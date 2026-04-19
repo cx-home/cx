@@ -29,12 +29,17 @@ converts losslessly to and from JSON, YAML, TOML, and XML.
   - [Elements](#elements)
   - [Attributes](#attributes)
   - [Text and quoting](#text-and-quoting)
+  - [Triple-quoted strings](#triple-quoted-strings)
   - [Comments](#comments)
   - [Scalars and auto-typing](#scalars-and-auto-typing)
   - [Explicit type annotations](#explicit-type-annotations)
+  - [Short type aliases](#short-type-aliases)
   - [Typed arrays](#typed-arrays)
+  - [Auto-array](#auto-array)
+  - [Inferred-type array `:[]`](#inferred-type-array-)
   - [Mixed content](#mixed-content)
   - [Raw text blocks](#raw-text-blocks)
+  - [Block content](#block-content)
   - [Entity and character references](#entity-and-character-references)
   - [Anchors, merges, and aliases](#anchors-merges-and-aliases)
   - [Processing instructions](#processing-instructions)
@@ -153,9 +158,10 @@ XML equivalent:
 > all valid in unquoted attribute values. `href=https://example.com/a?b=1&c=2`
 > works without quotes.
 
-> **Note:** Attribute values are **always stored as strings** in the AST.
-> Auto-typing does not apply to attributes. `port=8080` stores the string `"8080"`,
-> not an integer. Use child elements for typed values: `[port :int 8080]`.
+> **Note:** Bare attribute values are **auto-typed** the same way as bare element
+> body tokens: `port=8080` stores int `8080`, `debug=false` stores bool `false`.
+> Quoted attribute values (`port='8080'`) are always strings — use quotes to prevent
+> auto-typing when a numeric-looking string is intended.
 
 ### Text and quoting
 
@@ -174,6 +180,31 @@ Quotes are required when a value would otherwise be auto-typed (see below):
 [status 'true']               # string "true",  not bool true
 [version '3.0']               # string "3.0",   not float 3.0
 [zip :string 90210]           # explicit :string type annotation also works
+```
+
+### Triple-quoted strings
+
+`'''...'''` is the multiline string literal. Whitespace stripping (in order):
+1. One leading newline after `'''` is stripped.
+2. One trailing newline before `'''` is stripped.
+3. Common leading indent of all non-blank lines is stripped.
+
+```cx
+[readme '''
+  CX is a bracket-based format.
+  It converts to XML, JSON, YAML, and TOML.
+''']
+```
+
+Stored as `Text("CX is a bracket-based format.\nIt converts to XML, JSON, YAML, and TOML.")`.
+
+Triple-quoted strings always produce a `Text` node — no auto-typing, no child element parsing.
+Single and double quotes are allowed unescaped inside; `\'` prevents early termination.
+Triple-quoted strings are **not** valid in attribute position — use single-quoted strings there.
+
+The CX emitter round-trips multiline text as single-quoted strings with literal `\n`:
+```cx
+[readme 'CX is a bracket-based format.\nIt converts to XML, JSON, YAML, and TOML.']
 ```
 
 ### Comments
@@ -252,6 +283,24 @@ In XML output, explicit annotations appear as `cx:type`:
 <zip cx:type="string">90210</zip>
 ```
 
+### Short type aliases
+
+Each long type name has a one- or two-character alias accepted everywhere
+`:type` is valid. Emitters always produce long forms; parsers accept both:
+
+| Short | Long | Example |
+|---|---|---|
+| `:i` | `:int` | `[count :i 42]` |
+| `:f` | `:float` | `[ratio :f 3.14]` |
+| `:b` | `:bool` | `[active :b true]` |
+| `:s` | `:string` | `[label :s 90210]` |
+| `:d` | `:date` | `[launch :d 2026-04-19]` |
+| `:dt` | `:datetime` | `[stamp :dt 2026-04-19T09:00:00Z]` |
+
+`null` and `bytes` have no short alias — use their long forms only.
+
+Short aliases also work on arrays: `:i[]`, `:f[]`, `:b[]`, `:s[]`, `:d[]`, `:dt[]`.
+
 ### Typed arrays
 
 `:type[]` turns the element body into a sequence of items of that type:
@@ -274,6 +323,76 @@ In XML output, each item becomes an `<item>` element:
 ```xml
 <tags cx:type="string[]"><item>admin</item><item>user</item><item>guest</item></tags>
 ```
+
+### Auto-array
+
+When an element body has **2 or more** whitespace-separated unquoted tokens and
+**no child elements**, and all tokens resolve to the **same non-string type**, the
+body becomes a typed array automatically — no annotation needed:
+
+```cx
+[scores 10 20 30]             # → int[]   (all integers)
+[temps  -2.5 0.0 3.7 21.1]   # → float[] (all floats)
+[flags  true false true]      # → bool[]
+[dates  2024-01-15 2025-03-01 2026-04-19]  # → date[]
+```
+
+Mixed int and float tokens promote to `float[]`:
+```cx
+[data 1 2.5 3]                # → float[] (1 and 3 promoted from int)
+```
+
+Any token that falls through to `Text`, or any quoted string token, suppresses
+auto-array — the body stays as `Text`:
+```cx
+[p Version 3.0]               # Text "Version 3.0" — "Version" is not a number
+[p 10 'twenty' 30]            # Text — quoted string suppresses auto-array
+```
+
+The CX emitter adds the explicit annotation on round-trip:
+```cx
+[scores :int[] 10 20 30]      # canonical output from [scores 10 20 30]
+```
+
+String arrays always require an explicit annotation (`:[]`, `:s[]`, or `:string[]`).
+
+### Inferred-type array `:[]`
+
+`:[]` without a type name infers the array element type from the tokens:
+
+- Non-string auto-typed tokens → that type (with int+float promotion to `float[]`)
+- Any quoted string or any token falling through to `Text` → `string[]`
+
+```cx
+[data  :[] 1 2.5 3]           # → float[]  (all numeric, int promoted)
+[tags  :[] admin user guest]  # → string[] (bare words fall through to text)
+[mixed :[] 10 hello 30]       # → string[] (hello falls through to text)
+```
+
+`:[]` is the minimal annotation to force a string array from bare tokens:
+```cx
+[tags :[] admin user guest]   # string[] — each bare word becomes a string item
+```
+
+### Block content
+
+`[|...|]` is a parsed block literal that preserves newlines. Content is parsed as
+normal CX — elements, entity refs, and all body items work inside:
+
+```cx
+[p [|
+  Visit our [a href=https://example.com site] or
+  read the [a href=https://docs.example.com docs].
+|]]
+```
+
+Whitespace stripping (same rules as triple-quoted strings):
+1. One leading newline after `[|` is stripped.
+2. One trailing newline before `|]` is stripped.
+3. Common leading indent of all non-blank lines is stripped.
+
+In round-trip XML: `<cx:block>...</cx:block>`.
+In semantic XML and JSON/YAML/TOML: items inlined into the parent.
 
 ### Mixed content
 
@@ -440,19 +559,24 @@ YAML is the other common format that supports multi-document streams.
 [port :string 8080]           # Text "8080" — explicit :string annotation
 ```
 
-### Attribute values are always strings
+### Attribute auto-typing
 
-Auto-typing never applies to attribute values. They are always `Text` in the AST:
+Bare attribute values are auto-typed the same way as bare body tokens:
 
 ```cx
-[server port=8080]            # attr "port" = string "8080"
-[server port='8080']          # identical — quoting is redundant here
+[server host=localhost port=8080 debug=false]
+# host → string "localhost"  (no pattern match)
+# port → int 8080
+# debug → bool false
 ```
 
-For a typed value use child element form:
+Quote an attribute value to force it to be a string:
 ```cx
-[server [port :int 8080]]     # child element with int scalar
+[server port='8080']          # string "8080", not int 8080
 ```
+
+Array auto-typing does **not** apply to attributes — only scalar auto-typing does.
+Use child elements for array-typed values.
 
 ### Whitespace normalization
 
@@ -768,7 +892,8 @@ All returned strings are heap-allocated and must be released with `cx_free()`.
 
 The conformance suite lives in `conformance/` and covers:
 - `core.txt` — documents, elements, comments, raw text, entity refs, PIs, DTD
-- `extended.txt` — scalars, type annotations, arrays, anchors, merges, multi-doc
+- `extended.txt` — scalars, type annotations, arrays (auto-array, `:[]`, typed),
+  anchors, merges, multi-doc, triple-quoted strings, block content, short aliases
 - `xml.txt` — XML input parsing round-trips
 
 ```sh
