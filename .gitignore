@@ -5,3 +5,4 @@ rust/target/
 bench.md
 
 .claude/settings.local.json
+dist/
