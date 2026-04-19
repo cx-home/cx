@@ -4,3 +4,4 @@ rust/target/
 *.pyc
 bench.md
 
+.claude/settings.local.json
