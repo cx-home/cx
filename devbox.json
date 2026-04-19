@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.1/.schema/devbox.schema.json",
+  "packages": [
+    "rustup@latest",
+    "python@3.12",
+    "jq@latest",
+    "hyperfine@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "rustup toolchain install stable --no-self-update 2>/dev/null || true",
+      "rustup default stable"
+    ],
+    "scripts": {
+      "build":    "make build",
+      "test":     "make test",
+      "conform":  "make conform"
+    }
+  }
+}

@@ -1,2 +1,6 @@
 __pycache__/
 out.txt
+rust/target/
+*.pyc
+bench.md
+
