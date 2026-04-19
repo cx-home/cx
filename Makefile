@@ -27,14 +27,12 @@ build-vcx:
 
 build-lib: build-rust build-vcx
 
-# Copy dylib + header into dist/
-dist: build-lib
+# Copy vcx dylib + header into dist/ (V implementation is primary)
+dist: build-vcx
 	mkdir -p $(DIST_DIR)/lib $(DIST_DIR)/include
 	cp -f include/cx.h $(DIST_DIR)/include/
-	@if [ -f $(LIB_DYLIB) ]; then cp -f $(LIB_DYLIB) $(DIST_DIR)/lib/; fi
-	@if [ -f $(LIB_SO)    ]; then cp -f $(LIB_SO)    $(DIST_DIR)/lib/; fi
-	@if [ -f $(VCX_DYLIB) ]; then cp -f $(VCX_DYLIB) $(DIST_DIR)/lib/libcx-v.dylib; fi
-	@if [ -f $(VCX_SO)    ]; then cp -f $(VCX_SO)    $(DIST_DIR)/lib/libcx-v.so; fi
+	@if [ -f $(VCX_DYLIB) ]; then cp -f $(VCX_DYLIB) $(DIST_DIR)/lib/libcx.dylib; fi
+	@if [ -f $(VCX_SO)    ]; then cp -f $(VCX_SO)    $(DIST_DIR)/lib/libcx.so; fi
 	@echo "dist: $(DIST_DIR)/include/cx.h  $(DIST_DIR)/lib/"
 
 # ── Test ───────────────────────────────────────────────────────────────────────

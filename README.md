@@ -53,7 +53,7 @@ converts losslessly to and from JSON, YAML, TOML, and XML.
 
 ## Install
 
-**Prerequisites:** Rust toolchain (`cargo`). No other dependencies.
+**Prerequisites:** [V](https://vlang.io) 0.5.1+. No other dependencies.
 
 ```sh
 git clone https://github.com/your-org/cx
@@ -61,13 +61,13 @@ cd cx
 make build
 ```
 
-This builds the `cx` CLI binary at `rust/target/release/cx` and the shared
-library `libcx.dylib` / `libcx.so`.
+This builds the `cx` CLI binary at `vcx/target/cx` and the shared library
+`vcx/target/libcx.dylib` / `vcx/target/libcx.so`.
 
 Add the binary to your PATH:
 
 ```sh
-export PATH="$PATH:$(pwd)/rust/target/release"
+export PATH="$PATH:$(pwd)/vcx/target"
 ```
 
 ---
@@ -766,7 +766,7 @@ CX uses the `cx:` namespace to preserve CX-specific metadata in XML output:
 
 ## Language bindings
 
-All language bindings wrap the same Rust implementation via the C ABI
+All language bindings wrap the same V implementation (`vcx/`) via the C ABI
 (`libcx.dylib` / `libcx.so`). Every binding exposes the same 30 functions
 covering all 5×5 input/output format combinations.
 
@@ -897,5 +897,6 @@ The conformance suite lives in `conformance/` and covers:
 - `xml.txt` — XML input parsing round-trips
 
 ```sh
-cd rust && cargo test
+make test          # all suites: V conformance + Rust cross-check + Python
+make conform-vcx   # V conformance only (76 cases)
 ```
