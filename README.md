@@ -2,7 +2,7 @@
 
 CX is a bracket-based document and configuration format that unifies markup and
 structured data in one coherent syntax. It reads like XML, types like YAML, and
-converts losslessly to and from JSON, YAML, TOML, and XML.
+converts losslessly to and from JSON, YAML, TOML, XML, and Markdown.
 
 ```cx
 [article lang=en
@@ -29,12 +29,17 @@ converts losslessly to and from JSON, YAML, TOML, and XML.
   - [Elements](#elements)
   - [Attributes](#attributes)
   - [Text and quoting](#text-and-quoting)
+  - [Triple-quoted strings](#triple-quoted-strings)
   - [Comments](#comments)
   - [Scalars and auto-typing](#scalars-and-auto-typing)
   - [Explicit type annotations](#explicit-type-annotations)
+  - [Short type aliases](#short-type-aliases)
   - [Typed arrays](#typed-arrays)
+  - [Auto-array](#auto-array)
+  - [Inferred-type array `:[]`](#inferred-type-array-)
   - [Mixed content](#mixed-content)
   - [Raw text blocks](#raw-text-blocks)
+  - [Block content](#block-content)
   - [Entity and character references](#entity-and-character-references)
   - [Anchors, merges, and aliases](#anchors-merges-and-aliases)
   - [Processing instructions](#processing-instructions)
@@ -48,7 +53,7 @@ converts losslessly to and from JSON, YAML, TOML, and XML.
 
 ## Install
 
-**Prerequisites:** Rust toolchain (`cargo`). No other dependencies.
+**Prerequisites:** [V](https://vlang.io) 0.5.1+. No other dependencies.
 
 ```sh
 git clone https://github.com/your-org/cx
@@ -56,13 +61,13 @@ cd cx
 make build
 ```
 
-This builds the `cx` CLI binary at `rust/target/release/cx` and the shared
-library `libcx.dylib` / `libcx.so`.
+This builds the `cx` CLI binary at `vcx/target/cx` and the shared library
+`vcx/target/libcx.dylib` / `vcx/target/libcx.so`.
 
 Add the binary to your PATH:
 
 ```sh
-export PATH="$PATH:$(pwd)/rust/target/release"
+export PATH="$PATH:$(pwd)/vcx/target"
 ```
 
 ---
@@ -70,7 +75,7 @@ export PATH="$PATH:$(pwd)/rust/target/release"
 ## CLI
 
 ```
-cx [--from cx|xml|json|yaml|toml] [--cx|--xml|--ast|--json|--yaml|--toml] [file]
+cx [--from cx|xml|json|yaml|toml|md] [--cx|--xml|--ast|--json|--yaml|--toml|--md] [file]
 ```
 
 Input format is auto-detected from the file extension (`.cx`, `.xml`, `.json`,
@@ -88,6 +93,9 @@ cx --from xml  file.xml       # XML  → CX
 cx --from json file.json      # JSON → CX
 cx --from yaml file.yaml      # YAML → CX
 cx --from toml file.toml      # TOML → CX
+cx --from md   file.md        # MD   → CX
+
+cx --md file.cx               # CX   → Markdown
 
 cat file.cx | cx --json       # read from stdin
 ```
@@ -153,9 +161,10 @@ XML equivalent:
 > all valid in unquoted attribute values. `href=https://example.com/a?b=1&c=2`
 > works without quotes.
 
-> **Note:** Attribute values are **always stored as strings** in the AST.
-> Auto-typing does not apply to attributes. `port=8080` stores the string `"8080"`,
-> not an integer. Use child elements for typed values: `[port :int 8080]`.
+> **Note:** Bare attribute values are **auto-typed** the same way as bare element
+> body tokens: `port=8080` stores int `8080`, `debug=false` stores bool `false`.
+> Quoted attribute values (`port='8080'`) are always strings — use quotes to prevent
+> auto-typing when a numeric-looking string is intended.
 
 ### Text and quoting
 
@@ -174,6 +183,31 @@ Quotes are required when a value would otherwise be auto-typed (see below):
 [status 'true']               # string "true",  not bool true
 [version '3.0']               # string "3.0",   not float 3.0
 [zip :string 90210]           # explicit :string type annotation also works
+```
+
+### Triple-quoted strings
+
+`'''...'''` is the multiline string literal. Whitespace stripping (in order):
+1. One leading newline after `'''` is stripped.
+2. One trailing newline before `'''` is stripped.
+3. Common leading indent of all non-blank lines is stripped.
+
+```cx
+[readme '''
+  CX is a bracket-based format.
+  It converts to XML, JSON, YAML, and TOML.
+''']
+```
+
+Stored as `Text("CX is a bracket-based format.\nIt converts to XML, JSON, YAML, and TOML.")`.
+
+Triple-quoted strings always produce a `Text` node — no auto-typing, no child element parsing.
+Single and double quotes are allowed unescaped inside; `\'` prevents early termination.
+Triple-quoted strings are **not** valid in attribute position — use single-quoted strings there.
+
+The CX emitter round-trips multiline text as single-quoted strings with literal `\n`:
+```cx
+[readme 'CX is a bracket-based format.\nIt converts to XML, JSON, YAML, and TOML.']
 ```
 
 ### Comments
@@ -252,6 +286,24 @@ In XML output, explicit annotations appear as `cx:type`:
 <zip cx:type="string">90210</zip>
 ```
 
+### Short type aliases
+
+Each long type name has a one- or two-character alias accepted everywhere
+`:type` is valid. Emitters always produce long forms; parsers accept both:
+
+| Short | Long | Example |
+|---|---|---|
+| `:i` | `:int` | `[count :i 42]` |
+| `:f` | `:float` | `[ratio :f 3.14]` |
+| `:b` | `:bool` | `[active :b true]` |
+| `:s` | `:string` | `[label :s 90210]` |
+| `:d` | `:date` | `[launch :d 2026-04-19]` |
+| `:dt` | `:datetime` | `[stamp :dt 2026-04-19T09:00:00Z]` |
+
+`null` and `bytes` have no short alias — use their long forms only.
+
+Short aliases also work on arrays: `:i[]`, `:f[]`, `:b[]`, `:s[]`, `:d[]`, `:dt[]`.
+
 ### Typed arrays
 
 `:type[]` turns the element body into a sequence of items of that type:
@@ -274,6 +326,76 @@ In XML output, each item becomes an `<item>` element:
 ```xml
 <tags cx:type="string[]"><item>admin</item><item>user</item><item>guest</item></tags>
 ```
+
+### Auto-array
+
+When an element body has **2 or more** whitespace-separated unquoted tokens and
+**no child elements**, and all tokens resolve to the **same non-string type**, the
+body becomes a typed array automatically — no annotation needed:
+
+```cx
+[scores 10 20 30]             # → int[]   (all integers)
+[temps  -2.5 0.0 3.7 21.1]   # → float[] (all floats)
+[flags  true false true]      # → bool[]
+[dates  2024-01-15 2025-03-01 2026-04-19]  # → date[]
+```
+
+Mixed int and float tokens promote to `float[]`:
+```cx
+[data 1 2.5 3]                # → float[] (1 and 3 promoted from int)
+```
+
+Any token that falls through to `Text`, or any quoted string token, suppresses
+auto-array — the body stays as `Text`:
+```cx
+[p Version 3.0]               # Text "Version 3.0" — "Version" is not a number
+[p 10 'twenty' 30]            # Text — quoted string suppresses auto-array
+```
+
+The CX emitter adds the explicit annotation on round-trip:
+```cx
+[scores :int[] 10 20 30]      # canonical output from [scores 10 20 30]
+```
+
+String arrays always require an explicit annotation (`:[]`, `:s[]`, or `:string[]`).
+
+### Inferred-type array `:[]`
+
+`:[]` without a type name infers the array element type from the tokens:
+
+- Non-string auto-typed tokens → that type (with int+float promotion to `float[]`)
+- Any quoted string or any token falling through to `Text` → `string[]`
+
+```cx
+[data  :[] 1 2.5 3]           # → float[]  (all numeric, int promoted)
+[tags  :[] admin user guest]  # → string[] (bare words fall through to text)
+[mixed :[] 10 hello 30]       # → string[] (hello falls through to text)
+```
+
+`:[]` is the minimal annotation to force a string array from bare tokens:
+```cx
+[tags :[] admin user guest]   # string[] — each bare word becomes a string item
+```
+
+### Block content
+
+`[|...|]` is a parsed block literal that preserves newlines. Content is parsed as
+normal CX — elements, entity refs, and all body items work inside:
+
+```cx
+[p [|
+  Visit our [a href=https://example.com site] or
+  read the [a href=https://docs.example.com docs].
+|]]
+```
+
+Whitespace stripping (same rules as triple-quoted strings):
+1. One leading newline after `[|` is stripped.
+2. One trailing newline before `|]` is stripped.
+3. Common leading indent of all non-blank lines is stripped.
+
+In round-trip XML: `<cx:block>...</cx:block>`.
+In semantic XML and JSON/YAML/TOML: items inlined into the parent.
 
 ### Mixed content
 
@@ -440,19 +562,24 @@ YAML is the other common format that supports multi-document streams.
 [port :string 8080]           # Text "8080" — explicit :string annotation
 ```
 
-### Attribute values are always strings
+### Attribute auto-typing
 
-Auto-typing never applies to attribute values. They are always `Text` in the AST:
+Bare attribute values are auto-typed the same way as bare body tokens:
 
 ```cx
-[server port=8080]            # attr "port" = string "8080"
-[server port='8080']          # identical — quoting is redundant here
+[server host=localhost port=8080 debug=false]
+# host → string "localhost"  (no pattern match)
+# port → int 8080
+# debug → bool false
 ```
 
-For a typed value use child element form:
+Quote an attribute value to force it to be a string:
 ```cx
-[server [port :int 8080]]     # child element with int scalar
+[server port='8080']          # string "8080", not int 8080
 ```
+
+Array auto-typing does **not** apply to attributes — only scalar auto-typing does.
+Use child elements for array-typed values.
 
 ### Whitespace normalization
 
@@ -565,9 +692,9 @@ whitespace before `&`.
 
 ## Format conversion
 
-CX converts losslessly between CX, XML, JSON, YAML, and TOML.
+CX converts losslessly between CX, XML, JSON, YAML, TOML, and Markdown.
 
-### All five formats from one source
+### All six formats from one source
 
 ```sh
 cx --cx   examples/config.cx   # canonical CX
@@ -575,6 +702,7 @@ cx --xml  examples/config.cx   # XML with cx: namespace for type metadata
 cx --json examples/config.cx   # semantic JSON (collapsed data values)
 cx --yaml examples/config.cx   # YAML
 cx --toml examples/config.cx   # TOML
+cx --md   examples/doc.cx      # Markdown
 ```
 
 ### Reading any format as CX
@@ -584,6 +712,75 @@ cx --from xml  examples/books.xml
 cx --from json examples/config.json
 cx --from yaml examples/config.yaml
 cx --from toml examples/config.toml
+cx --from md   examples/doc.md
+```
+
+### Markdown format
+
+CX supports Markdown as a 6th first-class format. CX bracket syntax maps to
+standard Markdown shorthand, which in turn normalizes to canonical element names
+in the AST:
+
+| MD shorthand | CX bracket syntax | HTML long name | Markdown output |
+|---|---|---|---|
+| `# text` | `[# text]` or `[h1 text]` | `h1` | `# text` |
+| `## text` | `[## text]` or `[h2 text]` | `h2` | `## text` |
+| `**text**` | `[** text]` or `[strong text]` or `[b text]` | `strong` | `**text**` |
+| `*text*` | `[* text]` or `[em text]` or `[i text]` | `em` | `*text*` |
+| `~~text~~` | `[~~ text]` or `[del text]` or `[s text]` | `del` | `~~text~~` |
+| `~text~` | `[~ text]` | `sub` | `~text~` |
+| `^text^` | `[^ text]` | `sup` | `^text^` |
+| `<u>text</u>` | `[__ text]` | `u` | `<u>text</u>` |
+| `` `text` `` | `` [` text] `` or `[code text]` or `[c text]` | `code` | `` `text` `` |
+| `` ```lang\n...\n``` `` | `` [``` lang:bash \| ... \|] `` | `code` (block) | fenced code block |
+| `> text` | `[> text]` or `[blockquote text]` | `blockquote` | `> text` |
+| `---` | `[---]` | `hr` | `---` |
+| `[text](url)` | `[a href:"url" text]` | `a` | `[text](url)` |
+| `![alt](src)` | `[img src:"s" alt:"a"]` | `img` | `![a](s)` |
+
+**Auto-wrap**: bare `TextNode` at block level auto-wraps to `<p>` on MD output.
+
+**YAML frontmatter**: `[doc title:"..." author:"..."]` emits YAML frontmatter.
+
+**Tables**: `[table | pipe rows |]` stores raw GFM pipe table text; emitters pass
+it through for MD, and parse rows into `tr/th/td` for XML/JSON.
+
+**Unknown elements**: elements not in the vocabulary above render as
+`<!-- [element_name attr:val body] -->` in MD output, and are round-tripped back
+on MD input.
+
+Example document in CX MD dialect:
+
+```cx
+[doc title:"Guide"
+  [# CX Language Guide]
+  [p CX is a [** structured] language with [* clean] syntax.]
+  [## Lists]
+  [ul
+    [li Item one]
+    [li Item two]
+  ]
+  [a href:"https://example.com" Learn more]
+]
+```
+
+Produces Markdown:
+
+```markdown
+---
+title: Guide
+---
+
+# CX Language Guide
+
+CX is a **structured** language with *clean* syntax.
+
+## Lists
+
+- Item one
+- Item two
+
+[Learn more](https://example.com)
 ```
 
 ### JSON output — semantic vs AST
@@ -642,9 +839,9 @@ CX uses the `cx:` namespace to preserve CX-specific metadata in XML output:
 
 ## Language bindings
 
-All language bindings wrap the same Rust implementation via the C ABI
-(`libcx.dylib` / `libcx.so`). Every binding exposes the same 30 functions
-covering all 5×5 input/output format combinations.
+All language bindings wrap the same V implementation (`vcx/`) via the C ABI
+(`libcx.dylib` / `libcx.so`). Every binding exposes functions covering all
+6×6 input/output format combinations (CX, XML, JSON, YAML, TOML, MD).
 
 ### Python
 
@@ -654,6 +851,8 @@ covering all 5×5 input/output format combinations.
 import sys
 sys.path.insert(0, 'python')
 import cxlib
+
+print(cxlib.version())   # "0.9.0"
 
 # CX input
 result = cxlib.to_json('[server [host localhost] [port :int 8080]]')
@@ -672,7 +871,7 @@ cx_src = cxlib.yaml_to_cx('server:\n  host: localhost')
 # TOML input
 cx_src = cxlib.toml_to_cx('[server]\nhost = "localhost"')
 
-# Any of 5 inputs × 5 outputs
+# Any of 6 inputs × 7 outputs, plus version()
 cxlib.yaml_to_toml(yaml_src)   # YAML → TOML
 cxlib.toml_to_xml(toml_src)    # TOML → XML
 cxlib.xml_to_yaml(xml_src)     # XML  → YAML
@@ -700,6 +899,8 @@ python python/examples/transform.py
 import cxlib
 
 fn main() {
+    println(cxlib.version())   // "0.9.0"
+
     result := cxlib.to_json('[server [host localhost] [port :int 8080]]') or {
         eprintln(err)
         return
@@ -712,7 +913,8 @@ fn main() {
 }
 ```
 
-All functions return `!string` — use `or { ... }` for error handling.
+All conversion functions return `!string` — use `or { ... }` for error handling.
+`version()` returns a plain `string` (never fails).
 
 Run the full example:
 ```sh
@@ -738,17 +940,23 @@ After `make dist`:
 ```
 dist/
   lib/libcx.dylib     # (or libcx.so on Linux)
-  include/cx.h        # C header with all 30 function declarations
+  include/cx.h        # C header — 42 conversion functions + cx_free + cx_version
 ```
 
 ### C ABI
 
-The shared library exposes 30 `#[no_mangle]` functions — all 5 input formats ×
-5 output formats, plus `cx_free`:
+The shared library exposes 44 C-exported functions — all 6 input formats ×
+7 output formats (including AST), plus `cx_free` and `cx_version`:
 
 ```c
 #include "cx.h"
 
+// version query
+char* ver = cx_version();
+printf("libcx %s\n", ver);
+cx_free(ver);
+
+// conversion
 char* result = cx_to_json("[port :int 8080]", NULL);
 // result → "{\"port\": 8080}"
 cx_free(result);
@@ -762,15 +970,20 @@ if (!out) {
 }
 ```
 
-All returned strings are heap-allocated and must be released with `cx_free()`.
+Every string returned by the library (including `cx_version()`) is
+heap-allocated and must be released with `cx_free()`. Never free with the
+system `free()` directly.
 
 ### Conformance tests
 
 The conformance suite lives in `conformance/` and covers:
 - `core.txt` — documents, elements, comments, raw text, entity refs, PIs, DTD
-- `extended.txt` — scalars, type annotations, arrays, anchors, merges, multi-doc
-- `xml.txt` — XML input parsing round-trips
+- `extended.txt` — scalars, type annotations, arrays (auto-array, `:[]`, typed),
+  anchors, merges, multi-doc, triple-quoted strings, block content, short aliases
+- `xml.txt` — XML input parsing and round-trips
+- `md.txt` — Markdown output from CX, and MD input parsing
 
 ```sh
-cd rust && cargo test
+make test          # all suites: V conformance + Rust cross-check + Python
+make conform-vcx   # V conformance only (115 cases)
 ```

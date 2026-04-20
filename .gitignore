@@ -1,8 +1,12 @@
 __pycache__/
 out.txt
 rust/target/
+vcx/target/
 *.pyc
 bench.md
 
 .claude/settings.local.json
 dist/
+
+# compiled V binaries in example dirs
+vlang/examples/transform

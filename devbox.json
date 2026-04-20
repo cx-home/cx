@@ -4,7 +4,9 @@
     "rustup@latest",
     "python@3.12",
     "jq@latest",
-    "hyperfine@latest"
+    "hyperfine@latest",
+    "git@latest",
+    "lazygit@latest"
   ],
   "shell": {
     "init_hook": [
