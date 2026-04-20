@@ -19,6 +19,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
 .PHONY: all build build-vcx build-lib build-rust \
         build-ruby build-go build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
         build-lsp build-vscode build-editors \
+        publish \
         dist install uninstall \
         test test-python test-vcx test-rust \
         test-ruby test-ruby-api test-go test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
@@ -201,6 +202,11 @@ example-ruby: build-vcx
 
 example-swift: build-swift
 	$(SWIFT_FLAGS) $(SWIFT) run --package-path lang/swift/cxlib transform
+
+# ── Publish to public repo ────────────────────────────────────────────────────
+
+publish:
+	@bash scripts/publish.sh
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
 
