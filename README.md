@@ -921,6 +921,42 @@ Run the full example:
 cd vlang && v run examples/transform.v
 ```
 
+### Rust
+
+**Requires:** `libcx` built (`make build`). No crates.io dependencies.
+
+```rust
+fn main() {
+    println!("libcx {}", cxlib::version());
+
+    let result = cxlib::to_json("[server [host localhost] [port :int 8080]]")
+        .unwrap();
+    println!("{result}");
+    // {"server": {"host": "localhost", "port": 8080}}
+
+    // any of 6 inputs × 7 outputs
+    let cx_src = cxlib::yaml_to_cx("server:\n  host: localhost").unwrap();
+    let md_out = cxlib::to_md("[# Hello]").unwrap();
+
+    // errors return Err(String)
+    match cxlib::to_json("[unclosed") {
+        Ok(_)    => unreachable!(),
+        Err(msg) => eprintln!("parse error: {msg}"),
+    }
+}
+```
+
+Add to `Cargo.toml`:
+```toml
+[dependencies]
+cxlib = { path = "rustlang/cxlib" }
+```
+
+Run the full example:
+```sh
+cargo run --manifest-path rustlang/cxlib/Cargo.toml --example transform
+```
+
 ---
 
 ## Building from source

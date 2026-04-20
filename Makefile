@@ -10,20 +10,23 @@ VCX_DYLIB  := vcx/target/$(LIB_NAME).dylib
 VCX_SO     := vcx/target/$(LIB_NAME).so
 DIST_DIR   := dist
 
-.PHONY: all build build-rust build-vcx build-lib dist test test-rust test-python test-vcx \
+.PHONY: all build build-rust build-vcx build-lib build-rustlang dist test test-rust test-python test-vcx test-rustlang \
         conform conform-rust conform-vcx conform-md bench clean
 
 all: build
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 
-build: build-rust build-vcx
+build: build-rust build-vcx build-rustlang
 
 build-rust:
 	cargo build --manifest-path rust/Cargo.toml --release
 
 build-vcx:
 	$(MAKE) -C vcx build
+
+build-rustlang: build-vcx
+	cargo build --manifest-path rustlang/cxlib/Cargo.toml
 
 build-lib: build-rust build-vcx
 
@@ -37,13 +40,16 @@ dist: build-vcx
 
 # ── Test ───────────────────────────────────────────────────────────────────────
 
-test: test-rust test-python test-vcx
+test: test-rust test-python test-vcx test-rustlang
 
 test-rust:
 	cargo test --manifest-path rust/Cargo.toml
 
 test-python: build-vcx
 	python python/conformance.py
+
+test-rustlang: build-rustlang
+	cargo test --manifest-path rustlang/cxlib/Cargo.toml
 
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
