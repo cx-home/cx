@@ -11,3 +11,13 @@ dist/
 
 # compiled V binaries in example dirs
 vlang/examples/transform
+
+# Language binding build artifacts
+swift/cxlib/.build/
+typescript/cxlib/dist/
+typescript/cxlib/node_modules/
+java/cxlib/target/
+kotlin/cxlib/build/
+kotlin/cxlib/.gradle/
+csharp/*/bin/
+csharp/*/obj/

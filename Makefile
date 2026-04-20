@@ -10,14 +10,24 @@ VCX_DYLIB  := vcx/target/$(LIB_NAME).dylib
 VCX_SO     := vcx/target/$(LIB_NAME).so
 DIST_DIR   := dist
 
-.PHONY: all build build-rust build-vcx build-lib build-rustlang dist test test-rust test-python test-vcx test-rustlang \
+# ── Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
+RUBY        := /opt/homebrew/opt/ruby/bin/ruby
+SWIFT       := /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift
+SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
+JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+
+.PHONY: all build build-rust build-vcx build-lib build-rustlang \
+        build-ruby build-golang build-typescript build-java build-kotlin build-csharp build-swift \
+        dist test test-rust test-python test-vcx test-rustlang \
+        test-ruby test-golang test-typescript test-java test-kotlin test-csharp test-swift \
         conform conform-rust conform-vcx conform-md bench clean
 
 all: build
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 
-build: build-rust build-vcx build-rustlang
+build: build-rust build-vcx build-rustlang build-ruby build-golang build-typescript build-java build-kotlin build-csharp build-swift
 
 build-rust:
 	cargo build --manifest-path rust/Cargo.toml --release
@@ -27,6 +37,27 @@ build-vcx:
 
 build-rustlang: build-vcx
 	cargo build --manifest-path rustlang/cxlib/Cargo.toml
+
+build-ruby: build-vcx
+	@echo "Ruby binding: no compile step needed"
+
+build-golang: build-vcx
+	cd golang/cxlib && go build ./...
+
+build-typescript: build-vcx
+	cd typescript/cxlib && npm install --silent && npm run build
+
+build-java: build-vcx
+	mvn -f java/cxlib/pom.xml -q package -DskipTests
+
+build-kotlin: build-vcx
+	cd kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle assemble -q
+
+build-csharp: build-vcx
+	$(DOTNET) build csharp/cxlib/cxlib.csproj -c Release -q
+
+build-swift: build-vcx
+	$(SWIFT_FLAGS) $(SWIFT) build --package-path swift/cxlib
 
 build-lib: build-rust build-vcx
 
@@ -40,7 +71,7 @@ dist: build-vcx
 
 # ── Test ───────────────────────────────────────────────────────────────────────
 
-test: test-rust test-python test-vcx test-rustlang
+test: test-rust test-python test-vcx test-rustlang test-ruby test-golang test-typescript test-java test-kotlin test-csharp test-swift
 
 test-rust:
 	cargo test --manifest-path rust/Cargo.toml
@@ -53,6 +84,27 @@ test-rustlang: build-rustlang
 
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
+
+test-ruby: build-vcx
+	$(RUBY) ruby/conformance.rb
+
+test-golang: build-golang
+	cd golang/conformance && go run .
+
+test-typescript: build-typescript
+	cd typescript/cxlib && npm run conform
+
+test-java: build-java
+	mvn -f java/cxlib/pom.xml -q test
+
+test-kotlin: build-kotlin
+	cd kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle test -q
+
+test-csharp: build-csharp
+	$(DOTNET) run --project csharp/conformance/conformance.csproj -c Release
+
+test-swift: build-swift
+	$(SWIFT_FLAGS) $(SWIFT) test --package-path swift/cxlib
 
 conform-md: build-vcx
 	$(MAKE) -C vcx conform-md

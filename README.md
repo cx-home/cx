@@ -891,6 +891,11 @@ Run the full example:
 python python/examples/transform.py
 ```
 
+Run conformance:
+```sh
+python python/conformance.py
+```
+
 ### V
 
 **Requires:** V 0.5.1+, `libcx` built (`make build`).
@@ -955,6 +960,256 @@ cxlib = { path = "rustlang/cxlib" }
 Run the full example:
 ```sh
 cargo run --manifest-path rustlang/cxlib/Cargo.toml --example transform
+```
+
+Run conformance:
+```sh
+make test-rustlang
+```
+
+### Ruby
+
+**Requires:** `libcx` built (`make build`), Ruby 3+ with `ffi` gem (`gem install ffi`).
+
+```ruby
+require_relative 'ruby/cxlib/lib/cxlib'
+
+puts CXLib.version   # "0.9.0"
+
+result = CXLib.to_json('[server [host localhost] [port :int 8080]]')
+puts result
+# {"server": {"host": "localhost", "port": 8080}}
+
+# any of 6 inputs x 7 outputs
+cx_src = CXLib.yaml_to_cx("server:\n  host: localhost")
+puts cx_src
+
+# errors raise RuntimeError
+begin
+  CXLib.to_json('[unclosed')
+rescue RuntimeError => e
+  puts e.message   # 1:9: expected ']' got EOF
+end
+```
+
+Run the full example:
+```sh
+/opt/homebrew/opt/ruby/bin/ruby ruby/cxlib/examples/transform.rb
+```
+
+Run conformance:
+```sh
+make test-ruby
+```
+
+### Go
+
+**Requires:** `libcx` built (`make build`), Go 1.21+, CGo toolchain.
+
+```go
+import cxlib "cx/golang"
+
+fmt.Println(cxlib.Version())   // "0.9.0"
+
+result, err := cxlib.ToJson("[server [host localhost] [port :int 8080]]")
+if err != nil { log.Fatal(err) }
+fmt.Println(result)
+// {"server": {"host": "localhost", "port": 8080}}
+
+// any of 6 inputs x 7 outputs
+cxSrc, _ := cxlib.YamlToCx("server:\n  host: localhost")
+mdOut, _  := cxlib.ToMd("[# Hello]")
+_ = cxSrc; _ = mdOut
+
+// errors return non-nil error
+if _, err := cxlib.ToCx("[unclosed"); err != nil {
+    fmt.Println(err)  // 1:9: expected ']' got EOF
+}
+```
+
+Run the full example:
+```sh
+cd golang/cxlib && go run ./examples/transform/
+```
+
+Run conformance:
+```sh
+make test-golang
+```
+
+### TypeScript
+
+**Requires:** `libcx` built (`make build`), Node.js 18+, `koffi` npm package.
+
+```typescript
+import * as cx from './typescript/cxlib/src/index';
+
+console.log(cx.version());   // "0.9.0"
+
+const result = cx.toJson('[server [host localhost] [port :int 8080]]');
+console.log(result);
+// {"server": {"host": "localhost", "port": 8080}}
+
+// any of 6 inputs x 7 outputs
+const cxSrc = cx.yamlToCx("server:\n  host: localhost");
+const mdOut = cx.toMd("[# Hello]");
+
+// errors throw Error
+try {
+    cx.toJson('[unclosed');
+} catch (e) {
+    console.error((e as Error).message);  // 1:9: expected ']' got EOF
+}
+```
+
+Run the full example:
+```sh
+cd typescript/cxlib && npm run example
+```
+
+Run conformance:
+```sh
+make test-typescript
+```
+
+### Java
+
+**Requires:** `libcx` built (`make build`), Java 11+, Maven, JNA 5.14.0 (fetched by Maven).
+
+```java
+import cx.CxLib;
+
+System.out.println(CxLib.version());   // "0.9.0"
+
+String result = CxLib.toJson("[server [host localhost] [port :int 8080]]");
+System.out.println(result);
+// {"server": {"host": "localhost", "port": 8080}}
+
+// any of 6 inputs x 7 outputs
+String cxSrc = CxLib.yamlToCx("server:\n  host: localhost");
+String mdOut = CxLib.toMd("[# Hello]");
+
+// errors throw RuntimeException
+try {
+    CxLib.toJson("[unclosed");
+} catch (RuntimeException e) {
+    System.err.println(e.getMessage());  // 1:9: expected ']' got EOF
+}
+```
+
+Run the full example:
+```sh
+mvn -f java/cxlib/pom.xml exec:java -Dexec.mainClass=cx.examples.Transform
+```
+
+Run conformance:
+```sh
+make test-java
+```
+
+### Kotlin
+
+**Requires:** `libcx` built (`make build`), Java 21 (arm64), Gradle, JNA 5.14.0.
+
+```kotlin
+import cx.CxLib
+
+println(CxLib.version())   // "0.9.0"
+
+val result = CxLib.toJson("[server [host localhost] [port :int 8080]]")
+println(result)
+// {"server": {"host": "localhost", "port": 8080}}
+
+// any of 6 inputs x 7 outputs
+val cxSrc = CxLib.yamlToCx("server:\n  host: localhost")
+val mdOut = CxLib.toMd("[# Hello]")
+
+// errors throw RuntimeException
+try {
+    CxLib.toJson("[unclosed")
+} catch (e: RuntimeException) {
+    System.err.println(e.message)  // 1:9: expected ']' got EOF
+}
+```
+
+Run the full example:
+```sh
+cd kotlin/cxlib && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home gradle run
+```
+
+Run conformance:
+```sh
+make test-kotlin
+```
+
+### C#
+
+**Requires:** `libcx` built (`make build`), .NET 10 SDK.
+
+```csharp
+using CX;
+
+Console.WriteLine(CxLib.Version());   // "0.9.0"
+
+string result = CxLib.ToJson("[server [host localhost] [port :int 8080]]");
+Console.WriteLine(result);
+// {"server": {"host": "localhost", "port": 8080}}
+
+// any of 6 inputs x 7 outputs
+string cxSrc = CxLib.YamlToCx("server:\n  host: localhost");
+string mdOut = CxLib.ToMd("[# Hello]");
+
+// errors throw InvalidOperationException
+try {
+    CxLib.ToJson("[unclosed");
+} catch (InvalidOperationException e) {
+    Console.Error.WriteLine(e.Message);  // 1:9: expected ']' got EOF
+}
+```
+
+Run the full example:
+```sh
+DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec dotnet run --project csharp/examples/transform/transform.csproj
+```
+
+Run conformance:
+```sh
+make test-csharp
+```
+
+### Swift
+
+**Requires:** `libcx` built (`make build`), Xcode 15+ (Swift 5.9+), macOS.
+
+```swift
+import CXLib
+
+print(version())   // "0.9.0"
+
+let result = try toJson("[server [host localhost] [port :int 8080]]")
+print(result)
+// {"server": {"host": "localhost", "port": 8080}}
+
+// any of 6 inputs x 7 outputs
+let cxSrc = try yamlToCx("server:\n  host: localhost")
+let mdOut = try toMd("[# Hello]")
+
+// errors throw CXError.parse(message)
+do {
+    _ = try toJson("[unclosed")
+} catch CXError.parse(let msg) {
+    print(msg)  // 1:9: expected ']' got EOF
+}
+```
+
+Run the full example:
+```sh
+swift run --package-path swift/cxlib transform
+```
+
+Run conformance:
+```sh
+make test-swift
 ```
 
 ---
