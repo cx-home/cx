@@ -54,7 +54,7 @@ build-kotlin: build-vcx
 	cd kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle assemble -q
 
 build-csharp: build-vcx
-	$(DOTNET) build csharp/cxlib/cxlib.csproj -c Release -q
+	$(DOTNET) build csharp/cxlib/cxlib.csproj -c Release --nologo -v:m
 
 build-swift: build-vcx
 	$(SWIFT_FLAGS) $(SWIFT) build --package-path swift/cxlib
