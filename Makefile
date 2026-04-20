@@ -9,6 +9,7 @@ LIB_SO     := rust/target/release/$(LIB_NAME).so
 VCX_DYLIB  := vcx/target/$(LIB_NAME).dylib
 VCX_SO     := vcx/target/$(LIB_NAME).so
 DIST_DIR   := dist
+PREFIX     ?= /usr/local
 
 # ── Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
 RUBY        := /opt/homebrew/opt/ruby/bin/ruby
@@ -19,7 +20,8 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
 
 .PHONY: all build build-rust build-vcx build-lib build-rustlang \
         build-ruby build-golang build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
-        dist test test-rust test-python test-vcx test-rustlang \
+        dist install uninstall \
+        test test-rust test-python test-vcx test-rustlang \
         test-ruby test-ruby-api test-golang test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
         test-python-api test-python-stream test-vcx-api test-vcx-stream test-typescript-api test-golang-api \
         conform conform-rust conform-vcx conform-md bench bench-python bench-v clean
@@ -72,6 +74,21 @@ dist: build-vcx
 	@if [ -f $(VCX_DYLIB) ]; then cp -f $(VCX_DYLIB) $(DIST_DIR)/lib/libcx.dylib; fi
 	@if [ -f $(VCX_SO)    ]; then cp -f $(VCX_SO)    $(DIST_DIR)/lib/libcx.so; fi
 	@echo "dist: $(DIST_DIR)/include/cx.h  $(DIST_DIR)/lib/"
+
+# Install libcx system-wide (default: /usr/local; override with PREFIX=...)
+install: dist
+	install -d $(PREFIX)/lib $(PREFIX)/include $(PREFIX)/lib/pkgconfig
+	@if [ -f $(DIST_DIR)/lib/libcx.dylib ]; then install -m 755 $(DIST_DIR)/lib/libcx.dylib $(PREFIX)/lib/; fi
+	@if [ -f $(DIST_DIR)/lib/libcx.so    ]; then install -m 755 $(DIST_DIR)/lib/libcx.so    $(PREFIX)/lib/; fi
+	install -m 644 $(DIST_DIR)/include/cx.h $(PREFIX)/include/
+	sed "s|@PREFIX@|$(PREFIX)|g" cx.pc.in > $(PREFIX)/lib/pkgconfig/cx.pc
+	@echo "installed libcx → $(PREFIX)/lib/  header → $(PREFIX)/include/  pkg-config → $(PREFIX)/lib/pkgconfig/cx.pc"
+
+uninstall:
+	rm -f $(PREFIX)/lib/libcx.dylib $(PREFIX)/lib/libcx.so
+	rm -f $(PREFIX)/include/cx.h
+	rm -f $(PREFIX)/lib/pkgconfig/cx.pc
+	@echo "uninstalled libcx from $(PREFIX)"
 
 # ── Test ───────────────────────────────────────────────────────────────────────
 
