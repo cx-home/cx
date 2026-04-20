@@ -2,6 +2,7 @@ __pycache__/
 out.txt
 rust/target/
 vcx/target/
+rustlang/cxlib/target/
 *.pyc
 bench.md
 
