@@ -1,7 +1,7 @@
 CONFORMANCE_CORE    := conformance/core.txt
 CONFORMANCE_EXT     := conformance/extended.txt
 CONFORMANCE_XML     := conformance/xml.txt
-CONFORM_SUITE       := $(CONFORMANCE_CORE) $(CONFORMANCE_EXT)
+CONFORMANCE_MD      := conformance/md.txt
 
 LIB_NAME   := libcx
 LIB_DYLIB  := rust/target/release/$(LIB_NAME).dylib
@@ -11,7 +11,7 @@ VCX_SO     := vcx/target/$(LIB_NAME).so
 DIST_DIR   := dist
 
 .PHONY: all build build-rust build-vcx build-lib dist test test-rust test-python test-vcx \
-        conform conform-rust conform-vcx bench clean
+        conform conform-rust conform-vcx conform-md bench clean
 
 all: build
 
@@ -42,11 +42,14 @@ test: test-rust test-python test-vcx
 test-rust:
 	cargo test --manifest-path rust/Cargo.toml
 
-test-python:
-	cd python && python -m pytest -q
+test-python: build-vcx
+	python python/conformance.py
 
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
+
+conform-md: build-vcx
+	$(MAKE) -C vcx conform-md
 
 # ── Conformance ────────────────────────────────────────────────────────────────
 

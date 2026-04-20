@@ -2,7 +2,7 @@
 
 CX is a bracket-based document and configuration format that unifies markup and
 structured data in one coherent syntax. It reads like XML, types like YAML, and
-converts losslessly to and from JSON, YAML, TOML, and XML.
+converts losslessly to and from JSON, YAML, TOML, XML, and Markdown.
 
 ```cx
 [article lang=en
@@ -75,7 +75,7 @@ export PATH="$PATH:$(pwd)/vcx/target"
 ## CLI
 
 ```
-cx [--from cx|xml|json|yaml|toml] [--cx|--xml|--ast|--json|--yaml|--toml] [file]
+cx [--from cx|xml|json|yaml|toml|md] [--cx|--xml|--ast|--json|--yaml|--toml|--md] [file]
 ```
 
 Input format is auto-detected from the file extension (`.cx`, `.xml`, `.json`,
@@ -93,6 +93,9 @@ cx --from xml  file.xml       # XML  → CX
 cx --from json file.json      # JSON → CX
 cx --from yaml file.yaml      # YAML → CX
 cx --from toml file.toml      # TOML → CX
+cx --from md   file.md        # MD   → CX
+
+cx --md file.cx               # CX   → Markdown
 
 cat file.cx | cx --json       # read from stdin
 ```
@@ -689,9 +692,9 @@ whitespace before `&`.
 
 ## Format conversion
 
-CX converts losslessly between CX, XML, JSON, YAML, and TOML.
+CX converts losslessly between CX, XML, JSON, YAML, TOML, and Markdown.
 
-### All five formats from one source
+### All six formats from one source
 
 ```sh
 cx --cx   examples/config.cx   # canonical CX
@@ -699,6 +702,7 @@ cx --xml  examples/config.cx   # XML with cx: namespace for type metadata
 cx --json examples/config.cx   # semantic JSON (collapsed data values)
 cx --yaml examples/config.cx   # YAML
 cx --toml examples/config.cx   # TOML
+cx --md   examples/doc.cx      # Markdown
 ```
 
 ### Reading any format as CX
@@ -708,6 +712,75 @@ cx --from xml  examples/books.xml
 cx --from json examples/config.json
 cx --from yaml examples/config.yaml
 cx --from toml examples/config.toml
+cx --from md   examples/doc.md
+```
+
+### Markdown format
+
+CX supports Markdown as a 6th first-class format. CX bracket syntax maps to
+standard Markdown shorthand, which in turn normalizes to canonical element names
+in the AST:
+
+| MD shorthand | CX bracket syntax | HTML long name | Markdown output |
+|---|---|---|---|
+| `# text` | `[# text]` or `[h1 text]` | `h1` | `# text` |
+| `## text` | `[## text]` or `[h2 text]` | `h2` | `## text` |
+| `**text**` | `[** text]` or `[strong text]` or `[b text]` | `strong` | `**text**` |
+| `*text*` | `[* text]` or `[em text]` or `[i text]` | `em` | `*text*` |
+| `~~text~~` | `[~~ text]` or `[del text]` or `[s text]` | `del` | `~~text~~` |
+| `~text~` | `[~ text]` | `sub` | `~text~` |
+| `^text^` | `[^ text]` | `sup` | `^text^` |
+| `<u>text</u>` | `[__ text]` | `u` | `<u>text</u>` |
+| `` `text` `` | `` [` text] `` or `[code text]` or `[c text]` | `code` | `` `text` `` |
+| `` ```lang\n...\n``` `` | `` [``` lang:bash \| ... \|] `` | `code` (block) | fenced code block |
+| `> text` | `[> text]` or `[blockquote text]` | `blockquote` | `> text` |
+| `---` | `[---]` | `hr` | `---` |
+| `[text](url)` | `[a href:"url" text]` | `a` | `[text](url)` |
+| `![alt](src)` | `[img src:"s" alt:"a"]` | `img` | `![a](s)` |
+
+**Auto-wrap**: bare `TextNode` at block level auto-wraps to `<p>` on MD output.
+
+**YAML frontmatter**: `[doc title:"..." author:"..."]` emits YAML frontmatter.
+
+**Tables**: `[table | pipe rows |]` stores raw GFM pipe table text; emitters pass
+it through for MD, and parse rows into `tr/th/td` for XML/JSON.
+
+**Unknown elements**: elements not in the vocabulary above render as
+`<!-- [element_name attr:val body] -->` in MD output, and are round-tripped back
+on MD input.
+
+Example document in CX MD dialect:
+
+```cx
+[doc title:"Guide"
+  [# CX Language Guide]
+  [p CX is a [** structured] language with [* clean] syntax.]
+  [## Lists]
+  [ul
+    [li Item one]
+    [li Item two]
+  ]
+  [a href:"https://example.com" Learn more]
+]
+```
+
+Produces Markdown:
+
+```markdown
+---
+title: Guide
+---
+
+# CX Language Guide
+
+CX is a **structured** language with *clean* syntax.
+
+## Lists
+
+- Item one
+- Item two
+
+[Learn more](https://example.com)
 ```
 
 ### JSON output — semantic vs AST
@@ -767,8 +840,8 @@ CX uses the `cx:` namespace to preserve CX-specific metadata in XML output:
 ## Language bindings
 
 All language bindings wrap the same V implementation (`vcx/`) via the C ABI
-(`libcx.dylib` / `libcx.so`). Every binding exposes the same 30 functions
-covering all 5×5 input/output format combinations.
+(`libcx.dylib` / `libcx.so`). Every binding exposes functions covering all
+6×6 input/output format combinations (CX, XML, JSON, YAML, TOML, MD).
 
 ### Python
 
@@ -778,6 +851,8 @@ covering all 5×5 input/output format combinations.
 import sys
 sys.path.insert(0, 'python')
 import cxlib
+
+print(cxlib.version())   # "0.9.0"
 
 # CX input
 result = cxlib.to_json('[server [host localhost] [port :int 8080]]')
@@ -796,7 +871,7 @@ cx_src = cxlib.yaml_to_cx('server:\n  host: localhost')
 # TOML input
 cx_src = cxlib.toml_to_cx('[server]\nhost = "localhost"')
 
-# Any of 5 inputs × 5 outputs
+# Any of 6 inputs × 7 outputs, plus version()
 cxlib.yaml_to_toml(yaml_src)   # YAML → TOML
 cxlib.toml_to_xml(toml_src)    # TOML → XML
 cxlib.xml_to_yaml(xml_src)     # XML  → YAML
@@ -824,6 +899,8 @@ python python/examples/transform.py
 import cxlib
 
 fn main() {
+    println(cxlib.version())   // "0.9.0"
+
     result := cxlib.to_json('[server [host localhost] [port :int 8080]]') or {
         eprintln(err)
         return
@@ -836,7 +913,8 @@ fn main() {
 }
 ```
 
-All functions return `!string` — use `or { ... }` for error handling.
+All conversion functions return `!string` — use `or { ... }` for error handling.
+`version()` returns a plain `string` (never fails).
 
 Run the full example:
 ```sh
@@ -862,17 +940,23 @@ After `make dist`:
 ```
 dist/
   lib/libcx.dylib     # (or libcx.so on Linux)
-  include/cx.h        # C header with all 30 function declarations
+  include/cx.h        # C header — 42 conversion functions + cx_free + cx_version
 ```
 
 ### C ABI
 
-The shared library exposes 30 `#[no_mangle]` functions — all 5 input formats ×
-5 output formats, plus `cx_free`:
+The shared library exposes 44 C-exported functions — all 6 input formats ×
+7 output formats (including AST), plus `cx_free` and `cx_version`:
 
 ```c
 #include "cx.h"
 
+// version query
+char* ver = cx_version();
+printf("libcx %s\n", ver);
+cx_free(ver);
+
+// conversion
 char* result = cx_to_json("[port :int 8080]", NULL);
 // result → "{\"port\": 8080}"
 cx_free(result);
@@ -886,7 +970,9 @@ if (!out) {
 }
 ```
 
-All returned strings are heap-allocated and must be released with `cx_free()`.
+Every string returned by the library (including `cx_version()`) is
+heap-allocated and must be released with `cx_free()`. Never free with the
+system `free()` directly.
 
 ### Conformance tests
 
@@ -894,9 +980,10 @@ The conformance suite lives in `conformance/` and covers:
 - `core.txt` — documents, elements, comments, raw text, entity refs, PIs, DTD
 - `extended.txt` — scalars, type annotations, arrays (auto-array, `:[]`, typed),
   anchors, merges, multi-doc, triple-quoted strings, block content, short aliases
-- `xml.txt` — XML input parsing round-trips
+- `xml.txt` — XML input parsing and round-trips
+- `md.txt` — Markdown output from CX, and MD input parsing
 
 ```sh
 make test          # all suites: V conformance + Rust cross-check + Python
-make conform-vcx   # V conformance only (76 cases)
+make conform-vcx   # V conformance only (115 cases)
 ```
