@@ -39,7 +39,7 @@ build-vcx:
 	$(MAKE) -C vcx build
 
 build-rustlang: build-vcx
-	cargo build --manifest-path rustlang/cxlib/Cargo.toml
+	cargo build --manifest-path rustlang/cxlib/Cargo.toml --release
 
 build-ruby: build-vcx
 	@echo "Ruby binding: no compile step needed"
@@ -63,7 +63,7 @@ build-csharp-api: build-csharp
 	$(DOTNET) build csharp/api_test/api_test.csproj -c Release --nologo -v:m
 
 build-swift: build-vcx
-	$(SWIFT_FLAGS) $(SWIFT) build --package-path swift/cxlib
+	$(SWIFT_FLAGS) $(SWIFT) build --package-path swift/cxlib -c release
 
 build-lib: build-rust build-vcx
 
