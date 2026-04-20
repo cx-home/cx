@@ -22,6 +22,7 @@ lang/kotlin/cxlib/build/
 lang/kotlin/cxlib/.gradle/
 lang/csharp/*/bin/
 lang/csharp/*/obj/
+lang/rust/cxlib/target/
 
 # Editor tooling build artifacts
 tooling/lsp/node_modules/

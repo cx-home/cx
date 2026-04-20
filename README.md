@@ -56,7 +56,7 @@ converts losslessly to and from JSON, YAML, TOML, XML, and Markdown.
 **Prerequisites:** [V](https://vlang.io) 0.5.1+. No other dependencies.
 
 ```sh
-git clone https://github.com/your-org/cx
+git clone https://github.com/ardec/cx
 cd cx
 make build
 ```
@@ -840,8 +840,9 @@ CX uses the `cx:` namespace to preserve CX-specific metadata in XML output:
 ## Language bindings
 
 All language bindings wrap the same V implementation (`vcx/`) via the C ABI
-(`libcx.dylib` / `libcx.so`). Every binding exposes functions covering all
-6×6 input/output format combinations (CX, XML, JSON, YAML, TOML, MD).
+(`libcx.dylib` / `libcx.so`). Every binding exposes the full conversion API:
+6 input formats × 7 output formats (CX, XML, JSON, YAML, TOML, MD, AST),
+plus `to_cx_compact` and `ast_to_cx`.
 
 ### Python
 
@@ -852,7 +853,7 @@ import sys
 sys.path.insert(0, 'python')
 import cxlib
 
-print(cxlib.version())   # "0.9.0"
+print(cxlib.version())   # "1.0.0"
 
 # CX input
 result = cxlib.to_json('[server [host localhost] [port :int 8080]]')
@@ -904,7 +905,7 @@ python lang/python/conformance.py
 import cxlib
 
 fn main() {
-    println(cxlib.version())   // "0.9.0"
+    println(cxlib.version())   // "1.0.0"
 
     result := cxlib.to_json('[server [host localhost] [port :int 8080]]') or {
         eprintln(err)
@@ -974,7 +975,7 @@ make test-rust
 ```ruby
 require_relative 'lang/ruby/cxlib/lib/cxlib'
 
-puts CXLib.version   # "0.9.0"
+puts CXLib.version   # "1.0.0"
 
 result = CXLib.to_json('[server [host localhost] [port :int 8080]]')
 puts result
@@ -1009,7 +1010,7 @@ make test-ruby
 ```go
 import cxlib "github.com/ardec/cx/lang/go"
 
-fmt.Println(cxlib.Version())   // "0.9.0"
+fmt.Println(cxlib.Version())   // "1.0.0"
 
 result, err := cxlib.ToJson("[server [host localhost] [port :int 8080]]")
 if err != nil { log.Fatal(err) }
@@ -1044,7 +1045,7 @@ make test-go
 ```typescript
 import * as cx from './lang/typescript/cxlib/src/index';
 
-console.log(cx.version());   // "0.9.0"
+console.log(cx.version());   // "1.0.0"
 
 const result = cx.toJson('[server [host localhost] [port :int 8080]]');
 console.log(result);
@@ -1079,7 +1080,7 @@ make test-typescript
 ```java
 import cx.CxLib;
 
-System.out.println(CxLib.version());   // "0.9.0"
+System.out.println(CxLib.version());   // "1.0.0"
 
 String result = CxLib.toJson("[server [host localhost] [port :int 8080]]");
 System.out.println(result);
@@ -1114,7 +1115,7 @@ make test-java
 ```kotlin
 import cx.CxLib
 
-println(CxLib.version())   // "0.9.0"
+println(CxLib.version())   // "1.0.0"
 
 val result = CxLib.toJson("[server [host localhost] [port :int 8080]]")
 println(result)
@@ -1149,7 +1150,7 @@ make test-kotlin
 ```csharp
 using CX;
 
-Console.WriteLine(CxLib.Version());   // "0.9.0"
+Console.WriteLine(CxLib.Version());   // "1.0.0"
 
 string result = CxLib.ToJson("[server [host localhost] [port :int 8080]]");
 Console.WriteLine(result);
@@ -1184,7 +1185,7 @@ make test-csharp
 ```swift
 import CXLib
 
-print(version())   // "0.9.0"
+print(version())   // "1.0.0"
 
 let result = try toJson("[server [host localhost] [port :int 8080]]")
 print(result)
@@ -1231,13 +1232,15 @@ After `make dist`:
 ```
 dist/
   lib/libcx.dylib     # (or libcx.so on Linux)
-  include/cx.h        # C header — 42 conversion functions + cx_free + cx_version
+  include/cx.h        # C header — 49 exported functions (44 conversion + 5 utility/advanced)
 ```
 
 ### C ABI
 
-The shared library exposes 44 C-exported functions — all 6 input formats ×
-7 output formats (including AST), plus `cx_free` and `cx_version`:
+The shared library exposes 49 C-exported functions: 44 conversion functions
+(6×7 standard matrix plus `cx_to_cx_compact` and `cx_ast_to_cx`), plus
+`cx_free`, `cx_version`, and 3 advanced streaming/binary functions
+(`cx_to_events`, `cx_to_events_bin`, `cx_to_ast_bin`):
 
 ```c
 #include "cx.h"
