@@ -888,12 +888,12 @@ except RuntimeError as e:
 
 Run the full example:
 ```sh
-python python/examples/transform.py
+python lang/python/examples/transform.py
 ```
 
 Run conformance:
 ```sh
-python python/conformance.py
+python lang/python/conformance.py
 ```
 
 ### V
@@ -923,7 +923,7 @@ All conversion functions return `!string` — use `or { ... }` for error handlin
 
 Run the full example:
 ```sh
-cd vlang && v run examples/transform.v
+cd lang/v && v run examples/transform.v
 ```
 
 ### Rust
@@ -954,17 +954,17 @@ fn main() {
 Add to `Cargo.toml`:
 ```toml
 [dependencies]
-cxlib = { path = "rustlang/cxlib" }
+cxlib = { path = "lang/rust/cxlib" }
 ```
 
 Run the full example:
 ```sh
-cargo run --manifest-path rustlang/cxlib/Cargo.toml --example transform
+cargo run --manifest-path lang/rust/cxlib/Cargo.toml --example transform
 ```
 
 Run conformance:
 ```sh
-make test-rustlang
+make test-rust
 ```
 
 ### Ruby
@@ -972,7 +972,7 @@ make test-rustlang
 **Requires:** `libcx` built (`make build`), Ruby 3+ with `ffi` gem (`gem install ffi`).
 
 ```ruby
-require_relative 'ruby/cxlib/lib/cxlib'
+require_relative 'lang/ruby/cxlib/lib/cxlib'
 
 puts CXLib.version   # "0.9.0"
 
@@ -994,7 +994,7 @@ end
 
 Run the full example:
 ```sh
-/opt/homebrew/opt/ruby/bin/ruby ruby/cxlib/examples/transform.rb
+/opt/homebrew/opt/ruby/bin/ruby lang/ruby/cxlib/examples/transform.rb
 ```
 
 Run conformance:
@@ -1007,7 +1007,7 @@ make test-ruby
 **Requires:** `libcx` built (`make build`), Go 1.21+, CGo toolchain.
 
 ```go
-import cxlib "cx/golang"
+import cxlib "github.com/ardec/cx/lang/go"
 
 fmt.Println(cxlib.Version())   // "0.9.0"
 
@@ -1029,12 +1029,12 @@ if _, err := cxlib.ToCx("[unclosed"); err != nil {
 
 Run the full example:
 ```sh
-cd golang/cxlib && go run ./examples/transform/
+cd lang/go/cxlib && go run ./examples/transform/
 ```
 
 Run conformance:
 ```sh
-make test-golang
+make test-go
 ```
 
 ### TypeScript
@@ -1042,7 +1042,7 @@ make test-golang
 **Requires:** `libcx` built (`make build`), Node.js 18+, `koffi` npm package.
 
 ```typescript
-import * as cx from './typescript/cxlib/src/index';
+import * as cx from './lang/typescript/cxlib/src/index';
 
 console.log(cx.version());   // "0.9.0"
 
@@ -1064,7 +1064,7 @@ try {
 
 Run the full example:
 ```sh
-cd typescript/cxlib && npm run example
+cd lang/typescript/cxlib && npm run example
 ```
 
 Run conformance:
@@ -1099,7 +1099,7 @@ try {
 
 Run the full example:
 ```sh
-mvn -f java/cxlib/pom.xml exec:java -Dexec.mainClass=cx.examples.Transform
+mvn -f lang/java/cxlib/pom.xml exec:java -Dexec.mainClass=cx.examples.Transform
 ```
 
 Run conformance:
@@ -1134,7 +1134,7 @@ try {
 
 Run the full example:
 ```sh
-cd kotlin/cxlib && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home gradle run
+cd lang/kotlin/cxlib && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home gradle run
 ```
 
 Run conformance:
@@ -1169,7 +1169,7 @@ try {
 
 Run the full example:
 ```sh
-DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec dotnet run --project csharp/examples/transform/transform.csproj
+DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec dotnet run --project lang/csharp/examples/transform/transform.csproj
 ```
 
 Run conformance:
@@ -1204,7 +1204,7 @@ do {
 
 Run the full example:
 ```sh
-swift run --package-path swift/cxlib transform
+swift run --package-path lang/swift/cxlib transform
 ```
 
 Run conformance:
