@@ -18,10 +18,11 @@ DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/do
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 .PHONY: all build build-rust build-vcx build-lib build-rustlang \
-        build-ruby build-golang build-typescript build-java build-kotlin build-csharp build-swift \
+        build-ruby build-golang build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
         dist test test-rust test-python test-vcx test-rustlang \
-        test-ruby test-golang test-typescript test-java test-kotlin test-csharp test-swift \
-        conform conform-rust conform-vcx conform-md bench clean
+        test-ruby test-ruby-api test-golang test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
+        test-python-api test-python-stream test-vcx-api test-vcx-stream test-typescript-api test-golang-api \
+        conform conform-rust conform-vcx conform-md bench bench-python bench-v clean
 
 all: build
 
@@ -56,6 +57,9 @@ build-kotlin: build-vcx
 build-csharp: build-vcx
 	$(DOTNET) build csharp/cxlib/cxlib.csproj -c Release --nologo -v:m
 
+build-csharp-api: build-csharp
+	$(DOTNET) build csharp/api_test/api_test.csproj -c Release --nologo -v:m
+
 build-swift: build-vcx
 	$(SWIFT_FLAGS) $(SWIFT) build --package-path swift/cxlib
 
@@ -78,21 +82,48 @@ test-rust:
 
 test-python: build-vcx
 	python python/conformance.py
+	python python/test_api.py
+	python python/test_stream.py
+
+test-python-api: build-vcx
+	python python/test_api.py
+
+test-python-stream: build-vcx
+	python python/test_stream.py
 
 test-rustlang: build-rustlang
-	cargo test --manifest-path rustlang/cxlib/Cargo.toml
+	cargo test --manifest-path rustlang/cxlib/Cargo.toml -- --test-threads=1
 
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
+	v test vlang/tests/api_test.v
+
+test-vcx-api: build-vcx
+	v test vlang/tests/api_test.v
+
+test-vcx-stream: build-vcx
+	v test vcx/tests/stream_test.v
 
 test-ruby: build-vcx
 	$(RUBY) ruby/conformance.rb
+	$(RUBY) ruby/test_api.rb
+
+test-ruby-api: build-vcx
+	$(RUBY) ruby/test_api.rb
 
 test-golang: build-golang
+	cd golang/cxlib && go test ./...
 	cd golang/conformance && go run .
+
+test-golang-api: build-golang
+	cd golang/cxlib && go test ./...
 
 test-typescript: build-typescript
 	cd typescript/cxlib && npm run conform
+	tsx typescript/api_test.ts
+
+test-typescript-api: build-typescript
+	tsx typescript/api_test.ts
 
 test-java: build-java
 	mvn -f java/cxlib/pom.xml -q test
@@ -100,8 +131,12 @@ test-java: build-java
 test-kotlin: build-kotlin
 	cd kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle test -q
 
-test-csharp: build-csharp
+test-csharp: build-csharp build-csharp-api
 	$(DOTNET) run --project csharp/conformance/conformance.csproj -c Release
+	$(DOTNET) run --project csharp/api_test/api_test.csproj -c Release
+
+test-csharp-api: build-csharp-api
+	$(DOTNET) run --project csharp/api_test/api_test.csproj -c Release
 
 test-swift: build-swift
 	$(SWIFT_FLAGS) $(SWIFT) test --package-path swift/cxlib
@@ -130,6 +165,12 @@ bench: build-rust
 	  'rust/target/release/cx --ast < /dev/null' \
 	  'vcx/target/cx --ast < /dev/null' \
 	  --export-markdown bench.md
+
+bench-python: build-vcx
+	python python/bench.py
+
+bench-v: build-vcx
+	v run vcx/bench/bench.v
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
