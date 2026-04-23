@@ -899,32 +899,53 @@ python lang/python/conformance.py
 
 ### V
 
-**Requires:** V 0.5.1+, `libcx` built (`make build`).
+V is the native implementation language — the `vcx/` core is written in V and
+compiled to `libcx`. The V binding therefore exposes the full Document API in
+addition to the conversion API shared by all other bindings.
+
+**Requires:** V 0.5+, `libcx` built (`make build`).
 
 ```v
 import cxlib
 
 fn main() {
-    println(cxlib.version())   // "1.0.0"
-
-    result := cxlib.to_json('[server [host localhost] [port :int 8080]]') or {
-        eprintln(err)
-        return
-    }
+    // Conversion API (shared by all bindings)
+    result := cxlib.to_json('[server [host localhost] [port :int 8080]]') or { panic(err) }
     println(result)
     // {"server": {"host": "localhost", "port": 8080}}
 
-    cx_src := cxlib.yaml_to_cx('server:\n  host: localhost') or { panic(err) }
-    println(cx_src)
+    // Document API — parse, navigate, transform
+    doc := cxlib.parse('[config
+  [server host=localhost port=8080]
+  [database host=db.local port=5432]
+]') or { panic(err) }
+
+    host := (doc.at('config/server') or { panic('') }).attr('host') or { panic('') }
+    println(host.str())  // localhost
+
+    // Immutable update — returns a new document, original unchanged
+    updated := doc.transform('config/server', fn (el cxlib.Element) cxlib.Element {
+        mut e := el
+        e.set_attr('host', cxlib.ScalarVal('prod.example.com'))
+        return e
+    })
+    println((updated.at('config/server') or { panic('') }).attr('host') or { panic('') }.str())
+    // prod.example.com
+
+    // CXPath select
+    for svc in doc.select_all('//server[@port>=8080]') {
+        println(svc.attr('host') or { '' }.str())
+    }
 }
 ```
 
-All conversion functions return `!string` — use `or { ... }` for error handling.
-`version()` returns a plain `string` (never fails).
+Conversion functions return `!string`; `version()` returns a plain `string`.
+See `lang/v/README.md` for the full Document and CXPath API reference.
 
-Run the full example:
+Run the examples:
 ```sh
-cd lang/v && v run examples/transform.v
+v run lang/v/examples/demo.v
+v run lang/v/examples/transform.v
 ```
 
 ### Rust
