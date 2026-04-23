@@ -98,6 +98,9 @@ test-python: build-vcx
 	python lang/python/conformance.py
 	python lang/python/test_api.py
 	python lang/python/test_stream.py
+	python lang/python/test_cxpath.py
+	python lang/python/test_transform.py
+	python lang/python/test_immutability.py
 
 test-python-api: build-vcx
 	python lang/python/test_api.py
