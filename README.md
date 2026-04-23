@@ -2,7 +2,7 @@
 
 CX is a bracket-based document and configuration format that unifies markup and
 structured data in one coherent syntax. It reads like XML, types like YAML, and
-converts losslessly to and from JSON, YAML, TOML, XML, and Markdown.
+converts losslessly to and from JSON, YAML, TOML, XML, and Markdown. Multiple AI's were used but unharmed in this project including (in alpha order): ChatGPT, Claude, Grok.
 
 ```cx
 [article lang=en
@@ -840,52 +840,42 @@ CX uses the `cx:` namespace to preserve CX-specific metadata in XML output:
 ## Language bindings
 
 All language bindings wrap the same V implementation (`vcx/`) via the C ABI
-(`libcx.dylib` / `libcx.so`). Every binding exposes the full conversion API:
-6 input formats × 7 output formats (CX, XML, JSON, YAML, TOML, MD, AST),
-plus `to_cx_compact` and `ast_to_cx`.
+(`libcx.dylib` / `libcx.so`). Every binding exposes:
+
+- **Conversion API** — 6 input formats × 7 output formats (CX, XML, JSON, YAML, TOML, MD, AST), plus `to_cx_compact` and `ast_to_cx`
+- **Document API** — `parse`, `at`, `find_all`, `select` / `select_all` (CXPath), `transform` / `transform_all` (immutable update), streaming, `loads` / `dumps`
+
+All 10 languages have full feature parity. See each language's `README.md` for the complete API reference.
 
 ### Python
 
 **Requires:** `libcx` built (`make build`). No pip packages needed.
 
 ```python
-import sys
-sys.path.insert(0, 'python')
+import sys; sys.path.insert(0, 'lang/python')
 import cxlib
 
-print(cxlib.version())   # "1.0.0"
-
-# CX input
+# Conversion API
 result = cxlib.to_json('[server [host localhost] [port :int 8080]]')
-print(result)
 # {"server": {"host": "localhost", "port": 8080}}
 
-# XML input
-cx_src = cxlib.xml_to_cx('<server><host>localhost</host></server>')
+# Document API — parse, navigate, query, transform
+doc = cxlib.parse('[config [server host=localhost port=8080] [db host=db.local]]')
 
-# JSON input
-cx_src = cxlib.json_to_cx('{"server": {"host": "localhost"}}')
+print(doc.at('config/server').attr('host'))   # localhost
 
-# YAML input
-cx_src = cxlib.yaml_to_cx('server:\n  host: localhost')
+# CXPath select
+for svc in doc.select_all('//server[@port>=8080]'):
+    print(svc.attr('host'))   # localhost
 
-# TOML input
-cx_src = cxlib.toml_to_cx('[server]\nhost = "localhost"')
-
-# Any of 6 inputs × 7 outputs, plus version()
-cxlib.yaml_to_toml(yaml_src)   # YAML → TOML
-cxlib.toml_to_xml(toml_src)    # TOML → XML
-cxlib.xml_to_yaml(xml_src)     # XML  → YAML
+# Immutable transform — returns a new document, original unchanged
+updated = doc.transform('config/server',
+    lambda el: (el.set_attr('host', 'prod.example.com') or el))
+print(updated.at('config/server').attr('host'))  # prod.example.com
+print(doc.at('config/server').attr('host'))       # localhost
 ```
 
-Errors raise `RuntimeError` with the parser message:
-
-```python
-try:
-    cxlib.to_json('[unclosed')
-except RuntimeError as e:
-    print(e)   # 1:9: unexpected end of input
-```
+Errors raise `RuntimeError`. See `lang/python/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -953,25 +943,28 @@ v run lang/v/examples/transform.v
 **Requires:** `libcx` built (`make build`). No crates.io dependencies.
 
 ```rust
-fn main() {
-    println!("libcx {}", cxlib::version());
+use cxlib::ast::{parse, Value};
 
-    let result = cxlib::to_json("[server [host localhost] [port :int 8080]]")
-        .unwrap();
-    println!("{result}");
-    // {"server": {"host": "localhost", "port": 8080}}
+// Conversion API
+let result = cxlib::to_json("[server [host localhost] [port :int 8080]]").unwrap();
+// {"server": {"host": "localhost", "port": 8080}}
 
-    // any of 6 inputs × 7 outputs
-    let cx_src = cxlib::yaml_to_cx("server:\n  host: localhost").unwrap();
-    let md_out = cxlib::to_md("[# Hello]").unwrap();
+// Document API
+let doc = parse("[config [server host=localhost port=8080]]").unwrap();
+println!("{:?}", doc.at("config/server").unwrap().attr("host"));  // Some("localhost")
 
-    // errors return Err(String)
-    match cxlib::to_json("[unclosed") {
-        Ok(_)    => unreachable!(),
-        Err(msg) => eprintln!("parse error: {msg}"),
-    }
-}
+// CXPath select
+let svcs = doc.select_all("//server[@port>=8080]").unwrap();
+println!("{:?}", svcs[0].attr("host"));   // Some("localhost")
+
+// Immutable transform
+let updated = doc.transform("config/server", |mut el| {
+    el.set_attr("host", Value::String("prod.example.com".into()), None);
+    el
+});
 ```
+
+Errors return `Err(String)`. See `lang/rust/cxlib/README.md` for the full API reference.
 
 Add to `Cargo.toml`:
 ```toml
@@ -996,23 +989,24 @@ make test-rust
 ```ruby
 require_relative 'lang/ruby/cxlib/lib/cxlib'
 
-puts CXLib.version   # "1.0.0"
-
+# Conversion API
 result = CXLib.to_json('[server [host localhost] [port :int 8080]]')
-puts result
 # {"server": {"host": "localhost", "port": 8080}}
 
-# any of 6 inputs x 7 outputs
-cx_src = CXLib.yaml_to_cx("server:\n  host: localhost")
-puts cx_src
+# Document API
+doc = CXLib.parse('[config [server host=localhost port=8080]]')
+puts doc.at('config/server').attr('host')   # localhost
 
-# errors raise RuntimeError
-begin
-  CXLib.to_json('[unclosed')
-rescue RuntimeError => e
-  puts e.message   # 1:9: expected ']' got EOF
-end
+# CXPath select
+doc.select_all('//server[@port>=8080]').each { |el| puts el.attr('host') }
+
+# Immutable transform
+updated = doc.transform('config/server') { |el| el.set_attr('host', 'prod.example.com'); el }
+puts updated.at('config/server').attr('host')  # prod.example.com
+puts doc.at('config/server').attr('host')       # localhost
 ```
+
+Errors raise `RuntimeError`. See `lang/ruby/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -1031,23 +1025,29 @@ make test-ruby
 ```go
 import cxlib "github.com/ardec/cx/lang/go"
 
-fmt.Println(cxlib.Version())   // "1.0.0"
-
-result, err := cxlib.ToJson("[server [host localhost] [port :int 8080]]")
-if err != nil { log.Fatal(err) }
-fmt.Println(result)
+// Conversion API
+result, _ := cxlib.ToJson("[server [host localhost] [port :int 8080]]")
 // {"server": {"host": "localhost", "port": 8080}}
 
-// any of 6 inputs x 7 outputs
-cxSrc, _ := cxlib.YamlToCx("server:\n  host: localhost")
-mdOut, _  := cxlib.ToMd("[# Hello]")
-_ = cxSrc; _ = mdOut
+// Document API
+doc, _ := cxlib.Parse("[config [server host=localhost port=8080]]")
+srv := doc.At("config/server")
+fmt.Println(srv.Attr("host"))   // localhost
 
-// errors return non-nil error
-if _, err := cxlib.ToCx("[unclosed"); err != nil {
-    fmt.Println(err)  // 1:9: expected ']' got EOF
-}
+// CXPath select
+svcs, _ := doc.SelectAll("//server[@port>=8080]")
+fmt.Println(svcs[0].Attr("host"))   // localhost
+
+// Immutable transform
+updated := doc.Transform("config/server", func(el *cxlib.Element) *cxlib.Element {
+    el.SetAttr("host", "prod.example.com", "")
+    return el
+})
+fmt.Println(updated.At("config/server").Attr("host"))  // prod.example.com
+fmt.Println(doc.At("config/server").Attr("host"))       // localhost
 ```
+
+Errors return non-nil `error`. See `lang/go/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -1065,24 +1065,30 @@ make test-go
 
 ```typescript
 import * as cx from './lang/typescript/cxlib/src/index';
+import { parse } from './lang/typescript/cxlib/src/ast';
 
-console.log(cx.version());   // "1.0.0"
-
+// Conversion API
 const result = cx.toJson('[server [host localhost] [port :int 8080]]');
-console.log(result);
 // {"server": {"host": "localhost", "port": 8080}}
 
-// any of 6 inputs x 7 outputs
-const cxSrc = cx.yamlToCx("server:\n  host: localhost");
-const mdOut = cx.toMd("[# Hello]");
+// Document API
+const doc = parse('[config [server host=localhost port=8080]]');
+console.log(doc.at('config/server')!.attr('host'));   // localhost
 
-// errors throw Error
-try {
-    cx.toJson('[unclosed');
-} catch (e) {
-    console.error((e as Error).message);  // 1:9: expected ']' got EOF
-}
+// CXPath select
+const svcs = doc.selectAll('//server[@port>=8080]');
+console.log(svcs[0].attr('host'));   // localhost
+
+// Immutable transform
+const updated = doc.transform('config/server', el => {
+    el.setAttr('host', 'prod.example.com');
+    return el;
+});
+console.log(updated.at('config/server')!.attr('host'));  // prod.example.com
+console.log(doc.at('config/server')!.attr('host'));       // localhost
 ```
+
+Errors throw `Error`. See `lang/typescript/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -1096,28 +1102,32 @@ make test-typescript
 
 ### Java
 
-**Requires:** `libcx` built (`make build`), Java 11+, Maven, JNA 5.14.0 (fetched by Maven).
+**Requires:** `libcx` built (`make build`), Java 21+, Maven, JNA 5.14.0 (fetched by Maven).
 
 ```java
-import cx.CxLib;
+import cx.CXDocument;
 
-System.out.println(CxLib.version());   // "1.0.0"
-
-String result = CxLib.toJson("[server [host localhost] [port :int 8080]]");
-System.out.println(result);
+// Conversion API
+String result = cx.CxLib.toJson("[server [host localhost] [port :int 8080]]");
 // {"server": {"host": "localhost", "port": 8080}}
 
-// any of 6 inputs x 7 outputs
-String cxSrc = CxLib.yamlToCx("server:\n  host: localhost");
-String mdOut = CxLib.toMd("[# Hello]");
+// Document API
+CXDocument doc = CXDocument.parse("[config [server host=localhost port=8080]]");
+System.out.println(doc.at("config/server").attr("host"));   // localhost
 
-// errors throw RuntimeException
-try {
-    CxLib.toJson("[unclosed");
-} catch (RuntimeException e) {
-    System.err.println(e.getMessage());  // 1:9: expected ']' got EOF
-}
+// CXPath select
+doc.selectAll("//server[@port>=8080]").forEach(el -> System.out.println(el.attr("host")));
+
+// Immutable transform
+CXDocument updated = doc.transform("config/server", el -> {
+    el.setAttr("host", "prod.example.com", null);
+    return el;
+});
+System.out.println(updated.at("config/server").attr("host"));  // prod.example.com
+System.out.println(doc.at("config/server").attr("host"));       // localhost
 ```
+
+Errors throw `RuntimeException`. See `lang/java/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -1134,25 +1144,29 @@ make test-java
 **Requires:** `libcx` built (`make build`), Java 21 (arm64), Gradle, JNA 5.14.0.
 
 ```kotlin
-import cx.CxLib
+import cx.CXDocument
 
-println(CxLib.version())   // "1.0.0"
-
-val result = CxLib.toJson("[server [host localhost] [port :int 8080]]")
-println(result)
+// Conversion API
+val result = cx.CxLib.toJson("[server [host localhost] [port :int 8080]]")
 // {"server": {"host": "localhost", "port": 8080}}
 
-// any of 6 inputs x 7 outputs
-val cxSrc = CxLib.yamlToCx("server:\n  host: localhost")
-val mdOut = CxLib.toMd("[# Hello]")
+// Document API
+val doc = CXDocument.parse("[config [server host=localhost port=8080]]")
+println(doc.at("config/server")?.attr("host"))   // localhost
 
-// errors throw RuntimeException
-try {
-    CxLib.toJson("[unclosed")
-} catch (e: RuntimeException) {
-    System.err.println(e.message)  // 1:9: expected ']' got EOF
+// CXPath select
+doc.selectAll("//server[@port>=8080]").forEach { println(it.attr("host")) }
+
+// Immutable transform
+val updated = doc.transform("config/server") { el ->
+    el.setAttr("host", "prod.example.com")
+    el
 }
+println(updated.at("config/server")?.attr("host"))  // prod.example.com
+println(doc.at("config/server")?.attr("host"))       // localhost
 ```
+
+Errors throw `RuntimeException`. See `lang/kotlin/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -1171,23 +1185,28 @@ make test-kotlin
 ```csharp
 using CX;
 
-Console.WriteLine(CxLib.Version());   // "1.0.0"
-
+// Conversion API
 string result = CxLib.ToJson("[server [host localhost] [port :int 8080]]");
-Console.WriteLine(result);
 // {"server": {"host": "localhost", "port": 8080}}
 
-// any of 6 inputs x 7 outputs
-string cxSrc = CxLib.YamlToCx("server:\n  host: localhost");
-string mdOut = CxLib.ToMd("[# Hello]");
+// Document API
+var doc = CXDocument.Parse("[config [server host=localhost port=8080]]");
+Console.WriteLine(doc.At("config/server")?.Attr("host"));   // localhost
 
-// errors throw InvalidOperationException
-try {
-    CxLib.ToJson("[unclosed");
-} catch (InvalidOperationException e) {
-    Console.Error.WriteLine(e.Message);  // 1:9: expected ']' got EOF
-}
+// CXPath select
+foreach (var el in doc.SelectAll("//server[@port>=8080]"))
+    Console.WriteLine(el.Attr("host"));   // localhost
+
+// Immutable transform
+var updated = doc.Transform("config/server", el => {
+    el.SetAttr("host", "prod.example.com");
+    return el;
+});
+Console.WriteLine(updated.At("config/server")?.Attr("host"));  // prod.example.com
+Console.WriteLine(doc.At("config/server")?.Attr("host"));       // localhost
 ```
+
+Errors throw `InvalidOperationException`. See `lang/csharp/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh
@@ -1206,23 +1225,28 @@ make test-csharp
 ```swift
 import CXLib
 
-print(version())   // "1.0.0"
-
+// Conversion API
 let result = try toJson("[server [host localhost] [port :int 8080]]")
-print(result)
 // {"server": {"host": "localhost", "port": 8080}}
 
-// any of 6 inputs x 7 outputs
-let cxSrc = try yamlToCx("server:\n  host: localhost")
-let mdOut = try toMd("[# Hello]")
+// Document API
+let doc = try CXDocument.parse("[config [server host=localhost port=8080]]")
+print(doc.at("config/server")?.attr("host") as Any)   // localhost
 
-// errors throw CXError.parse(message)
-do {
-    _ = try toJson("[unclosed")
-} catch CXError.parse(let msg) {
-    print(msg)  // 1:9: expected ']' got EOF
+// CXPath select
+let svcs = try doc.selectAll("//server[@port>=8080]")
+print(svcs.first?.attr("host") as Any)   // localhost
+
+// Immutable transform
+let updated = doc.transform("config/server") { el in
+    el.setAttr("host", value: "prod.example.com")
+    return el
 }
+print(updated.at("config/server")?.attr("host") as Any)  // prod.example.com
+print(doc.at("config/server")?.attr("host") as Any)       // localhost
 ```
+
+Errors throw `CXError`. See `lang/swift/cxlib/README.md` for the full API reference.
 
 Run the full example:
 ```sh

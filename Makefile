@@ -27,6 +27,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
         conform conform-vcx conform-md bench bench-python \
         examples example-python example-v example-go example-rust example-typescript \
         example-java example-kotlin example-csharp example-ruby example-swift \
+        demos demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift \
         clean
 
 all: build
@@ -207,6 +208,37 @@ example-ruby: build-vcx
 example-swift: build-swift
 	$(SWIFT_FLAGS) $(SWIFT) run --package-path lang/swift/cxlib transform
 
+# ── Demos (Document Model + Streaming + CXPath + Transform) ──────────────────
+
+demos: demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift
+
+demo-v: build-vcx
+	v run lang/v/examples/demo.v
+
+demo-go: build-go
+	cd lang/go/cxlib && go run ./examples/demo/
+
+demo-rust: build-rust
+	cargo run --example demo --manifest-path lang/rust/cxlib/Cargo.toml
+
+demo-typescript: build-typescript
+	npx tsx lang/typescript/cxlib/examples/demo.ts
+
+demo-java: build-java
+	mvn -f lang/java/cxlib/pom.xml -q exec:java -Dexec.mainClass=cx.Demo
+
+demo-kotlin: build-kotlin
+	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle demo -q
+
+demo-csharp: build-csharp
+	$(DOTNET) run --project lang/csharp/examples/readme_demo/readme_demo.csproj -c Release
+
+demo-ruby: build-vcx
+	$(RUBY) lang/ruby/cxlib/examples/demo.rb
+
+demo-swift: build-swift
+	$(SWIFT_FLAGS) $(SWIFT) run --package-path lang/swift/cxlib Demo
+
 # ── Publish to public repo ────────────────────────────────────────────────────
 
 publish:
@@ -221,7 +253,7 @@ build-lsp:
 	cd tooling/lsp && npm install --silent && npm run build
 
 build-vscode: build-lsp
-	cd tooling/vscode && npm install --silent && npm run build && npx vsce package --no-dependencies
+	cd tooling/vscode && npm install --silent && npm run build && npx vsce package --no-dependencies --allow-missing-repository
 
 build-editors: build-lsp build-vscode
 
@@ -238,5 +270,8 @@ bench-python: build-vcx
 clean:
 	$(MAKE) -C vcx clean
 	rm -rf $(DIST_DIR)
+	cargo clean --manifest-path lang/rust/cxlib/Cargo.toml
+	find lang/csharp -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
+	rm -rf lang/kotlin/cxlib/.gradle
 	find lang/python -name '*.pyc' -delete
 	find lang/python -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
