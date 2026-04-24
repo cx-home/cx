@@ -2,7 +2,7 @@
 
 Because some things just need to be done. CX is a bracket-based document and configuration format that unifies markup and
 structured data in one coherent syntax. It reads like XML, types like YAML, and
-converts losslessly to and from JSON, YAML, TOML, XML, and Markdown. Multiple AI's were used but unharmed in this project including (in alpha order): ChatGPT, Claude, Grok. Claude gets the MVP award.
+converts losslessly to and from JSON, YAML, TOML, XML, and Markdown. Multiple AI's were used but unharmed in this project including (in alpha order): ChatGPT, Claude, Grok.
 
 ```cx
 [article lang=en
