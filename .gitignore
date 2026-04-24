@@ -30,3 +30,4 @@ tooling/lsp/out/
 tooling/vscode/node_modules/
 tooling/vscode/out/
 tooling/vscode/*.vsix
+lang/v/cx
