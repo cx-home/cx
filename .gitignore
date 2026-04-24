@@ -8,10 +8,13 @@ dist/
 
 # V / Rust build artifacts
 vcx/target/
+vcx/cx/*.dylib
+vcx/cx/*.so
 lang/rust/cxlib/target/
 
 # compiled V binaries in example dirs
 lang/v/examples/transform
+lang/v/examples/demo
 
 # Language binding build artifacts
 lang/swift/cxlib/.build/
@@ -30,3 +33,4 @@ tooling/lsp/out/
 tooling/vscode/node_modules/
 tooling/vscode/out/
 tooling/vscode/*.vsix
+lang/v/cx
