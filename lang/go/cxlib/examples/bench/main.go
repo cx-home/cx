@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	cxlib "github.com/ardec/cx/lang/go"
+	cxlib "github.com/cx-home/cx-public/lang/go"
 )
 
 func main() {

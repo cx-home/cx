@@ -3,7 +3,7 @@ plugins {
     application
 }
 
-group = "com.ardec"
+group = "io.cxhome"
 version = "0.5.0"
 
 java {

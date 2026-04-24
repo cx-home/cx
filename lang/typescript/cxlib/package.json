@@ -1,5 +1,5 @@
 {
-  "name": "@ardec/cxlib",
+  "name": "@cx-home/cx",
   "version": "0.5.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

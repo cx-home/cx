@@ -11,15 +11,16 @@ bindings link the same shared library.
 
 ## Install
 
-> **`v install cx` will not work** — the package is not published to vpm.vlang.io.
-> Use the source directly via `VMODULES`.
+This binding wraps `libcx` and requires the shared library to be built first.
+For a pure V install with no C dependency, use
+[cx-home/cx-v](https://github.com/cx-home/cx-v) (`v install cx-home.cx`).
 
 ```sh
 # 1. Build the shared library (from repo root)
 make build-vcx
 
 # 2. Point V at the module (add to your shell profile)
-export VMODULES=/path/to/cx-private/lang/v
+export VMODULES=/path/to/cx-public/lang/v
 
 # 3. Import cxlib in any V file
 v run myapp.v
