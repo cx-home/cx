@@ -20,6 +20,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
         build-ruby build-go build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
         build-lsp build-vscode build-editors \
         publish publish-push \
+        publish-v publish-v-push \
         dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
         test test-python test-vcx test-rust \
         test-ruby test-ruby-api test-go test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
@@ -265,6 +266,12 @@ publish:
 
 publish-push:
 	@bash scripts/publish_push.sh
+
+publish-v:
+	@bash scripts/publish_v.sh
+
+publish-v-push:
+	@bash scripts/publish_v_push.sh
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
 
