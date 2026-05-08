@@ -171,13 +171,20 @@ choice is recorded and reviewed.
 
 ### Reference and composition primitives
 
-- **ID / IDREF cross-document references.** Anchors/aliases solve
-  intra-document merge; ID/IDREF is the cross-document mechanism.
-  Design committed in [`spec/decisions/0003-id-idref.md`](spec/decisions/0003-id-idref.md):
-  `[node #my-id ...]` declares an ID, `[ref @my-id]` references it,
-  resolution is per-document by default with caller-supplied
-  cross-document scope. Remaining: grammar update, V core resolver,
-  per-binding API for `cx_resolve_ref`, conformance fixtures.
+- 🚧 **ID / IDREF cross-document references.** Anchors/aliases
+  solve intra-document merge; ID/IDREF is the cross-document
+  mechanism. Design ADR
+  [`spec/decisions/0003-id-idref.md`](spec/decisions/0003-id-idref.md);
+  V core v0 shipped 2026-05-08 (Phase 7.61): `[node #my-id ...]`
+  declarations, `attr=@my-id` references at attribute-value
+  position, two-pass parse with duplicate-ID and unresolved-
+  reference diagnostics, `Document.resolve_id()` and
+  `elements_by_id()` public API, CXPath `[#id]` predicate, 9-case
+  [`conformance/identity.txt`](conformance/identity.txt). Pending:
+  XML round-trip (`xs:ID` / `xs:IDREF`), canonical-form ID renaming,
+  include-time ID merging across `[?cx include=...]`, `[ref @id]`
+  body-position node form, C ABI surface (`cx_resolve_ref` /
+  `cx_node_id` / `cx_id_lookup`), 9-binding rollout, MIGRATION entry.
 - **Include resolution semantics formally specified** — what a
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.
