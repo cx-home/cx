@@ -99,11 +99,12 @@ review. Items here are in flight or imminent on the active branch.
 - **`docs/RELEASE_PROCESS.md` §0.7 gate** — "adoption review for this
   version is committed and signed off."
 
-### Release-hygiene docs (in flight this branch)
+### Release-hygiene docs (landed 2026-05-08)
 
-- `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`,
-  `docs/FAQ.md`, `LICENSE` (Apache-2.0). Drop the superseded
-  `docs/cx.md`.
+- ✅ [`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md),
+  [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md),
+  [`docs/FAQ.md`](docs/FAQ.md), [`LICENSE`](LICENSE) (Apache-2.0).
+  Superseded `docs/cx.md` removed.
 
 ---
 
