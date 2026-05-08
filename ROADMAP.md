@@ -27,29 +27,27 @@ review. Items here are in flight or imminent on the active branch.
 
 ### Tooling completion
 
-- **`cx diff`** — semantic diff CLI subcommand. Two CX inputs;
-  data-equivalent → exit 0 (mirrors `cx eq`); structural change
-  → emit a unified-diff-style report showing attribute / value
-  / element changes while ignoring comments, attribute order,
-  and other noise that `cx eq` already classifies as semantically
-  irrelevant. Walks two ASTs; reports per-element delta.
-  Implementation builds on the canonical-form primitive at
-  `spec/canonical.md`. CLI subcommand + per-binding API for
-  programmatic use.
-- **`cx lint`** — style + correctness warnings. Distinct from
-  `cx fmt` (which reformats lossless-canonically) — lint *warns*
-  about issues a formatter can't or shouldn't fix automatically.
-  Initial check categories: comment-style consistency
-  (`# line` for one-liners, `[- block ]` for multi-line);
-  type-annotation-position consistency within a document;
-  unused anchors (declared `&name` never referenced); dangling
-  aliases (`*name` referencing an undeclared anchor); deprecated-
-  pattern warnings (e.g., post-v3.4 leading-zero string
-  transitions per `MIGRATION.md`). Schema-violation warnings
-  layer in once the schema language ships. Each check has a
-  documented severity (warn / info) and is suppressible per file
-  or per element via a CX directive. CLI subcommand + per-binding
-  API for editor integration.
+- **`cx diff`** — semantic diff CLI subcommand. Design committed in
+  [`spec/decisions/0012-cx-diff.md`](spec/decisions/0012-cx-diff.md):
+  unified / json / summary output formats; exit codes 0 (equivalent)
+  / 1 (differs) / 2 (error) aligned with `diff(1)`; walks the strict
+  canonical form (`spec/canonical.md §1.2`) so reformat / comment /
+  attribute-order / anchor-expansion changes produce empty diff;
+  JSON output uses CXPath for the `path` field. C ABI bit 14.
+  Remaining: spec section, V core impl, CLI subcommand, 9-binding
+  rollout, conformance fixtures, microbench (~5–6 weeks).
+- **`cx lint`** — style + correctness warnings. Design committed in
+  [`spec/decisions/0013-cx-lint.md`](spec/decisions/0013-cx-lint.md):
+  five initial check IDs (CX-L001 comment-style consistency, L002
+  type-annotation-position consistency, L003 unused anchors, L004
+  dangling aliases, L005 v3.4 deprecated patterns), three severity
+  levels (info / warn / error), suppression via `[?cx lint-disable=
+  ...]` directive + `.cxlint.cx` config file, LSP diagnostics
+  integration. Distinct from `cx fmt` (lint *warns*, fmt *fixes*).
+  Schema-violation checks layer on once schema (ADR 0009) lands.
+  C ABI bit 15. Remaining: spec section, V core impl, CLI subcommand,
+  9-binding rollout, LSP wire-up, conformance fixtures, microbench
+  (~7–8 weeks).
 
 ### Format-completeness
 
