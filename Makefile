@@ -9,7 +9,8 @@ VCX_SO     := vcx/target/$(LIB_NAME).so
 DIST_DIR   := dist
 PREFIX     ?= /usr/local
 
-# ── Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
+# ── Python / Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
+PYTHON      ?= python3
 RUBY        := /opt/homebrew/opt/ruby/bin/ruby
 SWIFT       := /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift
 SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -117,18 +118,18 @@ promote-cli: verify-cli install-cli
 test: test-python test-vcx test-v test-rust test-ruby test-go test-typescript test-java test-kotlin test-csharp test-swift
 
 test-python: build-vcx
-	python lang/python/conformance.py
-	python lang/python/test_api.py
-	python lang/python/test_stream.py
-	python lang/python/test_cxpath.py
-	python lang/python/test_transform.py
-	python lang/python/test_immutability.py
+	$(PYTHON) lang/python/conformance.py
+	$(PYTHON) lang/python/test_api.py
+	$(PYTHON) lang/python/test_stream.py
+	$(PYTHON) lang/python/test_cxpath.py
+	$(PYTHON) lang/python/test_transform.py
+	$(PYTHON) lang/python/test_immutability.py
 
 test-python-api: build-vcx
-	python lang/python/test_api.py
+	$(PYTHON) lang/python/test_api.py
 
 test-python-stream: build-vcx
-	python lang/python/test_stream.py
+	$(PYTHON) lang/python/test_stream.py
 
 test-rust: build-rust
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
@@ -200,7 +201,7 @@ examples: example-python example-v example-go example-rust example-typescript \
           example-java example-kotlin example-csharp example-ruby example-swift
 
 example-python: build-vcx
-	python lang/python/examples/transform.py
+	$(PYTHON) lang/python/examples/transform.py
 
 example-v: build-vcx
 	v run lang/v/examples/transform.v
@@ -293,10 +294,10 @@ build-editors: build-lsp build-vscode
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
 bench: build-vcx
-	python bench_report.py
+	$(PYTHON) bench_report.py
 
 bench-python: build-vcx
-	python lang/python/bench.py
+	$(PYTHON) lang/python/bench.py
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
