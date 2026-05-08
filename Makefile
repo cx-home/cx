@@ -166,6 +166,7 @@ test-go-api: build-go
 test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
 	npx tsx lang/typescript/api_test.ts
+	npx tsx lang/typescript/data_bin_one_shots_test.ts
 
 test-typescript-api: build-typescript
 	npx tsx lang/typescript/api_test.ts
