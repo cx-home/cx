@@ -1,9 +1,9 @@
 [doc title="Embedding Test"
 
   [- Demonstrates code blocks containing foreign-syntax content.
-     Use raw-text form (#-delimited) when the embedded code
-     contains brackets or quotes; parsed-body form (|-delimited)
-     is for content where you want CX to parse inline. ]
+     Use [# ... #] (raw, never parsed) when the embedded code
+     contains brackets or quotes; [| ... |] is for parsed-body
+     content where you want CX to parse inline. ]
 
   [section
     [h1 Embedded JSON]
