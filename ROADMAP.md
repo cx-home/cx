@@ -71,9 +71,14 @@ review. Items here are in flight or imminent on the active branch.
     (`cx_to_csv` / `cx_from_csv` already declared in `spec/abi.md`),
     threaded through all 9 bindings with parity-matrix update and
     conformance fixtures.
-- **`columns` → `cols` rename** in the `:table` block (grammar, V
-  parser, all 9 bindings, examples, conformance). One-time breaking
-  change before the format is widely adopted.
+- ✅ **`columns` → `cols` rename** in the Table API field name —
+  landed 2026-05-08 (Phase 7.46). V core `TableData.cols` /
+  `DataTable.cols`; spec [`table_api.md`](spec/table_api.md) updated
+  with new property names (`cols`, `col_count`, `iter_cols`); examples
+  + CHEATSHEET + FAQ rewritten to use the actual `:table[<cols>]<rows>`
+  grammar (the `[columns ...] [rows ...]` wrapper form they previously
+  showed was never supported by the parser). Migration recorded in
+  [`MIGRATION.md §2.5`](MIGRATION.md). Wire format unchanged.
 - **Document `[?cx include=...]`** in cheatsheet + tutorial; it
   exists in the parser but is undocumented user-facing.
 - **Document anchors / aliases honestly** as merge-only (YAML-style),

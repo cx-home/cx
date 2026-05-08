@@ -52,13 +52,10 @@
 [server +tls -debug +metrics host=0.0.0.0]
 
 [- 10. TYPED TABLE (v3.4): row-major in CX text, column-major in binary ]
-[stocks :table
-  [columns ticker:string price:f64 volume:u32]
-  [rows
-    AAPL 192.45 38291092
-    GOOG 142.30 18234567
-    MSFT 415.18 23456789
-  ]
+[stocks :table[ticker:string price:f64 volume:u32]
+  AAPL 192.45 38291092
+  GOOG 142.30 18234567
+  MSFT 415.18 23456789
 ]
 
 [- 11. TRIPLE-QUOTED STRINGS: ''' ... ''' — multiline, indent-stripped ]

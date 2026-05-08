@@ -27,17 +27,14 @@
     [listing lang=cx [# [server host=localhost :u16 port=8080 +tls] #]]
     [p CX infers types automatically — and v3.4 sized types pin the width:]
     [- typed table: every type column is a real CX type token ]
-    [examples :table
-      [columns value:string inferred:string sized:string]
-      [rows
-        '8080'         'int'    ':u16 → 0..65535'
-        '3.14'         'float'  ':f32 / :f64'
-        'true'         'bool'   '+flag / -flag sigils'
-        '2026-04-20'   'date'   ':d alias'
-        'null'         'null'   '— (no sized form)'
-        '02134'        'string' '— (leading-zero stays string in v3.4)'
-        '1_000_000'    'int'    ':u32 1_000_000 (underscore separator)'
-      ]
+    [examples :table[value:string inferred:string sized:string]
+      '8080'         'int'    ':u16 → 0..65535'
+      '3.14'         'float'  ':f32 / :f64'
+      'true'         'bool'   '+flag / -flag sigils'
+      '2026-04-20'   'date'   ':d alias'
+      'null'         'null'   '— (no sized form)'
+      '02134'        'string' '— (leading-zero stays string in v3.4)'
+      '1_000_000'    'int'    ':u32 1_000_000 (underscore separator)'
     ]
   ]
 
