@@ -152,6 +152,7 @@ test-vcx-stream: build-vcx
 test-ruby: build-vcx
 	$(RUBY) lang/ruby/conformance.rb
 	$(RUBY) lang/ruby/test_api.rb
+	$(RUBY) lang/ruby/cxlib/test/test_data_bin_one_shots.rb
 
 test-ruby-api: build-vcx
 	$(RUBY) lang/ruby/test_api.rb
