@@ -1,0 +1,416 @@
+# CX Roadmap
+
+This document is CX's living, public roadmap. It tracks what's
+landing in the next release, what's planned for later, and what is
+deliberately *not* on the roadmap.
+
+The release gate for any tagged version is the [readiness
+rubric](spec/readiness_rubric.md): no `⚠` entries at tag time. Each
+release ships with an adoption review (`docs/adoption_review_<version>.md`)
+that records how every row of the rubric was classified for that
+version and where the gaps are tracked.
+
+**The next tag is v0.6.0.** v0.6.0 is the API/format-stability
+boundary: from v0.6.0 onward through 1.0, no breaking changes to the
+public surface (C ABI, binding APIs, wire formats, spec-normative
+grammar). The "Now" and "Next" scopes below both feed v0.6.0 — Now is
+the work in flight on the active branch, Next is the larger scope that
+follows but ships under the same v0.6.0 tag. "Later" is post-v0.6.0
+work targeting subsequent releases.
+
+---
+
+## Now — current branch (toward v0.6.0)
+
+Closing the audit, raising the bar to a level that survives external
+review. Items here are in flight or imminent on the active branch.
+
+### Tooling completion
+
+- **`cx diff`** — semantic diff CLI subcommand. Two CX inputs;
+  data-equivalent → exit 0 (mirrors `cx eq`); structural change
+  → emit a unified-diff-style report showing attribute / value
+  / element changes while ignoring comments, attribute order,
+  and other noise that `cx eq` already classifies as semantically
+  irrelevant. Walks two ASTs; reports per-element delta.
+  Implementation builds on the canonical-form primitive at
+  `spec/canonical.md`. CLI subcommand + per-binding API for
+  programmatic use.
+- **`cx lint`** — style + correctness warnings. Distinct from
+  `cx fmt` (which reformats lossless-canonically) — lint *warns*
+  about issues a formatter can't or shouldn't fix automatically.
+  Initial check categories: comment-style consistency
+  (`# line` for one-liners, `[- block ]` for multi-line);
+  type-annotation-position consistency within a document;
+  unused anchors (declared `&name` never referenced); dangling
+  aliases (`*name` referencing an undeclared anchor); deprecated-
+  pattern warnings (e.g., post-v3.4 leading-zero string
+  transitions per `MIGRATION.md`). Schema-violation warnings
+  layer in once the schema language ships. Each check has a
+  documented severity (warn / info) and is suppressible per file
+  or per element via a CX directive. CLI subcommand + per-binding
+  API for editor integration.
+
+### Format-completeness
+
+- **Delimited (CSV / TSV / PSV / …) — reasonable, well-defined
+  conversion.** Spec at `spec/conversions.md §8` exists but is too
+  narrow for real use, and was framed as "lossless within `:table`
+  scope" which isn't recoverable: delimited fields are inherently
+  string-typed, and type metadata can't be carried in-band without
+  breaking plain-CSV consumers. Scope, in order:
+
+  - **ADR** at [`spec/decisions/0001-delimited-conversion.md`](spec/decisions/0001-delimited-conversion.md)
+    — landed 2026-05-07. Records the framing change, shape-detected
+    flattening (repeated-row + dotted-path + `:table`), RFC 4180
+    default emit, multi-style quote parsing on input, escape
+    handling, and type recovery via caller-schema → auto-type →
+    string fallback.
+  - **Spec rewrite of §8** against the ADR. Includes the normative
+    tables for emit defaults, parse accept-set, escape sequences,
+    lossy properties, and shape-detection rules.
+  - **Implementation** at V core (`vcx/cx/csv*.v`), C ABI
+    (`cx_to_csv` / `cx_from_csv` already declared in `spec/abi.md`),
+    threaded through all 9 bindings with parity-matrix update and
+    conformance fixtures.
+- **`columns` → `cols` rename** in the `:table` block (grammar, V
+  parser, all 9 bindings, examples, conformance). One-time breaking
+  change before the format is widely adopted.
+- **Document `[?cx include=...]`** in cheatsheet + tutorial; it
+  exists in the parser but is undocumented user-facing.
+- **Document anchors / aliases honestly** as merge-only (YAML-style),
+  not cross-document references. ID/IDREF is the cross-document
+  reference mechanism, designed in
+  [`spec/decisions/0003-id-idref.md`](spec/decisions/0003-id-idref.md)
+  and listed under "Next" below.
+- **Comment-style consistency** across docs: `# line` for one-liners,
+  `[- block ]` for multi-token or multi-line.
+
+### Process artifacts (one-time setup, then ongoing)
+
+- **`spec/readiness_rubric.md`** — release gate criterion. Landed.
+- **`ROADMAP.md`** — this document. Landed.
+- **`docs/adoption_review_<version>.md`** — the version-specific
+  review against the rubric. Six-persona evaluation: API integrator,
+  config author, data-format engineer, library implementer, docs
+  reader, security reviewer. New review per release.
+- **`spec/decisions/`** — Architectural Decision Records. One per
+  spec-affecting decision (which capabilities are deliberately not
+  features, what the include-vs-transclude semantics are, etc.).
+  Backfill a starter set as part of the next release.
+- **`docs/RELEASE_PROCESS.md` §0.7 gate** — "adoption review for this
+  version is committed and signed off."
+
+### Release-hygiene docs (in flight this branch)
+
+- `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`,
+  `docs/FAQ.md`, `LICENSE` (Apache-2.0). Drop the superseded
+  `docs/cx.md`.
+
+---
+
+## Next — v0.6.0 production-hardening scope
+
+The capabilities a serious format is expected to provide that CX
+doesn't ship yet. These close the largest open gaps from the rubric
+and ship as part of v0.6.0 — the API/format-stability boundary.
+Scope is intentionally large; v0.6.0 is the release that earns the
+"production-ready" framing.
+
+### Schema language and validation (release blocker — largest single item)
+
+Three adoption personas (API integrator, config author at-scale, data-
+format engineer) are blocked on this capability. The directive
+`[?cx schema=path.cxs]` is already reserved in the grammar at
+`spec/grammar.ebnf §418`; existing files using it remain forward-
+compatible. Scope:
+
+- **`.cxs` schema language** — minimum-viable schema covering
+  element shapes, attribute presence + types, cardinality, basic
+  range/enum/pattern constraints. Specified in
+  `spec/schema.md` (to be written) before implementation begins.
+- **Validation engine in libcx** with diagnostics that include line +
+  column and a friendly reason.
+- **Schema-driven defaults and coercion** (a missing optional attribute
+  with a default fills in; a string-typed value with `:int` schema
+  position errors loudly).
+- **Per-binding `validate(doc, schema)` API** with consistent
+  signatures across all 9 bindings (parity-matrix entry).
+- **Schema-aware LSP diagnostics** in `tooling/lsp/`.
+
+Schema design begins with an ADR in `spec/decisions/` weighing
+options: lifted-from-XSD, JSON-Schema-compatible, hand-rolled
+minimal. The ADR is the gate; implementation follows once the design
+choice is recorded and reviewed.
+
+### Conversion shape control
+
+- **CX → JSON output shape directives** so a CX document can specify
+  how it serializes to JSON (e.g., to match an external API
+  contract). Likely shape: a `[?cx json-shape=...]` directive plus a
+  `cx --json --shape <spec>` CLI flag. The exact mechanism needs a
+  design doc in `spec/decisions/` before implementation.
+- **CX → YAML / TOML / XML shape control** on the same mechanism.
+- **Reverse direction** — shape-aware import (JSON → CX with a
+  declared shape rather than the deterministic default mapping).
+
+### Data-bin one-shot loaders/dumpers
+
+- **`cx_<fmt>_to_data_bin` × 5** (xml / json / yaml / toml / md)
+  and **`cx_data_bin_to_<fmt>` × 5** at the C ABI. Spec
+  `abi.md §2.4–2.5` marks these v2-required; V core
+  `cabi.v:47` feature-bitmask comment explicitly admits "Not yet
+  implemented: bit 5 (data_bin one-shots)." Each is a thin
+  composition of existing pieces (`cx_<fmt>_to_ast_bin` +
+  AST→data-bin, and the symmetric direction); rollout includes
+  binding wrappers and bitmask flip.
+
+### Reference and composition primitives
+
+- **ID / IDREF cross-document references.** Anchors/aliases solve
+  intra-document merge; ID/IDREF is the cross-document mechanism.
+  Design committed in [`spec/decisions/0003-id-idref.md`](spec/decisions/0003-id-idref.md):
+  `[node #my-id ...]` declares an ID, `[ref @my-id]` references it,
+  resolution is per-document by default with caller-supplied
+  cross-document scope. Remaining: grammar update, V core resolver,
+  per-binding API for `cx_resolve_ref`, conformance fixtures.
+- **Include resolution semantics formally specified** — what a
+  cycle does, what relative paths resolve against, what happens
+  to comments and PIs in the included document.
+- **Namespaces (XML xmlns equivalent).** Design committed in
+  [`spec/decisions/0002-namespaces.md`](spec/decisions/0002-namespaces.md):
+  XML-style scoped declarations (`xmlns:prefix=uri` and `xmlns=uri`
+  as inherited attributes), parse-time resolution to expanded
+  names, prefix preserved on the AST for round-trip,
+  `prefix:name` flattening for conversion to namespace-less
+  formats. Remaining work: grammar update, V core parser scope
+  stack + resolution + emitter, AST shape change, per-binding
+  Element/Attribute API update (breaking change to public
+  binding types — handled via accessor methods to keep common-
+  case code terse), CXPath namespace-aware predicates,
+  conformance fixtures. Estimated 4–6 weeks for V core +
+  spec + conformance; 2–3 weeks for binding rollout.
+
+### Internationalization
+
+- **`cx:lang` attribute** formalized as a first-class language tag
+  (BCP 47 values), with documented inheritance rules through child
+  elements (matches XML's `xml:lang` semantics).
+- **Unicode normalization policy** documented (current implementation
+  passes input through unchanged; we make that normative, or specify
+  NFC).
+- **Bidirectional text handling** rule documented.
+
+### Tabular API surface
+
+- **Public Table API across all 10 bindings.** `spec/table_api.md`
+  defines a 17-member API (4 properties + 13 methods spanning
+  row/column/cell access, slicing, iteration, and 5 conversions).
+  None of it is implemented yet — the internal `TableData` struct
+  at `vcx/cx/ast.v:60–79` is not exported through the C ABI, and
+  no binding has a `Table` class. Largest single doc-vs-reality
+  gap surfaced in the 2026-05 audit. Scope: design the C ABI
+  surface (likely a handle-based table object similar to events
+  streaming); implement at V core; thread through all 9 bindings
+  with parity-matrix entries and conformance fixtures.
+
+### Streaming + scale
+
+- **Streaming write API** — pull-based event stream consumer for
+  emit. The read-side `cx_events_open/next/close` API is in place;
+  the symmetric write side is the gap. `spec/streaming.md:289–294`
+  currently marks it "Deferred" — the deferral is what's being
+  closed here. Likely shape: `cx_events_writer_open` /
+  `cx_events_writer_emit_<event>` (one per event type) /
+  `cx_events_writer_close_get_bytes`.
+- **Large-file (multi-GB) benchmark** with documented numbers in
+  `spec/governance.md §6`.
+
+### Security + verification
+
+- **Fuzz-testing harness** — both grammar fuzzing (random valid CX
+  in, no parser crashes) and roundtrip fuzzing (random CX → format
+  → CX preserves data).
+- **Comparative benchmarks** vs JSON / YAML / TOML / XML for text,
+  vs MessagePack / CBOR for binary. Published in
+  `spec/governance.md §6.3`.
+- **Microbenchmark suite measuring against published SLA budgets.**
+  Audit confirms `bench_report.py` extracts metrics
+  (`parse=X.XXX` / `stream=X.XXX` at lines 178–182) but does not
+  validate against `governance.md §6` budgets (`loads(1KB) <
+  100µs`, `loads(1MB) < 60ms`, `loads(100MB) < 6s`,
+  `select(1MB) < 120ms`) and does not enforce the 10% regression
+  threshold the spec mandates. Scope: move bench fixtures
+  public; add §6-budget validators with pass/fail per binding;
+  commit baseline numbers; document measurement methodology
+  (host, build flags, warmup, samples, percentiles).
+- **CI regression gate against SLA budgets.** Per `governance.md
+  §6` the CI gate runs the microbenchmark suite per binding per
+  PR; a 10% regression vs baseline blocks merge. Implementation
+  follows the public bench fixtures and committed baselines
+  above.
+- **Reproducible libcx builds** so SHA-256s match across independent
+  builds (currently flagged in `docs/RELEASE_PROCESS.md §6`).
+  Toolchain pinning, deterministic timestamps, embedded-path
+  scrubbing.
+- **External security audit.** Engagement with a third-party
+  security review firm; scoped to V core parser, C ABI, and the
+  binding FFI shims. Findings are addressed in a patch release
+  before the audit report is published. Required by 1.0 for the
+  production-positioned framing.
+- **CI matrix.** GitHub Actions running `make test` on macOS-13,
+  macOS-14, ubuntu-22.04, ubuntu-24.04 for every PR. Per-binding
+  regression gate so a Python/Rust/etc. failure blocks merge.
+
+### Concurrency & parallelism
+
+- **Thread-safety contract documented per public C ABI function**
+  in `spec/abi.md`. Three classes: thread-safe (top-level
+  converters like `cx_to_data_bin`), thread-local (handle objects
+  like `cx_events_*`), and inherently single-threaded (rare —
+  ideally none).
+- **Concurrent test suite** at the V core and per binding. Worker-
+  pool stress test calling parse/emit on independent inputs;
+  race-detector integration where the toolchain supports it
+  (Go race, ThreadSanitizer for V/C builds).
+- **Per-binding concurrency story** documented in each binding's
+  README — Python GIL implications, Go goroutine safety, Rust
+  `Send`/`Sync` bounds, Java/Kotlin JVM monitor model, Swift
+  actor isolation, C# task safety, Ruby GVL implications.
+- **Memory-model contract.** Whether libcx relies on the host
+  language's memory model or imposes its own. Likely the former
+  (libcx is a stateless converter for top-level calls; handles
+  are owned by the caller's thread). Make it normative.
+- **Parallel parse / emit benchmarks** showing scaling with
+  cores. Required to claim CX scales for production workloads.
+
+### Tooling and ecosystem (1.0 expectations)
+
+- **Tree-sitter grammar v3.4 update.** Audit confirms
+  `grammar.js:156–169` lists only v3.3 types and the number lexer
+  has no underscore support. Scope: full grammar.js rewrite for
+  v3.4 (sized int/float types, `:decimal`, `:bigint`, numeric
+  underscores, boolean attribute sigils, line comments, logfmt
+  mode, `:table` block, leading-zero-now-string change);
+  regenerate `parser.c`; refresh `highlights.scm` for the new
+  constructs; smoke-test against GitHub Linguist and Neovim
+  consumers. Tree-sitter is the substrate every code editor's
+  syntax highlighting flows through; staleness here means every
+  adopter sees broken highlighting.
+- **LSP minimum capability set.** Audit confirms current LSP
+  (`tooling/lsp/out/server.js` v0.1.0) advertises completion only
+  and the completion list shows v3.3 types — substantially less
+  than a usable minimum. Scope: implement diagnostics (parse
+  errors with line/col from `cx` output), hover (type info from
+  `:type` annotations and known reserved-attribute descriptions),
+  document symbols (element tree as outline), formatting (proxy
+  to `cx fmt`); update completion list to v3.4 types.
+  Schema-aware completions and validate-on-save layer in once
+  schema lands.
+- **VSCode extension.** Audit confirms `package.json:9`
+  `activationEvents` is empty — extension may not auto-activate.
+  Scope: wire `onLanguage:cx` activation; launch LSP on `.cx`
+  files; ship installable `.vsix` from VS Code Marketplace; bind
+  the v3.4 tree-sitter grammar for default-out-of-the-box
+  highlighting.
+- **Neovim integration.** Audit confirms `cx.lua:20–26` uses a
+  hardcoded LSP path requiring manual install. Scope: replace
+  with the standard nvim-lspconfig pattern; provide an example
+  `init.lua` snippet adopters drop into their config; resolve
+  the LSP binary by `$PATH` lookup or registered server name.
+- **Working examples in `examples/`.** Audit confirms 9 .cx
+  files (article, books, chapter, config, doc, embedding_test,
+  env, post, vcore; 365 lines) all on v3.3-era patterns — zero
+  v3.4 coverage. Scope: refresh existing files to v3.4 idioms
+  where helpful; add new examples covering the missing shapes
+  (sized types, numeric underscores, boolean sigils, `:table`
+  block, logfmt mode, namespace bearer post-ADR-0002, leading-
+  zero-now-string demo, line-comment usage). Every file in
+  `examples/` exits 0 through `cx <file>`. First-impression-
+  critical: a clone-and-try adopter who hits a parse error or
+  who looks for `:table` and finds no example walks away.
+
+### Third-party conformance
+
+- **Conformance certification process** with operational details:
+  the exact command a third party runs against their binding, the
+  pass criterion, the version they certify against, the artifact
+  they publish. `spec/governance.md §8` outlines the policy; the
+  ops detail is the gap.
+- **Public test corpus for third-party binding compliance.** A
+  packaged subset of `vcx/tests/conformance/` that adopters can
+  vendor and run against their own implementation. Format: a
+  versioned tarball with input CX files, expected outputs per
+  format, and a runner script.
+
+### Format hygiene
+
+- **BOM handling rule** documented and tested.
+- **Line-ending policy** documented (CR / LF / CRLF — what's
+  preserved, what's normalized, where).
+- **Null vs empty vs missing** semantics formalized — what
+  `[name]` vs `[name :string]` vs `[name :string '']` vs
+  `[name :null]` means.
+
+---
+
+## Later — post-v0.6.0
+
+Capabilities that are real, planned, but not blocking v0.6.0.
+
+- **Parquet import/export** for tabular data (depends on schema).
+- **Schema-aware editor support** (LSP completion, hover docs from
+  schema, error squigglies).
+- **Annual binding audit (2027 edition)** — same shape as the 2026-05
+  audit, applied to whatever evolved since. Cadence item, not a
+  release blocker.
+
+---
+
+## Deliberate non-features
+
+These are *not* on the roadmap. They are decisions, not gaps.
+Rationale lives below; the seed-set ADRs in `spec/decisions/`
+covering each of these is a v0.6.0 doc-fix item (one ADR per
+non-feature: external entities, `xml:space`, multi-encoding,
+MessagePack/CBOR/Protobuf import, DOCTYPE-as-active).
+
+- **External entity references** (XML's `&foo;` resolved against
+  DTD declarations or external resources). Rationale: this is the
+  attack surface behind XXE and billion-laughs. CX's
+  `[?cx include=...]` covers the legitimate use case (file
+  inclusion) without the attack vectors.
+- **`xml:space="preserve"` equivalent.** Rationale: token context
+  in CX is unambiguous — quoted strings preserve, unquoted bodies
+  normalize, raw-text blocks (`[# ... #]`) preserve verbatim.
+  Adding a per-element override would create three ways to do the
+  same thing.
+- **MessagePack / CBOR / Protobuf as import-export targets.**
+  Rationale: CXDB v1 binary already covers the "compact wire
+  format" need, and adding three more binary formats explodes the
+  conversion matrix without buying anything CXDB doesn't already
+  give. Third parties can write codecs against `cx_to_data_bin`
+  if they want them.
+- **DOCTYPE-as-active-declaration.** CX parses DOCTYPE for XML
+  round-trip, but it has no semantic effect on parsing. Rationale:
+  same as external entities — DTD-driven validation is XML's
+  legacy; schema validation will be the supported path.
+- **Multiple character encodings.** CX is UTF-8 only. Rationale:
+  the only encodings still used in greenfield deployments are
+  UTF-8 and (rarely) UTF-16; the cost of multi-encoding parsers
+  is large and the benefit is approximately zero.
+
+---
+
+## Updating this document
+
+- When a "Now" item ships, move its row to the rubric (`spec/readiness_rubric.md`) and flip the status to ✅. Remove it from this file.
+- When a "Next" item ships, do the same.
+- When a new capability becomes a known need, add it to the rubric
+  with status `⚠` (release blocker) or `📋` (planned), and add a
+  ROADMAP entry under the appropriate scope.
+- When a capability is rejected, write an ADR in `spec/decisions/`
+  and add an entry under "Deliberate non-features."
+
+The roadmap is the surface adopters check to know what's coming. Keep
+it honest; keep it short; keep it tied to the rubric.
