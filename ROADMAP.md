@@ -181,27 +181,25 @@ choice is recorded and reviewed.
 - **Include resolution semantics formally specified** — what a
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.
-- **Namespaces (XML xmlns equivalent).** V core landed 2026-05-08
-  (Phase 7.57); 9-binding accessor rollout landed 2026-05-08
-  (Phase 7.58). Spec [`spec/namespaces.md`](spec/namespaces.md);
-  ADR [`spec/decisions/0002-namespaces.md`](spec/decisions/0002-namespaces.md);
-  12-case V conformance suite [`conformance/namespaces.txt`](conformance/namespaces.txt);
-  11-case per-binding namespace test in each of the 9 bindings.
-  Implementation: `vcx/cx/namespaces.v` resolves prefixes against a
-  scope stack at the tail of every parse entry point (CX, XML,
-  JSON, YAML, TOML, MD, ast_bin), populating
-  `Element.{local, ns_uri}` and `Attribute.{local, ns_uri}` while
-  preserving source `name` for round-trip. Each binding ships an
-  in-language `resolve_namespaces` (~50 LOC, scope-stack walk) that
-  runs at the tail of all 6 binding-side parse entry points, plus
-  `localName()` / `namespaceUri()` accessors on Element and
-  Attribute (idiom-adjusted: `local_name`/`namespace_uri` for
-  Python/Rust/Ruby; PascalCase `LocalName`/`NamespaceURI` for Go;
-  camelCase elsewhere). Reserved prefixes `xml:` and `cx:` resolve
-  unconditionally; default-namespace applies to elements only
-  (XML Namespaces 1.0 §6.2); `xmlns=""` undeclares. Remaining for
-  full close: CXPath namespace-aware predicates, canonical-form
-  prefix-resolution rule (ADR 0002 D6), MIGRATION.md entry.
+- ✅ **Namespaces (XML xmlns equivalent).** Closed 2026-05-08
+  across Phases 7.57 (V core), 7.58 (9-binding accessors), 7.59
+  (CXPath ns-aware + canonical-form D6 + MIGRATION). Spec
+  [`spec/namespaces.md`](spec/namespaces.md); ADR
+  [`spec/decisions/0002-namespaces.md`](spec/decisions/0002-namespaces.md);
+  16-case V conformance suite
+  [`conformance/namespaces.txt`](conformance/namespaces.txt) (12
+  parse/emit + 4 canonical-form); 11-case per-binding namespace
+  test in each of the 9 bindings; 9-case CXPath ns suite
+  `vcx/tests/ns_cxpath/cxpath_test.v`. CXPath gains namespace-
+  aware name tests (prefixed queries resolve via the document's
+  xmlns map, first-occurrence wins) plus `local-name()` and
+  `namespace-uri()` predicate functions for cross-prefix queries.
+  `cx canonical` now sorts xmlns declarations and rewrites prefix
+  usage to the lex-smallest in-scope prefix per URI, so
+  semantically-equal namespaced documents hash identically under
+  `cx hash`. Migration entry at
+  [`MIGRATION.md §2.4`](MIGRATION.md). Strictly additive — no
+  existing CX or wire format changes.
 
 ### Internationalization
 
