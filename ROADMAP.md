@@ -369,36 +369,40 @@ Capabilities that are real, planned, but not blocking v0.6.0.
 
 ## Deliberate non-features
 
-These are *not* on the roadmap. They are decisions, not gaps.
-Rationale lives below; the seed-set ADRs in `spec/decisions/`
-covering each of these is a v0.6.0 doc-fix item (one ADR per
-non-feature: external entities, `xml:space`, multi-encoding,
-MessagePack/CBOR/Protobuf import, DOCTYPE-as-active).
+These are *not* on the roadmap. They are decisions, not gaps. Each
+has a full ADR in `spec/decisions/`; the rationale below is a one-
+paragraph summary cross-linked to the ADR.
 
 - **External entity references** (XML's `&foo;` resolved against
-  DTD declarations or external resources). Rationale: this is the
-  attack surface behind XXE and billion-laughs. CX's
-  `[?cx include=...]` covers the legitimate use case (file
-  inclusion) without the attack vectors.
-- **`xml:space="preserve"` equivalent.** Rationale: token context
-  in CX is unambiguous — quoted strings preserve, unquoted bodies
-  normalize, raw-text blocks (`[# ... #]`) preserve verbatim.
-  Adding a per-element override would create three ways to do the
-  same thing.
-- **MessagePack / CBOR / Protobuf as import-export targets.**
+  DTD declarations or external resources) — see
+  [ADR 0004](spec/decisions/0004-external-entity-references.md).
+  Rationale: this is the attack surface behind XXE and billion-
+  laughs. CX's `[?cx include=...]` covers the legitimate use case
+  (file inclusion) without the attack vectors.
+- **`xml:space="preserve"` equivalent** — see
+  [ADR 0005](spec/decisions/0005-xml-space-preserve.md). Rationale:
+  token context in CX is unambiguous — quoted strings preserve,
+  unquoted bodies normalize, raw-text blocks (`[# ... #]`) preserve
+  verbatim. Adding a per-element override would create three ways
+  to do the same thing.
+- **Multiple character encodings** — see
+  [ADR 0006](spec/decisions/0006-multi-encoding.md). Rationale: CX
+  is UTF-8 only. The only encodings still used in greenfield
+  deployments are UTF-8 and (rarely) UTF-16; the cost of multi-
+  encoding parsers is large and the benefit is approximately zero.
+- **MessagePack / CBOR / Protobuf as import-export targets** — see
+  [ADR 0007](spec/decisions/0007-binary-format-imports.md).
   Rationale: CXDB v1 binary already covers the "compact wire
   format" need, and adding three more binary formats explodes the
   conversion matrix without buying anything CXDB doesn't already
-  give. Third parties can write codecs against `cx_to_data_bin`
-  if they want them.
-- **DOCTYPE-as-active-declaration.** CX parses DOCTYPE for XML
-  round-trip, but it has no semantic effect on parsing. Rationale:
-  same as external entities — DTD-driven validation is XML's
-  legacy; schema validation will be the supported path.
-- **Multiple character encodings.** CX is UTF-8 only. Rationale:
-  the only encodings still used in greenfield deployments are
-  UTF-8 and (rarely) UTF-16; the cost of multi-encoding parsers
-  is large and the benefit is approximately zero.
+  give. Third parties can write codecs against `cx_to_data_bin` if
+  they want them.
+- **DOCTYPE-as-active-declaration** — see
+  [ADR 0008](spec/decisions/0008-doctype-as-active-declaration.md).
+  Rationale: CX parses DOCTYPE for XML round-trip, but it has no
+  semantic effect on parsing. Same family as external entities —
+  DTD-driven validation is XML's legacy; schema validation will be
+  the supported path.
 
 ---
 
