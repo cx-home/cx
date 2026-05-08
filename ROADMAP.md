@@ -36,18 +36,18 @@ review. Items here are in flight or imminent on the active branch.
   JSON output uses CXPath for the `path` field. C ABI bit 14.
   Remaining: spec section, V core impl, CLI subcommand, 9-binding
   rollout, conformance fixtures, microbench (~5–6 weeks).
-- **`cx lint`** — style + correctness warnings. Design committed in
-  [`spec/decisions/0013-cx-lint.md`](spec/decisions/0013-cx-lint.md):
-  five initial check IDs (CX-L001 comment-style consistency, L002
-  type-annotation-position consistency, L003 unused anchors, L004
-  dangling aliases, L005 v3.4 deprecated patterns), three severity
-  levels (info / warn / error), suppression via `[?cx lint-disable=
-  ...]` directive + `.cxlint.cx` config file, LSP diagnostics
-  integration. Distinct from `cx fmt` (lint *warns*, fmt *fixes*).
-  Schema-violation checks layer on once schema (ADR 0009) lands.
-  C ABI bit 15. Remaining: spec section, V core impl, CLI subcommand,
-  9-binding rollout, LSP wire-up, conformance fixtures, microbench
-  (~7–8 weeks).
+- ✅ **`cx lint`** — style + correctness warnings. Closed
+  2026-05-08 across Phases 7.49 (V core + CLI), 7.50 (9-binding
+  wrappers), 7.52 (LSP diagnostics), 7.54 (initial 9 conformance
+  fixtures), 7.60 (L001/L002 source-text passes, `[?cx lint-disable
+  =...]` / `lint-enable=...` directive scoping, `.cxlint.cx`
+  config discovery + severity overrides, 12 additional fixtures).
+  All 5 check IDs implemented (L001 comment-style, L002 type-
+  annotation form, L003 unused-anchor, L004 dangling-alias, L005
+  leading-zero-pattern). Distinct from `cx fmt` (lint warns, fmt
+  fixes). Schema-violation checks will layer on once schema
+  (ADR 0009) lands. ADR:
+  [`spec/decisions/0013-cx-lint.md`](spec/decisions/0013-cx-lint.md).
 
 ### Format-completeness
 
