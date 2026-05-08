@@ -125,6 +125,7 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_transform.py
 	$(PYTHON) lang/python/test_immutability.py
 	$(PYTHON) lang/python/test_data_bin_one_shots.py
+	$(PYTHON) lang/python/test_namespaces.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
@@ -153,6 +154,7 @@ test-ruby: build-vcx
 	$(RUBY) lang/ruby/conformance.rb
 	$(RUBY) lang/ruby/test_api.rb
 	$(RUBY) lang/ruby/cxlib/test/test_data_bin_one_shots.rb
+	$(RUBY) lang/ruby/test_namespaces.rb
 
 test-ruby-api: build-vcx
 	$(RUBY) lang/ruby/test_api.rb
@@ -168,6 +170,7 @@ test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
 	npx tsx lang/typescript/api_test.ts
 	npx tsx lang/typescript/data_bin_one_shots_test.ts
+	npx tsx lang/typescript/namespaces_test.ts
 
 test-typescript-api: build-typescript
 	npx tsx lang/typescript/api_test.ts

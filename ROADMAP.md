@@ -182,21 +182,26 @@ choice is recorded and reviewed.
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.
 - **Namespaces (XML xmlns equivalent).** V core landed 2026-05-08
-  (Phase 7.57). Spec [`spec/namespaces.md`](spec/namespaces.md);
+  (Phase 7.57); 9-binding accessor rollout landed 2026-05-08
+  (Phase 7.58). Spec [`spec/namespaces.md`](spec/namespaces.md);
   ADR [`spec/decisions/0002-namespaces.md`](spec/decisions/0002-namespaces.md);
-  12-case conformance suite [`conformance/namespaces.txt`](conformance/namespaces.txt).
+  12-case V conformance suite [`conformance/namespaces.txt`](conformance/namespaces.txt);
+  11-case per-binding namespace test in each of the 9 bindings.
   Implementation: `vcx/cx/namespaces.v` resolves prefixes against a
   scope stack at the tail of every parse entry point (CX, XML,
   JSON, YAML, TOML, MD, ast_bin), populating
   `Element.{local, ns_uri}` and `Attribute.{local, ns_uri}` while
-  preserving source `name` for round-trip. Reserved prefixes
-  `xml:` and `cx:` resolve unconditionally; default-namespace
-  applies to elements only (XML Namespaces 1.0 §6.2);
-  `xmlns=""` undeclares. Remaining for full close: per-binding
-  accessor methods (`localName()` / `namespaceUri()`) across all
-  9 bindings, CXPath namespace-aware predicates, canonical-form
+  preserving source `name` for round-trip. Each binding ships an
+  in-language `resolve_namespaces` (~50 LOC, scope-stack walk) that
+  runs at the tail of all 6 binding-side parse entry points, plus
+  `localName()` / `namespaceUri()` accessors on Element and
+  Attribute (idiom-adjusted: `local_name`/`namespace_uri` for
+  Python/Rust/Ruby; PascalCase `LocalName`/`NamespaceURI` for Go;
+  camelCase elsewhere). Reserved prefixes `xml:` and `cx:` resolve
+  unconditionally; default-namespace applies to elements only
+  (XML Namespaces 1.0 §6.2); `xmlns=""` undeclares. Remaining for
+  full close: CXPath namespace-aware predicates, canonical-form
   prefix-resolution rule (ADR 0002 D6), MIGRATION.md entry.
-  Estimated 2–3 weeks for the binding rollout.
 
 ### Internationalization
 
