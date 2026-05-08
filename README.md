@@ -11,60 +11,166 @@ losslessly to and from the five formats that already dominate config and
 data exchange — so you can adopt it incrementally without rewriting
 existing pipelines.
 
+---
+
+## CX at a glance
+
+Five small things CX makes ordinary that other formats made hard.
+
+### 1. Config that documents itself
+
 ```cx
-[config
-  [server host=localhost port=8080 +tls]      # comments are line- or block-
-  [- timeouts in seconds]
-  [timeouts :int connect=5 read=30 write=30]  # typed attributes
-  [allowed-origins :string[]                  # typed array
-    https://app.example.com
-    https://admin.example.com
+[server
+  # bind to 0.0.0.0 so the load balancer can reach us
+  host=0.0.0.0 :u16 port=8080 +tls
+  [- TLS terminates here; backend speaks plaintext on 127.0.0.1:8081 ]
+]
+```
+
+`# line comments` and `[- block comments ]` are first-class. The rationale
+lives next to the values it explains — no separate runbook drifting out
+of sync. JSON has no comments at all; YAML and TOML drop them through
+most parser round-trips.
+
+### 2. Types that survive a round trip
+
+```cx
+[server :u16 port=8080]
+[ratio :float 1.5]
+[user_id :bigint 1234567890123456789]
+[balance :decimal 1234.56]
+```
+
+`cx --json | cx --from json` brings these back unchanged. `8080` stays
+an integer; the bigint stays exact; the decimal doesn't drift to a
+float. JSON's all-numbers-are-IEEE-doubles silently breaks IDs over
+2⁵³; YAML's implicit typing means `1.10` parses as `1.1` and `no`
+parses as `false`.
+
+### 3. Config and prose, one file
+
+```cx
+[deployment
+  [- production rollout notes — keep these in sync with the values below ]
+  [doc
+    [p This service uses [em rolling] updates with a 30-second drain window.]
+    [p Rollback target is the previous git tag.]
+  ]
+  [server host=0.0.0.0 :u16 port=8080]
+]
+```
+
+Structured config and the prose that explains it live in the same
+document because the grammar is the same for both. The pattern of "the
+runbook is on the wiki, the values are in git, neither is canonical"
+stops being unavoidable.
+
+### 4. Log streams in the same grammar
+
+```
+ts=2026-05-07T10:30:00Z level=info  svc=api req_id=abc123 latency_ms=45
+ts=2026-05-07T10:30:01Z level=warn  svc=api req_id=def456 latency_ms=210 slow=true
+ts=2026-05-07T10:30:01Z level=error svc=api req_id=ghi789 err='connection refused'
+```
+
+CX's *logfmt mode* treats bare `key=value` lines as one synthetic
+element each — the format you already see in production logs is valid
+CX. Same parser, same query language (CXPath), same bindings as for
+your config.
+
+### 5. Mixed-content documents
+
+```cx
+[article lang=en
+  [head [title Introducing CX]]
+  [body
+    [p CX is at home in [em prose] and [strong structured data] alike.]
+    [pre :code [# server { port = 8080 } #]]
   ]
 ]
 ```
 
-Same data as JSON, YAML, or TOML — emitted by the `cx` CLI, byte-stable
-across runs:
-
-```sh
-$ cx --json config.cx
-{"config": {"server": {"host": "localhost", "port": 8080, "tls": true},
-            "timeouts": {"connect": 5, "read": 30, "write": 30},
-            "allowed-origins": ["https://app.example.com", "https://admin.example.com"]}}
-```
-
-> **Status: pre-1.0, not production-hardened.** The grammar is stable and
-> tested (~1,200 tests across 9 language bindings, 0 failures), the C ABI is
-> versioned and forward-compatible, and the [2026-05 binding
-> audit](spec/binding_audit_2026.md) closed five systemic shortcuts at the
-> core. **But:** there has been no security review, no fuzz-testing
-> infrastructure, no production deployments at scale, and the V toolchain
-> CX builds on is itself pre-1.0. Use it for prototypes, internal tools,
-> and exploratory work. Don't bet a customer-facing system on it yet.
+Inline `[em ...]` inside paragraph text — the thing JSON, YAML, and
+TOML can't represent without escape gymnastics, and the thing XML
+traditionally does at the cost of verbosity. CX uses the same brackets
+either way.
 
 ---
 
-## Why CX exists
+## How CX compares
 
-Three things in one format that no other format gives you together:
+|  | CX | JSON | YAML | TOML | XML |
+|---|---|---|---|---|---|
+| Syntax weight        | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+| Strong types         | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes | ❌ number only (no int/float distinction) | partial (auto-detect, often wrong) | ✅ int / float / bool / datetime | partial (xs:type) |
+| Comments             | ✅ block `[- ... ]` and line `# ...` | ❌ | ✅ `# ...` | ✅ `# ...` | ✅ `<!-- ... -->` |
+| Mixed content (markup + data) | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
+| Multiple top-level docs | ✅ no wrapper required | ❌ requires `[...]` array | ✅ via `---` separator | ❌ single document | partial (with declaration tricks) |
+| Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
+| Type fidelity through round-trip | ✅ guaranteed via CXDB v1 binary | ❌ int↔float coerced silently | partial | ✅ preserved | partial |
+| Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
+| Streaming parser | ✅ pull-based handle API | partial (per-implementation) | ❌ usually whole-file | ❌ | ✅ SAX |
 
-1. **Markup and data in one syntax.** XML can carry data but is verbose;
-   JSON/YAML/TOML can carry config but can't represent mixed-content
-   documents. CX is at home in both: `[p Hello [strong world]]` is a
-   document fragment and `[server host=localhost port=8080]` is config —
-   same grammar.
-2. **Type fidelity end-to-end.** `[port :int 8080]` is an integer, not a
-   string-that-looks-like-a-number, and stays integer through every
-   conversion (JSON's `8080`, YAML's `8080`, TOML's `8080 = ...`). Sized
-   types (`u16`, `i64`, `decimal`, `bigint`) and typed arrays preserve
-   precision and intent.
-3. **Lossless conversions.** `cx --xml` then `cx --from xml` round-trips
-   to byte-identical CX. Same for JSON, YAML, TOML, and Markdown
-   (with one well-defined caveat per format, documented in
-   [`spec/conversions.md`](spec/conversions.md)).
+For the full head-to-head against each format — including where CX
+wins, where it doesn't, and the format-by-format adoption guidance —
+see [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
-If you're choosing between formats: see [`docs/COMPARISON.md`](docs/COMPARISON.md)
-for an honest accounting of when CX is the right pick and when it isn't.
+---
+
+## Status
+
+CX is pre-1.0. The grammar is stable, the C ABI is versioned and
+forward-compatible, and ~1,200 tests pass across all 9 language
+bindings — the [2026-05 binding audit](spec/binding_audit_2026.md)
+closed five systemic shortcuts at the core. Formal security review and
+fuzz-testing infrastructure are still ahead, so pin a tested version
+and apply normal pre-1.0 caution before customer-facing use.
+
+---
+
+## Why CX
+
+If you've used JSON, YAML, TOML, XML, and Markdown long enough, you've
+hit a recurring set of papercuts:
+
+- A YAML file behaves differently after copy-paste because indentation
+  got rewritten.
+- A JSON config has no comments, so the *why* lives in a separate doc
+  that goes stale.
+- An integer ID over 2⁵³ silently becomes an approximate float through
+  a JSON round trip.
+- A document needs both prose and config-shaped data — neither
+  Markdown nor YAML cover both, so you maintain two files and hope
+  they stay aligned.
+- A schema change loses the distinction between `8080` (integer) and
+  `"8080"` (string) because the wire format never preserved it.
+- A log line and a config file use different parsers, different query
+  languages, and different libraries, so you write the same selector
+  logic three times.
+
+Each of these has a workaround — you've shipped them. CX is what
+happens when one grammar is designed with all six in mind from the
+start:
+
+- **One bracket form, every shape.** No indentation rules, no
+  closing-tag repetition, no special-case section headers. `[...]`
+  carries config, data, prose, log lines, and tabular rows uniformly.
+- **Optional explicit types.** `:int`, `:f64`, `:decimal`, `:bigint`,
+  `:u16[]` — declare the type once and the value survives conversion
+  to JSON, YAML, TOML, XML, and back.
+- **Comments as a first-class construct.** `# line` and `[- block ]`
+  forms, preserved through `cx fmt`. Strict-canonical mode (used for
+  hashing) is the only place they're dropped, and that's a deliberate
+  trade.
+- **Mixed content out of the box.** Inline markup inside text works
+  the same way nested config does — same brackets, same parser.
+- **Lossless six-way conversion.** XML, JSON, YAML, TOML, and
+  Markdown round-trip with documented per-format caveats
+  ([`spec/conversions.md`](spec/conversions.md)). Adopt CX
+  incrementally without rewriting downstream consumers.
+
+For an honest head-to-head against each format, including where CX is
+*not* the right pick, see [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 ---
 
@@ -96,7 +202,7 @@ C#, Ruby), see the per-binding READMEs under [`lang/`](lang/).
 
 | You want to... | Read this |
 | --- | --- |
-| **See CX in many shapes at a glance** (config / data / docs / logs) | [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) |
+| **See more CX in many shapes** (config / data / docs / logs / table) | [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) |
 | **Decide whether to adopt CX over JSON/YAML/TOML/XML** | [`docs/COMPARISON.md`](docs/COMPARISON.md) |
 | **Learn the format end-to-end with the design rationale** | [`docs/TUTORIAL.md`](docs/TUTORIAL.md) |
 | **Use CX from your favorite language** | [`lang/<your-lang>/cxlib/README.md`](lang/) |
@@ -105,48 +211,6 @@ C#, Ruby), see the per-binding READMEs under [`lang/`](lang/).
 | **Read frequently asked questions** | [`docs/FAQ.md`](docs/FAQ.md) |
 | **Contribute code, docs, or bug reports** | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | **See what's in the latest release** | [`RELEASE_NOTES_v0.6.0.md`](RELEASE_NOTES_v0.6.0.md) |
-
----
-
-## A 30-second tour
-
-CX in three different roles. All three are valid CX, all three convert
-losslessly to JSON / YAML / TOML / XML / MD via the `cx` CLI.
-
-### As config
-
-```cx
-[server :u16 port=8080
-  [tls cert=/etc/ssl/cert.pem key=/etc/ssl/key.pem]
-  [logging level=info format=json]
-]
-```
-
-### As data
-
-```cx
-[users
-  [user id=1 name=alice +admin]
-  [user id=2 name=bob]
-  [user id=3 name=carol +admin]
-]
-```
-
-### As a document
-
-```cx
-[article lang=en
-  [head [title Introducing CX]]
-  [body
-    [p CX unifies markup and data in one syntax.]
-    [p It [em reads] like XML, [em types] like YAML.]
-    [pre :code [# server { port = 8080 } #]]
-  ]
-]
-```
-
-The same grammar handles all three. No wrapper element required. No format
-switch.
 
 ---
 
@@ -184,7 +248,7 @@ expectations, and the audit-driven coding rules.
 
 ## License
 
-[License TBD — placeholder until v0.6.0 release.]
+Apache License 2.0 — see [`LICENSE`](LICENSE).
 
 ---
 
