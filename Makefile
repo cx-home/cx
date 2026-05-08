@@ -124,6 +124,7 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_cxpath.py
 	$(PYTHON) lang/python/test_transform.py
 	$(PYTHON) lang/python/test_immutability.py
+	$(PYTHON) lang/python/test_data_bin_one_shots.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
