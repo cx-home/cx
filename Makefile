@@ -196,7 +196,7 @@ conform-md: build-vcx
 conform: conform-vcx
 
 conform-vcx: build-vcx
-	$(MAKE) -C vcx conform-all
+	$(MAKE) -C vcx conform
 
 # ── Examples (transform showcase) ────────────────────────────────────────────
 
