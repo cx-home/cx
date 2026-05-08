@@ -181,19 +181,22 @@ choice is recorded and reviewed.
 - **Include resolution semantics formally specified** — what a
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.
-- **Namespaces (XML xmlns equivalent).** Design committed in
-  [`spec/decisions/0002-namespaces.md`](spec/decisions/0002-namespaces.md):
-  XML-style scoped declarations (`xmlns:prefix=uri` and `xmlns=uri`
-  as inherited attributes), parse-time resolution to expanded
-  names, prefix preserved on the AST for round-trip,
-  `prefix:name` flattening for conversion to namespace-less
-  formats. Remaining work: grammar update, V core parser scope
-  stack + resolution + emitter, AST shape change, per-binding
-  Element/Attribute API update (breaking change to public
-  binding types — handled via accessor methods to keep common-
-  case code terse), CXPath namespace-aware predicates,
-  conformance fixtures. Estimated 4–6 weeks for V core +
-  spec + conformance; 2–3 weeks for binding rollout.
+- **Namespaces (XML xmlns equivalent).** V core landed 2026-05-08
+  (Phase 7.57). Spec [`spec/namespaces.md`](spec/namespaces.md);
+  ADR [`spec/decisions/0002-namespaces.md`](spec/decisions/0002-namespaces.md);
+  12-case conformance suite [`conformance/namespaces.txt`](conformance/namespaces.txt).
+  Implementation: `vcx/cx/namespaces.v` resolves prefixes against a
+  scope stack at the tail of every parse entry point (CX, XML,
+  JSON, YAML, TOML, MD, ast_bin), populating
+  `Element.{local, ns_uri}` and `Attribute.{local, ns_uri}` while
+  preserving source `name` for round-trip. Reserved prefixes
+  `xml:` and `cx:` resolve unconditionally; default-namespace
+  applies to elements only (XML Namespaces 1.0 §6.2);
+  `xmlns=""` undeclares. Remaining for full close: per-binding
+  accessor methods (`localName()` / `namespaceUri()`) across all
+  9 bindings, CXPath namespace-aware predicates, canonical-form
+  prefix-resolution rule (ADR 0002 D6), MIGRATION.md entry.
+  Estimated 2–3 weeks for the binding rollout.
 
 ### Internationalization
 
