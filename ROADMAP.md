@@ -51,26 +51,24 @@ review. Items here are in flight or imminent on the active branch.
 
 ### Format-completeness
 
-- **Delimited (CSV / TSV / PSV / …) — reasonable, well-defined
-  conversion.** Spec at `spec/conversions.md §8` exists but is too
-  narrow for real use, and was framed as "lossless within `:table`
-  scope" which isn't recoverable: delimited fields are inherently
-  string-typed, and type metadata can't be carried in-band without
-  breaking plain-CSV consumers. Scope, in order:
-
-  - **ADR** at [`spec/decisions/0001-delimited-conversion.md`](spec/decisions/0001-delimited-conversion.md)
-    — landed 2026-05-07. Records the framing change, shape-detected
-    flattening (repeated-row + dotted-path + `:table`), RFC 4180
-    default emit, multi-style quote parsing on input, escape
-    handling, and type recovery via caller-schema → auto-type →
-    string fallback.
-  - **Spec rewrite of §8** against the ADR. Includes the normative
-    tables for emit defaults, parse accept-set, escape sequences,
-    lossy properties, and shape-detection rules.
-  - **Implementation** at V core (`vcx/cx/csv*.v`), C ABI
-    (`cx_to_csv` / `cx_from_csv` already declared in `spec/abi.md`),
-    threaded through all 9 bindings with parity-matrix update and
-    conformance fixtures.
+- ✅ **Delimited (CSV / TSV / PSV / arbitrary single-char) —
+  reasonable, well-defined conversion.** Closed at V core
+  2026-05-08 (Phase 7.67) per ADR 0001 [`spec/decisions/0001-delimited-conversion.md`](spec/decisions/0001-delimited-conversion.md):
+  spec rewrite [`spec/conversions.md §8`](spec/conversions.md) (well-defined-not-lossless framing,
+  shape-detected flattening D2 — `:table` / repeated-row /
+  dotted-path; RFC 4180 default emit D3; multi-quote parse D4 —
+  no/single/double quote with `""` / `''` doubling and six
+  universal escape sequences; auto-typing D5 with per-column type
+  narrowing; arbitrary single-char delimiters D6); V core impl
+  `vcx/cx/delimited.v`; C ABI symbols
+  `cx_to_delimited` / `cx_from_delimited` plus
+  `cx_{to,from}_{csv,tsv,psv}` aliases plus data_bin one-shots
+  `cx_{csv,tsv,psv}_to_data_bin` / `cx_data_bin_to_{csv,tsv,psv}`
+  at capability bit 6 (cx_features now `0xd3ffff`); 14-case
+  [conformance/delimited.txt](conformance/delimited.txt). Pending:
+  9-binding wrappers exposing `to_csv` / `from_csv` / `to_tsv` /
+  etc. across Python, Go, Rust, TypeScript, Java, Kotlin, Swift,
+  C#, Ruby (next phase).
 - ✅ **`columns` → `cols` rename** in the Table API field name —
   landed 2026-05-08 (Phase 7.46). V core `TableData.cols` /
   `DataTable.cols`; spec [`table_api.md`](spec/table_api.md) updated
