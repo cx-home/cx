@@ -180,11 +180,17 @@ choice is recorded and reviewed.
   position, two-pass parse with duplicate-ID and unresolved-
   reference diagnostics, `Document.resolve_id()` and
   `elements_by_id()` public API, CXPath `[#id]` predicate, 9-case
-  [`conformance/identity.txt`](conformance/identity.txt). Pending:
-  XML round-trip (`xs:ID` / `xs:IDREF`), canonical-form ID renaming,
-  include-time ID merging across `[?cx include=...]`, `[ref @id]`
-  body-position node form, C ABI surface (`cx_resolve_ref` /
-  `cx_node_id` / `cx_id_lookup`), 9-binding rollout, MIGRATION entry.
+  [`conformance/identity.txt`](conformance/identity.txt). 9-binding
+  rollout shipped 2026-05-08 (Phase 7.62): `Element.id` + `Attr.is_ref`
+  (language-idiomatic spelling), `Document.resolve_id()` /
+  `Document.elements_by_id()` accessors, CX-text emitter for `#id` and
+  `name=@id`, ast_bin wire format v2 carries the new fields verbatim
+  across V↔binding round-trip, 9-case identity test per binding (all
+  9 bindings). Pending: XML round-trip (`xs:ID` / `xs:IDREF`),
+  canonical-form ID renaming, include-time ID merging across
+  `[?cx include=...]`, `[ref @id]` body-position node form, C ABI
+  surface (`cx_resolve_ref` / `cx_node_id` / `cx_id_lookup`),
+  MIGRATION entry.
 - **Include resolution semantics formally specified** — what a
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.
