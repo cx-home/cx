@@ -17,14 +17,14 @@ SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacO
 DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
-.PHONY: all build build-vcx build-lib build-lib-arrow build-rust \
+.PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
         build-ruby build-go build-go-arrow build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
         build-lsp build-vscode build-editors \
         publish publish-push \
         publish-v publish-v-push \
         release release-v release-all \
         dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
-        test test-python test-python-arrow test-vcx test-rust \
+        test test-python test-python-arrow test-vcx test-rust test-rust-arrow \
         test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
         test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
         conform conform-vcx conform-md bench bench-python \
@@ -52,6 +52,12 @@ build-lib-arrow: build-vcx
 
 build-rust: build-vcx
 	cargo build --manifest-path lang/rust/cxlib/Cargo.toml --release
+
+# Arrow C-Data Rust binding (Phase 7.74c-cont-bindings-multi-rust,
+# spec/abi.md §2.11). Gated behind the `arrow` Cargo feature so the
+# default `build-rust` does not require the `arrow` crate.
+build-rust-arrow: build-vcx build-lib-arrow
+	cargo build --features arrow --manifest-path lang/rust/cxlib/Cargo.toml --release
 
 build-ruby: build-vcx
 	@echo "Ruby binding: no compile step needed"
@@ -159,6 +165,14 @@ test-python-stream: build-vcx
 
 test-rust: build-rust
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
+
+# Apache Arrow C-Data interop tests for the Rust binding
+# (Phase 7.74c-cont-bindings-multi-rust). Mirrors test-go-arrow:
+# builds libcx_arrow then exercises the 9-type round-trip surface
+# under `--features arrow`. Pulls in the `arrow` crate (v53.x) the
+# first time it runs.
+test-rust-arrow: build-vcx build-lib-arrow
+	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
 
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
