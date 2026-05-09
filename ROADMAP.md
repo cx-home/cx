@@ -195,10 +195,14 @@ choice is recorded and reviewed.
   `cx_text_canonical` rewrites declarations to `id-N` in document
   order and `is_ref` values to track per ADR 0003 D7; lossless
   `cx fmt` preserves source spellings. 3 new conformance fixtures
-  (id-015..017). Pending: include-time ID merging across
-  `[?cx include=...]`, `[ref @id]` body-position node form, C ABI
-  surface (`cx_resolve_ref` / `cx_node_id` / `cx_id_lookup`),
-  MIGRATION entry.
+  (id-015..017). C ABI surface shipped 2026-05-08 (Phase 7.65):
+  `cx_id_lookup` / `cx_resolve_ref` / `cx_node_id` at capability
+  bit 20 (cx_features now `0xd3ffbf`); thin per-binding wrappers
+  across all 9 bindings with 3–4-case test per binding;
+  `Element.id` and `Attribute.isRef` now serialized in AST-JSON
+  output so the symbols return useful payloads. Pending: include-time
+  ID merging across `[?cx include=...]`, `[ref @id]` body-position
+  node form, MIGRATION entry.
 - **Include resolution semantics formally specified** — what a
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.

@@ -127,6 +127,7 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_data_bin_one_shots.py
 	$(PYTHON) lang/python/test_namespaces.py
 	$(PYTHON) lang/python/test_identity.py
+	$(PYTHON) lang/python/test_id_abi.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
@@ -157,6 +158,7 @@ test-ruby: build-vcx
 	$(RUBY) lang/ruby/cxlib/test/test_data_bin_one_shots.rb
 	$(RUBY) lang/ruby/test_namespaces.rb
 	$(RUBY) lang/ruby/test_identity.rb
+	$(RUBY) lang/ruby/test_id_abi.rb
 
 test-ruby-api: build-vcx
 	$(RUBY) lang/ruby/test_api.rb
