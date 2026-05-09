@@ -17,14 +17,14 @@ SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacO
 DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
-.PHONY: all build build-vcx build-lib build-rust \
+.PHONY: all build build-vcx build-lib build-lib-arrow build-rust \
         build-ruby build-go build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
         build-lsp build-vscode build-editors \
         publish publish-push \
         publish-v publish-v-push \
         release release-v release-all \
         dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
-        test test-python test-vcx test-rust \
+        test test-python test-python-arrow test-vcx test-rust \
         test-ruby test-ruby-api test-go test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
         test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
         conform conform-vcx conform-md bench bench-python \
@@ -41,6 +41,14 @@ build: build-vcx build-rust build-ruby build-go build-typescript build-java buil
 
 build-vcx:
 	$(MAKE) -C vcx build
+
+# Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
+# 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
+# this library independently. Built on demand by test-python-arrow
+# / the per-binding Arrow tests; not pulled into the default `build`
+# target since pyarrow / arrow ecosystems are opt-in per binding.
+build-lib-arrow: build-vcx
+	$(MAKE) -C vcx lib-arrow
 
 build-rust: build-vcx
 	cargo build --manifest-path lang/rust/cxlib/Cargo.toml --release
@@ -129,6 +137,13 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_identity.py
 	$(PYTHON) lang/python/test_id_abi.py
 	$(PYTHON) lang/python/test_delimited.py
+
+# Apache Arrow C-Data interop tests (Phase 7.74c-cont-bindings).
+# Skip-cleanly if pyarrow is not installed; otherwise builds libcx_arrow
+# and exercises the full 9-type round-trip surface. Install the optional
+# dep with `pip install pyarrow` (or `pip install lang/python[arrow]`).
+test-python-arrow: build-vcx build-lib-arrow
+	$(PYTHON) lang/python/test_arrow.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
