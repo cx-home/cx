@@ -171,7 +171,7 @@ choice is recorded and reviewed.
 
 ### Reference and composition primitives
 
-- 🚧 **ID / IDREF cross-document references.** Anchors/aliases
+- ✅ **ID / IDREF cross-document references.** Anchors/aliases
   solve intra-document merge; ID/IDREF is the cross-document
   mechanism. Design ADR
   [`spec/decisions/0003-id-idref.md`](spec/decisions/0003-id-idref.md);
@@ -200,9 +200,18 @@ choice is recorded and reviewed.
   bit 20 (cx_features now `0xd3ffbf`); thin per-binding wrappers
   across all 9 bindings with 3–4-case test per binding;
   `Element.id` and `Attribute.isRef` now serialized in AST-JSON
-  output so the symbols return useful payloads. Pending: include-time
-  ID merging across `[?cx include=...]`, `[ref @id]` body-position
-  node form, MIGRATION entry.
+  output so the symbols return useful payloads. Body-position
+  `[ref @id]` form (D1) and MIGRATION entry shipped 2026-05-08
+  (Phase 7.66): `Element.body_ref ?string` + parser + emitter +
+  validator participation; v0 limitation (V-core only — ast_bin
+  wire format does not yet carry it) documented in
+  [`spec/identity.md §1.2a`](spec/identity.md). 3 new fixtures
+  (id-018..020). [`MIGRATION.md §2.6`](MIGRATION.md) covers all of
+  Phases 7.61–7.66. Include-time ID merging (D3) is contracted in
+  [`spec/identity.md §2.1`](spec/identity.md) but pending its
+  prerequisite — include resolution itself isn't yet implemented;
+  tracked separately as the §4 "Include resolution formal spec"
+  row.
 - **Include resolution semantics formally specified** — what a
   cycle does, what relative paths resolve against, what happens
   to comments and PIs in the included document.
