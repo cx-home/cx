@@ -216,9 +216,21 @@ choice is recorded and reviewed.
   prerequisite — include resolution itself isn't yet implemented;
   tracked separately as the §4 "Include resolution formal spec"
   row.
-- **Include resolution semantics formally specified** — what a
-  cycle does, what relative paths resolve against, what happens
-  to comments and PIs in the included document.
+- **Include resolution semantics formally specified.** Design
+  ADR [`0014`](spec/decisions/0014-include-resolution.md) and
+  user-facing spec [`spec/include.md`](spec/include.md) committed
+  2026-05-08: caller-supplied include root, current-file-relative
+  path resolution, URL-scheme + traversal-escape rejection,
+  include-stack cycle detection, default `max_include_depth=8`,
+  element-level splice (XMLDecl/DOCTYPE/other CXDirectives not
+  inlined), parse → include → namespace → ID pass ordering, error
+  chain reporting. Implementation lands six new C ABI entry points
+  (`cx_<fmt>_to_data_bin_with_include_root` × 6), a
+  depth-options variant, a new capability bit, a
+  `cx --include-root=<dir>` CLI flag, and per-binding
+  `include_root` parameters. Closes the include-time ID-merging
+  pre-requisite that ADR 0003 D3 contracted (see
+  [`spec/identity.md §2.1`](spec/identity.md)).
 - ✅ **Namespaces (XML xmlns equivalent).** Closed 2026-05-08
   across Phases 7.57 (V core), 7.58 (9-binding accessors), 7.59
   (CXPath ns-aware + canonical-form D6 + MIGRATION). Spec
