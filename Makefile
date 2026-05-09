@@ -18,14 +18,14 @@ DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/do
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust \
-        build-ruby build-go build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
+        build-ruby build-go build-go-arrow build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
         build-lsp build-vscode build-editors \
         publish publish-push \
         publish-v publish-v-push \
         release release-v release-all \
         dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
         test test-python test-python-arrow test-vcx test-rust \
-        test-ruby test-ruby-api test-go test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
+        test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
         test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
         conform conform-vcx conform-md bench bench-python \
         examples example-python example-v example-go example-rust example-typescript \
@@ -58,6 +58,12 @@ build-ruby: build-vcx
 
 build-go: build-vcx
 	cd lang/go/cxlib && go build ./...
+
+# Arrow C-Data Go binding (Phase 7.74c-cont-bindings-multi-go,
+# spec/abi.md §2.11). Gated behind `-tags arrow` so the default
+# `build-go` does not require the apache/arrow/go module.
+build-go-arrow: build-vcx build-lib-arrow
+	cd lang/go/cxlib && go build -tags arrow ./...
 
 build-typescript: build-vcx
 	cd lang/typescript/cxlib && npm install --silent && npm run build
@@ -186,6 +192,14 @@ test-go: build-go
 
 test-go-api: build-go
 	cd lang/go/cxlib && go test ./...
+
+# Apache Arrow C-Data interop tests for the Go binding
+# (Phase 7.74c-cont-bindings-multi-go). Mirrors test-python-arrow:
+# builds libcx_arrow then exercises the 9-type round-trip surface
+# under `-tags arrow`. Pulls in github.com/apache/arrow/go/v18 the
+# first time it runs.
+test-go-arrow: build-vcx build-lib-arrow
+	cd lang/go/cxlib && go test -tags arrow ./...
 
 test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
