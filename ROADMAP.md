@@ -186,8 +186,12 @@ choice is recorded and reviewed.
   `Document.elements_by_id()` accessors, CX-text emitter for `#id` and
   `name=@id`, ast_bin wire format v2 carries the new fields verbatim
   across V↔binding round-trip, 9-case identity test per binding (all
-  9 bindings). Pending: XML round-trip (`xs:ID` / `xs:IDREF`),
-  canonical-form ID renaming, include-time ID merging across
+  9 bindings). XML round-trip shipped 2026-05-08 (Phase 7.63): CX
+  `#id` ↔ XML `xml:id` attribute (XML built-in URI ns); `is_ref` attrs
+  emit as plain `name="<id>"` on XML output; XML→CX import marks
+  matching values as `is_ref`. 5 new conformance cases at
+  [`conformance/identity.txt`](conformance/identity.txt) (id-010..014).
+  Pending: canonical-form ID renaming, include-time ID merging across
   `[?cx include=...]`, `[ref @id]` body-position node form, C ABI
   surface (`cx_resolve_ref` / `cx_node_id` / `cx_id_lookup`),
   MIGRATION entry.
