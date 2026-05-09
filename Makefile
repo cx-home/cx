@@ -128,6 +128,7 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_namespaces.py
 	$(PYTHON) lang/python/test_identity.py
 	$(PYTHON) lang/python/test_id_abi.py
+	$(PYTHON) lang/python/test_delimited.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
@@ -159,6 +160,7 @@ test-ruby: build-vcx
 	$(RUBY) lang/ruby/test_namespaces.rb
 	$(RUBY) lang/ruby/test_identity.rb
 	$(RUBY) lang/ruby/test_id_abi.rb
+	$(RUBY) lang/ruby/test_delimited.rb
 
 test-ruby-api: build-vcx
 	$(RUBY) lang/ruby/test_api.rb
@@ -174,6 +176,7 @@ test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
 	npx tsx lang/typescript/api_test.ts
 	npx tsx lang/typescript/data_bin_one_shots_test.ts
+	npx tsx lang/typescript/delimited_test.ts
 	npx tsx lang/typescript/namespaces_test.ts
 	npx tsx lang/typescript/identity_test.ts
 

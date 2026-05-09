@@ -65,10 +65,16 @@ review. Items here are in flight or imminent on the active branch.
   `cx_{to,from}_{csv,tsv,psv}` aliases plus data_bin one-shots
   `cx_{csv,tsv,psv}_to_data_bin` / `cx_data_bin_to_{csv,tsv,psv}`
   at capability bit 6 (cx_features now `0xd3ffff`); 14-case
-  [conformance/delimited.txt](conformance/delimited.txt). Pending:
-  9-binding wrappers exposing `to_csv` / `from_csv` / `to_tsv` /
-  etc. across Python, Go, Rust, TypeScript, Java, Kotlin, Swift,
-  C#, Ruby (next phase).
+  [conformance/delimited.txt](conformance/delimited.txt). 9-binding
+  rollout shipped 2026-05-08 (Phase 7.68): each of Python, Go, Rust,
+  TypeScript, Java, Kotlin, Swift, C#, Ruby exposes the 8 text-text
+  entry points (`to_csv` / `from_csv` / `to_tsv` / `from_tsv` /
+  `to_psv` / `from_psv` / `to_delimited(src, delim)` /
+  `from_delimited(src, delim)` in language-idiomatic spelling) plus
+  the 6 binary one-shots (`csv_to_data_bin` / `tsv_to_data_bin` /
+  `psv_to_data_bin` / `data_bin_to_csv` / `data_bin_to_tsv` /
+  `data_bin_to_psv`); 12-case delimited test per binding mirroring
+  `vcx/tests/v34_delimited_test.v` byte-exact.
 - ✅ **`columns` → `cols` rename** in the Table API field name —
   landed 2026-05-08 (Phase 7.46). V core `TableData.cols` /
   `DataTable.cols`; spec [`table_api.md`](spec/table_api.md) updated
