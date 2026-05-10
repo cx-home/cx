@@ -18,14 +18,14 @@ DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/do
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
-        build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-csharp build-csharp-api build-csharp-arrow build-swift \
+        build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
         build-lsp build-vscode build-editors \
         publish publish-push \
         publish-v publish-v-push \
         release release-v release-all \
         dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
         test test-python test-python-arrow test-vcx test-rust test-rust-arrow \
-        test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-java-arrow test-kotlin test-csharp test-csharp-api test-csharp-arrow test-swift \
+        test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-java-arrow test-kotlin test-kotlin-arrow test-csharp test-csharp-api test-csharp-arrow test-swift \
         test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
         conform conform-vcx conform-md bench bench-python \
         examples example-python example-v example-go example-rust example-typescript \
@@ -86,6 +86,14 @@ build-java-arrow: build-vcx build-lib-arrow
 
 build-kotlin: build-vcx
 	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle assemble -q
+
+# Apache Arrow C-Data interop binding — gated behind libcx_arrow + the
+# `arrow` Gradle source-set (pulls arrow-c-data / arrow-vector /
+# arrow-memory-netty). Mirrors test-go-arrow / test-rust-arrow /
+# test-csharp-arrow / test-java-arrow
+# (Phase 7.74c-cont-bindings-multi-kotlin).
+build-kotlin-arrow: build-vcx build-lib-arrow
+	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle compileArrowKotlin -q
 
 build-csharp: build-vcx
 	$(DOTNET) build lang/csharp/cxlib/cxlib.csproj -c Release --nologo -v:m
@@ -251,6 +259,13 @@ test-java-arrow: build-vcx build-lib-arrow
 
 test-kotlin: build-kotlin
 	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle test -q
+
+# Apache Arrow C-Data interop tests for the Kotlin binding
+# (Phase 7.74c-cont-bindings-multi-kotlin). Mirrors test-java-arrow:
+# builds libcx_arrow then exercises the round-trip surface for the
+# 10 v0.6.0 supported column types under the Apache Arrow Java JAR.
+test-kotlin-arrow: build-vcx build-lib-arrow
+	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle arrowTest -q
 
 test-csharp: build-csharp build-csharp-api
 	$(DOTNET) run --project lang/csharp/conformance/conformance.csproj -c Release
