@@ -188,36 +188,41 @@ test-python-stream: build-vcx
 	$(PYTHON) lang/python/test_stream.py
 
 # C-level ABI conformance test (Phase 7.74c-abi-c-test). Compiles a
-# small C harness against libcx + libcx_arrow under
-# `-fsanitize=address,undefined`, then runs it. Catches the boundary-
-# surface bugs binding rollouts have surfaced (size-header garbage,
-# double-free on Export error, NULL-input rejection) at the source
-# instead of via N binding rollouts. See spec/abi.md §1.5 / §2.10 /
-# §2.11 for the surface; tests/abi/c_abi_test.c for what is exercised.
+# small C harness against libcx + libcx_arrow under UBSan, then runs
+# it. Catches the boundary-surface bugs binding rollouts have surfaced
+# (size-header garbage, double-free on Export error, NULL-input
+# rejection) at the source instead of via N binding rollouts. See
+# spec/abi.md §1.5 / §2.10 / §2.11 for the surface;
+# tests/abi/c_abi_test.c for what is exercised.
 #
-# macOS note: MallocNanoZone=0 is required on macOS 14+ (and especially
-# macOS 26 / Tahoe) to avoid an ASan-init deadlock against Apple's
-# nano-malloc zone. Without it, the asan runtime spins forever in
-# StaticSpinMutex::LockSlow during InitializeShadowMemory because
-# malloc reenters the asan interceptor before init completes.
+# Sanitizer choice: UBSan only by default. Apple clang's AddressSanitizer
+# runtime on macOS 26 (Tahoe) deadlocks during AsanInitInternal —
+# malloc re-enters the asan interceptor before init completes, the
+# spin lock yields forever in StaticSpinMutex::LockSlow. The bug is
+# in __sanitizer_mz_malloc → AsanInitFromRtl, present whether or not
+# MallocNanoZone is disabled. Until Apple ships a fix or we adopt
+# Homebrew LLVM as a build dep, ASan stays disabled here. UBSan
+# alone reliably catches the integer-overflow / null-deref / out-of-
+# bounds-load classes the boundary surface is most likely to expose.
+# To opt back into ASan when running on Linux or with Homebrew clang,
+# set ABI_C_TEST_SAN=address,undefined when invoking make.
 ABI_C_TEST_BIN := vcx/target/c_abi_test
+ABI_C_TEST_SAN ?= undefined
 ifeq ($(UNAME_S),Darwin)
   ABI_LIB_PATH_VAR := DYLD_LIBRARY_PATH
   ABI_ARROW_LIB    := vcx/target/libcx_arrow.dylib
-  ABI_RUN_PREFIX   := MallocNanoZone=0
 else
   ABI_LIB_PATH_VAR := LD_LIBRARY_PATH
   ABI_ARROW_LIB    := vcx/target/libcx_arrow.so
-  ABI_RUN_PREFIX   :=
 endif
 abi-c-test: build-vcx build-lib-arrow
 	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
-	  -fsanitize=address,undefined \
+	  -fsanitize=$(ABI_C_TEST_SAN) \
 	  -I include -I vcx/arrow \
 	  tests/abi/c_abi_test.c \
 	  -L vcx/target -lcx -ldl \
 	  -o $(ABI_C_TEST_BIN)
-	$(ABI_RUN_PREFIX) $(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
+	$(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
 test-rust: build-rust
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
