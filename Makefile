@@ -9,6 +9,8 @@ VCX_SO     := vcx/target/$(LIB_NAME).so
 DIST_DIR   := dist
 PREFIX     ?= /usr/local
 
+UNAME_S := $(shell uname -s)
+
 # ── Python / Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
 PYTHON      ?= python3
 RUBY        := /opt/homebrew/opt/ruby/bin/ruby
@@ -27,6 +29,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
         test test-python test-python-arrow test-vcx test-rust test-rust-arrow \
         test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-java-arrow test-kotlin test-kotlin-arrow test-csharp test-csharp-api test-csharp-arrow test-swift \
         test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
+        abi-c-test \
         conform conform-vcx conform-md bench bench-python \
         examples example-python example-v example-go example-rust example-typescript \
         example-java example-kotlin example-csharp example-ruby example-swift \
@@ -156,7 +159,7 @@ promote-cli: verify-cli install-cli
 
 # ── Test ───────────────────────────────────────────────────────────────────────
 
-test: test-python test-vcx test-v test-rust test-ruby test-go test-typescript test-java test-kotlin test-csharp test-swift
+test: abi-c-test test-python test-vcx test-v test-rust test-ruby test-go test-typescript test-java test-kotlin test-csharp test-swift
 
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
@@ -183,6 +186,30 @@ test-python-api: build-vcx
 
 test-python-stream: build-vcx
 	$(PYTHON) lang/python/test_stream.py
+
+# C-level ABI conformance test (Phase 7.74c-abi-c-test). Compiles a
+# small C harness against libcx + libcx_arrow under
+# `-fsanitize=address,undefined`, then runs it. Catches the boundary-
+# surface bugs binding rollouts have surfaced (size-header garbage,
+# double-free on Export error, NULL-input rejection) at the source
+# instead of via N binding rollouts. See spec/abi.md §1.5 / §2.10 /
+# §2.11 for the surface; tests/abi/c_abi_test.c for what is exercised.
+ABI_C_TEST_BIN := vcx/target/c_abi_test
+ifeq ($(UNAME_S),Darwin)
+  ABI_LIB_PATH_VAR := DYLD_LIBRARY_PATH
+  ABI_ARROW_LIB    := vcx/target/libcx_arrow.dylib
+else
+  ABI_LIB_PATH_VAR := LD_LIBRARY_PATH
+  ABI_ARROW_LIB    := vcx/target/libcx_arrow.so
+endif
+abi-c-test: build-vcx build-lib-arrow
+	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
+	  -fsanitize=address,undefined \
+	  -I include -I vcx/arrow \
+	  tests/abi/c_abi_test.c \
+	  -L vcx/target -lcx -ldl \
+	  -o $(ABI_C_TEST_BIN)
+	$(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
 test-rust: build-rust
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
