@@ -18,14 +18,14 @@ DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/do
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
-        build-ruby build-go build-go-arrow build-typescript build-java build-kotlin build-csharp build-csharp-api build-swift \
+        build-ruby build-go build-go-arrow build-typescript build-java build-kotlin build-csharp build-csharp-api build-csharp-arrow build-swift \
         build-lsp build-vscode build-editors \
         publish publish-push \
         publish-v publish-v-push \
         release release-v release-all \
         dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
         test test-python test-python-arrow test-vcx test-rust test-rust-arrow \
-        test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-kotlin test-csharp test-csharp-api test-swift \
+        test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-kotlin test-csharp test-csharp-api test-csharp-arrow test-swift \
         test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
         conform conform-vcx conform-md bench bench-python \
         examples example-python example-v example-go example-rust example-typescript \
@@ -85,6 +85,12 @@ build-csharp: build-vcx
 
 build-csharp-api: build-csharp
 	$(DOTNET) build lang/csharp/api_test/api_test.csproj -c Release --nologo -v:m
+
+# Apache Arrow C-Data interop binding — gated behind libcx_arrow + the
+# Apache.Arrow NuGet package; mirrors test-go-arrow / test-rust-arrow
+# (Phase 7.74c-cont-bindings-multi-csharp).
+build-csharp-arrow: build-vcx build-lib-arrow
+	$(DOTNET) build lang/csharp/cxlib_arrow/cxlib_arrow.csproj -c Release --nologo -v:m
 
 build-swift: build-vcx
 	$(SWIFT_FLAGS) $(SWIFT) build --package-path lang/swift/cxlib -c release
@@ -238,6 +244,13 @@ test-csharp: build-csharp build-csharp-api
 
 test-csharp-api: build-csharp-api
 	$(DOTNET) run --project lang/csharp/api_test/api_test.csproj -c Release
+
+# Apache Arrow C-Data interop tests for the C# binding
+# (Phase 7.74c-cont-bindings-multi-csharp). Mirrors test-go-arrow:
+# builds libcx_arrow then exercises the round-trip surface for the
+# 10 v0.6.0 supported column types under the Apache.Arrow NuGet pkg.
+test-csharp-arrow: build-vcx build-lib-arrow build-csharp-arrow
+	$(DOTNET) run --project lang/csharp/cxlib_arrow_test/cxlib_arrow_test.csproj -c Release
 
 test-swift: build-swift
 	$(SWIFT_FLAGS) $(SWIFT) test --package-path lang/swift/cxlib
