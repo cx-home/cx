@@ -151,16 +151,58 @@ options: lifted-from-XSD, JSON-Schema-compatible, hand-rolled
 minimal. The ADR is the gate; implementation follows once the design
 choice is recorded and reviewed.
 
-### Conversion shape control
+### CXL 1.0 — CX Language evaluator (release blocker, replaces shape engine)
 
-- **CX → JSON output shape directives** so a CX document can specify
-  how it serializes to JSON (e.g., to match an external API
-  contract). Likely shape: a `[?cx json-shape=...]` directive plus a
-  `cx --json --shape <spec>` CLI flag. The exact mechanism needs a
-  design doc in `spec/decisions/` before implementation.
-- **CX → YAML / TOML / XML shape control** on the same mechanism.
-- **Reverse direction** — shape-aware import (JSON → CX with a
-  declared shape rather than the deterministic default mapping).
+- **CXL 1.0 evaluator** at V core (`vcx/cx/cxl.v`) per
+  [ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)
+  and `spec/cxl.md`. Pulled into v0.6.0 (2026-05-10 amendment;
+  was v0.7.0) when ADR 0010 was superseded — CXL is now the only
+  output-shape mechanism. Seven EvalDirectives
+  (`[?if]`, `[?for]`, `[?with]`, `[?cond]`, `[?include]`, `[?def]`,
+  `[?use]`) plus `[?=EXPR]` interpolation, frozen filter set,
+  target-aware auto-escape, `cx eval` / `cx render` subcommands.
+- **Grammar v3.5 ast_bin wire format (v5 bump)** carrying
+  `InterpolationNode`, `EvalDirectiveNode`, and `Attribute.body`
+  tail — required for parsed CXL programs to round-trip across the
+  C ABI. Tier 1 (V/Python/Go) gated; Tier 2/3 decoder rollout
+  required in the same release.
+- **C ABI surface** at capability bit 28 — `cx_eval_cxl`,
+  `cx_eval_cxl_with_len`, `cx_eval_cxl_streaming` go from W012
+  stubs to fully implemented. Per `spec/abi.md §2.16`.
+- **Conformance fixtures** at `conformance/cxl.txt` per
+  ADR 0016 D11 — per-directive, composition, whitespace, escaping,
+  error-path, schema-validated CXL.
+- **Per-binding native evaluators** (9 bindings × ~2k LOC each)
+  per ADR 0016 D9. V is the reference; per-binding evaluators must
+  produce byte-identical output for every conformance fixture.
+- **`cx eval` / `cx render` CLI subcommands**.
+- **Worked examples** at `examples/cxl/` covering the
+  pattern set that ADR 0010 was originally designed for (rename,
+  reshape, lift, drop, alphabetize) plus CXL-native cases (HTML
+  card render, Markdown report, CX-to-CX transform). Demonstrates
+  that the ADR 0010 use cases are served without a second engine.
+
+Total: ~7 weeks focused work (ADR 0016 §Implementation notes),
+parallelizable across the Tier-1 binding work. Replaces the ~2–3
+month shape engine scope.
+
+### Conversion shape control — superseded by CXL (2026-05-10)
+
+ADR 0010 (declarative `.cxsh` shape engine) was originally targeted
+here. As of 2026-05-10 it is **superseded by [ADR 0016 — CXL](spec/decisions/0016-templates-queries-cx-expression-family.md)**;
+CXL 1.0 covers the entire output-shape use case (CX → JSON / YAML /
+TOML / XML / HTML / CSV / Markdown / arbitrary text) via a single
+expression-language evaluator. CXL 1.0 lands in v0.6.0 (pulled
+forward from v0.7.0) per the ADR 0016 §Amendment 2026-05-10.
+
+The original ADR 0010 use cases (rename, reshape, lift, drop,
+alphabetize) are served by canonical CXL idioms in `spec/cxl.md §8`
+(worked examples) and `examples/cxl/`. Computation (filter, group,
+aggregate, sort) — which ADR 0010 could not do — is served by CXL
+3.1's FLWOR + arrow operator at v0.9.0+.
+
+CXL 1.0 itself is now a v0.6.0 scope item; see the "CXL 1.0
+evaluator" entry under "Now — v0.6.0 scope" below.
 
 ### Data-bin one-shot loaders/dumpers
 
@@ -424,22 +466,9 @@ Capabilities that are real, planned, but not blocking v0.6.0.
 - **Annual binding audit (2027 edition)** — same shape as the 2026-05
   audit, applied to whatever evolved since. Cadence item, not a
   release blocker.
-- **CXL — the CX Language** ([ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)).
-  CXL is a CX-native expression language for rendering, querying, and
-  transformation, designed for **eventual feature equivalence with
-  XQuery 4.0**. CXL spec versions track XQuery's version numbers at
-  the points where features land. CX release v0.6.0 ships the prep
-  work (grammar v3.5: Interpolation `[?=EXPR]` + EvalDirective
-  `[?Name ...]` + BracketBody AttValue; ABI stubs; capability bit 28;
-  reserved EvalNames; sequence-flat data model). CXL roadmap:
-  - **CXL 1.0 — CX release v0.7.0.** Template-oriented subset.
-    Seven EvalDirectives (`[?if]`, `[?for]`, `[?with]`, `[?cond]`,
-    `[?include]`, `[?def]`, `[?use]`) plus `[?=EXPR]` interpolation,
-    frozen filter set, target-aware auto-escape, `cx eval` /
-    `cx render` subcommands. Renders CX to HTML / Markdown / CSV /
-    custom text formats; CX-to-CX transformation with computation.
-    Composes with ADR 0010 output-shape control without overlap.
-    Tier 1 (V/Python/Go) at ship; Tier 2 bundled at release time.
+- **CXL 3.1 and 4.0 — post-v0.6.0** ([ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)).
+  CXL 1.0 ships in v0.6.0 (see "Next — v0.6.0" above); CXL 3.1 and
+  4.0 are post-v0.6.0:
   - **CX release v0.8.0 — CXPath axes.** Adds parent / ancestor /
     following-sibling / preceding-sibling (deferred in CXPath v1).
     CXL picks up upward navigation automatically with no CXL version
