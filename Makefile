@@ -2,6 +2,7 @@ CONFORMANCE_CORE    := conformance/core.txt
 CONFORMANCE_EXT     := conformance/extended.txt
 CONFORMANCE_XML     := conformance/xml.txt
 CONFORMANCE_MD      := conformance/md.txt
+CONFORMANCE_CXL     := conformance/cxl.txt
 
 LIB_NAME   := libcx
 VCX_DYLIB  := vcx/target/$(LIB_NAME).dylib
