@@ -424,6 +424,39 @@ Capabilities that are real, planned, but not blocking v0.6.0.
 - **Annual binding audit (2027 edition)** — same shape as the 2026-05
   audit, applied to whatever evolved since. Cadence item, not a
   release blocker.
+- **CXL — the CX Language** ([ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)).
+  CXL is a CX-native expression language for rendering, querying, and
+  transformation, designed for **eventual feature equivalence with
+  XQuery 4.0**. CXL spec versions track XQuery's version numbers at
+  the points where features land. CX release v0.6.0 ships the prep
+  work (grammar v3.5: Interpolation `[?=EXPR]` + EvalDirective
+  `[?Name ...]` + BracketBody AttValue; ABI stubs; capability bit 28;
+  reserved EvalNames; sequence-flat data model). CXL roadmap:
+  - **CXL 1.0 — CX release v0.7.0.** Template-oriented subset.
+    Seven EvalDirectives (`[?if]`, `[?for]`, `[?with]`, `[?cond]`,
+    `[?include]`, `[?def]`, `[?use]`) plus `[?=EXPR]` interpolation,
+    frozen filter set, target-aware auto-escape, `cx eval` /
+    `cx render` subcommands. Renders CX to HTML / Markdown / CSV /
+    custom text formats; CX-to-CX transformation with computation.
+    Composes with ADR 0010 output-shape control without overlap.
+    Tier 1 (V/Python/Go) at ship; Tier 2 bundled at release time.
+  - **CX release v0.8.0 — CXPath axes.** Adds parent / ancestor /
+    following-sibling / preceding-sibling (deferred in CXPath v1).
+    CXL picks up upward navigation automatically with no CXL version
+    bump.
+  - **CXL 3.1 — CX release v0.9.0+.** XQuery 3.1 feature equivalence.
+    Adds `[?let]`, `[?fn]`, `[?match]`, `[?try]` EvalNames; full
+    FLWOR on `[?for]` with `:let` / `:where` / `:order` / `:return`
+    (XQuery 3.1-aligned `order` spelling); user-defined functions;
+    maps and arrays as CXDM value kinds; arrow operator `=>`; aggregate
+    filters; group-by; try/catch.
+  - **CXL 4.0 — CX release v1.x+ (target).** XQuery 4.0 feature
+    equivalence once XQuery 4.0 stabilizes — pipeline operator `|>`,
+    partial function application, member maps, enhanced types,
+    additional collection operations.
+
+  The data-code symbiosis XML+XQuery have, in CX flavor: CXL queries
+  CXL; programs inspect programs; one toolchain.
 
 ---
 
