@@ -126,17 +126,19 @@ closed five systemic shortcuts at the core. Formal security review and
 fuzz-testing infrastructure are still ahead, so pin a tested version
 and apply normal pre-1.0 caution before customer-facing use.
 
-After v0.6.0 the focus shifts to **CXL — the CX Language** — a
-CX-native expression language (`.cxl`) for rendering, querying, and
-transformation, designed for eventual feature equivalence with XQuery
-4.0. CXL programs share one parser and one data model with the format
-itself, in the spirit of XML+XQuery but with CX's typed scalars,
-indentation-significant syntax, and hashable canonical form. CXL 1.0
-(template-oriented subset) ships at CX release v0.7.0; CXL 3.1 (full
-FLWOR + maps + arrays, XQuery 3.1 equivalence) at v0.9.0+; CXL 4.0
-is the long-term target. The architectural commitment and the
-v0.6.0 prep work are in
-[ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md).
+**CXL — the CX Language** — a CX-native expression language (`.cxl`)
+for rendering, querying, and transformation, designed for eventual
+feature equivalence with XQuery 4.0. CXL programs share one parser
+and one data model with the format itself, in the spirit of XML+XQuery
+but with CX's typed scalars, indentation-significant syntax, and
+hashable canonical form. **CXL 1.0 (template-oriented subset, with
+labeled directive form per ADR 0017 §D23 and parameterized templates
+per ADR 0020) ships at CX release v0.6.0**; CXL 3.1 (full FLWOR + maps
++ arrays + XQuery 3.1 equivalence) at v0.9.0+; CXL 4.0 is the long-
+term target. The architectural commitment is in
+[ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md);
+the v0.6.0 surface-syntax rewrite is in
+[ADR 0017](spec/decisions/0017-collection-literals-and-cxl-refactor.md).
 
 ---
 
