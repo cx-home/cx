@@ -35,10 +35,11 @@ if [ ! -x "$CX" ]; then
 fi
 
 echo "── F1/F9: cx demo within 60s and deterministic ────────────"
+# Portable timer: macOS lacks GNU `timeout`. Measure wall-clock.
 run "T-60-1: cx demo completes in < 60s" \
-    "timeout 60 $CX demo > /tmp/cx-demo-out.txt"
+    "start=\$(date +%s); $CX demo > /tmp/cx-demo-out.txt; end=\$(date +%s); test \$((end - start)) -lt 60"
 run "T-60-3: cx demo output deterministic" \
-    "diff /tmp/cx-demo-out.txt /tmp/cx-demo-out.txt"
+    "diff /tmp/cx-demo-out.txt $ROOT/fixtures/expected_demo_output.txt"
 
 echo ""
 echo "── F4: documented examples run ───────────────────────────"

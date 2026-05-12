@@ -1,5 +1,5 @@
-[- vcore.cx — v3.4 grammar showcase.
-   Demonstrates each non-trivial v3.4 feature in isolation so the test
+[- vcore.cx — v0.6 grammar showcase.
+   Demonstrates each non-trivial v0.6 feature in isolation so the test
    suite, format roundtrips, and binding parity tests have one canonical
    sample to exercise per feature. ]
 
@@ -25,7 +25,7 @@
 [count_short :i 42]
 [ratio_short :f 3.14]
 
-[- 5. SIZED NUMERIC TYPES (v3.4): width is part of the type ]
+[- 5. SIZED NUMERIC TYPES: width is part of the type ]
 [port      :u16    8080]
 [tiny      :u8     255]
 [big       :i64    -9_223_372_036_854_775_000]
@@ -33,25 +33,25 @@
 [ratio32   :f32    3.14]
 [ratio64   :f64    3.141_592_653_589_793]
 
-[- 6. ARBITRARY-PRECISION NUMERIC (v3.4): :decimal, :bigint ]
+[- 6. ARBITRARY-PRECISION NUMERIC: :decimal, :bigint ]
 [balance   :decimal  1234.56]
 [user_id   :bigint   1234567890123456789]
 [microcoin :decimal  0.000_000_01]      # eight zeros after the decimal
 
-[- 7. NUMERIC UNDERSCORES (v3.4): cosmetic separators in numeric literals ]
+[- 7. NUMERIC UNDERSCORES: cosmetic separators in numeric literals ]
 [heap_max  :u64  16_777_216]            # 16 MiB
 [heap_min  :u64  4_096]
 [pi_dig    :f64  3.141_592_653_589_793]
 
-[- 8. LEADING-ZERO TOKENS STAY STRINGS (v3.4 BREAKING vs v3.3) ]
+[- 8. LEADING-ZERO TOKENS STAY STRINGS (leading-zero rule) ]
 [zip       02134]                       # "02134" — not int 2134
 [area      0420]                        # "0420" — not octal, not int
 [hex       0xCAFE]                      # int — 0x prefix is not "leading zero"
 
-[- 9. BOOLEAN SIGILS (v3.4): +flag → flag=true, -flag → flag=false ]
+[- 9. BOOLEAN SIGILS: +flag → flag=true, -flag → flag=false ]
 [server +tls -debug +metrics host=0.0.0.0]
 
-[- 10. TYPED TABLE (v3.4): row-major in CX text, column-major in binary ]
+[- 10. TYPED TABLE: row-major in CX text, column-major in binary ]
 [stocks :table[ticker:string price:f64 volume:u32]
   AAPL 192.45 38291092
   GOOG 142.30 18234567
@@ -84,7 +84,7 @@
   }
 #]]
 
-[- 14. LINE COMMENTS (v3.4): # to end-of-line, anywhere whitespace is allowed ]
+[- 14. LINE COMMENTS: # to end-of-line, anywhere whitespace is allowed ]
 [memory                                  # subsystem block
   [heap_initial :u32 1_048_576]          # 1 MiB starting heap
   [heap_max     :u32 16_777_216]         # 16 MiB cap
