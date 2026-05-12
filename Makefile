@@ -158,6 +158,44 @@ verify-cli: build-vcx
 promote-cli: verify-cli install-cli
 	@echo "promoted verified cx CLI to $(PREFIX)/bin/cx"
 
+# ── Experience gate (docs/EVALUATION_EXPERIENCE.md) ──────────────────────────
+
+.PHONY: smoke-eval verify-examples verify-readme-blocks verify-binding-quickstarts \
+        verify-doc-blocks verify-doc-links bump-version-check release-verify
+
+# F1, F2, F4, F5, F6, F7, F9 — the experience-gate hard-fail checks.
+smoke-eval: build-vcx
+	@tools/smoke-eval.sh
+
+# F4 — every example must compile and round-trip cleanly.
+verify-examples: build-vcx
+	@tools/verify-examples.sh
+
+# F6 — README's runnable code blocks must run.
+verify-readme-blocks: build-vcx
+	@tools/verify-readme-blocks.sh
+
+# F7 — per-binding quickstart blocks must exist and be well-formed.
+verify-binding-quickstarts:
+	@tools/verify-binding-quickstarts.sh
+
+# Documentation hygiene — every fenced ```cx block parses.
+verify-doc-blocks: build-vcx
+	@tools/verify-doc-blocks.sh docs/
+
+# Documentation hygiene — every relative markdown link resolves.
+verify-doc-links:
+	@tools/verify-doc-links.sh docs/
+	@tools/verify-doc-links.sh README.md
+
+# Pre-tag version-string consistency (defaults to 0.6.0).
+bump-version-check:
+	@tools/bump-version.sh --check $(or $(VERSION),0.6.0)
+
+# Full pre-tag check — runs everything in docs/RELEASE_PROCESS.md §0 + §0.5.
+release-verify:
+	@tools/release-verify.sh $(or $(VERSION),0.6.0)
+
 # ── Test ───────────────────────────────────────────────────────────────────────
 
 # Test fan-out — independent per-language targets, plus the C-ABI conformance
