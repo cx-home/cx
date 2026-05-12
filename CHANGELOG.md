@@ -14,6 +14,17 @@ version, library version).
 
 (empty)
 
+## [0.6.1] — in development
+
+### Added
+- **`cx_eval_cxl` wired into all 10 bindings** — Python, Go, Rust, Ruby, Java, Kotlin, C#, Swift gained idiomatic `eval_cxl` / `EvalCXL` wrappers (TypeScript and V already had it). CXL evaluation is now reachable from every binding.
+- **CXL quickstart block** in all 9 per-binding READMEs — same fleet/svc example across languages.
+- **`cx eval -e <expr> -d <data>`** — inline expression and inline data flags for one-liner CXL evaluation without files.
+
+### Fixed
+- **Parser preserves `#` line comments + block comments with commas/apostrophes** — array-literal misrouting at `[-` / `[!` / `[|` / `[#` brackets fixed; line-comment text now round-trips through `cx fmt`.
+- **`tools/release-verify.sh`** — restored doc-presence checks for `RELEASE_PROCESS.md` / `EVALUATION_EXPERIENCE.md`, and fixed over-escaped `\.claude/`/`\.cache/` grep exclusions in working-tree-clean check.
+
 ## [0.6.0] — 2026-05 (planned)
 
 The **API/format-stability boundary**. From 0.6.0 onward through
