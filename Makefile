@@ -259,6 +259,7 @@ test-v: build-vcx
 	v run lang/v/conformance.v
 	v test lang/v/tests/api_test.v
 	v test lang/v/tests/stream_test.v
+	v test lang/v/tests/table_test.v
 
 test-vcx-api: build-vcx
 	v test lang/v/tests/api_test.v
