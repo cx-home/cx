@@ -96,6 +96,10 @@ public static partial class CxLib
     [DllImport(Lib, EntryPoint = "cx_to_toml")] private static extern IntPtr NativeToToml(string i, out IntPtr e);
     [DllImport(Lib, EntryPoint = "cx_to_md")]   private static extern IntPtr NativeToMd  (string i, out IntPtr e);
 
+    // ── CXL evaluator (capability bit 28; spec/cxl.md) ────────────────────────
+    [DllImport(Lib, EntryPoint = "cx_eval_cxl")]
+    private static extern IntPtr NativeEvalCxl(string input, string program, string outputTarget, out IntPtr e);
+
     // ── XML input ─────────────────────────────────────────────────────────────
     [DllImport(Lib, EntryPoint = "cx_xml_to_cx")]   private static extern IntPtr NativeXmlToCx  (string i, out IntPtr e);
     [DllImport(Lib, EntryPoint = "cx_xml_to_xml")]  private static extern IntPtr NativeXmlToXml (string i, out IntPtr e);
@@ -673,6 +677,18 @@ public static partial class CxLib
     public static string ToYaml(string i) { var r = NativeToYaml(i, out var e); return Unwrap(r, e); }
     public static string ToToml(string i) { var r = NativeToToml(i, out var e); return Unwrap(r, e); }
     public static string ToMd  (string i) { var r = NativeToMd  (i, out var e); return Unwrap(r, e); }
+
+    /// <summary>
+    /// Evaluate a CXL program against a CX context document.
+    /// <paramref name="outputTarget"/> may be "" (honour the program's
+    /// [?cx output-target=…] directive, default "text") or one of
+    /// "text" / "cx" / "html" at CXL 1.0 (v0.6.0).
+    /// </summary>
+    public static string EvalCxl(string input, string program, string outputTarget = "")
+    {
+        var r = NativeEvalCxl(input, program, outputTarget ?? "", out var e);
+        return Unwrap(r, e);
+    }
 
     // XML input
     public static string XmlToCx  (string i) { var r = NativeXmlToCx  (i, out var e); return Unwrap(r, e); }

@@ -34,6 +34,9 @@ public class CxLib {
         Pointer cx_to_toml (String input, PointerByReference errOut);
         Pointer cx_to_md   (String input, PointerByReference errOut);
 
+        // CXL evaluator (capability bit 28; spec/cxl.md)
+        Pointer cx_eval_cxl(String input, String program, String outputTarget, PointerByReference errOut);
+
         // XML input
         Pointer cx_xml_to_cx   (String input, PointerByReference errOut);
         Pointer cx_xml_to_xml  (String input, PointerByReference errOut);
@@ -349,6 +352,26 @@ public class CxLib {
     public static String toYaml(String input) { return callFn(LIB::cx_to_yaml, input); }
     public static String toToml(String input) { return callFn(LIB::cx_to_toml, input); }
     public static String toMd  (String input) { return callFn(LIB::cx_to_md,   input); }
+
+    /**
+     * Evaluate a CXL program against a CX context document.
+     * outputTarget may be "" (honour the program's [?cx output-target=…]
+     * directive, default "text") or one of "text" / "cx" / "html" at
+     * CXL 1.0 (v0.6.0).
+     */
+    public static String evalCxl(String input, String program, String outputTarget) {
+        PointerByReference err = new PointerByReference();
+        Pointer out = LIB.cx_eval_cxl(input, program, outputTarget == null ? "" : outputTarget, err);
+        if (out == null) {
+            Pointer ep = err.getValue();
+            String msg = (ep != null) ? ep.getString(0) : "cx_eval_cxl: unknown error";
+            if (ep != null) LIB.cx_free(ep);
+            throw new RuntimeException(msg);
+        }
+        String s = out.getString(0);
+        LIB.cx_free(out);
+        return s;
+    }
 
     // XML input
     public static String xmlToCx  (String input) { return callFn(LIB::cx_xml_to_cx,   input); }

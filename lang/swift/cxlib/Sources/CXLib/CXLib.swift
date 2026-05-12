@@ -422,6 +422,32 @@ public enum CXLib {
     public static func toToml(_ input: String) throws -> String { try _callFn(cx_to_toml, input) }
     public static func toMd  (_ input: String) throws -> String { try _callFn(cx_to_md,   input) }
 
+    // ── CXL evaluation ─────────────────────────────────────────────────────────
+
+    /// Evaluate a CXL program against a CX context document.
+    /// `outputTarget` may be "" (honour the program's `[?cx output-target=…]`
+    /// directive, default "text") or one of "text" / "cx" / "html".
+    public static func evalCxl(_ input: String, _ program: String, _ outputTarget: String = "") throws -> String {
+        _ensureCxInit()
+        var errPtr: UnsafeMutablePointer<CChar>? = nil
+        let out = input.withCString { ci in
+            program.withCString { cp in
+                outputTarget.withCString { ct in
+                    cx_eval_cxl(ci, cp, ct, &errPtr)
+                }
+            }
+        }
+        guard let result = out else {
+            let msg: String
+            if let ep = errPtr { msg = String(cString: ep); cx_free(ep) }
+            else                { msg = "cx_eval_cxl: unknown error" }
+            throw CXError.parse(msg)
+        }
+        let s = String(cString: result)
+        cx_free(result)
+        return s
+    }
+
     // ── XML input ──────────────────────────────────────────────────────────────
 
     public static func xmlToCx  (_ input: String) throws -> String { try _callFn(cx_xml_to_cx,   input) }

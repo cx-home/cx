@@ -259,6 +259,29 @@ def _call(fn, text: str) -> str:
         raise RuntimeError(msg)
     return out.decode()
 
+# CXL evaluator: signature is (input, program, output_target, err_out).
+# Wired separately because _call only handles single-string functions.
+_lib.cx_eval_cxl.restype  = ctypes.c_char_p
+_lib.cx_eval_cxl.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
+
+def eval_cxl(input_cx: str, program_cxl: str, output_target: str = "") -> str:
+    """Evaluate a CXL program against a CX context document.
+
+    output_target: '' (honour the program's `[?cx output-target=…]` directive,
+    default 'text'), or one of 'text' / 'cx' / 'html' at CXL 1.0 (v0.6.0).
+    """
+    err = ctypes.c_char_p(None)
+    out = _lib.cx_eval_cxl(
+        input_cx.encode(),
+        program_cxl.encode(),
+        output_target.encode(),
+        ctypes.byref(err),
+    )
+    if out is None:
+        msg = err.value.decode() if err.value else "unknown error"
+        raise RuntimeError(msg)
+    return out.decode()
+
 def version() -> str: return _lib.cx_version().decode()
 def abi_version() -> str: return _lib.cx_abi_version().decode()
 def features() -> int:

@@ -429,6 +429,23 @@ func ToMd(input string) (string, error) {
 	s := C.GoString(out); C.cx_free(out); return s, nil
 }
 
+// EvalCXL evaluates a CXL program against a CX context document and
+// returns the rendered output. outputTarget may be "" (honour the
+// program's `[?cx output-target=…]` directive, default "text"), or
+// one of "text" / "cx" / "html" at CXL 1.0 (v0.6.0).
+func EvalCXL(input, program, outputTarget string) (string, error) {
+	cin := C.CString(input); defer C.free(unsafe.Pointer(cin))
+	cprog := C.CString(program); defer C.free(unsafe.Pointer(cprog))
+	ctgt := C.CString(outputTarget); defer C.free(unsafe.Pointer(ctgt))
+	var ep *C.char
+	out := C.cx_eval_cxl(cin, cprog, ctgt, &ep)
+	if out == nil {
+		if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }
+		return "", fmt.Errorf("cx_eval_cxl: unknown error")
+	}
+	s := C.GoString(out); C.cx_free(out); return s, nil
+}
+
 // XML input
 func XmlToCx(input string) (string, error) {
 	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char

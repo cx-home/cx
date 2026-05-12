@@ -206,6 +206,24 @@ EndDoc
 
 ---
 
+### CXL: query / transform / template
+
+CXL is CX's templating + query language — a CXL program is itself a `.cx` file (same parser, same data model). `cxlib::eval_cxl(context, program, output_target)` runs the program against the context document. `output_target` is `""` (default), `"text"`, `"cx"`, or `"html"`.
+
+```rust
+let ctx  = "[fleet [svc name=auth +up] [svc name=web +up] [svc name=db]]";
+// Each service: name + status
+let prog = "[?for s :in //svc :return [?= s/@name]: [?if [s/@up, ok, down]]; ]";
+
+let out = cxlib::eval_cxl(ctx, prog, "")?;
+println!("{}", out);
+// auth: ok;web: ok;db: down;
+```
+
+See [docs/CXL.md](../../../docs/CXL.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
+
+---
+
 ## Run the Demo
 
 Create a new project and paste both demos into `src/main.rs`:

@@ -45,7 +45,7 @@ check "all 11 version locations = $EXPECTED_VERSION" \
 
 section "Working tree state"
 check "git working tree clean" \
- "test -z \"\$(git status --porcelain | grep -v '^?? \\\\.claude/' | grep -v '^?? \\\\.cache/')\""
+ "test -z \"\$(git status --porcelain | grep -v '^?? \\.claude/' | grep -v '^?? \\.cache/')\""
 check "on a release branch (not detached)" \
  "git symbolic-ref -q HEAD"
 
@@ -56,10 +56,10 @@ check "MIGRATION.md exists" \
  "test -f MIGRATION.md"
 check "CHANGELOG.md exists" \
  "test -f CHANGELOG.md"
-check "the release process exists" \
- "test -f the release process"
-check "the evaluation-experience checklist exists" \
- "test -f the evaluation-experience checklist"
+check "docs/internal/RELEASE_PROCESS.md exists" \
+ "test -f docs/internal/RELEASE_PROCESS.md"
+check "docs/internal/EVALUATION_EXPERIENCE.md exists" \
+ "test -f docs/internal/EVALUATION_EXPERIENCE.md"
 check "docs/internal/adoption_review_v${EXPECTED_VERSION}.md exists" \
  "test -f docs/internal/adoption_review_v${EXPECTED_VERSION}.md"
 

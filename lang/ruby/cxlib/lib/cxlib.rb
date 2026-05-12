@@ -62,6 +62,8 @@ module CXLib
   attach_function :cx_to_yaml,       [:string, :pointer], :pointer
   attach_function :cx_to_toml,       [:string, :pointer], :pointer
   attach_function :cx_to_md,         [:string, :pointer], :pointer
+  # CXL evaluator (capability bit 28; spec/cxl.md)
+  attach_function :cx_eval_cxl,      [:string, :string, :string, :pointer], :pointer
   attach_function :cx_to_ast_bin,    [:string, :pointer], :pointer
   attach_function :cx_to_events_bin, [:string, :pointer], :pointer
   attach_function :cx_to_data_bin,   [:string, :pointer], :pointer
@@ -489,6 +491,23 @@ module CXLib
   def self.to_yaml(src) = _call(:cx_to_yaml, src)
   def self.to_toml(src) = _call(:cx_to_toml, src)
   def self.to_md(src)   = _call(:cx_to_md,   src)
+
+  # CXL evaluator. output_target may be '' (honour the program's
+  # `[?cx output-target=…]` directive, default 'text'), or one of
+  # 'text' / 'cx' / 'html' at CXL 1.0 (v0.6.0).
+  def self.eval_cxl(input_cx, program_cxl, output_target = '')
+    err = FFI::MemoryPointer.new(:pointer)
+    out = cx_eval_cxl(input_cx, program_cxl, output_target, err)
+    if out.null?
+      ep = err.read_pointer
+      msg = ep.null? ? 'unknown error' : ep.read_string
+      cx_free(ep) unless ep.null?
+      raise msg
+    end
+    s = out.read_string
+    cx_free(out)
+    s
+  end
 
   # XML input
   def self.xml_to_cx(src)   = _call(:cx_xml_to_cx,   src)

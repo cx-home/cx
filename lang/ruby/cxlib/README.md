@@ -191,6 +191,23 @@ end
 # EndDoc
 ```
 
+### CXL: query / transform / template
+
+CXL is CX's templating + query language — a CXL program is itself a `.cx` file (same parser, same data model). `Cxlib.eval_cxl(context, program, output_target)` runs the program against the context document. `output_target` is `''` (default), `'text'`, `'cx'`, or `'html'`.
+
+```ruby
+require 'cxlib'
+
+ctx  = '[fleet [svc name=auth +up] [svc name=web +up] [svc name=db]]'
+# Each service: name + status
+prog = '[?for s :in //svc :return [?= s/@name]: [?if [s/@up, ok, down]]; ]'
+
+puts Cxlib.eval_cxl(ctx, prog, '')
+# auth: ok;web: ok;db: down;
+```
+
+See [docs/CXL.md](../../../docs/CXL.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
+
 ## Run the Demo
 
 From the repo root:

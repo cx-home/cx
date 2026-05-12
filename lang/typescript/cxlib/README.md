@@ -208,6 +208,23 @@ EndElement
 EndDoc
 ```
 
+### CXL: query / transform / template
+
+CXL is CX's templating + query language — a CXL program is itself a `.cx` file (same parser, same data model). `cx.evalCxl(context, program, outputTarget)` runs the program against the context document. `outputTarget` is `''` (default), `'text'`, `'cx'`, or `'html'`.
+
+```ts
+import * as cx from 'cxlib';
+
+const ctx  = '[fleet [svc name=auth +up] [svc name=web +up] [svc name=db]]';
+// Each service: name + status
+const prog = '[?for s :in //svc :return [?= s/@name]: [?if [s/@up, ok, down]]; ]';
+
+console.log(cx.evalCxl(ctx, prog, ''));
+// auth: ok;web: ok;db: down;
+```
+
+See [docs/CXL.md](../../../docs/CXL.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
+
 ## Run the Demo
 
 ```sh

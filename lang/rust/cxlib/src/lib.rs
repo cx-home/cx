@@ -43,6 +43,14 @@ extern "C" {
     fn cx_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
+    // CXL evaluator (capability bit 28; spec/cxl.md)
+    fn cx_eval_cxl(
+        input: *const c_char,
+        program: *const c_char,
+        output_target: *const c_char,
+        err_out: *mut *mut c_char,
+    ) -> *mut c_char;
+
     // XML input
     fn cx_xml_to_cx  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_xml_to_xml (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -630,6 +638,30 @@ fn call_id_abi(
     let s = unsafe { CStr::from_ptr(out).to_string_lossy().into_owned() };
     unsafe { cx_free(out) };
     if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
+}
+
+/// Evaluate a CXL program against a CX context document and return the
+/// rendered output. `output_target` may be `""` (honour the program's
+/// `[?cx output-target=…]` directive, default `"text"`) or one of
+/// `"text"` / `"cx"` / `"html"` at CXL 1.0 (v0.6.0).
+pub fn eval_cxl(input: &str, program: &str, output_target: &str) -> Result<String, String> {
+    ensure_thread();
+    let ci = CString::new(input).map_err(|e| e.to_string())?;
+    let cp = CString::new(program).map_err(|e| e.to_string())?;
+    let ct = CString::new(output_target).map_err(|e| e.to_string())?;
+    let mut err_ptr: *mut c_char = ptr::null_mut();
+    let out = unsafe { cx_eval_cxl(ci.as_ptr(), cp.as_ptr(), ct.as_ptr(), &mut err_ptr) };
+    if out.is_null() {
+        if err_ptr.is_null() {
+            return Err("cx_eval_cxl: unknown error".to_owned());
+        }
+        let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
+        unsafe { cx_free(err_ptr) };
+        return Err(msg);
+    }
+    let s = unsafe { CStr::from_ptr(out).to_string_lossy().into_owned() };
+    unsafe { cx_free(out) };
+    Ok(s)
 }
 
 /// Find the element declaring `#id` in `input`. Returns the AST-JSON

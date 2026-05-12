@@ -137,6 +137,9 @@ object CxLib {
         fun cx_to_toml (input: String, errOut: PointerByReference): Pointer?
         fun cx_to_md   (input: String, errOut: PointerByReference): Pointer?
 
+        // CXL evaluator (capability bit 28; spec/cxl.md)
+        fun cx_eval_cxl(input: String, program: String, outputTarget: String, errOut: PointerByReference): Pointer?
+
         // XML input
         fun cx_xml_to_cx   (input: String, errOut: PointerByReference): Pointer?
         fun cx_xml_to_xml  (input: String, errOut: PointerByReference): Pointer?
@@ -603,6 +606,26 @@ object CxLib {
     fun toYaml(input: String) = callFn(lib::cx_to_yaml, input)
     fun toToml(input: String) = callFn(lib::cx_to_toml, input)
     fun toMd  (input: String) = callFn(lib::cx_to_md,   input)
+
+    /**
+     * Evaluate a CXL program against a CX context document.
+     * outputTarget may be "" (honour the program's [?cx output-target=…]
+     * directive, default "text") or one of "text" / "cx" / "html" at
+     * CXL 1.0 (v0.6.0).
+     */
+    fun evalCxl(input: String, program: String, outputTarget: String = ""): String {
+        val err = PointerByReference()
+        val out = lib.cx_eval_cxl(input, program, outputTarget, err)
+            ?: run {
+                val ep = err.value
+                val msg = ep?.getString(0) ?: "cx_eval_cxl: unknown error"
+                ep?.let { lib.cx_free(it) }
+                throw RuntimeException(msg)
+            }
+        val s = out.getString(0)
+        lib.cx_free(out)
+        return s
+    }
 
     // XML input
     fun xmlToCx  (input: String) = callFn(lib::cx_xml_to_cx,   input)
