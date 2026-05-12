@@ -21,17 +21,17 @@ The **API/format-stability boundary**. From 0.6.0 onward through
 wire formats, spec-normative grammar).
 
 ### Added
-- **17-member Public Table API** ([ADR 0018](spec/decisions/0018-public-table-api.md)) — shipping in all 10 bindings (V native, V-cffi, Python, Go, Rust, Java, TypeScript, C#, Kotlin, Swift, Ruby).
-- **Collection literals** ([ADR 0017](spec/decisions/0017-collection-literals-and-cxl-refactor.md)) — first-class `seq[T]`, `arr[T]`, `map[K, V]` with cross-emitter parity.
-- **`cx table` CLI subcommand** ([ADR 0019 §D1](spec/decisions/0019-analytics-bridge-public-surface.md)) — `info` / `dump` / `load` verbs.
-- **`cx demo` subcommand** — self-contained 60s-tier showcase per [`docs/EVALUATION_EXPERIENCE.md`](docs/EVALUATION_EXPERIENCE.md).
+- **17-member Public Table API** — shipping in all 10 bindings (V native, V-cffi, Python, Go, Rust, Java, TypeScript, C#, Kotlin, Swift, Ruby).
+- **Collection literals** — first-class `seq[T]`, `arr[T]`, `map[K, V]` with cross-emitter parity.
+- **`cx table` CLI subcommand** ( §D1) — `info` / `dump` / `load` verbs.
+- **`cx demo` subcommand** — self-contained 60s-tier showcase per the evaluation-experience checklist.
 - **`cx scaffold <kind>` subcommand** — typed, commented skeletons for config / data / doc / log / table.
 - **CSV / TSV / PSV via `--csv` / `--tsv` / `--psv` CLI flags** — delimited conversion now CLI-accessible (was C-ABI-only).
 - **Streaming-write event API** (capability bit 27) — Tier 1 + Tier 2 + CX/XML emits.
 - **Schema validator** — 20/20 spec rules complete on Tier 1 (V core + Python + Go).
 - **CXL 1.0 evaluator** (V reference; per-binding native rollout deferred to v0.7.0).
-- **Parameterized templates** ([ADR 0020](spec/decisions/0020-cxl-named-templates-with-parameter-lists.md)) — `?def name :params [a b] :body ...`.
-- **`docs/EVALUATION_EXPERIENCE.md`** — friction-budget gate with 10 hard-fail conditions and 10 time-horizon checkpoints (10s → 1yr+).
+- **Parameterized templates** — `?def name :params [a b] :body ...`.
+- **`the evaluation-experience checklist`** — friction-budget gate with 10 hard-fail conditions and 10 time-horizon checkpoints (10s → 1yr+).
 - **CI matrix** (`.github/workflows/ci.yml`) — macOS-14 + ubuntu-22.04/24.04 × 10 bindings.
 - **Release tooling** in `tools/` — bump-version, release-verify, smoke-eval, verify-* scripts.
 
@@ -43,7 +43,7 @@ wire formats, spec-normative grammar).
 - Internal grammar revisions during this cycle (v3.3 → v3.4 → v3.5 → v3.6) are now hidden from user-facing docs; users observe only the v0.5 → v0.6.0 transition.
 
 ### Fixed
-- All five 2026-05 binding-audit findings (CB-1..CB-5) closed at V core and across all 9 FFI bindings; see [`spec/binding_audit_2026.md`](spec/binding_audit_2026.md).
+- All five 2026-05 binding-audit findings (CB-1..CB-5) closed at V core and across all 9 FFI bindings; see the 2026-05 binding audit.
 - Rust binding SIGABRT under Boehm GC threading — `cx_init` / `cx_thread_register` / `cx_thread_unregister` C ABI symbols added (cap bit 26).
 - Parser quote+bracket fix — body-text tokenizer is now quote- and bracket-aware; closes the last two carried parser limits.
 

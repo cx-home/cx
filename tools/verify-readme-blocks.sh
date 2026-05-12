@@ -2,7 +2,7 @@
 # tools/verify-readme-blocks.sh — README.md's runnable code blocks
 # must actually run. Wraps verify-doc-blocks.sh for the root README.
 #
-# F6 from docs/EVALUATION_EXPERIENCE.md.
+# F6 from the evaluation-experience checklist.
 
 set -uo pipefail
 

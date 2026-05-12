@@ -21,8 +21,8 @@ GitHub's private vulnerability reporting** instead of a public issue:
 1. Go to <https://github.com/cx-home/cx/security/advisories/new>.
 2. Fill in the advisory.
 3. We acknowledge within 7 days. Triage and fix timeline depend on
-   severity; high-severity fixes ship in a patch release within 30
-   days, lower-severity in the next minor release.
+ severity; high-severity fixes ship in a patch release within 30
+ days, lower-severity in the next minor release.
 
 ## Disclosure
 
@@ -43,9 +43,9 @@ In scope:
 Out of scope:
 
 - Bugs in the V toolchain itself — report upstream at
-  [vlang/v](https://github.com/vlang/v).
+ [vlang/v](https://github.com/vlang/v).
 - Vulnerabilities in third-party libraries our bindings link against
-  — report to the upstream library.
+ — report to the upstream library.
 
 ## Known gaps
 
@@ -53,6 +53,6 @@ Out of scope:
 - No formal threat model.
 - No security audit by an external party.
 
-These are tracked in [`docs/RELEASE_PROCESS.md` §6](docs/RELEASE_PROCESS.md).
+These are tracked in the release process §6.
 Treat CX as appropriate for prototypes and internal tools — not for
 parsing adversarial input on a public-facing endpoint.

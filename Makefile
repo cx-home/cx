@@ -1,42 +1,42 @@
-CONFORMANCE_CORE    := conformance/core.txt
-CONFORMANCE_EXT     := conformance/extended.txt
-CONFORMANCE_XML     := conformance/xml.txt
-CONFORMANCE_MD      := conformance/md.txt
-CONFORMANCE_CXL     := conformance/cxl.txt
+CONFORMANCE_CORE := conformance/core.txt
+CONFORMANCE_EXT := conformance/extended.txt
+CONFORMANCE_XML := conformance/xml.txt
+CONFORMANCE_MD := conformance/md.txt
+CONFORMANCE_CXL := conformance/cxl.txt
 
-LIB_NAME   := libcx
-VCX_DYLIB  := vcx/target/$(LIB_NAME).dylib
-VCX_SO     := vcx/target/$(LIB_NAME).so
-DIST_DIR   := dist
-PREFIX     ?= /usr/local
+LIB_NAME := libcx
+VCX_DYLIB := vcx/target/$(LIB_NAME).dylib
+VCX_SO := vcx/target/$(LIB_NAME).so
+DIST_DIR := dist
+PREFIX ?= /usr/local
 
 UNAME_S := $(shell uname -s)
 
 # ── Python / Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
-PYTHON      ?= python3
-RUBY        := /opt/homebrew/opt/ruby/bin/ruby
-SWIFT       := /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift
+PYTHON ?= python3
+RUBY := /opt/homebrew/opt/ruby/bin/ruby
+SWIFT := /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift
 SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-DOTNET      := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
+DOTNET := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
-        build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
-        build-lsp build-vscode build-editors \
-        publish publish-push \
-        publish-v publish-v-push \
-        publish-org \
-        release release-v release-all \
-        dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
-        test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
-        test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-java-arrow test-kotlin test-kotlin-arrow test-csharp test-csharp-api test-csharp-arrow test-swift \
-        test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
-        abi-c-test \
-        conform conform-vcx conform-md bench bench-python \
-        examples example-python example-v example-go example-rust example-typescript \
-        example-java example-kotlin example-csharp example-ruby example-swift \
-        demos demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift \
-        clean
+ build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
+ build-lsp build-vscode build-editors \
+ publish publish-push \
+ publish-v publish-v-push \
+ publish-org \
+ release release-v release-all \
+ dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
+ test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
+ test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-java-arrow test-kotlin test-kotlin-arrow test-csharp test-csharp-api test-csharp-arrow test-swift \
+ test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
+ abi-c-test \
+ conform conform-vcx conform-md bench bench-python \
+ examples example-python example-v example-go example-rust example-typescript \
+ example-java example-kotlin example-csharp example-ruby example-swift \
+ demos demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift \
+ clean
 
 all: build
 
@@ -122,17 +122,17 @@ dist: build-vcx
 	mkdir -p $(DIST_DIR)/lib $(DIST_DIR)/include
 	cp -f include/cx.h $(DIST_DIR)/include/
 	@if [ -f $(VCX_DYLIB) ]; then cp -f $(VCX_DYLIB) $(DIST_DIR)/lib/libcx.dylib; fi
-	@if [ -f $(VCX_SO)    ]; then cp -f $(VCX_SO)    $(DIST_DIR)/lib/libcx.so; fi
-	@echo "dist: $(DIST_DIR)/include/cx.h  $(DIST_DIR)/lib/"
+	@if [ -f $(VCX_SO) ]; then cp -f $(VCX_SO) $(DIST_DIR)/lib/libcx.so; fi
+	@echo "dist: $(DIST_DIR)/include/cx.h $(DIST_DIR)/lib/"
 
 # Install libcx system-wide (default: /usr/local; override with PREFIX=...)
 install: dist
 	install -d $(PREFIX)/lib $(PREFIX)/include $(PREFIX)/lib/pkgconfig
 	@if [ -f $(DIST_DIR)/lib/libcx.dylib ]; then install -m 755 $(DIST_DIR)/lib/libcx.dylib $(PREFIX)/lib/; fi
-	@if [ -f $(DIST_DIR)/lib/libcx.so    ]; then install -m 755 $(DIST_DIR)/lib/libcx.so    $(PREFIX)/lib/; fi
+	@if [ -f $(DIST_DIR)/lib/libcx.so ]; then install -m 755 $(DIST_DIR)/lib/libcx.so $(PREFIX)/lib/; fi
 	install -m 644 $(DIST_DIR)/include/cx.h $(PREFIX)/include/
 	sed "s|@PREFIX@|$(PREFIX)|g" cx.pc.in > $(PREFIX)/lib/pkgconfig/cx.pc
-	@echo "installed libcx → $(PREFIX)/lib/  header → $(PREFIX)/include/  pkg-config → $(PREFIX)/lib/pkgconfig/cx.pc"
+	@echo "installed libcx → $(PREFIX)/lib/ header → $(PREFIX)/include/ pkg-config → $(PREFIX)/lib/pkgconfig/cx.pc"
 
 uninstall:
 	rm -f $(PREFIX)/lib/libcx.dylib $(PREFIX)/lib/libcx.so
@@ -159,10 +159,10 @@ verify-cli: build-vcx
 promote-cli: verify-cli install-cli
 	@echo "promoted verified cx CLI to $(PREFIX)/bin/cx"
 
-# ── Experience gate (docs/EVALUATION_EXPERIENCE.md) ──────────────────────────
+# ── Experience gate (the evaluation-experience checklist) ──────────────────────────
 
 .PHONY: smoke-eval verify-examples verify-readme-blocks verify-binding-quickstarts \
-        verify-doc-blocks verify-doc-links bump-version-check release-verify
+ verify-doc-blocks verify-doc-links bump-version-check release-verify
 
 # F1, F2, F4, F5, F6, F7, F9 — the experience-gate hard-fail checks.
 smoke-eval: build-vcx
@@ -193,7 +193,7 @@ verify-doc-links:
 bump-version-check:
 	@tools/bump-version.sh --check $(or $(VERSION),0.6.0)
 
-# Full pre-tag check — runs everything in docs/RELEASE_PROCESS.md §0 + §0.5.
+# Full pre-tag check — runs everything in the release process + §0.5.
 release-verify:
 	@tools/release-verify.sh $(or $(VERSION),0.6.0)
 
@@ -265,19 +265,19 @@ test-python-stream: build-vcx
 ABI_C_TEST_BIN := vcx/target/c_abi_test
 ABI_C_TEST_SAN ?= undefined
 ifeq ($(UNAME_S),Darwin)
-  ABI_LIB_PATH_VAR := DYLD_LIBRARY_PATH
-  ABI_ARROW_LIB    := vcx/target/libcx_arrow.dylib
+ ABI_LIB_PATH_VAR := DYLD_LIBRARY_PATH
+ ABI_ARROW_LIB := vcx/target/libcx_arrow.dylib
 else
-  ABI_LIB_PATH_VAR := LD_LIBRARY_PATH
-  ABI_ARROW_LIB    := vcx/target/libcx_arrow.so
+ ABI_LIB_PATH_VAR := LD_LIBRARY_PATH
+ ABI_ARROW_LIB := vcx/target/libcx_arrow.so
 endif
 abi-c-test: build-vcx build-lib-arrow
 	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
-	  -fsanitize=$(ABI_C_TEST_SAN) \
-	  -I include -I vcx/arrow \
-	  tests/abi/c_abi_test.c \
-	  -L vcx/target -lcx -ldl \
-	  -o $(ABI_C_TEST_BIN)
+	 -fsanitize=$(ABI_C_TEST_SAN) \
+	 -I include -I vcx/arrow \
+	 tests/abi/c_abi_test.c \
+	 -L vcx/target -lcx -ldl \
+	 -o $(ABI_C_TEST_BIN)
 	$(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
 test-rust: build-rust
@@ -395,7 +395,7 @@ conform-vcx: build-vcx
 # ── Examples (transform showcase) ────────────────────────────────────────────
 
 examples: example-python example-v example-go example-rust example-typescript \
-          example-java example-kotlin example-csharp example-ruby example-swift
+ example-java example-kotlin example-csharp example-ruby example-swift
 
 example-python: build-vcx
 	$(PYTHON) lang/python/examples/transform.py

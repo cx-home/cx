@@ -21,9 +21,9 @@ Five small things CX makes ordinary that other formats made hard.
 
 ```cx
 [server
-  # bind to 0.0.0.0 so the load balancer can reach us
-  host=0.0.0.0 :u16 port=8080 +tls
-  [- TLS terminates here; backend speaks plaintext on 127.0.0.1:8081 ]
+ # bind to 0.0.0.0 so the load balancer can reach us
+ host=0.0.0.0 :u16 port=8080 +tls
+ [- TLS terminates here; backend speaks plaintext on 127.0.0.1:8081 ]
 ]
 ```
 
@@ -51,12 +51,12 @@ parses as `false`.
 
 ```cx
 [deployment
-  [- production rollout notes — keep these in sync with the values below ]
-  [doc
-    [p This service uses [em rolling] updates with a 30-second drain window.]
-    [p Rollback target is the previous git tag.]
-  ]
-  [server host=0.0.0.0 :u16 port=8080]
+ [- production rollout notes — keep these in sync with the values below ]
+ [doc
+ [p This service uses [em rolling] updates with a 30-second drain window.]
+ [p Rollback target is the previous git tag.]
+ ]
+ [server host=0.0.0.0 :u16 port=8080]
 ]
 ```
 
@@ -68,8 +68,8 @@ stops being unavoidable.
 ### 4. Log streams in the same grammar
 
 ```
-ts=2026-05-07T10:30:00Z level=info  svc=api req_id=abc123 latency_ms=45
-ts=2026-05-07T10:30:01Z level=warn  svc=api req_id=def456 latency_ms=210 slow=true
+ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
+ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true
 ts=2026-05-07T10:30:01Z level=error svc=api req_id=ghi789 err='connection refused'
 ```
 
@@ -82,11 +82,11 @@ your config.
 
 ```cx
 [article lang=en
-  [head [title Introducing CX]]
-  [body
-    [p CX is at home in [em prose] and [strong structured data] alike.]
-    [pre :code [# server { port = 8080 } #]]
-  ]
+ [head [title Introducing CX]]
+ [body
+ [p CX is at home in [em prose] and [strong structured data] alike.]
+ [pre :code [# server { port = 8080 } #]]
+ ]
 ]
 ```
 
@@ -99,11 +99,11 @@ either way.
 
 ## How CX compares
 
-|  | CX | JSON | YAML | TOML | XML |
+| | CX | JSON | YAML | TOML | XML |
 |---|---|---|---|---|---|
-| Syntax weight        | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
-| Strong types         | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes | ❌ number only (no int/float distinction) | partial (auto-detect, often wrong) | ✅ int / float / bool / datetime | partial (xs:type) |
-| Comments             | ✅ block `[- ... ]` and line `# ...` | ❌ | ✅ `# ...` | ✅ `# ...` | ✅ `<!-- ... -->` |
+| Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+| Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes | ❌ number only (no int/float distinction) | partial (auto-detect, often wrong) | ✅ int / float / bool / datetime | partial (xs:type) |
+| Comments | ✅ block `[- ... ]` and line `# ...` | ❌ | ✅ `# ...` | ✅ `# ...` | ✅ `<!-- ... -->` |
 | Mixed content (markup + data) | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
 | Multiple top-level docs | ✅ no wrapper required | ❌ requires `[...]` array | ✅ via `---` separator | ❌ single document | partial (with declaration tricks) |
 | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
@@ -125,17 +125,17 @@ the C ABI is versioned and forward-compatible, and the full test matrix
 passes across all 10 language bindings (V native + V-cffi + 8 FFI
 bindings). v0.6.0 highlights:
 
-- **17-member Public Table API** ([ADR 0018](spec/decisions/0018-public-table-api.md))
-  shipping in every binding; stable through v1.0.
-- **Collection literals** ([ADR 0017](spec/decisions/0017-collection-literals-and-cxl-refactor.md))
-  — first-class `seq[T]`, `arr[T]`, `map[K, V]` with cross-emitter parity.
-- **`cx table` CLI subcommand** ([ADR 0019 §D1](spec/decisions/0019-analytics-bridge-public-surface.md))
-  — `info` / `dump` / `load` verbs with `--to=cx` round-trip live;
-  Parquet / Arrow IPC export reserved for Phase C (libcx_arrow).
+- **17-member Public Table API** 
+ shipping in every binding; stable through v1.0.
+- **Collection literals** 
+ — first-class `seq[T]`, `arr[T]`, `map[K, V]` with cross-emitter parity.
+- **`cx table` CLI subcommand** ( §D1)
+ — `info` / `dump` / `load` verbs with `--to=cx` round-trip live;
+ Parquet / Arrow IPC export reserved for Phase C (libcx_arrow).
 - **Streaming-write event API** (Tier 1/2) + **20/20 schema validator
-  rules** (Tier 1) round out the format-side completeness.
+ rules** (Tier 1) round out the format-side completeness.
 
-The [2026-05 binding audit](spec/binding_audit_2026.md) closed five
+The 2026-05 binding audit closed five
 systemic shortcuts (CB-1..CB-5) at the core and across all bindings —
 duplication is gone, type fidelity is preserved through CXDB, and one
 fix-site replaces drift across nine. Formal security review and
@@ -148,13 +148,13 @@ feature equivalence with XQuery 4.0. CXL programs share one parser
 and one data model with the format itself, in the spirit of XML+XQuery
 but with CX's typed scalars, indentation-significant syntax, and
 hashable canonical form. **CXL 1.0 (template-oriented subset, with
-labeled directive form per ADR 0017 §D23 and parameterized templates
-per ADR 0020) ships at CX release v0.6.0**; CXL 3.1 (full FLWOR + maps
+labeled directive form §D23 and parameterized templates
+per ) ships at CX release v0.6.0**; CXL 3.1 (full FLWOR + maps
 + arrays + XQuery 3.1 equivalence) at v0.9.0+; CXL 4.0 is the long-
 term target. The architectural commitment is in
-[ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md);
+;
 the v0.6.0 surface-syntax rewrite is in
-[ADR 0017](spec/decisions/0017-collection-literals-and-cxl-refactor.md).
+.
 
 ---
 
@@ -164,40 +164,40 @@ If you've used JSON, YAML, TOML, XML, and Markdown long enough, you've
 hit a recurring set of papercuts:
 
 - A YAML file behaves differently after copy-paste because indentation
-  got rewritten.
+ got rewritten.
 - A JSON config has no comments, so the *why* lives in a separate doc
-  that goes stale.
+ that goes stale.
 - An integer ID over 2⁵³ silently becomes an approximate float through
-  a JSON round trip.
+ a JSON round trip.
 - A document needs both prose and config-shaped data — neither
-  Markdown nor YAML cover both, so you maintain two files and hope
-  they stay aligned.
+ Markdown nor YAML cover both, so you maintain two files and hope
+ they stay aligned.
 - A schema change loses the distinction between `8080` (integer) and
-  `"8080"` (string) because the wire format never preserved it.
+ `"8080"` (string) because the wire format never preserved it.
 - A log line and a config file use different parsers, different query
-  languages, and different libraries, so you write the same selector
-  logic three times.
+ languages, and different libraries, so you write the same selector
+ logic three times.
 
 Each of these has a workaround — you've shipped them. CX is what
 happens when one grammar is designed with all six in mind from the
 start:
 
 - **One bracket form, every shape.** No indentation rules, no
-  closing-tag repetition, no special-case section headers. `[...]`
-  carries config, data, prose, log lines, and tabular rows uniformly.
+ closing-tag repetition, no special-case section headers. `[...]`
+ carries config, data, prose, log lines, and tabular rows uniformly.
 - **Optional explicit types.** `:int`, `:f64`, `:decimal`, `:bigint`,
-  `:u16[]` — declare the type once and the value survives conversion
-  to JSON, YAML, TOML, XML, and back.
+ `:u16[]` — declare the type once and the value survives conversion
+ to JSON, YAML, TOML, XML, and back.
 - **Comments as a first-class construct.** `# line` and `[- block ]`
-  forms, preserved through `cx fmt`. Strict-canonical mode (used for
-  hashing) is the only place they're dropped, and that's a deliberate
-  trade.
+ forms, preserved through `cx fmt`. Strict-canonical mode (used for
+ hashing) is the only place they're dropped, and that's a deliberate
+ trade.
 - **Mixed content out of the box.** Inline markup inside text works
-  the same way nested config does — same brackets, same parser.
+ the same way nested config does — same brackets, same parser.
 - **Lossless six-way conversion.** XML, JSON, YAML, TOML, and
-  Markdown round-trip with documented per-format caveats
-  ([`spec/conversions.md`](spec/conversions.md)). Adopt CX
-  incrementally without rewriting downstream consumers.
+ Markdown round-trip with documented per-format caveats
+ ([`spec/conversions.md`](spec/conversions.md)). Adopt CX
+ incrementally without rewriting downstream consumers.
 
 For an honest head-to-head against each format, including where CX is
 *not* the right pick, see [`docs/COMPARISON.md`](docs/COMPARISON.md).
@@ -209,8 +209,8 @@ For an honest head-to-head against each format, including where CX is
 ```sh
 git clone https://github.com/cx-home/cx
 cd cx
-make build              # CLI + libcx shared library
-make promote-cli        # install `cx` to /usr/local/bin
+make build # CLI + libcx shared library
+make promote-cli # install `cx` to /usr/local/bin
 ```
 
 Prerequisites: [V](https://vlang.io) 0.5.1+. No other dependencies.
@@ -263,7 +263,7 @@ The 10th binding is **V native** — V is the reference implementation,
 so `lang/v/native/` imports the V core directly rather than going
 through FFI. Per-binding READMEs live under [`lang/`](lang/).
 
-Every binding ships the v0.6.0 **Public Table API** ([ADR 0018](spec/decisions/0018-public-table-api.md))
+Every binding ships the v0.6.0 **Public Table API** 
 with a uniform 17-member surface — properties (`cols`/`types`/`row_count`/
 `col_count`), access (`row`/`column`/`col_at`/`cell`/`cell_by_name`/
 `slice`/`head`/`tail`/`select_cols`), iteration, and `to_cx`/`to_csv`/
@@ -295,7 +295,7 @@ Apache License 2.0 — see [`LICENSE`](LICENSE).
 *CX is engineered to be approachable but takes its formal contracts
 seriously. The
 [`spec/`](spec/) directory is normative; the
-[2026-05 binding audit](spec/binding_audit_2026.md) is the closing
+2026-05 binding audit is the closing
 artifact for the project's "no shortcuts" rule
 ([`spec/governance.md`](spec/governance.md) §1). If you find a
 bug or a spec violation, that's a real bug — please report it.*
