@@ -257,40 +257,12 @@ $ cx eval team.cxl --data=team.cx
 (Whitespace control between iterations is part of CXL 1.0's `[?-` /
 `-]` syntax; see [`docs/CXL.md`](docs/CXL.md).)
 
-### 3. Pipe — generate CX, then transform
-
-```sh
-$ echo '[fleet [svc name=auth region=useast][svc name=api region=useast]]' \
-    | cx eval useast.cxl --data=-
-- **auth** (region: useast)- **api** (region: useast)
-```
-
-### 4. Cross-format — JSON in, CXL transform, anything out
-
-```sh
-$ curl -s api.example.com/fleet \
-    | cx --from=json --to=cx \
-    | cx eval report.cxl --data=- \
-    | cx --from=md --to=html > report.html
-```
-
-The same `cx` binary handles **format conversion**, **templating**, and
-**stdin/stdout composition** — no separate `jq + jinja + pandoc`, no
-Python wrapper, no shell glue between three different tools.
-
-### 5. Everything inline — one command, no files
-
-```sh
-$ cx eval \
-    -e '[?for s :in //svc :return - **[?= s/@name]** (region: [?= s/@region])
-]' \
-    -d '[fleet [svc name=auth region=useast][svc name=api region=useast][svc name=cache region=uswest]]'
-- **auth** (region: useast)- **api** (region: useast)- **cache** (region: uswest)
-```
-
-`-e` for inline CXL, `-d` for inline CX. Useful for shell pipelines,
-makefile recipes, or when you want to see a transformation work without
-touching the filesystem.
+Three more invocation styles — pipe-from-stdin, cross-format pipeline,
+and everything-inline `-e`/`-d` flags for shell one-liners — are covered
+in [`docs/CXL.md`](docs/CXL.md). The same `cx` binary handles format
+conversion, templating, and stdin/stdout composition: no separate
+`jq + jinja + pandoc`, no Python wrapper, no shell glue between three
+different tools.
 
 ### CXL 1.0 → 3.1 → 4.0 — XQuery feature equivalence
 
