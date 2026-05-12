@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main, native-data-binding]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-matrix:
+    name: ${{ matrix.os }} / ${{ matrix.lang }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, macos-14]
+        lang: [vcx, python, go, rust, typescript, java, kotlin, csharp, ruby, swift]
+        exclude:
+          # Swift on Linux requires special setup; macOS only for now.
+          - os: ubuntu-22.04
+            lang: swift
+          - os: ubuntu-24.04
+            lang: swift
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install V (CX core language)
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+          v version
+
+      - name: Set up Python
+        if: matrix.lang == 'python'
+        uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      - name: Set up Go
+        if: matrix.lang == 'go'
+        uses: actions/setup-go@v5
+        with: { go-version: '1.22' }
+
+      - name: Set up Rust
+        if: matrix.lang == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Node (TypeScript)
+        if: matrix.lang == 'typescript'
+        uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Set up JDK 21
+        if: matrix.lang == 'java' || matrix.lang == 'kotlin'
+        uses: actions/setup-java@v4
+        with: { java-version: '21', distribution: 'temurin' }
+
+      - name: Set up .NET
+        if: matrix.lang == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+
+      - name: Set up Ruby
+        if: matrix.lang == 'ruby'
+        uses: ruby/setup-ruby@v1
+        with: { ruby-version: '3.3' }
+
+      - name: Build libcx
+        run: make build-vcx
+
+      - name: Run binding test
+        run: make test-${{ matrix.lang }}
+
+  experience-gate:
+    name: Experience gate (F1–F9)
+    runs-on: ubuntu-22.04
+    needs: test-matrix
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install V
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+
+      - name: Build cx
+        run: make build-vcx
+
+      - name: Verify examples (F4)
+        run: make verify-examples
+
+      - name: Verify README blocks (F6)
+        run: make verify-readme-blocks
+
+      - name: Verify doc blocks
+        run: make verify-doc-blocks
+
+      - name: Verify doc links
+        run: make verify-doc-links
+
+      - name: Verify binding quickstarts (F7)
+        run: make verify-binding-quickstarts
+
+      - name: Run smoke-eval
+        run: make smoke-eval
+
+  cold-install:
+    name: Cold install + first demo (F1, F2, F5)
+    runs-on: ubuntu-22.04
+    needs: experience-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      # Future: download a published binary from the GitHub release
+      # and assert install + cx demo < 60s. Until the install script
+      # is hosted, this job builds from source and times `cx demo`.
+      - name: Build cx
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+          make build-vcx
+
+      - name: cx demo within 60s and deterministic
+        run: |
+          start=$(date +%s%N)
+          ./vcx/target/cx demo > /tmp/demo.txt
+          end=$(date +%s%N)
+          elapsed_ms=$(( (end - start) / 1000000 ))
+          if [ $elapsed_ms -gt 60000 ]; then
+              echo "FAIL: cx demo took ${elapsed_ms}ms (>60s)"
+              exit 1
+          fi
+          echo "OK: cx demo finished in ${elapsed_ms}ms"

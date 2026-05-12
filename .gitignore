@@ -6,6 +6,9 @@ dist/
 
 .claude/settings.local.json
 
+# Python venvs (per-binding optional deps like pyarrow)
+lang/python/.venv/
+
 # V / Rust build artifacts
 vcx/target/
 vcx/cx/*.dylib

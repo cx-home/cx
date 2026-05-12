@@ -1,35 +1,43 @@
-[-XML-style structured document: chapter with metadata, sections, table, listings, notes]
-[chapter id=getting-started lang=en
+[- XML-style structured document with xmlns namespace declarations.
+   Demonstrates the namespace bearer pattern (ADR 0002): xmlns: as an
+   inherited attribute scoped to the declaring element and descendants. ]
+
+[chapter id=getting-started lang=en xmlns=https://cxhome.org/ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/
   [title Getting Started with CX]
   [meta
-    [author org=Ardec Erik Paulson]
-    [date 2026-04-20]
-    [version 1.0]
+    [- prefixed names resolve to the http://purl.org/dc URI at parse time ]
+    [dc:author Erik Paulson]
+    [dc:date 2026-04-20]
+    [dc:identifier urn:cx:chapter:getting-started]
+    [version :string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
     [keywords :string[] cx format tutorial getting-started]
   ]
+
   [abstract
     [p CX is a compact, typed format for configs, data, and documents —
        all in one unified bracket syntax.]
     [p This chapter introduces the core concepts and shows how a single
        CX source converts to XML, JSON, YAML, TOML, and Markdown.]
   ]
+
   [section id=elements
     [title Elements and Attributes]
     [p An [em element] is a named bracket. Attributes carry typed scalars —
        no schema or quotes required:]
-    [listing lang=cx [# [server host=localhost port=8080 debug=true] #]]
-    [p CX infers types automatically:]
-    [table
-      [thead [tr [th Value]      [th Type]]]
-      [tbody
-        [tr [td 8080]       [td int]]
-        [tr [td 3.14]       [td float]]
-        [tr [td true]       [td bool]]
-        [tr [td 2026-04-20] [td date]]
-        [tr [td null]       [td null]]
-      ]
+    [listing lang=cx [# [server host=localhost :u16 port=8080 +tls] #]]
+    [p CX infers types automatically — and v3.4 sized types pin the width:]
+    [- typed table: every type column is a real CX type token ]
+    [examples :table[value:string inferred:string sized:string]
+      '8080'         'int'    ':u16 → 0..65535'
+      '3.14'         'float'  ':f32 / :f64'
+      'true'         'bool'   '+flag / -flag sigils'
+      '2026-04-20'   'date'   ':d alias'
+      'null'         'null'   '— (no sized form)'
+      '02134'        'string' '— (leading-zero stays string in v3.4)'
+      '1_000_000'    'int'    ':u32 1_000_000 (underscore separator)'
     ]
   ]
+
   [section id=nesting
     [title Nesting and Mixed Content]
     [p Elements nest freely. Text and child elements mix in the same container:]
@@ -47,16 +55,18 @@
          normalised, diff-friendly output.]
     ]
   ]
+
   [section id=formats
     [title Output Formats]
     [p One source file, any target format. The [code cx] CLI and
-       [code libcx] library support ten language bindings:]
+       [code libcx] library support nine language bindings plus the
+       native V reference implementation:]
     [ul
-      [li [code cx to-xml   chapter.cx] — DocBook-style XML]
-      [li [code cx to-json  chapter.cx] — API-ready JSON]
-      [li [code cx to-yaml  chapter.cx] — YAML for editors]
-      [li [code cx to-toml  chapter.cx] — TOML for configs]
-      [li [code cx to-md    chapter.cx] — Markdown for docs]
+      [li [code cx --xml   chapter.cx] — DocBook-style XML]
+      [li [code cx --json  chapter.cx] — API-ready JSON]
+      [li [code cx --yaml  chapter.cx] — YAML for editors]
+      [li [code cx --toml  chapter.cx] — TOML for configs]
+      [li [code cx --md    chapter.cx] — Markdown for docs]
     ]
   ]
 ]

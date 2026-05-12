@@ -1,4 +1,4 @@
-[doc title="CX Language Guide" author="Erik" version="3.3"
+[doc title="CX Language Guide" author="Erik" version="3.4"
 
   [# CX Language Guide]
 
@@ -10,8 +10,9 @@
   [p Install and build:]
 
   [``` lang:bash [|
-git clone https://github.com/example/cx
-make build
+git clone https://github.com/cx-home/cx
+make build              # builds libcx + every binding
+make promote-cli        # install the cx CLI
 |]]
 
   [p Then try [` cx --help] to see all options.]
@@ -27,13 +28,14 @@ make build
 
   [ul
     [li Clean bracket syntax]
-    [li Typed attributes on any element]
+    [li Typed attributes on any element &mdash; sized types in v3.4]
     [li Multiple output formats]
+    [li Boolean sigils: [` +flag] / [` -flag]]
   ]
 
   [### Links]
 
-  [p See the [a href="https://example.com/docs" full documentation] for details.]
+  [p See the [a href="https://cxhome.org/docs" full documentation] for details.]
 
   [### Tables]
 

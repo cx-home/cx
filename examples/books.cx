@@ -1,22 +1,18 @@
+[- Library catalogue as :table — column-major in binary form
+   (5–10× smaller than element-per-row for large datasets);
+   row-major in CX text for human reading. v3.4 idiom showcase. ]
+
 [library
-  [book
-    [title The Hobbit]
-    [author J.R.R. Tolkien]
-    [-The year value is read as an int, auto-typed]
-    [year 1937]
-    [available true]
+  [- v3.4 :table form with typed columns; ISBNs stay strings even
+     though the leading digit makes them look numeric ]
+  [books :table[title:string author:string year:u16 isbn:string available:bool]
+    'The Hobbit'        'J.R.R. Tolkien'     1937   978-0547928227   true
+    'Dune'              'Frank Herbert'      1965   978-0441172719   false
+    'Neuromancer'       'William Gibson'     1984   978-0441569595   true
+    'Snow Crash'        'Neal Stephenson'    1992   978-0553380958   true
+    'The Diamond Age'   'Neal Stephenson'    1995   978-0553380965   true
   ]
-  [-book, lets just comment out this entire element
-    [title Dune]
-    [author Frank Herbert]
-    [-The year value is manually defined as as int]
-    [year :int 1965]
-    [available false]
-  ]
-  [book
-    [title Neuromancer]
-    [author William Gibson]
-    [year :int 1984]
-    [available true]
-  ]
+
+  [- ad-hoc per-shelf tagging stays in element form, not the table ]
+  [shelf id=sci-fi-classics :string[] tags=hugo,nebula,canon]
 ]
