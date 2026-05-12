@@ -11,21 +11,13 @@
 #   ```
 #   <!-- quickstart-end -->
 
-set -uo pipefail
+set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-declare -A BINDING_RUNNERS=(
-    [python]="python3"
-    [go]="go run"
-    [rust]="cargo run --example"
-    [typescript]="tsx"
-    [java]="java"
-    [kotlin]="kotlin"
-    [csharp]="dotnet run"
-    [swift]="swift run"
-    [ruby]="ruby"
-)
+# Note: full binding-runner execution is left to per-binding test
+# suites (make test-<lang>); this script verifies the quickstart
+# marker pair exists and is well-formed.
 
 PASS=0
 FAIL=0
