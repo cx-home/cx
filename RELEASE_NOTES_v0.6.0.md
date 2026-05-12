@@ -22,6 +22,92 @@ cx_hash / cx_eq) and propagates it through every binding.
 
 ## Highlights
 
+> Two pillars in v0.6.0:
+> 1. **Audit closure** — the original branch goal (CB-1..CB-5 across V core + 9 bindings, see below).
+> 2. **Scope expansion** — three ADRs ratified post-audit (0017 / 0018 / 0019) that turn v0.6.0 into the API/format-stability boundary through v1.0. Summarised next.
+
+### NEW: collection literals (ADR 0017 — accepted 2026-05-11)
+
+CX grows three first-class collection literal forms with cross-emitter
+parity (CX text, JSON, YAML, TOML, MD, XML, CXDB, AST-bin):
+
+| Literal | Surface | Type | Example |
+| --- | --- | --- | --- |
+| Sequence | `(a, b, c)` | `seq[T]` (homogeneous post-flatten) | `[tags (admin, user, root)]` |
+| Array    | `[a, b, c,]` | `arr[T]` (ordered, indexed) | `[ports [8080, 8081, 8082,]]` |
+| Map      | `{k: v, ...}` | `map[K, V]` (string-keyed at v0.6.0) | `[hosts {alice: 1.1.1.1, bob: 2.2.2.2}]` |
+
+Plus three CXL readability levers (ADR 0017 §D23–D25): labeled
+directive slots (`[?if cond :then a :else b]`), explicit body labels,
+and kebab-case FLWOR keywords (`order`, not `order-by`). Parameterized
+templates (ADR 0020): `?def name :params [a b] :body ...` with
+lexical-scope `dispatch_template_call`.
+
+22 locked decisions in [`spec/decisions/0017-collection-literals-and-cxl-refactor.md`](spec/decisions/0017-collection-literals-and-cxl-refactor.md);
+28 CXL conformance fixtures green across runners; 4 new
+collection-cell fixtures in `conformance/table.txt`.
+
+### NEW: Public Table API (ADR 0018 — accepted 2026-05-11)
+
+The 17-member canonical Table surface ships in **all 10 bindings**
+(V native, V-cffi, Python, Go, Rust, Java, TypeScript, C#, Kotlin,
+Swift, Ruby). Stable through v1.0.
+
+| Surface | Members |
+| --- | --- |
+| Properties (4) | `cols`, `types`, `row_count`, `col_count` |
+| Access (9)     | `row`, `column`, `col_at`, `cell`, `cell_by_name`, `slice`, `head`, `tail`, `select_cols` |
+| Iteration (2)  | `__iter__` / `each` / `for-of` over rows; `iter_cols` over `ColumnView` |
+| Conversion (5) | `to_cx`, `to_csv(delim=',')`, `to_json`, `to_data_bin`, `to_dict_list` |
+| Equality       | `equals` / `==` with recursive cell-equality |
+
+Construction: `Table.from_cx(src)` / `from_cx_all(src)` / `create(cols, types, rows)` with the 4-invariant validation (ADR 0018 §D7: len-match, unique cols, row-shape, types-len-match).
+
+`select` was renamed to `select_cols` everywhere (avoids LINQ / Enumerable conflicts in .NET / Ruby). Per-binding naming follows the language conventions: snake_case in Python/Rust/Ruby/V, camelCase in TS/Java/Kotlin/Swift, PascalCase in Go/C#.
+
+12 tests per binding, fixture-driven; full test matrix green at commit `8714baa`.
+
+### NEW: `cx table` CLI subcommand (ADR 0019 §D1 — drafted 2026-05-11)
+
+```sh
+$ cx table info data.cx
+tables: 1
+byte_size: 61
+table[0]:
+  rows: 3
+  cols: 2
+    name: _
+    age: int
+
+$ cx table dump data.cx --to=cx     # round-trip via Table API
+$ cx table load data.cx --to=cx     # symmetric inverse
+$ cx table dump data.cx --to=parquet
+# cx table dump --to=parquet: binding does not ship Parquet/Arrow
+# adapter at v0.6.0 RC — defers to libcx_arrow Phase C (ADR 0019 §D4)
+```
+
+Parquet / Arrow IPC output is staged for **Phase C** (libcx_arrow
+ecosystem bindings; per ADR 0019 §D4). v0.6.0 ships the CLI
+surface and CX round-trip path so downstreams can wire scripts now;
+flipping to native Parquet emit later is non-breaking. ADR 0019
+ratification is the user-pending gate.
+
+### NEW: Streaming-write event API (Tier 1 + Tier 2 — CX + XML formats)
+
+`EventWriter` (per-binding) emits CX / XML by event streaming —
+StartDoc / StartElement / Attr / Text / EndElement / EndDoc, plus the
+chunked-table sub-protocol (StartTable / ColSpec / RowGroup /
+EndTable). 14 well-defined error codes (W001..W013) with fail-closed
+semantics. Capability bit 27 advertised. JSON/YAML/TOML/MD emits are
+W009-stubbed pending the output-shape ADR.
+
+### NEW: Schema validator — 20/20 spec rules complete on Tier 1
+
+All 20 schema-validation rules from `spec/schema.md` land on V core,
+Python, and Go (Tier 1). 55-fixture conformance suite at commit
+`a547f9d`. Apply-defaults inserts schema-default attribute values
+during validation.
+
 ### BREAKING: leading-zero integers are now strings
 
 Source like `[zip 02134]` parses as a string in v3.4 (was `int 2134` in
@@ -123,23 +209,26 @@ All of the above are documented in [`MIGRATION.md`](MIGRATION.md) §3.
 
 ## Verification
 
-Aggregate test runs across the 9 bindings (post-v3.4 closure):
+Aggregate test runs across the 10 bindings (post-v0.6.0 closure,
+including Phase 2 Table-API fan-out):
 
-| binding    | test files                             | total | failures |
-| ---------- | -------------------------------------- | ----- | -------- |
-| Python     | api + cxpath + transform + immutability + stream + conformance | 275 | 0 |
-| Go         | go test (parallel)                     | ok    | 0 |
-| Rust       | cargo test --test-threads=1            | 105   | 0 |
-| TypeScript | api_test + conformance                 | 231   | 0 |
-| Java       | mvn test (ApiTest + ConformanceTest)   | 117   | 0 |
-| Kotlin     | gradle test (3 suites)                 | 131   | 0 |
-| Swift      | swift test (ApiTests + ConformanceTests) | 116+conformance | 0 |
-| C#         | dotnet test (api_test + conformance)   | 169+conformance | 0 |
-| Ruby       | test_api.rb + conformance.rb           | 113+conformance | 0 |
+| binding    | test files                                              | result |
+| ---------- | ------------------------------------------------------- | ------ |
+| V core     | conformance (core/extended/xml/md/cxl) + api + stream + table | green |
+| V-cffi     | api_test + stream_test + table_test                     | green  |
+| Python     | api + cxpath + transform + immutability + stream + table + conformance | green |
+| Go         | go test ./... (incl. table_test.go)                     | green  |
+| Rust       | cargo test (incl. table.rs 12 tests)                    | green  |
+| TypeScript | api_test + conformance + table                          | green  |
+| Java       | mvn test (incl. TableTest 11)                           | green  |
+| Kotlin     | gradle test (incl. TableTest 12; 193 total)             | green  |
+| Swift      | swift test (incl. TableTests 12; 179 total)             | green  |
+| C#         | dotnet test (incl. Table 17 assertions; 304 total)      | green  |
+| Ruby       | test_table.rb 12 + full Ruby suite                      | green  |
 
-Plus 11 V-core suites including new `v34_select_all_paths_test.v` and
-`v34_tooling_test.v`. No test was disabled, skipped, or weakened to
-land any phase.
+Plus the conformance corpora (core / extended / xml / md / cxl /
+namespaces) running through every Tier-1 emitter. No test was
+disabled, skipped, or weakened to land any phase.
 
 ---
 
