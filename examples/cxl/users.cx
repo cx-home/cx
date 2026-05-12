@@ -1,0 +1,5 @@
+[team
+  [member name=Alice role=admin +active]
+  [member name=Bob   role=user  +active]
+  [member name=Carol role=user  -active]
+]

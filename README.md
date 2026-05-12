@@ -1,99 +1,255 @@
 # CX
 
 > **One concise format. Six lossless conversions.** Configs, data, structured
-> documents, and log streams in a single coherent syntax that round-trips
-> through XML, JSON, YAML, TOML, and Markdown without losing meaning.
+> documents, log streams, and tabular data in a single coherent syntax that
+> round-trips through XML, JSON, YAML, TOML, Markdown, and CSV without losing
+> meaning.
 
 CX is a bracket-based document and configuration format. Every construct is
 a `[...]` pair: no closing tags to repeat, no mandatory quoting, no
-indentation rules. It reads like XML, types like YAML, and converts
-losslessly to and from the five formats that already dominate config and
-data exchange — so you can adopt it incrementally without rewriting
-existing pipelines.
+indentation rules. It reads like XML, types like TOML, and converts
+losslessly to and from the formats that already dominate config and data
+exchange — so you can adopt it incrementally without rewriting existing
+pipelines.
+
+## Install
+
+```sh
+# macOS / Linux — single statically-linked binary, no runtime deps
+curl -sSL https://cx-home.io/install | sh
+
+# Or from source (requires V 0.5.1+)
+git clone https://github.com/cx-home/cx && cd cx && make build
+```
+
+```sh
+$ cx demo
+```
+
+The in-binary demo runs in < 1 second and shows everything below working.
 
 ---
 
-## CX at a glance
-
-Five small things CX makes ordinary that other formats made hard.
-
-### 1. Config that documents itself
+## A complete example
 
 ```cx
-[server
- # bind to 0.0.0.0 so the load balancer can reach us
- host=0.0.0.0 :u16 port=8080 +tls
- [- TLS terminates here; backend speaks plaintext on 127.0.0.1:8081 ]
+[service name=auth version:u8=2
+  # primary listen socket — TLS terminates here, backend speaks plaintext
+  [server host=0.0.0.0 port:u16=8443 +tls -debug]
+
+  [database
+    url=postgres://localhost:5432/auth
+    pool_size:u16=24
+    connect_timeout_ms:u32=5000
+    slow_query_threshold:decimal=0.250
+  ]
+
+  [allowed_origins
+    https://app.example.com
+    https://admin.example.com
+  ]
+
+  [- rate limits per client tier; rps and burst are counters per second ]
+  [limits :table[tier rps:u32 burst:u32 daily_cap:u32]
+    free       10    50    100_000
+    pro        100   500   10_000_000
+    enterprise 1000  5000  999_999_999
+  ]
 ]
 ```
 
-`# line comments` and `[- block comments ]` are first-class. The rationale
-lives next to the values it explains — no separate runbook drifting out
-of sync. JSON has no comments at all; YAML and TOML drop them through
-most parser round-trips.
+One file. Typed scalars (`:u8`, `:u16`, `:u32`, `:decimal`). Boolean sigils
+(`+tls`, `-debug`). Numeric underscores (`100_000`). Comments where they
+matter (`#` line and `[- block ]`). A `:table` block for tabular rows.
+Convert it to anything:
 
-### 2. Types that survive a round trip
-
-```cx
-[server :u16 port=8080]
-[ratio :float 1.5]
-[user_id :bigint 1234567890123456789]
-[balance :decimal 1234.56]
+```sh
+$ cx --json    service.cx    # → JSON, types preserved through CXDB
+$ cx --yaml    service.cx    # → YAML
+$ cx --toml    service.cx    # → TOML
+$ cx --xml     service.cx    # → XML, with namespaces if declared
+$ cx --md      service.cx    # → Markdown, prose-aware
+$ cx --csv     service.cx    # → CSV (from :table block)
 ```
 
-`cx --json | cx --from json` brings these back unchanged. `8080` stays
-an integer; the bigint stays exact; the decimal doesn't drift to a
-float. JSON's all-numbers-are-IEEE-doubles silently breaks IDs over
-2⁵³; YAML's implicit typing means `1.10` parses as `1.1` and `no`
-parses as `false`.
+All six round-trip. `cx eq service.cx <(cx --json service.cx | cx --from=json)`
+returns 0.
 
-### 3. Config and prose, one file
+---
+
+## Mixed content — config and prose, one file
+
+The same brackets that hold typed scalars hold markup:
 
 ```cx
-[deployment
- [- production rollout notes — keep these in sync with the values below ]
- [doc
- [p This service uses [em rolling] updates with a 30-second drain window.]
- [p Rollback target is the previous git tag.]
- ]
- [server host=0.0.0.0 :u16 port=8080]
+[release v=2.1.0 :date date=2026-05-12
+  [- production rollout notes ]
+  [doc
+    [p This release adds the [strong Public Table API] across all 10
+       language bindings and ships [em CXL 1.0] as the templating layer.]
+    [p Upgrade path: see [link href=docs/migrations/v0.5-to-v0.6.md
+       v0.5 → v0.6 migration guide].]
+  ]
+
+  [server host=0.0.0.0 :u16 port=8443]
+  [feature_flags
+    new_billing=true
+    legacy_auth=false
+  ]
 ]
 ```
 
-Structured config and the prose that explains it live in the same
-document because the grammar is the same for both. The pattern of "the
-runbook is on the wiki, the values are in git, neither is canonical"
-stops being unavoidable.
+Inline `[em ...]` and `[strong ...]` inside paragraph text — the thing JSON,
+YAML, and TOML can't represent without escape gymnastics, and the thing XML
+traditionally does at the cost of verbosity. CX uses the same brackets either
+way.
 
-### 4. Log streams in the same grammar
+---
 
-```
-ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
-ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true
-ts=2026-05-07T10:30:01Z level=error svc=api req_id=ghi789 err='connection refused'
-```
+## CXL — the CX Language
 
-CX's *logfmt mode* treats bare `key=value` lines as one synthetic
-element each — the format you already see in production logs is valid
-CX. Same parser, same query language (CXPath), same bindings as for
-your config.
+CXL is CX's templating, querying, and transformation language. Same parser,
+same data model, no separate runtime. A `.cxl` file is itself a `.cx`
+document — so every CX tool (parser, schema validator, formatter, hash,
+diff) works on CXL programs unchanged.
 
-### 5. Mixed-content documents
+Given a context document:
 
 ```cx
-[article lang=en
- [head [title Introducing CX]]
- [body
- [p CX is at home in [em prose] and [strong structured data] alike.]
- [pre :code [# server { port = 8080 } #]]
- ]
+[user name=Alice role=admin active=true]
+```
+
+A template can interpolate, conditionally branch, iterate, and render:
+
+```cxl
+[?if @active
+  :then Welcome [?= @name]! Role: [?= @role].
+  :else Account [?= @name] is disabled.
 ]
 ```
 
-Inline `[em ...]` inside paragraph text — the thing JSON, YAML, and
-TOML can't represent without escape gymnastics, and the thing XML
-traditionally does at the cost of verbosity. CX uses the same brackets
-either way.
+```sh
+$ cx eval notification.cxl --data=user.cx
+Welcome Alice! Role: admin.
+```
+
+A more involved example — iterate over elements:
+
+```cx
+[team
+  [member name=Alice role=admin +active]
+  [member name=Bob   role=user  +active]
+  [member name=Carol role=user  -active]
+]
+```
+
+```cxl
+[?for m :in //member :return - [?= m/@name] ([?= m/@role])
+]
+```
+
+```sh
+$ cx eval team.cxl --data=team.cx
+- Alice (admin)- Bob (user)- Carol (user)
+```
+
+(Output joining and whitespace control are part of CXL 1.0's `[?-` /
+`-]` syntax; see [`docs/CXL.md`](docs/CXL.md).)
+
+CXL 1.0 ships in v0.6.0 with `[?if]` / `[?for]` / `[?with]` / `[?def]` /
+`[?use]` / `[?include]` directives, `[?= expr]` interpolation, a frozen
+filter set (`upper`, `lower`, `trim`, `length`, `concat`, `join`, `replace`,
+`default`, `first`, `rest`, `empty`, `reverse`, `escape-html`, `escape-url`,
+`raw`), and output targets (`text` / `cx` / `html` with auto-escape).
+
+CXL 3.1 (XQuery 3.1 equivalence — FLWOR, maps, arrays, user-defined
+functions, arrow operator) is planned for v0.9.0+. CXL 4.0 (XQuery 4.0
+equivalence) is the long-term target.
+
+Full reference: [`docs/CXL.md`](docs/CXL.md).
+
+---
+
+## CXDB — the binary form
+
+`.cxdb` is CX's content-addressable binary format. Same data, same
+semantics, smaller wire and stricter integrity:
+
+```sh
+$ cx --to=cxdb service.cx > service.cxdb
+$ wc -c service.cx service.cxdb
+     597 service.cx
+     404 service.cxdb              # ~32% smaller; varint-packed, dictionary-encoded
+```
+
+CXDB gives you:
+
+- **Type fidelity.** `int64` stays `int64`. `bigint` stays exact.
+  `decimal` doesn't drift to float. The JSON round-trip that silently
+  truncates IDs above 2⁵³ doesn't happen through CXDB.
+- **Content addressability.** The bytes *are* the strict-canonical form —
+  no re-canonicalization needed before hashing. The same data produces the
+  same SHA-256 across every binding, every platform. Use it as a cache key,
+  a deduplication key, or a signed-artifact identity.
+- **Streaming.** Pull-based reader for files larger than RAM
+  (`cx_table_reader_*` / per-binding `TableReader`); bounded memory.
+- **Chunked tables.** Tabular data is column-major in CXDB even though it's
+  row-major in CX text — zstd-compressed, dictionary-encoded, and Arrow
+  C-Data interop is one optional library (`libcx_arrow`) away.
+
+```python
+# Per-binding: parse, work in Python, hash bytes for a cache key.
+import cxlib, hashlib
+doc = cxlib.parse(open("service.cx").read())
+blob = cxlib.to_data_bin("service.cx")    # bytes — the canonical form
+key  = hashlib.sha256(blob).hexdigest()
+```
+
+See [`spec/data_bin.md`](spec/data_bin.md) for the wire format.
+
+---
+
+## CLI tour
+
+A single statically-linked binary; no Python, Node, or JVM in the way.
+
+```sh
+$ cx demo                            # in-binary showcase (< 1 second)
+$ cx scaffold config > my.cx         # typed config skeleton
+$ cx scaffold table  > rows.cx       # :table skeleton
+$ cx scaffold doc    > article.cx    # mixed-content skeleton
+
+# Conversion (any → CX, CX → any)
+$ cx --json     file.cx              # → JSON
+$ cx --xml      file.cx              # → XML
+$ cx --yaml     file.cx              # → YAML
+$ cx --toml     file.cx              # → TOML
+$ cx --md       file.cx              # → Markdown
+$ cx --csv      file.cx              # → CSV (from :table)
+$ cx --from=json --to=cx data.json   # JSON → CX
+
+# Canonical / hashing / diff / equality
+$ cx fmt        file.cx              # idempotent canonical formatter
+$ cx canonical  file.cx              # strict canonical (data only)
+$ cx hash       file.cx              # SHA-256 hex
+$ cx eq         a.cx b.cx            # exit 0 iff data-equivalent
+$ cx diff       a.cx b.cx            # semantic diff
+
+# Linting & validation
+$ cx lint       file.cx              # style + correctness checks
+$ cx validate   file.cx --schema=svc.cxs
+
+# Tabular operations
+$ cx table info   data.cx            # rows, cols, types, byte size
+$ cx table dump   data.cx --to=cx    # round-trip via Table API
+
+# Templating
+$ cx eval       template.cxl --data=ctx.cx
+$ cx render     report.cxl --data=metrics.cx --target=html
+```
+
+Every subcommand is also available as a per-binding API call. See
+[`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) for the one-page reference.
 
 ---
 
@@ -105,142 +261,41 @@ either way.
 | Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes | ❌ number only (no int/float distinction) | partial (auto-detect, often wrong) | ✅ int / float / bool / datetime | partial (xs:type) |
 | Comments | ✅ block `[- ... ]` and line `# ...` | ❌ | ✅ `# ...` | ✅ `# ...` | ✅ `<!-- ... -->` |
 | Mixed content (markup + data) | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
-| Multiple top-level docs | ✅ no wrapper required | ❌ requires `[...]` array | ✅ via `---` separator | ❌ single document | partial (with declaration tricks) |
+| Multiple top-level docs | ✅ no wrapper required | ❌ requires `[...]` array | ✅ via `---` separator | ❌ single document | partial |
 | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
-| Type fidelity through round-trip | ✅ guaranteed via CXDB v1 binary | ❌ int↔float coerced silently | partial | ✅ preserved | partial |
+| Type fidelity through round-trip | ✅ guaranteed via CXDB | ❌ int↔float coerced silently | partial | ✅ preserved | partial |
 | Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
-| Streaming parser | ✅ pull-based handle API | partial (per-implementation) | ❌ usually whole-file | ❌ | ✅ SAX |
+| Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
+| Templating language | ✅ CXL (same parser / data model) | external | external | external | XSLT / XQuery |
+| Content-addressable hash | ✅ canonical bytes → SHA-256 | ❌ key-order-dependent | ❌ | ❌ | ❌ |
 
-For the full head-to-head against each format — including where CX
-wins, where it doesn't, and the format-by-format adoption guidance —
-see [`docs/COMPARISON.md`](docs/COMPARISON.md).
+For the full head-to-head — including the conversion-loss matrix and per-
+format adoption guidance — see [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 ---
 
 ## Status
 
-CX is pre-1.0 and approaching v0.6.0 — the
-**API/format-stability boundary through 1.0**. The grammar is stable,
-the C ABI is versioned and forward-compatible, and the full test matrix
-passes across all 10 language bindings (V native + V-cffi + 8 FFI
-bindings). v0.6.0 highlights:
+CX is pre-1.0 and approaching v0.6.0 — the **API/format-stability boundary
+through 1.0**. The grammar is stable, the C ABI is versioned and forward-
+compatible, and the full test matrix passes across all 10 language bindings
+(V native + V-cffi + 8 FFI bindings).
 
-- **17-member Public Table API** 
- shipping in every binding; stable through v1.0.
-- **Collection literals** 
- — first-class `seq[T]`, `arr[T]`, `map[K, V]` with cross-emitter parity.
-- **`cx table` CLI subcommand** ( §D1)
- — `info` / `dump` / `load` verbs with `--to=cx` round-trip live;
- Parquet / Arrow IPC export reserved for Phase C (libcx_arrow).
-- **Streaming-write event API** (Tier 1/2) + **20/20 schema validator
- rules** (Tier 1) round out the format-side completeness.
+v0.6.0 highlights:
 
-The 2026-05 binding audit closed five
-systemic shortcuts (CB-1..CB-5) at the core and across all bindings —
-duplication is gone, type fidelity is preserved through CXDB, and one
-fix-site replaces drift across nine. Formal security review and
-fuzz-testing infrastructure are still ahead, so pin a tested version
-and apply normal pre-1.0 caution before customer-facing use.
+- **17-member Public Table API** in every binding; stable through v1.0.
+- **Collection literals** — first-class `seq[T]`, `arr[T]`, `map[K, V]`
+  with cross-emitter parity.
+- **CXL 1.0** evaluator (V reference) + 10-binding decoder rollout.
+- **`cx table` CLI subcommand** — `info` / `dump` / `load` verbs with
+  `--to=cx` round-trip live; Parquet / Arrow IPC export reserved for the
+  libcx_arrow follow-up.
+- **Schema validator** — 20 of 20 spec rules complete on V / Python / Go.
+- **Streaming-write event API** (capability bit 27) for CX + XML.
 
-**CXL — the CX Language** — a CX-native expression language (`.cxl`)
-for rendering, querying, and transformation, designed for eventual
-feature equivalence with XQuery 4.0. CXL programs share one parser
-and one data model with the format itself, in the spirit of XML+XQuery
-but with CX's typed scalars, indentation-significant syntax, and
-hashable canonical form. **CXL 1.0 (template-oriented subset, with
-labeled directive form §D23 and parameterized templates
-per ) ships at CX release v0.6.0**; CXL 3.1 (full FLWOR + maps
-+ arrays + XQuery 3.1 equivalence) at v0.9.0+; CXL 4.0 is the long-
-term target. The architectural commitment is in
-;
-the v0.6.0 surface-syntax rewrite is in
-.
-
----
-
-## Why CX
-
-If you've used JSON, YAML, TOML, XML, and Markdown long enough, you've
-hit a recurring set of papercuts:
-
-- A YAML file behaves differently after copy-paste because indentation
- got rewritten.
-- A JSON config has no comments, so the *why* lives in a separate doc
- that goes stale.
-- An integer ID over 2⁵³ silently becomes an approximate float through
- a JSON round trip.
-- A document needs both prose and config-shaped data — neither
- Markdown nor YAML cover both, so you maintain two files and hope
- they stay aligned.
-- A schema change loses the distinction between `8080` (integer) and
- `"8080"` (string) because the wire format never preserved it.
-- A log line and a config file use different parsers, different query
- languages, and different libraries, so you write the same selector
- logic three times.
-
-Each of these has a workaround — you've shipped them. CX is what
-happens when one grammar is designed with all six in mind from the
-start:
-
-- **One bracket form, every shape.** No indentation rules, no
- closing-tag repetition, no special-case section headers. `[...]`
- carries config, data, prose, log lines, and tabular rows uniformly.
-- **Optional explicit types.** `:int`, `:f64`, `:decimal`, `:bigint`,
- `:u16[]` — declare the type once and the value survives conversion
- to JSON, YAML, TOML, XML, and back.
-- **Comments as a first-class construct.** `# line` and `[- block ]`
- forms, preserved through `cx fmt`. Strict-canonical mode (used for
- hashing) is the only place they're dropped, and that's a deliberate
- trade.
-- **Mixed content out of the box.** Inline markup inside text works
- the same way nested config does — same brackets, same parser.
-- **Lossless six-way conversion.** XML, JSON, YAML, TOML, and
- Markdown round-trip with documented per-format caveats
- ([`spec/conversions.md`](spec/conversions.md)). Adopt CX
- incrementally without rewriting downstream consumers.
-
-For an honest head-to-head against each format, including where CX is
-*not* the right pick, see [`docs/COMPARISON.md`](docs/COMPARISON.md).
-
----
-
-## Quick install
-
-```sh
-git clone https://github.com/cx-home/cx
-cd cx
-make build # CLI + libcx shared library
-make promote-cli # install `cx` to /usr/local/bin
-```
-
-Prerequisites: [V](https://vlang.io) 0.5.1+. No other dependencies.
-
-```sh
-$ cx --version
-cx 0.5.0
-
-$ echo '[server host=localhost port=8080]' | cx --json
-{"server": {"host": "localhost", "port": 8080}}
-```
-
-For language bindings (Python, Go, Rust, TypeScript, Java, Kotlin, Swift,
-C#, Ruby), see the per-binding READMEs under [`lang/`](lang/).
-
----
-
-## Where to go next
-
-| You want to... | Read this |
-| --- | --- |
-| **See more CX in many shapes** (config / data / docs / logs / table) | [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) |
-| **Decide whether to adopt CX over JSON/YAML/TOML/XML** | [`docs/COMPARISON.md`](docs/COMPARISON.md) |
-| **Learn the format end-to-end with the design rationale** | [`docs/TUTORIAL.md`](docs/TUTORIAL.md) |
-| **Use CX from your favorite language** | [`lang/<your-lang>/cxlib/README.md`](lang/) |
-| **Check the formal grammar / C ABI / conversion rules** | [`spec/`](spec/) |
-| **Upgrade existing CX from a previous version** | [`MIGRATION.md`](MIGRATION.md) |
-| **Read frequently asked questions** | [`docs/FAQ.md`](docs/FAQ.md) |
-| **Contribute code, docs, or bug reports** | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| **See what's in the latest release** | [`RELEASE_NOTES_v0.6.0.md`](RELEASE_NOTES_v0.6.0.md) |
+Formal security review and fuzz-testing infrastructure are still ahead, so
+pin a tested version and apply normal pre-1.0 caution before customer-facing
+use.
 
 ---
 
@@ -257,19 +312,34 @@ C#, Ruby), see the per-binding READMEs under [`lang/`](lang/).
 | C# | `dotnet add package CX` |
 | Ruby | `gem install cxlib` |
 
-All 9 FFI bindings wrap the same `libcx` shared library and expose the
-same core API: parse, query, mutate, stream, convert, hash, equality.
-The 10th binding is **V native** — V is the reference implementation,
-so `lang/v/native/` imports the V core directly rather than going
-through FFI. Per-binding READMEs live under [`lang/`](lang/).
+All 9 FFI bindings wrap the same `libcx` shared library and expose the same
+core API. The 10th binding is **V native** — V is the reference
+implementation, so `lang/v/native/` imports the V core directly rather than
+going through FFI. Per-binding READMEs live under [`lang/`](lang/).
 
-Every binding ships the v0.6.0 **Public Table API** 
-with a uniform 17-member surface — properties (`cols`/`types`/`row_count`/
-`col_count`), access (`row`/`column`/`col_at`/`cell`/`cell_by_name`/
-`slice`/`head`/`tail`/`select_cols`), iteration, and `to_cx`/`to_csv`/
-`to_json`/`to_data_bin`/`to_dict_list` conversion. Method names follow
+Every binding ships the v0.6.0 **Public Table API** with a uniform 17-member
+surface (`row` / `column` / `cell` / `slice` / `head` / `tail` / `select_cols`
+/ iteration / 5 conversion / 4 properties / equality). Method names follow
 each language's conventions (snake_case, camelCase, PascalCase) but the
 underlying behaviour is byte-identical.
+
+---
+
+## Where to go next
+
+| You want to... | Read this |
+| --- | --- |
+| **Try CX in 60 seconds** | run `cx demo` |
+| **Write your first `.cx` file** | [`docs/TUTORIAL.md`](docs/TUTORIAL.md) |
+| **One-page syntax reference** | [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) |
+| **Compare CX to JSON / YAML / TOML / XML** | [`docs/COMPARISON.md`](docs/COMPARISON.md) |
+| **Learn CXL (templating + querying + transform)** | [`docs/CXL.md`](docs/CXL.md) |
+| **Use CX from your favorite language** | [`lang/<your-lang>/cxlib/README.md`](lang/) |
+| **Check the formal grammar / C ABI / conversion rules** | [`spec/`](spec/) |
+| **Frequently asked questions** | [`docs/FAQ.md`](docs/FAQ.md) |
+| **Upgrade existing CX from a previous version** | [`MIGRATION.md`](MIGRATION.md) |
+| **See what's in the latest release** | [`RELEASE_NOTES_v0.6.0.md`](RELEASE_NOTES_v0.6.0.md) |
+| **Contribute code, docs, or bug reports** | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
 ---
 
@@ -277,25 +347,11 @@ underlying behaviour is byte-identical.
 
 | repo | what's there |
 | ---- | ------------ |
-| [`cx`](https://github.com/cx-home/cx) (this repo) | spec, V core, all 9 bindings, conformance, examples, docs |
-| [`cx-v`](https://github.com/cx-home/cx-v) | V binding (separate because V can also import vcx natively) |
-
-Issues and pull requests welcome on `cx`. See
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for dev setup, testing
-expectations, and the audit-driven coding rules.
+| [`cx`](https://github.com/cx-home/cx) (this repo) | spec, V core, all 10 bindings, conformance suite, examples, docs |
+| [`cx-v`](https://github.com/cx-home/cx-v) | V native package (`v install cx-home.cx-v`) |
 
 ---
 
 ## License
 
-Apache License 2.0 — see [`LICENSE`](LICENSE).
-
----
-
-*CX is engineered to be approachable but takes its formal contracts
-seriously. The
-[`spec/`](spec/) directory is normative; the
-2026-05 binding audit is the closing
-artifact for the project's "no shortcuts" rule
-([`spec/governance.md`](spec/governance.md) §1). If you find a
-bug or a spec violation, that's a real bug — please report it.*
+Apache-2.0. See [`LICENSE`](LICENSE).
