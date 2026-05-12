@@ -38,6 +38,7 @@ and mixed content — all in one file, with the same brackets throughout:
 ```cx
 [service name=auth version:u8=2
 
+  # nested element with attributes including boolean signal: +tls means tls=true
   [server
     host=0.0.0.0
     port:u16=8443
@@ -50,49 +51,66 @@ and mixed content — all in one file, with the same brackets throughout:
     timeout_ms:u32=5000
   ]
 
-  [- Tier-based rate limits. Daily cap counts successful requests only;
-     errors and 429s don't count toward the cap. ]
+  # block comment for multi-line content or to not parse an element
+  [- Daily cap counts successful requests only;
+     errors and 429s do not count toward the cap. ]
+
+  # :table block, typed columns
   [limits :table[tier rps:u32 burst:u32 daily_cap:u32]
     free       10    50    100_000
     pro        100   500   10_000_000
     enterprise 1000  5000  999_999_999
   ]
 
+  # array literal
   [allowed_origins [
     https://app.example.com,
     https://admin.example.com,
   ]]
 
+  # map literal
   [features {
     new_billing: true,
     legacy_auth: false,
     canary_rollout: true,
   }]
 
+  # sequence literal where elements flatten in CXL processing
   [labels (production, payments, public-facing,)]
 
+  # array of arrays: weighted upstreams as [name, weight] tuples
+  [upstreams [
+    [us-east-1, 60,],
+    [us-west-2, 30,],
+    [eu-west-1, 10,],
+  ]]
+
+  # mixed content: markup inside prose
   [doc
-    [p This service handles authentication for [strong all production traffic].
-       Rate limits are tier-based and reset at midnight UTC.]
+    [p This service handles authentication for [strong all production
+       traffic]. Rate limits reset at midnight UTC.]
   ]
 ]
 ```
 
-What's in those 34 lines:
+What's in those lines:
 
 - **Typed scalars** — `version:u8=2`, `port:u16=8443`, `pool_size:u16=24`,
   `timeout_ms:u32=5000`. Each survives conversion to JSON / YAML / TOML /
   XML / CXDB unchanged.
 - **Boolean sigils** — `+tls` means `tls=true`; `-debug` would mean `false`.
 - **Numeric underscores** — `100_000`, `10_000_000`.
-- **A meaningful comment** — `[- … ]` block form is for multi-line rationale
-  that explains *why*, not what the code already says.
+- **Line comments** — `# …` to end of line, preserved through `cx fmt`.
+- **Block comments** — `[- … ]` form for multi-line content, or to comment
+  out a whole element without re-parsing it.
 - **`:table` block** — typed columns, row-major in CX text, column-major
   on the CXDB wire, CSV-natively round-trippable.
 - **Array literal** — `[https://…, https://…,]` for an ordered list.
 - **Map literal** — `{new_billing: true, …}` for a string-keyed dictionary.
-- **Sequence literal** — `(production, payments, public-facing,)` for a
-  flat unordered set.
+- **Sequence literal** — `(production, payments, public-facing,)` for a flat
+  set that flattens into its containing context under CXL processing.
+- **Array of arrays** — `[[us-east-1, 60,], [us-west-2, 30,], …]` for
+  nested rows. Pairs, triples, matrices — all the same shape.
 - **Mixed content** — `[strong all production traffic]` inline inside a
   paragraph. The same brackets carry markup *and* structured config.
 
@@ -253,8 +271,8 @@ semantics, smaller wire and stricter integrity:
 ```sh
 $ cx --to=cxdb service.cx > service.cxdb
 $ wc -c service.cx service.cxdb
-     874 service.cx
-     467 service.cxdb              # ~47% smaller; varint-packed, dictionary-encoded
+    1301 service.cx
+     460 service.cxdb              # ~65% smaller; varint-packed, dictionary-encoded
 ```
 
 CXDB gives you:
