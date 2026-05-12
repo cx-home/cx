@@ -45,7 +45,7 @@ check "all 11 version locations = $EXPECTED_VERSION" \
 
 section "Working tree state"
 check "git working tree clean" \
- "test -z \"\$(git status --porcelain | grep -v '^?? \\\\.claude/' | grep -v '^?? \\\\.cache/')\""
+ "test -z \"\$(git status --porcelain | grep -v '^?? \\.claude/' | grep -v '^?? \\.cache/')\""
 check "on a release branch (not detached)" \
  "git symbolic-ref -q HEAD"
 
