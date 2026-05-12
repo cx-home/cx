@@ -1,6 +1,13 @@
 ; ── Element tags ─────────────────────────────────────────────────────────────
 (element name: (tag_name) @function)
 
+; ── Prose elements (known MD/markup set) ──────────────────────────────────────
+; Overrides @function for the built-in prose element names so authors can
+; distinguish structural markup from domain-specific elements at a glance.
+; Uses @markup.link (teal/cyan in most themes) — distinct from @function (blue).
+((element name: (tag_name) @markup.link)
+ (#any-of? @markup.link "p" "ul" "ol" "li" "table" "hr" "br" "a" "img" "doc" "article" "strong" "b" "em" "i" "del" "s" "u" "sub" "sup" "c"))
+
 ; ── Attributes ────────────────────────────────────────────────────────────────
 (attribute name: (attr_name) @property)
 (attribute "=" @operator)

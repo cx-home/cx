@@ -2,13 +2,26 @@
   "name": "cx-language",
   "displayName": "CX Language",
   "description": "Syntax highlighting and completions for CX markup/configuration",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "cx",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Programming Languages"],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:cx",
+    "workspaceContains:**/*.cx"
+  ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "CX",
+      "properties": {
+        "cx.languageServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the CX language server (out/server.js). Leave blank to auto-detect next to the extension."
+        }
+      }
+    },
     "languages": [
       {
         "id": "cx",

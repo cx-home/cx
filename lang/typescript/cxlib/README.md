@@ -4,6 +4,29 @@ TypeScript binding for the CX format library. Parses, streams, queries, and
 transforms CX documents; converts between CX, XML, JSON, YAML, TOML, and
 Markdown via `libcx`.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `loads()` / `dumps()`
+> type fidelity (integers no longer coerce through the JSON detour;
+> values > 2^53 are now `bigint`).
+
+## Canonical-form tooling (v3.4)
+
+```ts
+import { fmt, canonical, hash, eq } from '@cx-home/cx';
+
+const src1 = "[config\n  [- comment]\n  [server host=localhost]\n]";
+const src2 = "[config [server host=localhost]]";
+fmt(src1);          // lossless canonical (preserves the comment)
+canonical(src1);    // strict canonical   (comment stripped)
+hash(src1);         // 64-char SHA-256 hex of strict canonical bytes
+eq(src1, src2);     // true — data-equivalent inputs
+```
+
+`fmt` is idempotent. `canonical`/`hash`/`eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ## Requirements
 
 - **Node.js 18+**
@@ -309,9 +332,61 @@ decimals → `number`, everything else → `string`. An invalid expression throw
 `PINode(target, data?)`, `XMLDeclNode(version, encoding?, standalone?)`,
 `CXDirectiveNode(attrs)`, `BlockContentNode(items)`, `DoctypeDeclNode(name, ...)`
 
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Function | Description |
+|---|---|
+| `xmlToDataBin(s)`  | XML text → CXDB v1 framed bytes |
+| `jsonToDataBin(s)` | JSON text → CXDB v1 framed bytes |
+| `yamlToDataBin(s)` | YAML text → CXDB v1 framed bytes |
+| `tomlToDataBin(s)` | TOML text → CXDB v1 framed bytes |
+| `mdToDataBin(s)`   | Markdown text → CXDB v1 framed bytes |
+| `dataBinToXml(b)`  | CXDB v1 framed bytes → XML text |
+| `dataBinToJson(b)` | CXDB v1 framed bytes → JSON text |
+| `dataBinToYaml(b)` | CXDB v1 framed bytes → YAML text |
+| `dataBinToToml(b)` | CXDB v1 framed bytes → TOML text |
+| `dataBinToMd(b)`   | CXDB v1 framed bytes → Markdown text |
+
+Each `*ToDataBin` returns `Uint8Array`; each `dataBinTo*` accepts
+`Uint8Array` and returns `string`. The framed bytes are CX Data
+Binary v1 — see `spec/data_bin.md` for the wire format. Round-trip:
+`dataBinToX(xToDataBin(s)) === s` (after canonicalization).
+
 ## Tests
 
 ```sh
 cd /path/to/cx
 npx tsx lang/typescript/api_test.ts
 ```
+
+## 30-second quickstart
+
+<!-- quickstart-begin: typescript -->
+```typescript
+import { parse, toJson, Table } from "@cx-home/cx";
+
+// Parse + read a typed value out
+const doc = parse('[server [port :u16 8080] [host localhost]]');
+console.log(doc.at('server/port')?.intValue());   // 8080
+
+// Round-trip to JSON, lossless
+console.log(toJson('[user [id :i64 9007199254740993]]'));
+
+// Public Table API (ADR 0018) — 17-member surface
+const src = `[users :table[name age:int]
+  alice 30
+  bob   25
+]`;
+const t = Table.fromCx(src);
+console.log(t.rowCount, t.cols);    // 2 [ 'name', 'age' ]
+for (const row of t) {
+    console.log(row.name, row.age);
+}
+console.log(t.toCsv());
+```
+<!-- quickstart-end -->

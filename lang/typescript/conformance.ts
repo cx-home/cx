@@ -99,6 +99,32 @@ function runTest(t: TestCase): string[] {
   const failures: string[] = [];
   const s = t.sections;
 
+  // ── CXL evaluation (in_cxl + in_cx → out_text / out_err) ───────────────────
+  if ('in_cxl' in s && 'in_cx' in s) {
+    if ('out_text' in s) {
+      try {
+        const got = cx.evalCxl(s['in_cx'], s['in_cxl'], '');
+        if (s['out_text'] !== got) {
+          failures.push(`out_text mismatch\n  expected:\n${s['out_text']}\n  got:\n${got}`);
+        }
+      } catch (e) {
+        failures.push(`eval_cxl error: ${(e as Error).message}`);
+      }
+    }
+    if ('out_err' in s) {
+      try {
+        cx.evalCxl(s['in_cx'], s['in_cxl'], '');
+        failures.push(`out_err: expected failure containing ${s['out_err'].trim()}, got success`);
+      } catch (e) {
+        const msg = (e as Error).message;
+        if (!msg.includes(s['out_err'].trim())) {
+          failures.push(`out_err mismatch\n  expected substring: ${s['out_err'].trim()}\n  got: ${msg}`);
+        }
+      }
+    }
+    return failures;
+  }
+
   let src = '', inFmt = '';
   for (const [key, fmt] of [
     ['in_cx','cx'], ['in_xml','xml'], ['in_json','json'],
@@ -190,6 +216,7 @@ const suites = args.length > 0 ? args : [
   path.join(base, 'extended.txt'),
   path.join(base, 'xml.txt'),
   path.join(base, 'md.txt'),
+  path.join(base, 'cxl.txt'),
 ];
 
 let totalFailed = 0;

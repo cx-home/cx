@@ -4,6 +4,28 @@ Go binding for the CX format library via CGo. Parses, streams, queries, and
 transforms CX documents; converts between CX, XML, JSON, YAML, TOML, and
 Markdown via `libcx`.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `Loads()` / `Dumps()` type
+> fidelity (integers no longer coerce to `float64` through the JSON detour).
+
+## Canonical-form tooling (v3.4)
+
+Four convenience functions for canonical text, hashing, and equality:
+
+```go
+src1 := "[config\n  [- comment]\n  [server host=localhost]\n]"
+src2 := "[config [server host=localhost]]"
+cxlib.Fmt(src1)        // lossless canonical — preserves the comment
+cxlib.Canonical(src1)  // strict canonical   — comment stripped
+cxlib.Hash(src1)       // 64-char SHA-256 hex of strict canonical bytes
+cxlib.Eq(src1, src2)   // true — data-equivalent inputs
+```
+
+`Fmt` is idempotent. `Canonical`/`Hash`/`Eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ## Requirements
 
 - Go 1.21+
@@ -448,8 +470,137 @@ a non-nil `error`.
 | `Target` | `string` | `PI` |
 | `Data` | `*string` | `PI` (when present) |
 
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Function | Description |
+|---|---|
+| `cxlib.XmlToDataBin(s)`  | XML text → CXDB v1 framed bytes |
+| `cxlib.JsonToDataBin(s)` | JSON text → CXDB v1 framed bytes |
+| `cxlib.YamlToDataBin(s)` | YAML text → CXDB v1 framed bytes |
+| `cxlib.TomlToDataBin(s)` | TOML text → CXDB v1 framed bytes |
+| `cxlib.MdToDataBin(s)`   | Markdown text → CXDB v1 framed bytes |
+| `cxlib.DataBinToXml(b)`  | CXDB v1 framed bytes → XML text |
+| `cxlib.DataBinToJson(b)` | CXDB v1 framed bytes → JSON text |
+| `cxlib.DataBinToYaml(b)` | CXDB v1 framed bytes → YAML text |
+| `cxlib.DataBinToToml(b)` | CXDB v1 framed bytes → TOML text |
+| `cxlib.DataBinToMd(b)`   | CXDB v1 framed bytes → Markdown text |
+
+The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+the wire format. Round-trip: `DataBinToX(XToDataBin(s)) == s` (after
+canonicalization).
+
+## Apache Arrow C-Data interop (v0.6.0+, optional)
+
+Bridges CXDB chunked-tables to Apache Arrow `ArrowArrayStream` via
+`libcx_arrow` (`spec/abi.md §2.11`, capability bit `0x800000`). The
+bridge handles all 9 v0.6.0 column types (`int`, `i8`, `i16`, `i32`,
+`float`, `bool`, `string`, `date`, `bytes`); `datetime` / `decimal` /
+dictionary columns are deferred and surface a clear error.
+
+The surface is gated behind a `arrow` build tag so the default
+`go build` does not pull in the apache/arrow Go module. Mirrors the
+Python `pip install cxlib[arrow]` opt-in:
+
+```sh
+# build / test with the arrow tag
+go build -tags arrow ./...
+go test  -tags arrow ./...
+make test-go-arrow         # builds libcx_arrow + runs the suite
+```
+
+```go
+import (
+    "github.com/cx-home/cx/lang/go/cxlib"
+    "github.com/apache/arrow/go/v18/arrow"
+    "github.com/apache/arrow/go/v18/arrow/array"
+    "github.com/apache/arrow/go/v18/arrow/memory"
+)
+
+if cxlib.ArrowAvailable() {                       // always true under -tags arrow
+    fmt.Printf("0x%x\n", cxlib.ArrowFeatures())   // 0x800000
+}
+
+// Forward — CXDB chunked-table → Arrow.
+payload, _ := cxlib.ToDataBinChunked(`[points :table[name:string score:int]
+  alice 91
+  bob 88]`)
+reader, _ := cxlib.ArrowExport(payload)           // array.RecordReader
+defer reader.Release()
+for reader.Next() {
+    rec := reader.Record()
+    // rec.Column(0).(*array.String), rec.Column(1).(*array.Int64), ...
+}
+
+// Inverse — build an Arrow record directly, drain into CXDB bytes.
+schema := arrow.NewSchema([]arrow.Field{
+    {Name: "name",  Type: arrow.BinaryTypes.String},
+    {Name: "score", Type: arrow.PrimitiveTypes.Int64},
+}, nil)
+bld := array.NewRecordBuilder(memory.NewGoAllocator(), schema)
+defer bld.Release()
+bld.Field(0).(*array.StringBuilder).AppendValues([]string{"alice", "bob"}, nil)
+bld.Field(1).(*array.Int64Builder).AppendValues([]int64{91, 88}, nil)
+rec := bld.NewRecord(); defer rec.Release()
+rdr, _ := array.NewRecordReader(schema, []arrow.Record{rec}); defer rdr.Release()
+out, _ := cxlib.ArrowImportToDataBin(rdr)          // unframed CXDB bytes
+```
+
+Functions: `ArrowAvailable()`, `ArrowFeatures()`, `ArrowVersion()`,
+`ArrowMergedFeatures()`, `ArrowExport(payload []byte) (array.RecordReader, error)`,
+`ArrowImportToDataBin(reader array.RecordReader) ([]byte, error)`.
+Naming uses an `Arrow*` prefix on `package cxlib` because a Go
+package literally named `arrow` would shadow the apache/arrow
+import path.
+
+`ArrowExport` accepts UNFRAMED CXDB bytes — the shape
+`ToDataBinChunked` returns. `ArrowImportToDataBin` returns
+UNFRAMED bytes. Bytes can be re-decoded with `ArrowExport` or any
+other CXDB consumer.
+
 ## Tests
 
 ```sh
-make test-golang
+make test-go               # default suite (no arrow dep)
+make test-go-arrow         # adds the Arrow C-Data bridge surface
 ```
+
+## 30-second quickstart
+
+<!-- quickstart-begin: go -->
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/cx-home/cx/lang/go/cxlib"
+)
+
+func main() {
+    // Parse + read a typed value out
+    doc, _ := cxlib.Parse(`[server [port :u16 8080] [host localhost]]`)
+    fmt.Println(doc.At("server/port").IntValue())   // 8080
+
+    // Round-trip to JSON, lossless
+    out, _ := cxlib.ToJson(`[user [id :i64 9007199254740993]]`)
+    fmt.Println(out)
+
+    // Public Table API (ADR 0018) — 17-member surface
+    src := `[users :table[name age:int]
+  alice 30
+  bob   25
+]`
+    t, _ := cxlib.TableFromCx(src)
+    fmt.Println(t.RowCount(), t.Cols())   // 2 [name age]
+    for _, row := range t.Rows() {
+        fmt.Println(row["name"], row["age"])
+    }
+    csv, _ := t.ToCsv(',')
+    fmt.Print(csv)
+}
+```
+<!-- quickstart-end -->

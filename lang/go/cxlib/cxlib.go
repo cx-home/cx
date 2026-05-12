@@ -90,6 +90,284 @@ func ToEventsBin(input string) ([]byte, error) {
 	return extractBinPayload(raw, errPtr)
 }
 
+// ── Phase 6 / canonical-form tooling (spec/abi.md §2.6) ──────────────────────
+
+// Fmt returns the lossless canonical text CX. Preserves comments and
+// other presentation; normalizes whitespace/quoting. Idempotent.
+func Fmt(input string) (string, error) {
+	return callC(func(s *C.char, e **C.char) *C.char { return C.cx_fmt(s, e) }, input)
+}
+
+// Canonical returns the strict canonical text CX. Strips presentation
+// (comments, etc.) so byte-identical output corresponds to data
+// equivalence.
+func Canonical(input string) (string, error) {
+	return callC(func(s *C.char, e **C.char) *C.char { return C.cx_canonical(s, e) }, input)
+}
+
+// Hash returns the SHA-256 hex (64 lowercase hex chars) of the strict
+// canonical bytes.
+func Hash(input string) (string, error) {
+	return callC(func(s *C.char, e **C.char) *C.char { return C.cx_hash(s, e) }, input)
+}
+
+// Eq reports whether strict-canonical(a) == strict-canonical(b).
+func Eq(a, b string) (bool, error) {
+	cs := C.CString(a); defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(b); defer C.free(unsafe.Pointer(cs2))
+	var errPtr *C.char
+	out := C.cx_eq(cs, cs2, &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return false, fmt.Errorf("%s", msg)
+		}
+		return false, fmt.Errorf("unknown error")
+	}
+	return goStr(out) == "1", nil
+}
+
+// Diff returns the semantic diff between two CX inputs. format is
+// "unified", "json", or "summary". Empty result means data-equivalent.
+// Per spec/decisions/0012-cx-diff.md.
+func Diff(a, b, format string) (string, error) {
+	cs := C.CString(a); defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(b); defer C.free(unsafe.Pointer(cs2))
+	cs3 := C.CString(format); defer C.free(unsafe.Pointer(cs3))
+	var errPtr *C.char
+	out := C.cx_diff(cs, cs2, cs3, &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return "", fmt.Errorf("%s", msg)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	return goStr(out), nil
+}
+
+// Lint runs style + correctness checks on the input. format is
+// "text", "json", or "summary". disabled is a comma-separated list
+// of check IDs to suppress ("" runs all). Empty result means no
+// findings. Per spec/decisions/0013-cx-lint.md.
+func Lint(input, format, disabled string) (string, error) {
+	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(format); defer C.free(unsafe.Pointer(cs2))
+	cs3 := C.CString(disabled); defer C.free(unsafe.Pointer(cs3))
+	var errPtr *C.char
+	out := C.cx_lint(cs, cs2, cs3, &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return "", fmt.Errorf("%s", msg)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	return goStr(out), nil
+}
+
+// IDLookup finds the element declaring `#id` in `input` and returns
+// its AST-JSON encoding. Empty result means no such ID. Stateless
+// wrapper around cx_id_lookup; for repeated lookups against the same
+// document, prefer Document.ResolveID() / ElementsByID().
+// Per spec/decisions/0003-id-idref.md.
+func IDLookup(input, id string) (string, error) {
+	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(id); defer C.free(unsafe.Pointer(cs2))
+	var errPtr *C.char
+	out := C.cx_id_lookup(cs, cs2, &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return "", fmt.Errorf("%s", msg)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	return goStr(out), nil
+}
+
+// ResolveRef follows a bare `@ref` reference to its declaring element
+// and returns its AST-JSON encoding. Refs and IDs share a namespace,
+// so this is observationally equivalent to IDLookup.
+func ResolveRef(input, ref string) (string, error) {
+	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(ref); defer C.free(unsafe.Pointer(cs2))
+	var errPtr *C.char
+	out := C.cx_resolve_ref(cs, cs2, &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return "", fmt.Errorf("%s", msg)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	return goStr(out), nil
+}
+
+// NodeID returns the syntactic ID of the element selected by cxpath,
+// or an empty string when the matched element has no ID (or the cxpath
+// matched nothing).
+func NodeID(input, cxpath string) (string, error) {
+	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(cxpath); defer C.free(unsafe.Pointer(cs2))
+	var errPtr *C.char
+	out := C.cx_node_id(cs, cs2, &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return "", fmt.Errorf("%s", msg)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	return goStr(out), nil
+}
+
+// ── Phase 5 / CB-1 / CB-2 helpers ────────────────────────────────────────────
+
+// callBinTextOut calls a cx_ast_bin_to_<format> function with FRAMED
+// binary AST input and returns the text result.
+func callBinTextOut(astBin []byte, fn func(*C.char, **C.char) *C.char) (string, error) {
+	if len(astBin) == 0 {
+		return "", fmt.Errorf("ast_bin_to_*: empty input")
+	}
+	var errPtr *C.char
+	out := fn((*C.char)(unsafe.Pointer(&astBin[0])), &errPtr)
+	if out == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return "", fmt.Errorf("%s", msg)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	return goStr(out), nil
+}
+
+func astBinToCx(astBin []byte) (string, error) {
+	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_cx(s, e) })
+}
+func astBinToXml(astBin []byte) (string, error) {
+	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_xml(s, e) })
+}
+func astBinToJson(astBin []byte) (string, error) {
+	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_json(s, e) })
+}
+func astBinToYaml(astBin []byte) (string, error) {
+	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_yaml(s, e) })
+}
+func astBinToToml(astBin []byte) (string, error) {
+	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_toml(s, e) })
+}
+func astBinToMd(astBin []byte) (string, error) {
+	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_md(s, e) })
+}
+
+// callTextToAstBin invokes a cx_<fmt>_to_ast_bin function and returns
+// the raw AST bin payload (frame stripped).
+func callTextToAstBin(input string, fn func(*C.char, **C.char) *C.char) ([]byte, error) {
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var errPtr *C.char
+	raw := unsafe.Pointer(fn(cs, &errPtr))
+	return extractBinPayload(raw, errPtr)
+}
+
+func xmlToAstBin(input string) ([]byte, error) {
+	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_xml_to_ast_bin(s, e) })
+}
+func jsonToAstBin(input string) ([]byte, error) {
+	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_json_to_ast_bin(s, e) })
+}
+func yamlToAstBin(input string) ([]byte, error) {
+	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_yaml_to_ast_bin(s, e) })
+}
+func tomlToAstBin(input string) ([]byte, error) {
+	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_toml_to_ast_bin(s, e) })
+}
+func mdToAstBin(input string) ([]byte, error) {
+	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_md_to_ast_bin(s, e) })
+}
+
+// ── Phase 5 / CB-4 — events handle API ──────────────────────────────────────
+
+// EventStream is a pull-based iterator over CX streaming events,
+// backed by the cx_events_open / cx_events_next / cx_events_close
+// handle API. Replaces the prior eager-buffered cx_to_events_bin path.
+type EventStream struct {
+	handle unsafe.Pointer
+	closed bool
+}
+
+// OpenEvents creates a streaming handle for the given CX input.
+// Caller must Close().
+func OpenEvents(input string) (*EventStream, error) {
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var errPtr *C.char
+	h := unsafe.Pointer(C.cx_events_open(cs, &errPtr))
+	if h == nil {
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			return nil, fmt.Errorf("%s", msg)
+		}
+		return nil, fmt.Errorf("cx_events_open: unknown error")
+	}
+	return &EventStream{handle: h}, nil
+}
+
+// Next returns the next event. Returns (zero, false, nil) on EOF.
+func (s *EventStream) Next() (StreamEvent, bool, error) {
+	if s.closed || s.handle == nil {
+		return StreamEvent{}, false, nil
+	}
+	var errPtr *C.char
+	raw := unsafe.Pointer(C.cx_events_next(C.cx_events_handle(s.handle), &errPtr))
+	if raw == nil {
+		// NULL with err = error; NULL with no err = EOF.
+		if errPtr != nil {
+			msg := C.GoString(errPtr)
+			C.cx_free(errPtr)
+			s.Close()
+			return StreamEvent{}, false, fmt.Errorf("%s", msg)
+		}
+		s.Close()
+		return StreamEvent{}, false, nil
+	}
+	// Read framed [u32 size][payload] from the C-owned buffer.
+	sizeBytes := (*[4]byte)(raw)[:]
+	size := binary.LittleEndian.Uint32(sizeBytes)
+	payload := make([]byte, size)
+	if size > 0 {
+		src := unsafe.Slice((*byte)(unsafe.Pointer(uintptr(raw)+4)), size)
+		copy(payload, src)
+	}
+	C.cx_free((*C.char)(raw))
+	evt, err := decodeOneEvent(&binBuf{data: payload})
+	if err != nil {
+		return StreamEvent{}, false, err
+	}
+	return evt, true, nil
+}
+
+// Close releases the underlying handle. Idempotent.
+func (s *EventStream) Close() {
+	if s.closed || s.handle == nil {
+		s.closed = true
+		s.handle = nil
+		return
+	}
+	C.cx_events_close(C.cx_events_handle(s.handle))
+	s.closed = true
+	s.handle = nil
+}
+
 // Version returns the library version string.
 func Version() string {
 	ptr := C.cx_version()

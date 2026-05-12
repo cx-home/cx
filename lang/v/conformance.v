@@ -1,7 +1,7 @@
 module main
 
 import os
-import cxlib
+import cffi as cxlib
 
 const repo_root = os.join_path(os.dir(@FILE), '..', '..')
 
@@ -75,14 +75,53 @@ fn run_test(t Test) []string {
 	has_cx  := 'in_cx'  in t.sections
 	has_xml := 'in_xml' in t.sections
 	has_md  := 'in_md'  in t.sections
+	has_cxl := 'in_cxl' in t.sections
 
-	if !has_cx && !has_xml && !has_md {
+	if !has_cx && !has_xml && !has_md && !has_cxl {
 		return failures
 	}
 
 	in_cx  := t.sections['in_cx']  or { '' }
 	in_xml := t.sections['in_xml'] or { '' }
 	in_md  := t.sections['in_md']  or { '' }
+	in_cxl := t.sections['in_cxl'] or { '' }
+
+	// ── out_text (CXL evaluation) ────────────────────────────────────────────
+	// Driven by an `in_cxl` + `in_cx` pair: the CXL program is evaluated
+	// against the CX input and the byte-exact output is compared against
+	// `out_text`. The program's own `[?cx output-target=…]` directive
+	// selects the target; the runner does not override it.
+	if exp := t.sections['out_text'] {
+		if has_cxl && has_cx {
+			got := cxlib.eval_cxl(in_cx, in_cxl, '') or {
+				failures << 'eval_cxl error: ${err}'
+				return failures
+			}
+			if exp != got {
+				failures << 'out_text mismatch\n  expected:\n${exp}\n  got:\n${got}'
+			}
+		} else {
+			failures << 'out_text requires in_cxl + in_cx sections'
+		}
+	}
+
+	// ── out_err (CXL evaluation error path) ──────────────────────────────────
+	// `eval_cxl` must fail; the substring in `out_err` must appear in the
+	// returned error message. Used for unbound-variable, bad-CXPath,
+	// type-mismatch, future-version EvalName, and similar cases.
+	if exp := t.sections['out_err'] {
+		if has_cxl && has_cx {
+			_ := cxlib.eval_cxl(in_cx, in_cxl, '') or {
+				if !err.msg().contains(exp.trim_space()) {
+					failures << 'out_err mismatch\n  expected substring: ${exp.trim_space()}\n  got: ${err.msg()}'
+				}
+				return failures
+			}
+			failures << 'out_err: expected failure containing ${exp.trim_space()}, got success'
+		} else {
+			failures << 'out_err requires in_cxl + in_cx sections'
+		}
+	}
 
 	// ── out_ast ───────────────────────────────────────────────────────────────
 	if exp := t.sections['out_ast'] {
@@ -184,6 +223,7 @@ fn main() {
 			os.join_path(repo_root, 'conformance', 'extended.txt'),
 			os.join_path(repo_root, 'conformance', 'xml.txt'),
 			os.join_path(repo_root, 'conformance', 'md.txt'),
+			os.join_path(repo_root, 'conformance', 'cxl.txt'),
 		]
 	}
 	mut all_pass := true

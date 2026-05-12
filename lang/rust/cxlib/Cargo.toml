@@ -1,6 +1,6 @@
 [package]
 name = "cxlib"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 description = "CX format library — thin wrapper around libcx"
 
@@ -12,6 +12,14 @@ strip = true         # strip symbols from the binary
 
 [dependencies]
 serde_json = "1"
+# Apache Arrow C-Data interop — opt-in via `--features arrow` so the default
+# build stays light. Mirrors Python's `pip install cxlib[arrow]` and Go's
+# `-tags arrow` patterns. Pulls in `libcx_arrow` at link time (see build.rs).
+arrow = { version = "53", optional = true, default-features = false, features = ["ffi"] }
+
+[features]
+default = []
+arrow = ["dep:arrow"]
 
 [[example]]
 name = "transform"

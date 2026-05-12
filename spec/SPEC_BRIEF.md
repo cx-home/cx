@@ -17,15 +17,15 @@ the spec has failed.
 
 ## Existing specs (inputs — treat as authoritative where present)
 
-| File                    | Status   | Notes |
+| File | Status | Notes |
 |-------------------------|----------|-------|
-| `spec/grammar.ebnf`     | complete | CX grammar v3.3 — do not contradict |
-| `spec/ast.md`           | complete | AST node types v2.3 — do not contradict |
-| `spec/api.md`           | complete | Document API v2.0 — authoritative |
-| `spec/cxpath.md`        | complete | CXPath v1.0 — authoritative |
-| `conformance/README.md` | partial  | test format is complete; conformance contract is not |
-| `CONTEXT.md`            | informal | useful background; not a spec |
-| `spec/analysis.md`      | reference only | format comparison, not normative |
+| `spec/grammar.ebnf` | complete | CX grammar v3.3 — do not contradict |
+| `spec/ast.md` | complete | AST node types v2.3 — do not contradict |
+| `spec/api.md` | complete | Document API v2.0 — authoritative |
+| `spec/cxpath.md` | complete | CXPath v1.0 — authoritative |
+| `conformance/README.md` | partial | test format is complete; conformance contract is not |
+| `CONTEXT.md` | informal | useful background; not a spec |
+| `spec/analysis.md` | reference only | format comparison, not normative |
 
 ---
 
@@ -49,11 +49,11 @@ The AST spec must be sufficient to answer:
 - For each node type: what fields are required, optional, and forbidden?
 - What are the exact rules for when a field is omitted vs null vs empty?
 - What is the difference between Parse AST and Resolved AST, and which
-  operations require which?
+ operations require which?
 - What is the JSON serialization format, including key names, value types,
-  and omission rules?
+ and omission rules?
 - What are the auto-typing rules in full, including priority order and all
-  patterns matched?
+ patterns matched?
 
 ---
 
@@ -62,10 +62,10 @@ The AST spec must be sufficient to answer:
 
 The API spec must be sufficient to answer:
 - What is the immutability model? What does "structural sharing" mean
-  concretely and what are the copy semantics at each level?
+ concretely and what are the copy semantics at each level?
 - What is the exact contract of every method on Document and Element?
 - What is the difference between build mode and transform mode mutation?
-  When is each correct?
+ When is each correct?
 - What does `transform` return when the path does not exist?
 - What does `transform_all` do when no elements match?
 - What is the missing-value contract for every method?
@@ -84,19 +84,19 @@ The CXPath spec must be sufficient to answer:
 - What comparison operators exist and what are their type rules?
 - What happens when a numeric operator is applied to a non-numeric value?
 - What are `contains()` and `starts-with()` applied to — the attribute value
-  as a string regardless of native type?
+ as a string regardless of native type?
 - What does `[n]` count — siblings with the same name or all siblings?
 - What does `[last()]` mean when there is only one match?
 - What is the context when `select`/`select_all` is called on Document vs
-  Element? Is the element itself included or only descendants?
+ Element? Is the element itself included or only descendants?
 - What is the exact error contract for invalid expressions?
 - What is the exact return value for no-match?
 - What is the relationship between CXPath expressions and the structural API?
-  When are they equivalent?
+ When are they equivalent?
 
 ---
 
-### 5. `spec/architecture.md` — System Architecture  *(needs writing)*
+### 5. `spec/architecture.md` — System Architecture *(needs writing)*
 
 Must unambiguously answer:
 
@@ -104,29 +104,29 @@ Must unambiguously answer:
 - What is V's role? Why is it the reference and not a binding?
 - What is libcx? What does it compile to and what does it expose?
 - What is the C ABI? What is its status (transitional) and what replaces it
-  (WASM) and when?
+ (WASM) and when?
 - What is the exact boundary between what lives in libcx and what is
-  implemented natively in each language binding? Give a definitive list.
+ implemented natively in each language binding? Give a definitive list.
 
 **Binary wire protocol**
 - What is `cx_to_ast_bin`? Give the complete binary format: byte layout,
-  field order, string encoding, all node type IDs and their payloads.
+ field order, string encoding, all node type IDs and their payloads.
 - What is `cx_to_events_bin`? Give the complete binary format.
 - What is the calling convention? Who allocates, who frees, what does
-  NULL return mean, what does a non-NULL err_out mean?
+ NULL return mean, what does a non-NULL err_out mean?
 - What is the complete list of C ABI functions, their signatures, and their
-  semantics?
+ semantics?
 
 **Language binding contract**
 - What must every conformant language binding implement? Give a definitive
-  checklist.
+ checklist.
 - What may a binding omit and still be considered conformant at a given tier?
 - What naming conventions apply per language (camelCase, snake_case,
-  PascalCase)?
+ PascalCase)?
 - How do CX scalar types map to native types in each language?
-  (int→int64/long/i64, bool→bool, null→None/nil/null, date→string/Date, etc.)
+ (int→int64/long/i64, bool→bool, null→None/nil/null, date→string/Date, etc.)
 - What are the error/exception conventions per language? When does a method
-  return an error type vs panic vs raise vs return none?
+ return an error type vs panic vs raise vs return none?
 
 **WASM transition**
 - What changes when the C ABI is replaced by a WASM module?
@@ -135,7 +135,7 @@ Must unambiguously answer:
 
 ---
 
-### 6. `spec/conversions.md` — Format Conversion Semantics  *(needs writing)*
+### 6. `spec/conversions.md` — Format Conversion Semantics *(needs writing)*
 
 Must unambiguously answer for **each of the 30 conversion paths**
 (6 inputs × 5 outputs, excluding self-to-self):
@@ -144,20 +144,20 @@ cx, xml, json, yaml, toml, md → cx, xml, json, yaml, toml, md
 
 For each path:
 - What is lossless, what is lossy, and what is the precise definition of
-  each loss?
+ each loss?
 - What CX features have no equivalent in the target format and how are they
-  handled (dropped, encoded, error)?
+ handled (dropped, encoded, error)?
 - What target format features have no CX equivalent and how are they
-  handled?
+ handled?
 - Give a canonical example: input, expected output, and explanation of any
-  non-obvious transformation.
+ non-obvious transformation.
 
 Key conversions that must be specified with particular precision:
 
 **CX → XML**
 - Round-trip vs semantic XML: what is the exact difference?
 - How are CX-specific features encoded: anchors, merges, aliases,
-  type annotations, block content, CX directives?
+ type annotations, block content, CX directives?
 - When does the `cx:` namespace appear and when is it omitted?
 - What is the CDATA split rule for `]]>` in RawText?
 
@@ -181,34 +181,34 @@ Key conversions that must be specified with particular precision:
 
 ---
 
-### 7. `spec/streaming.md` — Streaming API  *(needs writing)*
+### 7. `spec/streaming.md` — Streaming API *(needs writing)*
 
 Must unambiguously answer:
 
 **Event types**
 - What are all 11 StreamEvent types? For each: exact fields, field types,
-  which fields are optional, what values they can take.
+ which fields are optional, what values they can take.
 - What is the complete event sequence for a document? Give the ordering
-  guarantees: does StartDoc always precede all element events? Does
-  EndElement always follow all its child events?
+ guarantees: does StartDoc always precede all element events? Does
+ EndElement always follow all its child events?
 - Are comments, PIs, and entity refs included in the event stream? If so,
-  what event type do they produce?
+ what event type do they produce?
 
 **API contract**
 - What does `stream(cx_str)` return? An iterator, a channel, a list?
-  Specify per language idiom.
+ Specify per language idiom.
 - Is streaming lazy (events produced on demand) or eager (all events
-  produced upfront)?
+ produced upfront)?
 - What happens on a parse error mid-stream?
 - Can a stream be consumed more than once?
 
 **Binary wire protocol for events**
 - Give the complete binary format for `cx_to_events_bin`: byte layout,
-  field order, all event type IDs and their payloads, string encoding.
+ field order, all event type IDs and their payloads, string encoding.
 
 ---
 
-### 8. `conformance/README.md` — Conformance Contract  *(extend existing)*
+### 8. `conformance/README.md` — Conformance Contract *(extend existing)*
 
 The existing file specifies the test format. It must be extended to answer:
 
@@ -225,12 +225,12 @@ The existing file specifies the test format. It must be extended to answer:
 **CXPath conformance (not yet covered)**
 - What is the CXPath test format?
 - What expressions must a conformant CXPath implementation evaluate
-  correctly?
+ correctly?
 - How are predicate type errors tested?
 
 **Streaming conformance (not yet covered)**
 - What event sequences must a conformant streaming implementation produce
-  for the standard fixtures?
+ for the standard fixtures?
 
 ---
 
@@ -294,12 +294,12 @@ implementation would pass the conformance suite.
 
 A spec section fails if:
 - It describes what a method does without specifying what it returns for
-  every possible input (including missing, empty, and error cases)
+ every possible input (including missing, empty, and error cases)
 - It uses the word "appropriate", "reasonable", "typical", or "usually"
-  without a normative default
+ without a normative default
 - It specifies behavior for the happy path but leaves error paths implicit
 - Two reasonable engineers reading it could make different implementation
-  choices that produce different observable behavior
+ choices that produce different observable behavior
 - It references a concept defined elsewhere without citing where
 
 Every method signature in `spec/api.md` and `spec/cxpath.md` must be

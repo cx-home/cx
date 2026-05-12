@@ -1,4 +1,5 @@
-[-Markdown-style blog post: headings, inline markup, code blocks, lists, blockquote, link]
+[- Markdown-style blog post: headings, inline markup, code blocks,
+   lists, blockquote, link. v0.6 idioms appear in embedded code samples. ]
 
 [# CX in Practice: A Field Guide]
 
@@ -12,30 +13,34 @@
 [p Build from source — the whole toolchain compiles with a single command:]
 
 [``` lang=bash [|
-git clone https://github.com/ardec/cx
+git clone https://github.com/cx-home/cx
 make build   # builds libcx and the cx CLI
-make test    # runs all 10 language binding test suites
+make test    # runs all 9 language binding test suites
 |]]
 
 [## Your First Document]
 
-[p Start with a simple config. Attributes type themselves — no quotes, no schema:]
+[p Start with a simple config. Sized types pin numeric ranges, boolean
+   sigils replace explicit [` flag=true] and [` flag=false], and line
+   comments document intent inline:]
 
-[``` lang=cx [|
-[server host=localhost port=8080 debug=true
+[``` lang=cx [#
+[server host=localhost +tls -debug    # +tls -> tls=true; -debug -> debug=false
+  [port :u16 8080]                    # u16 covers 0..65535
+  [max_request_bytes :u32 1_048_576]  # 1 MiB - underscores improve readability
   [tags :string[] web api internal]
 ]
-|]]
+#]]
 
 [## Converting Formats]
 
 [p Pipe any CX file through the [` cx] CLI or call the library directly:]
 
 [ul
-  [li [` cx to-json config.cx] — compact JSON for APIs]
-  [li [` cx to-xml  config.cx] — XML for legacy systems]
-  [li [` cx to-toml config.cx] — TOML for human editors]
-  [li [` cx to-md   doc.cx]    — Markdown for documentation]
+  [li [` cx --json config.cx] — compact JSON for APIs]
+  [li [` cx --xml  config.cx] — XML for legacy systems]
+  [li [` cx --toml config.cx] — TOML for human editors]
+  [li [` cx --md   doc.cx]    — Markdown for documentation]
 ]
 
 [## Mixed Content]
@@ -47,5 +52,5 @@ make test    # runs all 10 language binding test suites
 
 [## What's Next]
 
-[p See the [a href=https://github.com/ardec/cx full documentation] for
+[p See the [a href=https://cxhome.org/docs full documentation] for
   language binding guides, the conformance suite, and the grammar spec.]

@@ -4,12 +4,19 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "cxlib"
-version = "0.5.0"
+version = "0.6.0"
 description = "CX format library — parse, stream, and convert CX/XML/JSON/YAML/TOML/Markdown"
 readme = "cxlib/README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 keywords = ["cx", "markup", "xml", "json", "yaml", "toml", "parser"]
+
+# Arrow C-Data interop is optional — pyarrow is a heavy dep we do not
+# pull in for vanilla cxlib users. `pip install cxlib[arrow]` enables
+# `cxlib.arrow.export(...)` / `cxlib.arrow.import_to_data_bin(...)`
+# (spec/abi.md §2.11, capability bit 0x800000).
+[project.optional-dependencies]
+arrow = ["pyarrow>=14"]
 
 [tool.setuptools.packages.find]
 where = ["."]

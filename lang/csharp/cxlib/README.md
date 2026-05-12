@@ -3,6 +3,26 @@
 C# binding for the CX format library. Parses, streams, and converts
 CX/XML/JSON/YAML/TOML/Markdown via P/Invoke into `libcx`.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `Loads()` / `Dumps()`
+> type fidelity (integers stay `long` instead of coercing to `double`).
+
+## Canonical-form tooling (v3.4)
+
+```csharp
+string src1 = "[config\n  [- comment]\n  [server host=localhost]\n]";
+string src2 = "[config [server host=localhost]]";
+CxLib.Fmt(src1);          // lossless canonical (preserves the comment)
+CxLib.Canonical(src1);    // strict canonical   (comment stripped)
+CxLib.Hash(src1);         // 64-char SHA-256 hex of strict canonical bytes
+CxLib.Eq(src1, src2);     // true — data-equivalent inputs
+```
+
+`Fmt` is idempotent. `Canonical`/`Hash`/`Eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ---
 
 ## Requirements
@@ -376,3 +396,54 @@ decimals → `double`, everything else → `string`. An invalid expression throw
 | `ev.DataType` | Scalar type string — `"int"`, `"float"`, `"bool"`, `"null"`, `"string"` (set on `Scalar`) |
 | `ev.Target` / `ev.Data` | Processing instruction fields (set on `PI`) |
 | `ev.Anchor` / `ev.Merge` | Anchor and merge-key fields (set on `StartElement`) |
+
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Method | Description |
+|---|---|
+| `CxLib.XmlToDataBin(s)`  | XML text → CXDB v1 framed bytes (`byte[]`) |
+| `CxLib.JsonToDataBin(s)` | JSON text → CXDB v1 framed bytes |
+| `CxLib.YamlToDataBin(s)` | YAML text → CXDB v1 framed bytes |
+| `CxLib.TomlToDataBin(s)` | TOML text → CXDB v1 framed bytes |
+| `CxLib.MdToDataBin(s)`   | Markdown text → CXDB v1 framed bytes |
+| `CxLib.DataBinToXml(b)`  | CXDB v1 framed bytes → XML `string` |
+| `CxLib.DataBinToJson(b)` | CXDB v1 framed bytes → JSON `string` |
+| `CxLib.DataBinToYaml(b)` | CXDB v1 framed bytes → YAML `string` |
+| `CxLib.DataBinToToml(b)` | CXDB v1 framed bytes → TOML `string` |
+| `CxLib.DataBinToMd(b)`   | CXDB v1 framed bytes → Markdown `string` |
+
+The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+the wire format. Round-trip: `CxLib.DataBinToX(CxLib.XToDataBin(s))
+== s` (after canonicalization).
+
+## 30-second quickstart
+
+<!-- quickstart-begin: csharp -->
+```csharp
+using CX;
+
+// Parse + read a typed value out
+var doc = CxLib.Parse("[server [port :u16 8080] [host localhost]]");
+Console.WriteLine(doc.At("server/port")?.IntValue());   // 8080
+
+// Round-trip to JSON, lossless
+Console.WriteLine(CxLib.ToJson("[user [id :i64 9007199254740993]]"));
+
+// Public Table API (ADR 0018) — 17-member surface
+var src = @"[users :table[name age:int]
+  alice 30
+  bob   25
+]";
+var t = Table.FromCx(src);
+Console.WriteLine($"{t.RowCount} [{string.Join(", ", t.Cols)}]");
+foreach (var row in t) {
+    Console.WriteLine($"{row["name"]} {row["age"]}");
+}
+Console.WriteLine(t.ToCsv());
+```
+<!-- quickstart-end -->

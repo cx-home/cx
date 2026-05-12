@@ -1,7 +1,7 @@
 module main
 
 import os
-import cxlib
+import cffi as cxlib
 
 const fixtures = os.join_path(os.dir(@FILE), '..', '..', '..', 'fixtures')
 

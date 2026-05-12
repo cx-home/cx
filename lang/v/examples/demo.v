@@ -1,4 +1,4 @@
-import cxlib
+import cffi as cxlib
 
 fn main() {
 	src := "[config version='1.0' debug=false

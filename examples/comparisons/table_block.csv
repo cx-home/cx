@@ -1,0 +1,5 @@
+id,customer,total,status
+1001,alice,29.99,shipped
+1002,bob,149.50,pending
+1003,carol,8.75,shipped
+1004,dave,1024.0,cancelled

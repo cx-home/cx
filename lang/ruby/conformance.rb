@@ -26,7 +26,7 @@ def parse_suite(path)
     buf.clear
   end
 
-  File.foreach(path) do |raw|
+  File.foreach(path, encoding: 'UTF-8') do |raw|
     raw = raw.chomp
     if raw.start_with?('=== test:')
       flush.call

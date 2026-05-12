@@ -1,0 +1,18 @@
+{
+  "_comment_env": "JSON has no comment syntax; this is a workaround.",
+  "config": {
+    "env": "production",
+    "server": {
+      "_comment": "listen on all interfaces in prod",
+      "host": "0.0.0.0",
+      "port": 8443,
+      "tls": true,
+      "debug": false
+    },
+    "database": {
+      "_comment": "connection-pool sized for p99 + 50% headroom",
+      "pool_size": 24,
+      "connect_timeout_ms": 5000
+    }
+  }
+}

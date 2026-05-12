@@ -41,14 +41,28 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 function resolveLspServer(context: ExtensionContext): string | undefined {
-  // 1. Next to this extension (installed/packaged)
+  // 1. Workspace setting override (highest priority — explicit user choice).
+  const cfg = workspace.getConfiguration('cx');
+  const override = cfg.get<string>('languageServerPath');
+  if (override && override.length > 0 && fs.existsSync(override)) return override;
+
+  // 2. CX_LSP_PATH env var.
+  const envPath = process.env.CX_LSP_PATH;
+  if (envPath && fs.existsSync(envPath)) return envPath;
+
+  // 3. Bundled next to this extension (installed VSIX layout).
   const bundled = context.asAbsolutePath(path.join('..', 'lsp', 'out', 'server.js'));
   if (fs.existsSync(bundled)) return bundled;
 
-  // 2. Workspace setting override
-  const cfg = workspace.getConfiguration('cx');
-  const override = cfg.get<string>('languageServerPath');
-  if (override && fs.existsSync(override)) return override;
+  // 4. Repo-relative dev tree (running from cx-private checkout).
+  const devCandidates = [
+    path.join(process.env.HOME || '', '.local', 'share', 'cx-lsp', 'out', 'server.js'),
+    '/usr/local/share/cx-lsp/out/server.js',
+    '/opt/homebrew/share/cx-lsp/out/server.js',
+  ];
+  for (const c of devCandidates) {
+    if (fs.existsSync(c)) return c;
+  }
 
   return undefined;
 }

@@ -1,0 +1,864 @@
+module main
+
+import os
+import cx
+
+struct Test {
+mut:
+	name     string
+	level    string
+	tags     []string
+	pending  string
+	chunk_at int = 1 << 20  // strict-canonical default per ADR 0015 D1
+	sections map[string]string
+}
+
+fn parse_suite(path string) []Test {
+	src := os.read_file(path) or {
+		eprintln('could not read suite file: ${path}')
+		return []
+	}
+	mut tests := []Test{}
+	mut cur := ?Test(none)
+	mut section := ?string(none)
+	mut lines_buf := []string{}
+
+	// Note: flush_section is inlined as a `for` body rather than a
+	// closure. V closures capture mutated optionals by value, so
+	// `if mut t := cur { t.sections[sec] = val; cur = t }` inside a
+	// closure does not propagate the section assignment back to the
+	// outer `cur`. Earlier versions of this file used a closure here
+	// and silently swallowed every section, making the runner accept
+	// any out_ast/out_xml/out_cx as PASS.
+
+	for raw in src.split_into_lines() {
+		if raw.starts_with('=== test:') {
+			// flush prior section
+			if sec := section {
+				for lines_buf.len > 0 && lines_buf[0].trim_space() == '' { lines_buf.delete(0) }
+				for lines_buf.len > 0 && lines_buf[lines_buf.len-1].trim_space() == '' { lines_buf.delete(lines_buf.len-1) }
+				val := lines_buf.join('\n')
+				if mut t := cur {
+					t.sections[sec] = val
+					cur = t
+				}
+			}
+			lines_buf = []string{}
+			// commit prior test
+			if t := cur { tests << t }
+			cur = Test{
+				name: raw[9..].trim_space()
+				sections: map[string]string{}
+			}
+			section = none
+		} else if raw.starts_with('level:') {
+			if mut t := cur { t.level = raw[6..].trim_space(); cur = t }
+		} else if raw.starts_with('tags:') {
+			if mut t := cur { t.tags = raw[5..].trim_space().split_any(' \t'); cur = t }
+		} else if raw.starts_with('pending:') {
+			if mut t := cur { t.pending = raw[8..].trim_space(); cur = t }
+		} else if raw.starts_with('chunk_at:') {
+			if mut t := cur {
+				t.chunk_at = raw[9..].trim_space().int()
+				if t.chunk_at <= 0 { t.chunk_at = 1 << 20 }
+				cur = t
+			}
+		} else if raw.starts_with('--- ') {
+			// flush prior section
+			if sec := section {
+				for lines_buf.len > 0 && lines_buf[0].trim_space() == '' { lines_buf.delete(0) }
+				for lines_buf.len > 0 && lines_buf[lines_buf.len-1].trim_space() == '' { lines_buf.delete(lines_buf.len-1) }
+				val := lines_buf.join('\n')
+				if mut t := cur {
+					t.sections[sec] = val
+					cur = t
+				}
+			}
+			lines_buf = []string{}
+			if cur != none { section = raw[4..].trim_space() }
+		} else {
+			if section != none && cur != none {
+				lines_buf << raw
+			}
+		}
+	}
+	// flush trailing section
+	if sec := section {
+		for lines_buf.len > 0 && lines_buf[0].trim_space() == '' { lines_buf.delete(0) }
+		for lines_buf.len > 0 && lines_buf[lines_buf.len-1].trim_space() == '' { lines_buf.delete(lines_buf.len-1) }
+		val := lines_buf.join('\n')
+		if mut t := cur {
+			t.sections[sec] = val
+			cur = t
+		}
+	}
+	if t := cur { tests << t }
+	return tests
+}
+
+fn run_test(t Test) []string {
+	mut failures := []string{}
+
+	// Decode-error fixtures: feed framed bytes through parse_data_bin
+	// and assert the expected error message. Used by the chunked-table
+	// negative tests in data_bin_compression.txt (cmp-003 / cmp-004).
+	// Schema-driven decode-error fixtures supply `schema_cxs` and go
+	// through the parse_data_bin_schema_driven path further below.
+	if 'in_data_bin_hex' in t.sections && 'expected_decode_error' in t.sections
+		&& 'schema_cxs' !in t.sections {
+		hex := normalize_hex_text(t.sections['in_data_bin_hex'] or { '' })
+		bytes := framed_bytes_from_hex(hex)
+		expected_err := (t.sections['expected_decode_error'] or { '' }).trim_space()
+		_ := cx.parse_data_bin(bytes) or {
+			if expected_err != '' && err.msg().contains(expected_err) {
+				return failures
+			}
+			failures << 'decode error: ${err} (expected: ${expected_err})'
+			return failures
+		}
+		failures << 'decode: expected error containing "${expected_err}", but decode succeeded'
+		return failures
+	}
+
+	input_src, parse_fmt := if 'in_cx' in t.sections {
+		t.sections['in_cx'] or { '' }, 'cx'
+	} else if 'in_xml' in t.sections {
+		t.sections['in_xml'] or { '' }, 'xml'
+	} else if 'in_md' in t.sections {
+		t.sections['in_md'] or { '' }, 'md'
+	} else if 'in_csv' in t.sections {
+		t.sections['in_csv'] or { '' }, 'csv'
+	} else if 'in_tsv' in t.sections {
+		t.sections['in_tsv'] or { '' }, 'tsv'
+	} else if 'in_psv' in t.sections {
+		t.sections['in_psv'] or { '' }, 'psv'
+	} else {
+		return failures
+	}
+
+	// Parse
+	result := if parse_fmt == 'xml' {
+		cx.parse_xml_cx(input_src) or {
+			failures << 'parse error: ${err}'
+			return failures
+		}
+	} else if parse_fmt == 'md' {
+		cx.parse_md_cx(input_src) or {
+			failures << 'parse error: ${err}'
+			return failures
+		}
+	} else if parse_fmt == 'csv' || parse_fmt == 'tsv' || parse_fmt == 'psv' {
+		mut opts := cx.default_parse_options()
+		opts.delimiter = match parse_fmt {
+			'csv' { u8(`,`) }
+			'tsv' { u8(`\t`) }
+			'psv' { u8(`|`) }
+			else { u8(`,`) }
+		}
+		doc := cx.parse_delimited(input_src, opts) or {
+			failures << 'parse error: ${err}'
+			return failures
+		}
+		cx.ParseResult{ is_multi: false, single: doc }
+	} else {
+		cx.parse_cx(input_src) or {
+			failures << 'parse error: ${err}'
+			return failures
+		}
+	}
+
+	// ── out_ast ───────────────────────────────────────────────────────────────
+	if 'out_ast' in t.sections {
+		expected_ast := t.sections['out_ast'] or { '' }
+		got_json := if result.is_multi {
+			docs := result.multi or { [] }
+			cx.emit_ast_json_docs(docs)
+		} else {
+			doc := result.single or { cx.Document{} }
+			cx.emit_ast_json(doc)
+		}
+		if !json_equal(expected_ast, got_json) {
+			failures << 'out_ast mismatch\n  expected: ${expected_ast}\n  got:      ${got_json}'
+		}
+	}
+
+	// ── out_xml ───────────────────────────────────────────────────────────────
+	if 'out_xml' in t.sections {
+		expected_xml := t.sections['out_xml'] or { '' }
+		got_xml := if result.is_multi {
+			docs := result.multi or { [] }
+			cx.emit_xml_docs(docs)
+		} else {
+			doc := result.single or { cx.Document{} }
+			cx.emit_xml(doc)
+		}
+		if expected_xml.trim_space() != got_xml.trim_space() {
+			failures << 'out_xml mismatch\n  expected:\n${expected_xml}\n  got:\n${got_xml}'
+		}
+	}
+
+	// ── out_json ──────────────────────────────────────────────────────────────
+	if 'out_json' in t.sections {
+		expected_json := t.sections['out_json'] or { '' }
+		got_json := if result.is_multi {
+			docs := result.multi or { [] }
+			cx.emit_semantic_json_docs(docs)
+		} else {
+			doc := result.single or { cx.Document{} }
+			cx.emit_semantic_json(doc)
+		}
+		if !json_equal(expected_json, got_json) {
+			failures << 'out_json mismatch\n  expected: ${expected_json}\n  got:      ${got_json}'
+		}
+	}
+
+	// ── out_cx ────────────────────────────────────────────────────────────────
+	if 'out_cx' in t.sections {
+		expected_cx := t.sections['out_cx'] or { '' }
+		got_cx := if result.is_multi {
+			docs := result.multi or { [] }
+			cx.emit_cx_docs(docs)
+		} else {
+			doc := result.single or { cx.Document{} }
+			cx.emit_cx(doc)
+		}
+		if expected_cx.trim_space() != got_cx.trim_space() {
+			failures << 'out_cx mismatch\n  expected:\n${expected_cx}\n  got:\n${got_cx}'
+		}
+	}
+
+	// ── out_canonical ─────────────────────────────────────────────────────────
+	// Strict-canonical text via cx_text_canonical (re-parse internally;
+	// applies presentation strip + namespace prefix/declaration
+	// canonicalization per ADR 0002 D6).
+	if 'out_canonical' in t.sections {
+		expected_canon := t.sections['out_canonical'] or { '' }
+		got_canon := cx.cx_text_canonical(input_src) or {
+			failures << 'out_canonical error: ${err}'
+			''
+		}
+		if got_canon.len > 0 && expected_canon.trim_space() != got_canon.trim_space() {
+			failures << 'out_canonical mismatch\n  expected:\n${expected_canon}\n  got:\n${got_canon}'
+		}
+	}
+
+	// ── out_csv / out_tsv / out_psv (delimited per ADR 0001) ───────────────────
+	for fmt_key in ['out_csv', 'out_tsv', 'out_psv'] {
+		if fmt_key !in t.sections { continue }
+		expected := t.sections[fmt_key] or { '' }
+		delim := match fmt_key {
+			'out_csv' { u8(`,`) }
+			'out_tsv' { u8(`\t`) }
+			'out_psv' { u8(`|`) }
+			else      { u8(`,`) }
+		}
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		mut opts := cx.default_emit_options()
+		opts.delimiter = delim
+		got := cx.emit_delimited(doc, opts) or {
+			failures << '${fmt_key} emit error: ${err}'
+			continue
+		}
+		// Expected text in the fixture is recorded with `\n` line
+		// terminators (the fixture file is plain text); the emitter
+		// produces `\r\n`. Normalize both sides on `\r\n` → `\n`
+		// before comparing.
+		exp_n := expected.replace('\r\n', '\n').trim_space()
+		got_n := got.replace('\r\n', '\n').trim_space()
+		if exp_n != got_n {
+			failures << '${fmt_key} mismatch\n  expected:\n${exp_n}\n  got:\n${got_n}'
+		}
+	}
+
+	// ── assert_chunked_distinct_from_plain (chunked-table canonicality) ───
+	// Verifies that chunked (0x63) and non-chunked (0x60) encodings of the
+	// same logical data produce DIFFERENT byte sequences, per
+	// spec/data_bin.md §3.11.3. The chunk boundaries are part of the
+	// canonical form. Used by ch-004 to property-check that chunked is
+	// not a free abstraction over plain.
+	if 'assert_chunked_distinct_from_plain' in t.sections {
+		flag := (t.sections['assert_chunked_distinct_from_plain'] or { '0' }).trim_space()
+		if flag == '1' {
+			doc := if result.is_multi {
+				docs := result.multi or { [] }
+				if docs.len > 0 { docs[0] } else { cx.Document{} }
+			} else {
+				result.single or { cx.Document{} }
+			}
+			plain := cx.emit_data_bin(doc)
+			opts := cx.ChunkedEmitOptions{ chunk_size: t.chunk_at, compress: .never }
+			chunked := cx.emit_data_bin_chunked(doc, opts) or {
+				failures << 'assert_chunked_distinct: chunked emit error: ${err}'
+				return failures
+			}
+			if plain.len == chunked.len {
+				mut all_eq := true
+				for i in 0 .. plain.len {
+					if plain[i] != chunked[i] { all_eq = false; break }
+				}
+				if all_eq {
+					failures << 'assert_chunked_distinct_from_plain: chunked bytes match plain bytes (len=${plain.len})'
+				}
+			}
+		}
+	}
+
+	// ── out_data_bin_hex (chunked-table; ADR 0015 D1) ──────────────────────
+	// Compares the bytes produced by emit_data_bin_chunked against the
+	// fixture's expected hex (whitespace + ` # comment` non-significant).
+	// The framing prefix `[u32 LE size]` is stripped before comparison
+	// (the fixture records the CXDB header onward).
+	if 'out_data_bin_hex' in t.sections {
+		expected_hex := normalize_hex_text(t.sections['out_data_bin_hex'] or { '' })
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		opts := cx.ChunkedEmitOptions{ chunk_size: t.chunk_at, compress: .never }
+		got := cx.emit_data_bin_chunked(doc, opts) or {
+			failures << 'out_data_bin_hex error: ${err}'
+			return failures
+		}
+		got_hex := bytes_to_hex(got[4..]) // strip framing prefix
+		if expected_hex != got_hex {
+			failures << 'out_data_bin_hex mismatch\n  expected: ${expected_hex}\n  got:      ${got_hex}'
+		}
+	}
+
+	// ── out_md ────────────────────────────────────────────────────────────────
+	if 'out_md' in t.sections {
+		expected_md := t.sections['out_md'] or { '' }
+		got_md := if result.is_multi {
+			docs := result.multi or { [] }
+			cx.emit_md_docs(docs)
+		} else {
+			doc := result.single or { cx.Document{} }
+			cx.emit_md(doc)
+		}
+		if expected_md.trim_space() != got_md.trim_space() {
+			failures << 'out_md mismatch\n  expected:\n${expected_md}\n  got:\n${got_md}'
+		}
+	}
+
+	// ── Schema-driven encoding (ADR 0015 D3 / D4 / D5 / D6) ───────────────────
+	// Three section types compose to verify schema-driven behavior:
+	//
+	//   schema_cxs              — schema source text (parsed as `.cxs`)
+	//   sd_assert_round_trip    — opt-in flag: set to "1" to assert that
+	//                             (encode → decode) preserves the input
+	//                             at the data layer (ScalarValue level)
+	//   sd_assert_flag_bit_1    — opt-in flag: set to "1" to assert that
+	//                             encoded bytes have CXDB header flag bit
+	//                             1 set
+	//   sd_ref_form             — selects the schema-ref form: "hash" /
+	//                             "inline" / "hash_with_name". Default
+	//                             "hash".
+	//   sd_assert_ref_tag       — expected first byte of the schema ref
+	//                             ("0x10" / "0x11" / "0x12")
+	//   sd_expected_emit_error  — expected substring of the encode error
+	//                             (skips round-trip if the encoder must
+	//                             reject — e.g., closed-mode rejection)
+	//
+	// schema_cxs_a / schema_cxs_b + sd_assert_hash_equal: hash-stability
+	// assertion across two semantically-equivalent schemas.
+	//
+	// in_data_bin_hex + sd_expected_decode_error: feed concrete framed
+	// bytes through the decoder and assert the error message.
+	if 'sd_assert_hash_equal' in t.sections {
+		schema_a := t.sections['schema_cxs_a'] or { '' }
+		schema_b := t.sections['schema_cxs_b'] or { '' }
+		ha := cx.schema_content_hash(schema_a) or {
+			failures << 'sd_assert_hash_equal: hash A failed: ${err}'
+			return failures
+		}
+		hb := cx.schema_content_hash(schema_b) or {
+			failures << 'sd_assert_hash_equal: hash B failed: ${err}'
+			return failures
+		}
+		if !slices_equal(ha, hb) {
+			failures << 'sd_assert_hash_equal: hash A != hash B'
+		}
+	}
+	has_sd := 'sd_assert_round_trip' in t.sections
+		|| 'sd_assert_flag_bit_1' in t.sections
+		|| 'sd_assert_ref_tag' in t.sections
+		|| 'sd_ref_form' in t.sections
+		|| 'sd_name_hint' in t.sections
+		|| 'sd_expected_emit_error' in t.sections
+		|| 'sd_expected_decoded_cx' in t.sections
+	if has_sd && 'schema_cxs' in t.sections {
+		schema_text := t.sections['schema_cxs'] or { '' }
+		ref_form := match (t.sections['sd_ref_form'] or { 'hash' }).trim_space() {
+			'inline'         { cx.SchemaRefForm.inline_schema }
+			'hash_with_name' { cx.SchemaRefForm.hash_with_name }
+			else             { cx.SchemaRefForm.hash_only }
+		}
+		name_hint := (t.sections['sd_name_hint'] or { '' }).trim_space()
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		bytes_or_err := cx.emit_data_bin_schema_driven(doc, schema_text: schema_text, ref_form: ref_form, name_hint: name_hint) or {
+			expected_err := (t.sections['sd_expected_emit_error'] or { '' }).trim_space()
+			if expected_err != '' && err.msg().contains(expected_err) {
+				return failures  // expected emit-time rejection (e.g., closed mode)
+			}
+			failures << 'sd_emit error: ${err} (expected: ${expected_err})'
+			return failures
+		}
+		// header is at offset 4 (after 4-byte framing prefix). Flag byte
+		// is byte index 5 of payload, i.e., absolute offset 9.
+		if 'sd_assert_flag_bit_1' in t.sections {
+			expected := (t.sections['sd_assert_flag_bit_1'] or { '0' }).trim_space()
+			got_bit := bytes_or_err.len > 9 && (bytes_or_err[9] & 0x02) != 0
+			want := expected == '1'
+			if got_bit != want {
+				failures << 'sd_assert_flag_bit_1: expected=${want} got=${got_bit} (flags byte=0x${bytes_or_err[9]:02x})'
+			}
+		}
+		if 'sd_assert_ref_tag' in t.sections {
+			expected_tag := (t.sections['sd_assert_ref_tag'] or { '' }).trim_space()
+			// schema ref starts at offset 16 (after 4-byte framing + 12-byte header)
+			got_tag := if bytes_or_err.len > 16 { bytes_or_err[16] } else { u8(0) }
+			want_tag := if expected_tag.starts_with('0x') {
+				u8(parse_hex_byte(expected_tag[2..]))
+			} else {
+				u8(parse_hex_byte(expected_tag))
+			}
+			if got_tag != want_tag {
+				failures << 'sd_assert_ref_tag: expected=0x${want_tag:02x} got=0x${got_tag:02x}'
+			}
+		}
+		if (t.sections['sd_assert_round_trip'] or { '0' }).trim_space() == '1' {
+			rec := cx.parse_data_bin_schema_driven(bytes_or_err, schema_text) or {
+				failures << 'sd_round_trip decode error: ${err}'
+				return failures
+			}
+			out := cx.emit_cx(rec)
+			// Round-trip is data-equivalent, not byte-identical (type
+			// annotations may be dropped on the way back through
+			// DataVal). Compare against `sd_expected_decoded_cx` if the
+			// fixture supplies it; otherwise just confirm decode
+			// succeeded — the semantic compare is implicit in the
+			// DataPairs round-trip.
+			if 'sd_expected_decoded_cx' in t.sections {
+				expected := t.sections['sd_expected_decoded_cx'] or { '' }
+				if out.trim_space() != expected.trim_space() {
+					failures << 'sd_round_trip mismatch\n  expected: ${expected}\n  got:      ${out}'
+				}
+			}
+		}
+	}
+	if 'in_data_bin_hex' in t.sections {
+		hex := normalize_hex_text(t.sections['in_data_bin_hex'] or { '' })
+		bytes := framed_bytes_from_hex(hex)
+		schema_hint := t.sections['schema_cxs'] or { '' }
+		expected_err := (t.sections['sd_expected_decode_error'] or { '' }).trim_space()
+		_ := cx.parse_data_bin_schema_driven(bytes, schema_hint) or {
+			if expected_err != '' && err.msg().contains(expected_err) {
+				return failures
+			}
+			failures << 'sd_decode error: ${err} (expected: ${expected_err})'
+			return failures
+		}
+		if expected_err != '' {
+			failures << 'sd_decode: expected error containing "${expected_err}", but decode succeeded'
+		}
+	}
+
+	// ── Schema validator (Phase 7.74c-schema-validator-v-core) ─────────────
+	// Section types driving the validator-fixture path:
+	//
+	//   schema_cxs                 — schema source (.cxs) (shared with sd_*)
+	//   sv_assert_valid            — '1' to assert zero error diagnostics
+	//                                (warnings / info do NOT invalidate)
+	//   sv_expected_codes          — comma-separated error-severity codes
+	//                                in document order, e.g. 'S002,S003'
+	//   sv_expected_warn_codes     — comma-separated warn-severity codes
+	//                                in document order (Phase 7.74d:
+	//                                strict-mode S001/S012 etc.)
+	//   sv_expected_info_codes     — comma-separated info-severity codes
+	//                                in document order (reserved)
+	//
+	// The validator-only branch fires when any sv_* section is present
+	// alongside schema_cxs. Other schema_cxs-using sections (sd_*) are
+	// unaffected.
+	has_sv := 'sv_assert_valid' in t.sections
+		|| 'sv_expected_codes' in t.sections
+		|| 'sv_expected_warn_codes' in t.sections
+		|| 'sv_expected_info_codes' in t.sections
+	if has_sv && 'schema_cxs' in t.sections {
+		schema_text := t.sections['schema_cxs'] or { '' }
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		report := cx.validate(doc, schema_text) or {
+			failures << 'sv_validate error: ${err}'
+			return failures
+		}
+		mut got_codes := []string{cap: report.diagnostics.len}
+		mut got_warn_codes := []string{cap: report.diagnostics.len}
+		mut got_info_codes := []string{cap: report.diagnostics.len}
+		for d in report.diagnostics {
+			match d.severity {
+				.error_severity { got_codes << d.code }
+				.warn           { got_warn_codes << d.code }
+				.info           { got_info_codes << d.code }
+			}
+		}
+		if 'sv_assert_valid' in t.sections {
+			expected := (t.sections['sv_assert_valid'] or { '0' }).trim_space()
+			if expected == '1' && got_codes.len > 0 {
+				failures << 'sv_assert_valid: expected zero errors, got [${got_codes.join(",")}]'
+			}
+		}
+		if 'sv_expected_codes' in t.sections {
+			expected_str := (t.sections['sv_expected_codes'] or { '' }).trim_space()
+			mut expected := []string{}
+			for c in expected_str.split(',') {
+				e := c.trim_space()
+				if e != '' { expected << e }
+			}
+			if expected.join(',') != got_codes.join(',') {
+				failures << 'sv_expected_codes mismatch\n  expected: [${expected.join(",")}]\n  got:      [${got_codes.join(",")}]'
+			}
+		}
+		if 'sv_expected_warn_codes' in t.sections {
+			expected_str := (t.sections['sv_expected_warn_codes'] or { '' }).trim_space()
+			mut expected := []string{}
+			for c in expected_str.split(',') {
+				e := c.trim_space()
+				if e != '' { expected << e }
+			}
+			if expected.join(',') != got_warn_codes.join(',') {
+				failures << 'sv_expected_warn_codes mismatch\n  expected: [${expected.join(",")}]\n  got:      [${got_warn_codes.join(",")}]'
+			}
+		}
+		if 'sv_expected_info_codes' in t.sections {
+			expected_str := (t.sections['sv_expected_info_codes'] or { '' }).trim_space()
+			mut expected := []string{}
+			for c in expected_str.split(',') {
+				e := c.trim_space()
+				if e != '' { expected << e }
+			}
+			if expected.join(',') != got_info_codes.join(',') {
+				failures << 'sv_expected_info_codes mismatch\n  expected: [${expected.join(",")}]\n  got:      [${got_info_codes.join(",")}]'
+			}
+		}
+	}
+
+	return failures
+}
+
+fn slices_equal(a []u8, b []u8) bool {
+	if a.len != b.len { return false }
+	for i in 0 .. a.len {
+		if a[i] != b[i] { return false }
+	}
+	return true
+}
+
+fn parse_hex_byte(s string) int {
+	mut v := 0
+	for c in s.bytes() {
+		mut d := 0
+		if c >= `0` && c <= `9` { d = int(c - `0`) }
+		else if c >= `a` && c <= `f` { d = int(c - `a`) + 10 }
+		else if c >= `A` && c <= `F` { d = int(c - `A`) + 10 }
+		else { continue }
+		v = (v << 4) | d
+	}
+	return v
+}
+
+// framed_bytes_from_hex turns a hex string (header bytes onward, no
+// framing prefix) into a framed [u32 LE size][payload] buffer ready to
+// hand to the decoder. The fixture hex starts at the CXDB magic.
+fn framed_bytes_from_hex(hex string) []u8 {
+	mut payload := []u8{cap: hex.len / 2}
+	mut i := 0
+	for i + 1 < hex.len {
+		hi := hex_digit(hex[i])
+		lo := hex_digit(hex[i + 1])
+		payload << u8((hi << 4) | lo)
+		i += 2
+	}
+	mut framed := []u8{cap: 4 + payload.len}
+	sz := u32(payload.len)
+	framed << u8(sz & 0xFF)
+	framed << u8((sz >> 8) & 0xFF)
+	framed << u8((sz >> 16) & 0xFF)
+	framed << u8((sz >> 24) & 0xFF)
+	framed << payload
+	return framed
+}
+
+fn hex_digit(b u8) int {
+	if b >= `0` && b <= `9` { return int(b - `0`) }
+	if b >= `a` && b <= `f` { return int(b - `a`) + 10 }
+	if b >= `A` && b <= `F` { return int(b - `A`) + 10 }
+	return 0
+}
+
+// ── Simple JSON value equality (parse and compare) ────────────────────────────
+
+fn json_equal(a string, b string) bool {
+	va := parse_json_val(a.trim_space())
+	vb := parse_json_val(b.trim_space())
+	return json_vals_equal(va, vb)
+}
+
+type JVal = JNull | bool | f64 | string | []JVal | map[string]JVal
+
+struct JNull {}
+
+fn json_vals_equal(a JVal, b JVal) bool {
+	return match a {
+		JNull    { b is JNull }
+		bool     { b is bool && (a as bool) == (b as bool) }
+		f64      { b is f64 && (a as f64) == (b as f64) }
+		string   { b is string && (a as string) == (b as string) }
+		[]JVal   {
+			if b !is []JVal { return false }
+			ba := b as []JVal
+			aa := a as []JVal
+			if aa.len != ba.len { return false }
+			for i in 0..aa.len {
+				if !json_vals_equal(aa[i], ba[i]) { return false }
+			}
+			true
+		}
+		map[string]JVal {
+			if b !is map[string]JVal { return false }
+			am := a as map[string]JVal
+			bm := b as map[string]JVal
+			if am.len != bm.len { return false }
+			for k, v in am {
+				bv := bm[k] or { return false }
+				if !json_vals_equal(v, bv) { return false }
+			}
+			true
+		}
+	}
+}
+
+struct JsonReader {
+mut:
+	src []u8
+	pos int
+}
+
+fn parse_json_val(src string) JVal {
+	mut r := JsonReader{ src: src.bytes(), pos: 0 }
+	return r.read_val()
+}
+
+fn json_is_ws(b u8) bool {
+	return b == ` ` || b == `\t` || b == `\n` || b == `\r`
+}
+
+fn (mut r JsonReader) skip_ws() {
+	for r.pos < r.src.len && json_is_ws(r.src[r.pos]) { r.pos++ }
+}
+
+fn (mut r JsonReader) peek() u8 {
+	if r.pos < r.src.len { return r.src[r.pos] }
+	return 0
+}
+
+fn (mut r JsonReader) read_val() JVal {
+	r.skip_ws()
+	if r.pos >= r.src.len { return JVal(JNull{}) }
+	b := r.peek()
+	return match b {
+		`"` { r.read_json_str() }
+		`{` { r.read_json_obj() }
+		`[` { r.read_json_arr() }
+		`t` { r.pos += 4; JVal(true) }
+		`f` { r.pos += 5; JVal(false) }
+		`n` { r.pos += 4; JVal(JNull{}) }
+		else { r.read_json_num() }
+	}
+}
+
+fn (mut r JsonReader) read_json_str() JVal {
+	r.pos++ // '"'
+	mut s := []u8{}
+	for r.pos < r.src.len {
+		b := r.src[r.pos]
+		if b == `"` { r.pos++; break }
+		if b == `\\` {
+			r.pos++
+			if r.pos < r.src.len {
+				esc := r.src[r.pos]
+				r.pos++
+				match esc {
+					`n` { s << `\n` }
+					`r` { s << `\r` }
+					`t` { s << `\t` }
+					`"` { s << `"` }
+					`\\` { s << `\\` }
+					else { s << `\\`; s << esc }
+				}
+			}
+		} else {
+			s << b
+			r.pos++
+		}
+	}
+	return JVal(s.bytestr())
+}
+
+fn (mut r JsonReader) read_json_obj() JVal {
+	r.pos++ // '{'
+	mut obj := map[string]JVal{}
+	r.skip_ws()
+	if r.pos < r.src.len && r.peek() == `}` { r.pos++; return JVal(obj) }
+	for r.pos < r.src.len {
+		r.skip_ws()
+		key_val := r.read_val()
+		key := if key_val is string { key_val as string } else { '' }
+		r.skip_ws()
+		if r.peek() == `:` { r.pos++ }
+		val := r.read_val()
+		obj[key] = val
+		r.skip_ws()
+		if r.peek() == `,` { r.pos++; continue }
+		if r.peek() == `}` { r.pos++; break }
+		break
+	}
+	return JVal(obj)
+}
+
+fn (mut r JsonReader) read_json_arr() JVal {
+	r.pos++ // '['
+	mut arr := []JVal{}
+	r.skip_ws()
+	if r.pos < r.src.len && r.peek() == `]` { r.pos++; return JVal(arr) }
+	for r.pos < r.src.len {
+		val := r.read_val()
+		arr << val
+		r.skip_ws()
+		if r.peek() == `,` { r.pos++; continue }
+		if r.peek() == `]` { r.pos++; break }
+		break
+	}
+	return JVal(arr)
+}
+
+fn (mut r JsonReader) read_json_num() JVal {
+	mut s := []u8{}
+	for r.pos < r.src.len {
+		b := r.src[r.pos]
+		if b == `,` || b == `}` || b == `]` || json_is_ws(b) { break }
+		s << b
+		r.pos++
+	}
+	num_str := s.bytestr()
+	if num_str == 'null' { return JVal(JNull{}) }
+	if num_str == 'true' { return JVal(true) }
+	if num_str == 'false' { return JVal(false) }
+	// try as float
+	fv := num_str.f64()
+	if fv != 0.0 || num_str == '0' || num_str == '0.0' {
+		return JVal(fv)
+	}
+	return JVal(f64(0))
+}
+
+// ── Hex helpers (out_data_bin_hex section type) ───────────────────────────────
+
+// normalize_hex_text strips comments (` # ...`) and whitespace from a
+// fixture's hex section, returning a lowercase contiguous hex string.
+fn normalize_hex_text(s string) string {
+	mut out := []u8{cap: s.len}
+	for line in s.split_into_lines() {
+		mut l := line
+		// strip line-tail comments after a `#`
+		if hash := l.index('#') {
+			l = l[..hash]
+		}
+		for b in l.bytes() {
+			if (b >= `0` && b <= `9`) || (b >= `a` && b <= `f`) {
+				out << b
+			} else if b >= `A` && b <= `F` {
+				out << b + 32 // to lowercase
+			}
+		}
+	}
+	return out.bytestr()
+}
+
+fn bytes_to_hex(bytes []u8) string {
+	hex_chars := '0123456789abcdef'.bytes()
+	mut out := []u8{cap: bytes.len * 2}
+	for b in bytes {
+		out << hex_chars[(b >> 4) & 0x0F]
+		out << hex_chars[b & 0x0F]
+	}
+	return out.bytestr()
+}
+
+// ── Test runner ───────────────────────────────────────────────────────────────
+
+fn run_suite(path string) bool {
+	tests := parse_suite(path)
+	mut pass := 0
+	mut fail := 0
+	mut skip := 0
+
+	for t in tests {
+		if t.pending != '' {
+			skip++
+			println('SKIP ${t.name} (pending: ${t.pending})')
+			continue
+		}
+		failures := run_test(t)
+		if failures.len == 0 {
+			pass++
+			println('PASS ${t.name}')
+		} else {
+			fail++
+			println('FAIL ${t.name}')
+			for f in failures { println('     ${f}') }
+		}
+	}
+	println('${path}: ${pass} passed, ${fail} failed, ${skip} skipped')
+	return fail == 0
+}
+
+fn main() {
+	args := os.args[1..]
+
+	// Default: run all suites
+	suites := if args.len > 0 {
+		args
+	} else {
+		[
+			'../conformance/core.txt',
+			'../conformance/extended.txt',
+			'../conformance/xml.txt',
+			'../conformance/md.txt',
+			'../conformance/namespaces.txt',
+		]
+	}
+
+	mut all_pass := true
+	for suite in suites {
+		if !run_suite(suite) { all_pass = false }
+	}
+
+	if !all_pass { exit(1) }
+}

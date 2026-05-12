@@ -10,8 +10,8 @@ import java.util.regex.*;
  *
  * Architecture:
  *   CXDocument.parse(cxStr)  → CxLib.toAst(cxStr) → JSON → native Java objects
- *   CXDocument.loads(cxStr)  → CxLib.toJson(cxStr) → parse JSON → Java Object
- *   CXDocument.dumps(data)   → CxLib.jsonToCx(gson.toJson(data)) → CX string
+ *   CXDocument.loads(cxStr)  → CxLib.toDataBin(cxStr) → DataBin.decode → Java Object
+ *   CXDocument.dumps(data)   → DataBin.encode(data)   → CxLib.fromDataBin → CX
  *   doc.toCx()               → native CX emitter (StringBuilder)
  *   doc.toXml() etc.         → CxLib.toXml(doc.toCx())
  */
@@ -29,6 +29,23 @@ class Attr {
     public String name;
     public Object value;     // String | Long | Double | Boolean | null
     public String dataType;  // null means string (omitted in JSON)
+    /** v3.4 (ADR 0002): expanded-name fields populated by
+     *  CXDocument.resolveNamespaces(). `local` is the part after the
+     *  first ':' in `name` (or the whole name); `nsUri` is the resolved
+     *  URI, null when no binding is in scope. Per XML Namespaces 1.0
+     *  §6.2 the default namespace does not apply to unprefixed attrs. */
+    public String local = "";
+    public String nsUri = null;
+    /** v3.4 (ADR 0003): true when the source attribute value was a bare
+     *  `@id` reference token. Quoted strings starting with '@' have
+     *  isRef = false. Round-trip preserves the bare form on emit. */
+    public boolean isRef = false;
+    /** v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+     *  When non-null, `value` is unused and the attribute's content is the
+     *  parsed body sequence. Used by CXL evaluation directives like
+     *  `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL evaluation;
+     *  round-trips as opaque structure (ADR 0016 R5). ast_bin v5+. */
+    public List<Node> body = null;
 
     public Attr(String name, Object value, String dataType) {
         this.name     = name;
@@ -39,6 +56,12 @@ class Attr {
     public Attr(String name, Object value) {
         this(name, value, null);
     }
+
+    /** Local part of the attribute name (post-colon, or whole name). */
+    public String localName() { return local; }
+
+    /** Resolved namespace URI; null for unprefixed or unbound prefixes. */
+    public String namespaceUri() { return nsUri; }
 }
 
 class TextNode implements Node {
@@ -97,14 +120,52 @@ class XMLDeclNode implements Node {
     }
 }
 
+/**
+ * `[?cx ...]`. v0.6.0 (ast_bin v4) — directives may carry an `&amp;anchor`
+ * and nested elements; used by the standalone-fragment form
+ * `[?cx frag &amp;name [body :TYPE :flags]]` (spec/schema.md §8). v1-v3
+ * buffers populate anchor/items as null/empty.
+ */
 class CXDirectiveNode implements Node {
     public List<Attr> attrs;
-    public CXDirectiveNode(List<Attr> attrs) { this.attrs = attrs; }
+    public String     anchor;
+    public List<Node> items;
+    public CXDirectiveNode(List<Attr> attrs) {
+        this(attrs, null, new ArrayList<>());
+    }
+    public CXDirectiveNode(List<Attr> attrs, String anchor, List<Node> items) {
+        this.attrs  = attrs;
+        this.anchor = anchor;
+        this.items  = items != null ? items : new ArrayList<>();
+    }
 }
 
 class BlockContentNode implements Node {
     public List<Node> items;
     public BlockContentNode(List<Node> items) { this.items = items; }
+}
+
+/** v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text at v0.6.0;
+ *  the CXL evaluator at v0.7.0+ parses it as CXPath at evaluation time.
+ *  ast_bin tag 0x0D (format v5+). */
+class InterpolationNode implements Node {
+    public String expr;
+    public InterpolationNode(String expr) { this.expr = expr; }
+}
+
+/** v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Reserved EvalNames
+ *  (if/for/with/cond/include/def/use/let/fn/match/try) parse into this
+ *  node. Inert at v0.6.0; the CXL evaluator dispatches on `name`.
+ *  ast_bin tag 0x0E (format v5+). */
+class EvalDirectiveNode implements Node {
+    public String     name;
+    public List<Attr> attrs;
+    public List<Node> items;
+    public EvalDirectiveNode(String name, List<Attr> attrs, List<Node> items) {
+        this.name  = name;
+        this.attrs = attrs;
+        this.items = items;
+    }
 }
 
 class DoctypeDeclNode implements Node {
@@ -128,6 +189,18 @@ class Element implements Node {
     public String     dataType;  // may be null — TypeAnnotation e.g. "int[]"
     public List<Attr> attrs;
     public List<Node> items;
+    /** v3.4 (ADR 0002): expanded-name fields populated by
+     *  CXDocument.resolveNamespaces(). See Attr. */
+    public String local = "";
+    public String nsUri = null;
+    /** v3.4 (ADR 0003): syntactic ID declaration ("#name" token); null
+     *  when the element has no ID. Distinct from anchor and from
+     *  user-data attributes literally named "id". */
+    public String id    = null;
+    /** v3.4 (ADR 0003 D1): body-position reference ("[ref @id]" shape).
+     *  Carried over the ast_bin wire format at v3+ (Phase 7.70 bumped
+     *  2 → 3). Null when the element is not a body-position reference. */
+    public String bodyRef = null;
 
     public Element(String name) {
         this.name     = name;
@@ -137,6 +210,13 @@ class Element implements Node {
         this.attrs    = new ArrayList<>();
         this.items    = new ArrayList<>();
     }
+
+    /** Local part of the element name (post-colon, or whole name). */
+    public String localName() { return local; }
+
+    /** Resolved namespace URI; null when no binding is in scope and
+     *  the prefix is not reserved. */
+    public String namespaceUri() { return nsUri; }
 
     /** Attribute value by name, or null. */
     public Object attr(String attrName) {
@@ -288,12 +368,46 @@ class Element implements Node {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    /** All Elements matching a CXPath expression (subtree of this element). */
+    /**
+     * All Elements matching a CXPath expression (subtree of this element).
+     *
+     * <p>v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+     * Elements are *live references* into this Element's tree —
+     * mutations propagate, preserving prior behavior. Semantics match
+     * V's Element.select_all: this element's items become the top-level
+     * candidate set.
+     */
     public List<Element> selectAll(String expr) {
-        CXPath.CXPathExpr cx = CXPath.parse(expr);
-        List<Element> result = new ArrayList<>();
-        CXPath.collectStep(this, cx, 0, result);
-        return result;
+        // Emit each Element child as a top-level node so V's
+        // Document.select_all_paths walks the same candidate set V's
+        // Element.select_all would. Track a doc-index → orig-index
+        // mapping for non-Element items.
+        StringBuilder sb = new StringBuilder();
+        List<Integer> docToOrig = new ArrayList<>();
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i) instanceof Element el) {
+                sb.append(CxEmitter.emitElement(el, 0));
+                docToOrig.add(i);
+            }
+        }
+        String docStr = sb.toString().stripTrailing();
+        List<int[]> paths = CxLib.selectAllPaths(docStr, expr);
+        List<Element> out = new ArrayList<>();
+        for (int[] p : paths) {
+            if (p.length == 0) continue;
+            int top = p[0];
+            if (top < 0 || top >= docToOrig.size()) continue;
+            Node node = items.get(docToOrig.get(top));
+            boolean ok = true;
+            for (int i = 1; i < p.length; i++) {
+                if (!(node instanceof Element el2) || p[i] < 0 || p[i] >= el2.items.size()) {
+                    ok = false; break;
+                }
+                node = el2.items.get(p[i]);
+            }
+            if (ok && node instanceof Element matched) out.add(matched);
+        }
+        return out;
     }
 
     /** Emit this element as a CX string (no trailing newline). */
@@ -369,6 +483,41 @@ public class CXDocument {
         return null;
     }
 
+    /** Return the Element declaring `#id`, or null. v3.4 (ADR 0003). */
+    public Element resolveId(String id) {
+        Element found = findElementById(elements, id);
+        if (found != null) return found;
+        return findElementById(prolog, id);
+    }
+
+    /** {id: Element} map for the whole document. v3.4 (ADR 0003). */
+    public Map<String, Element> elementsById() {
+        Map<String, Element> out = new java.util.HashMap<>();
+        collectElementsById(elements, out);
+        collectElementsById(prolog, out);
+        return out;
+    }
+
+    private static Element findElementById(List<Node> nodes, String id) {
+        for (Node n : nodes) {
+            if (n instanceof Element e) {
+                if (id.equals(e.id)) return e;
+                Element found = findElementById(e.items, id);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private static void collectElementsById(List<Node> nodes, Map<String, Element> out) {
+        for (Node n : nodes) {
+            if (n instanceof Element e) {
+                if (e.id != null) out.put(e.id, e);
+                collectElementsById(e.items, out);
+            }
+        }
+    }
+
     /** Append a top-level node. */
     public void append(Node node) {
         elements.add(node);
@@ -385,14 +534,21 @@ public class CXDocument {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    /** All Elements matching a CXPath expression. */
+    /**
+     * All Elements matching a CXPath expression.
+     *
+     * <p>v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+     * Elements are live references into this Document's tree —
+     * mutations propagate.
+     */
     public List<Element> selectAll(String expr) {
-        CXPath.CXPathExpr cx = CXPath.parse(expr);
-        Element vroot = new Element("#document");
-        vroot.items = new ArrayList<>(elements);
-        List<Element> result = new ArrayList<>();
-        CXPath.collectStep(vroot, cx, 0, result);
-        return result;
+        List<int[]> paths = CxLib.selectAllPaths(toCx(), expr);
+        List<Element> out = new ArrayList<>(paths.size());
+        for (int[] p : paths) {
+            Element el = CXPath.navigateDocPath(this, p);
+            if (el != null) out.add(el);
+        }
+        return out;
     }
 
     /** Return new document with element at path replaced by f(element). */
@@ -414,17 +570,26 @@ public class CXDocument {
         return this;
     }
 
-    /** Return new document with all matching elements replaced by f(element). */
+    /**
+     * Return new document with all matching elements replaced by f(element).
+     *
+     * <p>v3.4: thunks to libcx via cx_select_all_paths (CB-5). Paths are
+     * applied bottom-up (longest first) so when a parent is rewritten
+     * its f-input already contains the f-results of descendant matches —
+     * matching the prior post-order semantics.
+     */
     public CXDocument transformAll(String expr, Function<Element, Element> f) {
-        CXPath.CXPathExpr cx = CXPath.parse(expr);
-        List<Node> newElements = elements.stream()
-                                         .map(n -> CXPath.rebuildNode(n, cx, f))
-                                         .toList();
-        CXDocument d = new CXDocument();
-        d.elements = new ArrayList<>(newElements);
-        d.prolog   = new ArrayList<>(this.prolog);
-        d.doctype  = this.doctype;
-        return d;
+        List<int[]> paths = CxLib.selectAllPaths(toCx(), expr);
+        if (paths.isEmpty()) return this;
+        List<int[]> sorted = new ArrayList<>(paths);
+        sorted.sort((a, b) -> Integer.compare(b.length, a.length));
+        CXDocument newDoc = this;
+        for (int[] p : sorted) {
+            Element target = CXPath.navigateDocPath(newDoc, p);
+            if (target == null) continue;
+            newDoc = CXPath.replaceAtDocPath(newDoc, p, f.apply(CXPath.elemDetached(target)));
+        }
+        return newDoc;
     }
 
     /** Emit the document as a CX string using the native emitter. */
@@ -432,62 +597,180 @@ public class CXDocument {
         return CxEmitter.emitDoc(this);
     }
 
-    public String toXml()  { return CxLib.toXml(toCx());  }
-    public String toJson() { return CxLib.toJson(toCx()); }
-    public String toYaml() { return CxLib.toYaml(toCx()); }
-    public String toToml() { return CxLib.toToml(toCx()); }
-    public String toMd()   { return CxLib.toMd(toCx());   }
+    /**
+     * Serialize this Document to a FRAMED [u32 LE size][payload]
+     * binary AST buffer. Used internally by toXml / toJson / etc.
+     * (Phase 5 / CB-1).
+     */
+    public byte[] toAstBin() { return BinaryDecoder.encodeAST(this); }
+
+    // v3.4 (Phase 5 / CB-1): format methods now go through
+    // cx_ast_bin_to_<fmt>(toAstBin()) directly, avoiding the prior
+    // emit-CX-and-reparse detour.
+    public String toXml()  { return CxLib.astBinToXml (toAstBin()); }
+    public String toJson() { return CxLib.astBinToJson(toAstBin()); }
+    public String toYaml() { return CxLib.astBinToYaml(toAstBin()); }
+    public String toToml() { return CxLib.astBinToToml(toAstBin()); }
+    public String toMd()   { return CxLib.astBinToMd  (toAstBin()); }
+
+    // ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────────
+    //
+    // Mirrors V core's vcx/cx/namespaces.v. Walks a parsed Document,
+    // populating Element.{local, nsUri} and Attr.{local, nsUri} from
+    // in-scope xmlns / xmlns: declarations. Called at the tail of every
+    // parse entry point so consumers see a uniform expanded-name view.
+
+    public static final String XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace";
+    public static final String CX_NAMESPACE_URI  = "https://cx-home.org/ns/cx";
+
+    private static String[] splitNsPrefix(String name) {
+        int i = name.indexOf(':');
+        if (i < 0) return new String[]{"", name};
+        return new String[]{name.substring(0, i), name.substring(i + 1)};
+    }
+
+    private static String lookupNs(String prefix, List<Map<String, String>> scope) {
+        if ("xml".equals(prefix))   return XML_NAMESPACE_URI;
+        if ("cx".equals(prefix))    return CX_NAMESPACE_URI;
+        if ("xmlns".equals(prefix)) return null;
+        for (int i = scope.size() - 1; i >= 0; i--) {
+            if (scope.get(i).containsKey(prefix)) {
+                String uri = scope.get(i).get(prefix);
+                return (uri == null || uri.isEmpty()) ? null : uri;
+            }
+        }
+        return null;
+    }
+
+    private static void resolveElement(Element e, List<Map<String, String>> scope) {
+        Map<String, String> frame = new LinkedHashMap<>();
+        for (Attr a : e.attrs) {
+            String v = a.value == null ? "" : String.valueOf(a.value);
+            if ("xmlns".equals(a.name)) {
+                frame.put("", v);
+            } else if (a.name.startsWith("xmlns:") && a.name.length() > 6) {
+                frame.put(a.name.substring(6), v);
+            }
+        }
+        boolean pushed = !frame.isEmpty();
+        if (pushed) scope.add(frame);
+
+        String[] split = splitNsPrefix(e.name);
+        e.local = split[1];
+        e.nsUri = lookupNs(split[0], scope);
+
+        for (Attr a : e.attrs) {
+            String[] aSplit = splitNsPrefix(a.name);
+            a.local = aSplit[1];
+            if ("xmlns".equals(a.name) || "xmlns".equals(aSplit[0])) {
+                a.nsUri = null;
+                continue;
+            }
+            if (aSplit[0].isEmpty()) {
+                // Default ns does not apply to unprefixed attributes.
+                a.nsUri = null;
+                continue;
+            }
+            a.nsUri = lookupNs(aSplit[0], scope);
+        }
+
+        for (Node item : e.items) {
+            if (item instanceof Element child) resolveElement(child, scope);
+        }
+
+        if (pushed) scope.remove(scope.size() - 1);
+    }
+
+    /** Populate Element.{local, nsUri} and Attr.{local, nsUri} on every
+     *  node in {@code doc} per ADR 0002 / spec/namespaces.md.
+     *  Idempotent. Called automatically by parse / parseXml / parseJson /
+     *  parseYaml / parseToml / parseMd. */
+    public static void resolveNamespaces(CXDocument doc) {
+        List<Map<String, String>> scope = new ArrayList<>();
+        for (Node n : doc.elements) {
+            if (n instanceof Element e) resolveElement(e, scope);
+        }
+    }
 
     // ── Static factory methods ─────────────────────────────────────────────────
 
     /** Parse a CX string into a CXDocument (uses binary wire protocol). */
     public static CXDocument parse(String cxStr) throws Exception {
         byte[] data = CxLib.astBin(cxStr);
-        return BinaryDecoder.decodeAST(data);
+        CXDocument doc = BinaryDecoder.decodeAST(data);
+        resolveNamespaces(doc);
+        return doc;
     }
 
-    /** Stream a CX string as a list of SAX-like {@link StreamEvent}s. */
+    /**
+     * Stream a CX string as a list of SAX-like {@link StreamEvent}s.
+     *
+     * <p>v3.4 (Phase 5 / CB-4): pulls events one-by-one via the
+     * cx_events_open / cx_events_next / cx_events_close handle API.
+     * Replaces the prior eager-buffered cx_to_events_bin path. For
+     * true pull-based streaming with caller-controlled cancellation,
+     * use {@link EventStream#open} directly.
+     */
     public static List<StreamEvent> stream(String cxStr) throws Exception {
-        byte[] data = CxLib.eventsBin(cxStr);
-        return BinaryDecoder.decodeEvents(data);
+        try (EventStream s = EventStream.open(cxStr)) {
+            List<StreamEvent> events = new ArrayList<>();
+            for (StreamEvent ev : s) events.add(ev);
+            return events;
+        }
     }
+
+    // v3.4 (Phase 5 / CB-2): parse_<format> goes through
+    // cx_<format>_to_ast_bin directly, avoiding the prior cx_<fmt>_to_ast
+    // → JSON.parse → walk dict pipeline.
 
     /** Parse an XML string into a CXDocument. */
     public static CXDocument parseXml(String s) {
-        String astJson = CxLib.xmlToAst(s);
-        return AstDeserializer.docFromJson(new Gson().fromJson(astJson, JsonObject.class));
+        CXDocument doc = BinaryDecoder.decodeAST(CxLib.xmlToAstBin(s));
+        resolveNamespaces(doc);
+        return doc;
     }
 
     /** Parse a JSON string into a CXDocument. */
     public static CXDocument parseJson(String s) {
-        String astJson = CxLib.jsonToAst(s);
-        return AstDeserializer.docFromJson(new Gson().fromJson(astJson, JsonObject.class));
+        CXDocument doc = BinaryDecoder.decodeAST(CxLib.jsonToAstBin(s));
+        resolveNamespaces(doc);
+        return doc;
     }
 
     /** Parse a YAML string into a CXDocument. */
     public static CXDocument parseYaml(String s) {
-        String astJson = CxLib.yamlToAst(s);
-        return AstDeserializer.docFromJson(new Gson().fromJson(astJson, JsonObject.class));
+        CXDocument doc = BinaryDecoder.decodeAST(CxLib.yamlToAstBin(s));
+        resolveNamespaces(doc);
+        return doc;
     }
 
     /** Parse a TOML string into a CXDocument. */
     public static CXDocument parseToml(String s) {
-        String astJson = CxLib.tomlToAst(s);
-        return AstDeserializer.docFromJson(new Gson().fromJson(astJson, JsonObject.class));
+        CXDocument doc = BinaryDecoder.decodeAST(CxLib.tomlToAstBin(s));
+        resolveNamespaces(doc);
+        return doc;
     }
 
     /** Parse a Markdown string into a CXDocument. */
     public static CXDocument parseMd(String s) {
-        String astJson = CxLib.mdToAst(s);
-        return AstDeserializer.docFromJson(new Gson().fromJson(astJson, JsonObject.class));
+        CXDocument doc = BinaryDecoder.decodeAST(CxLib.mdToAstBin(s));
+        resolveNamespaces(doc);
+        return doc;
     }
 
     // ── Data binding ───────────────────────────────────────────────────────────
 
-    /** Deserialize a CX data string into native Java types (Map/List/scalar). */
+    /**
+     * Deserialize a CX data string into native Java types (Map/List/scalar).
+     *
+     * <p>v3.4: parses through CXDB v1 (cx_to_data_bin) directly into Java
+     * types — no JSON-string detour. Type fidelity preserved (integers
+     * stay {@link Long}, floats stay {@link Double}, booleans stay
+     * {@link Boolean}, dates round-trip as {@link java.time.LocalDate},
+     * bytes as {@code byte[]}). Closes audit finding CB-3.
+     */
     public static Object loads(String cxStr) {
-        String jsonStr = CxLib.toJson(cxStr);
-        return new Gson().fromJson(jsonStr, Object.class);
+        return DataBin.decode(CxLib.toDataBin(cxStr));
     }
 
     /** Deserialize an XML string into native Java types. */
@@ -515,9 +798,16 @@ public class CXDocument {
         return new Gson().fromJson(CxLib.mdToJson(s), Object.class);
     }
 
-    /** Serialize native Java types (Map/List/scalar) to a CX string. */
+    /**
+     * Serialize native Java types (Map/List/scalar) to a CX string.
+     *
+     * <p>v3.4: encodes the Java value as CXDB v1 bytes directly, then calls
+     * cx_from_data_bin to produce canonical CX. No JSON-string detour;
+     * type fidelity preserved on round-trip with {@link #loads}. Closes
+     * audit finding CB-3.
+     */
     public static String dumps(Object data) {
-        return CxLib.jsonToCx(new Gson().toJson(data));
+        return CxLib.fromDataBin(DataBin.encode(data));
     }
 }
 
@@ -724,6 +1014,10 @@ class CxEmitter {
     // ── attribute formatting ───────────────────────────────────────────────────
 
     static String emitAttr(Attr a) {
+        if (a.isRef) {
+            // ADR 0003 D1: bare `@id` round-trips verbatim.
+            return a.name + "=@" + (a.value == null ? "" : a.value.toString());
+        }
         String dt = a.dataType;
         if ("int".equals(dt)) {
             return a.name + "=" + ((Number) a.value).longValue();
@@ -740,9 +1034,11 @@ class CxEmitter {
         if ("null".equals(dt)) {
             return a.name + "=null";
         }
-        // string attr — quote if would autotype
+        // string attr — quote if would autotype OR starts with '@' (else
+        // would mis-parse as is_ref reference per ADR 0003).
         String s = a.value == null ? "null" : a.value.toString();
-        String v = wouldAutotype(s) ? cxChooseQuote(s) : cxQuoteAttr(s);
+        boolean startsAt = !s.isEmpty() && s.charAt(0) == '@';
+        String v = (wouldAutotype(s) || startsAt) ? cxChooseQuote(s) : cxQuoteAttr(s);
         return a.name + "=" + v;
     }
 
@@ -783,6 +1079,10 @@ class CxEmitter {
 
     static String emitElement(Element e, int depth) {
         String ind = "  ".repeat(depth);
+        // ADR 0003 D1: body-position reference shape — early return.
+        if (e.bodyRef != null) {
+            return ind + "[" + e.name + " @" + e.bodyRef + "]\n";
+        }
         boolean hasChildElems = e.items.stream().anyMatch(i -> i instanceof Element);
         boolean hasText       = e.items.stream().anyMatch(
             i -> i instanceof TextNode || i instanceof ScalarNode
@@ -793,6 +1093,7 @@ class CxEmitter {
         List<String> metaParts = new ArrayList<>();
         if (e.anchor   != null) metaParts.add("&" + e.anchor);
         if (e.merge    != null) metaParts.add("*" + e.merge);
+        if (e.id       != null) metaParts.add("#" + e.id);
         if (e.dataType != null) metaParts.add(":" + e.dataType);
         for (Attr a : e.attrs) metaParts.add(emitAttr(a));
         String meta = metaParts.isEmpty() ? "" : " " + String.join(" ", metaParts);

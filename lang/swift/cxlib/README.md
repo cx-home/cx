@@ -4,6 +4,27 @@ Swift binding for the CX format library. Parses, queries, mutates, and
 converts CX, XML, JSON, YAML, TOML, and Markdown via a thin wrapper around
 `libcx`.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `loads()`/`dumps()` type
+> fidelity (integers stay `Int64` instead of coercing to `Double`
+> through `JSONSerialization`).
+
+## Canonical-form tooling (v3.4)
+
+```swift
+let src1 = "[config\n  [- comment]\n  [server host=localhost]\n]"
+let src2 = "[config [server host=localhost]]"
+try CXLib.fmt(src1)          // lossless canonical (preserves the comment)
+try CXLib.canonical(src1)    // strict canonical   (comment stripped)
+try CXLib.hash(src1)         // 64-char SHA-256 hex of strict canonical bytes
+try CXLib.eq(src1, src2)     // true — data-equivalent inputs
+```
+
+`fmt` is idempotent. `canonical`/`hash`/`eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ## Requirements
 
 | Tool | Version |
@@ -399,3 +420,56 @@ invalid expression throws `CXPathError`.
 | `ev.value` | `Any?` | typed value for Text, Scalar, Comment, etc. |
 | `ev.isStartElement(_:)` | `Bool` | helper: `ev.isStartElement("config")` |
 | `ev.isEndElement(_:)` | `Bool` | helper: `ev.isEndElement("config")` |
+
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Method | Returns | Notes |
+|---|---|---|
+| `CXLib.xmlToDataBin(_:)`  | `Data` (throws) | XML text → CXDB v1 framed bytes |
+| `CXLib.jsonToDataBin(_:)` | `Data` (throws) | JSON text → CXDB v1 framed bytes |
+| `CXLib.yamlToDataBin(_:)` | `Data` (throws) | YAML text → CXDB v1 framed bytes |
+| `CXLib.tomlToDataBin(_:)` | `Data` (throws) | TOML text → CXDB v1 framed bytes |
+| `CXLib.mdToDataBin(_:)`   | `Data` (throws) | Markdown text → CXDB v1 framed bytes |
+| `CXLib.dataBinToXml(_:)`  | `String` (throws) | CXDB v1 framed bytes → XML text |
+| `CXLib.dataBinToJson(_:)` | `String` (throws) | CXDB v1 framed bytes → JSON text |
+| `CXLib.dataBinToYaml(_:)` | `String` (throws) | CXDB v1 framed bytes → YAML text |
+| `CXLib.dataBinToToml(_:)` | `String` (throws) | CXDB v1 framed bytes → TOML text |
+| `CXLib.dataBinToMd(_:)`   | `String` (throws) | CXDB v1 framed bytes → Markdown text |
+
+The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+the wire format. Round-trip: `CXLib.dataBinToX(CXLib.xToDataBin(s))
+== s` (after canonicalization).
+
+## 30-second quickstart
+
+<!-- quickstart-begin: swift -->
+```swift
+import CXLib
+
+// Parse + read a typed value out
+let doc = try CXLib.parse("[server [port :u16 8080] [host localhost]]")
+print(try doc.at("server/port")?.intValue() ?? 0)   // 8080
+
+// Round-trip to JSON, lossless
+print(try CXLib.toJson("[user [id :i64 9007199254740993]]"))
+
+// Public Table API (ADR 0018) — 17-member surface
+let src = """
+[users :table[name age:int]
+  alice 30
+  bob   25
+]
+"""
+let t = try Table.fromCx(src)
+print("\(t.rowCount) \(t.cols)")    // 2 ["name", "age"]
+for row in t {
+    print(row["name"] ?? "", row["age"] ?? "")
+}
+print(t.toCsv())
+```
+<!-- quickstart-end -->

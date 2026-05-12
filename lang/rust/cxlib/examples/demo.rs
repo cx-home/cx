@@ -56,6 +56,10 @@ fn document_model_demo() -> Result<(), String> {
                 data_type: "int".to_string(),
                 value: json!(30),
             }],
+            local: String::new(),
+            ns_uri: None,
+            id: None,
+            body_ref: None,
         };
         el.append(cxlib::ast::Node::Element(timeout));
         el

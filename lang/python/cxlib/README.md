@@ -4,6 +4,13 @@ Python binding for the CX format library. Parses, streams, queries, and
 transforms CX documents; converts between CX, XML, JSON, YAML, TOML, and
 Markdown via `libcx`.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `loads()`/`dumps()`
+> type fidelity (integers no longer coerce to floats through the
+> JSON detour). Most user code is unaffected; type-strict assertions
+> and ZIP-code-shaped data may need a one-line update.
+
 ## Requirements
 
 - Python 3.10 or newer
@@ -280,8 +287,136 @@ decimals → `float`, everything else → `str`. An invalid expression raises
 | `dumps(data)` | Serialize Python types back to CX |
 | `version()` | Return the libcx version string |
 
+### Canonical-form tooling (v3.4)
+
+| Function | Description |
+|---|---|
+| `cx.fmt(s)` | Lossless canonical text — preserves comments/anchors; normalizes presentation. Idempotent: `fmt(fmt(x)) == fmt(x)`. |
+| `cx.canonical(s)` | Strict canonical text — strips presentation. Two CX inputs have identical strict canonical bytes iff they encode the same data. |
+| `cx.hash(s)` | SHA-256 hex (64 lowercase hex chars) of the strict canonical bytes. Use for content-addressable hashing or signed config bundles. |
+| `cx.eq(a, b)` | `True` iff `strict-canonical(a) == strict-canonical(b)`. |
+
+```py
+from cxlib import cx
+src1 = "[config\n  [- a comment]\n  [server host=localhost]\n]"
+src2 = "[config [server host=localhost]]"
+cx.fmt(src1)        # preserves the comment, normalizes whitespace
+cx.canonical(src1)  # comment stripped
+cx.eq(src1, src2)   # True — same data, different presentation
+cx.hash(src1) == cx.hash(src2)  # True
+```
+
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Function | Description |
+|---|---|
+| `cxlib.xml_to_data_bin(s)` | XML text → CXDB v1 framed bytes |
+| `cxlib.json_to_data_bin(s)` | JSON text → CXDB v1 framed bytes |
+| `cxlib.yaml_to_data_bin(s)` | YAML text → CXDB v1 framed bytes |
+| `cxlib.toml_to_data_bin(s)` | TOML text → CXDB v1 framed bytes |
+| `cxlib.md_to_data_bin(s)` | Markdown text → CXDB v1 framed bytes |
+| `cxlib.data_bin_to_xml(b)` | CXDB v1 framed bytes → XML text |
+| `cxlib.data_bin_to_json(b)` | CXDB v1 framed bytes → JSON text |
+| `cxlib.data_bin_to_yaml(b)` | CXDB v1 framed bytes → YAML text |
+| `cxlib.data_bin_to_toml(b)` | CXDB v1 framed bytes → TOML text |
+| `cxlib.data_bin_to_md(b)` | CXDB v1 framed bytes → Markdown text |
+
+The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+the wire format. Round-trip: `data_bin_to_X(X_to_data_bin(s)) == s`
+(after canonicalization).
+
+### Apache Arrow C-Data interop (v0.6.0; optional)
+
+Bridges CXDB chunked-tables to Apache Arrow's
+[C-Data ABI](https://arrow.apache.org/docs/format/CDataInterface.html)
+via the separate `libcx_arrow` shared library
+(`make lib-arrow` → `vcx/target/libcx_arrow.dylib` / `.so`). Arrow is an
+optional dependency; install with `pip install cxlib[arrow]` to pull in
+PyArrow ≥ 14. With the bridge wired up CXDB becomes a canonical
+hashable origin that flows zero-copy into Polars / DuckDB / Pandas via
+PyArrow, and the Parquet bridge chains for free
+(`pyarrow.parquet.write_table(reader.read_all(), 'file.parquet')`).
+
+```python
+import cxlib
+import cxlib.arrow as cxa
+
+# Discover capability — bit 23 (0x800000) reports libcx_arrow present
+assert cxa.available()
+assert cxa.merged_features() & 0x800000
+
+# CXDB chunked-table → pyarrow.RecordBatchReader (one ArrayChunk per row group)
+src = '[points :table[name:string score:int] alice 91 bob 88 carol 73]'
+framed = cxlib.to_data_bin_chunked(src)
+reader = cxa.export(framed)
+table  = reader.read_all()        # pyarrow.Table
+
+# Inverse: pyarrow.Table or pyarrow.RecordBatchReader → framed CXDB
+import pyarrow as pa
+table_in = pa.table({'name': pa.array(['alice'], type=pa.string()),
+                     'score': pa.array([91], type=pa.int64())})
+framed_again = cxa.import_to_data_bin(table_in)
+```
+
+Supported v0.6.0 column types (`spec/abi.md §2.11.1`):
+
+| CXDB type        | Arrow format | PyArrow type   |
+|------------------|--------------|----------------|
+| `int` / `i64`    | `l`          | `int64`        |
+| `i8`             | `c`          | `int8`         |
+| `i16`            | `s`          | `int16`        |
+| `i32`            | `i`          | `int32`        |
+| `float` / `f64`  | `g`          | `float64`      |
+| `bool`           | `b`          | `bool`         |
+| `string`         | `u`          | `string`       |
+| `date`           | `tdD`        | `date32[day]`  |
+| `bytes`          | `z`          | `binary`       |
+
+`datetime` and `decimal` columns are deferred to a follow-up phase
+(`spec/abi.md §2.11.1`); they surface a clear deferred-type error at
+chunked-emit time. NULL handling is also deferred (`null_count = 0`
+on both sides at v0.6.0).
+
+`cxa.available()` is `False` if either `libcx_arrow` is missing or
+PyArrow is not importable; consumers can fall back to materializing
+through `cxlib.data_bin_to_csv()` / `cxlib.data_bin_to_json()` for
+those environments.
+
 ## Tests
 
 ```sh
 make test-python
 ```
+
+## 30-second quickstart
+
+<!-- quickstart-begin: python -->
+```python
+import cxlib
+from cxlib import Table
+
+# Parse + read a typed value out
+doc = cxlib.parse('[server [port :u16 8080] [host localhost]]')
+print(doc.at('server/port').int_value())   # 8080
+
+# Round-trip to JSON, lossless
+print(cxlib.to_json('[user [id :i64 9007199254740993]]'))
+
+# Public Table API (ADR 0018) — 17-member surface
+src = """[users :table[name age:int]
+  alice 30
+  bob   25
+]"""
+t = Table.from_cx(src)
+print(t.row_count, t.cols)         # 2  ['name', 'age']
+for row in t:                      # iterate rows as dicts
+    print(row['name'], row['age'])
+print(t.column('age'))             # [30, 25]
+print(t.to_csv())                  # CSV emit
+```
+<!-- quickstart-end -->

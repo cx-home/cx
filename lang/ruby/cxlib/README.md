@@ -3,6 +3,27 @@
 Ruby binding for the [CX format library](https://github.com/cx-language/cx).
 Thin FFI wrapper around `libcx` — parses, streams, and converts CX/XML/JSON/YAML/TOML/Markdown.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `loads`/`dumps` type
+> fidelity (integers stay `Integer` instead of coercing to `Float` via
+> `JSON.parse`).
+
+## Canonical-form tooling (v3.4)
+
+```ruby
+src1 = "[config\n  [- comment]\n  [server host=localhost]\n]"
+src2 = "[config [server host=localhost]]"
+CXLib.fmt(src1)          # lossless canonical (preserves the comment)
+CXLib.canonical(src1)    # strict canonical   (comment stripped)
+CXLib.hash(src1)         # 64-char SHA-256 hex of strict canonical bytes
+CXLib.eq(src1, src2)     # true — data-equivalent inputs
+```
+
+`fmt` is idempotent. `canonical`/`hash`/`eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ## Requirements
 
 - Ruby 3.1 or newer (Homebrew: `brew install ruby`)
@@ -316,3 +337,56 @@ CXLib::Comment.new('comment text')
 | `ev.start_element?(name = nil)` | Returns `true` if this is a `StartElement` event, optionally matching `name` |
 | `ev.end_element?(name = nil)` | Returns `true` if this is an `EndElement` event, optionally matching `name` |
 | `CXLib.version` | Return the `libcx` version string |
+
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Method | Description |
+|---|---|
+| `CXLib.xml_to_data_bin(s)`  | XML text → CXDB v1 framed bytes (`String`) |
+| `CXLib.json_to_data_bin(s)` | JSON text → CXDB v1 framed bytes |
+| `CXLib.yaml_to_data_bin(s)` | YAML text → CXDB v1 framed bytes |
+| `CXLib.toml_to_data_bin(s)` | TOML text → CXDB v1 framed bytes |
+| `CXLib.md_to_data_bin(s)`   | Markdown text → CXDB v1 framed bytes |
+| `CXLib.data_bin_to_xml(b)`  | CXDB v1 framed bytes → XML `String` |
+| `CXLib.data_bin_to_json(b)` | CXDB v1 framed bytes → JSON `String` |
+| `CXLib.data_bin_to_yaml(b)` | CXDB v1 framed bytes → YAML `String` |
+| `CXLib.data_bin_to_toml(b)` | CXDB v1 framed bytes → TOML `String` |
+| `CXLib.data_bin_to_md(b)`   | CXDB v1 framed bytes → Markdown `String` |
+
+The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+the wire format. Round-trip: `CXLib.data_bin_to_x(CXLib.x_to_data_bin(s))
+== s` (after canonicalization).
+
+## 30-second quickstart
+
+<!-- quickstart-begin: ruby -->
+```ruby
+require 'cxlib'
+
+# Parse + read a typed value out
+doc = CXLib.parse('[server [port :u16 8080] [host localhost]]')
+puts doc.at('server/port').int_value   # 8080
+
+# Round-trip to JSON, lossless
+puts CXLib.to_json('[user [id :i64 9007199254740993]]')
+
+# Public Table API (ADR 0018) — 17-member surface
+src = <<~CX
+  [users :table[name age:int]
+    alice 30
+    bob   25
+  ]
+CX
+t = CXLib::Table.from_cx(src)
+puts "#{t.row_count} #{t.cols}"   # 2 ["name", "age"]
+t.each do |row|
+  puts "#{row['name']} #{row['age']}"
+end
+puts t.to_csv
+```
+<!-- quickstart-end -->

@@ -453,6 +453,10 @@
           "named": true
         },
         {
+          "type": "attribute",
+          "named": true
+        },
+        {
           "type": "block_content",
           "named": true
         },
@@ -587,6 +591,10 @@
           "named": true
         },
         {
+          "type": "bool_sigil_attr",
+          "named": true
+        },
+        {
           "type": "boolean",
           "named": true
         },
@@ -648,6 +656,10 @@
         },
         {
           "type": "superscript",
+          "named": true
+        },
+        {
+          "type": "table_block",
           "named": true
         },
         {
@@ -921,6 +933,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "null_value",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "quoted_string",
@@ -1237,7 +1254,57 @@
     }
   },
   {
+    "type": "table_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "table_column",
+          "named": true
+        },
+        {
+          "type": "table_open",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "table_column",
+    "named": true,
+    "fields": {
+      "col_name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "word",
+            "named": true
+          }
+        ]
+      },
+      "col_type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "tag_name",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "type_name",
     "named": true,
     "fields": {}
   },
@@ -1414,7 +1481,23 @@
     "named": true
   },
   {
+    "type": "b",
+    "named": false
+  },
+  {
+    "type": "bigint",
+    "named": false
+  },
+  {
     "type": "block_text",
+    "named": true
+  },
+  {
+    "type": "bool",
+    "named": false
+  },
+  {
+    "type": "bool_sigil_attr",
     "named": true
   },
   {
@@ -1422,16 +1505,84 @@
     "named": true
   },
   {
+    "type": "bytes",
+    "named": false
+  },
+  {
     "type": "comment_raw",
     "named": true
+  },
+  {
+    "type": "d",
+    "named": false
+  },
+  {
+    "type": "date",
+    "named": false
+  },
+  {
+    "type": "datetime",
+    "named": false
+  },
+  {
+    "type": "decimal",
+    "named": false
+  },
+  {
+    "type": "dt",
+    "named": false
   },
   {
     "type": "entity_ref",
     "named": true
   },
   {
+    "type": "f",
+    "named": false
+  },
+  {
+    "type": "f16",
+    "named": false
+  },
+  {
+    "type": "f32",
+    "named": false
+  },
+  {
+    "type": "f64",
+    "named": false
+  },
+  {
+    "type": "float",
+    "named": false
+  },
+  {
     "type": "heading_marker",
     "named": true
+  },
+  {
+    "type": "i",
+    "named": false
+  },
+  {
+    "type": "i16",
+    "named": false
+  },
+  {
+    "type": "i32",
+    "named": false
+  },
+  {
+    "type": "i64",
+    "named": false
+  },
+  {
+    "type": "i8",
+    "named": false
+  },
+  {
+    "type": "int",
+    "named": false
   },
   {
     "type": "lang",
@@ -1442,12 +1593,17 @@
     "named": true
   },
   {
+    "type": "line_comment",
+    "named": true,
+    "extra": true
+  },
+  {
     "type": "merge_ref",
     "named": true
   },
   {
-    "type": "null_value",
-    "named": true
+    "type": "null",
+    "named": false
   },
   {
     "type": "number",
@@ -1462,6 +1618,18 @@
     "named": true
   },
   {
+    "type": "s",
+    "named": false
+  },
+  {
+    "type": "string",
+    "named": false
+  },
+  {
+    "type": "table_open",
+    "named": true
+  },
+  {
     "type": "text",
     "named": true
   },
@@ -1472,6 +1640,22 @@
   {
     "type": "type_annotation",
     "named": true
+  },
+  {
+    "type": "u16",
+    "named": false
+  },
+  {
+    "type": "u32",
+    "named": false
+  },
+  {
+    "type": "u64",
+    "named": false
+  },
+  {
+    "type": "u8",
+    "named": false
   },
   {
     "type": "unquoted_value",

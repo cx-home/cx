@@ -230,9 +230,156 @@ public class ConformanceTest {
         }
     }
 
+    // ── streaming-write dispatch ───────────────────────────────────────────────
+
+    static String decodeQuoted(String s) {
+        s = s.trim();
+        if (s.length() >= 2 && s.startsWith("\"") && s.endsWith("\""))
+            return s.substring(1, s.length() - 1);
+        return s;
+    }
+
+    static byte[] hexBytes(String s) {
+        s = s.trim();
+        byte[] out = new byte[s.length() / 2];
+        for (int i = 0; i < out.length; i++)
+            out[i] = (byte) Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16);
+        return out;
+    }
+
+    static void dispatchEvent(EventWriter w, String op, String rest) {
+        switch (op) {
+            case "StartDoc": w.startDoc(); break;
+            case "EndDoc":   w.endDoc();   break;
+            case "StartElement": {
+                String[] toks = rest.trim().split("\\s+");
+                String name = toks[0];
+                String anchor = null, dt = null, merge = null;
+                for (int i = 1; i < toks.length; i++) {
+                    int eq = toks[i].indexOf('=');
+                    if (eq < 0) continue;
+                    String k = toks[i].substring(0, eq), v = toks[i].substring(eq + 1);
+                    if ("anchor".equals(k))    anchor = v;
+                    if ("data_type".equals(k)) dt = v;
+                    if ("merge".equals(k))     merge = v;
+                }
+                w.startElement(name, anchor, dt, merge, null);
+                break;
+            }
+            case "EndElement": w.endElement(rest.trim()); break;
+            case "Text":       w.text(decodeQuoted(rest)); break;
+            case "Scalar": {
+                int c = rest.indexOf(':');
+                String typ = c >= 0 ? rest.substring(0, c).trim() : rest.trim();
+                String val = c >= 0 ? rest.substring(c + 1)        : "";
+                w.scalar(val, typ);
+                break;
+            }
+            case "Comment": w.comment(decodeQuoted(rest)); break;
+            case "PI": {
+                String[] parts = rest.split("\\s+", 2);
+                String target = parts[0].trim();
+                String data = "";
+                if (parts.length > 1 && parts[1].trim().startsWith("data="))
+                    data = decodeQuoted(parts[1].trim().substring(5));
+                w.pi(target, data);
+                break;
+            }
+            case "EntityRef": w.entityRef(rest.trim()); break;
+            case "RawText":   w.rawText(decodeQuoted(rest)); break;
+            case "Alias":     w.alias(rest.trim()); break;
+            case "StartTable": w.startTable(hexBytes(rest)); break;
+            case "RowGroup":   w.rowGroup(hexBytes(rest)); break;
+            case "EndTable":   w.endTable(); break;
+            default: throw new IllegalArgumentException("unknown event op: " + op);
+        }
+    }
+
+    static String firstNonBlankNonComment(String text) {
+        for (String line : text.split("\n")) {
+            String t = line.trim();
+            if (!t.isEmpty() && !t.startsWith("#")) return t;
+        }
+        return "";
+    }
+
+    static String stripComments(String text) {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String line : text.split("\n")) {
+            if (line.trim().startsWith("#")) continue;
+            if (!first) sb.append('\n');
+            sb.append(line);
+            first = false;
+        }
+        return sb.toString();
+    }
+
+    static List<String> runStreamingWriteTest(Map<String, String> s) {
+        List<String> failures = new ArrayList<>();
+        String fmt = s.getOrDefault("format", "cx").trim();
+        String expectErr = s.containsKey("expect_err") ? firstNonBlankNonComment(s.get("expect_err")) : "";
+        String expectOk  = s.containsKey("expect_ok") ? stripComments(s.get("expect_ok")) : null;
+        String expectOkContains = s.containsKey("expect_ok_contains") ? stripComments(s.get("expect_ok_contains")) : null;
+
+        EventWriter w;
+        try { w = new EventWriter(fmt); }
+        catch (Exception e) {
+            if (!expectErr.isEmpty() && e.getMessage().contains(expectErr)) return failures;
+            failures.add("EventWriter(" + fmt + ") raised: " + e.getMessage());
+            return failures;
+        }
+
+        String triggered = null;
+        try {
+            for (String raw : s.get("events").split("\n")) {
+                String line = raw.trim();
+                if (line.isEmpty()) continue;
+                int sp = line.indexOf(' ');
+                String op = sp < 0 ? line : line.substring(0, sp);
+                String rest = sp < 0 ? ""   : line.substring(sp + 1);
+                try { dispatchEvent(w, op, rest); }
+                catch (RuntimeException e) { triggered = e.getMessage(); break; }
+            }
+
+            if (!expectErr.isEmpty()) {
+                if (triggered == null) {
+                    try { w.closeGetBytes(); }
+                    catch (RuntimeException e) { triggered = e.getMessage(); }
+                }
+                if (triggered == null) failures.add("expected " + expectErr + " but writer produced no error");
+                else if (!triggered.contains(expectErr))
+                    failures.add("expected " + expectErr + " in error, got " + triggered);
+                return failures;
+            }
+
+            if (triggered != null) { failures.add("unexpected error: " + triggered); return failures; }
+            byte[] bytes;
+            try { bytes = w.closeGetBytes(); }
+            catch (RuntimeException e) { failures.add("closeGetBytes raised: " + e.getMessage()); return failures; }
+            String outStr = new String(bytes);
+            if (expectOk != null && !expectOk.trim().equals(outStr.trim()))
+                failures.add("expect_ok mismatch\n  expected:\n" + expectOk + "\n  got:\n" + outStr);
+            if (expectOkContains != null) {
+                for (String needle : expectOkContains.split("\n")) {
+                    String n = needle.trim();
+                    if (!n.isEmpty() && !outStr.contains(n))
+                        failures.add("expect_ok_contains: missing " + n + " in output:\n" + outStr);
+                }
+            }
+        } finally {
+            w.close();
+        }
+        return failures;
+    }
+
     static List<String> runTest(TestCase t) {
         List<String> failures = new ArrayList<>();
         Map<String, String> s = t.sections;
+
+        // streaming-write fixtures
+        if (s.containsKey("events") && s.containsKey("format"))
+            return runStreamingWriteTest(s);
 
         String src = null, inFmt = null;
         for (String[] pair : new String[][]{
@@ -333,5 +480,11 @@ public class ConformanceTest {
     void testMd() throws IOException {
         int f = runSuite(conformanceDir().resolve("md.txt"));
         assertEquals(0, f, "md.txt had failures");
+    }
+
+    @Test
+    void testStreamingWrite() throws IOException {
+        int f = runSuite(conformanceDir().resolve("streaming_write.txt"));
+        assertEquals(0, f, "streaming_write.txt had failures");
     }
 }

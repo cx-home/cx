@@ -5,6 +5,26 @@ with first-class support for XML, JSON, YAML, TOML, and Markdown conversion.
 The crate wraps `libcx` via `extern "C"` and exposes a typed Document AST,
 a streaming event API, and direct format-conversion functions.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `loads()` / `dumps()` type
+> fidelity (integers stay `Number(i64)` instead of coercing to `Number(f64)`).
+
+## Canonical-form tooling (v3.4)
+
+```rust
+let src1 = "[config\n  [- comment]\n  [server host=localhost]\n]";
+let src2 = "[config [server host=localhost]]";
+cxlib::fmt(src1)?;          // lossless canonical (preserves the comment)
+cxlib::canonical(src1)?;    // strict canonical   (comment stripped)
+cxlib::hash(src1)?;          // 64-char SHA-256 hex of strict canonical bytes
+cxlib::eq(src1, src2)?;     // true — data-equivalent inputs
+```
+
+`fmt` is idempotent. `canonical`/`hash`/`eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ---
 
 ## Requirements
@@ -411,3 +431,128 @@ decimals → `float`, everything else → `str`. An invalid expression returns
 | `StreamEventType::EntityRef(String)` | Entity reference |
 | `StreamEventType::RawText(String)` | Raw text block |
 | `StreamEventType::Alias(String)` | YAML-style alias |
+
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Function | Description |
+|---|---|
+| `cxlib::data_bin::xml_to_data_bin(s)`  | XML text → CXDB v1 framed bytes |
+| `cxlib::data_bin::json_to_data_bin(s)` | JSON text → CXDB v1 framed bytes |
+| `cxlib::data_bin::yaml_to_data_bin(s)` | YAML text → CXDB v1 framed bytes |
+| `cxlib::data_bin::toml_to_data_bin(s)` | TOML text → CXDB v1 framed bytes |
+| `cxlib::data_bin::md_to_data_bin(s)`   | Markdown text → CXDB v1 framed bytes |
+| `cxlib::data_bin::data_bin_to_xml(b)`  | CXDB v1 framed bytes → XML text |
+| `cxlib::data_bin::data_bin_to_json(b)` | CXDB v1 framed bytes → JSON text |
+| `cxlib::data_bin::data_bin_to_yaml(b)` | CXDB v1 framed bytes → YAML text |
+| `cxlib::data_bin::data_bin_to_toml(b)` | CXDB v1 framed bytes → TOML text |
+| `cxlib::data_bin::data_bin_to_md(b)`   | CXDB v1 framed bytes → Markdown text |
+
+Each returns `Result<Vec<u8>, String>` on the to-binary path and
+`Result<String, String>` on the from-binary path. The framed bytes are
+CX Data Binary v1 — see `spec/data_bin.md` for the wire format.
+Round-trip: `data_bin_to_X(X_to_data_bin(s)?)? == s` (after
+canonicalization).
+
+## Apache Arrow C-Data interop (v0.6.0+, optional)
+
+Bridges CXDB chunked-tables to Apache Arrow `ArrowArrayStream` via
+`libcx_arrow` (`spec/abi.md §2.11`, capability bit `0x800000`). The
+bridge handles all 9 v0.6.0 column types (`int`, `i8`, `i16`, `i32`,
+`float`, `bool`, `string`, `date`, `bytes`); `datetime` / `decimal` /
+dictionary columns are deferred and surface a clear error.
+
+The surface is gated behind a Cargo `arrow` feature so the default
+`cargo build` does not pull in the `arrow` crate. Mirrors Go's
+`-tags arrow` build constraint and Python's `pip install cxlib[arrow]`
+extra:
+
+```sh
+cargo build --features arrow --manifest-path lang/rust/cxlib/Cargo.toml
+cargo test  --features arrow --manifest-path lang/rust/cxlib/Cargo.toml
+make build-rust-arrow      # builds libcx_arrow + the rust crate with --features arrow
+make test-rust-arrow       # builds libcx_arrow + runs tests/arrow_test.rs
+```
+
+```rust
+use cxlib::streaming_table::to_data_bin_chunked;
+use cxlib::arrow as cxa;
+
+assert!(cxa::available());
+assert_eq!(cxa::features(), 0x800000);
+
+// Forward — CXDB chunked-table → Arrow.
+let payload = to_data_bin_chunked(
+    "[points :table[name:string score:int] alice 91 bob 88]")?;
+let mut reader = cxa::export(&payload)?;        // ArrowArrayStreamReader
+while let Some(rec) = reader.next() {
+    let rec = rec?;
+    // rec.column(0).as_any().downcast_ref::<arrow::array::StringArray>(), …
+}
+
+// Inverse — build a record directly, drain into CXDB bytes.
+use std::sync::Arc;
+use arrow::array::{Int64Array, RecordBatch, StringArray};
+use arrow::datatypes::{DataType, Field, Schema};
+use arrow::record_batch::RecordBatchIterator;
+
+let schema = Arc::new(Schema::new(vec![
+    Field::new("name",  DataType::Utf8,  false),
+    Field::new("score", DataType::Int64, false),
+]));
+let rec = RecordBatch::try_new(schema.clone(), vec![
+    Arc::new(StringArray::from(vec!["alice", "bob"])),
+    Arc::new(Int64Array::from(vec![91_i64, 88])),
+])?;
+let it = RecordBatchIterator::new(vec![Ok(rec)].into_iter(), schema);
+let cxdb = cxa::import_to_data_bin(it)?;        // unframed CXDB bytes
+```
+
+Functions: `cxa::available()`, `cxa::features()`, `cxa::version()`,
+`cxa::merged_features()`,
+`cxa::export(payload: &[u8]) -> Result<ArrowArrayStreamReader, String>`,
+`cxa::import_to_data_bin<R: RecordBatchReader + Send + 'static>(reader: R) -> Result<Vec<u8>, String>`.
+
+`export` accepts UNFRAMED CXDB bytes — the shape
+`streaming_table::to_data_bin_chunked` returns. `import_to_data_bin`
+returns UNFRAMED bytes. Bytes can be re-decoded with `export` or any
+other CXDB consumer.
+
+Linkage: `build.rs` conditionally emits
+`cargo:rustc-link-lib=cx_arrow` only when `CARGO_FEATURE_ARROW` is
+set, so the default `cargo build` does not require libcx_arrow at
+link time.
+
+## 30-second quickstart
+
+<!-- quickstart-begin: rust -->
+```rust
+use cxlib::{Table, parse, to_json};
+
+fn main() -> anyhow::Result<()> {
+    // Parse + read a typed value out
+    let doc = parse("[server [port :u16 8080] [host localhost]]")?;
+    println!("{}", doc.at("server/port").int_value()?);   // 8080
+
+    // Round-trip to JSON, lossless
+    println!("{}", to_json("[user [id :i64 9007199254740993]]")?);
+
+    // Public Table API (ADR 0018) — 17-member surface
+    let src = r#"[users :table[name age:int]
+  alice 30
+  bob   25
+]"#;
+    let t = Table::from_cx(src)?;
+    println!("{} {:?}", t.row_count(), t.cols());   // 2 ["name", "age"]
+    for row in t.rows() {
+        println!("{:?} {:?}", row["name"], row["age"]);
+    }
+    println!("{}", t.to_csv(',')?);
+    Ok(())
+}
+```
+<!-- quickstart-end -->

@@ -423,7 +423,10 @@ fn test_remove_attr_nonexistent_is_noop() {
 fn test_doc_append_element() {
     let mut doc = parse(&fx("api_config.cx")).unwrap();
     let mut cache = Element::new("cache");
-    cache.attrs.push(Attr { name: "host".to_string(), value: json!("redis"), data_type: None });
+    cache.attrs.push(Attr {
+        name: "host".to_string(), value: json!("redis"), data_type: None,
+        local: String::new(), ns_uri: None, is_ref: false, body: None,
+    });
     doc.append(Node::Element(cache));
     assert_eq!(doc.get("cache").unwrap().attr("host").unwrap(), "redis");
 }

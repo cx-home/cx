@@ -117,12 +117,171 @@ static string Dispatch(string inFmt, string outFmt, string input) => (inFmt, out
     _ => throw new ArgumentException($"no dispatch for {inFmt}:{outFmt}")
 };
 
+// ── streaming-write fixture support ───────────────────────────────────────────
+
+static string DecodeQuoted(string s)
+{
+    s = s.Trim();
+    if (s.Length >= 2 && s.StartsWith("\"") && s.EndsWith("\""))
+        return s.Substring(1, s.Length - 2);
+    return s;
+}
+
+static byte[] HexBytes(string s)
+{
+    s = s.Trim();
+    var bytes = new byte[s.Length / 2];
+    for (int i = 0; i < bytes.Length; i++)
+        bytes[i] = Convert.ToByte(s.Substring(i * 2, 2), 16);
+    return bytes;
+}
+
+static void DispatchEvent(EventWriter w, string op, string rest)
+{
+    switch (op)
+    {
+        case "StartDoc":     w.StartDoc(); break;
+        case "EndDoc":       w.EndDoc();   break;
+        case "StartElement":
+        {
+            var toks = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string name = toks[0];
+            string? anchor = null, dt = null, merge = null;
+            for (int i = 1; i < toks.Length; i++)
+            {
+                int eq = toks[i].IndexOf('=');
+                if (eq < 0) continue;
+                string k = toks[i].Substring(0, eq), v = toks[i].Substring(eq + 1);
+                if (k == "anchor")    anchor = v;
+                if (k == "data_type") dt = v;
+                if (k == "merge")     merge = v;
+            }
+            w.StartElement(name, anchor, dt, merge); break;
+        }
+        case "EndElement":   w.EndElement(rest.Trim()); break;
+        case "Text":         w.Text(DecodeQuoted(rest)); break;
+        case "Scalar":
+        {
+            int c = rest.IndexOf(':');
+            string typ = c >= 0 ? rest.Substring(0, c).Trim() : rest.Trim();
+            string val = c >= 0 ? rest.Substring(c + 1)        : "";
+            w.Scalar(val, typ); break;
+        }
+        case "Comment":      w.Comment(DecodeQuoted(rest)); break;
+        case "PI":
+        {
+            var parts = rest.Split(new[] {' ', '\t'}, 2);
+            string target = parts[0].Trim();
+            string data = "";
+            if (parts.Length > 1)
+            {
+                var rest2 = parts[1].Trim();
+                if (rest2.StartsWith("data=")) data = DecodeQuoted(rest2.Substring(5));
+            }
+            w.Pi(target, data); break;
+        }
+        case "EntityRef":    w.EntityRef(rest.Trim()); break;
+        case "RawText":      w.RawText(DecodeQuoted(rest)); break;
+        case "Alias":        w.Alias(rest.Trim()); break;
+        case "StartTable":   w.StartTable(HexBytes(rest)); break;
+        case "RowGroup":     w.RowGroup(HexBytes(rest)); break;
+        case "EndTable":     w.EndTable(); break;
+        default: throw new ArgumentException($"unknown event op: {op}");
+    }
+}
+
+static string FirstNonBlankNonComment(string text)
+{
+    foreach (var line in text.Split('\n'))
+    {
+        var t = line.Trim();
+        if (t.Length > 0 && !t.StartsWith("#")) return t;
+    }
+    return "";
+}
+
+static string StripComments(string text)
+{
+    var keep = new List<string>();
+    foreach (var line in text.Split('\n'))
+        if (!line.TrimStart().StartsWith("#")) keep.Add(line);
+    return string.Join("\n", keep);
+}
+
+static List<string> RunStreamingWriteTest(Dictionary<string, string> s)
+{
+    var failures = new List<string>();
+    string fmt = s.GetValueOrDefault("format", "cx").Trim();
+    string expectErr = s.TryGetValue("expect_err", out var ee) ? FirstNonBlankNonComment(ee) : "";
+    string? expectOk = s.TryGetValue("expect_ok", out var eo) ? StripComments(eo) : null;
+    string? expectOkContains = s.TryGetValue("expect_ok_contains", out var eoc) ? StripComments(eoc) : null;
+
+    EventWriter w;
+    try { w = new EventWriter(fmt); }
+    catch (Exception e)
+    {
+        if (expectErr.Length > 0 && e.Message.Contains(expectErr)) return failures;
+        failures.Add($"EventWriter({fmt}) raised: {e.Message}");
+        return failures;
+    }
+
+    string? triggered = null;
+    foreach (var raw in s["events"].Split('\n'))
+    {
+        var line = raw.Trim();
+        if (line.Length == 0) continue;
+        int sp = line.IndexOf(' ');
+        string op = sp < 0 ? line : line.Substring(0, sp);
+        string rest = sp < 0 ? ""   : line.Substring(sp + 1);
+        try { DispatchEvent(w, op, rest); }
+        catch (InvalidOperationException e) { triggered = e.Message; break; }
+        catch (Exception e) { failures.Add($"unexpected exception in {op}: {e.Message}"); w.Close(); return failures; }
+    }
+
+    if (expectErr.Length > 0)
+    {
+        if (triggered is null)
+        {
+            try { w.CloseGetBytes(); }
+            catch (InvalidOperationException e) { triggered = e.Message; }
+            catch (Exception) {}
+        }
+        else { w.Close(); }
+        if (triggered is null) failures.Add($"expected {expectErr} but writer produced no error");
+        else if (!triggered.Contains(expectErr)) failures.Add($"expected {expectErr} in error, got {triggered}");
+        return failures;
+    }
+
+    if (triggered != null) { failures.Add($"unexpected error: {triggered}"); w.Close(); return failures; }
+
+    byte[] bytes;
+    try { bytes = w.CloseGetBytes(); }
+    catch (Exception e) { failures.Add($"CloseGetBytes raised: {e.Message}"); return failures; }
+    string outStr = System.Text.Encoding.UTF8.GetString(bytes);
+    if (expectOk != null && expectOk.Trim() != outStr.Trim())
+        failures.Add($"expect_ok mismatch\n  expected:\n{expectOk}\n  got:\n{outStr}");
+    if (expectOkContains != null)
+    {
+        foreach (var needle in expectOkContains.Split('\n'))
+        {
+            var n = needle.Trim();
+            if (n.Length > 0 && !outStr.Contains(n))
+                failures.Add($"expect_ok_contains: missing {n} in output:\n{outStr}");
+        }
+    }
+    return failures;
+}
+
 // ── test runner ───────────────────────────────────────────────────────────────
 
 static List<string> RunTest((string name, Dictionary<string, string> sections) t)
 {
     var failures = new List<string>();
     var s = t.sections;
+
+    // ── streaming-write (events + format) ───────────────────────────────────
+    if (s.ContainsKey("events") && s.ContainsKey("format"))
+        return RunStreamingWriteTest(s);
 
     string? src = null, inFmt = null;
     foreach (var (k, fmt) in new[] { ("in_cx","cx"), ("in_xml","xml"), ("in_json","json"),
@@ -179,6 +338,7 @@ string[] suites = args.Length > 0 ? args : [
     Path.Combine(base_, "extended.txt"),
     Path.Combine(base_, "xml.txt"),
     Path.Combine(base_, "md.txt"),
+    Path.Combine(base_, "streaming_write.txt"),
 ];
 
 int totalFailed = suites.Sum(RunSuite);

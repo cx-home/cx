@@ -1,0 +1,24 @@
+# commented_config.cx — comments + types coexist.
+# JSON cannot do this; YAML/TOML can but lose comments through any
+# round-trip via a typical parser.
+
+[config
+  # The environment selector controls which downstream profile loads.
+  env=production
+
+  [server
+    [- listen on all interfaces in prod, localhost otherwise ]
+    host=0.0.0.0
+    port:u16=8443
+
+    # TLS is mandatory in production by org policy CSP-2024-07.
+    +tls
+    -debug
+  ]
+
+  [database
+    # Connection-pool sized for p99 load + 50% headroom.
+    pool_size:u8=24
+    connect_timeout_ms:u32=5000
+  ]
+]

@@ -1,11 +1,16 @@
 use std::path::PathBuf;
 
 fn main() {
+    let arrow_enabled = std::env::var("CARGO_FEATURE_ARROW").is_ok();
+
     // 1. Explicit directory override
     if let Ok(dir) = std::env::var("LIBCX_LIB_DIR") {
         let p = PathBuf::from(&dir);
         println!("cargo:rustc-link-search=native={dir}");
         println!("cargo:rustc-link-lib=dylib=cx");
+        if arrow_enabled {
+            println!("cargo:rustc-link-lib=dylib=cx_arrow");
+        }
         rpath(&p);
         println!("cargo:rerun-if-env-changed=LIBCX_LIB_DIR");
         return;
@@ -13,6 +18,9 @@ fn main() {
 
     // 2. pkg-config (set by `make install`)
     if pkg_config_works() {
+        if arrow_enabled {
+            println!("cargo:rustc-link-lib=dylib=cx_arrow");
+        }
         println!("cargo:rerun-if-env-changed=LIBCX_LIB_DIR");
         return;
     }
@@ -30,6 +38,9 @@ fn main() {
         if p.join("libcx.dylib").exists() || p.join("libcx.so").exists() {
             println!("cargo:rustc-link-search=native={dir}");
             println!("cargo:rustc-link-lib=dylib=cx");
+            if arrow_enabled {
+                println!("cargo:rustc-link-lib=dylib=cx_arrow");
+            }
             rpath(&p);
             println!("cargo:rerun-if-env-changed=LIBCX_LIB_DIR");
             return;
@@ -48,6 +59,9 @@ fn main() {
     }) {
         println!("cargo:rustc-link-search=native={}", lib_dir.display());
         println!("cargo:rustc-link-lib=dylib=cx");
+        if arrow_enabled {
+            println!("cargo:rustc-link-lib=dylib=cx_arrow");
+        }
         rpath(lib_dir);
         rerun_if(lib_dir);
         println!("cargo:rerun-if-env-changed=LIBCX_LIB_DIR");

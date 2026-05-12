@@ -1,0 +1,266 @@
+# CX v0.6.0 — Release Notes
+# Date: TBD
+# Branch: native-data-binding (merged → main)
+
+The first release after the 2026-05 binding audit.
+Closes 5 systemic findings (CB-1..CB-5) at the V core *and* across all 9
+FFI bindings (Python, Go, Rust, TypeScript, Java, Kotlin, Swift, C#, Ruby).
+Also adds the canonical-form tooling C ABI (cx_fmt / cx_canonical /
+cx_hash / cx_eq) and propagates it through every binding.
+
+> **TL;DR for end users:** integer types now round-trip correctly through
+> `loads()` / `dumps()` and `02134` is now a string. See
+> [`MIGRATION.md`](MIGRATION.md) for both BREAKING changes and the v3.4
+> opt-in additions.
+
+> **TL;DR for binding maintainers:** the audit closes 5 systemic
+> shortcuts via new C ABI symbols. ~3970 LOC of duplicated CXPath code
+> deleted across the 9 in-tree bindings. If you maintain a third-party
+> binding, follow the per-binding checklist in [`MIGRATION.md`](MIGRATION.md) §4.
+
+---
+
+## Highlights
+
+> Two pillars in v0.6.0:
+> 1. **Audit closure** — the original branch goal (CB-1..CB-5 across V core + 9 bindings, see below).
+> 2. **Scope expansion** — three ADRs ratified post-audit (0017 / 0018 / 0019) that turn v0.6.0 into the API/format-stability boundary through v1.0. Summarised next.
+
+### NEW: collection literals ( — accepted 2026-05-11)
+
+CX grows three first-class collection literal forms with cross-emitter
+parity (CX text, JSON, YAML, TOML, MD, XML, CXDB, AST-bin):
+
+| Literal | Surface | Type | Example |
+| --- | --- | --- | --- |
+| Sequence | `(a, b, c)` | `seq[T]` (homogeneous post-flatten) | `[tags (admin, user, root)]` |
+| Array | `[a, b, c,]` | `arr[T]` (ordered, indexed) | `[ports [8080, 8081, 8082,]]` |
+| Map | `{k: v, ...}` | `map[K, V]` (string-keyed at v0.6.0) | `[hosts {alice: 1.1.1.1, bob: 2.2.2.2}]` |
+
+Plus three CXL readability levers ( §D23–D25): labeled
+directive slots (`[?if cond :then a :else b]`), explicit body labels,
+and kebab-case FLWOR keywords (`order`, not `order-by`). Parameterized
+templates : `?def name :params [a b] :body ...` with
+lexical-scope `dispatch_template_call`.
+
+22 locked decisions in;
+28 CXL conformance fixtures green across runners; 4 new
+collection-cell fixtures in `conformance/table.txt`.
+
+### NEW: Public Table API ( — accepted 2026-05-11)
+
+The 17-member canonical Table surface ships in **all 10 bindings**
+(V native, V-cffi, Python, Go, Rust, Java, TypeScript, C#, Kotlin,
+Swift, Ruby). Stable through v1.0.
+
+| Surface | Members |
+| --- | --- |
+| Properties (4) | `cols`, `types`, `row_count`, `col_count` |
+| Access (9) | `row`, `column`, `col_at`, `cell`, `cell_by_name`, `slice`, `head`, `tail`, `select_cols` |
+| Iteration (2) | `__iter__` / `each` / `for-of` over rows; `iter_cols` over `ColumnView` |
+| Conversion (5) | `to_cx`, `to_csv(delim=',')`, `to_json`, `to_data_bin`, `to_dict_list` |
+| Equality | `equals` / `==` with recursive cell-equality |
+
+Construction: `Table.from_cx(src)` / `from_cx_all(src)` / `create(cols, types, rows)` with the 4-invariant validation ( §D7: len-match, unique cols, row-shape, types-len-match).
+
+`select` was renamed to `select_cols` everywhere (avoids LINQ / Enumerable conflicts in .NET / Ruby). Per-binding naming follows the language conventions: snake_case in Python/Rust/Ruby/V, camelCase in TS/Java/Kotlin/Swift, PascalCase in Go/C#.
+
+12 tests per binding, fixture-driven; full test matrix green at commit `8714baa`.
+
+### NEW: `cx table` CLI subcommand ( §D1 — drafted 2026-05-11)
+
+```sh
+$ cx table info data.cx
+tables: 1
+byte_size: 61
+table[0]:
+ rows: 3
+ cols: 2
+ name: _
+ age: int
+
+$ cx table dump data.cx --to=cx # round-trip via Table API
+$ cx table load data.cx --to=cx # symmetric inverse
+$ cx table dump data.cx --to=parquet
+# cx table dump --to=parquet: binding does not ship Parquet/Arrow
+# adapter at v0.6.0 RC — defers to libcx_arrow Phase C ( §D4)
+```
+
+Parquet / Arrow IPC output is staged for **Phase C** (libcx_arrow
+ecosystem bindings; §D4). v0.6.0 ships the CLI
+surface and CX round-trip path so downstreams can wire scripts now;
+flipping to native Parquet emit later is non-breaking. 
+ratification is the user-pending gate.
+
+### NEW: Streaming-write event API (Tier 1 + Tier 2 — CX + XML formats)
+
+`EventWriter` (per-binding) emits CX / XML by event streaming —
+StartDoc / StartElement / Attr / Text / EndElement / EndDoc, plus the
+chunked-table sub-protocol (StartTable / ColSpec / RowGroup /
+EndTable). 14 well-defined error codes (W001..W013) with fail-closed
+semantics. Capability bit 27 advertised. JSON/YAML/TOML/MD emits are
+W009-stubbed pending the output-shape decision.
+
+### NEW: Schema validator — 20/20 spec rules complete on Tier 1
+
+All 20 schema-validation rules from `spec/schema.md` land on V core,
+Python, and Go (Tier 1). 55-fixture conformance suite at commit
+`a547f9d`. Apply-defaults inserts schema-default attribute values
+during validation.
+
+### BREAKING: leading-zero integers are now strings
+
+Source like `[zip 02134]` parses as a string in v3.4 (was `int 2134` in
+v3.3, with the leading zero silently dropped). Affects ZIP codes,
+zero-padded IDs, area codes. Detection regex and migration in
+[`MIGRATION.md`](MIGRATION.md) §1.
+
+### BREAKING: `loads()` / `dumps()` preserve integer / float distinction
+
+The v3.3 detour through `cx_to_json` + native JSON parser silently
+coerced integers to floats. v3.4 routes through the new CXDB v1 binary
+format, so integer-typed values stay integer-typed in every binding.
+
+```python
+# v3.3
+loads(dumps({"port": 8080}))["port"] # 8080.0 (float — wrong)
+
+# v3.4
+loads(dumps({"port": 8080}))["port"] # 8080 (int — correct)
+```
+
+Per-binding type tables in [`MIGRATION.md`](MIGRATION.md) §2.
+
+### NEW: canonical-form tooling (`fmt` / `canonical` / `hash` / `eq`)
+
+Four convenience functions in every binding, plus matching CLI
+subcommands on the `cx` binary:
+
+| binding | API |
+| --------- | ------------------------------------------------------ |
+| Python | `cx.fmt(s)` / `cx.canonical(s)` / `cx.hash(s)` / `cx.eq(a, b)` |
+| Go | `cxlib.Fmt(s)` / `.Canonical(s)` / `.Hash(s)` / `.Eq(a, b)` |
+| Rust | `cxlib::fmt(s)?` / `::canonical(s)?` / `::hash(s)?` / `::eq(a, b)?` |
+| TypeScript| `fmt(s)` / `canonical(s)` / `hash(s)` / `eq(a, b)` (named exports) |
+| Java | `CxLib.fmt(s)` / `.canonical(s)` / `.hash(s)` / `.eq(a, b)` |
+| Kotlin | `CxLib.fmt(s)` / `.canonical(s)` / `.hash(s)` / `.eq(a, b)` |
+| Swift | `try CXLib.fmt(s)` / `.canonical(s)` / `.hash(s)` / `.eq(a, b)` |
+| C# | `CxLib.Fmt(s)` / `.Canonical(s)` / `.Hash(s)` / `.Eq(a, b)` |
+| Ruby | `CXLib.fmt(s)` / `.canonical(s)` / `.hash(s)` / `.eq(a, b)` |
+
+```sh
+$ cx fmt config.cx # lossless canonical (preserves comments)
+$ cx canonical config.cx # strict canonical (data only)
+$ cx hash config.cx # 64-char SHA-256 hex
+$ cx eq a.cx b.cx # exit 0 if data-equivalent, 1 if not
+```
+
+`fmt` is idempotent. `canonical`/`hash`/`eq` are byte-stable across
+runs and across bindings — the same input produces the same hash in
+any language. Use cases: signed config bundles, content-addressable
+storage, deduplication keyed on data not file bytes.
+
+### Audit closure: 5 findings, 9 bindings, ~3970 LOC removed
+
+| ID | what was wrong | core symbol(s) | per-binding LOC delta |
+| -- | --------------- | --------------- | --- |
+| CB-1 | `to_<fmt>` re-emit detour | `cx_ast_bin_to_<fmt>` ×6 | (re-routed; no large LOC delta) |
+| CB-2 | `parse_<fmt>` JSON-AST re-parse | `cx_<fmt>_to_ast_bin` ×5 | (re-routed) |
+| CB-3 | `loads`/`dumps` JSON detour | `cx_to_data_bin` / `cx_from_data_bin` | new CXDB codec per binding (~3500 LOC added) |
+| CB-4 | fake streaming | `cx_events_open/next/close` | new EventStream per binding |
+| CB-5 | CXPath parser duplication | `cx_select_all_paths` | **~3970 LOC removed** |
+
+Net: parser/evaluator code in bindings is gone; type-fidelity codec
+code is added; the trade is fewer drift surfaces and one place to
+fix bugs (V core).
+
+Full per-binding commit list and verification details:
+the 2026-05 binding audit.
+
+### Other v3.4 grammar additions (non-breaking)
+
+- `:table` blocks for tabular data.
+- Sized scalar types: `i8`, `i16`, `i32`, `i64`, `u8`..`u64`, `f16`, `f32`, `f64`, `decimal`, `bigint`.
+- Numeric underscores: `9_223_372_036_854_775_807`, `0xCAFE_BABE`.
+- Boolean attribute sigils: `[user +admin -disabled name=alice]`.
+- Line comments: `# to end of line`.
+- logfmt mode: top-level `key=value` documents.
+- Triple-quoted strings: `'''multi-line content'''`.
+
+All of the above are documented in [`MIGRATION.md`](MIGRATION.md) §3.
+
+---
+
+## Compatibility
+
+- **C ABI**: backward compatible. Every v3.3 symbol still exists. New
+ symbols added: `cx_ast_bin_to_<fmt>` ×6, `cx_<fmt>_to_ast_bin` ×5,
+ `cx_to_data_bin` / `cx_from_data_bin`, `cx_events_open` /
+ `cx_events_next` / `cx_events_close`, `cx_select_all_paths`,
+ `cx_fmt` / `cx_canonical` / `cx_hash` / `cx_eq`. Bumps ABI v1 → v2;
+ see `cx_abi_version()` and `cx_features()` for runtime detection.
+- **Bindings**: backward compatible at the API level. `loads()` /
+ `dumps()` return type-fidelity-preserving values now (integers stay
+ integer); only type-strict assertions in user code may need updates.
+- **Source documents**: one BREAKING grammar change (leading-zero
+ integers); see [`MIGRATION.md`](MIGRATION.md) §1.
+
+---
+
+## Verification
+
+Aggregate test runs across the 10 bindings (post-v0.6.0 closure,
+including Phase 2 Table-API fan-out):
+
+| binding | test files | result |
+| ---------- | ------------------------------------------------------- | ------ |
+| V core | conformance (core/extended/xml/md/cxl) + api + stream + table | green |
+| V-cffi | api_test + stream_test + table_test | green |
+| Python | api + cxpath + transform + immutability + stream + table + conformance | green |
+| Go | go test ./... (incl. table_test.go) | green |
+| Rust | cargo test (incl. table.rs 12 tests) | green |
+| TypeScript | api_test + conformance + table | green |
+| Java | mvn test (incl. TableTest 11) | green |
+| Kotlin | gradle test (incl. TableTest 12; 193 total) | green |
+| Swift | swift test (incl. TableTests 12; 179 total) | green |
+| C# | dotnet test (incl. Table 17 assertions; 304 total) | green |
+| Ruby | test_table.rb 12 + full Ruby suite | green |
+
+Plus the conformance corpora (core / extended / xml / md / cxl /
+namespaces) running through every Tier-1 emitter. No test was
+disabled, skipped, or weakened to land any phase.
+
+---
+
+## Per-registry release notes
+
+Bindings ship to:
+
+- **PyPI** — `pip install cxlib==0.6.0`
+- **crates.io** — `cargo add cxlib@0.6`
+- **npm** — `npm install @cx-home/cx@0.6.0`
+- **Maven Central** — `io.cxhome:cxlib:0.6.0`
+- **Gradle/Kotlin** — `io.cxhome:cxlib:0.6.0` (same artifact)
+- **NuGet** — `dotnet add package CX --version 0.6.0`
+- **RubyGems** — `gem install cxlib -v 0.6.0`
+- **Swift Package Manager** — `https://github.com/cx-home/cx`, `from: "0.6.0"`
+- **Go modules** — `go get github.com/cx-home/cx/lang/go@v0.6.0`
+
+All artifacts statically link or dynamically link `libcx.dylib` /
+`libcx.so` / `libcx.dll` (per platform). `libcx` itself is shipped
+through `make install` from the source repo and via OS package
+managers (planned: Homebrew, apt, dnf, pacman post-v0.6.0).
+
+See the release process for the
+multi-registry release sequence (V core first, then libcx binaries,
+then bindings in dependency order).
+
+---
+
+## Acknowledgments
+
+The audit was conducted by the project lead with paired review by
+Claude Opus 4.7 over the `native-data-binding` branch. All commits
+attributed via `Co-Authored-By:`. The systematic per-binding closure
+(Phases 3, 4, 5) and the canonical-form tooling layer (Phase 6) are
+the result of that review.

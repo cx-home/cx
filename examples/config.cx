@@ -1,20 +1,23 @@
-[server
-  [host localhost]
-  [port :int 8080]
-  [debug false]
-  [workers :int 4]
+[- Server / database / logging configuration.
+   Showcases v3.4 idioms: sized numeric types, boolean sigils,
+   numeric underscores, line comments, leading-zero strings. ]
+
+[server host=0.0.0.0 +tls -debug   # +tls → tls=true; -debug → debug=false
+  [port :u16 8080]                 # sized: u16 covers 0..65535
+  [workers :u8 4]
+  [max_request_bytes :u32 1_048_576]   # 1 MiB — underscores aid readability
   [allowed_origins :string[] https://example.com https://app.example.com]
 ]
 
-[database
-  [host localhost]
-  [port :int 5432]
-  [name myapp]
-  [pool_size :int 10]
-  [ssl false]
+[database host=localhost name=myapp -ssl
+  [port :u16 5432]
+  [pool_size :u16 10]
+  [statement_timeout_ms :u32 30_000]
 ]
 
 [logging
   [level info]
   [file /var/log/app.log]
+  [- v3.4: a leading-zero token stays a string, never an octal-looking int ]
+  [rotate_at_hour 03]              # the literal string "03", not int 3
 ]

@@ -1,9 +1,23 @@
 # CX AST Specification
-# Version: 2.3
-# Date: 2026-04-19
+# Version: 2.4
+# Date: 2026-05-11
 
 Both the CX parser and XML parser produce this AST. It is the canonical representation
 shared by all emitters (CX, XML, JSON) and all language implementations.
+
+### What's new in v2.4 (2026-05-11)
+
+Per :
+
+- **SequenceNode** (`(a, b, c)`), **ArrayNode** (`[a, b, c]`), and
+ **MapNode** (`{k: v}`) are new AST node kinds in node-body /
+ attribute-value / document-top positions, mirroring CXDM v1.1's
+ three container Item kinds (§D10).
+- AST emitters round-trip the three new kinds through grammar v3.6
+ source-text forms (per `spec/grammar.ebnf §[56]`).
+- ast_bin wire format bumps to **v6** (per §D11 +
+ `spec/ast_bin.md`); v5 readers reject v6 files.
+- Capability bit **29** signals support across the binding ABI.
 
 ---
 
@@ -41,10 +55,10 @@ When emitting XML, the emitter MUST work from the Resolved AST.
 
 ```json
 {
-  "type": "Document",
-  "prolog": [],     // XMLDecl, PI, CXDirective, Comment — omitted if empty
-  "doctype": {},    // DoctypeDecl — omitted if absent
-  "elements": []    // top-level nodes — same set as element body nodes (see below)
+ "type": "Document",
+ "prolog": [], // XMLDecl, PI, CXDirective, Comment — omitted if empty
+ "doctype": {}, // DoctypeDecl — omitted if absent
+ "elements": [] // top-level nodes — same set as element body nodes (see below)
 }
 ```
 
@@ -66,10 +80,10 @@ Top-level Scalar and Text nodes are allowed (loose content at document level):
 
 ```json
 {
-  "type": "XMLDecl",
-  "version": "1.0",
-  "encoding": "UTF-8",   // omitted if absent
-  "standalone": "yes"    // omitted if absent; "yes" or "no"
+ "type": "XMLDecl",
+ "version": "1.0",
+ "encoding": "UTF-8", // omitted if absent
+ "standalone": "yes" // omitted if absent; "yes" or "no"
 }
 ```
 
@@ -84,15 +98,25 @@ Must be first item in `prolog` when present.
 
 ```json
 {
-  "type": "CXDirective",
-  "attrs": [{"name": "include", "value": "base.cx"}]
+ "type": "CXDirective",
+ "attrs": [{"name": "include", "value": "base.cx"}]
 }
 ```
 
 CX: `[?cx include=base.cx]`
 XML: `<?cx include="base.cx"?>` (serializes as a standard XML PI)
 
-Known attrs: `include` (file path), `schema` (schema path), `version` (CX version).
+Known attrs (v0.6.0): `include` (file path), `schema` (schema path),
+`version` (CX version), plus the CXL configuration attributes reserved
+per [`spec/governance.md §12.2`](governance.md) — `output-target`,
+`output-strict`, `cxl-version`.
+
+The CXL configuration attributes configure the post-v0.6.0 CXL
+evaluator. They round-trip as ordinary CXDirective
+attrs through the v0.6.0 parser; the evaluator (v0.6.0+) consumes
+them. Unknown CXDirective attributes also round-trip — the attribute
+set is open by design.
+
 In Parse AST: preserved as CXDirective node.
 In Resolved AST: `include` directives are expanded inline; others remain.
 
@@ -102,9 +126,9 @@ In Resolved AST: `include` directives are expanded inline; others remain.
 
 ```json
 {
-  "type": "PI",
-  "target": "php",
-  "data": "echo $foo;"   // omitted if empty
+ "type": "PI",
+ "target": "php",
+ "data": "echo $foo;" // omitted if empty
 }
 ```
 
@@ -131,10 +155,10 @@ XML: `<!--comment text-->`
 
 ```json
 {
-  "type": "DoctypeDecl",
-  "name": "html",
-  "externalID": {"public": "-//W3C//DTD...", "system": "http://..."},
-  "intSubset": []   // omitted if empty
+ "type": "DoctypeDecl",
+ "name": "html",
+ "externalID": {"public": "-//W3C//DTD...", "system": "http://..."},
+ "intSubset": [] // omitted if empty
 }
 ```
 
@@ -153,13 +177,13 @@ SystemLiteral and PubidLiteral are always single-quoted in CX output.
 
 ```json
 {
-  "type": "Element",
-  "name": "person",
-  "anchor": "def",        // omitted if absent (Parse AST only)
-  "merge": "def",         // omitted if absent (Parse AST only)
-  "dataType": "string[]", // omitted if absent — from TypeAnnotation
-  "attrs": [],            // Attribute[] — omitted if empty
-  "items": []             // Node[] — omitted if empty
+ "type": "Element",
+ "name": "person",
+ "anchor": "def", // omitted if absent (Parse AST only)
+ "merge": "def", // omitted if absent (Parse AST only)
+ "dataType": "string[]", // omitted if absent — from TypeAnnotation
+ "attrs": [], // Attribute[] — omitted if empty
+ "items": [] // Node[] — omitted if empty
 }
 ```
 
@@ -169,6 +193,20 @@ after resolution.
 `dataType` carries the TypeAnnotation value (`:int`, `:string[]`, etc.) when present.
 Emitters MUST always store the canonical long form (`int`, not `i`; `string[]`, not `s[]`).
 
+**Namespace fields (in-memory, not currently in JSON wire shape).** Per /
+[`spec/namespaces.md`](namespaces.md), every Element carries two additional fields
+populated by the post-parse `resolve_namespaces` pass:
+
+- `local` — the part of `name` after the first `:`, or all of `name` if no `:`.
+- `ns_uri` — the resolved namespace URI (optional). `none` means no in-scope binding
+ and the prefix is not reserved (`xml:`, `cx:`).
+
+Source `name` is preserved verbatim for round-trip emission. Equality (`cx eq`) and
+canonical form use `(ns_uri, local)`. The `ns_uri`/`local` fields are not currently
+emitted in the AST-JSON wire shape — they are derivable from `name` plus the
+xmlns declarations carried as ordinary attributes. A future minor revision may add
+optional `nsUri`/`local` JSON fields when binding APIs need them surfaced explicitly.
+
 ### Attribute
 
 ```json
@@ -176,6 +214,12 @@ Emitters MUST always store the canonical long form (`int`, not `i`; `string[]`, 
 {"name": "port", "value": 8080, "dataType": "int"}
 {"name": "debug", "value": true, "dataType": "bool"}
 ```
+
+Same `local` and `ns_uri` fields apply. Per XML Namespaces 1.0 §6.2 the default
+namespace does **not** apply to unprefixed attributes — `ns_uri` is `none` for
+unprefixed attribute names even when an `xmlns="…"` default is in scope. `xmlns`
+and `xmlns:*` declarations themselves have `ns_uri = none` (they are declarations,
+not data).
 
 BareValue attribute values are auto-typed using the same scalar priority as body
 scalars (see Scalar › Auto-typing rule). The `dataType` field is present when the
@@ -193,52 +237,52 @@ a string value that would otherwise auto-type, use QuotedText (`'8080'`).
 `[p class=note Hello]`
 ```json
 {
-  "type": "Element", "name": "p",
-  "attrs": [{"name": "class", "value": "note"}],
-  "items": [{"type": "Text", "value": "Hello"}]
+ "type": "Element", "name": "p",
+ "attrs": [{"name": "class", "value": "note"}],
+ "items": [{"type": "Text", "value": "Hello"}]
 }
 ```
 
 `[server host=localhost port=8080 debug=false]`
 ```json
 {
-  "type": "Element", "name": "server",
-  "attrs": [
-    {"name": "host",  "value": "localhost"},
-    {"name": "port",  "value": 8080,  "dataType": "int"},
-    {"name": "debug", "value": false, "dataType": "bool"}
-  ]
+ "type": "Element", "name": "server",
+ "attrs": [
+ {"name": "host", "value": "localhost"},
+ {"name": "port", "value": 8080, "dataType": "int"},
+ {"name": "debug", "value": false, "dataType": "bool"}
+ ]
 }
 ```
 
 `[tags :string[] admin user guest]`
 ```json
 {
-  "type": "Element", "name": "tags", "dataType": "string[]",
-  "items": [
-    {"type": "Scalar", "dataType": "string", "value": "admin"},
-    {"type": "Scalar", "dataType": "string", "value": "user"},
-    {"type": "Scalar", "dataType": "string", "value": "guest"}
-  ]
+ "type": "Element", "name": "tags", "dataType": "string[]",
+ "items": [
+ {"type": "Scalar", "dataType": "string", "value": "admin"},
+ {"type": "Scalar", "dataType": "string", "value": "user"},
+ {"type": "Scalar", "dataType": "string", "value": "guest"}
+ ]
 }
 ```
 
 `[defaults &def timeout=30 retries=3]` (Parse AST)
 ```json
 {
-  "type": "Element", "name": "defaults", "anchor": "def",
-  "attrs": [
-    {"name": "timeout", "value": 30, "dataType": "int"},
-    {"name": "retries", "value": 3,  "dataType": "int"}
-  ]
+ "type": "Element", "name": "defaults", "anchor": "def",
+ "attrs": [
+ {"name": "timeout", "value": 30, "dataType": "int"},
+ {"name": "retries", "value": 3, "dataType": "int"}
+ ]
 }
 ```
 
 `[production *def host=prod.example.com]` (Parse AST)
 ```json
 {
-  "type": "Element", "name": "production", "merge": "def",
-  "attrs": [{"name": "host", "value": "prod.example.com"}]
+ "type": "Element", "name": "production", "merge": "def",
+ "attrs": [{"name": "host", "value": "prod.example.com"}]
 }
 ```
 
@@ -283,14 +327,14 @@ Text nodes contain only string content. Typed tokens produce Scalar nodes.
 Typed value node. Produced by explicit TypeAnnotation or by auto-typing.
 
 ```json
-{"type": "Scalar", "dataType": "int",      "value": 30}
-{"type": "Scalar", "dataType": "float",    "value": 3.14}
-{"type": "Scalar", "dataType": "bool",     "value": true}
-{"type": "Scalar", "dataType": "null",     "value": null}
-{"type": "Scalar", "dataType": "string",   "value": "hello"}
-{"type": "Scalar", "dataType": "date",     "value": "2026-04-19"}
+{"type": "Scalar", "dataType": "int", "value": 30}
+{"type": "Scalar", "dataType": "float", "value": 3.14}
+{"type": "Scalar", "dataType": "bool", "value": true}
+{"type": "Scalar", "dataType": "null", "value": null}
+{"type": "Scalar", "dataType": "string", "value": "hello"}
+{"type": "Scalar", "dataType": "date", "value": "2026-04-19"}
 {"type": "Scalar", "dataType": "datetime", "value": "2026-04-19T14:30:00Z"}
-{"type": "Scalar", "dataType": "bytes",    "value": "SGVsbG8="}
+{"type": "Scalar", "dataType": "bytes", "value": "SGVsbG8="}
 ```
 
 `value` uses native JSON types: number for int/float, boolean for bool, null for null,
@@ -335,21 +379,21 @@ alias `:[]` produces an inferred-type array: non-string tokens → that type;
 any string token → `string[]`.
 
 ```
-[age 30]            → Scalar int 30          (scalar auto-type)
-[scores 10 20 30]   → Array  int[] [10,20,30] (array auto-type)
-[tags :[] a b c]    → Array  string[] (inferred via :[], tokens are strings)
-[tags :s[] a b c]   → Array  string[] (explicit short alias)
-[port :i 8080]      → Scalar int 8080        (explicit short alias)
-[port '8080']       → Text   "8080"          (quoted → always Text)
-[scores :s[] 1 2 3] → Array  string[]        (override auto-int with :s[])
+[age 30] → Scalar int 30 (scalar auto-type)
+[scores 10 20 30] → Array int[] [10,20,30] (array auto-type)
+[tags :[] a b c] → Array string[] (inferred via :[], tokens are strings)
+[tags :s[] a b c] → Array string[] (explicit short alias)
+[port :i 8080] → Scalar int 8080 (explicit short alias)
+[port '8080'] → Text "8080" (quoted → always Text)
+[scores :s[] 1 2 3] → Array string[] (override auto-int with :s[])
 ```
 
 ### Scalar in XML
 
 Auto-typed scalar: `[age 30]` → `<age>30</age>`
-Explicit scalar:   `[age :int 30]` → `<age cx:type="int">30</age>`
-Auto-typed array:  `[scores 10 20 30]` → `<scores cx:type="int[]"><item>10</item>...</scores>`
-Explicit array:    `[tags :string[] a b]` → `<tags cx:type="string[]"><item>a</item>...</tags>`
+Explicit scalar: `[age :int 30]` → `<age cx:type="int">30</age>`
+Auto-typed array: `[scores 10 20 30]` → `<scores cx:type="int[]"><item>10</item>...</scores>`
+Explicit array: `[tags :string[] a b]` → `<tags cx:type="string[]"><item>a</item>...</tags>`
 
 ---
 
@@ -360,8 +404,8 @@ preserved literally rather than normalized to spaces.
 
 ```json
 {
-  "type": "BlockContent",
-  "items": []    // Node[] — same set as element body items
+ "type": "BlockContent",
+ "items": [] // Node[] — same set as element body items
 }
 ```
 
@@ -384,26 +428,26 @@ poetry, preformatted prose, code with inline markup, template literals.
 
 ```
 [poem
-  [|
-    Roses are red,
-    Violets are blue,
-    CX is [em elegant],
-    And YAML is through.
-  ]
+ [|
+ Roses are red,
+ Violets are blue,
+ CX is [em elegant],
+ And YAML is through.
+ ]
 ]
 ```
 ```json
 {
-  "type": "Element", "name": "poem",
-  "items": [{
-    "type": "BlockContent",
-    "items": [
-      {"type": "Text", "value": "Roses are red,\nViolets are blue,\nCX is "},
-      {"type": "Element", "name": "em",
-       "items": [{"type": "Text", "value": "elegant"}]},
-      {"type": "Text", "value": ",\nAnd YAML is through.\n"}
-    ]
-  }]
+ "type": "Element", "name": "poem",
+ "items": [{
+ "type": "BlockContent",
+ "items": [
+ {"type": "Text", "value": "Roses are red,\nViolets are blue,\nCX is "},
+ {"type": "Element", "name": "em",
+ "items": [{"type": "Text", "value": "elegant"}]},
+ {"type": "Text", "value": ",\nAnd YAML is through.\n"}
+ ]
+ }]
 }
 ```
 
@@ -427,6 +471,198 @@ as a single-character Text node.
 
 ---
 
+## Interpolation (NEW in v0.6.0)
+
+```json
+{"type": "Interpolation", "expr": "@name"}
+{"type": "Interpolation", "expr": "//service[@port=8080]/@host"}
+```
+
+CX: `[?=EXPR]` (grammar [58])
+XML: round-trip preserved as `<cx:interp expr="..."/>` (round-trip XML)
+ / opaque text in semantic XML
+
+The opaque-body bracket form `[?=EXPR]` / grammar v3.5.
+`expr` holds the captured expression text verbatim; the CX parser does
+not interpret it. The CXL evaluator (v0.6.0+) parses `expr` as CXPath
+at evaluation time.
+
+In pure-data documents (no CXL evaluator running): Interpolation
+nodes round-trip as-is and have no semantic effect. They are inert
+data.
+
+In evaluated documents (CXL programs): the evaluator parses `expr`,
+evaluates it against the current context, and emits the result per
+[`spec/cxdm.md §7.1`](cxdm.md) (canonical scalar formatting) or
+[`spec/cxl.md §3.1`](cxl.md) (interpolation rules).
+
+The Interpolation node is part of the v0.6.0 ABI lock; pre-v0.6.0
+parsers reject `[?=...]` as a parse error.
+
+---
+
+## EvalDirective (NEW in v0.6.0)
+
+```json
+{
+ "type": "EvalDirective",
+ "name": "if",
+ "items": [/* ArgArray (single ArrayNode) carrying the positional slots §D7 */]
+}
+```
+
+CX: `[?Name [arg1, arg2, ...]]` (grammar [59], positional) or
+`[?Name :slot1 a :slot2 b]` (grammar [59b], labeled — desugars
+to the same AST)
+XML: round-trip preserved as `<cx:eval name="..."><cx:args>.../></cx:eval>`
+ (round-trip XML) / opaque preserved structure in semantic XML
+
+CXL evaluation directive + §D7 + grammar
+v3.6. The `name` field carries the EvalName (`if`, `for`, `with`,
+`include`, `def`, `use`; v0.9.0+ adds `let`, `fn`, `match`, `try`;
+built-in filter names per `spec/cxl.md §4` are also EvalNames).
+`?cond` was dropped at §D7 (folded into multi-branch
+`?if`).
+
+**`items` field** — the positional argument list. Per 
+§D6/§D7, `items` contains exactly one node — an `ArrayNode`
+whose items are the directive's positional slots. Empty body
+(`[?Name]`) yields `items.len == 0`. For directives invoked in
+**labeled form** ( §D23, grammar [59b]), the parser
+desugars `:slot1 a :slot2 b` to the same single-ArgArray shape
+at the directive's documented slot order. The AST is identical
+whether the source used positional or labeled form. Canonical-
+form serialization always emits the positional form
+(`spec/canonical.md`).
+
+**`?def` parameters** — for `?def` directives, the
+ArgArray's slot 1 is the params Array (an `ArrayNode` of bare
+identifier `TextNode`/`ScalarNode` items). Slot 0 is the
+template name, slot 2 is the body. Zero-parameter `?def` has
+`params = []`. Legacy 2-slot form `[?def [name, body]]` parses
+as backward-compat sugar; the parser auto-expands to 3-slot
+with `params = []`. Lexical-scope binding semantics per
+ §D2; signaled by capability bit 30. No new AST field
+introduced — params lives in the existing ArgArray as a regular
+slot.
+
+Attributes (pre-D7 `:then=` / `:else=` named-attribute slots) are
+**not** valid on EvalDirective §D7. The runtime V
+struct retains a vestigial `attrs []Attribute` field that is
+always empty; future cleanup may remove it but it has no
+semantic effect at v0.6.0.
+
+In pure-data documents (no CXL evaluator running): EvalDirective
+nodes round-trip as-is, preserve their structure under canonical
+form and hashing, and have no semantic effect.
+
+In evaluated documents (CXL programs): the evaluator dispatches on
+`name` and produces a CXDM value per
+[`spec/cxl.md §3`](cxl.md).
+
+EvalDirective is part of the v0.6.0 ABI lock; pre-v0.6.0 parsers
+reject `[?<EvalName> ...]` as a parse error (would have been
+attempted as PI but lacked the structural shape).
+
+---
+
+## SequenceNode (NEW in v0.6.0 / v1.1)
+
+```json
+{"type": "Sequence", "items": [/* BodyItem nodes */]}
+```
+
+CX: `(a, b, c)` (grammar [56a])
+XML: `<cx:seq><cx:item>a</cx:item>…</cx:seq>` (round-trip)
+
+Sequence-literal node / grammar v3.6. Represents a
+**Sequence-as-Item** runtime value (per [`spec/cxdm.md §2.6`](cxdm.md))
+when stored as one item of an enclosing Array or Map. At top level
+or in element body position, the value flattens into the enclosing
+Sequence per CXDM §1 sequence-flat principle.
+
+`items` is the ordered list of contained body items. Items
+themselves may be Element / Scalar / Text / ArrayNode / MapNode /
+SequenceNode / any other BodyItem; nested SequenceNode values at
+the SequenceNode-into-SequenceNode boundary auto-flatten at
+runtime per CXDM §1.2. Source-text round-trip preserves source
+nesting in the parse AST; flattening is a runtime operation, not
+an AST-level normalization.
+
+SequenceNode is part of the v0.6.0 ABI lock; pre-v0.6.0 parsers
+reject `(...)` collection literals. Capability bit 29
+(`0x20000000` per [`spec/abi.md`](abi.md)) signals support.
+
+---
+
+## ArrayNode (NEW in v0.6.0 / v1.1)
+
+```json
+{"type": "Array", "items": [/* BodyItem nodes */]}
+```
+
+CX: `[a, b, c]` (grammar [56b])
+XML: `<cx:arr><cx:item>a</cx:item>…</cx:arr>` (round-trip)
+
+Array-literal node / grammar v3.6. Represents an
+**Array Item** runtime value per [`spec/cxdm.md §2.4`](cxdm.md) —
+ordered, non-flat, preserves nesting.
+
+`items` is the ordered list of contained body items. Nested
+ArrayNode values are preserved as ArrayNode items (do not
+flatten). SequenceNode items inside an ArrayNode preserve their
+Sequence-as-Item semantics per CXDM §2.6.
+
+The empty Array `[]` parses to `{"type": "Array", "items": []}`.
+Empty Arrays are valid in BodyItem / AttValue / Node position;
+they remain a parse error in Element position per grammar [50].
+
+ArrayNode is part of the v0.6.0 ABI lock. Capability bit 29
+signals support.
+
+---
+
+## MapNode (NEW in v0.6.0 / v1.1)
+
+```json
+{
+ "type": "Map",
+ "entries": [
+ {"key": {"type": "Scalar", "dataType": "string", "value": "name"}, "value": /* BodyItem */},
+ {"key": {"type": "Scalar", "dataType": "int", "value": 42}, "value": /* BodyItem */}
+ ]
+}
+```
+
+CX: `{k: v, k2: v2}` (grammar [56c])
+XML: `<cx:map><cx:entry cx:key="k">v</cx:entry>…</cx:map>` (round-trip)
+
+Map-literal node / grammar v3.6. Represents a
+**Map Item** runtime value per [`spec/cxdm.md §2.5`](cxdm.md) —
+unordered (runtime) / canonical-sorted (emit), atomic-Scalar keys,
+any-Item values.
+
+`entries` is the list of `(key, value)` pairs. Each entry's
+`key` is a Scalar AST node (per [`spec/ast.md §Scalar`](ast.md))
+with `dataType` ∈ `{string, int, float, bool, date, datetime, bytes}`;
+`null` is not a valid key (parse error W014). Bare-name keys in
+source text (`{name: 'a'}`) parse with `dataType=string`. Each
+entry's `value` is any BodyItem.
+
+Duplicate keys (per §4.1 atomic equality, type-strict — `1` and
+`1.0` are distinct keys) are a parse error W014.
+
+Runtime order is insertion order §D14 / Q6.
+Canonical-form emit sorts keys lexicographically by canonical-
+string form per `spec/canonical.md`.
+
+The empty Map `{}` parses to `{"type": "Map", "entries": []}`.
+
+MapNode is part of the v0.6.0 ABI lock. Capability bit 29 signals
+support.
+
+---
+
 ## RawText (CDATA)
 
 ```json
@@ -442,7 +678,7 @@ Inner CX elements are NOT parsed — use BlockContent when inner elements are ne
 **CDATA split rule:** When emitting XML, if `value` contains the sequence `]]>`,
 the emitter MUST split it using adjacent CDATA sections:
 ```
-]]>  →  ]]><![CDATA[>
+]]> → ]]><![CDATA[>
 ```
 Example: `value = "a]]>b"` → `<![CDATA[a]]><![CDATA[>b]]>`.
 XML parsers reassemble adjacent CDATA sections into the original content.
@@ -454,10 +690,10 @@ The `]]>` sequence is valid in CX raw text (only `#]` is forbidden in CX source)
 
 ```json
 {
-  "type": "EntityDecl",
-  "kind": "GE",
-  "name": "ext",
-  "def": {"externalID": {"system": "external.txt"}}
+ "type": "EntityDecl",
+ "kind": "GE",
+ "name": "ext",
+ "def": {"externalID": {"system": "external.txt"}}
 }
 ```
 
@@ -468,8 +704,8 @@ The `]]>` sequence is valid in CX raw text (only `#]` is forbidden in CX source)
 
 ```json
 {
-  "externalID": {"system": "file.ent"},
-  "ndata": "gif"    // omitted if absent
+ "externalID": {"system": "file.ent"},
+ "ndata": "gif" // omitted if absent
 }
 ```
 
@@ -489,12 +725,12 @@ The `]]>` sequence is valid in CX raw text (only `#]` is forbidden in CX source)
 
 ```json
 {
-  "type": "AttlistDecl",
-  "name": "img",
-  "defs": [
-    {"name": "src",  "type": "CDATA", "default": "#REQUIRED"},
-    {"name": "alt",  "type": "CDATA", "default": "#IMPLIED"}
-  ]
+ "type": "AttlistDecl",
+ "name": "img",
+ "defs": [
+ {"name": "src", "type": "CDATA", "default": "#REQUIRED"},
+ {"name": "alt", "type": "CDATA", "default": "#IMPLIED"}
+ ]
 }
 ```
 
@@ -504,10 +740,10 @@ The `]]>` sequence is valid in CX raw text (only `#]` is forbidden in CX source)
 
 ```json
 {
-  "type": "NotationDecl",
-  "name": "gif",
-  "publicID": "image/gif",
-  "systemID": "viewer.exe"
+ "type": "NotationDecl",
+ "name": "gif",
+ "publicID": "image/gif",
+ "systemID": "viewer.exe"
 }
 ```
 
@@ -519,9 +755,9 @@ At least one of `publicID` or `systemID` present.
 
 ```json
 {
-  "type": "ConditionalSect",
-  "kind": "include",
-  "subset": []
+ "type": "ConditionalSect",
+ "kind": "include",
+ "subset": []
 }
 ```
 
@@ -539,14 +775,14 @@ Reserved prefix: `cx` — documents may not use `ns:cx` as a namespace alias.
 
 CX AST fields map to XML `cx:` attributes. Two XML output modes exist (see below):
 
-| AST field           | Round-trip XML            | Semantic XML              |
+| AST field | Round-trip XML | Semantic XML |
 |---------------------|---------------------------|---------------------------|
-| `element.anchor`    | `cx:anchor="name"`        | omitted (resolved)        |
-| `element.merge`     | `cx:merge="name"`         | omitted (resolved)        |
-| `element.dataType`  | `cx:type="string[]"`      | `cx:type="string[]"`      |
-| `alias.name`        | `<cx:alias name="name"/>` | expanded element (clone)  |
-| `CXDirective`       | `<?cx ...?>`              | omitted / inlined         |
-| `BlockContent`      | `<cx:block>...</cx:block>`| items inlined into parent |
+| `element.anchor` | `cx:anchor="name"` | omitted (resolved) |
+| `element.merge` | `cx:merge="name"` | omitted (resolved) |
+| `element.dataType` | `cx:type="string[]"` | `cx:type="string[]"` |
+| `alias.name` | `<cx:alias name="name"/>` | expanded element (clone) |
+| `CXDirective` | `<?cx ...?>` | omitted / inlined |
+| `BlockContent` | `<cx:block>...</cx:block>`| items inlined into parent |
 
 ---
 
@@ -570,27 +806,32 @@ Conformance tests specify Round-trip XML in their `out_xml` sections.
 
 ## Node type summary
 
-| Type            | Core/Ext | CX syntax               | XML syntax (round-trip)        |
+| Type | Core/Ext | CX syntax | XML syntax (round-trip) |
 |-----------------|----------|-------------------------|--------------------------------|
-| Document        | Core     | (document)              | (document)                     |
-| XMLDecl         | Core     | [?xml ...]              | <?xml ...?>                    |
-| CXDirective     | Core     | [?cx include=f.cx]      | <?cx include="f.cx"?>          |
-| PI              | Core     | [?target data]          | <?target data?>                |
-| Comment         | Core     | [-text]                 | <!--text-->                    |
-| DoctypeDecl     | Core     | [!DOCTYPE ...]          | <!DOCTYPE ...>                 |
-| Element         | Core     | [name ...]              | <name>...</name>               |
-| Alias           | Extended | [*name]                 | <cx:alias name="name"/>        |
-| Text            | Core     | word or 'phrase'        | text node                      |
-| Text            | Extended | '''multiline'''         | text node                      |
-| Scalar          | Extended | 30  true  2026-04-19    | text node (+ cx:type opt.)     |
-| BlockContent    | Extended | [| ... ]                | <cx:block>...</cx:block>       |
-| EntityRef       | Core     | &name;                  | &name;                         |
-| RawText         | Core     | [# content #]           | <![CDATA[content]]>            |
-| EntityDecl      | Core     | [!ENTITY ...]           | <!ENTITY ...>                  |
-| ElementDecl     | Extended | [!ELEMENT ...]          | <!ELEMENT ...>                 |
-| AttlistDecl     | Extended | [!ATTLIST ...]          | <!ATTLIST ...>                 |
-| NotationDecl    | Extended | [!NOTATION ...]         | <!NOTATION ...>                |
-| ConditionalSect | Extended | [![INCLUDE[...]]]       | <![INCLUDE[...]]>              |
+| Document | Core | (document) | (document) |
+| XMLDecl | Core | [?xml ...] | <?xml ...?> |
+| CXDirective | Core | [?cx include=f.cx] | <?cx include="f.cx"?> |
+| PI | Core | [?target data] | <?target data?> |
+| Comment | Core | [-text] | <!--text--> |
+| DoctypeDecl | Core | [!DOCTYPE ...] | <!DOCTYPE ...> |
+| Element | Core | [name ...] | <name>...</name> |
+| Alias | Extended | [*name] | <cx:alias name="name"/> |
+| Text | Core | word or 'phrase' | text node |
+| Text | Extended | '''multiline''' | text node |
+| Scalar | Extended | 30 true 2026-04-19 | text node (+ cx:type opt.) |
+| BlockContent | Extended | [| ... ] | <cx:block>...</cx:block> |
+| Interpolation | Extended | [?=EXPR] | <cx:interp expr="EXPR"/> |
+| EvalDirective | Extended | [?Name ...] | <cx:eval name="Name">...</cx:eval> |
+| Sequence | Extended | (a, b, c) | <cx:seq>...</cx:seq> |
+| Array | Extended | [a, b, c] | <cx:arr>...</cx:arr> |
+| Map | Extended | {k: v} | <cx:map>...</cx:map> |
+| EntityRef | Core | &name; | &name; |
+| RawText | Core | [# content #] | <![CDATA[content]]> |
+| EntityDecl | Core | [!ENTITY ...] | <!ENTITY ...> |
+| ElementDecl | Extended | [!ELEMENT ...] | <!ELEMENT ...> |
+| AttlistDecl | Extended | [!ATTLIST ...] | <!ATTLIST ...> |
+| NotationDecl | Extended | [!NOTATION ...] | <!NOTATION ...> |
+| ConditionalSect | Extended | [![INCLUDE[...]]] | <![INCLUDE[...]]> |
 
 EntityDecl is Core because EntityRef is Core — entity declarations define the
 names that appear as EntityRef nodes. ElementDecl, AttlistDecl, NotationDecl,
@@ -611,18 +852,18 @@ element content).
 **Mixed content:** `[p Hello [b world] and [em you]]`
 ```json
 {
-  "type": "Document",
-  "elements": [{
-    "type": "Element", "name": "p",
-    "items": [
-      {"type": "Text", "value": "Hello"},
-      {"type": "Element", "name": "b",
-       "items": [{"type": "Text", "value": "world"}]},
-      {"type": "Text", "value": "and"},
-      {"type": "Element", "name": "em",
-       "items": [{"type": "Text", "value": "you"}]}
-    ]
-  }]
+ "type": "Document",
+ "elements": [{
+ "type": "Element", "name": "p",
+ "items": [
+ {"type": "Text", "value": "Hello"},
+ {"type": "Element", "name": "b",
+ "items": [{"type": "Text", "value": "world"}]},
+ {"type": "Text", "value": "and"},
+ {"type": "Element", "name": "em",
+ "items": [{"type": "Text", "value": "you"}]}
+ ]
+ }]
 }
 ```
 
@@ -630,50 +871,50 @@ element content).
 `[server host=localhost port=8080 debug=false]`
 ```json
 {
-  "type": "Document",
-  "elements": [{
-    "type": "Element", "name": "server",
-    "attrs": [
-      {"name": "host",  "value": "localhost"},
-      {"name": "port",  "value": 8080,  "dataType": "int"},
-      {"name": "debug", "value": false, "dataType": "bool"}
-    ]
-  }]
+ "type": "Document",
+ "elements": [{
+ "type": "Element", "name": "server",
+ "attrs": [
+ {"name": "host", "value": "localhost"},
+ {"name": "port", "value": 8080, "dataType": "int"},
+ {"name": "debug", "value": false, "dataType": "bool"}
+ ]
+ }]
 }
 ```
 
 **Auto-typed array:** `[scores 10 20 30]`
 ```json
 {
-  "type": "Document",
-  "elements": [{
-    "type": "Element", "name": "scores", "dataType": "int[]",
-    "items": [
-      {"type": "Scalar", "dataType": "int", "value": 10},
-      {"type": "Scalar", "dataType": "int", "value": 20},
-      {"type": "Scalar", "dataType": "int", "value": 30}
-    ]
-  }]
+ "type": "Document",
+ "elements": [{
+ "type": "Element", "name": "scores", "dataType": "int[]",
+ "items": [
+ {"type": "Scalar", "dataType": "int", "value": 10},
+ {"type": "Scalar", "dataType": "int", "value": 20},
+ {"type": "Scalar", "dataType": "int", "value": 30}
+ ]
+ }]
 }
 ```
 
 **Mixed typed data:** `[person [age 30] [active true] [tags :[] admin user]]`
 ```json
 {
-  "type": "Document",
-  "elements": [{
-    "type": "Element", "name": "person",
-    "items": [
-      {"type": "Element", "name": "age",
-       "items": [{"type": "Scalar", "dataType": "int", "value": 30}]},
-      {"type": "Element", "name": "active",
-       "items": [{"type": "Scalar", "dataType": "bool", "value": true}]},
-      {"type": "Element", "name": "tags", "dataType": "string[]",
-       "items": [
-         {"type": "Scalar", "dataType": "string", "value": "admin"},
-         {"type": "Scalar", "dataType": "string", "value": "user"}
-       ]}
-    ]
-  }]
+ "type": "Document",
+ "elements": [{
+ "type": "Element", "name": "person",
+ "items": [
+ {"type": "Element", "name": "age",
+ "items": [{"type": "Scalar", "dataType": "int", "value": 30}]},
+ {"type": "Element", "name": "active",
+ "items": [{"type": "Scalar", "dataType": "bool", "value": true}]},
+ {"type": "Element", "name": "tags", "dataType": "string[]",
+ "items": [
+ {"type": "Scalar", "dataType": "string", "value": "admin"},
+ {"type": "Scalar", "dataType": "string", "value": "user"}
+ ]}
+ ]
+ }]
 }
 ```

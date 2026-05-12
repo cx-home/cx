@@ -1,5 +1,5 @@
 import os
-import cxlib
+import cffi as cxlib
 
 const examples = os.join_path(@VMODROOT, '..', '..', 'examples')
 

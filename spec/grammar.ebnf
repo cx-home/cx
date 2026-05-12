@@ -1,9 +1,110 @@
 # CX Grammar Specification
-# Version: 3.3
-# Date: 2026-04-19
+# Version: 3.6
+# Date: 2026-05-11
 # Description: CX is a bracket-based markup language. Every single resolved CX Document
 # can be serialized to XML using the cx: namespace for CX-specific metadata. Both CX and
 # XML parse to the same canonical AST (see ast-spec.md).
+#
+# Version 3.6 changes (additive over 3.5, no breaks):
+#   - CollectionLiteral [56] is a new BodyItem / AttValue / Node alternative
+#     covering three source-text forms per ADR 0017:
+#       SequenceLiteral [56a]  (a, b, c)        — flat, auto-flattens
+#       ArrayLiteral    [56b]  [a, b, c]        — nested, preserves structure
+#       MapLiteral      [56c]  {k: v, k: v}     — keyed entries, atomic keys
+#     Disambiguation from existing element syntax follows the one-token-
+#     lookahead rule below.
+#   - Element-vs-Array disambiguation [50.D]:
+#       Inside `[…]`, the parser scans from the opening `[` past optional
+#       whitespace and decides Element vs ArrayLiteral by looking at the
+#       first non-whitespace separator encountered (`=` / `,` / `]`):
+#         first separator = `=`  → Element with attributes (today's form)
+#         first separator = `,`  → ArrayLiteral
+#         first separator = `]`  AND content matches `Name (S ElementMeta)*`
+#                                → Element (today's form, possibly empty body)
+#         empty `[]`             → ArrayLiteral (the empty array), valid only
+#                                  in expression position (BodyItem / AttValue
+#                                  positions); element position rejects empty
+#                                  brackets per existing [50] rule.
+#       The rule is unambiguous against all currently-valid CX because no
+#       pre-v3.6 valid CX uses bare commas inside brackets at the body-item
+#       level (commas in body text are part of UnquotedText / QuotedText
+#       characters, never standalone separators).
+#   - Capability bit 29 (`0x20000000`, per spec/abi.md) signals the new
+#     productions. Parsers without the bit reject the new forms.
+#   - `:type[]` element-prefix annotation ([26b]) is deprecated by ADR 0017
+#     §D19. It remains syntactically valid and parses to an ArrayLiteral
+#     body item per spec/conversions.md §0.2 desugaring rule. Removed at
+#     v0.7.0+ pending adopter usage signal.
+#   - All productions are additive over v3.5; no pre-v3.6 valid document
+#     changes meaning under the new grammar.
+#
+# Version 3.6 changes (additive over 3.5):
+#   - Collection literals per ADR 0017 §D1: SequenceLiteral [56a],
+#     ArrayLiteral [56b], MapLiteral [56c]. One-token-lookahead
+#     disambiguation rule for `[...]` (comma-before-equals → array,
+#     equals-before-comma → element). See [56b] and ADR 0017 §D1.
+#   - CXL 1.0 directive shape rewrite per ADR 0017 §D7: every
+#     EvalDirective uses `[?Name ArgArray]` where ArgArray is an
+#     Array literal (positional slots). The pre-D7 `:then=[BODY]` /
+#     `:else=[BODY]` attribute-form slots are dropped.
+#   - Labeled directive form per ADR 0017 §D23–D25 (added 2026-05-12):
+#     LabeledArgList [59a] admits `:label expr` slots as a parser-
+#     level alias for the [59] positional ArgArray. Slot labels are
+#     `:[a-z][a-z0-9-]*` identifiers. Labeled form desugars to
+#     positional AST at parse time. Per-directive label tables in
+#     spec/cxl.md §3.0.1.
+#   - Parameterized ?def per ADR 0020: EvalDirective [59] for the
+#     `?def` directive admits an optional `:params` slot whose
+#     value is an Array of bare identifiers. Signaled by capability
+#     bit 30.
+#
+# Version 3.5 changes (additive over 3.4, no breaks):
+#   - AttValue [55a] accepts a third form, BracketBody [55c] — bracketed
+#     attribute values whose content is itself a CX body. Required by the
+#     CX Language (CXL) per ADR 0016 for evaluation-directive forms.
+#     (Note: the pre-D7 `:then=[BODY]` / `:else=[BODY]` attribute-form
+#     usage was superseded by ADR 0017 §D7 positional arrays — see
+#     v3.6 above. BracketBody itself is retained for general attribute
+#     scenarios.) No existing CX document is affected — pre-v3.5
+#     AttValue never started with `[` (the character was excluded from
+#     BareValue per [12a]).
+#   - Interpolation [58] is a new opaque-body syntactic form `[?=EXPR]`
+#     where EXPR is captured as a string for evaluation by the CXL
+#     evaluator (per spec/cxpath.md / spec/cxl.md). The CX parser
+#     preserves the captured text; pure-data documents round-trip the
+#     form unchanged. The `?=` sigil extends the `?`-prefixed directive
+#     family that already covers [?xml ...], [?cx ...], and [?php ...].
+#   - EvalDirective [59] formalizes the `[?Name ...]` shape for CXL
+#     evaluation directives (`[?if]`, `[?for]`, `[?with]`, `[?include]`,
+#     `[?def]`, `[?use]`, plus v0.9.0+ additions). (`?cond` was dropped
+#     at ADR 0017 §D7, folded into multi-branch `?if` — see v3.6
+#     above.) This production lives alongside the existing CXDirective
+#     `[?cx ...]` and PI `[?target data]` productions; the parser
+#     dispatches on Name to decide which production applies.
+#   - All three additions are required at v0.6.0 to keep the post-v0.6.0
+#     CXL work additive (no breaking parser changes after the
+#     format-stability lock). The CXL evaluator itself ships at v0.6.0
+#     (pulled forward from v0.7.0 in the 2026-05-10 amendment to
+#     ADR 0016).
+#
+# Version 3.4 changes (additive over 3.3, except where noted):
+#   - :table block (tabular data with declared column types) — see [29].
+#   - :decimal, :f16, :f32, :i8/:i16/:i32/:i64, :u8/:u16/:u32/:u64, :bigint
+#     type names — see [26a].
+#   - Numeric literal underscores: 1_000_000 is equivalent to 1000000 — see [20c].
+#   - Boolean attribute sigils: +name = name=true, -name = name=false — see [55b].
+#   - Line comments: # to end-of-line outside body context — see [30b].
+#   - Logfmt mode: Document may consist of top-level Attributes only — see [2].
+#   - BREAKING: integer literals with a leading zero (other than '0' itself or
+#     '0x...') are no longer auto-typed; they parse as Text. Source '02134'
+#     parses as the string "02134" instead of the integer 2134.
+#     This addresses an auto-typing footgun for ZIP codes and similar
+#     identifiers. See [25] auto-typing rules.
+#   - REMOVED: [?cx schema=] directive reference removed from CXDirective
+#     examples — schema language is not yet implemented.
+#   - Namespaces (ADR 0002): xmlns / xmlns:foo declarations and prefixed
+#     QNames are now first-class. Resolution at parse time. See [7], [7a-d]
+#     and spec/namespaces.md.
 #
 # This grammar uses PascalCase for all named productions without exception.
 # Lexical terminals are quoted strings or character classes.
@@ -32,16 +133,39 @@
         Each Document is parsed independently with its own scope.
         Parsers return a stream or array of Document nodes. */
 
-[2]  Document    ::= Prolog? DoctypeDecl? Node*
-     /* Multiple top-level Nodes allowed (multi-root). */
+[2]  Document    ::= Prolog? DoctypeDecl? ( Node* | Attribute+ )
+     /* Multiple top-level Nodes allowed (multi-root).
+        v3.4: A Document may consist of one or more top-level Attributes
+        instead of Nodes — this is "logfmt mode" and is intended for
+        observability use cases (log lines, structured events). The
+        document parses as a single anonymous element whose attributes
+        are the top-level attributes; no element wrapper is required.
+
+        Examples (logfmt mode):
+          time=2026-05-06T12:00:00Z level=INFO svc=web req=GET path=/foo
+
+        Parser disambiguation: if the first non-whitespace token after
+        Prolog/Doctype is `Name '='`, the document is in logfmt mode and
+        the entire document is one or more Attributes. Otherwise it is
+        in node mode (one or more Nodes). The two modes are not mixed in
+        the same document. */
 
 [3]  Node        ::= Element | Scalar | AliasElement | CXDirective
-                   | BodyText | Reference | RawText | BlockContent | PI | Comment
+                   | BodyText | Reference | RawText | BlockContent | PI | Comment | LineComment
+                   | Interpolation | EvalDirective
+                   | CollectionLiteral
                    | EntityDecl | ElementDecl | AttlistDecl
                    | NotationDecl | ConditionalSect
      /* BodyText and Reference added so that loose text and entity refs are
         valid at the document level, not only inside element bodies.
-        This aligns Node with BodyItem [53] for consistent multi-root docs. */
+        This aligns Node with BodyItem [53] for consistent multi-root docs.
+        v3.4: LineComment [30b] is also valid at document level.
+        v0.6.0 (v3.5): Interpolation [58] and EvalDirective [59] are valid
+        wherever a Node may appear; CXL evaluators interpret them, pure-
+        data parsers preserve them.
+        v0.6.0 (v3.6): CollectionLiteral [56] is valid in Node position.
+        A top-level array, map, or sequence literal parses as a single
+        Node containing the collection value. */
 
 # ─── Characters and Whitespace ────────────────────────────────────────────────
 
@@ -61,6 +185,22 @@
 [6a] NameChar    ::= NameStartChar | "-" | "." | [0-9] | #xB7
                    | [#x0300-#x036F] | [#x203F-#x2040]
 [7]  Name        ::= NameStartChar NameChar*
+     /* Names may contain ':' as a NameChar. A name with a ':'
+        is a QName (see [7a]) carrying a namespace prefix; a
+        name without ':' is its own local name. The first ':'
+        delimits prefix from local part; trailing colons are
+        part of the local name. Resolution rules: spec/namespaces.md. */
+[7a] QName       ::= (Prefix ':')? LocalName
+[7b] Prefix      ::= NameStartChar NameChar*  /* excluding ':' */
+[7c] LocalName   ::= NameStartChar NameChar*  /* may contain ':' */
+     /* Reserved prefixes (cannot be redeclared): 'xml' (XML built-in),
+        'cx' (CX metadata), 'xmlns' (declaration syntax only). */
+[7d] NsDecl      ::= 'xmlns' ('=' AttValue
+                            | ':' Prefix '=' AttValue)
+     /* xmlns="URI" declares the default namespace; xmlns:foo="URI"
+        binds 'foo' to URI. Both are scoped to the declaring element
+        and its descendants until redeclared. xmlns="" undeclares.
+        See spec/namespaces.md §1, §2. */
 [8]  Nmtoken     ::= NameChar+
 
 # ─── Literals ────────────────────────────────────────────────────────────────
@@ -108,12 +248,30 @@
 [20] Number      ::= '-'? ( HexInt | Float | Integer )
      /* Lexer rule: '-' immediately followed by a digit is part of the Number
         token. '-' followed by a non-digit is a NameChar (text/name character). */
-[20a] HexInt     ::= '0x' HexDigit+
-      /* Stored as int in AST. Checked before Integer to avoid prefix match. */
-[20b] Float      ::= Integer '.' [0-9]+ ( [eE] [+-]? Integer )?
+[20a] HexInt     ::= '0x' HexDigit ('_'? HexDigit)*
+      /* Stored as int in AST. Checked before Integer to avoid prefix match.
+         v3.4: underscores between hex digits permitted as a readability aid
+         (0xDEAD_BEEF). Stripped before evaluation. */
+[20b] Float      ::= Integer '.' [0-9] ('_'? [0-9])* ( [eE] [+-]? Integer )?
                    | Integer [eE] [+-]? Integer
-      /* Requires a decimal point or exponent — plain digits are Integer, not Float. */
-[20c] Integer    ::= [0-9]+
+      /* Requires a decimal point or exponent — plain digits are Integer, not Float.
+         v3.4: underscores permitted between digits in the fractional part
+         (e.g., 1.234_567) and in the exponent. Stripped before evaluation. */
+[20c] Integer    ::= '0' | NonZeroLeadingInteger
+[20d] NonZeroLeadingInteger ::= [1-9] ('_'? [0-9])*
+      /* v3.4 BREAKING: integer literals MUST NOT have a leading zero (except
+         for the literal '0' itself, or hex literals '0x...'). Source '02134'
+         is NOT a valid Integer; the token falls through to Text auto-type.
+         This addresses an auto-typing footgun for identifiers like ZIP codes.
+         v3.3 silently parsed '02134' as integer 2134.
+         v3.4: underscores between digits are readability aids and are
+         stripped before evaluation. They cannot appear at the start, end,
+         or doubled (rejected by the parser). Examples:
+           1_000_000          → 1000000 (valid)
+           1_0_0_0            → 1000    (valid but ugly; allowed)
+           _1000              → invalid (leading underscore)
+           1000_              → invalid (trailing underscore)
+           1__000             → invalid (doubled underscore) */
 
 [21] BoolLiteral     ::= 'true' | 'false'
 [22] NullLiteral     ::= 'null'
@@ -132,6 +290,11 @@
         no child elements. Priority for that single token:
           1. Matches HexInt pattern              → int
           2. Matches Integer pattern             → int
+                                                   (v3.4: tokens with a
+                                                    leading zero other than
+                                                    '0' itself fall through
+                                                    to Text — they are NOT
+                                                    Integer per [20c].)
           3. Matches Float pattern               → float
           4. 'true' or 'false'                   → bool
           5. 'null'                              → null
@@ -145,7 +308,15 @@
 
         Attribute auto-type [55a]: BareValue attribute values are auto-typed
         using the scalar priority above. Array auto-type does not apply
-        to attribute values. */
+        to attribute values.
+
+        v3.4 BREAKING change: leading-zero tokens like '02134' that v3.3
+        parsed as integer 2134 are now Text. This matters for ZIP codes,
+        product SKUs, account numbers, and similar identifier-like data
+        where the leading zero is significant. Sources relying on the v3.3
+        behavior: either explicitly quote the value ('02134') or rely on
+        the new Text auto-typing. See spec/policies.md §1.7 for the policy
+        rationale; see MIGRATION.md for migration notes. */
 
 [25a] AutoArray  ::= (informative)
       /* Fires when: element body has 2+ whitespace-separated unquoted tokens,
@@ -175,12 +346,27 @@
                     :[] is the minimal annotation to signal a string array. */
 [26a] TypeName   ::= 'int' | 'float' | 'bool' | 'string' | 'null'
                    | 'date' | 'datetime' | 'bytes'
+                   | 'decimal' | 'bigint'
+                   | 'i8' | 'i16' | 'i32' | 'i64'
+                   | 'u8' | 'u16' | 'u32' | 'u64'
+                   | 'f16' | 'f32' | 'f64'
                    | 'i' | 'f' | 'b' | 's' | 'd' | 'dt'
       /* Short aliases: i=int  f=float  b=bool  s=string  d=date  dt=datetime.
-         null and bytes have no short alias — use long forms only.
+         null, bytes, decimal, bigint, and the sized numerics have no short
+         alias — use the long form only.
          Long forms are canonical: emitters MUST produce long forms;
          parsers MUST accept both long and short in all TypeAnnotation contexts.
-         Short and long forms are fully equivalent; no semantic difference. */
+         Short and long forms are fully equivalent; no semantic difference.
+         v3.4 additions:
+           - decimal: arbitrary-precision decimal (financial / scientific data)
+           - bigint:  arbitrary-precision integer (auto-promoted from int when
+                      a literal exceeds i64 range)
+           - i8..i64: sized signed integers (default :int means :i64)
+           - u8..u64: sized unsigned integers
+           - f16/f32/f64: sized floats (default :float means :f64). f16 is
+                      half-precision IEEE 754 binary16, opt-in via explicit
+                      :f16 annotation.
+         See spec/type_mapping.md for host-language target types per binding. */
 
 # ─── Scalar (Extended) ───────────────────────────────────────────────────────
 
@@ -216,12 +402,81 @@
       /* Same item set as element Body [52]/BodyItem [53], but parsed with
          newline-preservation mode active rather than whitespace normalization. */
 
+# ─── Tabular Block (Extended; v3.4) ───────────────────────────────────────────
+
+[29]  TableBlock ::= ':table' '[' TableHeader ']' S TableRows
+      /* Extended. Tabular data with declared column types. Appears in
+         ElementMeta position [301] in place of TypeAnnotation [26].
+         Header declares column names and types once; rows are
+         positional values, parsed per the declared column type.
+         The element name ([50] Element's Name) is the table's name.
+
+         Example:
+           [users :table[name:string age:int active:bool]
+             alice 30 true
+             bob 25 false
+           ]
+
+         Header form:
+           :table[c1 c2 c3 ...]            — untyped columns (all string)
+           :table[c1:T1 c2:T2 c3:T3 ...]   — explicitly typed columns
+           :table[c1 c2:T2 c3]             — mixed; untyped columns are string
+
+         Each row is a whitespace-separated sequence of token values, one
+         per column, in column-declaration order. Quoted values per [10].
+
+         Round-trips losslessly to all output formats:
+           CSV:  one row per column-row pair, header row first.
+           XML:  <users><row><name>alice</name>...</row>...</users>
+                 with cx:table-shape="rows" attribute on the parent.
+           JSON: array of objects, keys per column declaration.
+           AST:  Element with cx:table = "true" + cx:cols metadata.
+
+         See spec/table_api.md for binding-side Table type. */
+[29a] TableHeader ::= TableColumn (S TableColumn)*
+[29b] TableColumn ::= Name (':' TypeName)?
+       /* Untyped columns default to :string. */
+[29c] TableRows  ::= TableRow ( S TableRow )*
+[29d] TableRow   ::= TableCell (S TableCell)*
+[29e] TableCell  ::= QuotedText | TripleQuoted | BareValue | NullLiteral
+       /* The value parser uses the column's declared type to interpret each
+          cell. For bare cells, type-driven parsing applies (an :int column
+          parses cells as integers, an :date column as dates, etc.). For
+          quoted cells, the value is always a string regardless of column type
+          (the quote is the user's escape hatch).
+          Cells must equal column count exactly; mismatch is an error.
+          Empty cells in the wire form are not allowed; null is encoded as
+          the literal 'null' (which auto-types to NullLiteral) in untyped
+          columns or per the column's null-handling rules. */
+
 # ─── Comments ─────────────────────────────────────────────────────────────────
 
 [30] Comment     ::= '[-' CommentContent ']'
      /* [-comment text]  →  <!-- comment text -->
         Value stored in AST excludes the [- and ] delimiters. */
 [30a] CommentContent ::= Char* - (Char* ']' Char*)
+
+[30b] LineComment ::= '#' [^#xA]* (#xA | EOF)
+      /* v3.4 Extended. Line comment from '#' to end-of-line.
+         Value stored in AST excludes the leading '#' and the terminating
+         newline. Equivalent to Comment [30] for AST purposes; round-trip
+         lossless emitters preserve the line-comment form when the source
+         used it. Strict canonical emitters [spec/canonical.md] strip
+         comments entirely.
+
+         Position rules: '#' starts a line comment ONLY when:
+           - At input start, or preceded by whitespace or ']' or '\n'.
+           - NOT inside a quoted string ('...', '''...''', or [#...#]).
+           - NOT inside a BareValue token (per [12a] BareChar, which
+             includes '#').
+
+         The token boundary is unchanged: whitespace separates BareValue
+         from a following '#' line comment. Inside a BareValue (e.g.,
+         'tag#anchor' as URL fragment), '#' is literal.
+
+         Cross-format mapping:
+           XML:   serialized as <!-- comment text -->
+           Pretty CX: preserved as line comments where source had them. */
 
 # ─── Raw Text (CDSect) ────────────────────────────────────────────────────────
 
@@ -268,8 +523,10 @@
         Stored as CXDirective node in Parse AST; expanded in Resolved AST.
         Serializes to <?cx ...?> in XML output.
         [?cx include=file.cx]    — include another CX file inline
-        [?cx schema=file.cxs]    — declare schema for this document
-        [?cx version=3.1]        — declare CX version */
+        [?cx version=3.4]        — declare CX language version
+        v3.4 NOTE: the [?cx schema=...] directive previously reserved here is
+        not yet implemented (no .cxs schema language exists). Removed from
+        examples until the schema language ships. */
 [34a] CXAttr     ::= Name Eq BareValue
 
 # ─── Prolog ───────────────────────────────────────────────────────────────────
@@ -296,24 +553,42 @@
 # ─── Elements ─────────────────────────────────────────────────────────────────
 
 [50] Element     ::= '[' Name ( S ElementMeta )* S? Body? ']'
+                   | '[' Name S? TableBlock ']'
+      /* The TableBlock alternative is the v3.4 tabular form. The element's
+         body is the rows of the table; no other ElementMeta or Body items
+         apply. See [29] TableBlock. */
 
-[51] ElementMeta ::= AnchorDef | MergeRef | TypeAnnotation | Attribute
+[51] ElementMeta ::= AnchorDef | MergeRef | TypeAnnotation | Attribute | BoolSigilAttr
      /* TypeAnnotation appears at most once. Ordering is NORMATIVE:
-          AnchorDef? MergeRef? TypeAnnotation? Attribute*
+          AnchorDef? MergeRef? TypeAnnotation? (Attribute | BoolSigilAttr)*
         Parsers MUST accept any order for compatibility, but emitters MUST
         produce this canonical order. This ensures round-trip stability and
-        consistent output across all language implementations. */
+        consistent output across all language implementations.
+        v3.4: BoolSigilAttr [55b] is an alternative form for boolean
+        attributes that is more compact. AST-equivalent to Attribute with
+        the same name and bool value. */
 
 [52] Body        ::= BodyItem+
 [53] BodyItem    ::= BodyText | Element | AliasElement | Scalar | BlockContent
-                   | Reference | RawText | PI | CXDirective | Comment | MarkupDecl
+                   | Reference | RawText | PI | CXDirective | Comment | LineComment
+                   | Interpolation | EvalDirective
+                   | CollectionLiteral
+                   | MarkupDecl
+      /* v3.4: LineComment [30b] added to the body item set for parsers
+         that support inline line comments anywhere a Comment may appear.
+         v0.6.0 (v3.5): Interpolation [58] and EvalDirective [59] permitted
+         in body position for CXL (ADR 0016); inert in pure-data documents.
+         v0.6.0 (v3.6): CollectionLiteral [56] permitted in body position
+         per ADR 0017. Disambiguation from Element [50] follows the one-
+         token-lookahead rule in the v3.6 header — first separator `=` →
+         Element, first separator `,` → ArrayLiteral. */
 [54] BodyText    ::= QuotedText | TripleQuoted | UnquotedText
 [54a] UnquotedText ::= ( NameChar | BareChar )+
       /* Unquoted body token. Auto-typed per rule [25] when element qualifies.
          Otherwise stored as Text node with whitespace normalization. */
 
 [55] Attribute   ::= Name Eq AttValue
-[55a] AttValue   ::= BareValue | QuotedText
+[55a] AttValue   ::= BareValue | QuotedText | BracketBody | CollectionLiteral
       /* BareValue attribute values are auto-typed using the same scalar
          priority as rule [25] (HexInt → int, Integer → int, Float → float,
          true/false → bool, null → null, datetime, date; else string).
@@ -321,7 +596,257 @@
          when a numeric-looking value must be stored as string.
          Array auto-type [25a] does not apply to attribute values.
          The inferred dataType is recorded in the AST Attribute node when
-         non-string; string is the default and is omitted from the AST. */
+         non-string; string is the default and is omitted from the AST.
+
+         v0.6.0 (v3.5): BracketBody [55c] is a third AttValue form whose
+         value is a sequence of body items (a parsed CX subtree, not a
+         scalar). It exists to support CXL (the CX Language per ADR 0016)
+         for general element-attribute bodies. (The pre-D7 use of
+         BracketBody for CXL evaluation-directive named slots like
+         `:then=[BODY]` was superseded by ADR 0017 §D7 positional
+         ArgArray + §D23 LabeledArgList — see [59]. BracketBody itself
+         remains valid for element-attribute scenarios outside CXL.)
+         Existing CX documents are unaffected — no pre-v3.5 AttValue
+         starts with `[` (the character was excluded from BareValue
+         per [12a]). The grammar change is additive. AST representation: an
+         attribute whose source value is a BracketBody is stored with the
+         body items as the attribute's value sequence; emitters preserve the
+         bracketed form on round-trip. Auto-typing rules [25] / [55a] do not
+         apply to BracketBody attribute values. */
+
+[55c] BracketBody ::= '[' BodyItem* ']'
+      /* Bracketed AttValue. Content uses the same BodyItem [53] production
+         as element body — Elements, Text, Scalars, sub-BracketBody, etc.,
+         all permitted; brackets must balance. The BracketBody is a single
+         AttValue token; it MUST appear in attribute-value position
+         immediately after `=` (no whitespace permitted between `=` and `[`
+         for unambiguous lexing). Conformance examples in
+         `spec/cxl.md §3` (CXL evaluation-directive forms). */
+
+[55b] BoolSigilAttr ::= ( '+' | '-' ) Name
+      /* v3.4 Extended. Compact form for boolean attributes:
+           +name    →  AST Attribute(name, value=true,  type=bool)
+           -name    →  AST Attribute(name, value=false, type=bool)
+
+         Examples:
+           [user +admin -disabled]  ≡  [user admin=true disabled=false]
+           [build +release -debug]  ≡  [build release=true debug=false]
+
+         Position: ElementMeta only [51]. Not valid in body, document
+         top level, or attribute value position.
+
+         Disambiguation:
+           The grammar lexer recognizes BoolSigilAttr only at ElementMeta
+           position with no whitespace between sigil and Name. In body
+           position, a leading '-' followed by digits is a negative number
+           [20]; a leading '-' or '+' followed by NameChar is a NameChar
+           start. This means:
+             [user -active]         → BoolSigilAttr (active=false)
+             [user 'don' -t worry]  → body text (the '-' is a NameChar)
+
+         Round-trip: lossless emitters preserve sigil form when source
+         used it. Strict canonical emitters always emit explicit
+         Attribute form (name=true / name=false) for stability. */
+
+# ─── Collection literals (Extended; v0.6.0 per ADR 0017) ────────────────────
+#
+# Three new container-Item source-text forms per ADR 0017 §D1. The CXDM v1.1
+# runtime data model (spec/cxdm.md §2.4–§2.6) defines the value semantics;
+# this section defines the source-text productions. Disambiguation from
+# Element [50] is the one-token-lookahead rule documented in the v3.6 header.
+
+[56]  CollectionLiteral
+              ::= SequenceLiteral | ArrayLiteral | MapLiteral
+     /* Any of three primitive collection forms. All three accept any
+        BodyItem as a contained item (including nested CollectionLiteral
+        for ArrayLiteral and MapLiteral; SequenceLiteral flattens nested
+        sequences per CXDM §1.2 sequence-flat principle).
+        Trailing commas accepted per ADR 0017 §D5 / D17 Q7 — canonical
+        emit omits them per [spec/canonical.md §D14]. */
+
+[56a] SequenceLiteral
+              ::= '(' S? ItemList? S? ')'
+     /* Flat sequence per CXDM §1 sequence-flat. Source-text `((a,b), c)`
+        parses as a 4-item sequence value `(a, b, c)` after flatten. Parens
+        are currently unused at the CX structural level — no ambiguity
+        with element syntax. Empty `()` parses as the empty Sequence. */
+
+[56b] ArrayLiteral
+              ::= '[' S? ItemList? S? ']'
+     /* Nested-preserving array per ADR 0017 §D3. Distinguished from
+        Element [50] by the one-token-lookahead rule:
+          - first separator after `[` is `,` (before any `=` or `]`)
+            → ArrayLiteral
+          - first separator is `=` → Element with attribute
+          - first separator is `]` (no `,` or `=` encountered)
+            → Element with name only (today's form) UNLESS the bracket
+              is empty (`[]`), which is the empty-array literal in
+              expression / attribute position.
+        Empty `[]` is a parse error in Element position per the existing
+        rule (Name required); in BodyItem / AttValue / Node position it
+        is the empty Array. */
+
+[56c] MapLiteral
+              ::= '{' S? MapEntryList? S? '}'
+     /* Map-of-pairs per ADR 0017 §D4. Braces are currently unused at the
+        CX structural level — no ambiguity. Keys must be unique; duplicate
+        keys are warning W014 (parse error). Empty `{}` parses as the
+        empty Map. */
+
+[56d] ItemList
+              ::= BodyItem ( S? ',' S? BodyItem )* ( S? ',' )?
+     /* Comma-separated body items, trailing comma optional. The
+        BodyItem [53] set is the full body-item production including
+        nested CollectionLiteral. */
+
+[56e] MapEntryList
+              ::= MapEntry ( S? ',' S? MapEntry )* ( S? ',' )?
+
+[56f] MapEntry
+              ::= MapKey S? ':' S? BodyItem
+     /* `key: value` pair. The `:` separator is unambiguous because it
+        cannot appear at the same lexical position in any other production
+        within `{ ... }` scope. */
+
+[56g] MapKey  ::= Name | QuotedText | Scalar
+     /* Atomic-scalar keys per ADR 0017 §D4 + Q5. Bare Name parses as a
+        string key identical to the quoted form. Scalar covers int, float,
+        bool, date, datetime, bytes literals. `null` is NOT a valid map
+        key (per spec/cxdm.md §2.5); a `null` key produces W014. */
+
+# ─── CXL evaluation forms (Extended; reserved at v0.6.0; evaluator v0.6.0+) ──
+#
+# CXL (the CX Language) is the post-v0.6.0 expression family per ADR 0016:
+# one syntax, one parser, one data model spanning data (.cx), schemas
+# (.cxs), shapes (.cxsh), and CXL programs (.cxl) used for templating,
+# querying, and transformation. CXL evaluation forms extend the existing
+# `?`-prefixed directive family (XMLDecl, CXDirective, PI).
+
+[58] Interpolation ::= '[?=' S? InterpolationBody S? ']'
+     /* Extended. Value-interpolation form. The body is captured as
+        opaque text by the CX parser and parsed as a CXPath expression
+        (per spec/cxpath.md) by the CXL evaluator at evaluation time,
+        not at parse time.
+
+        Why opaque-body: CXPath expressions contain `[` and `]` (e.g.,
+        predicates `//service[@port=8080]`) which would otherwise be
+        parsed by the CX parser as nested elements. The Interpolation
+        production captures everything between `[?=` and the matching
+        `]` as a string, with internal `[` and `]` required to balance.
+
+        v0.6.0 parsers MUST recognize the production and produce an
+        Interpolation AST node carrying the captured expression text.
+        **v0.6.0 ships both the parser and the CXL 1.0 evaluator**
+        (pulled forward from v0.7.0 in the 2026-05-10 amendment to
+        ADR 0016 when CXL became the sole output-shape mechanism).
+        The CXL evaluator parses the captured text as CXPath.
+
+        Outside CXL evaluation contexts, Interpolation nodes have no
+        special meaning and round-trip as literal `[?=...]` text.
+
+        Examples:
+          [?=@name]                          interpolate context's @name
+          [?=//service[@port=8080]/@host]    nested brackets balance
+          [?=v/@sku]                         dotted path
+*/
+
+[58a] InterpolationBody ::= ( '[' InterpolationBody ']' | InterpolationChar )*
+[58b] InterpolationChar ::= Char - ('[' | ']')
+     /* Any character except `[` or `]`. Bracket balance is enforced by
+        the recursive InterpolationBody production. Quoting via `'...'`
+        is permitted (single quotes inside have no special meaning to
+        the CX parser; the CXPath evaluator parses them per its own
+        rules at evaluation time). */
+
+[59] EvalDirective ::= '[?' EvalName ( S ArgArray | S LabeledForm )? S? ']'
+     /* Extended. CXL evaluation directive — `?`-prefixed form per
+        ADR 0017 §D7 (positional array) and §D23 (labeled alias).
+        Reserved at v0.6.0; evaluator ships at v0.6.0 (pulled forward
+        from v0.7.0 by the 2026-05-10 amendment to ADR 0016).
+
+        Two surface forms admitted:
+
+        - **Positional (ADR 0017 §D7, canonical AST shape):**
+            [?Name [arg1, arg2, arg3, ...]]
+          where ArgArray is an Array literal [56b] whose items are the
+          positional slots. Slot interpretation per spec/cxl.md §3.
+
+        - **Labeled (ADR 0017 §D23, parser-level alias):**
+            [?Name bare-head* :slot1 a :slot2 b ...]
+          where LabeledForm [59b] is zero or more bare leading items
+          (the directive's documented bare-head shape, per
+          spec/cxl.md §3.0.1) followed by zero or more `:label expr`
+          slots. **No inner Array bracket** in labeled form. The
+          parser desugars to the same AST as the positional form by
+          mapping bare-head items to their positional slot indices
+          and labeled slots to the directive's documented label
+          positions. Slot-label vocabulary per spec/cxl.md §3.0.1;
+          W016 (mixed forms), W017 (missing required body label),
+          W020 (malformed identifier), W021 (unknown label).
+
+        A directive uses EITHER positional OR labeled form, never
+        both. Mixing in the same EvalDirective — `[?dir [a, b] :label c]`
+        (inner array + labels) or `[?dir a, b]` (bare commas without
+        inner array) — is a parse error W016.
+
+        **Bracket-leading bare-heads.** When a labeled-form bare-head
+        starts with `[`, the parser applies §D1's one-token lookahead:
+        `,` before `]` inside the inner `[` → positional ArgArray;
+        `]` before `,` → bare-head Element per existing `[name body]`
+        rules. To force an array-typed bare-head in labeled form, use
+        the trailing-comma form `[a,]` per D5; or use positional form.
+
+        EvalName is any Name that is not currently recognized as XMLDecl
+        ('xml'), CXDirective ('cx'), or a PI target. The v0.6.0 reserved
+        EvalNames are: 'if', 'for', 'with', 'include', 'def', 'use'
+        (`?cond` was dropped at ADR 0017 §D7, folded into multi-branch
+        `?if`). v0.9.0+ adds 'let', 'fn', 'match', 'try' per the CXL
+        3.1 roadmap.
+
+        `?def` with ADR 0020 capability bit 30 set admits an optional
+        `:params` labeled slot whose value is an Array of bare
+        identifiers. Bindings advertising bit 29 (collection literals)
+        without bit 30 (parameters) reject `:params` syntactically
+        (W021).
+
+        Disambiguation from PI [27]: the parser recognizes EvalNames as
+        EvalDirective; all other targets (`php`, `xslt-stylesheet`,
+        application-specific PIs) fall through to PI with raw data. The
+        v0.6.0 grammar lock fixes the EvalName set; future minor
+        versions may add names but cannot remove or repurpose them.
+
+        Outside CXL evaluation contexts, EvalDirective nodes round-trip
+        as ordinary data. Pure-data tools (cx fmt, cx diff, cx hash)
+        treat them as `?`-prefixed CXDirective-family nodes. */
+
+[59a] EvalName ::= 'if' | 'for' | 'with' | 'include' | 'def' | 'use'
+                 | 'let' | 'fn' | 'match' | 'try'
+     /* `?cond` was in v3.5 but dropped at v3.6 per ADR 0017 §D7
+        (folded into multi-branch `?if`). 'let' / 'fn' / 'match' /
+        'try' are reserved for CXL 3.1 / v0.9.0+. */
+
+[59b] LabeledForm    ::= BodyItem* ( S LabeledSlot )*
+     /* ADR 0017 §D23. The labeled alternative to ArgArray. Zero or
+        more bare leading BodyItems (the directive's documented
+        bare-head shape per spec/cxl.md §3.0.1) followed by zero or
+        more `:label expr` slots. At least one of the two parts must
+        be non-empty (an entirely empty body is the no-args form
+        already covered by the optional ArgArray | LabeledForm at
+        [59]). Slot order is unrestricted at the grammar level;
+        each directive's spec/cxl.md §3.x section defines the valid
+        label set and required-vs-optional rules. */
+
+[59c] LabeledSlot ::= SlotLabel S? BodyItem
+     /* One label-value pair. BodyItem covers expressions,
+        elements, scalars, arrays, sequences, maps, and nested
+        directives — anything that can appear as a directive
+        argument in positional form. */
+
+[59d] SlotLabel ::= ':' [a-z] [a-z0-9'-']*
+     /* ADR 0017 §D25. Lowercase identifier with optional hyphens.
+        Kebab-case admitted for FLWOR compound clauses (`:order-by`,
+        `:group-by`). Underscores and camelCase are parse errors
+        (W020) to keep label spelling canonical. */
 
 # ─── Anchors and Aliases (Extended) ──────────────────────────────────────────
 
@@ -426,12 +951,18 @@
 # ALIAS_OPEN     [*                                   AliasElement start [62]
 # TYPE_ANN       : TypeName ( '[]' )?                 TypeAnnotation [26]; Extended
 # TYPE_ANN_ARR   :[]                                  Inferred-type array [26]; Extended
+# TABLE_OPEN     :table[                              TableBlock [29]; Extended (v3.4)
+# BOOL_SIGIL     ('+' | '-') Name                     BoolSigilAttr [55b]; Extended (v3.4)
+# LINE_COMMENT   #                                    LineComment [30b]; Extended (v3.4)
 #
 # QUOTED         ' QuotedContent '                    QuotedText [10]
 # TRIPLE_QUOT    ''' TripleContent '''                 TripleQuoted [10b]; Extended
 # BARE           BareChar+                            BareValue [12]
 # NAME           NameStartChar NameChar*              Element/attr names, targets
 # NUMBER         -? (HexInt | Float | Integer)        Numeric literal [20]
+#                                                     v3.4: underscores between
+#                                                     digits permitted; leading
+#                                                     zero in Integer rejected
 # BOOL           true | false                         BoolLiteral [21]
 # NULL_LIT       null                                 NullLiteral [22]
 # DATE           [0-9]{4}-[0-9]{2}-[0-9]{2}          DateLiteral [23]
@@ -457,6 +988,17 @@
 # MERGE vs unquoted body text starting with *: MERGE requires Name immediately
 # after * with no whitespace, inside ElementMeta position only.
 # TRIPLE_QUOT vs QUOTED: lexer checks for ''' before ' — three-char lookahead.
+#
+# v3.4 disambiguation:
+# BOOL_SIGIL vs NUMBER: '+' or '-' followed immediately by NameStartChar (no
+#   whitespace) is BOOL_SIGIL — but only at ElementMeta position. In body
+#   position, '+' or '-' followed by digit is NUMBER (negative or positive
+#   prefix); '+' or '-' followed by NameChar is part of a NameChar token.
+# LINE_COMMENT vs '#' in BareValue: LINE_COMMENT requires '#' to be preceded
+#   by whitespace, ']', or input start. Inside a BareValue token, '#' is
+#   literal (per [12a] BareChar).
+# TABLE_OPEN: lexer recognizes ':table[' as a single TABLE_OPEN token at
+#   ElementMeta position; outside that position, ':' starts a TYPE_ANN.
 
 # ─── Notes ────────────────────────────────────────────────────────────────────
 
@@ -493,3 +1035,12 @@
 # DTD schema declarations (ElementDecl, AttlistDecl, NotationDecl,
 # ConditionalSect) are CX Extended. EntityDecl is CX Core.
 # See Conventions section for the rationale.
+#
+# v3.4 Extended additions:
+#   TableBlock (:table) [29], BoolSigilAttr (+/-name) [55b],
+#   LineComment (# to EOL) [30b], logfmt mode (top-level Attribute+ in [2]),
+#   numeric underscores in [20a]/[20b]/[20c], new TypeName values
+#   (decimal, bigint, sized i8..i64, sized u8..u64, sized f16/f32/f64).
+# v3.4 BREAKING:
+#   Integer [20c] no longer accepts leading zeros (other than '0' itself).
+#   Source '02134' is now Text "02134", not int 2134.

@@ -111,6 +111,20 @@ syn region cxCodeCX matchgroup=cxCodeFence
   \ contains=cxEmbedCX,cxAttribute
 syn region cxEmbedCX start=/\[|/ end=/|\]/ contained contains=TOP
 
+" ── Prose element regions ─────────────────────────────────────────────────────
+" Known MD/markup elements highlighted with cxProseTag (distinct from cxTag).
+" Must be defined before cxElement so Vim gives it higher priority on match.
+syn region cxProseElement matchgroup=cxProseTag
+  \ start=/\[\(p\|ul\|ol\|li\|table\|hr\|br\|a\|img\|doc\|article\|strong\|b\|em\|i\|del\|s\|u\|sub\|sup\|c\)\ze\([\s\]]\)/ end=/\]/
+  \ transparent
+  \ contains=cxComment,@cxHeadings,cxRawText,cxBlockContent,cxTripleQuoted,
+  \   cxCodeJSON,cxCodeXML,cxCodeCSS,cxCodeHTML,cxCodeJS,cxCodePython,
+  \   cxCodeBash,cxCodeSQL,cxCodeYAML,cxCodeCX,cxCodeBlock,
+  \   cxBold,cxItalic,cxStrike,cxSubscript,cxSuperscript,cxUnderline,
+  \   cxInlineCode,cxBlockquote,cxPI,cxAlias,cxProseElement,cxElement,
+  \   cxAttribute,cxTypeAnnotation,cxFloat,cxInteger,cxBoolean,cxNull,
+  \   cxString,cxEntityRef
+
 " ── Element regions ───────────────────────────────────────────────────────────
 " matchgroup highlights [tagname … and … ] with cxTag; content is transparent.
 " Listed order of contains determines priority at the same start position.
@@ -121,7 +135,7 @@ syn region cxElement matchgroup=cxTag
   \   cxCodeJSON,cxCodeXML,cxCodeCSS,cxCodeHTML,cxCodeJS,cxCodePython,
   \   cxCodeBash,cxCodeSQL,cxCodeYAML,cxCodeCX,cxCodeBlock,
   \   cxBold,cxItalic,cxStrike,cxSubscript,cxSuperscript,cxUnderline,
-  \   cxInlineCode,cxBlockquote,cxPI,cxAlias,cxElement,
+  \   cxInlineCode,cxBlockquote,cxPI,cxAlias,cxProseElement,cxElement,
   \   cxAttribute,cxTypeAnnotation,cxFloat,cxInteger,cxBoolean,cxNull,
   \   cxString,cxEntityRef
 
@@ -177,7 +191,9 @@ if has('nvim')
   hi def link cxBlockContent   @markup.raw
 
   " elements — @function (blue) not @tag (magenta/pink-purple)
+  " prose elements — @markup.link (teal/cyan) distinct from domain @function
   hi def link cxTag            @function
+  hi def link cxProseTag       @markup.link
   hi def link cxCodeFence      @punctuation.special
   hi def link cxPI             @keyword.directive
   hi def link cxAlias          @variable.member
@@ -223,6 +239,7 @@ else
   hi def link cxRawText        String
   hi def link cxBlockContent   String
   hi def link cxTag            Function
+  hi def link cxProseTag       Special
   hi def link cxCodeFence      Special
   hi def link cxPI             PreProc
   hi def link cxAlias          Identifier

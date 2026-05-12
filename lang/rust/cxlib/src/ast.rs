@@ -9,6 +9,24 @@ pub struct Attr {
     pub name: String,
     pub value: Value,
     pub data_type: Option<String>,
+    /// v3.4 (ADR 0002): expanded-name fields populated by
+    /// `resolve_namespaces`. `local` is the part after the first ':'
+    /// in `name` (or the whole name); `ns_uri` is the resolved URI.
+    /// Per XML Namespaces 1.0 §6.2 the default namespace does not
+    /// apply to unprefixed attributes — `ns_uri` stays `None` for them.
+    pub local: String,
+    pub ns_uri: Option<String>,
+    /// v3.4 (ADR 0003): true when the source attribute value was a
+    /// bare `@id` reference token. Quoted strings starting with '@'
+    /// have `is_ref = false`. Round-trip preserves the bare form.
+    pub is_ref: bool,
+    /// v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+    /// When `Some`, `value` is unused and the attribute's content is
+    /// the parsed body sequence. Used by CXL evaluation directives
+    /// like `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL
+    /// evaluation; round-trips as opaque structure (ADR 0016 R5).
+    /// ast_bin format version 5 carries this field.
+    pub body: Option<Vec<Node>>,
 }
 
 #[derive(Debug, Clone)]
@@ -19,6 +37,17 @@ pub struct Element {
     pub data_type: Option<String>,
     pub attrs: Vec<Attr>,
     pub items: Vec<Node>,
+    /// v3.4 (ADR 0002): expanded-name fields. See `Attr`.
+    pub local: String,
+    pub ns_uri: Option<String>,
+    /// v3.4 (ADR 0003): syntactic ID declaration ("#name" token).
+    /// `None` when the element has no ID. Distinct from anchors.
+    pub id: Option<String>,
+    /// v3.4 (ADR 0003 D1): body-position reference shape `[name @id]`.
+    /// `Some("id")` when the element body is a bare `@id` reference,
+    /// `None` for ordinary elements. Carried over the ast_bin wire
+    /// format at v3+ (Phase 7.70 bumped 2 → 3).
+    pub body_ref: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,15 +61,45 @@ pub enum Node {
     Alias(String),
     PI { target: String, data: Option<String> },
     XMLDecl { version: String, encoding: Option<String>, standalone: Option<String> },
-    CXDirective(Vec<Attr>),
+    /// `[?cx ...]`. v0.6.0 (ast_bin v4) — directives may carry an
+    /// `&anchor` and nested elements; used by the standalone-fragment
+    /// form `[?cx frag &name [body :TYPE :flags]]` (spec/schema.md §8).
+    /// v1-v3 buffers populate `anchor`/`items` as `None`/empty.
+    CXDirective {
+        attrs:  Vec<Attr>,
+        anchor: Option<String>,
+        items:  Vec<Node>,
+    },
     DoctypeDecl { name: String, external_id: Option<Value>, int_subset: Vec<Value> },
     BlockContent(Vec<Node>),
+    /// v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text at v0.6.0;
+    /// the CXL evaluator at v0.7.0+ parses it as CXPath at evaluation
+    /// time. ast_bin tag 0x0D (format v5+).
+    Interpolation { expr: String },
+    /// v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Reserved EvalNames
+    /// (if/for/with/cond/include/def/use/let/fn/match/try) parse into
+    /// this variant. Inert at v0.6.0; the CXL evaluator dispatches on
+    /// `name`. ast_bin tag 0x0E (format v5+).
+    EvalDirective { name: String, attrs: Vec<Attr>, items: Vec<Node> },
 }
 
 #[derive(Debug, Clone)]
 pub struct Document {
     pub elements: Vec<Node>,
     pub prolog: Vec<Node>,
+}
+
+// ── Attr methods ──────────────────────────────────────────────────────────────
+
+impl Attr {
+    /// Local part of the attribute name (after the first ':' in `name`,
+    /// or the whole name if no colon is present).
+    pub fn local_name(&self) -> &str { &self.local }
+
+    /// Resolved namespace URI for prefixed attributes; `None` for
+    /// unprefixed attributes (default ns does not apply per XML
+    /// Namespaces 1.0 §6.2) and for unbound prefixes.
+    pub fn namespace_uri(&self) -> Option<&str> { self.ns_uri.as_deref() }
 }
 
 // ── Element methods ───────────────────────────────────────────────────────────
@@ -55,8 +114,22 @@ impl Element {
             data_type: None,
             attrs: Vec::new(),
             items: Vec::new(),
+            local: String::new(),
+            ns_uri: None,
+            id: None,
+            body_ref: None,
         }
     }
+
+    /// Local part of the element name (after the first ':' in `name`,
+    /// or the whole name if no colon is present). Populated by
+    /// `resolve_namespaces` during parse.
+    pub fn local_name(&self) -> &str { &self.local }
+
+    /// Resolved namespace URI for this element; `None` when no binding
+    /// is in scope and the prefix is not reserved. Populated by
+    /// `resolve_namespaces` during parse.
+    pub fn namespace_uri(&self) -> Option<&str> { self.ns_uri.as_deref() }
 
     /// Attribute value by name, or None.
     pub fn attr(&self, name: &str) -> Option<&Value> {
@@ -156,7 +229,10 @@ impl Element {
             a.value = value;
             a.data_type = data_type;
         } else {
-            self.attrs.push(Attr { name: name.to_string(), value, data_type });
+            self.attrs.push(Attr {
+                name: name.to_string(), value, data_type,
+                local: String::new(), ns_uri: None, is_ref: false, body: None,
+            });
         }
     }
 
@@ -210,11 +286,52 @@ impl Element {
     }
 
     /// All Elements matching a CXPath expression (searches subtree of this element).
+    ///
+    /// v3.4: thunks to libcx via `cx_select_all_paths` (CB-5). Semantics
+    /// match V's `Element::select_all`: this element's items become the
+    /// top-level candidate set, so a child-axis expression like `child`
+    /// matches direct children, and `//child` matches at any descendant
+    /// depth. Returns owned (cloned) elements.
     pub fn select_all(&self, expr: &str) -> Result<Vec<Element>, String> {
-        let cx = crate::cxpath::cxpath_parse(expr)?;
-        let mut result = Vec::new();
-        crate::cxpath::collect_step(self, &cx, 0, &mut result);
-        Ok(result)
+        // Emit each Element child as a top-level node; the round-trip
+        // makes V's Document.select_all_paths walk the same candidate
+        // set V's Element.select_all would. Track a doc-index ->
+        // self.items-index mapping (non-Element items don't affect
+        // CXPath matches but shift item indices).
+        let mut doc_str = String::new();
+        let mut doc_to_orig: Vec<usize> = Vec::with_capacity(self.items.len());
+        for (i, item) in self.items.iter().enumerate() {
+            if matches!(item, Node::Element(_)) {
+                doc_str.push_str(&emit_node(item, 0));
+                doc_to_orig.push(i);
+            }
+        }
+        // emit_node trailing newline isn't significant here.
+        let trimmed = doc_str.trim_end_matches('\n').to_string();
+        let paths = crate::select_all_paths(&trimmed, expr)?;
+        let mut out: Vec<Element> = Vec::with_capacity(paths.len());
+        for p in paths {
+            if p.is_empty() {
+                continue;
+            }
+            let top = p[0];
+            if top >= doc_to_orig.len() {
+                continue;
+            }
+            let mut node: &Node = &self.items[doc_to_orig[top]];
+            let mut ok = true;
+            for &k in &p[1..] {
+                match node {
+                    Node::Element(e) if k < e.items.len() => node = &e.items[k],
+                    _ => { ok = false; break; }
+                }
+            }
+            if !ok { continue; }
+            if let Node::Element(e) = node {
+                out.push(e.clone());
+            }
+        }
+        Ok(out)
     }
 }
 
@@ -286,6 +403,19 @@ impl Document {
         None
     }
 
+    /// Return the Element declaring `#id`, or `None`. v3.4 (ADR 0003).
+    pub fn resolve_id(&self, id: &str) -> Option<&Element> {
+        find_element_by_id(&self.elements, id).or_else(|| find_element_by_id(&self.prolog, id))
+    }
+
+    /// Build a {id: &Element} map for the whole document. v3.4 (ADR 0003).
+    pub fn elements_by_id(&self) -> std::collections::HashMap<String, &Element> {
+        let mut out = std::collections::HashMap::new();
+        collect_elements_by_id(&self.elements, &mut out);
+        collect_elements_by_id(&self.prolog, &mut out);
+        out
+    }
+
     /// Append a top-level node.
     pub fn append(&mut self, node: Node) {
         self.elements.push(node);
@@ -302,28 +432,42 @@ impl Document {
     }
 
     /// Convert to XML via the CX library.
+    /// Serialize this Document to a FRAMED [u32 LE size][payload]
+    /// binary AST buffer. Used internally by `to_xml` / `to_json` /
+    /// etc. (Phase 5 / CB-1) and exported for callers that want to
+    /// pass the document directly to libcx without round-tripping
+    /// through CX text.
+    pub fn to_ast_bin(&self) -> Vec<u8> {
+        crate::binary::encode_ast(self)
+    }
+
+    // v3.4 (Phase 5 / CB-1): format methods now go through
+    // cx_ast_bin_to_<fmt>(self.to_ast_bin()) directly, avoiding the
+    // prior emit-CX-and-reparse detour.
+
+    /// Convert to XML via the CX library.
     pub fn to_xml(&self) -> Result<String, String> {
-        crate::to_xml(&self.to_cx())
+        crate::call_ast_bin_to_text(&self.to_ast_bin(), "cx_ast_bin_to_xml")
     }
 
     /// Convert to JSON via the CX library.
     pub fn to_json(&self) -> Result<String, String> {
-        crate::to_json(&self.to_cx())
+        crate::call_ast_bin_to_text(&self.to_ast_bin(), "cx_ast_bin_to_json")
     }
 
     /// Convert to YAML via the CX library.
     pub fn to_yaml(&self) -> Result<String, String> {
-        crate::to_yaml(&self.to_cx())
+        crate::call_ast_bin_to_text(&self.to_ast_bin(), "cx_ast_bin_to_yaml")
     }
 
     /// Convert to TOML via the CX library.
     pub fn to_toml(&self) -> Result<String, String> {
-        crate::to_toml(&self.to_cx())
+        crate::call_ast_bin_to_text(&self.to_ast_bin(), "cx_ast_bin_to_toml")
     }
 
     /// Convert to Markdown via the CX library.
     pub fn to_md(&self) -> Result<String, String> {
-        crate::to_md(&self.to_cx())
+        crate::call_ast_bin_to_text(&self.to_ast_bin(), "cx_ast_bin_to_md")
     }
 
     /// First Element matching a CXPath expression.
@@ -333,19 +477,18 @@ impl Document {
     }
 
     /// All Elements matching a CXPath expression.
+    ///
+    /// v3.4: thunks to libcx via `cx_select_all_paths` (CB-5). Returns
+    /// owned (cloned) elements at the matched paths.
     pub fn select_all(&self, expr: &str) -> Result<Vec<Element>, String> {
-        let cx = crate::cxpath::cxpath_parse(expr)?;
-        let vroot = Element {
-            name: "#document".to_string(),
-            anchor: None,
-            merge: None,
-            data_type: None,
-            attrs: Vec::new(),
-            items: self.elements.clone(),
-        };
-        let mut result = Vec::new();
-        crate::cxpath::collect_step(&vroot, &cx, 0, &mut result);
-        Ok(result)
+        let paths = crate::select_all_paths(&self.to_cx(), expr)?;
+        let mut out: Vec<Element> = Vec::with_capacity(paths.len());
+        for p in paths {
+            if let Some(el) = crate::cxpath::navigate_doc_path(self, &p) {
+                out.push(el);
+            }
+        }
+        Ok(out)
     }
 
     /// Return new Document with element at path replaced by f(element).
@@ -375,15 +518,30 @@ impl Document {
     }
 
     /// Return new Document with all matching elements replaced by f(element).
+    ///
+    /// v3.4: thunks to libcx via `cx_select_all_paths` (CB-5). Paths
+    /// are applied bottom-up (longest first) so when a parent is
+    /// rewritten its `f`-input already contains the `f`-results of
+    /// descendant matches — matching the prior post-order semantics.
     pub fn transform_all<F>(&self, expr: &str, f: F) -> Result<Document, String>
     where
         F: Fn(Element) -> Element,
     {
-        let cx = crate::cxpath::cxpath_parse(expr)?;
-        let new_elements: Vec<Node> = self.elements.iter()
-            .map(|n| crate::cxpath::rebuild_node(n, &cx, &f))
-            .collect();
-        Ok(Document { elements: new_elements, prolog: self.prolog.clone() })
+        use crate::cxpath::{elem_detached, navigate_doc_path, replace_at_doc_path};
+        let mut paths = crate::select_all_paths(&self.to_cx(), expr)?;
+        if paths.is_empty() {
+            return Ok(self.clone());
+        }
+        // Sort longest-first; descendants get rewritten before ancestors.
+        paths.sort_by(|a, b| b.len().cmp(&a.len()));
+        let mut new_doc = self.clone();
+        for p in paths {
+            if let Some(target) = navigate_doc_path(&new_doc, &p) {
+                let replacement = f(elem_detached(&target));
+                new_doc = replace_at_doc_path(&new_doc, &p, replacement);
+            }
+        }
+        Ok(new_doc)
     }
 }
 
@@ -421,7 +579,10 @@ fn node_from_value(v: &Value) -> Node {
             let attrs = v["attrs"].as_array()
                 .map(|arr| arr.iter().map(attr_from_value).collect())
                 .unwrap_or_default();
-            Node::CXDirective(attrs)
+            // JSON form is the attrs-only shape (cx_to_json doesn't yet
+            // surface anchor/items for directives); decoders that need
+            // those fields read the binary AST instead.
+            Node::CXDirective { attrs, anchor: None, items: Vec::new() }
         }
         "DoctypeDecl" => {
             let int_subset = v["intSubset"].as_array()
@@ -451,6 +612,10 @@ fn attr_from_value(a: &Value) -> Attr {
         name: a["name"].as_str().unwrap_or("").to_string(),
         value: a["value"].clone(),
         data_type: a["dataType"].as_str().map(|s| s.to_string()),
+        local: String::new(),
+        ns_uri: None,
+        is_ref: false,
+        body: None,
     }
 }
 
@@ -468,6 +633,10 @@ fn element_from_value(v: &Value) -> Element {
         data_type: v["dataType"].as_str().map(|s| s.to_string()),
         attrs,
         items,
+        local: String::new(),
+        ns_uri: None,
+        id: None,
+        body_ref: None,
     }
 }
 
@@ -481,53 +650,170 @@ fn doc_from_value(v: &Value) -> Document {
     Document { prolog, elements }
 }
 
+// ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────────────
+//
+// Mirrors V core's vcx/cx/namespaces.v. Walks a parsed Document,
+// populating Element.{local, ns_uri} and Attr.{local, ns_uri} based on
+// in-scope xmlns / xmlns: declarations. Called at the tail of every
+// parse entry point so consumers see a uniform expanded-name view.
+//
+// Reserved prefixes:
+//   - `xml`   → http://www.w3.org/XML/1998/namespace
+//   - `cx`    → https://cx-home.org/ns/cx
+//   - `xmlns` → declaration-only; never resolves as a name prefix
+
+pub const XML_NAMESPACE_URI: &str = "http://www.w3.org/XML/1998/namespace";
+pub const CX_NAMESPACE_URI:  &str = "https://cx-home.org/ns/cx";
+
+fn split_ns_prefix(name: &str) -> (&str, &str) {
+    match name.find(':') {
+        Some(i) => (&name[..i], &name[i + 1..]),
+        None    => ("", name),
+    }
+}
+
+fn lookup_ns(prefix: &str, scope: &[std::collections::HashMap<String, String>]) -> Option<String> {
+    match prefix {
+        "xml"   => return Some(XML_NAMESPACE_URI.to_string()),
+        "cx"    => return Some(CX_NAMESPACE_URI.to_string()),
+        "xmlns" => return None,
+        _ => {}
+    }
+    for frame in scope.iter().rev() {
+        if let Some(uri) = frame.get(prefix) {
+            if uri.is_empty() { return None; }
+            return Some(uri.clone());
+        }
+    }
+    None
+}
+
+fn attr_value_str(v: &Value) -> String {
+    match v {
+        Value::String(s) => s.clone(),
+        Value::Null      => String::new(),
+        other            => other.to_string(),
+    }
+}
+
+fn resolve_element(e: &mut Element, scope: &mut Vec<std::collections::HashMap<String, String>>) {
+    let mut frame = std::collections::HashMap::new();
+    for a in &e.attrs {
+        if a.name == "xmlns" {
+            frame.insert(String::new(), attr_value_str(&a.value));
+        } else if let Some(rest) = a.name.strip_prefix("xmlns:") {
+            if !rest.is_empty() {
+                frame.insert(rest.to_string(), attr_value_str(&a.value));
+            }
+        }
+    }
+    let pushed = !frame.is_empty();
+    if pushed { scope.push(frame); }
+
+    let (prefix, local) = split_ns_prefix(&e.name);
+    e.local = local.to_string();
+    e.ns_uri = lookup_ns(prefix, scope);
+
+    for a in e.attrs.iter_mut() {
+        let (ap, al) = split_ns_prefix(&a.name);
+        a.local = al.to_string();
+        if a.name == "xmlns" || ap == "xmlns" {
+            a.ns_uri = None;
+            continue;
+        }
+        if ap.is_empty() {
+            // Default ns does not apply to unprefixed attrs.
+            a.ns_uri = None;
+            continue;
+        }
+        a.ns_uri = lookup_ns(ap, scope);
+    }
+
+    for item in e.items.iter_mut() {
+        if let Node::Element(child) = item {
+            resolve_element(child, scope);
+        }
+    }
+
+    if pushed { scope.pop(); }
+}
+
+/// Populate `Element.{local, ns_uri}` and `Attr.{local, ns_uri}` on
+/// every node in `doc` per ADR 0002 / spec/namespaces.md. Idempotent.
+/// Called automatically by `parse`, `parse_xml`, `parse_json`,
+/// `parse_yaml`, `parse_toml`, `parse_md`.
+pub fn resolve_namespaces(doc: &mut Document) {
+    let mut scope: Vec<std::collections::HashMap<String, String>> = Vec::new();
+    for n in doc.elements.iter_mut() {
+        if let Node::Element(e) = n {
+            resolve_element(e, &mut scope);
+        }
+    }
+}
+
 // ── Public parse/loads/dumps functions ────────────────────────────────────────
 
 /// Parse a CX string into a Document (uses binary wire protocol).
 pub fn parse(cx_str: &str) -> Result<Document, String> {
     let data = crate::call_bin(cx_str, "cx_to_ast_bin")?;
-    crate::binary::decode_ast(&data)
+    let mut doc = crate::binary::decode_ast(&data)?;
+    resolve_namespaces(&mut doc);
+    Ok(doc)
 }
+
+// v3.4 (Phase 5 / CB-2): parse_<format> goes through
+// cx_<format>_to_ast_bin directly, avoiding the prior cx_<fmt>_to_ast
+// → JSON → walk-Value pipeline.
 
 /// Parse an XML string into a Document.
 pub fn parse_xml(xml_str: &str) -> Result<Document, String> {
-    let ast_json = crate::xml_to_ast(xml_str)?;
-    let v: Value = serde_json::from_str(&ast_json).map_err(|e| e.to_string())?;
-    Ok(doc_from_value(&v))
+    let data = crate::call_text_to_ast_bin(xml_str, "cx_xml_to_ast_bin")?;
+    let mut doc = crate::binary::decode_ast(&data)?;
+    resolve_namespaces(&mut doc);
+    Ok(doc)
 }
 
 /// Parse a JSON string into a Document.
 pub fn parse_json(json_str: &str) -> Result<Document, String> {
-    let ast_json = crate::json_to_ast(json_str)?;
-    let v: Value = serde_json::from_str(&ast_json).map_err(|e| e.to_string())?;
-    Ok(doc_from_value(&v))
+    let data = crate::call_text_to_ast_bin(json_str, "cx_json_to_ast_bin")?;
+    let mut doc = crate::binary::decode_ast(&data)?;
+    resolve_namespaces(&mut doc);
+    Ok(doc)
 }
 
 /// Parse a YAML string into a Document.
 pub fn parse_yaml(yaml_str: &str) -> Result<Document, String> {
-    let ast_json = crate::yaml_to_ast(yaml_str)?;
-    let v: Value = serde_json::from_str(&ast_json).map_err(|e| e.to_string())?;
-    Ok(doc_from_value(&v))
+    let data = crate::call_text_to_ast_bin(yaml_str, "cx_yaml_to_ast_bin")?;
+    let mut doc = crate::binary::decode_ast(&data)?;
+    resolve_namespaces(&mut doc);
+    Ok(doc)
 }
 
 /// Parse a TOML string into a Document.
 pub fn parse_toml(toml_str: &str) -> Result<Document, String> {
-    let ast_json = crate::toml_to_ast(toml_str)?;
-    let v: Value = serde_json::from_str(&ast_json).map_err(|e| e.to_string())?;
-    Ok(doc_from_value(&v))
+    let data = crate::call_text_to_ast_bin(toml_str, "cx_toml_to_ast_bin")?;
+    let mut doc = crate::binary::decode_ast(&data)?;
+    resolve_namespaces(&mut doc);
+    Ok(doc)
 }
 
 /// Parse a Markdown string into a Document.
 pub fn parse_md(md_str: &str) -> Result<Document, String> {
-    let ast_json = crate::md_to_ast(md_str)?;
-    let v: Value = serde_json::from_str(&ast_json).map_err(|e| e.to_string())?;
-    Ok(doc_from_value(&v))
+    let data = crate::call_text_to_ast_bin(md_str, "cx_md_to_ast_bin")?;
+    let mut doc = crate::binary::decode_ast(&data)?;
+    resolve_namespaces(&mut doc);
+    Ok(doc)
 }
 
 /// Deserialize a CX string into a JSON Value (dict/list/scalar).
+///
+/// v3.4: parses through CXDB v1 (cx_to_data_bin) directly into a
+/// serde_json::Value — no JSON-string detour. Type fidelity preserved
+/// (int stays Number(i64), not coerced to f64). Closes audit finding
+/// CB-3.
 pub fn loads(cx_str: &str) -> Result<Value, String> {
-    let json_str = crate::to_json(cx_str)?;
-    serde_json::from_str(&json_str).map_err(|e| e.to_string())
+    let payload = crate::data_bin::to_data_bin(cx_str)?;
+    crate::data_bin::decode_payload(&payload)
 }
 
 /// Deserialize an XML string into a JSON Value.
@@ -561,8 +847,43 @@ pub fn loads_md(md_str: &str) -> Result<Value, String> {
 }
 
 /// Serialize a JSON Value into a CX string.
+///
+/// v3.4: encodes the Value as CXDB v1 bytes directly, then calls
+/// cx_from_data_bin to produce canonical CX. No JSON-string detour.
+/// Closes audit finding CB-3.
 pub fn dumps(data: &Value) -> Result<String, String> {
-    crate::json_to_cx(&data.to_string())
+    let framed = crate::data_bin::encode(data)?;
+    crate::data_bin::from_data_bin(&framed)
+}
+
+// ── ID/IDREF helpers (ADR 0003) ───────────────────────────────────────────────
+
+fn find_element_by_id<'a>(nodes: &'a [Node], id: &str) -> Option<&'a Element> {
+    for n in nodes {
+        if let Node::Element(e) = n {
+            if e.id.as_deref() == Some(id) {
+                return Some(e);
+            }
+            if let Some(found) = find_element_by_id(&e.items, id) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
+fn collect_elements_by_id<'a>(
+    nodes: &'a [Node],
+    out: &mut std::collections::HashMap<String, &'a Element>,
+) {
+    for n in nodes {
+        if let Node::Element(e) = n {
+            if let Some(ref id) = e.id {
+                out.insert(id.clone(), e);
+            }
+            collect_elements_by_id(&e.items, out);
+        }
+    }
 }
 
 // ── CX emitter helpers ────────────────────────────────────────────────────────
@@ -700,6 +1021,11 @@ fn emit_scalar_value(data_type: &str, value: &Value) -> String {
 }
 
 fn emit_attr(a: &Attr) -> String {
+    if a.is_ref {
+        // ADR 0003 D1: bare `@id` round-trips verbatim.
+        let id = json_value_to_display(&a.value);
+        return format!("{}=@{}", a.name, id);
+    }
     let dt = a.data_type.as_deref();
     match dt {
         Some("int") => {
@@ -726,9 +1052,14 @@ fn emit_attr(a: &Attr) -> String {
         }
         Some("null") => format!("{}=null", a.name),
         _ => {
-            // string attr — quote if would autotype
+            // string attr — quote if would autotype OR starts with '@'
+            // (else would mis-parse as is_ref reference per ADR 0003).
             let s = json_value_to_display(&a.value);
-            let v = if would_autotype(&s) { cx_choose_quote(&s) } else { cx_quote_attr(&s) };
+            let v = if would_autotype(&s) || s.starts_with('@') {
+                cx_choose_quote(&s)
+            } else {
+                cx_quote_attr(&s)
+            };
             format!("{}={}", a.name, v)
         }
     }
@@ -760,6 +1091,11 @@ fn emit_inline(node: &Node) -> String {
 
 fn emit_element(e: &Element, depth: usize) -> String {
     let ind = "  ".repeat(depth);
+    // ADR 0003 D1: body-position `[name @id]` shape — emit before
+    // computing meta/items so a bare `@id` body round-trips verbatim.
+    if let Some(ref br) = e.body_ref {
+        return format!("{}[{} @{}]\n", ind, e.name, br);
+    }
     let has_child_elems = e.items.iter().any(|i| matches!(i, Node::Element(_)));
     let has_text = e.items.iter().any(|i| matches!(i,
         Node::Text(_) | Node::Scalar { .. } | Node::EntityRef(_) | Node::RawText(_)
@@ -772,6 +1108,9 @@ fn emit_element(e: &Element, depth: usize) -> String {
     }
     if let Some(ref merge) = e.merge {
         meta_parts.push(format!("*{}", merge));
+    }
+    if let Some(ref id) = e.id {
+        meta_parts.push(format!("#{}", id));
     }
     if let Some(ref dt) = e.data_type {
         meta_parts.push(format!(":{}", dt));
@@ -835,7 +1174,7 @@ fn emit_node(node: &Node, depth: usize) -> String {
             }
             format!("[?xml {}]\n", parts.join(" "))
         }
-        Node::CXDirective(attrs) => {
+        Node::CXDirective { attrs, .. } => {
             let attrs_str = attrs.iter().map(|a| {
                 let v = match &a.value {
                     Value::String(s) => cx_quote_attr(s),
@@ -844,6 +1183,25 @@ fn emit_node(node: &Node, depth: usize) -> String {
                 format!("{}={}", a.name, v)
             }).collect::<Vec<_>>().join(" ");
             format!("[?cx {}]\n", attrs_str)
+        }
+        Node::Interpolation { expr } => {
+            // v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text.
+            format!("{}[?={}]\n", ind, expr)
+        }
+        Node::EvalDirective { name, attrs, items } => {
+            // v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Grammar-order
+            // canonical emission: attrs first, then body items.
+            let attrs_str = attrs.iter().map(|a| {
+                let v = match &a.value {
+                    Value::String(s) => cx_quote_attr(s),
+                    _ => a.value.to_string(),
+                };
+                format!("{}={}", a.name, v)
+            }).collect::<Vec<_>>().join(" ");
+            let body_str: String = items.iter().map(|n| emit_node(n, 0)).collect();
+            let sep_a = if attrs_str.is_empty() { "" } else { " " };
+            let sep_b = if body_str.is_empty() { "" } else { " " };
+            format!("{}[?{}{}{}{}{}]\n", ind, name, sep_a, attrs_str, sep_b, body_str.trim_end())
         }
         Node::DoctypeDecl { name, external_id, .. } => {
             let ext = match external_id {

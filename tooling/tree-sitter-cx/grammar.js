@@ -8,7 +8,13 @@
 module.exports = grammar({
   name: "cx",
 
-  extras: ($) => [/[ \t\r\n]/],
+  // v3.4: line comments (# to EOL) are extras (skipped wherever
+  // whitespace is allowed). Distinct from heading_marker, which is
+  // recognized only after "[" and uses /######|#####|####|###|##|#/
+  // — those tokens never start a comment because they're guarded by
+  // the preceding "[". A bare # at top-level / between attrs / etc.
+  // is therefore unambiguously a line comment.
+  extras: ($) => [/[ \t\r\n]/, $.line_comment],
 
   conflicts: ($) => [
     [$.attribute, $.word],
@@ -37,6 +43,9 @@ module.exports = grammar({
         $.alias,
         $.entity_ref,
         $.triple_quoted,
+        // v3.4: top-level attributes (logfmt mode — bare key=value
+        // sequences at document root, no enclosing element).
+        $.attribute,
         $.word,
         $.text,
         $.number,
@@ -51,8 +60,10 @@ module.exports = grammar({
         field("name", $.tag_name),
         repeat(
           choice(
+            $.table_block,
             $.type_annotation,
             $.attribute,
+            $.bool_sigil_attr,
             $.anchor_ref,
             $.merge_ref,
             $._inline_node
@@ -60,6 +71,46 @@ module.exports = grammar({
         ),
         "]"
       ),
+
+    // ── v3.4 :table[<cols>]<rows> block ──────────────────────────────────────
+    // Inline form: `:table[name1:type1 name2:type2]` followed by
+    // whitespace-separated row cells until the enclosing element's `]`.
+    // Tree-sitter sees the header but treats the rows as ordinary
+    // inline content; emitter-level row parsing happens in the V core.
+    table_block: ($) =>
+      seq($.table_open, repeat($.table_column), "]"),
+
+    table_open: (_) => token(":table["),
+
+    table_column: ($) =>
+      seq(
+        field("col_name", $.word),
+        optional(seq(":", field("col_type", $.type_name)))
+      ),
+
+    type_name: (_) =>
+      choice(
+        "string", "int", "float", "bool", "null", "date", "datetime", "bytes",
+        // v3.4 sized + arbitrary-precision types
+        "decimal", "bigint",
+        "i8", "i16", "i32", "i64",
+        "u8", "u16", "u32", "u64",
+        "f16", "f32", "f64",
+        // short aliases
+        "i", "f", "b", "s", "d", "dt"
+      ),
+
+    // ── v3.4 boolean sigil attribute  +name / -name ──────────────────────────
+    // Atomic token so a leading `-` doesn't conflict with negative
+    // numbers: `-2.5` matches the number regex (4 chars) over the
+    // bool_sigil regex (which needs an identifier name after).
+    bool_sigil_attr: (_) =>
+      token(seq(choice("+", "-"), /[a-zA-Z_][a-zA-Z0-9._-]*/)),
+
+    // ── v3.4 line comment  # to EOL ──────────────────────────────────────────
+    // Recognized as an "extra" — skipped wherever whitespace is allowed.
+    // Distinct from heading_marker, which is anchored after "[".
+    line_comment: (_) => token(seq("#", /[^\n]*/)),
 
     // ── Headings  [# …] through [###### …] ───────────────────────────────────
     // All start with "[" then heading_marker — same "[" token as element,
@@ -153,12 +204,22 @@ module.exports = grammar({
       ),
 
     // ── Type annotations ──────────────────────────────────────────────────────
+    // v3.4: adds sized variants (:i8/:i16/:i32/:i64/:u8/:u16/:u32/:u64/
+    // :f16/:f32/:f64), arbitrary-precision (:decimal, :bigint), and
+    // short aliases (:i, :f, :b, :s, :d, :dt).
     type_annotation: (_) =>
       token(
         choice(
           seq(
             ":",
-            choice("int", "float", "bool", "string", "null", "date", "datetime", "bytes"),
+            choice(
+              "int", "float", "bool", "string", "null", "date", "datetime", "bytes",
+              "decimal", "bigint",
+              "i8", "i16", "i32", "i64",
+              "u8", "u16", "u32", "u64",
+              "f16", "f32", "f64",
+              "i", "f", "b", "s", "d", "dt"
+            ),
             optional("[]")
           ),
           seq(":", "[]")  // :[] — inferred-type array
@@ -166,7 +227,21 @@ module.exports = grammar({
       ),
 
     // ── Scalars ───────────────────────────────────────────────────────────────
-    number: (_) => token(/-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?/),
+    // v3.4: numeric literals allow `_` between digits as cosmetic
+    // separators (e.g. `1_000_000`). Leading-zero integers other than
+    // bare `0` are NOT matched here — they auto-type to string per
+    // v3.4 grammar [20c]. (`0`, `0.5`, `0xCAFE` still match.)
+    number: (_) => token(
+      choice(
+        // Hex / octal / binary — v3.4 leaves these alone.
+        /-?0[xX][0-9a-fA-F][0-9a-fA-F_]*/,
+        /-?0[oO][0-7][0-7_]*/,
+        /-?0[bB][01][01_]*/,
+        // Float / int with optional underscores. Disallow leading zero
+        // in the integer part (`0`, `0.5`, `0e10` ok; `02134` rejected).
+        /-?(0|[1-9][0-9_]*)(\.[0-9][0-9_]*)?([eE][+-]?[0-9][0-9_]*)?/
+      )
+    ),
     boolean: (_) => token(choice("true", "false")),
     null_value: (_) => token("null"),
 

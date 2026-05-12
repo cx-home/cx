@@ -1,4 +1,7 @@
-[-Rich document example: comments, mixed content, raw text, entity and char refs]
+[- Rich document example: comments, mixed content, raw text,
+   entity and char refs. Mostly markup; v3.4 sized type appears
+   in the embedded code block. ]
+
 [article lang=en
   [head
     [title CX Language Tour]
@@ -15,16 +18,17 @@
       unifies markup and configuration in one clean syntax.
     ]
 
-    [-code block uses raw text so brackets inside are not parsed]
+    [- code block uses raw text so brackets inside are not parsed ]
     [h2 Quick Example]
-    [pre [# [server [host localhost] [port :int 8080] [debug true]] #]]
+    [pre [# [server host=localhost :u16 port=8080 +tls -debug] #]]
 
     [p
-      Note that [code 8080] auto-types as an [em integer] and [code true]
-      as a [em boolean] &mdash; no schema or quotes required.
+      Note that [code 8080] auto-types as an [em integer]; [code :u16]
+      pins it to the 0..65535 range &mdash; out-of-range values fail at
+      parse time. [code +tls] is shorthand for [code tls=true].
     ]
 
-    [-entity refs and character references]
+    [- entity refs and character references ]
     [h2 Special Characters]
     [p
       Predefined entities: &amp; &lt; &gt; &apos; &quot;
@@ -33,7 +37,7 @@
       Character references: &#169; 2026 Acme Corp, registered trademark &#174;
     ]
 
-    [-demonstrate inline elements mixed with entity refs]
+    [- demonstrate inline elements mixed with entity refs ]
     [blockquote
       [p
         The goal of CX is to be [strong as readable as YAML] yet

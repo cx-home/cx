@@ -2,7 +2,7 @@ module main
 
 import os
 import x.json2
-import cxlib
+import cffi as cxlib
 
 // ── fixture loader ────────────────────────────────────────────────────────────
 

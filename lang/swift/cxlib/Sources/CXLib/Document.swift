@@ -6,12 +6,34 @@ public struct Attr {
     public var name: String
     public var value: Any?
     public var dataType: String?
+    /// v3.4 (ADR 0002): expanded-name fields populated by
+    /// `CXDocument.resolveNamespaces`. `local` is the part after the
+    /// first ':' in `name` (or the whole name); `nsUri` is the resolved
+    /// URI, nil when no binding is in scope. Per XML Namespaces 1.0
+    /// §6.2 the default namespace does not apply to unprefixed attrs.
+    public var local: String = ""
+    public var nsUri: String?
+    /// v3.4 (ADR 0003): true when the source attribute value was a
+    /// bare `@id` reference token. Quoted strings starting with '@'
+    /// have isRef = false. Round-trip preserves the bare form on emit.
+    public var isRef: Bool = false
+    /// v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+    /// When non-nil, `value` is unused and the attribute's content is
+    /// the parsed body sequence. Used by CXL evaluation directives like
+    /// `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL evaluation;
+    /// round-trips as opaque structure (ADR 0016 R5). ast_bin v5+.
+    public var body: [Node]? = nil
 
     public init(_ name: String, _ value: Any?, dataType: String? = nil) {
         self.name = name
         self.value = value
         self.dataType = dataType
     }
+
+    /// Local part of the attribute name (post-colon, or whole name).
+    public func localName() -> String { return local }
+    /// Resolved namespace URI; nil for unprefixed or unbound prefixes.
+    public func namespaceUri() -> String? { return nsUri }
 }
 
 // ── Node enum ─────────────────────────────────────────────────────────────────
@@ -26,9 +48,21 @@ public indirect enum Node {
     case alias(String)
     case pi(target: String, data: String?)
     case xmlDecl(version: String, encoding: String?, standalone: String?)
-    case cxDirective([Attr])
+    /// v0.6.0 — CXDirective `[?cx ...]`. ast_bin v4+ also carries an
+    /// optional `&anchor` and nested children for the standalone-fragment
+    /// form `[?cx frag &name [body :TYPE :flags]]` (spec/schema.md §8).
+    case cxDirective(attrs: [Attr], anchor: String?, items: [Node])
     case doctype(name: String, externalId: Any?)
     case blockContent([Node])
+    /// v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text at v0.6.0;
+    /// the CXL evaluator at v0.7.0+ parses it as CXPath at evaluation time.
+    /// ast_bin tag 0x0D (format v5+).
+    case interpolation(expr: String)
+    /// v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Reserved EvalNames
+    /// (if/for/with/cond/include/def/use/let/fn/match/try) parse into this
+    /// case. Inert at v0.6.0; the CXL evaluator dispatches on `name`.
+    /// ast_bin tag 0x0E (format v5+).
+    case evalDirective(name: String, attrs: [Attr], items: [Node])
 }
 
 // ── Element ───────────────────────────────────────────────────────────────────
@@ -40,12 +74,30 @@ public class Element {
     public var dataType: String?
     public var attrs: [Attr]
     public var items: [Node]
+    /// v3.4 (ADR 0002): expanded-name fields populated by
+    /// `CXDocument.resolveNamespaces`. See `Attr`.
+    public var local: String = ""
+    public var nsUri: String?
+    /// v3.4 (ADR 0003): syntactic ID declaration ("#name" token);
+    /// nil when the element has no ID. Distinct from `anchor`.
+    public var id: String?
+    /// v3.4 (ADR 0003 D1): body-position reference (`[ref @id]` form);
+    /// nil for ordinary elements. When set, the element has empty
+    /// attrs/items and emits as `[<name> @<bodyRef>]`. Carried over
+    /// the ast_bin wire format at v3+ (Phase 7.70 bumped 2 → 3).
+    public var bodyRef: String?
 
     public init(_ name: String, attrs: [Attr] = [], items: [Node] = []) {
         self.name = name
         self.attrs = attrs
         self.items = items
     }
+
+    /// Local part of the element name (post-colon, or whole name).
+    public func localName() -> String { return local }
+    /// Resolved namespace URI; nil when no binding is in scope and the
+    /// prefix is not reserved.
+    public func namespaceUri() -> String? { return nsUri }
 
     /// Attribute value by name, or nil.
     public func attr(_ name: String) -> Any? {
@@ -194,11 +246,47 @@ public class Element {
     }
 
     /// All Elements matching a CXPath expression (searches subtree of this element).
+    ///
+    /// v3.4: thunks to libcx via `cx_select_all_paths` (CB-5). Returned
+    /// Elements are *live references* into this Element's tree —
+    /// mutations propagate, preserving prior behavior. Semantics match
+    /// V's Element.select_all: this element's items become the
+    /// top-level candidate set.
     public func selectAll(_ expr: String) throws -> [Element] {
-        let cx = try cxpathParse(expr)
-        var result: [Element] = []
-        collectStep(self, cx, 0, &result)
-        return result
+        // Emit each Element child as top-level so V's
+        // Document.select_all_paths walks the same candidate set V's
+        // Element.select_all would. Track a doc-index → orig-index
+        // mapping (non-Element items don't affect CXPath matches but
+        // shift item indices).
+        var sb = ""
+        var docToOrig: [Int] = []
+        for (i, item) in items.enumerated() {
+            if case .element(let el) = item {
+                sb.append(_emitElement(el, depth: 0))
+                docToOrig.append(i)
+            }
+        }
+        // Trim trailing newlines
+        while sb.last == "\n" { sb.removeLast() }
+        let paths = try CXLib.selectAllPaths(sb, expr)
+        var out: [Element] = []
+        for p in paths {
+            if p.isEmpty { continue }
+            let top = p[0]
+            if top < 0 || top >= docToOrig.count { continue }
+            var node: Node = items[docToOrig[top]]
+            var ok = true
+            for i in 1 ..< p.count {
+                guard case .element(let el) = node, p[i] >= 0, p[i] < el.items.count else {
+                    ok = false; break
+                }
+                node = el.items[p[i]]
+            }
+            if ok, case .element(let matched) = node {
+                out.append(matched)
+            }
+        }
+        return out
     }
 
     /// Emit this element as a CX string.
@@ -266,6 +354,19 @@ public class CXDocument {
         return nil
     }
 
+    /// Return the Element declaring `#id`, or nil. v3.4 (ADR 0003).
+    public func resolveId(_ id: String) -> Element? {
+        return _findElementById(elements, id) ?? _findElementById(prolog, id)
+    }
+
+    /// {id: Element} map for the whole document. v3.4 (ADR 0003).
+    public func elementsById() -> [String: Element] {
+        var out: [String: Element] = [:]
+        _collectElementsById(elements, &out)
+        _collectElementsById(prolog, &out)
+        return out
+    }
+
     public func append(_ node: Node) {
         elements.append(node)
     }
@@ -280,12 +381,13 @@ public class CXDocument {
     }
 
     /// All Elements matching a CXPath expression.
+    ///
+    /// v3.4: thunks to libcx via `cx_select_all_paths` (CB-5). Returned
+    /// Elements are live references into this Document's tree —
+    /// mutations propagate.
     public func selectAll(_ expr: String) throws -> [Element] {
-        let cx = try cxpathParse(expr)
-        let vroot = Element("#document", items: elements)
-        var result: [Element] = []
-        collectStep(vroot, cx, 0, &result)
-        return result
+        let paths = try CXLib.selectAllPaths(self.toCx(), expr)
+        return paths.compactMap { navigateDocPath(self, $0) }
     }
 
     /// Return new CXDocument with element at path replaced by f(element).
@@ -308,11 +410,22 @@ public class CXDocument {
     }
 
     /// Return new CXDocument with all matching elements replaced by f(element).
+    ///
+    /// v3.4: thunks to libcx via `cx_select_all_paths` (CB-5). Paths
+    /// are applied bottom-up (longest first) so when a parent is
+    /// rewritten its f-input already contains the f-results of
+    /// descendant matches — matching the prior post-order semantics.
     @discardableResult
     public func transformAll(_ expr: String, _ f: (Element) -> Element) throws -> CXDocument {
-        let cx = try cxpathParse(expr)
-        let newElements = elements.map { rebuildNode($0, cx, f) }
-        return CXDocument(elements: newElements, prolog: prolog)
+        let paths = try CXLib.selectAllPaths(self.toCx(), expr)
+        if paths.isEmpty { return self }
+        let sorted = paths.sorted { $0.count > $1.count }
+        var newDoc = self
+        for p in sorted {
+            guard let target = navigateDocPath(newDoc, p) else { continue }
+            newDoc = replaceAtDocPath(newDoc, p, f(elemDetached(target)))
+        }
+        return newDoc
     }
 
     /// Emit this document as a CX string.
@@ -320,24 +433,100 @@ public class CXDocument {
         return _emitDoc(self)
     }
 
-    public func toXml() throws -> String {
-        try CXLib.toXml(toCx())
+    /// Serialize this Document to a FRAMED [u32 LE size][payload] AST
+    /// bin Data buffer. Used internally by toXml / toJson / etc.
+    /// (Phase 5 / CB-1).
+    public func toAstBin() -> Data {
+        return BinaryDecoder.encodeAST(self)
     }
 
-    public func toJson() throws -> String {
-        try CXLib.toJson(toCx())
+    // v3.4 (Phase 5 / CB-1): format methods now go through
+    // cx_ast_bin_to_<fmt>(toAstBin()) directly, avoiding the prior
+    // emit-CX-and-reparse detour.
+    public func toXml()  throws -> String { try CXLib.astBinToXml (toAstBin()) }
+    public func toJson() throws -> String { try CXLib.astBinToJson(toAstBin()) }
+    public func toYaml() throws -> String { try CXLib.astBinToYaml(toAstBin()) }
+    public func toToml() throws -> String { try CXLib.astBinToToml(toAstBin()) }
+    public func toMd()   throws -> String { try CXLib.astBinToMd  (toAstBin()) }
+
+    // ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────────
+    //
+    // Mirrors V core's vcx/cx/namespaces.v.
+    public static let xmlNamespaceUri = "http://www.w3.org/XML/1998/namespace"
+    public static let cxNamespaceUri  = "https://cx-home.org/ns/cx"
+
+    private static func splitNsPrefix(_ name: String) -> (String, String) {
+        if let i = name.firstIndex(of: ":") {
+            return (String(name[..<i]), String(name[name.index(after: i)...]))
+        }
+        return ("", name)
     }
 
-    public func toYaml() throws -> String {
-        try CXLib.toYaml(toCx())
+    private static func lookupNs(_ prefix: String, _ scope: [[String: String]]) -> String? {
+        switch prefix {
+        case "xml":   return xmlNamespaceUri
+        case "cx":    return cxNamespaceUri
+        case "xmlns": return nil
+        default: break
+        }
+        for frame in scope.reversed() {
+            if let uri = frame[prefix] {
+                return uri.isEmpty ? nil : uri
+            }
+        }
+        return nil
     }
 
-    public func toToml() throws -> String {
-        try CXLib.toToml(toCx())
+    private static func resolveElement(_ e: Element, _ scope: inout [[String: String]]) {
+        var frame: [String: String] = [:]
+        for a in e.attrs {
+            let v = a.value == nil ? "" : String(describing: a.value!)
+            if a.name == "xmlns" { frame[""] = v }
+            else if a.name.hasPrefix("xmlns:") && a.name.count > 6 {
+                frame[String(a.name.dropFirst(6))] = v
+            }
+        }
+        let pushed = !frame.isEmpty
+        if pushed { scope.append(frame) }
+
+        let (prefix, local) = splitNsPrefix(e.name)
+        e.local = local
+        e.nsUri = lookupNs(prefix, scope)
+
+        for i in e.attrs.indices {
+            let (ap, al) = splitNsPrefix(e.attrs[i].name)
+            e.attrs[i].local = al
+            if e.attrs[i].name == "xmlns" || ap == "xmlns" {
+                e.attrs[i].nsUri = nil
+                continue
+            }
+            if ap.isEmpty {
+                e.attrs[i].nsUri = nil
+                continue
+            }
+            e.attrs[i].nsUri = lookupNs(ap, scope)
+        }
+
+        for item in e.items {
+            if case .element(let child) = item {
+                resolveElement(child, &scope)
+            }
+        }
+
+        if pushed { scope.removeLast() }
     }
 
-    public func toMd() throws -> String {
-        try CXLib.toMd(toCx())
+    /// Populate `Element.{local, nsUri}` and `Attr.{local, nsUri}` on
+    /// every node in `doc` per ADR 0002. Idempotent. Called
+    /// automatically by `parse` / `parseXml` / `parseJson` / `parseYaml`
+    /// / `parseToml` / `parseMd`.
+    public static func resolveNamespaces(_ doc: CXDocument) {
+        var scope: [[String: String]] = []
+        for n in doc.elements {
+            if case .element(let e) = n {
+                resolveElement(e, &scope)
+            }
+        }
     }
 
     // ── Parse ──────────────────────────────────────────────────────────────────
@@ -345,78 +534,80 @@ public class CXDocument {
     /// Parse a CX string into a CXDocument (via binary wire protocol).
     public static func parse(_ cxStr: String) throws -> CXDocument {
         let data = try CXLib.astBin(cxStr)
-        return try BinaryDecoder.decodeAST(data)
+        let doc = try BinaryDecoder.decodeAST(data)
+        resolveNamespaces(doc)
+        return doc
     }
 
-    /// Parse an XML string into a CXDocument.
+    // v3.4 (Phase 5 / CB-2): parse_<format> goes through
+    // cx_<format>_to_ast_bin directly, avoiding the prior cx_<fmt>
+    // _to_ast → JSONSerialization → walk-dict pipeline.
+
     public static func parseXml(_ s: String) throws -> CXDocument {
-        let astJson = try CXLib.xmlToAst(s)
-        guard let data = astJson.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { throw CXError.parse("invalid AST JSON") }
-        return _docFromDict(obj)
+        let doc = try BinaryDecoder.decodeAST(try CXLib.xmlToAstBin(s))
+        resolveNamespaces(doc)
+        return doc
     }
 
-    /// Parse a JSON string into a CXDocument.
     public static func parseJson(_ s: String) throws -> CXDocument {
-        let astJson = try CXLib.jsonToAst(s)
-        guard let data = astJson.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { throw CXError.parse("invalid AST JSON") }
-        return _docFromDict(obj)
+        let doc = try BinaryDecoder.decodeAST(try CXLib.jsonToAstBin(s))
+        resolveNamespaces(doc)
+        return doc
     }
 
-    /// Parse a YAML string into a CXDocument.
     public static func parseYaml(_ s: String) throws -> CXDocument {
-        let astJson = try CXLib.yamlToAst(s)
-        guard let data = astJson.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { throw CXError.parse("invalid AST JSON") }
-        return _docFromDict(obj)
+        let doc = try BinaryDecoder.decodeAST(try CXLib.yamlToAstBin(s))
+        resolveNamespaces(doc)
+        return doc
     }
 
-    /// Parse a TOML string into a CXDocument.
     public static func parseToml(_ s: String) throws -> CXDocument {
-        let astJson = try CXLib.tomlToAst(s)
-        guard let data = astJson.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { throw CXError.parse("invalid AST JSON") }
-        return _docFromDict(obj)
+        let doc = try BinaryDecoder.decodeAST(try CXLib.tomlToAstBin(s))
+        resolveNamespaces(doc)
+        return doc
     }
 
-    /// Parse a Markdown string into a CXDocument.
     public static func parseMd(_ s: String) throws -> CXDocument {
-        let astJson = try CXLib.mdToAst(s)
-        guard let data = astJson.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { throw CXError.parse("invalid AST JSON") }
-        return _docFromDict(obj)
+        let doc = try BinaryDecoder.decodeAST(try CXLib.mdToAstBin(s))
+        resolveNamespaces(doc)
+        return doc
     }
 
     /// Stream a CX string as a sequence of StreamEvents.
+    ///
+    /// v3.4 (Phase 5 / CB-4): pulls events one-by-one via the handle
+    /// API. Replaces the prior eager-buffered cx_to_events_bin path.
+    /// For true pull-based streaming with caller-controlled
+    /// cancellation, use `EventStream(cxStr)` directly.
     public static func stream(_ cxStr: String) throws -> [StreamEvent] {
-        let data = try CXLib.eventsBin(cxStr)
-        return try BinaryDecoder.decodeEvents(data)
+        let s = try EventStream(cxStr)
+        defer { s.close() }
+        var events: [StreamEvent] = []
+        while let ev = try s.nextEvent() { events.append(ev) }
+        return events
     }
 
     // ── loads / dumps ──────────────────────────────────────────────────────────
 
-    /// Deserialize a CX data string into native Swift types (dict/array/scalar).
+    /// Deserialize a CX data string into native Swift types
+    /// (`[String: Any]` / `[Any]` / scalar).
+    ///
+    /// v3.4: parses through CXDB v1 (`cx_to_data_bin`) directly into Swift
+    /// types — no JSON-string detour. Type fidelity preserved (integers
+    /// stay `Int64`, floats stay `Double`, booleans stay `Bool`, dates
+    /// round-trip as `Date`, bytes as `Data`). Closes audit finding CB-3.
     public static func loads(_ cxStr: String) throws -> Any {
-        let jsonStr = try CXLib.toJson(cxStr)
-        guard let data = jsonStr.data(using: .utf8) else {
-            throw CXError.parse("invalid JSON from toJson")
-        }
-        return try JSONSerialization.jsonObject(with: data)
+        return try DataBin.decode(try CXLib.toDataBin(cxStr))
     }
 
     /// Serialize native Swift types to a CX string.
+    ///
+    /// v3.4: encodes the Swift value as CXDB v1 bytes directly, then calls
+    /// `cx_from_data_bin` to produce canonical CX. No JSON-string detour;
+    /// type fidelity preserved on round-trip with `loads`. Closes audit
+    /// finding CB-3.
     public static func dumps(_ value: Any) throws -> String {
-        let data = try JSONSerialization.data(withJSONObject: value)
-        guard let jsonStr = String(data: data, encoding: .utf8) else {
-            throw CXError.parse("JSON serialization failed")
-        }
-        return try CXLib.jsonToCx(jsonStr)
+        return try CXLib.fromDataBin(try DataBin.encode(value))
     }
 
     /// Deserialize an XML string into native Swift types.
@@ -523,7 +714,7 @@ private func _nodeFromDict(_ d: [String: Any]) -> Node {
         let dirAttrs = (d["attrs"] as? [[String: Any]] ?? []).map { a in
             Attr(a["name"] as? String ?? "", a["value"])
         }
-        return .cxDirective(dirAttrs)
+        return .cxDirective(attrs: dirAttrs, anchor: d["anchor"] as? String, items: [])
 
     case "DoctypeDecl":
         return .doctype(
@@ -555,6 +746,27 @@ private let _hexRe = try! NSRegularExpression(pattern: #"^0[xX][0-9a-fA-F]+$"#)
 private func _matches(_ re: NSRegularExpression, _ s: String) -> Bool {
     let range = NSRange(s.startIndex..., in: s)
     return re.firstMatch(in: s, range: range) != nil
+}
+
+// ── ID/IDREF helpers (ADR 0003) ───────────────────────────────────────────────
+
+private func _findElementById(_ nodes: [Node], _ id: String) -> Element? {
+    for n in nodes {
+        if case .element(let e) = n {
+            if e.id == id { return e }
+            if let found = _findElementById(e.items, id) { return found }
+        }
+    }
+    return nil
+}
+
+private func _collectElementsById(_ nodes: [Node], _ out: inout [String: Element]) {
+    for n in nodes {
+        if case .element(let e) = n {
+            if let id = e.id { out[id] = e }
+            _collectElementsById(e.items, &out)
+        }
+    }
 }
 
 private func _wouldAutotype(_ s: String) -> Bool {
@@ -614,6 +826,11 @@ private func _emitScalarValue(_ dataType: String, _ value: Any?) -> String {
 }
 
 private func _emitAttr(_ a: Attr) -> String {
+    if a.isRef {
+        // ADR 0003 D1: bare `@id` round-trips verbatim.
+        let id = a.value.map { String(describing: $0) } ?? ""
+        return "\(a.name)=@\(id)"
+    }
     let dt = a.dataType
     if dt == "int" {
         if let n = a.value as? NSNumber { return "\(a.name)=\(n.intValue)" }
@@ -634,9 +851,11 @@ private func _emitAttr(_ a: Attr) -> String {
         return "\(a.name)=\(a.value ?? "null")"
     }
     if dt == "null" { return "\(a.name)=null" }
-    // string attr
+    // string attr — quote if would autotype OR starts with '@' (else
+    // would mis-parse as is_ref reference per ADR 0003).
     let s = a.value.map { String(describing: $0) } ?? "null"
-    let v = _wouldAutotype(s) ? _cxChooseQuote(s) : _cxQuoteAttr(s)
+    let startsAt = !s.isEmpty && s.first == "@"
+    let v = (_wouldAutotype(s) || startsAt) ? _cxChooseQuote(s) : _cxQuoteAttr(s)
     return "\(a.name)=\(v)"
 }
 
@@ -666,6 +885,10 @@ private func _emitInline(_ node: Node) -> String {
 
 private func _emitElement(_ e: Element, depth: Int) -> String {
     let ind = String(repeating: "  ", count: depth)
+    // ADR 0003 D1 (Phase 7.70): body-position reference shape.
+    if let bref = e.bodyRef {
+        return "\(ind)[\(e.name) @\(bref)]\n"
+    }
     let hasChildElems = e.items.contains { if case .element(_) = $0 { return true }; return false }
     let hasText = e.items.contains {
         switch $0 {
@@ -678,6 +901,7 @@ private func _emitElement(_ e: Element, depth: Int) -> String {
     var metaParts: [String] = []
     if let anchor = e.anchor { metaParts.append("&\(anchor)") }
     if let merge = e.merge { metaParts.append("*\(merge)") }
+    if let id = e.id { metaParts.append("#\(id)") }
     if let dt = e.dataType { metaParts.append(":\(dt)") }
     for a in e.attrs { metaParts.append(_emitAttr(a)) }
     let meta = metaParts.isEmpty ? "" : " " + metaParts.joined(separator: " ")
@@ -729,9 +953,20 @@ private func _emitNode(_ node: Node, depth: Int) -> String {
         if let enc = encoding { parts.append("encoding=\(enc)") }
         if let sa = standalone { parts.append("standalone=\(sa)") }
         return "[?xml \(parts.joined(separator: " "))]\n"
-    case .cxDirective(let dirAttrs):
+    case .cxDirective(let dirAttrs, _, _):
         let attrStr = dirAttrs.map { "\($0.name)=\(_cxQuoteAttr(String(describing: $0.value ?? "")))" }.joined(separator: " ")
         return "[?cx \(attrStr)]\n"
+    case .interpolation(let expr):
+        // v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+        return "\(ind)[?=\(expr)]\n"
+    case .evalDirective(let dirName, let dirAttrs, let dirItems):
+        // v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Grammar-order
+        // canonical emission: attrs first, then body items.
+        let attrStr = dirAttrs.map { "\($0.name)=\(_cxQuoteAttr(String(describing: $0.value ?? "")))" }.joined(separator: " ")
+        let bodyStr = dirItems.map { _emitNode($0, depth: 0) }.joined().trimmingCharacters(in: .newlines)
+        let sepA = attrStr.isEmpty ? "" : " "
+        let sepB = bodyStr.isEmpty ? "" : " "
+        return "\(ind)[?\(dirName)\(sepA)\(attrStr)\(sepB)\(bodyStr)]\n"
     case .doctype(let name, let externalId):
         var ext = ""
         if let extId = externalId as? [String: Any] {

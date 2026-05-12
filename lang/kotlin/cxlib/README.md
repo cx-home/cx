@@ -3,6 +3,26 @@
 Kotlin binding for the CX format library via JNA.  Parses, streams, queries,
 transforms, and converts CX / XML / JSON / YAML / TOML / Markdown.
 
+> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../../MIGRATION.md) at
+> the repo root. v3.4 has two breaking changes: leading-zero integer
+> literals (`02134` is now string, not int) and `loads()`/`dumps()` type
+> fidelity (integers stay `Long` instead of coercing to `Double`).
+
+## Canonical-form tooling (v3.4)
+
+```kotlin
+val src1 = "[config\n  [- comment]\n  [server host=localhost]\n]"
+val src2 = "[config [server host=localhost]]"
+CxLib.fmt(src1)          // lossless canonical (preserves the comment)
+CxLib.canonical(src1)    // strict canonical   (comment stripped)
+CxLib.hash(src1)         // 64-char SHA-256 hex of strict canonical bytes
+CxLib.eq(src1, src2)     // true — data-equivalent inputs
+```
+
+`fmt` is idempotent. `canonical`/`hash`/`eq` are byte-stable across
+runs and bindings; the same input produces the same hash in any
+language. Use for content-addressable hashing or signed config bundles.
+
 ---
 
 ## Requirements
@@ -424,6 +444,30 @@ decimals → `Double`, everything else → `String`. An invalid expression throw
 | `target` | `String?` | Processing-instruction target |
 | `data` | `String?` | Processing-instruction data |
 
+### `data_bin` one-shot conversions (v3.4)
+
+Direct format ↔ binary AST conversions, skipping the text-CX
+intermediate. Useful when a tool already produces CX-binary payloads
+(or wants to consume them) and the text form would only add a
+parse/emit roundtrip.
+
+| Method | Description |
+|---|---|
+| `CxLib.xmlToDataBin(s)`  | XML text → CXDB v1 framed bytes (`ByteArray`) |
+| `CxLib.jsonToDataBin(s)` | JSON text → CXDB v1 framed bytes |
+| `CxLib.yamlToDataBin(s)` | YAML text → CXDB v1 framed bytes |
+| `CxLib.tomlToDataBin(s)` | TOML text → CXDB v1 framed bytes |
+| `CxLib.mdToDataBin(s)`   | Markdown text → CXDB v1 framed bytes |
+| `CxLib.dataBinToXml(b)`  | CXDB v1 framed bytes → XML `String` |
+| `CxLib.dataBinToJson(b)` | CXDB v1 framed bytes → JSON `String` |
+| `CxLib.dataBinToYaml(b)` | CXDB v1 framed bytes → YAML `String` |
+| `CxLib.dataBinToToml(b)` | CXDB v1 framed bytes → TOML `String` |
+| `CxLib.dataBinToMd(b)`   | CXDB v1 framed bytes → Markdown `String` |
+
+The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+the wire format. Round-trip: `CxLib.dataBinToX(CxLib.xToDataBin(s))
+== s` (after canonicalization).
+
 ---
 
 ## Tests
@@ -439,3 +483,35 @@ Or from `lang/kotlin/cxlib/`:
 ```sh
 gradle test
 ```
+
+## 30-second quickstart
+
+<!-- quickstart-begin: kotlin -->
+```kotlin
+import cx.CxLib
+import cx.Table
+
+fun main() {
+    // Parse + read a typed value out
+    val doc = CxLib.parse("[server [port :u16 8080] [host localhost]]")
+    println(doc.at("server/port")?.intValue())   // 8080
+
+    // Round-trip to JSON, lossless
+    println(CxLib.toJson("[user [id :i64 9007199254740993]]"))
+
+    // Public Table API (ADR 0018) — 17-member surface
+    val src = """
+        [users :table[name age:int]
+          alice 30
+          bob   25
+        ]
+    """.trimIndent()
+    val t = Table.fromCx(src)
+    println("${t.rowCount} ${t.cols}")   // 2 [name, age]
+    for (row in t) {
+        println("${row["name"]} ${row["age"]}")
+    }
+    println(t.toCsv())
+}
+```
+<!-- quickstart-end -->

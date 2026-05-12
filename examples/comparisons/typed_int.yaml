@@ -1,0 +1,5 @@
+record:
+  id: 9007199254740993        # YAML 1.2 preserves; YAML 1.1 may truncate.
+  name: precise-id-survives
+  count: 4294967295
+  ratio: 3.141592653589793

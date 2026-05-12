@@ -1,6 +1,13 @@
 ; ── Element tags ─────────────────────────────────────────────────────────────
 (element name: (tag_name) @function)
 
+; ── Prose elements (known MD/markup set) ──────────────────────────────────────
+; Overrides @function for the built-in prose element names so authors can
+; distinguish structural markup from domain-specific elements at a glance.
+; Uses @markup.link (teal/cyan in most themes) — distinct from @function (blue).
+((element name: (tag_name) @markup.link)
+ (#any-of? @markup.link "p" "ul" "ol" "li" "table" "hr" "br" "a" "img" "doc" "article" "strong" "b" "em" "i" "del" "s" "u" "sub" "sup" "c"))
+
 ; ── Attributes ────────────────────────────────────────────────────────────────
 (attribute name: (attr_name) @property)
 (attribute "=" @operator)
@@ -79,11 +86,15 @@
 (lang_attr lang: (lang_name) @string.special)
 
 ; ── Block content and raw text ────────────────────────────────────────────────
-(block_content) @markup.raw
+; Highlight only the delimiters — injected language highlights the body.
+(block_content "[" @punctuation.special)
+(block_content "|]" @punctuation.special)
 (raw_text) @markup.raw
 
 ; ── Comments ──────────────────────────────────────────────────────────────────
-(comment) @comment
+(comment_element) @comment
+(comment_bracket) @comment
+(comment_raw) @comment
 
 ; ── PI ────────────────────────────────────────────────────────────────────────
 (pi) @keyword.directive
@@ -102,3 +113,16 @@
 ; ── Element bracket punctuation ───────────────────────────────────────────────
 (element "[" @punctuation.bracket)
 (element "]" @punctuation.bracket)
+
+; ── v3.4 boolean sigil attributes  +name / -name ──────────────────────────────
+(bool_sigil_attr) @property
+
+; ── v3.4 line comment  # to EOL ───────────────────────────────────────────────
+(line_comment) @comment
+
+; ── v3.4 :table[<cols>] block ─────────────────────────────────────────────────
+(table_block (table_open) @keyword.directive)
+(table_block "]" @keyword.directive)
+(table_column col_name: (word) @property)
+(table_column ":" @operator)
+(table_column col_type: (type_name) @type)

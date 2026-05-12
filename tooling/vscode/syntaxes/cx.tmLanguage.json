@@ -25,6 +25,7 @@
     { "include": "#blockquote" },
     { "include": "#pi" },
     { "include": "#alias" },
+    { "include": "#prose-element" },
     { "include": "#element" },
     { "include": "#type-annotation" },
     { "include": "#scalar-value" },
@@ -462,6 +463,46 @@
         "1": { "name": "variable.other.alias.cx" }
       }
     },
+    "prose-element": {
+      "comment": "Known MD/markup elements — entity.name.tag.prose.cx distinguishes them from domain elements (entity.name.tag.cx)",
+      "begin": "\\[(p|ul|ol|li|table|hr|br|a|img|doc|article|strong|b|em|i|del|s|u|sub|sup|c)(?![\\w.-])",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.element.begin.cx" },
+        "1": { "name": "entity.name.tag.prose.cx" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.definition.element.end.cx" } },
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#heading" },
+        { "include": "#raw-text" },
+        { "include": "#block-content" },
+        { "include": "#triple-quoted" },
+        { "include": "#code-block-json" },
+        { "include": "#code-block-xml" },
+        { "include": "#code-block-css" },
+        { "include": "#code-block-html" },
+        { "include": "#code-block-javascript" },
+        { "include": "#code-block-typescript" },
+        { "include": "#code-block-python" },
+        { "include": "#code-block-bash" },
+        { "include": "#code-block-sql" },
+        { "include": "#code-block-yaml" },
+        { "include": "#code-block-toml" },
+        { "include": "#code-block-cx" },
+        { "include": "#code-block" },
+        { "include": "#inline-markup" },
+        { "include": "#blockquote" },
+        { "include": "#pi" },
+        { "include": "#alias" },
+        { "include": "#prose-element" },
+        { "include": "#element" },
+        { "include": "#type-annotation" },
+        { "include": "#attribute" },
+        { "include": "#scalar-value" },
+        { "include": "#entity-ref" }
+      ]
+    },
     "element": {
       "begin": "\\[([a-zA-Z_][\\w.-]*)",
       "end": "\\]",
@@ -493,6 +534,7 @@
         { "include": "#blockquote" },
         { "include": "#pi" },
         { "include": "#alias" },
+        { "include": "#prose-element" },
         { "include": "#element" },
         { "include": "#type-annotation" },
         { "include": "#attribute" },

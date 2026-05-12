@@ -27,6 +27,14 @@ class StreamEvent:
     # PI fields
     target: Optional[str] = None
     data: Optional[str] = None
+    # Chunked-table fields (StartTable / RowGroup / EndTable, ADR 0015 D10).
+    # col_spec is the §1.1 events-layer encoding: [u32 LE: count]
+    # ([u32 LE: name_len]name [u8: col_type_code])*. payload is the §3.11.2
+    # plain-body bytes uvarint(row_count) <col-payload>(col_count) — already
+    # decompressed if the source row group used §3.12 zstd wrapping.
+    col_spec: bytes = b''
+    row_count: int = 0
+    payload: bytes = b''
 
     @classmethod
     def from_dict(cls, d: dict) -> 'StreamEvent':
@@ -48,6 +56,16 @@ class StreamEvent:
         elif t == 'PI':
             e.target = d.get('target')
             e.data = d.get('data')
+        elif t == 'StartTable':
+            import base64
+            e.name = d.get('name')
+            e.col_spec = base64.b64decode(d.get('colSpecBase64', ''))
+        elif t == 'RowGroup':
+            import base64
+            e.row_count = int(d.get('rowCount', 0))
+            e.payload = base64.b64decode(d.get('payloadBase64', ''))
+        elif t == 'EndTable':
+            e.name = d.get('name')
         return e
 
     def is_start_element(self, name: Optional[str] = None) -> bool:
@@ -65,22 +83,48 @@ class Stream:
             for event in s:
                 if event.is_start_element():
                     print(event.name, event.attrs)
+
+    v3.4: handle-based pull API via cx_events_open / cx_events_next /
+    cx_events_close (Phase 5 / CB-4). Replaces the prior eager-buffered
+    `decode_events(events_bin(cx_str))` which materialized the full
+    event list up-front.
     """
 
     def __init__(self, cx_str: str):
-        from .binary import events_bin, decode_events
-        self._events: list = decode_events(events_bin(cx_str))
-        self._pos = 0
+        import ctypes
+        from . import cx as _cx_mod
+        err = ctypes.c_char_p(None)
+        h = _cx_mod._lib.cx_events_open(cx_str.encode(), ctypes.byref(err))
+        if not h:
+            raise RuntimeError(err.value.decode() if err.value else 'cx_events_open: unknown error')
+        self._handle = h
+        self._closed = False
 
     def __iter__(self) -> Iterator[StreamEvent]:
         return self
 
     def __next__(self) -> StreamEvent:
-        if self._pos >= len(self._events):
+        import ctypes
+        from . import cx as _cx_mod
+        from .binary import decode_one_event_framed
+        if self._closed or not self._handle:
             raise StopIteration
-        e = self._events[self._pos]
-        self._pos += 1
-        return e
+        err = ctypes.c_char_p(None)
+        addr = _cx_mod._lib.cx_events_next(self._handle, ctypes.byref(err))
+        if not addr:
+            # NULL with err set = error; NULL with no err = EOF.
+            if err.value:
+                msg = err.value.decode()
+                self.close()
+                raise RuntimeError(msg)
+            self.close()
+            raise StopIteration
+        # Read framed [u32 size][payload] from the C-owned buffer, copy
+        # the bytes out, then free the buffer.
+        size = int.from_bytes(ctypes.string_at(addr, 4), 'little')
+        framed = bytes(ctypes.string_at(addr, 4 + size))
+        _cx_mod._lib.cx_free(ctypes.cast(addr, ctypes.c_char_p))
+        return decode_one_event_framed(framed)
 
     def next(self) -> Optional[StreamEvent]:
         """Return next event or None when exhausted."""
@@ -90,13 +134,25 @@ class Stream:
             return None
 
     def collect(self) -> list:
-        """Return all remaining events."""
-        remaining = self._events[self._pos:]
-        self._pos = len(self._events)
-        return remaining
+        """Return all remaining events as a list."""
+        return list(self)
+
+    def close(self) -> None:
+        """Release the underlying handle. Idempotent."""
+        if self._closed:
+            return
+        self._closed = True
+        if self._handle:
+            from . import cx as _cx_mod
+            _cx_mod._lib.cx_events_close(self._handle)
+            self._handle = None
 
     def __enter__(self): return self
-    def __exit__(self, *_): pass
+    def __exit__(self, *_): self.close()
+    def __del__(self):
+        # Best-effort release if the user forgot the context manager.
+        try: self.close()
+        except Exception: pass
 
 
 def stream(cx_str: str) -> Stream:

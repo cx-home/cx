@@ -1,1340 +1,483 @@
 # CX
 
-Because some things just need to be done. CX is a bracket-based document and configuration format that unifies markup and
-structured data in one coherent syntax. It reads like XML, types like YAML, and
-converts losslessly to and from JSON, YAML, TOML, XML, and Markdown. Multiple AI's were used but unharmed in this project including (in alpha order): ChatGPT, Claude, Grok.
+> **One concise format. Six lossless conversions.** Configs, data, structured
+> documents, log streams, and tabular data in a single coherent syntax that
+> round-trips through XML, JSON, YAML, TOML, Markdown, and CSV without losing
+> meaning.
 
-```cx
-[article lang=en
-  [-author note: written 2026-04-19]
-  [head
-    [title Getting Started with CX]
-    [tags :string[] tutorial beginner]
-  ]
-  [body
-    [h1 What is CX?]
-    [p CX is [em compact] and [strong human-friendly].]
-    [pre [# [server [host localhost] [port :int 8080]] #]]
-  ]
-]
-```
-
----
-
-## Contents
-
-- [Install](#install)
-- [CLI](#cli)
-- [Syntax](#syntax)
-  - [Elements](#elements)
-  - [Attributes](#attributes)
-  - [Text and quoting](#text-and-quoting)
-  - [Triple-quoted strings](#triple-quoted-strings)
-  - [Comments](#comments)
-  - [Scalars and auto-typing](#scalars-and-auto-typing)
-  - [Explicit type annotations](#explicit-type-annotations)
-  - [Short type aliases](#short-type-aliases)
-  - [Typed arrays](#typed-arrays)
-  - [Auto-array](#auto-array)
-  - [Inferred-type array `:[]`](#inferred-type-array-)
-  - [Mixed content](#mixed-content)
-  - [Raw text blocks](#raw-text-blocks)
-  - [Block content](#block-content)
-  - [Entity and character references](#entity-and-character-references)
-  - [Anchors, merges, and aliases](#anchors-merges-and-aliases)
-  - [Processing instructions](#processing-instructions)
-  - [Multi-document streams](#multi-document-streams)
-- [Corner cases](#corner-cases)
-- [Format conversion](#format-conversion)
-- [Language bindings](#language-bindings)
-- [Building from source](#building-from-source)
-- [Why CX? Format comparison](spec/analysis.md)
-
----
+CX is a bracket-based document and configuration format. Every construct is
+a `[...]` pair: no closing tags to repeat, no mandatory quoting, no
+indentation rules. It reads like XML, types like TOML, and converts
+losslessly to and from the formats that already dominate config and data
+exchange — so you can adopt it incrementally without rewriting existing
+pipelines.
 
 ## Install
 
-**Prerequisites:** [V](https://vlang.io) 0.5.1+. No other dependencies.
-
 ```sh
-git clone https://github.com/cx-home/cx
-cd cx
-make build
+# macOS / Linux — single statically-linked binary, no runtime deps
+curl -sSL https://cx-home.io/install | sh
+
+# Or from source (requires V 0.5.1+)
+git clone https://github.com/cx-home/cx && cd cx && make build
 ```
 
-This builds the `cx` CLI binary at `vcx/target/cx` and the shared library
-`vcx/target/libcx.dylib` / `vcx/target/libcx.so`. Treat `vcx/target/cx` as a
-staging artifact for local builds, not the stable command on your `PATH`.
-
-Promote a verified CLI build into a stable install location:
-
 ```sh
-make promote-cli
+$ cx demo
 ```
 
-That installs `cx` to `/usr/local/bin/cx` by default. Override the install
-prefix if needed:
-
-```sh
-make promote-cli PREFIX="$HOME/.local"
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-`make install` still installs `libcx` and `cx.h`; it does not install the CLI.
+The in-binary demo runs in < 1 second and shows everything below working.
 
 ---
 
-## CLI
+## CX: simple but expressive
 
-```
-cx [--from cx|xml|json|yaml|toml|md] [--cx|--xml|--ast|--json|--yaml|--toml|--md] [file]
-```
-
-Input format is auto-detected from the file extension (`.cx`, `.xml`, `.json`,
-`.yaml`, `.yml`, `.toml`) or overridden with `--from`. Default output is `--cx`.
-
-```sh
-cx file.cx                    # CX → CX  (canonical round-trip)
-cx --json file.cx             # CX → semantic JSON
-cx --yaml file.cx             # CX → YAML
-cx --toml file.cx             # CX → TOML
-cx --xml  file.cx             # CX → XML
-cx --ast  file.cx             # CX → full AST as JSON (for tooling)
-
-cx --from xml  file.xml       # XML  → CX
-cx --from json file.json      # JSON → CX
-cx --from yaml file.yaml      # YAML → CX
-cx --from toml file.toml      # TOML → CX
-cx --from md   file.md        # MD   → CX
-
-cx --md file.cx               # CX   → Markdown
-
-cat file.cx | cx --json       # read from stdin
-```
-
----
-
-## Syntax
-
-Every construct in CX is a bracket pair `[...]`. There are no closing tags to
-repeat, no mandatory quoting, and no indentation rules.
-
-### Elements
+Types, comments, structured data, collection literals, tabular rows,
+and mixed content — all in one file, with the same brackets throughout:
 
 ```cx
-[br]                          # empty element
-[p Hello]                     # element with text
-[p Hello World]               # multi-word text (whitespace normalized)
-[div
-  [p First]
-  [p Second]
-]                             # nested elements
-```
-
-XML equivalent:
-```xml
-<br/>
-<p>Hello</p>
-<p>Hello World</p>
-<div>
-  <p>First</p>
-  <p>Second</p>
-</div>
-```
-
-A document can have **multiple root elements** — no wrapper element required:
-
-```cx
-[title Hello]
-[body
-  [p World]
-]
-```
-
-### Attributes
-
-Attributes use `name=value` with no surrounding quotes needed for most values.
-`[`, `]`, `=`, `'`, `"`, and whitespace terminate an unquoted value.
-
-```cx
-[input type=text name=q placeholder='Search...']
-[a href=https://example.com/path?id=1 Visit us]
-[img src=/images/logo.png alt='Company logo' width=120 height=40]
-```
-
-XML equivalent:
-```xml
-<input type="text" name="q" placeholder="Search..."/>
-<a href="https://example.com/path?id=1">Visit us</a>
-<img src="/images/logo.png" alt="Company logo" width="120" height="40"/>
-```
-
-> **Note:** URL characters including `/`, `?`, `#`, `@`, `:`, `+`, and `&` are
-> all valid in unquoted attribute values. `href=https://example.com/a?b=1&c=2`
-> works without quotes.
-
-> **Note:** Bare attribute values are **auto-typed** the same way as bare element
-> body tokens: `port=8080` stores int `8080`, `debug=false` stores bool `false`.
-> Quoted attribute values (`port='8080'`) are always strings — use quotes to prevent
-> auto-typing when a numeric-looking string is intended.
-
-### Text and quoting
-
-Unquoted text is whitespace-normalized: consecutive spaces and newlines collapse
-to a single space. Use single quotes to preserve whitespace exactly:
-
-```cx
-[p   extra   spaces   ]       # stored as "extra spaces" (normalized)
-[pre '  indented  ']          # stored as "  indented  " (preserved)
-[p 'first line\nsecond line'] # \n escape inside quotes
-```
-
-Quotes are required when a value would otherwise be auto-typed (see below):
-
-```cx
-[status 'true']               # string "true",  not bool true
-[version '3.0']               # string "3.0",   not float 3.0
-[zip :string 90210]           # explicit :string type annotation also works
-```
-
-### Triple-quoted strings
-
-`'''...'''` is the multiline string literal. Whitespace stripping (in order):
-1. One leading newline after `'''` is stripped.
-2. One trailing newline before `'''` is stripped.
-3. Common leading indent of all non-blank lines is stripped.
-
-```cx
-[readme '''
-  CX is a bracket-based format.
-  It converts to XML, JSON, YAML, and TOML.
-''']
-```
-
-Stored as `Text("CX is a bracket-based format.\nIt converts to XML, JSON, YAML, and TOML.")`.
-
-Triple-quoted strings always produce a `Text` node — no auto-typing, no child element parsing.
-Single and double quotes are allowed unescaped inside; `\'` prevents early termination.
-Triple-quoted strings are **not** valid in attribute position — use single-quoted strings there.
-
-The CX emitter round-trips multiline text as single-quoted strings with literal `\n`:
-```cx
-[readme 'CX is a bracket-based format.\nIt converts to XML, JSON, YAML, and TOML.']
-```
-
-### Comments
-
-Comments use the `[-` opener:
-
-```cx
-[-this is a comment]
-
-[config
-  [-database settings]
-  [host localhost]
-  [port :int 5432]
-]
-```
-
-XML equivalent: `<!--this is a comment-->` / `<!--database settings-->`
-
-Comments are preserved in the AST and round-trip through all formats. JSON
-(which has no comment syntax) discards them during conversion.
-
-### Scalars and auto-typing
-
-When an element body is a **single unquoted token** with **no child elements**,
-the value is auto-typed:
-
-| Pattern | Type | Example |
-|---|---|---|
-| Digits only | `int` | `[age 30]` |
-| `0x` prefix | `int` (hex) | `[flags 0xFF]` → 255 |
-| Digits with `.` or `e` | `float` | `[price 3.14]`, `[scale 1e-3]` |
-| `true` or `false` | `bool` | `[debug true]` |
-| `null` | `null` | `[value null]` |
-| `YYYY-MM-DD` | `date` | `[born 2026-04-19]` |
-| ISO 8601 datetime | `datetime` | `[created 2026-04-19T14:30:00Z]` |
-| Anything else | `Text` | `[name Alice]`, `[msg hello world]` |
-
-```cx
-[server
-  [host localhost]              # Text "localhost"
-  [port 8080]                   # int 8080
-  [ratio 0.75]                  # float 0.75
-  [debug false]                 # bool false
-  [secret null]                 # null
-  [launched 2026-04-19]        # date
-  [updated 2026-04-19T09:00:00Z] # datetime
-]
-```
-
-Auto-typing fires **only** on a single bare token. Multiple tokens or any child
-element suppress it:
-
-```cx
-[p Version 3.0]               # Text "Version 3.0" — two tokens, no typing
-[p 3.0]                       # float 3.0 — single token
-[root 42 [x]]                 # Text "42 " — has a child element, no typing
-```
-
-### Explicit type annotations
-
-Use `:type` after the element name to override auto-typing or force a specific
-type. This is the `ElementMeta` position — before any attributes or body:
-
-```cx
-[port :int 8080]              # explicitly int (same as auto here)
-[zip :string 90210]           # force string — without :string this would be int
-[ratio :float 1]              # force float — without :float this would be int
-[payload :bytes SGVsbG8=]     # base64-encoded bytes
-[count :int -1]               # negative int
-```
-
-In XML output, explicit annotations appear as `cx:type`:
-
-```xml
-<port cx:type="int">8080</port>
-<zip cx:type="string">90210</zip>
-```
-
-### Short type aliases
-
-Each long type name has a one- or two-character alias accepted everywhere
-`:type` is valid. Emitters always produce long forms; parsers accept both:
-
-| Short | Long | Example |
-|---|---|---|
-| `:i` | `:int` | `[count :i 42]` |
-| `:f` | `:float` | `[ratio :f 3.14]` |
-| `:b` | `:bool` | `[active :b true]` |
-| `:s` | `:string` | `[label :s 90210]` |
-| `:d` | `:date` | `[launch :d 2026-04-19]` |
-| `:dt` | `:datetime` | `[stamp :dt 2026-04-19T09:00:00Z]` |
-
-`null` and `bytes` have no short alias — use their long forms only.
-
-Short aliases also work on arrays: `:i[]`, `:f[]`, `:b[]`, `:s[]`, `:d[]`, `:dt[]`.
-
-### Typed arrays
-
-`:type[]` turns the element body into a sequence of items of that type:
-
-```cx
-[tags :string[] admin user guest]
-[scores :int[] 10 20 30]
-[primes :int[] 2 3 5 7 11]
-[origins :string[] https://example.com https://app.example.com]
-```
-
-In JSON / YAML / TOML output:
-
-```json
-{"tags": ["admin", "user", "guest"], "scores": [10, 20, 30]}
-```
-
-In XML output, each item becomes an `<item>` element:
-
-```xml
-<tags cx:type="string[]"><item>admin</item><item>user</item><item>guest</item></tags>
-```
-
-### Auto-array
-
-When an element body has **2 or more** whitespace-separated unquoted tokens and
-**no child elements**, and all tokens resolve to the **same non-string type**, the
-body becomes a typed array automatically — no annotation needed:
-
-```cx
-[scores 10 20 30]             # → int[]   (all integers)
-[temps  -2.5 0.0 3.7 21.1]   # → float[] (all floats)
-[flags  true false true]      # → bool[]
-[dates  2024-01-15 2025-03-01 2026-04-19]  # → date[]
-```
-
-Mixed int and float tokens promote to `float[]`:
-```cx
-[data 1 2.5 3]                # → float[] (1 and 3 promoted from int)
-```
-
-Any token that falls through to `Text`, or any quoted string token, suppresses
-auto-array — the body stays as `Text`:
-```cx
-[p Version 3.0]               # Text "Version 3.0" — "Version" is not a number
-[p 10 'twenty' 30]            # Text — quoted string suppresses auto-array
-```
-
-The CX emitter adds the explicit annotation on round-trip:
-```cx
-[scores :int[] 10 20 30]      # canonical output from [scores 10 20 30]
-```
-
-String arrays always require an explicit annotation (`:[]`, `:s[]`, or `:string[]`).
-
-### Inferred-type array `:[]`
-
-`:[]` without a type name infers the array element type from the tokens:
-
-- Non-string auto-typed tokens → that type (with int+float promotion to `float[]`)
-- Any quoted string or any token falling through to `Text` → `string[]`
-
-```cx
-[data  :[] 1 2.5 3]           # → float[]  (all numeric, int promoted)
-[tags  :[] admin user guest]  # → string[] (bare words fall through to text)
-[mixed :[] 10 hello 30]       # → string[] (hello falls through to text)
-```
-
-`:[]` is the minimal annotation to force a string array from bare tokens:
-```cx
-[tags :[] admin user guest]   # string[] — each bare word becomes a string item
-```
-
-### Block content
-
-`[|...|]` is a parsed block literal that preserves newlines. Content is parsed as
-normal CX — elements, entity refs, and all body items work inside:
-
-```cx
-[p [|
-  Visit our [a href=https://example.com site] or
-  read the [a href=https://docs.example.com docs].
-|]]
-```
-
-Whitespace stripping (same rules as triple-quoted strings):
-1. One leading newline after `[|` is stripped.
-2. One trailing newline before `|]` is stripped.
-3. Common leading indent of all non-blank lines is stripped.
-
-In round-trip XML: `<cx:block>...</cx:block>`.
-In semantic XML and JSON/YAML/TOML: items inlined into the parent.
-
-### Mixed content
-
-Text and child elements can be freely interleaved — like HTML prose:
-
-```cx
-[p
-  For help, visit our [a href=https://example.com/faq FAQ page]
-  or [a href=mailto:support@example.com contact us].
-]
-
-[p The result is [code x + y] where [em x] and [em y] are integers.]
-```
-
-XML equivalent:
-```xml
-<p>
-  For help, visit our <a href="https://example.com/faq">FAQ page</a>
-  or <a href="mailto:support@example.com">contact us</a>.
-</p>
-```
-
-In the AST, each text run and element is a separate node. Auto-typing is
-**suppressed** in mixed-content bodies — all bare tokens are `Text`, never
-`Scalar`, regardless of their value:
-
-```cx
-[p The answer is 42 and it is true]
-#                  ^^ Text, not int
-#                           ^^^^ Text, not bool
-```
-
-### Raw text blocks
-
-`[# ... #]` contains raw text where brackets are not parsed — equivalent to
-XML CDATA sections:
-
-```cx
-[script [# if (x < y) { return [1, 2]; } #]]
-[css    [# .nav > a[href^="https"] { color: blue; } #]]
-[pre    [# [server [host localhost]] #]]
-```
-
-XML equivalent:
-```xml
-<script><![CDATA[ if (x < y) { return [1, 2]; } ]]></script>
-```
-
-The terminator is `#]`. A bare `]` is allowed inside raw text. To embed a
-literal `#]` you must split it across two adjacent raw blocks.
-
-### Entity and character references
-
-Standard XML entity references require a semicolon:
-
-```cx
-[p Copyright &copy; 2026 &mdash; all rights reserved.]
-[p Use &amp; for ampersands and &lt; for less-than signs.]
-[p Predefined: &amp; &lt; &gt; &apos; &quot;]
-```
-
-The five predefined XML entities (`amp`, `lt`, `gt`, `apos`, `quot`) are
-resolved to their characters in the semantic JSON output. Others (like `&copy;`,
-`&mdash;`) are preserved as `EntityRef` nodes and passed through.
-
-Character references are always resolved to Unicode:
-
-```cx
-[p &#169; 2026]               # © 2026
-[p &#x1F600;]                 # 😀
-[p &#8212; em dash]           # — em dash
-```
-
-> **Anchor vs EntityRef disambiguation:** `&name` without a semicolon is an
-> _anchor definition_ (Extended). `&name;` with a semicolon is an _entity
-> reference_ (Core). The parser uses semicolon lookahead to disambiguate.
-
-### Anchors, merges, and aliases
-
-Anchors name an element for later reuse. Merges inherit another element's
-attributes. Useful for DRY configuration:
-
-```cx
-[-define shared defaults with &anchor]
-[defaults &base timeout=30 retries=3 log_level=info ssl=false]
-
-[-each environment merges base and overrides only what changes]
-[dev     *base host=localhost         port=8080 debug=true]
-[staging *base host=staging.acme.com  port=443  ssl=true]
-[prod    *base host=acme.com          port=443  ssl=true  retries=5]
-```
-
-An **alias element** `[*name]` is a full stand-in for the anchored element:
-
-```cx
-[defaults &def timeout=30 retries=3]
-[service1 *def host=svc1.internal]
-[*def]                        # alias — expands to the full defaults element
-```
-
-Canonical meta order is: anchor `&` → merge `*` → type `:` → attributes.
-Parsers accept any order; emitters produce canonical order.
-
-In XML output:
-```xml
-<defaults cx:anchor="base" timeout="30" retries="3" log_level="info" ssl="false"/>
-<dev cx:merge="base" host="localhost" port="8080" debug="true"/>
-```
-
-### Processing instructions
-
-```cx
-[?xml version=1.0 encoding=UTF-8]    # XML declaration (must be first)
-[?cx include=base.cx]                 # CX directive
-[?php echo $greeting; ]              # arbitrary PI
-```
-
-XML equivalent: `<?xml version="1.0" encoding="UTF-8"?>` / `<?php echo $greeting; ?>`
-
-`[?xml ...]` and `[?cx ...]` are structured (parsed as key=value pairs).
-All other `[?target data]` PIs store their data as a raw string.
-
-### Multi-document streams
-
-Separate documents with `---` on its own line:
-
-```cx
-[config
-  [env production]
-  [port :int 443]
-]
----
-[secrets
-  [db_password :string 's3cr3t']
-  [api_key :string abc123]
-]
-```
-
-The CLI and all language bindings return a `Multi` result for multi-doc files.
-YAML is the other common format that supports multi-document streams.
-
----
-
-## Corner cases
-
-### Auto-typing is single-token only
-
-```cx
-[n 42]                        # int 42
-[n 42.0]                      # float 42.0
-[n 42 items]                  # Text "42 items" — two tokens
-[n -1]                        # int -1  (minus sign attached to digit)
-[n - 1]                       # Text "- 1" — space separates minus from digit
-```
-
-### Quoting to prevent auto-typing
-
-```cx
-[active true]                 # bool true
-[active 'true']               # Text "true" — quoted suppresses auto-typing
-[version 3.0]                 # float 3.0
-[version '3.0']               # Text "3.0"
-[port 8080]                   # int 8080
-[port :string 8080]           # Text "8080" — explicit :string annotation
-```
-
-### Attribute auto-typing
-
-Bare attribute values are auto-typed the same way as bare body tokens:
-
-```cx
-[server host=localhost port=8080 debug=false]
-# host → string "localhost"  (no pattern match)
-# port → int 8080
-# debug → bool false
-```
-
-Quote an attribute value to force it to be a string:
-```cx
-[server port='8080']          # string "8080", not int 8080
-```
-
-Array auto-typing does **not** apply to attributes — only scalar auto-typing does.
-Use child elements for array-typed values.
-
-### Whitespace normalization
-
-Unquoted body text collapses whitespace. Quoted text preserves it:
-
-```cx
-[p hello    world]            # stored as "hello world" (one space)
-[p 'hello    world']          # stored as "hello    world" (preserved)
-[p
-  first line
-  second line
-]                             # stored as "first line second line"
-```
-
-### Whitespace in mixed content needs quoting
-
-When text adjacent to child elements has significant leading or trailing spaces,
-quote it:
-
-```cx
-[p [b bold] text after]       # "text after" — no leading space captured
-[p [b bold] ' text after']    # " text after" — leading space preserved
-[p 'before ' [b bold] after]  # "before " then bold then "after"
-```
-
-The CX emitter automatically adds quotes when a text run would lose whitespace
-on round-trip.
-
-### Mixed content suppresses scalar auto-typing
-
-Any child element in the body suppresses auto-typing for all bare tokens:
-
-```cx
-[root 42 [x]]                 # "42 " is Text, not int — child element present
-[root 42]                     # int 42 — no child elements
-[root :int 42 [x]]            # explicit annotation still forces int scalar
-```
-
-### Hex integer normalization
-
-Hex literals are stored as their decimal integer value:
-
-```cx
-[mask 0xFF]                   # stored as int 255
-[offset 0x1A3F]               # stored as int 6719
-```
-
-Round-tripping through CX emits decimal: `[mask 255]`.
-
-### `&` disambiguation: anchor vs entity ref
-
-Inside element meta position (no semicolon) → anchor definition:
-```cx
-[node &myanchor attr=val]     # defines anchor named "myanchor"
-```
-
-Inside body or attribute (with semicolon) → entity reference:
-```cx
-[p Tom &amp; Jerry]           # EntityRef "amp"
-[p &copy; 2026]               # EntityRef "copy"
-```
-
-### Raw text terminator
-
-`#]` terminates a raw text block. A single `]` is safe inside:
-
-```cx
-[p [# arrays use ] notation #]]   # OK — bare ] is fine
-[p [# end: #]]                    # OK — terminates at #]
-```
-
-To include a literal `#]` sequence, split into two adjacent raw blocks:
-```cx
-[p [# first part: #][# ] rest #]]  # produces: first part: #] rest
-```
-
-### Multi-document `---` separator
-
-`---` must not appear as content inside an element — it is only meaningful at
-the top level between documents. Inside a body it is text:
-
-```cx
-[p ---]                       # Text "---" inside an element, not a separator
----
-[next-doc]                    # this IS a separator — top-level between docs
-```
-
-### Entity refs need whitespace separation in body text
-
-An `&name;` sequence is only parsed as an entity reference when separated from
-surrounding text by whitespace. Without whitespace it is treated as plain text:
-
-```cx
-[p Tom &amp; Jerry]          # EntityRef "amp" — spaces around &amp;
-[p a&amp;b]                  # Text "a&amp;b"  — no spaces, treated as bare text
-```
-
-This means URLs containing `&` work unquoted in both attribute and body
-positions — no quoting needed:
-
-```cx
-[a href=https://example.com/search?q=hello&lang=en Click]   # attribute — fine
-[p Visit https://example.com/search?q=hello&lang=en today.] # body — also fine
-```
-
-The `&lang=en` segment is never mistaken for an entity ref because there is no
-whitespace before `&`.
-
----
-
-## Format conversion
-
-CX converts losslessly between CX, XML, JSON, YAML, TOML, and Markdown.
-
-### All six formats from one source
-
-```sh
-cx --cx   examples/config.cx   # canonical CX
-cx --xml  examples/config.cx   # XML with cx: namespace for type metadata
-cx --json examples/config.cx   # semantic JSON (collapsed data values)
-cx --yaml examples/config.cx   # YAML
-cx --toml examples/config.cx   # TOML
-cx --md   examples/doc.cx      # Markdown
-```
-
-### Reading any format as CX
-
-```sh
-cx --from xml  examples/books.xml
-cx --from json examples/config.json
-cx --from yaml examples/config.yaml
-cx --from toml examples/config.toml
-cx --from md   examples/doc.md
-```
-
-### Markdown format
-
-CX supports Markdown as a 6th first-class format. CX bracket syntax maps to
-standard Markdown shorthand, which in turn normalizes to canonical element names
-in the AST:
-
-| MD shorthand | CX bracket syntax | HTML long name | Markdown output |
-|---|---|---|---|
-| `# text` | `[# text]` or `[h1 text]` | `h1` | `# text` |
-| `## text` | `[## text]` or `[h2 text]` | `h2` | `## text` |
-| `**text**` | `[** text]` or `[strong text]` or `[b text]` | `strong` | `**text**` |
-| `*text*` | `[* text]` or `[em text]` or `[i text]` | `em` | `*text*` |
-| `~~text~~` | `[~~ text]` or `[del text]` or `[s text]` | `del` | `~~text~~` |
-| `~text~` | `[~ text]` | `sub` | `~text~` |
-| `^text^` | `[^ text]` | `sup` | `^text^` |
-| `<u>text</u>` | `[__ text]` | `u` | `<u>text</u>` |
-| `` `text` `` | `` [` text] `` or `[code text]` or `[c text]` | `code` | `` `text` `` |
-| `` ```lang\n...\n``` `` | `` [``` lang:bash \| ... \|] `` | `code` (block) | fenced code block |
-| `> text` | `[> text]` or `[blockquote text]` | `blockquote` | `> text` |
-| `---` | `[---]` | `hr` | `---` |
-| `[text](url)` | `[a href:"url" text]` | `a` | `[text](url)` |
-| `![alt](src)` | `[img src:"s" alt:"a"]` | `img` | `![a](s)` |
-
-**Auto-wrap**: bare `TextNode` at block level auto-wraps to `<p>` on MD output.
-
-**YAML frontmatter**: `[doc title:"..." author:"..."]` emits YAML frontmatter.
-
-**Tables**: `[table | pipe rows |]` stores raw GFM pipe table text; emitters pass
-it through for MD, and parse rows into `tr/th/td` for XML/JSON.
-
-**Unknown elements**: elements not in the vocabulary above render as
-`<!-- [element_name attr:val body] -->` in MD output, and are round-tripped back
-on MD input.
-
-Example document in CX MD dialect:
-
-```cx
-[doc title:"Guide"
-  [# CX Language Guide]
-  [p CX is a [** structured] language with [* clean] syntax.]
-  [## Lists]
-  [ul
-    [li Item one]
-    [li Item two]
+[service name=auth version:u8=2
+
+  # nested element with attributes including boolean signal: +tls means tls=true
+  [server
+    host=0.0.0.0
+    port:u16=8443
+    +tls
   ]
-  [a href:"https://example.com" Learn more]
+
+  [database
+    url=postgres://localhost:5432/auth
+    pool_size:u16=24
+    timeout_ms:u32=5000
+  ]
+
+  # block comment for multi-line content or to not parse an element
+  [- Daily cap counts successful requests only;
+     errors and 429s do not count toward the cap. ]
+
+  # :table block, typed columns
+  [limits :table[tier rps:u32 burst:u32 daily_cap:u32]
+    free       10    50    100_000
+    pro        100   500   10_000_000
+    enterprise 1000  5000  999_999_999
+  ]
+
+  # array literal
+  [allowed_origins [
+    https://app.example.com,
+    https://admin.example.com,
+  ]]
+
+  # map literal
+  [features {
+    new_billing: true,
+    legacy_auth: false,
+    canary_rollout: true,
+  }]
+
+  # sequence literal where elements flatten in CXL processing
+  [labels (production, payments, public-facing,)]
+
+  # array of arrays: weighted upstreams as [name, weight] tuples
+  [upstreams [
+    [us-east-1, 60,],
+    [us-west-2, 30,],
+    [eu-west-1, 10,],
+  ]]
+
+  # mixed content: markup inside prose
+  [doc
+    [p This service handles authentication for [strong all production
+       traffic]. Rate limits reset at midnight UTC.]
+  ]
 ]
 ```
 
-Produces Markdown:
+What's in those lines:
 
-```markdown
+- **Typed scalars** — `version:u8=2`, `port:u16=8443`, `pool_size:u16=24`,
+  `timeout_ms:u32=5000`. Each survives conversion to JSON / YAML / TOML /
+  XML / CXDB unchanged.
+- **Boolean sigils** — `+tls` means `tls=true`; `-debug` would mean `false`.
+- **Numeric underscores** — `100_000`, `10_000_000`.
+- **Line comments** — `# …` to end of line, preserved through `cx fmt`.
+- **Block comments** — `[- … ]` form for multi-line content, or to comment
+  out a whole element without re-parsing it.
+- **`:table` block** — typed columns, row-major in CX text, column-major
+  on the CXDB wire, CSV-natively round-trippable.
+- **Array literal** — `[https://…, https://…,]` for an ordered list.
+- **Map literal** — `{new_billing: true, …}` for a string-keyed dictionary.
+- **Sequence literal** — `(production, payments, public-facing,)` for a flat
+  set that flattens into its containing context under CXL processing.
+- **Array of arrays** — `[[us-east-1, 60,], [us-west-2, 30,], …]` for
+  nested rows. Pairs, triples, matrices — all the same shape.
+- **Mixed content** — `[strong all production traffic]` inline inside a
+  paragraph. The same brackets carry markup *and* structured config.
+
 ---
-title: Guide
----
 
-# CX Language Guide
+## Round-trip in both directions
 
-CX is a **structured** language with *clean* syntax.
-
-## Lists
-
-- Item one
-- Item two
-
-[Learn more](https://example.com)
-```
-
-### JSON output — semantic vs AST
-
-`--json` emits **semantic JSON**: collapsed data values as plain JSON, useful
-for data pipelines.
-
-`--ast` emits the **full AST** as JSON: every node type, attribute, and scalar
-preserved, useful for tooling and debugging.
+Import from any of six formats:
 
 ```sh
-cx --json examples/config.cx   # {"server": {"host": "localhost", "port": 8080, ...}}
-cx --ast  examples/config.cx   # {"type":"Document","elements":[{"type":"Element",...}]}
+$ cx --from=json --to=cx  config.json   > config.cx
+$ cx --from=yaml --to=cx  config.yaml   > config.cx
+$ cx --from=toml --to=cx  config.toml   > config.cx
+$ cx --from=xml  --to=cx  config.xml    > config.cx
+$ cx --from=md   --to=cx  article.md    > article.cx
+$ cx --from=csv  --to=cx  data.csv      > data.cx
 ```
 
-### Semantic JSON rules
+Export to any of seven:
 
-| CX construct | JSON output |
-|---|---|
-| `[port :int 8080]` | `"port": 8080` (native int) |
-| `[debug false]` | `"debug": false` (native bool) |
-| `[name Alice]` | `"name": "Alice"` (string) |
-| `[value null]` | `"value": null` |
-| `[tags :string[] a b c]` | `"tags": ["a", "b", "c"]` |
-| `[book ...]` repeated | `"book": [{...}, {...}]` (auto-array) |
-| `[p text [em bold] more]` | `"p": {"_": "text  more", "em": "bold"}` |
-| `[-comment]` | _(discarded)_ |
+```sh
+$ cx --json  service.cx     # → JSON
+$ cx --yaml  service.cx     # → YAML
+$ cx --toml  service.cx     # → TOML
+$ cx --xml   service.cx     # → XML
+$ cx --md    service.cx     # → Markdown
+$ cx --csv   service.cx     # → CSV (from :table blocks)
+$ cx --cxdb  service.cx     # → CXDB binary form
+```
 
-Repeated elements with the same name automatically collect into a JSON array:
+Verify with `cx eq` (data-equivalence):
+
+```sh
+$ cx --json service.cx | cx --from=json --to=cx > /tmp/rt.cx
+$ cx eq service.cx /tmp/rt.cx && echo "data-equivalent"
+data-equivalent
+```
+
+CX ↔ CXDB is **byte-stable** (CXDB *is* the strict-canonical form).
+The other five formats round-trip **data-equivalent** — presentation-layer
+differences (comments, attribute order, whitespace) are normalized; the
+data survives unchanged. Full per-format details, including the
+[lossy-conversion matrix](docs/COMPARISON.md#conversion-loss-matrix),
+in [`docs/COMPARISON.md`](docs/COMPARISON.md).
+
+---
+
+## CXPath — querying CX
+
+CXPath is XPath-for-CX: a path-and-predicate query syntax over the
+CX data model.
 
 ```cx
-[library
-  [book [title Dune] [year :int 1965]]
-  [book [title Neuromancer] [year :int 1984]]
+[users
+  [u name=Alice role=admin active=true]
+  [u name=Bob   role=user  active=true]
+  [u name=Carol role=user  active=false]
 ]
 ```
-```json
-{"library": {"book": [{"title": "Dune", "year": 1965}, {"title": "Neuromancer", "year": 1984}]}}
+
+```sh
+$ cx select '//u' users.cx
+[u name=Alice role=admin active=true]
+[u name=Bob role=user active=true]
+[u name=Carol role=user active=false]
+
+$ cx select '//u[@role=admin]' users.cx
+[u name=Alice role=admin active=true]
+
+$ cx select '//u[@active=true]' users.cx
+[u name=Alice role=admin active=true]
+[u name=Bob role=user active=true]
 ```
 
-### XML round-trip
+Predicates support `=` / `!=` / `<` / `>` / `<=` / `>=`, `and` /
+`or` / `not(...)`, `contains(...)` / `starts-with(...)`, `[N]`
+position, and child-existence (`[tags]`) / attribute-existence
+(`[@id]`) tests.
 
-CX uses the `cx:` namespace to preserve CX-specific metadata in XML output:
+CXPath is **the selection layer underneath CXL templating**, **the
+query API exposed by every binding** (`doc.select_all(expr)` etc.),
+and **the predicate syntax in `cx lint`, `cx diff`, and schema
+rules**. One query language, used everywhere structure is addressed.
+See [`spec/cxpath.md`](spec/cxpath.md).
 
-```xml
-<!-- cx:type preserves scalar type annotations -->
-<port cx:type="int">8080</port>
-<tags cx:type="string[]"><item>admin</item><item>user</item></tags>
+---
 
-<!-- cx:anchor and cx:merge preserve anchor/merge relationships -->
-<defaults cx:anchor="base" timeout="30" retries="3"/>
-<dev cx:merge="base" host="localhost" port="8080"/>
+
+## CXL — the CX Language
+
+CXL borrows the **data-code symbiosis** that makes XML + XQuery uniquely
+powerful — and improves on it. Where XQuery is a separate language with
+its own parser, type system, and runtime, **a CXL template file (.cxl)
+is CX format. Code is data and that's very powerful.** The same parser,
+the same data model, the same content-hash, the same schema engine
+work on configs *and* on the programs that transform them.
+
+CXL is CX's templating, querying, and transformation language. There is
+no separate runtime to install, no second grammar to learn, no impedance
+mismatch between "the data" and "the code that shapes it."
+
+### 1. Template a value
+
+Given a context document:
+
+```cx
+[user name=Alice role=admin active=true]
 ```
+
+A template can interpolate, conditionally branch, iterate, and render:
+
+```cxl
+[?if @active
+  :then Welcome [?= @name]! Role: [?= @role].
+  :else Account [?= @name] is disabled.
+]
+```
+
+```sh
+$ cx eval notification.cxl --data=user.cx
+Welcome Alice! Role: admin.
+```
+
+### 2. Iterate over elements
+
+```cx
+[team
+  [member name=Alice role=admin +active]
+  [member name=Bob   role=user  +active]
+  [member name=Carol role=user  -active]
+]
+```
+
+```cxl
+[?for m :in //member :return - [?= m/@name] ([?= m/@role])
+]
+```
+
+```sh
+$ cx eval team.cxl --data=team.cx
+- Alice (admin)- Bob (user)- Carol (user)
+```
+
+(Whitespace control between iterations is part of CXL 1.0's `[?-` /
+`-]` syntax; see [`docs/CXL.md`](docs/CXL.md).)
+
+Three more invocation styles — pipe-from-stdin, cross-format pipeline,
+and everything-inline `-e`/`-d` flags for shell one-liners — are covered
+in [`docs/CXL.md`](docs/CXL.md). The same `cx` binary handles format
+conversion, templating, and stdin/stdout composition: no separate
+`jq + jinja + pandoc`, no Python wrapper, no shell glue between three
+different tools.
+
+### CXL 1.0 → 3.1 → 4.0 — XQuery feature equivalence
+
+**CXL 1.0** (v0.6.0) ships the templating subset — interpolation
+(`[?= expr]`), conditional (`[?if]`), iteration (`[?for]`), context
+shift (`[?with]`), named blocks (`[?def]` / `[?use]`), parameterized
+templates (`[?def name :params [a b] :body …]`), partial inclusion
+(`[?include]`), a frozen filter set (`upper`, `lower`, `trim`, `length`,
+`concat`, `join`, `replace`, `default`, `first`, `rest`, `empty`,
+`reverse`, `escape-html`, `escape-url`, `raw`), and three output targets
+(`text` / `cx` / `html` with auto-escape). Enough to replace
+Jinja + Liquid + Handlebars for most real workloads.
+
+**CXL 3.1** (v0.9.0+) brings **XQuery 3.1 feature equivalence**: full
+FLWOR (`:let` / `:where` / `:order` / `:return`), user-defined functions
+(`[?fn name :params … :body …]`), maps and arrays as first-class values,
+the arrow operator (`@input => trim => upper`), pattern matching
+(`[?match]`), and try/catch.
+
+**CXL 4.0** (v1.x target) tracks XQuery 4.0 once it stabilizes —
+pipeline operator, partial function application, enhanced types,
+additional collection operations.
+
+The data-code symbiosis XML + XQuery have, in CX flavor: CXL queries
+CXL; programs inspect programs; one toolchain for both.
+
+Full reference: [`docs/CXL.md`](docs/CXL.md).
+
+---
+
+## CXDB — the binary form
+
+`.cxdb` is CX's content-addressable binary format. Same data, same
+semantics, smaller wire and stricter integrity:
+
+```sh
+$ cx --to=cxdb service.cx > service.cxdb
+$ wc -c service.cx service.cxdb
+    1301 service.cx
+     460 service.cxdb              # ~65% smaller; varint-packed, dictionary-encoded
+```
+
+CXDB gives you:
+
+- **Type fidelity.** `int64` stays `int64`. `bigint` stays exact.
+  `decimal` doesn't drift to float. The JSON round-trip that silently
+  truncates IDs above 2⁵³ doesn't happen through CXDB.
+- **Content addressability.** The bytes *are* the strict-canonical form —
+  no re-canonicalization needed before hashing. The same data produces the
+  same SHA-256 across every binding, every platform. Use it as a cache key,
+  a deduplication key, or a signed-artifact identity.
+- **Streaming.** Pull-based reader for files larger than RAM
+  (`cx_table_reader_*` / per-binding `TableReader`); bounded memory.
+- **Chunked tables.** Tabular data is column-major in CXDB even though it's
+  row-major in CX text — zstd-compressed, dictionary-encoded, and Arrow
+  C-Data interop is one optional library (`libcx_arrow`) away.
+
+```python
+# Per-binding: parse, work in Python, hash bytes for a cache key.
+import cxlib, hashlib
+doc = cxlib.parse(open("service.cx").read())
+blob = cxlib.to_data_bin("service.cx")    # bytes — the canonical form
+key  = hashlib.sha256(blob).hexdigest()
+```
+
+See [`spec/data_bin.md`](spec/data_bin.md) for the wire format.
+
+---
+
+## CLI tour
+
+A single statically-linked binary; no Python, Node, or JVM in the way.
+
+```sh
+$ cx demo                            # in-binary showcase (< 1 second)
+$ cx scaffold config > my.cx         # typed config skeleton
+$ cx scaffold table  > rows.cx       # :table skeleton
+$ cx scaffold doc    > article.cx    # mixed-content skeleton
+
+# Conversion (any → CX, CX → any)
+$ cx --json     file.cx              # → JSON
+$ cx --xml      file.cx              # → XML
+$ cx --yaml     file.cx              # → YAML
+$ cx --toml     file.cx              # → TOML
+$ cx --md       file.cx              # → Markdown
+$ cx --csv      file.cx              # → CSV (from :table)
+$ cx --from=json --to=cx data.json   # JSON → CX
+
+# Canonical / hashing / diff / equality
+$ cx fmt        file.cx              # idempotent canonical formatter
+$ cx canonical  file.cx              # strict canonical (data only)
+$ cx hash       file.cx              # SHA-256 hex
+$ cx eq         a.cx b.cx            # exit 0 iff data-equivalent
+$ cx diff       a.cx b.cx            # semantic diff
+
+# Linting & validation
+$ cx lint       file.cx              # style + correctness checks
+$ cx validate   file.cx --schema=svc.cxs
+
+# Tabular operations
+$ cx table info   data.cx            # rows, cols, types, byte size
+$ cx table dump   data.cx --to=cx    # round-trip via Table API
+
+# Templating
+$ cx eval       template.cxl --data=ctx.cx
+$ cx render     report.cxl --data=metrics.cx --target=html
+```
+
+Every subcommand is also available as a per-binding API call. See
+[`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) for the one-page reference.
+
+---
+
+## How CX compares
+
+| | CX | JSON | YAML | TOML | XML |
+|---|---|---|---|---|---|
+| Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+| Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes | ❌ number only (no int/float distinction) | partial (auto-detect, often wrong) | ✅ int / float / bool / datetime | partial (xs:type) |
+| Comments | ✅ block `[- ... ]` and line `# ...` | ❌ | ✅ `# ...` | ✅ `# ...` | ✅ `<!-- ... -->` |
+| Mixed content (markup + data) | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
+| Multiple top-level docs | ✅ no wrapper required | ❌ requires `[...]` array | ✅ via `---` separator | ❌ single document | partial |
+| Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
+| Type fidelity through round-trip | ✅ guaranteed via CXDB | ❌ int↔float coerced silently | partial | ✅ preserved | partial |
+| Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
+| Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
+| Templating language | ✅ CXL (same parser / data model) | external | external | external | XSLT / XQuery |
+| Content-addressable hash | ✅ canonical bytes → SHA-256 | ❌ key-order-dependent | ❌ | ❌ | ❌ |
+
+For the full head-to-head — including the conversion-loss matrix and per-
+format adoption guidance — see [`docs/COMPARISON.md`](docs/COMPARISON.md).
+
+---
+
+## Status
+
+CX is pre-1.0 and approaching v0.6.0 — the **API/format-stability boundary
+through 1.0**. The grammar is stable, the C ABI is versioned and forward-
+compatible, and the full test matrix passes across all 10 language bindings
+(V native + V-cffi + 8 FFI bindings).
+
+v0.6.0 highlights:
+
+- **17-member Public Table API** in every binding; stable through v1.0.
+- **Collection literals** — first-class `seq[T]`, `arr[T]`, `map[K, V]`
+  with cross-emitter parity.
+- **CXL 1.0** evaluator (V reference) + 10-binding decoder rollout.
+- **`cx table` CLI subcommand** — `info` / `dump` / `load` verbs with
+  `--to=cx` round-trip live; Parquet / Arrow IPC export reserved for the
+  libcx_arrow follow-up.
+- **Schema validator** — 20 of 20 spec rules complete on V / Python / Go.
+- **Streaming-write event API** (capability bit 27) for CX + XML.
+
+Formal security review and fuzz-testing infrastructure are still ahead, so
+pin a tested version and apply normal pre-1.0 caution before customer-facing
+use.
 
 ---
 
 ## Language bindings
 
-All language bindings wrap the same V implementation (`vcx/`) via the C ABI
-(`libcx.dylib` / `libcx.so`). Every binding exposes:
-
-- **Conversion API** — 6 input formats × 7 output formats (CX, XML, JSON, YAML, TOML, MD, AST), plus `to_cx_compact` and `ast_to_cx`
-- **Document API** — `parse`, `at`, `find_all`, `select` / `select_all` (CXPath), `transform` / `transform_all` (immutable update), streaming, `loads` / `dumps`
-
-All 10 languages have full feature parity. See each language's `README.md` for the complete API reference.
-
-### Python
-
-**Requires:** `libcx` built (`make build`). No pip packages needed.
-
-```python
-import sys; sys.path.insert(0, 'lang/python')
-import cxlib
-
-# Conversion API
-result = cxlib.to_json('[server [host localhost] [port :int 8080]]')
-# {"server": {"host": "localhost", "port": 8080}}
-
-# Document API — parse, navigate, query, transform
-doc = cxlib.parse('[config [server host=localhost port=8080] [db host=db.local]]')
-
-print(doc.at('config/server').attr('host'))   # localhost
-
-# CXPath select
-for svc in doc.select_all('//server[@port>=8080]'):
-    print(svc.attr('host'))   # localhost
-
-# Immutable transform — returns a new document, original unchanged
-updated = doc.transform('config/server',
-    lambda el: (el.set_attr('host', 'prod.example.com') or el))
-print(updated.at('config/server').attr('host'))  # prod.example.com
-print(doc.at('config/server').attr('host'))       # localhost
-```
-
-Errors raise `RuntimeError`. See `lang/python/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-python lang/python/examples/transform.py
-```
-
-Run conformance:
-```sh
-python lang/python/conformance.py
-```
-
-### V
-
-V is the native implementation language — the `vcx/` core is written in V and
-compiled to `libcx`. The V binding therefore exposes the full Document API in
-addition to the conversion API shared by all other bindings.
-
-**Requires:** V 0.5+, `libcx` built (`make build`).
-
-```v
-import cxlib
-
-fn main() {
-    // Conversion API (shared by all bindings)
-    result := cxlib.to_json('[server [host localhost] [port :int 8080]]') or { panic(err) }
-    println(result)
-    // {"server": {"host": "localhost", "port": 8080}}
-
-    // Document API — parse, navigate, transform
-    doc := cxlib.parse('[config
-  [server host=localhost port=8080]
-  [database host=db.local port=5432]
-]') or { panic(err) }
-
-    host := (doc.at('config/server') or { panic('') }).attr('host') or { panic('') }
-    println(host.str())  // localhost
-
-    // Immutable update — returns a new document, original unchanged
-    updated := doc.transform('config/server', fn (el cxlib.Element) cxlib.Element {
-        mut e := el
-        e.set_attr('host', cxlib.ScalarVal('prod.example.com'))
-        return e
-    })
-    println((updated.at('config/server') or { panic('') }).attr('host') or { panic('') }.str())
-    // prod.example.com
-
-    // CXPath select
-    for svc in doc.select_all('//server[@port>=8080]') {
-        println(svc.attr('host') or { '' }.str())
-    }
-}
-```
-
-Conversion functions return `!string`; `version()` returns a plain `string`.
-See `lang/v/README.md` for the full Document and CXPath API reference.
-
-Run the examples:
-```sh
-v run lang/v/examples/demo.v
-v run lang/v/examples/transform.v
-```
-
-### Rust
-
-**Requires:** `libcx` built (`make build`). No crates.io dependencies.
-
-```rust
-use cxlib::ast::{parse, Value};
-
-// Conversion API
-let result = cxlib::to_json("[server [host localhost] [port :int 8080]]").unwrap();
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-let doc = parse("[config [server host=localhost port=8080]]").unwrap();
-println!("{:?}", doc.at("config/server").unwrap().attr("host"));  // Some("localhost")
-
-// CXPath select
-let svcs = doc.select_all("//server[@port>=8080]").unwrap();
-println!("{:?}", svcs[0].attr("host"));   // Some("localhost")
-
-// Immutable transform
-let updated = doc.transform("config/server", |mut el| {
-    el.set_attr("host", Value::String("prod.example.com".into()), None);
-    el
-});
-```
-
-Errors return `Err(String)`. See `lang/rust/cxlib/README.md` for the full API reference.
-
-Add to `Cargo.toml`:
-```toml
-[dependencies]
-cxlib = { path = "lang/rust/cxlib" }
-```
-
-Run the full example:
-```sh
-cargo run --manifest-path lang/rust/cxlib/Cargo.toml --example transform
-```
-
-Run conformance:
-```sh
-make test-rust
-```
-
-### Ruby
-
-**Requires:** `libcx` built (`make build`), Ruby 3+ with `ffi` gem (`gem install ffi`).
-
-```ruby
-require_relative 'lang/ruby/cxlib/lib/cxlib'
-
-# Conversion API
-result = CXLib.to_json('[server [host localhost] [port :int 8080]]')
-# {"server": {"host": "localhost", "port": 8080}}
-
-# Document API
-doc = CXLib.parse('[config [server host=localhost port=8080]]')
-puts doc.at('config/server').attr('host')   # localhost
-
-# CXPath select
-doc.select_all('//server[@port>=8080]').each { |el| puts el.attr('host') }
-
-# Immutable transform
-updated = doc.transform('config/server') { |el| el.set_attr('host', 'prod.example.com'); el }
-puts updated.at('config/server').attr('host')  # prod.example.com
-puts doc.at('config/server').attr('host')       # localhost
-```
-
-Errors raise `RuntimeError`. See `lang/ruby/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-/opt/homebrew/opt/ruby/bin/ruby lang/ruby/cxlib/examples/transform.rb
-```
-
-Run conformance:
-```sh
-make test-ruby
-```
-
-### Go
-
-**Requires:** `libcx` built (`make build`), Go 1.21+, CGo toolchain.
-
-```go
-import cxlib "github.com/cx-home/cx/lang/go"
-
-// Conversion API
-result, _ := cxlib.ToJson("[server [host localhost] [port :int 8080]]")
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-doc, _ := cxlib.Parse("[config [server host=localhost port=8080]]")
-srv := doc.At("config/server")
-fmt.Println(srv.Attr("host"))   // localhost
-
-// CXPath select
-svcs, _ := doc.SelectAll("//server[@port>=8080]")
-fmt.Println(svcs[0].Attr("host"))   // localhost
-
-// Immutable transform
-updated := doc.Transform("config/server", func(el *cxlib.Element) *cxlib.Element {
-    el.SetAttr("host", "prod.example.com", "")
-    return el
-})
-fmt.Println(updated.At("config/server").Attr("host"))  // prod.example.com
-fmt.Println(doc.At("config/server").Attr("host"))       // localhost
-```
-
-Errors return non-nil `error`. See `lang/go/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-cd lang/go/cxlib && go run ./examples/transform/
-```
-
-Run conformance:
-```sh
-make test-go
-```
-
-### TypeScript
-
-**Requires:** `libcx` built (`make build`), Node.js 18+, `koffi` npm package.
-
-```typescript
-import * as cx from './lang/typescript/cxlib/src/index';
-import { parse } from './lang/typescript/cxlib/src/ast';
-
-// Conversion API
-const result = cx.toJson('[server [host localhost] [port :int 8080]]');
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-const doc = parse('[config [server host=localhost port=8080]]');
-console.log(doc.at('config/server')!.attr('host'));   // localhost
-
-// CXPath select
-const svcs = doc.selectAll('//server[@port>=8080]');
-console.log(svcs[0].attr('host'));   // localhost
-
-// Immutable transform
-const updated = doc.transform('config/server', el => {
-    el.setAttr('host', 'prod.example.com');
-    return el;
-});
-console.log(updated.at('config/server')!.attr('host'));  // prod.example.com
-console.log(doc.at('config/server')!.attr('host'));       // localhost
-```
-
-Errors throw `Error`. See `lang/typescript/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-cd lang/typescript/cxlib && npm run example
-```
-
-Run conformance:
-```sh
-make test-typescript
-```
-
-### Java
-
-**Requires:** `libcx` built (`make build`), Java 21+, Maven, JNA 5.14.0 (fetched by Maven).
-
-```java
-import cx.CXDocument;
-
-// Conversion API
-String result = cx.CxLib.toJson("[server [host localhost] [port :int 8080]]");
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-CXDocument doc = CXDocument.parse("[config [server host=localhost port=8080]]");
-System.out.println(doc.at("config/server").attr("host"));   // localhost
-
-// CXPath select
-doc.selectAll("//server[@port>=8080]").forEach(el -> System.out.println(el.attr("host")));
-
-// Immutable transform
-CXDocument updated = doc.transform("config/server", el -> {
-    el.setAttr("host", "prod.example.com", null);
-    return el;
-});
-System.out.println(updated.at("config/server").attr("host"));  // prod.example.com
-System.out.println(doc.at("config/server").attr("host"));       // localhost
-```
-
-Errors throw `RuntimeException`. See `lang/java/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-mvn -f lang/java/cxlib/pom.xml exec:java -Dexec.mainClass=cx.examples.Transform
-```
-
-Run conformance:
-```sh
-make test-java
-```
-
-### Kotlin
-
-**Requires:** `libcx` built (`make build`), Java 21 (arm64), Gradle, JNA 5.14.0.
-
-```kotlin
-import cx.CXDocument
-
-// Conversion API
-val result = cx.CxLib.toJson("[server [host localhost] [port :int 8080]]")
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-val doc = CXDocument.parse("[config [server host=localhost port=8080]]")
-println(doc.at("config/server")?.attr("host"))   // localhost
-
-// CXPath select
-doc.selectAll("//server[@port>=8080]").forEach { println(it.attr("host")) }
-
-// Immutable transform
-val updated = doc.transform("config/server") { el ->
-    el.setAttr("host", "prod.example.com")
-    el
-}
-println(updated.at("config/server")?.attr("host"))  // prod.example.com
-println(doc.at("config/server")?.attr("host"))       // localhost
-```
-
-Errors throw `RuntimeException`. See `lang/kotlin/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-cd lang/kotlin/cxlib && JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home gradle run
-```
-
-Run conformance:
-```sh
-make test-kotlin
-```
-
-### C#
-
-**Requires:** `libcx` built (`make build`), .NET 10 SDK.
-
-```csharp
-using CX;
-
-// Conversion API
-string result = CxLib.ToJson("[server [host localhost] [port :int 8080]]");
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-var doc = CXDocument.Parse("[config [server host=localhost port=8080]]");
-Console.WriteLine(doc.At("config/server")?.Attr("host"));   // localhost
-
-// CXPath select
-foreach (var el in doc.SelectAll("//server[@port>=8080]"))
-    Console.WriteLine(el.Attr("host"));   // localhost
-
-// Immutable transform
-var updated = doc.Transform("config/server", el => {
-    el.SetAttr("host", "prod.example.com");
-    return el;
-});
-Console.WriteLine(updated.At("config/server")?.Attr("host"));  // prod.example.com
-Console.WriteLine(doc.At("config/server")?.Attr("host"));       // localhost
-```
-
-Errors throw `InvalidOperationException`. See `lang/csharp/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec dotnet run --project lang/csharp/examples/transform/transform.csproj
-```
-
-Run conformance:
-```sh
-make test-csharp
-```
-
-### Swift
-
-**Requires:** `libcx` built (`make build`), Xcode 15+ (Swift 5.9+), macOS.
-
-```swift
-import CXLib
-
-// Conversion API
-let result = try toJson("[server [host localhost] [port :int 8080]]")
-// {"server": {"host": "localhost", "port": 8080}}
-
-// Document API
-let doc = try CXDocument.parse("[config [server host=localhost port=8080]]")
-print(doc.at("config/server")?.attr("host") as Any)   // localhost
-
-// CXPath select
-let svcs = try doc.selectAll("//server[@port>=8080]")
-print(svcs.first?.attr("host") as Any)   // localhost
-
-// Immutable transform
-let updated = doc.transform("config/server") { el in
-    el.setAttr("host", value: "prod.example.com")
-    return el
-}
-print(updated.at("config/server")?.attr("host") as Any)  // prod.example.com
-print(doc.at("config/server")?.attr("host") as Any)       // localhost
-```
-
-Errors throw `CXError`. See `lang/swift/cxlib/README.md` for the full API reference.
-
-Run the full example:
-```sh
-swift run --package-path lang/swift/cxlib transform
-```
-
-Run conformance:
-```sh
-make test-swift
-```
+| binding | install |
+| ------- | ------- |
+| **V** (native — reference implementation) | `v install cx-home.cx-v` — see [`cx-home/cx-v`](https://github.com/cx-home/cx-v) |
+| Python | `pip install cxlib` |
+| Go | `go get github.com/cx-home/cx/lang/go` |
+| Rust | `cargo add cxlib` |
+| TypeScript | `npm install @cx-home/cx` |
+| Java / Kotlin | `io.cxhome:cxlib:0.6.0` (Maven Central) |
+| Swift | SwiftPM via `https://github.com/cx-home/cx` |
+| C# | `dotnet add package CX` |
+| Ruby | `gem install cxlib` |
+
+**V is the reference implementation.** The V core lives in `vcx/cx/` in
+this repo and is published as the `cx-home/cx-v` package for V users.
+The other 9 bindings are thin wrappers over the same `libcx` shared
+library compiled from the V source — they expose identical behaviour
+through each language's idiomatic API.
+
+Every binding ships the v0.6.0 **Public Table API** with a uniform 17-
+member surface (`row` / `column` / `cell` / `slice` / `head` / `tail`
+/ `select_cols` / iteration / 5 conversion / 4 properties / equality).
+Method names follow each language's conventions (snake_case, camelCase,
+PascalCase) but the underlying behaviour is byte-identical. Per-binding
+READMEs live under [`lang/`](lang/).
 
 ---
 
-## Building from source
+## Where to go next
 
-```sh
-# Build CLI binary + shared library
-make build
+| You want to... | Read this |
+| --- | --- |
+| **Try CX in 60 seconds** | run `cx demo` |
+| **Write your first `.cx` file** | [`docs/TUTORIAL.md`](docs/TUTORIAL.md) |
+| **One-page syntax reference** | [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) |
+| **Compare CX to JSON / YAML / TOML / XML** | [`docs/COMPARISON.md`](docs/COMPARISON.md) |
+| **Learn CXL (templating + querying + transform)** | [`docs/CXL.md`](docs/CXL.md) |
+| **Use CX from your favorite language** | [`lang/<your-lang>/cxlib/README.md`](lang/) |
+| **Check the formal grammar / C ABI / conversion rules** | [`spec/`](spec/) |
+| **Frequently asked questions** | [`docs/FAQ.md`](docs/FAQ.md) |
+| **Upgrade existing CX from a previous version** | [`MIGRATION.md`](MIGRATION.md) |
+| **See what's in the latest release** | [`RELEASE_NOTES_v0.6.0.md`](RELEASE_NOTES_v0.6.0.md) |
+| **Contribute code, docs, or bug reports** | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
-# Run conformance tests
-make test
+---
 
-# Install shared library and header to dist/
-make dist
-```
+## CX project at github.com/cx-home
 
-After `make dist`:
-```
-dist/
-  lib/libcx.dylib     # (or libcx.so on Linux)
-  include/cx.h        # C header — 49 exported functions (44 conversion + 5 utility/advanced)
-```
+| repo | what's there |
+| ---- | ------------ |
+| [`cx`](https://github.com/cx-home/cx) (this repo) | spec, V core, all 10 bindings, conformance suite, examples, docs |
+| [`cx-v`](https://github.com/cx-home/cx-v) | V native package (`v install cx-home.cx-v`) |
 
-### C ABI
+---
 
-The shared library exposes 49 C-exported functions: 44 conversion functions
-(6×7 standard matrix plus `cx_to_cx_compact` and `cx_ast_to_cx`), plus
-`cx_free`, `cx_version`, and 3 advanced streaming/binary functions
-(`cx_to_events`, `cx_to_events_bin`, `cx_to_ast_bin`):
+## License
 
-```c
-#include "cx.h"
-
-// version query
-char* ver = cx_version();
-printf("libcx %s\n", ver);
-cx_free(ver);
-
-// conversion
-char* result = cx_to_json("[port :int 8080]", NULL);
-// result → "{\"port\": 8080}"
-cx_free(result);
-
-// with error handling
-char* err = NULL;
-char* out = cx_yaml_to_toml(yaml_src, &err);
-if (!out) {
-    fprintf(stderr, "error: %s\n", err);
-    cx_free(err);
-}
-```
-
-Every string returned by the library (including `cx_version()`) is
-heap-allocated and must be released with `cx_free()`. Never free with the
-system `free()` directly.
-
-### Conformance tests
-
-The conformance suite lives in `conformance/` and covers:
-- `core.txt` — documents, elements, comments, raw text, entity refs, PIs, DTD
-- `extended.txt` — scalars, type annotations, arrays (auto-array, `:[]`, typed),
-  anchors, merges, multi-doc, triple-quoted strings, block content, short aliases
-- `xml.txt` — XML input parsing and round-trips
-- `md.txt` — Markdown output from CX, and MD input parsing
-
-```sh
-make test          # all suites: V conformance + Rust cross-check + Python
-make conform-vcx   # V conformance only (115 cases)
-```
+Apache-2.0. See [`LICENSE`](LICENSE).

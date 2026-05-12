@@ -1,0 +1,11 @@
+# typed_int.cx — int64 precision survives every format hop.
+#
+# Try:  cx --json typed_int.cx
+#       cx eq typed_int.cx <(cx --json typed_int.cx | cx --from=json)
+
+[record
+  [id :i64 9007199254740993]
+  [name 'precise-id-survives-cx']
+  [count :u32 4294967295]
+  [ratio :f64 3.141592653589793]
+]

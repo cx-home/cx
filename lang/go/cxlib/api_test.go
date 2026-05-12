@@ -647,10 +647,11 @@ func TestLoadsReturnsMap(t *testing.T) {
 	if server["host"] != "localhost" {
 		t.Fatalf("expected localhost, got %v", server["host"])
 	}
-	// JSON unmarshals numbers as float64
-	port, ok := server["port"].(float64)
+	// v3.4: CXDB v1 preserves int type (not coerced to float64 like
+	// the prior JSON detour). spec/type_mapping.md §2.
+	port, ok := server["port"].(int64)
 	if !ok || port != 8080 {
-		t.Fatalf("expected port 8080, got %v", server["port"])
+		t.Fatalf("expected port 8080 (int64), got %v (%T)", server["port"], server["port"])
 	}
 }
 
@@ -676,9 +677,10 @@ func TestLoadsScalars(t *testing.T) {
 	m := data.(map[string]any)
 	values := m["values"].(map[string]any)
 
-	count, ok := values["count"].(float64)
+	// v3.4: CXDB v1 preserves int type. spec/type_mapping.md §2.
+	count, ok := values["count"].(int64)
 	if !ok || count != 42 {
-		t.Fatalf("expected count=42, got %v", values["count"])
+		t.Fatalf("expected count=42 (int64), got %v (%T)", values["count"], values["count"])
 	}
 	enabled, ok := values["enabled"].(bool)
 	if !ok || enabled != true {
@@ -733,9 +735,12 @@ func TestLoadsDumpsDataPreserved(t *testing.T) {
 	m := restored.(map[string]any)
 	server := m["server"].(map[string]any)
 
-	port, ok := server["port"].(float64)
+	// v3.4: CXDB v1 preserves int type through round-trip (Go literal
+	// 8080 in the original map is `int`, encoded as int8/int16/int32
+	// via narrowest-fit, decoded back as int64 per type_mapping spec).
+	port, ok := server["port"].(int64)
 	if !ok || port != 8080 {
-		t.Fatalf("expected port 8080, got %v", server["port"])
+		t.Fatalf("expected port 8080 (int64), got %v (%T)", server["port"], server["port"])
 	}
 	if server["host"] != "localhost" {
 		t.Fatalf("expected host localhost, got %v", server["host"])

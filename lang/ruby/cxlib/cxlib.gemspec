@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'cxlib'
-  s.version     = '0.5.0'
+  s.version     = '0.6.0'
   s.summary     = 'CX format library'
   s.description = 'Parse, stream, and convert CX/XML/JSON/YAML/TOML/Markdown via libcx'
   s.license     = 'MIT'

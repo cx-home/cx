@@ -11,7 +11,33 @@ import com.google.gson.JsonPrimitive
 
 sealed class Node
 
-data class Attr(val name: String, var value: Any?, var dataType: String? = null)
+data class Attr(
+    val name: String,
+    var value: Any?,
+    var dataType: String? = null,
+    /** v3.4 (ADR 0002): expanded-name fields populated by
+     *  [CXDocument.resolveNamespaces]. `local` is the part after the
+     *  first ':' in `name` (or the whole name); `nsUri` is the resolved
+     *  URI, null when no binding is in scope. Per XML Namespaces 1.0
+     *  §6.2 the default ns does not apply to unprefixed attributes. */
+    var local: String = "",
+    var nsUri: String? = null,
+    /** v3.4 (ADR 0003): true when the source attribute value was a bare
+     *  `@id` reference token. Quoted strings starting with '@' have
+     *  isRef = false. Round-trip preserves the bare form on emit. */
+    var isRef: Boolean = false,
+    /** v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+     *  When non-null, `value` is unused and the attribute's content is
+     *  the parsed body sequence. Used by CXL evaluation directives like
+     *  `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL evaluation;
+     *  round-trips as opaque structure (ADR 0016 R5). ast_bin v5+. */
+    var body: List<Node>? = null,
+) {
+    /** Local part of the attribute name (post-colon, or whole name). */
+    fun localName(): String = local
+    /** Resolved namespace URI; null for unprefixed or unbound prefixes. */
+    fun namespaceUri(): String? = nsUri
+}
 
 class Element(
     val name: String,
@@ -21,6 +47,25 @@ class Element(
     val attrs: MutableList<Attr> = mutableListOf(),
     val items: MutableList<Node> = mutableListOf(),
 ) : Node() {
+
+    /** v3.4 (ADR 0002): expanded-name fields populated by
+     *  [CXDocument.resolveNamespaces]. */
+    var local: String = ""
+    var nsUri: String? = null
+    /** v3.4 (ADR 0003): syntactic ID declaration ("#name" token); null
+     *  when the element has no ID. Distinct from anchor. */
+    var id: String? = null
+    /** v3.4 (ADR 0003 D1): body-position reference token. When set,
+     *  the element was written as `[name @id]` — a bare-`@id` body
+     *  reference with no other meta or items. Carried over the
+     *  ast_bin wire format at v3+ (Phase 7.70 bumped 2 → 3). */
+    var bodyRef: String? = null
+
+    /** Local part of the element name (post-colon, or whole name). */
+    fun localName(): String = local
+    /** Resolved namespace URI; null when no binding is in scope and
+     *  the prefix is not reserved. */
+    fun namespaceUri(): String? = nsUri
 
     fun attr(name: String): Any? = attrs.find { it.name == name }?.value
 
@@ -108,11 +153,44 @@ class Element(
 
     fun select(expr: String): Element? = selectAll(expr).firstOrNull()
 
+    /**
+     * v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+     * Elements are *live references* into this Element's tree —
+     * mutations propagate, preserving prior behavior. Semantics match
+     * V's Element.select_all: this element's items become the top-
+     * level candidate set.
+     */
     fun selectAll(expr: String): List<Element> {
-        val cx = cxpathParse(expr)
-        val result = mutableListOf<Element>()
-        collectStep(this, cx, 0, result)
-        return result
+        // Emit each Element child as top-level so V's
+        // Document.select_all_paths walks the same candidate set V's
+        // Element.select_all would. Track a doc-index → orig-index
+        // mapping (non-Element items don't affect CXPath matches but
+        // shift item indices).
+        val sb = StringBuilder()
+        val docToOrig = mutableListOf<Int>()
+        for ((i, item) in items.withIndex()) {
+            if (item is Element) {
+                sb.append(emitElement(item, 0))
+                docToOrig.add(i)
+            }
+        }
+        val docStr = sb.toString().trimEnd()
+        val paths = CxLib.selectAllPaths(docStr, expr)
+        val out = mutableListOf<Element>()
+        for (p in paths) {
+            if (p.isEmpty()) continue
+            val top = p[0]
+            if (top !in docToOrig.indices) continue
+            var node: Node = items[docToOrig[top]]
+            var ok = true
+            for (i in 1 until p.size) {
+                val el = node as? Element
+                if (el == null || p[i] !in el.items.indices) { ok = false; break }
+                node = el.items[p[i]]
+            }
+            if (ok && node is Element) out.add(node)
+        }
+        return out
     }
 }
 
@@ -128,7 +206,31 @@ data class XMLDeclNode(
     val encoding: String? = null,
     val standalone: String? = null,
 ) : Node()
-data class CXDirectiveNode(val attrs: List<Attr>) : Node()
+data class CXDirectiveNode(
+    val attrs: List<Attr>,
+    /** v0.6.0 — directives may carry an `&anchor` and/or nested
+     *  elements. Currently used by the standalone-fragment form
+     *  `[?cx frag &name [body :TYPE :flags]]` (spec/schema.md §8).
+     *  ast_bin format version 4 carries them; v1-3 buffers populate
+     *  these as null/empty. */
+    val anchor: String? = null,
+    val items: List<Node> = emptyList(),
+) : Node()
+
+/** v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text at v0.6.0;
+ *  the CXL evaluator at v0.7.0+ parses it as CXPath at evaluation time.
+ *  ast_bin tag 0x0D (format v5+). */
+data class InterpolationNode(val expr: String) : Node()
+
+/** v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Reserved EvalNames
+ *  (if/for/with/cond/include/def/use/let/fn/match/try) parse into this
+ *  node. Inert at v0.6.0; the CXL evaluator dispatches on `name`.
+ *  ast_bin tag 0x0E (format v5+). */
+data class EvalDirectiveNode(
+    val name: String,
+    val attrs: List<Attr> = emptyList(),
+    val items: List<Node> = emptyList(),
+) : Node()
 data class DoctypeDeclNode(
     val name: String,
     val externalId: Any? = null,
@@ -179,17 +281,31 @@ class CXDocument(
         return null
     }
 
+    /** Return the Element declaring `#id`, or null. v3.4 (ADR 0003). */
+    fun resolveId(id: String): Element? =
+        findElementById(elements, id) ?: findElementById(prolog, id)
+
+    /** {id: Element} map for the whole document. v3.4 (ADR 0003). */
+    fun elementsById(): Map<String, Element> {
+        val out = mutableMapOf<String, Element>()
+        collectElementsById(elements, out)
+        collectElementsById(prolog, out)
+        return out
+    }
+
     fun append(node: Node) { elements.add(node) }
     fun prepend(node: Node) { elements.add(0, node) }
 
     fun select(expr: String): Element? = selectAll(expr).firstOrNull()
 
+    /**
+     * v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+     * Elements are live references into this Document's tree —
+     * mutations propagate.
+     */
     fun selectAll(expr: String): List<Element> {
-        val cx = cxpathParse(expr)
-        val vroot = Element("#document", items = elements.toMutableList())
-        val result = mutableListOf<Element>()
-        collectStep(vroot, cx, 0, result)
-        return result
+        val paths = CxLib.selectAllPaths(toCx(), expr)
+        return paths.mapNotNull { navigateDocPath(this, it) }
     }
 
     fun transform(path: String, f: (Element) -> Element): CXDocument {
@@ -208,64 +324,163 @@ class CXDocument(
         return this
     }
 
+    /**
+     * v3.4: thunks to libcx via cx_select_all_paths (CB-5). Paths are
+     * applied bottom-up (longest first) so when a parent is rewritten
+     * its f-input already contains the f-results of descendant
+     * matches — matching the prior post-order semantics.
+     */
     fun transformAll(expr: String, f: (Element) -> Element): CXDocument {
-        val cx = cxpathParse(expr)
-        val newElements = elements.map { rebuildNode(it, cx, f) }.toMutableList()
-        return CXDocument(newElements, prolog.toMutableList(), doctype)
+        val paths = CxLib.selectAllPaths(toCx(), expr)
+        if (paths.isEmpty()) return this
+        val sorted = paths.sortedByDescending { it.size }
+        var newDoc = this
+        for (p in sorted) {
+            val target = navigateDocPath(newDoc, p) ?: continue
+            newDoc = replaceAtDocPath(newDoc, p, f(elemDetached(target)))
+        }
+        return newDoc
     }
 
     fun toCx(): String = emitDoc(this)
-    fun toXml(): String = CxLib.toXml(toCx())
-    fun toJson(): String = CxLib.toJson(toCx())
-    fun toYaml(): String = CxLib.toYaml(toCx())
-    fun toToml(): String = CxLib.toToml(toCx())
-    fun toMd(): String = CxLib.toMd(toCx())
+
+    /**
+     * Serialize this Document to a FRAMED [u32 LE size][payload] AST
+     * bin ByteArray. Used internally by toXml / toJson / etc.
+     * (Phase 5 / CB-1).
+     */
+    fun toAstBin(): ByteArray = BinaryDecoder.encodeAST(this)
+
+    // v3.4 (Phase 5 / CB-1): format methods now go through
+    // cx_ast_bin_to_<fmt>(toAstBin()) directly, avoiding the prior
+    // emit-CX-and-reparse detour.
+    fun toXml(): String  = CxLib.astBinToXml (toAstBin())
+    fun toJson(): String = CxLib.astBinToJson(toAstBin())
+    fun toYaml(): String = CxLib.astBinToYaml(toAstBin())
+    fun toToml(): String = CxLib.astBinToToml(toAstBin())
+    fun toMd(): String   = CxLib.astBinToMd  (toAstBin())
 
     companion object {
+        // ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────
+        //
+        // Mirrors V core's vcx/cx/namespaces.v. Walks a parsed Document,
+        // populating Element.{local, nsUri} and Attr.{local, nsUri} from
+        // in-scope xmlns / xmlns: declarations. Called at the tail of
+        // every parse entry point.
+
+        const val XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
+        const val CX_NAMESPACE_URI  = "https://cx-home.org/ns/cx"
+
+        private fun splitNsPrefix(name: String): Pair<String, String> {
+            val i = name.indexOf(':')
+            return if (i < 0) "" to name else name.substring(0, i) to name.substring(i + 1)
+        }
+
+        private fun lookupNs(prefix: String, scope: List<MutableMap<String, String>>): String? {
+            when (prefix) {
+                "xml"   -> return XML_NAMESPACE_URI
+                "cx"    -> return CX_NAMESPACE_URI
+                "xmlns" -> return null
+            }
+            for (i in scope.indices.reversed()) {
+                if (scope[i].containsKey(prefix)) {
+                    val uri = scope[i][prefix]
+                    return if (uri.isNullOrEmpty()) null else uri
+                }
+            }
+            return null
+        }
+
+        private fun resolveElement(e: Element, scope: MutableList<MutableMap<String, String>>) {
+            val frame = mutableMapOf<String, String>()
+            for (a in e.attrs) {
+                val v = a.value?.toString() ?: ""
+                if (a.name == "xmlns") frame[""] = v
+                else if (a.name.startsWith("xmlns:") && a.name.length > 6)
+                    frame[a.name.substring(6)] = v
+            }
+            val pushed = frame.isNotEmpty()
+            if (pushed) scope.add(frame)
+
+            val (prefix, local) = splitNsPrefix(e.name)
+            e.local = local
+            e.nsUri = lookupNs(prefix, scope)
+
+            for (a in e.attrs) {
+                val (ap, al) = splitNsPrefix(a.name)
+                a.local = al
+                if (a.name == "xmlns" || ap == "xmlns") { a.nsUri = null; continue }
+                if (ap.isEmpty()) { a.nsUri = null; continue }
+                a.nsUri = lookupNs(ap, scope)
+            }
+
+            for (item in e.items) if (item is Element) resolveElement(item, scope)
+
+            if (pushed) scope.removeAt(scope.size - 1)
+        }
+
+        /** Populate [Element.local], [Element.nsUri], [Attr.local], and
+         *  [Attr.nsUri] on every node in [doc] per ADR 0002.
+         *  Idempotent. Called automatically by [parse] / [parseXml] /
+         *  [parseJson] / [parseYaml] / [parseToml] / [parseMd]. */
+        fun resolveNamespaces(doc: CXDocument) {
+            val scope = mutableListOf<MutableMap<String, String>>()
+            for (n in doc.elements) if (n is Element) resolveElement(n, scope)
+        }
+
         fun parse(cxStr: String): CXDocument {
             val data = CxLib.astBin(cxStr)
-            return BinaryDecoder.decodeAST(data)
+            val doc = BinaryDecoder.decodeAST(data)
+            resolveNamespaces(doc)
+            return doc
         }
 
+        /**
+         * Stream a CX string as a list of SAX-like StreamEvents.
+         *
+         * v3.4 (Phase 5 / CB-4): pulls events one-by-one via the handle
+         * API. Replaces the prior eager-buffered cx_to_events_bin path.
+         * For true pull-based streaming with caller-controlled
+         * cancellation, use [EventStream.open] directly.
+         */
         fun stream(cxStr: String): List<StreamEvent> {
-            val data = CxLib.eventsBin(cxStr)
-            return BinaryDecoder.decodeEvents(data)
+            EventStream.open(cxStr).use { s ->
+                val events = mutableListOf<StreamEvent>()
+                for (ev in s) events.add(ev)
+                return events
+            }
         }
 
-        fun parseXml(s: String): CXDocument {
-            val astJson = CxLib.xmlToAst(s)
-            val root = JsonParser.parseString(astJson).asJsonObject
-            return docFromJson(root)
-        }
+        // v3.4 (Phase 5 / CB-2): parse_<format> goes through
+        // cx_<format>_to_ast_bin directly, avoiding the prior cx_<fmt>
+        // _to_ast → JSON.parse → walk-dict pipeline.
 
-        fun parseJson(s: String): CXDocument {
-            val astJson = CxLib.jsonToAst(s)
-            val root = JsonParser.parseString(astJson).asJsonObject
-            return docFromJson(root)
-        }
+        fun parseXml(s: String): CXDocument =
+            BinaryDecoder.decodeAST(CxLib.xmlToAstBin(s)).also { resolveNamespaces(it) }
 
-        fun parseYaml(s: String): CXDocument {
-            val astJson = CxLib.yamlToAst(s)
-            val root = JsonParser.parseString(astJson).asJsonObject
-            return docFromJson(root)
-        }
+        fun parseJson(s: String): CXDocument =
+            BinaryDecoder.decodeAST(CxLib.jsonToAstBin(s)).also { resolveNamespaces(it) }
 
-        fun parseToml(s: String): CXDocument {
-            val astJson = CxLib.tomlToAst(s)
-            val root = JsonParser.parseString(astJson).asJsonObject
-            return docFromJson(root)
-        }
+        fun parseYaml(s: String): CXDocument =
+            BinaryDecoder.decodeAST(CxLib.yamlToAstBin(s)).also { resolveNamespaces(it) }
 
-        fun parseMd(s: String): CXDocument {
-            val astJson = CxLib.mdToAst(s)
-            val root = JsonParser.parseString(astJson).asJsonObject
-            return docFromJson(root)
-        }
+        fun parseToml(s: String): CXDocument =
+            BinaryDecoder.decodeAST(CxLib.tomlToAstBin(s)).also { resolveNamespaces(it) }
 
-        fun loads(cxStr: String): Any? {
-            val jsonStr = CxLib.toJson(cxStr)
-            return parseJsonValue(JsonParser.parseString(jsonStr))
-        }
+        fun parseMd(s: String): CXDocument =
+            BinaryDecoder.decodeAST(CxLib.mdToAstBin(s)).also { resolveNamespaces(it) }
+
+        /**
+         * Deserialize a CX data string into native Kotlin types
+         * (Map/List/scalar).
+         *
+         * v3.4: parses through CXDB v1 (cx_to_data_bin) directly into Kotlin
+         * types — no JSON-string detour. Type fidelity preserved (integers
+         * stay Long, floats stay Double, booleans stay Boolean, dates
+         * round-trip as java.time.LocalDate, bytes as ByteArray). Closes
+         * audit finding CB-3.
+         */
+        fun loads(cxStr: String): Any? = DataBin.decode(CxLib.toDataBin(cxStr))
 
         fun loadsXml(s: String): Any? {
             val jsonStr = CxLib.xmlToJson(s)
@@ -292,10 +507,15 @@ class CXDocument(
             return parseJsonValue(JsonParser.parseString(jsonStr))
         }
 
-        fun dumps(data: Any?): String {
-            val jsonStr = nativeToJsonString(data)
-            return CxLib.jsonToCx(jsonStr)
-        }
+        /**
+         * Serialize native Kotlin types (Map/List/scalar) to a CX string.
+         *
+         * v3.4: encodes the Kotlin value as CXDB v1 bytes directly, then
+         * calls cx_from_data_bin to produce canonical CX. No JSON-string
+         * detour; type fidelity preserved on round-trip with [loads].
+         * Closes audit finding CB-3.
+         */
+        fun dumps(data: Any?): String = CxLib.fromDataBin(DataBin.encode(data))
 
         // ── JSON value parsing ─────────────────────────────────────────────────
 
@@ -514,7 +734,33 @@ private fun emitScalar(s: ScalarNode): String {
     }
 }
 
+// ── ID/IDREF helpers (ADR 0003) ───────────────────────────────────────────────
+
+private fun findElementById(nodes: List<Node>, id: String): Element? {
+    for (n in nodes) {
+        if (n is Element) {
+            if (n.id == id) return n
+            val found = findElementById(n.items, id)
+            if (found != null) return found
+        }
+    }
+    return null
+}
+
+private fun collectElementsById(nodes: List<Node>, out: MutableMap<String, Element>) {
+    for (n in nodes) {
+        if (n is Element) {
+            n.id?.let { out[it] = n }
+            collectElementsById(n.items, out)
+        }
+    }
+}
+
 private fun emitAttr(a: Attr): String {
+    if (a.isRef) {
+        // ADR 0003 D1: bare `@id` round-trips verbatim.
+        return "${a.name}=@${a.value ?: ""}"
+    }
     return when (a.dataType) {
         "int"  -> "${a.name}=${(a.value as? Number)?.toLong() ?: a.value}"
         "float" -> {
@@ -527,7 +773,8 @@ private fun emitAttr(a: Attr): String {
         "null" -> "${a.name}=null"
         else -> {
             val s = a.value?.toString() ?: ""
-            val v = if (wouldAutotype(s)) cxChooseQuote(s) else cxQuoteAttr(s)
+            val startsAt = s.isNotEmpty() && s[0] == '@'
+            val v = if (wouldAutotype(s) || startsAt) cxChooseQuote(s) else cxQuoteAttr(s)
             "${a.name}=$v"
         }
     }
@@ -554,6 +801,8 @@ private fun emitInline(node: Node): String = when (node) {
 
 internal fun emitElement(e: Element, depth: Int): String {
     val ind = "  ".repeat(depth)
+    // ADR 0003 D1: body-position reference shape `[name @id]`.
+    e.bodyRef?.let { return "$ind[${e.name} @$it]\n" }
     val hasChildElems = e.items.any { it is Element }
     val hasText = e.items.any { it is TextNode || it is ScalarNode || it is EntityRefNode || it is RawTextNode }
     val isMultiline = hasChildElems && !hasText
@@ -561,6 +810,7 @@ internal fun emitElement(e: Element, depth: Int): String {
     val metaParts = mutableListOf<String>()
     e.anchor?.let { metaParts.add("&$it") }
     e.merge?.let { metaParts.add("*$it") }
+    e.id?.let { metaParts.add("#$it") }
     e.dataType?.let { metaParts.add(":$it") }
     e.attrs.forEach { metaParts.add(emitAttr(it)) }
     val meta = if (metaParts.isNotEmpty()) " " + metaParts.joinToString(" ") else ""
@@ -622,6 +872,21 @@ internal fun emitNode(node: Node, depth: Int): String {
                 }
             }
             "[!DOCTYPE ${node.name}$ext]\n"
+        }
+        is InterpolationNode -> {
+            // v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+            "$ind[?=${node.expr}]\n"
+        }
+        is EvalDirectiveNode -> {
+            // v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Grammar-order
+            // canonical emission: attrs first, then body items.
+            val attrsStr = node.attrs.joinToString(" ") {
+                "${it.name}=${cxQuoteAttr(it.value?.toString() ?: "")}"
+            }
+            val bodyStr = node.items.joinToString("") { emitNode(it, 0) }.trimEnd('\n')
+            val sepA = if (attrsStr.isEmpty()) "" else " "
+            val sepB = if (bodyStr.isEmpty()) "" else " "
+            "$ind[?${node.name}$sepA$attrsStr$sepB$bodyStr]\n"
         }
     }
 }

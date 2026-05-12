@@ -1,10 +1,28 @@
 # CX System Architecture Specification
-# Version: 1.0
-# Date: 2026-04-23
+# Version: 2.0
+# Date: 2026-05-06
 
 This document specifies the system architecture of CX: the role of V and libcx,
-the C ABI (current mechanism), the binary wire protocol, and the language binding
-contract. All language binding implementations must conform to this spec.
+the C ABI, the binary wire protocols, and the language binding contract. All
+language binding implementations must conform to this spec.
+
+> **v2 update.** This document describes the v1 architecture that shipped
+> with CX 0.5. The v2 architecture (current branch) introduces symmetric
+> binary AST, `cx_to_data_bin`, real streaming, and CXPath C ABI in
+> response to the 2026-05 binding audit. The detailed v2 specs live in:
+>
+> - `spec/abi.md` — libcx C ABI v2 surface (the authoritative reference).
+> - `spec/data_bin.md` — CXDB v1 strict canonical binary format.
+> - `spec/canonical.md` — lossless and strict canonical forms across all formats.
+> - `spec/type_mapping.md` — host-type mapping per binding.
+> - `spec/table_api.md` — Table API surface across bindings.
+> - `spec/governance.md` — native-implementation rule, parity matrix, audit cadence, V module split.
+> - `spec/policies.md` — error policies (NaN/Inf, overflow, dup-keys, etc.) with stable error code registry.
+> - the 2026-05 binding audit — 2026-05 audit findings (CB-1..CB-5).
+>
+> Where this document and the v2 specs disagree, the v2 specs win for new
+> work. The v1 narrative below is preserved for context until a future
+> revision rewrites this document around the v2 architecture.
 
 ---
 
@@ -18,15 +36,15 @@ streaming engine. All other language bindings consume this implementation via li
 
 The relationship is:
 ```
-vcx/cx/        ← V source: single implementation of everything
-    │
-    ├── V binding ──────────────────────── lang/v/cxlib/
-    │   import vcx.cx directly             native Document/Element types
-    │   no FFI, no binary protocol         compile-time access to V sum types
-    │
-    └── compiled to libcx ─────────────── all other 9 language bindings
-        libcx.dylib / libcx.so             each wraps via FFI
-        C ABI in include/cx.h
+vcx/cx/ ← V source: single implementation of everything
+ │
+ ├── V binding ──────────────────────── lang/v/cxlib/
+ │ import vcx.cx directly native Document/Element types
+ │ no FFI, no binary protocol compile-time access to V sum types
+ │
+ └── compiled to libcx ─────────────── all other 9 language bindings
+ libcx.dylib / libcx.so each wraps via FFI
+ C ABI in include/cx.h
 ```
 
 **Current V binding state:** `lang/v/cxlib/` currently uses the same JSON bridge
@@ -59,15 +77,15 @@ no global mutable state. Every call is independent and thread-safe.
 **Each language binding implements natively (never through C ABI):**
 - The `Document` and `Element` types and all their fields
 - All Document API methods: `at`, `get`, `get_all`, `children`, `find_first`,
-  `find_all`, `root`, `attr`, `text`, `scalar`, `set_attr`, `remove_attr`,
-  `append`, `prepend`, `insert`, `remove_at`, `remove_child`
+ `find_all`, `root`, `attr`, `text`, `scalar`, `set_attr`, `remove_attr`,
+ `append`, `prepend`, `insert`, `remove_at`, `remove_child`
 - `transform(path, fn)` — path-copy structural update
 - `transform_all(cxpath, fn)` — decomposed into `select_all` + iterative `transform`
 - Binary AST decoder (reads `cx_to_ast_bin` output → native Document tree)
 - Binary events decoder (reads `cx_to_events_bin` output → native StreamEvent list)
 - `select(expr)` / `select_all(expr)` — these serialize the in-memory Document
-  back to CX string, call `cx_to_ast_bin` (which evaluates the expression internally),
-  and decode the result
+ back to CX string, call `cx_to_ast_bin` (which evaluates the expression internally),
+ and decode the result
 
 **The invariant:** No Document API method (`find_all`, `at`, `attr`, `transform`,
 etc.) goes through the C ABI. The C ABI is for parsing, format conversion, binary
@@ -91,29 +109,29 @@ char* cx_{input}_to_{output}(const char* input, char** err_out);
 
 - `input` — NUL-terminated UTF-8 string. Must not be NULL.
 - `err_out` — pointer to a `char*` that receives the error message on failure.
-  MAY be NULL if error detail is not needed.
+ MAY be NULL if error detail is not needed.
 - **On success** — returns a heap-allocated NUL-terminated UTF-8 string (or binary
-  buffer for `_bin` functions — see §4). Caller must `cx_free()` it.
+ buffer for `_bin` functions — see §4). Caller must `cx_free()` it.
 - **On error** — returns NULL. If `err_out` is non-NULL, sets `*err_out` to a
-  heap-allocated error message string. Caller must `cx_free(*err_out)`.
+ heap-allocated error message string. Caller must `cx_free(*err_out)`.
 - **Thread safety** — all functions are stateless and safe to call concurrently
-  from multiple threads without synchronisation.
+ from multiple threads without synchronisation.
 - **Memory rule** — every non-NULL pointer returned by libcx (result or `*err_out`)
-  must be released with `cx_free()`. Never pass these pointers to the system `free()`.
+ must be released with `cx_free()`. Never pass these pointers to the system `free()`.
 
 ### Complete C ABI function list
 
 **Format conversions (6 inputs × 7 outputs = 42 + cx_to_cx_compact):**
 
-| Group        | Functions |
+| Group | Functions |
 |--------------|-----------|
-| CX input     | `cx_to_cx`, `cx_to_cx_compact`, `cx_to_xml`, `cx_to_ast`, `cx_to_json`, `cx_to_yaml`, `cx_to_toml`, `cx_to_md` |
-| XML input    | `cx_xml_to_cx`, `cx_xml_to_xml`, `cx_xml_to_ast`, `cx_xml_to_json`, `cx_xml_to_yaml`, `cx_xml_to_toml`, `cx_xml_to_md` |
-| JSON input   | `cx_json_to_cx`, `cx_json_to_xml`, `cx_json_to_ast`, `cx_json_to_json`, `cx_json_to_yaml`, `cx_json_to_toml`, `cx_json_to_md` |
-| YAML input   | `cx_yaml_to_cx`, `cx_yaml_to_xml`, `cx_yaml_to_ast`, `cx_yaml_to_json`, `cx_yaml_to_yaml`, `cx_yaml_to_toml`, `cx_yaml_to_md` |
-| TOML input   | `cx_toml_to_cx`, `cx_toml_to_xml`, `cx_toml_to_ast`, `cx_toml_to_json`, `cx_toml_to_yaml`, `cx_toml_to_toml`, `cx_toml_to_md` |
-| MD input     | `cx_md_to_cx`, `cx_md_to_xml`, `cx_md_to_ast`, `cx_md_to_json`, `cx_md_to_yaml`, `cx_md_to_toml`, `cx_md_to_md` |
-| AST input    | `cx_ast_to_cx` |
+| CX input | `cx_to_cx`, `cx_to_cx_compact`, `cx_to_xml`, `cx_to_ast`, `cx_to_json`, `cx_to_yaml`, `cx_to_toml`, `cx_to_md` |
+| XML input | `cx_xml_to_cx`, `cx_xml_to_xml`, `cx_xml_to_ast`, `cx_xml_to_json`, `cx_xml_to_yaml`, `cx_xml_to_toml`, `cx_xml_to_md` |
+| JSON input | `cx_json_to_cx`, `cx_json_to_xml`, `cx_json_to_ast`, `cx_json_to_json`, `cx_json_to_yaml`, `cx_json_to_toml`, `cx_json_to_md` |
+| YAML input | `cx_yaml_to_cx`, `cx_yaml_to_xml`, `cx_yaml_to_ast`, `cx_yaml_to_json`, `cx_yaml_to_yaml`, `cx_yaml_to_toml`, `cx_yaml_to_md` |
+| TOML input | `cx_toml_to_cx`, `cx_toml_to_xml`, `cx_toml_to_ast`, `cx_toml_to_json`, `cx_toml_to_yaml`, `cx_toml_to_toml`, `cx_toml_to_md` |
+| MD input | `cx_md_to_cx`, `cx_md_to_xml`, `cx_md_to_ast`, `cx_md_to_json`, `cx_md_to_yaml`, `cx_md_to_toml`, `cx_md_to_md` |
+| AST input | `cx_ast_to_cx` |
 
 **Semantics of the output formats:**
 - `*_to_cx` — canonical CX with whitespace normalization
@@ -154,24 +172,24 @@ A language binding is conformant when it implements all of the following:
 - [ ] Full Document type with `elements` field (list of top-level Element nodes)
 - [ ] Full Element type with `name`, `attrs`, `items` fields
 - [ ] All node types decoded from binary: Element, Text, Scalar, Comment, RawText,
-  EntityRef, Alias, PI, XMLDecl, CXDirective, BlockContent
+ EntityRef, Alias, PI, XMLDecl, CXDirective, BlockContent
 - [ ] Document API — navigation: `root()`, `get()`, `get_all()`, `at()`,
-  `find_first()`, `find_all()`, `children()`
+ `find_first()`, `find_all()`, `children()`
 - [ ] Document API — extraction: `attr()`, `text()`, `scalar()`
 - [ ] Document API — build mode mutation: `set_attr()`, `remove_attr()`, `append()`,
-  `prepend()`, `insert()`, `remove_at()`, `remove_child()`
+ `prepend()`, `insert()`, `remove_at()`, `remove_child()`
 - [ ] Document API — transform mode: `transform()`, `transform_all()`
 - [ ] Emit: `to_cx()`, `to_xml()`, `to_json()`, `to_yaml()`, `to_toml()`, `to_md()`
 - [ ] Parse error raised as the binding's error type; never silently swallowed
 - [ ] Missing-value contract: navigation and extraction return `none`/`nil`/`null`
-  (not error) when the target is absent
+ (not error) when the target is absent
 - [ ] 122/122 conformance tests passing
 
 **Tier 2 — CXPath (required for CXPath feature claim):**
 - [ ] `select(expr) → Element or none`
 - [ ] `select_all(expr) → Element[]`
 - [ ] Round-trip implementation: serialize Document to CX → `cx_to_ast_bin` with
-  expression → decode result (see §3.1 for specification)
+ expression → decode result (see §3.1 for specification)
 - [ ] Invalid expression panics/throws (programming error, not soft return)
 - [ ] No-match returns `none` / `[]` (not error)
 
@@ -192,8 +210,8 @@ CXPath or Streaming conformance. Feature claims are all-or-nothing within each t
 
 1. Serialize the in-memory Document to a CX string using the binding's `to_cx()`.
 2. Prepend the CXPath expression to the CX string in a standard envelope, then
-   call `cx_to_ast_bin` with the compound input. (Alternatively: call a dedicated
-   CXPath evaluation path when available.)
+ call `cx_to_ast_bin` with the compound input. (Alternatively: call a dedicated
+ CXPath evaluation path when available.)
 3. Decode the binary result to get the matching element paths.
 4. Return matching elements located within the existing in-memory Document tree.
 
@@ -205,7 +223,7 @@ not use this path — it evaluates CXPath directly against the in-memory Documen
 `transform_all(cxpath_expr, fn)` is always implemented as:
 
 1. Call `select_all(cxpath_expr)` to get the list of matching elements (with their
-   paths within the document).
+ paths within the document).
 2. Sort matched paths deepest-first (to avoid path invalidation on nested matches).
 3. For each path, call `transform(path, fn)` on the current document.
 4. Return the final document after all transforms.
@@ -215,18 +233,18 @@ the binding's own language.
 
 ### 3.3 — Naming conventions per language
 
-| Language   | Methods / functions | Types | Constants |
+| Language | Methods / functions | Types | Constants |
 |------------|---------------------|-------|-----------|
-| V          | `snake_case`        | `PascalCase` | `snake_case` |
-| Python     | `snake_case`        | `PascalCase` | `UPPER_CASE` |
-| Go         | `camelCase`         | `PascalCase` | `PascalCase` |
-| Rust       | `snake_case`        | `PascalCase` | `SCREAMING_SNAKE` |
-| TypeScript | `camelCase`         | `PascalCase` | `camelCase` |
-| C#         | `PascalCase`        | `PascalCase` | `PascalCase` |
-| Swift      | `camelCase`         | `PascalCase` | `camelCase` |
-| Java       | `camelCase`         | `PascalCase` | `UPPER_CASE` |
-| Kotlin     | `camelCase`         | `PascalCase` | `UPPER_CASE` |
-| Ruby       | `snake_case`        | `PascalCase` | `SCREAMING_SNAKE` |
+| V | `snake_case` | `PascalCase` | `snake_case` |
+| Python | `snake_case` | `PascalCase` | `UPPER_CASE` |
+| Go | `camelCase` | `PascalCase` | `PascalCase` |
+| Rust | `snake_case` | `PascalCase` | `SCREAMING_SNAKE` |
+| TypeScript | `camelCase` | `PascalCase` | `camelCase` |
+| C# | `PascalCase` | `PascalCase` | `PascalCase` |
+| Swift | `camelCase` | `PascalCase` | `camelCase` |
+| Java | `camelCase` | `PascalCase` | `UPPER_CASE` |
+| Kotlin | `camelCase` | `PascalCase` | `UPPER_CASE` |
+| Ruby | `snake_case` | `PascalCase` | `SCREAMING_SNAKE` |
 
 Method names translate as: `find_first` → Go/TS/Swift/Java/Kotlin: `findFirst`,
 C#: `FindFirst`, Ruby: `find_first`.
@@ -236,16 +254,16 @@ C#: `FindFirst`, Ruby: `find_first`.
 CX scalar types map to native types as follows. Bindings MUST use these exact types —
 no narrowing or widening.
 
-| CX type  | V       | Go       | Rust    | Python  | TypeScript | C#      | Swift    | Java    | Kotlin  | Ruby    |
+| CX type | V | Go | Rust | Python | TypeScript | C# | Swift | Java | Kotlin | Ruby |
 |----------|---------|----------|---------|---------|------------|---------|----------|---------|---------|---------|
-| int      | `i64`   | `int64`  | `i64`   | `int`   | `number`   | `long`  | `Int64`  | `long`  | `Long`  | `Integer` |
-| float    | `f64`   | `float64`| `f64`   | `float` | `number`   | `double`| `Double` | `double`| `Double`| `Float` |
-| bool     | `bool`  | `bool`   | `bool`  | `bool`  | `boolean`  | `bool`  | `Bool`   | `boolean`| `Boolean`| `true/false` |
-| null     | `NullVal`| `nil`   | `None`  | `None`  | `null`     | `null`  | `nil`    | `null`  | `null`  | `nil`   |
-| string   | `string`| `string` | `String`| `str`   | `string`   | `string`| `String` | `String`| `String`| `String`|
-| date     | `string`| `string` | `String`| `str`   | `string`   | `string`| `String` | `String`| `String`| `String`|
-| datetime | `string`| `string` | `String`| `str`   | `string`   | `string`| `String` | `String`| `String`| `String`|
-| bytes    | `string`| `[]byte` | `Vec<u8>`| `bytes`| `Uint8Array`| `byte[]`| `Data`  | `byte[]`| `ByteArray`| `String`|
+| int | `i64` | `int64` | `i64` | `int` | `number` | `long` | `Int64` | `long` | `Long` | `Integer` |
+| float | `f64` | `float64`| `f64` | `float` | `number` | `double`| `Double` | `double`| `Double`| `Float` |
+| bool | `bool` | `bool` | `bool` | `bool` | `boolean` | `bool` | `Bool` | `boolean`| `Boolean`| `true/false` |
+| null | `NullVal`| `nil` | `None` | `None` | `null` | `null` | `nil` | `null` | `null` | `nil` |
+| string | `string`| `string` | `String`| `str` | `string` | `string`| `String` | `String`| `String`| `String`|
+| date | `string`| `string` | `String`| `str` | `string` | `string`| `String` | `String`| `String`| `String`|
+| datetime | `string`| `string` | `String`| `str` | `string` | `string`| `String` | `String`| `String`| `String`|
+| bytes | `string`| `[]byte` | `Vec<u8>`| `bytes`| `Uint8Array`| `byte[]`| `Data` | `byte[]`| `ByteArray`| `String`|
 
 date and datetime are represented as ISO 8601 strings. No language binding is
 required to parse them into a native date type — doing so is permitted but must
@@ -260,18 +278,18 @@ none/absent sentinel.
 
 **Parse errors** — the CX string is malformed. Implementations MUST raise an error:
 
-| Language   | Mechanism |
+| Language | Mechanism |
 |------------|-----------|
-| V          | `!Document` — propagate with `!` or `or { ... }` |
-| Go         | `(Document, error)` — caller checks `err != nil` |
-| Rust       | `Result<Document, CxError>` |
-| Python     | `raise CxError(msg)` |
+| V | `!Document` — propagate with `!` or `or { ... }` |
+| Go | `(Document, error)` — caller checks `err != nil` |
+| Rust | `Result<Document, CxError>` |
+| Python | `raise CxError(msg)` |
 | TypeScript | `throw new CxError(msg)` |
-| C#         | `throw new CxException(msg)` |
-| Swift      | `throws CxError` |
-| Java       | `throw new CxException(msg)` (unchecked) |
-| Kotlin     | `throw CxException(msg)` |
-| Ruby       | `raise CxError, msg` |
+| C# | `throw new CxException(msg)` |
+| Swift | `throws CxError` |
+| Java | `throw new CxException(msg)` (unchecked) |
+| Kotlin | `throw CxException(msg)` |
+| Ruby | `raise CxError, msg` |
 
 **Navigation / extraction missing** — not an error. Return `none`/`nil`/`null`/`[]`
 as documented in `spec/api.md §4`. Never throw.
@@ -306,7 +324,7 @@ The buffer is **binary data**, not a null-terminated string.
 All strings in the binary payload use this encoding:
 
 ```
-String:    [u32 LE: byte_len] [byte_len bytes: UTF-8]   (no null terminator)
+String: [u32 LE: byte_len] [byte_len bytes: UTF-8] (no null terminator)
 OptString: [u8: present (0=absent, 1=present)] [String if present]
 ```
 
@@ -329,26 +347,26 @@ Each node is recursively encoded:
 
 Node type IDs and payloads:
 
-| ID   | Node type      | Payload |
+| ID | Node type | Payload |
 |------|----------------|---------|
-| 0x01 | Element        | `String:name  OptString:anchor  OptString:data_type  OptString:merge  u16:attr_count  attrs[]  u16:child_count  nodes[]` |
-| 0x02 | Text           | `String:value` |
-| 0x03 | Scalar         | `String:data_type  String:value` |
-| 0x04 | Comment        | `String:value` |
-| 0x05 | RawText        | `String:value` |
-| 0x06 | EntityRef      | `String:name` |
-| 0x07 | Alias          | `String:name` |
-| 0x08 | PI             | `String:target  OptString:data` |
-| 0x09 | XMLDecl        | `String:version  OptString:encoding  OptString:standalone` |
-| 0x0A | CXDirective    | `String:content` |
-| 0x0B | DoctypeDecl    | `String:content` |
-| 0x0C | BlockContent   | `u16:child_count  nodes[]` |
+| 0x01 | Element | `String:name OptString:anchor OptString:data_type OptString:merge u16:attr_count attrs[] u16:child_count nodes[]` |
+| 0x02 | Text | `String:value` |
+| 0x03 | Scalar | `String:data_type String:value` |
+| 0x04 | Comment | `String:value` |
+| 0x05 | RawText | `String:value` |
+| 0x06 | EntityRef | `String:name` |
+| 0x07 | Alias | `String:name` |
+| 0x08 | PI | `String:target OptString:data` |
+| 0x09 | XMLDecl | `String:version OptString:encoding OptString:standalone` |
+| 0x0A | CXDirective | `String:content` |
+| 0x0B | DoctypeDecl | `String:content` |
+| 0x0C | BlockContent | `u16:child_count nodes[]` |
 | 0xFF | (skip/padding) | (no payload — skip this node) |
 
 Each `Attr` in an element's attrs array:
 
 ```
-Attr: String:name  String:value  OptString:data_type
+Attr: String:name String:value OptString:data_type
 ```
 
 `data_type` in Attr is the explicit type annotation, if present. When absent,
@@ -363,20 +381,20 @@ Parsed as: Document { elements: [ Element { name:"hello", items:[ Text{"world"} 
 
 ```
 Buffer (36 bytes):
-Offset  Hex bytes                         Annotation
-00      20 00 00 00                       payload_size = 32 (u32 LE)
-04      01                                version = 1
-05      00 00                             prolog_count = 0 (u16 LE)
-07      01 00                             element_count = 1 (u16 LE)
-09      01                                node_type = 0x01 (Element)
-0A      05 00 00 00  68 65 6C 6C 6F       String "hello" (len=5)
-13      00                                anchor = absent
-14      00                                data_type = absent
-15      00                                merge = absent
-16      00 00                             attr_count = 0 (u16 LE)
-18      01 00                             child_count = 1 (u16 LE)
-1A      02                                node_type = 0x02 (Text)
-1B      05 00 00 00  77 6F 72 6C 64       String "world" (len=5)
+Offset Hex bytes Annotation
+00 20 00 00 00 payload_size = 32 (u32 LE)
+04 01 version = 1
+05 00 00 prolog_count = 0 (u16 LE)
+07 01 00 element_count = 1 (u16 LE)
+09 01 node_type = 0x01 (Element)
+0A 05 00 00 00 68 65 6C 6C 6F String "hello" (len=5)
+13 00 anchor = absent
+14 00 data_type = absent
+15 00 merge = absent
+16 00 00 attr_count = 0 (u16 LE)
+18 01 00 child_count = 1 (u16 LE)
+1A 02 node_type = 0x02 (Text)
+1B 05 00 00 00 77 6F 72 6C 64 String "world" (len=5)
 ```
 
 Total buffer: `20 00 00 00 01 00 00 01 00 01 05 00 00 00 68 65 6C 6C 6F 00 00 00 00 00 01 00 02 05 00 00 00 77 6F 72 6C 64`
@@ -397,24 +415,35 @@ Each event:
 
 Event type IDs and payloads:
 
-| ID   | Event type   | Payload |
+| ID | Event type | Payload |
 |------|--------------|---------|
-| 0x01 | StartDoc     | (none) |
-| 0x02 | EndDoc       | (none) |
-| 0x03 | StartElement | `String:name  OptString:anchor  OptString:data_type  OptString:merge  u16:attr_count  attrs[]` |
-| 0x04 | EndElement   | `String:name` |
-| 0x05 | Text         | `String:value` |
-| 0x06 | Scalar       | `OptString:data_type  String:value` |
-| 0x07 | Comment      | `String:value` |
-| 0x08 | PI           | `String:target  OptString:data` |
-| 0x09 | EntityRef    | `String:name` |
-| 0x0A | RawText      | `String:value` |
-| 0x0B | Alias        | `String:name` |
+| 0x01 | StartDoc | (none) |
+| 0x02 | EndDoc | (none) |
+| 0x03 | StartElement | `String:name OptString:anchor OptString:data_type OptString:merge u16:attr_count attrs[]` |
+| 0x04 | EndElement | `String:name` |
+| 0x05 | Text | `String:value` |
+| 0x06 | Scalar | `OptString:data_type String:value` |
+| 0x07 | Comment | `String:value` |
+| 0x08 | PI | `String:target OptString:data` |
+| 0x09 | EntityRef | `String:name` |
+| 0x0A | RawText | `String:value` |
+| 0x0B | Alias | `String:name` |
+| 0x0C | StartTable | `String:name Bytes:col_spec` (chunked-table — see [`spec/streaming.md §1.1`](streaming.md)) |
+| 0x0D | RowGroup | `u32:row_count Bytes:payload` (§3.11.2 plain-body) |
+| 0x0E | EndTable | `String:name` |
+
+`Bytes` encoding mirrors `String` but the body is opaque binary, not
+UTF-8 text: `[u32 LE: byte_len][raw bytes]`. Used by StartTable's
+`col_spec` (events-layer per [`spec/streaming.md §1.1`](streaming.md)
+/ [`spec/data_bin.md §3.10.1`](data_bin.md)) and RowGroup's `payload`
+(decompressed §3.11.2 plain-body). Compressed row groups (§3.12) are
+decompressed by the reader before emission so consumers see uniform
+plain bodies.
 
 Each `Attr` in a StartElement event:
 
 ```
-Attr: String:name  String:value  OptString:data_type
+Attr: String:name String:value OptString:data_type
 ```
 
 **Test vector — input:** `[hello world]`
@@ -426,24 +455,64 @@ event_count = 5
 
 ```
 Buffer (45 bytes):
-Offset  Hex bytes                         Annotation
-00      29 00 00 00                       payload_size = 41 (u32 LE)
-04      05 00 00 00                       event_count = 5 (u32 LE)
-08      01                                event_type = 0x01 (StartDoc)
-09      03                                event_type = 0x03 (StartElement)
-0A      05 00 00 00  68 65 6C 6C 6F       String "hello" (len=5)
-13      00                                anchor = absent
-14      00                                data_type = absent
-15      00                                merge = absent
-16      00 00                             attr_count = 0 (u16 LE)
-18      05                                event_type = 0x05 (Text)
-19      05 00 00 00  77 6F 72 6C 64       String "world" (len=5)
-22      04                                event_type = 0x04 (EndElement)
-23      05 00 00 00  68 65 6C 6C 6F       String "hello" (len=5)
-2C      02                                event_type = 0x02 (EndDoc)
+Offset Hex bytes Annotation
+00 29 00 00 00 payload_size = 41 (u32 LE)
+04 05 00 00 00 event_count = 5 (u32 LE)
+08 01 event_type = 0x01 (StartDoc)
+09 03 event_type = 0x03 (StartElement)
+0A 05 00 00 00 68 65 6C 6C 6F String "hello" (len=5)
+13 00 anchor = absent
+14 00 data_type = absent
+15 00 merge = absent
+16 00 00 attr_count = 0 (u16 LE)
+18 05 event_type = 0x05 (Text)
+19 05 00 00 00 77 6F 72 6C 64 String "world" (len=5)
+22 04 event_type = 0x04 (EndElement)
+23 05 00 00 00 68 65 6C 6C 6F String "hello" (len=5)
+2C 02 event_type = 0x02 (EndDoc)
 ```
 
 Total buffer: `29 00 00 00 05 00 00 00 01 03 05 00 00 00 68 65 6C 6C 6F 00 00 00 00 00 05 05 00 00 00 77 6F 72 6C 64 04 05 00 00 00 68 65 6C 6C 6F 02`
+
+**Test vector — chunked table:** A table-bodied document with a single
+column `n :i32` carrying two rows `[1, 2]` originating from the chunked
+data_bin form (`tag_table_chunked` = `0x63`).
+
+```
+Events: StartDoc, StartTable{name:"t", col_spec:<col-spec>}, RowGroup{row_count:2, payload:<plain-body>}, EndTable{name:"t"}, EndDoc
+event_count = 5
+```
+
+Where `<col-spec>` is the events-layer encoding per §1.1 / data_bin §3.10.1:
+`[u32 LE: 1][u32 LE: 1]"n"[u8: 0x12]` = `01 00 00 00 01 00 00 00 6E 12` (10 bytes; col_type_code 0x12 = i32).
+
+And `<plain-body>` is the §3.11.2 row-group plain body:
+`uvarint(2) [int32 LE: 1] [int32 LE: 2]` = `02 01 00 00 00 02 00 00 00` (9 bytes).
+
+```
+Buffer (53 bytes):
+Offset Hex bytes Annotation
+00 31 00 00 00 payload_size = 49 (u32 LE)
+04 05 00 00 00 event_count = 5 (u32 LE)
+08 01 event_type = 0x01 (StartDoc)
+09 0C event_type = 0x0C (StartTable)
+0A 01 00 00 00 74 String "t" (len=1)
+0F 0A 00 00 00 col_spec_len = 10
+13 01 00 00 00 01 00 00 00 6E 12 col_spec bytes
+1D 0D event_type = 0x0D (RowGroup)
+1E 02 00 00 00 row_count = 2 (u32 LE)
+22 09 00 00 00 payload_len = 9
+26 02 01 00 00 00 02 00 00 00 plain-body bytes
+2F 0E event_type = 0x0E (EndTable)
+30 01 00 00 00 74 String "t" (len=1)
+35 02 event_type = 0x02 (EndDoc)
+```
+
+`StartTable` and `EndTable` are emitted only when the underlying source
+was the chunked data_bin form (`tag_table_chunked` = `0x63`) per
+[`spec/streaming.md §1.1`](streaming.md). Non-chunked `:table` bodies
+(CX text source, `0x60`, `0x61`) emit the existing
+StartElement / per-cell-Scalar / EndElement sequence.
 
 ---
 
@@ -464,12 +533,12 @@ target is a WASM module. This section specifies what changes and what stays the 
 - libcx compiled to `libcx.wasm` (single portable binary)
 - No per-platform `.dylib` / `.so`; no per-language FFI setup
 - Language bindings load the WASM module via their platform's WASM runtime
-  (wasmtime, wasmer, browser runtime, etc.)
+ (wasmtime, wasmer, browser runtime, etc.)
 - The function signatures remain identical: same names, same `(const char*, char**) → char*`
-  calling convention mapped to WASM linear memory
+ calling convention mapped to WASM linear memory
 - Memory management: `cx_free()` still required; caller writes the input string into
-  WASM linear memory, reads the output from WASM linear memory, calls `cx_free` in
-  the WASM module
+ WASM linear memory, reads the output from WASM linear memory, calls `cx_free` in
+ the WASM module
 
 ### What stays the same
 

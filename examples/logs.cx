@@ -1,0 +1,14 @@
+[- logs.cx — logfmt mode (v3.4): top-level key=value attribute lines,
+   no enclosing element. Each line parses as a synthetic Element with
+   the attributes attached. Type fidelity is preserved: `latency_ms=45`
+   is int, `slow=true` is bool, `ts=2026-05-07T10:30:00Z` is datetime.
+
+   Run `cx --json examples/logs.cx` to convert to a JSON array of
+   typed log records. ]
+
+ts=2026-05-07T10:30:00Z level=info  svc=api req_id=abc123 latency_ms=45  status=200
+ts=2026-05-07T10:30:01Z level=warn  svc=api req_id=def456 latency_ms=210 status=200 slow=true
+ts=2026-05-07T10:30:02Z level=info  svc=api req_id=ghi789 latency_ms=12  status=204
+ts=2026-05-07T10:30:03Z level=error svc=api req_id=jkl012 latency_ms=5_034 status=500 retry=2
+ts=2026-05-07T10:30:04Z level=info  svc=api req_id=mno345 latency_ms=18  status=200 cached=true
+ts=2026-05-07T10:30:05Z level=info  svc=db  req_id=pqr678 latency_ms=3   query=select_user

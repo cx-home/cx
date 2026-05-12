@@ -14,6 +14,32 @@ class Attr:
     name: str
     value: Any          # str | int | float | bool | None
     data_type: Optional[str] = None  # None means string (omitted in JSON)
+    # v3.4 (ADR 0002): expanded-name fields populated by
+    # resolve_namespaces(). `local` is the part after the first ':' in
+    # `name` (or the whole name); `ns_uri` is the resolved namespace
+    # URI. Per XML Namespaces 1.0 §6.2 the default namespace does not
+    # apply to unprefixed attributes — `ns_uri` is None for them.
+    local: str = ""
+    ns_uri: Optional[str] = None
+    # v3.4 (ADR 0003): True when the source attribute value was a bare
+    # `@id` token (e.g. `assigned-to=@u-1`). Quoted strings starting
+    # with '@' have is_ref = False. Round-trip preserves the bare form.
+    is_ref: bool = False
+    # v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+    # When set, `value` is unused and the attribute's content is the parsed
+    # body sequence. Used by CXL evaluation directives like
+    # `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL evaluation;
+    # round-trips as opaque structure (ADR 0016 R5). ast_bin format
+    # version 5 carries this field; v1-4 decoders see attrs without it.
+    body: Optional[list["Node"]] = None
+
+    def local_name(self) -> str:
+        """Local part of the attribute name (post-colon, or whole name)."""
+        return self.local
+
+    def namespace_uri(self) -> Optional[str]:
+        """Resolved namespace URI for prefixed attributes; None otherwise."""
+        return self.ns_uri
 
 
 @dataclass
@@ -63,10 +89,33 @@ class XMLDecl:
 @dataclass
 class CXDirective:
     attrs: list[Attr] = field(default_factory=list)
+    # v0.6.0 — directives may carry an `&anchor` and/or nested elements.
+    # Currently used by `[?cx frag &name [body :TYPE :flags]]` (spec
+    # schema.md §8 standalone fragment form). ast_bin format version 4
+    # carries them; v1-3 decoders see attrs-only and leave these empty.
+    anchor: Optional[str] = None
+    items: list["Node"] = field(default_factory=list)
 
 
 @dataclass
 class BlockContent:
+    items: list["Node"] = field(default_factory=list)
+
+
+@dataclass
+class Interpolation:
+    """v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text at v0.6.0;
+    the CXL evaluator at v0.7.0+ parses it as CXPath at evaluation time."""
+    expr: str
+
+
+@dataclass
+class EvalDirective:
+    """v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Reserved EvalNames
+    (if/for/with/cond/include/def/use/let/fn/match/try) parse into this
+    node. Inert at v0.6.0; CXL evaluator dispatches on `name`."""
+    name: str
+    attrs: list[Attr] = field(default_factory=list)
     items: list["Node"] = field(default_factory=list)
 
 
@@ -85,6 +134,30 @@ class Element:
     data_type: Optional[str] = None  # TypeAnnotation e.g. "int[]"
     attrs: list[Attr] = field(default_factory=list)
     items: list["Node"] = field(default_factory=list)
+    # v3.4 (ADR 0002): expanded-name fields populated by
+    # resolve_namespaces(). See Attr docstring.
+    local: str = ""
+    ns_uri: Optional[str] = None
+    # v3.4 (ADR 0003): syntactic ID declaration — set when the source has
+    # a `#name` token immediately after the element name (e.g.
+    # `[user #u-1 name=alice]`). Distinct from anchors and from user-data
+    # attributes literally named `id`.
+    id: Optional[str] = None
+    # v3.4 (ADR 0003 D1): body-position reference — set when the source had
+    # `[ref @<name>]` (an element named `ref` whose body is a single
+    # `@name` token). Carries the bare-ref target id; `name` is fixed to
+    # `"ref"` and `attrs`/`items` are empty in that case. Round-trips
+    # across the C ABI via ast_bin v3+ (Phase 7.70).
+    body_ref: Optional[str] = None
+
+    def local_name(self) -> str:
+        """Local part of the element name (post-colon, or whole name)."""
+        return self.local
+
+    def namespace_uri(self) -> Optional[str]:
+        """Resolved namespace URI for this element; None when no
+        binding is in scope and the prefix is not reserved."""
+        return self.ns_uri
 
     def get(self, name: str) -> Optional["Element"]:
         """First child Element with this name."""
@@ -187,12 +260,47 @@ class Element:
         return results[0] if results else None
 
     def select_all(self, expr: str) -> list["Element"]:
-        """All descendants matching a CXPath expression (excludes self), depth-first."""
-        from .cxpath import cxpath_parse, collect_step
-        cx_expr = cxpath_parse(expr)
-        result: list[Element] = []
-        collect_step(self, cx_expr, 0, result)
-        return result
+        """All descendants matching a CXPath expression (excludes self), depth-first.
+
+        v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+        Elements are live references into this Element's tree —
+        mutations propagate, preserving prior behavior. Semantics match
+        V's Element.select_all: the element's items become the top-
+        level candidate set, so a child-axis expression like "child"
+        matches direct children, and "//child" matches at any descendant
+        depth.
+        """
+        from . import cx as _cx
+        # Emit each Element child of self as a top-level node. This puts
+        # self.items into doc.elements after the round-trip, so V's
+        # Document.select_all_paths walks the same candidate set that
+        # V's Element.select_all would. Track a mapping from
+        # serialized-doc index back to the original self.items index;
+        # CXPath only matches Elements anyway, so non-Element items can
+        # be skipped from the docStr without affecting matches.
+        parts: list[str] = []
+        doc_to_orig: list[int] = []
+        for i, item in enumerate(self.items):
+            if isinstance(item, Element):
+                parts.append(_emit_element_as_doc(item))
+                doc_to_orig.append(i)
+        doc_str = '\n'.join(parts)
+        paths = _cx.select_all_paths(doc_str, expr)
+        out: list[Element] = []
+        for p in paths:
+            if not p:
+                continue
+            top = p[0]
+            if top < 0 or top >= len(doc_to_orig):
+                continue
+            node: Any = self.items[doc_to_orig[top]]
+            for k in p[1:]:
+                if not isinstance(node, Element) or k >= len(node.items):
+                    node = None; break
+                node = node.items[k]
+            if isinstance(node, Element):
+                out.append(node)
+        return out
 
     def set_attr(self, name: str, value: Any, data_type: Optional[str] = None) -> None:
         """Set an attribute value, updating if it already exists."""
@@ -211,6 +319,7 @@ class Element:
 Node = Union[
     Element, Text, Scalar, Comment, RawText, EntityRef, BlockContent,
     Alias, PI, XMLDecl, CXDirective, DoctypeDecl,
+    Interpolation, EvalDirective,
 ]
 
 
@@ -279,14 +388,21 @@ class Document:
         return results[0] if results else None
 
     def select_all(self, expr: str) -> list[Element]:
-        """All elements matching a CXPath expression, depth-first."""
-        from .cxpath import cxpath_parse, collect_step
-        cx_expr = cxpath_parse(expr)
-        # Virtual root gives top-level elements sibling context for position predicates.
-        virtual_root = Element(name='#document', items=list(self.elements))
-        result: list[Element] = []
-        collect_step(virtual_root, cx_expr, 0, result)
-        return result
+        """All elements matching a CXPath expression, depth-first.
+
+        v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+        Elements are live references into this Document's tree —
+        mutations propagate, preserving prior behavior.
+        """
+        from . import cx as _cx
+        from .cxpath import navigate_doc_path
+        paths = _cx.select_all_paths(self.to_cx(), expr)
+        out: list[Element] = []
+        for p in paths:
+            el = navigate_doc_path(self, p)
+            if el is not None:
+                out.append(el)
+        return out
 
     def transform(self, path: str, f) -> "Document":
         """Return a new Document with the element at path replaced by f(el). Original unchanged."""
@@ -305,29 +421,78 @@ class Document:
         return self
 
     def transform_all(self, expr: str, f) -> "Document":
-        """Return a new Document with every element matching expr replaced by f(el). Original unchanged."""
-        from .cxpath import cxpath_parse, rebuild_node
-        cx_expr = cxpath_parse(expr)
-        new_elements = [rebuild_node(n, cx_expr, f) for n in self.elements]
-        return Document(elements=new_elements, prolog=self.prolog, doctype=self.doctype)
+        """Return a new Document with every element matching expr replaced by f(el). Original unchanged.
+
+        v3.4: thunks to libcx via cx_select_all_paths (CB-5). Paths are
+        applied bottom-up (longest first) so that when a parent is
+        rewritten, its f-input already contains the f-results of
+        descendant matches — matching the prior post-order semantics.
+        """
+        from . import cx as _cx
+        from .cxpath import elem_detached, navigate_doc_path, replace_at_doc_path
+        paths = _cx.select_all_paths(self.to_cx(), expr)
+        if not paths:
+            return self
+        # Sort longest-first; descendants get rewritten before ancestors.
+        paths_sorted = sorted(paths, key=len, reverse=True)
+        new_doc = self
+        for p in paths_sorted:
+            target = navigate_doc_path(new_doc, p)
+            if target is None:
+                continue
+            new_doc = replace_at_doc_path(new_doc, p, f(elem_detached(target)))
+        return new_doc
+
+    def resolve_id(self, id: str) -> Optional[Element]:
+        """Return the Element declaring `#id`, or None. v3.4 (ADR 0003)."""
+        for tree in (self.elements, self.prolog):
+            found = _find_element_by_id(tree, id)
+            if found is not None:
+                return found
+        return None
+
+    def elements_by_id(self) -> dict[str, Element]:
+        """Build a {id: Element} map for the whole document. v3.4 (ADR 0003)."""
+        out: dict[str, Element] = {}
+        _collect_elements_by_id(self.elements, out)
+        _collect_elements_by_id(self.prolog, out)
+        return out
 
     def to_cx(self) -> str:
         return _emit_doc(self)
 
+    def to_ast_bin(self) -> bytes:
+        """Serialize this Document to a FRAMED binary AST buffer
+        ([u32 LE size][payload]). Used by to_xml / to_json / etc. and
+        spec/ast_bin.md describes the wire format.
+
+        v3.4: encoder added in Phase 5 (CB-1) so format conversions
+        skip the cx_to_<fmt>(self.to_cx()) round-trip.
+        """
+        from .binary import encode_ast
+        return encode_ast(self)
+
+    # v3.4: each format method now goes through cx_ast_bin_to_<fmt>
+    # directly (CB-1), avoiding the prior emit-CX-and-reparse detour.
     def to_xml(self) -> str:
-        return _cx.to_xml(self.to_cx())
+        from .binary import call_bin_in_text_out
+        return call_bin_in_text_out('cx_ast_bin_to_xml', self.to_ast_bin())
 
     def to_json(self) -> str:
-        return _cx.to_json(self.to_cx())
+        from .binary import call_bin_in_text_out
+        return call_bin_in_text_out('cx_ast_bin_to_json', self.to_ast_bin())
 
     def to_yaml(self) -> str:
-        return _cx.to_yaml(self.to_cx())
+        from .binary import call_bin_in_text_out
+        return call_bin_in_text_out('cx_ast_bin_to_yaml', self.to_ast_bin())
 
     def to_toml(self) -> str:
-        return _cx.to_toml(self.to_cx())
+        from .binary import call_bin_in_text_out
+        return call_bin_in_text_out('cx_ast_bin_to_toml', self.to_ast_bin())
 
     def to_md(self) -> str:
-        return _cx.to_md(self.to_cx())
+        from .binary import call_bin_in_text_out
+        return call_bin_in_text_out('cx_ast_bin_to_md', self.to_ast_bin())
 
 
 # ── Deserialization: AST JSON dict → native types ─────────────────────────────
@@ -368,6 +533,25 @@ def _node_from_dict(d: dict) -> Node:
     return Text(str(d))  # unknown node — preserve as text
 
 
+def _find_element_by_id(nodes: list, id: str) -> Optional[Element]:
+    for n in nodes:
+        if isinstance(n, Element):
+            if n.id == id:
+                return n
+            found = _find_element_by_id(n.items, id)
+            if found is not None:
+                return found
+    return None
+
+
+def _collect_elements_by_id(nodes: list, out: dict[str, Element]) -> None:
+    for n in nodes:
+        if isinstance(n, Element):
+            if n.id:
+                out[n.id] = n
+            _collect_elements_by_id(n.items, out)
+
+
 def _doc_from_dict(d: dict) -> Document:
     doctype = None
     if "doctype" in d:
@@ -380,42 +564,153 @@ def _doc_from_dict(d: dict) -> Document:
     )
 
 
+# ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────────────
+#
+# Mirrors V core's vcx/cx/namespaces.v. Walks a parsed Document,
+# populating Element.{local, ns_uri} and Attr.{local, ns_uri} based on
+# in-scope xmlns / xmlns: declarations. Called at the tail of every
+# parse entry point (parse, parse_xml, parse_json, parse_yaml,
+# parse_toml, parse_md) so consumers see a uniform expanded-name view.
+#
+# Reserved prefixes:
+#   - `xml`   → http://www.w3.org/XML/1998/namespace
+#   - `cx`    → https://cx-home.org/ns/cx
+#   - `xmlns` → declaration-only; never resolves as a name prefix
+
+XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
+CX_NAMESPACE_URI = "https://cx-home.org/ns/cx"
+
+
+def _split_ns_prefix(name: str) -> tuple[str, str]:
+    i = name.find(':')
+    if i < 0:
+        return '', name
+    return name[:i], name[i + 1:]
+
+
+def _lookup_ns(prefix: str, scope: list[dict[str, str]]) -> Optional[str]:
+    if prefix == 'xml':
+        return XML_NAMESPACE_URI
+    if prefix == 'cx':
+        return CX_NAMESPACE_URI
+    if prefix == 'xmlns':
+        return None
+    for frame in reversed(scope):
+        if prefix in frame:
+            uri = frame[prefix]
+            return uri if uri else None  # empty URI undeclares
+    return None
+
+
+def _resolve_element(e: Element, scope: list[dict[str, str]]) -> None:
+    frame: dict[str, str] = {}
+    for a in e.attrs:
+        if a.name == 'xmlns':
+            frame[''] = '' if a.value is None else str(a.value)
+        elif a.name.startswith('xmlns:') and len(a.name) > 6:
+            frame[a.name[6:]] = '' if a.value is None else str(a.value)
+    pushed = bool(frame)
+    if pushed:
+        scope.append(frame)
+
+    prefix, local = _split_ns_prefix(e.name)
+    e.local = local
+    e.ns_uri = _lookup_ns(prefix, scope)
+
+    for a in e.attrs:
+        ap, al = _split_ns_prefix(a.name)
+        a.local = al
+        if a.name == 'xmlns' or ap == 'xmlns':
+            a.ns_uri = None
+            continue
+        if ap == '':
+            # Default ns does not apply to unprefixed attributes.
+            a.ns_uri = None
+            continue
+        a.ns_uri = _lookup_ns(ap, scope)
+
+    for item in e.items:
+        if isinstance(item, Element):
+            _resolve_element(item, scope)
+
+    if pushed:
+        scope.pop()
+
+
+def resolve_namespaces(doc: Document) -> None:
+    """Populate Element.{local, ns_uri} and Attr.{local, ns_uri} on
+    every node in `doc` per ADR 0002 / spec/namespaces.md. Idempotent.
+    Called automatically by parse(), parse_xml(), parse_json(),
+    parse_yaml(), parse_toml(), parse_md()."""
+    scope: list[dict[str, str]] = []
+    for node in doc.elements:
+        if isinstance(node, Element):
+            _resolve_element(node, scope)
+
+
 def parse(cx_str: str) -> Document:
     """Parse a CX string into a Document."""
     from .binary import ast_bin, decode_ast
-    return decode_ast(ast_bin(cx_str))
+    doc = decode_ast(ast_bin(cx_str))
+    resolve_namespaces(doc)
+    return doc
 
+
+# v3.4: parse_<fmt> goes through cx_<fmt>_to_ast_bin (CB-2), avoiding
+# the prior cx_<fmt>_to_ast → JSON.parse → walk-dict pipeline.
 
 def parse_xml(xml_str: str) -> Document:
     """Parse an XML string into a Document."""
-    return _doc_from_dict(json.loads(_cx.xml_to_ast(xml_str)))
+    from .binary import call_bin_in, decode_ast
+    doc = decode_ast(call_bin_in('cx_xml_to_ast_bin', xml_str))
+    resolve_namespaces(doc)
+    return doc
 
 
 def parse_json(json_str: str) -> Document:
     """Parse a JSON string into a Document."""
-    return _doc_from_dict(json.loads(_cx.json_to_ast(json_str)))
+    from .binary import call_bin_in, decode_ast
+    doc = decode_ast(call_bin_in('cx_json_to_ast_bin', json_str))
+    resolve_namespaces(doc)
+    return doc
 
 
 def parse_yaml(yaml_str: str) -> Document:
     """Parse a YAML string into a Document."""
-    return _doc_from_dict(json.loads(_cx.yaml_to_ast(yaml_str)))
+    from .binary import call_bin_in, decode_ast
+    doc = decode_ast(call_bin_in('cx_yaml_to_ast_bin', yaml_str))
+    resolve_namespaces(doc)
+    return doc
 
 
 def parse_toml(toml_str: str) -> Document:
     """Parse a TOML string into a Document."""
-    return _doc_from_dict(json.loads(_cx.toml_to_ast(toml_str)))
+    from .binary import call_bin_in, decode_ast
+    doc = decode_ast(call_bin_in('cx_toml_to_ast_bin', toml_str))
+    resolve_namespaces(doc)
+    return doc
 
 
 def parse_md(md_str: str) -> Document:
     """Parse a Markdown string into a Document."""
-    return _doc_from_dict(json.loads(_cx.md_to_ast(md_str)))
+    from .binary import call_bin_in, decode_ast
+    doc = decode_ast(call_bin_in('cx_md_to_ast_bin', md_str))
+    resolve_namespaces(doc)
+    return doc
 
 
 # ── Data binding: loads / dumps ───────────────────────────────────────────────
 
 def loads(cx_str: str) -> Any:
-    """Deserialize CX data string into native Python types (dict/list/scalar)."""
-    return json.loads(_cx.to_json(cx_str))
+    """Deserialize CX data string into native Python types (dict/list/scalar).
+
+    v3.4: parses through CXDB v1 (cx_to_data_bin) directly into Python
+    types — no JSON-string detour. Type fidelity preserved (int stays
+    int, bool stays bool, dates round-trip as datetime.date, etc.).
+    Closes audit finding CB-3.
+    """
+    from . import data_bin
+    return data_bin.decode(_cx.to_data_bin(cx_str))
 
 def loads_xml(xml_str: str) -> Any:
     """Deserialize XML string into native Python types."""
@@ -438,8 +733,15 @@ def loads_md(md_str: str) -> Any:
     return json.loads(_cx.md_to_json(md_str))
 
 def dumps(data: Any) -> str:
-    """Serialize native Python types (dict/list/scalar) to a CX string."""
-    return _cx.json_to_cx(json.dumps(data))
+    """Serialize native Python types (dict/list/scalar) to a CX string.
+
+    v3.4: encodes Python value as CXDB v1 bytes directly, then calls
+    cx_from_data_bin to produce canonical CX. No JSON-string detour.
+    Type fidelity preserved on round-trip with loads(). Closes audit
+    finding CB-3.
+    """
+    from . import data_bin
+    return _cx.from_data_bin(data_bin.encode(data))
 
 
 # ── CX emitter ────────────────────────────────────────────────────────────────
@@ -514,6 +816,9 @@ def _emit_scalar(s: Scalar) -> str:
 
 
 def _emit_attr(a: Attr) -> str:
+    if a.is_ref:
+        # ADR 0003 D1: bare `@id` round-trips verbatim.
+        return f'{a.name}=@{a.value}'
     dt = a.data_type
     if dt == 'int':
         return f'{a.name}={int(a.value)}'
@@ -525,9 +830,13 @@ def _emit_attr(a: Attr) -> str:
         return f'{a.name}={"true" if a.value else "false"}'
     if dt == 'null':
         return f'{a.name}=null'
-    # string attr — quote if would autotype
+    # string attr — quote if would autotype OR starts with '@' (else
+    # would mis-parse as is_ref reference per ADR 0003).
     s = str(a.value)
-    v = _cx_choose_quote(s) if _would_autotype(s) else _cx_quote_attr(s)
+    if _would_autotype(s) or (s and s[0] == '@'):
+        v = _cx_choose_quote(s)
+    else:
+        v = _cx_quote_attr(s)
     return f'{a.name}={v}'
 
 
@@ -553,6 +862,11 @@ def _emit_inline(node: Node) -> str:
 
 def _emit_element(e: Element, depth: int) -> str:
     ind = '  ' * depth
+    # v3.4 (ADR 0003 D1): body-position reference shape `[ref @<id>]`.
+    # No anchor / merge / id / type meta or attrs / items per parser
+    # contract — just the bare-ref body.
+    if e.body_ref is not None:
+        return f'{ind}[{e.name} @{e.body_ref}]\n'
     has_child_elems = any(isinstance(i, Element) for i in e.items)
     has_text = any(isinstance(i, (Text, Scalar, EntityRef, RawText)) for i in e.items)
     is_multiline = has_child_elems and not has_text
@@ -562,6 +876,8 @@ def _emit_element(e: Element, depth: int) -> str:
         meta_parts.append(f'&{e.anchor}')
     if e.merge:
         meta_parts.append(f'*{e.merge}')
+    if e.id:
+        meta_parts.append(f'#{e.id}')
     if e.data_type:
         meta_parts.append(f':{e.data_type}')
     for a in e.attrs:
@@ -637,3 +953,9 @@ def _emit_doc(doc: Document) -> str:
     for node in doc.elements:
         parts.append(_emit_node(node, 0))
     return ''.join(parts).rstrip('\n')
+
+
+def _emit_element_as_doc(e: Element) -> str:
+    """Emit a single Element as a top-level CX document. Used by
+    Element.select_all when wrapping self for the path-based thunk."""
+    return _emit_node(e, 0).rstrip('\n')

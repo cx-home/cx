@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 // ── fixture path ──────────────────────────────────────────────────────────────
 
@@ -799,6 +800,855 @@ Section("TransformAll");
     Expect(ps.Count == 3, "TransformAll deeply nested — all matched");
     Expect(ps.All(p => p.Attr("class") as string == "para"),
         "TransformAll deeply nested — all updated");
+}
+
+// ── data_bin one-shots (Phase 7.28; spec/abi.md §2.4–§2.5) ───────────────────
+
+Section("data_bin one-shots");
+
+byte[] Reframe(byte[] payload)
+{
+    var framed = new byte[4 + payload.Length];
+    BitConverter.GetBytes((uint)payload.Length).CopyTo(framed, 0);
+    Buffer.BlockCopy(payload, 0, framed, 4, payload.Length);
+    return framed;
+}
+
+{
+    var payload = CxLib.XmlToDataBin("<server><host>localhost</host><port>8080</port></server>");
+    Expect(payload.Length > 4 && payload[0] == 'C' && payload[1] == 'X' && payload[2] == 'D' && payload[3] == 'B',
+        "XmlToDataBin returns CXDB payload");
+    var xml = CxLib.DataBinToXml(Reframe(payload));
+    Expect(xml.Contains("server") && xml.Contains("localhost") && xml.Contains("8080"),
+        "xml round-trip through data_bin");
+}
+
+{
+    var payload = CxLib.JsonToDataBin("{\"name\": \"alice\", \"id\": 1}");
+    var json = CxLib.DataBinToJson(Reframe(payload));
+    Expect(json.Contains("alice") && json.Contains("1"), "json round-trip through data_bin");
+}
+
+{
+    var payload = CxLib.YamlToDataBin("name: alice\nid: 1\n");
+    var yaml = CxLib.DataBinToYaml(Reframe(payload));
+    Expect(yaml.Contains("alice"), "yaml round-trip through data_bin");
+}
+
+{
+    var payload = CxLib.TomlToDataBin("name = \"alice\"\nid = 1\n");
+    var toml = CxLib.DataBinToToml(Reframe(payload));
+    Expect(toml.Contains("alice"), "toml round-trip through data_bin");
+}
+
+{
+    var payload = CxLib.MdToDataBin("# Title\n\nA paragraph.\n");
+    var md = CxLib.DataBinToMd(Reframe(payload));
+    Expect(md.Contains("Title"), "md round-trip through data_bin");
+}
+
+{
+    var payload = CxLib.XmlToDataBin("<user id=\"1\" name=\"alice\"/>");
+    var json = CxLib.DataBinToJson(Reframe(payload));
+    Expect(json.Contains("alice") && json.Contains("1"), "xml → data_bin → json");
+}
+
+{
+    var payload = CxLib.JsonToDataBin("{\"name\": \"alice\", \"active\": true}");
+    var yaml = CxLib.DataBinToYaml(Reframe(payload));
+    Expect(yaml.Contains("alice"), "json → data_bin → yaml");
+}
+
+{
+    var payload = CxLib.TomlToDataBin("host = \"localhost\"\nport = 8080\n");
+    var xml = CxLib.DataBinToXml(Reframe(payload));
+    Expect(xml.Contains("localhost") && xml.Contains("8080"), "toml → data_bin → xml");
+}
+
+// ── namespaces (Phase 7.58 / ADR 0002) ────────────────────────────────────────
+
+Section("namespaces");
+
+{
+    var doc = CXDocument.Parse("[html xmlns=http://www.w3.org/1999/xhtml [body [p Hi]]]");
+    var html = doc.Root()!;
+    Expect(html.LocalName() == "html", "default ns: element local");
+    Expect(html.NamespaceUri() == "http://www.w3.org/1999/xhtml", "default ns: element URI");
+    Expect(html.Get("body")!.NamespaceUri() == "http://www.w3.org/1999/xhtml",
+        "default ns inherits to descendants");
+}
+
+{
+    var doc = CXDocument.Parse("[html xmlns=urn:x id=top body]");
+    var id = doc.Root()!.Attrs.First(a => a.Name == "id");
+    Expect(id.NamespaceUri() == null, "default ns does NOT apply to unprefixed attrs");
+    Expect(id.LocalName() == "id", "unprefixed attr local-name");
+}
+
+{
+    var doc = CXDocument.Parse("[doc xmlns:dc=http://purl.org/dc/elements/1.1/ [dc:title Hi]]");
+    var title = doc.Root()!.Get("dc:title")!;
+    Expect(title.LocalName() == "title", "prefixed element: local part");
+    Expect(title.NamespaceUri() == "http://purl.org/dc/elements/1.1/",
+        "prefixed element: resolved URI");
+}
+
+{
+    var doc = CXDocument.Parse(
+        "[doc xmlns:xl=http://www.w3.org/1999/xlink [link xl:href=https://example.com Click]]");
+    var href = doc.Root()!.Get("link")!.Attrs.First(a => a.Name == "xl:href");
+    Expect(href.LocalName() == "href" && href.NamespaceUri() == "http://www.w3.org/1999/xlink",
+        "prefixed attribute resolves");
+}
+
+{
+    var doc = CXDocument.Parse("[doc xml:base=https://example.com content]");
+    var b = doc.Root()!.Attrs.First(a => a.Name == "xml:base");
+    Expect(b.NamespaceUri() == CXDocument.XmlNamespaceUri, "reserved xml: prefix");
+}
+
+{
+    var doc = CXDocument.Parse("[doc [cx:meta key=value]]");
+    var m = doc.Root()!.Get("cx:meta")!;
+    Expect(m.NamespaceUri() == CXDocument.CxNamespaceUri, "reserved cx: prefix");
+}
+
+{
+    var doc = CXDocument.Parse("[doc [foo:bar baz]]");
+    var bar = doc.Root()!.Get("foo:bar")!;
+    Expect(bar.LocalName() == "bar" && bar.NamespaceUri() == null,
+        "undeclared prefix passes through unbound");
+}
+
+{
+    var doc = CXDocument.Parse(
+        "[html xmlns=http://www.w3.org/1999/xhtml [body [svg xmlns=http://www.w3.org/2000/svg [circle r=10]]]]");
+    var html = doc.Root()!;
+    var body = html.Get("body")!;
+    var svg = body.Get("svg")!;
+    var circle = svg.Get("circle")!;
+    Expect(html.NamespaceUri() == "http://www.w3.org/1999/xhtml" &&
+           body.NamespaceUri() == "http://www.w3.org/1999/xhtml" &&
+           svg.NamespaceUri() == "http://www.w3.org/2000/svg" &&
+           circle.NamespaceUri() == "http://www.w3.org/2000/svg",
+        "subtree redeclaration overrides default");
+}
+
+{
+    var doc = CXDocument.Parse("[outer xmlns=urn:x [inner xmlns='' [child x=1]]]");
+    var outer = doc.Root()!;
+    var inner = outer.Get("inner")!;
+    var child = inner.Get("child")!;
+    Expect(outer.NamespaceUri() == "urn:x" &&
+           inner.NamespaceUri() == null &&
+           child.NamespaceUri() == null,
+        "xmlns='' undeclares default ns");
+}
+
+{
+    var doc = CXDocument.Parse("[doc xmlns:dc=http://purl.org/dc/elements/1.1/ [dc:title Hi]]");
+    var first = doc.Root()!.Get("dc:title")!.NamespaceUri();
+    CXDocument.ResolveNamespaces(doc);
+    CXDocument.ResolveNamespaces(doc);
+    var second = doc.Root()!.Get("dc:title")!.NamespaceUri();
+    Expect(first == second && first == "http://purl.org/dc/elements/1.1/",
+        "ResolveNamespaces is idempotent");
+}
+
+{
+    var doc = CXDocument.Parse("[doc xmlns:dc=http://purl.org/dc/elements/1.1/ body]");
+    var decl = doc.Root()!.Attrs.First(a => a.Name == "xmlns:dc");
+    Expect(decl.NamespaceUri() == null && decl.LocalName() == "dc",
+        "xmlns: declaration attrs have no resolved URI");
+}
+
+// ── ID/IDREF (Phase 7.62 / ADR 0003) ──────────────────────────────────────────
+
+Section("id/idref");
+
+{
+    var cxIn = "[user #u-1 name=alice]";
+    var doc = CXDocument.Parse(cxIn);
+    Expect(doc.Root()!.Id == "u-1", "id declaration parsed");
+    Expect(doc.ToCx() == cxIn, "id declaration round-trips");
+}
+
+{
+    var doc = CXDocument.Parse("[item &a #u-1 v=42]");
+    var item = doc.Root()!;
+    Expect(item.Anchor == "a" && item.Id == "u-1", "id coexists with anchor");
+}
+
+{
+    var doc = CXDocument.Parse("[users [user #u-1 name=alice] [reviewer assigned-to=@u-1]]");
+    var a = doc.FindFirst("reviewer")!.Attrs.First(x => x.Name == "assigned-to");
+    Expect(a.IsRef && (string)a.Value! == "u-1", "@id reference is_ref + value");
+}
+
+{
+    var doc = CXDocument.Parse("[users [user #u-1 name=alice] [user #u-2 name=bob]]");
+    Expect((string?)doc.ResolveId("u-1")?.Attr("name") == "alice", "ResolveId u-1");
+    Expect((string?)doc.ResolveId("u-2")?.Attr("name") == "bob",   "ResolveId u-2");
+    Expect(doc.ResolveId("u-3") is null, "ResolveId missing returns null");
+}
+
+{
+    var doc = CXDocument.Parse("[a #x v=1] [b #y v=2] [c #z v=3]");
+    var m = doc.ElementsById();
+    Expect(m.Count == 3 && m["x"].Name == "a" && m["y"].Name == "b" && m["z"].Name == "c",
+        "ElementsById full map");
+}
+
+{
+    var cxIn = "[item label='@literal']";
+    var doc = CXDocument.Parse(cxIn);
+    var label = doc.Root()!.Attrs.First(a => a.Name == "label");
+    Expect(!label.IsRef && (string)label.Value! == "@literal",
+        "quoted '@literal' is not a reference");
+    Expect(doc.ToCx() == cxIn, "quoted '@literal' round-trips");
+}
+
+{
+    var doc = CXDocument.Parse("[users [reviewer assigned-to=@u-1] [user #u-1 name=alice]]");
+    Expect((string?)doc.ResolveId("u-1")?.Attr("name") == "alice", "forward reference resolves");
+}
+
+{
+    var cxIn = "[doc\n  [users\n    [user #u-1 name=alice]\n  ]\n  [reviews\n    [review target=@u-1 score=5]\n  ]\n]";
+    var doc = CXDocument.Parse(cxIn);
+    Expect(doc.ResolveId("u-1") is not null, "nested ResolveId");
+    var t = doc.FindFirst("review")!.Attrs.First(a => a.Name == "target");
+    Expect(t.IsRef && (string)t.Value! == "u-1", "nested ref attr");
+}
+
+{
+    var doc = CXDocument.Parse(
+        "[users [user #u-1 name=alice] " +
+        "[reviewer assigned-to=@u-1] " +
+        "[approver checked-by=@u-1]]");
+    int count = 0;
+    foreach (var el in doc.FindAll("reviewer").Concat(doc.FindAll("approver")))
+        foreach (var a in el.Attrs)
+            if (a.IsRef && (string?)a.Value == "u-1") count++;
+    Expect(count == 2, "multiple refs to same id");
+}
+
+// Phase 7.70 / ADR 0003 D1: body-position reference round-trips through ast_bin v3.
+{
+    var cxIn = "[doc [section #section-3 [para See [ref @section-3].]]]";
+    var doc = CXDocument.Parse(cxIn);
+    var refEl = doc.FindFirst("ref")!;
+    Expect(refEl.BodyRef == "section-3", "BodyRef survives ast_bin round-trip");
+    Expect(refEl.Attrs.Count == 0, "body-ref element has no attrs");
+    Expect(refEl.Items.Count == 0, "body-ref element has no items");
+    Expect(doc.ToCx().Contains("[ref @section-3]"), "[ref @section-3] in ToCx output");
+}
+
+// ── ID/IDREF C ABI (Phase 7.65 / ADR 0003) ────────────────────────────────────
+
+Section("id/idref C ABI");
+
+{
+    string doc = "[users\n  [user #u-1 name=alice]\n  [user #u-2 name=bob]\n  [reviewer assigned-to=@u-1]\n]";
+
+    // 1. id_lookup happy path: AST-JSON contains type/name/id.
+    {
+        string? json = CxLib.IdLookup(doc, "u-1");
+        Expect(json is not null, "IdLookup u-1 returns non-null");
+        using var parsed = JsonDocument.Parse(json!);
+        var r = parsed.RootElement;
+        Expect(r.GetProperty("type").GetString() == "Element", "IdLookup u-1: type=Element");
+        Expect(r.GetProperty("name").GetString() == "user",    "IdLookup u-1: name=user");
+        Expect(r.GetProperty("id").GetString()   == "u-1",     "IdLookup u-1: id=u-1");
+    }
+
+    // 2. id_lookup missing returns null.
+    {
+        Expect(CxLib.IdLookup(doc, "does-not-exist") is null, "IdLookup missing returns null");
+    }
+
+    // 3. resolve_ref equals id_lookup for same id.
+    {
+        string? a = CxLib.IdLookup  (doc, "u-2");
+        string? b = CxLib.ResolveRef(doc, "u-2");
+        Expect(a is not null && a == b, "ResolveRef equals IdLookup for u-2");
+    }
+
+    // 4. node_id at cxpath: //user matches first user with id u-1; //reviewer has no id.
+    {
+        Expect(CxLib.NodeId(doc, "//user")     == "u-1", "NodeId //user == u-1");
+        Expect(CxLib.NodeId(doc, "//reviewer") is null,  "NodeId //reviewer is null (no id)");
+    }
+}
+
+// ── delimited (CSV/TSV/PSV/arbitrary) (ADR 0001 / Phase 7.68) ────────────────
+
+Section("delimited");
+
+// Emit (5)
+{
+    var src = "[users :table[name:string age:int active:bool]\n  alice 30 true\n  bob 25 false\n]";
+    var got = CxLib.ToCsv(src);
+    Expect(got == "name,age,active\r\nalice,30,true\r\nbob,25,false\r\n",
+        "to_csv table direct");
+}
+{
+    var src = "[users\n  [user id=1 name=alice +admin]\n  [user id=2 name=bob]\n  [user id=3 name=carol +admin]\n]";
+    var got = CxLib.ToCsv(src);
+    Expect(got == "id,name,admin\r\n1,alice,true\r\n2,bob,\r\n3,carol,true\r\n",
+        "to_csv repeated row (missing +admin → empty cell)");
+}
+{
+    var src = "[config\n  [server host=localhost port=8080 +tls]\n  [logging level=info format=json]\n]";
+    var got = CxLib.ToCsv(src);
+    var expected = "server.host,server.port,server.tls,logging.level,logging.format\r\nlocalhost,8080,true,info,json\r\n";
+    Expect(got == expected, "to_csv dotted path");
+}
+{
+    var src = "[t :table[a b c]\n  x y z\n]";
+    Expect(CxLib.ToTsv(src) == "a\tb\tc\r\nx\ty\tz\r\n", "to_tsv");
+}
+{
+    var src = "[t :table[a b]\n  x y\n]";
+    Expect(CxLib.ToPsv(src) == "a|b\r\nx|y\r\n", "to_psv");
+}
+
+// Parse (3)
+{
+    var got = CxLib.FromCsv("name,age,active\nalice,30,true\nbob,25,false\n");
+    var expected = "[table :table[name age:int active:bool]\n  alice 30 true\n  bob 25 false\n]";
+    Expect(got == expected, "from_csv auto-types");
+}
+{
+    var got = CxLib.FromCsv("name,age\nalice,\"30\"\nbob,\"25\"\n");
+    var expected = "[table :table[name age]\n  alice 30\n  bob 25\n]";
+    Expect(got == expected, "from_csv quoted stays string");
+}
+{
+    var got = CxLib.FromCsv("name,age\nalice,30\nbob,\n");
+    var expected = "[table :table[name age:int]\n  alice 30\n  bob null\n]";
+    Expect(got == expected, "from_csv empty cell is null");
+}
+
+// Arbitrary delimiter + binary one-shots (4)
+{
+    var src = "[t :table[a b]\n  x y\n]";
+    Expect(CxLib.ToDelimited(src, ';') == "a;b\r\nx;y\r\n",
+        "to_delimited semicolon");
+}
+{
+    var payload = CxLib.CsvToDataBin("name,age\nalice,30\nbob,25\n");
+    Expect(payload.Length > 4 && payload[0] == 'C' && payload[1] == 'X' && payload[2] == 'D' && payload[3] == 'B',
+        "csv_to_data_bin returns CXDB payload");
+    var got = CxLib.DataBinToCsv(Reframe(payload));
+    Expect(got == "name,age\r\nalice,30\r\nbob,25\r\n", "csv → data_bin → csv round-trip");
+}
+{
+    var payload = CxLib.TsvToDataBin("a\tb\nx\ty\n");
+    var got = CxLib.DataBinToTsv(Reframe(payload));
+    Expect(got == "a\tb\r\nx\ty\r\n", "tsv → data_bin → tsv round-trip");
+}
+{
+    var payload = CxLib.PsvToDataBin("a|b\nx|y\n");
+    var got = CxLib.DataBinToPsv(Reframe(payload));
+    Expect(got == "a|b\r\nx|y\r\n", "psv → data_bin → psv round-trip");
+}
+
+// ── streaming Table + schema-driven + chunked-table (Phase 7.74b-cont-2) ─────
+
+Section("streaming table");
+
+const string smallTableCx =
+    "[points :table[name:string score:i32]\n" +
+    "  alice 91\n" +
+    "  bob 88\n" +
+    "  carol 73\n" +
+    "  dave 95\n" +
+    "  eve 84\n" +
+    "  frank 60\n" +
+    "]";
+
+{
+    // 1. in-memory round-trip: chunked → reader → writer → from_data_bin.
+    var payload = CxLib.ToDataBinChunked(smallTableCx);
+    Expect(payload.Length > 12 &&
+           payload[0] == 'C' && payload[1] == 'X' && payload[2] == 'D' && payload[3] == 'B',
+        "ToDataBinChunked returns CXDB payload");
+
+    var framed = Reframe(payload);
+    using var reader = new TableReader(framed);
+    var schema = reader.Schema();
+    Expect(schema.Length > 4, "Schema returns framed ast_bin");
+    var groups = reader.ToList();
+    Expect(groups.Count >= 1, "reader yields at least one row group");
+
+    using var writer = new TableWriter(schema);
+    foreach (var g in groups) writer.Emit(g);
+    var rebuilt = writer.CloseGetBytes();
+    var cx = CxLib.FromDataBin(rebuilt);
+    Expect(cx.Contains(":table"), "rebuilt CX contains :table body marker");
+    Expect(cx.Contains("alice") && cx.Contains("frank"),
+        "rebuilt CX contains all row values");
+}
+
+{
+    // 2. fd round-trip: stream through fd writer → fd reader; assert schema +
+    //    group count drift. Mirrors the Python pattern exactly.
+    var payload = CxLib.ToDataBinChunked(smallTableCx);
+    using (var rIn = new TableReader(Reframe(payload)))
+    {
+        var schema = rIn.Schema();
+        var groups = rIn.ToList();
+
+        string tmpPath = Path.Combine(Path.GetTempPath(),
+            $"cx_csharp_streaming_{Guid.NewGuid()}.cxdb");
+        try
+        {
+            using (var outFs = new FileStream(tmpPath, FileMode.Create, FileAccess.Write))
+            {
+                int outFd = (int)outFs.SafeFileHandle.DangerousGetHandle();
+                using var w = TableWriter.ToFd(schema, outFd);
+                foreach (var g in groups) w.Emit(g);
+                // w.Close on dispose flushes end-of-table.
+            }
+
+            using var inFs = new FileStream(tmpPath, FileMode.Open, FileAccess.Read);
+            int inFd = (int)inFs.SafeFileHandle.DangerousGetHandle();
+            using var rOut = TableReader.FromFd(inFd);
+            var schemaOut = rOut.Schema();
+            var groupsOut = rOut.ToList();
+
+            Expect(schemaOut.SequenceEqual(schema), "fd round-trip: schema preserved");
+            Expect(groupsOut.Count == groups.Count,
+                $"fd round-trip: group count preserved ({groupsOut.Count} vs {groups.Count})");
+        }
+        finally { try { File.Delete(tmpPath); } catch { } }
+    }
+}
+
+{
+    // 3. closed-handle errors.
+    var payload = CxLib.ToDataBinChunked(smallTableCx);
+    var framed = Reframe(payload);
+
+    var reader = new TableReader(framed);
+    reader.Close();
+    Expect(reader.Next() is null, "Next() on closed reader yields null");
+    bool threw = false;
+    try { reader.Schema(); } catch (InvalidOperationException) { threw = true; }
+    Expect(threw, "Schema() on closed reader throws");
+
+    var r2 = new TableReader(framed);
+    var schema = r2.Schema();
+    var groups = r2.ToList();
+    r2.Close();
+
+    var writer = new TableWriter(schema);
+    foreach (var g in groups) writer.Emit(g);
+    _ = writer.CloseGetBytes();
+    bool emitThrew = false;
+    try { writer.Emit(groups[0]); }
+    catch (InvalidOperationException) { emitThrew = true; }
+    Expect(emitThrew, "Emit after CloseGetBytes throws");
+}
+
+{
+    // 4. concatenate row groups from two distinct sources sharing a schema.
+    var p1 = CxLib.ToDataBinChunked(
+        "[points :table[name:string score:i32] alice 91 bob 88]");
+    var p2 = CxLib.ToDataBinChunked(
+        "[points :table[name:string score:i32] carol 73 dave 95 eve 84]");
+
+    using var r1 = new TableReader(Reframe(p1));
+    var schema = r1.Schema();
+    var g1 = r1.ToList();
+    using var r2 = new TableReader(Reframe(p2));
+    var g2 = r2.ToList();
+
+    Expect(g1.Count >= 1 && g2.Count >= 1, "both readers yield row groups");
+
+    using var w = new TableWriter(schema);
+    foreach (var g in g1) w.Emit(g);
+    foreach (var g in g2) w.Emit(g);
+    var rebuilt = w.CloseGetBytes();
+    var cx = CxLib.FromDataBin(rebuilt);
+    foreach (var needle in new[] { "alice", "bob", "carol", "dave", "eve" })
+    {
+        Expect(cx.Contains(needle), $"merged CX contains '{needle}'");
+    }
+}
+
+Section("schema-driven encoding");
+
+{
+    // 5. schema-driven round-trip (CX text → schema-driven CXDB → CX text).
+    string cxText = "[server [host \"localhost\"] [port 8080]]";
+    string schema = "[server [host :string] [port :int]]";
+    var payload = CxLib.ToDataBinSchemaDriven(cxText, schema);
+    Expect(payload.Length > 12 &&
+           payload[0] == 'C' && payload[1] == 'X' && payload[2] == 'D' && payload[3] == 'B',
+        "ToDataBinSchemaDriven returns CXDB payload");
+
+    var framed = Reframe(payload);
+    var roundtrip = CxLib.FromDataBinSchemaDriven(framed, schema);
+    Expect(roundtrip.Contains("server"),  "schema-driven round-trip contains 'server'");
+    Expect(roundtrip.Contains("localhost"), "schema-driven round-trip contains 'localhost'");
+    Expect(roundtrip.Contains("8080"),    "schema-driven round-trip contains '8080'");
+}
+
+Section("schema validator");
+
+{
+    // Smoke tests for the schema-validator binding (Phase 7.74d / ADR 0009).
+    // The full sweep stays on the V/Python/Go side (51 fixtures × 3 bindings).
+    string bookSchema = @"
+[?cx schema-of book]
+
+[book
+  [body :elem]
+  [attr id :string :req]
+  [elem title :card='1..1']
+  [elem author :card='1..*']
+]
+
+[title [body :string]]
+[author [body :string]]
+";
+
+    // 1. Valid document — zero errors.
+    {
+        string doc = @"
+[book id='b1'
+  [title 'The Stand']
+  [author 'King']
+]
+";
+        var report = CxLib.Validate(doc, bookSchema);
+        Expect(report.IsValid,         "valid book → IsValid");
+        Expect(report.ErrorCount == 0, "valid book → ErrorCount == 0");
+    }
+
+    // 2. Missing :req attribute fires S002.
+    {
+        string doc = "[book\n  [title 'X']\n  [author 'Y']\n]\n";
+        var report = CxLib.Validate(doc, bookSchema);
+        Expect(report.ErrorCodes().SequenceEqual(new[] { "S002" }),
+            "missing :req attr fires S002 only");
+        Expect(report.Diagnostics[0].Severity == Severity.Error,
+            "S002 diagnostic severity == Error");
+    }
+
+    // 3. Wrong root element fires S017.
+    {
+        string doc = "[other id='x']";
+        var report = CxLib.Validate(doc, bookSchema);
+        Expect(report.ErrorCodes().SequenceEqual(new[] { "S017" }),
+            "root mismatch fires S017");
+    }
+
+    // 4. `[?cx schema=PATH]` directive without a caller-supplied schema fires S010.
+    {
+        string doc = "[?cx schema=path/to/book.cxs]\n[book id='b1' [title 'X']]\n";
+        var report = CxLib.Validate(doc, "");
+        Expect(report.ErrorCodes().SequenceEqual(new[] { "S010" }),
+            "schema directive w/o caller schema fires S010");
+    }
+
+    // 5. ValidateWithDefaults populates ModifiedDoc from `:def='…'`.
+    {
+        string schema = @"
+[?cx schema-of server]
+
+[server
+  [body :elem]
+  [attr host :string :def='localhost']
+]
+";
+        string doc = "[server]";
+        var report = CxLib.ValidateWithDefaults(doc, schema);
+        Expect(report.IsValid, "apply-defaults: zero errors");
+        Expect(report.ModifiedDoc.Contains("host="),
+            "apply-defaults writes default into ModifiedDoc");
+    }
+}
+
+// ── streaming-write API (spec/streaming.md §6 + ADR 0011) ─────────────────────
+
+Section("streaming-write — EventWriter");
+
+byte[] ColSpec2()
+{
+    // 2 columns: name:string (0x30), score:i32 (0x12)
+    using var ms = new MemoryStream();
+    void U32(int v) { ms.Write(BitConverter.GetBytes(v), 0, 4); }
+    U32(2);
+    U32(4); ms.Write(System.Text.Encoding.UTF8.GetBytes("name"));  ms.WriteByte(0x30);
+    U32(5); ms.Write(System.Text.Encoding.UTF8.GetBytes("score")); ms.WriteByte(0x12);
+    return ms.ToArray();
+}
+
+byte[] RowGroup2()
+{
+    // uvarint(2) + col1 strings + col2 i32 LE
+    using var ms = new MemoryStream();
+    ms.WriteByte(2);
+    ms.WriteByte(5); ms.Write(System.Text.Encoding.UTF8.GetBytes("alice"));
+    ms.WriteByte(3); ms.Write(System.Text.Encoding.UTF8.GetBytes("bob"));
+    ms.Write(BitConverter.GetBytes(91));
+    ms.Write(BitConverter.GetBytes(88));
+    return ms.ToArray();
+}
+
+void ExpectWcode(string code, Action f, string what)
+{
+    try
+    {
+        f();
+        Expect(false, $"{what}: expected {code}, no exception thrown");
+    }
+    catch (InvalidOperationException e)
+    {
+        Expect(e.Message.StartsWith(code), $"{what}: expected {code} prefix, got {e.Message}");
+    }
+}
+
+Expect(EventWriter.HasCapability, "capability bit 27 advertised");
+
+{
+    using var w = new EventWriter("cx");
+    w.StartDoc();
+    w.StartElement("greet");
+    w.Text("hello");
+    w.EndElement("greet");
+    w.EndDoc();
+    var bytes = w.CloseGetBytes();
+    var s = System.Text.Encoding.UTF8.GetString(bytes);
+    Expect(s.Contains("[greet"), "cx minimal: contains [greet");
+    Expect(s.Contains("hello"),  "cx minimal: contains hello");
+}
+
+{
+    using var w = new EventWriter("cx");
+    w.StartDoc();
+    w.StartElement("book", attrs: new[] {
+        new EventAttr("id", "b1", "string"),
+        new EventAttr("yr", "2024", "int"),
+    });
+    w.EndElement("book");
+    w.EndDoc();
+    var s = System.Text.Encoding.UTF8.GetString(w.CloseGetBytes());
+    Expect(s.Contains("id="), "attrs: id=");
+    Expect(s.Contains("b1"),  "attrs: b1");
+}
+
+{
+    using var w = new EventWriter("xml");
+    w.StartDoc();
+    w.StartElement("greet");
+    w.Text("hello");
+    w.EndElement("greet");
+    w.EndDoc();
+    var s = System.Text.Encoding.UTF8.GetString(w.CloseGetBytes());
+    Expect(s.Contains("<?xml version=\"1.0\"?>"), "xml minimal: prolog");
+    Expect(s.Contains("<greet>") && s.Contains("</greet>"), "xml minimal: element tags");
+    Expect(s.Contains("hello"), "xml minimal: text");
+}
+
+ExpectWcode("W001", () => { var w = new EventWriter("cx"); w.StartDoc(); w.StartDoc(); }, "W001 double StartDoc");
+ExpectWcode("W002", () => { var w = new EventWriter("cx"); w.Text("premature"); }, "W002 text before StartDoc");
+ExpectWcode("W003", () => { var w = new EventWriter("cx"); w.StartDoc(); w.EndDoc(); w.Text("post"); }, "W003 text after EndDoc");
+ExpectWcode("W004", () => { var w = new EventWriter("cx"); w.StartDoc(); w.StartElement("open"); w.EndDoc(); }, "W004 unclosed element on EndDoc");
+ExpectWcode("W005", () => { var w = new EventWriter("cx"); w.StartDoc(); w.StartElement("greet"); w.EndElement("farewell"); }, "W005 end-element mismatch");
+ExpectWcode("W006", () => { var w = new EventWriter("cx"); w.StartDoc(); w.EndElement("orphan"); }, "W006 orphan EndElement");
+ExpectWcode("W008", () => { var w = new EventWriter("cx"); w.StartDoc(); w.Scalar("42", "not_a_type"); }, "W008 invalid scalar type");
+ExpectWcode("W009", () => { var w = new EventWriter("xml"); w.StartDoc(); w.StartTable(new byte[]{1,0,0,0,1,0,0,0,(byte)'x',0x12}); }, "W009 chunked on xml");
+ExpectWcode("W012", () => { var w = new EventWriter("cx"); w.StartDoc(); w.RowGroup(new byte[]{1}); }, "W012 orphan RowGroup");
+ExpectWcode("W013", () => { var w = new EventWriter("cx"); w.StartDoc(); w.EndTable(); }, "W013 orphan EndTable");
+
+{
+    // fail-closed: subsequent emit returns same W-code without effect.
+    using var w = new EventWriter("cx");
+    try { w.Text("premature"); Expect(false, "fail-closed: first call did not throw"); }
+    catch (InvalidOperationException e1) { Expect(e1.Message.StartsWith("W002"), "fail-closed: first W002"); }
+    try { w.Text("again"); Expect(false, "fail-closed: second call did not throw"); }
+    catch (InvalidOperationException e2) { Expect(e2.Message.StartsWith("W002"), "fail-closed: second still W002"); }
+}
+
+{
+    // Chunked-table CX round-trip.
+    using var w = new EventWriter("cx");
+    w.StartDoc();
+    w.StartElement("points");
+    w.StartTable(ColSpec2());
+    w.RowGroup(RowGroup2());
+    w.EndTable();
+    w.EndElement("points");
+    w.EndDoc();
+    var s = System.Text.Encoding.UTF8.GetString(w.CloseGetBytes());
+    Expect(s.Contains(":table"), "chunked: contains :table");
+    Expect(s.Contains("alice"),  "chunked: contains alice");
+    Expect(s.Contains("91"),     "chunked: contains 91");
+}
+
+{
+    // fd writer path.
+    string tmp = Path.Combine(Path.GetTempPath(), $"cx_event_writer_csharp_{Environment.ProcessId}.cx");
+    try
+    {
+        using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write))
+        using (var w = EventWriter.ToFd("cx", (int)fs.SafeFileHandle.DangerousGetHandle()))
+        {
+            w.StartDoc();
+            w.StartElement("greet");
+            w.Text("hello");
+            w.EndElement("greet");
+            w.EndDoc();
+            var bytes = w.CloseGetBytes();
+            Expect(bytes.Length == 0, "fd writer: CloseGetBytes returns empty");
+        }
+        var written = File.ReadAllText(tmp);
+        Expect(written.Contains("[greet"), "fd output: contains [greet");
+        Expect(written.Contains("hello"),  "fd output: contains hello");
+    }
+    finally { try { File.Delete(tmp); } catch {} }
+}
+
+// ── Public Table API (ADR 0018 D1) ────────────────────────────────────────────
+
+Section("Table API — construction");
+
+{
+    string src = "[users :table[name age:int]\n" +
+                 "  alice 30\n" +
+                 "  bob 25\n" +
+                 "]";
+    var t = Table.FromCx(src);
+    Expect(t.RowCount == 2, "FromCx: rowCount=2");
+    Expect(t.ColCount == 2, "FromCx: colCount=2");
+}
+
+{
+    try
+    {
+        Table.FromCx("[product name=alice]");
+        Expect(false, "FromCx no-table did not throw");
+    }
+    catch (InvalidOperationException e)
+    {
+        Expect(e.Message.Contains("no :table"), "FromCx no-table errors");
+    }
+}
+
+{
+    try
+    {
+        Table.Create(new[] { "a", "b" }, new[] { "int" },
+            new List<IReadOnlyList<object?>>());
+        Expect(false, "Create len-mismatch did not throw");
+    }
+    catch (ArgumentException e)
+    {
+        Expect(e.Message.Contains("len(cols)"), "Create len mismatch errors");
+    }
+}
+
+{
+    try
+    {
+        Table.Create(new[] { "a", "a" }, new[] { "int", "int" },
+            new List<IReadOnlyList<object?>>());
+        Expect(false, "Create duplicate did not throw");
+    }
+    catch (ArgumentException e)
+    {
+        Expect(e.Message.Contains("duplicate"), "Create duplicate cols errors");
+    }
+}
+
+Section("Table API — access");
+
+{
+    var t = Table.Create(
+        new[] { "a", "b" },
+        new[] { "int", "string" },
+        new List<IReadOnlyList<object?>> {
+            new object?[] { 1L, "x" },
+            new object?[] { 2L, "y" },
+        });
+    var row = t.Row(0);
+    Expect((long)row["a"]! == 1L && (string)row["b"]! == "x", "Row(0) by name");
+    var col = t.Column("b");
+    Expect((string)col[0]! == "x" && (string)col[1]! == "y", "Column(name)");
+    Expect((long)t.Cell(1, 0)! == 2L, "Cell(r,c)");
+    Expect((string)t.CellByName(1, "b")! == "y", "CellByName");
+}
+
+{
+    var t = Table.Create(
+        new[] { "v" }, new[] { "int" },
+        new List<IReadOnlyList<object?>> {
+            new object?[] { 1L }, new object?[] { 2L }, new object?[] { 3L },
+            new object?[] { 4L }, new object?[] { 5L },
+        });
+    Expect(t.Head(2).RowCount == 2, "Head(2)");
+    Expect(t.Tail(2).RowCount == 2, "Tail(2)");
+    Expect(t.Slice(1, 4).RowCount == 3, "Slice(1,4)");
+}
+
+{
+    var t = Table.Create(
+        new[] { "a", "b", "c" },
+        new[] { "int", "int", "int" },
+        new List<IReadOnlyList<object?>> { new object?[] { 1L, 2L, 3L } });
+    var sel = t.SelectCols(new[] { "c", "a" });
+    Expect(sel.Cols.SequenceEqual(new[] { "c", "a" }), "SelectCols reorders");
+}
+
+Section("Table API — iteration / conversion");
+
+{
+    var t = Table.Create(
+        new[] { "a" }, new[] { "int" },
+        new List<IReadOnlyList<object?>> {
+            new object?[] { 1L }, new object?[] { 2L }
+        });
+    int sum = 0;
+    foreach (var row in t) sum += (int)(long)row["a"]!;
+    Expect(sum == 3, "Iteration sums values");
+}
+
+{
+    var t = Table.Create(
+        new[] { "a" }, new[] { "int" },
+        new List<IReadOnlyList<object?>> { new object?[] { 1L } });
+    Expect(t.ToCx().Contains(":table[a:int]"), "ToCx contains :table[a:int]");
+}
+
+{
+    var t = Table.Create(
+        new[] { "a" }, new[] { "int" },
+        new List<IReadOnlyList<object?>> {
+            new object?[] { 1L }, new object?[] { 2L }
+        });
+    string js = t.ToJson();
+    Expect(js.Contains("\"a\":1"), "ToJson contains a:1");
+}
+
+{
+    var a = Table.Create(new[] { "a" }, new[] { "int" },
+        new List<IReadOnlyList<object?>> { new object?[] { 1L } });
+    var b = Table.Create(new[] { "a" }, new[] { "int" },
+        new List<IReadOnlyList<object?>> { new object?[] { 1L } });
+    Expect(a.Equals(b), "Equals on equal tables");
+}
+
+{
+    string src = "[u :table[name tags]\n" +
+                 "  alice [admin, user,]\n" +
+                 "]";
+    var t = Table.FromCx(src);
+    var row = t.Row(0);
+    Expect(row["tags"] is IList<object?>, "FromCx collection cell yields list");
 }
 
 // ── summary ───────────────────────────────────────────────────────────────────

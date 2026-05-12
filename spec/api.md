@@ -15,16 +15,16 @@ Elements, Text, Scalars, Comments, etc.).
 
 ```cx
 [config
-  [server host=localhost port=8080 debug=false]
-  [database host=db.local port=5432]
+ [server host=localhost port=8080 debug=false]
+ [database host=db.local port=5432]
 ]
 ```
 
 ```
 Document
-  └─ Element "config"
-       ├─ Element "server"    attrs: host="localhost", port=8080, debug=false
-       └─ Element "database"  attrs: host="db.local",  port=5432
+ └─ Element "config"
+ ├─ Element "server" attrs: host="localhost", port=8080, debug=false
+ └─ Element "database" attrs: host="db.local", port=5432
 ```
 
 ### Immutability
@@ -35,12 +35,12 @@ document — only the nodes on the path from root to the changed element are
 copied. This is O(depth), not O(total nodes).
 
 ```
-Before transform:                After transform:
+Before transform: After transform:
 
-Document                         Document' (new value)
-  └─ config ──────────────────────└─ config' (new copy)
-       ├─ server ──────────────────────├─ server' (new copy — changed)
-       └─ database (shared) ──────────└─ database (shared — unchanged)
+Document Document' (new value)
+ └─ config ──────────────────────└─ config' (new copy)
+ ├─ server ──────────────────────├─ server' (new copy — changed)
+ └─ database (shared) ──────────└─ database (shared — unchanged)
 ```
 
 This makes Documents safe to share across threads with no locks. Multiple
@@ -60,10 +60,10 @@ The primary navigation method. A `/`-separated chain of element names, where
 each segment is a direct-child lookup.
 
 ```
-doc.at("config/server")          → Element "server"
-doc.at("config/server/timeout")  → Element "timeout"
-doc.at("config/missing")         → none
-el.at("head/title")              → relative navigation from el
+doc.at("config/server") → Element "server"
+doc.at("config/server/timeout") → Element "timeout"
+doc.at("config/missing") → none
+el.at("head/title") → relative navigation from el
 ```
 
 Returns the element at the path, or `none` if any step is missing. Never raises
@@ -76,8 +76,8 @@ Empty or redundant slashes are ignored: `"/config/"` is the same as `"config"`.
 Returns the **first direct child Element** with the given name, or `none`.
 
 ```
-config.get("server")    → Element "server"
-config.get("missing")   → none
+config.get("server") → Element "server"
+config.get("missing") → none
 ```
 
 Direct children only. For any-depth search, use `find_first`.
@@ -88,8 +88,8 @@ Returns **all direct child Elements** with the given name, in document order.
 Returns `[]` if none match.
 
 ```
-root.get_all("item")   → [Element, Element, ...]
-root.get_all("none")   → []
+root.get_all("item") → [Element, Element, ...]
+root.get_all("none") → []
 ```
 
 Direct children only. For any-depth search, use `find_all`.
@@ -100,7 +100,7 @@ Returns **all direct child Elements**, in document order. Excludes Text, Scalar,
 Comment, and other non-Element nodes.
 
 ```
-config.children()   → [Element "server", Element "database"]
+config.children() → [Element "server", Element "database"]
 ```
 
 ### find_first(name)
@@ -109,8 +109,8 @@ Searches the **entire subtree** depth-first and returns the **first** matching
 Element, or `none`.
 
 ```
-doc.find_first("p")     → first <p> anywhere in document
-el.find_first("title")  → first <title> anywhere inside el
+doc.find_first("p") → first <p> anywhere in document
+el.find_first("title") → first <title> anywhere inside el
 ```
 
 Depth-first order: children are visited before their siblings. Does not include
@@ -122,8 +122,8 @@ Searches the **entire subtree** depth-first and returns **all** matching
 Elements, in the order encountered.
 
 ```
-doc.find_all("p")    → all <p> elements, depth-first
-el.find_all("item")  → all <item> elements inside el
+doc.find_all("p") → all <p> elements, depth-first
+el.find_all("item") → all <item> elements inside el
 ```
 
 Returns `[]` if none match. Does not include the element itself.
@@ -134,7 +134,7 @@ Returns the **first top-level Element** in the document, or `none` on empty
 input. Available on Document only.
 
 ```
-doc.root()   → Element "config"  (first element in doc.elements)
+doc.root() → Element "config" (first element in doc.elements)
 ```
 
 ---
@@ -153,10 +153,10 @@ Returns the value of the named attribute, typed, or `none` if absent.
 ```
 
 ```
-el.attr("host")   → "localhost"   (string)
-el.attr("port")   → 8080          (int)
-el.attr("debug")  → false         (bool)
-el.attr("nope")   → none
+el.attr("host") → "localhost" (string)
+el.attr("port") → 8080 (int)
+el.attr("debug") → false (bool)
+el.attr("nope") → none
 ```
 
 Values are native types: int, float, bool, null, string, date, datetime.
@@ -168,9 +168,9 @@ Scalar children with a single space. Returns `""` if the body has no text or
 scalar content (e.g. only child Elements).
 
 ```cx
-[h1 Introduction]       → el.text() == "Introduction"
-[label 'hello world']   → el.text() == "hello world"
-[section [p ...]]       → el.text() == ""
+[h1 Introduction] → el.text() == "Introduction"
+[label 'hello world'] → el.text() == "hello world"
+[section [p ...]] → el.text() == ""
 ```
 
 ### scalar()
@@ -179,10 +179,10 @@ Returns the **typed value** of the first Scalar child, or `none`. Use this when
 an element holds a single typed value.
 
 ```cx
-[count 42]     → el.scalar() == 42      (int)
-[active true]  → el.scalar() == true    (bool)
-[ratio 1.5]    → el.scalar() == 1.5     (float)
-[label Hello]  → el.scalar() == none    (Text node, not Scalar)
+[count 42] → el.scalar() == 42 (int)
+[active true] → el.scalar() == true (bool)
+[ratio 1.5] → el.scalar() == 1.5 (float)
+[label Hello] → el.scalar() == none (Text node, not Scalar)
 ```
 
 Unquoted body values (`42`, `true`, `1.5`) auto-type to Scalar. Quoted body
@@ -261,10 +261,10 @@ are shared.
 ```v
 // V
 updated := doc.transform('config/server', fn(el cxlib.Element) cxlib.Element {
-    mut e := el
-    e.set_attr('host', cxlib.ScalarVal('newhost'))
-    e.remove_attr('debug')
-    return e
+ mut e := el
+ e.set_attr('host', cxlib.ScalarVal('newhost'))
+ e.remove_attr('debug')
+ return e
 })
 // doc is unchanged. updated is a new Document.
 ```
@@ -272,9 +272,9 @@ updated := doc.transform('config/server', fn(el cxlib.Element) cxlib.Element {
 ```python
 # Python
 def update_server(el):
-    el.set_attr("host", "newhost")
-    el.remove_attr("debug")
-    return el
+ el.set_attr("host", "newhost")
+ el.remove_attr("debug")
+ return el
 
 updated = doc.transform("config/server", update_server)
 # doc is unchanged. updated is a new Document.
@@ -283,9 +283,9 @@ updated = doc.transform("config/server", update_server)
 ```rust
 // Rust
 let updated = doc.transform("config/server", |mut el| {
-    el.set_attr("host", "newhost");
-    el.remove_attr("debug");
-    el
+ el.set_attr("host", "newhost");
+ el.remove_attr("debug");
+ el
 });
 // doc is unchanged. updated is a new Document.
 ```
@@ -298,8 +298,8 @@ Since each `transform` returns a Document, changes can be composed:
 
 ```v
 updated := doc
-    .transform('config/server',   fn(el cxlib.Element) cxlib.Element { ... })
-    .transform('config/database', fn(el cxlib.Element) cxlib.Element { ... })
+ .transform('config/server', fn(el cxlib.Element) cxlib.Element { ... })
+ .transform('config/database', fn(el cxlib.Element) cxlib.Element { ... })
 ```
 
 **`transform_all(cxpath, fn)` — transform every match**
@@ -310,15 +310,15 @@ new Document. Requires CXPath (see `spec/cxpath.md`).
 ```v
 // activate all services in us region
 updated := doc.transform_all('//service[@region=us]', fn(el cxlib.Element) cxlib.Element {
-    mut e := el
-    e.set_attr('active', cxlib.ScalarVal(true))
-    return e
+ mut e := el
+ e.set_attr('active', cxlib.ScalarVal(true))
+ return e
 })
 ```
 
 ```python
 updated = doc.transform_all('//service[@region=us]',
-    lambda el: el.set_attr('active', True) or el
+ lambda el: el.set_attr('active', True) or el
 )
 ```
 
@@ -337,18 +337,18 @@ A missing result is always `none` / `nil` / `null` in the host language —
 **never an error**. Parse errors are the only thing that can fail. Navigation
 and extraction are always safe to call.
 
-| Method               | Missing returns |
+| Method | Missing returns |
 |----------------------|-----------------|
-| `root()`             | `none`          |
-| `get(name)`          | `none`          |
-| `at(path)`           | `none`          |
-| `find_first(name)`   | `none`          |
-| `attr(name)`         | `none`          |
-| `scalar()`           | `none`          |
-| `get_all(name)`      | `[]`            |
-| `find_all(name)`     | `[]`            |
-| `children()`         | `[]`            |
-| `text()`             | `""`            |
+| `root()` | `none` |
+| `get(name)` | `none` |
+| `at(path)` | `none` |
+| `find_first(name)` | `none` |
+| `attr(name)` | `none` |
+| `scalar()` | `none` |
+| `get_all(name)` | `[]` |
+| `find_all(name)` | `[]` |
+| `children()` | `[]` |
+| `text()` | `""` |
 
 `transform` called with a path that does not exist returns the original document
 unchanged — not an error.
@@ -357,14 +357,14 @@ unchanged — not an error.
 
 ## 5 — Direct children vs. descendants
 
-| Method               | Scope                             |
+| Method | Scope |
 |----------------------|-----------------------------------|
-| `get(name)`          | Direct children only              |
-| `get_all(name)`      | Direct children only              |
-| `children()`         | Direct children only              |
-| `at(path)`           | Chain of direct-child `get` calls |
-| `find_first(name)`   | All descendants, depth-first      |
-| `find_all(name)`     | All descendants, depth-first      |
+| `get(name)` | Direct children only |
+| `get_all(name)` | Direct children only |
+| `children()` | Direct children only |
+| `at(path)` | Chain of direct-child `get` calls |
+| `find_first(name)` | All descendants, depth-first |
+| `find_all(name)` | All descendants, depth-first |
 
 Use `get` / `get_all` / `at` when the structure is known and the element is at
 a specific position. Use `find_first` / `find_all` when searching across
@@ -385,13 +385,13 @@ with each other or with threads still reading the original.
 ```v
 // V — parallel transforms over the same source document
 results := parallels.map(regions, fn(region string) cxlib.Document {
-    return doc.transform_all('//service[@region=${region}]',
-        fn(el cxlib.Element) cxlib.Element {
-            mut e := el
-            e.set_attr('active', cxlib.ScalarVal(true))
-            return e
-        }
-    )
+ return doc.transform_all('//service[@region=${region}]',
+ fn(el cxlib.Element) cxlib.Element {
+ mut e := el
+ e.set_attr('active', cxlib.ScalarVal(true))
+ return e
+ }
+ )
 })
 ```
 
@@ -399,24 +399,24 @@ results := parallels.map(regions, fn(region string) cxlib.Document {
 
 ## 7 — API surface by receiver
 
-| Method                    | Document | Element | Returns          |
+| Method | Document | Element | Returns |
 |---------------------------|----------|---------|------------------|
-| `root()`                  | ✓        |         | Element or none  |
-| `get(name)`               | ✓        | ✓       | Element or none  |
-| `get_all(name)`           |          | ✓       | Element[]        |
-| `at(path)`                | ✓        | ✓       | Element or none  |
-| `find_first(name)`        | ✓        | ✓       | Element or none  |
-| `find_all(name)`          | ✓        | ✓       | Element[]        |
-| `children()`              |          | ✓       | Element[]        |
-| `attr(name)`              |          | ✓       | value or none    |
-| `text()`                  |          | ✓       | string           |
-| `scalar()`                |          | ✓       | value or none    |
-| `set_attr(name, val)`     |          | ✓       | — (build mode)   |
-| `remove_attr(name)`       |          | ✓       | — (build mode)   |
-| `append(node)`            | ✓        | ✓       | — (build mode)   |
-| `prepend(node)`           | ✓        | ✓       | — (build mode)   |
-| `insert(i, node)`         |          | ✓       | — (build mode)   |
-| `remove_at(i)`            |          | ✓       | — (build mode)   |
-| `remove_child(name)`      |          | ✓       | — (build mode)   |
-| `transform(path, fn)`     | ✓        |         | Document         |
-| `transform_all(expr, fn)` | ✓        |         | Document         |
+| `root()` | ✓ | | Element or none |
+| `get(name)` | ✓ | ✓ | Element or none |
+| `get_all(name)` | | ✓ | Element[] |
+| `at(path)` | ✓ | ✓ | Element or none |
+| `find_first(name)` | ✓ | ✓ | Element or none |
+| `find_all(name)` | ✓ | ✓ | Element[] |
+| `children()` | | ✓ | Element[] |
+| `attr(name)` | | ✓ | value or none |
+| `text()` | | ✓ | string |
+| `scalar()` | | ✓ | value or none |
+| `set_attr(name, val)` | | ✓ | — (build mode) |
+| `remove_attr(name)` | | ✓ | — (build mode) |
+| `append(node)` | ✓ | ✓ | — (build mode) |
+| `prepend(node)` | ✓ | ✓ | — (build mode) |
+| `insert(i, node)` | | ✓ | — (build mode) |
+| `remove_at(i)` | | ✓ | — (build mode) |
+| `remove_child(name)` | | ✓ | — (build mode) |
+| `transform(path, fn)` | ✓ | | Document |
+| `transform_all(expr, fn)` | ✓ | | Document |

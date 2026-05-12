@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -21,7 +22,33 @@ type Attr struct {
 	Name     string
 	Value    any    // string | int64 | float64 | bool | nil
 	DataType string // "" means string (omitted in JSON)
+	// v3.4 (ADR 0002): expanded-name fields populated by
+	// resolveNamespaces(). Local is the part after the first ':' in
+	// Name (or the whole name); NsURI is the resolved URI. Per XML
+	// Namespaces 1.0 §6.2 the default namespace does not apply to
+	// unprefixed attributes — NsURI stays empty for them.
+	Local string
+	NsURI string // "" when no binding is in scope and prefix is not reserved
+	// v3.4 (ADR 0003): true when the source attribute value was a bare
+	// `@id` reference token. Quoted strings starting with '@' have
+	// IsRef = false. Round-trip preserves the bare form on emit.
+	IsRef bool
+	// v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+	// When non-nil, Value is unused and the attribute's content is the
+	// parsed body sequence. Used by CXL evaluation directives like
+	// `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL evaluation;
+	// round-trips as opaque structure (ADR 0016 R5). ast_bin format
+	// version 5 carries this field; v1-4 decoders saw attrs without it.
+	Body []Node
 }
+
+// LocalName returns the part of Name after the first ':' (or the whole
+// name when no colon is present).
+func (a Attr) LocalName() string { return a.Local }
+
+// NamespaceURI returns the resolved namespace URI for prefixed
+// attributes; empty string for unprefixed or unbound prefixes.
+func (a Attr) NamespaceURI() string { return a.NsURI }
 
 // ── Concrete node types ───────────────────────────────────────────────────────
 
@@ -75,8 +102,16 @@ type XMLDeclNode struct {
 
 func (n *XMLDeclNode) cxNode() {}
 
-// CXDirectiveNode is `[?cx ...]`.
-type CXDirectiveNode struct{ Attrs []Attr }
+// CXDirectiveNode is `[?cx ...]`. v0.6.0 — directives may carry an
+// `&anchor` and/or nested elements. Currently used by the standalone
+// fragment form `[?cx frag &name [body :TYPE :flags]]` (spec
+// schema.md §8). ast_bin format version 4 carries them; v1-3 decoders
+// see attrs-only and leave Anchor/Items as nil/empty.
+type CXDirectiveNode struct {
+	Attrs  []Attr
+	Anchor string // "" when none
+	Items  []Node
+}
 
 func (n *CXDirectiveNode) cxNode() {}
 
@@ -94,6 +129,25 @@ type BlockContentNode struct{ Items []Node }
 
 func (n *BlockContentNode) cxNode() {}
 
+// InterpolationNode is v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque
+// text at v0.6.0; the CXL evaluator at v0.7.0+ parses it as CXPath at
+// evaluation time. ast_bin tag 0x0D (format v5+).
+type InterpolationNode struct{ Expr string }
+
+func (n *InterpolationNode) cxNode() {}
+
+// EvalDirectiveNode is v3.5 (ADR 0016) [59] — `[?Name attrs body]`.
+// Reserved EvalNames (if/for/with/cond/include/def/use/let/fn/match/try)
+// parse into this node. Inert at v0.6.0; the CXL evaluator dispatches on
+// Name at v0.7.0+. ast_bin tag 0x0E (format v5+).
+type EvalDirectiveNode struct {
+	Name  string
+	Attrs []Attr
+	Items []Node
+}
+
+func (n *EvalDirectiveNode) cxNode() {}
+
 // ── Element ───────────────────────────────────────────────────────────────────
 
 // Element is the main structural node in a CX document.
@@ -104,9 +158,33 @@ type Element struct {
 	DataType string // type annotation e.g. "int[]"
 	Attrs    []Attr
 	Items    []Node
+	// v3.4 (ADR 0002): expanded-name fields populated by
+	// resolveNamespaces(). See Attr.
+	Local string
+	NsURI string
+	// v3.4 (ADR 0003): syntactic ID declaration ("" when none). Set when
+	// the source has a `#name` token immediately after the element name.
+	// Distinct from Anchor and from user-data attributes literally named
+	// "id".
+	Id string
+	// v3.4 (ADR 0003 D1): body-position reference ("" when none). Set when
+	// the source had `[ref @<name>]` (an element named `ref` whose body is
+	// a single `@name` token). Carries the bare-ref target id; Name is
+	// fixed to "ref" and Attrs/Items are empty in that case. Round-trips
+	// across the C ABI via ast_bin v3+ (Phase 7.70).
+	BodyRef string
 }
 
 func (e *Element) cxNode() {}
+
+// LocalName returns the part of Name after the first ':' (or the whole
+// name when no colon is present).
+func (e *Element) LocalName() string { return e.Local }
+
+// NamespaceURI returns the resolved namespace URI for this element;
+// empty string when no binding is in scope and the prefix is not
+// reserved.
+func (e *Element) NamespaceURI() string { return e.NsURI }
 
 // Attr returns the value of the named attribute, or nil if not found.
 func (e *Element) Attr(name string) any {
@@ -301,14 +379,62 @@ func (e *Element) Select(expr string) (*Element, error) {
 }
 
 // SelectAll returns all Elements matching the CXPath expression relative to this element.
+//
+// v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+// Elements are live pointers into this Element's tree — mutations
+// propagate, preserving prior behavior. Semantics match V's
+// Element.select_all: the element's items become the top-level
+// candidate set, so a child-axis expression like "child" matches
+// direct children, and "//child" matches at any descendant depth.
 func (e *Element) SelectAll(expr string) ([]*Element, error) {
-	cx, err := cxpathParse(expr)
+	// Emit each Element child of e as a top-level node. This puts
+	// e.items into doc.Elements after the round-trip, so V's
+	// Document.select_all_paths walks the same candidate set that
+	// V's Element.select_all would. We track a mapping from
+	// serialized-doc index back to original e.Items index, since
+	// the docStr only contains Element children (any text/comment
+	// items are skipped by the CXPath evaluator anyway).
+	var sb strings.Builder
+	docToOrig := make([]int, 0, len(e.Items))
+	for i, item := range e.Items {
+		if _, ok := item.(*Element); ok {
+			sb.WriteString(emitNode(item, 0))
+			docToOrig = append(docToOrig, i)
+		}
+	}
+	docStr := strings.TrimRight(sb.String(), "\n")
+	paths, err := cxSelectAllPaths(docStr, expr)
 	if err != nil {
 		return nil, err
 	}
-	var result []*Element
-	collectStep(e, cx, 0, &result)
-	return result, nil
+	out := make([]*Element, 0, len(paths))
+	for _, p := range paths {
+		if len(p) == 0 {
+			continue
+		}
+		topIdx := p[0]
+		if topIdx < 0 || topIdx >= len(docToOrig) {
+			continue
+		}
+		// First step navigates into e.items, then into Element.items.
+		var node Node = e.Items[docToOrig[topIdx]]
+		ok := true
+		for _, k := range p[1:] {
+			el, isEl := node.(*Element)
+			if !isEl || k < 0 || k >= len(el.Items) {
+				ok = false
+				break
+			}
+			node = el.Items[k]
+		}
+		if !ok {
+			continue
+		}
+		if el, isEl := node.(*Element); isEl {
+			out = append(out, el)
+		}
+	}
+	return out, nil
 }
 
 // ── Document ──────────────────────────────────────────────────────────────────
@@ -382,6 +508,49 @@ func (d *Document) FindFirst(name string) *Element {
 	return nil
 }
 
+// ResolveID returns the Element declaring `#id`, or nil if no such
+// declaration exists in the document. v3.4 (ADR 0003).
+func (d *Document) ResolveID(id string) *Element {
+	if el := findElementByID(d.Elements, id); el != nil {
+		return el
+	}
+	return findElementByID(d.Prolog, id)
+}
+
+// ElementsByID returns a map from id-string to the Element declaring it.
+// v3.4 (ADR 0003).
+func (d *Document) ElementsByID() map[string]*Element {
+	out := map[string]*Element{}
+	collectElementsByID(d.Elements, out)
+	collectElementsByID(d.Prolog, out)
+	return out
+}
+
+func findElementByID(nodes []Node, id string) *Element {
+	for _, n := range nodes {
+		if el, ok := n.(*Element); ok {
+			if el.Id == id {
+				return el
+			}
+			if found := findElementByID(el.Items, id); found != nil {
+				return found
+			}
+		}
+	}
+	return nil
+}
+
+func collectElementsByID(nodes []Node, out map[string]*Element) {
+	for _, n := range nodes {
+		if el, ok := n.(*Element); ok {
+			if el.Id != "" {
+				out[el.Id] = el
+			}
+			collectElementsByID(el.Items, out)
+		}
+	}
+}
+
 // Select returns the first Element matching the CXPath expression.
 func (d *Document) Select(expr string) (*Element, error) {
 	results, err := d.SelectAll(expr)
@@ -392,16 +561,22 @@ func (d *Document) Select(expr string) (*Element, error) {
 }
 
 // SelectAll returns all Elements matching the CXPath expression.
+//
+// v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+// Elements are live pointers into this Document's tree — mutations
+// propagate.
 func (d *Document) SelectAll(expr string) ([]*Element, error) {
-	cx, err := cxpathParse(expr)
+	paths, err := cxSelectAllPaths(d.ToCx(), expr)
 	if err != nil {
 		return nil, err
 	}
-	// Virtual root for sibling context at top level
-	vroot := &Element{Name: "#document", Items: append([]Node{}, d.Elements...)}
-	var result []*Element
-	collectStep(vroot, cx, 0, &result)
-	return result, nil
+	out := make([]*Element, 0, len(paths))
+	for _, p := range paths {
+		if el := navigateDocPath(d, p); el != nil {
+			out = append(out, el)
+		}
+	}
+	return out, nil
 }
 
 // Transform returns a new Document with the element at path replaced by f(element).
@@ -426,16 +601,34 @@ func (d *Document) Transform(path string, f func(*Element) *Element) *Document {
 }
 
 // TransformAll returns a new Document with all elements matching expr replaced by f(element).
+//
+// v3.4: thunks to libcx via cx_select_all_paths (CB-5). Paths are
+// applied bottom-up (longest first) so when a parent is rewritten its
+// f-input already contains the f-results of descendant matches —
+// matching the prior post-order semantics.
 func (d *Document) TransformAll(expr string, f func(*Element) *Element) (*Document, error) {
-	cx, err := cxpathParse(expr)
+	paths, err := cxSelectAllPaths(d.ToCx(), expr)
 	if err != nil {
 		return nil, err
 	}
-	newElements := make([]Node, len(d.Elements))
-	for i, node := range d.Elements {
-		newElements[i] = rebuildNode(node, cx, f)
+	if len(paths) == 0 {
+		return d, nil
 	}
-	return &Document{Elements: newElements, Prolog: d.Prolog, Doctype: d.Doctype}, nil
+	// Sort longest-first so descendants get rewritten before ancestors.
+	sortedPaths := make([][]int, len(paths))
+	copy(sortedPaths, paths)
+	sort.SliceStable(sortedPaths, func(i, j int) bool {
+		return len(sortedPaths[i]) > len(sortedPaths[j])
+	})
+	newDoc := d
+	for _, p := range sortedPaths {
+		target := navigateDocPath(newDoc, p)
+		if target == nil {
+			continue
+		}
+		newDoc = replaceAtDocPath(newDoc, p, f(elemDetached(target)))
+	}
+	return newDoc, nil
 }
 
 // Append adds a top-level node to the end.
@@ -453,29 +646,41 @@ func (d *Document) ToCx() string {
 	return emitDoc(d)
 }
 
+// ToAstBin serializes this Document to a FRAMED [u32 LE size][payload]
+// binary AST buffer. Used internally by ToXml / ToJson / etc. (Phase 5
+// CB-1) and exported for callers that want to pass the document
+// directly to libcx without round-tripping through CX text.
+func (d *Document) ToAstBin() []byte {
+	return encodeAST(d)
+}
+
+// v3.4 (Phase 5 / CB-1): format methods now go through
+// cx_ast_bin_to_<fmt>(d.ToAstBin()) directly, avoiding the prior
+// emit-CX-and-reparse detour.
+
 // ToXml converts the document to XML via the C library.
 func (d *Document) ToXml() (string, error) {
-	return ToXml(d.ToCx())
+	return astBinToXml(d.ToAstBin())
 }
 
 // ToJson converts the document to JSON via the C library.
 func (d *Document) ToJson() (string, error) {
-	return ToJson(d.ToCx())
+	return astBinToJson(d.ToAstBin())
 }
 
 // ToYaml converts the document to YAML via the C library.
 func (d *Document) ToYaml() (string, error) {
-	return ToYaml(d.ToCx())
+	return astBinToYaml(d.ToAstBin())
 }
 
 // ToToml converts the document to TOML via the C library.
 func (d *Document) ToToml() (string, error) {
-	return ToToml(d.ToCx())
+	return astBinToToml(d.ToAstBin())
 }
 
 // ToMd converts the document to Markdown via the C library.
 func (d *Document) ToMd() (string, error) {
-	return ToMd(d.ToCx())
+	return astBinToMd(d.ToAstBin())
 }
 
 // ── JSON deserialization ──────────────────────────────────────────────────────
@@ -710,6 +915,117 @@ func docFromMap(m map[string]json.RawMessage) (*Document, error) {
 	return doc, nil
 }
 
+// ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────────────
+//
+// Mirrors V core's vcx/cx/namespaces.v. Walks a parsed Document,
+// populating Element.{Local, NsURI} and Attr.{Local, NsURI} based on
+// in-scope xmlns / xmlns: declarations. Called at the tail of every
+// parse entry point so consumers see a uniform expanded-name view.
+//
+// Reserved prefixes:
+//   - `xml`   → http://www.w3.org/XML/1998/namespace
+//   - `cx`    → https://cx-home.org/ns/cx
+//   - `xmlns` → declaration-only; never resolves as a name prefix
+
+const (
+	XMLNamespaceURI = "http://www.w3.org/XML/1998/namespace"
+	CXNamespaceURI  = "https://cx-home.org/ns/cx"
+)
+
+func splitNsPrefix(name string) (string, string) {
+	for i := 0; i < len(name); i++ {
+		if name[i] == ':' {
+			return name[:i], name[i+1:]
+		}
+	}
+	return "", name
+}
+
+func lookupNs(prefix string, scope []map[string]string) string {
+	switch prefix {
+	case "xml":
+		return XMLNamespaceURI
+	case "cx":
+		return CXNamespaceURI
+	case "xmlns":
+		return ""
+	}
+	for i := len(scope) - 1; i >= 0; i-- {
+		if uri, ok := scope[i][prefix]; ok {
+			return uri // empty URI undeclares; we propagate the empty
+		}
+	}
+	return ""
+}
+
+func resolveElement(e *Element, scope *[]map[string]string) {
+	frame := map[string]string{}
+	for _, a := range e.Attrs {
+		switch {
+		case a.Name == "xmlns":
+			frame[""] = stringifyAttrValue(a.Value)
+		case strings.HasPrefix(a.Name, "xmlns:") && len(a.Name) > 6:
+			frame[a.Name[6:]] = stringifyAttrValue(a.Value)
+		}
+	}
+	pushed := len(frame) > 0
+	if pushed {
+		*scope = append(*scope, frame)
+	}
+
+	prefix, local := splitNsPrefix(e.Name)
+	e.Local = local
+	e.NsURI = lookupNs(prefix, *scope)
+
+	for i := range e.Attrs {
+		ap, al := splitNsPrefix(e.Attrs[i].Name)
+		e.Attrs[i].Local = al
+		if e.Attrs[i].Name == "xmlns" || ap == "xmlns" {
+			e.Attrs[i].NsURI = ""
+			continue
+		}
+		if ap == "" {
+			// Default ns does not apply to unprefixed attributes.
+			e.Attrs[i].NsURI = ""
+			continue
+		}
+		e.Attrs[i].NsURI = lookupNs(ap, *scope)
+	}
+
+	for _, item := range e.Items {
+		if child, ok := item.(*Element); ok {
+			resolveElement(child, scope)
+		}
+	}
+
+	if pushed {
+		*scope = (*scope)[:len(*scope)-1]
+	}
+}
+
+func stringifyAttrValue(v any) string {
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+// ResolveNamespaces populates Element.{Local, NsURI} and
+// Attr.{Local, NsURI} on every node in doc per ADR 0002 /
+// spec/namespaces.md. Idempotent. Called automatically by Parse,
+// ParseXml, ParseJson, ParseYaml, ParseToml, ParseMd.
+func ResolveNamespaces(doc *Document) {
+	scope := []map[string]string{}
+	for _, n := range doc.Elements {
+		if el, ok := n.(*Element); ok {
+			resolveElement(el, &scope)
+		}
+	}
+}
+
 // ── Public parse / loads / dumps ──────────────────────────────────────────────
 
 // Parse parses a CX string into a Document using the binary wire protocol.
@@ -718,72 +1034,87 @@ func Parse(cxStr string) (*Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	return decodeAST(data)
-}
-
-// ParseXml parses an XML string into a Document.
-func ParseXml(xmlStr string) (*Document, error) {
-	astJSON, err := XmlToAst(xmlStr)
+	doc, err := decodeAST(data)
 	if err != nil {
 		return nil, err
 	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(astJSON), &m); err != nil {
-		return nil, fmt.Errorf("ast json unmarshal: %w", err)
+	ResolveNamespaces(doc)
+	return doc, nil
+}
+
+// v3.4 (Phase 5 / CB-2): parse_<format> goes through cx_<format>_to_ast_bin
+// directly, avoiding the prior cx_<format>_to_ast → JSON.Unmarshal →
+// walk-map pipeline. The cgo glue lives in cxlib.go (xmlToAstBin etc.)
+// since cgo `C.` symbols are only visible there.
+
+// ParseXml parses an XML string into a Document.
+func ParseXml(xmlStr string) (*Document, error) {
+	data, err := xmlToAstBin(xmlStr)
+	if err != nil {
+		return nil, err
 	}
-	return docFromMap(m)
+	doc, err := decodeAST(data)
+	if err != nil {
+		return nil, err
+	}
+	ResolveNamespaces(doc)
+	return doc, nil
 }
 
 // ParseJson parses a JSON string into a Document.
 func ParseJson(jsonStr string) (*Document, error) {
-	astJSON, err := JsonToAst(jsonStr)
+	data, err := jsonToAstBin(jsonStr)
 	if err != nil {
 		return nil, err
 	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(astJSON), &m); err != nil {
-		return nil, fmt.Errorf("ast json unmarshal: %w", err)
+	doc, err := decodeAST(data)
+	if err != nil {
+		return nil, err
 	}
-	return docFromMap(m)
+	ResolveNamespaces(doc)
+	return doc, nil
 }
 
 // ParseYaml parses a YAML string into a Document.
 func ParseYaml(yamlStr string) (*Document, error) {
-	astJSON, err := YamlToAst(yamlStr)
+	data, err := yamlToAstBin(yamlStr)
 	if err != nil {
 		return nil, err
 	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(astJSON), &m); err != nil {
-		return nil, fmt.Errorf("ast json unmarshal: %w", err)
+	doc, err := decodeAST(data)
+	if err != nil {
+		return nil, err
 	}
-	return docFromMap(m)
+	ResolveNamespaces(doc)
+	return doc, nil
 }
 
 // ParseToml parses a TOML string into a Document.
 func ParseToml(tomlStr string) (*Document, error) {
-	astJSON, err := TomlToAst(tomlStr)
+	data, err := tomlToAstBin(tomlStr)
 	if err != nil {
 		return nil, err
 	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(astJSON), &m); err != nil {
-		return nil, fmt.Errorf("ast json unmarshal: %w", err)
+	doc, err := decodeAST(data)
+	if err != nil {
+		return nil, err
 	}
-	return docFromMap(m)
+	ResolveNamespaces(doc)
+	return doc, nil
 }
 
 // ParseMd parses a Markdown string into a Document.
 func ParseMd(mdStr string) (*Document, error) {
-	astJSON, err := MdToAst(mdStr)
+	data, err := mdToAstBin(mdStr)
 	if err != nil {
 		return nil, err
 	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(astJSON), &m); err != nil {
-		return nil, fmt.Errorf("ast json unmarshal: %w", err)
+	doc, err := decodeAST(data)
+	if err != nil {
+		return nil, err
 	}
-	return docFromMap(m)
+	ResolveNamespaces(doc)
+	return doc, nil
 }
 
 // LoadsXml deserializes an XML string into native Go types (map/slice/scalar).
@@ -852,25 +1183,31 @@ func LoadsMd(mdStr string) (any, error) {
 }
 
 // Loads deserializes a CX string into native Go types (map/slice/scalar).
+// Loads deserializes a CX string into native Go types.
+//
+// v3.4: parses through CXDB v1 (cx_to_data_bin) directly into Go
+// types — no JSON-string detour. Type fidelity preserved: int stays
+// int64, bool stays bool, dates round-trip via time.Time. Closes
+// audit finding CB-3.
 func Loads(cxStr string) (any, error) {
-	jsonStr, err := ToJson(cxStr)
+	bytes, err := ToDataBin(cxStr)
 	if err != nil {
 		return nil, err
 	}
-	var result any
-	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
-		return nil, fmt.Errorf("loads json unmarshal: %w", err)
-	}
-	return result, nil
+	return decodeDataBin(bytes)
 }
 
 // Dumps serializes native Go types to a CX string.
+//
+// v3.4: encodes Go value as CXDB v1 bytes directly, then calls
+// cx_from_data_bin to produce canonical CX. No JSON-string detour.
+// Closes audit finding CB-3.
 func Dumps(data any) (string, error) {
-	jsonBytes, err := json.Marshal(data)
+	framed, err := encodeDataBin(data)
 	if err != nil {
-		return "", fmt.Errorf("dumps marshal: %w", err)
+		return "", err
 	}
-	return JsonToCx(string(jsonBytes))
+	return FromDataBin(framed)
 }
 
 // ── CX emitter ────────────────────────────────────────────────────────────────
@@ -966,6 +1303,10 @@ func emitScalar(s *ScalarNode) string {
 }
 
 func emitAttr(a Attr) string {
+	if a.IsRef {
+		// ADR 0003 D1: bare `@id` round-trips verbatim.
+		return fmt.Sprintf("%s=@%v", a.Name, a.Value)
+	}
 	switch a.DataType {
 	case "int":
 		switch v := a.Value.(type) {
@@ -1002,10 +1343,11 @@ func emitAttr(a Attr) string {
 	case "null":
 		return a.Name + "=null"
 	default:
-		// string attr — quote if would autotype
+		// string attr — quote if would autotype OR starts with '@' (else
+		// would mis-parse as is_ref reference per ADR 0003).
 		s := fmt.Sprintf("%v", a.Value)
 		var v string
-		if wouldAutotype(s) {
+		if wouldAutotype(s) || (len(s) > 0 && s[0] == '@') {
 			v = cxChooseQuote(s)
 		} else {
 			v = cxQuoteAttr(s)
@@ -1046,6 +1388,11 @@ func emitInline(node Node) string {
 
 func emitElement(e *Element, depth int) string {
 	ind := strings.Repeat("  ", depth)
+	// v3.4 (ADR 0003 D1): body-position reference shape `[ref @<id>]`.
+	// No meta or attrs/items per parser contract — just the bare ref body.
+	if e.BodyRef != "" {
+		return ind + "[" + e.Name + " @" + e.BodyRef + "]\n"
+	}
 	hasChildElems := false
 	hasText := false
 	for _, item := range e.Items {
@@ -1064,6 +1411,9 @@ func emitElement(e *Element, depth int) string {
 	}
 	if e.Merge != "" {
 		metaParts = append(metaParts, "*"+e.Merge)
+	}
+	if e.Id != "" {
+		metaParts = append(metaParts, "#"+e.Id)
 	}
 	if e.DataType != "" {
 		metaParts = append(metaParts, ":"+e.DataType)

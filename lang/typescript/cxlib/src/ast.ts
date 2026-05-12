@@ -3,24 +3,31 @@
  */
 import {
   toAstBin as _toAstBin,
-  toJson as _toJson,
-  toXml as _toXml,
-  toYaml as _toYaml,
-  toToml as _toToml,
-  toMd as _toMd,
+  toDataBin as _toDataBin,
+  fromDataBin as _fromDataBin,
+  selectAllPaths as _selectAllPaths,
+  // Phase 5 helpers
+  astBinToCx as _astBinToCx,
+  astBinToXml as _astBinToXml,
+  astBinToJson as _astBinToJson,
+  astBinToYaml as _astBinToYaml,
+  astBinToToml as _astBinToToml,
+  astBinToMd as _astBinToMd,
+  xmlToAstBin as _xmlToAstBin,
+  jsonToAstBin as _jsonToAstBin,
+  yamlToAstBin as _yamlToAstBin,
+  tomlToAstBin as _tomlToAstBin,
+  mdToAstBin as _mdToAstBin,
+  // Legacy text-only converters still used by loads_<fmt>
   jsonToCx as _jsonToCx,
-  xmlToAst as _xmlToAst,
-  jsonToAst as _jsonToAst,
-  yamlToAst as _yamlToAst,
-  tomlToAst as _tomlToAst,
-  mdToAst as _mdToAst,
   xmlToJson as _xmlToJson,
   jsonToJson as _jsonToJson,
   yamlToJson as _yamlToJson,
   tomlToJson as _tomlToJson,
   mdToJson as _mdToJson,
 } from './index';
-import { decodeAST as _decodeAST } from './binary';
+import { decodeAST as _decodeAST, encodeAST as _encodeAST } from './binary';
+import { decode as _cxdbDecode, encode as _cxdbEncode } from './data_bin';
 
 // ── Node types ────────────────────────────────────────────────────────────────
 
@@ -28,6 +35,34 @@ export interface Attr {
   name: string;
   value: any;       // string | number | boolean | null
   dataType?: string | null;  // null/undefined means string (omitted in JSON)
+  /**
+   * v3.4 (ADR 0002): expanded-name fields populated by
+   * resolveNamespaces(). `local` is the part after the first ':' in
+   * `name` (or the whole name); `nsUri` is the resolved URI. Per XML
+   * Namespaces 1.0 §6.2 the default namespace does not apply to
+   * unprefixed attributes — `nsUri` is null for them.
+   */
+  local?: string;
+  nsUri?: string | null;
+  /** v3.4 (ADR 0003): true when the source was a bare `@id` reference
+   *  token. Quoted strings starting with '@' have isRef = false. */
+  isRef?: boolean;
+  /** v3.5 (ADR 0016): BracketBody attribute value — `name=[BodyItem*]`.
+   *  When set, `value` is unused and the attribute's content is the
+   *  parsed body sequence. Used by CXL evaluation directives like
+   *  `[?if cond :then=[BODY] :else=[BODY]]`. Inert outside CXL evaluation;
+   *  round-trips as opaque structure (ADR 0016 R5). ast_bin v5+. */
+  body?: Node[];
+}
+
+/** Local part of an attribute's name (post-colon, or whole name). */
+export function attrLocalName(a: Attr): string {
+  return a.local ?? '';
+}
+
+/** Resolved namespace URI for prefixed attributes; null otherwise. */
+export function attrNamespaceUri(a: Attr): string | null {
+  return a.nsUri ?? null;
 }
 
 export class TextNode {
@@ -76,7 +111,33 @@ export class XMLDeclNode {
 
 export class CXDirectiveNode {
   readonly type = 'CXDirective' as const;
-  constructor(public attrs: Attr[] = []) {}
+  /** v0.6.0 — directives may carry an `&anchor` and/or nested elements.
+   *  Used by the standalone-fragment form `[?cx frag &name [body :TYPE :flags]]`
+   *  (spec/schema.md §8). ast_bin format version 4 carries them. */
+  constructor(
+    public attrs: Attr[] = [],
+    public anchor: string | null = null,
+    public items: Node[] = [],
+  ) {}
+}
+
+export class InterpolationNode {
+  /** v3.5 (ADR 0016) [58] — `[?=EXPR]`. EXPR is opaque text at v0.6.0;
+   *  the CXL evaluator at v0.7.0+ parses it as CXPath at evaluation time. */
+  readonly type = 'Interpolation' as const;
+  constructor(public expr: string) {}
+}
+
+export class EvalDirectiveNode {
+  /** v3.5 (ADR 0016) [59] — `[?Name attrs body]`. Reserved EvalNames
+   *  (if/for/with/cond/include/def/use/let/fn/match/try) parse into this
+   *  node. Inert at v0.6.0; the CXL evaluator dispatches on `name`. */
+  readonly type = 'EvalDirective' as const;
+  constructor(
+    public name: string,
+    public attrs: Attr[] = [],
+    public items: Node[] = [],
+  ) {}
 }
 
 export class BlockContentNode {
@@ -105,7 +166,9 @@ export type Node =
   | XMLDeclNode
   | CXDirectiveNode
   | BlockContentNode
-  | DoctypeDeclNode;
+  | DoctypeDeclNode
+  | InterpolationNode
+  | EvalDirectiveNode;
 
 // ── Element ───────────────────────────────────────────────────────────────────
 
@@ -117,6 +180,17 @@ export class Element {
   dataType?: string | null;
   attrs: Attr[];
   items: Node[];
+  /** v3.4 (ADR 0002): expanded-name fields populated by resolveNamespaces(). */
+  local: string = '';
+  nsUri: string | null = null;
+  /** v3.4 (ADR 0003): syntactic ID declaration ("#name" token); null
+   *  when the element has no ID. Distinct from `anchor`. */
+  id: string | null = null;
+  /** v3.4 (ADR 0003 D1): body-position reference target — set when the
+   *  element body is a bare `@<id>` token (e.g. `[ref @section-3]`).
+   *  Null for ordinary elements. Carried over the ast_bin wire format
+   *  at v3+ (Phase 7.70 bumped 2 → 3). */
+  bodyRef: string | null = null;
 
   constructor(opts: {
     name: string;
@@ -125,6 +199,8 @@ export class Element {
     dataType?: string | null;
     attrs?: Attr[];
     items?: Node[];
+    id?: string | null;
+    bodyRef?: string | null;
   }) {
     this.name = opts.name;
     this.anchor = opts.anchor ?? null;
@@ -132,7 +208,16 @@ export class Element {
     this.dataType = opts.dataType ?? null;
     this.attrs = opts.attrs ?? [];
     this.items = opts.items ?? [];
+    this.id = opts.id ?? null;
+    this.bodyRef = opts.bodyRef ?? null;
   }
+
+  /** Local part of the element name (post-colon, or whole name). */
+  localName(): string { return this.local; }
+
+  /** Resolved namespace URI; null when no binding is in scope and
+   * the prefix is not reserved. */
+  namespaceUri(): string | null { return this.nsUri; }
 
   /** First child Element with this name. */
   get(name: string): Element | null {
@@ -273,13 +358,49 @@ export class Element {
     return results.length > 0 ? results[0] : null;
   }
 
-  /** All Elements matching a CXPath expression (subtree of this element). */
+  /**
+   * All Elements matching a CXPath expression (subtree of this element).
+   *
+   * v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+   * Elements are *live references* into this Element's tree —
+   * mutations propagate, preserving prior behavior. Semantics match
+   * V's Element.select_all: this element's items become the top-level
+   * candidate set, so a child-axis expression like `child` matches
+   * direct children, and `//child` matches at any descendant depth.
+   */
   selectAll(expr: string): Element[] {
-    const { cxpathParse, collectStep } = require('./cxpath');
-    const cx = cxpathParse(expr);
-    const result: Element[] = [];
-    collectStep(this, cx, 0, result);
-    return result;
+    // Emit each Element child as a top-level node. The round-trip
+    // makes V's Document.select_all_paths walk the same candidate set
+    // V's Element.select_all would. Track a doc-index → orig-index
+    // mapping (non-Element items don't affect CXPath matches but shift
+    // item indices).
+    const parts: string[] = [];
+    const docToOrig: number[] = [];
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items[i];
+      if (item instanceof Element) {
+        parts.push(_emitElement(item, 0));
+        docToOrig.push(i);
+      }
+    }
+    const docStr = parts.join('').replace(/\n$/, '');
+    const paths = _selectAllPaths(docStr, expr);
+    const out: Element[] = [];
+    for (const p of paths) {
+      if (p.length === 0) continue;
+      const top = p[0];
+      if (top < 0 || top >= docToOrig.length) continue;
+      let node: Node = this.items[docToOrig[top]];
+      let ok = true;
+      for (let i = 1; i < p.length; i++) {
+        if (!(node instanceof Element)) { ok = false; break; }
+        const k = p[i];
+        if (k < 0 || k >= node.items.length) { ok = false; break; }
+        node = node.items[k];
+      }
+      if (ok && node instanceof Element) out.push(node);
+    }
+    return out;
   }
 }
 
@@ -349,6 +470,19 @@ export class Document {
     return null;
   }
 
+  /** Return the Element declaring `#id`, or null. v3.4 (ADR 0003). */
+  resolveId(id: string): Element | null {
+    return _findElementById(this.elements, id) ?? _findElementById(this.prolog, id);
+  }
+
+  /** {id: Element} map for the whole document. v3.4 (ADR 0003). */
+  elementsById(): Record<string, Element> {
+    const out: Record<string, Element> = {};
+    _collectElementsById(this.elements, out);
+    _collectElementsById(this.prolog, out);
+    return out;
+  }
+
   /** Append a top-level node. */
   append(node: Node): void {
     this.elements.push(node);
@@ -365,19 +499,27 @@ export class Document {
     return results.length > 0 ? results[0] : null;
   }
 
-  /** All Elements matching a CXPath expression. */
+  /**
+   * All Elements matching a CXPath expression.
+   *
+   * v3.4: thunks to libcx via cx_select_all_paths (CB-5). Returned
+   * Elements are live references into this Document's tree —
+   * mutations propagate.
+   */
   selectAll(expr: string): Element[] {
-    const { cxpathParse, collectStep } = require('./cxpath');
-    const cx = cxpathParse(expr);
-    const vroot = new Element({ name: '#document', items: [...this.elements] });
-    const result: Element[] = [];
-    collectStep(vroot, cx, 0, result);
-    return result;
+    const { navigateDocPath } = require('./cxpath');
+    const paths = _selectAllPaths(this.to_cx(), expr);
+    const out: Element[] = [];
+    for (const p of paths) {
+      const el = navigateDocPath(this, p);
+      if (el !== null) out.push(el);
+    }
+    return out;
   }
 
   /** Return new Document with element at path replaced by f(element). */
   transform(path: string, f: (el: Element) => Element): Document {
-    const { cxpathParse: _unused, elemDetached, docReplaceAt, pathCopyElement } = require('./cxpath');
+    const { elemDetached, docReplaceAt, pathCopyElement } = require('./cxpath');
     const parts = path.split('/').filter((p: string) => p.length > 0);
     if (parts.length === 0) return this;
     for (let i = 0; i < this.elements.length; i++) {
@@ -396,37 +538,50 @@ export class Document {
     return this;
   }
 
-  /** Return new Document with all matching elements replaced by f(element). */
+  /**
+   * Return new Document with all matching elements replaced by f(element).
+   *
+   * v3.4: thunks to libcx via cx_select_all_paths (CB-5). Paths are
+   * applied bottom-up (longest first) so when a parent is rewritten
+   * its f-input already contains the f-results of descendant matches —
+   * matching the prior post-order semantics.
+   */
   transformAll(expr: string, f: (el: Element) => Element): Document {
-    const { cxpathParse, rebuildNode } = require('./cxpath');
-    const cx = cxpathParse(expr);
-    const newElements = this.elements.map((n: Node) => rebuildNode(n, cx, f));
-    return new Document({ elements: newElements, prolog: this.prolog, doctype: this.doctype });
+    const { elemDetached, navigateDocPath, replaceAtDocPath } = require('./cxpath');
+    const paths = _selectAllPaths(this.to_cx(), expr);
+    if (paths.length === 0) return this;
+    const sorted = [...paths].sort((a, b) => b.length - a.length);
+    let newDoc: Document = this;
+    for (const p of sorted) {
+      const target = navigateDocPath(newDoc, p);
+      if (target === null) continue;
+      newDoc = replaceAtDocPath(newDoc, p, f(elemDetached(target)));
+    }
+    return newDoc;
   }
 
   to_cx(): string {
     return _emitDoc(this);
   }
 
-  to_xml(): string {
-    return _toXml(this.to_cx());
+  /**
+   * Serialize this Document to a FRAMED [u32 LE size][payload]
+   * binary AST Buffer. Used internally by to_xml / to_json / etc.
+   * (Phase 5 / CB-1) and exported for callers that want to pass the
+   * document directly to libcx without round-tripping through CX text.
+   */
+  to_ast_bin(): Buffer {
+    return _encodeAST(this);
   }
 
-  to_json(): string {
-    return _toJson(this.to_cx());
-  }
-
-  to_yaml(): string {
-    return _toYaml(this.to_cx());
-  }
-
-  to_toml(): string {
-    return _toToml(this.to_cx());
-  }
-
-  to_md(): string {
-    return _toMd(this.to_cx());
-  }
+  // v3.4 (Phase 5 / CB-1): format methods now go through
+  // cx_ast_bin_to_<fmt>(this.to_ast_bin()) directly, avoiding the
+  // prior emit-CX-and-reparse detour.
+  to_xml(): string  { return _astBinToXml (this.to_ast_bin()); }
+  to_json(): string { return _astBinToJson(this.to_ast_bin()); }
+  to_yaml(): string { return _astBinToYaml(this.to_ast_bin()); }
+  to_toml(): string { return _astBinToToml(this.to_ast_bin()); }
+  to_md(): string   { return _astBinToMd  (this.to_ast_bin()); }
 }
 
 // ── Deserialization: AST JSON dict → native types ─────────────────────────────
@@ -479,48 +634,164 @@ function _docFromDict(d: any): Document {
   });
 }
 
+// ── Namespace resolution (ADR 0002 / spec/namespaces.md) ──────────────────────
+//
+// Mirrors V core's vcx/cx/namespaces.v. Walks a parsed Document,
+// populating Element.{local, nsUri} and Attr.{local, nsUri} based on
+// in-scope xmlns / xmlns: declarations. Called at the tail of every
+// parse entry point so consumers see a uniform expanded-name view.
+//
+// Reserved prefixes:
+//   - `xml`   → http://www.w3.org/XML/1998/namespace
+//   - `cx`    → https://cx-home.org/ns/cx
+//   - `xmlns` → declaration-only; never resolves as a name prefix
+
+export const XML_NAMESPACE_URI = 'http://www.w3.org/XML/1998/namespace';
+export const CX_NAMESPACE_URI  = 'https://cx-home.org/ns/cx';
+
+function _splitNsPrefix(name: string): [string, string] {
+  const i = name.indexOf(':');
+  if (i < 0) return ['', name];
+  return [name.slice(0, i), name.slice(i + 1)];
+}
+
+function _lookupNs(prefix: string, scope: Map<string, string>[]): string | null {
+  if (prefix === 'xml') return XML_NAMESPACE_URI;
+  if (prefix === 'cx')  return CX_NAMESPACE_URI;
+  if (prefix === 'xmlns') return null;
+  for (let i = scope.length - 1; i >= 0; i--) {
+    const uri = scope[i].get(prefix);
+    if (uri !== undefined) {
+      return uri.length > 0 ? uri : null;
+    }
+  }
+  return null;
+}
+
+function _resolveElement(e: Element, scope: Map<string, string>[]): void {
+  const frame = new Map<string, string>();
+  for (const a of e.attrs) {
+    const v = a.value === null || a.value === undefined ? '' : String(a.value);
+    if (a.name === 'xmlns') {
+      frame.set('', v);
+    } else if (a.name.startsWith('xmlns:') && a.name.length > 6) {
+      frame.set(a.name.slice(6), v);
+    }
+  }
+  const pushed = frame.size > 0;
+  if (pushed) scope.push(frame);
+
+  const [prefix, local] = _splitNsPrefix(e.name);
+  e.local = local;
+  e.nsUri = _lookupNs(prefix, scope);
+
+  for (const a of e.attrs) {
+    const [ap, al] = _splitNsPrefix(a.name);
+    a.local = al;
+    if (a.name === 'xmlns' || ap === 'xmlns') {
+      a.nsUri = null;
+      continue;
+    }
+    if (ap === '') {
+      // Default ns does not apply to unprefixed attrs.
+      a.nsUri = null;
+      continue;
+    }
+    a.nsUri = _lookupNs(ap, scope);
+  }
+
+  for (const item of e.items) {
+    if (item instanceof Element) {
+      _resolveElement(item, scope);
+    }
+  }
+
+  if (pushed) scope.pop();
+}
+
+/** Populate Element.{local, nsUri} and Attr.{local, nsUri} on every
+ *  node in `doc` per ADR 0002 / spec/namespaces.md. Idempotent.
+ *  Called automatically by parse / parseXml / parseJson / parseYaml /
+ *  parseToml / parseMd. */
+export function resolveNamespaces(doc: Document): void {
+  const scope: Map<string, string>[] = [];
+  for (const n of doc.elements) {
+    if (n instanceof Element) _resolveElement(n, scope);
+  }
+}
+
 // ── Public parse functions ────────────────────────────────────────────────────
 
 /** Parse a CX string into a Document (uses binary protocol). */
 export function parse(cxStr: string): Document {
-  return _decodeAST(_toAstBin(cxStr));
+  const doc = _decodeAST(_toAstBin(cxStr));
+  resolveNamespaces(doc);
+  return doc;
 }
+
+// v3.4 (Phase 5 / CB-2): parse_<format> goes through cx_<fmt>_to_ast_bin
+// directly, avoiding the prior cx_<fmt>_to_ast → JSON.parse → walk-dict
+// pipeline.
 
 /** Parse an XML string into a Document. */
 export function parseXml(xmlStr: string): Document {
-  return _docFromDict(JSON.parse(_xmlToAst(xmlStr)));
+  const doc = _decodeAST(_xmlToAstBin(xmlStr));
+  resolveNamespaces(doc);
+  return doc;
 }
 
 /** Parse a JSON string into a Document. */
 export function parseJson(jsonStr: string): Document {
-  return _docFromDict(JSON.parse(_jsonToAst(jsonStr)));
+  const doc = _decodeAST(_jsonToAstBin(jsonStr));
+  resolveNamespaces(doc);
+  return doc;
 }
 
 /** Parse a YAML string into a Document. */
 export function parseYaml(yamlStr: string): Document {
-  return _docFromDict(JSON.parse(_yamlToAst(yamlStr)));
+  const doc = _decodeAST(_yamlToAstBin(yamlStr));
+  resolveNamespaces(doc);
+  return doc;
 }
 
 /** Parse a TOML string into a Document. */
 export function parseToml(tomlStr: string): Document {
-  return _docFromDict(JSON.parse(_tomlToAst(tomlStr)));
+  const doc = _decodeAST(_tomlToAstBin(tomlStr));
+  resolveNamespaces(doc);
+  return doc;
 }
 
 /** Parse a Markdown string into a Document. */
 export function parseMd(mdStr: string): Document {
-  return _docFromDict(JSON.parse(_mdToAst(mdStr)));
+  const doc = _decodeAST(_mdToAstBin(mdStr));
+  resolveNamespaces(doc);
+  return doc;
 }
 
 // ── Data binding: loads / dumps ───────────────────────────────────────────────
 
-/** Deserialize CX data string into native JS types (object/array/scalar). */
+/**
+ * Deserialize CX data string into native JS types (object/array/scalar).
+ *
+ * v3.4: parses through CXDB v1 (cx_to_data_bin) directly into JS types —
+ * no JSON-string detour. Type fidelity preserved (integers stay integer
+ * Numbers — or bigint when wider than 2^53 — bool stays bool, dates
+ * round-trip as Date, bytes as Buffer). Closes audit finding CB-3.
+ */
 export function loads(cxStr: string): any {
-  return JSON.parse(_toJson(cxStr));
+  return _cxdbDecode(_toDataBin(cxStr));
 }
 
-/** Serialize native JS types (object/array/scalar) to a CX string. */
+/**
+ * Serialize native JS types (object/array/scalar) to a CX string.
+ *
+ * v3.4: encodes JS value as CXDB v1 bytes directly, then calls
+ * cx_from_data_bin to produce canonical CX. No JSON-string detour;
+ * type fidelity preserved on round-trip with loads(). Closes audit
+ * finding CB-3.
+ */
 export function dumps(data: any): string {
-  return _jsonToCx(JSON.stringify(data));
+  return _fromDataBin(_cxdbEncode(data));
 }
 
 /** Deserialize an XML string into native JS types. */
@@ -553,6 +824,28 @@ export function loadsMd(mdStr: string): any {
 const _DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const _DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 const _HEX_RE = /^0[xX][0-9a-fA-F]+$/;
+
+// ── ID/IDREF helpers (ADR 0003) ───────────────────────────────────────────────
+
+function _findElementById(nodes: Node[], id: string): Element | null {
+  for (const n of nodes) {
+    if (n instanceof Element) {
+      if (n.id === id) return n;
+      const found = _findElementById(n.items, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function _collectElementsById(nodes: Node[], out: Record<string, Element>): void {
+  for (const n of nodes) {
+    if (n instanceof Element) {
+      if (n.id) out[n.id] = n;
+      _collectElementsById(n.items, out);
+    }
+  }
+}
 
 function _wouldAutotype(s: string): boolean {
   if (s.includes(' ')) return false;
@@ -607,6 +900,10 @@ function _emitScalar(s: ScalarNode): string {
 }
 
 function _emitAttr(a: Attr): string {
+  if (a.isRef) {
+    // ADR 0003 D1: bare `@id` round-trips verbatim.
+    return `${a.name}=@${a.value}`;
+  }
   const dt = a.dataType;
   if (dt === 'int') return `${a.name}=${Math.trunc(Number(a.value))}`;
   if (dt === 'float') {
@@ -616,9 +913,11 @@ function _emitAttr(a: Attr): string {
   }
   if (dt === 'bool') return `${a.name}=${a.value ? 'true' : 'false'}`;
   if (dt === 'null') return `${a.name}=null`;
-  // string attr — quote if would autotype
+  // string attr — quote if would autotype OR starts with '@' (else
+  // would mis-parse as is_ref reference per ADR 0003).
   const s = String(a.value);
-  const v = _wouldAutotype(s) ? _cxChooseQuote(s) : _cxQuoteAttr(s);
+  const startsAt = s.length > 0 && s[0] === '@';
+  const v = (_wouldAutotype(s) || startsAt) ? _cxChooseQuote(s) : _cxQuoteAttr(s);
   return `${a.name}=${v}`;
 }
 
@@ -643,6 +942,11 @@ function _emitInline(node: Node): string {
 
 function _emitElement(e: Element, depth: number): string {
   const ind = '  '.repeat(depth);
+  // v3.4 (ADR 0003 D1): body-position reference shape `[<name> @<id>]`.
+  // No meta or attrs/items per parser contract — just the bare ref body.
+  if (e.bodyRef) {
+    return `${ind}[${e.name} @${e.bodyRef}]\n`;
+  }
   const hasChildElems = e.items.some(i => i instanceof Element);
   const hasText = e.items.some(
     i => i instanceof TextNode || i instanceof ScalarNode ||
@@ -653,6 +957,7 @@ function _emitElement(e: Element, depth: number): string {
   const metaParts: string[] = [];
   if (e.anchor) metaParts.push(`&${e.anchor}`);
   if (e.merge) metaParts.push(`*${e.merge}`);
+  if (e.id) metaParts.push(`#${e.id}`);
   if (e.dataType) metaParts.push(`:${e.dataType}`);
   for (const a of e.attrs) metaParts.push(_emitAttr(a));
   const meta = metaParts.length > 0 ? (' ' + metaParts.join(' ')) : '';
