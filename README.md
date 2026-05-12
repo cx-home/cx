@@ -30,81 +30,156 @@ The in-binary demo runs in < 1 second and shows everything below working.
 
 ---
 
-## A complete example
+## CX: simple but expressive
+
+Types, comments, structured data, collection literals, tabular rows,
+and mixed content — all in one file, with the same brackets throughout:
 
 ```cx
 [service name=auth version:u8=2
-  # primary listen socket — TLS terminates here, backend speaks plaintext
-  [server host=0.0.0.0 port:u16=8443 +tls -debug]
+
+  [server
+    host=0.0.0.0
+    port:u16=8443
+    +tls
+  ]
 
   [database
     url=postgres://localhost:5432/auth
     pool_size:u16=24
-    connect_timeout_ms:u32=5000
-    slow_query_threshold:decimal=0.250
+    timeout_ms:u32=5000
   ]
 
-  [allowed_origins
-    https://app.example.com
-    https://admin.example.com
-  ]
-
-  [- rate limits per client tier; rps and burst are counters per second ]
+  [- Tier-based rate limits. Daily cap counts successful requests only;
+     errors and 429s don't count toward the cap. ]
   [limits :table[tier rps:u32 burst:u32 daily_cap:u32]
     free       10    50    100_000
     pro        100   500   10_000_000
     enterprise 1000  5000  999_999_999
   ]
+
+  [allowed_origins [
+    https://app.example.com,
+    https://admin.example.com,
+  ]]
+
+  [features {
+    new_billing: true,
+    legacy_auth: false,
+    canary_rollout: true,
+  }]
+
+  [labels (production, payments, public-facing,)]
+
+  [doc
+    [p This service handles authentication for [strong all production traffic].
+       Rate limits are tier-based and reset at midnight UTC.]
+  ]
 ]
 ```
 
-One file. Typed scalars (`:u8`, `:u16`, `:u32`, `:decimal`). Boolean sigils
-(`+tls`, `-debug`). Numeric underscores (`100_000`). Comments where they
-matter (`#` line and `[- block ]`). A `:table` block for tabular rows.
-Convert it to anything:
+What's in those 34 lines:
+
+- **Typed scalars** — `version:u8=2`, `port:u16=8443`, `pool_size:u16=24`,
+  `timeout_ms:u32=5000`. Each survives conversion to JSON / YAML / TOML /
+  XML / CXDB unchanged.
+- **Boolean sigils** — `+tls` means `tls=true`; `-debug` would mean `false`.
+- **Numeric underscores** — `100_000`, `10_000_000`.
+- **A meaningful comment** — `[- … ]` block form is for multi-line rationale
+  that explains *why*, not what the code already says.
+- **`:table` block** — typed columns, row-major in CX text, column-major
+  on the CXDB wire, CSV-natively round-trippable.
+- **Array literal** — `[https://…, https://…,]` for an ordered list.
+- **Map literal** — `{new_billing: true, …}` for a string-keyed dictionary.
+- **Sequence literal** — `(production, payments, public-facing,)` for a
+  flat unordered set.
+- **Mixed content** — `[strong all production traffic]` inline inside a
+  paragraph. The same brackets carry markup *and* structured config.
+
+---
+
+## Round-trip in both directions
+
+Import from any of six formats:
 
 ```sh
-$ cx --json    service.cx    # → JSON, types preserved through CXDB
-$ cx --yaml    service.cx    # → YAML
-$ cx --toml    service.cx    # → TOML
-$ cx --xml     service.cx    # → XML, with namespaces if declared
-$ cx --md      service.cx    # → Markdown, prose-aware
-$ cx --csv     service.cx    # → CSV (from :table block)
+$ cx --from=json --to=cx  config.json   > config.cx
+$ cx --from=yaml --to=cx  config.yaml   > config.cx
+$ cx --from=toml --to=cx  config.toml   > config.cx
+$ cx --from=xml  --to=cx  config.xml    > config.cx
+$ cx --from=md   --to=cx  article.md    > article.cx
+$ cx --from=csv  --to=cx  data.csv      > data.cx
 ```
 
-All six round-trip. `cx eq service.cx <(cx --json service.cx | cx --from=json)`
-returns 0.
+Export to any of seven:
+
+```sh
+$ cx --json  service.cx     # → JSON
+$ cx --yaml  service.cx     # → YAML
+$ cx --toml  service.cx     # → TOML
+$ cx --xml   service.cx     # → XML
+$ cx --md    service.cx     # → Markdown
+$ cx --csv   service.cx     # → CSV (from :table blocks)
+$ cx --cxdb  service.cx     # → CXDB binary form
+```
+
+Verify with `cx eq` (data-equivalence):
+
+```sh
+$ cx --json service.cx | cx --from=json --to=cx > /tmp/rt.cx
+$ cx eq service.cx /tmp/rt.cx && echo "data-equivalent"
+data-equivalent
+```
+
+CX ↔ CXDB is **byte-stable** (CXDB *is* the strict-canonical form).
+The other five formats round-trip **data-equivalent** — presentation-layer
+differences (comments, attribute order, whitespace) are normalized; the
+data survives unchanged. Full per-format details, including the
+[lossy-conversion matrix](docs/COMPARISON.md#conversion-loss-matrix),
+in [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 ---
 
-## Mixed content — config and prose, one file
+## CXPath — querying CX
 
-The same brackets that hold typed scalars hold markup:
+CXPath is XPath-for-CX: a path-and-predicate query syntax over the
+CX data model.
 
 ```cx
-[release v=2.1.0 :date date=2026-05-12
-  [- production rollout notes ]
-  [doc
-    [p This release adds the [strong Public Table API] across all 10
-       language bindings and ships [em CXL 1.0] as the templating layer.]
-    [p Upgrade path: see [link href=docs/migrations/v0.5-to-v0.6.md
-       v0.5 → v0.6 migration guide].]
-  ]
-
-  [server host=0.0.0.0 :u16 port=8443]
-  [feature_flags
-    new_billing=true
-    legacy_auth=false
-  ]
+[users
+  [u name=Alice role=admin active=true]
+  [u name=Bob   role=user  active=true]
+  [u name=Carol role=user  active=false]
 ]
 ```
 
-Inline `[em ...]` and `[strong ...]` inside paragraph text — the thing JSON,
-YAML, and TOML can't represent without escape gymnastics, and the thing XML
-traditionally does at the cost of verbosity. CX uses the same brackets either
-way.
+```sh
+$ cx select '//u' users.cx
+[u name=Alice role=admin active=true]
+[u name=Bob role=user active=true]
+[u name=Carol role=user active=false]
+
+$ cx select '//u[@role=admin]' users.cx
+[u name=Alice role=admin active=true]
+
+$ cx select '//u[@active=true]' users.cx
+[u name=Alice role=admin active=true]
+[u name=Bob role=user active=true]
+```
+
+Predicates support `=` / `!=` / `<` / `>` / `<=` / `>=`, `and` /
+`or` / `not(...)`, `contains(...)` / `starts-with(...)`, `[N]`
+position, and child-existence (`[tags]`) / attribute-existence
+(`[@id]`) tests.
+
+CXPath is **the selection layer underneath CXL templating**, **the
+query API exposed by every binding** (`doc.select_all(expr)` etc.),
+and **the predicate syntax in `cx lint`, `cx diff`, and schema
+rules**. One query language, used everywhere structure is addressed.
+See [`spec/cxpath.md`](spec/cxpath.md).
 
 ---
+
 
 ## CXL — the CX Language
 
@@ -178,8 +253,8 @@ semantics, smaller wire and stricter integrity:
 ```sh
 $ cx --to=cxdb service.cx > service.cxdb
 $ wc -c service.cx service.cxdb
-     597 service.cx
-     404 service.cxdb              # ~32% smaller; varint-packed, dictionary-encoded
+     874 service.cx
+     467 service.cxdb              # ~47% smaller; varint-packed, dictionary-encoded
 ```
 
 CXDB gives you:
@@ -303,6 +378,7 @@ use.
 
 | binding | install |
 | ------- | ------- |
+| **V** (native — reference implementation) | `v install cx-home.cx-v` — see [`cx-home/cx-v`](https://github.com/cx-home/cx-v) |
 | Python | `pip install cxlib` |
 | Go | `go get github.com/cx-home/cx/lang/go` |
 | Rust | `cargo add cxlib` |
@@ -312,16 +388,18 @@ use.
 | C# | `dotnet add package CX` |
 | Ruby | `gem install cxlib` |
 
-All 9 FFI bindings wrap the same `libcx` shared library and expose the same
-core API. The 10th binding is **V native** — V is the reference
-implementation, so `lang/v/native/` imports the V core directly rather than
-going through FFI. Per-binding READMEs live under [`lang/`](lang/).
+**V is the reference implementation.** The V core lives in `vcx/cx/` in
+this repo and is published as the `cx-home/cx-v` package for V users.
+The other 9 bindings are thin wrappers over the same `libcx` shared
+library compiled from the V source — they expose identical behaviour
+through each language's idiomatic API.
 
-Every binding ships the v0.6.0 **Public Table API** with a uniform 17-member
-surface (`row` / `column` / `cell` / `slice` / `head` / `tail` / `select_cols`
-/ iteration / 5 conversion / 4 properties / equality). Method names follow
-each language's conventions (snake_case, camelCase, PascalCase) but the
-underlying behaviour is byte-identical.
+Every binding ships the v0.6.0 **Public Table API** with a uniform 17-
+member surface (`row` / `column` / `cell` / `slice` / `head` / `tail`
+/ `select_cols` / iteration / 5 conversion / 4 properties / equality).
+Method names follow each language's conventions (snake_case, camelCase,
+PascalCase) but the underlying behaviour is byte-identical. Per-binding
+READMEs live under [`lang/`](lang/).
 
 ---
 
