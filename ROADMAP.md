@@ -460,6 +460,62 @@ evaluator" entry under "Now — v0.6.0 scope" below.
 
 Capabilities that are real, planned, but not blocking v0.6.0.
 
+### v0.6.1 — closure pass on v0.6.0 deferrals
+
+The 2026-05-12 rubric reconciliation walk deferred these items to
+v0.6.1 with rationale recorded in
+[`spec/readiness_rubric.md` §Reconciliation log](spec/readiness_rubric.md#reconciliation-log--2026-05-12-pre-tag-walk):
+
+- **Schema validator Tier 2/3 catchup** — native validate() wrappers
+  in Rust / C# / Java / TypeScript / Kotlin / Swift / Ruby / V-cffi
+  (Tier 1 ships at v0.6.0; Tier 2/3 access via C ABI today).
+- **Streaming write JSON / YAML / TOML / MD emits** — pending output-
+  shape decision; current bindings return W009 stub.
+- **Streaming write Tier-3 binding fan-out** (CX + XML emits).
+- **Include resolution** — V core `resolve_includes` pass + 6 C ABI
+  entry points + `cx --include-root=<dir>` flag + per-binding
+  `include_root` parameter + `conformance/include.txt`.
+- **Null vs empty vs missing binding conformance** — per-binding
+  equality conformance suite verifying the four-way distinction
+  documented in `spec/policies.md §2.6`.
+- **Tree-sitter / LSP / Neovim full closure** — parser.c regen +
+  test corpus + URL-attribute parse fix; LSP hover + document
+  symbols + semantic tokens; nvim-lspconfig PR submission.
+- **Concurrent test suite** — N-worker × class-S symbol mix + race
+  detection per `spec/abi.md §1.5.4`.
+- **Microbenchmark SLA validation + CI regression gate** —
+  `bench_report.py` validates against `spec/governance.md §6`
+  budgets with 10% regression threshold.
+- **Third-party conformance certification process + public test
+  corpus** — `cx-conformance-v0.6.0.zip` packaged on release page;
+  `governance.md §8` operational details documented.
+
+### v0.7.0 — depth + ecosystem
+
+- **CXL per-binding native evaluators** — ~2k LOC × 9 bindings, byte-
+  identical to V reference. Bindings access CXL via C ABI today;
+  native evaluators are a performance optimization.
+- **`cx:lang` formalization + inherited scope** — V core + 10
+  bindings; design committed in `spec/i18n.md §1`.
+- **Comparative benchmarks** vs JSON / YAML / TOML / XML (text) +
+  MessagePack / CBOR (binary).
+- **Reproducible builds** — independent SHA-256 match against
+  published `dist/SHA256SUMS.txt`.
+- **Fuzz-testing harness** — continuous fuzzing of V core parser
+  and C ABI surfaces.
+- **CXPath axes** — parent / ancestor / following-sibling /
+  preceding-sibling (deferred in CXPath v1).
+
+### v1.0 — quality + audit milestone
+
+- **External security audit** — engagement scoped to V core parser,
+  C ABI, and binding FFI shims. Anchors the format/API stability
+  claim that v0.6.0 makes.
+- **CXL 4.0** — XQuery 4.0 feature equivalence once XQuery 4.0
+  stabilizes.
+
+### Original "Later" items
+
 - **Parquet import/export** for tabular data (depends on schema).
 - **Schema-aware editor support** (LSP completion, hover docs from
   schema, error squigglies).
