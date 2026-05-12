@@ -119,10 +119,26 @@ see [`docs/COMPARISON.md`](docs/COMPARISON.md).
 
 ## Status
 
-CX is pre-1.0. The grammar is stable, the C ABI is versioned and
-forward-compatible, and ~1,200 tests pass across all 9 language
-bindings — the [2026-05 binding audit](spec/binding_audit_2026.md)
-closed five systemic shortcuts at the core. Formal security review and
+CX is pre-1.0 and approaching v0.6.0 — the
+**API/format-stability boundary through 1.0**. The grammar is stable,
+the C ABI is versioned and forward-compatible, and the full test matrix
+passes across all 10 language bindings (V native + V-cffi + 8 FFI
+bindings). v0.6.0 highlights:
+
+- **17-member Public Table API** ([ADR 0018](spec/decisions/0018-public-table-api.md))
+  shipping in every binding; stable through v1.0.
+- **Collection literals** ([ADR 0017](spec/decisions/0017-collection-literals-and-cxl-refactor.md))
+  — first-class `seq[T]`, `arr[T]`, `map[K, V]` with cross-emitter parity.
+- **`cx table` CLI subcommand** ([ADR 0019 §D1](spec/decisions/0019-analytics-bridge-public-surface.md))
+  — `info` / `dump` / `load` verbs with `--to=cx` round-trip live;
+  Parquet / Arrow IPC export reserved for Phase C (libcx_arrow).
+- **Streaming-write event API** (Tier 1/2) + **20/20 schema validator
+  rules** (Tier 1) round out the format-side completeness.
+
+The [2026-05 binding audit](spec/binding_audit_2026.md) closed five
+systemic shortcuts (CB-1..CB-5) at the core and across all bindings —
+duplication is gone, type fidelity is preserved through CXDB, and one
+fix-site replaces drift across nine. Formal security review and
 fuzz-testing infrastructure are still ahead, so pin a tested version
 and apply normal pre-1.0 caution before customer-facing use.
 
@@ -241,9 +257,19 @@ C#, Ruby), see the per-binding READMEs under [`lang/`](lang/).
 | C# | `dotnet add package CX` |
 | Ruby | `gem install cxlib` |
 
-All 9 bindings wrap the same `libcx` shared library and expose the same
-core API: parse, query, mutate, stream, convert, hash, equality. Per-binding
-READMEs live under [`lang/`](lang/).
+All 9 FFI bindings wrap the same `libcx` shared library and expose the
+same core API: parse, query, mutate, stream, convert, hash, equality.
+The 10th binding is **V native** — V is the reference implementation,
+so `lang/v/native/` imports the V core directly rather than going
+through FFI. Per-binding READMEs live under [`lang/`](lang/).
+
+Every binding ships the v0.6.0 **Public Table API** ([ADR 0018](spec/decisions/0018-public-table-api.md))
+with a uniform 17-member surface — properties (`cols`/`types`/`row_count`/
+`col_count`), access (`row`/`column`/`col_at`/`cell`/`cell_by_name`/
+`slice`/`head`/`tail`/`select_cols`), iteration, and `to_cx`/`to_csv`/
+`to_json`/`to_data_bin`/`to_dict_list` conversion. Method names follow
+each language's conventions (snake_case, camelCase, PascalCase) but the
+underlying behaviour is byte-identical.
 
 ---
 
