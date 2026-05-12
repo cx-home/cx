@@ -457,6 +457,30 @@ Items deferred from v0.6.0 to v0.6.1:
  corpus** — `cx-conformance-v0.6.0.zip` packaged on release page;
  `governance.md §8` operational details documented.
 
+CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
+
+- **CXL `?for` iteration newlines** — body-slot whitespace handling
+ collapses iteration boundaries; output of `[?for x :in seq :return
+ row\n]` is concatenated on one line instead of one row per line.
+ Workaround: emit explicit separators (`,`/`|`/`;`) and post-process,
+ or use the per-binding `Table` API which emits CSV/TSV/PSV with
+ proper row separators. Fix: extend the `[?-` / `-]` whitespace-control
+ markers to iteration slot endings, and decide on a per-iteration
+ default (preserve trailing newline vs. consume it).
+- **CXL-substituted cells inside `:table` blocks** — the `:table`
+ row validator runs at parse time over the slot text, so `[result
+ :table[a b c] [?for x :in seq :return [?= x/a] [?= x/b] [?= x/c]
+ ]]` parses as 1-cell-per-row (the unsubstituted `[?= …]` looks
+ like one cell). Fix: defer table-row validation to post-evaluation
+ when the row source contains CXL directives.
+- **`?for` variable name `e` collides with scientific-notation
+ parsing** — `[?for e :in //emp :return [?= e/@name]]` binds the
+ variable but the CXPath lookup `e/@name` returns empty. Names that
+ don't start with a single `e` work fine. Fix: CXPath name lexer
+ needs to disambiguate `e` (identifier) from `1e10` (number)
+ properly; an identifier followed by `/` or `[` is never scientific
+ notation.
+
 ### v0.7.0 — depth + ecosystem
 
 - **CXL per-binding native evaluators** — ~2k LOC × 9 bindings, byte-
