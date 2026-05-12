@@ -270,6 +270,7 @@ test-ruby: build-vcx
 	$(RUBY) lang/ruby/conformance.rb
 	$(RUBY) lang/ruby/test_api.rb
 	$(RUBY) lang/ruby/cxlib/test/test_data_bin_one_shots.rb
+	$(RUBY) lang/ruby/cxlib/test/test_table.rb
 	$(RUBY) lang/ruby/test_namespaces.rb
 	$(RUBY) lang/ruby/test_identity.rb
 	$(RUBY) lang/ruby/test_id_abi.rb
