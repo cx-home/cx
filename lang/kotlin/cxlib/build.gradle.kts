@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.cxhome"
-version = "0.6.0"
+version = "0.6.1"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21

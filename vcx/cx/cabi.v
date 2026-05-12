@@ -91,7 +91,7 @@ pub fn cx_thread_unregister() int {
 
 // ── version ───────────────────────────────────────────────────────────────────
 
-const cx_version_str = '0.6.0'
+const cx_version_str = '0.6.1'
 const cx_abi_version_str = '2.0'
 
 // Capability bitmask per spec/abi.md §3. Implemented capabilities in
