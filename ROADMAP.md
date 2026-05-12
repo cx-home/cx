@@ -388,7 +388,7 @@ evaluator" entry under "Now — v0.6.0 scope" below.
 
 ### Tooling and ecosystem (1.0 expectations)
 
-- **Tree-sitter grammar v3.4 update.** Audit confirms
+- **Tree-sitter grammar v0.6 update.** Audit confirms
   `grammar.js:156–169` lists only v3.3 types and the number lexer
   has no underscore support. Scope: full grammar.js rewrite for
   v3.4 (sized int/float types, `:decimal`, `:bigint`, numeric
@@ -406,7 +406,7 @@ evaluator" entry under "Now — v0.6.0 scope" below.
   errors with line/col from `cx` output), hover (type info from
   `:type` annotations and known reserved-attribute descriptions),
   document symbols (element tree as outline), formatting (proxy
-  to `cx fmt`); update completion list to v3.4 types.
+  to `cx fmt`); update completion list to v0.6 types.
   Schema-aware completions and validate-on-save layer in once
   schema lands.
 - **VSCode extension.** Audit confirms `package.json:9`
@@ -422,8 +422,8 @@ evaluator" entry under "Now — v0.6.0 scope" below.
   the LSP binary by `$PATH` lookup or registered server name.
 - **Working examples in `examples/`.** Audit confirms 9 .cx
   files (article, books, chapter, config, doc, embedding_test,
-  env, post, vcore; 365 lines) all on v3.3-era patterns — zero
-  v3.4 coverage. Scope: refresh existing files to v3.4 idioms
+  env, post, vcore; 365 lines) all on v0.5-era patterns — zero
+  v0.6 coverage. Scope: refresh existing files to v0.6 idioms
   where helpful; add new examples covering the missing shapes
   (sized types, numeric underscores, boolean sigils, `:table`
   block, logfmt mode, namespace bearer post-ADR-0002, leading-
