@@ -201,10 +201,18 @@ See [`spec/cxpath.md`](spec/cxpath.md).
 
 ## CXL — the CX Language
 
-CXL is CX's templating, querying, and transformation language. Same parser,
-same data model, no separate runtime. A `.cxl` file is itself a `.cx`
-document — so every CX tool (parser, schema validator, formatter, hash,
-diff) works on CXL programs unchanged.
+CXL borrows the **data-code symbiosis** that makes XML + XQuery uniquely
+powerful — and improves on it. Where XQuery is a separate language with
+its own parser, type system, and runtime, **a CXL template file (.cxl)
+is CX format. Code is data and that's very powerful.** The same parser,
+the same data model, the same content-hash, the same schema engine
+work on configs *and* on the programs that transform them.
+
+CXL is CX's templating, querying, and transformation language. There is
+no separate runtime to install, no second grammar to learn, no impedance
+mismatch between "the data" and "the code that shapes it."
+
+### 1. Template a value
 
 Given a context document:
 
@@ -226,7 +234,7 @@ $ cx eval notification.cxl --data=user.cx
 Welcome Alice! Role: admin.
 ```
 
-A more involved example — iterate over elements:
+### 2. Iterate over elements
 
 ```cx
 [team
@@ -246,18 +254,68 @@ $ cx eval team.cxl --data=team.cx
 - Alice (admin)- Bob (user)- Carol (user)
 ```
 
-(Output joining and whitespace control are part of CXL 1.0's `[?-` /
+(Whitespace control between iterations is part of CXL 1.0's `[?-` /
 `-]` syntax; see [`docs/CXL.md`](docs/CXL.md).)
 
-CXL 1.0 ships in v0.6.0 with `[?if]` / `[?for]` / `[?with]` / `[?def]` /
-`[?use]` / `[?include]` directives, `[?= expr]` interpolation, a frozen
-filter set (`upper`, `lower`, `trim`, `length`, `concat`, `join`, `replace`,
-`default`, `first`, `rest`, `empty`, `reverse`, `escape-html`, `escape-url`,
-`raw`), and output targets (`text` / `cx` / `html` with auto-escape).
+### 3. Pipe — generate CX, then transform
 
-CXL 3.1 (XQuery 3.1 equivalence — FLWOR, maps, arrays, user-defined
-functions, arrow operator) is planned for v0.9.0+. CXL 4.0 (XQuery 4.0
-equivalence) is the long-term target.
+```sh
+$ echo '[fleet [svc name=auth region=useast][svc name=api region=useast]]' \
+    | cx eval useast.cxl --data=-
+- **auth** (region: useast)- **api** (region: useast)
+```
+
+### 4. Cross-format — JSON in, CXL transform, anything out
+
+```sh
+$ curl -s api.example.com/fleet \
+    | cx --from=json --to=cx \
+    | cx eval report.cxl --data=- \
+    | cx --from=md --to=html > report.html
+```
+
+The same `cx` binary handles **format conversion**, **templating**, and
+**stdin/stdout composition** — no separate `jq + jinja + pandoc`, no
+Python wrapper, no shell glue between three different tools.
+
+### 5. Everything inline — one command, no files
+
+```sh
+$ cx eval \
+    -e '[?for s :in //svc :return - **[?= s/@name]** (region: [?= s/@region])
+]' \
+    -d '[fleet [svc name=auth region=useast][svc name=api region=useast][svc name=cache region=uswest]]'
+- **auth** (region: useast)- **api** (region: useast)- **cache** (region: uswest)
+```
+
+`-e` for inline CXL, `-d` for inline CX. Useful for shell pipelines,
+makefile recipes, or when you want to see a transformation work without
+touching the filesystem.
+
+### CXL 1.0 → 3.1 → 4.0 — XQuery feature equivalence
+
+**CXL 1.0** (v0.6.0) ships the templating subset — interpolation
+(`[?= expr]`), conditional (`[?if]`), iteration (`[?for]`), context
+shift (`[?with]`), named blocks (`[?def]` / `[?use]`), parameterized
+templates (`[?def name :params [a b] :body …]`), partial inclusion
+(`[?include]`), a frozen filter set (`upper`, `lower`, `trim`, `length`,
+`concat`, `join`, `replace`, `default`, `first`, `rest`, `empty`,
+`reverse`, `escape-html`, `escape-url`, `raw`), and three output targets
+(`text` / `cx` / `html` with auto-escape). Enough to replace
+Jinja + Liquid + Handlebars for most real workloads.
+
+**CXL 3.1** (v0.9.0+) brings **XQuery 3.1 feature equivalence**: full
+FLWOR (`:let` / `:where` / `:order` / `:return`), user-defined functions
+(`[?fn name :params … :body …]`), maps and arrays as first-class values,
+the arrow operator (`@input => trim => upper`), pattern matching
+(`[?match]`), and try/catch.
+
+**CXL 4.0** (v1.x target) tracks XQuery 4.0 once it stabilizes —
+pipeline operator, partial function application, enhanced types,
+additional collection operations.
+
+The data-code symbiosis XML + XQuery have, in CX flavor: CXL queries
+CXL; programs inspect programs; one toolchain for both.
 
 Full reference: [`docs/CXL.md`](docs/CXL.md).
 
