@@ -4,6 +4,11 @@ out.txt
 bench.md
 dist/
 
+# Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.py)
+fixtures/bench/bench_1mb.cx
+fixtures/bench/bench_10mb.cx
+fixtures/bench/bench_100mb.cx
+
 .claude/settings.local.json
 
 # Python venvs (per-binding optional deps like pyarrow)
