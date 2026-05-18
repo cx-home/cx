@@ -23,6 +23,7 @@ lang/v/.cache/
 
 # compiled V binaries
 vcx/tests/conformance_run
+vcx/tests/runners/conformance/conformance_run
 lang/v/examples/transform
 lang/v/examples/demo
 
