@@ -113,6 +113,9 @@ jobs:
       - name: Run smoke-eval
         run: make smoke-eval
 
+      - name: Conformance fixture coverage gate (V3)
+        run: make check-conformance-coverage
+
   cold-install:
     name: Cold install + first demo (F1, F2, F5)
     runs-on: ubuntu-22.04

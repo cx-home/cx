@@ -184,6 +184,12 @@ verify-binding-quickstarts:
 verify-doc-blocks: build-vcx
 	@tools/verify-doc-blocks.sh docs/
 
+# V3 — conformance fixture coverage gate. Validates that
+# conformance/eval.txt is structurally sound, meets the v0.7.0
+# minimum fixture count, and tags every required v0.7.0 surface.
+check-conformance-coverage:
+	@python3 scripts/check_conformance_coverage.py
+
 # Documentation hygiene — every relative markdown link resolves.
 verify-doc-links:
 	@tools/verify-doc-links.sh docs/
