@@ -573,15 +573,17 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 - **Fuzz-testing harness** — continuous fuzzing of V core parser
  and C ABI surfaces.
 - **CXPath axes** — parent / ancestor / following-sibling /
- preceding-sibling (deferred in CXPath v1).
+ preceding-sibling. **Promoted to v0.7.0 scope** per
+ [ADR 0022 §D2 Amendment #4](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+ — full axes are XPath 1.0 floor, and v0.7.0 ships XPath 4.0 parity
+ for CXPath per the XQuery 4.0 parity claim. Tracked in
+ [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md) §4.6.5.
 
 ### v1.0 — quality + audit milestone
 
 - **External security audit** — engagement scoped to V core parser,
  C ABI, and binding FFI shims. Anchors the format/API stability
  claim that v0.6.0 makes.
-- **CXL 4.0** — XQuery 4.0 feature equivalence once XQuery 4.0
- stabilizes.
 
 ### Original "Later" items
 
@@ -591,19 +593,33 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 - **Annual binding audit (2027 edition)** — same shape as the 2026-05
  audit, applied to whatever evolved since. Cadence item, not a
  release blocker.
+
+> **The "CXL 3.1 / CXL 4.0" staging block previously in this section
+> is superseded** by [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+> (Accepted 2026-05-17). v0.7.0 ships XQuery 4.0 + XPath 4.0
+> expression parity in a single cut (per
+> [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md)); v0.8.0
+> ships the BaseX-class function-module ecosystem (per
+> [`spec/basex_function_modules.md`](spec/basex_function_modules.md));
+> v0.9.0+ adds concurrency primitives behind a separate ADR; v1.0+
+> is the open question on cx-native database. The "CXPath axes at
+> v0.8.0" line above is similarly superseded — axes move to v0.7.0.
+> Historical text preserved below for provenance:
+
 - **CXL 3.1 and 4.0 — post-v0.6.0** .
  CXL 1.0 ships in v0.6.0 (see "Next — v0.6.0" above); CXL 3.1 and
  4.0 are post-v0.6.0:
  - **CX release v0.8.0 — CXPath axes.** Adds parent / ancestor /
  following-sibling / preceding-sibling (deferred in CXPath v1).
  CXL picks up upward navigation automatically with no CXL version
- bump.
+ bump. **(Superseded — moves to v0.7.0 per ADR 0022 §D2 Amendment #4.)**
  - **CXL 3.1 — CX release v0.9.0+.** XQuery 3.1 feature equivalence.
  Adds `[?let]`, `[?fn]`, `[?match]`, `[?try]` EvalNames; full
  FLWOR on `[?for]` with `:let` / `:where` / `:order` / `:return`
  (XQuery 3.1-aligned `order` spelling); user-defined functions;
  maps and arrays as CXDM value kinds; arrow operator `=>`; aggregate
- filters; group-by; try/catch.
+ filters; group-by; try/catch. **(Superseded — folded into v0.7.0
+ single-cut per ADR 0022.)**
  - **CXL 4.0 — CX release v1.x+ (target).** XQuery 4.0 feature
  equivalence once XQuery 4.0 stabilizes — pipeline operator `|>`,
  partial function application, member maps, enhanced types,
