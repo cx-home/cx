@@ -314,6 +314,12 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
+# Per spec/v0_7_0_status.md H4 — Rust-binding parity check for the
+# v0.7.0 evaluator surface (16 tests).
+test-rust-eval-v0-7-0: build-vcx
+	cargo test --manifest-path lang/rust/cxlib/Cargo.toml \
+		--test eval_v0_7_0
+
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
@@ -362,6 +368,11 @@ test-go-arrow: build-vcx build-lib-arrow
 # both consume the same fixture file. Per spec/v0_7_0_status.md W3.
 test-go-arrow-conformance: build-vcx build-lib-arrow
 	cd lang/go/cxlib && go test -tags arrow -v -run TestArrowConformance
+
+# Per spec/v0_7_0_status.md H3 — Go-binding parity check for the
+# v0.7.0 evaluator surface (17 tests).
+test-go-eval-v0-7-0: build-vcx
+	cd lang/go/cxlib && go test -v -run TestEvalV070
 
 test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
