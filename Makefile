@@ -190,6 +190,12 @@ verify-doc-blocks: build-vcx
 check-conformance-coverage:
 	@python3 scripts/check_conformance_coverage.py
 
+# V2 — upstream V patch tracking. Reports status of the vlang/v
+# issues that block cx v0.7.0 per ADR 0022 §D7. Exit non-zero only
+# on a closed-unfixed (upstream-rejected) outcome.
+check-v-upstream:
+	@python3 scripts/check_v_upstream_patches.py
+
 # Documentation hygiene — every relative markdown link resolves.
 verify-doc-links:
 	@tools/verify-doc-links.sh docs/
