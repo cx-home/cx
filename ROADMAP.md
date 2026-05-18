@@ -14,23 +14,36 @@ work targeting subsequent releases.
 
 **v0.7.0 — single-cut release per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)**
 (Accepted 2026-05-17). After v0.6.0 tags, the next milestone is
-v0.7.0, which ships in one cut: full XQuery-4-equivalent evaluator
-surface (FLWOR, inline functions, pipeline `|>`, partial application,
-pattern matching, try/catch, `?key` lookup operator); retires the
-"CXL" name (cx is one language) in prose and ABI identifiers; cuts
-the binding matrix from nine to five (V + Python + Go + Rust +
+v0.7.0, which ships in one cut: **full XQuery 4.0 parity (or
+exceed) for the evaluator surface** — every XQuery 4.0 expression
+implemented with cx-native syntax. Per-feature deliverable list in
+[`spec/xquery_40_parity.md`](spec/xquery_40_parity.md). Highlights:
+inline function expressions (closures, partial application, named
+function refs), full FLWOR (for/let/window/where/while/count/group-by/
+order-by/return), maps/arrays with full function library (~26
+functions), structured try/catch with `$err:*` bindings + `fn:error()`
++ cx-native error code namespace, SequenceType expressions
+(instance of, cast as, typeswitch, treat as), pipeline `|>` AND
+arrow `=>` operators, switch and quantified expressions, simple
+map `!` operator, lookup operator `?key`. Plus: retires the "CXL"
+name (cx is one language) in prose and ABI identifiers; cuts the
+binding matrix from nine to five (V + Python + Go + Rust +
 TypeScript); ships a first-class HTMX component example (five
-htmx.org/examples structural cases); and takes a one-time epoch
-break against the v0.6.0 stability boundary scoped to ABI rename,
-file/dir renames, and `cxl-version` → `cx-eval-version` (see
+htmx.org/examples structural cases); takes a one-time epoch break
+against the v0.6.0 stability boundary scoped to ABI rename, file/
+dir renames, and `cxl-version` → `cx-eval-version` (see
 [readiness rubric amendment](spec/readiness_rubric.md)). **Directive
 syntax (the `?` prefix) is preserved** — the original draft proposed
 a `?` → `!` flip; dropped same-day after empirical inspection (ADR
 0022 §D1 Amendment). The former "CXL 1.0 / 3.1 / 4.0" staging from
 [ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)
 is superseded. From v0.7.0 onward through 1.0 the v0.6.0-style
-stability commitment resumes. Scope detail and tagging discipline:
-see [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md).
+stability commitment resumes. **v0.7.0 effort estimate ~2–3× the
+originally-scoped work** per the parity audit (ADR 0022 §D2
+Amendment 2026-05-17 #2). Scope detail and tagging discipline:
+see [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+and the per-feature checklist at
+[`spec/xquery_40_parity.md`](spec/xquery_40_parity.md).
 
 ---
 
