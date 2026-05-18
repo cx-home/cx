@@ -211,6 +211,20 @@ install-hooks:
 	@echo "[install-hooks] git core.hooksPath set to .githooks"
 	@ls -1 .githooks/ | sed 's/^/  - /'
 
+# V7 — bench harness JSON runner. Drives bench-streaming and emits
+# a stable JSON shape consumable by scripts/compare_bench.py.
+bench-json:
+	@python3 scripts/run_bench_json.py
+
+# V7 — bench regression comparison. Pass BASELINE= and CURRENT= as
+# paths to JSON files produced by bench-json. Default threshold is
+# 30%; pass STRICT=1 for the 10% threshold.
+bench-compare:
+	@python3 scripts/compare_bench.py \
+	  $(or $(BASELINE),bench/baseline.json) \
+	  $(or $(CURRENT),bench/current.json) \
+	  $(if $(STRICT),--strict,)
+
 # Documentation hygiene — every relative markdown link resolves.
 verify-doc-links:
 	@tools/verify-doc-links.sh docs/
