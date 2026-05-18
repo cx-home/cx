@@ -162,7 +162,7 @@ recorded before implementation.
 ### CXL 1.0 — CX Language evaluator (release blocker, replaces shape engine)
 
 - **CXL 1.0 evaluator** at V core (`vcx/cx/cxl.v`) per
- the CXL design and `spec/cxl.md`. Pulled into v0.6.0 (2026-05-10 amendment;
+ the CXL design and `spec/eval.md`. Pulled into v0.6.0 (2026-05-10 amendment;
  was v0.7.0) when the shape engine was superseded — CXL is now the only
  output-shape mechanism. Seven EvalDirectives
  (`[?if]`, `[?for]`, `[?with]`, `[?cond]`, `[?include]`, `[?def]`,
@@ -176,13 +176,13 @@ recorded before implementation.
 - **C ABI surface** at capability bit 28 — `cx_eval_cxl`,
  `cx_eval_cxl_with_len`, `cx_eval_cxl_streaming` go from W012
  stubs to fully implemented. Per `spec/abi.md §2.16`.
-- **Conformance fixtures** at `conformance/cxl.txt` — per-directive, composition, whitespace, escaping,
+- **Conformance fixtures** at `conformance/eval.txt` — per-directive, composition, whitespace, escaping,
  error-path, schema-validated CXL.
 - **Per-binding native evaluators** (9 bindings × ~2k LOC each)
  V is the reference; per-binding evaluators must
  produce byte-identical output for every conformance fixture.
 - **`cx eval` / `cx render` CLI subcommands**.
-- **Worked examples** at `examples/cxl/` covering the
+- **Worked examples** at `examples/cx/` covering the
  pattern set originally designed for (rename,
  reshape, lift, drop, alphabetize) plus CXL-native cases (HTML
  card render, Markdown report, CX-to-CX transform). Demonstrates
@@ -202,8 +202,8 @@ expression-language evaluator. CXL 1.0 lands in v0.6.0 (pulled
 forward from v0.7.0) per the §Amendment 2026-05-10.
 
 The original use cases (rename, reshape, lift, drop,
-alphabetize) are served by canonical CXL idioms in `spec/cxl.md §8`
-(worked examples) and `examples/cxl/`. Computation (filter, group,
+alphabetize) are served by canonical CXL idioms in `spec/eval.md §8`
+(worked examples) and `examples/cx/`. Computation (filter, group,
 aggregate, sort) — which could not do — is served by CXL
 3.1's FLWOR + arrow operator at v0.9.0+.
 
