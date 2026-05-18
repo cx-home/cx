@@ -561,23 +561,44 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 
 ### v0.7.0 — depth + ecosystem
 
-- **CXL per-binding native evaluators** — ~2k LOC × 9 bindings, byte-
- identical to V reference. Bindings access CXL via C ABI today;
- native evaluators are a performance optimization.
-- **`cx:lang` formalization + inherited scope** — V core + 10
- bindings; design committed in `spec/i18n.md §1`.
-- **Comparative benchmarks** vs JSON / YAML / TOML / XML (text) +
- MessagePack / CBOR (binary).
+The v0.7.0 scope is authoritatively defined by
+[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+and tracked item-by-item in
+[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md). The bullets
+below summarise the ROADMAP-level themes; the status document
+carries per-row state.
+
+- **Full XQuery 4.0 / XPath 4.0 parity** — single cut at v0.7.0,
+ superseding the staged "CXL 1.0 → 3.1 → 4.0" trajectory. Includes
+ inline functions, FLWOR (`:let` / `:where` / `:count` / `:while`
+ / `:order-by` / `:group-by` / tumbling+sliding windows),
+ `?match`, `?try` with multi-catch + error namespace, maps + arrays
+ as first-class values, the XPath 4.0 fn library, and the CXPath
+ operator-token surface.
+- **CXPath axes** — full XPath 1.0 axis set (parent / ancestor /
+ ancestor-or-self / following-sibling / preceding-sibling /
+ following / preceding / descendant-or-self / self) per
+ [ADR 0022 §D2 Amendment #4](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md).
+ Tracked in [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md) §4.6.5.
+- **Arrow + Parquet** — full surface with binding parity across
+ the five active bindings (V + Python + Go + Rust + TypeScript).
+- **Streaming evaluator** — replaces the W012 `cx_eval_streaming`
+ stub with a real pull-based incremental-emit implementation.
+- **`cx:lang` formalization + inherited scope** — V core + the
+ five active bindings; design committed in `spec/i18n.md §1`.
+- **Comparative benchmarks** vs JSON / YAML / TOML / XML (text)
+ + MessagePack / CBOR (binary).
 - **Reproducible builds** — independent SHA-256 match against
  published `dist/SHA256SUMS.txt`.
 - **Fuzz-testing harness** — continuous fuzzing of V core parser
  and C ABI surfaces.
-- **CXPath axes** — parent / ancestor / following-sibling /
- preceding-sibling. **Promoted to v0.7.0 scope** per
- [ADR 0022 §D2 Amendment #4](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
- — full axes are XPath 1.0 floor, and v0.7.0 ships XPath 4.0 parity
- for CXPath per the XQuery 4.0 parity claim. Tracked in
- [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md) §4.6.5.
+
+**Binding architecture note:** v0.7.0 keeps the single-evaluator
+model. V is the reference implementation (`vcx/cx/cxl.v` compiled
+into libcx); Python, Go, Rust, TypeScript bindings access cx via
+the C ABI. Per-binding native evaluator ports are NOT in scope —
+byte-identical cross-binding output is automatic because every
+binding routes through the same V evaluator.
 
 ### v1.0 — quality + audit milestone
 
