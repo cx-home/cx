@@ -341,6 +341,12 @@ test-go-api: build-go
 test-go-arrow: build-vcx build-lib-arrow
 	cd lang/go/cxlib && go test -tags arrow ./...
 
+# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
+# fixtures through the Go binding. Mirrors test-python-arrow-conformance;
+# both consume the same fixture file. Per spec/v0_7_0_status.md W3.
+test-go-arrow-conformance: build-vcx build-lib-arrow
+	cd lang/go/cxlib && go test -tags arrow -v -run TestArrowConformance
+
 test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
 	npx tsx lang/typescript/api_test.ts
