@@ -1,0 +1,64 @@
+name: Fuzz (CC5)
+
+# CC5 — nightly fuzz runs per spec/v0_7_0_status.md CC row and
+# docs/fuzzing.md. Runs scripts/fuzz_cx.py for 1 hour against the
+# parser + buffered eval + streaming eval + ABI-passthrough surfaces.
+# A new crash fails the job and uploads the archive so the on-call
+# can triage.
+#
+# Triggers:
+#   - Nightly cron (03:00 UTC) on whatever's at the head of the
+#     branch.
+#   - workflow_dispatch with optional `duration_seconds` input for
+#     ad-hoc longer runs (e.g. before a release).
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      duration_seconds:
+        description: 'Fuzz budget in seconds (default 3600)'
+        required: false
+        default: '3600'
+
+jobs:
+  fuzz:
+    name: Fuzz parser + eval + ABI (1h)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 75  # 60m fuzz budget + build + upload overhead
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install V
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+          v version
+
+      - name: Build libcx (release-shaped, hardened)
+        run: make build-vcx
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      - name: Install cxlib (Python)
+        run: |
+          cd lang/python
+          python -m pip install -e .
+
+      - name: Run fuzz harness
+        env:
+          DURATION: ${{ github.event.inputs.duration_seconds || '3600' }}
+        run: |
+          python3 scripts/fuzz_cx.py --duration "$DURATION"
+
+      - name: Upload crash archive (if any)
+        if: failure() || always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes-${{ github.run_id }}
+          path: vcx/fuzz/crashes/
+          if-no-files-found: ignore
+          retention-days: 30
