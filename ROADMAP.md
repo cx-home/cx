@@ -12,6 +12,22 @@ the work in flight on the active branch, Next is the larger scope that
 follows but ships under the same v0.6.0 tag. "Later" is post-v0.6.0
 work targeting subsequent releases.
 
+**v0.7.0 — single-cut release per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)**
+(Accepted 2026-05-17). After v0.6.0 tags, the next milestone is
+v0.7.0, which ships in one cut: full XQuery-4-equivalent evaluator
+surface (FLWOR, inline functions, pipeline `|>`, partial application,
+pattern matching, try/catch, lookup operator); retires the "CXL" name
+(cx is one language); flips the directive prefix `?` → `!`; cuts the
+binding matrix from nine to five (V + Python + Go + Rust + TypeScript);
+ships a first-class HTMX component example (five htmx.org/examples
+structural cases); and takes a one-time epoch break against the v0.6.0
+stability boundary (see [readiness rubric amendment](spec/readiness_rubric.md)).
+The former "CXL 1.0 / 3.1 / 4.0" staging from
+[ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)
+is superseded. From v0.7.0 onward through 1.0 the v0.6.0-style
+stability commitment resumes. Scope detail and tagging discipline:
+see [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md).
+
 ---
 
 ## Now — current branch (toward v0.6.0)
