@@ -44,7 +44,10 @@ jobs:
       - name: Run bench (JSON)
         run: |
           mkdir -p out
-          python3 scripts/run_bench_json.py -o out/bench.json
+          # --include-eval also runs the T1 evaluator-feature bench
+          # so the artifact carries every v0.7.0 perf signal in one
+          # JSON blob.
+          python3 scripts/run_bench_json.py --include-eval -o out/bench.json
           cat out/bench.json
 
       - name: Upload bench artifact
