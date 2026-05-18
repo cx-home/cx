@@ -128,6 +128,14 @@ is collapsed into one tag.
 - **Active-binding set** (D4 / H row): cut from 9 to 5 — V, Python,
   Go, Rust, TypeScript. The five frozen bindings live under
   `lang/<name>/frozen/`.
+- **Strict xs: constructor parse** (U8): `xs:integer`,
+  `xs:double`, `xs:decimal`, `xs:float`, `xs:nonNegativeInteger`,
+  `xs:positiveInteger`, and `cast-as` now raise `cx-err:FORG0001`
+  on unparseable string inputs. Pre-v0.7.0 they silently coerced
+  to 0/0.0. Callers depending on the old fallback must add a
+  `[?try]` wrapper or a `[?castable-as]` guard. Numeric-input
+  truncation (`xs:integer(1.7) → 1`) is unchanged per
+  XPath §19.1.2.
 
 ### Removed
 
