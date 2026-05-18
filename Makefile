@@ -320,6 +320,11 @@ test-rust-eval-v0-7-0: build-vcx
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test eval_v0_7_0
 
+# Per spec/v0_7_0_status.md H5 — TypeScript-binding parity check for
+# the v0.7.0 evaluator surface (16 tests).
+test-typescript-eval-v0-7-0: build-vcx build-typescript
+	npx tsx lang/typescript/eval_v0_7_0_test.ts
+
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
