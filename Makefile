@@ -298,6 +298,13 @@ test-rust: build-rust
 test-rust-arrow: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
 
+# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
+# fixtures through the Rust binding. Mirrors test-python-arrow-conformance
+# and test-go-arrow-conformance. Per spec/v0_7_0_status.md W3.
+test-rust-arrow-conformance: build-vcx build-lib-arrow
+	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
+		--test arrow_conformance -- --nocapture
+
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
