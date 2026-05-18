@@ -462,6 +462,54 @@ evaluator" entry under "Now — v0.6.0 scope" below.
 
 Capabilities that are real, planned, but not blocking v0.6.0.
 
+### v0.7.x — BaseX-class function-module wrap (post-v0.7.0)
+
+Per [ADR 0022 §D1 Amendment #3](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+and [`spec/basex_function_modules.md`](spec/basex_function_modules.md):
+once v0.7.0 ships XQuery 4.0 expression parity, the function-module
+ecosystem expands toward BaseX peer status. Tier 2 modules (post-
+v0.7.0 priority order):
+
+1. **`file:` module** — read/write/exists/list/etc. Essential I/O.
+2. **`http:` module** — HTTP client (`http:send-request`); essential
+   for HTMX consumer workflows and any HTTP-driven processing.
+3. **`json:` module** — promote existing cx JSON conversion to
+   module-namespaced surface.
+4. **`hash:` module** — md5/sha1/sha256/sha512/hash. Content addressing,
+   integrity checks.
+5. **`convert:` module** — base64, hex, byte/string conversions.
+6. **`random:` module** — UUIDs, random numbers, gaussian.
+7. **`validate:` module** — wrap cxs validation in module-namespaced
+   API; widen to BaseX-equivalent surface.
+
+### v0.8.0 — extended function modules
+
+8. **`crypto:` module** — encrypt/decrypt/sign/verify.
+9. **`archive:` / `zip:` / `bin:` modules** — file format handling
+   and binary-data manipulation.
+10. **`inspect:` module** — runtime introspection.
+11. **`prof:` module** — profiling helpers.
+12. **`html:` module** — input parsing (cx already emits HTML).
+
+### v0.8.0+ — concurrency and parallel processing (separate ADR)
+
+13. **`jobs:` module** — async / background / parallel evaluation.
+    Load-bearing for the "large-scale highly parallel data processing
+    systems" pitch. Requires substantive ADR covering evaluator-
+    state isolation, result collection, error propagation,
+    determinism / byte-identity preservation under parallelism.
+14. **`proc:` module** — subprocess spawning.
+15. **`web:` module** — possible HTTP server framework if cx grows
+    that ambition (parallel to BaseX RESTXQ).
+
+### v1.0+ — open question (per ADR 0022 §D1 Amendment #3)
+
+16. **Cx-native database layer** — possible storage / indexing /
+    query-optimization layer comparable to BaseX-as-a-database.
+    Explicitly *possible but not committed*. Would unlock the
+    Database / Index / Full-text modules from BaseX's catalog. Its
+    own major design conversation.
+
 ### v0.6.1 — closure pass on v0.6.0 deferrals
 
 Items deferred from v0.6.0 to v0.6.1:
