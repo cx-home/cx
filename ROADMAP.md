@@ -13,10 +13,25 @@ follows but ships under the same v0.6.0 tag. "Later" is post-v0.6.0
 work targeting subsequent releases.
 
 **v0.7.0 — single-cut release per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)**
-(Accepted 2026-05-17). After v0.6.0 tags, the next milestone is
+(Accepted 2026-05-17) and [ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md)
+(Accepted 2026-05-18 — adds `cx:` self-host module + function/module
+extension interface; Amendment #1 same day pulls `log:` structured
+logging forward to v0.7.0 + reserves evaluator-hook signature for
+v0.8.0+ debug adapters). After v0.6.0 tags, the next milestone is
 v0.7.0, which ships in one cut: **full XQuery 4.0 parity (or
 exceed) for the evaluator surface** — every XQuery 4.0 expression
-implemented with cx-native syntax. Per-feature deliverable list in
+implemented with cx-native syntax — **plus** the operational
+homoiconic surface that makes the "or exceed" axis runtime-real
+(23-function `cx:` module covering parse / serialize / canonical /
+hash / diff / patch / equal / select / eval (gated) / render /
+schema / validate / anchors / ids / references / resolve-includes /
+merge / strip-comments / strip-attrs / pretty-print / to-format /
+from-format), the 7-function `log:` module for structured logging
+(trace / debug / info / warn / error / level / with-context with
+logfmt + json formats and stderr / stdout / file sinks), the
+generalized function-module registry that v0.8.0's BaseX-class
+modules slot into, and the evaluator-hook signature for future
+debug-adapter integration. Per-feature deliverable list in
 [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md). Highlights:
 inline function expressions (closures, partial application, named
 function refs), full FLWOR (for/let/window/where/while/count/group-by/
@@ -40,10 +55,18 @@ a `?` → `!` flip; dropped same-day after empirical inspection (ADR
 is superseded. From v0.7.0 onward through 1.0 the v0.6.0-style
 stability commitment resumes. **v0.7.0 effort estimate ~2–3× the
 originally-scoped work** per the parity audit (ADR 0022 §D2
-Amendment 2026-05-17 #2). Scope detail and tagging discipline:
-see [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-and the per-feature checklist at
-[`spec/xquery_40_parity.md`](spec/xquery_40_parity.md).
+Amendment 2026-05-17 #2), plus ~14–15% for the `cx:` module +
+extension interface + `log:` module + evaluator-hook signature
+added by ADR 0023 (2026-05-18, including Amendment #1). Net total
+~262–333 sessions per
+[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) §Summary. Scope
+detail and tagging discipline: see
+[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
+[ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md),
+and the per-feature checklists at
+[`spec/xquery_40_parity.md`](spec/xquery_40_parity.md),
+[`spec/modules/cx.md`](spec/modules/cx.md), and
+[`spec/modules/log.md`](spec/modules/log.md).
 
 ---
 
