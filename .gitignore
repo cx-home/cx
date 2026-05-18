@@ -44,3 +44,6 @@ tooling/vscode/node_modules/
 tooling/vscode/out/
 tooling/vscode/*.vsix
 lang/v/cx
+
+# v0.7.0 CC fuzz harness — crashes are runtime artifacts, never source
+vcx/fuzz/crashes/
