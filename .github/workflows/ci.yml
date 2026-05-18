@@ -120,6 +120,9 @@ jobs:
         run: make check-v-upstream
         continue-on-error: true
 
+      - name: Pre-commit lint rules (V6)
+        run: make check-lint-rules
+
   cold-install:
     name: Cold install + first demo (F1, F2, F5)
     runs-on: ubuntu-22.04

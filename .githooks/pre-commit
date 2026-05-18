@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# V6 — pre-commit lint hook.
+#
+# Install with `make install-hooks`. Calls
+# scripts/check_lint_rules.py in --staged mode against the files
+# in the index.
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec python3 "${REPO_ROOT}/scripts/check_lint_rules.py" --staged
