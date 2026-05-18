@@ -519,6 +519,15 @@ bench: build-vcx
 bench-python: build-vcx
 	$(PYTHON) lang/python/bench.py
 
+# Y6 — Streaming evaluator throughput. Standalone V runner; surfaces
+# buffered vs streaming MB/s for a representative ?for-over-large-
+# sequence workload. -prod is intentionally NOT used (it triggers a
+# parse-time segfault under macOS hardened runtime per the V upstream
+# Boehm-GC trampoline issue, same as in test-vcx and other Make
+# targets that build the cli without -prod).
+bench-streaming: build-vcx
+	v run vcx/tests/runners/streaming_bench.v
+
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
 clean:
