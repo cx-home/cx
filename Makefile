@@ -244,6 +244,15 @@ test-python-arrow: build-vcx build-lib-arrow
 test-python-arrow-conformance: build-vcx build-lib-arrow
 	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
 
+# Per spec/v0_7_0_status.md H2 — exercise the new v0.7.0 evaluator
+# surface through the Python binding (cross-binding parity check
+# against V conformance/eval.txt). 18 tests covering ?let, FLWOR,
+# ?fn + apply, ?partial w/ [?_], ?try multi-catch, CXPath axes,
+# operator-token forms, attribute-value interpolation, fn library
+# (regex + current-date), and streaming.
+test-python-eval-v0-7-0: build-vcx
+	$(PYTHON) -m unittest lang.python.test_eval_v0_7_0 -v
+
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
 
