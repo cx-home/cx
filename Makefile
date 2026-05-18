@@ -237,6 +237,13 @@ test-python: build-vcx
 test-python-arrow: build-vcx build-lib-arrow
 	$(PYTHON) lang/python/test_arrow.py
 
+# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
+# fixtures through the Python binding. Cross-binding parity (W3 / W9)
+# means each active binding will have an equivalent runner over the
+# same fixture file. Per spec/v0_7_0_status.md W3.
+test-python-arrow-conformance: build-vcx build-lib-arrow
+	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
+
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
 
