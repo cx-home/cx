@@ -16,13 +16,17 @@ work targeting subsequent releases.
 (Accepted 2026-05-17). After v0.6.0 tags, the next milestone is
 v0.7.0, which ships in one cut: full XQuery-4-equivalent evaluator
 surface (FLWOR, inline functions, pipeline `|>`, partial application,
-pattern matching, try/catch, lookup operator); retires the "CXL" name
-(cx is one language); flips the directive prefix `?` → `!`; cuts the
-binding matrix from nine to five (V + Python + Go + Rust + TypeScript);
-ships a first-class HTMX component example (five htmx.org/examples
-structural cases); and takes a one-time epoch break against the v0.6.0
-stability boundary (see [readiness rubric amendment](spec/readiness_rubric.md)).
-The former "CXL 1.0 / 3.1 / 4.0" staging from
+pattern matching, try/catch, `?key` lookup operator); retires the
+"CXL" name (cx is one language) in prose and ABI identifiers; cuts
+the binding matrix from nine to five (V + Python + Go + Rust +
+TypeScript); ships a first-class HTMX component example (five
+htmx.org/examples structural cases); and takes a one-time epoch
+break against the v0.6.0 stability boundary scoped to ABI rename,
+file/dir renames, and `cxl-version` → `cx-eval-version` (see
+[readiness rubric amendment](spec/readiness_rubric.md)). **Directive
+syntax (the `?` prefix) is preserved** — the original draft proposed
+a `?` → `!` flip; dropped same-day after empirical inspection (ADR
+0022 §D1 Amendment). The former "CXL 1.0 / 3.1 / 4.0" staging from
 [ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)
 is superseded. From v0.7.0 onward through 1.0 the v0.6.0-style
 stability commitment resumes. Scope detail and tagging discipline:
