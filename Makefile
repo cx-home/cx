@@ -592,12 +592,13 @@ bench-python: build-vcx
 
 # Y6 — Streaming evaluator throughput. Standalone V runner; surfaces
 # buffered vs streaming MB/s for a representative ?for-over-large-
-# sequence workload. -prod is intentionally NOT used (it triggers a
-# parse-time segfault under macOS hardened runtime per the V upstream
-# Boehm-GC trampoline issue, same as in test-vcx and other Make
-# targets that build the cli without -prod).
+# sequence workload. Uses the patched V at third_party/v/ (carries
+# the macOS hardened-runtime libgc source-compile bypass + vlang/v
+# #27178/#27179 fixes) so -prod can be safely enabled on macOS.
+# Falls back to system V if the submodule isn't present.
+PATCHED_V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 bench-streaming: build-vcx
-	v run vcx/tests/runners/streaming_bench.v
+	$(PATCHED_V) -prod run vcx/tests/runners/streaming_bench.v
 
 # T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
 # surface additions (FLWOR clauses, ?fn calls, partial application,
