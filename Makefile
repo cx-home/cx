@@ -22,7 +22,6 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
  build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
- build-lsp build-vscode build-editors \
  publish publish-push \
  publish-v publish-v-push \
  publish-org \
@@ -568,14 +567,12 @@ release-v: publish-v publish-v-push
 release-all: release release-v publish-org
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
-
-build-lsp:
-	cd tooling/lsp && npm install --silent && npm run build
-
-build-vscode: build-lsp
-	cd tooling/vscode && npm install --silent && npm run build && npx vsce package --no-dependencies --allow-missing-repository
-
-build-editors: build-lsp build-vscode
+#
+# Since v0.7.0, the language server is built into the `cx` binary itself —
+# `cx lsp` speaks JSON-RPC 2.0 over stdio (see vcx/cmd/lsp.v and
+# tooling/lsp/README.md). No separate npm build step is required. Editor
+# integration is just `cx` on $PATH plus the example configs at
+# tooling/lsp/{vscode,neovim,helix}.example.*.
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
