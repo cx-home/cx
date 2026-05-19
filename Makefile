@@ -22,6 +22,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
  build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
+ build-vscode \
  publish publish-push \
  publish-v publish-v-push \
  publish-org \
@@ -568,11 +569,18 @@ release-all: release release-v publish-org
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
 #
-# Since v0.7.0, the language server is built into the `cx` binary itself —
+# Since v0.7.0 the language server is built into the `cx` binary itself —
 # `cx lsp` speaks JSON-RPC 2.0 over stdio (see vcx/cmd/lsp.v and
-# tooling/lsp/README.md). No separate npm build step is required. Editor
-# integration is just `cx` on $PATH plus the example configs at
-# tooling/lsp/{vscode,neovim,helix}.example.*.
+# tooling/lsp/README.md). Editor integration is `cx` on $PATH plus the
+# example configs at tooling/lsp/{vscode,neovim,helix}.example.*.
+#
+# `make build-vscode` produces a publishable .vsix wrapping the VS Code
+# extension at tooling/vscode/. The .vsix bundles the TextMate grammar,
+# snippets, language configuration, and LSP-client glue; it does NOT
+# bundle a `cx` binary — users install that separately.
+
+build-vscode:
+	cd tooling/vscode && npm install --silent && npm run build && npx vsce package --no-dependencies --allow-missing-repository
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
