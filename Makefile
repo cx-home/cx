@@ -431,6 +431,12 @@ test-typescript: build-typescript
 test-typescript-api: build-typescript
 	npx tsx lang/typescript/api_test.ts
 
+# W3 v0.7.0 — TS Arrow conformance. Mirrors Python/Go/Rust arrow-conformance
+# targets; consumes the same fixtures at conformance/data_bin_arrow.txt and
+# round-trips them through the W7 IPC bridge (apache-arrow JS).
+test-typescript-arrow-conformance: build-typescript
+	npx tsx lang/typescript/arrow_conformance_test.ts
+
 test-java: build-java
 	mvn -f lang/java/cxlib/pom.xml -q test
 
