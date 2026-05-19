@@ -1,0 +1,134 @@
+# V5 v0.7.0: release artifact CI. Triggers on tag push (v*.*.*) and
+# produces:
+#   - signed binary tarballs per OS/arch
+#   - dist/SHA256SUMS.txt
+#   - cx-conformance-v0.7.0.zip bundle (per S7)
+#
+# The reproducible-build workflow (reproducibility.yml) gates the
+# binaries before they're uploaded.
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.7.0)'
+        required: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            target: linux-x86_64
+          - os: ubuntu-22.04
+            arch: aarch64
+            target: linux-aarch64
+          - os: macos-14
+            arch: aarch64
+            target: macos-aarch64
+          - os: macos-13
+            arch: x86_64
+            target: macos-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Install V toolchain
+        run: |
+          git clone --depth=1 https://github.com/vlang/v ~/v
+          (cd ~/v && make)
+          echo "$HOME/v" >> $GITHUB_PATH
+
+      - name: Build libcx + cx CLI
+        run: |
+          export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+          make build-vcx
+          make build-lib-arrow
+
+      - name: Strip + package
+        run: |
+          mkdir -p dist/${{ matrix.target }}
+          cp vcx/target/cx dist/${{ matrix.target }}/
+          cp vcx/target/libcx.dylib dist/${{ matrix.target }}/ 2>/dev/null || true
+          cp vcx/target/libcx.so dist/${{ matrix.target }}/ 2>/dev/null || true
+          cp dist/lib/libcx_arrow.* dist/${{ matrix.target }}/ 2>/dev/null || true
+          cp include/cx.h dist/${{ matrix.target }}/
+          cd dist && tar czf cx-${{ inputs.tag || github.ref_name }}-${{ matrix.target }}.tar.gz ${{ matrix.target }}/
+
+      - name: Generate SHA256SUMS for this target
+        run: |
+          cd dist
+          shasum -a 256 cx-${{ inputs.tag || github.ref_name }}-${{ matrix.target }}.tar.gz > SHA256SUMS.${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cx-${{ matrix.target }}
+          path: |
+            dist/cx-*.tar.gz
+            dist/SHA256SUMS.*
+          retention-days: 30
+
+  conformance-bundle:
+    name: Build conformance bundle
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Assemble conformance/
+        run: |
+          cd conformance
+          zip -r ../cx-conformance-${{ inputs.tag || github.ref_name }}.zip . -x "*.bak"
+
+      - name: Upload conformance bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cx-conformance
+          path: cx-conformance-*.zip
+          retention-days: 30
+
+  release:
+    name: Publish GitHub release
+    needs: [build, conformance-bundle]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Build canonical SHA256SUMS.txt
+        run: |
+          mkdir -p dist
+          cat artifacts/*/SHA256SUMS.* > dist/SHA256SUMS.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: CX ${{ inputs.tag || github.ref_name }}
+          body_path: RELEASE_NOTES_v0.7.0.md
+          files: |
+            artifacts/*/cx-*.tar.gz
+            artifacts/cx-conformance/cx-conformance-*.zip
+            dist/SHA256SUMS.txt
+          generate_release_notes: false
+          draft: true
