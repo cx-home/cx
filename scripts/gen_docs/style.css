@@ -1,0 +1,147 @@
+:root {
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --code-bg: #f3f3ef;
+  --code-border: #e5e5dc;
+  --border: #e5e5e0;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.85rem;
+  margin: 0 0 0.6rem;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin: 1.5rem 0 0.4rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--border);
+}
+
+h3 {
+  font-size: 1.08rem;
+  margin: 1.1rem 0 0.3rem;
+  color: var(--fg);
+}
+
+p {
+  margin: 0.45em 0;
+}
+
+ul, ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+
+li {
+  margin: 0.1em 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.86em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 6px;
+  padding: 0.7rem 0.9rem;
+  margin: 0.7em 0;
+  overflow-x: auto;
+  position: relative;
+  line-height: 1.5;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+.lang-label {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.7rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  user-select: none;
+}
+
+pre code {
+  display: block;
+  margin-top: 0.4rem;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+  font-family: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+pre:hover .copy-btn,
+pre:focus-within .copy-btn { opacity: 1; }
+
+.copy-btn:hover {
+  color: var(--fg);
+  border-color: var(--muted);
+}
+
+.copy-btn.copied {
+  color: #16a34a;
+  border-color: #16a34a;
+}
+
+.copy-btn.failed {
+  color: #dc2626;
+  border-color: #dc2626;
+}
