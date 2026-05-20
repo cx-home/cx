@@ -33,6 +33,14 @@ curl -sSL https://cx-home.io/install | sh
 git clone https://github.com/cx-home/cx && cd cx && make build
 ```
 
+V users — the native V binding lives in its own
+[`cx-home/cx-v`](https://github.com/cx-home/cx-v) repo so V's package
+manager can install it directly:
+
+```sh
+v install --git https://github.com/cx-home/cx-v
+```
+
 ```sh
 $ cx demo
 ```
