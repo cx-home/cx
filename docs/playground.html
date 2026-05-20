@@ -448,7 +448,7 @@ td code {
       <option value="cxl-merge">CXL 15. cx:merge — three-policy semantic merge</option>
       <option value="cxl-includes">CXL 16. Include — partial composition</option>
     </select>
-    <button id="cxp-run" type="button">Run</button>
+    <button id="cxp-run" type="button" disabled title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target.">Run</button>
     <button id="cxp-reset" type="button">Reset</button>
   </div>
   <div class="cxp-panes">
@@ -469,7 +469,7 @@ td code {
       <pre id="cxp-out-xml" class="cxp-pane"><code class="language-xml"></code></pre>
     </div>
   </div>
-  <p id="cxp-status" class="cxp-status" aria-live="polite" data-default="Run shows the pre-recorded outputs for the selected example. The Source pane is editable but is not wired to a live evaluator yet — libcx-wasm is not built. Switch examples via the dropdown to load a fresh starter; Reset restores the canned source for the current example.">Run shows the pre-recorded outputs for the selected example. The Source pane is editable but is not wired to a live evaluator yet — libcx-wasm is not built. Switch examples via the dropdown to load a fresh starter; Reset restores the canned source for the current example.</p>
+  <p id="cxp-status" class="cxp-status" aria-live="polite" data-default="Browser-based libcx-wasm evaluator planned — see Concepts → WebAssembly Target for the transition plan. Until that ships, Run is disabled and the output panes carry pre-recorded canned results for each example. The Source pane is fully editable; use Reset to restore the canned source, or switch examples via the dropdown.">Browser-based libcx-wasm evaluator planned — see <a href="concepts/wasm.html">Concepts → WebAssembly Target</a> for the transition plan. Until that ships, Run is disabled and the output panes carry pre-recorded canned results for each example. The Source pane is fully editable; use Reset to restore the canned source, or switch examples via the dropdown.</p>
 </div>
 <link rel="stylesheet" href="playground/playground.css">
 <script src="playground/playground.js" defer></script>
