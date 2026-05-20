@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tables, Streaming, and Binary Formats</title>
+<title>WebAssembly Target</title>
 <style>:root {
   --bg: #fafaf7;
   --fg: #1a1a1a;
@@ -383,14 +383,14 @@ td code {
     <li><a href="../concepts/cxpath.html">CXPath</a></li>
     <li><a href="../concepts/identity.html">Identity & Canonical</a></li>
     <li><a href="../concepts/types.html">Types</a></li>
-    <li><a href="../concepts/wasm.html">WebAssembly Target</a></li>
+    <li><a class="active" href="../concepts/wasm.html">WebAssembly Target</a></li>
     </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="../reference/cli.html">CLI</a></li>
     <li><a href="../reference/cxl.html">CXL Language</a></li>
     <li><a href="../reference/cxpath.html">CXPath Functions</a></li>
     <li><a href="../reference/schemas.html">Schemas</a></li>
-    <li><a class="active" href="../reference/tables.html">Tables</a></li>
+    <li><a href="../reference/tables.html">Tables</a></li>
     <li><a href="../reference/streaming.html">Streaming</a></li>
     <li><a href="../reference/includes.html">Includes</a></li>
     <li><a href="../reference/ast-bin.html">ast-bin Format</a></li>
@@ -426,43 +426,93 @@ td code {
 </aside>
 <main>
 <doc>
-  <h1>Tables, Streaming, and Binary Formats</h1>
-  <p>Tabular data, event-driven IO, and the binary forms underneath.</p>
-  <h2>The Table API</h2>
-  <p>A CX table is a structural form for columnar data. Columns declare a name and a type; rows are records. The Table API exposes count, schema introspection, dump, and load — symmetric inverses with declared types preserved across formats.</p>
-<pre><span class="lang-label">cx</span><code class="language-cx">[:table
-  [:col name='size'  type='string']
-  [:col name='count' type='int']
-  [:row [size 'large'] [count 12]]
-  [:row [size 'small'] [count 8]]]</code></pre>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx table info orders.cx     # column / row counts, types, byte size
-cx table dump orders.cx --to=cx
-cx table load orders.csv --to=cx</code></pre>
-  <h2>Streaming Parse and Emit</h2>
-  <p>Streaming parse and emit move bytes through the runtime without ever holding the whole tree in memory. Callbacks fire per element-start, attribute, body chunk, and element-end. The same callback shape works on every input format.</p>
-<pre><span class="lang-label">python</span><code class="language-python">with open('events.cx', 'rb') as f:
-    for event in cx.stream(f):
-        if event.kind == 'element_start' and event.name == 'error':
-            print(event.attrs)</code></pre>
-  <p>Use streaming when the input is large enough that resident memory matters — log files, telemetry dumps, large XML / JSON / CXDB sources. The tree API materialises everything; streaming materialises nothing.</p>
-  <h2>Streaming Emit</h2>
-<pre><span class="lang-label">python</span><code class="language-python">with cx.stream_writer(open('out.cx', 'wb')) as w:
-    for record in fetch_records():
-        w.write(record)</code></pre>
-  <p>RSS stays bounded regardless of the output size. Tier-1 bindings V Python Go ship the streaming writer; Tier-2/3 follow in the v0.7.x window.</p>
-  <h2>ast-bin: Binary AST</h2>
-  <p>ast-bin is a binary serialization of the CXDM tree designed for fast cross-binding handoff and stable disk storage. Compact, versioned, and round-trip-byte-identical with the text form. Used for the FFI boundary in every binding and for canonical-bytes comparisons in the conformance suite. Capability bit 29 advertises v6; bindings query cx_features before reading a payload.</p>
-  <h2>data-bin: Arrow and Parquet</h2>
-  <p>data-bin connects the CX Table API to the columnar formats the analytics ecosystem already speaks — Apache Arrow for in-process exchange, Parquet for on-disk storage. The bridges live in libcx_arrow; the CX side stays format-agnostic. Phase A (Arrow round-trip) ships in v0.7.0; Phase B (Parquet writer) and Phase C (read-side schema inference) follow.</p>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx table dump orders.cx --to=parquet &gt; orders.parquet
-cx table load orders.parquet --to=cx</code></pre>
+  <h1>WebAssembly Target</h1>
+  <p>WASM is the long-term distribution target. C ABI is the current mechanism. The boundary moves, the contract stays.</p>
+  <h2>Why WebAssembly</h2>
+  <p>CX ships today as a native C ABI library — libcx.dylib on macOS, libcx.so on Linux — that every binding loads through its own foreign-function machinery ctypes for Python cgo for Go koffi for TypeScript P/Invoke for C# JNA for Java/Kotlin FFI gem for Ruby swift-c for Swift bindgen for Rust. It works and it is fast, but it carries two ongoing costs. Every supported triple needs a binary; every binding carries its own FFI plumbing. A WebAssembly target collapses both.</p>
+  <p>The long-term distribution target is a single libcx.wasm artifact loaded by each binding through its host runtime — wasmtime, wasmer, the browser, Node, V8, Wasmer-Python. The function names, the binary wire protocol, and the per-language Document API all stay the same. The boundary moves; the contract stays.</p>
+  <h2>What the C ABI Gives Us Today</h2>
+  <ul>
+    <li>
+      <a href="../reference/cli.html">libcx compiled to a platform-specific .dylib or .so</a>
+    </li>
+    <li>
+      <a href="../bindings/c-abi.html">include/cx.h exporting ~49 functions (the full surface)</a>
+    </li>
+    <li>
+      <a href="../bindings/index.html">Per-language FFI binding (ctypes, cgo, extern "C", koffi, P/Invoke, JNA, FFI, swift-c)</a>
+    </li>
+    <li>
+      <a href="../install.html">Platform binaries: macOS arm64 + Linux x86_64 today; per-triple expansion as bindings need them</a>
+    </li>
+  </ul>
+  <h2>What Changes With WebAssembly</h2>
+  <p>The shape of the artifact and the loader change. The function surface does not.</p>
+  <ul>
+    <li>
+      <a href="../reference/cli.html">libcx compiles to libcx.wasm — one portable binary, no per-triple build matrix</a>
+    </li>
+    <li>
+      <a href="../bindings/c-abi.html">No per-language FFI setup; each binding loads the WASM module through the host runtime instead</a>
+    </li>
+    <li>
+      <a href="../reference/data-bin.html">Memory crosses linear-memory boundaries: caller writes the input string into WASM linear memory, reads the output back out, calls cx_free in the module</a>
+    </li>
+    <li>
+      <a href="../reference/grammar.html">Same function names, same → char* contract — projected onto linear-memory offsets</a>
+    </li>
+  </ul>
+  <h2>What Stays the Same</h2>
+  <p>The contract is what matters; the loader is implementation.</p>
+  <ul>
+    <li>
+      <a href="../bindings/c-abi.html">Every function name and semantic — the ~49-entry surface in include/cx.h</a>
+    </li>
+    <li>
+      <a href="../reference/ast-bin.html">The ast-bin wire protocol — byte-identical, untouched by the loader change</a>
+    </li>
+    <li>
+      <a href="../reference/data-bin.html">The data-bin format and Arrow C-Data ABI — same bytes, same chunked-column semantics</a>
+    </li>
+    <li>
+      <a href="../bindings/index.html">The Document API in each binding — native data structures over the same wire bytes, unaffected</a>
+    </li>
+    <li>
+      <a href="../reference/errors.html">The error contract per language — same conventions, same code surface</a>
+    </li>
+  </ul>
+  <h2>Per-Binding Changes When WASM Lands</h2>
+  <p>Catch-up is a binding-level swap, not a rewrite. Four steps per binding.</p>
+  <ul>
+    <li>
+      <a href="../bindings/index.html">Replace the FFI loader (ctypes / cgo / koffi / P/Invoke / JNA / FFI gem / swift-c) with a WASM runtime loader for that language</a>
+    </li>
+    <li>
+      <a href="../bindings/index.html">Replace direct memory pointers with read/write against the WASM linear-memory buffer</a>
+    </li>
+    <li>
+      <a href="../bindings/index.html">Keep the binary decoders unchanged — ast-bin and data-bin payloads carry the same bytes</a>
+    </li>
+    <li>
+      <a href="../bindings/index.html">Keep the Document API implementation unchanged — it operates on the decoded tree, not on the FFI boundary</a>
+    </li>
+  </ul>
+  <h2>Status</h2>
+  <p>libcx-wasm is not yet built. The C ABI is the only distribution mechanism on v0.7.0; the WASM target is tracked for the v0.7.x window. A reference WASM build will land alongside a parity-tested rollout across the 10-binding matrix — until that point, bindings MUST link against the C ABI and SHOULD NOT assume the WASM artifact exists. The playgrounds and live-eval scenarios that reference libcx-wasm in their messaging are forward-looking; they fall back to canned outputs today.</p>
+  <p>Track concrete progress in the GitHub repo. When libcx-wasm reaches a usable artifact, the Playground page swaps its lookup-table evaluator for the live module without changing the page UI.</p>
   <h2>Related</h2>
   <ul>
     <li>
-      <a href="../concepts/identity.html">Identity &amp; canonical form</a>
+      <a href="../bindings/c-abi.html">C ABI — the current distribution mechanism, full function list</a>
     </li>
     <li>
-      <a href="../bindings/index.html">Language bindings</a>
+      <a href="../install.html">Install — how libcx is built and loaded today</a>
+    </li>
+    <li>
+      <a href="../playground.html">Playground — the first consumer of libcx-wasm once it ships</a>
+    </li>
+    <li>
+      <a href="../reference/streaming.html">Streaming — how memory crosses the boundary today</a>
     </li>
   </ul>
 </doc>

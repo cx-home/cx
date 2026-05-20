@@ -40,6 +40,7 @@
       [item path='concepts/cxpath'        label='CXPath']
       [item path='concepts/identity'      label='Identity & Canonical']
       [item path='concepts/types'         label='Types']
+      [item path='concepts/wasm'          label='WebAssembly Target']
     ]
     [group label='Reference'
       [item path='reference/cli'          label='CLI']
