@@ -291,6 +291,7 @@
 
   const pick      = document.getElementById('cxp-pick');
   const input     = document.getElementById('cxp-input');
+  const inputRender = document.getElementById('cxp-input-render');
   const runBtn    = document.getElementById('cxp-run');
   const reset     = document.getElementById('cxp-reset');
   const sourceLang = document.getElementById('cxp-source-lang');
@@ -312,15 +313,45 @@
     }
   }
 
+  function highlightInput() {
+    if (!inputRender) return;
+    const lang = (inputRender.className.match(/language-([\w-]+)/) || [, 'cx'])[1];
+    // Append a trailing space so the render box always agrees with
+    // the textarea on height after a final newline.
+    const text = input.value + (input.value.endsWith('\n') ? ' ' : '');
+    if (window.CXHighlight) {
+      inputRender.innerHTML = window.CXHighlight.highlight(text, lang);
+    } else {
+      inputRender.textContent = text;
+    }
+  }
+
+  function syncScroll() {
+    if (!inputRender) return;
+    const pre = inputRender.parentElement;
+    if (!pre) return;
+    pre.scrollTop = input.scrollTop;
+    pre.scrollLeft = input.scrollLeft;
+  }
+
+  function setInputLang(lang) {
+    if (sourceLang) sourceLang.textContent = lang;
+    if (inputRender) {
+      inputRender.className = inputRender.className.replace(/language-[\w-]+/, 'language-' + lang);
+    }
+  }
+
   function load(key) {
     const ex = examples[key];
     if (!ex) return;
     input.value = ex.input;
-    if (sourceLang) sourceLang.textContent = ex.lang;
+    setInputLang(ex.lang);
     if (outCx)   outCx.textContent = ex.cx;
     if (outJson) outJson.textContent = ex.json;
     if (outXml)  outXml.textContent = ex.xml;
+    highlightInput();
     highlightOutputs();
+    syncScroll();
   }
 
   function setTab(name) {
@@ -328,6 +359,8 @@
     panes.forEach(p => p.classList.toggle('is-active', p.id === 'cxp-out-' + name));
   }
 
+  input.addEventListener('input', () => { highlightInput(); syncScroll(); });
+  input.addEventListener('scroll', syncScroll);
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
   runBtn.addEventListener('click', () => {

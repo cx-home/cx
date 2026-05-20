@@ -24,7 +24,10 @@
   </div>
   <div class="cxp-panes">
     <div class="cxp-pane-header"><span>Source</span><span id="cxp-source-lang">cx</span></div>
-    <textarea id="cxp-input" class="cxp-input" spellcheck="false"></textarea>
+    <div class="cxp-editor">
+      <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
+      <textarea id="cxp-input" class="cxp-input" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+    </div>
     <div class="cxp-output">
       <div class="cxp-tab-bar">
         <button class="cxp-tab is-active" data-tab="cx" type="button">Canonical CX</button>

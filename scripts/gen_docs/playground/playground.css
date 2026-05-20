@@ -65,17 +65,56 @@
   letter-spacing: 0.06em;
 }
 
-.cxp-input {
-  font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
-  border: none;
-  border-bottom: 1px solid var(--code-border);
-  padding: 0.7rem 0.9rem;
-  resize: vertical;
-  background: var(--code-bg);
-  color: var(--code-fg);
-  outline: none;
+/* Source editor — overlay technique. A highlighted <pre> sits
+   behind a transparent <textarea>; the textarea drives input
+   and caret while the <pre> renders the colored tokens. Both
+   share font, padding, and white-space so glyphs align 1:1. */
+.cxp-editor {
+  position: relative;
   min-height: 240px;
+  background: var(--code-bg);
+  border-bottom: 1px solid var(--code-border);
+  overflow: hidden;
 }
+.cxp-editor-render,
+.cxp-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  white-space: pre;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+.cxp-editor-render {
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--code-fg);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cxp-editor-render code {
+  display: block;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  white-space: inherit;
+}
+.cxp-input {
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: #f8fafc;
+  outline: none;
+  overflow: auto;
+}
+.cxp-input::selection { background: rgba(125, 211, 252, 0.35); color: transparent; }
 
 .cxp-output {
   display: flex;
