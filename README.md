@@ -56,12 +56,24 @@ no server.
 
 ## Status
 
-CX is pre-1.0 and approaching v0.6.0 — the **API/format-stability boundary
-through 1.0**. The grammar is stable, the C ABI is versioned and forward-
-compatible, and the full test matrix passes across all 10 language bindings.
-Formal security review and fuzz-testing infrastructure are still ahead, so
-pin a tested version and apply normal pre-1.0 caution before customer-facing
-use.
+CX is pre-1.0. **v0.7.0** is the current release line, building on the
+v0.6.0 API/format-stability lock — the grammar is stable, the C ABI is
+versioned and forward-compatible, and the full test matrix passes across
+all 10 language bindings.
+
+v0.7.0 brings **XQuery 4.0 / XPath 4.0 parity** to CXL (FLWOR with
+`:let` / `:where` / `:count` / `:while` / `:order-by` / `:group-by`,
+windows, `?fn` / `?match` / `?try`, partial application), an ~80-entry
+standard function library, a pull-based streaming evaluator, CXPath 4.0
+axes (parent / ancestor / sibling / following / preceding), a
+parse-time + eval-time include resolver, `cx:lang` inherited-scope
+resolution, the doc-gen pipeline this site is built with, and Parquet
+bridges in Python, Go, and Rust. Full notes:
+[`RELEASE_NOTES_v0.7.0.md`](RELEASE_NOTES_v0.7.0.md).
+
+Formal security review and fuzz-testing infrastructure are still ahead,
+so pin a tested version and apply normal pre-1.0 caution before
+customer-facing use.
 
 ## License
 
