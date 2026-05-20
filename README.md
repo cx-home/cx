@@ -64,14 +64,19 @@ no server.
 
 ## Status
 
-CX is pre-1.0. **v0.7.0** is the current release line, building on the
-v0.6.0 API/format-stability lock — the grammar is stable and the C ABI
-is versioned and forward-compatible. Bindings ship in three tiers:
-Tier-1 (V, Python, Go) carries every feature on tag with a green test
-matrix; Tier-2 (Rust, C#, Java) catches up within the release window;
-Tier-3 (Kotlin, Swift, Ruby, TypeScript, V-cffi) follows on a
-one-release lag. The current parity state is tracked in the bindings
-catalog on the docs site.
+CX is pre-1.0. **v0.7.0** is the current release line, building on
+the v0.6.0 API/format-stability lock — the grammar is stable and the
+C ABI is versioned and forward-compatible.
+
+v0.7.0 shipped with a five-binding parity matrix (V, Python, Go,
+Rust, TypeScript) by ADR 0022 §D4 to control release scope, with C#,
+Java, Kotlin, Ruby, and Swift held in a "frozen" sentinel substate.
+Per [Amendment #5](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+the five frozen bindings are being re-promoted to the active matrix
+on a binding-by-binding cadence; the C ABI rename is in across all
+ten, and each binding's v0.7.0 eval corpus + streaming-events catch-
+up lands as that binding's sentinel is removed. The current per-
+binding state is tracked in the bindings catalog on the docs site.
 
 v0.7.0 brings **XQuery 4.0 / XPath 4.0 parity** to CXL (FLWOR with
 `:let` / `:where` / `:count` / `:while` / `:order-by` / `:group-by`,

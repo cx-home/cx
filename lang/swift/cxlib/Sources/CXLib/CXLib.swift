@@ -433,14 +433,14 @@ public enum CXLib {
         let out = input.withCString { ci in
             program.withCString { cp in
                 outputTarget.withCString { ct in
-                    cx_eval_cxl(ci, cp, ct, &errPtr)
+                    cx_eval(ci, cp, ct, &errPtr)
                 }
             }
         }
         guard let result = out else {
             let msg: String
             if let ep = errPtr { msg = String(cString: ep); cx_free(ep) }
-            else                { msg = "cx_eval_cxl: unknown error" }
+            else                { msg = "cx_eval: unknown error" }
             throw CXError.parse(msg)
         }
         let s = String(cString: result)

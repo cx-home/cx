@@ -138,7 +138,7 @@ object CxLib {
         fun cx_to_md   (input: String, errOut: PointerByReference): Pointer?
 
         // CXL evaluator (capability bit 28; spec/eval.md)
-        fun cx_eval_cxl(input: String, program: String, outputTarget: String, errOut: PointerByReference): Pointer?
+        fun cx_eval(input: String, program: String, outputTarget: String, errOut: PointerByReference): Pointer?
 
         // XML input
         fun cx_xml_to_cx   (input: String, errOut: PointerByReference): Pointer?
@@ -615,10 +615,10 @@ object CxLib {
      */
     fun evalCxl(input: String, program: String, outputTarget: String = ""): String {
         val err = PointerByReference()
-        val out = lib.cx_eval_cxl(input, program, outputTarget, err)
+        val out = lib.cx_eval(input, program, outputTarget, err)
             ?: run {
                 val ep = err.value
-                val msg = ep?.getString(0) ?: "cx_eval_cxl: unknown error"
+                val msg = ep?.getString(0) ?: "cx_eval: unknown error"
                 ep?.let { lib.cx_free(it) }
                 throw RuntimeException(msg)
             }

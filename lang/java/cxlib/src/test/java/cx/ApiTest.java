@@ -561,10 +561,10 @@ public class ApiTest {
         assertThrows(RuntimeException.class, () -> CXDocument.parse(fx("errors/unclosed.cx")));
     }
 
-    @Test
-    void testParseErrorEmptyElementName() throws Exception {
-        assertThrows(RuntimeException.class, () -> CXDocument.parse(fx("errors/empty_name.cx")));
-    }
+    // testParseErrorEmptyElementName removed at v0.7.0: the parser
+    // now accepts symbolic/empty element names like `[=]` (collection
+    // literal unification, ADR 0017). Unclosed-bracket tests above
+    // remain the canonical parse-error coverage.
 
     @Test
     void testParseErrorNestedUnclosed() throws Exception {

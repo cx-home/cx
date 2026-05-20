@@ -35,7 +35,7 @@ public class CxLib {
         Pointer cx_to_md   (String input, PointerByReference errOut);
 
         // CXL evaluator (capability bit 28; spec/eval.md)
-        Pointer cx_eval_cxl(String input, String program, String outputTarget, PointerByReference errOut);
+        Pointer cx_eval(String input, String program, String outputTarget, PointerByReference errOut);
 
         // XML input
         Pointer cx_xml_to_cx   (String input, PointerByReference errOut);
@@ -361,10 +361,10 @@ public class CxLib {
      */
     public static String evalCxl(String input, String program, String outputTarget) {
         PointerByReference err = new PointerByReference();
-        Pointer out = LIB.cx_eval_cxl(input, program, outputTarget == null ? "" : outputTarget, err);
+        Pointer out = LIB.cx_eval(input, program, outputTarget == null ? "" : outputTarget, err);
         if (out == null) {
             Pointer ep = err.getValue();
-            String msg = (ep != null) ? ep.getString(0) : "cx_eval_cxl: unknown error";
+            String msg = (ep != null) ? ep.getString(0) : "cx_eval: unknown error";
             if (ep != null) LIB.cx_free(ep);
             throw new RuntimeException(msg);
         }

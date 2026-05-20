@@ -97,7 +97,7 @@ public static partial class CxLib
     [DllImport(Lib, EntryPoint = "cx_to_md")]   private static extern IntPtr NativeToMd  (string i, out IntPtr e);
 
     // ── CXL evaluator (capability bit 28; spec/eval.md) ────────────────────────
-    [DllImport(Lib, EntryPoint = "cx_eval_cxl")]
+    [DllImport(Lib, EntryPoint = "cx_eval")]
     private static extern IntPtr NativeEvalCxl(string input, string program, string outputTarget, out IntPtr e);
 
     // ── XML input ─────────────────────────────────────────────────────────────

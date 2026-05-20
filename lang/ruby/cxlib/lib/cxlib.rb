@@ -63,7 +63,7 @@ module CXLib
   attach_function :cx_to_toml,       [:string, :pointer], :pointer
   attach_function :cx_to_md,         [:string, :pointer], :pointer
   # CXL evaluator (capability bit 28; spec/eval.md)
-  attach_function :cx_eval_cxl,      [:string, :string, :string, :pointer], :pointer
+  attach_function :cx_eval,      [:string, :string, :string, :pointer], :pointer
   attach_function :cx_to_ast_bin,    [:string, :pointer], :pointer
   attach_function :cx_to_events_bin, [:string, :pointer], :pointer
   attach_function :cx_to_data_bin,   [:string, :pointer], :pointer
@@ -497,7 +497,7 @@ module CXLib
   # 'text' / 'cx' / 'html' at CXL 1.0 (v0.6.0).
   def self.eval_cxl(input_cx, program_cxl, output_target = '')
     err = FFI::MemoryPointer.new(:pointer)
-    out = cx_eval_cxl(input_cx, program_cxl, output_target, err)
+    out = cx_eval(input_cx, program_cxl, output_target, err)
     if out.null?
       ep = err.read_pointer
       msg = ep.null? ? 'unknown error' : ep.read_string
