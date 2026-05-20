@@ -276,13 +276,13 @@
       ].join('\n'),
       cx: [
         '[page',
-        '  [header [logo Powerband]]',
+        '  [header [logo Acme]]',
         '  [section Body content goes here.]]'
       ].join('\n'),
-      json: '{"page":{"header":{"logo":"Powerband"},"section":"Body content goes here."}}',
+      json: '{"page":{"header":{"logo":"Acme"},"section":"Body content goes here."}}',
       xml: [
         '<page>',
-        '  <header><logo>Powerband</logo></header>',
+        '  <header><logo>Acme</logo></header>',
         '  <section>Body content goes here.</section>',
         '</page>'
       ].join('\n')
