@@ -1,9 +1,13 @@
 # scripts/gen_docs/docs.mk — v0.7.0 documentation pipeline targets.
 #
 # Spliced into the top-level Makefile via `-include`. Re-running
-# scripts/gen_docs/scaffold.sh writes _docs_staging/ (markdown) and
-# _site_staging/ (html). `docs-publish` promotes staging → docs/;
-# `site-publish` promotes staging → _site/ (which stays gitignored).
+# scripts/gen_docs/scaffold.sh writes _docs_staging/ (markdown, kept
+# as a build artifact for diffing) and _site_staging/ (html, the
+# canonical output). `docs-publish` promotes the html tree into
+# docs/ for GitHub Pages serving (Pages source = /docs on main on
+# the public cx-home/cx mirror). The markdown set is no longer
+# promoted to docs/ — README.md plus the html docs are the only
+# user-facing surface.
 
 DOCS_STG     := _docs_staging
 SITE_STG     := _site_staging
@@ -24,24 +28,30 @@ docs: build-vcx
 
 ## docs-diff         Summarize what docs-publish would change.
 docs-diff: docs
-	@diff -ruN $(DOCS_OUT) $(DOCS_STG) || true
+	@diff -ruN $(DOCS_OUT) $(SITE_STG) || true
 
-## docs-publish      Promote $(DOCS_STG)/ → $(DOCS_OUT)/.
+## docs-publish      Promote $(SITE_STG)/ → $(DOCS_OUT)/ so GitHub
+##                   Pages on cx-home/cx (source = /docs on main)
+##                   serves the html tree. A .nojekyll file is
+##                   dropped at the publish root so Pages skips
+##                   Jekyll on our pre-built html.
 docs-publish: docs
 	@mkdir -p $(DOCS_OUT)
-	@cp -R $(DOCS_STG)/. $(DOCS_OUT)/
-	@echo "docs-publish: promoted $(DOCS_STG)/ → $(DOCS_OUT)/"
+	@cp -R $(SITE_STG)/. $(DOCS_OUT)/
+	@touch $(DOCS_OUT)/.nojekyll
+	@echo "docs-publish: promoted $(SITE_STG)/ → $(DOCS_OUT)/"
 
-## docs-clean        Wipe $(DOCS_STG)/.
+## docs-clean        Wipe $(DOCS_STG)/ and $(SITE_STG)/.
 docs-clean:
-	@rm -rf $(DOCS_STG)
-	@echo "docs-clean: removed $(DOCS_STG)/"
+	@rm -rf $(DOCS_STG) $(SITE_STG)
+	@echo "docs-clean: removed $(DOCS_STG)/ and $(SITE_STG)/"
 
-## site              Build html into $(SITE_STG)/ (XML stand-in until
-##                   CXL HTML emit ships — see design §12 #3).
+## site              Alias for docs (one scaffold pass produces both
+##                   markdown and html).
 site: docs
 
-## site-publish      Promote $(SITE_STG)/ → $(SITE_OUT)/ (gitignored).
+## site-publish      Promote $(SITE_STG)/ → $(SITE_OUT)/ (gitignored,
+##                   for local file:// preview without touching docs/).
 site-publish: site
 	@mkdir -p $(SITE_OUT)
 	@cp -R $(SITE_STG)/. $(SITE_OUT)/
