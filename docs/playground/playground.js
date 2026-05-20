@@ -292,6 +292,7 @@
   const pick      = document.getElementById('cxp-pick');
   const input     = document.getElementById('cxp-input');
   const inputRender = document.getElementById('cxp-input-render');
+  const inputCopy = document.getElementById('cxp-input-copy');
   const runBtn    = document.getElementById('cxp-run');
   const reset     = document.getElementById('cxp-reset');
   const sourceLang = document.getElementById('cxp-source-lang');
@@ -371,6 +372,41 @@
 
   input.addEventListener('input', () => { highlightInput(); syncScroll(); });
   input.addEventListener('scroll', syncScroll);
+
+  // Copy button for the Source pane. Mirrors the global pre>.copy-btn
+  // behaviour the scaffold injects for output panes: writes the
+  // textarea value to the clipboard, flashes "copied" / "failed", and
+  // falls back to a hidden-textarea copy if the async clipboard API
+  // is blocked (older browsers, insecure contexts).
+  if (inputCopy) {
+    inputCopy.addEventListener('click', async () => {
+      const text = input.value;
+      const flash = (label, cls) => {
+        inputCopy.textContent = label;
+        inputCopy.classList.add(cls);
+        setTimeout(() => { inputCopy.textContent = 'copy'; inputCopy.classList.remove(cls); }, 1500);
+      };
+      try {
+        await navigator.clipboard.writeText(text);
+        flash('copied', 'copied');
+      } catch (_) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          flash('copied', 'copied');
+        } catch (__) {
+          flash('failed', 'failed');
+        }
+      }
+    });
+  }
+
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
   runBtn.addEventListener('click', () => {
