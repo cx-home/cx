@@ -68,6 +68,83 @@ aside.sidebar .brand-sub {
 }
 aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
 
+/* Site search — input under the CX brand, results dropdown that
+   overlays the nav groups when active. Idle state is one slim
+   input; active state expands to show ranked hits. */
+.side-search {
+  position: relative;
+  margin: 0 0 0.9rem;
+}
+#side-search-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.32rem 0.55rem;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: var(--side-fg);
+  background: var(--side-input-bg, rgba(255,255,255,0.06));
+  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+#side-search-input::placeholder { color: var(--side-muted); }
+#side-search-input:focus {
+  border-color: var(--accent, #5b8def);
+  background: var(--side-input-bg-focus, rgba(255,255,255,0.10));
+}
+.side-search-results {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--side-bg);
+  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
+  border-radius: 4px;
+  font-size: 12px;
+}
+.side-search-results li { margin: 0; }
+.side-search-hit a {
+  display: block;
+  padding: 0.42rem 0.55rem;
+  color: var(--side-fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--side-input-border, rgba(255,255,255,0.06));
+}
+.side-search-hit:last-child a { border-bottom: 0; }
+.side-search-hit a:hover,
+.side-search-hit.is-active a {
+  background: var(--side-input-bg-focus, rgba(255,255,255,0.08));
+  color: var(--side-fg);
+  text-decoration: none;
+}
+.side-search-title {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.15rem;
+}
+.side-search-snip {
+  display: block;
+  font-size: 11px;
+  color: var(--side-muted);
+  line-height: 1.35;
+}
+.side-search-hit mark {
+  background: rgba(125, 211, 252, 0.30);
+  color: inherit;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+.side-search-empty,
+.side-search-error {
+  padding: 0.5rem 0.6rem;
+  color: var(--side-muted);
+  font-size: 11.5px;
+}
+.side-search-error { color: #f87171; }
+
 aside.sidebar section { margin-bottom: 0.9rem; }
 aside.sidebar h4 {
   font-size: 10.5px;

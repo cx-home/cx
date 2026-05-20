@@ -3,11 +3,13 @@
 // Today: a fixed corpus of CX and CXL examples, each with the
 // canonical / JSON / XML output recorded ahead of time. The
 // "Run" button surfaces those outputs and re-syntax-highlights
-// every pane.
+// every pane. Source-pane edits are preserved but not executed —
+// libcx-wasm is not built yet.
 //
-// v0.7.x: the same UI drives a live libcx-WASM evaluator; the
-// shape of this file does not change — `run(input)` will route
-// through WASM instead of the lookup table.
+// When libcx-wasm lands, the same UI drives a live evaluator; the
+// shape of this file does not change — `refreshOutputs(key)` will
+// route the textarea contents through the WASM module instead of
+// the lookup table. See docs/concepts/wasm for the transition plan.
 (function () {
   'use strict';
 
@@ -381,8 +383,8 @@
   }
 
   // Refresh the three output tabs without touching the source pane.
-  // Today the outputs come from the canned example corpus — the v0.7.x
-  // libcx-WASM build will route the current source through a live
+  // Today the outputs come from the canned example corpus — a future
+  // libcx-wasm build will route the current source through a live
   // evaluator instead. Either way the Source pane preserves user edits.
   function refreshOutputs(key) {
     const ex = examples[key];
@@ -439,9 +441,9 @@
   reset.addEventListener('click', () => load(pick.value));
   runBtn.addEventListener('click', () => {
     // Re-render the canned outputs for the selected example. User
-    // edits in the Source pane are preserved (the live libcx-WASM
-    // evaluator that will route Source through actual eval lands in
-    // the v0.7.x window — until then Run is a re-render, not a reset).
+    // edits in the Source pane are preserved; libcx-wasm is not built
+    // yet, so Run is a re-render of the canned corpus rather than
+    // actual evaluation of whatever is in the textarea.
     try {
       const key = pick.value;
       const ex = examples[key];
@@ -453,7 +455,7 @@
       flashRun(edited ? 'rendered (no eval)' : 'rendered', 'ran');
       setStatus(
         edited
-          ? "Output panes re-rendered from the canned corpus. Your Source edits aren't being executed — live eval lands when libcx-WASM ships in v0.7.x."
+          ? "Output panes re-rendered from the canned corpus. Your Source edits aren't being executed — libcx-wasm is not built yet."
           : 'Canned outputs re-rendered for the selected example.',
         'ok'
       );
