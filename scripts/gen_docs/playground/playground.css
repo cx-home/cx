@@ -116,6 +116,13 @@
 }
 .cxp-input::selection { background: rgba(125, 211, 252, 0.35); color: transparent; }
 
+/* Copy button for the source pane. Mirrors the global .copy-btn
+   style (style.css) but lifts above the transparent textarea so
+   it remains clickable, and shows on .cxp-editor hover/focus. */
+.cxp-editor .copy-btn { z-index: 3; }
+.cxp-editor:hover .copy-btn,
+.cxp-editor:focus-within .copy-btn { opacity: 1; }
+
 .cxp-output {
   display: flex;
   flex-direction: column;
