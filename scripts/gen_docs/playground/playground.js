@@ -308,20 +308,28 @@
   if (!pick || !input) return;
 
   // Status line surfaces transient feedback (Run/Reset/error) on top
-  // of the static explanatory default. Set msg='' to restore default;
-  // pass level='ok'|'error' for the palette flash. Errors stick until
-  // the next setStatus call; ok/info auto-clear after 3s.
+  // of the static explanatory default. The default is rich HTML (with
+  // a PLANNED badge + <strong> emphasis + a link to concepts/wasm), so
+  // we capture the initial innerHTML once and restore that exact
+  // markup when transient state clears. Transient text is plain.
+  // Pass level='ok'|'error' for the palette flash. Errors stick
+  // until the next setStatus call; ok auto-clears after 3s.
+  const statusDefaultHTML = status ? status.innerHTML : '';
   let statusTimer = null;
   function setStatus(msg, level) {
     if (!status) return;
     if (statusTimer) { clearTimeout(statusTimer); statusTimer = null; }
     status.classList.remove('ok', 'error', 'info');
     if (level) status.classList.add(level);
-    status.textContent = msg || status.dataset.default || '';
+    if (msg) {
+      status.textContent = msg;
+    } else {
+      status.innerHTML = statusDefaultHTML;
+    }
     if (level && level !== 'error') {
       statusTimer = setTimeout(() => {
         status.classList.remove(level);
-        status.textContent = status.dataset.default || '';
+        status.innerHTML = statusDefaultHTML;
       }, 3000);
     }
   }

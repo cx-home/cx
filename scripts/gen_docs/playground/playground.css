@@ -45,11 +45,14 @@
 }
 #cxp-run:not([disabled]):hover { filter: brightness(1.08); }
 #cxp-run[disabled] {
-  background: transparent;
-  color: var(--muted);
-  border-color: var(--border);
+  /* Distinct, obviously-disabled palette: solid muted slate so the
+     button reads as "off" against the light toolbar, not just a
+     low-contrast accent. */
+  background: #cbd5e1;
+  color: #475569;
+  border-color: #94a3b8;
   cursor: not-allowed;
-  filter: grayscale(1) opacity(0.65);
+  opacity: 0.7;
 }
 
 /* Top-bottom layout. Input pane fills first; output panes below.
@@ -178,19 +181,49 @@
 /* Status line: doubles as the explanatory note (default state) and
    transient feedback when Run / Reset fires. .info / .ok / .error
    classes flip the colour palette; the JS clears the class on next
-   action or after a timeout. */
+   action or after a timeout. The static default carries a
+   highlighted accent-bar + PLANNED badge so the 'wasm not built'
+   reality reads at a glance. */
 .cxp-status {
-  font-size: 11.5px;
-  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #44403c;                       /* warm dark slate against amber bg */
   margin: 0;
-  padding: 0.45rem 0.8rem;
-  background: var(--side-bg);
+  padding: 0.6rem 0.9rem 0.6rem 1rem;
+  background: #fef3c7;                  /* warm amber, reads as a notice */
   border-top: 1px solid var(--border);
+  border-left: 3px solid #d97706;       /* darker amber accent bar */
   min-height: 1.2em;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-.cxp-status.ok    { color: #34d399; background: rgba(52, 211, 153, 0.08); }
-.cxp-status.error { color: #f87171; background: rgba(248, 113, 113, 0.10); }
+.cxp-status strong { font-weight: 600; }
+.cxp-status a { color: #b45309; text-decoration: underline; }
+.cxp-status a:hover { color: #92400e; }
+.cxp-status-badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  margin-right: 0.4rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff7ed;
+  background: #d97706;
+  border-radius: 3px;
+  vertical-align: 1px;
+}
+/* Transient action states override the default amber. */
+.cxp-status.ok {
+  color: #166534;
+  background: rgba(52, 211, 153, 0.10);
+  border-left-color: #16a34a;
+}
+.cxp-status.error {
+  color: #b91c1c;
+  background: rgba(248, 113, 113, 0.12);
+  border-left-color: #dc2626;
+}
+.cxp-status.ok .cxp-status-badge,
+.cxp-status.error .cxp-status-badge { display: none; }
 
 /* Run-button flash states mirror the copy-button feedback so the
    click visibly registers even when the output content is unchanged. */
