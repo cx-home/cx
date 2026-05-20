@@ -1,15 +1,21 @@
-// CX Playground — canned-example sandbox.
+// CX Playground.
 //
-// Today: a fixed corpus of CX and CXL examples, each with the
-// canonical / JSON / XML output recorded ahead of time. The
-// "Run" button surfaces those outputs and re-syntax-highlights
-// every pane. Source-pane edits are preserved but not executed —
-// libcx-wasm is not built yet.
+// Two modes, decided at page-load time by detecting `window.cxlib`:
 //
-// When libcx-wasm lands, the same UI drives a live evaluator; the
-// shape of this file does not change — `refreshOutputs(key)` will
-// route the textarea contents through the WASM module instead of
-// the lookup table. See docs/concepts/wasm for the transition plan.
+//  • Live mode (v0.7.5+): libcx-wasm is bundled with the site. The
+//    Run button is un-disabled, the PLANNED notice is retired, and
+//    Run routes the *current source textarea* through cxlib.eval()
+//    / cxlib.toCx() / cxlib.toJson() / cxlib.toXml() — i.e. user
+//    edits are actually executed.
+//
+//  • Canned mode (pre-v0.7.5 fallback): no libcx-wasm in the bundle.
+//    The Run button stays disabled, the PLANNED notice stays, and
+//    Run is a re-render of the canned corpus for the selected
+//    example. User edits are preserved but never executed.
+//
+// The canned corpus is always present so the page still demos
+// something coherent if the WASM build is absent or fails to load.
+// See docs/concepts/wasm and spec/decisions/0026 for the rollout.
 (function () {
   'use strict';
 
@@ -307,6 +313,41 @@
 
   if (!pick || !input) return;
 
+  // ── live mode detection (libcx-wasm bundled with the site) ──────────
+  // `window.cxlib` is set by /wasm/cxlib.js if the WASM artifacts
+  // loaded successfully. The wrapper's `ready` promise resolves once
+  // _vinit has run. We capture that promise here and flip the UI
+  // state when it lands. Until then the Run button stays disabled and
+  // the PLANNED notice stays — exactly the v0.7.0 visual state.
+  let liveActive = false;
+  // Indirection so setStatus() below can pick up the LIVE-mode
+  // default once it flips.
+  const statusDefaultHTMLRef = { value: status ? status.innerHTML : '' };
+
+  function activateLiveMode() {
+    liveActive = true;
+    if (runBtn) {
+      runBtn.disabled = false;
+      runBtn.removeAttribute('title');
+    }
+    // Retire the PLANNED notice — swap in a one-line "Powered by
+    // libcx.wasm vX.Y.Z" footer per ADR 0026 §D6.
+    if (status) {
+      const cxlib = globalThis.cxlib;
+      const ver = (cxlib && cxlib.version) ? cxlib.version() : 'wasm';
+      status.innerHTML = 'Powered by <strong>libcx.wasm ' + ver + '</strong> — '
+        + 'edits to the Source pane are evaluated live. '
+        + '<a href="concepts/wasm.html">Concepts → WebAssembly Target</a>.';
+      status.classList.remove('error', 'info');
+      statusDefaultHTMLRef.value = status.innerHTML;
+    }
+  }
+
+  const liveReady = (typeof globalThis !== 'undefined' && globalThis.cxlib && globalThis.cxlib.ready)
+    ? globalThis.cxlib.ready.then(() => true, () => false)
+    : Promise.resolve(false);
+  liveReady.then(ok => { if (ok) activateLiveMode(); });
+
   // Status line surfaces transient feedback (Run/Reset/error) on top
   // of the static explanatory default. The default is rich HTML (with
   // a PLANNED badge + <strong> emphasis + a link to concepts/wasm), so
@@ -314,7 +355,6 @@
   // markup when transient state clears. Transient text is plain.
   // Pass level='ok'|'error' for the palette flash. Errors stick
   // until the next setStatus call; ok auto-clears after 3s.
-  const statusDefaultHTML = status ? status.innerHTML : '';
   let statusTimer = null;
   function setStatus(msg, level) {
     if (!status) return;
@@ -324,12 +364,12 @@
     if (msg) {
       status.textContent = msg;
     } else {
-      status.innerHTML = statusDefaultHTML;
+      status.innerHTML = statusDefaultHTMLRef.value;
     }
     if (level && level !== 'error') {
       statusTimer = setTimeout(() => {
         status.classList.remove(level);
-        status.innerHTML = statusDefaultHTML;
+        status.innerHTML = statusDefaultHTMLRef.value;
       }, 3000);
     }
   }
@@ -447,30 +487,66 @@
 
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
+  // Live evaluation via cxlib (libcx-wasm). For lang='cx' inputs the
+  // source is parsed and re-emitted through toCx/toJson/toXml. For
+  // lang='cxl' inputs the source carries both data and `[?…]`
+  // directives in one document, so we hand it to cxlib.eval as the
+  // input *and* the program — the CXL evaluator treats the embedded
+  // directives as the template.
+  function liveEvaluate(key) {
+    const ex = examples[key];
+    const src = input.value;
+    const lang = (ex && ex.lang) || 'cx';
+    const cxlib = globalThis.cxlib;
+    if (lang === 'cxl') {
+      return {
+        cx:   cxlib.eval(src, src, 'cx'),
+        json: cxlib.eval(src, src, 'json'),
+        xml:  cxlib.eval(src, src, 'xml'),
+      };
+    }
+    return {
+      cx:   cxlib.toCx(src),
+      json: cxlib.toJson(src),
+      xml:  cxlib.toXml(src),
+    };
+  }
+
+  function applyOutputs(outputs) {
+    if (outCx)   outCx.textContent   = outputs.cx;
+    if (outJson) outJson.textContent = outputs.json;
+    if (outXml)  outXml.textContent  = outputs.xml;
+    highlightOutputs();
+  }
+
   runBtn.addEventListener('click', () => {
-    // Re-render the canned outputs for the selected example. User
-    // edits in the Source pane are preserved; libcx-wasm is not built
-    // yet, so Run is a re-render of the canned corpus rather than
-    // actual evaluation of whatever is in the textarea.
     try {
       const key = pick.value;
       const ex = examples[key];
       if (!ex) {
-        throw new Error(`no canned outputs registered for example '${key}'`);
+        throw new Error(`no example registered for '${key}'`);
       }
-      const edited = input.value !== ex.input;
-      refreshOutputs(key);
-      flashRun(edited ? 'rendered (no eval)' : 'rendered', 'ran');
-      setStatus(
-        edited
-          ? "Output panes re-rendered from the canned corpus. Your Source edits aren't being executed — libcx-wasm is not built yet."
-          : 'Canned outputs re-rendered for the selected example.',
-        'ok'
-      );
+      if (liveActive) {
+        applyOutputs(liveEvaluate(key));
+        flashRun('evaluated', 'ran');
+        setStatus('Source evaluated through libcx.wasm.', 'ok');
+      } else {
+        // Canned-corpus fallback: re-render the recorded outputs
+        // for the selected example. User edits are preserved but
+        // not executed — libcx-wasm is not bundled with this site.
+        const edited = input.value !== ex.input;
+        refreshOutputs(key);
+        flashRun(edited ? 'rendered (no eval)' : 'rendered', 'ran');
+        setStatus(
+          edited
+            ? "Output panes re-rendered from the canned corpus. Your Source edits aren't being executed — libcx-wasm is not built yet."
+            : 'Canned outputs re-rendered for the selected example.',
+          'ok'
+        );
+      }
     } catch (err) {
       flashRun('failed', 'failed');
       setStatus(`Run failed: ${err && err.message ? err.message : err}`, 'error');
-      // Surface to the console for offline debugging.
       // eslint-disable-next-line no-console
       console.error('[cx-playground] Run failed:', err);
     }

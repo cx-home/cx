@@ -19,7 +19,7 @@
       <option value="cxl-merge">CXL 15. cx:merge — three-policy semantic merge</option>
       <option value="cxl-includes">CXL 16. Include — partial composition</option>
     </select>
-    <button id="cxp-run" type="button" disabled title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target.">Run</button>
+    <button id="cxp-run" type="button" disabled data-wasm-pending-title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target." title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target.">Run</button>
     <button id="cxp-reset" type="button">Reset</button>
   </div>
   <div class="cxp-panes">
@@ -51,4 +51,6 @@
   </p>
 </div>
 <link rel="stylesheet" href="/playground/playground.css">
+<script src="/wasm/libcx.js" defer></script>
+<script src="/wasm/cxlib.js" defer></script>
 <script src="/playground/playground.js" defer></script>

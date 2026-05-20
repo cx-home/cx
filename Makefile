@@ -28,7 +28,7 @@ SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacO
 DOTNET := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
 JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
-.PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
+.PHONY: all build build-wasm build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
  build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
  build-vscode \
  publish publish-push \
@@ -59,6 +59,18 @@ build: build-vcx build-rust build-go build-typescript
 
 build-vcx:
 	$(MAKE) -C vcx build
+
+# v0.7.5 / ADR 0026 §D7 — build libcx.wasm + libcx.js (emscripten
+# loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
+# Opt-in: not invoked by the default `build` target so contributors
+# without emcc on PATH aren't blocked. The docs-site CI lane invokes
+# this before scripts/gen_docs/scaffold.sh so the playground page
+# bundles the WASM artifacts. Depends on the patched V at
+# third_party/v/v (carries the wasm32-emcc vmemcpy fix); falls back
+# to system V at the cost of broken Option payloads — see
+# spec/v0_7_5_status.md row P1.
+build-wasm:
+	./scripts/wasm/build_libcx_wasm.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
