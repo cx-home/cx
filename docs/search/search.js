@@ -1,16 +1,19 @@
 // Tiny client-side site search for the CX docs.
 //
 // Index shape: [{slug, title, summary, text}, ...] emitted by
-// scripts/gen_docs/scaffold.sh as <prefix>search-index.json after
-// every page renders. This file lazy-loads that index on the user's
-// first interaction (focus/input) so cold visits don't pay for it.
+// scripts/gen_docs/scaffold.sh as <prefix>search-index.js — a
+// regular <script src> that assigns window.CXSearchIndex. Using a
+// script-tag load (rather than fetch of a .json) means the search
+// works under file:// (cloned-and-opened) the same way it works
+// over HTTP; browsers block fetch() of local JSON for security but
+// load local <script src> happily.
 //
 // Ranking: case-insensitive token-AND. Each token must hit somewhere
 // in title / summary / text. Title hits score 8, summary 3, body 1;
 // per-token scores sum into a per-entry score; results sort
 // descending by score, stable by slug.
 //
-// No frameworks, no dependencies; ~120 LOC.
+// No frameworks, no dependencies; ~140 LOC.
 
 (function () {
   'use strict';
@@ -24,19 +27,22 @@
   let active = -1;
   let last = '';
 
-  async function loadIndex() {
+  // The search-index.js script-tag is `defer`, which means it runs
+  // before DOMContentLoaded but after this file's IIFE registers its
+  // event listeners. By the time the user actually focuses the
+  // input, window.CXSearchIndex will be populated. If the script
+  // failed to load (404, syntax error in the generated file), the
+  // global is missing and we surface a clear error.
+  function loadIndex() {
     if (index || indexErr) return;
-    const href = input.dataset.indexHref || 'search-index.json';
-    try {
-      const res = await fetch(href, { cache: 'force-cache' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      index = await res.json();
-    } catch (err) {
-      indexErr = err;
-      renderError('Search index unavailable: ' + (err && err.message ? err.message : err));
-      // eslint-disable-next-line no-console
-      console.error('[cx-search] failed to load index:', err);
+    if (Array.isArray(window.CXSearchIndex)) {
+      index = window.CXSearchIndex;
+      return;
     }
+    indexErr = new Error('window.CXSearchIndex missing — was search-index.js loaded?');
+    renderError('Search index unavailable: index script did not load. Check that search-index.js is reachable from this page.');
+    // eslint-disable-next-line no-console
+    console.error('[cx-search] index load failed:', indexErr);
   }
 
   function tokenise(q) {
@@ -158,10 +164,7 @@
     const q = input.value.trim();
     if (q === last) return;
     last = q;
-    if (!index && !indexErr) {
-      loadIndex().then(() => render(input.value.trim()));
-      return;
-    }
+    if (!index && !indexErr) loadIndex();
     render(q);
   });
   input.addEventListener('keydown', (e) => {
