@@ -637,10 +637,13 @@ optimisation stack and next-lever ordering.
   (or equivalent on the V surface: `eval_cxl_from_doc(prog_doc,
   input_doc, sink)`) so callers can amortise parse cost across many
   evaluations. Today `eval_cxl_streaming(input, program, sink)`
-  re-parses both inputs on every call (~1.9 ms per invocation on
-  the medium fixture; `bin_to_doc` from ast_bin is ~2× faster than
-  `parse` from CX text). Biggest single structural win for server-
-  style workloads (estimated 30–50% on short evals).
+  re-parses both inputs on every call (~1 ms per invocation on the
+  medium fixture; `bin_to_doc` from ast_bin is ~2× faster than
+  `parse` from CX text). On the streaming bench this is ~1.5% of
+  total time at N≥5000 (parse is amortised), so it's a public-API
+  shape win — not a headline-throughput win. The real payoff is
+  server-style workloads with short evals where parse dominates,
+  and as load-bearing infra for cached `CompiledProgram` reuse.
 - **strings.Builder.str() bypass on flush** — `flush_stream`
   memdups the chunk via `memdup_noscan` even when the sink is a
   byte-level consumer. Either widen the V `CXLStreamSink` to a
