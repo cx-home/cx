@@ -1,0 +1,15 @@
+[form hx-post=/signup hx-target=this hx-swap=outerHTML
+  [?for f :in //field :return
+    [div class=field
+      [label for=[?=f/@name] [?=f/@name]]
+      [input type=text name=[?=f/@name] value=[?=f/@value]
+             hx-post=/signup/validate
+             hx-trigger="keyup changed delay:300ms, blur"
+             hx-target="next .error"]
+      [- always render the .error span so hx-target="next .error" has
+         a swap target regardless of current valid state ]
+      [div class=error [?if [f/@valid = 'no', [?=f/@error]]]]
+    ]
+  ]
+  [button type=submit Submit]
+]

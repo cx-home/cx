@@ -761,7 +761,7 @@ char* cx_events_writer_end_table
 
 /* ── §2.16 CXL evaluator (capability bit 28) ─────────────────────────────
  *
- * Per ADR 0016 / spec/cxl.md / spec/abi.md §2.16. CXL is a CX-native
+ * Per ADR 0016 / spec/eval.md / spec/abi.md §2.16. CXL is a CX-native
  * expression language for rendering, querying, and transformation. The
  * v0.6.0 evaluator implements CXL 1.0 (Interpolation, [?if], [?for],
  * [?with], [?cond], [?def], [?use], and the frozen filter set). All
@@ -779,18 +779,23 @@ char* cx_events_writer_end_table
  *          cx_free); or NULL with *err_out set on error. */
 typedef int (*cx_eval_write_cb)(const char* bytes, size_t n, void* user);
 
-char* cx_eval_cxl
+/* Cx evaluator (renamed from cx_eval_cxl* at v0.7.0 per ADR 0022 §D5).
+ * The cxl-prefixed names are NOT exported by v0.7.0 libcx — this is
+ * the documented ABI epoch break. Pre-v0.7.0 binding code must be
+ * updated. */
+
+char* cx_eval
     (const char* cx_input, const char* cxl_program,
      const char* output_target, char** err_out);
 
-char* cx_eval_cxl_with_len
+char* cx_eval_with_len
     (const char* cx_input, size_t cx_len,
      const char* cxl_program, size_t prog_len,
      const char* output_target, char** err_out);
 
-/* Streaming variant: v0.6.0 stub returns W012. Lands at v0.6.1+ once
- * the per-event evaluator skeleton stabilises in conformance. */
-char* cx_eval_cxl_streaming
+/* Streaming variant: v0.7.0 stub returns W012. Lands once the
+ * v0.9.0+ concurrency ADR resolves the streaming-evaluator skeleton. */
+char* cx_eval_streaming
     (const char* cx_input, const char* cxl_program,
      const char* output_target,
      cx_eval_write_cb write_cb, void* user, char** err_out);

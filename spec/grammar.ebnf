@@ -13,22 +13,46 @@
 #       MapLiteral      [56c]  {k: v, k: v}     — keyed entries, atomic keys
 #     Disambiguation from existing element syntax follows the one-token-
 #     lookahead rule below.
-#   - Element-vs-Array disambiguation [50.D]:
+#   - Element-vs-Array disambiguation [50.D] (amended 2026-05-19 per
+#     ADR 0017 §D1 "Amendment 2026-05-19" — see the ADR for full
+#     rationale and migration note):
 #       Inside `[…]`, the parser scans from the opening `[` past optional
-#       whitespace and decides Element vs ArrayLiteral by looking at the
-#       first non-whitespace separator encountered (`=` / `,` / `]`):
-#         first separator = `=`  → Element with attributes (today's form)
-#         first separator = `,`  → ArrayLiteral
-#         first separator = `]`  AND content matches `Name (S ElementMeta)*`
-#                                → Element (today's form, possibly empty body)
-#         empty `[]`             → ArrayLiteral (the empty array), valid only
-#                                  in expression position (BodyItem / AttValue
-#                                  positions); element position rejects empty
-#                                  brackets per existing [50] rule.
-#       The rule is unambiguous against all currently-valid CX because no
-#       pre-v3.6 valid CX uses bare commas inside brackets at the body-item
-#       level (commas in body text are part of UnquotedText / QuotedText
-#       characters, never standalone separators).
+#       whitespace and decides Element vs ArrayLiteral by examining the
+#       FIRST ITEM (not by scanning the whole body):
+#         empty `[]`             → ArrayLiteral (the empty array), valid
+#                                  only in expression position.
+#         first char ∉ Name-start AND ∉ {`*`, `` ` ``, `>`, `~`, `^`}
+#                                → ArrayLiteral. Catches `[1, 2, 3]`,
+#                                  `['a', 'b']`, `[(seq, lit)]`, etc.
+#         first char ∈ {`*`, `` ` ``, `>`, `~`, `^`} (element-side sigils
+#         with dual roles): peek the next non-whitespace char.
+#           `,` → ArrayLiteral (e.g. `[*, default]` §D8 sentinel).
+#           else → Element (alias node `[*name]`, MD blockquote
+#           `[> text]`, MD strikethrough `[~ text]`, MD inline-code
+#           `` [` text] ``, etc.).
+#         first char ∈ Name-start: scan the candidate name. The next
+#         non-name-char decides:
+#           `,`        → ArrayLiteral (`[a, b, c]` — the candidate was
+#                        item 1, comma marks the separator).
+#           `=`        → Element with attribute (today's attribute form).
+#           `]`        → Element with empty body (`[name]`).
+#           whitespace → Element. THIS IS THE LOAD-BEARING CHANGE: the
+#                        first whitespace inside the bracket marks the
+#                        boundary between the element name and the body.
+#                        Commas appearing *after* the body starts are
+#                        content, not separators. Pre-amendment rule
+#                        ("comma anywhere → array") silently destroyed
+#                        prose like `[prose A line, with commas, has no
+#                        body.]` by routing it through ArrayLiteral with
+#                        the element name vaporised into item 0.
+#           any other non-name char (e.g. `*` inside a try-catch glob
+#           token `FOAR*`) → ArrayLiteral. The candidate isn't a clean
+#           Name shape, so the bracket can't be element-head.
+#       The rule is strictly local (O(first-token-length) lookahead) and
+#       backward-compatible for every valid array literal `[a, b, c]`
+#       shape. Only the pre-amendment lossy case (first token is a Name
+#       AND body contains commas later) changes behavior — and that case
+#       had no coherent meaning under the old rule.
 #   - Capability bit 29 (`0x20000000`, per spec/abi.md) signals the new
 #     productions. Parsers without the bit reject the new forms.
 #   - `:type[]` element-prefix annotation ([26b]) is deprecated by ADR 0017
@@ -133,7 +157,7 @@
         Each Document is parsed independently with its own scope.
         Parsers return a stream or array of Document nodes. */
 
-[2]  Document    ::= Prolog? DoctypeDecl? ( Node* | Attribute+ )
+[2]  Document    ::= Prolog? DoctypeDecl? ( Node* | Attribute+ | BareText )
      /* Multiple top-level Nodes allowed (multi-root).
         v3.4: A Document may consist of one or more top-level Attributes
         instead of Nodes — this is "logfmt mode" and is intended for
@@ -144,11 +168,24 @@
         Examples (logfmt mode):
           time=2026-05-06T12:00:00Z level=INFO svc=web req=GET path=/foo
 
-        Parser disambiguation: if the first non-whitespace token after
-        Prolog/Doctype is `Name '='`, the document is in logfmt mode and
-        the entire document is one or more Attributes. Otherwise it is
-        in node mode (one or more Nodes). The two modes are not mixed in
-        the same document. */
+        v0.7.0: A Document whose first non-whitespace byte is neither a
+        node-start (`[`, `&`) nor a quoted-scalar opener (`"`, `'`) nor
+        a logfmt name='=' is BARE TEXT — the entire input (up to EOF or
+        the `---` MultiDoc separator) is one TextNode containing the
+        verbatim bytes (minus one trailing newline by editor convention).
+        No whitespace normalization, no auto-typing. Lets bare scalar
+        documents (`42`, `"hello"`, `'''multi\nline'''`, plain prose,
+        multi-line text) be valid CX. To get a typed scalar at top,
+        use the explicit `:type value` form (Scalar [27]).
+
+        Parser disambiguation order: if the first non-whitespace token
+        after Prolog/Doctype is `Name '='`, logfmt mode; else if it
+        starts with `[` or `&`, node mode; else if `"` / `'`, quoted-
+        scalar document mode; else bare-text mode. The four modes are
+        not mixed in the same document. */
+[2a] BareText    ::= Char* - (Char* '---' Char*)
+     /* v0.7.0. Verbatim character sequence; the only forbidden subsequence
+        is the depth-0 MultiDoc separator `---` at the start of a line. */
 
 [3]  Node        ::= Element | Scalar | AliasElement | CXDirective
                    | BodyText | Reference | RawText | BlockContent | PI | Comment | LineComment
@@ -221,7 +258,9 @@
            1. One leading newline immediately after ''' is stripped.
            2. One trailing newline immediately before ''' is stripped.
            3. Common leading whitespace of all non-blank lines is stripped.
-         TripleQuoted is NOT valid in AttValue position [55a]. */
+         v0.7.0: TripleQuoted is valid in AttValue position [55a] (the
+         prior ban was lifted; parser one-token lookahead disambiguates
+         `attr='''…'''` from `attr=''` (empty squote) + `'…'` (squote)). */
 [10c] TripleContent ::= Char* - (Char* "'''" Char*)
       /* All character sequences not containing the unescaped terminator '''.
          Use \' to prevent early termination; \'\'\' embeds literal ''' . */
@@ -438,8 +477,16 @@
        /* Untyped columns default to :string. */
 [29c] TableRows  ::= TableRow ( S TableRow )*
 [29d] TableRow   ::= TableCell (S TableCell)*
-[29e] TableCell  ::= QuotedText | TripleQuoted | BareValue | NullLiteral
-       /* The value parser uses the column's declared type to interpret each
+[29e] TableCell  ::= QuotedText | TripleQuoted | BlockContent | RawText
+                   | BareValue | NullLiteral
+       /* v0.7.0: BlockContent and RawText valid as cell values when the
+          declared column type is `:string` (or untyped, which defaults to
+          string). Numeric / bool columns still reject the bracket-shaped
+          forms — silent coercion to int / float / bool is unsafe.
+          QuotedText covers both single- and double-quoted; the parser
+          dispatches on the first character.
+
+          The value parser uses the column's declared type to interpret each
           cell. For bare cells, type-driven parsing applies (an :int column
           parses cells as integers, an :date column as dates, etc.). For
           quoted cells, the value is always a string regardless of column type
@@ -588,7 +635,19 @@
          Otherwise stored as Text node with whitespace normalization. */
 
 [55] Attribute   ::= Name Eq AttValue
-[55a] AttValue   ::= BareValue | QuotedText | BracketBody | CollectionLiteral
+[55a] AttValue   ::= BareValue | QuotedText | TripleQuoted
+                   | BracketBody | RawText | BlockContent | CollectionLiteral
+       /* v0.7.0 additions (symmetry pass):
+            - TripleQuoted: lifts the [10b] ban. Parser peeks `'''` after
+              `=` before settling on the squote path. `attr='''…'''`
+              produces a string scalar.
+            - RawText: `attr=[# … #]` produces a body-bearing attribute
+              whose single body item is a RawTextNode. Parser peeks `[#`
+              after `=` before the generic BracketBody dispatch.
+            - BlockContent: `attr=[| … |]` produces a body-bearing
+              attribute whose single body item is a BlockContentNode.
+              Parser peeks `[|` after `=` similarly. Previously this
+              parsed as BracketBody with `|` chars as literal text. */
       /* BareValue attribute values are auto-typed using the same scalar
          priority as rule [25] (HexInt → int, Integer → int, Float → float,
          true/false → bool, null → null, datetime, date; else string).
@@ -800,8 +859,13 @@
         ('xml'), CXDirective ('cx'), or a PI target. The v0.6.0 reserved
         EvalNames are: 'if', 'for', 'with', 'include', 'def', 'use'
         (`?cond` was dropped at ADR 0017 §D7, folded into multi-branch
-        `?if`). v0.9.0+ adds 'let', 'fn', 'match', 'try' per the CXL
-        3.1 roadmap.
+        `?if`). v0.7.0 (cx-eval 4.0 / ADR 0022 §D2) added 'let', 'fn',
+        'match', 'try', the FLWOR-windowing variants 'for-tumbling' /
+        'for-sliding' / 'for-group-by', the function-value directives
+        'fn-ref' / 'partial' / 'apply' / 'focus', the helper directives
+        'str-template' / 'error' / 'range', and the module-prefix
+        EvalNames 'cx' / 'log' (per ADR 0023). v0.9.0+ adds the
+        concurrency / job directives per the `jobs:` module roadmap.
 
         `?def` with ADR 0020 capability bit 30 set admits an optional
         `:params` labeled slot whose value is an Array of bare
@@ -819,11 +883,53 @@
         as ordinary data. Pure-data tools (cx fmt, cx diff, cx hash)
         treat them as `?`-prefixed CXDirective-family nodes. */
 
-[59a] EvalName ::= 'if' | 'for' | 'with' | 'include' | 'def' | 'use'
-                 | 'let' | 'fn' | 'match' | 'try'
+[59a] EvalName ::= BareEvalName | ModuleEvalName
+[59a.1] BareEvalName ::= 'if' | 'for' | 'with' | 'include' | 'def' | 'use'
+                       | 'let' | 'fn' | 'match' | 'try'
+                       | 'for-tumbling' | 'for-sliding' | 'for-group-by'
+                       | 'fn-ref' | 'partial' | 'apply' | 'focus'
+                       | 'str-template' | 'error' | 'range'
+                       | 'cx'
+                       | FrozenFilterName | XQuery40FnName
+[59a.2] ModuleEvalName ::= ModulePrefix ':' Name
+[59a.3] ModulePrefix ::= 'cx' | 'log' | 'fn' | 'map' | 'array' | 'math'
      /* `?cond` was in v3.5 but dropped at v3.6 per ADR 0017 §D7
         (folded into multi-branch `?if`). 'let' / 'fn' / 'match' /
-        'try' are reserved for CXL 3.1 / v0.9.0+. */
+        'try' shipped at v0.7.0 (cx-eval 4.0) per ADR 0022 §D2 —
+        previously slated for v0.9.0+ CXL 3.1 but pulled forward
+        as part of the XQuery 4.0 / XPath 4.0 parity arc.
+
+        Labeled-form FLWOR clauses (`:let`, `:where`, `:count`,
+        `:order-by`, `:group-by`, `:tumbling`, `:sliding`) live as
+        SlotLabel productions [59d], not separate EvalNames.
+
+        BareEvalName 'cx' (without a colon suffix) heads the
+        evaluator config directive shape `[?cx <attr>=<val>...]`
+        (e.g., `[?cx allow-eval=true]`, `[?cx output-target=html]`)
+        per spec/eval.md §5. Distinguished from ModuleEvalName by
+        the trailing attribute-pair vs. colon-Name follow-up.
+
+        ModulePrefix enumerates the v0.7.0 module namespaces:
+          'fn' / 'map' / 'array' / 'math' — XQuery 4.0 standard
+              namespaces per ADR 0022 §D2
+          'cx'  — self-host module per ADR 0023 §D (DD row)
+          'log' — structured logging per ADR 0023 §D10 (FF row)
+        v0.8.0+ adds the BaseX-style modules (`file:`, `http:`,
+        `hash:`, `random:`, ...) per spec/basex_function_modules.md;
+        each lands as a new ModulePrefix without an EBNF break.
+
+        FrozenFilterName (the v0.6.0 closed filter set: `upper`,
+        `lower`, `trim`, etc.) and XQuery40FnName (the ~85 v0.7.0
+        XQuery 4.0 fn:* arrivals callable without the `fn:` prefix
+        for backward compatibility) are enumerated in
+        spec/eval.md §4 and ADR 0022 §D2 §C respectively; the V
+        parser's `is_cxl_eval_name` (`vcx/cx/parser.v:839`) is the
+        reference closed-set implementation.
+
+        Disambiguation of `[?cx ...]` config directive vs.
+        `[?cx:fn ...]` module call: the parser scans one token
+        past the `cx` to see whether a `:` follows (module call)
+        or whitespace + an attribute pair (config directive). */
 
 [59b] LabeledForm    ::= BodyItem* ( S LabeledSlot )*
      /* ADR 0017 §D23. The labeled alternative to ArgArray. Zero or

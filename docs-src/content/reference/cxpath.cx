@@ -1,0 +1,107 @@
+[- Reference: CXPath function library. -]
+[page id='ref-cxpath'
+  [meta
+    title='CXPath Functions'
+    layout='reference'
+    nav-order='415'
+    audience='lookup'
+    summary='Reference for the XPath 3.1 / 4.0 function library available in CXPath expressions.'
+  ]
+
+  [section id='string' title='String Functions'
+    [code lang='cx' src='''string-length(s)        # codepoint count
+substring(s, start, len)
+contains(s, sub)        # bool
+starts-with(s, prefix)
+ends-with(s, suffix)
+upper-case(s)
+lower-case(s)
+normalize-space(s)      # collapse whitespace
+concat(a, b, …)
+string-join(seq, sep)
+replace(s, pat, rep)    # PCRE
+matches(s, pat)         # PCRE bool
+tokenize(s, sep)
+encode-for-uri(s)''']
+  ]
+
+  [section id='node' title='Node Functions'
+    [code lang='cx' src='''name(n)                 # qualified name with prefix
+local-name(n)           # name without prefix
+namespace-uri(n)
+position()              # 1-based; current context
+last()                  # size of the current sequence
+count(seq)
+exists(seq)
+empty(seq)''']
+  ]
+
+  [section id='numeric' title='Numeric Functions'
+    [code lang='cx' src='''number(x)              # cast to numeric
+abs(x)
+floor(x) / ceiling(x) / round(x)
+sum(seq) / min(seq) / max(seq) / avg(seq)
+format-number(x, picture)''']
+  ]
+
+  [section id='boolean' title='Boolean and Logical'
+    [code lang='cx' src='''true() / false()
+not(x)
+boolean(x)             # effective boolean value''']
+  ]
+
+  [section id='sequence' title='Sequence'
+    [code lang='cx' src='''head(seq) / tail(seq)
+reverse(seq)
+distinct-values(seq)
+remove(seq, position)
+insert-before(seq, position, items)
+subsequence(seq, start, len)''']
+  ]
+
+  [section id='datetime' title='Date and Time'
+    [code lang='cx' src='''current-date()
+current-dateTime()
+current-time()
+year-from-date(d) / month-from-date(d) / day-from-date(d)
+seconds-from-dateTime(dt) / minutes-from-dateTime(dt) / hours-from-dateTime(dt)''']
+  ]
+
+  [section id='hof' title='Higher-Order'
+    [code lang='cx' src='''for-each(seq, fn)
+filter(seq, predicate)
+fold-left(seq, init, fn)
+fold-right(seq, init, fn)
+apply(fn, args)
+function-arity(fn)''']
+  ]
+
+  [section id='cx-module' title='cx: Module'
+    [code lang='cx' src='''cx:parse(text)
+cx:serialize(value)
+cx:canonical(value)
+cx:hash(value)
+cx:merge(a, b)
+cx:resolve-includes(value)''']
+  ]
+
+  [section id='log-module' title='log: Module'
+    [code lang='cx' src='''log:info(msg, fields?)
+log:warn(msg, fields?)
+log:error(msg, fields?)
+log:debug(msg, fields?)
+log:trace(msg, fields?)
+log:with-context(fields, body)''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='concepts/cxpath' label='CXPath concept page']
+      [item path='reference/cxl'   label='CXL reference']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

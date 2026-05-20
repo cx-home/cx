@@ -1,0 +1,82 @@
+[- Release notes: v0.7.0 + v0.6.0 + migration. One page. -]
+[page id='release-notes'
+  [meta
+    title='Release Notes'
+    layout='reference'
+    nav-order='800'
+    audience='user'
+    summary='What shipped in v0.7.0 and v0.6.0, and how to migrate.'
+  ]
+
+  [section id='v07-headline' title='v0.7.0 — Format-Stability Boundary'
+    [prose v0.7.0 is the API and format-stability boundary through 1.0. C ABI symbols are append-only from here; ast-bin format versions are forward-compatible; the cross-binding conformance suite gates every release. The release ships the v0.7.0 evaluator, the parse-time and eval-time include resolvers, the Table API, and the documentation generator.]
+  ]
+
+  [section id='v07-added' title='v0.7.0: Added'
+    [list
+      [item path='reference/cxl'      label='CXL v0.7.0 — FLWOR for, multi-branch if, match, typeswitch, named templates, function values, partial application, error handling']
+      [item path='reference/includes' label='Include resolver — parse-time and eval-time, shared containment + cycle detection']
+      [item path='reference/tables'   label='Table API with Tier-1 columnar surface']
+      [item path='reference/cli'      label='Doc generator (this site) and cx lsp subcommand']
+      [item path='performance'        label='Streaming evaluator at 340 MB/s on the bench corpus — 17 percent under the comparable JSON benchmark']
+    ]
+  ]
+
+  [section id='v07-changed' title='v0.7.0: Changed'
+    [list
+      [item path='concepts/data-model' label='ADR 0017 collection literals — sequence, array, map']
+      [item path='concepts/data-model' label='Bare prose with commas, em-dash, and equals parses as one Element body']
+      [item path='reference/cxl'       label='Substituted attribute values in body position auto-quote when they would re-tokenize as structure']
+      [item path='reference/includes'  label='cx eval and cx --cx accept --include-root']
+    ]
+  ]
+
+  [section id='v07-removed' title='v0.7.0: Removed'
+    [prose The W012 cx_eval_streaming stub is retired. Pre-G1 symbol names retired in favour of the renamed surface. See the migration section below.]
+  ]
+
+  [section id='v06' title='v0.6.0'
+    [prose v0.6.0 introduced the collection-literal trio (sequence, array, map per ADR 0017), the cross-binding API contract, the V-native data binding lane, and the schema validator at full Tier-1 coverage. The release also closed the bounded audit and brought every Tier-1 binding to parity on the C ABI surface.]
+  ]
+
+  [section id='migration' title='v0.6 → v0.7 Migration'
+    [prose Six breaking changes ship with v0.7.0. Each is mechanical to update.]
+  ]
+
+  [section id='m1' title='M1: C ABI Symbol Rename'
+    [prose Symbols matching cx_eval_cxl_* were renamed to cx_eval_* at G1. Bindings using the old names will fail to link. Replace cx_eval_cxl with cx_eval; cx_eval_cxl_with_target with cx_eval — the target is now the third positional argument.]
+  ]
+
+  [section id='m2' title='M2: Attribute Rename'
+    [prose The columns attribute on :table renamed to cols. Existing tables that used columns parse as undeclared and warn under strict mode. The cx upgrade-config subcommand rewrites them automatically.]
+    [code lang='shell' src='cx upgrade-config orders.cx > orders.v07.cx']
+  ]
+
+  [section id='m3' title='M3: File Renames'
+    [prose ADR 0021 renamed CXDB to cx:database. Library file lang/*/cxdb.* files renamed accordingly; build configs that name the file explicitly need an update.]
+  ]
+
+  [section id='m4' title='M4: Binding Cut'
+    [prose Per the binding tiering decision, Tier-3 bindings (Kotlin, Swift, Ruby, TypeScript, V-cffi) are no longer feature-gating for v0.7.0. They lag by one minor release. Production users on a Tier-3 binding should expect a smaller feature surface until the per-binding catchup ships in v0.7.x.]
+  ]
+
+  [section id='m5' title='M5: W012 Stub Removed'
+    [prose The cx_eval_streaming stub from v0.6.0 is removed. Use cx_eval with the streaming variant of the entry point. The C ABI symbol cx_eval_streaming returns NotImplemented if linked against; bindings that probed via cx_features bit 27 should detect support before calling.]
+  ]
+
+  [section id='m6' title='M6: ADR 0021 Rename'
+    [prose CXDB is now cx:database internally. The user-facing CLI surface is unchanged (cx table is still cx table); internal references in ADRs and spec docs updated accordingly.]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='comparison'         label='Comparison']
+      [item path='performance'        label='Performance']
+      [item path='faq'                label='FAQ']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

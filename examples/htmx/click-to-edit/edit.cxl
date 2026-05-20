@@ -1,0 +1,16 @@
+[?for c :in //contact :return [form hx-put=/contact/[?=c/@cid] hx-target=this hx-swap=outerHTML
+  [div
+    [label First Name]
+    [input type=text name=firstName value=[?=c/@first]]
+  ]
+  [div
+    [label Last Name]
+    [input type=text name=lastName value=[?=c/@last]]
+  ]
+  [div
+    [label Email Address]
+    [input type=email name=email value=[?=c/@email]]
+  ]
+  [button class=btn Submit]
+  [button hx-get=/contact/[?=c/@cid] class=btn Cancel]
+]]

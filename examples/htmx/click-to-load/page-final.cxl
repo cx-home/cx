@@ -1,0 +1,13 @@
+[- Fragment template for /agents responses after the first click —
+   produces rows + a terminator row instead of another Load More
+   button. The dataset is one fixed page, so we end pagination here. ]
+[?for a :in //agent :return
+  [tr
+    [td [?=a/@name]]
+    [td [?=a/@email]]
+    [td [?=a/@status]]
+  ]
+]
+[tr
+  [td colspan=3 style=text-align:center;color:#888 — end of list —]
+]

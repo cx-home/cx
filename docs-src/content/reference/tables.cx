@@ -1,0 +1,59 @@
+[- Reference: Tables, streaming, ast-bin, data-bin. -]
+[page id='tables'
+  [meta
+    title='Tables, Streaming, and Binary Formats'
+    layout='reference'
+    nav-order='440'
+    audience='user'
+    summary='Tabular data, event-driven IO, and the binary forms underneath.'
+  ]
+
+  [section id='tables' title='The Table API'
+    [prose A CX table is a structural form for columnar data. Columns declare a name and a type; rows are records. The Table API exposes count, schema introspection, dump, and load — symmetric inverses with declared types preserved across formats.]
+    [code lang='cx' src='''[:table
+  [:col name='size'  type='string']
+  [:col name='count' type='int']
+  [:row [size 'large'] [count 12]]
+  [:row [size 'small'] [count 8]]]''']
+    [code lang='shell' src='''cx table info orders.cx     # column / row counts, types, byte size
+cx table dump orders.cx --to=cx
+cx table load orders.csv --to=cx''']
+  ]
+
+  [section id='streaming' title='Streaming Parse and Emit'
+    [prose Streaming parse and emit move bytes through the runtime without ever holding the whole tree in memory. Callbacks fire per element-start, attribute, body chunk, and element-end. The same callback shape works on every input format.]
+    [code lang='python' src='''with open('events.cx', 'rb') as f:
+    for event in cx.stream(f):
+        if event.kind == 'element_start' and event.name == 'error':
+            print(event.attrs)''']
+    [prose Use streaming when the input is large enough that resident memory matters — log files, telemetry dumps, large XML / JSON / CXDB sources. The tree API materialises everything; streaming materialises nothing.]
+  ]
+
+  [section id='write' title='Streaming Emit'
+    [code lang='python' src='''with cx.stream_writer(open('out.cx', 'wb')) as w:
+    for record in fetch_records():
+        w.write(record)''']
+    [prose RSS stays bounded regardless of the output size. Tier-1 bindings (V, Python, Go) ship the streaming writer; Tier-2/3 follow in the v0.7.x window.]
+  ]
+
+  [section id='ast-bin' title='ast-bin: Binary AST'
+    [prose ast-bin is a binary serialization of the CXDM tree designed for fast cross-binding handoff and stable disk storage. Compact, versioned, and round-trip-byte-identical with the text form. Used for the FFI boundary in every binding and for canonical-bytes comparisons in the conformance suite. Capability bit 29 advertises v6; bindings query cx_features before reading a payload.]
+  ]
+
+  [section id='data-bin' title='data-bin: Arrow and Parquet'
+    [prose data-bin connects the CX Table API to the columnar formats the analytics ecosystem already speaks — Apache Arrow for in-process exchange, Parquet for on-disk storage. The bridges live in libcx_arrow; the CX side stays format-agnostic. Phase A (Arrow round-trip) ships in v0.7.0; Phase B (Parquet writer) and Phase C (read-side schema inference) follow.]
+    [code lang='shell' src='''cx table dump orders.cx --to=parquet > orders.parquet
+cx table load orders.parquet --to=cx''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='concepts/identity'    label='Identity & canonical form']
+      [item path='bindings/index'   label='Language bindings']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

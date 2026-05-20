@@ -494,7 +494,7 @@ data.
 In evaluated documents (CXL programs): the evaluator parses `expr`,
 evaluates it against the current context, and emits the result per
 [`spec/cxdm.md §7.1`](cxdm.md) (canonical scalar formatting) or
-[`spec/cxl.md §3.1`](cxl.md) (interpolation rules).
+[`spec/eval.md §3.1`](cxl.md) (interpolation rules).
 
 The Interpolation node is part of the v0.6.0 ABI lock; pre-v0.6.0
 parsers reject `[?=...]` as a parse error.
@@ -520,7 +520,7 @@ XML: round-trip preserved as `<cx:eval name="..."><cx:args>.../></cx:eval>`
 CXL evaluation directive + §D7 + grammar
 v3.6. The `name` field carries the EvalName (`if`, `for`, `with`,
 `include`, `def`, `use`; v0.9.0+ adds `let`, `fn`, `match`, `try`;
-built-in filter names per `spec/cxl.md §4` are also EvalNames).
+built-in filter names per `spec/eval.md §4` are also EvalNames).
 `?cond` was dropped at §D7 (folded into multi-branch
 `?if`).
 
@@ -558,7 +558,7 @@ form and hashing, and have no semantic effect.
 
 In evaluated documents (CXL programs): the evaluator dispatches on
 `name` and produces a CXDM value per
-[`spec/cxl.md §3`](cxl.md).
+[`spec/eval.md §3`](cxl.md).
 
 EvalDirective is part of the v0.6.0 ABI lock; pre-v0.6.0 parsers
 reject `[?<EvalName> ...]` as a parse error (would have been

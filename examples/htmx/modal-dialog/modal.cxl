@@ -1,0 +1,17 @@
+[?for m :in //modal :return [div data-mid=[?=m/@mid] class=modal-backdrop
+  [div class=modal-dialog role=dialog
+    [div class=modal-header
+      [h3 [?=m/@title]]
+      [div class=modal-subtitle [?=m/@subtitle]]
+      [button hx-get=/modal/[?=m/@mid]/close hx-target="closest .modal-backdrop" hx-swap=outerHTML class=close ×]
+    ]
+    [div class=modal-body
+      [?for f :in m/body/field :return
+        [div class=field
+          [label [?=f/@label]]
+          [span [?=f/@value]]
+        ]
+      ]
+    ]
+  ]
+]]

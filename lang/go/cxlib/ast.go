@@ -173,9 +173,22 @@ type Element struct {
 	// fixed to "ref" and Attrs/Items are empty in that case. Round-trips
 	// across the C ABI via ast_bin v3+ (Phase 7.70).
 	BodyRef string
+	// v0.7.0 Z2 (spec/i18n.md §1.3): in-scope BCP 47 language tag.
+	// Populated by ResolveNamespaces(). LangResolvedSet distinguishes
+	// "no cx:lang in scope" (false) from "explicit cx:lang='' shadow"
+	// (true with LangResolved == "").
+	LangResolved    string
+	LangResolvedSet bool
 }
 
 func (e *Element) cxNode() {}
+
+// Lang returns the BCP 47 language tag in scope at this Element per
+// spec/i18n.md §1.3. Returns "" when no cx:lang is in scope or when
+// an ancestor's declaration was shadowed by an explicit cx:lang="".
+func (e *Element) Lang() string {
+	return e.LangResolved
+}
 
 // LocalName returns the part of Name after the first ':' (or the whole
 // name when no colon is present).
@@ -515,6 +528,17 @@ func (d *Document) ResolveID(id string) *Element {
 		return el
 	}
 	return findElementByID(d.Prolog, id)
+}
+
+// ResolveBodyRef returns the Element targeted by e.BodyRef in this
+// document, or nil when BodyRef is empty or the target ID is
+// undeclared. v0.7.0 (ADR 0003 D1 second bullet / GG13 row at
+// spec/v0_7_0_status.md).
+func (d *Document) ResolveBodyRef(e *Element) *Element {
+	if e == nil || e.BodyRef == "" {
+		return nil
+	}
+	return d.ResolveID(e.BodyRef)
 }
 
 // ElementsByID returns a map from id-string to the Element declaring it.
@@ -1015,8 +1039,10 @@ func stringifyAttrValue(v any) string {
 
 // ResolveNamespaces populates Element.{Local, NsURI} and
 // Attr.{Local, NsURI} on every node in doc per ADR 0002 /
-// spec/namespaces.md. Idempotent. Called automatically by Parse,
-// ParseXml, ParseJson, ParseYaml, ParseToml, ParseMd.
+// spec/namespaces.md. Also propagates cx:lang inherited scope per
+// spec/i18n.md §1.3 — sets Element.LangResolved on every Element.
+// Idempotent. Called automatically by Parse, ParseXml, ParseJson,
+// ParseYaml, ParseToml, ParseMd.
 func ResolveNamespaces(doc *Document) {
 	scope := []map[string]string{}
 	for _, n := range doc.Elements {
@@ -1024,13 +1050,65 @@ func ResolveNamespaces(doc *Document) {
 			resolveElement(el, &scope)
 		}
 	}
+	var langStack []langFrame
+	for _, n := range doc.Elements {
+		if el, ok := n.(*Element); ok {
+			resolveElementLang(el, &langStack)
+		}
+	}
+}
+
+type langFrame struct {
+	tag string
+	set bool
+}
+
+// resolveElementLang propagates cx:lang per spec/i18n.md §1.3.
+// Mirrors V's vcx/cx/namespaces.v::resolve_element_lang.
+func resolveElementLang(el *Element, stack *[]langFrame) {
+	var (
+		ownTag   string
+		declared bool
+	)
+	for _, a := range el.Attrs {
+		if a.Name == "cx:lang" {
+			ownTag, _ = a.Value.(string)
+			declared = true
+			break
+		}
+	}
+	var resolved langFrame
+	if declared {
+		resolved = langFrame{tag: ownTag, set: true}
+	} else if n := len(*stack); n > 0 {
+		resolved = (*stack)[n-1]
+	}
+	el.LangResolved = resolved.tag
+	el.LangResolvedSet = resolved.set
+	*stack = append(*stack, resolved)
+	for _, item := range el.Items {
+		if child, ok := item.(*Element); ok {
+			resolveElementLang(child, stack)
+		}
+	}
+	*stack = (*stack)[:len(*stack)-1]
 }
 
 // ── Public parse / loads / dumps ──────────────────────────────────────────────
 
 // Parse parses a CX string into a Document using the binary wire protocol.
-func Parse(cxStr string) (*Document, error) {
-	data, err := ToAstBin(cxStr)
+func Parse(cxStr string, opts ...ParseOption) (*Document, error) {
+	po := parseOptions{}
+	for _, opt := range opts {
+		opt(&po)
+	}
+	var data []byte
+	var err error
+	if po.includeRoot != "" {
+		data, err = ToAstBinWithIncludeRoot(cxStr, po.includeRoot)
+	} else {
+		data, err = ToAstBin(cxStr)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1040,6 +1118,22 @@ func Parse(cxStr string) (*Document, error) {
 	}
 	ResolveNamespaces(doc)
 	return doc, nil
+}
+
+// ParseOption is a functional option for Parse.
+type ParseOption func(*parseOptions)
+
+type parseOptions struct {
+	includeRoot string
+}
+
+// WithIncludeRoot opts into the spec/include.md §1-§8 ?include
+// resolver (v0.7.0 GG4). The supplied path is the root directory
+// against which every [?cx include=path] in the source is resolved;
+// any escape past the root surfaces as cx-err:E902. Empty string is
+// equivalent to omitting the option (no resolution).
+func WithIncludeRoot(root string) ParseOption {
+	return func(po *parseOptions) { po.includeRoot = root }
 }
 
 // v3.4 (Phase 5 / CB-2): parse_<format> goes through cx_<format>_to_ast_bin

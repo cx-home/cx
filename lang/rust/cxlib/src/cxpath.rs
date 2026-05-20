@@ -22,6 +22,7 @@ pub fn elem_detached(e: &Element) -> Element {
         ns_uri: e.ns_uri.clone(),
         id: e.id.clone(),
         body_ref: e.body_ref.clone(),
+        lang_resolved: e.lang_resolved.clone(),
     }
 }
 
@@ -54,6 +55,7 @@ pub fn elem_replace_item_at(e: &Element, idx: usize, child: Node) -> Element {
         ns_uri: e.ns_uri.clone(),
         id: e.id.clone(),
         body_ref: e.body_ref.clone(),
+        lang_resolved: e.lang_resolved.clone(),
     }
 }
 
@@ -153,5 +155,6 @@ fn replace_in_element(el: &Element, path: &[usize], new_elem: Element) -> Elemen
         ns_uri: el.ns_uri.clone(),
         id: el.id.clone(),
         body_ref: el.body_ref.clone(),
+        lang_resolved: el.lang_resolved.clone(),
     }
 }

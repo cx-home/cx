@@ -176,6 +176,34 @@ Self-to-self conversions normalize the source. They are not format conversions.
 
 ---
 
+## 1.1 — Body-position references across formats *(v0.7.0)*
+
+CX's body-position reference form `[ref @id]` (ADR 0003 D1 second
+bullet) carries through the cross-format conversion matrix per the
+following rule:
+
+| Format | Representation |
+|---|---|
+| CX | `[ref @id]` (the source-text form; `Element.body_ref = "<id>"`) |
+| XML | `<ref cx:body-ref="<id>"/>` (round-trips: XML import reconstructs `Element.body_ref` from the `cx:body-ref` attribute) |
+| JSON / YAML / TOML / MD (semantic emit) | `{"$ref": "<id>"}` (JSON Pointer-style convention; lossy direction — these formats have no built-in syntactic reference primitive) |
+| AST JSON | `"bodyRef": "<id>"` (field on the Element AST record; round-trips through `ast_bin` v3 per `vcx/cx/binary.v:233`) |
+
+Cross-format-import (JSON / YAML / TOML / MD → CX) does NOT round-trip
+the `$ref` shape back to `[ref @id]` automatically at v0.7.0 — the
+semantic-emit direction is operator-facing (humans look at the output
+and recognize `$ref` as a reference) rather than machine-round-trip-
+authoritative. v0.7.x may add an import-side recognition of the
+`$ref` pattern if a use case surfaces; until then, the canonical
+round-trip happens through CX or XML.
+
+ID-declaration sites (`#id-1` in CX source / `xml:id="id-1"` in XML)
+appear on the declaring element as a regular attribute / XML
+identifier; the reference side is the only one that gets the special
+`$ref` representation in semantic-emit formats.
+
+---
+
 ## 2 — CX as input
 
 CX is the most expressive format. Converting from CX to any other format is the

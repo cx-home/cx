@@ -20,7 +20,9 @@ from .cx import (
     toml_to_data_bin_schema_driven, md_to_data_bin_schema_driven,
     csv_to_data_bin_schema_driven, tsv_to_data_bin_schema_driven,
     psv_to_data_bin_schema_driven, from_data_bin_schema_driven,
+    eval_cxl, eval_cxl_streaming,
 )
+from .binary import ast_bin as to_ast_bin
 from .streaming_table import TableReader, TableWriter
 from .table import Table
 from .event_writer import EventWriter

@@ -587,11 +587,30 @@ streaming Table API set this bit.
 
 ### 2.11 Apache Arrow C-Data interop (NEW in v0.6.0; separate library)
 
-Per.
 **`libcx_arrow`** is a separate dynamic library that links against
 both `libcx` and the Arrow C-Data ABI. Core `libcx` remains
 Arrow-free; consumers without Arrow needs do not pay the dependency
 cost.
+
+**Arrow C Data Interface version targeted.** cx implements the
+Arrow C Data Interface as specified at
+<https://arrow.apache.org/docs/format/CDataInterface.html>. The
+struct layout (`ArrowSchema`, `ArrowArray`, `ArrowArrayStream`) has
+been stable since Arrow 4.0 (2021); cx targets that ABI contract,
+not any particular Arrow library release. The four shipped bindings
+have been tested against:
+
+| Binding | Arrow library + version |
+|---|---|
+| Python | `pyarrow` ≥ 10.0 (via `cffi` C-Data bridge) |
+| Go | `github.com/apache/arrow/go/v18` v18.0.0 |
+| Rust | `arrow` crate ≥ 50.0 (the `arrow::ffi_stream` module) |
+| TypeScript | `apache-arrow` JS — bridge via Arrow IPC bytes; C Data Interface bridge is not feasible from V8 |
+
+Compatibility window: any Arrow library that implements the Arrow
+C Data Interface spec is compatible. If a future Arrow spec
+revision changes the struct layout, cx will bump the
+`libcx_arrow` shared-library SONAME and document the break here.
 
 ```c
 /* Export: CXDB chunked-table → Arrow ArrowArrayStream.
@@ -898,12 +917,12 @@ output (or `W012` for v0.6.0-out-of-scope CXL 3.1+ syntax,
 
 ```c
 /* One-shot: evaluate a CXL program against a CX input, return output bytes. */
-char* cx_eval_cxl (const char* cx_input,
+char* cx_eval (const char* cx_input,
  const char* cxl_program,
  const char* output_target,
  char** err_out);
 
-char* cx_eval_cxl_with_len (const char* cx_input, size_t cx_len,
+char* cx_eval_with_len (const char* cx_input, size_t cx_len,
  const char* cxl_program, size_t prog_len,
  const char* output_target,
  char** err_out);
@@ -913,7 +932,7 @@ char* cx_eval_cxl_with_len (const char* cx_input, size_t cx_len,
  * API (§2.15) for memory-bounded evaluation of multi-GB inputs. */
 typedef int (*cx_eval_write_cb)(const char* bytes, size_t n, void* user);
 
-char* cx_eval_cxl_streaming (const char* cx_input,
+char* cx_eval_streaming (const char* cx_input,
  const char* cxl_program,
  const char* output_target,
  cx_eval_write_cb write_cb,
@@ -935,7 +954,7 @@ W-codes defined for the CXL surface:
 | Code | Meaning |
 |-------|---------|
 | `W012`| CXL evaluator not implemented (v0.6.0 stub return) |
-| `W013-W019` | Reserved for the CXL 1.0 evaluator (unbound variable, bad CXPath inside program, type mismatch, recursive include, future-CXL-version EvalName at older evaluator, etc.); finalized in `spec/cxl.md §2.5` at CX release v0.6.0 |
+| `W013-W019` | Reserved for the CXL 1.0 evaluator (unbound variable, bad CXPath inside program, type mismatch, recursive include, future-CXL-version EvalName at older evaluator, etc.); finalized in `spec/eval.md §2.5` at CX release v0.6.0 |
 
 Three symbols total (2 one-shot + 1 streaming). All three are class
 **P** (pure, thread-safe) per [§1.5.1](#151-per-symbol-thread-safety-classes)
@@ -949,6 +968,32 @@ versions export the symbols but leave the bit unset. Bindings MUST
 query the bit before invoking the symbols and surface "CXL evaluator
 not available" to callers when the bit is unset (e.g., older libcx
 loaded by a newer binding).
+
+**v0.7.0 widening (EE3 per [ADR 0023](decisions/0023-cx-self-host-module-and-extension-interface.md)
+Amendment #2 R2).** At v0.7.0 the semantics of bit 28 are widened
+from "CXL 1.0 evaluator present" to "full DD/EE/FF self-host surface
+present." A v0.7.0+ libcx that sets bit 28 commits to **all** of the
+following, exhaustively:
+
+- The 23-function `cx:` module per [`spec/modules/cx.md`](modules/cx.md) (DD1–DD22)
+- The 7-function `log:` module per [`spec/modules/log.md`](modules/log.md) (FF1–FF7) plus its three `[?cx log-*=...]` directives
+- The `ModuleSpec` catalog (EE1) exposed through `inspect:module-available` / `inspect:module-version` / `inspect:functions`
+- The `[?cx use-module=...]` activation directive (EE2)
+- The Pure / ReadOnly / SideEffect classification with `[?cx pure-only]` enforcement (EE4)
+- The five `cx:eval` mitigations (M1–M5 per ADR 0023 §D6) with the
+  `cx-err:CXER0040..0044` error codes
+- The `EvaluatorHook` signature (EE7) reserved for v0.8.0+ debug
+  adapters (signature stability through 1.0; no external registration
+  surface yet)
+
+A binding that ships *some but not all* of DD/EE/FF leaves bit 28
+clear and routes through the v0.6.0 compatibility shim path. There
+is no partial-credit advertisement at v0.7.0 — bit 28 is the all-or-
+nothing surface commitment. The bit-budget rationale for not
+allocating per-module bits is in ADR 0023 §D4-revised: per-module
+discovery happens at the cxl level via the `inspect:` surface, which
+gives v0.8.0 BaseX-class modules a discovery story without burning
+ABI bits.
 
 ---
 
@@ -988,7 +1033,7 @@ features the loaded library does not implement.
 | 25 | 0x2000000 | Schema validator (`cx_validate` / `cx_validate_apply_defaults` plus `_with_len` variants per [§2.13](#213-schema-validator-new-in-v060), + [`spec/schema.md §10`](schema.md)) — v0.6.0+. Includes RE2-backed `:pat=` pattern matching (S008 rule); pattern-engine semantics are normative cross-binding because every binding routes through `cx_validate`. |
 | 26 | 0x4000000 | Thread-init handshake ([§1.5.5](#155-thread-init-handshake)): `cx_init` / `cx_thread_register` / `cx_thread_unregister` — v0.6.0+. Required for bindings whose host runtime spawns OS threads outside V's control (Rust, C#, Java); cheap and harmless on every other binding. |
 | 27 | 0x8000000 | Streaming-write API (`cx_events_writer_*` per [§2.15](#215-streaming-write-api-new-in-v060), [`spec/streaming.md §6`](streaming.md), ) — v0.6.0+. 21 C ABI symbols (4 lifecycle + 17 emit) covering 14 stream events × 6 output formats with emit-time validation. (Originally 25 symbols including 4 `_shaped` open variants for composition; the `_shaped` variants and the W011 stub paths were removed 2026-05-10 when was superseded by . CXL is the only output-shape mechanism — see bit 28 / §2.16.) |
-| 28 | 0x10000000 | CXL evaluator (`cx_eval_cxl` + `cx_eval_cxl_with_len` + `cx_eval_cxl_streaming` per [§2.16](#216-cxl-evaluator-new-in-v060-cxl-10-evaluator-pulled-forward-2026-05-10), [`spec/cxl.md`](cxl.md), ) — v0.6.0+. The CX parser recognizes the `[?=EXPR]` Interpolation form, the `[?Name ...]` EvalDirective form, and `BracketBody` attribute values D3. The CXL 1.0 evaluator was pulled forward from v0.7.0 in the 2026-05-10 amendment to when it became the sole output-shape mechanism. A v0.6.0 libcx that ships the CXL 1.0 evaluator sets this bit to 1. |
+| 28 | 0x10000000 | CXL evaluator (`cx_eval` + `cx_eval_with_len` + `cx_eval_streaming` per [§2.16](#216-cxl-evaluator-new-in-v060-cxl-10-evaluator-pulled-forward-2026-05-10), [`spec/eval.md`](cxl.md), ) — v0.6.0+. The CX parser recognizes the `[?=EXPR]` Interpolation form, the `[?Name ...]` EvalDirective form, and `BracketBody` attribute values D3. The CXL 1.0 evaluator was pulled forward from v0.7.0 in the 2026-05-10 amendment to when it became the sole output-shape mechanism. A v0.6.0 libcx that ships the CXL 1.0 evaluator sets this bit to 1. **v0.7.0 widens semantics** (EE3 per [ADR 0023](decisions/0023-cx-self-host-module-and-extension-interface.md) Amendment #2 R2): bit 28 set on a v0.7.0+ libcx commits to the full DD/EE/FF self-host surface — 23-function `cx:` module ([`spec/modules/cx.md`](modules/cx.md)), 7-function `log:` module ([`spec/modules/log.md`](modules/log.md)) plus three `[?cx log-*=...]` directives, `ModuleSpec` catalog exposed through `inspect:`, `[?cx use-module=...]` activation, `[?cx pure-only]` Pure/ReadOnly/SideEffect enforcement, `cx:eval` five-mitigation enforcement (M1–M5 with `cx-err:CXER0040..0044`), and `EvaluatorHook` signature reservation. Partial-DD/EE/FF bindings leave bit 28 clear. Per-module presence in user code goes through `inspect:` at the cxl level, not separate ABI bits — see §1.5 narrative for the bit-budget rationale. |
 | 29 | 0x20000000 | Collection literals + CXDM v1.1 — v0.6.0+. Signals support for the three new container Item kinds (Array `[a, b, c]`, Map `{k: v}`, Sequence `(a, b, c)`) across parser ([`spec/grammar.ebnf §[56]`](grammar.ebnf)), AST ([`spec/ast.md`](ast.md)), ast_bin v6 ([`spec/ast_bin.md`](ast_bin.md)), all six emitters §D12, CXL evaluator under refactored directive syntax §D7, CXPath union / array indexing / map key access §D13, and schema validator under `seq[T]` / `arr[T]` / `map[K, V]` productions §D15. ** §D23–D25 (labeled directive form) is parser-only and signaled by this same bit 29** — no separate capability is needed since the AST / ast_bin / canonical / evaluator are unchanged by labeled-form parsing (it desugars to the same positional AST). The bit is set only when ALL of the surface components are implemented; partial implementations leave the bit clear. v0.6.0 libcx sets bit 29 once the Phase 2–4 implementation lands (per §Migration plan); v0.5.x libcx must leave it clear and reject any ast_bin payload with version byte ≥ 6. |
 | 30 | 0x40000000 | Parameterized templates — v0.6.0+. Signals **evaluator-side** support for `?def`'s 3-slot positional form `[?def [name, params, body]]` (per §D7 amendment 2026-05-12) and the labeled-form `:params` slot §D23. Required behavior: lexical-scope evaluator frames binding parameter names within the `body` slot; positional invocation `[?template-name arg1 arg2]` binds args to params; W018 emission on argument-count mismatch; legacy 2-slot `[?def [name, body]]` auto-expanded to 3-slot with `params=[]` at parse time. **No ast_bin or AST shape change** — params lives in the existing ArgArray slot 1 as a regular ArrayNode of identifiers; v6.0 wire format round-trips it natively. Independent of bit 29: a binding may advertise bit 29 (collection literals + §D7 + §D23 parser) without bit 30 (parameter-binding evaluator). Such a binding parses the 3-slot `?def` form (and `:params` desugars to slot 1) but errors at evaluation when params is non-empty (W018-adjacent runtime error). v0.6.0 libcx sets bit 30 once Phase B–D land (V evaluator + 10-binding fan-out + conformance fixtures pass). |
 | 31-63 | reserved | (set to 0) |
@@ -1004,6 +1049,19 @@ collection literals are core-library features) and bit 23
 conditionally (set iff `libcx_arrow` is linked into the runtime).
 Bit 29 is added once the Phase 2–4 implementation
 completes; v0.6.0 ships will not be tagged until then.
+
+**v0.7.0 reuses bits 28 and 30 with widened semantics** rather than
+allocating new bits. Bit 28 widens from "CXL 1.0 evaluator" to "full
+DD/EE/FF self-host surface" per the §2.16 narrative above (EE3 / ADR
+0023 Amendment #2 R2). Bit 30 already covers parameterized templates;
+the v0.7.0 first-class function value type (A19 / A20 / A21 `?fn`)
+ships under the same bit because parameter-binding semantics are the
+load-bearing surface for both — a binding that sets bit 30 at v0.7.0
+commits to both the `?def`-with-params shape and the `?fn` value
+shape. v0.7.0 adds no new capability bits at v0.7.0 tag time; the
+~32 bits remaining (31 plus 32–63) stay reserved for v0.8.0+ module
+families (per ADR 0023 §D4-revised, per-module presence is queried
+at the cxl level via `inspect:`, not at the ABI level).
 
 **Pattern-engine centralisation (bit 25).** The schema validator's
 `:pat=` constraint (S008) routes every match decision through

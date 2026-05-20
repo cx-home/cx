@@ -12,8 +12,11 @@ pub mod table;
 #[cfg(feature = "arrow")]
 pub mod arrow;
 
+#[cfg(feature = "parquet")]
+pub mod parquet;
+
 use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int, c_void};
 use std::ptr;
 
 // ── C declarations ─────────────────────────────────────────────────────────────
@@ -28,6 +31,7 @@ extern "C" {
     // -1 on real failure.
     fn cx_init() -> std::os::raw::c_int;
     fn cx_thread_register() -> std::os::raw::c_int;
+    fn cx_thread_unregister() -> std::os::raw::c_int;
 
     fn cx_free(s: *mut c_char);
     fn cx_version() -> *mut c_char;
@@ -43,11 +47,21 @@ extern "C" {
     fn cx_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
-    // CXL evaluator (capability bit 28; spec/cxl.md)
-    fn cx_eval_cxl(
+    // CXL evaluator (capability bit 28; spec/eval.md)
+    fn cx_eval(
         input: *const c_char,
         program: *const c_char,
         output_target: *const c_char,
+        err_out: *mut *mut c_char,
+    ) -> *mut c_char;
+
+    // Streaming evaluator (v0.7.0 Y-row; spec/eval.md §6 + spec/v0_7_0_status.md Y)
+    fn cx_eval_streaming(
+        input: *const c_char,
+        program: *const c_char,
+        output_target: *const c_char,
+        write_cb: extern "C" fn(*const c_char, usize, *mut c_void) -> c_int,
+        user: *mut c_void,
         err_out: *mut *mut c_char,
     ) -> *mut c_char;
 
@@ -98,6 +112,9 @@ extern "C" {
 
     // Binary output (CX input only)
     fn cx_to_ast_bin   (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
+    fn cx_to_ast_bin_with_include_root(
+        input: *const c_char, include_root: *const c_char, err_out: *mut *mut c_char,
+    ) -> *mut c_char;
     fn cx_to_events_bin(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // CXPath path-tracking C ABI (Phase 4 / CB-5).
@@ -158,19 +175,31 @@ pub(crate) unsafe fn free_libcx_string(ptr: *mut c_char) {
 /// thread that wasn't spawned by V's runtime (cargo test workers,
 /// rayon workers, application thread pools, etc.). Calling on a thread
 /// that doesn't strictly need it is a no-op at libgc level.
+///
+/// Registration is auto-released at thread exit via a thread-local
+/// `Drop` guard — Boehm GC would otherwise retain the now-dead pthread
+/// in its tracked-thread list and abort with "thread_suspend failed"
+/// the next time the GC marker tried to stop the world (manifests
+/// quickly under cargo's `--test-threads=1` test harness, which spawns
+/// a fresh worker per test).
+struct ThreadGuard;
+impl Drop for ThreadGuard {
+    fn drop(&mut self) {
+        unsafe { cx_thread_unregister(); }
+    }
+}
+
 #[inline]
 pub(crate) fn ensure_thread() {
     static INIT: std::sync::Once = std::sync::Once::new();
     INIT.call_once(|| { unsafe { cx_init(); } });
     thread_local! {
-        static REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-    }
-    REGISTERED.with(|c| {
-        if !c.get() {
+        static GUARD: ThreadGuard = {
             unsafe { cx_thread_register(); }
-            c.set(true);
-        }
-    });
+            ThreadGuard
+        };
+    }
+    GUARD.with(|_| ());
 }
 
 // ── Phase 5 helpers ──────────────────────────────────────────────────────────
@@ -414,6 +443,24 @@ pub(crate) fn call_bin(input: &str, func: &str) -> Result<Vec<u8>, String> {
             other => return Err(format!("unknown binary function: {}", other)),
         }
     };
+    extract_bin_payload(raw_ptr, err_ptr)
+}
+
+/// call_bin_with_include_root: parse + resolve includes via the
+/// spec/include.md §1-§8 engine (v0.7.0 GG4). Empty include_root is
+/// a no-op equivalent to call_bin(input, "cx_to_ast_bin").
+pub(crate) fn call_bin_with_include_root(input: &str, include_root: &str) -> Result<Vec<u8>, String> {
+    ensure_thread();
+    let c_input = CString::new(input).map_err(|e| e.to_string())?;
+    let c_root = CString::new(include_root).map_err(|e| e.to_string())?;
+    let mut err_ptr: *mut c_char = ptr::null_mut();
+    let raw_ptr: *mut c_char = unsafe {
+        cx_to_ast_bin_with_include_root(c_input.as_ptr(), c_root.as_ptr(), &mut err_ptr)
+    };
+    extract_bin_payload(raw_ptr, err_ptr)
+}
+
+fn extract_bin_payload(raw_ptr: *mut c_char, err_ptr: *mut c_char) -> Result<Vec<u8>, String> {
     if raw_ptr.is_null() {
         if err_ptr.is_null() {
             return Err("unknown error".to_owned());
@@ -422,7 +469,6 @@ pub(crate) fn call_bin(input: &str, func: &str) -> Result<Vec<u8>, String> {
         unsafe { cx_free(err_ptr) };
         return Err(msg);
     }
-    // Read the 4-byte length prefix then copy payload bytes.
     let payload = unsafe {
         let hdr = std::slice::from_raw_parts(raw_ptr as *const u8, 4);
         let size = u32::from_le_bytes([hdr[0], hdr[1], hdr[2], hdr[3]]) as usize;
@@ -650,10 +696,10 @@ pub fn eval_cxl(input: &str, program: &str, output_target: &str) -> Result<Strin
     let cp = CString::new(program).map_err(|e| e.to_string())?;
     let ct = CString::new(output_target).map_err(|e| e.to_string())?;
     let mut err_ptr: *mut c_char = ptr::null_mut();
-    let out = unsafe { cx_eval_cxl(ci.as_ptr(), cp.as_ptr(), ct.as_ptr(), &mut err_ptr) };
+    let out = unsafe { cx_eval(ci.as_ptr(), cp.as_ptr(), ct.as_ptr(), &mut err_ptr) };
     if out.is_null() {
         if err_ptr.is_null() {
-            return Err("cx_eval_cxl: unknown error".to_owned());
+            return Err("cx_eval: unknown error".to_owned());
         }
         let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
         unsafe { cx_free(err_ptr) };
@@ -662,6 +708,80 @@ pub fn eval_cxl(input: &str, program: &str, output_target: &str) -> Result<Strin
     let s = unsafe { CStr::from_ptr(out).to_string_lossy().into_owned() };
     unsafe { cx_free(out) };
     Ok(s)
+}
+
+/// Evaluate a CXL program with pull-based incremental output (v0.7.0
+/// Y-row). `on_chunk` is invoked with each output chunk as a `&[u8]`;
+/// returning `Err(_)` aborts evaluation cleanly.
+///
+/// The user closure is passed through `cx_eval_streaming`'s `user`
+/// pointer wrapped as a `*mut dyn FnMut`. The exported trampoline
+/// `rust_stream_trampoline` unwraps and dispatches per chunk.
+pub fn eval_cxl_streaming<F>(
+    input: &str,
+    program: &str,
+    output_target: &str,
+    mut on_chunk: F,
+) -> Result<(), String>
+where
+    F: FnMut(&[u8]) -> Result<(), String>,
+{
+    ensure_thread();
+    let ci = CString::new(input).map_err(|e| e.to_string())?;
+    let cp = CString::new(program).map_err(|e| e.to_string())?;
+    let ct = CString::new(output_target).map_err(|e| e.to_string())?;
+    let mut err_ptr: *mut c_char = ptr::null_mut();
+    let mut state: StreamState = StreamState {
+        cb: &mut on_chunk as &mut dyn FnMut(&[u8]) -> Result<(), String>,
+        captured_err: None,
+    };
+    let user_ptr = &mut state as *mut StreamState as *mut c_void;
+    unsafe {
+        cx_eval_streaming(
+            ci.as_ptr(),
+            cp.as_ptr(),
+            ct.as_ptr(),
+            rust_stream_trampoline,
+            user_ptr,
+            &mut err_ptr,
+        );
+    }
+    if !err_ptr.is_null() {
+        let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
+        unsafe { cx_free(err_ptr) };
+        return Err(msg);
+    }
+    if let Some(e) = state.captured_err {
+        return Err(e);
+    }
+    Ok(())
+}
+
+struct StreamState<'a> {
+    cb: &'a mut dyn FnMut(&[u8]) -> Result<(), String>,
+    captured_err: Option<String>,
+}
+
+extern "C" fn rust_stream_trampoline(
+    bytes: *const c_char,
+    n: usize,
+    user: *mut c_void,
+) -> c_int {
+    if user.is_null() {
+        return 1;
+    }
+    let state = unsafe { &mut *(user as *mut StreamState) };
+    if state.captured_err.is_some() {
+        return 1;
+    }
+    let slice = unsafe { std::slice::from_raw_parts(bytes as *const u8, n) };
+    match (state.cb)(slice) {
+        Ok(()) => 0,
+        Err(e) => {
+            state.captured_err = Some(e);
+            1
+        }
+    }
 }
 
 /// Find the element declaring `#id` in `input`. Returns the AST-JSON

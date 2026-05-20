@@ -233,6 +233,7 @@ Shapes:
 | `map[K, V]` *(v1.1)* | CXDM Map Item with K-typed keys, V-typed values §D15 (K restricted to atomic Scalars per `spec/cxdm.md §2.5`) | `[config {name: 'svc'}]` |
 | `:elem` | child elements only, no text | `[book [chapter ...]]` |
 | `:mixed` | text + child elements | `[para See [b above]]` |
+| `:ref` *(v0.7.0)* | body-position reference per ADR 0003 D1 second bullet — the element's body MUST be the `[<name> @<id>]` body-position form (i.e., `Element.body_ref` is set; `Element.items` is empty) | `[para See [ref @s-3] for details]` |
 | `:any` | no body shape constraint | any |
 
 **v1.1 collection-type productions (per §D15).** The

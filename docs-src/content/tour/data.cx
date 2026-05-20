@@ -1,0 +1,368 @@
+[- Tour: 50 Ways to Love Your CX Data — ported from docs/archive/50-ways-data.md.
+   A guided tour of CX data forms, simple to complex, in 50 examples. -]
+[page id='tour-data'
+  [meta
+    title='50 Ways to Love Your CX Data'
+    layout='reference'
+    nav-order='150'
+    audience='evaluator,learner'
+    summary='Fifty short CX data examples, simple to complex. Pizzeria edition.'
+  ]
+
+  [section id='intro' title='Read This First'
+    [prose Fifty examples that walk through CX data — bare attributes through anchors and merge, with stops at quoted strings, multi-line text, comments, collection literals, typed columns, and a final whole-shop document. Each step adds one shape; no shape requires anything the earlier ones do not already give you. The companion 50 Ways to Love Your CXL Code covers CXL directives.]
+  ]
+
+  [section id='atom' title='1. The Atom'
+    [prose Just name equals value. In CX this is a valid document on its own — logfmt mode, intended for log lines and structured events.]
+    [code lang='cx' src='size=large']
+  ]
+
+  [section id='atoms' title='2. Several Atoms — a One-Line Event'
+    [prose A whole log line — no brackets, no root, just attributes.]
+    [code lang='cx' src='time=2026-05-09T12:00:00Z level=INFO svc=oven pizza=Margherita']
+  ]
+
+  [section id='empty' title='3. Empty Element'
+    [prose Brackets give a name. Empty, but a thing.]
+    [code lang='cx' src='[pizza]']
+  ]
+
+  [section id='one-attr' title='4. Element With One Property'
+    [prose The atom from example 1, now attached to a pizza.]
+    [code lang='cx' src='[pizza size=large]']
+  ]
+
+  [section id='multi-attr' title='5. Several Properties'
+    [prose Keep adding. No commas required between attrs.]
+    [code lang='cx' src='[pizza size=large crust=thin price=12]']
+  ]
+
+  [section id='flag' title='6. Bare Flag (No Equals-Value)'
+    [prose Presence means yes, absence means no — same idea as --verbose or HTMLs required. Here, this pizza is controversial.]
+    [code lang='cx' src='[pizza name=Hawaiian controversial]']
+  ]
+
+  [section id='bool' title='7. Explicit Boolean Values'
+    [prose When you want both polarities, write the word.]
+    [code lang='cx' src='[pizza vegan=true gluten-free=false]']
+  ]
+
+  [section id='bool-sigil' title='8. Boolean Sigil Shorthand'
+    [prose Plus-name means name=true; minus-name means name=false. Compact form for many booleans.]
+    [code lang='cx' src='[pizza +vegan -nuts -gluten]']
+  ]
+
+  [section id='numbers' title='9. Numbers — Int, Decimal, Negative, Hex, Underscores'
+    [prose All bare, all auto-typed. Underscores in numbers are readability sugar.]
+    [code lang='cx' src='[pizza price=12.50 discount=-2 ovens=4 mask=0xFF00FF batch=1_000_000]']
+  ]
+
+  [section id='single-q' title='10. Quoted — Single Quotes'
+    [prose Reads: attribute name, value is the string BBQ Chicken.]
+    [code lang='cx' src="[pizza name='BBQ Chicken']"]
+  ]
+
+  [section id='double-q' title='11. Quoted — Double Quotes'
+    [prose Pick the quote that does not appear in the value.]
+    [code lang='cx' src='[pizza name="Quattro Formaggi"]']
+  ]
+
+  [section id='mix-q' title='12. Mix When the Value Has an Apostrophe'
+    [prose Double-quote around an apostrophe; no escaping needed.]
+    [code lang='cx' src='[pizza name="Tonys Special"]']
+  ]
+
+  [section id='empty-string' title='13. The Empty String'
+    [prose Distinct from missing: the attribute is there, just empty.]
+    [code lang='cx' src='[pizza name=Mystery description=""]']
+  ]
+
+  [section id='escape' title='14. Escape Sequences Inside Quotes'
+    [prose Same family as C and JSON: backslash-n, backslash-r, backslash-t, backslash-uXXXX, backslash-quote, backslash-backslash.]
+    [code lang='cx' src="[pizza alert='Hot!\\nHandle with care.\\tCafe e']"]
+  ]
+
+  [section id='entity' title='15. Entity References (XML-Style)'
+    [prose Ampersand-amp-semicolon, ampersand-lt-semicolon, ampersand-gt-semicolon work as in XML. Useful when a literal ampersand would confuse the parser.]
+    [code lang='cx' src="[pizza name='Cheese &amp; Pepper' note='use &lt;tongs&gt;']"]
+  ]
+
+  [section id='null' title='16. Null'
+    [prose A real null value, distinct from empty string or the word null as a string.]
+    [code lang='cx' src='[pizza discount=null reviewed=null]']
+  ]
+
+  [section id='dates' title='17. Date and Datetime Literals'
+    [prose ISO 8601 shapes are auto-typed as date or datetime.]
+    [code lang='cx' src='[promo starts=2026-05-01 ends=2026-05-31 cutoff=2026-05-31T23:59:00Z]']
+  ]
+
+  [section id='text-body' title='18. Plain Text Body'
+    [prose After the name, the rest of the bracket is text.]
+    [code lang='cx' src='[motto Hand-tossed since 1987]']
+  ]
+
+  [section id='attrs-then-body' title='19. Attributes Plus Text Body'
+    [prose Reads: element pizza, attribute name=Margherita, then text body Classic since day one.]
+    [code lang='cx' src='[pizza name=Margherita Classic since day one.]']
+  ]
+
+  [section id='multi-line-text' title='20. Multi-Line Text — Preserved as Written'
+    [prose Whitespace and newlines inside a text body are kept literally.]
+    [code lang='cx' src='''[description
+  Stone-baked, hand-stretched,
+  and ready in 90 seconds.]''']
+  ]
+
+  [section id='triq' title='21. Triple-Quoted String'
+    [prose Three quotes open and close. Single and double quotes inside need no escaping. Common leading whitespace is stripped.]
+    [code lang='cx' src="[bio '''
+  Born in Naples, 1955.
+  Started Pepes in 1987.
+  Still on the line every Friday.
+''']"]
+  ]
+
+  [section id='block' title='22. Block Content [| … ]'
+    [prose Like a text body, but indentation and newlines are kept verbatim. Unlike triple-quoted, inner elements such as [em best] are still real markup.]
+    [code lang='cx' src='''[poem [|
+  Roses are red,
+    violets are blue,
+  the [em best] pizza
+    is waiting for you.
+]]''']
+  ]
+
+  [section id='raw' title='23. Raw Text [# … #]'
+    [prose The CDATA of CX. Brackets, quotes, less-than, greater-than — all literal characters. The terminator is hash-bracket.]
+    [code lang='cx' src='[snippet [# if (x < 10) { return "[pizza]"; } #]]']
+  ]
+
+  [section id='embedded' title='24. Embedded Code in Another Language'
+    [prose Raw text is how you embed SQL, JS, or regex without escaping every quote.]
+    [code lang='cx' src='''[query language=sql [#
+  SELECT name, price FROM pizza
+  WHERE price < 15 AND vegan = true;
+#]]''']
+  ]
+
+  [section id='line-comment' title='25. Line Comment'
+    [prose Hash comments out the rest of the line. Lives outside elements, like a script header.]
+    [code lang='cx' src='''# weekend special — pulled Monday
+[pizza name=TruffleSpecial price=24]''']
+  ]
+
+  [section id='inline-comment' title='26. Inline Block Comment'
+    [prose Element-shaped — fits inside brackets where hash cannot reach.]
+    [code lang='cx' src='[pizza name=Diavola [- TODO confirm price ] price=14]']
+  ]
+
+  [section id='multi-comment' title='27. Multi-Line Block Comment'
+    [prose Canonical for multi-line notes.]
+    [code lang='cx' src='''[-
+  Pricing review:
+    - Diavola: bump to 16?
+    - Hawaiian: hold at 14
+]''']
+  ]
+
+  [section id='comment-choice' title='28. When to Use Which'
+    [prose Hash for line-scoped headers; [- … ] when the comment must nest inside an element or span lines. Not HTMLs less-than-bang form — CX has its own.]
+    [code lang='cx' src='''# top-of-file header
+[shop [- inline aside on this branch ] port=8080]''']
+  ]
+
+  [section id='nest' title='29. Nesting'
+    [prose Brackets inside brackets.]
+    [code lang='cx' src='[pizza name=Margherita [base tomato]]']
+  ]
+
+  [section id='siblings' title='30. Siblings'
+    [prose Same shape, side by side. No separators required.]
+    [code lang='cx' src='[pizza [topping cheese] [topping basil] [topping oil]]']
+  ]
+
+  [section id='mixed' title='31. Inline Prose With Markup'
+    [prose Prose and tags interleave freely. The same shapes you would write in HTML.]
+    [code lang='cx' src='[note Try the [b Margherita] — our [em best seller], hand-tossed [strong daily].]']
+  ]
+
+  [section id='article' title='32. A Whole Article — Prose and Data'
+    [prose Headings, paragraphs, links, emphasis — CX handles document text as cleanly as XML.]
+    [code lang='cx' src='''[article
+  [h1 Pepes Story]
+  [p Founded in [em 1987]. See the [a href=/menu menu].]
+  [p Still [strong hand-tossing] every pie.]]''']
+  ]
+
+  [section id='deep-nest' title='33. Deeper Nesting — Children With Their Own Data'
+    [prose Each child carries its own attributes.]
+    [code lang='cx' src='''[pizza name=Quattro
+  [topping cheese price=2]
+  [topping ham    price=3]
+  [topping olives price=2]]''']
+  ]
+
+  [section id='multi-top' title='34. Multiple Top-Level Elements (No Required Root)'
+    [prose A document can be a flat list.]
+    [code lang='cx' src='''[pizza name=Margherita]
+[pizza name=Hawaiian]
+[pizza name=Diavola]''']
+  ]
+
+  [section id='multi-doc' title='35. Multi-Document File'
+    [prose One file, several independent documents. Same separator as YAML — three dashes on a line by themselves between documents.]
+    [code lang='shell' src="cat file.cx
+# [menu [pizza name=Margherita]]
+# (three dashes)
+# [menu [pizza name=Hawaiian]]"]
+  ]
+
+  [section id='seq' title='36. Sequence (a, b, c) — Flat List'
+    [prose Reads: attribute toppings, value is the sequence of three strings.]
+    [code lang='cx' src='[pizza toppings=(cheese, basil, oil)]']
+  ]
+
+  [section id='array' title='37. Array [a, b, c] — Nested List'
+    [prose Arrays preserve structure; sequences flatten. Use arrays when nesting matters.]
+    [code lang='cx' src='[grid cells=[1, 2, 3]]']
+  ]
+
+  [section id='nested-array' title='38. Nested Arrays'
+    [prose A matrix is just an array of arrays.]
+    [code lang='cx' src='''[board cells=[[1, 0, 1],
+              [0, 1, 0],
+              [1, 0, 1]]]''']
+  ]
+
+  [section id='map' title='39. Map {k: v} — Named Key to Value'
+    [prose Reads: attribute prices, value is a map with three entries.]
+    [code lang='cx' src='[pizza prices={small: 9, medium: 12, large: 15}]']
+  ]
+
+  [section id='body-coll' title='40. Collections in Body Position'
+    [prose Sequences, arrays, and maps can sit inside an element body too.]
+    [code lang='cx' src='''[favorites
+  (Margherita, Hawaiian, Diavola)]''']
+  ]
+
+  [section id='mixed-coll' title='41. Mixed-Shape Composition'
+    [prose Map of sequences, multi-line. Compose freely.]
+    [code lang='cx' src='''[stats {
+  monday: (12, 8, 14),
+  tuesday: (10, 9, 11),
+  wednesday: (15, 11, 18)
+}]''']
+  ]
+
+  [section id='typed-body' title='42. Explicit Type Annotation'
+    [prose Colon-type after the name pins the bodys type, overriding auto-typing.]
+    [code lang='cx' src='''[count :int 42]
+[ratio :decimal 3.14159]''']
+  ]
+
+  [section id='typed-array' title='43. Typed Array as Body'
+    [prose Colon-int-brackets for typed; colon-brackets for inferred (string array here).]
+    [code lang='cx' src='''[oven-temps :int[] 220 240 260 480]
+[tags :[] cheap fast tasty]''']
+  ]
+
+  [section id='table' title='44. Plain Table — Header Plus Rows'
+    [prose The colon-table form declares column names in brackets. Each line below is a row.]
+    [code lang='cx' src='''[menu :table[name size price]
+  Margherita medium 12
+  Hawaiian   large  14
+  Diavola    medium 13
+]''']
+  ]
+
+  [section id='typed-table' title='45. Typed Columns'
+    [prose Each column can carry a colon-type. Cells parse accordingly.]
+    [code lang='cx' src='''[orders :table[item:string qty:int paid:bool when:date]
+  Margherita 2 true  2026-05-09
+  Hawaiian   1 false 2026-05-09
+]''']
+  ]
+
+  [section id='table-null' title='46. Quoted Cells and Nulls'
+    [prose Quote cells with spaces. null is a real null in the cell.]
+    [code lang='cx' src="[shifts :table[cook hours:int notes]
+  Pepe       8 morning
+  Maria      6 'closing crew'
+  'Jean-Luc' 4 null
+]"]
+  ]
+
+  [section id='anchor' title='47. Anchor and Alias'
+    [prose Ampersand-classic names this element; bracket-asterisk-classic drops a full copy in.]
+    [code lang='cx' src='''[pizza &classic name=Margherita price=12 [base tomato]]
+[menu [*classic] [*classic]]''']
+  ]
+
+  [section id='merge' title='48. Merge With Overrides'
+    [prose Asterisk-classic inherits the anchors attrs and children; overrides apply on top.]
+    [code lang='cx' src='''[pizza &classic name=Margherita price=12 [base tomato]]
+[pizza *classic name=ClassicXL size=large price=16]''']
+  ]
+
+  [section id='recipe' title='49. A Recipe — Prose, Data, Table, All Together'
+    [prose Tabular ingredients, prose steps with inline markup, multi-line notes — all in one document, one syntax.]
+    [code lang='cx' src="[recipe name=Margherita serves=2
+  [ingredients :table[item amount:string]
+    flour      300g
+    water      200ml
+    yeast      2g
+    'San Marzano tomato' 150g
+    mozzarella 120g
+    basil      'a handful']
+  [steps
+    [step Mix the dough and rest [em 24 hours] cold.]
+    [step Stretch by hand — no rolling pin.]
+    [step Bake at [strong 480 degrees] for 90 seconds.]]
+  [notes '''
+    A wetter dough gives a softer cornicione.
+    Do not skip the cold rest.
+  ''']]"]
+  ]
+
+  [section id='whole-shop' title='50. The Whole Shop'
+    [prose XML decl, anchor, sigil flags, line comment, block comment, typed table, merged child, map and sequence attribute values, triple-quoted text. One syntax, everywhere.]
+    [code lang='cx' src="[?xml version=1.0 encoding=UTF-8]
+[shop &flagship name='Pepes' port=8080 +open
+  # opening hours
+  [hours mon-fri=11-22 sat=12-23 sun=closed]
+  [- menu reviewed 2026-05-01 ]
+  [menu :table[name:string size price:decimal vegan:bool]
+    Margherita medium 12.00 true
+    Hawaiian   large  14.00 false
+    Diavola    medium 13.00 false]
+  [staff [cook &lead name=Pepe shift=morning +founder]
+         [cook *lead name=Maria shift=closing -founder]]
+  [contact
+    address='123 Forno Lane'
+    coords={lat: 40.8518, lon: 14.2681}
+    phones=('+39 555 0101', '+39 555 0102')]
+  [tagline '''
+    Hand-tossed since 1987.
+    Still tossing.
+  ''']]"]
+  ]
+
+  [section id='arc' title='The Arc'
+    [prose Bare attribute then element then strings then text bodies then comments then structure then collections then typed arrays then tables then anchors then the whole shop. Every step adds one shape; no shape requires anything the earlier ones do not already give you.]
+  ]
+
+  [section id='related' title='Where to Next'
+    [list
+      [item path='tour/programs'        label='50 Ways to Love Your CXL Code — CXL directives, simple to complex']
+      [item path='tutorial'             label='Tutorial — guided exercises']
+      [item path='cookbook'             label='Cookbook — task-shaped recipes']
+      [item path='concepts/data-model'  label='Data model — the shape every example lives in']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

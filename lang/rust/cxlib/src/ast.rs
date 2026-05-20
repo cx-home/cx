@@ -48,6 +48,12 @@ pub struct Element {
     /// `None` for ordinary elements. Carried over the ast_bin wire
     /// format at v3+ (Phase 7.70 bumped 2 → 3).
     pub body_ref: Option<String>,
+    /// v0.7.0 Z2 (spec/i18n.md §1.3): in-scope BCP 47 language tag.
+    /// Populated by `resolve_namespaces`. `None` means no cx:lang in
+    /// scope; `Some("")` is an explicit cx:lang="" shadow; otherwise
+    /// the locally-declared or inherited tag. Use `Element::lang()`
+    /// for the flattened common-case accessor.
+    pub lang_resolved: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -118,7 +124,15 @@ impl Element {
             ns_uri: None,
             id: None,
             body_ref: None,
+            lang_resolved: None,
         }
+    }
+
+    /// BCP 47 language tag in scope at this Element per spec/i18n.md
+    /// §1.3. Returns `""` when no cx:lang is in scope or when an
+    /// ancestor's declaration was shadowed by an explicit `cx:lang=""`.
+    pub fn lang(&self) -> &str {
+        self.lang_resolved.as_deref().unwrap_or("")
     }
 
     /// Local part of the element name (after the first ':' in `name`,
@@ -408,6 +422,14 @@ impl Document {
         find_element_by_id(&self.elements, id).or_else(|| find_element_by_id(&self.prolog, id))
     }
 
+    /// Return the Element targeted by `e.body_ref` in this document,
+    /// or `None` when `body_ref` is unset or the target ID is
+    /// undeclared. v0.7.0 (ADR 0003 D1 second bullet / GG13 row at
+    /// spec/v0_7_0_status.md).
+    pub fn resolve_body_ref(&self, e: &Element) -> Option<&Element> {
+        e.body_ref.as_deref().and_then(|id| self.resolve_id(id))
+    }
+
     /// Build a {id: &Element} map for the whole document. v3.4 (ADR 0003).
     pub fn elements_by_id(&self) -> std::collections::HashMap<String, &Element> {
         let mut out = std::collections::HashMap::new();
@@ -637,6 +659,7 @@ fn element_from_value(v: &Value) -> Element {
         ns_uri: None,
         id: None,
         body_ref: None,
+        lang_resolved: None,
     }
 }
 
@@ -739,9 +762,11 @@ fn resolve_element(e: &mut Element, scope: &mut Vec<std::collections::HashMap<St
 }
 
 /// Populate `Element.{local, ns_uri}` and `Attr.{local, ns_uri}` on
-/// every node in `doc` per ADR 0002 / spec/namespaces.md. Idempotent.
-/// Called automatically by `parse`, `parse_xml`, `parse_json`,
-/// `parse_yaml`, `parse_toml`, `parse_md`.
+/// every node in `doc` per ADR 0002 / spec/namespaces.md. Also
+/// propagates cx:lang inherited scope per spec/i18n.md §1.3 — sets
+/// `Element.lang_resolved` on every Element. Idempotent. Called
+/// automatically by `parse`, `parse_xml`, `parse_json`, `parse_yaml`,
+/// `parse_toml`, `parse_md`.
 pub fn resolve_namespaces(doc: &mut Document) {
     let mut scope: Vec<std::collections::HashMap<String, String>> = Vec::new();
     for n in doc.elements.iter_mut() {
@@ -749,6 +774,43 @@ pub fn resolve_namespaces(doc: &mut Document) {
             resolve_element(e, &mut scope);
         }
     }
+    let mut lang_stack: Vec<Option<String>> = Vec::new();
+    for n in doc.elements.iter_mut() {
+        if let Node::Element(e) = n {
+            resolve_element_lang(e, &mut lang_stack);
+        }
+    }
+}
+
+/// Propagate cx:lang per spec/i18n.md §1.3. Mirrors V's
+/// `vcx/cx/namespaces.v::resolve_element_lang`.
+fn resolve_element_lang(e: &mut Element, stack: &mut Vec<Option<String>>) {
+    let mut own_lang: Option<String> = None;
+    let mut declared = false;
+    for a in e.attrs.iter() {
+        if a.name == "cx:lang" {
+            own_lang = Some(match &a.value {
+                Value::String(s) => s.clone(),
+                Value::Null => String::new(),
+                other => format!("{other:?}"),
+            });
+            declared = true;
+            break;
+        }
+    }
+    let resolved = if declared {
+        own_lang
+    } else {
+        stack.last().cloned().unwrap_or(None)
+    };
+    e.lang_resolved = resolved.clone();
+    stack.push(resolved);
+    for item in e.items.iter_mut() {
+        if let Node::Element(child) = item {
+            resolve_element_lang(child, stack);
+        }
+    }
+    stack.pop();
 }
 
 // ── Public parse/loads/dumps functions ────────────────────────────────────────
@@ -756,6 +818,22 @@ pub fn resolve_namespaces(doc: &mut Document) {
 /// Parse a CX string into a Document (uses binary wire protocol).
 pub fn parse(cx_str: &str) -> Result<Document, String> {
     let data = crate::call_bin(cx_str, "cx_to_ast_bin")?;
+    decode_namespaces_and_lang(data)
+}
+
+/// parse_with_include_root opts into the spec/include.md §1-§8
+/// resolver (v0.7.0 GG4). Empty include_root preserves directives in
+/// the AST.
+pub fn parse_with_include_root(cx_str: &str, include_root: &str) -> Result<Document, String> {
+    let data = if include_root.is_empty() {
+        crate::call_bin(cx_str, "cx_to_ast_bin")?
+    } else {
+        crate::call_bin_with_include_root(cx_str, include_root)?
+    };
+    decode_namespaces_and_lang(data)
+}
+
+fn decode_namespaces_and_lang(data: Vec<u8>) -> Result<Document, String> {
     let mut doc = crate::binary::decode_ast(&data)?;
     resolve_namespaces(&mut doc);
     Ok(doc)

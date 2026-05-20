@@ -1,0 +1,171 @@
+#cx-playground {
+  margin: 0.8rem 0 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cxp-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  background: var(--side-bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.cxp-toolbar label {
+  color: var(--muted);
+  font-weight: 500;
+}
+.cxp-toolbar select {
+  flex: 1;
+  font: inherit;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+}
+.cxp-toolbar button {
+  font: inherit;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+.cxp-toolbar button:hover {
+  background: var(--side-bg);
+  border-color: var(--muted);
+}
+#cxp-run {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+#cxp-run:hover { filter: brightness(1.08); }
+
+/* Top-bottom layout. Input pane fills first; output panes below.
+   Each pane carries its own header and minimum height so even
+   single-line examples have room to grow. */
+.cxp-panes {
+  display: flex;
+  flex-direction: column;
+}
+
+.cxp-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.8rem;
+  background: var(--code-border);
+  color: var(--code-label);
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Source editor — overlay technique. A highlighted <pre> sits
+   behind a transparent <textarea>; the textarea drives input
+   and caret while the <pre> renders the colored tokens. Both
+   share font, padding, and white-space so glyphs align 1:1. */
+.cxp-editor {
+  position: relative;
+  min-height: 240px;
+  background: var(--code-bg);
+  border-bottom: 1px solid var(--code-border);
+  overflow: hidden;
+}
+.cxp-editor-render,
+.cxp-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  white-space: pre;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+.cxp-editor-render {
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--code-fg);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cxp-editor-render code {
+  display: block;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  white-space: inherit;
+}
+.cxp-input {
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: #f8fafc;
+  outline: none;
+  overflow: auto;
+}
+.cxp-input::selection { background: rgba(125, 211, 252, 0.35); color: transparent; }
+
+.cxp-output {
+  display: flex;
+  flex-direction: column;
+  background: var(--code-bg);
+  color: var(--code-fg);
+}
+
+.cxp-tab-bar {
+  display: flex;
+  gap: 0;
+  background: var(--code-border);
+  border-bottom: 1px solid var(--code-border);
+}
+.cxp-tab {
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.4rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: var(--code-label);
+  cursor: pointer;
+}
+.cxp-tab.is-active {
+  background: var(--code-bg);
+  color: var(--code-fg);
+}
+
+.cxp-pane {
+  flex: 1;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  background: transparent;
+  color: inherit;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: auto;
+  white-space: pre;
+  display: none;
+  min-height: 180px;
+}
+.cxp-pane.is-active { display: block; }
+
+.cxp-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 0;
+  padding: 0.45rem 0.8rem;
+  background: var(--side-bg);
+  border-top: 1px solid var(--border);
+}

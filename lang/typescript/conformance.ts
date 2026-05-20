@@ -216,7 +216,8 @@ const suites = args.length > 0 ? args : [
   path.join(base, 'extended.txt'),
   path.join(base, 'xml.txt'),
   path.join(base, 'md.txt'),
-  path.join(base, 'cxl.txt'),
+  path.join(base, 'schema_validate.txt'),
+  path.join(base, 'streaming_write.txt'),
 ];
 
 let totalFailed = 0;

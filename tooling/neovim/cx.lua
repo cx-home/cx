@@ -1,68 +1,106 @@
--- CX language support for Neovim 0.11+
+-- CX language support for Neovim 0.11+ (LazyVim / lazy.nvim path).
+--
+-- Since v0.7.0 the language server is built into the `cx` binary —
+-- `cx lsp` speaks JSON-RPC 2.0 over stdio (vcx/cmd/lsp.v). No npm
+-- toolchain, no separate server.js. Just `cx` on $PATH.
 --
 -- SETUP:
---   1. Install the tree-sitter grammar:
+--   1. (Optional) Install the tree-sitter grammar for embedded-language
+--      injection inside [``` lang=X [| ... |] ] blocks:
 --        cd tooling/tree-sitter-cx && make install-nvim
---   2. Install the language server somewhere discoverable:
---        cd tooling/lsp && npm install && npm run build
---      Then either:
---        - Set the CX_LSP_PATH env var to the server.js absolute path, OR
---        - Symlink to one of the searched paths (see find_lsp_server below)
+--   2. Ensure `cx` is on $PATH (or set $CX_BIN to an absolute path).
 --   3. Drop this file into your plugin directory.
 --      LazyVim / lazy.nvim: place at lua/plugins/cx.lua
 --      Plain init.lua: require() it directly
 --
--- Requires: Neovim 0.11+, Node.js >= 18 (for LSP).
+-- Requires: Neovim 0.11+.
 
-vim.filetype.add({ extension = { cx = "cx" } })
-vim.treesitter.language.register("cx", "cx")
+vim.filetype.add({ extension = { cx = 'cx', cxs = 'cx', cxl = 'cx' } })
+vim.treesitter.language.register('cx', 'cx')
 
--- Resolve the LSP server.js path. Searches (in order):
---   1. CX_LSP_PATH env var (explicit override)
---   2. Standard install locations
-local function find_lsp_server()
-  local override = vim.env.CX_LSP_PATH
-  if override and override ~= "" and vim.fn.filereadable(override) == 1 then
+local function find_cx_bin()
+  local override = vim.env.CX_BIN
+  if override and override ~= '' and vim.fn.executable(override) == 1 then
     return override
   end
+  if vim.fn.executable('cx') == 1 then
+    return 'cx'
+  end
+  return nil
+end
 
-  local candidates = {
-    vim.fn.expand("~/.local/share/cx-lsp/out/server.js"),
-    "/usr/local/share/cx-lsp/out/server.js",
-    "/opt/homebrew/share/cx-lsp/out/server.js",
-  }
-  for _, c in ipairs(candidates) do
-    if vim.fn.filereadable(c) == 1 then
-      return c
-    end
+-- on_attach wires the full v0.7.0 LSP capability surface to keybindings.
+-- Lifted out of the lazy spec so user configs can reuse it directly.
+local function cx_on_attach(client, bufnr)
+  local kmap = function(mode, lhs, rhs, desc)
+    vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
   end
 
-  return nil
+  -- Navigation
+  kmap('n', 'gd', vim.lsp.buf.definition,      'CX: go to definition')
+  kmap('n', 'gr', vim.lsp.buf.references,      'CX: find references')
+  kmap('n', 'gO', vim.lsp.buf.document_symbol, 'CX: outline')
+
+  -- Information
+  kmap('n', 'K',     vim.lsp.buf.hover,          'CX: hover docs')
+  kmap('n', '<C-k>', vim.lsp.buf.signature_help, 'CX: signature help')
+  kmap('i', '<C-k>', vim.lsp.buf.signature_help, 'CX: signature help')
+
+  -- Editing
+  kmap('n', '<leader>r', vim.lsp.buf.rename,      'CX: rename #id')
+  kmap('n', '<leader>a', vim.lsp.buf.code_action, 'CX: code action')
+  kmap('n', '<leader>f', function() vim.lsp.buf.format({ async = true }) end, 'CX: format buffer')
+  kmap('i', '<C-Space>', vim.lsp.completion.get,  'CX: completion (snippet)')
+
+  -- Diagnostics
+  kmap('n', ']d',       vim.diagnostic.goto_next,  'CX: next diagnostic')
+  kmap('n', '[d',       vim.diagnostic.goto_prev,  'CX: prev diagnostic')
+  kmap('n', '<leader>d', vim.diagnostic.open_float, 'CX: show diagnostic')
+
+  -- Inlay hints (placeholder at v0.7.0; populated at v0.7.x)
+  if client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
+    vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+  end
+
+  -- Smart structural selection (selectionRange)
+  vim.keymap.set({ 'n', 'v' }, '<leader>v', function()
+    local pos = vim.api.nvim_win_get_cursor(0)
+    vim.lsp.buf_request(bufnr, 'textDocument/selectionRange', {
+      textDocument = vim.lsp.util.make_text_document_params(),
+      positions = { { line = pos[1] - 1, character = pos[2] } },
+    }, function(_, result)
+      if not result or not result[1] then return end
+      local r = result[1].range
+      vim.api.nvim_buf_set_mark(bufnr, '<', r.start.line + 1, r.start.character, {})
+      vim.api.nvim_buf_set_mark(bufnr, '>', r['end'].line + 1, r['end'].character, {})
+      vim.cmd('normal! gv')
+    end)
+  end, { buffer = bufnr, desc = 'CX: expand selection' })
 end
 
 return {
   {
-    "neovim/nvim-lspconfig",
+    'neovim/nvim-lspconfig',
     opts = function(_, opts)
       opts.servers = opts.servers or {}
 
-      local server_path = find_lsp_server()
-      if not server_path then
+      local cx_bin = find_cx_bin()
+      if not cx_bin then
         vim.notify(
-          "CX: language server not found. Install tooling/lsp/ and either " ..
-          "symlink to ~/.local/share/cx-lsp/, set CX_LSP_PATH, or override " ..
-          "opts.servers.cx_ls.cmd in your config.",
+          'CX: `cx` binary not found on $PATH. Install with ' ..
+          '`brew install cx-home/tap/cx` or set $CX_BIN to an absolute path.',
           vim.log.levels.WARN
         )
         return
       end
 
       opts.servers.cx_ls = {
-        cmd = { "node", server_path, "--stdio" },
-        filetypes = { "cx" },
-        root_markers = { "v.mod", ".git" },
+        cmd              = { cx_bin, 'lsp' },
+        filetypes        = { 'cx' },
+        root_markers     = { 'cx.yaml', 'cxlint.yaml', 'v.mod', '.git' },
         single_file_support = true,
-        mason = false,
+        mason            = false,
+        on_attach        = cx_on_attach,
       }
     end,
   },

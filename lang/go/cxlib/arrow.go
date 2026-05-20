@@ -34,6 +34,7 @@ extern void  cx_arrow_free(void* p);
 import "C"
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -43,6 +44,7 @@ import (
 
 	"github.com/apache/arrow/go/v18/arrow/array"
 	"github.com/apache/arrow/go/v18/arrow/cdata"
+	"github.com/apache/arrow/go/v18/arrow/ipc"
 )
 
 // parseHexBitmask accepts the libcx convention of optional `0x` prefix.
@@ -163,4 +165,45 @@ func ArrowImportToDataBin(reader array.RecordReader) ([]byte, error) {
 	}
 	C.cx_arrow_free(addr)
 	return out, nil
+}
+
+// W2 v0.7.0: Arrow IPC stream format read/write.
+// Delegates to apache/arrow/go/v18/arrow/ipc, which handles the
+// flatbuffer encoding. CX never touches flatbuffer bytes directly —
+// IPC codec lives in each language's Arrow library by Apache Arrow
+// convention.
+
+// ArrowToIPC converts framed CXDB chunked-table bytes to Arrow IPC
+// stream bytes suitable for writing to a `.arrow` file or piping
+// into another Arrow IPC consumer.
+func ArrowToIPC(payload []byte) ([]byte, error) {
+	reader, err := ArrowExport(payload)
+	if err != nil {
+		return nil, fmt.Errorf("ArrowToIPC: export: %w", err)
+	}
+	defer reader.Release()
+	var buf bytes.Buffer
+	writer := ipc.NewWriter(&buf, ipc.WithSchema(reader.Schema()))
+	defer writer.Close()
+	for reader.Next() {
+		if err := writer.Write(reader.Record()); err != nil {
+			return nil, fmt.Errorf("ArrowToIPC: write: %w", err)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("ArrowToIPC: close: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+// ArrowFromIPC converts Arrow IPC stream bytes (the byte stream a
+// `.arrow` file would contain) to framed CXDB chunked-table bytes.
+func ArrowFromIPC(ipcBytes []byte) ([]byte, error) {
+	source := bytes.NewReader(ipcBytes)
+	reader, err := ipc.NewReader(source)
+	if err != nil {
+		return nil, fmt.Errorf("ArrowFromIPC: open: %w", err)
+	}
+	defer reader.Release()
+	return ArrowImportToDataBin(reader)
 }

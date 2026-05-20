@@ -87,6 +87,20 @@ for _name in _bin_fns:
     _fn.restype  = ctypes.c_void_p
     _fn.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
 
+# v0.7.0 GG3 / GG4 — include-resolver C ABI variants.
+_lib.cx_to_ast_bin_with_include_root.restype  = ctypes.c_void_p
+_lib.cx_to_ast_bin_with_include_root.argtypes = [
+    ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)
+]
+_lib.cx_to_data_bin_with_include_root.restype  = ctypes.c_void_p
+_lib.cx_to_data_bin_with_include_root.argtypes = [
+    ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)
+]
+_lib.cx_to_cx_with_include_root.restype  = ctypes.c_char_p
+_lib.cx_to_cx_with_include_root.argtypes = [
+    ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)
+]
+
 # CXPath takes (input, expr, err_out) — second arg is a string.
 for _name in ("cx_select", "cx_select_all", "cx_select_all_paths"):
     _fn = getattr(_lib, _name)
@@ -206,7 +220,7 @@ _lib.cx_events_writer_open.argtypes         = [ctypes.c_char_p, ctypes.POINTER(c
 _lib.cx_events_writer_open_fd.restype       = ctypes.c_void_p
 _lib.cx_events_writer_open_fd.argtypes      = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
 # cx_events_writer_open_shaped removed 2026-05-10: ADR 0010 superseded by
-# ADR 0016. CXL is the only output-shape mechanism (see cx_eval_cxl* below).
+# ADR 0016. CXL is the only output-shape mechanism (see cx_eval* below).
 _lib.cx_events_writer_close_get_bytes.restype  = ctypes.c_void_p
 _lib.cx_events_writer_close_get_bytes.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p)]
 _lib.cx_events_writer_close.restype         = None
@@ -261,8 +275,8 @@ def _call(fn, text: str) -> str:
 
 # CXL evaluator: signature is (input, program, output_target, err_out).
 # Wired separately because _call only handles single-string functions.
-_lib.cx_eval_cxl.restype  = ctypes.c_char_p
-_lib.cx_eval_cxl.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
+_lib.cx_eval.restype  = ctypes.c_char_p
+_lib.cx_eval.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
 
 def eval_cxl(input_cx: str, program_cxl: str, output_target: str = "") -> str:
     """Evaluate a CXL program against a CX context document.
@@ -271,7 +285,7 @@ def eval_cxl(input_cx: str, program_cxl: str, output_target: str = "") -> str:
     default 'text'), or one of 'text' / 'cx' / 'html' at CXL 1.0 (v0.6.0).
     """
     err = ctypes.c_char_p(None)
-    out = _lib.cx_eval_cxl(
+    out = _lib.cx_eval(
         input_cx.encode(),
         program_cxl.encode(),
         output_target.encode(),
@@ -281,6 +295,66 @@ def eval_cxl(input_cx: str, program_cxl: str, output_target: str = "") -> str:
         msg = err.value.decode() if err.value else "unknown error"
         raise RuntimeError(msg)
     return out.decode()
+
+# Streaming evaluator (v0.7.0 Y-row). The C ABI exposes cx_eval_streaming
+# with a write-callback that fires per-chunk; the binding wraps the
+# callback in a ctypes CFUNCTYPE and forwards each chunk to the
+# user-supplied Python callable.
+_CX_EVAL_WRITE_CB = ctypes.CFUNCTYPE(
+    ctypes.c_int,                # return: 0 ok, non-zero aborts
+    ctypes.c_char_p,              # bytes
+    ctypes.c_size_t,              # n
+    ctypes.c_void_p,              # user
+)
+
+_lib.cx_eval_streaming.restype  = ctypes.c_char_p
+_lib.cx_eval_streaming.argtypes = [
+    ctypes.c_char_p,             # cx_input
+    ctypes.c_char_p,             # cxl_program
+    ctypes.c_char_p,             # output_target
+    _CX_EVAL_WRITE_CB,           # write_cb
+    ctypes.c_void_p,             # user
+    ctypes.POINTER(ctypes.c_char_p),  # err_out
+]
+
+def eval_cxl_streaming(input_cx: str, program_cxl: str,
+                       on_chunk, output_target: str = "") -> None:
+    """Evaluate a CXL program with pull-based incremental output.
+
+    on_chunk: callable(bytes) -> None | int. Invoked with each output
+    chunk as bytes. Return None or 0 to continue; any other int (or
+    raising) aborts evaluation cleanly.
+
+    output_target: same semantics as eval_cxl().
+
+    Raises RuntimeError on parse / evaluation failure, or wraps the
+    callback's exception in RuntimeError.
+    """
+    pending_exc = []
+
+    def _trampoline(buf, n, _user):
+        try:
+            data = ctypes.string_at(buf, n)
+            rc = on_chunk(data)
+            return 0 if rc in (None, 0) else int(rc)
+        except BaseException as exc:        # pylint: disable=broad-except
+            pending_exc.append(exc)
+            return 1                          # any non-zero aborts
+
+    cb = _CX_EVAL_WRITE_CB(_trampoline)
+    err = ctypes.c_char_p(None)
+    _lib.cx_eval_streaming(
+        input_cx.encode(),
+        program_cxl.encode(),
+        output_target.encode(),
+        cb,
+        None,
+        ctypes.byref(err),
+    )
+    if pending_exc:
+        raise RuntimeError(f"cx_eval_streaming callback raised") from pending_exc[0]
+    if err.value is not None:
+        raise RuntimeError(err.value.decode())
 
 def version() -> str: return _lib.cx_version().decode()
 def abi_version() -> str: return _lib.cx_abi_version().decode()

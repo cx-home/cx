@@ -4,7 +4,8 @@ import sys, os, time
 sys.path.insert(0, os.path.dirname(__file__))
 import cxlib
 
-with open(os.path.join(os.path.dirname(__file__), '..', '..', 'fixtures', 'bench', 'bench_medium.cx')) as f:
+_fixture = os.environ.get('CX_BENCH_FIXTURE', 'bench_medium.cx')
+with open(os.path.join(os.path.dirname(__file__), '..', '..', 'fixtures', 'bench', _fixture)) as f:
     medium = f.read()
 
 def time_median(fn, n=100, warmup=20):

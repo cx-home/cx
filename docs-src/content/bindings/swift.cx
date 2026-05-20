@@ -1,0 +1,47 @@
+[- Binding: Swift. -]
+[page id='binding-swift'
+  [meta
+    title='Swift Binding'
+    layout='reference'
+    nav-order='691'
+    audience='lookup'
+    summary='Swift Package Manager. clang interop, native Swift API.'
+  ]
+
+  [section id='install' title='Install'
+    [code lang='swift' src='''// Package.swift
+dependencies: [
+    .package(url: "https://github.com/cx-home/cx-swift", from: "0.7.0"),
+]''']
+  ]
+
+  [section id='parse-emit' title='Parse and Emit'
+    [code lang='swift' src='''import Cx
+
+let input = try String(contentsOfFile: "pizza.cx")
+let json  = try Cx.emit(input, to: .json)
+let xml   = try Cx.emit(input, to: .xml)
+
+let tree = try Cx.parse(input)
+for pizza in tree.findAll("pizza") {
+    print("\\(pizza["name"]) @ \\(pizza["price"])")
+}''']
+  ]
+
+  [section id='eval' title='Run a CXL Template'
+    [code lang='swift' src='''let out = try Cx.eval(program,
+                       data: dataText,
+                       includeRoot: "/proj")''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='bindings/c-abi' label='C ABI']
+      [item path='bindings/index' label='Binding catalog']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

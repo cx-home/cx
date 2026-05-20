@@ -280,6 +280,62 @@ list of exported symbols against a whitelist
 in the same PR. Removed symbols cause CI failure unless the major
 version is bumped.
 
+### 5.3 Source-code identifier vs. prose-name divergence (v0.7.0)
+
+Per [ADR 0022 §D5](decisions/0022-cx-is-one-language-v0_7_0-scope.md),
+the v0.7.0 release retires the "CXL" name in prose (specs, docs,
+release notes, and user-facing surfaces — see ROADMAP P1) but retains
+historical identifiers in source code where they appear in ABI-visible
+or fixture-visible positions. This is a deliberate divergence; it
+keeps the v0.6.0 → v0.7.0 break narrow to a single mechanical pass
+applied by `cx upgrade-config` (§D6) rather than a full source-tree
+identifier sweep that would force every downstream code reader to
+relearn names.
+
+**Identifiers retained verbatim in source:**
+
+- V module identifiers — `eval_cxl`, `eval_cxl_streaming`,
+  `eval_cxl_with_len`, `CXLEnv`, `CXLValue`, `CXLFunction`, `CXLScalar`
+  (the historical `cxl_*` symbol set in `vcx/cx/`).
+- Binding-internal symbols mirroring the V identifiers
+  (`cxlib.eval_cxl` in Python / Go / Rust / TS — none of which is
+  user-visible as a public API name; user-facing wrappers are
+  `eval` / `evaluate` per binding idiom).
+- AST node types where the `CXL` prefix designates evaluator-stage
+  nodes vs. data-stage nodes (`CXLEvalDirective`, `CXLInterpolation`,
+  etc) — disambiguates evaluator semantics from regular Element
+  parsing in the V source.
+- Fixture filenames and category labels inside
+  `vcx/tests/cxl_test.v` and similar — predates v0.7.0 and changing
+  these forces a git-blame rewrite of every test history line.
+
+**Identifiers renamed in source AND prose:**
+
+- C ABI symbols: `cx_eval_cxl*` → `cx_eval*` per §D5 epoch break.
+  This is the **only** ABI rename at v0.7.0; preserving it would
+  lock the historical "cxl" name into every external binding's
+  generated FFI bindings forever.
+- File renames: `spec/cxl.md` → `spec/eval.md`; `docs/CXL.md`
+  retained at v0.7.0 transition (R1 rewrites it; see ROADMAP P1).
+
+**Why the divergence works:**
+
+- ABI-visible names (C symbols, capability-bit labels, the `cx-eval-version`
+  attribute) carry the new "cx-eval" naming so external consumers see
+  the consistent v0.7.0 vocabulary.
+- Source-internal names retain "cxl" because their cost is paid
+  only by maintainers of the V source — a much smaller audience
+  than external binding consumers — and changing them adds zero
+  signal to that audience (they read code, not prose).
+- The divergence is documented here, in `RELEASE_NOTES_v0.7.0.md`,
+  and in ADR 0022 §D5, so the discrepancy never becomes folklore.
+
+**Forward path:** at the next major break (v1.0.0 or whichever
+release re-opens the ABI envelope), the source-internal "cxl"
+identifiers MAY be renamed in a mechanical sweep without breaking
+public ABI consumers. Until then, the divergence is the cost-
+correct deployment.
+
 ---
 
 ## 6 — Performance SLA policy
@@ -303,6 +359,51 @@ at:
 
 Per-binding caps account for native deserialization. A binding that
 exceeds its cap is non-conformant for that operation.
+
+#### 6.1.1 Evaluator-feature budgets (v0.7.0)
+
+The v0.7.0 evaluator surface adds FLWOR clauses, first-class
+functions, partial application, operator-token forms, pattern
+matching, and the RE2-backed regex family. Each gets a tracked
+microbench in `vcx/tests/runners/eval_features_bench.v` whose key
+shows up under `eval.*` in the JSON consumed by the V7 perf gate
+(`.github/workflows/perf.yml`).
+
+Per-feature budgets are **relative** rather than absolute — the V7
+gate compares each `eval.*` key against the baseline JSON for the
+same key, refusing PRs that regress by more than the configured
+threshold (default 30% per `spec/v0_7_0_status.md §T7`; tightened to
+10% by passing `--strict` to `scripts/compare_bench.py` once cross-
+machine variance is bounded). Absolute µs/ms values are tracked but
+not gated; the relative-regression model survives runner-image swaps
+and cross-OS bench drift.
+
+| Bench key | Feature | Notes |
+|---|---|---|
+| `eval.flwor.where` | A8 — FLWOR `:where` clause | Per-iteration predicate; should not exceed simple `?for` baseline by more than ~10–15% |
+| `eval.flwor.count` | A11 — FLWOR `:count` clause | Position-binding overhead; bounded by simple `?for` + an integer slot per iteration |
+| `eval.flwor.order_by` | A26 — `:order-by` clause | Materialising (per `spec/eval.md §8.4.2`); cost dominated by sort, not iteration. Budget = `O(n log n)` proportionality to input length |
+| `eval.flwor.group_by` | A26 — `:group-by` clause | Group-collection phase buffered, result emission streams. Budget = `O(n)` collection + `O(g)` emission (g = group count) |
+| `eval.flwor.tumbling` | A26 — `?for-tumbling` | Constant-overhead per chunk; budget tracks the chunk-formation cost not exceeding the underlying `?for` baseline + chunk-emit |
+| `eval.fn.call_x500` | A20 — `?fn` calling protocol (500 invocations) | High-frequency invocation; budget tracks per-call dispatch cost (no run-away allocation per call) |
+| `eval.partial.invoke_x500` | A23 — partial application (500 invocations) | Pre-bound slot rebinding; budget at most ~1.5× the equivalent direct-call cost |
+| `eval.op.pipeline` | A27 — `=>` arrow operator | Low-precedence pre-pass; per-stage cost equivalent to direct nested call form |
+| `eval.op.arrow` | A27 — `=>` operator chained | Per-stage cost — chained pipelines should track linear in stage count |
+| `eval.op.to_range_10k` | A41 — `1 to N` range materialisation (10 000-element) | Bounded by U3/U4 sequence-length cap (default 1M); throughput per item tracked |
+| `eval.match.string` | A14 — `?match` pattern dispatch | Per-arm trial cost; budget tracks arm count, not arm body cost (the latter is independently measured) |
+| `eval.regex.matches_x500` | C5 — `fn:matches` over 500 calls | RE2 backend; linear-time guaranteed by construction. Budget tracks per-call regex compile-and-discard overhead (separate from regex-execution cost on long inputs) |
+
+**Adding a new feature.** When v0.7.x lands a new evaluator
+directive or filter, the implementing PR MUST add a corresponding
+bench case to `eval_features_bench.v` and a row to the table above
+(or update an existing row's notes). The V7 baseline regenerates
+automatically on `workflow_dispatch publish-baseline`; the per-PR
+gate then catches future regressions on the new key.
+
+**Cross-binding budgets.** v0.7.0 bindings (Python / Go / Rust / TS)
+inherit these budgets via the C ABI passthrough — none has a native
+re-implementation at v0.7.0 (per `spec/v0_7_0_status.md §V4`). Per-
+binding parity tracking lands as T3 in v0.7.x.
 
 ### 6.2 Regression gate
 
@@ -547,7 +648,7 @@ Plus the CXL 1.0 built-in filter names (`upper`, `lower`, `trim`,
 `rest`, `take`, `drop`, `reverse`, `distinct`, `where`,
 `format-date`, `format-datetime`, `type-of`, `default`,
 `escape-html`, `escape-url`, `raw`) — also reserved as EvalNames in
-the `?`-prefixed family per [`spec/cxl.md §4`](cxl.md).
+the `?`-prefixed family per [`spec/eval.md §4`](cxl.md).
 
 **Why `?`-prefix.** The sigil makes CXL directive forms visually
 distinct from data elements at every read site, and the grammar

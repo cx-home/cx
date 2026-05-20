@@ -5,7 +5,7 @@
 The **CX Data Model (CXDM)** is the runtime value model shared by every member
 of the CX expression family: CXPath (navigation, [`spec/cxpath.md`](cxpath.md))
 and CXL (the CX Language for rendering, querying, and transformation,
-[`spec/cxl.md`](cxl.md)). It defines the values that predicates compare,
+[`spec/eval.md`](cxl.md)). It defines the values that predicates compare,
 that directives bind to loop variables, that interpolations emit, and that
 conformance fixtures match byte-identically across bindings.
 
@@ -550,7 +550,7 @@ both desugar to the bracket form (`[?upper [?trim xs]]`). CXL 1.0
 has neither and uses bracket-nested calls exclusively.
 
 A small fixed set of built-in filters is frozen at CXL 1.0; see
-[`spec/cxl.md` §4](cxl.md). Host-binding-pluggable extensions follow
+[`spec/eval.md` §4](cxl.md). Host-binding-pluggable extensions follow
 the v0.6.0 rule (frozen core, opt-in extensions,
 `[?cx output-strict]` rejects non-core).
 
@@ -683,7 +683,7 @@ The following raise an evaluation error rather than coercing silently:
  ordering operation. Containers participate in equality (§4.3) and
  EBV (§4.6) only.
 
-Error reporting follows [`spec/cxl.md` §2.5](cxl.md) for CXL.
+Error reporting follows [`spec/eval.md` §2.5](cxl.md) for CXL.
 
 ---
 
@@ -800,7 +800,7 @@ binding-ABI level by capability bit 29 (set ⇒ v1.1, clear ⇒ v1.0-only).
 - [`spec/ast.md`](ast.md) — parse AST; CXDM is the runtime/value analog.
 - [`spec/cxpath.md`](cxpath.md) — navigation sublanguage; CXDM is its
  value model.
-- [`spec/cxl.md`](cxl.md) — CXL language spec; consumes CXDM.
+- [`spec/eval.md`](cxl.md) — CXL language spec; consumes CXDM.
 - [`spec/canonical.md`](canonical.md) — canonical scalar formatting,
  namespace-aware equality.
 - [`spec/conversions.md`](conversions.md) — format-emission semantics

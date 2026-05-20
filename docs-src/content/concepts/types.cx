@@ -1,0 +1,80 @@
+[- Concept: Types. -]
+[page id='types'
+  [meta
+    title='Types'
+    layout='concept'
+    nav-order='240'
+    audience='learner'
+    summary='CXs type system: auto-typed values, sized annotations, decimal and bigint, and the lossless round-trip.'
+  ]
+
+  [section id='atomic' title='Atomic Types'
+    [prose CX values fall into a small set of atomic types — int, float, bool, string, null, date, datetime, bytes, decimal, bigint — and arrays of any of these. Most values are auto-typed from their lexical shape; explicit annotations cover the rest.]
+  ]
+
+  [section id='auto' title='Auto-Typing'
+    [prose Bare values are auto-typed when their lexical shape is unambiguous.]
+    [code lang='cx' src='''[demo
+  count=42                      # int
+  pi=3.14                       # float
+  enabled=true                  # bool
+  name=Alice                    # string
+  missing=null                  # null
+  date=2026-05-09               # date
+  start=2026-05-09T10:00:00Z]   # datetime''']
+  ]
+
+  [section id='leading-zero' title='Leading-Zero Strings'
+    [prose Tokens with a leading zero stay strings unless prefixed 0x (hex), 0o (octal), or 0b (binary). Postal codes, area codes, account numbers, BIC codes — anywhere the leading zero is data, not a numeric value.]
+    [code lang='cx' src='''[zip 02134]               # string "02134", not int 2134
+[mask 0xFF00FF]           # int 16711935 (hex)
+[perms 0o755]             # int 493 (octal)
+[bits 0b1101]             # int 13 (binary)''']
+  ]
+
+  [section id='sized' title='Sized Integer and Float'
+    [prose A colon-type pins the runtime representation and (for sized variants) the legal range. Out-of-range values fail at parse time, not at runtime in some downstream consumer.]
+    [code lang='cx' src='''[port :u16 8080]              # rejects values over 65535
+[balance :i64 -1234567890]    # signed 64-bit
+[ratio :f32 3.14]             # 32-bit float
+[count :u8 200]               # rejects 256 and up''']
+  ]
+
+  [section id='decimal-bigint' title='Decimal and BigInt'
+    [prose IEEE 754 floats lose precision for money and high-precision quantities; signed 64-bit overflows for some IDs. CX has :decimal and :bigint for both cases, with binding mappings to each languages native big-number type.]
+    [code lang='cx' src='''[total :decimal 19.99]
+[user-id :bigint 18446744073709551616]''']
+  ]
+
+  [section id='typed-bodies' title='Typed Bodies'
+    [prose A colon-type annotation pins not just attribute values but body content as well.]
+    [code lang='cx' src='''[count :int 42]
+[ratio :decimal 3.14159]
+[oven-temps :int[] 220 240 260 480]
+[tags :[] cheap fast tasty]''']
+  ]
+
+  [section id='tables' title='Typed Columnar Tables'
+    [prose The :table block carries column types end-to-end. CSV export and re-import preserve the schema; ast-bin and data-bin store rows column-major, which is 5 to 10 times smaller than equivalent element-per-row encoding.]
+    [code lang='cx' src='''[orders :table[item:string qty:u32 paid:bool when:date]
+  Margherita 2 true  2026-05-09
+  Hawaiian   1 false 2026-05-09
+]''']
+  ]
+
+  [section id='binding-map' title='Binding Type Mapping'
+    [prose Each bindings README has the language-specific mapping. The shape is consistent: CX int to native int (sized variants when the language has them); decimal to native arbitrary-precision decimal (Python Decimal, Java BigDecimal, .NET decimal, Ruby BigDecimal); bigint to native arbitrary-precision int.]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='concepts/data-model' label='Data Model']
+      [item path='reference/schemas'   label='Schemas — declared and validated types']
+      [item path='reference/tables'    label='Tables — typed columnar data']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

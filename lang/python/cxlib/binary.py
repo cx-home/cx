@@ -260,6 +260,26 @@ def ast_bin(cx_str: str) -> bytes:
     return _call_bin(_cx._lib.cx_to_ast_bin, cx_str)
 
 
+def ast_bin_with_include_root(cx_str: str, include_root: str) -> bytes:
+    """Same as ast_bin but with opt-in ?include resolution per
+    spec/include.md §1-§8 (v0.7.0 GG3 / GG4). The include_root is
+    passed verbatim to the C ABI; an absolute directory is normalised
+    in libcx via realpath()-equivalent before being used as the
+    resolver root."""
+    err = ctypes.c_char_p(None)
+    addr = _cx._lib.cx_to_ast_bin_with_include_root(
+        cx_str.encode(),
+        include_root.encode() if include_root else b'',
+        ctypes.byref(err),
+    )
+    if addr is None:
+        raise RuntimeError(err.value.decode() if err.value else 'unknown error')
+    size = struct.unpack_from('<I', ctypes.string_at(addr, 4))[0]
+    payload = bytes(ctypes.string_at(addr + 4, size))
+    _cx._lib.cx_free(ctypes.cast(addr, ctypes.c_char_p))
+    return payload
+
+
 def events_bin(cx_str: str) -> bytes:
     return _call_bin(_cx._lib.cx_to_events_bin, cx_str)
 

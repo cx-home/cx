@@ -1,32 +1,41 @@
 {
   "name": "cx-language",
   "displayName": "CX Language",
-  "description": "Syntax highlighting and completions for CX markup/configuration",
-  "version": "0.3.0",
-  "publisher": "cx",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Programming Languages"],
-  "activationEvents": [
-    "onLanguage:cx",
-    "workspaceContains:**/*.cx"
+  "description": "Syntax highlighting, LSP, snippets, and formatting for CX (.cx / .cxs / .cxl) — the structured-data language with full XPath 4.0 / XQuery 4.0 query layer.",
+  "version": "0.7.0",
+  "publisher": "cx-home",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cx-home/cx.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters",
+    "Snippets"
+  ],
+  "keywords": [
+    "cx",
+    "cxl",
+    "structured-data",
+    "xpath",
+    "xquery",
+    "language-server"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:cx"
+  ],
   "contributes": {
-    "configuration": {
-      "title": "CX",
-      "properties": {
-        "cx.languageServerPath": {
-          "type": "string",
-          "default": "",
-          "description": "Absolute path to the CX language server (out/server.js). Leave blank to auto-detect next to the extension."
-        }
-      }
-    },
     "languages": [
       {
         "id": "cx",
         "aliases": ["CX", "cx"],
-        "extensions": [".cx"],
+        "extensions": [".cx", ".cxs", ".cxl"],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -34,36 +43,66 @@
       {
         "language": "cx",
         "scopeName": "source.cx",
-        "path": "./syntaxes/cx.tmLanguage.json",
-        "embeddedLanguages": {
-          "meta.embedded.block.json":       "json",
-          "meta.embedded.block.xml":        "xml",
-          "meta.embedded.block.css":        "css",
-          "meta.embedded.block.html":       "html",
-          "meta.embedded.block.javascript": "javascript",
-          "meta.embedded.block.typescript": "typescript",
-          "meta.embedded.block.python":     "python",
-          "meta.embedded.block.bash":       "shellscript",
-          "meta.embedded.block.sql":        "sql",
-          "meta.embedded.block.yaml":       "yaml",
-          "meta.embedded.block.toml":       "toml",
-          "meta.embedded.block.cx":         "cx"
+        "path": "./syntaxes/cx.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "cx",
+        "path": "./snippets/cx.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "CX",
+      "properties": {
+        "cx.serverPath": {
+          "type": "string",
+          "default": "cx",
+          "description": "Path to the `cx` executable. Default `cx` looks it up on $PATH. The extension runs `<serverPath> lsp` for the language server."
+        },
+        "cx.serverArgs": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["lsp"],
+          "description": "Arguments passed to the cx server. Default `[\"lsp\"]`. Append `--verbose` to trace JSON-RPC on stderr."
+        },
+        "cx.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Traces communication between VS Code and the cx language server."
+        },
+        "cx.formatOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run `cx fmt` on save (delegates to the language server's formatting capability)."
         }
+      }
+    },
+    "commands": [
+      {
+        "command": "cx.restartServer",
+        "title": "CX: Restart Language Server"
+      },
+      {
+        "command": "cx.showServerVersion",
+        "title": "CX: Show Server Version"
       }
     ]
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc -p tsconfig.json --watch",
-    "package": "vsce package"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^9.0.1"
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-dependencies --allow-missing-repository"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.4.5",
-    "@vscode/vsce": "^2.24.0"
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
   }
 }

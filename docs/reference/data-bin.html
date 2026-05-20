@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>data-bin: Arrow and Parquet</title>
+<style>:root {
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --border: #e6e6e0;
+
+  /* Dark code blocks for visual prominence */
+  --code-bg: #1f2430;
+  --code-fg: #e2e8f0;
+  --code-comment: #6b7280;
+  --code-keyword: #c4b5fd;
+  --code-string: #fde68a;
+  --code-border: #2a2f3d;
+  --code-label: #9aa3b0;
+
+  --side-bg: #f3f3ec;
+  --side-fg: #1a1a1a;
+  --side-muted: #6b7280;
+  --side-active: #1f6feb;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+aside.sidebar {
+  background: var(--side-bg);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0.85rem 2rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+aside.sidebar .brand {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.9rem;
+  color: var(--side-fg);
+  display: block;
+  text-decoration: none;
+}
+aside.sidebar .brand:hover { text-decoration: none; }
+
+aside.sidebar .brand-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--side-muted);
+  text-decoration: none;
+  margin: 0 0 0.8rem;
+}
+aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
+
+aside.sidebar section { margin-bottom: 0.9rem; }
+aside.sidebar h4 {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin: 0.6rem 0 0.25rem;
+  color: var(--side-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+aside.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+aside.sidebar li { margin: 0; }
+aside.sidebar a {
+  display: block;
+  color: var(--side-fg);
+  text-decoration: none;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  margin-left: -0.4rem;
+}
+aside.sidebar a:hover {
+  background: rgba(0,0,0,0.05);
+  text-decoration: none;
+}
+aside.sidebar a.active {
+  background: var(--side-active);
+  color: white;
+  font-weight: 500;
+}
+
+main {
+  max-width: 760px;
+  padding: 1.5rem 2rem 3rem;
+  width: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 1.1rem 0 0.25rem;
+  color: var(--fg);
+}
+
+h3 {
+  font-size: 0.9rem;
+  margin: 0.7rem 0 0.2rem;
+  color: var(--fg);
+}
+
+main > p:first-of-type {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 0.8rem;
+}
+
+p {
+  margin: 0.3rem 0;
+}
+
+ul, ol {
+  margin: 0.3rem 0;
+  padding-left: 1.2rem;
+}
+li { margin: 0.05rem 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(31, 36, 48, 0.08);
+  padding: 0.08em 0.3em;
+  border-radius: 3px;
+  color: #2d2f36;
+}
+
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 5px;
+  padding: 1.6rem 0.9rem 0.7rem;
+  margin: 0.45rem 0;
+  overflow-x: auto;
+  position: relative;
+  line-height: 1.45;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+}
+
+.lang-label {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: var(--code-label);
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+pre:hover .copy-btn,
+pre:focus-within .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
+.copy-btn.copied { color: #34d399; border-color: #34d399; }
+.copy-btn.failed { color: #f87171; border-color: #f87171; }
+
+/* Syntax highlighting palette — colours tuned against the dark
+   code-bg slate. Subtle: comments muted, strings warm yellow,
+   numbers/literals amber/violet, element names and directives in
+   cool blue/pink so CX bracket structure reads at a glance. */
+.hl-comment   { color: #7a8294; font-style: italic; }
+.hl-string    { color: #fbbf77; }
+.hl-number    { color: #f59e0b; }
+.hl-literal   { color: #c4b5fd; }
+.hl-keyword   { color: #f87171; }
+.hl-element   { color: #7dd3fc; }
+.hl-directive { color: #f9a8d4; }
+.hl-sigil     { color: #fcd34d; }
+.hl-type      { color: #a5b4fc; }
+.hl-attr      { color: #86efac; }
+.hl-fn        { color: #93c5fd; }
+
+table {
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 100%;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: var(--side-bg);
+  font-weight: 600;
+}
+tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+td code {
+  font-size: 11.5px;
+  background: rgba(31, 36, 48, 0.06);
+}
+
+@media (max-width: 460px) {
+  body { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  main { padding: 1rem 1.25rem 2rem; }
+}</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="../index.html">CX</a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <section><h4>Get Started</h4><ul>
+    <li><a href="../index.html">Overview</a></li>
+    <li><a href="../install.html">Install</a></li>
+    <li><a href="../quickstart.html">Quickstart</a></li>
+    </ul></section>
+  <section><h4>Learn</h4><ul>
+    <li><a href="../tutorial.html">Tutorial</a></li>
+    <li><a href="../playground.html">Playground</a></li>
+    </ul></section>
+  <section><h4>Examples</h4><ul>
+    <li><a href="../tour/data.html">50 Ways to Love Your CX Data</a></li>
+    <li><a href="../tour/programs.html">50 Ways to Love Your CXL Code</a></li>
+    <li><a href="../cookbook.html">Cookbook</a></li>
+    <li><a href="../showcase.html">Showcase</a></li>
+    </ul></section>
+  <section><h4>Concepts</h4><ul>
+    <li><a href="../concepts/data-model.html">Data Model</a></li>
+    <li><a href="../concepts/sigils.html">Sigils & Markup</a></li>
+    <li><a href="../concepts/evaluation.html">Evaluation Model</a></li>
+    <li><a href="../concepts/cxpath.html">CXPath</a></li>
+    <li><a href="../concepts/identity.html">Identity & Canonical</a></li>
+    <li><a href="../concepts/types.html">Types</a></li>
+    </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="../reference/cli.html">CLI</a></li>
+    <li><a href="../reference/cxl.html">CXL Language</a></li>
+    <li><a href="../reference/cxpath.html">CXPath Functions</a></li>
+    <li><a href="../reference/schemas.html">Schemas</a></li>
+    <li><a href="../reference/tables.html">Tables</a></li>
+    <li><a href="../reference/streaming.html">Streaming</a></li>
+    <li><a href="../reference/includes.html">Includes</a></li>
+    <li><a href="../reference/ast-bin.html">ast-bin Format</a></li>
+    <li><a class="active" href="../reference/data-bin.html">data-bin / Arrow</a></li>
+    <li><a href="../reference/grammar.html">Grammar (EBNF)</a></li>
+    <li><a href="../reference/errors.html">Error Codes</a></li>
+    </ul></section>
+  <section><h4>Bindings</h4><ul>
+    <li><a href="../bindings/index.html">Binding Catalog</a></li>
+    <li><a href="../bindings/c-abi.html">C ABI</a></li>
+    <li><a href="../bindings/v.html">V</a></li>
+    <li><a href="../bindings/python.html">Python</a></li>
+    <li><a href="../bindings/go.html">Go</a></li>
+    <li><a href="../bindings/rust.html">Rust</a></li>
+    <li><a href="../bindings/typescript.html">TypeScript</a></li>
+    <li><a href="../bindings/java.html">Java</a></li>
+    <li><a href="../bindings/csharp.html">C#</a></li>
+    <li><a href="../bindings/ruby.html">Ruby</a></li>
+    <li><a href="../bindings/kotlin.html">Kotlin</a></li>
+    <li><a href="../bindings/swift.html">Swift</a></li>
+    </ul></section>
+  <section><h4>Tooling</h4><ul>
+    <li><a href="../tooling/editors.html">Editors & LSP</a></li>
+    <li><a href="../tooling/tree-sitter.html">Tree-sitter</a></li>
+    <li><a href="../tooling/fuzzing.html">Fuzzing & Tests</a></li>
+    </ul></section>
+  <section><h4>Resources</h4><ul>
+    <li><a href="../comparison.html">vs JSON, YAML, TOML, XML</a></li>
+    <li><a href="../performance.html">Performance</a></li>
+    <li><a href="../faq.html">FAQ</a></li>
+    <li><a href="../release-notes.html">Release Notes</a></li>
+    </ul></section>
+</aside>
+<main>
+<doc>
+  <h1>data-bin: Arrow and Parquet</h1>
+  <p>Bridges the CX Table API to Apache Arrow (in-process) and Parquet (on-disk).</p>
+  <h2>Purpose</h2>
+  <p>data-bin connects the CX Table API to the columnar formats the analytics ecosystem already speaks — Apache Arrow for in-process exchange, Parquet for on-disk storage. The bridges live in libcx_arrow; the CX side stays format-agnostic.</p>
+  <h2>Mapping</h2>
+  <p>A CX table converts to an Arrow record batch with one column per CX column, types preserved end-to-end. Decimal stays decimal, dates stay dates, sized integer widths preserved i32 stays i32 u16 stays u16, no ad-hoc string round-trips. The reverse direction reads Arrow or Parquet and projects into the CX Table form, where the rest of the Table API takes over.</p>
+  <h2>CLI</h2>
+<pre><span class="lang-label">shell</span><code class="language-shell">cx table dump orders.cx --to=parquet &gt; orders.parquet
+cx table load orders.parquet --to=cx
+cx table dump orders.cx --to=arrow &gt; orders.arrow</code></pre>
+  <h2>From Python</h2>
+<pre><span class="lang-label">python</span><code class="language-python">import cx, pyarrow as pa
+batch = cx.table_to_arrow(cx.parse(open('prices.cx').read()))
+print(batch.schema)</code></pre>
+  <h2>Phase Status</h2>
+  <p>Phase A (Arrow round-trip) ships at v0.7.0. Phase B (Parquet writer) and Phase C (read-side schema inference) follow in v0.7.x. See spec/v0_7_0_status.md for current phase.</p>
+  <h2>Related</h2>
+  <ul>
+    <li>
+      <a href="../reference/tables.html">Tables — the Table API source of truth</a>
+    </li>
+    <li>
+      <a href="../reference/ast-bin.html">ast-bin — the structural binary baseline</a>
+    </li>
+  </ul>
+</doc>
+</main>
+<script>
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'copy';
+  btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    const code = pre.querySelector('code')?.textContent ?? pre.textContent;
+    const flash = (label, cls) => {
+      btn.textContent = label;
+      btn.classList.add(cls);
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove(cls); }, 1500);
+    };
+    try {
+      await navigator.clipboard.writeText(code);
+      flash('copied', 'copied');
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); flash('copied', 'copied'); }
+      catch { flash('failed', 'failed'); }
+      document.body.removeChild(ta);
+    }
+  });
+  pre.appendChild(btn);
+});
+</script>
+<script src="../highlight/highlight.js" defer></script>
+</body>
+</html>

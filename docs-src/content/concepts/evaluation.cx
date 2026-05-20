@@ -1,0 +1,59 @@
+[- Concept: Evaluation and CXPath. Merges directives, scoping, cxpath. -]
+[page id='evaluation'
+  [meta
+    title='Evaluation and CXPath'
+    layout='concept'
+    nav-order='210'
+    audience='learner'
+    summary='Directives turn CX into a program; CXPath is the query language they run against the tree.'
+  ]
+
+  [section id='directives' title='Directives Turn Data Into a Language'
+    [prose A directive is a CX element whose name starts with a question mark. It carries semantics — iteration, branching, substitution, include, function call — that the evaluator interprets when running a CXL program. Directives parse as regular CX, evaluate to text or values, and compose with each other through their slot bodies.]
+    [code lang='cx' src='''[?= EXPR]                                # substitute a value
+[?for x :in PATH :return BODY]           # iterate
+[?if [COND, THEN, ELSE]]                 # branch
+[?let x :be EXPR :return BODY]           # bind a name
+[?def name :params [a, b] :body BODY]    # define a template''']
+  ]
+
+  [section id='cxpath' title='CXPath: Querying the Tree'
+    [prose Anywhere a directive needs to point at a node or compute a value from one, the slot is a CXPath expression. CXPath looks like XPath — slashes for steps, the at-sigil for attributes, square brackets for predicates, axes for navigation by relationship.]
+    [code lang='cx' src='''//page/section/@id
+//item[@price > 100]/@name
+//pizza[size = 'large']
+parent::*
+descendant::topping
+ancestor::menu''']
+  ]
+
+  [section id='predicates' title='Predicates and the Function Library'
+    [prose Predicates filter steps. Comparisons, name tests, position, and the XPath function library are all available.]
+    [code lang='cx' src='''//item[position() = 1]
+//*[local-name() = 'pizza']
+//order[count(items) > 3]
+//user[starts-with(@id, 'admin-')]''']
+  ]
+
+  [section id='context' title='Context and Scoping'
+    [prose Every CXL directive runs with a current context — by default the input document root. A bare path like //order finds order elements anywhere in the document; a relative path like item resolves against the current context.]
+    [prose The ?for and ?let directives introduce named bindings. Inside the body, the binding shadows any outer binding of the same name. The ?with directive shifts the context for its body.]
+    [code lang='cx' src='''[?for o :in //order :return
+  [?let n :be o/items :return
+    [order id=[?= o/@id] count=[?= count(n)]]]]
+
+[?with //order/items :return
+  [?for it :in . :return [line [?= it/@name]]]]''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='reference/cxl'  label='CXL reference — full directive list']
+      [item path='tour/programs'  label='50 ways to write a CXL program']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

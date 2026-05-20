@@ -1,0 +1,168 @@
+[- CX FORMAT TOUR — every structural feature in one document.
+   For the eval / directive / cxl surface, see examples/cxl-tour.cxl.
+   Open with cx-language wired up to test highlight, hover, fold,
+   outline, goto-definition, references, rename, snippets. ]
+
+[doc lang=en
+
+  [- 1. Elements with attributes (quoted + unquoted values) ]
+  [meta name=author content="J. Smith"]
+  [meta name=published content=2026-05-19]
+  [link rel=canonical href="https://cx.dev/tour"]
+
+  [- 2. Scalars + type annotations.
+     Auto-typing: 8080 to int, 1.5 to float, true to bool, null to null.
+     Type annotations pin a range or shape and fail at parse time
+     when violated. ]
+  [server
+    host="localhost"
+    :u16 port=8080
+    :f32 timeout-seconds=1.5
+    +tls
+    -debug
+    workers=4
+  ]
+
+  [- 3. Collection-literal attribute values (ADR 0017) ]
+  [tags :string[] cx markup format tutorial]
+  [scores :float[] 1.0 2.5 3.14]
+
+  [- 4. ID declarations and references. Hash-prefix declares; at-prefix
+     refers. The LSP resolves cross-document via goto-definition. ]
+  [section #intro
+    [h1 What is CX?]
+    [p
+      CX unifies markup, configuration, and structured data in one
+      syntax. See [a href="#outro" Closing thoughts] below.
+    ]
+  ]
+
+  [- 5. Anchors and merges. Ampersand declares; star merges, YAML-style. ]
+  [defaults &base
+    log-level=info
+    retries=3
+    timeout-seconds:f32=5.0
+  ]
+  [service name=api
+    *base
+    port:u16=8080
+  ]
+
+  [- 6. Prose markup. The square-bracket prose forms render styled text. ]
+  [section #prose
+    [h2 Prose markup]
+    [p
+      Inline forms: [** bold], [* italic], [` inline code], [~~ strike],
+      [^ superscript], [~ subscript], [__ underline]. Combine them:
+      [** bold with [* italic] inside].
+    ]
+
+    [- Headings: one to six hash marks. ]
+    [# H1 top-level heading]
+    [## H2 section heading]
+    [### H3 subsection heading]
+    [#### H4]
+    [##### H5]
+    [###### H6 deepest]
+
+    [blockquote
+      [p
+        The goal of CX is to be [** as readable as YAML] yet
+        [** as expressive as XML] without the verbosity of either.
+      ]
+      [cite CX specification, section 1]
+    ]
+
+    [ul
+      [li First item]
+      [li Second item with [* emphasis]]
+      [li
+        [ol
+          [li Nested ordered]
+          [li Items can hold [` code] too]
+        ]
+      ]
+    ]
+  ]
+
+  [- 7. Tables — plain prose form and compact :table form. ]
+  [section #tables
+    [h2 Tables]
+    [table
+      [tr [th name] [th type] [th example]]
+      [tr [td int]    [td integer scalar] [td 42]]
+      [tr [td float]  [td IEEE 754]       [td 3.14]]
+      [tr [td bool]   [td true or false]  [td true]]
+      [tr [td string] [td quoted or bare] [td "hello"]]
+    ]
+
+    [users :table[id:int name:string score:float]
+      1  alice    99.5
+      2  bob      87.0
+      3  charlie  73.25
+    ]
+  ]
+
+  [- 8. Code blocks with embedded-language injection.
+     Triple-backtick open plus lang=NAME triggers highlighting of the
+     embedded source (tree-sitter injection path in Neovim). ]
+  [section #code-blocks
+    [h2 Code blocks]
+
+    [``` lang=python [|
+def square(n: int) -> int:
+    return n * n
+|]]
+
+    [``` lang=json [|
+{"port": 8080, "tls": true, "workers": 4}
+|]]
+
+    [``` lang=sql [|
+SELECT name, score FROM users WHERE score > 50 ORDER BY score DESC;
+|]]
+
+    [``` lang=bash [|
+brew install cx-home/tap/cx
+cx --version
+|]]
+  ]
+
+  [- 9. Entity and character references. ]
+  [section #entities
+    [h2 Special characters]
+    [p Predefined: &amp; &lt; &gt; &apos; &quot;]
+    [p Numeric: &#169; 2026 Acme Corp, registered &#174;]
+  ]
+
+  [- 10. Comments — line and block forms. ]
+  [section #comments
+    [h2 Comments]
+    # this is a line comment to end of line
+    [- this is a block comment -]
+    [p
+      Comments are stripped from canonical output and never affect
+      hash or equality semantics.
+    ]
+  ]
+
+  [- 11. Raw text — preserves bracket-laden content literally. ]
+  [section #raw
+    [h2 Raw text]
+    [pre [# [server host=x :u16 port=80 +tls] #]]
+  ]
+
+  [- 12. Body-position references (ADR 0003 D1). The ref element
+     reads its body from another element identified by id. ]
+  [snippet #greeting Hello world]
+  [output [ref @greeting]]
+
+  [- 13. Closing section with reference back to intro. ]
+  [section #outro
+    [h2 Closing]
+    [p
+      See [a href="#intro" Section 1] for the introduction,
+      and [a href="#prose" Prose markup] for the styled-text surface.
+    ]
+  ]
+]

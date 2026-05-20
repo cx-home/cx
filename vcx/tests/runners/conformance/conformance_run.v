@@ -2,6 +2,7 @@ module main
 
 import os
 import cx
+import runtime
 
 struct Test {
 mut:
@@ -117,6 +118,154 @@ fn run_test(t Test) []string {
 			return failures
 		}
 		failures << 'decode: expected error containing "${expected_err}", but decode succeeded'
+		return failures
+	}
+
+	// HH3 (v0.7.0): synthesized-table fixtures. `synth_table_rows: N`
+	// + `synth_table_schema: [t :table[id:int v:string]]` lets a
+	// fixture declare a million-row corpus without authoring the
+	// rows inline. The schema is parsed for its column declarations;
+	// rows are generated deterministically (int columns get their
+	// row index, string columns get "r_<i>", bool gets i % 2 == 0).
+	// The resulting Document goes through the same chunked-emit /
+	// hash / per-group-inspection assertions as in_cx-driven fixtures.
+	if 'synth_table_rows' in t.sections {
+		raw_n := (t.sections['synth_table_rows'] or { '0' }).trim_space()
+		n_rows := raw_n.int()
+		if n_rows <= 0 {
+			failures << 'synth_table_rows: must be > 0, got "${raw_n}"'
+			return failures
+		}
+		schema_cx := (t.sections['synth_table_schema'] or { '' }).trim_space()
+		if schema_cx == '' {
+			failures << 'synth_table_rows present but synth_table_schema missing'
+			return failures
+		}
+		doc := synth_table_document(schema_cx, n_rows) or {
+			failures << 'synth_table: ${err}'
+			return failures
+		}
+		// HH4 (v0.7.0): RSS-bounded streaming-write test. The fixture
+		// asserts the fd-streaming Table writer's process RSS stays
+		// bounded as N row groups are emitted. The driver builds one
+		// plain-body row-group payload once, opens the writer to
+		// /dev/null, emits the payload `warmup_groups` times, snaps
+		// RSS, emits `stress_groups` more, snaps RSS, asserts
+		// (stress / baseline) < max_ratio. Baseline isn't taken at 0
+		// emits because the col-spec / writer state hasn't reached
+		// steady state — the first row group also exercises the GC's
+		// initial-large-allocation pattern. v0.7.0 cap is 1.50× for
+		// the CI scale-down; the cmp-005 spec target (100M rows) is
+		// opt-in via BENCH_STRESS=1.
+		if 'assert_streaming_write_bounded_memory' in t.sections {
+			raw_bm := (t.sections['assert_streaming_write_bounded_memory'] or { '' }).trim_space()
+			toks := raw_bm.split_any(' \t\r\n').filter(it.trim_space().len > 0)
+			if toks.len != 4 {
+				failures << 'assert_streaming_write_bounded_memory: needs 4 tokens "rows_per_group warmup_groups stress_groups max_ratio", got ${toks.len}: ${raw_bm}'
+				return failures
+			}
+			rows_per_group := toks[0].int()
+			warmup_groups := toks[1].int()
+			stress_groups := toks[2].int()
+			max_ratio := toks[3].f64()
+			// Pull cols from the doc's single :table root.
+			if doc.elements.len != 1 || doc.elements[0] !is cx.Element {
+				failures << 'assert_streaming_write_bounded_memory: synth doc must have one Element root'
+				return failures
+			}
+			el := doc.elements[0] as cx.Element
+			td := el.table or {
+				failures << 'assert_streaming_write_bounded_memory: synth doc root lacks :table'
+				return failures
+			}
+			cols := td.cols
+			col_spec := cx.col_spec_to_ast_bin_pub(cols)
+			plain_body := cx.build_synthesized_plain_row_group(cols, rows_per_group) or {
+				failures << 'assert_streaming_write_bounded_memory: build payload: ${err}'
+				return failures
+			}
+			// /dev/null write-only fd (macOS + Linux both expose it).
+			mut devnull := os.open_file('/dev/null', 'wb') or {
+				failures << 'assert_streaming_write_bounded_memory: open /dev/null: ${err}'
+				return failures
+			}
+			defer { devnull.close() }
+			mut w := cx.new_table_writer_fd(col_spec, devnull.fd) or {
+				failures << 'assert_streaming_write_bounded_memory: open writer: ${err}'
+				return failures
+			}
+			for _ in 0 .. warmup_groups {
+				w.emit_row_group_payload(plain_body) or {
+					failures << 'assert_streaming_write_bounded_memory: emit (warmup): ${err}'
+					return failures
+				}
+			}
+			gc_collect()
+			baseline := runtime.used_memory() or {
+				failures << 'assert_streaming_write_bounded_memory: used_memory baseline: ${err}'
+				return failures
+			}
+			for _ in 0 .. stress_groups {
+				w.emit_row_group_payload(plain_body) or {
+					failures << 'assert_streaming_write_bounded_memory: emit (stress): ${err}'
+					return failures
+				}
+			}
+			gc_collect()
+			stress := runtime.used_memory() or {
+				failures << 'assert_streaming_write_bounded_memory: used_memory stress: ${err}'
+				return failures
+			}
+			ratio := if baseline > 0 {
+				f64(stress) / f64(baseline)
+			} else {
+				1.0  // baseline unmeasurable; pass through
+			}
+			if ratio >= max_ratio {
+				failures << 'assert_streaming_write_bounded_memory: ratio ${ratio:.3f} >= max ${max_ratio:.3f} (baseline=${baseline} bytes, stress=${stress} bytes after ${stress_groups} extra ${rows_per_group}-row groups)'
+			}
+			w.writer_close() or {
+				failures << 'assert_streaming_write_bounded_memory: close: ${err}'
+				return failures
+			}
+			return failures
+		}
+
+		// Per-group inspection assertions on the chunked encoding.
+		if 'assert_group_count' in t.sections || 'assert_group_row_counts' in t.sections {
+			opts := cx.ChunkedEmitOptions{ chunk_size: t.chunk_at, compress: .never }
+			framed := cx.emit_data_bin_chunked(doc, opts) or {
+				failures << 'synth_table: chunked emit: ${err}'
+				return failures
+			}
+			counts := cx.chunked_group_row_counts(framed) or {
+				failures << 'synth_table: chunked_group_row_counts: ${err}'
+				return failures
+			}
+			if 'assert_group_count' in t.sections {
+				want := (t.sections['assert_group_count'] or { '' }).trim_space().int()
+				if counts.len != want {
+					failures << 'assert_group_count: expected ${want}, got ${counts.len} (per-group: ${counts})'
+				}
+			}
+			if 'assert_group_row_counts' in t.sections {
+				raw_rc := t.sections['assert_group_row_counts'] or { '' }
+				want_strs := raw_rc.split_any(' \t\r\n').filter(it.trim_space().len > 0)
+				mut want := []int{}
+				for s in want_strs {
+					want << s.int()
+				}
+				if counts.len != want.len {
+					failures << 'assert_group_row_counts: expected ${want.len} groups ${want}, got ${counts.len}: ${counts}'
+				} else {
+					for i in 0 .. want.len {
+						if counts[i] != want[i] {
+							failures << 'assert_group_row_counts: group ${i} expected ${want[i]} rows, got ${counts[i]}'
+						}
+					}
+				}
+			}
+		}
 		return failures
 	}
 
@@ -308,6 +457,89 @@ fn run_test(t Test) []string {
 		}
 	}
 
+	// ── assert_hash_compression_invariance + assert_compressed_size_lt (HH1,
+	// v0.7.0) ──────────────────────────────────────────────────────────────
+	// Encode the input in N modes and verify cx_data_bin_hash is invariant
+	// across them. Spec: data_bin.md §3.12.2. Both section handlers live
+	// together so the size-comparison branch can reuse the bytes computed
+	// by the hash-invariance branch.
+	//
+	// assert_hash_compression_invariance value: whitespace-separated list of
+	// encoding tokens:
+	//   plain   → ChunkedEmitOptions{ compress: .never }
+	//   auto    → ChunkedEmitOptions{ compress: .auto, compress_level: 3 }
+	//   zstd1   → ChunkedEmitOptions{ compress: .always, compress_level: 1 }
+	//   zstd3   → ChunkedEmitOptions{ compress: .always, compress_level: 3 }
+	//   zstd19  → ChunkedEmitOptions{ compress: .always, compress_level: 19 }
+	//
+	// assert_compressed_size_lt value: two encoding tokens "smaller bigger"
+	// — asserts sizeof(smaller) < sizeof(bigger). Both tokens must appear
+	// in the assert_hash_compression_invariance encoding list above.
+	if 'assert_hash_compression_invariance' in t.sections {
+		raw := t.sections['assert_hash_compression_invariance'] or { '' }
+		encs := raw.split_any(' \t\r\n').filter(it.trim_space().len > 0)
+		if encs.len < 2 {
+			failures << 'assert_hash_compression_invariance: needs >=2 encoding tokens, got ${encs.len}'
+			return failures
+		}
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		mut size_by_enc := map[string]int{}
+		mut hash_by_enc := map[string]string{}
+		for enc in encs {
+			opts := encoding_token_to_opts(enc, t.chunk_at) or {
+				failures << 'assert_hash_compression_invariance: ${err}'
+				return failures
+			}
+			bytes := cx.emit_data_bin_chunked(doc, opts) or {
+				failures << 'assert_hash_compression_invariance: emit(${enc}) error: ${err}'
+				return failures
+			}
+			h := cx.cx_data_bin_hash(bytes) or {
+				failures << 'assert_hash_compression_invariance: hash(${enc}) error: ${err}'
+				return failures
+			}
+			hash_by_enc[enc] = h
+			size_by_enc[enc] = bytes.len
+		}
+		// All hashes must match the first.
+		base_enc := encs[0]
+		base_hash := hash_by_enc[base_enc] or { '' }
+		for i in 1 .. encs.len {
+			e := encs[i]
+			h := hash_by_enc[e] or { '' }
+			if h != base_hash {
+				failures << 'assert_hash_compression_invariance: hash(${base_enc})=${base_hash} != hash(${e})=${h}'
+			}
+		}
+		// Companion size-ordering check, if requested.
+		if 'assert_compressed_size_lt' in t.sections {
+			raw_sz := t.sections['assert_compressed_size_lt'] or { '' }
+			toks := raw_sz.split_any(' \t\r\n').filter(it.trim_space().len > 0)
+			if toks.len != 2 {
+				failures << 'assert_compressed_size_lt: needs exactly 2 encoding tokens (smaller bigger), got ${toks.len}'
+				return failures
+			}
+			smaller := toks[0]
+			bigger := toks[1]
+			sz_small := size_by_enc[smaller] or {
+				failures << 'assert_compressed_size_lt: encoding "${smaller}" not in assert_hash_compression_invariance list'
+				return failures
+			}
+			sz_big := size_by_enc[bigger] or {
+				failures << 'assert_compressed_size_lt: encoding "${bigger}" not in assert_hash_compression_invariance list'
+				return failures
+			}
+			if sz_small >= sz_big {
+				failures << 'assert_compressed_size_lt: ${smaller}=${sz_small} bytes is NOT < ${bigger}=${sz_big} bytes'
+			}
+		}
+	}
+
 	// ── out_data_bin_hex (chunked-table; ADR 0015 D1) ──────────────────────
 	// Compares the bytes produced by emit_data_bin_chunked against the
 	// fixture's expected hex (whitespace + ` # comment` non-significant).
@@ -393,6 +625,7 @@ fn run_test(t Test) []string {
 		|| 'sd_name_hint' in t.sections
 		|| 'sd_expected_emit_error' in t.sections
 		|| 'sd_expected_decoded_cx' in t.sections
+		|| 'sd_decode_with_alt_schema' in t.sections
 	if has_sd && 'schema_cxs' in t.sections {
 		schema_text := t.sections['schema_cxs'] or { '' }
 		ref_form := match (t.sections['sd_ref_form'] or { 'hash' }).trim_space() {
@@ -436,6 +669,26 @@ fn run_test(t Test) []string {
 			}
 			if got_tag != want_tag {
 				failures << 'sd_assert_ref_tag: expected=0x${want_tag:02x} got=0x${got_tag:02x}'
+			}
+		}
+		// HH5 (v0.7.0): content-store schema-mismatch test. Encode with
+		// schema_cxs, then decode with a different schema text supplied
+		// as the consumer's content-store response. The decoder must
+		// reject with D002 (content-hash mismatch) because the embedded
+		// reference hashes the original schema, not the alt.
+		if 'sd_decode_with_alt_schema' in t.sections {
+			alt := (t.sections['sd_decode_with_alt_schema'] or { '' }).trim_space()
+			expected_err := (t.sections['sd_expected_decode_error'] or { '' }).trim_space()
+			_ := cx.parse_data_bin_schema_driven(bytes_or_err, alt) or {
+				if expected_err != '' && err.msg().contains(expected_err) {
+					return failures
+				}
+				failures << 'sd_decode_with_alt_schema: ${err} (expected: ${expected_err})'
+				return failures
+			}
+			if expected_err != '' {
+				failures << 'sd_decode_with_alt_schema: expected error containing "${expected_err}", decode succeeded'
+				return failures
 			}
 		}
 		if (t.sections['sd_assert_round_trip'] or { '0' }).trim_space() == '1' {
@@ -568,6 +821,74 @@ fn slices_equal(a []u8, b []u8) bool {
 		if a[i] != b[i] { return false }
 	}
 	return true
+}
+
+// synth_table_document builds an N-row Document from a CX :table
+// schema header. The schema_cx text declares one Element with a
+// `:table[col:type, ...]` body; rows are generated deterministically:
+//   - int / i64 / i32 columns           → row index (i64)
+//   - float / f64 columns               → row index as f64
+//   - bool columns                      → i % 2 == 0
+//   - string / unspecified columns      → "r_<i>"
+//   - datetime columns                  → unix epoch + i seconds (i64 ns)
+// HH3 (v0.7.0). Composes with assert_group_count + assert_group_row_counts
+// for million-row corpus tests without inline row authoring.
+fn synth_table_document(schema_cx string, n_rows int) !cx.Document {
+	parsed := cx.parse(schema_cx)!
+	if parsed.elements.len != 1 {
+		return error('schema must declare exactly one Element, got ${parsed.elements.len}')
+	}
+	root := parsed.elements[0]
+	if root !is cx.Element {
+		return error('schema root must be Element')
+	}
+	el := root as cx.Element
+	td := el.table or { return error('schema Element lacks :table body') }
+	cols := td.cols
+	if cols.len == 0 {
+		return error('schema :table must declare at least one column')
+	}
+	mut rows := [][]cx.TableCellValue{cap: n_rows}
+	for i in 0 .. n_rows {
+		mut row := []cx.TableCellValue{cap: cols.len}
+		for col in cols {
+			t := col.type_name
+			cell := if t == 'int' || t == 'i64' || t == 'i32' {
+				cx.TableCellValue(i64(i))
+			} else if t == 'float' || t == 'f64' || t == 'f32' {
+				cx.TableCellValue(f64(i))
+			} else if t == 'bool' {
+				cx.TableCellValue(i % 2 == 0)
+			} else {
+				cx.TableCellValue('r_${i}')
+			}
+			row << cell
+		}
+		rows << row
+	}
+	synth_el := cx.Element{
+		name:  el.name
+		attrs: el.attrs
+		table: cx.TableData{ cols: cols, rows: rows, from_chunked: false }
+	}
+	return cx.Document{ elements: [cx.Node(synth_el)] }
+}
+
+// encoding_token_to_opts maps an HH1 encoding token to a
+// ChunkedEmitOptions value. Unknown tokens return an error so typos
+// in fixtures surface immediately. chunk_at carries the fixture's
+// `chunk_at:` metadata; the canonical default (2^20 rows) applies
+// when chunk_at is 0.
+fn encoding_token_to_opts(token string, chunk_at int) !cx.ChunkedEmitOptions {
+	chunk := if chunk_at > 0 { chunk_at } else { 1 << 20 }
+	return match token {
+		'plain'  { cx.ChunkedEmitOptions{ chunk_size: chunk, compress: .never } }
+		'auto'   { cx.ChunkedEmitOptions{ chunk_size: chunk, compress: .auto,   compress_level: 3 } }
+		'zstd1'  { cx.ChunkedEmitOptions{ chunk_size: chunk, compress: .always, compress_level: 1 } }
+		'zstd3'  { cx.ChunkedEmitOptions{ chunk_size: chunk, compress: .always, compress_level: 3 } }
+		'zstd19' { cx.ChunkedEmitOptions{ chunk_size: chunk, compress: .always, compress_level: 19 } }
+		else     { error('unknown encoding token "${token}" — expected plain / auto / zstd1 / zstd3 / zstd19') }
+	}
 }
 
 fn parse_hex_byte(s string) int {

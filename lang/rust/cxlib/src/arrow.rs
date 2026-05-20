@@ -205,3 +205,39 @@ where
     };
     Ok(out)
 }
+
+// W2 v0.7.0: Arrow IPC stream format read/write.
+// Delegates to arrow::ipc's StreamWriter / StreamReader, which
+// handle flatbuffer encoding/decoding. CX never touches flatbuffer
+// bytes directly — IPC codec lives in each language's Arrow library
+// by Apache Arrow convention.
+
+/// Convert framed CXDB chunked-table bytes to Arrow IPC stream bytes
+/// suitable for writing to a `.arrow` file or piping into another
+/// Arrow IPC consumer.
+pub fn to_ipc(payload: &[u8]) -> Result<Vec<u8>, String> {
+    use arrow::ipc::writer::StreamWriter;
+    let mut reader = export(payload)?;
+    let schema = reader.schema();
+    let mut buf: Vec<u8> = Vec::new();
+    {
+        let mut writer = StreamWriter::try_new(&mut buf, &schema)
+            .map_err(|e| format!("to_ipc: writer init: {e}"))?;
+        while let Some(batch) = reader.next() {
+            let batch = batch.map_err(|e| format!("to_ipc: next batch: {e}"))?;
+            writer.write(&batch).map_err(|e| format!("to_ipc: write: {e}"))?;
+        }
+        writer.finish().map_err(|e| format!("to_ipc: finish: {e}"))?;
+    }
+    Ok(buf)
+}
+
+/// Convert Arrow IPC stream bytes (the byte stream a `.arrow` file
+/// would contain) to framed CXDB chunked-table bytes.
+pub fn from_ipc(ipc_bytes: &[u8]) -> Result<Vec<u8>, String> {
+    use arrow::ipc::reader::StreamReader;
+    let cursor = std::io::Cursor::new(ipc_bytes);
+    let reader = StreamReader::try_new(cursor, None)
+        .map_err(|e| format!("from_ipc: reader init: {e}"))?;
+    import_to_data_bin(reader)
+}

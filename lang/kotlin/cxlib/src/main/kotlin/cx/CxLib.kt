@@ -137,7 +137,7 @@ object CxLib {
         fun cx_to_toml (input: String, errOut: PointerByReference): Pointer?
         fun cx_to_md   (input: String, errOut: PointerByReference): Pointer?
 
-        // CXL evaluator (capability bit 28; spec/cxl.md)
+        // CXL evaluator (capability bit 28; spec/eval.md)
         fun cx_eval_cxl(input: String, program: String, outputTarget: String, errOut: PointerByReference): Pointer?
 
         // XML input

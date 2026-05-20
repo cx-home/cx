@@ -1,0 +1,47 @@
+[- Reference: Schemas. -]
+[page id='schemas'
+  [meta
+    title='Schemas and Validation'
+    layout='reference'
+    nav-order='430'
+    audience='user'
+    summary='Declare the expected shape of a document; validate before processing.'
+  ]
+
+  [section id='what' title='What a CX Schema Is'
+    [prose A schema in CX is itself a CX document. It declares which elements may appear where, what attributes they carry, and what types those attributes hold. The cx validate subcommand walks the schema against an input document and reports diagnostics.]
+  ]
+
+  [section id='minimal' title='Minimal Schema'
+    [code lang='cx' src='''[schema
+  [element name='pizza'
+    [attribute name='size' type='enum' values='small medium large']
+    [attribute name='crust' type='string']]]''']
+  ]
+
+  [section id='validate' title='Validating a Document'
+    [code lang='shell' src='''cx validate order.cx --schema=order.cxs
+cx validate order.cx --schema=order.cxs --mode=strict
+cx validate order.cx --schema=order.cxs --fail-on=warn''']
+    [prose Exit codes: 0 if no diagnostics at or above fail-on, 1 if any, 2 on I/O or schema-load failure.]
+  ]
+
+  [section id='modes' title='Validation Modes'
+    [prose Three modes determine what counts as a diagnostic. Open admits undeclared attributes and child elements as warnings; strict rejects them as errors; closed treats undeclared content as a hard error. The schema may set its own default mode; the --mode flag overrides it.]
+  ]
+
+  [section id='types' title='Type System'
+    [prose Schemas declare attribute types from a fixed catalog — string, int with sized variants such as i8 / u16 / i64, float, decimal, bigint, bool, date, datetime, bytes, enum with explicit values, regex with a pattern. The validator coerces and bounds-checks each value against the declared type.]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='reference/cli'     label='cx validate flag reference']
+      [item path='comparison'        label='Type fidelity vs JSON / YAML / TOML / XML']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

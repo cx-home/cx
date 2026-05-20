@@ -1,6 +1,43 @@
 /**
  * CX TypeScript binding — koffi wrapper around libcx.
  */
+
+// libcx's bundled Boehm GC crashes inside `GC_mark_from` on its second
+// real stop-the-world collection when running under Node's process
+// layout. macOS crash reports confirm EXC_BAD_ACCESS in
+// `GC_mark_from + 524`, called from
+// `GC_collect_or_expand → cx__parse_cx → ForwardCallGG (koffi)`. The
+// first collection (bootstrap, empty heap) always succeeds; the second
+// — the first real mark — always crashes regardless of initial heap
+// size or libgc tuning. Confirmed reproducible across heap sizes from
+// 256 KB to 512 MB, GC_DISABLE_INCREMENTAL, GC_USE_ENTIRE_HEAP,
+// GC_MARKERS=1, GC_FORCE_UNMAP_ON_GCOLLECT=0, and several other
+// settings. The only env knob that prevents the crash is GC_DONT_GC=1.
+//
+// Until the underlying interaction is fixed upstream (likely a libgc
+// conservative-pointer-following confusion specific to Node/V8's
+// address-space layout — Python's ctypes binding does not hit it),
+// the TS binding disables libcx's GC by default. Trade-off: libcx
+// allocations are never reclaimed for the lifetime of the process.
+//   - Short-lived CLI: no functional impact (process exits).
+//   - Long-lived server: must periodically restart workers, or set
+//     CX_TS_ALLOW_GC=1 to risk the SIGSEGV instead of leaking.
+//
+// Env vars are read by Boehm GC during GC_INIT, which runs at
+// libcx.dylib load time — they MUST be set before koffi.load(). The
+// no-op import order below is preserved by tsc / esbuild because top-
+// level statements in a CommonJS-compiled module run in source order
+// once `require` is invoked at the top.
+//
+// Root cause + reproduction recipe + suggested upstream debug path
+// are tracked in memory/project_ts_binding_gc_sigsegv.md.
+if (!process.env.CX_TS_ALLOW_GC && !process.env.GC_DONT_GC) {
+  process.env.GC_DONT_GC = '1';
+}
+if (!process.env.GC_INITIAL_HEAP_SIZE) {
+  process.env.GC_INITIAL_HEAP_SIZE = String(32 * 1024 * 1024);
+}
+
 import koffi from 'koffi';
 import path from 'path';
 import fs from 'fs';
@@ -44,15 +81,23 @@ const lib = koffi.load(libPath);
 // For err_out we use _Out_ str* so koffi writes the error string into an array.
 
 // Thread-init handshake (spec/abi.md §1.5.5, capability bit 26).
-// Mandatory-for-all-bindings; called once at module-load time.
+// Mandatory-for-all-bindings; called once at module-load time. Node's
+// JS execution is single-threaded so a single cx_thread_register on the
+// main thread is sufficient — without it, libcx's Boehm GC has no
+// awareness of the Node thread's stack roots and may collect live
+// libcx-owned strings while koffi still references them, surfacing as
+// a silent SIGSEGV mid-suite once the heap accumulates enough churn.
 const _cx_init = lib.func('int cx_init()');
+const _cx_thread_register = lib.func('int cx_thread_register()');
 _cx_init();
+_cx_thread_register();
 
 const _cx_version = lib.func('char* cx_version()');
 const _cx_free = lib.func('void cx_free(void* ptr)');
 
 // Binary functions — return a raw pointer to [u32 size][payload] buffer.
 const _cx_to_ast_bin    = lib.func('void* cx_to_ast_bin(str input, _Out_ str* err_out)');
+const _cx_to_ast_bin_with_include_root = lib.func('void* cx_to_ast_bin_with_include_root(str input, str include_root, _Out_ str* err_out)');
 const _cx_to_events_bin = lib.func('void* cx_to_events_bin(str input, _Out_ str* err_out)');
 const _cx_to_data_bin   = lib.func('void* cx_to_data_bin(str input, _Out_ str* err_out)');
 
@@ -212,8 +257,22 @@ const _cx_tsv_to_data_bin_schema_driven  = lib.func('void* cx_tsv_to_data_bin_sc
 const _cx_psv_to_data_bin_schema_driven  = lib.func('void* cx_psv_to_data_bin_schema_driven  (str input, str schema, int ref_form, str name_hint, _Out_ str* err_out)');
 const _cx_from_data_bin_schema_driven    = lib.func('char* cx_from_data_bin_schema_driven    (uint8_t* data_bin, str schema_hint, _Out_ str* err_out)');
 
-// CXL evaluation (spec/cxl.md / ADR 0016, capability bit 28)
-const _cx_eval_cxl = lib.func('char* cx_eval_cxl(str cx_input, str cxl_program, str output_target, _Out_ str* err_out)');
+// CXL evaluation (spec/eval.md / ADR 0016, capability bit 28)
+const _cx_eval = lib.func('char* cx_eval(str cx_input, str cxl_program, str output_target, _Out_ str* err_out)');
+
+// Streaming evaluator (v0.7.0 Y-row; spec/v0_7_0_status.md Y).
+// cx_eval_streaming takes a write-callback that fires per chunk;
+// koffi's `register` / callback API wraps a JS function as a C
+// function pointer with the matching signature.
+// Declare bytes as `void*` (not `const char*`) so koffi exposes a
+// raw pointer to the callback rather than auto-decoding to JS string.
+// Buffer contents may include NUL bytes — read via koffi.decode with
+// the supplied length.
+const CxEvalWriteCb = koffi.proto('int CxEvalWriteCb(void* bytes, size_t n, void* user)');
+const _cx_eval_streaming = lib.func(
+  'char* cx_eval_streaming(str cx_input, str cxl_program, str output_target, ' +
+  'CxEvalWriteCb* write_cb, void* user, _Out_ str* err_out)'
+);
 
 // MD input
 const _cx_md_to_cx   = lib.func('char* cx_md_to_cx  (str input, _Out_ str* err_out)');
@@ -238,13 +297,14 @@ function callFn(fn: koffi.KoffiFunction, input: string): string {
 function callBinFn(fn: koffi.KoffiFunction, input: string): Buffer {
   const errArr: (string | null)[] = [null];
   const ptr: any = fn(input, errArr);
+  return extractBinPayload(ptr, errArr[0]);
+}
+
+function extractBinPayload(ptr: any, errMsg: string | null): Buffer {
   if (ptr === null || ptr === undefined) {
-    throw new Error(errArr[0] ?? 'unknown error');
+    throw new Error(errMsg ?? 'unknown error');
   }
-  // Read the 4-byte little-endian size prefix, coerce to number for safety.
   const payloadSize: number = Number(koffi.decode(ptr, 'uint32_t') as number);
-  // Map the raw C buffer into an ArrayBuffer (zero-copy view), copy payload
-  // bytes into a Node Buffer, then free the C-owned memory.
   const ab: ArrayBuffer = koffi.view(ptr, 4 + payloadSize);
   const payload = Buffer.from(Buffer.from(ab).subarray(4));
   _cx_free(ptr);
@@ -258,6 +318,14 @@ export function version(): string { return _cx_version() as string; }
 // Binary bridge — used by parse() in ast.ts and stream() below.
 export function toAstBin(input: string): Buffer {
   return callBinFn(_cx_to_ast_bin, input);
+}
+
+/** toAstBin with opt-in spec/include.md ?include resolver (v0.7.0
+ *  GG4). Empty includeRoot is a no-op equivalent to toAstBin. */
+export function toAstBinWithIncludeRoot(input: string, includeRoot: string): Buffer {
+  const errOut: [string | null] = [null];
+  const raw = _cx_to_ast_bin_with_include_root(input, includeRoot, errOut);
+  return extractBinPayload(raw, errOut[0]);
 }
 
 export function toEventsBin(input: string): Buffer {
@@ -675,18 +743,53 @@ export function mdToYaml(input: string): string { return callFn(_cx_md_to_yaml, 
 export function mdToToml(input: string): string { return callFn(_cx_md_to_toml, input); }
 export function mdToMd  (input: string): string { return callFn(_cx_md_to_md,   input); }
 
-// ── CXL evaluation (spec/cxl.md / ADR 0016, capability bit 28) ──────────────
+// ── CXL evaluation (spec/eval.md / ADR 0016, capability bit 28) ──────────────
 /** Evaluate a CXL program against a CX input document and return the
  *  rendered output. `outputTarget` may be '' (honour the program's
  *  `[?cx output-target=…]` directive, defaulting to `text`) or one of
  *  `text` / `cx` / `html` at CXL 1.0 (v0.6.0). */
 export function evalCxl(cxInput: string, cxlProgram: string, outputTarget: string = ''): string {
   const errArr: (string | null)[] = [null];
-  const out: string | null = _cx_eval_cxl(cxInput, cxlProgram, outputTarget, errArr);
+  const out: string | null = _cx_eval(cxInput, cxlProgram, outputTarget, errArr);
   if (out === null) {
-    throw new Error(errArr[0] ?? 'cx_eval_cxl: unknown error');
+    throw new Error(errArr[0] ?? 'cx_eval: unknown error');
   }
   return out;
+}
+
+/** Evaluate a CXL program with pull-based incremental output (v0.7.0
+ *  Y-row). `onChunk` is invoked with each output chunk as a string;
+ *  throwing from the callback aborts evaluation cleanly. */
+export function evalCxlStreaming(
+  cxInput: string,
+  cxlProgram: string,
+  onChunk: (chunk: string) => void,
+  outputTarget: string = '',
+): void {
+  let captured: unknown = null;
+  const cbId = koffi.register(
+    (bytesPtr: unknown, n: number /*, _user: unknown */) => {
+      try {
+        // Read n bytes from the C pointer and decode as UTF-8.
+        const buf = koffi.decode(bytesPtr, koffi.array('uint8_t', n)) as Uint8Array;
+        const s = Buffer.from(buf).toString('utf8');
+        onChunk(s);
+        return 0;
+      } catch (e) {
+        captured = e;
+        return 1;
+      }
+    },
+    koffi.pointer(CxEvalWriteCb),
+  );
+  const errArr: (string | null)[] = [null];
+  try {
+    _cx_eval_streaming(cxInput, cxlProgram, outputTarget, cbId, null, errArr);
+  } finally {
+    koffi.unregister(cbId);
+  }
+  if (captured !== null) throw captured;
+  if (errArr[0] !== null) throw new Error(errArr[0] as string);
 }
 
 // ── Chunked-table one-shot (Phase 7.72) ─────────────────────────────────────
@@ -785,3 +888,5 @@ export { decodeAST, decodeEvents } from './binary';
 export { decode as decodeDataBin, encode as encodeDataBin } from './data_bin';
 export { TableReader, TableWriter } from './streaming_table';
 export { Table, type ColumnView } from './table';
+export * as arrow from './arrow';
+export * as parquet from './parquet';

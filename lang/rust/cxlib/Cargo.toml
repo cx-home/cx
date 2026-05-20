@@ -16,16 +16,24 @@ serde_json = "1"
 # build stays light. Mirrors Python's `pip install cxlib[arrow]` and Go's
 # `-tags arrow` patterns. Pulls in `libcx_arrow` at link time (see build.rs).
 arrow = { version = "53", optional = true, default-features = false, features = ["ffi"] }
+# Parquet bridge (X-row / v0.7.0). Same major as the `arrow` crate.
+# Opt-in via `--features parquet` (implies arrow).
+parquet = { version = "53", optional = true, default-features = false, features = ["arrow", "snap"] }
 
 [features]
 default = []
 arrow = ["dep:arrow"]
+parquet = ["arrow", "dep:parquet"]
 
 [[example]]
 name = "transform"
 
 [[example]]
 name = "demo"
+
+[[example]]
+name = "parquet_smoke"
+required-features = ["parquet"]
 
 [[bin]]
 name = "bench_time"

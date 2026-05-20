@@ -1,0 +1,43 @@
+[- Tooling: Tree-sitter grammar. -]
+[page id='tooling-tree-sitter'
+  [meta
+    title='Tree-Sitter Grammar'
+    layout='reference'
+    nav-order='510'
+    audience='user'
+    summary='Incremental parser for editors and static-analysis tools. Lives at tooling/tree-sitter-cx in the repo.'
+  ]
+
+  [section id='what' title='Purpose'
+    [prose Tree-sitter is the engine behind syntax highlighting, code folding, structural selection, and lightweight static analysis in modern editors. The CX grammar at tooling/tree-sitter-cx covers all of v0.7.0 and ships prebuilt artifacts inside each editor extension.]
+  ]
+
+  [section id='build' title='Building the Grammar'
+    [code lang='shell' src='''cd tooling/tree-sitter-cx
+tree-sitter generate
+tree-sitter parse example.cx''']
+  ]
+
+  [section id='editor-bind' title='Editor Bindings'
+    [list
+      [item path='tooling/editors' label='VS Code — packages the grammar as a .wasm artifact']
+      [item path='tooling/editors' label='Neovim — picks up the grammar via nvim-treesitter']
+      [item path='tooling/editors' label='Helix and Emacs (tree-sitter-langs) wire it through directly']
+    ]
+  ]
+
+  [section id='queries' title='Queries'
+    [prose Highlight, indent, fold, and locals queries ship alongside the grammar. They drive syntax colours, structural selection, and the cursor-jump-to-definition behaviour. The queries are versioned with the grammar; updates flow through the editor extensions on each release.]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='tooling/editors'  label='Editor and LSP integration']
+      [item path='reference/grammar' label='Grammar (EBNF)']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

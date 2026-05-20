@@ -126,3 +126,24 @@
 (table_column col_name: (word) @property)
 (table_column ":" @operator)
 (table_column col_type: (type_name) @type)
+
+; ── Scope note (ADR 0025) ─────────────────────────────────────────────
+;
+; This grammar provides STRUCTURAL highlighting only — element names,
+; attributes, scalars, code blocks, embedded-language injection. Eval
+; directives `[?Name ...]` are rendered as opaque `(pi)` regions; the
+; directive name, slot labels, and operator tokens inside the brackets
+; are NOT individually tokenised.
+;
+; Per-directive coloring is the job of `cx lsp` (LSP semanticTokens,
+; libcx-backed) and the TextMate grammar at tooling/syntax/. Both are
+; the canonical highlighting paths. See ADR 0025 for the rationale —
+; one parser (libcx), one source of truth, no parallel CFG to drift.
+;
+; Tree-sitter remains the recommended highlighter for
+;   - structural CX (elements, attributes, prose markup, scalars)
+;   - embedded-language injection in `[``` lang=X [| … |] ]` blocks
+;     (see queries/injections.scm)
+;
+; Eval-directive interior coloring is a 1.0+ revisit, gated on the
+; spec freezing + a grammar-from-EBNF generator landing.

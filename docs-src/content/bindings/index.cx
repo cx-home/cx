@@ -1,0 +1,38 @@
+[- Bindings catalog. -]
+[page id='bindings-catalog'
+  [meta
+    title='Bindings'
+    layout='reference'
+    nav-order='600'
+    audience='lookup'
+    summary='Ten implementations, one libcx C ABI underneath. Pick your language.'
+  ]
+
+  [section id='shape' title='Shape'
+    [prose Every CX binding wraps the libcx C ABI. The API surface a binding exposes maps one-to-one with the underlying C entry point, so the shape you learn in one language carries to the next. Tier-1 bindings (V, Python, Go) gate every release feature; Tier-2 (Rust, C-sharp, Java) catches up once per release; Tier-3 (TypeScript, Kotlin, Swift, Ruby, V-cffi) lags by one minor release.]
+  ]
+
+  [section id='languages' title='Languages'
+    [list
+      [item path='bindings/v'          label='V — the native reference implementation']
+      [item path='bindings/c-abi'      label='C ABI — the symbols every binding calls']
+      [item path='bindings/python'     label='Python']
+      [item path='bindings/go'         label='Go']
+      [item path='bindings/rust'       label='Rust']
+      [item path='bindings/typescript' label='TypeScript']
+      [item path='bindings/java'       label='Java']
+      [item path='bindings/csharp'     label='C-sharp']
+      [item path='bindings/ruby'       label='Ruby']
+      [item path='bindings/kotlin'     label='Kotlin']
+      [item path='bindings/swift'      label='Swift']
+    ]
+  ]
+
+  [section id='parity' title='Parity Matrix'
+    [prose Every binding implements the core capability set: parse, emit, format conversion (CX with XML, JSON, YAML, TOML, Markdown), canonical form, hash, equality, ast-bin and data-bin one-shots, evaluator (cx eval), include resolution, and schema validation. Per-binding ergonomic conveniences differ; the underlying capabilities do not.]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

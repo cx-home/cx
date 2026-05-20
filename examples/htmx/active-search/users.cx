@@ -1,0 +1,7 @@
+[users
+  [user name=Alice email=alice@example.com role=admin]
+  [user name=Aaron email=aaron@example.com role=user]
+  [user name=Bob   email=bob@example.com   role=user]
+  [user name=Carol email=carol@example.com role=user]
+  [user name=Dave  email=dave@example.com  role=admin]
+]

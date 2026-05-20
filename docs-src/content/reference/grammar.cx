@@ -1,0 +1,82 @@
+[- Reference: Grammar (EBNF). -]
+[page id='ref-grammar'
+  [meta
+    title='Grammar (EBNF)'
+    layout='reference'
+    nav-order='480'
+    audience='lookup'
+    summary='Normative CX grammar in EBNF. The source of truth is spec/grammar.ebnf in the repo.'
+  ]
+
+  [section id='intro' title='Source of Truth'
+    [prose The normative CX grammar lives at spec/grammar.ebnf in the repository. This page mirrors the high-level shape and points at the file for the full production list. The grammar is append-only after v0.7.0; new constructs add new productions and feature-flag through capability bits.]
+  ]
+
+  [section id='document' title='Document'
+    [code lang='ebnf' src='''Document    ::= Prolog (Element | TopText | "---" Document)*
+Prolog      ::= (XmlDecl | CxDirective | Comment | WS)*
+XmlDecl     ::= "[?xml" Attr* "]"
+CxDirective ::= "[?cx" Attr+ "]"
+TopText     ::= /* logfmt-mode top-level bare attributes */ Attr (WS Attr)*''']
+  ]
+
+  [section id='element' title='Element'
+    [code lang='ebnf' src='''Element     ::= "[" Name TypeAnno? Sigil* Attr* (WS Body)? "]"
+Sigil       ::= "&" Name | "*" Name | "#" Name
+TypeAnno    ::= ":" TypeRef
+Attr        ::= AttrSigil Name ("=" Value)?
+AttrSigil   ::= "+" | "-" | ε
+Value       ::= ScalarLit | Quoted | TripleQuoted | CollectionLit''']
+  ]
+
+  [section id='body' title='Body'
+    [code lang='ebnf' src='''Body        ::= BodyItem (WS BodyItem)*
+BodyItem    ::= Element | QuotedString | TripleQuoted | BlockContent
+              | RawText  | LineComment | BlockComment | CollectionLit
+              | TextRun
+
+TextRun     ::= /* run of bytes excluding [, ], \', \" until next boundary */
+BlockContent::= "[|" /* parsed body, newlines preserved */ "]"
+RawText     ::= "[#" /* nothing parsed, terminator is #] */ "#]"
+LineComment ::= "#" /* to end of line, outside an element body */
+BlockComment::= "[-" /* … */ "]"''']
+  ]
+
+  [section id='collection' title='Collection Literals (ADR 0017)'
+    [code lang='ebnf' src='''SequenceLit ::= "(" (Value ("," Value)*)? ")"
+ArrayLit    ::= "[" (Value ("," Value)*)? "]"
+MapLit      ::= "{" (MapEntry ("," MapEntry)*)? "}"
+MapEntry    ::= MapKey ":" Value
+MapKey      ::= Name | Quoted''']
+  ]
+
+  [section id='cxl' title='CXL Directives'
+    [code lang='ebnf' src='''Directive   ::= Interpolation | EvalDirective
+Interpolation ::= "[?=" Expr "]"
+EvalDirective ::= "[?" Name (Slot | LabeledSlot)* "]"
+Slot        ::= Expr
+LabeledSlot ::= ":" Name Expr''']
+  ]
+
+  [section id='types' title='Type References'
+    [code lang='ebnf' src='''TypeRef     ::= IntType | FloatType | "decimal" | "bigint" | "string"
+              | "bool" | "null" | "date" | "datetime" | "bytes"
+              | TypeRef "[]"          /* array of */
+
+IntType     ::= "int" | "i8" | "i16" | "i32" | "i64"
+              | "u8" | "u16" | "u32" | "u64"
+FloatType   ::= "float" | "f32" | "f64"''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='concepts/data-model'  label='Data model — semantics on top of the grammar']
+      [item path='concepts/types'       label='Type system overview']
+      [item path='reference/errors'     label='Error codes thrown by the parser and resolver']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

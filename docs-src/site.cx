@@ -1,0 +1,90 @@
+[- Site-wide configuration for the v0.7.0 documentation system.
+   Consumed by scripts/gen_docs/scaffold.sh + build.cxl. -]
+[site
+  [meta
+    name='CX'
+    tagline='One bracket for every data format.'
+    version='0.7.0'
+    base-url='/'
+    repo='https://github.com/cx-home/cx'
+  ]
+
+  [theme
+    primary='#1f6feb'
+    mono-font='JetBrains Mono'
+    body-font='Inter'
+    logo='/assets/logo.svg'
+    favicon='/assets/favicon.ico'
+  ]
+
+  [nav
+    [group label='Get Started'
+      [item path='index'                  label='Overview']
+      [item path='install'                label='Install']
+      [item path='quickstart'             label='Quickstart']
+    ]
+    [group label='Learn'
+      [item path='tutorial'               label='Tutorial']
+      [item path='playground'             label='Playground']
+    ]
+    [group label='Examples'
+      [item path='tour/data'              label='50 Ways to Love Your CX Data']
+      [item path='tour/programs'          label='50 Ways to Love Your CXL Code']
+      [item path='cookbook'               label='Cookbook']
+      [item path='showcase'               label='Showcase']
+    ]
+    [group label='Concepts'
+      [item path='concepts/data-model'    label='Data Model']
+      [item path='concepts/sigils'        label='Sigils & Markup']
+      [item path='concepts/evaluation'    label='Evaluation Model']
+      [item path='concepts/cxpath'        label='CXPath']
+      [item path='concepts/identity'      label='Identity & Canonical']
+      [item path='concepts/types'         label='Types']
+    ]
+    [group label='Reference'
+      [item path='reference/cli'          label='CLI']
+      [item path='reference/cxl'          label='CXL Language']
+      [item path='reference/cxpath'       label='CXPath Functions']
+      [item path='reference/schemas'      label='Schemas']
+      [item path='reference/tables'       label='Tables']
+      [item path='reference/streaming'    label='Streaming']
+      [item path='reference/includes'     label='Includes']
+      [item path='reference/ast-bin'      label='ast-bin Format']
+      [item path='reference/data-bin'     label='data-bin / Arrow']
+      [item path='reference/grammar'      label='Grammar (EBNF)']
+      [item path='reference/errors'       label='Error Codes']
+    ]
+    [group label='Bindings'
+      [item path='bindings/index'         label='Binding Catalog']
+      [item path='bindings/c-abi'         label='C ABI']
+      [item path='bindings/v'             label='V']
+      [item path='bindings/python'        label='Python']
+      [item path='bindings/go'            label='Go']
+      [item path='bindings/rust'          label='Rust']
+      [item path='bindings/typescript'    label='TypeScript']
+      [item path='bindings/java'          label='Java']
+      [item path='bindings/csharp'        label='C#']
+      [item path='bindings/ruby'          label='Ruby']
+      [item path='bindings/kotlin'        label='Kotlin']
+      [item path='bindings/swift'         label='Swift']
+    ]
+    [group label='Tooling'
+      [item path='tooling/editors'        label='Editors & LSP']
+      [item path='tooling/tree-sitter'    label='Tree-sitter']
+      [item path='tooling/fuzzing'        label='Fuzzing & Tests']
+    ]
+    [group label='Resources'
+      [item path='comparison'             label='vs JSON, YAML, TOML, XML']
+      [item path='performance'            label='Performance']
+      [item path='faq'                    label='FAQ']
+      [item path='release-notes'          label='Release Notes']
+    ]
+  ]
+
+  [footer
+    [link href='https://github.com/cx-home/cx' label='GitHub']
+    [link href='https://github.com/cx-home/cx/issues' label='Issues']
+    [link href='/release-notes' label='Release notes']
+    [link href='/comparison' label='vs JSON/YAML/TOML/XML']
+  ]
+]

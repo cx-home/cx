@@ -1,0 +1,57 @@
+{
+  "comment": "V4 v0.7.0: per-binding native-implementation dashboard. Tracks which v0.7.0 evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. At v0.7.0 all 5 active bindings are C-ABI-passthrough by design (per ADR 0022 §D8 binding tiering). This file is the v0.7.x / v0.8.0 native-port roadmap.",
+  "version": "v0.7.0",
+  "as_of": "2026-05-19",
+  "bindings": {
+    "v": {
+      "tier": 1,
+      "implementation": "native",
+      "comment": "V is the native reference. Every feature is native by definition.",
+      "features": "*"
+    },
+    "python": {
+      "tier": 1,
+      "implementation": "c-abi-passthrough",
+      "native_coverage": ["data-bin", "ast-parse", "to-cx", "to-xml", "to-json", "to-yaml", "to-toml", "to-md"],
+      "ffi_coverage": ["cx_eval", "cx_eval_streaming", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "cx_data_bin_chunked"],
+      "comment": "Native Python parser for data-bin + AST surfaces; eval/diff/hash/canonical via libcx FFI. Arrow + Parquet via pyarrow C-Data bridge."
+    },
+    "go": {
+      "tier": 1,
+      "implementation": "c-abi-passthrough",
+      "native_coverage": ["data-bin", "ast-parse", "to-cx", "to-xml", "to-json"],
+      "ffi_coverage": ["cx_eval", "cx_eval_streaming", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "cx_data_bin_chunked"],
+      "comment": "Native Go parser for data-bin + AST + emitters. Eval surface via cgo + libcx."
+    },
+    "rust": {
+      "tier": 2,
+      "implementation": "c-abi-passthrough",
+      "native_coverage": ["data-bin", "ast-parse"],
+      "ffi_coverage": ["cx_eval", "cx_eval_streaming", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "cx_data_bin_chunked", "to_*"],
+      "comment": "Native data-bin + AST; everything else routes through libcx FFI via ensure_thread()."
+    },
+    "typescript": {
+      "tier": 2,
+      "implementation": "c-abi-passthrough",
+      "native_coverage": ["data-bin", "ast-parse"],
+      "ffi_coverage": ["cx_eval", "cx_eval_streaming", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "to_*"],
+      "comment": "koffi FFI to libcx for most surfaces. Arrow + Parquet via apache-arrow JS IPC bridge (W7 / X6) — composes with libcx C-Data export."
+    }
+  },
+  "frozen_bindings": {
+    "csharp": {"tier": 3, "status": "frozen at v0.7.0 per ADR 0022 §D4", "reason": "Not in 5-binding parity matrix; not built/tested at v0.7.0"},
+    "java":   {"tier": 3, "status": "frozen at v0.7.0 per ADR 0022 §D4", "reason": "Same"},
+    "kotlin": {"tier": 3, "status": "frozen at v0.7.0 per ADR 0022 §D4", "reason": "Same"},
+    "ruby":   {"tier": 3, "status": "frozen at v0.7.0 per ADR 0022 §D4", "reason": "Same"},
+    "swift":  {"tier": 3, "status": "frozen at v0.7.0 per ADR 0022 §D4", "reason": "Same"}
+  },
+  "v0_7_x_native_port_roadmap": {
+    "comment": "v0.7.x / v0.8.0 candidates for native-implementation expansion. Order: data-bin → emitters → eval (the latter is large and binding-specific).",
+    "priority_order": [
+      "go.cx_diff (native Go diff)",
+      "python.cx_diff (native Python diff)",
+      "rust.cx_canonical (native Rust canonical)",
+      "typescript.cx_eval (porting CXL evaluator to TS — substantial)"
+    ]
+  }
+}

@@ -1,0 +1,107 @@
+[- Overview / landing page. Opens with a substantive CX example,
+   then the differentiators, then start-here links. -]
+[page id='index'
+  [meta
+    title='CX — One Bracket for Every Data Format'
+    layout='index'
+    nav-order='0'
+    audience='evaluator'
+    summary='A unified syntax for configuration, data, documents, prose, and programs — losslessly convertible to JSON, YAML, TOML, XML, and Markdown. Built for humans and the AI systems that work alongside them.'
+  ]
+
+  [section id='hello' title='Hello, CX'
+    [prose The document below is one CX file. It carries typed configuration, structured data, prose with mixed-content markup, multi-line strings, declared identifiers, references, anchors with merge, a typed columnar table, and a CXL directive that templates a receipt — all in one syntax. The same parser handles every shape; the same evaluator can read, transform, and emit it as any of the six surface dialects CX speaks.]
+    [code lang='cx' src="[- ─────────────────────────────────────────────────────────────
+   Powerband Pizza — one document covers every shape on the menu.
+   Block comments wrap multi-line notes like this; line comments
+   live outside element bodies with the hash sigil.
+   ───────────────────────────────────────────────────────────── -]
+
+# top-of-file header comment
+[?xml version=1.0 encoding=UTF-8]
+
+[shop &flagship name='Powerband Pizza' port=8080 +open
+  # opening hours — bare attributes, auto-typed
+  [hours mon-fri=11-22 sat=12-23 sun=closed]
+
+  [- Typed columnar menu. Each column declares a type that
+     round-trips end-to-end through CSV, Arrow, and Parquet. -]
+  [menu :table[name:string size price:decimal vegan:bool]
+    Margherita medium 12.00 true
+    Hawaiian   large  14.00 false
+    Diavola    medium 13.00 false]
+
+  [- Anchor declares a shared shape; merge inherits with overrides. -]
+  [staff [cook &lead name=Pepe shift=morning +founder]
+         [cook *lead name=Maria shift=closing -founder]]
+
+  [- Sigils and types on attribute values. -]
+  [contact
+    address='123 Forno Lane'
+    coords={lat: 40.8518, lon: 14.2681}
+    phones=('+39 555 0101', '+39 555 0102')
+    open-since :date 1987-05-12]
+
+  [- Mixed content — prose interleaves with markup the way HTML does. -]
+  [about
+    [p Founded in [em 1987]. Still [strong hand-tossing] every pie.]
+    [p See the [a href=/menu menu] for tonights specials.]]
+
+  [- Multi-line string — triple-quoted, verbatim. -]
+  [tagline '''
+    Hand-tossed since 1987.
+    Still tossing.
+  ''']
+
+  [- A CXL directive inside the same document. cx eval reads the
+     surrounding tree, walks //order/line, and emits a receipt
+     row per line item — no separate template engine, no sprintf. -]
+  [?for line :in //order/line :return
+    [row sku=[?= line/@item] qty=[?= line/@count]]]]"]
+    [prose Eight concerns, one document, one syntax. The same tree parses and emits as XML, JSON, YAML, TOML, or Markdown; canonical-form bytes are content-addressed via SHA-256; the directive language is just data the evaluator interprets.]
+  ]
+
+  [section id='differentiators' title='What Makes CX Different'
+    [prose Each row below is the answer to a real friction in existing formats. The Comparison page walks the same list with side-by-side examples.]
+    [list
+      [item path='comparison'           label='Six surface dialects, one tree — round-trip CX, JSON, YAML, TOML, XML, and Markdown without losing data']
+      [item path='concepts/identity'    label='Content-addressed identity — SHA-256 over canonical bytes; two trees with the same data have the same hash']
+      [item path='reference/cxl'        label='Evaluator built in — CXL directives are just CX, no separate template engine, no sprintf']
+      [item path='concepts/sigils'      label='Five structural sigils — declared ids, references, anchors, merge targets, and data types as first-class syntax']
+      [item path='reference/tables'     label='Typed columnar tables — sized integer, decimal, datetime survive end-to-end through CSV, Arrow, and Parquet']
+      [item path='concepts/data-model'  label='Mixed content first-class — text and structure interleave in one body, the way XML and Markdown do, the way JSON cannot']
+      [item path='reference/includes'   label='Include resolver — compose documents at parse time and at eval time, with cycle detection and lexical containment']
+      [item path='reference/streaming'  label='Streaming parse and emit — process gigabyte inputs with bounded RSS, callback-driven']
+    ]
+  ]
+
+  [section id='ai' title='Built for Humans and AI Alike'
+    [prose Modern systems are not just humans editing config files. Agentic LLMs, retrieval pipelines, evaluation harnesses, and multi-step tool-use loops all need to capture, transfer, transform, and emit data alongside prose. The two have lived in separate formats for decades — JSON for the structured side, Markdown for the prose side — which forces every AI system to glue the two back together with brittle string templates and ad-hoc framing.]
+    [prose CX unifies them. Prompt context, tool arguments, structured outputs, observation logs, document corpora, and agent memory all fit in one tree shape. The directive language is data the model can read and emit directly; the canonical form gives a stable hash for memoisation and cache keys; the include resolver composes documents from files the same way the agent assembles its working context. One format underneath the whole loop.]
+    [list
+      [item path='cookbook'            label='Tool arguments and structured outputs as CX, parsed by every binding']
+      [item path='concepts/identity'   label='Memoisation by content hash — same input always memoises to the same key, in any dialect']
+      [item path='reference/streaming' label='Streaming context windows — emit gigabyte traces with bounded RSS']
+      [item path='reference/includes'  label='Compose prompt frames from partials the same way agents compose plans']
+      [item path='reference/cxl'       label='CXL as a transformation layer — directives are data, no template engine to install']
+    ]
+  ]
+
+  [section id='start' title='Start Here'
+    [list
+      [item path='quickstart'    label='Quickstart — five minutes from install to running output']
+      [item path='tutorial'      label='Tutorial — exercises from atoms to closures, work end to end']
+      [item path='tour/data'     label='50 Ways to Love Your CX Data — short data examples, simple to complex']
+      [item path='tour/programs' label='50 Ways to Love Your CXL Code — CXL snippets, simple to complex']
+      [item path='playground'    label='Playground — try CX in the browser']
+    ]
+  ]
+
+  [section id='status' title='Status'
+    [prose v0.7.0 is the API and format-stability boundary through 1.0. C ABI symbols are append-only from here forward; ast-bin format versions are forward-compatible; the cross-binding conformance suite gates every release. The full release notes live in the sidebar.]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

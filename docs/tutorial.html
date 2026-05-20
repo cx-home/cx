@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial</title>
+<style>:root {
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --border: #e6e6e0;
+
+  /* Dark code blocks for visual prominence */
+  --code-bg: #1f2430;
+  --code-fg: #e2e8f0;
+  --code-comment: #6b7280;
+  --code-keyword: #c4b5fd;
+  --code-string: #fde68a;
+  --code-border: #2a2f3d;
+  --code-label: #9aa3b0;
+
+  --side-bg: #f3f3ec;
+  --side-fg: #1a1a1a;
+  --side-muted: #6b7280;
+  --side-active: #1f6feb;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+aside.sidebar {
+  background: var(--side-bg);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0.85rem 2rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+aside.sidebar .brand {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.9rem;
+  color: var(--side-fg);
+  display: block;
+  text-decoration: none;
+}
+aside.sidebar .brand:hover { text-decoration: none; }
+
+aside.sidebar .brand-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--side-muted);
+  text-decoration: none;
+  margin: 0 0 0.8rem;
+}
+aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
+
+aside.sidebar section { margin-bottom: 0.9rem; }
+aside.sidebar h4 {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin: 0.6rem 0 0.25rem;
+  color: var(--side-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+aside.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+aside.sidebar li { margin: 0; }
+aside.sidebar a {
+  display: block;
+  color: var(--side-fg);
+  text-decoration: none;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  margin-left: -0.4rem;
+}
+aside.sidebar a:hover {
+  background: rgba(0,0,0,0.05);
+  text-decoration: none;
+}
+aside.sidebar a.active {
+  background: var(--side-active);
+  color: white;
+  font-weight: 500;
+}
+
+main {
+  max-width: 760px;
+  padding: 1.5rem 2rem 3rem;
+  width: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 1.1rem 0 0.25rem;
+  color: var(--fg);
+}
+
+h3 {
+  font-size: 0.9rem;
+  margin: 0.7rem 0 0.2rem;
+  color: var(--fg);
+}
+
+main > p:first-of-type {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 0.8rem;
+}
+
+p {
+  margin: 0.3rem 0;
+}
+
+ul, ol {
+  margin: 0.3rem 0;
+  padding-left: 1.2rem;
+}
+li { margin: 0.05rem 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(31, 36, 48, 0.08);
+  padding: 0.08em 0.3em;
+  border-radius: 3px;
+  color: #2d2f36;
+}
+
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 5px;
+  padding: 1.6rem 0.9rem 0.7rem;
+  margin: 0.45rem 0;
+  overflow-x: auto;
+  position: relative;
+  line-height: 1.45;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+}
+
+.lang-label {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: var(--code-label);
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+pre:hover .copy-btn,
+pre:focus-within .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
+.copy-btn.copied { color: #34d399; border-color: #34d399; }
+.copy-btn.failed { color: #f87171; border-color: #f87171; }
+
+/* Syntax highlighting palette — colours tuned against the dark
+   code-bg slate. Subtle: comments muted, strings warm yellow,
+   numbers/literals amber/violet, element names and directives in
+   cool blue/pink so CX bracket structure reads at a glance. */
+.hl-comment   { color: #7a8294; font-style: italic; }
+.hl-string    { color: #fbbf77; }
+.hl-number    { color: #f59e0b; }
+.hl-literal   { color: #c4b5fd; }
+.hl-keyword   { color: #f87171; }
+.hl-element   { color: #7dd3fc; }
+.hl-directive { color: #f9a8d4; }
+.hl-sigil     { color: #fcd34d; }
+.hl-type      { color: #a5b4fc; }
+.hl-attr      { color: #86efac; }
+.hl-fn        { color: #93c5fd; }
+
+table {
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 100%;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: var(--side-bg);
+  font-weight: 600;
+}
+tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+td code {
+  font-size: 11.5px;
+  background: rgba(31, 36, 48, 0.06);
+}
+
+@media (max-width: 460px) {
+  body { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  main { padding: 1rem 1.25rem 2rem; }
+}</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html">CX</a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <section><h4>Get Started</h4><ul>
+    <li><a href="index.html">Overview</a></li>
+    <li><a href="install.html">Install</a></li>
+    <li><a href="quickstart.html">Quickstart</a></li>
+    </ul></section>
+  <section><h4>Learn</h4><ul>
+    <li><a class="active" href="tutorial.html">Tutorial</a></li>
+    <li><a href="playground.html">Playground</a></li>
+    </ul></section>
+  <section><h4>Examples</h4><ul>
+    <li><a href="tour/data.html">50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour/programs.html">50 Ways to Love Your CXL Code</a></li>
+    <li><a href="cookbook.html">Cookbook</a></li>
+    <li><a href="showcase.html">Showcase</a></li>
+    </ul></section>
+  <section><h4>Concepts</h4><ul>
+    <li><a href="concepts/data-model.html">Data Model</a></li>
+    <li><a href="concepts/sigils.html">Sigils & Markup</a></li>
+    <li><a href="concepts/evaluation.html">Evaluation Model</a></li>
+    <li><a href="concepts/cxpath.html">CXPath</a></li>
+    <li><a href="concepts/identity.html">Identity & Canonical</a></li>
+    <li><a href="concepts/types.html">Types</a></li>
+    </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="reference/cli.html">CLI</a></li>
+    <li><a href="reference/cxl.html">CXL Language</a></li>
+    <li><a href="reference/cxpath.html">CXPath Functions</a></li>
+    <li><a href="reference/schemas.html">Schemas</a></li>
+    <li><a href="reference/tables.html">Tables</a></li>
+    <li><a href="reference/streaming.html">Streaming</a></li>
+    <li><a href="reference/includes.html">Includes</a></li>
+    <li><a href="reference/ast-bin.html">ast-bin Format</a></li>
+    <li><a href="reference/data-bin.html">data-bin / Arrow</a></li>
+    <li><a href="reference/grammar.html">Grammar (EBNF)</a></li>
+    <li><a href="reference/errors.html">Error Codes</a></li>
+    </ul></section>
+  <section><h4>Bindings</h4><ul>
+    <li><a href="bindings/index.html">Binding Catalog</a></li>
+    <li><a href="bindings/c-abi.html">C ABI</a></li>
+    <li><a href="bindings/v.html">V</a></li>
+    <li><a href="bindings/python.html">Python</a></li>
+    <li><a href="bindings/go.html">Go</a></li>
+    <li><a href="bindings/rust.html">Rust</a></li>
+    <li><a href="bindings/typescript.html">TypeScript</a></li>
+    <li><a href="bindings/java.html">Java</a></li>
+    <li><a href="bindings/csharp.html">C#</a></li>
+    <li><a href="bindings/ruby.html">Ruby</a></li>
+    <li><a href="bindings/kotlin.html">Kotlin</a></li>
+    <li><a href="bindings/swift.html">Swift</a></li>
+    </ul></section>
+  <section><h4>Tooling</h4><ul>
+    <li><a href="tooling/editors.html">Editors & LSP</a></li>
+    <li><a href="tooling/tree-sitter.html">Tree-sitter</a></li>
+    <li><a href="tooling/fuzzing.html">Fuzzing & Tests</a></li>
+    </ul></section>
+  <section><h4>Resources</h4><ul>
+    <li><a href="comparison.html">vs JSON, YAML, TOML, XML</a></li>
+    <li><a href="performance.html">Performance</a></li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="release-notes.html">Release Notes</a></li>
+    </ul></section>
+</aside>
+<main>
+<doc>
+  <h1>Tutorial</h1>
+  <p>Walk CX from atoms to closures in one scrollable page with exercises.</p>
+  <h2>Read This First</h2>
+  <p>This tutorial walks CX from the smallest piece to the fullest expression in one scrollable page. Each chapter introduces one shape, shows it in context, and ends with two or three exercises you can run with cx --ast or cx --json. Pace yourself.</p>
+  <p>Assumed background: familiarity with at least one of JSON, YAML, TOML, or XML. CX assumes you know what an object, array, scalar, and attribute are.</p>
+  <h2>Chapter 1. Why CX Looks the Way It Does</h2>
+  <p>Most projects need two kinds of file: typed configuration in nested structures, and documents with prose plus structure. JSON, YAML, and TOML are optimized for the first; Markdown, HTML, and XML for the second. Projects end up with multiple file formats and multiple parsers.</p>
+  <p>CX is one syntax for both. The same parser handles a Kubernetes-style config and an article with mixed-content prose. Five design constraints picked the shape: one construct, no indentation semantics, optional quoting, types first-class, lossless conversion to existing formats.</p>
+  <h2>Chapter 2. Elements</h2>
+  <p>Every CX node is a bracket pair with a name and an optional body. Editors balance brackets natively; code folding works without parser hooks. The opening name appears once; nothing repeats at close.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[p Hello, World]</code></pre>
+  <p>Exercises. Save the snippet as hello.cx and run cx --ast hello.cx. Add a child element and re-run. Then run cx --json on the same file.</p>
+  <h2>Chapter 3. Attributes</h2>
+  <p>Attributes are name=value pairs after the element name. Bare values auto-type: 8080 becomes int, 3.14 becomes float, true becomes bool, 2026-01-01 becomes date. Leading-zero tokens stay strings — 02134 stays the string 02134 — to avoid the YAML Norway problem.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[server host=api.example.com port=8080 ssl=true]</code></pre>
+  <p>Exercises. Add three more attributes and check what type cx assigns each. Quote a value containing a space and inspect the AST.</p>
+  <h2>Chapter 4. Types</h2>
+  <p>CX auto-types most values; for the rest, a colon-type annotation pins the value or body type. Sized variants carry range constraints that validate at parse time.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[port :u16 8080]</code></pre>
+  <p>Sized integer variants i8, i16, i32, i64, u8, u16, u32, u64; sized float f32, f64; arbitrary-precision decimal and bigint. Exercises. Try setting :u16 to 70000 and observe the error. Compare 12 vs 12 in cx --ast.</p>
+  <h2>Chapter 5. Element Bodies</h2>
+  <p>A body holds Text, Scalar, child Element, or collection literal in source order. Mixed content is first-class — text and structure interleave the way they do in XML.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[para Try the [b Margherita] — our [em best seller], hand-tossed daily.]</code></pre>
+  <p>Triple-quoted bodies preserve multi-line content verbatim. See 50 Ways to Love Your CX Data example 21 for the triple-quoted body shape. Exercises. Write an article with h1, p, em, and a children; convert with cx --md. Inspect a triple-quoted body with cx --ast.</p>
+  <h2>Chapter 6. Comments</h2>
+  <p>Hash line comments live outside element bodies. Bracket-dash block comments live inside elements and can span lines.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[shop port=8080 [menu [pizza name=Margherita]]]</code></pre>
+  <p>Add a hash line above the shop element; add a bracket-dash inline. Exercises. Check what cx fmt preserves and what cx canonical drops.</p>
+  <h2>Chapter 7. Sigils</h2>
+  <p>Five sigils give CX structural reach beyond name and attribute. The at-sigil prefixes attributes in CXPath and references in body position. The ampersand declares an anchor; the asterisk merges from an anchor; the hash declares an id; the colon pins a data type.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[defaults &amp;shared timeout=30 retries=3]</code></pre>
+<pre><span class="lang-label">cx</span><code class="language-cx">[server *shared name=api]</code></pre>
+  <p>Exercises. Declare an anchor and merge from it in two servers. Add ids to three pizza elements; reference them from a separate order element.</p>
+  <h2>Chapter 8. Collection Literals</h2>
+  <p>Three first-class collection shapes. Sequence with parens flattens; array with square brackets preserves nesting; map with braces gives named key-to-value entries.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza toppings=(cheese, basil, oil)]</code></pre>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza prices={small: 9, medium: 12, large: 15}]</code></pre>
+  <p>Exercises. Build a config with all three shapes; convert with cx --json. Note the difference between a b c and — sequence flattens, array preserves nesting.</p>
+  <h2>Chapter 9. Typed Tables</h2>
+  <p>A colon-table block declares column names and types. Each non-blank line below is a row; cells parse against the declared column types. Round-trips to CSV with types preserved via the header row. In the binary ast-bin form, rows are stored column-major and run 5 to 10 times smaller than equivalent element-per-row encoding.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[orders :table[item:string qty:u32 paid:bool when:date]
+  Margherita 2 true  2026-05-09
+  Hawaiian   1 false 2026-05-09]</code></pre>
+  <p>Exercises. Convert with cx table dump --to=csv; check the header. Add a row whose qty exceeds u32 max and observe the error.</p>
+  <h2>Chapter 10. Multi-Document Files</h2>
+  <p>A single CX file can hold multiple top-level documents separated by three dashes on a line by themselves. Same separator as YAML; each side parses as an independent document. cx parse iterates them; cx --json emits an array.</p>
+  <p>Exercises. Write two top-level documents with the separator between them and iterate with cx parse.</p>
+  <h2>Chapter 11. Six Surface Dialects</h2>
+  <p>The same tree parses and emits as CX, XML, JSON, YAML, TOML, or Markdown. Each dialect captures the subset of the data model it can represent.</p>
+<pre><span class="lang-label">shell</span><code class="language-shell">cx parse pizza.cx --to=yaml</code></pre>
+  <p>Exercises. Take a YAML config; run cx --from yaml file.yaml; check which features convert cleanly and which are dropped. The Comparison page documents the loss matrix per dialect pair.</p>
+  <h2>Chapter 12. CXL: Directives Inside Data</h2>
+  <p>CXL is CX that does things. A directive is an element whose name starts with a question mark. Directives parse as regular CX and evaluate against the surrounding tree when cx eval runs the document.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[h1 [?= //page/@title]]</code></pre>
+  <p>Exercises. Save the h1 example and run cx eval with --data pointing at a CX file that has a page element. Use a ?for and a ?if together to format an order with a stock badge per item.</p>
+  <h2>Chapter 13. CXPath</h2>
+  <p>CXPath is the query language inside CXL. Paths separated by slashes; predicates in square brackets; axes for navigation by relationship.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">//pizza[@price &gt; 10]</code></pre>
+  <p>Exercises. Write a CXPath that finds all toppings of a pizza named Margherita. Use count() to count pizzas above 10 euros.</p>
+  <h2>Chapter 14. Let and For</h2>
+  <p>?let binds a name once and reuses it. ?for iterates a CXPath result.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?let tax :be 0.22 :return [?= @price * (1 + tax)]]</code></pre>
+  <p>Exercises. Compute the grand total of all pizzas after a 10 percent discount; use ?let for the discount factor.</p>
+  <h2>Chapter 15. Filters</h2>
+  <p>Filter directives transform values. Compose with pipes or nest them.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?= @name |&gt; trim |&gt; upper]</code></pre>
+  <p>Exercises. Take a name attribute with leading and trailing whitespace; produce a canonical lower-case form.</p>
+  <h2>Chapter 16. Multi-Branch Conditional</h2>
+  <p>The multi-branch ?if shape avoids the else-if ladder. Each branch is a condition-value pair; the wildcard branch is the catch-all.</p>
+  <p>Exercises. Classify a temperature reading as cold or mild or hot with a multi-branch ?if.</p>
+  <h2>Chapter 17. Named Templates</h2>
+  <p>?def defines a reusable fragment. ?use invokes it; parameterised templates take positional args.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?def line :params [item] :body [tr [td [?= item/@name]] [td [?= item/@qty]]]]</code></pre>
+  <p>Exercises. Define a template for an HTML link card; use ?for to render a list of pizzas as cards.</p>
+  <h2>Chapter 18. Includes</h2>
+  <p>Two include forms share one resolver. The parse-time form expands files before the document reaches downstream tools; the eval-time form expands files while a CXL template runs.</p>
+<pre><span class="lang-label">shell</span><code class="language-shell">cx --xml --include-root=./conf config.cx</code></pre>
+  <p>Exercises. Create lib/defaults.cx with a few attribute lines; include it in two different parent elements.</p>
+  <h2>Chapter 19. Identity</h2>
+  <p>Every CX document has a canonical form: presentation stripped, attribute order normalised, anchors renumbered. cx hash returns the SHA-256 of those canonical bytes. Two documents with the same data have the same hash, in any dialect.</p>
+<pre><span class="lang-label">shell</span><code class="language-shell">cx hash menu.cx</code></pre>
+  <p>Exercises. Take a CX file; reorder its attributes; add a comment. Verify cx hash returns the same hash and cx eq reports them equal.</p>
+  <h2>Chapter 20. Putting It All Together</h2>
+  <p>Every shape composes naturally with every other. The whole-shop example at 50 Ways to Love Your CX Data example 50, and the whole-kitchen CXL example at 50 Ways to Love Your CXL Code example 50, exercise every shape in this tutorial inside a single working document.</p>
+  <h2>Where to Next</h2>
+  <ul>
+    <li>
+      <a href="tour/data.html">50 Ways to Love Your CX Data — more variety on the data side</a>
+    </li>
+    <li>
+      <a href="tour/programs.html">50 Ways to Love Your CXL Code — CXL directives, simple to complex</a>
+    </li>
+    <li>
+      <a href="cookbook.html">Cookbook — task-shaped recipes</a>
+    </li>
+    <li>
+      <a href="reference/cxl.html">CXL reference — every directive</a>
+    </li>
+    <li>
+      <a href="concepts/data-model.html">Data model — formal CXDM definition</a>
+    </li>
+    <li>
+      <a href="playground.html">Playground — try CX in the browser</a>
+    </li>
+  </ul>
+</doc>
+</main>
+<script>
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'copy';
+  btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    const code = pre.querySelector('code')?.textContent ?? pre.textContent;
+    const flash = (label, cls) => {
+      btn.textContent = label;
+      btn.classList.add(cls);
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove(cls); }, 1500);
+    };
+    try {
+      await navigator.clipboard.writeText(code);
+      flash('copied', 'copied');
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); flash('copied', 'copied'); }
+      catch { flash('failed', 'failed'); }
+      document.body.removeChild(ta);
+    }
+  });
+  pre.appendChild(btn);
+});
+</script>
+<script src="highlight/highlight.js" defer></script>
+</body>
+</html>

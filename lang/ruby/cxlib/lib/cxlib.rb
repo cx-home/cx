@@ -62,7 +62,7 @@ module CXLib
   attach_function :cx_to_yaml,       [:string, :pointer], :pointer
   attach_function :cx_to_toml,       [:string, :pointer], :pointer
   attach_function :cx_to_md,         [:string, :pointer], :pointer
-  # CXL evaluator (capability bit 28; spec/cxl.md)
+  # CXL evaluator (capability bit 28; spec/eval.md)
   attach_function :cx_eval_cxl,      [:string, :string, :string, :pointer], :pointer
   attach_function :cx_to_ast_bin,    [:string, :pointer], :pointer
   attach_function :cx_to_events_bin, [:string, :pointer], :pointer

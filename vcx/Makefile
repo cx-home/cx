@@ -1,5 +1,10 @@
 SHELL  := /bin/bash
-V      := v
+# Use the patched V from third_party/v/ which carries the
+# vlang/v#27178 (shared-lib GC thread-init) + #27179 (gc.h
+# standalone-C) fixes plus the macOS hardened-runtime libgc
+# source-compile bypass. Falls back to PATH-resolved `v` when
+# the submodule isn't present.
+V      := $(if $(wildcard $(CURDIR)/../third_party/v/v),$(CURDIR)/../third_party/v/v,v)
 TARGET := target
 
 # ── Platform detection ────────────────────────────────────────────────────────
@@ -46,9 +51,9 @@ CONFORMANCE_DATA_BIN_COMPRESS := ../conformance/data_bin_compression.txt
 CONFORMANCE_DATA_BIN_SCHEMA   := ../conformance/data_bin_schema_driven.txt
 CONFORMANCE_DATA_BIN_ARROW    := ../conformance/data_bin_arrow.txt
 CONFORMANCE_SCHEMA_VALIDATE   := ../conformance/schema_validate.txt
-CONFORMANCE_CXL               := ../conformance/cxl.txt
+CONFORMANCE_EVAL              := ../conformance/eval.txt
 
-.PHONY: all build lib lib-dev lib-arrow lib-arrow-dev re2-shim cli conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-cxl clean
+.PHONY: all build lib lib-dev lib-arrow lib-arrow-dev re2-shim cli conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-eval clean
 
 # ── Targets ───────────────────────────────────────────────────────────────────
 
@@ -84,14 +89,15 @@ $(TARGET):
 
 # Shared library — production build: size-optimised, stripped.
 #
-# Intentionally does NOT pass `-prod` to V. `-prod` enables runtime features
-# (Boehm GC trampolines / executable-page allocations) that fail under macOS
-# hardened runtime when the dylib is dlopen'd by FFI bindings — every binding
-# aborts with "Cannot allocate executable pages" on first call. Verified
-# empirically 2026-05-10. C-level optimisation is applied via `PROD_CFLAGS`
-# instead, which is safe across all platforms.
+# Passes `-prod` when using the patched V at third_party/v/ — that build
+# carries the vlang/v#27178 / #27179 fixes plus the macOS-hardened-runtime
+# libgc source-compile bypass (skips the precompiled gc.o that requires
+# rwx pages). Falls back to the workaround (PROD_CFLAGS only, no -prod)
+# when using a system V without the patches. Detected by checking for
+# our patched-V marker file.
+PROD_FLAGS := $(if $(wildcard $(CURDIR)/../third_party/v/v),-prod,)
 lib: re2-shim $(TARGET)
-	$(V) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) cx/
+	$(V) $(PROD_FLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) cx/
 	$(STRIP) $(LIB)
 
 # Unoptimised build for local development (faster compile, debuggable)
@@ -118,7 +124,7 @@ cli: re2-shim $(TARGET)
 
 # ── Conformance ───────────────────────────────────────────────────────────────
 
-conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint conform-cxl
+conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint conform-eval
 
 conform-core:
 	@echo "── core.txt ──────────────────────────────────────────────────────────"
@@ -184,9 +190,9 @@ conform-lint:
 	@echo "── lint.txt ──────────────────────────────────────────────────────────"
 	$(V) run tests/runners/diff_lint/diff_lint_conform.v lint $(CONFORMANCE_LINT)
 
-conform-cxl:
-	@echo "── cxl.txt ───────────────────────────────────────────────────────────"
-	$(V) run tests/runners/cxl/cxl_conform.v $(CONFORMANCE_CXL)
+conform-eval:
+	@echo "── eval.txt ──────────────────────────────────────────────────────────"
+	$(V) run tests/runners/eval/eval_conform.v $(CONFORMANCE_EVAL)
 
 conform-all:
 	@echo "── all suites ────────────────────────────────────────────────────────"

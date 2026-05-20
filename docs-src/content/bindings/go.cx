@@ -1,0 +1,76 @@
+[- Binding: Go. -]
+[page id='binding-go'
+  [meta
+    title='Go Binding'
+    layout='reference'
+    nav-order='630'
+    audience='lookup'
+    summary='go get github.com/cx-home/cx/lang/go. cgo wrapper, idiomatic Go API.'
+  ]
+
+  [section id='install' title='Install'
+    [code lang='shell' src='go get github.com/cx-home/cx/lang/go']
+  ]
+
+  [section id='parse-emit' title='Parse and Emit'
+    [code lang='go' src='''import "github.com/cx-home/cx/lang/go/cx"
+
+tree, err := cx.Parse(input)
+if err != nil { return err }
+
+out, err := cx.Emit(tree, cx.JSON)
+xml, err := cx.Emit(tree, cx.XML)
+yaml, err := cx.Emit(tree, cx.YAML)''']
+  ]
+
+  [section id='eval' title='Run a CXL Template'
+    [code lang='go' src='''out, err := cx.Eval(programText,
+    cx.WithData(dataText),
+    cx.WithIncludeRoot("/proj"),
+    cx.WithTarget(cx.TargetHTML),
+)''']
+  ]
+
+  [section id='access' title='Tree Access'
+    [code lang='go' src='''tree, _ := cx.Parse("[shop [pizza name=Margherita price=12]]")
+shop  := tree.Element("shop")
+pizza := shop.Find("pizza")[0]
+
+name  := pizza.Attr("name").String()
+price := pizza.Attr("price").Int()''']
+  ]
+
+  [section id='validate' title='Schema Validation'
+    [code lang='go' src='''diags, err := cx.Validate(doc, schema,
+    cx.WithMode(cx.ModeStrict),
+    cx.WithFailOn(cx.SeverityWarn),
+)
+for _, d := range diags {
+    fmt.Printf("%s %s at %s\\n", d.Severity, d.Message, d.Path)
+}''']
+  ]
+
+  [section id='streaming' title='Streaming'
+    [code lang='go' src='''it, _ := cx.Stream(reader)
+for it.Next() {
+    if e := it.Event(); e.Kind == cx.ElementStart && e.Name == "error" {
+        fmt.Println(e.Attrs)
+    }
+}''']
+  ]
+
+  [section id='cgo' title='cgo and Thread Safety'
+    [prose The Go binding uses cgo internally. Each goroutine that calls into libcx gets a thread registration on first use; the binding manages the Boehm GC handshake at every FFI chokepoint, so calling code does not need to think about it. Stateless format conversions are safe to call concurrently on disjoint inputs.]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='bindings/c-abi' label='C ABI — the layer this binding wraps']
+      [item path='bindings/index' label='Binding catalog']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

@@ -1,8 +1,16 @@
+# ── v0.7.0 doc pipeline ───────────────────────────────────────── BEGIN gen_docs
+# Auto-managed include: makes `make docs`, `make site`, `make docs-publish`,
+# etc. first-class targets. Generated layer — regenerate via the
+# cx-docs-author skill if/when scaffolding moves. Remove the stanza between
+# BEGIN gen_docs and END gen_docs to detach the doc pipeline.
+-include scripts/gen_docs/docs.mk
+# ── v0.7.0 doc pipeline ─────────────────────────────────────────── END gen_docs
+
 CONFORMANCE_CORE := conformance/core.txt
 CONFORMANCE_EXT := conformance/extended.txt
 CONFORMANCE_XML := conformance/xml.txt
 CONFORMANCE_MD := conformance/md.txt
-CONFORMANCE_CXL := conformance/cxl.txt
+CONFORMANCE_EVAL := conformance/eval.txt
 
 LIB_NAME := libcx
 VCX_DYLIB := vcx/target/$(LIB_NAME).dylib
@@ -22,7 +30,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
 
 .PHONY: all build build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
  build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
- build-lsp build-vscode build-editors \
+ build-vscode \
  publish publish-push \
  publish-v publish-v-push \
  publish-org \
@@ -42,7 +50,12 @@ all: build
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 
-build: build-vcx build-rust build-ruby build-go build-typescript build-java build-kotlin build-csharp build-swift
+# Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
+# Python has no compile step. Frozen bindings (Java/Kotlin/C#/Ruby/Swift)
+# are still buildable via their individual targets but excluded from
+# the default `build` so the v0.7.0 ABI rename doesn't make `make`
+# error out of the gate. See lang/<binding>/FROZEN.md for rationale.
+build: build-vcx build-rust build-go build-typescript
 
 build-vcx:
 	$(MAKE) -C vcx build
@@ -184,6 +197,47 @@ verify-binding-quickstarts:
 verify-doc-blocks: build-vcx
 	@tools/verify-doc-blocks.sh docs/
 
+# V3 — conformance fixture coverage gate. Validates that
+# conformance/eval.txt is structurally sound, meets the v0.7.0
+# minimum fixture count, and tags every required v0.7.0 surface.
+check-conformance-coverage:
+	@python3 scripts/check_conformance_coverage.py
+
+# V2 — upstream V patch tracking. Reports status of the vlang/v
+# issues that block cx v0.7.0 per ADR 0022 §D7. Exit non-zero only
+# on a closed-unfixed (upstream-rejected) outcome.
+check-v-upstream:
+	@python3 scripts/check_v_upstream_patches.py
+
+# V6 — pre-commit lint rules over .cx / .cxl files. Catches the
+# pre-ADR-0017 syntax forms the v0.7.0 parser rejects, plus the
+# cxl-version=/cx-eval-version= rename window deprecation.
+check-lint-rules:
+	@python3 scripts/check_lint_rules.py
+
+# V6 — install the .githooks/ scripts as repo-local git hooks
+# (idempotent). Sets core.hooksPath rather than symlinking each
+# hook individually so a new hook script lands without re-running
+# the install target.
+install-hooks:
+	@git config core.hooksPath .githooks
+	@echo "[install-hooks] git core.hooksPath set to .githooks"
+	@ls -1 .githooks/ | sed 's/^/  - /'
+
+# V7 — bench harness JSON runner. Drives bench-streaming and emits
+# a stable JSON shape consumable by scripts/compare_bench.py.
+bench-json:
+	@python3 scripts/run_bench_json.py
+
+# V7 — bench regression comparison. Pass BASELINE= and CURRENT= as
+# paths to JSON files produced by bench-json. Default threshold is
+# 30%; pass STRICT=1 for the 10% threshold.
+bench-compare:
+	@python3 scripts/compare_bench.py \
+	  $(or $(BASELINE),bench/baseline.json) \
+	  $(or $(CURRENT),bench/current.json) \
+	  $(if $(STRICT),--strict,)
+
 # Documentation hygiene — every relative markdown link resolves.
 verify-doc-links:
 	@tools/verify-doc-links.sh docs/
@@ -201,7 +255,10 @@ release-verify:
 
 # Test fan-out — independent per-language targets, plus the C-ABI conformance
 # harness. Listed once so `test` and `test-no-parallel` stay in sync.
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-ruby test-go test-typescript test-java test-kotlin test-csharp test-swift
+# Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
+# Frozen bindings (Java/Kotlin/C#/Ruby/Swift) retain their `test-<lang>`
+# targets for ad-hoc / re-promotion use but are not run by default `test`.
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go test-typescript
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
@@ -236,6 +293,22 @@ test-python: build-vcx
 # dep with `pip install pyarrow` (or `pip install lang/python[arrow]`).
 test-python-arrow: build-vcx build-lib-arrow
 	$(PYTHON) lang/python/test_arrow.py
+
+# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
+# fixtures through the Python binding. Cross-binding parity (W3 / W9)
+# means each active binding will have an equivalent runner over the
+# same fixture file. Per spec/v0_7_0_status.md W3.
+test-python-arrow-conformance: build-vcx build-lib-arrow
+	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
+
+# Per spec/v0_7_0_status.md H2 — exercise the new v0.7.0 evaluator
+# surface through the Python binding (cross-binding parity check
+# against V conformance/eval.txt). 18 tests covering ?let, FLWOR,
+# ?fn + apply, ?partial w/ [?_], ?try multi-catch, CXPath axes,
+# operator-token forms, attribute-value interpolation, fn library
+# (regex + current-date), and streaming.
+test-python-eval-v0-7-0: build-vcx
+	$(PYTHON) -m unittest lang.python.test_eval_v0_7_0 -v
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
@@ -291,6 +364,24 @@ test-rust: build-rust
 test-rust-arrow: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
 
+# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
+# fixtures through the Rust binding. Mirrors test-python-arrow-conformance
+# and test-go-arrow-conformance. Per spec/v0_7_0_status.md W3.
+test-rust-arrow-conformance: build-vcx build-lib-arrow
+	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
+		--test arrow_conformance -- --nocapture
+
+# Per spec/v0_7_0_status.md H4 — Rust-binding parity check for the
+# v0.7.0 evaluator surface (16 tests).
+test-rust-eval-v0-7-0: build-vcx
+	cargo test --manifest-path lang/rust/cxlib/Cargo.toml \
+		--test eval_v0_7_0
+
+# Per spec/v0_7_0_status.md H5 — TypeScript-binding parity check for
+# the v0.7.0 evaluator surface (16 tests).
+test-typescript-eval-v0-7-0: build-vcx build-typescript
+	npx tsx lang/typescript/eval_v0_7_0_test.ts
+
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
@@ -334,6 +425,17 @@ test-go-api: build-go
 test-go-arrow: build-vcx build-lib-arrow
 	cd lang/go/cxlib && go test -tags arrow ./...
 
+# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
+# fixtures through the Go binding. Mirrors test-python-arrow-conformance;
+# both consume the same fixture file. Per spec/v0_7_0_status.md W3.
+test-go-arrow-conformance: build-vcx build-lib-arrow
+	cd lang/go/cxlib && go test -tags arrow -v -run TestArrowConformance
+
+# Per spec/v0_7_0_status.md H3 — Go-binding parity check for the
+# v0.7.0 evaluator surface (17 tests).
+test-go-eval-v0-7-0: build-vcx
+	cd lang/go/cxlib && go test -v -run TestEvalV070
+
 test-typescript: build-typescript
 	cd lang/typescript/cxlib && npm run conform
 	npx tsx lang/typescript/api_test.ts
@@ -344,6 +446,12 @@ test-typescript: build-typescript
 
 test-typescript-api: build-typescript
 	npx tsx lang/typescript/api_test.ts
+
+# W3 v0.7.0 — TS Arrow conformance. Mirrors Python/Go/Rust arrow-conformance
+# targets; consumes the same fixtures at conformance/data_bin_arrow.txt and
+# round-trips them through the W7 IPC bridge (apache-arrow JS).
+test-typescript-arrow-conformance: build-typescript
+	npx tsx lang/typescript/arrow_conformance_test.ts
 
 test-java: build-java
 	mvn -f lang/java/cxlib/pom.xml -q test
@@ -482,14 +590,19 @@ release-v: publish-v publish-v-push
 release-all: release release-v publish-org
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
+#
+# Since v0.7.0 the language server is built into the `cx` binary itself —
+# `cx lsp` speaks JSON-RPC 2.0 over stdio (see vcx/cmd/lsp.v and
+# tooling/lsp/README.md). Editor integration is `cx` on $PATH plus the
+# example configs at tooling/lsp/{vscode,neovim,helix}.example.*.
+#
+# `make build-vscode` produces a publishable .vsix wrapping the VS Code
+# extension at tooling/vscode/. The .vsix bundles the TextMate grammar,
+# snippets, language configuration, and LSP-client glue; it does NOT
+# bundle a `cx` binary — users install that separately.
 
-build-lsp:
-	cd tooling/lsp && npm install --silent && npm run build
-
-build-vscode: build-lsp
+build-vscode:
 	cd tooling/vscode && npm install --silent && npm run build && npx vsce package --no-dependencies --allow-missing-repository
-
-build-editors: build-lsp build-vscode
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
@@ -498,6 +611,24 @@ bench: build-vcx
 
 bench-python: build-vcx
 	$(PYTHON) lang/python/bench.py
+
+# Y6 — Streaming evaluator throughput. Standalone V runner; surfaces
+# buffered vs streaming MB/s for a representative ?for-over-large-
+# sequence workload. Uses the patched V at third_party/v/ (carries
+# the macOS hardened-runtime libgc source-compile bypass + vlang/v
+# #27178/#27179 fixes) so -prod can be safely enabled on macOS.
+# Falls back to system V if the submodule isn't present.
+PATCHED_V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
+bench-streaming: build-vcx
+	$(PATCHED_V) -prod run vcx/tests/runners/streaming_bench.v
+
+# T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
+# surface additions (FLWOR clauses, ?fn calls, partial application,
+# pipeline/arrow operators, ?match, regex via RE2, range, tumbling
+# windows). Output is parsed by scripts/run_bench_json.py into the
+# T1.* benchmark keys for the V7 perf regression gate.
+bench-eval: build-vcx
+	v run vcx/tests/runners/eval_features_bench.v
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 

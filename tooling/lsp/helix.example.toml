@@ -1,0 +1,17 @@
+# Helix: cx language server registration. Drop into ~/.config/helix/
+# languages.toml (Helix merges this with the global config). `cx` must
+# be on PATH.
+
+[language-server.cx]
+command = "cx"
+args    = ["lsp"]
+
+[[language]]
+name              = "cx"
+scope             = "source.cx"
+file-types        = ["cx", "cxs", "cxl"]
+roots             = [".git", "cx.yaml", "cxlint.yaml"]
+language-servers  = ["cx"]
+indent            = { tab-width = 2, unit = "  " }
+auto-format       = true
+comment-token     = "#"

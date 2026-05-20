@@ -1,0 +1,50 @@
+[- Binding: C-sharp. -]
+[page id='binding-csharp'
+  [meta
+    title='C-sharp Binding'
+    layout='reference'
+    nav-order='670'
+    audience='lookup'
+    summary='NuGet: Cx.Lang. P/Invoke wrapper for .NET 8+.'
+  ]
+
+  [section id='install' title='Install'
+    [code lang='shell' src='dotnet add package Cx.Lang']
+  ]
+
+  [section id='parse-emit' title='Parse and Emit'
+    [code lang='csharp' src='''using Cx;
+
+var input = File.ReadAllText("pizza.cx");
+var json  = CxApi.Emit(input, Format.Json);
+var xml   = CxApi.Emit(input, Format.Xml);
+
+var tree = CxApi.Parse(input);
+foreach (var pizza in tree.FindAll("pizza"))
+{
+    Console.WriteLine($"{pizza.Attr<string>(\"name\")} @ {pizza.Attr<decimal>(\"price\")}");
+}''']
+  ]
+
+  [section id='eval' title='Run a CXL Template'
+    [code lang='csharp' src='''var output = CxEval.Run(programText)
+    .WithData(dataText)
+    .WithIncludeRoot("/proj")
+    .Execute();''']
+  ]
+
+  [section id='types' title='Type Mapping'
+    [prose CX type to .NET type: sized integers to sbyte / short / int / long (signed) and byte / ushort / uint / ulong (unsigned); bigint to System.Numerics.BigInteger; decimal to System.Decimal; float to double (or float for f32); bool to bool; string to string; date to DateOnly; datetime to DateTimeOffset; bytes to byte[].]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='bindings/c-abi' label='C ABI']
+      [item path='bindings/index' label='Binding catalog']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

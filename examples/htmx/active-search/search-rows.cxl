@@ -1,0 +1,11 @@
+[- Fragment template for /search responses. The server filters the
+   user list Python-side by the typed search text before passing it
+   inline as the data context (see filter_users_by_search in serve.py),
+   so this template just iterates and emits rows. ]
+[?for u :in //user :return
+  [tr
+    [td [?=u/@name]]
+    [td [?=u/@email]]
+    [td [?=u/@role]]
+  ]
+]

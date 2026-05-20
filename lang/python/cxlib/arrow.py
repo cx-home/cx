@@ -231,3 +231,96 @@ def import_to_data_bin(source) -> bytes:
     out = bytes(ctypes.string_at(addr, 4 + size))
     _lib.cx_arrow_free(ctypes.c_void_p(addr))
     return out
+
+
+# W2 v0.7.0: Arrow IPC stream format read/write.
+#
+# Implements .arrow file IPC reader/writer by delegating to pyarrow's
+# IPC layer over the existing C-Data Interface export/import bridge.
+# The pipeline:
+#
+#   data_bin → export → pyarrow.RecordBatchReader → ipc.RecordBatchStreamWriter → bytes
+#   bytes → ipc.RecordBatchStreamReader → pyarrow.RecordBatchReader → import → data_bin
+#
+# pyarrow's IPC layer handles flatbuffer encoding/decoding; we never
+# touch flatbuffer bytes directly. This is the canonical Apache Arrow
+# pattern — IPC is a wire format whose codec lives in each language's
+# Arrow library, not in CX.
+
+def to_ipc(data_bin: bytes) -> bytes:
+    """Convert framed CXDB chunked-table bytes to Arrow IPC stream bytes.
+
+    Returns a `bytes` object suitable for writing to a `.arrow` file
+    or piping into another Arrow IPC consumer.
+
+    Memory: copies the table through pyarrow's IPC writer.
+    """
+    _require_lib()
+    pa, _pa_cffi = _require_pyarrow()
+    import io
+    import pyarrow.ipc as paipc
+    reader = export(data_bin)
+    sink = io.BytesIO()
+    with paipc.new_stream(sink, reader.schema) as writer:
+        for batch in reader:
+            writer.write_batch(batch)
+    return sink.getvalue()
+
+
+def from_ipc(ipc_bytes: bytes) -> bytes:
+    """Convert Arrow IPC stream bytes to framed CXDB chunked-table bytes.
+
+    Accepts the byte stream a `.arrow` file would contain. Returns
+    framed CXDB bytes (`[u32 LE size][CXDB payload]`) that round-trip
+    through `cxlib.from_data_bin_chunked()`.
+    """
+    _require_lib()
+    pa, _pa_cffi = _require_pyarrow()
+    import io
+    import pyarrow.ipc as paipc
+    source = io.BytesIO(ipc_bytes)
+    with paipc.open_stream(source) as reader:
+        # RecordBatchReader is the interchange shape import_to_data_bin
+        # expects.
+        return import_to_data_bin(reader)
+
+
+def write_ipc_file(data_bin: bytes, path: str) -> None:
+    """Write framed CXDB bytes to a `.arrow` IPC file at `path`."""
+    with open(path, "wb") as f:
+        f.write(to_ipc(data_bin))
+
+
+def read_ipc_file(path: str) -> bytes:
+    """Read a `.arrow` IPC file and return framed CXDB bytes."""
+    with open(path, "rb") as f:
+        return from_ipc(f.read())
+
+
+# W2 v0.7.0: module-level CLI for `cx table dump --arrow` and IPC
+# read/write. The V CLI shells out to this entry point so the V binary
+# stays free of Arrow IPC linkage (pyarrow is the canonical reference).
+def _main() -> int:
+    import sys
+    if len(sys.argv) < 4 or sys.argv[1] not in ("dump", "load"):
+        sys.stderr.write(
+            "Usage:\n"
+            "  python -m cxlib.arrow dump <input.cxdb> <output.arrow>\n"
+            "  python -m cxlib.arrow load <input.arrow> <output.cxdb>\n"
+        )
+        return 2
+    verb, src_path, dst_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    if verb == "dump":
+        with open(src_path, "rb") as f:
+            framed = f.read()
+        write_ipc_file(framed, dst_path)
+    else:  # load
+        framed = read_ipc_file(src_path)
+        with open(dst_path, "wb") as f:
+            f.write(framed)
+    return 0
+
+
+if __name__ == "__main__":
+    import sys as _sys
+    _sys.exit(_main())

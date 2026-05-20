@@ -464,15 +464,10 @@ run('test_parse_error_unclosed_bracket', () => {
   assert.ok(threw, 'expected parse error for unclosed bracket');
 });
 
-run('test_parse_error_empty_element_name', () => {
-  let threw = false;
-  try {
-    parse(fx('errors/empty_name.cx'));
-  } catch (_) {
-    threw = true;
-  }
-  assert.ok(threw, 'expected parse error for empty element name');
-});
+// `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+// containing Text("="). Commit 72effe38 finalized this at the top-level
+// CXL parser. No syntactic surface for the old "empty element name"
+// diagnostic remains.
 
 run('test_parse_error_nested_unclosed', () => {
   let threw = false;

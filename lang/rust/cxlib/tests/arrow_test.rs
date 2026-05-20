@@ -1,3 +1,5 @@
+#![cfg(feature = "arrow")]
+
 //! Apache Arrow C-Data interop tests for lang/rust/cxlib
 //! (Phase 7.74c-cont-bindings-multi-rust).
 //!

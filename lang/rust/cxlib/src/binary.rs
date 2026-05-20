@@ -132,6 +132,7 @@ fn read_node(b: &mut BufReader<'_>, version: u8) -> Result<Node, String> {
             Ok(Node::Element(Element {
                 name, anchor, data_type, merge, attrs, items,
                 local: String::new(), ns_uri: None, id, body_ref,
+                lang_resolved: None,
             }))
         }
         0x02 => Ok(Node::Text(b.str_()?)),

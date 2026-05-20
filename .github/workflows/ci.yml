@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, native-data-binding]
+    branches: [main, native-data-binding, v0.7.0-dev]
   pull_request:
-    branches: [main]
+    branches: [main, v0.7.0-dev]
 
 jobs:
   test-matrix:
@@ -71,6 +71,15 @@ jobs:
       - name: Run binding test
         run: make test-${{ matrix.lang }}
 
+      # v0.7.0 H-row evaluator-surface tests for the five active
+      # bindings. Skipped for frozen bindings (csharp / java / kotlin
+      # / ruby / swift) and for the V core itself (the V-side surface
+      # is exercised by the cxl_test.v / cx_lang_test.v files run via
+      # make test-vcx).
+      - name: Run v0.7.0 evaluator-surface tests
+        if: matrix.lang == 'python' || matrix.lang == 'go' || matrix.lang == 'rust' || matrix.lang == 'typescript'
+        run: make test-${{ matrix.lang }}-eval-v0-7-0
+
   experience-gate:
     name: Experience gate (F1–F9)
     runs-on: ubuntu-22.04
@@ -103,6 +112,16 @@ jobs:
 
       - name: Run smoke-eval
         run: make smoke-eval
+
+      - name: Conformance fixture coverage gate (V3)
+        run: make check-conformance-coverage
+
+      - name: V upstream patch tracking (V2)
+        run: make check-v-upstream
+        continue-on-error: true
+
+      - name: Pre-commit lint rules (V6)
+        run: make check-lint-rules
 
   cold-install:
     name: Cold install + first demo (F1, F2, F5)

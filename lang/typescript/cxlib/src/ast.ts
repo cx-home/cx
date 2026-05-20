@@ -3,6 +3,7 @@
  */
 import {
   toAstBin as _toAstBin,
+  toAstBinWithIncludeRoot as _toAstBinWithIncludeRoot,
   toDataBin as _toDataBin,
   fromDataBin as _fromDataBin,
   selectAllPaths as _selectAllPaths,
@@ -191,6 +192,11 @@ export class Element {
    *  Null for ordinary elements. Carried over the ast_bin wire format
    *  at v3+ (Phase 7.70 bumped 2 → 3). */
   bodyRef: string | null = null;
+  /** v0.7.0 Z2 (spec/i18n.md §1.3): in-scope BCP 47 language tag.
+   *  Populated by resolveNamespaces(). `null` = no cx:lang in scope;
+   *  `""` = explicit cx:lang="" shadow; otherwise the locally-declared
+   *  or inherited tag. Use `lang()` for the flattened accessor. */
+  langResolved: string | null = null;
 
   constructor(opts: {
     name: string;
@@ -218,6 +224,11 @@ export class Element {
   /** Resolved namespace URI; null when no binding is in scope and
    * the prefix is not reserved. */
   namespaceUri(): string | null { return this.nsUri; }
+
+  /** BCP 47 language tag in scope at this Element per spec/i18n.md
+   *  §1.3. Returns `""` when no cx:lang is in scope or when an
+   *  ancestor's declaration was shadowed by an explicit `cx:lang=""`. */
+  lang(): string { return this.langResolved ?? ''; }
 
   /** First child Element with this name. */
   get(name: string): Element | null {
@@ -475,6 +486,14 @@ export class Document {
     return _findElementById(this.elements, id) ?? _findElementById(this.prolog, id);
   }
 
+  /** Return the Element targeted by `e.bodyRef` in this document, or
+   *  `null` when bodyRef is unset or the target ID is undeclared.
+   *  v0.7.0 (ADR 0003 D1 second bullet / GG13 row at v0_7_0_status.md). */
+  resolveBodyRef(e: Element): Element | null {
+    if (!e || !e.bodyRef) return null;
+    return this.resolveId(e.bodyRef);
+  }
+
   /** {id: Element} map for the whole document. v3.4 (ADR 0003). */
   elementsById(): Record<string, Element> {
     const out: Record<string, Element> = {};
@@ -710,21 +729,59 @@ function _resolveElement(e: Element, scope: Map<string, string>[]): void {
 }
 
 /** Populate Element.{local, nsUri} and Attr.{local, nsUri} on every
- *  node in `doc` per ADR 0002 / spec/namespaces.md. Idempotent.
- *  Called automatically by parse / parseXml / parseJson / parseYaml /
+ *  node in `doc` per ADR 0002 / spec/namespaces.md. Also propagates
+ *  cx:lang inherited scope per spec/i18n.md §1.3 — sets
+ *  Element.langResolved on every Element. Idempotent. Called
+ *  automatically by parse / parseXml / parseJson / parseYaml /
  *  parseToml / parseMd. */
 export function resolveNamespaces(doc: Document): void {
   const scope: Map<string, string>[] = [];
   for (const n of doc.elements) {
     if (n instanceof Element) _resolveElement(n, scope);
   }
+  const langStack: (string | null)[] = [];
+  for (const n of doc.elements) {
+    if (n instanceof Element) _resolveElementLang(n, langStack);
+  }
+}
+
+/** Propagate cx:lang per spec/i18n.md §1.3. Mirrors V's
+ *  vcx/cx/namespaces.v::resolve_element_lang. */
+function _resolveElementLang(el: Element, stack: (string | null)[]): void {
+  let ownTag: string | null = null;
+  let declared = false;
+  for (const a of el.attrs) {
+    if (a.name === 'cx:lang') {
+      ownTag = typeof a.value === 'string' ? a.value
+        : a.value == null ? ''
+        : String(a.value);
+      declared = true;
+      break;
+    }
+  }
+  const resolved = declared ? ownTag
+    : stack.length > 0 ? stack[stack.length - 1]
+    : null;
+  el.langResolved = resolved;
+  stack.push(resolved);
+  for (const item of el.items) {
+    if (item instanceof Element) _resolveElementLang(item, stack);
+  }
+  stack.pop();
 }
 
 // ── Public parse functions ────────────────────────────────────────────────────
 
-/** Parse a CX string into a Document (uses binary protocol). */
-export function parse(cxStr: string): Document {
-  const doc = _decodeAST(_toAstBin(cxStr));
+/** Parse a CX string into a Document (uses binary protocol).
+ *  Optional `opts.includeRoot` enables spec/include.md §1-§8
+ *  ?include resolution (v0.7.0 GG4). Empty / undefined preserves
+ *  directives in the AST. */
+export function parse(cxStr: string, opts?: { includeRoot?: string }): Document {
+  const root = opts?.includeRoot ?? '';
+  const data = root
+    ? _toAstBinWithIncludeRoot(cxStr, root)
+    : _toAstBin(cxStr);
+  const doc = _decodeAST(data);
   resolveNamespaces(doc);
   return doc;
 }

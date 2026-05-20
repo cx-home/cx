@@ -395,12 +395,11 @@ fn test_parse_error_unclosed_bracket() {
 	assert false, 'expected parse error for unclosed bracket'
 }
 
-fn test_parse_error_empty_element_name() {
-	_ := cxlib.parse(fx('errors/empty_name.cx')) or {
-		return   // error expected — test passes
-	}
-	assert false, 'expected parse error for empty element name'
-}
+// `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+// containing a single Text("="), and commit 72effe38 relaxed the top-level
+// CXL parser so brackets without a leading Name/keyword are read as
+// collection literals rather than malformed elements. The old
+// "empty element name" diagnostic has no syntactic surface left.
 
 fn test_parse_error_nested_unclosed() {
 	_ := cxlib.parse(fx('errors/nested_unclosed.cx')) or {

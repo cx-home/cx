@@ -1,0 +1,96 @@
+[- Binding: Python. -]
+[page id='binding-python'
+  [meta
+    title='Python Binding'
+    layout='reference'
+    nav-order='620'
+    audience='lookup'
+    summary='pip install cx-lang. ctypes under the hood. Pythonic API on top.'
+  ]
+
+  [section id='install' title='Install'
+    [code lang='shell' src='''pip install cx-lang
+# Or from source:
+git clone https://github.com/cx-home/cx
+cd cx/lang/python
+pip install -e .''']
+  ]
+
+  [section id='parse-emit' title='Parse and Emit'
+    [code lang='python' src='''import cx
+
+tree = cx.parse(open('pizza.cx').read())
+print(cx.emit(tree, to='json'))
+print(cx.emit(tree, to='yaml'))
+print(cx.canonical(open('pizza.cx').read()))''']
+  ]
+
+  [section id='access' title='Tree Access'
+    [code lang='python' src='''tree = cx.parse('[shop name=Pepe [pizza name=Margherita price=12]]')
+
+# Pythonic: attributes look like dict; children look like a list
+shop = tree[0]
+print(shop['name'])              # 'Pepe'
+print(shop[0]['name'])           # 'Margherita'
+print(shop[0]['price'])          # 12 (an int, not a string)
+
+# Iterate children
+for pizza in tree.find('pizza'):
+    print(pizza['name'], pizza['price'])''']
+  ]
+
+  [section id='eval' title='Run a CXL Template'
+    [code lang='python' src='''import cx
+
+program = open('receipt.cxl').read()
+data    = open('order.cx').read()
+print(cx.eval(program, data=data))
+
+# With include resolution
+print(cx.eval(program, data=data, include_root='/proj/templates'))''']
+  ]
+
+  [section id='convert' title='Format Conversion'
+    [code lang='python' src='''yaml_text = open('config.yaml').read()
+cx_text   = cx.from_yaml(yaml_text)
+
+# Or one-shot
+out = cx.convert(yaml_text, from_='yaml', to='cx')''']
+  ]
+
+  [section id='validate' title='Schema Validation'
+    [code lang='python' src='''diagnostics = cx.validate(
+    open('order.cx').read(),
+    schema=open('order.cxs').read(),
+    mode='strict',
+)
+for d in diagnostics:
+    print(d.severity, d.message, d.path)''']
+  ]
+
+  [section id='streaming' title='Streaming'
+    [code lang='python' src='''with open('events.cx', 'rb') as f:
+    for event in cx.stream(f):
+        if event.kind == 'element_start' and event.name == 'error':
+            print(event.attrs)
+
+with cx.stream_writer(open('out.cx', 'wb')) as w:
+    for record in fetch_records():
+        w.write(record)''']
+  ]
+
+  [section id='types' title='Type Mapping'
+    [prose CX type to Python type: int to int, bigint to int, decimal to decimal.Decimal, float / f32 / f64 to float, bool to bool, string to str, date to datetime.date, datetime to datetime.datetime, bytes to bytes, null to None.]
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='bindings/c-abi' label='C ABI — the layer this binding wraps']
+      [item path='bindings/index' label='Binding catalog']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

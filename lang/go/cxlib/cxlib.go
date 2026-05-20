@@ -11,9 +11,12 @@ package cxlib
 #include "cx.h"
 #include <stdlib.h>
 extern char* cx_to_ast_bin(const char* input, char** err_out);
+extern char* cx_to_ast_bin_with_include_root(const char* input, const char* include_root, char** err_out);
 extern char* cx_to_events_bin(const char* input, char** err_out);
 extern char* cx_ast_to_cx(const char* input, char** err_out);
 extern char* cx_to_cx_compact(const char* input, char** err_out);
+// Streaming trampoline — implemented in cxlib_stream.go via //export.
+extern int cxGoStreamTrampoline(const char* bytes, size_t n, void* user);
 */
 import "C"
 import (
@@ -78,6 +81,19 @@ func ToAstBin(input string) ([]byte, error) {
 	defer C.free(unsafe.Pointer(cs))
 	var errPtr *C.char
 	raw := unsafe.Pointer(C.cx_to_ast_bin(cs, &errPtr))
+	return extractBinPayload(raw, errPtr)
+}
+
+// ToAstBinWithIncludeRoot is ToAstBin with opt-in ?include resolution
+// per spec/include.md §1-§8 (v0.7.0 GG3 / GG4). Empty includeRoot
+// disables resolution.
+func ToAstBinWithIncludeRoot(input string, includeRoot string) ([]byte, error) {
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	cr := C.CString(includeRoot)
+	defer C.free(unsafe.Pointer(cr))
+	var errPtr *C.char
+	raw := unsafe.Pointer(C.cx_to_ast_bin_with_include_root(cs, cr, &errPtr))
 	return extractBinPayload(raw, errPtr)
 }
 
@@ -438,12 +454,44 @@ func EvalCXL(input, program, outputTarget string) (string, error) {
 	cprog := C.CString(program); defer C.free(unsafe.Pointer(cprog))
 	ctgt := C.CString(outputTarget); defer C.free(unsafe.Pointer(ctgt))
 	var ep *C.char
-	out := C.cx_eval_cxl(cin, cprog, ctgt, &ep)
+	out := C.cx_eval(cin, cprog, ctgt, &ep)
 	if out == nil {
 		if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }
-		return "", fmt.Errorf("cx_eval_cxl: unknown error")
+		return "", fmt.Errorf("cx_eval: unknown error")
 	}
 	s := C.GoString(out); C.cx_free(out); return s, nil
+}
+
+// EvalCXLStreaming evaluates a CXL program with pull-based
+// incremental output (v0.7.0 Y-row). onChunk is invoked with each
+// output chunk; returning a non-nil error aborts evaluation cleanly.
+//
+// cgo callback note: C function pointers can't be Go closures
+// directly, so the caller's onChunk is registered in a process-wide
+// dispatch table keyed by a uint64 token. The token is passed
+// through cx_eval_streaming's user pointer, and the exported
+// cxGoStreamTrampoline (in cxlib_stream.go) looks up the closure
+// per invocation. The token slot is freed when EvalCXLStreaming
+// returns regardless of outcome.
+func EvalCXLStreaming(input, program, outputTarget string,
+	onChunk func(chunk []byte) error) error {
+	token, cleanup := registerStreamCallback(onChunk)
+	defer cleanup()
+	cin := C.CString(input); defer C.free(unsafe.Pointer(cin))
+	cprog := C.CString(program); defer C.free(unsafe.Pointer(cprog))
+	ctgt := C.CString(outputTarget); defer C.free(unsafe.Pointer(ctgt))
+	var ep *C.char
+	C.cx_eval_streaming(
+		cin, cprog, ctgt,
+		C.cx_eval_write_cb(C.cxGoStreamTrampoline),
+		unsafe.Pointer(uintptr(token)),
+		&ep,
+	)
+	if ep != nil {
+		m := C.GoString(ep); C.cx_free(ep)
+		return fmt.Errorf("%s", m)
+	}
+	return streamCallbackError(token)
 }
 
 // XML input

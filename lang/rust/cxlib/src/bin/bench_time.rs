@@ -1,7 +1,9 @@
 use std::time::Instant;
 
 fn main() {
-    let medium = std::fs::read_to_string("../../../fixtures/bench/bench_medium.cx")
+    let fixture = std::env::var("CX_BENCH_FIXTURE").unwrap_or_else(|_| "bench_medium.cx".to_string());
+    let path = format!("../../../fixtures/bench/{}", fixture);
+    let medium = std::fs::read_to_string(&path)
         .expect("run from lang/rust/cxlib/");
 
     let parse_med  = time_median(100, 20, || { cxlib::parse(&medium).unwrap(); });

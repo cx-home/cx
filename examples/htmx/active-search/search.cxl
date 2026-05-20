@@ -1,0 +1,20 @@
+[doc
+  [input class=search name=search type=search
+         placeholder="Begin typing to filter (admin role hard-coded)"
+         autocomplete=off
+         hx-post=/search
+         hx-trigger="keyup changed delay:500ms, search"
+         hx-target=#search-results]
+  [table class=table
+    [thead [tr [th First Name] [th Email] [th Role]]]
+    [tbody id=search-results
+      [?for u :in //user :where u/@role = 'admin' :return
+        [tr
+          [td [?=u/@name]]
+          [td [?=u/@email]]
+          [td [?=u/@role]]
+        ]
+      ]
+    ]
+  ]
+]

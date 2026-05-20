@@ -209,6 +209,25 @@ syntactic IDs.
 //section[not(#u-1)] sections without that ID
 ```
 
+### Body-ref match (v0.7.0)
+
+`[#bodyref=id-name]` matches an element whose body-position
+reference (the `body_ref` field set when the source had a
+`[ref @<id>]` body-position form per ADR 0003 D1 second bullet)
+equals `id-name`. Distinguished from the ID match form by the `=`
+separator after `#bodyref`.
+
+```
+//ref[#bodyref=s-3] [ref @s-3] elements pointing at s-3
+//*[#bodyref=u-1] any element whose body_ref is u-1
+//para[not(#bodyref=archived)]
+                       paras not pointing at the archived target
+```
+
+Pairs with the `cx:references(value)` self-host function (DD17 at
+v0.7.0) — both surface the IDREF side of ADR 0003 to query / walk
+authoring time.
+
 ### Position
 
 Position predicates select by index among the matched elements at that step,
@@ -528,7 +547,49 @@ The v1.1 operators compose with the existing v1.0 path syntax:
 
 ---
 
-## v1 scope
+## v0.7.0 trajectory — XPath 4.0 parity
+
+**Per [ADR 0022 §D2 Amendment #4 (2026-05-17)](decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+and [`spec/xquery_40_parity.md`](xquery_40_parity.md):** v0.7.0
+brings CXPath to **XPath 4.0 feature parity**. This is implied by
+the XQuery 4.0 parity claim — XQuery is built on XPath, so XQuery
+4.0 parity requires XPath 4.0 parity for the underlying value-
+expression language.
+
+The XQuery 4.0 parity inventory ([`xquery_40_parity.md`](xquery_40_parity.md))
+catalogs CXPath features under §4 Expressions — the bulk of which
+are XPath territory, not XQuery-specific:
+
+| XPath surface | XPath version | Currently in CXPath v1 (v0.6.0)? |
+|---|---|---|
+| Full axes (parent, ancestor, sibling) | XPath 1.0 | ✗ deferred; **v0.7.0 scope** |
+| Sequence operators (range `to`, union/intersect/except) | XPath 2.0 | partial (union via `\|`); **v0.7.0 expand** |
+| Type expressions (`instance of`, `cast as`, `castable`, `treat as`, typeswitch) | XPath 2.0 | ✗ **v0.7.0 scope** |
+| Quantified expressions (`some`, `every`) | XPath 2.0 | ✗ **v0.7.0 scope** |
+| Conditional (`if-then-else` expression form) | XPath 2.0 | via CXL directive; **add as expression form** |
+| Function calls (static + dynamic + named refs + partial app) | XPath 3.0+ | static only; **v0.7.0 scope** — note: bare CXPath top-level form `count(//x)` / `local-name($n)` / `sum(//x/@v)` deferred to v0.8.0 per [`v0_7_0_status.md` B15](v0_7_0_status.md); v0.7.0 ships the directive form, argless predicate form, and `$f(args)` postfix |
+| Inline function expressions `fn ($x) { ... }`, `-> ($x) { ... }` | XPath 3.0 | ✗ **v0.7.0 scope** |
+| Simple map `!` | XPath 3.0 | ✗ **v0.7.0 scope** |
+| Arrow operator `=>` | XPath 3.1 | ✗ **v0.7.0 scope** |
+| String concatenation `\|\|` | XPath 3.0 | ✗ **v0.7.0 scope** |
+| Switch expression | XPath 3.0 | ✗ **v0.7.0 scope** |
+| Maps + arrays as values | XPath 3.1 | values in CXDM; expression integration **v0.7.0** |
+| Lookup operator `?key` (postfix and unary) | XPath 3.1 | ✗ **v0.7.0 scope** |
+| Try/catch expression | XPath 3.1 | available as CXL directive (`?try`); **add as expression form per XPath 3.1** |
+| Pipeline `\|>` | XPath 4.0 | ✗ **v0.7.0 scope** |
+| Otherwise `A otherwise B` | XPath 4.0 | ✗ **v0.7.0 scope** |
+| String templates / constructors | XPath 4.0 | ✗ **v0.7.0 scope** |
+
+The §"v1 scope" below describes v0.6.0 CXPath. v0.7.0 supersedes
+it via the parity inventory. The "Deferred" subsection's claim that
+"XQuery / FLWOR" is "out of scope for CXPath — separate spec if
+pursued" is **also superseded** — most of those features are
+XPath territory (not XQuery-specific) and ship with CXPath at
+v0.7.0.
+
+---
+
+## v1 scope (v0.6.0 — superseded by v0.7.0 parity expansion)
 
 ### In scope
 
@@ -583,5 +644,11 @@ return variant of `select`.
 the In-scope list above.
 
 **XQuery / FLWOR** — `for`/`let`/`where`/`return` expressions, aggregates
-(`count()`, `sum()`), transforms. Out of scope for CXPath — separate spec if
-pursued.
+(`count()`, `sum()`), transforms. Originally out of scope for CXPath v1.
+**Superseded at v0.7.0**: FLWOR expression directives (`?for`, `?let`,
+`?where`, `?return` and friends) ship at v0.7.0 per the §"v0.7.0 trajectory"
+table above, and aggregates (`count`, `sum`, `min`, `max`, `avg`, ...) ship
+as `?<name>` directive form + as predicate-context fn calls. The remaining
+piece — bare CXPath top-level call surface `count(//x)` / `sum(//x/@v)` /
+`local-name($n)` outside a predicate — is deferred to **v0.8.0** per
+[`v0_7_0_status.md` B15](v0_7_0_status.md).

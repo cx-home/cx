@@ -18,6 +18,7 @@ $if linux {
 fn C.cx_init() int
 
 fn C.cx_to_cx(input charptr, err_out &charptr) charptr
+fn C.cx_to_cx_with_include_root(input charptr, include_root charptr, err_out &charptr) charptr
 fn C.cx_to_cx_compact(input charptr, err_out &charptr) charptr
 fn C.cx_ast_to_cx(input charptr, err_out &charptr) charptr
 fn C.cx_to_xml(input charptr, err_out &charptr) charptr
@@ -68,7 +69,7 @@ fn C.cx_md_to_yaml(input charptr, err_out &charptr) charptr
 fn C.cx_md_to_toml(input charptr, err_out &charptr) charptr
 fn C.cx_md_to_md(input charptr, err_out &charptr) charptr
 
-fn C.cx_eval_cxl(cx_input charptr, cxl_program charptr, output_target charptr, err_out &charptr) charptr
+fn C.cx_eval(cx_input charptr, cxl_program charptr, output_target charptr, err_out &charptr) charptr
 
 fn C.cx_free(s charptr)
 fn C.cx_version() charptr
@@ -114,6 +115,14 @@ pub fn version() string {
 pub fn to_cx(src string) !string {
 	mut err := charptr(0)
 	return unwrap(C.cx_to_cx(charptr(src.str), &err), err)
+}
+
+// to_cx_with_include_root parses CX with the spec/include.md §1-§8
+// resolver enabled (v0.7.0 GG3). Empty `root` disables resolution
+// (matches the no-include default of `to_cx`).
+pub fn to_cx_with_include_root(src string, root string) !string {
+	mut err := charptr(0)
+	return unwrap(C.cx_to_cx_with_include_root(charptr(src.str), charptr(root.str), &err), err)
 }
 
 pub fn to_cx_compact(src string) !string {
@@ -345,7 +354,7 @@ pub fn md_to_md(src string) !string {
 	return unwrap(C.cx_md_to_md(charptr(src.str), &err), err)
 }
 
-// ── CXL evaluation (spec/cxl.md / ADR 0016, capability bit 28) ───────────────
+// ── CXL evaluation (spec/eval.md / ADR 0016, capability bit 28) ───────────────
 //
 // `output_target` may be '' (honour the program's `[?cx output-target=…]`
 // directive, defaulting to `text`) or one of `text` / `cx` / `html` at
@@ -353,5 +362,5 @@ pub fn md_to_md(src string) !string {
 pub fn eval_cxl(cx_input string, cxl_program string, output_target string) !string {
 	mut err := charptr(0)
 	target_ptr := if output_target == '' { charptr(0) } else { charptr(output_target.str) }
-	return unwrap(C.cx_eval_cxl(charptr(cx_input.str), charptr(cxl_program.str), target_ptr, &err), err)
+	return unwrap(C.cx_eval(charptr(cx_input.str), charptr(cxl_program.str), target_ptr, &err), err)
 }

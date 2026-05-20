@@ -149,6 +149,11 @@ class Element:
     # `"ref"` and `attrs`/`items` are empty in that case. Round-trips
     # across the C ABI via ast_bin v3+ (Phase 7.70).
     body_ref: Optional[str] = None
+    # v0.7.0 Z2 (spec/i18n.md §1.3): in-scope BCP 47 language tag.
+    # Populated by resolve_languages() called from parse_cx(). See
+    # Element.lang() for the public accessor and the None vs "" vs
+    # "<tag>" semantics.
+    lang_resolved: Optional[str] = None
 
     def local_name(self) -> str:
         """Local part of the element name (post-colon, or whole name)."""
@@ -158,6 +163,17 @@ class Element:
         """Resolved namespace URI for this element; None when no
         binding is in scope and the prefix is not reserved."""
         return self.ns_uri
+
+    def lang(self) -> str:
+        """BCP 47 language tag in scope at this element per
+        spec/i18n.md §1.3.
+
+        Returns the resolved tag when cx:lang is in scope (locally
+        declared or inherited from an ancestor); returns the empty
+        string when no cx:lang is in scope or when an ancestor's
+        declaration was shadowed by an explicit cx:lang="".
+        """
+        return self.lang_resolved or ""
 
     def get(self, name: str) -> Optional["Element"]:
         """First child Element with this name."""
@@ -451,6 +467,15 @@ class Document:
                 return found
         return None
 
+    def resolve_body_ref(self, e: Element) -> Optional[Element]:
+        """Return the Element targeted by ``e.body_ref`` in this document,
+        or None when ``e.body_ref`` is unset or the target ID is undeclared.
+        v0.7.0 (ADR 0003 D1 second bullet / GG13 row at v0_7_0_status.md).
+        """
+        if e.body_ref is None:
+            return None
+        return self.resolve_id(e.body_ref)
+
     def elements_by_id(self) -> dict[str, Element]:
         """Build a {id: Element} map for the whole document. v3.4 (ADR 0003)."""
         out: dict[str, Element] = {}
@@ -639,19 +664,60 @@ def _resolve_element(e: Element, scope: list[dict[str, str]]) -> None:
 
 def resolve_namespaces(doc: Document) -> None:
     """Populate Element.{local, ns_uri} and Attr.{local, ns_uri} on
-    every node in `doc` per ADR 0002 / spec/namespaces.md. Idempotent.
+    every node in `doc` per ADR 0002 / spec/namespaces.md. Also
+    propagates cx:lang inherited scope per spec/i18n.md §1.3 — sets
+    Element.lang_resolved on every Element. Idempotent.
     Called automatically by parse(), parse_xml(), parse_json(),
     parse_yaml(), parse_toml(), parse_md()."""
     scope: list[dict[str, str]] = []
     for node in doc.elements:
         if isinstance(node, Element):
             _resolve_element(node, scope)
+    lang_stack: list[Optional[str]] = []
+    for node in doc.elements:
+        if isinstance(node, Element):
+            _resolve_element_lang(node, lang_stack)
 
 
-def parse(cx_str: str) -> Document:
-    """Parse a CX string into a Document."""
-    from .binary import ast_bin, decode_ast
-    doc = decode_ast(ast_bin(cx_str))
+def _resolve_element_lang(el: "Element", stack: list[Optional[str]]) -> None:
+    """Propagate cx:lang per spec/i18n.md §1.3. Mirrors V's
+    vcx/cx/namespaces.v::resolve_element_lang."""
+    own_lang: Optional[str] = None
+    declared = False
+    for a in el.attrs:
+        if a.name == "cx:lang":
+            v = a.value
+            own_lang = v if isinstance(v, str) else (str(v) if v is not None else "")
+            declared = True
+            break
+    if declared:
+        resolved = own_lang
+    elif stack:
+        resolved = stack[-1]
+    else:
+        resolved = None
+    el.lang_resolved = resolved
+    stack.append(resolved)
+    for item in el.items:
+        if isinstance(item, Element):
+            _resolve_element_lang(item, stack)
+    stack.pop()
+
+
+def parse(cx_str: str, *, include_root: Optional[str] = None) -> Document:
+    """Parse a CX string into a Document.
+
+    ``include_root`` (v0.7.0, ADR 0023 GG4) opts into the
+    spec/include.md §1-§8 ?include resolver. When set to an absolute
+    directory path, every ``[?cx include=path]`` directive in the
+    source is resolved against that root before the Document is
+    decoded. ``None`` / empty preserves directives in the AST.
+    """
+    from .binary import ast_bin, ast_bin_with_include_root, decode_ast
+    if include_root:
+        doc = decode_ast(ast_bin_with_include_root(cx_str, include_root))
+    else:
+        doc = decode_ast(ast_bin(cx_str))
     resolve_namespaces(doc)
     return doc
 

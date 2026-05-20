@@ -86,28 +86,98 @@ pub mut:
 
 // arrow_format_for_cxdb_type returns the Arrow C-Data ABI format
 // string for a CXDB column type name (as produced by
-// cx.column_type_name_from_code). Errors for unsupported v0.6.0 types.
+// cx.column_type_name_from_code).
+//
+// v0.7.0 W1 extensions: decimal128, timestamp parametric tz, fixed-
+// size-binary, dictionary-encoded utf8. Errors for unsupported types.
+//
+// Parametric forms (case-insensitive on the prefix):
+//   decimal128[P,S]       → 'd:P,S' (Arrow decimal128 with precision P, scale S)
+//   timestamp[U, TZ]      → 'tsU:TZ' where U ∈ {s,m,u,n} → {s, ms, us, ns}
+//   fixed-size-binary[N]  → 'w:N'   (Arrow fixed-size-binary N bytes)
+//   dict-utf8             → 'u' (with dictionary field set in schema)
 fn arrow_format_for_cxdb_type(type_name string) !string {
+	// Parametric prefixes first.
+	if type_name.starts_with('decimal128[') && type_name.ends_with(']') {
+		body := type_name[11..type_name.len - 1]
+		if !body.contains(',') {
+			return error("decimal128 needs precision,scale: got '${type_name}'")
+		}
+		return 'd:${body}'
+	}
+	if type_name.starts_with('timestamp[') && type_name.ends_with(']') {
+		body := type_name[10..type_name.len - 1]
+		parts := body.split(',')
+		if parts.len != 2 {
+			return error("timestamp needs [unit, tz]: got '${type_name}'")
+		}
+		unit := parts[0].trim_space()
+		tz := parts[1].trim_space()
+		unit_code := match unit {
+			's', 'sec', 'seconds'         { 's' }
+			'ms', 'milli', 'milliseconds' { 'm' }
+			'us', 'micro', 'microseconds' { 'u' }
+			'ns', 'nano',  'nanoseconds'  { 'n' }
+			else { return error("timestamp unit must be s|ms|us|ns: got '${unit}'") }
+		}
+		return 'ts${unit_code}:${tz}'
+	}
+	if type_name.starts_with('fixed-size-binary[') && type_name.ends_with(']') {
+		body := type_name[18..type_name.len - 1]
+		if body.int() <= 0 {
+			return error("fixed-size-binary needs positive byte count: got '${type_name}'")
+		}
+		return 'w:${body}'
+	}
 	return match type_name {
-		'int', 'i64'      { 'l' }     // int64
-		'i8'              { 'c' }     // int8
-		'i16'             { 's' }     // int16
-		'i32'             { 'i' }     // int32
-		'float', 'f64'    { 'g' }     // float64
-		'bool'            { 'b' }     // bool (bit-packed)
-		'string', 's', '' { 'u' }     // utf8 (32-bit offsets)
-		'date', 'd'       { 'tdD' }   // date32 (days since 1970-01-01)
-		'datetime'        { 'tsn:UTC' } // timestamp[ns, UTC]
-		'bytes'           { 'z' }     // binary (32-bit offsets)
+		'int', 'i64'        { 'l' }     // int64
+		'i8'                { 'c' }     // int8
+		'i16'               { 's' }     // int16
+		'i32'               { 'i' }     // int32
+		'float', 'f64'      { 'g' }     // float64
+		'bool'              { 'b' }     // bool (bit-packed)
+		'string', 's', ''   { 'u' }     // utf8 (32-bit offsets)
+		'dict-utf8'         { 'u' }     // dictionary-encoded utf8 — dict field set at schema time
+		'date', 'd'         { 'tdD' }   // date32 (days since 1970-01-01)
+		'datetime'          { 'tsn:UTC' } // timestamp[ns, UTC] (shorthand)
+		'bytes'             { 'z' }     // binary (32-bit offsets)
+		'decimal128'        { 'd:38,10' } // decimal128 default precision/scale
 		else {
-			error("column type '${type_name}' not yet supported in v0.6.0; "
-				+ 'supported set: int, i8, i16, i32, float, bool, string, date, datetime, bytes')
+			error("column type '${type_name}' not yet supported in v0.7.0; "
+				+ 'supported scalar set: int, i8, i16, i32, float, bool, string, date, '
+				+ 'datetime, bytes, decimal128 (or decimal128[P,S]), '
+				+ 'timestamp[unit, tz], fixed-size-binary[N], dict-utf8. '
+				+ 'Nested types (struct, list, fixed-size-list) require cx-table '
+				+ 'cell-model evolution to carry nested cells natively '
+				+ '(tracked separately; depends on cx-table v0.8.0 schema work).')
 		}
 	}
 }
 
 // cxdb_type_name_from_arrow_format is the inverse — used on import.
+// v0.7.0 W1: handle parametric forms (d:P,S, tsU:TZ, w:N).
 fn cxdb_type_name_from_arrow_format(fmt string) !string {
+	if fmt.starts_with('d:') {
+		return 'decimal128[${fmt[2..]}]'
+	}
+	if fmt.starts_with('ts') && fmt.len >= 4 && fmt[3] == `:` {
+		unit_code := fmt[2]
+		tz := fmt[4..]
+		unit := match unit_code {
+			`s` { 's' }
+			`m` { 'ms' }
+			`u` { 'us' }
+			`n` { 'ns' }
+			else { return error("Arrow timestamp unit code '${unit_code.ascii_str()}' unrecognised in '${fmt}'") }
+		}
+		// Preserve the v0.6.0 shorthand 'datetime' for ns:UTC inputs to
+		// keep round-trip stable for the common case.
+		if unit_code == `n` && tz == 'UTC' { return 'datetime' }
+		return 'timestamp[${unit}, ${tz}]'
+	}
+	if fmt.starts_with('w:') {
+		return 'fixed-size-binary[${fmt[2..]}]'
+	}
 	return match fmt {
 		'l'           { 'int' }
 		'c'           { 'i8' }
@@ -120,10 +190,11 @@ fn cxdb_type_name_from_arrow_format(fmt string) !string {
 		'tsn:UTC'     { 'datetime' }
 		'z'           { 'bytes' }
 		else {
-			error("Arrow format '${fmt}' not yet supported in v0.6.0; "
+			error("Arrow format '${fmt}' not yet supported in v0.7.0; "
 				+ "supported set: 'l' (int64), 'c' (int8), 's' (int16), 'i' (int32), "
 				+ "'g' (float64), 'b' (bool), 'u' (utf8), 'tdD' (date32), "
-				+ "'tsn:UTC' (timestamp[ns, UTC]), 'z' (binary)")
+				+ "'tsn:UTC' (timestamp[ns, UTC]), 'z' (binary), "
+				+ "'d:P,S' (decimal128), 'tsU:TZ' (timestamp w/ tz), 'w:N' (fixed-size-binary)")
 		}
 	}
 }
@@ -292,9 +363,18 @@ const cxdb_tag_string   = u8(0x30)
 const cxdb_tag_date     = u8(0x31)
 const cxdb_tag_datetime = u8(0x32)
 const cxdb_tag_bytes    = u8(0x33)
+// W1 v0.7.0 — new CXDB tags for parametric scalar types.
+// Wire encoding: each cell is a fixed-width byte slab whose width
+// is determined by the column's type_name parameters at decode time.
+const cxdb_tag_decimal128 = u8(0x40)  // 16 bytes/cell
+const cxdb_tag_timestamp  = u8(0x41)  // 8 bytes/cell (i64) — unit + tz in type_name
+const cxdb_tag_fsb        = u8(0x42)  // fixed-size-binary, N bytes/cell from type_name[N]
 const cxdb_tag_true     = u8(0x02)
 
 fn cxdb_code_for_type_name(type_name string) u8 {
+	if type_name.starts_with('decimal128')       { return cxdb_tag_decimal128 }
+	if type_name.starts_with('timestamp[')       { return cxdb_tag_timestamp }
+	if type_name.starts_with('fixed-size-binary[') { return cxdb_tag_fsb }
 	return match type_name {
 		'int', 'i64'      { cxdb_tag_int64 }
 		'i8'              { cxdb_tag_int8 }
@@ -302,12 +382,24 @@ fn cxdb_code_for_type_name(type_name string) u8 {
 		'i32'             { cxdb_tag_int32 }
 		'float', 'f64'    { cxdb_tag_float64 }
 		'bool'            { cxdb_tag_true }
-		'string', '', 's' { cxdb_tag_string }
+		'string', '', 's', 'dict-utf8' { cxdb_tag_string }
 		'date', 'd'       { cxdb_tag_date }
 		'datetime'        { cxdb_tag_datetime }
 		'bytes'           { cxdb_tag_bytes }
 		else              { cxdb_tag_string }
 	}
+}
+
+// fsb_width_from_type_name extracts the byte width from a
+// `fixed-size-binary[N]` type name. Used by decoders.
+fn fsb_width_from_type_name(type_name string) !int {
+	if !type_name.starts_with('fixed-size-binary[') || !type_name.ends_with(']') {
+		return error('fsb width: not a fixed-size-binary type name: "${type_name}"')
+	}
+	body := type_name[18..type_name.len - 1]
+	w := body.int()
+	if w <= 0 { return error('fsb width must be > 0: "${type_name}"') }
+	return w
 }
 
 // ── Stream callbacks ─────────────────────────────────────────────────
@@ -572,7 +664,37 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << offsets
 			}
 			else {
-				return error("arrow: format '${fmt}' not handled in decoder")
+				// W1 v0.7.0 parametric scalar dispatch.
+				if fmt.starts_with('d:') {
+					if code != cxdb_tag_decimal128 {
+						return error('arrow: format/code mismatch for col ${i} (expected decimal128)')
+					}
+					// 16 bytes/cell for decimal128 (Arrow LE encoding).
+					bytes := br.take_pub(row_count * 16)!
+					la.col_main_bufs << bytes.clone()
+					la.col_aux_bufs << []u8{}
+				} else if fmt.starts_with('ts') && fmt.len >= 4 && fmt[3] == `:` {
+					if code != cxdb_tag_timestamp && code != cxdb_tag_datetime {
+						return error('arrow: format/code mismatch for col ${i} (expected timestamp)')
+					}
+					// 8 bytes/cell (i64) for parametric timestamps.
+					bytes := br.take_pub(row_count * 8)!
+					la.col_main_bufs << bytes.clone()
+					la.col_aux_bufs << []u8{}
+				} else if fmt.starts_with('w:') {
+					if code != cxdb_tag_fsb {
+						return error('arrow: format/code mismatch for col ${i} (expected fixed-size-binary)')
+					}
+					width := fmt[2..].int()
+					if width <= 0 {
+						return error('arrow: fixed-size-binary width must be > 0: "${fmt}"')
+					}
+					bytes := br.take_pub(row_count * width)!
+					la.col_main_bufs << bytes.clone()
+					la.col_aux_bufs << []u8{}
+				} else {
+					return error("arrow: format '${fmt}' not handled in decoder")
+				}
 			}
 		}
 	}
@@ -956,7 +1078,20 @@ fn write_column_from_arrow(mut body []u8, child &C.ArrowArray, fmt string, row_c
 			}
 		}
 		else {
-			return error("arrow: format '${fmt}' not handled in encoder")
+			// W1 v0.7.0 parametric scalar dispatch.
+			if fmt.starts_with('d:') {
+				copy_fixed_width_data(mut body, child, row_count, 16, 'decimal128')!
+			} else if fmt.starts_with('ts') && fmt.len >= 4 && fmt[3] == `:` {
+				copy_fixed_width_data(mut body, child, row_count, 8, 'timestamp[parametric]')!
+			} else if fmt.starts_with('w:') {
+				width := fmt[2..].int()
+				if width <= 0 {
+					return error("arrow: fixed-size-binary width must be > 0: '${fmt}'")
+				}
+				copy_fixed_width_data(mut body, child, row_count, width, 'fixed-size-binary')!
+			} else {
+				return error("arrow: format '${fmt}' not handled in encoder")
+			}
 		}
 	}
 }

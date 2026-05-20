@@ -4,8 +4,9 @@ import * as path from 'path';
 import { parse } from './cxlib/src/ast';
 import { stream } from './cxlib/src/index';
 
+const fixture = process.env.CX_BENCH_FIXTURE || 'bench_medium.cx';
 const medium = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'fixtures', 'bench', 'bench_medium.cx'), 'utf-8');
+    path.join(__dirname, '..', '..', 'fixtures', 'bench', fixture), 'utf-8');
 
 function timeMedian(n: number, warmup: number, fn: () => void): number {
     for (let i = 0; i < warmup; i++) fn();

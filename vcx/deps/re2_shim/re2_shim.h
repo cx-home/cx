@@ -40,6 +40,34 @@ cx_re2 *cx_re2_compile(const char *pattern);
  * The text-length variant avoids a NUL-scan on long inputs. */
 int cx_re2_full_match(cx_re2 *re, const char *text, unsigned long text_len);
 
+/* Return 1 when the regex matches anywhere in `text`; 0 otherwise.
+ * Backs XPath 4.0 fn:matches — the schema validator uses the full-
+ * match variant above; fn:matches uses partial semantics so an
+ * unanchored pattern like `[0-9]+` matches any input that contains
+ * a digit run. v0.7.0 C5 (regex family). */
+int cx_re2_partial_match(cx_re2 *re, const char *text, unsigned long text_len);
+
+/* Find the next match starting at `start_offset` in `text`. On match,
+ * writes the match start/end byte offsets to *out_start / *out_end
+ * and returns 1. On no-match, returns 0 and leaves the out params
+ * unchanged. Used by V-side tokenize / split implementations that
+ * iterate matches without allocating intermediate arrays at the
+ * shim boundary. v0.7.0 C5 (regex family). */
+int cx_re2_find(cx_re2 *re, const char *text, unsigned long text_len,
+                unsigned long start_offset,
+                unsigned long *out_start, unsigned long *out_end);
+
+/* Replace every non-overlapping match of the pattern in `text` with
+ * `replacement` (RE2 replacement syntax: `\1`..`\9` back-refs etc.).
+ * Returns a malloc'd NUL-terminated buffer that the caller frees via
+ * cx_re2_free_string, or NULL on internal failure (out-of-memory).
+ * v0.7.0 C5 (regex family). */
+char *cx_re2_replace_all(cx_re2 *re, const char *text, unsigned long text_len,
+                         const char *replacement, unsigned long replacement_len);
+
+/* Release a string returned by cx_re2_replace_all. Safe on NULL. */
+void cx_re2_free_string(char *s);
+
 /* Release the handle. Safe on NULL. */
 void cx_re2_destroy(cx_re2 *re);
 

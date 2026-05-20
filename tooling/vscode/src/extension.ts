@@ -1,6 +1,16 @@
-import * as path from 'path';
-import * as fs from 'fs';
-import { workspace, ExtensionContext, window } from 'vscode';
+// CX VS Code extension.
+//
+// Activation: any `.cx` / `.cxs` / `.cxl` file open. The extension spawns
+// `<cx.serverPath> <cx.serverArgs>` (default `cx lsp`) and wires it as the
+// language server via vscode-languageclient. The server speaks JSON-RPC
+// 2.0 over stdio with LSP Content-Length framing.
+//
+// We don't ship a server binary in the .vsix — users install `cx` via
+// `brew install cx-home/tap/cx` (or build from source). If `cx` isn't
+// on $PATH, the extension surfaces a one-time install hint and stays
+// dormant.
+
+import { workspace, window, commands, ExtensionContext } from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -10,59 +20,69 @@ import {
 
 let client: LanguageClient | undefined;
 
-export function activate(context: ExtensionContext) {
-  const serverPath = resolveLspServer(context);
-  if (!serverPath) {
+export async function activate(context: ExtensionContext): Promise<void> {
+  const config = workspace.getConfiguration('cx');
+  const serverPath = config.get<string>('serverPath', 'cx');
+  const serverArgs = config.get<string[]>('serverArgs', ['lsp']);
+  const trace = config.get<string>('trace.server', 'off');
+
+  const serverOptions: ServerOptions = {
+    run: {
+      command: serverPath,
+      args: serverArgs,
+      transport: TransportKind.stdio,
+    },
+    debug: {
+      command: serverPath,
+      args: [...serverArgs, '--verbose'],
+      transport: TransportKind.stdio,
+    },
+  };
+
+  const clientOptions: LanguageClientOptions = {
+    documentSelector: [
+      { scheme: 'file', language: 'cx' },
+    ],
+    synchronize: {
+      fileEvents: workspace.createFileSystemWatcher('**/*.{cx,cxs,cxl}'),
+    },
+    initializationOptions: {
+      traceServer: trace,
+    },
+  };
+
+  client = new LanguageClient(
+    'cx',
+    'CX Language Server',
+    serverOptions,
+    clientOptions,
+  );
+
+  try {
+    await client.start();
+  } catch (err) {
     window.showWarningMessage(
-      'CX: language server not found. Run `make build-lsp` in the repo root.'
+      `CX: failed to start language server (${serverPath} ${serverArgs.join(' ')}). ` +
+      `Install with \`brew install cx-home/tap/cx\` or set \`cx.serverPath\` in settings.`,
     );
     return;
   }
 
-  const serverOptions: ServerOptions = {
-    run:   { command: 'node', args: [serverPath], transport: TransportKind.stdio },
-    debug: { command: 'node', args: [serverPath], transport: TransportKind.stdio },
-  };
-
-  const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'cx' }],
-    synchronize: {
-      fileEvents: workspace.createFileSystemWatcher('**/*.cx'),
-    },
-  };
-
-  client = new LanguageClient('cx', 'CX Language Server', serverOptions, clientOptions);
-  client.start();
-  context.subscriptions.push({ dispose: () => client?.stop() });
+  context.subscriptions.push(
+    commands.registerCommand('cx.restartServer', async () => {
+      if (!client) return;
+      await client.stop();
+      await client.start();
+      window.showInformationMessage('CX language server restarted.');
+    }),
+    commands.registerCommand('cx.showServerVersion', () => {
+      if (!client) return;
+      window.showInformationMessage(`CX server initialized: ${client.initializeResult?.serverInfo?.name} ${client.initializeResult?.serverInfo?.version}`);
+    }),
+  );
 }
 
 export function deactivate(): Thenable<void> | undefined {
-  return client?.stop();
-}
-
-function resolveLspServer(context: ExtensionContext): string | undefined {
-  // 1. Workspace setting override (highest priority — explicit user choice).
-  const cfg = workspace.getConfiguration('cx');
-  const override = cfg.get<string>('languageServerPath');
-  if (override && override.length > 0 && fs.existsSync(override)) return override;
-
-  // 2. CX_LSP_PATH env var.
-  const envPath = process.env.CX_LSP_PATH;
-  if (envPath && fs.existsSync(envPath)) return envPath;
-
-  // 3. Bundled next to this extension (installed VSIX layout).
-  const bundled = context.asAbsolutePath(path.join('..', 'lsp', 'out', 'server.js'));
-  if (fs.existsSync(bundled)) return bundled;
-
-  // 4. Repo-relative dev tree (running from cx-private checkout).
-  const devCandidates = [
-    path.join(process.env.HOME || '', '.local', 'share', 'cx-lsp', 'out', 'server.js'),
-    '/usr/local/share/cx-lsp/out/server.js',
-    '/opt/homebrew/share/cx-lsp/out/server.js',
-  ];
-  for (const c of devCandidates) {
-    if (fs.existsSync(c)) return c;
-  }
-
-  return undefined;
+  if (!client) return undefined;
+  return client.stop();
 }

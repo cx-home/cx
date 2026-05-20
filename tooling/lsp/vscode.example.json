@@ -1,0 +1,16 @@
+{
+  "_comment": "VS Code: drop into .vscode/settings.json (or User Settings) and reload window. Requires a generic LSP-client extension such as 'mattn.lsp' or 'fwcd.kotlin' style wrapper, OR the official cx-vscode extension when published (v0.7.x). `cx` must be on PATH.",
+  "languageServerExample": {
+    "cx": {
+      "command": "cx",
+      "args": ["lsp"],
+      "filetypes": ["cx"],
+      "rootPatterns": [".git/", "cx.yaml", "cxlint.yaml"]
+    }
+  },
+  "files.associations": {
+    "*.cx": "cx",
+    "*.cxs": "cx",
+    "*.cxl": "cx"
+  }
+}

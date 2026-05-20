@@ -760,12 +760,10 @@ func TestParseErrorUnclosedBracket(t *testing.T) {
 	}
 }
 
-func TestParseErrorEmptyElementName(t *testing.T) {
-	_, err := Parse(fx(t, "errors/empty_name.cx"))
-	if err == nil {
-		t.Fatal("expected error for empty element name")
-	}
-}
+// `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+// containing Text("="). Commit 72effe38 cemented this at the top-level
+// CXL parser. No syntactic surface for the old "empty element name"
+// diagnostic remains.
 
 func TestParseErrorNestedUnclosed(t *testing.T) {
 	_, err := Parse(fx(t, "errors/nested_unclosed.cx"))

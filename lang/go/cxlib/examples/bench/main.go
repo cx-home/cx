@@ -12,7 +12,11 @@ import (
 
 func main() {
 	runtime.LockOSThread() // V's GC requires calls from a consistent OS thread
-	data, err := os.ReadFile("../../../fixtures/bench/bench_medium.cx")
+	fixture := os.Getenv("CX_BENCH_FIXTURE")
+	if fixture == "" {
+		fixture = "bench_medium.cx"
+	}
+	data, err := os.ReadFile("../../../fixtures/bench/" + fixture)
 	if err != nil {
 		panic(err)
 	}

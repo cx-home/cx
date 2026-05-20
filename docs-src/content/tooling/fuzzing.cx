@@ -1,0 +1,43 @@
+[- Tooling: Fuzzing and tests. -]
+[page id='tooling-fuzzing'
+  [meta
+    title='Fuzzing and Tests'
+    layout='reference'
+    nav-order='520'
+    audience='contributor,user'
+    summary='Conformance, fuzz, bench. The discipline that keeps every release stable.'
+  ]
+
+  [section id='conformance' title='Conformance Suite'
+    [prose The conformance suite at conformance/*.txt is the cross-binding contract. Each fixture declares an input and an expected output (out_cx, out_xml, out_json, out_text, or out_err). Every binding implements a runner that walks the fixture set. A release is gated on byte-identical output across every binding.]
+    [code lang='shell' src='''make test            # all bindings, all suites
+make test-vcx        # V core conformance
+make test-rust       # Rust binding
+make test-python     # Python binding
+# … one target per binding''']
+  ]
+
+  [section id='fuzz' title='Fuzzing'
+    [prose The fuzzers live at vcx/tests/fuzz. They drive the parser, the evaluator, the include resolver, and the schema validator with structured-random input. Coverage-guided where possible; corpus-replay always.]
+    [code lang='shell' src='''make fuzz            # 60-second run of every fuzzer
+make fuzz-parser     # parser only, runs until interrupted
+make fuzz-replay     # replay the saved crash corpus''']
+  ]
+
+  [section id='bench' title='Benchmarks'
+    [prose Microbenchmarks at vcx/tests/runners/streaming_bench.v and eval_features_bench.v. Results land in target/bench.json; the cross-binding parity script scripts/run_bench_json.py compares per-binding times against the V baseline.]
+    [code lang='shell' src='''make bench           # runs the full bench harness
+scripts/run_bench_json.py --include-eval''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='performance'     label='Performance — numbers and methodology']
+      [item path='reference/cli'   label='cx lint, cx fmt, cx validate — production tools']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

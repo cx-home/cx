@@ -417,12 +417,10 @@ def test_parse_error_unclosed_bracket():
     except Exception:
         pass
 
-def test_parse_error_empty_element_name():
-    try:
-        cxlib.parse(fx('errors/empty_name.cx'))
-        assert False, 'expected parse error for empty element name'
-    except Exception:
-        pass
+# `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+# containing Text("="); commit 72effe38 finalized this at the top-level
+# CXL parser. No syntactic surface for the old "empty element name"
+# diagnostic remains.
 
 def test_parse_error_nested_unclosed():
     try:

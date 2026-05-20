@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>50 Ways to Love Your CXL Code</title>
+<style>:root {
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --border: #e6e6e0;
+
+  /* Dark code blocks for visual prominence */
+  --code-bg: #1f2430;
+  --code-fg: #e2e8f0;
+  --code-comment: #6b7280;
+  --code-keyword: #c4b5fd;
+  --code-string: #fde68a;
+  --code-border: #2a2f3d;
+  --code-label: #9aa3b0;
+
+  --side-bg: #f3f3ec;
+  --side-fg: #1a1a1a;
+  --side-muted: #6b7280;
+  --side-active: #1f6feb;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+aside.sidebar {
+  background: var(--side-bg);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0.85rem 2rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+aside.sidebar .brand {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.9rem;
+  color: var(--side-fg);
+  display: block;
+  text-decoration: none;
+}
+aside.sidebar .brand:hover { text-decoration: none; }
+
+aside.sidebar .brand-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--side-muted);
+  text-decoration: none;
+  margin: 0 0 0.8rem;
+}
+aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
+
+aside.sidebar section { margin-bottom: 0.9rem; }
+aside.sidebar h4 {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin: 0.6rem 0 0.25rem;
+  color: var(--side-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+aside.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+aside.sidebar li { margin: 0; }
+aside.sidebar a {
+  display: block;
+  color: var(--side-fg);
+  text-decoration: none;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  margin-left: -0.4rem;
+}
+aside.sidebar a:hover {
+  background: rgba(0,0,0,0.05);
+  text-decoration: none;
+}
+aside.sidebar a.active {
+  background: var(--side-active);
+  color: white;
+  font-weight: 500;
+}
+
+main {
+  max-width: 760px;
+  padding: 1.5rem 2rem 3rem;
+  width: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 1.1rem 0 0.25rem;
+  color: var(--fg);
+}
+
+h3 {
+  font-size: 0.9rem;
+  margin: 0.7rem 0 0.2rem;
+  color: var(--fg);
+}
+
+main > p:first-of-type {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 0.8rem;
+}
+
+p {
+  margin: 0.3rem 0;
+}
+
+ul, ol {
+  margin: 0.3rem 0;
+  padding-left: 1.2rem;
+}
+li { margin: 0.05rem 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(31, 36, 48, 0.08);
+  padding: 0.08em 0.3em;
+  border-radius: 3px;
+  color: #2d2f36;
+}
+
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 5px;
+  padding: 1.6rem 0.9rem 0.7rem;
+  margin: 0.45rem 0;
+  overflow-x: auto;
+  position: relative;
+  line-height: 1.45;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+}
+
+.lang-label {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: var(--code-label);
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+pre:hover .copy-btn,
+pre:focus-within .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
+.copy-btn.copied { color: #34d399; border-color: #34d399; }
+.copy-btn.failed { color: #f87171; border-color: #f87171; }
+
+/* Syntax highlighting palette — colours tuned against the dark
+   code-bg slate. Subtle: comments muted, strings warm yellow,
+   numbers/literals amber/violet, element names and directives in
+   cool blue/pink so CX bracket structure reads at a glance. */
+.hl-comment   { color: #7a8294; font-style: italic; }
+.hl-string    { color: #fbbf77; }
+.hl-number    { color: #f59e0b; }
+.hl-literal   { color: #c4b5fd; }
+.hl-keyword   { color: #f87171; }
+.hl-element   { color: #7dd3fc; }
+.hl-directive { color: #f9a8d4; }
+.hl-sigil     { color: #fcd34d; }
+.hl-type      { color: #a5b4fc; }
+.hl-attr      { color: #86efac; }
+.hl-fn        { color: #93c5fd; }
+
+table {
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 100%;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: var(--side-bg);
+  font-weight: 600;
+}
+tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+td code {
+  font-size: 11.5px;
+  background: rgba(31, 36, 48, 0.06);
+}
+
+@media (max-width: 460px) {
+  body { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  main { padding: 1rem 1.25rem 2rem; }
+}</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="../index.html">CX</a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <section><h4>Get Started</h4><ul>
+    <li><a href="../index.html">Overview</a></li>
+    <li><a href="../install.html">Install</a></li>
+    <li><a href="../quickstart.html">Quickstart</a></li>
+    </ul></section>
+  <section><h4>Learn</h4><ul>
+    <li><a href="../tutorial.html">Tutorial</a></li>
+    <li><a href="../playground.html">Playground</a></li>
+    </ul></section>
+  <section><h4>Examples</h4><ul>
+    <li><a href="../tour/data.html">50 Ways to Love Your CX Data</a></li>
+    <li><a class="active" href="../tour/programs.html">50 Ways to Love Your CXL Code</a></li>
+    <li><a href="../cookbook.html">Cookbook</a></li>
+    <li><a href="../showcase.html">Showcase</a></li>
+    </ul></section>
+  <section><h4>Concepts</h4><ul>
+    <li><a href="../concepts/data-model.html">Data Model</a></li>
+    <li><a href="../concepts/sigils.html">Sigils & Markup</a></li>
+    <li><a href="../concepts/evaluation.html">Evaluation Model</a></li>
+    <li><a href="../concepts/cxpath.html">CXPath</a></li>
+    <li><a href="../concepts/identity.html">Identity & Canonical</a></li>
+    <li><a href="../concepts/types.html">Types</a></li>
+    </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="../reference/cli.html">CLI</a></li>
+    <li><a href="../reference/cxl.html">CXL Language</a></li>
+    <li><a href="../reference/cxpath.html">CXPath Functions</a></li>
+    <li><a href="../reference/schemas.html">Schemas</a></li>
+    <li><a href="../reference/tables.html">Tables</a></li>
+    <li><a href="../reference/streaming.html">Streaming</a></li>
+    <li><a href="../reference/includes.html">Includes</a></li>
+    <li><a href="../reference/ast-bin.html">ast-bin Format</a></li>
+    <li><a href="../reference/data-bin.html">data-bin / Arrow</a></li>
+    <li><a href="../reference/grammar.html">Grammar (EBNF)</a></li>
+    <li><a href="../reference/errors.html">Error Codes</a></li>
+    </ul></section>
+  <section><h4>Bindings</h4><ul>
+    <li><a href="../bindings/index.html">Binding Catalog</a></li>
+    <li><a href="../bindings/c-abi.html">C ABI</a></li>
+    <li><a href="../bindings/v.html">V</a></li>
+    <li><a href="../bindings/python.html">Python</a></li>
+    <li><a href="../bindings/go.html">Go</a></li>
+    <li><a href="../bindings/rust.html">Rust</a></li>
+    <li><a href="../bindings/typescript.html">TypeScript</a></li>
+    <li><a href="../bindings/java.html">Java</a></li>
+    <li><a href="../bindings/csharp.html">C#</a></li>
+    <li><a href="../bindings/ruby.html">Ruby</a></li>
+    <li><a href="../bindings/kotlin.html">Kotlin</a></li>
+    <li><a href="../bindings/swift.html">Swift</a></li>
+    </ul></section>
+  <section><h4>Tooling</h4><ul>
+    <li><a href="../tooling/editors.html">Editors & LSP</a></li>
+    <li><a href="../tooling/tree-sitter.html">Tree-sitter</a></li>
+    <li><a href="../tooling/fuzzing.html">Fuzzing & Tests</a></li>
+    </ul></section>
+  <section><h4>Resources</h4><ul>
+    <li><a href="../comparison.html">vs JSON, YAML, TOML, XML</a></li>
+    <li><a href="../performance.html">Performance</a></li>
+    <li><a href="../faq.html">FAQ</a></li>
+    <li><a href="../release-notes.html">Release Notes</a></li>
+    </ul></section>
+</aside>
+<main>
+<doc>
+  <h1>50 Ways to Love Your CXL Code</h1>
+  <p>Fifty CXL directives, simple to complex. Pizzeria edition.</p>
+  <h2>Read This First</h2>
+  <p>Fifty short CXL examples — interpolation, paths, filters, conditionals, iteration, functions, modules — that walk from the simplest substitution to a full pipeline with module activation, HTML-safe escaping, function definition, structured logging, semantic merge, and iteration. Each example pairs a tiny data input with a directive snippet.</p>
+  <h2>1. A Literal Value</h2>
+  <p>evaluates and prints. Here, the number 42.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?=42]</code></pre>
+  <h2>2. A Literal String</h2>
+  <p>Same form; strings and numbers interpolate identically.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?='Hand-tossed since 1987']</code></pre>
+  <h2>3. Read an Attribute — @name</h2>
+  <p>@name is CXPath for the attribute named name. Prints Margherita.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=Margherita]
+[?=@name]</code></pre>
+  <h2>4. Find Anywhere — //</h2>
+  <p>// matches a pizza element at any depth.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[order [pizza name=Margherita]]
+[?=//pizza/@name]</code></pre>
+  <h2>5. Inside Body Text</h2>
+  <p>A directive sits inside text. The rest stays as written.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=Margherita]
+[receipt Thanks for ordering [?=@name]!]</code></pre>
+  <h2>6. Inside an Attribute Value</h2>
+  <p>Interpolation works in attributes and in text. One mechanism, two positions.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[user id=42 name=Joe]
+[a href=/u/[?=@id]/profile View [?=@name]s profile]</code></pre>
+  <h2>7. Several on One Line</h2>
+  <p>Each is independent.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=Margherita price=12]
+[line [?=@name] — [?=@price]€]</code></pre>
+  <h2>8. Inside a Generated Element</h2>
+  <p>Per iteration, build a fully-formed … element.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[catalog [c cid=42 name=Joe] [c cid=43 name=Ann]]
+[?for c :in //c :return [a href=/u/[?=c/@cid] [?=c/@name]]]</code></pre>
+  <h2>9. Child Step</h2>
+  <p>Child steps separated by /. Prints Margherita.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[shop [menu [pizza name=Margherita]]]
+[?=//shop/menu/pizza/@name]</code></pre>
+  <h2>10. Parent Axis — parent::*</h2>
+  <p>Walks up one element. Prints Pepes.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[shop name='Pepes' [pizza name=Margherita]]
+[?=//pizza/parent::*/@name]</code></pre>
+  <h2>11. Ancestor Axis</h2>
+  <p>All ancestors of c. Prints mid;top;</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[a tag=top [b tag=mid [c found]]]
+[?for x :in //c/ancestor::* :return [?=x/@tag];]</code></pre>
+  <h2>12. Following-Sibling Axis</h2>
+  <p>Walks siblings to the right of the matched node.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[row [cell n=1] [cell n=2] [cell n=3]]
+[?for x :in //cell[@n=1]/following-sibling::* :return [?=x/@n];]</code></pre>
+  <h2>13. Predicate Filter — [@attr=value]</h2>
+  <p>Brackets inside CXPath are predicates, not new elements.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[menu [pizza name=Margherita] [pizza name=Hawaiian]]
+[?=//pizza[@name='Hawaiian']/@name]</code></pre>
+  <h2>14. Upper-Case</h2>
+  <p>Wrap a value with to call a filter.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=margherita]
+[?=[?upper [@name]]]</code></pre>
+  <h2>15. Default — Fall Back When Missing</h2>
+  <p>Graceful fallback; no exception.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=Mystery]
+[?=[?default [@price, 0]]]</code></pre>
+  <h2>16. Composed Filters — Nested</h2>
+  <p>Inside-out: trim, then upper.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name='  margherita  ']
+[?=[?upper [[?trim [@name]]]]]</code></pre>
+  <h2>17. String Length</h2>
+  <p>Counts characters. Prints 10.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=Margherita]
+[?=[?string-length [@name]]]</code></pre>
+  <h2>18. Todays Date</h2>
+  <p>, , .</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?=[?current-date]]</code></pre>
+  <h2>19. Pipeline |&gt; — Left-to-Right Composition</h2>
+  <p>Same result as composed filters, read top-down instead of inside-out.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name='  margherita  ']
+[?=@name |&gt; trim |&gt; upper]</code></pre>
+  <h2>20. Arrow =&gt; — Method-Call Style</h2>
+  <p>XQuerys invocation syntax. Reads as name.lower().</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name=MARGHERITA]
+[?=@name =&gt; lower()]</code></pre>
+  <h2>21. String Concatenation ||</h2>
+  <p>Join strings with double-pipe, like SQL.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[user first=Ada last=Lovelace]
+[?=@first || ' ' || @last]</code></pre>
+  <h2>22. Range — M to N</h2>
+  <p>Inclusive range. Prints 1;2;3;4;</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?for n :in 1 to 4 :return [?=n];]</code></pre>
+  <h2>23. If — Positional Form</h2>
+  <p>Three slots: condition, then, else.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza stock=0]
+[?if [@stock &gt; 0, in stock, out of stock]]</code></pre>
+  <h2>24. If — Labeled Form</h2>
+  <p>Same semantics, named slots — usually clearer.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza stock=5]
+[?if @stock &gt; 0 :then in stock :else out of stock]</code></pre>
+  <h2>25. Skip the Else Branch</h2>
+  <p>False condition renders nothing.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza featured=true]
+[?if @featured :then ★ featured!]</code></pre>
+  <h2>26. Existence Check</h2>
+  <p>A node-set is truthy when non-empty.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza [tags vegan]]
+[?if [//tags, yes, no]]</code></pre>
+  <h2>27. Multi-Branch — No Else-If Ladder</h2>
+  <p>Each is a branch; * is the catch-all.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza stock=2]
+[?if [[@stock &gt; 100, plenty], [@stock &gt; 10, some], [@stock &gt; 0, last few], [*, sold out]]]</code></pre>
+  <h2>28. For — Positional Form</h2>
+  <p>Slots: variable, source, body.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza [topping cheese] [topping basil] [topping oil]]
+[?for [t, //topping, [?=t/@name];]]</code></pre>
+  <h2>29. For — Labeled Form</h2>
+  <p>Same semantics with :in and :return.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza [topping cheese] [topping basil] [topping oil]]
+[?for t :in //topping :return [?=t/@name];]</code></pre>
+  <h2>30. Range Loop — Generate Elements</h2>
+  <p>Produces .</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?for n :in 1 to 3 :return [slot id=[?=n]]]</code></pre>
+  <h2>31. Nested For</h2>
+  <p>Loop over pizzas; inside, loop over each pizzas toppings.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[shop [pizza name=Margherita [topping cheese] [topping basil]]]
+[?for p :in //pizza :return
+  [grp [?=p/@name]: [?for t :in p/topping :return [?=t/@name],]]]</code></pre>
+  <h2>32. With — Positional</h2>
+  <p>Inside with, @owner and @region refer to meta. Prints Pepe / IT.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[shop [meta owner=Pepe region=IT]]
+[?with [//meta, [?=@owner] / [?=@region]]]</code></pre>
+  <h2>33. With — Labeled</h2>
+  <p>Named-slot variant.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[shop [meta owner=Pepe region=IT]]
+[?with //meta :return [?=@owner]/[?=@region]]</code></pre>
+  <h2>34. Let — Bind Once, Reuse</h2>
+  <p>Compute tax once, use it where the binding is in scope.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza price=12]
+[?let tax :be @price * 0.22 :return Total: [?=@price + tax]€]</code></pre>
+  <h2>35. Let — Bind a Pipeline Result</h2>
+  <p>Pipelines and let-bindings compose naturally.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name='  margherita  ']
+[?let clean :be @name |&gt; trim |&gt; upper :return Welcome, [?=clean]!]</code></pre>
+  <h2>36. Define a Template Fragment</h2>
+  <p>The body runs in the calling context.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?def greet :body Hello [?=@name]!]
+[pizza name=Pepe]
+[?use greet]</code></pre>
+  <h2>37. With One Parameter</h2>
+  <p>Once defined, the function is callable as .</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?def shout :params [x] :body LOUD: [?=x]!]
+[?shout 'pizza ready']</code></pre>
+  <h2>38. Multiple Parameters</h2>
+  <p>Positional params; prints cheese / basil.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?def pair :params [a, b] :body [?=a] / [?=b]]
+[?pair 'cheese' 'basil']</code></pre>
+  <h2>39. Function Plus Iteration</h2>
+  <p>A reusable per-item template, mapped over a node set.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?def line :params [item] :body sku=[?=item/@sku];]
+[order [v sku=A] [v sku=B] [v sku=C]]
+[?for x :in //v :return [?line x]]</code></pre>
+  <h2>40. Higher-Order — [?focus] and [?apply]</h2>
+  <p>builds a function from a body (underscore is the implicit arg); invokes it.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza [v n=5]]
+[?let dbl :be [?focus :body [?=_ * 2]]
+  :return [?for x :in //v :return [?=[?apply [dbl, x/@n]]]]]</code></pre>
+  <h2>41. HTML-Safe Output</h2>
+  <p>One directive switches the evaluator into context-aware escaping. No XSS from the menu.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[pizza name='&lt;script&gt;alert(1)&lt;/script&gt;']
+[?cx output-target=html]
+[?=@name]</code></pre>
+  <h2>42. Plain-Text Output</h2>
+  <p>Useful for terminals and files where escaping would be noise.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx output-target=text]
+[pizza name='&lt;b&gt;Margherita&lt;/b&gt;']
+[?=@name]</code></pre>
+  <h2>43. Activate a Module</h2>
+  <p>Modules expose new directive namespaces cx: log: … once activated.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx]
+[?=[?cx:canonical [[?cx:parse ['[a   x=1  ]']]]]]</code></pre>
+  <h2>44. cx:parse — Read CX From a String</h2>
+  <p>CX reads its own syntax as data. Code is data.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx]
+[?=[?cx:parse ['[pizza name=Margherita]']]]</code></pre>
+  <h2>45. cx:serialize — Emit a Value Back to Text</h2>
+  <p>Round-trip: parse then serialize. Prints .</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx]
+[?=[?cx:serialize [[?cx:parse ['[a x=1 y=2]']]]]]</code></pre>
+  <h2>46. cx:canonical — Normalize</h2>
+  <p>Whitespace and attribute order canonicalized; idempotent.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx]
+[?=[?cx:canonical [[?cx:parse ['[a   x=1   y=2]']]]]]</code></pre>
+  <h2>47. cx:hash — Content Digest</h2>
+  <p>Stable hash over the canonical form. Same input always yields the same hash, in every binding.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx]
+[?=[?cx:hash [[?cx:parse ['[pizza name=Margherita]']]]]]</code></pre>
+  <h2>48. cx:merge — Three-Policy Semantic Merge</h2>
+  <p>Two trees combined by element identity. Coupons price=10 overrides the orders.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx]
+[order [pizza name=Margherita price=12]]
+[coupon [pizza price=10]]
+[?=[?cx:merge [//order, //coupon]]]</code></pre>
+  <h2>49. Structured Logging</h2>
+  <p>emits a structured event. Second arg is a map of fields.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=log log-level=info]
+[?log:info ['sale', {pizza: 'Margherita', price: 12}]]
+[?log:debug ['suppressed at info level']]</code></pre>
+  <h2>50. The Whole Kitchen</h2>
+  <p>Module activation, HTML-safe escaping, function definition, structured logging, semantic merge, iteration. Six lines; the whole arc.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[?cx use-module=cx output-target=html log-level=info]
+[?def line :params [p] :body [li [?=p/@name] — [?=p/@price]€]]
+[order [pizza name='&lt;b&gt;Margherita&lt;/b&gt;' price=12]]
+[coupon [pizza price=10]]
+[?log:info ['rendering receipt']]
+[ul [?for p :in [?cx:merge [//order, //coupon]]/pizza :return [?line p]]]</code></pre>
+  <h2>The Arc</h2>
+  <p>Read a value then put it in context then walk paths then filter and combine then branch then loop then factor into functions then swap output mode then reflect / hash / merge / log. Every step adds exactly one capability; data from the companion document flows through unchanged.</p>
+  <h2>Where to Next</h2>
+  <ul>
+    <li>
+      <a href="../tour/data.html">50 Ways to Love Your CX Data — companion</a>
+    </li>
+    <li>
+      <a href="../reference/cxl.html">CXL reference — every directive</a>
+    </li>
+    <li>
+      <a href="../concepts/evaluation.html">Evaluation model — context and bindings</a>
+    </li>
+    <li>
+      <a href="../concepts/cxpath.html">CXPath — paths and axes</a>
+    </li>
+  </ul>
+</doc>
+</main>
+<script>
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'copy';
+  btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    const code = pre.querySelector('code')?.textContent ?? pre.textContent;
+    const flash = (label, cls) => {
+      btn.textContent = label;
+      btn.classList.add(cls);
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove(cls); }, 1500);
+    };
+    try {
+      await navigator.clipboard.writeText(code);
+      flash('copied', 'copied');
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); flash('copied', 'copied'); }
+      catch { flash('failed', 'failed'); }
+      document.body.removeChild(ta);
+    }
+  });
+  pre.appendChild(btn);
+});
+</script>
+<script src="../highlight/highlight.js" defer></script>
+</body>
+</html>

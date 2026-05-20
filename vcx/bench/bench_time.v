@@ -6,7 +6,8 @@ import time
 
 fn main() {
 	base := os.join_path(os.dir(@FILE), '..', '..', 'fixtures', 'bench')
-	medium := os.read_file(os.join_path(base, 'bench_medium.cx')) or { panic(err) }
+	fixture := os.getenv_opt('CX_BENCH_FIXTURE') or { 'bench_medium.cx' }
+	medium := os.read_file(os.join_path(base, fixture)) or { panic(err) }
 
 	parse_med := time_median(100, 20, fn [medium]() {
 		_ := cx.parse(medium) or { panic(err) }

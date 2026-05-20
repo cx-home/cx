@@ -1,0 +1,81 @@
+[- Concept: Sigils & Markup. -]
+[page id='sigils'
+  [meta
+    title='Sigils and Markup'
+    layout='concept'
+    nav-order='210'
+    audience='learner'
+    summary='Five single-character markers that give CX its structural reach beyond name and attribute.'
+  ]
+
+  [section id='catalog' title='The Catalog'
+    [prose CX uses five sigils. Each is a single character in a fixed lexical position that gives a value structural meaning beyond what bare text can carry.]
+    [list
+      [item path='concepts/sigils' label='at-sigil — attribute prefix in body position; reference to a declared id or anchor']
+      [item path='concepts/sigils' label='ampersand — anchor declaration; names an element so others can refer to or merge from it']
+      [item path='concepts/sigils' label='asterisk — merge target; folds the named anchors attrs and children into this element']
+      [item path='concepts/sigils' label='hash — declared id; stable handle within the documents scope; targets of references']
+      [item path='concepts/sigils' label='colon — data type annotation; pins the value type, overriding auto-typing']
+    ]
+  ]
+
+  [section id='at' title='At-Sigil — Attributes and References'
+    [prose The at-sigil does double duty. In CXPath expressions and in attribute-value position, @name refers to the attribute named name. In element-body position, @target is a reference to an anchor or declared id.]
+    [code lang='cx' src='''[order #o1234 customer=alice
+  [line item=@margherita count=2]    # at-sigil reference to declared id
+  [line item=@pepperoni  count=1]]
+[?for line :in //order/line :return
+  [row sku=[?= line/@item]]]         # at-sigil attribute access in CXPath''']
+  ]
+
+  [section id='anchor' title='Ampersand — Anchors'
+    [prose An anchor names a value once and lets later places refer to it without repeating it.]
+    [code lang='cx' src='''[defaults &shared timeout=30 retries=3]
+[server *shared name=api]
+[server *shared name=worker]''']
+  ]
+
+  [section id='merge' title='Asterisk — Merge Targets'
+    [prose Merge folds the named anchors attrs and children into the current element. Anchored attributes and children come first; locally declared attrs and children override or extend them. The canonical form renumbers anchors so two documents that bind the same data with different anchor names hash to the same identity.]
+  ]
+
+  [section id='id' title='Hash — Declared IDs'
+    [prose An id declares this element as a target of references. IDs are unique within their scope; the scope is the document root by default. References use the at-sigil.]
+    [code lang='cx' src='''[order #main
+  [item #latte]
+  [item #scone]]
+[receipt order=@main]''']
+  ]
+
+  [section id='type' title='Colon — Data Type Annotations'
+    [prose A colon-type annotation pins the value or body type. Sized integer variants (:i8, :i16, :i32, :i64, :u8, :u16, :u32, :u64) carry range constraints that validate at parse time. Floating point variants (:f32, :f64) and arbitrary-precision (:decimal, :bigint) pick the runtime representation.]
+    [code lang='cx' src='''[port :u16 8080]              # rejects values over 65535 at parse time
+[ratio :decimal 0.30000]      # exact decimal, not IEEE 754
+[temp :int 0xFFAA]            # hex literal pinned as int''']
+  ]
+
+  [section id='bool-sigils' title='Boolean Sigils'
+    [prose Two additional sigils — plus and minus — are syntactic sugar for boolean attributes. Plus-name parses as name=true; minus-name parses as name=false. Compact form for many booleans.]
+    [code lang='cx' src='[pizza +vegan -nuts -gluten +organic]']
+  ]
+
+  [section id='markup' title='Markup: Mixed Content'
+    [prose CX inherits XMLs first-class mixed content. Inside an element body, text and child elements interleave freely. The same shapes that compose an HTML document compose a CX document: h1, p, em, strong, a, etc.]
+    [code lang='cx' src='''[article
+  [h1 Pepes Story]
+  [p Founded in [em 1987]. See the [a href=/menu menu].]
+  [p Still [strong hand-tossing] every pie.]]''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='concepts/data-model'  label='Data Model — where sigils attach']
+      [item path='concepts/identity'    label='Identity — hash, ref-by-id, canonical renumbering']
+      [item path='concepts/types'       label='Types — what colon-type pins']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

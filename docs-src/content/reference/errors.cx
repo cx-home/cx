@@ -1,0 +1,71 @@
+[- Reference: Error codes. -]
+[page id='ref-errors'
+  [meta
+    title='Error Codes'
+    layout='reference'
+    nav-order='490'
+    audience='lookup'
+    summary='Catalogue of cx-err codes raised by the parser, the include resolver, and the evaluator.'
+  ]
+
+  [section id='format' title='Wire Format'
+    [prose Every CX error carries a structured payload: cx-err:CODE then a unit separator (US, 0x1F) then a human-readable description then optionally another unit separator and a value. Bindings preserve this shape so ?try / ?catch can match on code rather than on text.]
+  ]
+
+  [section id='security' title='CXER001x — Security Caps'
+    [list
+      [item path='reference/errors' label='CXER0010 — function call depth exceeded']
+      [item path='reference/errors' label='CXER0011 — collection size cap reached (sequence_len, map_entries, capture_size)']
+      [item path='reference/errors' label='CXER0014 — eval-time include attempted without --include-root']
+    ]
+  ]
+
+  [section id='cx-must' title='CXER002x — cx: Module Must'
+    [list
+      [item path='reference/errors' label='CXER0020 — cx:parse received a value that is not a string']
+      [item path='reference/errors' label='CXER0022 — cx:patch element-removed needs non-empty path']
+      [item path='reference/errors' label='CXER0024 — cx:merge encountered incompatible nodes']
+    ]
+  ]
+
+  [section id='eval-gates' title='CXER004x — Evaluator Gates'
+    [list
+      [item path='reference/errors' label='CXER0040 — purity gate: SideEffect / ReadOnly filter raised under [?cx pure-only]']
+      [item path='reference/errors' label='CXER0041 — module gate: on_declaration module called without use-module']
+      [item path='reference/errors' label='CXER0042 — eval gate: cx:eval invoked without [?cx allow-eval]']
+      [item path='reference/errors' label='CXER0043 — eval depth gate: cx:eval recursion exceeded max-eval-depth']
+    ]
+  ]
+
+  [section id='include' title='E9xx — Include Resolver'
+    [list
+      [item path='reference/errors' label='E901 — absolute path rejected']
+      [item path='reference/errors' label='E902 — path escapes include root (lexical or symlink)']
+      [item path='reference/errors' label='E903 — URL-scheme path rejected']
+      [item path='reference/errors' label='E904 — cycle detected']
+      [item path='reference/errors' label='E905 — max depth exceeded']
+      [item path='reference/errors' label='E906 — file not found']
+      [item path='reference/errors' label='E907 — file not readable']
+      [item path='reference/errors' label='E908 — path is a directory']
+      [item path='reference/errors' label='E909 — I/O error during read']
+      [item path='reference/errors' label='E910 — non-UTF-8 content']
+      [item path='reference/errors' label='E911 — included file parse failure']
+    ]
+  ]
+
+  [section id='catch' title='Catching With try'
+    [code lang='cx' src='''[?try [BODY, [?catch [err]
+  [?if [$err:code = 'E906', file missing, other error: [?= $err:code]]]]]]''']
+  ]
+
+  [section id='related' title='Related'
+    [list
+      [item path='reference/cxl'        label='CXL ?try / ?catch']
+      [item path='reference/includes'   label='Includes — full E9xx semantics']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

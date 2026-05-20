@@ -4,6 +4,17 @@ out.txt
 bench.md
 dist/
 
+# v0.7.0 doc pipeline — generated staging dirs and local-browse html.
+# The committed markdown tree is docs/, promoted via `make docs-publish`.
+_docs_staging/
+_site_staging/
+_site/
+
+# Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.py)
+fixtures/bench/bench_1mb.cx
+fixtures/bench/bench_10mb.cx
+fixtures/bench/bench_100mb.cx
+
 .claude/settings.local.json
 
 # Python venvs (per-binding optional deps like pyarrow)
@@ -14,9 +25,11 @@ vcx/target/
 vcx/cx/*.dylib
 vcx/cx/*.so
 lang/rust/cxlib/target/
+lang/v/.cache/
 
 # compiled V binaries
 vcx/tests/conformance_run
+vcx/tests/runners/conformance/conformance_run
 lang/v/examples/transform
 lang/v/examples/demo
 
@@ -38,3 +51,12 @@ tooling/vscode/node_modules/
 tooling/vscode/out/
 tooling/vscode/*.vsix
 lang/v/cx
+
+# v0.7.0 CC fuzz harness — crashes are runtime artifacts, never source
+vcx/fuzz/crashes/
+
+# Conformance runner build artifact (V binary co-located with source)
+vcx/tests/runners/eval/eval_conform
+
+# CCD spawned-task worktrees
+.claude/

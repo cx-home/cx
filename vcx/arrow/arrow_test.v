@@ -52,14 +52,61 @@ fn test_export_then_import_round_trip_four_col() {
 }
 
 fn test_export_unsupported_type_errors() {
-	// v0.6.0 covers the 10 column types listed at the top of arrow.v;
-	// other type names round-trip through the deferred-type path.
-	arrow_format_for_cxdb_type('decimal') or {
-		assert err.msg().contains('not yet supported in v0.6.0'),
+	// v0.7.0 extended the supported type set with decimal128 / timestamp
+	// (parametric) / fixed-size-binary / dict-utf8 (W1). Truly unknown
+	// types still error out — `struct` is one such (nested-type model
+	// pending cx-table cell-model evolution).
+	arrow_format_for_cxdb_type('struct') or {
+		assert err.msg().contains('not yet supported in v0.7.0'),
 			'expected deferred-type error, got: ${err.msg()}'
 		return
 	}
 	assert false, 'expected error for unsupported column type'
+}
+
+// W1 v0.7.0: new scalar type-name additions resolve to their Arrow
+// format strings.
+
+fn test_w1_decimal128_format_default() {
+	fmt := arrow_format_for_cxdb_type('decimal128') or { panic(err) }
+	assert fmt == 'd:38,10', 'expected d:38,10, got: ${fmt}'
+}
+
+fn test_w1_decimal128_parametric_format() {
+	fmt := arrow_format_for_cxdb_type('decimal128[18,4]') or { panic(err) }
+	assert fmt == 'd:18,4', 'expected d:18,4, got: ${fmt}'
+}
+
+fn test_w1_timestamp_parametric_format() {
+	fmt := arrow_format_for_cxdb_type('timestamp[us, America/New_York]') or { panic(err) }
+	assert fmt == 'tsu:America/New_York', 'expected tsu:America/New_York, got: ${fmt}'
+}
+
+fn test_w1_fixed_size_binary_format() {
+	fmt := arrow_format_for_cxdb_type('fixed-size-binary[16]') or { panic(err) }
+	assert fmt == 'w:16', 'expected w:16, got: ${fmt}'
+}
+
+fn test_w1_inverse_decimal128() {
+	name := cxdb_type_name_from_arrow_format('d:18,4') or { panic(err) }
+	assert name == 'decimal128[18,4]', 'expected decimal128[18,4], got: ${name}'
+}
+
+fn test_w1_inverse_timestamp_parametric() {
+	name := cxdb_type_name_from_arrow_format('tsu:UTC') or { panic(err) }
+	assert name == 'timestamp[us, UTC]', 'expected timestamp[us, UTC], got: ${name}'
+}
+
+fn test_w1_inverse_timestamp_datetime_shorthand_preserved() {
+	// The v0.6.0 shorthand 'datetime' maps from ns:UTC for round-trip
+	// stability with pre-W1 fixtures.
+	name := cxdb_type_name_from_arrow_format('tsn:UTC') or { panic(err) }
+	assert name == 'datetime', 'expected datetime, got: ${name}'
+}
+
+fn test_w1_inverse_fixed_size_binary() {
+	name := cxdb_type_name_from_arrow_format('w:32') or { panic(err) }
+	assert name == 'fixed-size-binary[32]', 'expected fixed-size-binary[32], got: ${name}'
 }
 
 fn test_export_then_import_round_trip_datetime() {

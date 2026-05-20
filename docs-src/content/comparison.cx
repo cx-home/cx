@@ -1,0 +1,69 @@
+[- Comparison: CX vs JSON, YAML, TOML, XML. Ported from docs/COMPARISON.md. -]
+[page id='comparison'
+  [meta
+    title='Comparison: CX vs JSON, YAML, TOML, XML'
+    layout='reference'
+    nav-order='710'
+    audience='evaluator'
+    summary='Honest assessment of where CX wins and where another format is the right pick.'
+  ]
+
+  [section id='intro' title='Who This Is For'
+    [prose This document is for people deciding whether to adopt CX. It compares CX to the four formats it converts to and from, with honest assessments of when CX is the right pick and when one of the others is a better fit. There is no need to choose CX for everything; CX is designed to live alongside these formats and convert losslessly between them.]
+  ]
+
+  [section id='at-a-glance' title='At a Glance'
+    [table-md src='''| | CX | JSON | YAML | TOML | XML |
+|---|---|---|---|---|---|
+| Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+| Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes | ❌ number only | partial (auto-detect) | ✅ int / float / bool / datetime | partial (xs:type) |
+| Comments | ✅ block and line | ❌ | ✅ # ... | ✅ # ... | ✅ |
+| Mixed content | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
+| Multiple top-level docs | ✅ no wrapper required | ❌ requires array | ✅ via --- separator | ❌ single document | partial |
+| Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
+| Type fidelity through round-trip | ✅ via CXDB | ❌ int↔float coerced | partial | ✅ preserved | partial |
+| Tabular data efficiency | ✅ :table block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
+| Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |''']
+    [prose The advantages buy you something concrete: type fidelity for typed config, mixed content and structured data in one file, lossless six-way conversion, and a stable canonical form for hashing and signing.]
+  ]
+
+  [section id='loss-matrix' title='Conversion-Loss Matrix'
+    [prose Lossless conversion means the data round-trips without semantic loss; presentation details such as comments, whitespace, and attribute order may be normalized. The table below is the honest accounting of what survives, what gets normalized, and what is genuinely lossy.]
+    [table-md src='''| CX → format → CX | Lossless? | What Is Preserved | What Is Normalized or Lost |
+|---|---|---|---|
+| CX → JSON → CX | data ✅ / presentation 📋 | Element shape, attributes, types via CXDB, values, nesting | Comments dropped; element vs attribute distinction collapses to keys |
+| CX → YAML → CX | data ✅ / presentation 📋 | Element shape, types via !!tags, multiline strings | Comments dropped by most parsers; flow-vs-block style normalized |
+| CX → TOML → CX | data ✅ / presentation 📋 | Element shape via table headers, strong types | Comments dropped; section ordering normalized; deep nesting flattened |
+| CX → XML → CX | data ✅ / presentation 📋 | Element shape, attributes, mixed content, namespaces, PIs | Whitespace normalized per xml:space; entity references resolved |
+| CX → Markdown → CX | data 📋 / presentation 📋 | Headings, paragraphs, lists, emphasis, code, links | Data-shaped elements flatten to inline text |
+| CX → CXDB → CX | bytes ✅ | Everything byte-for-byte | Nothing — CXDB is the strict-canonical form |
+| CX → CSV → CX | data partial | :table block columns and rows | Non-table data not encodable; cell subtyping collapses |''']
+  ]
+
+  [section id='presentation' title='What Presentation Means'
+    [prose Presentation-layer differences that conversions normalize away.]
+    [list
+      [item path='concepts/identity' label='Comments — only XML and CX preserve them; JSON has none; YAML and TOML lose them through most parsers']
+      [item path='concepts/identity' label='Whitespace — indentation, blank lines, line endings normalized to the target conventions']
+      [item path='concepts/identity' label='Attribute order — emission may pick a canonical order']
+      [item path='concepts/identity' label='Anchor names — canonical form renumbers them']
+    ]
+    [prose These all show up as identical hashes via cx hash because the hash operates on strict-canonical bytes, where presentation is stripped.]
+  ]
+
+  [section id='when-cx' title='When CX Wins'
+    [prose CX is the right pick for typed configuration, mixed content alongside structured data, lossless conversion across formats, and cases where you need a stable canonical form for hashing or signing. The other formats remain better picks for narrower use cases — JSON for browser-native parsing, YAML for human-curated config where indentation matters, TOML for flat single-file config, XML for document-shaped data with namespaces and processing instructions.]
+  ]
+
+  [section id='related' title='Related Reading'
+    [list
+      [item path='comparison' label='Format Conversion — parse, emit, convert']
+      [item path='concepts/identity' label='Identity & Canonical Form']
+      [item path='faq'               label='FAQ']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

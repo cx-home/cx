@@ -1,0 +1,83 @@
+[- Install — every platform, every binding. -]
+[page id='install'
+  [meta
+    title='Install'
+    layout='reference'
+    nav-order='2'
+    audience='evaluator'
+    summary='Get the cx binary and any language binding. One section per platform.'
+  ]
+
+  [section id='cli' title='The Command-Line Binary'
+    [prose The cx binary carries the parser, the emitter, the evaluator, the schema validator, the LSP, and every conversion entry point. It runs everywhere with no runtime dependency.]
+  ]
+
+  [section id='macos' title='macOS'
+    [code lang='shell' src='brew install cx-lang/tap/cx']
+    [prose The tap drops a universal binary on Apple Silicon and Intel; arm64 and x86_64 ship in the same bottle.]
+  ]
+
+  [section id='linux' title='Linux'
+    [prose Homebrew works on Linux too. The static binary tarball from the GitHub Releases page works on any glibc-based distro.]
+    [code lang='shell' src='''brew install cx-lang/tap/cx
+curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
+  | tar xz -C /usr/local/bin''']
+  ]
+
+  [section id='windows' title='Windows'
+    [prose A static cx.exe ships per release on github.com/cx-home/cx/releases. Drop it on PATH; no installer, no dependencies.]
+  ]
+
+  [section id='wasm' title='WebAssembly'
+    [prose The libcx-wasm bundle is on the v0.7.x roadmap and is what will power the live evaluator in the playground. It is not yet on a release tag; track progress in the GitHub repo.]
+  ]
+
+  [section id='source' title='Build From Source'
+    [code lang='shell' src='''git clone https://github.com/cx-home/cx
+cd cx
+devbox run -- make build-vcx
+devbox run -- make test''']
+    [prose The build chain expects V on PATH or the cx-home V fork at third_party/v; the Makefile auto-detects either.]
+  ]
+
+  [section id='bindings' title='Language Bindings'
+    [prose Each binding wraps libcx via the C ABI; the cx binary above includes libcx as part of its build. Per-language install commands live on the binding pages.]
+    [list
+      [item path='bindings/v'          label='V']
+      [item path='bindings/python'     label='Python']
+      [item path='bindings/go'         label='Go']
+      [item path='bindings/rust'       label='Rust']
+      [item path='bindings/typescript' label='TypeScript']
+      [item path='bindings/java'       label='Java']
+      [item path='bindings/csharp'     label='C-sharp']
+      [item path='bindings/ruby'       label='Ruby']
+      [item path='bindings/kotlin'     label='Kotlin']
+      [item path='bindings/swift'      label='Swift']
+    ]
+  ]
+
+  [section id='editors' title='Editors and LSP'
+    [prose The cx binary speaks LSP via cx lsp; editor install scripts at tooling/install land the VS Code or Neovim integration.]
+    [code lang='shell' src='''./tooling/install/install-vscode.sh
+./tooling/install/install-nvim.sh''']
+    [prose The full editor catalog and the tree-sitter grammar are on the Tooling pages.]
+  ]
+
+  [section id='verify' title='Verify the Install'
+    [code lang='shell' src='''cx --version
+cx --json - <<< "[hello world]"''']
+    [prose A successful run prints the version and a JSON document on stdout. If either fails, the build needs libcx on the loader path (LD_LIBRARY_PATH on Linux, DYLD_LIBRARY_PATH on macOS).]
+  ]
+
+  [section id='next' title='Where to Next'
+    [list
+      [item path='quickstart'  label='Quickstart — five minutes from install to running output']
+      [item path='tutorial'    label='Tutorial — guided walk-through']
+      [item path='tooling/editors' label='Editors and LSP — syntax highlighting, completions, diagnostics']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Empty by default. -]
+  ]
+]

@@ -60,6 +60,7 @@ fn document_model_demo() -> Result<(), String> {
             ns_uri: None,
             id: None,
             body_ref: None,
+            lang_resolved: None,
         };
         el.append(cxlib::ast::Node::Element(timeout));
         el

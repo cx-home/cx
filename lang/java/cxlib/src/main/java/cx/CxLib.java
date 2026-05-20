@@ -34,7 +34,7 @@ public class CxLib {
         Pointer cx_to_toml (String input, PointerByReference errOut);
         Pointer cx_to_md   (String input, PointerByReference errOut);
 
-        // CXL evaluator (capability bit 28; spec/cxl.md)
+        // CXL evaluator (capability bit 28; spec/eval.md)
         Pointer cx_eval_cxl(String input, String program, String outputTarget, PointerByReference errOut);
 
         // XML input

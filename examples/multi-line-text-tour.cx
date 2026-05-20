@@ -1,0 +1,62 @@
+[- Multi-line text forms tour — every position-validity case in one
+   document. Companion to cx-tour.cx and cxl-tour.cxl, showcasing the
+   v0.7.0 symmetry-pass result: any non-bare value form is valid in
+   any value position. ]
+
+[showcase
+  [- 1. SCALARS in attribute values — all four scalar forms ]
+  [single dquote=" double-quoted "]
+  [single squote=' single-quoted ']
+  [single bare=42]
+  [single triquote='''multi
+                      line
+                      triquote''']
+
+  [- 2. BRACKET-SHAPED values in attribute values (v0.7.0) ]
+  [single rawattr=[# literal [bracket] content #]]
+  [single blockattr=[| pipe
+                      block
+                      content |]]
+
+  [- 3. SCALARS in element body ]
+  [body "double quoted body"]
+  [body 'single quoted body']
+  [body bare body]
+  [body '''triple
+          quoted body''']
+
+  [- 4. BRACKET-SHAPED values in element body ]
+  [body [# literal [bracket] body content #]]
+  [body [| pipe
+          block
+          body |]]
+
+  [- 5. TABLE CELLS — every value form works (when col type accepts strings) ]
+  [t :table[id:int note:string]
+    1  "double quoted cell"
+    2  'single quoted cell'
+    3  bare-cell
+    4  '''triple
+        quoted cell'''
+    5  [# literal [bracket] cell #]
+    6  [| pipe block cell |]
+  ]
+
+  [- 6. COLLECTION-LITERAL items — same forms work ]
+  [items :string[] "first" 'second' bare '''fourth
+                                            multiline''' "fifth"]
+  [code-items :string[] alpha [# beta with [brackets] #] gamma]
+  [pipe-items :string[] one [| pipe item |] three]
+
+  [- 7. CXL slot bodies — directives consume value forms uniformly.
+     Note: the bracket-shaped node forms (hash-raw, pipe-block) work
+     parser-side and eval-render correctly via cxl-058 / cxl-059, but
+     emit through the directive labeled-slot path has a known round-
+     trip quirk for those — see conformance/eval.txt. Triquote +
+     bare text show the v0.7.0 symmetric behavior here. ]
+  [program
+    [?def greeting :body Hello, world!]
+    [?def message :body '''multi
+                          line message''']
+  ]
+]

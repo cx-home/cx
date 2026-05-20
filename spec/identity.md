@@ -1,7 +1,7 @@
 # CX Identity (ID / IDREF)
 
-**Version:** 1.0 (v0) — 2026-05-08
-**Status:** v0.6.0 (V core declarations + attribute-value references shipping; XML round-trip / canonical-form ID renaming / cross-include merging / `[ref @id]` body form / C ABI / 9-binding rollout pending)
+**Version:** 1.0 — 2026-05-08 (updated 2026-05-18 for v0.7.0 close-out)
+**Status:** v0.7.0 (full surface shipped). V-core declarations + attribute-value references (Phase 7.61), 9-binding rollout (7.62), XML round-trip (7.63), canonical-form ID renaming (7.64), C ABI symbols at capability bit 20 (7.65), `[ref @id]` body-position form (7.66), ast_bin v3 round-trip for `body_ref` across all 9 bindings (7.70). Cross-include ID merging (§2.1 / D3 second paragraph) becomes live at v0.7.0 GG1 — `vcx/cx/include.v` runs the spec/include.md §1-§8 resolver as a distinct pass between parse and ID-resolve, so the merge participates automatically.
 
 CX adopts a syntactic ID/IDREF mechanism for stable cross-element
 references, distinct from anchors/aliases (which are intra-document

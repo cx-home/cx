@@ -1,0 +1,339 @@
+[- Tour: 50 Ways to Love Your CXL Code — ported from docs/archive/50-ways-programs.md. -]
+[page id='tour-programs'
+  [meta
+    title='50 Ways to Love Your CXL Code'
+    layout='reference'
+    nav-order='160'
+    audience='evaluator,learner'
+    summary='Fifty CXL directives, simple to complex. Pizzeria edition.'
+  ]
+
+  [section id='intro' title='Read This First'
+    [prose Fifty short CXL examples — interpolation, paths, filters, conditionals, iteration, functions, modules — that walk from the simplest substitution to a full pipeline with module activation, HTML-safe escaping, function definition, structured logging, semantic merge, and iteration. Each example pairs a tiny data input with a directive snippet.]
+  ]
+
+  [section id='lit-num' title='1. A Literal Value'
+    [prose [?=expr] evaluates and prints. Here, the number 42.]
+    [code lang='cx' src='[?=42]']
+  ]
+
+  [section id='lit-str' title='2. A Literal String'
+    [prose Same form; strings and numbers interpolate identically.]
+    [code lang='cx' src="[?='Hand-tossed since 1987']"]
+  ]
+
+  [section id='attr' title='3. Read an Attribute — @name'
+    [prose @name is CXPath for the attribute named name. Prints Margherita.]
+    [code lang='cx' src='''[pizza name=Margherita]
+[?=@name]''']
+  ]
+
+  [section id='descendant' title='4. Find Anywhere — //'
+    [prose // matches a pizza element at any depth.]
+    [code lang='cx' src='''[order [pizza name=Margherita]]
+[?=//pizza/@name]''']
+  ]
+
+  [section id='in-body' title='5. Inside Body Text'
+    [prose A directive sits inside text. The rest stays as written.]
+    [code lang='cx' src='''[pizza name=Margherita]
+[receipt Thanks for ordering [?=@name]!]''']
+  ]
+
+  [section id='in-attr' title='6. Inside an Attribute Value'
+    [prose Interpolation works in attributes and in text. One mechanism, two positions.]
+    [code lang='cx' src="[user id=42 name=Joe]
+[a href=/u/[?=@id]/profile View [?=@name]s profile]"]
+  ]
+
+  [section id='several' title='7. Several on One Line'
+    [prose Each [?=...] is independent.]
+    [code lang='cx' src='''[pizza name=Margherita price=12]
+[line [?=@name] — [?=@price]€]''']
+  ]
+
+  [section id='gen-elem' title='8. Inside a Generated Element'
+    [prose Per iteration, build a fully-formed [a href=… …] element.]
+    [code lang='cx' src='''[catalog [c cid=42 name=Joe] [c cid=43 name=Ann]]
+[?for c :in //c :return [a href=/u/[?=c/@cid] [?=c/@name]]]''']
+  ]
+
+  [section id='child-step' title='9. Child Step'
+    [prose Child steps separated by /. Prints Margherita.]
+    [code lang='cx' src='''[shop [menu [pizza name=Margherita]]]
+[?=//shop/menu/pizza/@name]''']
+  ]
+
+  [section id='parent' title='10. Parent Axis — parent::*'
+    [prose Walks up one element. Prints Pepes.]
+    [code lang='cx' src="[shop name='Pepes' [pizza name=Margherita]]
+[?=//pizza/parent::*/@name]"]
+  ]
+
+  [section id='ancestor' title='11. Ancestor Axis'
+    [prose All ancestors of c. Prints mid;top;]
+    [code lang='cx' src='''[a tag=top [b tag=mid [c found]]]
+[?for x :in //c/ancestor::* :return [?=x/@tag];]''']
+  ]
+
+  [section id='following-sibling' title='12. Following-Sibling Axis'
+    [prose Walks siblings to the right of the matched node.]
+    [code lang='cx' src='''[row [cell n=1] [cell n=2] [cell n=3]]
+[?for x :in //cell[@n=1]/following-sibling::* :return [?=x/@n];]''']
+  ]
+
+  [section id='predicate' title='13. Predicate Filter — [@attr=value]'
+    [prose Brackets inside CXPath are predicates, not new elements.]
+    [code lang='cx' src="[menu [pizza name=Margherita] [pizza name=Hawaiian]]
+[?=//pizza[@name='Hawaiian']/@name]"]
+  ]
+
+  [section id='upper' title='14. Upper-Case'
+    [prose Wrap a value with [?fn [args]] to call a filter.]
+    [code lang='cx' src='''[pizza name=margherita]
+[?=[?upper [@name]]]''']
+  ]
+
+  [section id='default' title='15. Default — Fall Back When Missing'
+    [prose Graceful fallback; no exception.]
+    [code lang='cx' src='''[pizza name=Mystery]
+[?=[?default [@price, 0]]]''']
+  ]
+
+  [section id='composed' title='16. Composed Filters — Nested'
+    [prose Inside-out: trim, then upper.]
+    [code lang='cx' src="[pizza name='  margherita  ']
+[?=[?upper [[?trim [@name]]]]]"]
+  ]
+
+  [section id='strlen' title='17. String Length'
+    [prose Counts characters. Prints 10.]
+    [code lang='cx' src='''[pizza name=Margherita]
+[?=[?string-length [@name]]]''']
+  ]
+
+  [section id='current-date' title='18. Todays Date'
+    [prose [?current-date], [?current-dateTime], [?current-time].]
+    [code lang='cx' src='[?=[?current-date]]']
+  ]
+
+  [section id='pipeline' title='19. Pipeline |> — Left-to-Right Composition'
+    [prose Same result as composed filters, read top-down instead of inside-out.]
+    [code lang='cx' src="[pizza name='  margherita  ']
+[?=@name |> trim |> upper]"]
+  ]
+
+  [section id='arrow' title='20. Arrow => — Method-Call Style'
+    [prose XQuerys invocation syntax. Reads as name.lower().]
+    [code lang='cx' src='''[pizza name=MARGHERITA]
+[?=@name => lower()]''']
+  ]
+
+  [section id='concat-op' title='21. String Concatenation ||'
+    [prose Join strings with double-pipe, like SQL.]
+    [code lang='cx' src="[user first=Ada last=Lovelace]
+[?=@first || ' ' || @last]"]
+  ]
+
+  [section id='range' title='22. Range — M to N'
+    [prose Inclusive range. Prints 1;2;3;4;]
+    [code lang='cx' src='[?for n :in 1 to 4 :return [?=n];]']
+  ]
+
+  [section id='if-pos' title='23. If — Positional Form'
+    [prose Three slots: condition, then, else.]
+    [code lang='cx' src='''[pizza stock=0]
+[?if [@stock > 0, in stock, out of stock]]''']
+  ]
+
+  [section id='if-labeled' title='24. If — Labeled Form'
+    [prose Same semantics, named slots — usually clearer.]
+    [code lang='cx' src='''[pizza stock=5]
+[?if @stock > 0 :then in stock :else out of stock]''']
+  ]
+
+  [section id='if-no-else' title='25. Skip the Else Branch'
+    [prose False condition renders nothing.]
+    [code lang='cx' src='''[pizza featured=true]
+[?if @featured :then ★ featured!]''']
+  ]
+
+  [section id='existence' title='26. Existence Check'
+    [prose A node-set is truthy when non-empty.]
+    [code lang='cx' src='''[pizza [tags vegan]]
+[?if [//tags, yes, no]]''']
+  ]
+
+  [section id='multi-branch' title='27. Multi-Branch — No Else-If Ladder'
+    [prose Each [cond, value] is a branch; * is the catch-all.]
+    [code lang='cx' src='''[pizza stock=2]
+[?if [[@stock > 100, plenty], [@stock > 10, some], [@stock > 0, last few], [*, sold out]]]''']
+  ]
+
+  [section id='for-pos' title='28. For — Positional Form'
+    [prose Slots: variable, source, body.]
+    [code lang='cx' src='''[pizza [topping cheese] [topping basil] [topping oil]]
+[?for [t, //topping, [?=t/@name];]]''']
+  ]
+
+  [section id='for-labeled' title='29. For — Labeled Form'
+    [prose Same semantics with :in and :return.]
+    [code lang='cx' src='''[pizza [topping cheese] [topping basil] [topping oil]]
+[?for t :in //topping :return [?=t/@name];]''']
+  ]
+
+  [section id='range-loop' title='30. Range Loop — Generate Elements'
+    [prose Produces [slot id=1][slot id=2][slot id=3].]
+    [code lang='cx' src='[?for n :in 1 to 3 :return [slot id=[?=n]]]']
+  ]
+
+  [section id='nested-for' title='31. Nested For'
+    [prose Loop over pizzas; inside, loop over each pizzas toppings.]
+    [code lang='cx' src='''[shop [pizza name=Margherita [topping cheese] [topping basil]]]
+[?for p :in //pizza :return
+  [grp [?=p/@name]: [?for t :in p/topping :return [?=t/@name],]]]''']
+  ]
+
+  [section id='with-pos' title='32. With — Positional'
+    [prose Inside with, @owner and @region refer to meta. Prints Pepe / IT.]
+    [code lang='cx' src='''[shop [meta owner=Pepe region=IT]]
+[?with [//meta, [?=@owner] / [?=@region]]]''']
+  ]
+
+  [section id='with-labeled' title='33. With — Labeled'
+    [prose Named-slot variant.]
+    [code lang='cx' src='''[shop [meta owner=Pepe region=IT]]
+[?with //meta :return [?=@owner]/[?=@region]]''']
+  ]
+
+  [section id='let-once' title='34. Let — Bind Once, Reuse'
+    [prose Compute tax once, use it where the binding is in scope.]
+    [code lang='cx' src='''[pizza price=12]
+[?let tax :be @price * 0.22 :return Total: [?=@price + tax]€]''']
+  ]
+
+  [section id='let-pipe' title='35. Let — Bind a Pipeline Result'
+    [prose Pipelines and let-bindings compose naturally.]
+    [code lang='cx' src="[pizza name='  margherita  ']
+[?let clean :be @name |> trim |> upper :return Welcome, [?=clean]!]"]
+  ]
+
+  [section id='def-greet' title='36. Define a Template Fragment'
+    [prose The body runs in the calling context.]
+    [code lang='cx' src='''[?def greet :body Hello [?=@name]!]
+[pizza name=Pepe]
+[?use greet]''']
+  ]
+
+  [section id='def-param' title='37. With One Parameter'
+    [prose Once defined, the function is callable as [?shout …].]
+    [code lang='cx' src="[?def shout :params [x] :body LOUD: [?=x]!]
+[?shout 'pizza ready']"]
+  ]
+
+  [section id='def-params' title='38. Multiple Parameters'
+    [prose Positional params; prints cheese / basil.]
+    [code lang='cx' src="[?def pair :params [a, b] :body [?=a] / [?=b]]
+[?pair 'cheese' 'basil']"]
+  ]
+
+  [section id='def-loop' title='39. Function Plus Iteration'
+    [prose A reusable per-item template, mapped over a node set.]
+    [code lang='cx' src='''[?def line :params [item] :body sku=[?=item/@sku];]
+[order [v sku=A] [v sku=B] [v sku=C]]
+[?for x :in //v :return [?line x]]''']
+  ]
+
+  [section id='higher-order' title='40. Higher-Order — [?focus] and [?apply]'
+    [prose [?focus] builds a function from a body (underscore is the implicit arg); [?apply] invokes it.]
+    [code lang='cx' src='''[pizza [v n=5]]
+[?let dbl :be [?focus :body [?=_ * 2]]
+  :return [?for x :in //v :return [?=[?apply [dbl, x/@n]]]]]''']
+  ]
+
+  [section id='html-safe' title='41. HTML-Safe Output'
+    [prose One directive switches the evaluator into context-aware escaping. No XSS from the menu.]
+    [code lang='cx' src="[pizza name='<script>alert(1)</script>']
+[?cx output-target=html]
+[?=@name]"]
+  ]
+
+  [section id='text-mode' title='42. Plain-Text Output'
+    [prose Useful for terminals and files where escaping would be noise.]
+    [code lang='cx' src="[?cx output-target=text]
+[pizza name='<b>Margherita</b>']
+[?=@name]"]
+  ]
+
+  [section id='use-module' title='43. Activate a Module'
+    [prose Modules expose new directive namespaces (cx:, log:, …) once activated.]
+    [code lang='cx' src="[?cx use-module=cx]
+[?=[?cx:canonical [[?cx:parse ['[a   x=1  ]']]]]]"]
+  ]
+
+  [section id='cx-parse' title='44. cx:parse — Read CX From a String'
+    [prose CX reads its own syntax as data. Code is data.]
+    [code lang='cx' src="[?cx use-module=cx]
+[?=[?cx:parse ['[pizza name=Margherita]']]]"]
+  ]
+
+  [section id='cx-serialize' title='45. cx:serialize — Emit a Value Back to Text'
+    [prose Round-trip: parse then serialize. Prints [a x=1 y=2].]
+    [code lang='cx' src="[?cx use-module=cx]
+[?=[?cx:serialize [[?cx:parse ['[a x=1 y=2]']]]]]"]
+  ]
+
+  [section id='cx-canonical' title='46. cx:canonical — Normalize'
+    [prose Whitespace and attribute order canonicalized; idempotent.]
+    [code lang='cx' src="[?cx use-module=cx]
+[?=[?cx:canonical [[?cx:parse ['[a   x=1   y=2]']]]]]"]
+  ]
+
+  [section id='cx-hash' title='47. cx:hash — Content Digest'
+    [prose Stable hash over the canonical form. Same input always yields the same hash, in every binding.]
+    [code lang='cx' src="[?cx use-module=cx]
+[?=[?cx:hash [[?cx:parse ['[pizza name=Margherita]']]]]]"]
+  ]
+
+  [section id='cx-merge' title='48. cx:merge — Three-Policy Semantic Merge'
+    [prose Two trees combined by element identity. Coupons price=10 overrides the orders.]
+    [code lang='cx' src='''[?cx use-module=cx]
+[order [pizza name=Margherita price=12]]
+[coupon [pizza price=10]]
+[?=[?cx:merge [//order, //coupon]]]''']
+  ]
+
+  [section id='log-info' title='49. Structured Logging'
+    [prose [?log:level [msg]] emits a structured event. Second arg is a map of fields.]
+    [code lang='cx' src="[?cx use-module=log log-level=info]
+[?log:info ['sale', {pizza: 'Margherita', price: 12}]]
+[?log:debug ['suppressed at info level']]"]
+  ]
+
+  [section id='whole-kitchen' title='50. The Whole Kitchen'
+    [prose Module activation, HTML-safe escaping, function definition, structured logging, semantic merge, iteration. Six lines; the whole arc.]
+    [code lang='cx' src="[?cx use-module=cx output-target=html log-level=info]
+[?def line :params [p] :body [li [?=p/@name] — [?=p/@price]€]]
+[order [pizza name='<b>Margherita</b>' price=12]]
+[coupon [pizza price=10]]
+[?log:info ['rendering receipt']]
+[ul [?for p :in [?cx:merge [//order, //coupon]]/pizza :return [?line p]]]"]
+  ]
+
+  [section id='arc' title='The Arc'
+    [prose Read a value then put it in context then walk paths then filter and combine then branch then loop then factor into functions then swap output mode then reflect / hash / merge / log. Every step adds exactly one capability; data from the companion document flows through unchanged.]
+  ]
+
+  [section id='related' title='Where to Next'
+    [list
+      [item path='tour/data'            label='50 Ways to Love Your CX Data — companion']
+      [item path='reference/cxl'        label='CXL reference — every directive']
+      [item path='concepts/evaluation'  label='Evaluation model — context and bindings']
+      [item path='concepts/cxpath'      label='CXPath — paths and axes']
+    ]
+  ]
+
+  [preserve id='author-notes'
+    [- Hand-written notes survive regeneration. Empty by default. -]
+  ]
+]

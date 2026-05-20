@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAQ</title>
+<style>:root {
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #1f6feb;
+  --border: #e6e6e0;
+
+  /* Dark code blocks for visual prominence */
+  --code-bg: #1f2430;
+  --code-fg: #e2e8f0;
+  --code-comment: #6b7280;
+  --code-keyword: #c4b5fd;
+  --code-string: #fde68a;
+  --code-border: #2a2f3d;
+  --code-label: #9aa3b0;
+
+  --side-bg: #f3f3ec;
+  --side-fg: #1a1a1a;
+  --side-muted: #6b7280;
+  --side-active: #1f6feb;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+aside.sidebar {
+  background: var(--side-bg);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0.85rem 2rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+aside.sidebar .brand {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.9rem;
+  color: var(--side-fg);
+  display: block;
+  text-decoration: none;
+}
+aside.sidebar .brand:hover { text-decoration: none; }
+
+aside.sidebar .brand-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--side-muted);
+  text-decoration: none;
+  margin: 0 0 0.8rem;
+}
+aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
+
+aside.sidebar section { margin-bottom: 0.9rem; }
+aside.sidebar h4 {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin: 0.6rem 0 0.25rem;
+  color: var(--side-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+aside.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+aside.sidebar li { margin: 0; }
+aside.sidebar a {
+  display: block;
+  color: var(--side-fg);
+  text-decoration: none;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  margin-left: -0.4rem;
+}
+aside.sidebar a:hover {
+  background: rgba(0,0,0,0.05);
+  text-decoration: none;
+}
+aside.sidebar a.active {
+  background: var(--side-active);
+  color: white;
+  font-weight: 500;
+}
+
+main {
+  max-width: 760px;
+  padding: 1.5rem 2rem 3rem;
+  width: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 1.1rem 0 0.25rem;
+  color: var(--fg);
+}
+
+h3 {
+  font-size: 0.9rem;
+  margin: 0.7rem 0 0.2rem;
+  color: var(--fg);
+}
+
+main > p:first-of-type {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 0.8rem;
+}
+
+p {
+  margin: 0.3rem 0;
+}
+
+ul, ol {
+  margin: 0.3rem 0;
+  padding-left: 1.2rem;
+}
+li { margin: 0.05rem 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(31, 36, 48, 0.08);
+  padding: 0.08em 0.3em;
+  border-radius: 3px;
+  color: #2d2f36;
+}
+
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 5px;
+  padding: 1.6rem 0.9rem 0.7rem;
+  margin: 0.45rem 0;
+  overflow-x: auto;
+  position: relative;
+  line-height: 1.45;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+}
+
+.lang-label {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: var(--code-label);
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+pre:hover .copy-btn,
+pre:focus-within .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
+.copy-btn.copied { color: #34d399; border-color: #34d399; }
+.copy-btn.failed { color: #f87171; border-color: #f87171; }
+
+/* Syntax highlighting palette — colours tuned against the dark
+   code-bg slate. Subtle: comments muted, strings warm yellow,
+   numbers/literals amber/violet, element names and directives in
+   cool blue/pink so CX bracket structure reads at a glance. */
+.hl-comment   { color: #7a8294; font-style: italic; }
+.hl-string    { color: #fbbf77; }
+.hl-number    { color: #f59e0b; }
+.hl-literal   { color: #c4b5fd; }
+.hl-keyword   { color: #f87171; }
+.hl-element   { color: #7dd3fc; }
+.hl-directive { color: #f9a8d4; }
+.hl-sigil     { color: #fcd34d; }
+.hl-type      { color: #a5b4fc; }
+.hl-attr      { color: #86efac; }
+.hl-fn        { color: #93c5fd; }
+
+table {
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 100%;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: var(--side-bg);
+  font-weight: 600;
+}
+tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+td code {
+  font-size: 11.5px;
+  background: rgba(31, 36, 48, 0.06);
+}
+
+@media (max-width: 460px) {
+  body { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  main { padding: 1rem 1.25rem 2rem; }
+}</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html">CX</a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <section><h4>Get Started</h4><ul>
+    <li><a href="index.html">Overview</a></li>
+    <li><a href="install.html">Install</a></li>
+    <li><a href="quickstart.html">Quickstart</a></li>
+    </ul></section>
+  <section><h4>Learn</h4><ul>
+    <li><a href="tutorial.html">Tutorial</a></li>
+    <li><a href="playground.html">Playground</a></li>
+    </ul></section>
+  <section><h4>Examples</h4><ul>
+    <li><a href="tour/data.html">50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour/programs.html">50 Ways to Love Your CXL Code</a></li>
+    <li><a href="cookbook.html">Cookbook</a></li>
+    <li><a href="showcase.html">Showcase</a></li>
+    </ul></section>
+  <section><h4>Concepts</h4><ul>
+    <li><a href="concepts/data-model.html">Data Model</a></li>
+    <li><a href="concepts/sigils.html">Sigils & Markup</a></li>
+    <li><a href="concepts/evaluation.html">Evaluation Model</a></li>
+    <li><a href="concepts/cxpath.html">CXPath</a></li>
+    <li><a href="concepts/identity.html">Identity & Canonical</a></li>
+    <li><a href="concepts/types.html">Types</a></li>
+    </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="reference/cli.html">CLI</a></li>
+    <li><a href="reference/cxl.html">CXL Language</a></li>
+    <li><a href="reference/cxpath.html">CXPath Functions</a></li>
+    <li><a href="reference/schemas.html">Schemas</a></li>
+    <li><a href="reference/tables.html">Tables</a></li>
+    <li><a href="reference/streaming.html">Streaming</a></li>
+    <li><a href="reference/includes.html">Includes</a></li>
+    <li><a href="reference/ast-bin.html">ast-bin Format</a></li>
+    <li><a href="reference/data-bin.html">data-bin / Arrow</a></li>
+    <li><a href="reference/grammar.html">Grammar (EBNF)</a></li>
+    <li><a href="reference/errors.html">Error Codes</a></li>
+    </ul></section>
+  <section><h4>Bindings</h4><ul>
+    <li><a href="bindings/index.html">Binding Catalog</a></li>
+    <li><a href="bindings/c-abi.html">C ABI</a></li>
+    <li><a href="bindings/v.html">V</a></li>
+    <li><a href="bindings/python.html">Python</a></li>
+    <li><a href="bindings/go.html">Go</a></li>
+    <li><a href="bindings/rust.html">Rust</a></li>
+    <li><a href="bindings/typescript.html">TypeScript</a></li>
+    <li><a href="bindings/java.html">Java</a></li>
+    <li><a href="bindings/csharp.html">C#</a></li>
+    <li><a href="bindings/ruby.html">Ruby</a></li>
+    <li><a href="bindings/kotlin.html">Kotlin</a></li>
+    <li><a href="bindings/swift.html">Swift</a></li>
+    </ul></section>
+  <section><h4>Tooling</h4><ul>
+    <li><a href="tooling/editors.html">Editors & LSP</a></li>
+    <li><a href="tooling/tree-sitter.html">Tree-sitter</a></li>
+    <li><a href="tooling/fuzzing.html">Fuzzing & Tests</a></li>
+    </ul></section>
+  <section><h4>Resources</h4><ul>
+    <li><a href="comparison.html">vs JSON, YAML, TOML, XML</a></li>
+    <li><a href="performance.html">Performance</a></li>
+    <li><a class="active" href="faq.html">FAQ</a></li>
+    <li><a href="release-notes.html">Release Notes</a></li>
+    </ul></section>
+</aside>
+<main>
+<doc>
+  <h1>FAQ</h1>
+  <p>Working answers to the questions adopters ask in the first thirty minutes.</p>
+  <h2>Read This First</h2>
+  <p>Working answers for the questions adopters ask in the first thirty minutes. For the format itself see the Tutorial; for the formal grammar see the Grammar (EBNF) reference; for the comparison with other formats see the vs JSON / YAML / TOML / XML page.</p>
+  <h2>Why CX Instead of JSON?</h2>
+  <p>JSON has no comments and no type fidelity beyond IEEE 754 doubles. That is fine for API payloads but punishing for configuration (rationale belongs next to the values it explains) and for data exchange that involves big integers, decimals, dates, or anything outside the JSON value tower. CX keeps the round-trip: cx --json file.cx then cx --from json brings bigints, decimals, dates, and types back unchanged. JSON itself silently breaks any integer over two-to-the-53rd.</p>
+  <p>Use JSON when the consumer is fixed and the data fits the JSON value tower. Use CX when the same data needs to round-trip into and out of multiple consumers without losing meaning.</p>
+  <h2>Why CX Instead of YAML?</h2>
+  <p>YAMLs implicit typing is the load-bearing problem: country: NO parses as false; version: 1.10 parses as 1.1; port: 022 parses as octal 18. CX inverts the rule: leading-zero tokens are strings (so 02134 stays the string 02134), colon-type annotations make the type explicit, and there is no implicit boolean coercion of strings.</p>
+  <p>YAMLs significant whitespace is hostile to programmatic generation — a stray tab corrupts a deeply nested document. CX uses brackets, which programmatic emitters cannot accidentally break.</p>
+  <h2>Why CX Instead of TOML?</h2>
+  <p>TOML is excellent for flat, table-shaped configuration. It struggles with deep hierarchy: bracket-dot headers get repetitive, and mixing arrays-of-tables with inline tables leaks complexity. CX nests freely at any depth with no syntactic penalty, and exports to TOML losslessly when the source happens to fit TOMLs shape.</p>
+  <h2>Why CX Instead of XML?</h2>
+  <p>XML has the strongest schema and namespace story of any text format in wide use. It is also verbose: closing tags repeat, attribute quoting is mandatory, and the XML declaration and DOCTYPE machinery is cumbersome. CX gives you XMLs structural power attributes mixed content namespaces id/idref without the verbosity. A CX document that round-trips to XML is typically half the byte count.</p>
+  <h2>Why CX Instead of Markdown?</h2>
+  <p>Markdown is the right format for prose with light structure — articles, READMEs, blog posts. It has no opinion about types, schemas, or data. CX subsumes Markdown for the cases where prose and structured data live together. If you only need prose, stay in Markdown.</p>
+  <h2>When Is CX the Wrong Choice?</h2>
+  <ul>
+    <li>
+      <a href="faq.html">Hot-path JSON for high-throughput APIs. Use JSON; the parsing ecosystem is faster and more universal.</a>
+    </li>
+    <li>
+      <a href="faq.html">Kubernetes and the Helm ecosystem. Stay in YAML; the tooling expects it.</a>
+    </li>
+    <li>
+      <a href="faq.html">Pure prose documents. Stay in Markdown.</a>
+    </li>
+    <li>
+      <a href="faq.html">Database export with type-fidelity guarantees. Use Parquet or Arrow.</a>
+    </li>
+  </ul>
+  <h2>Is CX Production-Ready?</h2>
+  <p>v0.7.0 is the API and format-stability boundary through 1.0. C ABI symbols are append-only from here forward; ast-bin format versions are forward-compatible; the cross-binding conformance suite gates every release. Adopt today and expect format stability through 1.0 with incremental tooling improvements.</p>
+  <h2>Can I Adopt Incrementally?</h2>
+  <p>Yes. Every CX file converts losslessly to one or more of the five formats it interoperates with. Use CX as your source of truth and emit YAML for Kubernetes, TOML for static-site configs, and Markdown for docs; or author in JSON / YAML / TOML and convert to CX when you need comments, types, or hierarchy.</p>
+  <h2>Which Language Can I Use CX From?</h2>
+  <p>Ten implementations, all backed by the same V core. Each binding wraps the libcx C ABI; the API shape differs idiomatically but the underlying capability set is the same.</p>
+  <ul>
+    <li>
+      <a href="bindings/v.html">V — the native reference implementation</a>
+    </li>
+    <li>
+      <a href="bindings/python.html">Python — ctypes wrapper</a>
+    </li>
+    <li>
+      <a href="bindings/go.html">Go — cgo wrapper</a>
+    </li>
+    <li>
+      <a href="bindings/rust.html">Rust — extern C wrapper</a>
+    </li>
+    <li>
+      <a href="bindings/typescript.html">TypeScript — koffi wrapper for Node</a>
+    </li>
+    <li>
+      <a href="bindings/java.html">Java — JNA wrapper</a>
+    </li>
+    <li>
+      <a href="bindings/kotlin.html">Kotlin — JNA wrapper</a>
+    </li>
+    <li>
+      <a href="bindings/swift.html">Swift — clang interop</a>
+    </li>
+    <li>
+      <a href="bindings/csharp.html">C-sharp — P/Invoke wrapper</a>
+    </li>
+    <li>
+      <a href="bindings/ruby.html">Ruby — FFI wrapper</a>
+    </li>
+  </ul>
+  <h2>How Do I Migrate From JSON / YAML / TOML / XML / Markdown?</h2>
+<pre><span class="lang-label">shell</span><code class="language-shell">cx --from json existing.json &gt; existing.cx
+cx --from yaml existing.yaml &gt; existing.cx
+cx --from toml existing.toml &gt; existing.cx
+cx --from xml existing.xml &gt; existing.cx
+cx --from md existing.md &gt; existing.cx</code></pre>
+  <p>The reverse direction is the default — cx --json file.cx writes JSON to stdout.</p>
+  <h2>Why Brackets Instead of Braces, Indentation, or Tags?</h2>
+  <p>Brackets are the lightest balanced delimiter not in heavy use already. Braces are JSON; mixing braces with the rest of CX would create constant visual collision. Indentation breaks under programmatic generation. Tags double the character count for every construct and force closing-tag repetition. Brackets also pun usefully: is the thing called name, which matches how humans write structured outlines on whiteboards.</p>
+  <h2>What Types Does CX Support?</h2>
+  <p>Atomic types: int arbitrary range sized variants i8 i16 i32 i64 u8 u16 u32 u64, float IEEE 754 sized variants f32 f64, bool, string, null, date, datetime, bytes, decimal (arbitrary precision), bigint (arbitrary precision), and arrays of any of these. Compound types are inherent in the structure: any element with attributes is a record; any element with same-named children is a collection; the :table block is a typed table.</p>
+  <h2>Why Colon-Type Annotations?</h2>
+  <p>CX auto-types most values that look unambiguously like one type — 8080 becomes int, 3.14 becomes float, true becomes bool, 2026-01-01 becomes date. The colon-type annotation is for cases where the auto-typer would guess wrong, where you want a stricter range (:u16 rejects values over 65535), or where the value should keep a specific runtime type.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[port :u16 8080]</code></pre>
+  <h2>Why Plus-Flag and Minus-Flag Boolean Sigils?</h2>
+  <p>Boolean attributes are the most common attribute kind in configuration. Writing tls=true tls_v1_3=true http3=true debug=false is heavier than +tls +tls_v1_3 +http3 -debug. The sigils are pure syntactic sugar.</p>
+  <h2>Why Does [zip 02134] Produce a String?</h2>
+  <p>Leading-zero tokens stay strings unless the prefix is 0x (hex), 0o (octal), or 0b (binary). The rule is deliberately predictable: leading-zero numerics are typically identifiers postal codes area codes BIC codes account numbers where the leading zero is data, not a numeric value.</p>
+  <h2>What Is :decimal For?</h2>
+  <p>Arbitrary-precision decimal — for money, scientific quantities, or any value where IEEE 754 binary floats would lose precision. 0.1 plus 0.2 is 0.30000000000000004 in float; in :decimal it is 0.3. Consumer bindings map :decimal to their languages decimal type — Python Decimal, Java BigDecimal, .NET decimal, Ruby BigDecimal.</p>
+  <h2>What Is :table?</h2>
+  <p>A row-major-in-text, column-major-in-binary tabular block. In the binary cx_to_data_bin form, :table rows are stored column-major and run 5 to 10 times smaller than equivalent element-per-row encoding for large datasets.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[stocks :table[ticker:string price:f64 volume:u32]
+  AAPL 192.45 38291092
+  GOOG 142.30 18234567
+  MSFT 415.18 23456789
+]</code></pre>
+  <h2>What Is Logfmt Mode?</h2>
+  <p>A CX file made entirely of bare top-level key=value attributes. Each line parses as a synthetic Element. Log streams are valid CX. You can cx --json logs.cx and get a JSON array of typed log records — no separate logfmt parser needed.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
+ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true</code></pre>
+  <h2>Is There an LSP?</h2>
+  <p>Yes. cx lsp speaks LSP over stdio — any editor with an LSP client can drive completion, hover, go-to-definition, diagnostics, formatting, and rename refactors against CX, CXL, and CXS sources. Editor installer scripts under tooling/install set up VS Code and Neovim out of the box.</p>
+  <h2>Is There Syntax Highlighting for My Editor?</h2>
+  <p>The tree-sitter grammar at tooling/tree-sitter-cx covers all of v0.7.0. VS Code and Neovim integrations live at tooling/vscode and tooling/neovim.</p>
+  <h2>Will CX Scale to Gigabyte Files?</h2>
+  <p>Streaming parse and emit are both supported — process arbitrarily large inputs without reading them fully into memory, callback-driven. For terabyte-scale data, use a binary columnar format Parquet Arrow; CX has bridges to both via libcx_arrow.</p>
+  <h2>Is CX Thread-Safe?</h2>
+  <p>The C ABI is documented per-symbol with thread-safety classes. All format converters are stateless and can run concurrently across threads on disjoint inputs. The Boehm GC underneath libcx requires cx_thread_register on each calling thread; Tier-1 bindings handle this automatically at every FFI chokepoint.</p>
+  <h2>What Is the License?</h2>
+  <p>Apache 2.0.</p>
+  <h2>How Do I Contribute?</h2>
+  <p>The project lives at github.com/cx-home/cx. Bug reports, doc fixes, and pull requests are welcome. For format-design questions or proposed grammar changes, file an issue first; a recorded design decision is a prerequisite for any breaking change.</p>
+  <h2>How Do I Report a Security Issue?</h2>
+  <p>Through GitHubs private vulnerability reporting at github.com/cx-home/cx/security/advisories/new. Do not file a public issue for security-sensitive bugs.</p>
+  <h2>Why Does My Embedded Code Get Garbled?</h2>
+  <p>The bracket-pipe block-content form is parsed as CX, so child-element brackets inside it open new elements. If your code contains brackets, braces, or quotes, the parser will mangle it. Use the bracket-hash raw-text form instead — nothing inside is parsed, and the terminator is hash-bracket.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[code [#
+  for (let i = 0; i &lt; arr.length; i++) {
+    console.log(arr[i]);
+  }
+#]]</code></pre>
+  <h2>Where to Next</h2>
+  <ul>
+    <li>
+      <a href="comparison.html">Comparison — full feature matrix and loss tables</a>
+    </li>
+    <li>
+      <a href="reference/cli.html">CLI reference</a>
+    </li>
+    <li>
+      <a href="tutorial.html">Tutorial — hands-on walk-through</a>
+    </li>
+  </ul>
+</doc>
+</main>
+<script>
+document.querySelectorAll('pre').forEach(pre => {
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'copy';
+  btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    const code = pre.querySelector('code')?.textContent ?? pre.textContent;
+    const flash = (label, cls) => {
+      btn.textContent = label;
+      btn.classList.add(cls);
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove(cls); }, 1500);
+    };
+    try {
+      await navigator.clipboard.writeText(code);
+      flash('copied', 'copied');
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); flash('copied', 'copied'); }
+      catch { flash('failed', 'failed'); }
+      document.body.removeChild(ta);
+    }
+  });
+  pre.appendChild(btn);
+});
+</script>
+<script src="highlight/highlight.js" defer></script>
+</body>
+</html>

@@ -128,7 +128,7 @@ const cx_abi_version_str = '2.0'
 // (`cx_events_writer_*` / spec/streaming.md §6 /
 // spec/abi.md §2.15) — 25 C ABI symbols, wired in Phase 7.74g.
 // Bit 28 is the CXL 1.0 evaluator (`cx_eval_cxl*` /
-// spec/cxl.md / spec/abi.md §2.16) — V reference implementation
+// spec/eval.md / spec/abi.md §2.16) — V reference implementation
 // landed alongside the bit-28 flip; cf. `vcx/cx/cxl.v`.
 // Bit 29 is collection literals + CXDM v1.1 + labeled-form parser
 // (/§D7/§D23 / spec/abi.md §1.5) — V parser + AST +
@@ -182,6 +182,22 @@ pub fn cx_to_cx(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	s := to_cx(src) or { return c_err(err.msg(), err_out) }
 	return c_string(s)
+}
+
+// cx_to_cx_with_include_root: parse CX text with opt-in spec/include.md
+// resolution (v0.7.0 GG3) then re-emit the resolved document as
+// canonical CX text. NULL / empty `include_root` is a no-op
+// equivalent to `cx_to_cx` (directives preserved).
+@[export: 'cx_to_cx_with_include_root']
+pub fn cx_to_cx_with_include_root(input &char, include_root &char, err_out &&char) &char {
+	src := unsafe { cstring_to_vstring(input) }
+	root_str := if isnil(include_root) {
+		''
+	} else {
+		unsafe { cstring_to_vstring(include_root) }
+	}
+	doc := parse_with_include_root(src, root_str) or { return c_err(err.msg(), err_out) }
+	return c_string(emit_cx(doc))
 }
 
 @[export: 'cx_to_xml']
@@ -531,6 +547,24 @@ pub fn cx_to_ast_bin(input &char, err_out &&char) &char {
 	return buf.to_heap()
 }
 
+// cx_to_ast_bin_with_include_root: same as cx_to_ast_bin but with
+// opt-in `?include` resolution per spec/include.md §2.2 (v0.7.0 GG3
+// / GG4). NULL or empty `include_root` disables resolution.
+// Capability bit 28 widened semantics per EE3 / ADR 0023 Amendment
+// #2 R2 signals presence.
+@[export: 'cx_to_ast_bin_with_include_root']
+pub fn cx_to_ast_bin_with_include_root(input &char, include_root &char, err_out &&char) &char {
+	src := unsafe { cstring_to_vstring(input) }
+	root_str := if isnil(include_root) {
+		''
+	} else {
+		unsafe { cstring_to_vstring(include_root) }
+	}
+	doc := parse_with_include_root(src, root_str) or { return c_err(err.msg(), err_out) }
+	buf := doc_to_bin(doc)
+	return buf.to_heap()
+}
+
 // ── Streaming C ABI (Phase 2e) ───────────────────────────────────────────────
 //
 // Closes audit finding CB-4 by introducing a handle-based pull API
@@ -875,6 +909,33 @@ pub fn cx_ast_bin_to_md(input &char, err_out &&char) &char {
 pub fn cx_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	doc := parse(src) or { return c_err(err.msg(), err_out) }
+	bytes := emit_data_bin(doc)
+	return framed_bytes_to_heap(bytes)
+}
+
+// cx_to_data_bin_with_include_root: same as cx_to_data_bin but with
+// opt-in `?include` resolution per spec/include.md §2.2 (v0.7.0
+// GG3 row at spec/v0_7_0_status.md). NULL or empty `include_root`
+// disables resolution (matches the default of cx_to_data_bin).
+// Non-empty `include_root` must be an absolute path; relative paths
+// are resolved against the current working directory before being
+// passed through to the resolver.
+//
+// Errors: any of the E901-E911 codes per spec/include.md §8 surface
+// through `err_out` with the cx-err: prefix.
+//
+// Capability bit 28 (widened at v0.7.0 per EE3 / ADR 0023 Amendment
+// #2 R2) signals presence; bindings query `cx_features` and may
+// degrade to cx_to_data_bin when bit 28 is clear (older libcx).
+@[export: 'cx_to_data_bin_with_include_root']
+pub fn cx_to_data_bin_with_include_root(input &char, include_root &char, err_out &&char) &char {
+	src := unsafe { cstring_to_vstring(input) }
+	root_str := if isnil(include_root) {
+		''
+	} else {
+		unsafe { cstring_to_vstring(include_root) }
+	}
+	doc := parse_with_include_root(src, root_str) or { return c_err(err.msg(), err_out) }
 	bytes := emit_data_bin(doc)
 	return framed_bytes_to_heap(bytes)
 }
@@ -2096,27 +2157,32 @@ pub fn cx_events_writer_end_table(handle voidptr, err_out &&char) &char {
 	return unsafe { nil }
 }
 
-// ── CXL evaluator (spec/abi.md §2.16, capability bit 28) ────────────────────
+// ── Cx evaluator (spec/abi.md §2.16, capability bit 28) ─────────────────────
+//
+// Per ADR 0022 §D5: symbols renamed at v0.7.0 from cx_eval_cxl* to
+// cx_eval*. This is the documented ABI epoch break; pre-v0.7.0
+// bindings linked against libcx do NOT work against the v0.7.0 libcx.
+// Migration tool cx upgrade-config rewrites cxl-* references in cx
+// programs; binding code is updated per-binding by the 5-binding cut.
 //
 // Three symbols / spec/abi.md §2.16:
-// cx_eval_cxl — NUL-terminated one-shot
-// cx_eval_cxl_with_len — explicit-length one-shot (binary-safe)
-// cx_eval_cxl_streaming — pull-based incremental emit (W012 v0.6.0
-// stub — composes with the chunked-table
-// reader and streaming-write API; lands
-// at v0.6.1+ once the CXL 1.0 evaluator
-// stabilises).
+// cx_eval — NUL-terminated one-shot
+// cx_eval_with_len — explicit-length one-shot (binary-safe)
+// cx_eval_streaming — pull-based incremental emit (W012 stub at
+// v0.7.0 — lands once concurrency work in
+// v0.9.0+ stabilises the streaming
+// evaluator skeleton).
 //
 // W-codes:
-// W012 — CXL evaluator returns this when streaming is requested or
-// when a CXL 3.1+ directive is invoked at a v0.6.0 (CXL 1.0)
-// evaluator (`[?let]`, `[?fn]`, `[?match]`, `[?try]`).
-// W013 — Reserved for v0.7.0+ structured error codes per spec/cxl.md §2.5.
+// W012 — Cx evaluator returns this when streaming is requested or
+// when an unimplemented CXL 3.1+ directive is invoked
+// (subset of `[?fn]`/`[?match]` still pending at v0.7.0).
+// W013 — Reserved for v0.7.0+ structured error codes per spec/eval.md §2.5.
 
-@[export: 'cx_eval_cxl']
-pub fn cx_eval_cxl(cx_input &char, cxl_program &char, output_target &char, err_out &&char) &char {
+@[export: 'cx_eval']
+pub fn cx_eval(cx_input &char, cxl_program &char, output_target &char, err_out &&char) &char {
 	if cx_input == unsafe { nil } || cxl_program == unsafe { nil } {
-		return c_err('cx_eval_cxl: cx_input and cxl_program must be non-NULL', err_out)
+		return c_err('cx_eval: cx_input and cxl_program must be non-NULL', err_out)
 	}
 	input := unsafe { cstring_to_vstring(cx_input) }
 	prog := unsafe { cstring_to_vstring(cxl_program) }
@@ -2129,12 +2195,12 @@ pub fn cx_eval_cxl(cx_input &char, cxl_program &char, output_target &char, err_o
 	return c_string(out)
 }
 
-@[export: 'cx_eval_cxl_with_len']
-pub fn cx_eval_cxl_with_len(cx_input &char, cx_len usize,
+@[export: 'cx_eval_with_len']
+pub fn cx_eval_with_len(cx_input &char, cx_len usize,
 		cxl_program &char, prog_len usize,
 		output_target &char, err_out &&char) &char {
 	if cx_input == unsafe { nil } || cxl_program == unsafe { nil } {
-		return c_err('cx_eval_cxl_with_len: cx_input and cxl_program must be non-NULL', err_out)
+		return c_err('cx_eval_with_len: cx_input and cxl_program must be non-NULL', err_out)
 	}
 	input := unsafe { tos(&u8(cx_input), int(cx_len)) }
 	prog := unsafe { tos(&u8(cxl_program), int(prog_len)) }
@@ -2147,19 +2213,49 @@ pub fn cx_eval_cxl_with_len(cx_input &char, cx_len usize,
 	return c_string(out)
 }
 
-// cx_eval_cxl_streaming: v0.6.0 reserves the symbol and returns W012.
-// The streaming variant composes with the chunked-table reader and the
-// streaming-write API for memory-bounded evaluation of multi-GB inputs;
-// shipping it requires the per-event evaluator skeleton, which lands
-// post-v0.6.0 once the CXL 1.0 directive set is locked in conformance.
-@[export: 'cx_eval_cxl_streaming']
-pub fn cx_eval_cxl_streaming(cx_input &char, cxl_program &char, output_target &char,
+// CxEvalWriteCb mirrors include/cx.h cx_eval_write_cb:
+//   typedef int (*cx_eval_write_cb)(const char* bytes, size_t n, void* user);
+// V's fn-pointer call path expects a typed alias so the cast site in
+// cx_eval_streaming can dispatch correctly.
+type CxEvalWriteCb = fn (bytes &char, n usize, user voidptr) int
+
+// cx_eval_streaming: pull-based incremental emit. The V evaluator
+// flushes output chunks to the C callback at strategic points (after
+// each top-level program node, after each ?for / ?for-tumbling /
+// ?for-sliding / ?for-group-by iteration body). Per v0.7.0 Y-row of
+// spec/v0_7_0_status.md.
+//
+// A non-zero callback return aborts evaluation cleanly. The 'user'
+// pointer is passed through unchanged on every call. Returns NULL
+// on success, error string on failure. On success, no output is
+// returned via the function return value — output reaches the
+// caller exclusively through the write_cb.
+@[export: 'cx_eval_streaming']
+pub fn cx_eval_streaming(cx_input &char, cxl_program &char, output_target &char,
 		write_cb voidptr, user voidptr, err_out &&char) &char {
-	_ = cx_input
-	_ = cxl_program
-	_ = output_target
-	_ = write_cb
-	_ = user
-	return c_err('W012: cx_eval_cxl_streaming not yet implemented (v0.6.0 stub; see spec/cxl.md §6 streaming)', err_out)
+	if cx_input == unsafe { nil } || cxl_program == unsafe { nil } {
+		return c_err('cx_eval_streaming: cx_input and cxl_program must be non-NULL', err_out)
+	}
+	if write_cb == unsafe { nil } {
+		return c_err('cx_eval_streaming: write_cb must be non-NULL', err_out)
+	}
+	input_v   := unsafe { cstring_to_vstring(cx_input) }
+	program_v := unsafe { cstring_to_vstring(cxl_program) }
+	target_v  := if output_target == unsafe { nil } { '' } else {
+		unsafe { cstring_to_vstring(output_target) }
+	}
+	cb_ptr  := write_cb
+	user_ptr := user
+	sink := fn [cb_ptr, user_ptr] (chunk string) ! {
+		typed_cb := unsafe { CxEvalWriteCb(cb_ptr) }
+		rc := unsafe { typed_cb(&char(chunk.str), usize(chunk.len), user_ptr) }
+		if rc != 0 {
+			return error('write_cb returned non-zero (${rc})')
+		}
+	}
+	eval_cxl_streaming(input_v, program_v, target_v, sink, 65536) or {
+		return c_err('cx_eval_streaming: ${err.msg()}', err_out)
+	}
+	return unsafe { nil }
 }
 
