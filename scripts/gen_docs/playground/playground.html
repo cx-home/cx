@@ -1,0 +1,33 @@
+<div id="cx-playground">
+  <div class="cxp-toolbar">
+    <label for="cxp-pick">Example</label>
+    <select id="cxp-pick">
+      <option value="atom">1. Atom — single element with one attribute</option>
+      <option value="attrs">2. Attributes — typed, sized, sigil-flagged</option>
+      <option value="sigils">3. Sigils — id, anchor, merge, data-type</option>
+      <option value="table">4. Typed table — orders</option>
+      <option value="merge">5. Anchor + merge — shared defaults</option>
+      <option value="cxl-substitute">6. CXL — substitute a value</option>
+      <option value="cxl-for">7. CXL — iterate with [?for]</option>
+      <option value="cxl-if">8. CXL — multi-branch [?if]</option>
+    </select>
+    <button id="cxp-run" type="button">Run</button>
+    <button id="cxp-reset" type="button">Reset</button>
+  </div>
+  <div class="cxp-panes">
+    <textarea id="cxp-input" class="cxp-input" spellcheck="false" rows="14"></textarea>
+    <div class="cxp-output">
+      <div class="cxp-tab-bar">
+        <button class="cxp-tab is-active" data-tab="cx" type="button">canonical</button>
+        <button class="cxp-tab" data-tab="json" type="button">json</button>
+        <button class="cxp-tab" data-tab="xml" type="button">xml</button>
+      </div>
+      <pre id="cxp-out-cx" class="cxp-pane is-active"></pre>
+      <pre id="cxp-out-json" class="cxp-pane"></pre>
+      <pre id="cxp-out-xml" class="cxp-pane"></pre>
+    </div>
+  </div>
+  <p class="cxp-note">The playground evaluator is a static example corpus today. A live libcx-WASM evaluator is on the v0.7.x roadmap; until then, the Run button surfaces the pre-recorded outputs for the closest matching example.</p>
+</div>
+<script src="/playground/playground.js"></script>
+<link rel="stylesheet" href="/playground/playground.css">

@@ -1,0 +1,116 @@
+#cx-playground {
+  margin: 0.8rem 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.cxp-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  background: var(--side-bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.cxp-toolbar label {
+  color: var(--muted);
+  font-weight: 500;
+}
+.cxp-toolbar select {
+  flex: 1;
+  font: inherit;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+}
+.cxp-toolbar button {
+  font: inherit;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+.cxp-toolbar button:hover {
+  background: var(--side-bg);
+  border-color: var(--muted);
+}
+#cxp-run {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+#cxp-run:hover { filter: brightness(1.08); }
+
+.cxp-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 280px;
+}
+.cxp-input {
+  font: 12.5px/1.5 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  resize: vertical;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+}
+.cxp-output {
+  display: flex;
+  flex-direction: column;
+  background: var(--code-bg);
+  color: var(--code-fg);
+}
+.cxp-tab-bar {
+  display: flex;
+  gap: 0;
+  background: var(--code-border);
+  border-bottom: 1px solid var(--code-border);
+}
+.cxp-tab {
+  font: 11px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.8rem;
+  border: none;
+  background: transparent;
+  color: var(--code-label);
+  cursor: pointer;
+}
+.cxp-tab.is-active {
+  background: var(--code-bg);
+  color: var(--code-fg);
+}
+.cxp-pane {
+  flex: 1;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  font: 12.5px/1.5 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  background: transparent;
+  color: inherit;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: auto;
+  white-space: pre;
+  display: none;
+}
+.cxp-pane.is-active { display: block; }
+
+.cxp-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 0;
+  padding: 0.4rem 0.7rem;
+  background: var(--side-bg);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 720px) {
+  .cxp-panes { grid-template-columns: 1fr; }
+  .cxp-input { border-right: none; border-bottom: 1px solid var(--border); }
+}
