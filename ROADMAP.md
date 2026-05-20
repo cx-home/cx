@@ -623,6 +623,43 @@ the C ABI. Per-binding native evaluator ports are NOT in scope —
 byte-identical cross-binding output is automatic because every
 binding routes through the same V evaluator.
 
+### v0.7.x — perf + closure pass on v0.7.0 deferrals
+
+Items deferred from v0.7.0 to a v0.7.x point release. Streaming-
+evaluator perf work landed v0.7.0 at ~159 MB/s (boehm) / ~178 MB/s
+(`-prealloc`) on the medium fixture; the 300 / 500 MB/s targets
+from the Y6 row are pushed here. See
+[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) Y6 row and
+session memory `project_y6_streaming_perf.md` for the current
+optimisation stack and next-lever ordering.
+
+- **Parse-once / eval-many API** — `cx_eval_streaming_from_ast_bin`
+  (or equivalent on the V surface: `eval_cxl_from_doc(prog_doc,
+  input_doc, sink)`) so callers can amortise parse cost across many
+  evaluations. Today `eval_cxl_streaming(input, program, sink)`
+  re-parses both inputs on every call (~1.9 ms per invocation on
+  the medium fixture; `bin_to_doc` from ast_bin is ~2× faster than
+  `parse` from CX text). Biggest single structural win for server-
+  style workloads (estimated 30–50% on short evals).
+- **strings.Builder.str() bypass on flush** — `flush_stream`
+  memdups the chunk via `memdup_noscan` even when the sink is a
+  byte-level consumer. Either widen the V `CXLStreamSink` to a
+  bytes variant or route flushes through `write_ptr`. Estimated
+  5–10%.
+- **`-prealloc` as an opt-in libcx build flag** — adds ~14% over
+  Boehm on the medium fixture. Trade-off: no `free`, ever — suited
+  to CLI / one-shot batch workloads, not long-running daemons.
+  Ship as a build-time variant rather than the default.
+- **ast_bin / bin_to_doc parse benchmark** — add to `vcx/bench/bench.v`
+  alongside the existing `parse (CX → Document)` line so the
+  parse-once value proposition is reproducibly measured at every
+  release.
+- **JIT-compile hot `?for` bodies** — the CompiledBody parallel-
+  arrays form is bytecode-shaped already; a cranelift / V-codegen
+  backend that emits native code for the inner emit loop would
+  yield an estimated 3–5× on top of the current stack. Big project;
+  warrants its own ADR.
+
 ### v1.0 — quality + audit milestone
 
 - **External security audit** — engagement scoped to V core parser,
