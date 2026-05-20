@@ -623,6 +623,51 @@ the C ABI. Per-binding native evaluator ports are NOT in scope —
 byte-identical cross-binding output is automatic because every
 binding routes through the same V evaluator.
 
+### v0.7.5 — libcx-wasm + live playground (point release per [ADR 0026](spec/decisions/0026-wasm-distribution-target.md))
+
+WASM as a v0.7.x point-release distribution target — additive
+infrastructure, no language-semantics change. Single goal: replace
+the playground's canned-corpus fallback with live in-browser
+evaluation against a `libcx.wasm` build. Decisions locked in
+[ADR 0026](spec/decisions/0026-wasm-distribution-target.md):
+
+- **Build path: V-emit-C → emcc** (not V's native `-b wasm`
+  backend, which is experimental for the browser target).
+- **Memory model: V `-prealloc` arena** (not Boehm WASM port).
+  Default arena 64 MiB; `cxlib.setArenaSize` + `cxlib.reset`
+  exposed for memory control. The "no free" trade-off is
+  inapplicable to the per-call playground use case.
+- **Regex: explicit error** at v0.7.5 (`cx-err:CXER0100
+  regex-unavailable-in-wasm`). RE2 is C++ and not linked into
+  the WASM build at this tag. JS RegExp shim filed as a
+  follow-up if demand surfaces.
+- **C ABI surface: subset.** 16 symbols (the playground-load-
+  bearing set, including `cx_eval`, all CX-input format
+  converters, `cx_canonical`, `cx_hash`, plus two new WASM-only
+  symbols: `cx_wasm_set_arena_size`, `cx_wasm_reset`). Input-side
+  format converters (`cx_xml_to_*` etc.), `cx_validate_*`,
+  `cx_arrow_*`, streaming — all v0.7.x / v0.8.x follow-ups.
+- **JS wrapper: hand-written, ~80 LOC, no runtime deps.**
+  `dist/wasm/cxlib.js` exposes 11 public methods over linear-
+  memory marshalling.
+- **Playground wiring: same UI hook.** `refreshOutputs` routes
+  through `cxlib.eval` when `window.cxlib` is present; canned-
+  corpus path retained as offline fallback. Run button un-
+  disabled; PLANNED notice replaced with a "Powered by
+  libcx.wasm" footer linking to ADR 0026.
+- **`make build-wasm`** new top-level target. Opt-in: default
+  `make build` does not require emscripten.
+- **Parity contract: byte-identical to native `cx`** across the
+  non-regex subset of the v0.7.0 conformance corpus (38/42
+  fixtures).
+- **Frozen-binding re-promotion runs in parallel.** Per ADR 0022
+  Amendment #5, C# / Java / Kotlin / Ruby / Swift catch-up is
+  its own v0.7.x sequence on its own timeline; v0.7.5 does not
+  bundle that work.
+- **v0.8.0 BaseX-modules scope untouched.** v0.7.5 is additive
+  infrastructure that lets v0.8.0 land as its planned single-cut
+  capability tag without dilution.
+
 ### v0.7.x — perf + closure pass on v0.7.0 deferrals
 
 Items deferred from v0.7.0 to a v0.7.x point release. Streaming-
