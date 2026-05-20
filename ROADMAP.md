@@ -626,9 +626,10 @@ binding routes through the same V evaluator.
 ### v0.7.x — perf + closure pass on v0.7.0 deferrals
 
 Items deferred from v0.7.0 to a v0.7.x point release. Streaming-
-evaluator perf work landed v0.7.0 at ~159 MB/s (boehm) / ~178 MB/s
-(`-prealloc`) on the medium fixture; the 300 / 500 MB/s targets
-from the Y6 row are pushed here. See
+evaluator perf work landed v0.7.0 at ~340 MB/s on the comparable
+bench corpus — about 17% under the comparable JSON benchmark on
+the same workload — crossing the 300 MB/s Y6 target; the 500 MB/s
+stretch target is pushed here. See
 [`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) Y6 row and
 session memory `project_y6_streaming_perf.md` for the current
 optimisation stack and next-lever ordering.
