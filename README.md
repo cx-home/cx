@@ -153,8 +153,8 @@ CX ↔ CXDB is **byte-stable** (CXDB *is* the strict-canonical form).
 The other five formats round-trip **data-equivalent** — presentation-layer
 differences (comments, attribute order, whitespace) are normalized; the
 data survives unchanged. Full per-format details, including the
-[lossy-conversion matrix](docs/COMPARISON.md#conversion-loss-matrix),
-in [`docs/COMPARISON.md`](docs/COMPARISON.md).
+[lossy-conversion matrix](docs/comparison.md#conversion-loss-matrix),
+in [`docs/comparison.md`](docs/comparison.md).
 
 ---
 
@@ -255,11 +255,11 @@ $ cx eval team.cxl --data=team.cx
 ```
 
 (Whitespace control between iterations is part of CXL 1.0's `[?-` /
-`-]` syntax; see [`docs/CXL.md`](docs/CXL.md).)
+`-]` syntax; see [`docs/reference/cxl.md`](docs/reference/cxl.md).)
 
 Three more invocation styles — pipe-from-stdin, cross-format pipeline,
 and everything-inline `-e`/`-d` flags for shell one-liners — are covered
-in [`docs/CXL.md`](docs/CXL.md). The same `cx` binary handles format
+in [`docs/reference/cxl.md`](docs/reference/cxl.md). The same `cx` binary handles format
 conversion, templating, and stdin/stdout composition: no separate
 `jq + jinja + pandoc`, no Python wrapper, no shell glue between three
 different tools.
@@ -289,7 +289,7 @@ additional collection operations.
 The data-code symbiosis XML + XQuery have, in CX flavor: CXL queries
 CXL; programs inspect programs; one toolchain for both.
 
-Full reference: [`docs/CXL.md`](docs/CXL.md).
+Full reference: [`docs/reference/cxl.md`](docs/reference/cxl.md).
 
 ---
 
@@ -372,7 +372,7 @@ $ cx render     report.cxl --data=metrics.cx --target=html
 ```
 
 Every subcommand is also available as a per-binding API call. See
-[`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) for the one-page reference.
+[`docs/reference/cli.md`](docs/reference/cli.md) for the one-page reference.
 
 ---
 
@@ -393,7 +393,7 @@ Every subcommand is also available as a per-binding API call. See
 | Content-addressable hash | ✅ canonical bytes → SHA-256 | ❌ key-order-dependent | ❌ | ❌ | ❌ |
 
 For the full head-to-head — including the conversion-loss matrix and per-
-format adoption guidance — see [`docs/COMPARISON.md`](docs/COMPARISON.md).
+format adoption guidance — see [`docs/comparison.md`](docs/comparison.md).
 
 ---
 
@@ -456,13 +456,13 @@ READMEs live under [`lang/`](lang/).
 | You want to... | Read this |
 | --- | --- |
 | **Try CX in 60 seconds** | run `cx demo` |
-| **Write your first `.cx` file** | [`docs/TUTORIAL.md`](docs/TUTORIAL.md) |
-| **One-page syntax reference** | [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) |
-| **Compare CX to JSON / YAML / TOML / XML** | [`docs/COMPARISON.md`](docs/COMPARISON.md) |
-| **Learn CXL (templating + querying + transform)** | [`docs/CXL.md`](docs/CXL.md) |
+| **Write your first `.cx` file** | [`docs/tutorial.md`](docs/tutorial.md) |
+| **One-page CLI reference** | [`docs/reference/cli.md`](docs/reference/cli.md) |
+| **Compare CX to JSON / YAML / TOML / XML** | [`docs/comparison.md`](docs/comparison.md) |
+| **Learn CXL (templating + querying + transform)** | [`docs/reference/cxl.md`](docs/reference/cxl.md) |
 | **Use CX from your favorite language** | [`lang/<your-lang>/cxlib/README.md`](lang/) |
 | **Check the formal grammar / C ABI / conversion rules** | [`spec/`](spec/) |
-| **Frequently asked questions** | [`docs/FAQ.md`](docs/FAQ.md) |
+| **Frequently asked questions** | [`docs/faq.md`](docs/faq.md) |
 | **Upgrade existing CX from a previous version** | [`MIGRATION.md`](MIGRATION.md) |
 | **See what's in the latest release** | [`RELEASE_NOTES_v0.6.0.md`](RELEASE_NOTES_v0.6.0.md) |
 | **Contribute code, docs, or bug reports** | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
