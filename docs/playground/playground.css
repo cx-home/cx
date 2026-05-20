@@ -168,11 +168,24 @@
 }
 .cxp-pane.is-active { display: block; }
 
-.cxp-note {
+/* Status line: doubles as the explanatory note (default state) and
+   transient feedback when Run / Reset fires. .info / .ok / .error
+   classes flip the colour palette; the JS clears the class on next
+   action or after a timeout. */
+.cxp-status {
   font-size: 11.5px;
   color: var(--muted);
   margin: 0;
   padding: 0.45rem 0.8rem;
   background: var(--side-bg);
   border-top: 1px solid var(--border);
+  min-height: 1.2em;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
+.cxp-status.ok    { color: #34d399; background: rgba(52, 211, 153, 0.08); }
+.cxp-status.error { color: #f87171; background: rgba(248, 113, 113, 0.10); }
+
+/* Run-button flash states mirror the copy-button feedback so the
+   click visibly registers even when the output content is unchanged. */
+#cxp-run.ran    { filter: brightness(1.15); }
+#cxp-run.failed { background: #b91c1c; border-color: #b91c1c; }
