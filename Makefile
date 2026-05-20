@@ -42,7 +42,12 @@ all: build
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 
-build: build-vcx build-rust build-ruby build-go build-typescript build-java build-kotlin build-csharp build-swift
+# Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
+# Python has no compile step. Frozen bindings (Java/Kotlin/C#/Ruby/Swift)
+# are still buildable via their individual targets but excluded from
+# the default `build` so the v0.7.0 ABI rename doesn't make `make`
+# error out of the gate. See lang/<binding>/FROZEN.md for rationale.
+build: build-vcx build-rust build-go build-typescript
 
 build-vcx:
 	$(MAKE) -C vcx build
@@ -242,7 +247,10 @@ release-verify:
 
 # Test fan-out — independent per-language targets, plus the C-ABI conformance
 # harness. Listed once so `test` and `test-no-parallel` stay in sync.
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-ruby test-go test-typescript test-java test-kotlin test-csharp test-swift
+# Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
+# Frozen bindings (Java/Kotlin/C#/Ruby/Swift) retain their `test-<lang>`
+# targets for ad-hoc / re-promotion use but are not run by default `test`.
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go test-typescript
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
