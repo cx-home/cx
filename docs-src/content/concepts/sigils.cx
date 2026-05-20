@@ -62,7 +62,7 @@
   [section id='markup' title='Markup: Mixed Content'
     [prose CX inherits XMLs first-class mixed content. Inside an element body, text and child elements interleave freely. The same shapes that compose an HTML document compose a CX document: h1, p, em, strong, a, etc.]
     [code lang='cx' src='''[article
-  [h1 Pepes Story]
+  [h1 New Haven Story]
   [p Founded in [em 1987]. See the [a href=/menu menu].]
   [p Still [strong hand-tossing] every pie.]]''']
   ]

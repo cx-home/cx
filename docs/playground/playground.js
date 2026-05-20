@@ -101,20 +101,20 @@
       lang: 'cx',
       input: [
         "[article",
-        "  [h1 Pepes Story]",
+        "  [h1 New Haven Story]",
         "  [p Founded in [em 1987]. See the [a href=/menu menu].]",
         "  [p Still [strong hand-tossing] every pie.]]"
       ].join('\n'),
       cx: [
         "[article",
-        "  [h1 Pepes Story]",
+        "  [h1 New Haven Story]",
         "  [p Founded in [em 1987]. See the [a href=/menu menu].]",
         "  [p Still [strong hand-tossing] every pie.]]"
       ].join('\n'),
-      json: '{"article":{"h1":"Pepes Story","p":["Founded in <em>1987</em>. See the <a href=\\"/menu\\">menu</a>.","Still <strong>hand-tossing</strong> every pie."]}}',
+      json: '{"article":{"h1":"New Haven Story","p":["Founded in <em>1987</em>. See the <a href=\\"/menu\\">menu</a>.","Still <strong>hand-tossing</strong> every pie."]}}',
       xml: [
         '<article>',
-        '  <h1>Pepes Story</h1>',
+        '  <h1>New Haven Story</h1>',
         '  <p>Founded in <em>1987</em>. See the <a href="/menu">menu</a>.</p>',
         '  <p>Still <strong>hand-tossing</strong> every pie.</p>',
         '</article>'
@@ -141,12 +141,12 @@
     'cxl-substitute': {
       lang: 'cxl',
       input: [
-        "[page title='Pepes Pizza']",
+        "[page title='New Haven Pizza']",
         '[h1 [?= //page/@title]]'
       ].join('\n'),
-      cx:   '[h1 Pepes Pizza]',
-      json: '{"h1":"Pepes Pizza"}',
-      xml:  '<h1>Pepes Pizza</h1>'
+      cx:   '[h1 New Haven Pizza]',
+      json: '{"h1":"New Haven Pizza"}',
+      xml:  '<h1>New Haven Pizza</h1>'
     },
     'cxl-for': {
       lang: 'cxl',

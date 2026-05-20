@@ -65,8 +65,8 @@
   ]
 
   [section id='parent' title='10. Parent Axis — parent::*'
-    [prose Walks up one element. Prints Pepes.]
-    [code lang='cx' src="[shop name='Pepes' [pizza name=Margherita]]
+    [prose Walks up one element. Prints New Haven.]
+    [code lang='cx' src="[shop name='New Haven' [pizza name=Margherita]]
 [?=//pizza/parent::*/@name]"]
   ]
 

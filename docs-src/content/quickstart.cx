@@ -16,7 +16,7 @@ mkdir cx-tour && cd cx-tour"]
 
   [section id='write' title='Write a Document'
     [prose Save the following as menu.cx. Read it top to bottom — name, attributes, body items, nested children, mixed content. No commas required between attrs; no closing tag to repeat.]
-    [code lang='cx' src="[shop name='Pepes Pizza' open=true
+    [code lang='cx' src="[shop name='New Haven Pizza' open=true
   [hours mon-fri=11-22 sat=12-23 sun=closed]
   [menu
     [pizza #margherita size=large crust=thin  price=14.50]

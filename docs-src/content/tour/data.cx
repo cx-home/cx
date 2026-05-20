@@ -119,7 +119,7 @@
     [prose Three quotes open and close. Single and double quotes inside need no escaping. Common leading whitespace is stripped.]
     [code lang='cx' src="[bio '''
   Born in Naples, 1955.
-  Started Pepes in 1987.
+  Started New Haven in 1987.
   Still on the line every Friday.
 ''']"]
   ]
@@ -191,7 +191,7 @@
   [section id='article' title='32. A Whole Article — Prose and Data'
     [prose Headings, paragraphs, links, emphasis — CX handles document text as cleanly as XML.]
     [code lang='cx' src='''[article
-  [h1 Pepes Story]
+  [h1 New Haven Story]
   [p Founded in [em 1987]. See the [a href=/menu menu].]
   [p Still [strong hand-tossing] every pie.]]''']
   ]
@@ -329,7 +329,7 @@
   [section id='whole-shop' title='50. The Whole Shop'
     [prose XML decl, anchor, sigil flags, line comment, block comment, typed table, merged child, map and sequence attribute values, triple-quoted text. One syntax, everywhere.]
     [code lang='cx' src="[?xml version=1.0 encoding=UTF-8]
-[shop &flagship name='Pepes' port=8080 +open
+[shop &flagship name='New Haven' port=8080 +open
   # opening hours
   [hours mon-fri=11-22 sat=12-23 sun=closed]
   [- menu reviewed 2026-05-01 ]

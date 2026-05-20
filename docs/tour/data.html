@@ -412,7 +412,7 @@ td code {
   and ready in 90 seconds.]</code></pre>
   <h2>21. Triple-Quoted String</h2>
   <p>Three quotes open and close. Single and double quotes inside need no escaping. Common leading whitespace is stripped.</p>
-<pre><span class="lang-label">cx</span><code class="language-cx">[bio Born in Naples, 1955. Started Pepes in 1987. Still on the line every Friday.]</code></pre>
+<pre><span class="lang-label">cx</span><code class="language-cx">[bio Born in Naples, 1955. Started New Haven in 1987. Still on the line every Friday.]</code></pre>
   <h2>22. Block Content [| … ]</h2>
   <p>Like a text body, but indentation and newlines are kept verbatim. Unlike triple-quoted, inner elements such as best are still real markup.</p>
 <pre><span class="lang-label">cx</span><code class="language-cx">[poem [|
@@ -460,7 +460,7 @@ td code {
   <h2>32. A Whole Article — Prose and Data</h2>
   <p>Headings, paragraphs, links, emphasis — CX handles document text as cleanly as XML.</p>
 <pre><span class="lang-label">cx</span><code class="language-cx">[article
-  [h1 Pepes Story]
+  [h1 New Haven Story]
   [p Founded in [em 1987]. See the [a href=/menu menu].]
   [p Still [strong hand-tossing] every pie.]]</code></pre>
   <h2>33. Deeper Nesting — Children With Their Own Data</h2>
@@ -559,7 +559,7 @@ td code {
   <h2>50. The Whole Shop</h2>
   <p>XML decl, anchor, sigil flags, line comment, block comment, typed table, merged child, map and sequence attribute values, triple-quoted text. One syntax, everywhere.</p>
 <pre><span class="lang-label">cx</span><code class="language-cx">[?xml version=1.0 encoding=UTF-8]
-[shop &amp;flagship name='Pepes' port=8080 +open
+[shop &amp;flagship name='New Haven' port=8080 +open
   # opening hours
   [hours mon-fri=11-22 sat=12-23 sun=closed]
   [- menu reviewed 2026-05-01 ]
