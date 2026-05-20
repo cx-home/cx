@@ -51,3 +51,6 @@ vcx/fuzz/crashes/
 
 # Conformance runner build artifact (V binary co-located with source)
 vcx/tests/runners/eval/eval_conform
+
+# CCD spawned-task worktrees
+.claude/
