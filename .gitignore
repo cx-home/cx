@@ -4,6 +4,12 @@ out.txt
 bench.md
 dist/
 
+# v0.7.0 doc pipeline — generated staging dirs and local-browse html.
+# The committed markdown tree is docs/, promoted via `make docs-publish`.
+_docs_staging/
+_site_staging/
+_site/
+
 # Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.py)
 fixtures/bench/bench_1mb.cx
 fixtures/bench/bench_10mb.cx

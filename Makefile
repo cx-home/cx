@@ -1,3 +1,11 @@
+# ── v0.7.0 doc pipeline ───────────────────────────────────────── BEGIN gen_docs
+# Auto-managed include: makes `make docs`, `make site`, `make docs-publish`,
+# etc. first-class targets. Generated layer — regenerate via the
+# cx-docs-author skill if/when scaffolding moves. Remove the stanza between
+# BEGIN gen_docs and END gen_docs to detach the doc pipeline.
+-include scripts/gen_docs/docs.mk
+# ── v0.7.0 doc pipeline ─────────────────────────────────────────── END gen_docs
+
 CONFORMANCE_CORE := conformance/core.txt
 CONFORMANCE_EXT := conformance/extended.txt
 CONFORMANCE_XML := conformance/xml.txt
