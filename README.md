@@ -65,9 +65,13 @@ no server.
 ## Status
 
 CX is pre-1.0. **v0.7.0** is the current release line, building on the
-v0.6.0 API/format-stability lock — the grammar is stable, the C ABI is
-versioned and forward-compatible, and the full test matrix passes across
-all 10 language bindings.
+v0.6.0 API/format-stability lock — the grammar is stable and the C ABI
+is versioned and forward-compatible. Bindings ship in three tiers:
+Tier-1 (V, Python, Go) carries every feature on tag with a green test
+matrix; Tier-2 (Rust, C#, Java) catches up within the release window;
+Tier-3 (Kotlin, Swift, Ruby, TypeScript, V-cffi) follows on a
+one-release lag. The current parity state is tracked in the bindings
+catalog on the docs site.
 
 v0.7.0 brings **XQuery 4.0 / XPath 4.0 parity** to CXL (FLWOR with
 `:let` / `:where` / `:count` / `:while` / `:order-by` / `:group-by`,
