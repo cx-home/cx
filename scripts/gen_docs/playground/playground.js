@@ -299,10 +299,38 @@
   const outCx   = document.querySelector('#cxp-out-cx code');
   const outJson = document.querySelector('#cxp-out-json code');
   const outXml  = document.querySelector('#cxp-out-xml code');
+  const status  = document.getElementById('cxp-status');
   const tabs    = document.querySelectorAll('.cxp-tab');
   const panes   = document.querySelectorAll('.cxp-pane');
 
   if (!pick || !input) return;
+
+  // Status line surfaces transient feedback (Run/Reset/error) on top
+  // of the static explanatory default. Set msg='' to restore default;
+  // pass level='ok'|'error' for the palette flash. Errors stick until
+  // the next setStatus call; ok/info auto-clear after 3s.
+  let statusTimer = null;
+  function setStatus(msg, level) {
+    if (!status) return;
+    if (statusTimer) { clearTimeout(statusTimer); statusTimer = null; }
+    status.classList.remove('ok', 'error', 'info');
+    if (level) status.classList.add(level);
+    status.textContent = msg || status.dataset.default || '';
+    if (level && level !== 'error') {
+      statusTimer = setTimeout(() => {
+        status.classList.remove(level);
+        status.textContent = status.dataset.default || '';
+      }, 3000);
+    }
+  }
+
+  function flashRun(label, cls) {
+    if (!runBtn) return;
+    const orig = runBtn.dataset.origText || (runBtn.dataset.origText = runBtn.textContent);
+    runBtn.textContent = label;
+    runBtn.classList.add(cls);
+    setTimeout(() => { runBtn.textContent = orig; runBtn.classList.remove(cls); }, 1500);
+  }
 
   function highlightOutputs() {
     if (!window.CXHighlight) return;
@@ -414,9 +442,38 @@
     // edits in the Source pane are preserved (the live libcx-WASM
     // evaluator that will route Source through actual eval lands in
     // the v0.7.x window — until then Run is a re-render, not a reset).
-    refreshOutputs(pick.value);
+    try {
+      const key = pick.value;
+      const ex = examples[key];
+      if (!ex) {
+        throw new Error(`no canned outputs registered for example '${key}'`);
+      }
+      const edited = input.value !== ex.input;
+      refreshOutputs(key);
+      flashRun(edited ? 'rendered (no eval)' : 'rendered', 'ran');
+      setStatus(
+        edited
+          ? "Output panes re-rendered from the canned corpus. Your Source edits aren't being executed — live eval lands when libcx-WASM ships in v0.7.x."
+          : 'Canned outputs re-rendered for the selected example.',
+        'ok'
+      );
+    } catch (err) {
+      flashRun('failed', 'failed');
+      setStatus(`Run failed: ${err && err.message ? err.message : err}`, 'error');
+      // Surface to the console for offline debugging.
+      // eslint-disable-next-line no-console
+      console.error('[cx-playground] Run failed:', err);
+    }
   });
   tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
 
-  load(pick.value || 'atom');
+  // Initial load — surface boot errors visibly rather than silently
+  // failing to populate the panes.
+  try {
+    load(pick.value || 'atom');
+  } catch (err) {
+    setStatus(`Playground failed to initialise: ${err && err.message ? err.message : err}`, 'error');
+    // eslint-disable-next-line no-console
+    console.error('[cx-playground] init failed:', err);
+  }
 })();
