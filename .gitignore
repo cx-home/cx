@@ -48,3 +48,6 @@ lang/v/cx
 
 # v0.7.0 CC fuzz harness — crashes are runtime artifacts, never source
 vcx/fuzz/crashes/
+
+# Conformance runner build artifact (V binary co-located with source)
+vcx/tests/runners/eval/eval_conform
