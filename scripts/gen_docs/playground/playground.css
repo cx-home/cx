@@ -1,9 +1,10 @@
 #cx-playground {
-  margin: 0.8rem 0;
+  margin: 0.8rem 0 1.4rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
 }
+
 .cxp-toolbar {
   display: flex;
   gap: 0.5rem;
@@ -44,27 +45,45 @@
 }
 #cxp-run:hover { filter: brightness(1.08); }
 
+/* Top-bottom layout. Input pane fills first; output panes below.
+   Each pane carries its own header and minimum height so even
+   single-line examples have room to grow. */
 .cxp-panes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 280px;
+  display: flex;
+  flex-direction: column;
 }
+
+.cxp-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.8rem;
+  background: var(--code-border);
+  color: var(--code-label);
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .cxp-input {
-  font: 12.5px/1.5 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   border: none;
-  border-right: 1px solid var(--border);
-  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--code-border);
+  padding: 0.7rem 0.9rem;
   resize: vertical;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--code-bg);
+  color: var(--code-fg);
   outline: none;
+  min-height: 240px;
 }
+
 .cxp-output {
   display: flex;
   flex-direction: column;
   background: var(--code-bg);
   color: var(--code-fg);
 }
+
 .cxp-tab-bar {
   display: flex;
   gap: 0;
@@ -72,10 +91,10 @@
   border-bottom: 1px solid var(--code-border);
 }
 .cxp-tab {
-  font: 11px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.35rem 0.8rem;
+  padding: 0.4rem 0.85rem;
   border: none;
   background: transparent;
   color: var(--code-label);
@@ -85,11 +104,12 @@
   background: var(--code-bg);
   color: var(--code-fg);
 }
+
 .cxp-pane {
   flex: 1;
   margin: 0;
-  padding: 0.6rem 0.8rem;
-  font: 12.5px/1.5 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  padding: 0.7rem 0.9rem;
+  font: 13px/1.55 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   background: transparent;
   color: inherit;
   border: none;
@@ -98,6 +118,7 @@
   overflow: auto;
   white-space: pre;
   display: none;
+  min-height: 180px;
 }
 .cxp-pane.is-active { display: block; }
 
@@ -105,12 +126,7 @@
   font-size: 11.5px;
   color: var(--muted);
   margin: 0;
-  padding: 0.4rem 0.7rem;
+  padding: 0.45rem 0.8rem;
   background: var(--side-bg);
   border-top: 1px solid var(--border);
-}
-
-@media (max-width: 720px) {
-  .cxp-panes { grid-template-columns: 1fr; }
-  .cxp-input { border-right: none; border-bottom: 1px solid var(--border); }
 }
