@@ -346,12 +346,22 @@
     if (!ex) return;
     input.value = ex.input;
     setInputLang(ex.lang);
+    refreshOutputs(key);
+    highlightInput();
+    syncScroll();
+  }
+
+  // Refresh the three output tabs without touching the source pane.
+  // Today the outputs come from the canned example corpus — the v0.7.x
+  // libcx-WASM build will route the current source through a live
+  // evaluator instead. Either way the Source pane preserves user edits.
+  function refreshOutputs(key) {
+    const ex = examples[key];
+    if (!ex) return;
     if (outCx)   outCx.textContent = ex.cx;
     if (outJson) outJson.textContent = ex.json;
     if (outXml)  outXml.textContent = ex.xml;
-    highlightInput();
     highlightOutputs();
-    syncScroll();
   }
 
   function setTab(name) {
@@ -364,10 +374,11 @@
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
   runBtn.addEventListener('click', () => {
-    // Today the Run button replays the canned output for the
-    // selected example. The v0.7.x WASM build will read the
-    // current input, run libcx, and write the live result.
-    load(pick.value);
+    // Re-render the canned outputs for the selected example. User
+    // edits in the Source pane are preserved (the live libcx-WASM
+    // evaluator that will route Source through actual eval lands in
+    // the v0.7.x window — until then Run is a re-render, not a reset).
+    refreshOutputs(pick.value);
   });
   tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
 
