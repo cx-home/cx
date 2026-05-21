@@ -2,10 +2,10 @@
 # Date: TBD (target: v0.7.0-dev → main merge + tag)
 # Branch: v0.7.0-dev (merged → main)
 
-The single-cut release that takes the cx evaluator from the CXL 1.0
+The single-cut release that takes the cx evaluator from the CX programs 1.0
 floor (v0.6.0) to **XQuery 4.0 / XPath 4.0 parity**. Per
 [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
-the originally-staged "CXL 3.1 → CXL 4.0" trajectory is collapsed
+the originally-staged "CX programs 3.1 → CX programs 4.0" trajectory is collapsed
 into one tag.
 
 ## Headline
@@ -50,14 +50,14 @@ into one tag.
   active binding wrappers (Python, Go, Rust, TypeScript) handle
   the rename internally.
 
-- **`cxl-version` attribute** → **`cx-eval-version`**. The former
+- **`cx-version` attribute** → **`cx-eval-version`**. The former
   is accepted as a deprecated alias during the v0.6.0 → v0.7.0
   migration window; `cx upgrade-config` (see Migration below) does
   the rename automatically.
 
 - **Spec / file renames** (F row):
   - `spec/programs.md` → `spec/eval.md`
-  - `examples/cxl/` → `examples/cx/`
+  - `examples/cx/` → `examples/cx/`
   - `conformance/programs.txt` → `conformance/eval.txt`
 
   Anchor links to the old paths break; `cx upgrade-config` migrates
@@ -103,11 +103,11 @@ authoritative state. Quick links:
 
 `cx upgrade-config <path>` (per the I row migration tool) handles:
 
-- `cxl-version` → `cx-eval-version` attribute rename in user config
+- `cx-version` → `cx-eval-version` attribute rename in user config
   documents.
 - Documented path renames (e.g., `spec/programs.md` references →
   `spec/eval.md`).
-- Existing `.cxl` files round-trip without changes — the extension
+- Existing `.cx` files round-trip without changes — the extension
   remains a tooling-only convention.
 
 Programs that depended on the W012 `cx_eval_streaming` stub error
@@ -142,7 +142,7 @@ authoritative status of every row item.
 
 ## Acknowledgments
 
-The single-cut model from CXL 1.0 → XQuery 4.0 parity is the
+The single-cut model from CX programs 1.0 → XQuery 4.0 parity is the
 biggest scope expansion the v0.x line has shipped. Authors,
 reviewers, and downstream adopters who exercised the surface
 during the v0.7.0-dev arc made the parity claim verifiable rather

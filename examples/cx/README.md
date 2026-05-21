@@ -1,10 +1,10 @@
-# CXL examples
+# CX programs examples
 
-Runnable CXL templates against CX context documents. Each example
-pairs a `.cx` data file with a `.cxl` template file.
+Runnable CX programs templates against CX context documents. Each example
+pairs a `.cx` data file with a `.cx` template file.
 
 ```sh
-$ cx eval greet.cxl --data=greet.cx
+$ cx eval greet.cx --data=greet.cx
 Welcome Alice! Role: admin.
 ```
 
@@ -18,8 +18,8 @@ Welcome Alice! Role: admin.
 ## Run them
 
 ```sh
-cx eval greet.cxl --data=greet.cx
-cx eval users.cxl --data=users.cx
+cx eval greet.cx --data=greet.cx
+cx eval users.cx --data=users.cx
 ```
 
-For the full CXL reference: [`docs/CXL.md`](../../docs/CXL.md).
+For the full Programs reference: [`docs/CX programs.md`](../../docs/CX programs.md).

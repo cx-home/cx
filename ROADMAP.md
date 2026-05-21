@@ -24,8 +24,8 @@ Investment in that scope halted 2026-05-20. The cxpath/cxquery V
 implementation is deleted as part of v0.7.6 work; their specs
 remain as historical artifacts only.
 
-**v0.7.6 — CXL, the headline release per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)**
-(Accepted 2026-05-20). v0.7.6 ships **CXL** — a unified
+**v0.7.6 — CX programs, the headline release per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)**
+(Accepted 2026-05-20). v0.7.6 ships **CX programs** — a unified
 pattern/query/transform language replacing both cxpath and cxquery
 — with complete integration capabilities (visualization,
 resilience, services and clients, concurrency, async/await) as
@@ -34,7 +34,7 @@ part of the language surface. Authoritative design in
 normative spec in `spec/programs.md` (in progress, §11.6 release gate);
 ADR 0027 supersedes ADR 0022 §D2 and §D10. Highlights:
 
-- **Core CXL** — patterns as literal CX with `$bindings`; Scala-style
+- **Core CX programs** — patterns as literal CX with `$bindings`; Scala-style
   for-yield comprehension (`[?for $x :in src :where … :yield …]`);
   small directive set (`[?find]` / `[?match]` / `[?for]` / `[?if]` /
   `[?let]` / `[?fn]` / `[?def]` / `[?try]` / `[?pipe]`); three path
@@ -61,7 +61,7 @@ ADR 0027 supersedes ADR 0022 §D2 and §D10. Highlights:
   barriers; `[?cancel]` with cooperative-cancellation contract;
   `[?check-cancel]` for hot loops.
 - **Error code namespace expansion** — ADR 0024 amended 2026-05-21
-  to reserve `cx-err:CXER0100–CXER0299` for CXL runtime errors.
+  to reserve `cx-err:CXER0100–CXER0299` for Program runtime errors.
 - **Renames the bindings rule** — V/Python/Go are the Tier-1
   bindings that gate the §11.6 conformance suite (the cut from nine
   to five in ADR 0022 §D9 remains; Rust + TypeScript stay in scope
@@ -78,7 +78,7 @@ are independent of the cxpath/cxquery POC framing and ship through
 their own trajectories.
 
 **v0.8.0 — stable headline release** (post-v0.7.6). v0.8.0 tags as
-the stable CXL release after a burn-in window during which only bug
+the stable CX programs release after a burn-in window during which only bug
 fixes and conformance hardening land — no new surface. BaseX-class
 function-module ecosystem work (see "Later" below) targets v0.8.0
 only if it can land cleanly inside the burn-in scope; otherwise it
@@ -198,32 +198,32 @@ Schema design begins by weighing options: lifted-from-XSD,
 JSON-Schema-compatible, hand-rolled minimal. The design choice is
 recorded before implementation.
 
-### CXL 1.0 — CX Language evaluator (release blocker, replaces shape engine)
+### CX programs 1.0 — CX Language evaluator (release blocker, replaces shape engine)
 
-- **CXL 1.0 evaluator** at V core (`vcx/cx/cxl.v`) per
- the CXL design and `spec/eval.md`. Pulled into v0.6.0 (2026-05-10 amendment;
- was v0.7.0) when the shape engine was superseded — CXL is now the only
+- **CX programs 1.0 evaluator** at V core (`vcx/cx/cxl.v`) per
+ the CX program design and `spec/eval.md`. Pulled into v0.6.0 (2026-05-10 amendment;
+ was v0.7.0) when the shape engine was superseded — CX programs is now the only
  output-shape mechanism. Seven EvalDirectives
  (`[?if]`, `[?for]`, `[?with]`, `[?cond]`, `[?include]`, `[?def]`,
  `[?use]`) plus `[?=EXPR]` interpolation, frozen filter set,
  target-aware auto-escape, `cx eval` / `cx render` subcommands.
 - **Grammar v3.5 ast_bin wire format (v5 bump)** carrying
  `InterpolationNode`, `EvalDirectiveNode`, and `Attribute.body`
- tail — required for parsed CXL programs to round-trip across the
+ tail — required for parsed CX programs to round-trip across the
  C ABI. Tier 1 (V/Python/Go) gated; Tier 2/3 decoder rollout
  required in the same release.
 - **C ABI surface** at capability bit 28 — `cx_eval_cxl`,
  `cx_eval_cxl_with_len`, `cx_eval_cxl_streaming` go from W012
  stubs to fully implemented. Per `spec/abi.md §2.16`.
 - **Conformance fixtures** at `conformance/eval.txt` — per-directive, composition, whitespace, escaping,
- error-path, schema-validated CXL.
+ error-path, schema-validated CX programs.
 - **Per-binding native evaluators** (9 bindings × ~2k LOC each)
  V is the reference; per-binding evaluators must
  produce byte-identical output for every conformance fixture.
 - **`cx eval` / `cx render` CLI subcommands**.
 - **Worked examples** at `examples/cx/` covering the
  pattern set originally designed for (rename,
- reshape, lift, drop, alphabetize) plus CXL-native cases (HTML
+ reshape, lift, drop, alphabetize) plus CX programs-native cases (HTML
  card render, Markdown report, CX-to-CX transform). Demonstrates
  that the use cases are served without a second engine.
 
@@ -231,22 +231,22 @@ Total: ~7 weeks focused work ( §Implementation notes),
 parallelizable across the Tier-1 binding work. Replaces the ~2–3
 month shape engine scope.
 
-### Conversion shape control — superseded by CXL (2026-05-10)
+### Conversion shape control — superseded by CX programs (2026-05-10)
 
  (declarative `.cxsh` shape engine) was originally targeted
-here. As of 2026-05-10 it is **superseded by — CXL**;
-CXL 1.0 covers the entire output-shape use case (CX → JSON / YAML /
+here. As of 2026-05-10 it is **superseded by — CX programs**;
+CX programs 1.0 covers the entire output-shape use case (CX → JSON / YAML /
 TOML / XML / HTML / CSV / Markdown / arbitrary text) via a single
-expression-language evaluator. CXL 1.0 lands in v0.6.0 (pulled
+expression-language evaluator. CX programs 1.0 lands in v0.6.0 (pulled
 forward from v0.7.0) per the §Amendment 2026-05-10.
 
 The original use cases (rename, reshape, lift, drop,
-alphabetize) are served by canonical CXL idioms in `spec/eval.md §8`
+alphabetize) are served by canonical CX programs idioms in `spec/eval.md §8`
 (worked examples) and `examples/cx/`. Computation (filter, group,
-aggregate, sort) — which could not do — is served by CXL
+aggregate, sort) — which could not do — is served by CX programs
 3.1's FLWOR + arrow operator at v0.9.0+.
 
-CXL 1.0 itself is now a v0.6.0 scope item; see the "CXL 1.0
+CX programs 1.0 itself is now a v0.6.0 scope item; see the "CX programs 1.0
 evaluator" entry under "Now — v0.6.0 scope" below.
 
 ### Data-bin one-shot loaders/dumpers
@@ -574,9 +574,9 @@ Items deferred from v0.6.0 to v0.6.1:
  corpus** — `cx-conformance-v0.6.0.zip` packaged on release page;
  `governance.md §8` operational details documented.
 
-CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
+CX programs 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 
-- **CXL `?for` iteration newlines** — body-slot whitespace handling
+- **CX programs `?for` iteration newlines** — body-slot whitespace handling
  collapses iteration boundaries; output of `[?for x :in seq :return
  row\n]` is concatenated on one line instead of one row per line.
  Workaround: emit explicit separators (`,`/`|`/`;`) and post-process,
@@ -584,12 +584,12 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
  proper row separators. Fix: extend the `[?-` / `-]` whitespace-control
  markers to iteration slot endings, and decide on a per-iteration
  default (preserve trailing newline vs. consume it).
-- **CXL-substituted cells inside `:table` blocks** — the `:table`
+- **CX programs-substituted cells inside `:table` blocks** — the `:table`
  row validator runs at parse time over the slot text, so `[result
  :table[a b c] [?for x :in seq :return [?= x/a] [?= x/b] [?= x/c]
  ]]` parses as 1-cell-per-row (the unsubstituted `[?= …]` looks
  like one cell). Fix: defer table-row validation to post-evaluation
- when the row source contains CXL directives.
+ when the row source contains directives.
 - **`?for` variable name `e` collides with scientific-notation
  parsing** — `[?for e :in //emp :return [?= e/@name]]` binds the
  variable but the CXPath lookup `e/@name` returns empty. Names that
@@ -609,7 +609,7 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 > implementation was structurally incomplete, tests passed by
 > reduction, and `cx:merge` shipped with material defects (see
 > [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
-> CXL replaces the entire surface at v0.7.6 (see top of this
+> CX programs replaces the entire surface at v0.7.6 (see top of this
 > document). Items in the list below that are independent of
 > cxpath/cxquery (Arrow+Parquet, reproducible builds, fuzz harness,
 > `cx:lang`, comparative benchmarks) carry forward into v0.7.6 / v0.8.0
@@ -618,16 +618,16 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 Historical scope from ADR 0022 (now superseded for the query/transform
 items; carried forward for the rest):
 
-- ~~**Full XQuery 4.0 / XPath 4.0 parity**~~ — superseded by CXL
+- ~~**Full XQuery 4.0 / XPath 4.0 parity**~~ — superseded by CX programs
   (ADR 0027). The cxpath / cxquery V implementation is deleted as
   part of v0.7.6 work.
-- ~~**CXPath axes**~~ — superseded; CXL patterns replace axis syntax.
+- ~~**CXPath axes**~~ — superseded; CX patterns replace axis syntax.
 - **Arrow + Parquet** — carried forward to v0.7.6 with binding parity
   across the Tier-1 bindings (V + Python + Go).
-- ~~**Streaming evaluator**~~ — superseded by CXL `[?for :stream]`
+- ~~**Streaming evaluator**~~ — superseded by CX programs `[?for :stream]`
   comprehension.
 - **`cx:lang` formalization + inherited scope** — carried forward.
-- **Comparative benchmarks** — carried forward; CXL-shape workloads
+- **Comparative benchmarks** — carried forward; CX programs-shape workloads
   added.
 - **Reproducible builds** — carried forward.
 - **Fuzz-testing harness** — carried forward.
@@ -739,7 +739,7 @@ optimisation stack and next-lever ordering.
  audit, applied to whatever evolved since. Cadence item, not a
  release blocker.
 
-> **The "CXL 3.1 / CXL 4.0" staging block previously in this section
+> **The "CX programs 3.1 / CX programs 4.0" staging block previously in this section
 > is superseded** by [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
 > (Accepted 2026-05-17). v0.7.0 ships XQuery 4.0 + XPath 4.0
 > expression parity in a single cut (per
@@ -751,27 +751,27 @@ optimisation stack and next-lever ordering.
 > v0.8.0" line above is similarly superseded — axes move to v0.7.0.
 > Historical text preserved below for provenance:
 
-- **CXL 3.1 and 4.0 — post-v0.6.0** .
- CXL 1.0 ships in v0.6.0 (see "Next — v0.6.0" above); CXL 3.1 and
+- **CX programs 3.1 and 4.0 — post-v0.6.0** .
+ CX programs 1.0 ships in v0.6.0 (see "Next — v0.6.0" above); CX programs 3.1 and
  4.0 are post-v0.6.0:
  - **CX release v0.8.0 — CXPath axes.** Adds parent / ancestor /
  following-sibling / preceding-sibling (deferred in CXPath v1).
- CXL picks up upward navigation automatically with no CXL version
+ CX programs picks up upward navigation automatically with no CX programs version
  bump. **(Superseded — moves to v0.7.0 per ADR 0022 §D2 Amendment #4.)**
- - **CXL 3.1 — CX release v0.9.0+.** XQuery 3.1 feature equivalence.
+ - **CX programs 3.1 — CX release v0.9.0+.** XQuery 3.1 feature equivalence.
  Adds `[?let]`, `[?fn]`, `[?match]`, `[?try]` EvalNames; full
  FLWOR on `[?for]` with `:let` / `:where` / `:order` / `:return`
  (XQuery 3.1-aligned `order` spelling); user-defined functions;
  maps and arrays as CXDM value kinds; arrow operator `=>`; aggregate
  filters; group-by; try/catch. **(Superseded — folded into v0.7.0
  single-cut per ADR 0022.)**
- - **CXL 4.0 — CX release v1.x+ (target).** XQuery 4.0 feature
+ - **CX programs 4.0 — CX release v1.x+ (target).** XQuery 4.0 feature
  equivalence once XQuery 4.0 stabilizes — pipeline operator `|>`,
  partial function application, member maps, enhanced types,
  additional collection operations.
 
- The data-code symbiosis XML+XQuery have, in CX flavor: CXL queries
- CXL; programs inspect programs; one toolchain.
+ The data-code symbiosis XML+XQuery have, in CX flavor: CX programs queries
+ CX programs; programs inspect programs; one toolchain.
 
 ---
 

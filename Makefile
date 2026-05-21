@@ -221,9 +221,9 @@ check-conformance-coverage:
 check-v-upstream:
 	@python3 scripts/check_v_upstream_patches.py
 
-# V6 — pre-commit lint rules over .cx / .cxl files. Catches the
+# V6 — pre-commit lint rules over .cx / .cx files. Catches the
 # pre-ADR-0017 syntax forms the v0.7.0 parser rejects, plus the
-# cxl-version=/cx-eval-version= rename window deprecation.
+# cx-version=/cx-eval-version= rename window deprecation.
 check-lint-rules:
 	@python3 scripts/check_lint_rules.py
 
