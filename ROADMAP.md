@@ -24,7 +24,7 @@ Investment in that scope halted 2026-05-20. The cxpath/cxquery V
 implementation is deleted as part of v0.7.6 work; their specs
 remain as historical artifacts only.
 
-**v0.7.6 — CXL, the headline release per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md)**
+**v0.7.6 — CXL, the headline release per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)**
 (Accepted 2026-05-20). v0.7.6 ships **CXL** — a unified
 pattern/query/transform language replacing both cxpath and cxquery
 — with complete integration capabilities (visualization,
@@ -603,7 +603,7 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 > **Status note.** The v0.7.0 scope below was originally specced by
 > [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
 > and tracked in [`spec/v0_7_0_status.md`](spec/v0_7_0_status.md).
-> Per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md)
+> Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
 > (Accepted 2026-05-20), the cxpath / cxquery / XQuery-4.0-parity
 > portion of that scope is **retired as proof-of-concept**: the
 > implementation was structurally incomplete, tests passed by

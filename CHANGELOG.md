@@ -14,7 +14,7 @@ version, library version).
 
 ## [0.7.6] — in development on `v0.7.6-dev` (CXL — the headline release)
 
-Per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md)
+Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
 (Accepted 2026-05-20), v0.7.6 ships **CXL** — a unified
 pattern/query/transform language with full integration capabilities
 (visualization, resilience, services, concurrency, async). CXL
@@ -108,7 +108,7 @@ partial-ship fallback. See ADR 0027 for the gate list.
 > normative positions, tests passed by reduction (covering only the
 > implemented subset), and `cx:merge` shipped with material defects
 > (see [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
-> Per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md),
+> Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md),
 > the entire query/transform surface is being replaced by CXL in
 > v0.7.6. Users coming to CX for production query/transform begin
 > there. Other v0.7.x deliverables (WASM build per ADR 0026,
