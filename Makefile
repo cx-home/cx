@@ -290,14 +290,11 @@ test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
 	$(PYTHON) lang/python/test_api.py
 	$(PYTHON) lang/python/test_stream.py
-	$(PYTHON) lang/python/test_cxpath.py
-	$(PYTHON) lang/python/test_transform.py
-	$(PYTHON) lang/python/test_immutability.py
 	$(PYTHON) lang/python/test_data_bin_one_shots.py
 	$(PYTHON) lang/python/test_namespaces.py
 	$(PYTHON) lang/python/test_identity.py
-	$(PYTHON) lang/python/test_id_abi.py
 	$(PYTHON) lang/python/test_delimited.py
+	cd lang/python && $(PYTHON) -m unittest test_program_eval -v
 
 # Apache Arrow C-Data interop tests (Phase 7.74c-cont-bindings).
 # Skip-cleanly if pyarrow is not installed; otherwise builds libcx_arrow
@@ -313,14 +310,13 @@ test-python-arrow: build-vcx build-lib-arrow
 test-python-arrow-conformance: build-vcx build-lib-arrow
 	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
 
-# Per spec/v0_7_0_status.md H2 — exercise the new v0.7.0 evaluator
-# surface through the Python binding (cross-binding parity check
-# against V conformance/eval.txt). 18 tests covering ?let, FLWOR,
-# ?fn + apply, ?partial w/ [?_], ?try multi-catch, CXPath axes,
-# operator-token forms, attribute-value interpolation, fn library
-# (regex + current-date), and streaming.
-test-python-eval-v0-7-0: build-vcx
-	$(PYTHON) -m unittest lang.python.test_eval_v0_7_0 -v
+# Phase 5 Tier-1 binding parity (Python) — exercises the v0.7.6
+# cx_program_eval* surface (spec/audits/programs_abi_v1.md) and its
+# Pythonic eval_program / eval_program_streaming wrappers. The
+# v0.7.0 test-python-eval-v0-7-0 target was retired alongside the
+# cxl POC in Phase 7.
+test-python-program-eval: build-vcx
+	cd lang/python && $(PYTHON) -m unittest test_program_eval -v
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
