@@ -1,17 +1,19 @@
 # CX
 
-> **The homo-agentic data language** — one syntax for the humans and agents
-> that read, write, and run your data. Every config, document, query,
-> transform, and program is the same tree of `[...]` forms, so the JSON
-> you write today can grow into the queries, transforms, and services
-> you write tomorrow without changing syntax or learning a second tool.
+> **The CX Data Language** — one syntax for configs, queries, transforms,
+> and full programs. Every config, document, query, transform, and
+> program is the same tree of `[...]` forms, so the JSON you write today
+> can grow into the queries, transforms, and services you write tomorrow
+> without changing syntax or learning a second tool.
+>
+> **Agentic Ready.** Programs are CX values; data is CX values. Humans
+> and AI agents read, write, and run the same artifacts through the
+> same parser, same AST, same tree shape.
 
-CX is a homoiconic data language. Programs ARE CX values — the same
-parser, the same AST, the same tree shape covers inert data and
-executable code. Read it like XML, type it like TOML, query it like
-XPath, program it like Lisp. As a format, CX round-trips losslessly
-through JSON, YAML, TOML, XML, Markdown, and CSV, so you can adopt it
-incrementally without rewriting existing pipelines.
+CX is a homoiconic data language. Read it like XML, type it like TOML,
+query it like XPath, program it like Lisp. As a format, CX round-trips
+losslessly through JSON, YAML, TOML, XML, Markdown, and CSV, so you can
+adopt it incrementally without rewriting existing pipelines.
 
 ```cx
 [service name=auth version:u8=2
@@ -114,7 +116,7 @@ CX is pre-1.0. **v0.7.6** is the current development line, building on
 the v0.6.0 API/format-stability lock — the grammar is stable and the
 C ABI is versioned and forward-compatible.
 
-**v0.7.6 — the homo-agentic data language release**, ratified by
+**v0.7.6 — the CX Data Language consolidation release**, ratified by
 [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md).
 v0.7.6 unifies the executable subset of CX into one coherent surface:
 patterns as literal CX with `$bindings`, Scala-style for-yield
