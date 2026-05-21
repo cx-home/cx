@@ -41,6 +41,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
  test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
  abi-c-test \
  conform conform-vcx conform-md bench bench-python \
+ bench-programs-pattern-compile bench-programs-streaming bench-programs-http bench-programs-gates \
  examples example-python example-v example-go example-rust example-typescript \
  example-java example-kotlin example-csharp example-ruby example-swift \
  demos demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift \
@@ -639,6 +640,34 @@ bench-streaming: build-vcx
 # T1.* benchmark keys for the V7 perf regression gate.
 bench-eval: build-vcx
 	v run vcx/tests/runners/eval_features_bench.v
+
+# ── v0.7.6 §11.6 release-gate harnesses ────────────────────────────────────────
+#
+# Each target runs one of the three perf gates blocking the v0.7.6 tag
+# (spec/v0_7_6_status.md §11.6, spec/programs.md §11.4.4). Exit code
+# is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
+# The benches print their threshold + measured numbers so PASS/FAIL is
+# self-evident in logs. Env knobs documented in each .v file header.
+
+# Gate 14 — pattern compilation (depth-8, 32-binding pattern):
+# p99 parse-time MUST be ≤ 1 ms.
+bench-programs-pattern-compile: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_pattern_compile_bench.v
+
+# Gate 15 — streaming throughput on JSON-shape workloads:
+# mean MUST be ≥ 200 MB/s + no trial below 80 % of mean.
+bench-programs-streaming: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_streaming_throughput_bench.v
+
+# Gate 16 — HTTP service throughput (in-process substrate per §1.2):
+# mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
+bench-programs-http: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_http_throughput_bench.v
+
+# Aggregate runner — drives all three v0.7.6 perf gates back-to-back.
+# Exit code is the FIRST failing gate's exit code (make stops on
+# first non-zero); use individual targets to triage in isolation.
+bench-programs-gates: bench-programs-pattern-compile bench-programs-streaming bench-programs-http
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
