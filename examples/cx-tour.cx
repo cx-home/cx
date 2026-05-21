@@ -1,5 +1,5 @@
 [- CX FORMAT TOUR — every structural feature in one document.
-   For the eval / directive / cxl surface, see examples/cxl-tour.cxl.
+   For the eval / directive / cxl surface, see examples/programs-tour.cx.
    Open with cx-language wired up to test highlight, hover, fold,
    outline, goto-definition, references, rename, snippets. ]
 

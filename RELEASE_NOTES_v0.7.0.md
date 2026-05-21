@@ -56,9 +56,9 @@ into one tag.
   the rename automatically.
 
 - **Spec / file renames** (F row):
-  - `spec/cxl.md` → `spec/eval.md`
+  - `spec/programs.md` → `spec/eval.md`
   - `examples/cxl/` → `examples/cx/`
-  - `conformance/cxl.txt` → `conformance/eval.txt`
+  - `conformance/programs.txt` → `conformance/eval.txt`
 
   Anchor links to the old paths break; `cx upgrade-config` migrates
   user-side config references.
@@ -87,7 +87,7 @@ authoritative state. Quick links:
 | C | Standard fn library | ~80+ fns across numerics, strings, regex, date/time, sequences, higher-order, JSON, QName |
 | D | Map / array runtime | first-class map: / array: namespaces |
 | E | Error namespace | cx-err:CXER / FORG / FOAR encoding; `[?error]` raises; `?try` catches with err-* bindings |
-| F | Spec/file renames | cxl.md → eval.md (+ companion paths) |
+| F | Spec/file renames | programs.md → eval.md (+ companion paths) |
 | G | C ABI rename | cx_eval_cxl* → cx_eval* |
 | H | Five-binding parity | V + Python + Go + Rust + TS active |
 | J | HTMX examples + J0 | attribute-value interpolation + 5 worked examples |
@@ -105,7 +105,7 @@ authoritative state. Quick links:
 
 - `cxl-version` → `cx-eval-version` attribute rename in user config
   documents.
-- Documented path renames (e.g., `spec/cxl.md` references →
+- Documented path renames (e.g., `spec/programs.md` references →
   `spec/eval.md`).
 - Existing `.cxl` files round-trip without changes — the extension
   remains a tooling-only convention.

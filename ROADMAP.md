@@ -30,8 +30,8 @@ pattern/query/transform language replacing both cxpath and cxquery
 — with complete integration capabilities (visualization,
 resilience, services and clients, concurrency, async/await) as
 part of the language surface. Authoritative design in
-[`spec/audits/cxl_design_v1.md`](spec/audits/cxl_design_v1.md);
-normative spec in `spec/cxl.md` (in progress, §11.6 release gate);
+[`spec/audits/programs_design_v1.md`](spec/audits/programs_design_v1.md);
+normative spec in `spec/programs.md` (in progress, §11.6 release gate);
 ADR 0027 supersedes ADR 0022 §D2 and §D10. Highlights:
 
 - **Core CXL** — patterns as literal CX with `$bindings`; Scala-style

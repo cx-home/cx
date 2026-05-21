@@ -30,10 +30,10 @@ tests (passed by reduction) and partial specs. Users who need
 production-ready query/transform begin at v0.7.6.
 
 Authoritative design reference:
-[`spec/audits/cxl_design_v1.md`](spec/audits/cxl_design_v1.md)
+[`spec/audits/programs_design_v1.md`](spec/audits/programs_design_v1.md)
 (20 cxpath/cxquery → CXL side-by-side examples + complete §11
 integration-capability specs). Normative spec
-(`spec/cxl.md`) is in progress and is a §11.6 release gate.
+(`spec/programs.md`) is in progress and is a §11.6 release gate.
 
 ### Added
 
@@ -86,7 +86,7 @@ assigned by subsystem.
 - **XQuery 4.0 / XPath 4.0 parity scope** retired per ADR 0027's
   supersession of ADR 0022 §D2.
 - `spec/cxpath.md` and `spec/xquery_40_parity.md` retained as
-  historical artifacts; `spec/cxl.md` is the normative spec going
+  historical artifacts; `spec/programs.md` is the normative spec going
   forward.
 
 ### Release gates
@@ -218,8 +218,8 @@ XPath 4.0 parity**. That framing is now superseded.
   `cx_eval_cxl_streaming` → `cx_eval_streaming`.
 - **`cxl-version` attribute** → **`cx-eval-version`** with the
   former accepted as a deprecated alias.
-- **Spec / file renames** (F row): `spec/cxl.md` → `spec/eval.md`,
-  `examples/cxl/` → `examples/cx/`, `conformance/cxl.txt` →
+- **Spec / file renames** (F row): `spec/programs.md` → `spec/eval.md`,
+  `examples/cxl/` → `examples/cx/`, `conformance/programs.txt` →
   `conformance/eval.txt`.
 - **`spec/decisions/0021-cxdb-as-database-direction.md`** renamed
   to `0021-cx-database-direction.md`. The `cxdb` / `.cxdb` binary
