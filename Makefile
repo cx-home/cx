@@ -664,6 +664,19 @@ bench-programs-streaming: build-vcx
 bench-programs-http: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_http_throughput_bench.v
 
+# Gate 7 — concurrency soak. Loops a buffered send/receive workload
+# detecting deadlocks (per-iter wall-clock cap) and registry leaks
+# across an extended run. Default is a 30 s smoke; release candidate
+# runs the full 24 hours via `GATE7_DURATION_SEC=86400`.
+bench-programs-soak: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_concurrency_soak.v
+
+# Gate 8 — async cancellation battery. 10 000-iteration battery
+# against the canonical [?cancel] → [?await] pattern; zero non-
+# deterministic failures required.
+bench-programs-cancel: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_async_cancel_battery.v
+
 # Aggregate runner — drives all three v0.7.6 perf gates back-to-back.
 # Exit code is the FIRST failing gate's exit code (make stops on
 # first non-zero); use individual targets to triage in isolation.
