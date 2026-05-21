@@ -12,13 +12,113 @@ version, library version).
 
 ## [Unreleased]
 
-## [0.7.0] — in development on `v0.7.0-dev`
+## [0.7.6] — in development on `v0.7.6-dev` (CXL — the headline release)
+
+Per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md)
+(Accepted 2026-05-20), v0.7.6 ships **CXL** — a unified
+pattern/query/transform language with full integration capabilities
+(visualization, resilience, services, concurrency, async). CXL
+replaces cxpath and cxquery; both are removed from the codebase as
+part of this release.
+
+ADR 0027 supersedes [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+§D2 (full XQuery 4.0 evaluator surface) and §D10 (v0.7.0 ships the
+complete evaluator). The v0.7.0–v0.7.5 line is **frozen as
+proof-of-concept** — see the marker at the top of [0.7.0] below. The
+v0.7.0 cxpath/cxquery implementation was incomplete, with falsified
+tests (passed by reduction) and partial specs. Users who need
+production-ready query/transform begin at v0.7.6.
+
+Authoritative design reference:
+[`spec/audits/cxl_design_v1.md`](spec/audits/cxl_design_v1.md)
+(20 cxpath/cxquery → CXL side-by-side examples + complete §11
+integration-capability specs). Normative spec
+(`spec/cxl.md`) is in progress and is a §11.6 release gate.
+
+### Added
+
+**Core CXL surface** — patterns as literal CX with `$bindings`;
+Scala-style for-yield comprehension; `[?find]` / `[?match]` /
+`[?for]` / `[?if]` / `[?let]` / `[?fn]` / `[?def]` / `[?try]` /
+`[?pipe]` directives; `|` pipe sugar; three path sigils `/` `@` `.`;
+errors as `[err …]` CX values with `?` / `!` postfix; `:par` /
+`[?par-map]` / `[?par-reduce]` parallelism.
+
+**§11.1 Visualization commitment** — every directive renders to a
+sequence/activity diagram per fixed rendering rules. `cx diagram`
+CLI emits SVG/PNG/Mermaid; `<cx-diagram>` web component embeds in
+docs/playgrounds; LSP CodeLens integration via the CX language
+server.
+
+**§11.2 Resilience directives** — `[?retry]` (with constant /
+linear / exponential / fibonacci backoff and none / full / equal /
+decorrelated jitter), `[?timeout]`, `[?circuit-breaker]`,
+`[?fallback]`, `[?rate-limit]`, `[?bulkhead]`. Composable. Errors
+in the `cx-err:CXER0140–CXER0159` range per ADR 0024 amendment
+2026-05-21.
+
+**§11.3 Services and clients** — `[?service :on http :port N]` with
+`[resource :METHOD PATH]` children; `[?http-client :target URL]`
+for outbound. Full HTTP/1.1 + HTTP/2 + TLS + streaming + multipart
++ WebSocket upgrade. Service / client error codes in the
+`cx-err:CXER0160–CXER0199` range.
+
+**§11.4 Concurrency** — `[?worker]`, `[?channel]`, `[?send]`,
+`[?receive]`, `[?try-send]`, `[?try-receive]`, `[?close]`,
+`[?select]`. CSP-style. FIFO per-pair ordering, locked close/drain
+semantics. Channel / worker error codes in the
+`cx-err:CXER0200–CXER0239` range.
+
+**§11.5 Async / await** — `[?async]` returns `[future …]`;
+`[?await]` / `[?await-all]` / `[?await-any]` / `[?await-race]`
+barriers; `[?cancel]` with cooperative-cancellation contract;
+`[?check-cancel]` for hot loops. Async error codes in the
+`cx-err:CXER0240–CXER0279` range.
+
+**Error code namespace expansion** — ADR 0024 amended 2026-05-21
+to reserve `cx-err:CXER0100–CXER0299` for CXL runtime errors,
+assigned by subsystem.
+
+### Removed
+
+- **cxpath** and **cxquery** implementations deleted from `vcx/`
+  (replaced by CXL in `vcx/cxl/`).
+- **XQuery 4.0 / XPath 4.0 parity scope** retired per ADR 0027's
+  supersession of ADR 0022 §D2.
+- `spec/cxpath.md` and `spec/xquery_40_parity.md` retained as
+  historical artifacts; `spec/cxl.md` is the normative spec going
+  forward.
+
+### Release gates
+
+v0.7.6 cannot tag until all sixteen §11.6 conformance gates pass
+across four categories (spec completeness, test coverage,
+implementation completeness, performance floors). No exceptions, no
+partial-ship fallback. See ADR 0027 for the gate list.
+
+---
+
+## [0.7.5] — 2026-05 (tagged, **proof-of-concept**)
+## [0.7.0] — POC, superseded by ADR 0027 (2026-05-20)
+
+> **Status note (2026-05-20).** Everything in the [0.7.0] section
+> below shipped through v0.7.5 as **proof-of-concept**. The CXL
+> language work it describes (cxpath / cxquery / XQuery 4.0 parity)
+> was structurally incomplete: specs carried TBD markers in
+> normative positions, tests passed by reduction (covering only the
+> implemented subset), and `cx:merge` shipped with material defects
+> (see [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
+> Per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md),
+> the entire query/transform surface is being replaced by CXL in
+> v0.7.6. Users coming to CX for production query/transform begin
+> there. Other v0.7.x deliverables (WASM build per ADR 0026,
+> `cx:`/`log:` modules per ADR 0023) ship through their own
+> trajectories and are not subject to the POC marker.
 
 Per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
-v0.7.0 is the single-cut release that takes the cx evaluator from
-the CXL 1.0 floor (v0.6.0) to **XQuery 4.0 / XPath 4.0 parity**.
-The staged "CXL 3.1 → CXL 4.0" trajectory in the original ROADMAP
-is collapsed into one tag.
+v0.7.0 was originally framed as the single-cut release that takes the
+cx evaluator from the CXL 1.0 floor (v0.6.0) to **XQuery 4.0 /
+XPath 4.0 parity**. That framing is now superseded.
 
 ### Added
 

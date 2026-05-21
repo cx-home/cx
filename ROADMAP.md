@@ -12,61 +12,77 @@ the work in flight on the active branch, Next is the larger scope that
 follows but ships under the same v0.6.0 tag. "Later" is post-v0.6.0
 work targeting subsequent releases.
 
-**v0.7.0 — single-cut release per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)**
-(Accepted 2026-05-17) and [ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md)
-(Accepted 2026-05-18 — adds `cx:` self-host module + function/module
-extension interface; Amendment #1 same day pulls `log:` structured
-logging forward to v0.7.0 + reserves evaluator-hook signature for
-v0.8.0+ debug adapters). After v0.6.0 tags, the next milestone is
-v0.7.0, which ships in one cut: **full XQuery 4.0 parity (or
-exceed) for the evaluator surface** — every XQuery 4.0 expression
-implemented with cx-native syntax — **plus** the operational
-homoiconic surface that makes the "or exceed" axis runtime-real
-(23-function `cx:` module covering parse / serialize / canonical /
-hash / diff / patch / equal / select / eval (gated) / render /
-schema / validate / anchors / ids / references / resolve-includes /
-merge / strip-comments / strip-attrs / pretty-print / to-format /
-from-format), the 7-function `log:` module for structured logging
-(trace / debug / info / warn / error / level / with-context with
-logfmt + json formats and stderr / stdout / file sinks), the
-generalized function-module registry that v0.8.0's BaseX-class
-modules slot into, and the evaluator-hook signature for future
-debug-adapter integration. Per-feature deliverable list in
-[`spec/xquery_40_parity.md`](spec/xquery_40_parity.md). Highlights:
-inline function expressions (closures, partial application, named
-function refs), full FLWOR (for/let/window/where/while/count/group-by/
-order-by/return), maps/arrays with full function library (~26
-functions), structured try/catch with `$err:*` bindings + `fn:error()`
-+ cx-native error code namespace, SequenceType expressions
-(instance of, cast as, typeswitch, treat as), pipeline `|>` AND
-arrow `=>` operators, switch and quantified expressions, simple
-map `!` operator, lookup operator `?key`. Plus: retires the "CXL"
-name (cx is one language) in prose and ABI identifiers; cuts the
-binding matrix from nine to five (V + Python + Go + Rust +
-TypeScript); ships a first-class HTMX component example (five
-htmx.org/examples structural cases); takes a one-time epoch break
-against the v0.6.0 stability boundary scoped to ABI rename, file/
-dir renames, and `cxl-version` → `cx-eval-version` (see
-[readiness rubric amendment](spec/readiness_rubric.md)). **Directive
-syntax (the `?` prefix) is preserved** — the original draft proposed
-a `?` → `!` flip; dropped same-day after empirical inspection (ADR
-0022 §D1 Amendment). The former "CXL 1.0 / 3.1 / 4.0" staging from
-[ADR 0016](spec/decisions/0016-templates-queries-cx-expression-family.md)
-is superseded. From v0.7.0 onward through 1.0 the v0.6.0-style
-stability commitment resumes. **v0.7.0 effort estimate ~2–3× the
-originally-scoped work** per the parity audit (ADR 0022 §D2
-Amendment 2026-05-17 #2), plus ~14–15% for the `cx:` module +
-extension interface + `log:` module + evaluator-hook signature
-added by ADR 0023 (2026-05-18, including Amendment #1). Net total
-~262–333 sessions per
-[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) §Summary. Scope
-detail and tagging discipline: see
-[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
-[ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md),
-and the per-feature checklists at
-[`spec/xquery_40_parity.md`](spec/xquery_40_parity.md),
-[`spec/modules/cx.md`](spec/modules/cx.md), and
-[`spec/modules/log.md`](spec/modules/log.md).
+**v0.7.0 → v0.7.5 — proof-of-concept (superseded 2026-05-20).** The
+v0.7.x line up to and including v0.7.5 shipped as proof-of-concept.
+The cxpath / cxquery / XQuery-4.0-parity surface specced in
+[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+§D2 and §D10 turned out to be structurally incomplete: normative
+specs carried TBDs, tests passed by reduction (covering only the
+implemented subset), and `cx:merge` shipped with material defects
+(catalogued in [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
+Investment in that scope halted 2026-05-20. The cxpath/cxquery V
+implementation is deleted as part of v0.7.6 work; their specs
+remain as historical artifacts only.
+
+**v0.7.6 — CXL, the headline release per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md)**
+(Accepted 2026-05-20). v0.7.6 ships **CXL** — a unified
+pattern/query/transform language replacing both cxpath and cxquery
+— with complete integration capabilities (visualization,
+resilience, services and clients, concurrency, async/await) as
+part of the language surface. Authoritative design in
+[`spec/audits/cxl_design_v1.md`](spec/audits/cxl_design_v1.md);
+normative spec in `spec/cxl.md` (in progress, §11.6 release gate);
+ADR 0027 supersedes ADR 0022 §D2 and §D10. Highlights:
+
+- **Core CXL** — patterns as literal CX with `$bindings`; Scala-style
+  for-yield comprehension (`[?for $x :in src :where … :yield …]`);
+  small directive set (`[?find]` / `[?match]` / `[?for]` / `[?if]` /
+  `[?let]` / `[?fn]` / `[?def]` / `[?try]` / `[?pipe]`); three path
+  sigils (`/`, `@`, `.`); errors as first-class CX `[err …]` values
+  with `?` / `!` postfix; `:par` parallelism annotation.
+- **Visualization commitment** (§11.1) — every program renders as a
+  sequence diagram per locked rendering rules; `cx diagram` CLI +
+  `<cx-diagram>` web component + LSP CodeLens integration ship in
+  the release.
+- **Resilience** (§11.2) — `[?retry]` (constant / linear / exponential /
+  fibonacci backoff, jitter modes), `[?timeout]`, `[?circuit-breaker]`,
+  `[?fallback]`, `[?rate-limit]`, `[?bulkhead]`; composable; errors
+  in `cx-err:CXER0140–CXER0159`.
+- **Services and clients** (§11.3) — `[?service :on http :port N]`
+  with `[resource :METHOD PATH]` children; `[?http-client :target
+  URL]`; full HTTP/1.1 + HTTP/2 + TLS + streaming + multipart +
+  WebSocket upgrade.
+- **Concurrency** (§11.4) — `[?worker]`, `[?channel]`, `[?send]` /
+  `[?receive]` (blocking + try-variants), `[?close]`, `[?select]`;
+  CSP-style; FIFO per-pair ordering; locked close/drain semantics;
+  single-process (cross-process out of scope, requires separate ADR).
+- **Async / await** (§11.5) — `[?async]` returns `[future …]`;
+  `[?await]` / `[?await-all]` / `[?await-any]` / `[?await-race]`
+  barriers; `[?cancel]` with cooperative-cancellation contract;
+  `[?check-cancel]` for hot loops.
+- **Error code namespace expansion** — ADR 0024 amended 2026-05-21
+  to reserve `cx-err:CXER0100–CXER0299` for CXL runtime errors.
+- **Renames the bindings rule** — V/Python/Go are the Tier-1
+  bindings that gate the §11.6 conformance suite (the cut from nine
+  to five in ADR 0022 §D9 remains; Rust + TypeScript stay in scope
+  but pass the suite asynchronously).
+- **Release gates** — v0.7.6 cannot tag until all sixteen §11.6
+  gates pass (spec completeness, test coverage, implementation
+  completeness, performance floors). No partial-ship fallback.
+
+Other v0.7.x deliverables (the WASM build per
+[ADR 0026](spec/decisions/0026-wasm-distribution-target.md), the
+`cx:` / `log:` modules per
+[ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md))
+are independent of the cxpath/cxquery POC framing and ship through
+their own trajectories.
+
+**v0.8.0 — stable headline release** (post-v0.7.6). v0.8.0 tags as
+the stable CXL release after a burn-in window during which only bug
+fixes and conformance hardening land — no new surface. BaseX-class
+function-module ecosystem work (see "Later" below) targets v0.8.0
+only if it can land cleanly inside the burn-in scope; otherwise it
+slips to v0.9.0.
 
 ---
 
@@ -582,46 +598,45 @@ CXL 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
  properly; an identifier followed by `/` or `[` is never scientific
  notation.
 
-### v0.7.0 — depth + ecosystem
+### v0.7.0 — POC, superseded by ADR 0027 (2026-05-20)
 
-The v0.7.0 scope is authoritatively defined by
-[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-and tracked item-by-item in
-[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md). The bullets
-below summarise the ROADMAP-level themes; the status document
-carries per-row state.
+> **Status note.** The v0.7.0 scope below was originally specced by
+> [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+> and tracked in [`spec/v0_7_0_status.md`](spec/v0_7_0_status.md).
+> Per [ADR 0027](spec/decisions/0027-cxl-unified-pattern-query-transform.md)
+> (Accepted 2026-05-20), the cxpath / cxquery / XQuery-4.0-parity
+> portion of that scope is **retired as proof-of-concept**: the
+> implementation was structurally incomplete, tests passed by
+> reduction, and `cx:merge` shipped with material defects (see
+> [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
+> CXL replaces the entire surface at v0.7.6 (see top of this
+> document). Items in the list below that are independent of
+> cxpath/cxquery (Arrow+Parquet, reproducible builds, fuzz harness,
+> `cx:lang`, comparative benchmarks) carry forward into v0.7.6 / v0.8.0
+> on their own merits and are not POC.
 
-- **Full XQuery 4.0 / XPath 4.0 parity** — single cut at v0.7.0,
- superseding the staged "CXL 1.0 → 3.1 → 4.0" trajectory. Includes
- inline functions, FLWOR (`:let` / `:where` / `:count` / `:while`
- / `:order-by` / `:group-by` / tumbling+sliding windows),
- `?match`, `?try` with multi-catch + error namespace, maps + arrays
- as first-class values, the XPath 4.0 fn library, and the CXPath
- operator-token surface.
-- **CXPath axes** — full XPath 1.0 axis set (parent / ancestor /
- ancestor-or-self / following-sibling / preceding-sibling /
- following / preceding / descendant-or-self / self) per
- [ADR 0022 §D2 Amendment #4](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md).
- Tracked in [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md) §4.6.5.
-- **Arrow + Parquet** — full surface with binding parity across
- the five active bindings (V + Python + Go + Rust + TypeScript).
-- **Streaming evaluator** — replaces the W012 `cx_eval_streaming`
- stub with a real pull-based incremental-emit implementation.
-- **`cx:lang` formalization + inherited scope** — V core + the
- five active bindings; design committed in `spec/i18n.md §1`.
-- **Comparative benchmarks** vs JSON / YAML / TOML / XML (text)
- + MessagePack / CBOR (binary).
-- **Reproducible builds** — independent SHA-256 match against
- published `dist/SHA256SUMS.txt`.
-- **Fuzz-testing harness** — continuous fuzzing of V core parser
- and C ABI surfaces.
+Historical scope from ADR 0022 (now superseded for the query/transform
+items; carried forward for the rest):
 
-**Binding architecture note:** v0.7.0 keeps the single-evaluator
-model. V is the reference implementation (`vcx/cx/cxl.v` compiled
-into libcx); Python, Go, Rust, TypeScript bindings access cx via
-the C ABI. Per-binding native evaluator ports are NOT in scope —
-byte-identical cross-binding output is automatic because every
-binding routes through the same V evaluator.
+- ~~**Full XQuery 4.0 / XPath 4.0 parity**~~ — superseded by CXL
+  (ADR 0027). The cxpath / cxquery V implementation is deleted as
+  part of v0.7.6 work.
+- ~~**CXPath axes**~~ — superseded; CXL patterns replace axis syntax.
+- **Arrow + Parquet** — carried forward to v0.7.6 with binding parity
+  across the Tier-1 bindings (V + Python + Go).
+- ~~**Streaming evaluator**~~ — superseded by CXL `[?for :stream]`
+  comprehension.
+- **`cx:lang` formalization + inherited scope** — carried forward.
+- **Comparative benchmarks** — carried forward; CXL-shape workloads
+  added.
+- **Reproducible builds** — carried forward.
+- **Fuzz-testing harness** — carried forward.
+
+**Binding architecture note (revised 2026-05-20):** v0.7.6 keeps the
+single-evaluator model. V is the reference implementation; Python and
+Go are the Tier-1 bindings gating the §11.6 conformance suite. Rust
+and TypeScript stay in scope but pass the suite asynchronously per
+the ADR 0022 §D9 cut.
 
 ### v0.7.5 — libcx-wasm + live playground (point release per [ADR 0026](spec/decisions/0026-wasm-distribution-target.md))
 
