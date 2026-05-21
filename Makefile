@@ -288,6 +288,7 @@ test-no-parallel: $(TEST_TARGETS)
 
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
+	$(PYTHON) lang/python/conformance_programs.py
 	$(PYTHON) lang/python/test_api.py
 	$(PYTHON) lang/python/test_stream.py
 	$(PYTHON) lang/python/test_data_bin_one_shots.py
@@ -317,6 +318,7 @@ test-python-arrow-conformance: build-vcx build-lib-arrow
 # cxl POC in Phase 7.
 test-python-program-eval: build-vcx
 	cd lang/python && $(PYTHON) -m unittest test_program_eval -v
+	$(PYTHON) lang/python/conformance_programs.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
