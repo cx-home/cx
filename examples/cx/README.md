@@ -1,6 +1,6 @@
-# CX programs examples
+# CX code examples
 
-Runnable CX programs templates against CX context documents. Each example
+Runnable CX code templates against CX context documents. Each example
 pairs a `.cx` data file with a `.cx` template file.
 
 ```sh
@@ -22,4 +22,4 @@ cx eval greet.cx --data=greet.cx
 cx eval users.cx --data=users.cx
 ```
 
-For the full Programs reference: [`docs/CX programs.md`](../../docs/CX programs.md).
+For the full Programs reference: [`docs/CX code.md`](../../docs/CX code.md).

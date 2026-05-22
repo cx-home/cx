@@ -58,13 +58,13 @@ READ FIRST — in this order
 4.  spec/decisions/0028-cxpath-as-value-kind.md
 5.  spec/decisions/0029-match-heterogeneous-arms.md
 6.  spec/decisions/0030-modify-pure-functional-updates.md
-7.  spec/programs.md (full — normative; renamed to spec/code.md in Phase 1.2)
+7.  spec/code.md (full — normative; renamed to spec/code.md in Phase 1.2)
 8.  spec/bindings.md (two-layer binding contract)
 9.  spec/grammar.ebnf [127e] + [130]–[148e]
 10. spec/cxpath_alignment.md
 11. spec/cxdm.md §2 (Path as sixth Item kind)
 12. spec/v0_7_6_status.md (gate format template)
-13. conformance/programs.txt (fixture format; renamed to code.txt in 1.2)
+13. conformance/code.txt (fixture format; renamed to code.txt in 1.2)
 14. spec/abi.md (C ABI surface)
 15. Makefile (every target)
 16. docs-src/canonical/manifest.cx (guide TOC, 9 sections)
@@ -76,16 +76,16 @@ READ FIRST — in this order
 ALREADY DONE — do not redo
 ═════════════════════════════════════════════════════════════════
 - ADRs 0028, 0029, 0030 drafted (lean format: TL;DR + was-vs-is tables)
-- spec/programs.md: §5.2 rule 8, §5.5 CXPath, §6.2 extended binding
+- spec/code.md: §5.2 rule 8, §5.5 CXPath, §6.2 extended binding
   paths, §7.5 pattern-generator, §8.1 [?find] retirement, §8.2 multi-arm
   [?match], §8.10 [?modify], §8.11 integration directives
 - spec/grammar.ebnf: [130]–[148e] added, [127e] updated
 - spec/cxdm.md: Path as sixth Item kind
 - spec/cxpath_alignment.md: created
 - spec/bindings.md: two-layer contract created
-- conformance/programs.txt: in_cxl→in_code, [?find]→[?for], +29 fixtures
+- conformance/code.txt: in_cxl→in_code, [?find]→[?for], +29 fixtures
   (10 cxpath + 10 match-multi + 9 modify)
-- vcx/programs/tokens.v: 'find' removed, 'modify' added
+- vcx/code/tokens.v: 'find' removed, 'modify' added
 - docs-src/canonical/{manifest.cx, backlog.cx, v0_8_0_session_prompt.md}
   scaffolded
 - backlog.cx: decisions d-2026-05-22-01 through d-2026-05-22-15 ratified
@@ -96,13 +96,13 @@ PHASE 1 — SPEC COMPLETION
 1.1  spec/v0_8_0_status.md — create, modeled on v0_7_6_status.md.
      List every gate (Phase 1–11) with ✅/🚧/📋. Update each commit.
 1.2  ADR 0032 — draft (lean format) + execute "programs → code" rename:
-     · spec/programs.md → spec/code.md (update every internal link)
-     · spec/programs_migration.md → spec/code_migration.md
+     · spec/code.md → spec/code.md (update every internal link)
+     · spec/code_migration.md → spec/code_migration.md
      · spec/audits/programs_*.md → spec/audits/code_*.md
-     · vcx/programs/ → vcx/code/ (module rename, v.mod, all imports)
-     · cx_program_eval → cx_code_eval (spec/abi.md, C ABI header, every binding)
-     · _cx_program_diagram → _cx_code_diagram (wasm export)
-     · conformance/programs.txt → conformance/code.txt
+     · vcx/code/ → vcx/code/ (module rename, v.mod, all imports)
+     · cx_code_eval → cx_code_eval (spec/abi.md, C ABI header, every binding)
+     · _cx_code_diagram → _cx_code_diagram (wasm export)
+     · conformance/code.txt → conformance/code.txt
      · Makefile target references
      · All cross-refs in spec/*.md, README, docs-src/, ROADMAP.md
 1.3  Idiomatic fixture shapes — audit conformance/code.txt program-for-*
@@ -111,7 +111,7 @@ PHASE 1 — SPEC COMPLETION
      Keep [?for] only where nested structure genuinely needs destructure.
 1.4  spec/code_migration.md — complete v0.7.x → v0.8.0 Rosetta:
      [?find] retirement, multi-arm [?match], [?modify], CXPath path-value,
-     extended binding paths, in_cxl→in_code, cx_program_eval→cx_code_eval.
+     extended binding paths, in_cxl→in_code, cx_code_eval→cx_code_eval.
 1.5  spec/parity_matrix.md — update for v0.8.0 binding scope (V/Python/Go/Rust).
      Add Layer-1 method rows from spec/bindings.md §2.1.
      Footnote archived bindings; remove obsolete rows.
@@ -123,7 +123,7 @@ PHASE 1 — SPEC COMPLETION
      Function signatures + error matrix.
 1.9  spec/canonical.md — Path round-trip rules (terse // form is canonical).
 1.10 spec/eval.md §12 — directive table update (remove 'find', add 'modify').
-1.11 spec/audits/programs_design_v1.md → audits/code_design_v1.md; v0.8.0
+1.11 spec/audits/code_design_v1.md → audits/code_design_v1.md; v0.8.0
      appendix for ADRs 0028-0030.
 1.12 spec/governance.md §10 — confirm or update for v0.8.0 ADR cadence.
 1.13 ROADMAP.md — v0.8.0 scope LOCKED section; mark v0.7.6 as skipped.
@@ -215,7 +215,7 @@ Normative contract: spec/bindings.md.
      · Layer 1: 16 methods, snake_case.
      · Layer 2 (cxlib::idioms): typed Iterator wrappers compiling to
        CXPath; doc.iter::<T>().filter(...) style. #[derive(CxData)].
-     · Cargo.toml → 0.8.0. Remove dead code: cx_program_eval (wrong
+     · Cargo.toml → 0.8.0. Remove dead code: cx_code_eval (wrong
        arity), node_from_value, attr_from_value, element_from_value,
        doc_from_value.
 3.6  vcx binary version constant → 0.8.0; tooling/vscode/package.json → 0.8.0.
@@ -228,8 +228,8 @@ PHASE 4 — CONFORMANCE
 4.2  conformance/binding_api.txt — new Layer-1 parity suite per
      spec/bindings.md §4.1. Format: --- in_cx, --- call, --- out_text/err.
      Every binding (V/Python/Go/Rust) runs identical fixtures.
-4.3  conformance runner — update scripts/check_programs_fixtures.py +
-     scripts/check_programs_spec_consistency.py for rename + new categories.
+4.3  conformance runner — update scripts/check_code_fixtures.py +
+     scripts/check_code_spec_consistency.py for rename + new categories.
 4.4  XPath 3.1 parity gate (28.5) — scripts/test_xpath_parity.sh shelling
      to Saxon-HE Docker image. Tag fixtures xpath31-parity / xpath31-divergence.
 4.5  All other conformance suites verified green (core.txt, extended.txt,
@@ -272,12 +272,12 @@ PHASE 6 — DOC-GEN
 6.2  Sectional rendering fixed (i-doc-gen-sectional-regression closed).
      Use //page/section sectional [?for] iteration. v0.7.5 byte-identical
      baseline restored for unchanged pages.
-6.3  docs-src/content/reference/programs.cx → reference/code.cx (rename).
+6.3  docs-src/content/reference/code.cx → reference/code.cx (rename).
      Update content for v0.8.0 surface.
 6.4  New page: docs-src/content/reference/cxpath.cx — XPath 3.1 alignment
      reference; links to spec/cxpath_alignment.md.
 6.5  All docs-src/content/*.cx pages — audit for stale [?find], cxl,
-     cx_program_eval references. Update.
+     cx_code_eval references. Update.
 6.6  docs-src/content/playground.cx — update for v0.8.0 starters.
 6.7  docs-src/content/release-notes.cx — v0.8.0 entry.
 6.8  docs-src/content/install.cx — version bumps.
@@ -300,7 +300,7 @@ PHASE 6 — DOC-GEN
 PHASE 7 — PLAYGROUND
 ═════════════════════════════════════════════════════════════════
 7.1  WASM rebuild — scripts/wasm/build_libcx_wasm.sh:
-     · Re-export _cx_code_eval (renamed from _cx_program_eval)
+     · Re-export _cx_code_eval (renamed from _cx_code_eval)
      · Re-export _cx_code_diagram (renamed)
      · New exports if needed for [?modify] / CXPath visualization
      · Cap bit 31 if new capability exposed
@@ -353,7 +353,7 @@ PHASE 9 — MIGRATION
 9.2  docs/migrations/v0_8_0.md — full migration guide (renames,
      retirements, new directives, fixture format changes).
 9.3  scripts/migrate_v07_to_v08.py — automated migration script for user
-     codebases. Performs [?find]→[?for], in_cxl→in_code, cx_program_eval→
+     codebases. Performs [?find]→[?for], in_cxl→in_code, cx_code_eval→
      cx_code_eval substitutions with safety checks.
 9.4  cx-data-and-code-guide §9 (Migration section) — fully authored.
 
@@ -400,7 +400,7 @@ PHASE 12 — FINAL POLISH
 ═════════════════════════════════════════════════════════════════
 12.1 Grep audit — no stray "[?find" outside intentional retirement prose.
 12.2 Grep audit — no "in_cxl" anywhere (except changelog/migration history).
-12.3 Grep audit — no "cx_program_eval" / "vcx/programs" / "spec/programs.md"
+12.3 Grep audit — no "cx_code_eval" / "vcx/code" / "spec/code.md"
      anywhere live (only in migration docs explaining the old names).
 12.4 Grep audit — no "cxl" outside archive/migration prose.
 12.5 No TODO/FIXME blocking release (file as backlog issue if any remain).

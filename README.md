@@ -1,7 +1,7 @@
 # CX
 
 > **The CX Data Language** — one syntax for configs, queries, transforms,
-> and full programs. Every config, document, query, transform, and
+> and full code. Every config, document, query, transform, and
 > program is the same tree of `[...]` forms, so the JSON you write today
 > can grow into the queries, transforms, and services you write tomorrow
 > without changing syntax or learning a second tool.

@@ -41,7 +41,7 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
  test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
  abi-c-test \
  conform conform-vcx conform-md bench bench-python \
- bench-programs-pattern-compile bench-programs-streaming bench-programs-http bench-programs-gates \
+ bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
  examples example-python example-v example-go example-rust example-typescript \
  example-java example-kotlin example-csharp example-ruby example-swift \
  demos demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift \
@@ -310,14 +310,14 @@ test-docs: test-docs-snapshot test-playground-e2e
 
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
-	$(PYTHON) lang/python/conformance_programs.py
+	$(PYTHON) lang/python/conformance_code.py
 	$(PYTHON) lang/python/test_api.py
 	$(PYTHON) lang/python/test_stream.py
 	$(PYTHON) lang/python/test_data_bin_one_shots.py
 	$(PYTHON) lang/python/test_namespaces.py
 	$(PYTHON) lang/python/test_identity.py
 	$(PYTHON) lang/python/test_delimited.py
-	cd lang/python && $(PYTHON) -m unittest test_program_eval -v
+	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
 
 # Apache Arrow C-Data interop tests (Phase 7.74c-cont-bindings).
 # Skip-cleanly if pyarrow is not installed; otherwise builds libcx_arrow
@@ -334,13 +334,13 @@ test-python-arrow-conformance: build-vcx build-lib-arrow
 	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
 
 # Phase 5 Tier-1 binding parity (Python) — exercises the v0.7.6
-# cx_program_eval* surface (spec/audits/programs_abi_v1.md) and its
-# Pythonic eval_program / eval_program_streaming wrappers. The
+# cx_code_eval* surface (spec/audits/code_abi_v1.md) and its
+# Pythonic eval_code / eval_code_streaming wrappers. The
 # v0.7.0 test-python-eval-v0-7-0 target was retired alongside the
 # cxl POC in Phase 7.
-test-python-program-eval: build-vcx
-	cd lang/python && $(PYTHON) -m unittest test_program_eval -v
-	$(PYTHON) lang/python/conformance_programs.py
+test-python-code-eval: build-vcx
+	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
+	$(PYTHON) lang/python/conformance_code.py
 
 test-python-api: build-vcx
 	$(PYTHON) lang/python/test_api.py
@@ -665,43 +665,43 @@ bench-eval: build-vcx
 # ── v0.7.6 §11.6 release-gate harnesses ────────────────────────────────────────
 #
 # Each target runs one of the three perf gates blocking the v0.7.6 tag
-# (spec/v0_7_6_status.md §11.6, spec/programs.md §11.4.4). Exit code
+# (spec/v0_7_6_status.md §11.6, spec/code.md §11.4.4). Exit code
 # is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
 # The benches print their threshold + measured numbers so PASS/FAIL is
 # self-evident in logs. Env knobs documented in each .v file header.
 
 # Gate 14 — pattern compilation (depth-8, 32-binding pattern):
 # p99 parse-time MUST be ≤ 1 ms.
-bench-programs-pattern-compile: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_pattern_compile_bench.v
+bench-code-pattern-compile: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_pattern_compile_bench.v
 
 # Gate 15 — streaming throughput on JSON-shape workloads:
 # mean MUST be ≥ 200 MB/s + no trial below 80 % of mean.
-bench-programs-streaming: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_streaming_throughput_bench.v
+bench-code-streaming: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_streaming_throughput_bench.v
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
-bench-programs-http: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_http_throughput_bench.v
+bench-code-http: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_throughput_bench.v
 
 # Gate 7 — concurrency soak. Loops a buffered send/receive workload
 # detecting deadlocks (per-iter wall-clock cap) and registry leaks
 # across an extended run. Default is a 30 s smoke; release candidate
 # runs the full 24 hours via `GATE7_DURATION_SEC=86400`.
-bench-programs-soak: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_concurrency_soak.v
+bench-code-soak: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_concurrency_soak.v
 
 # Gate 8 — async cancellation battery. 10 000-iteration battery
 # against the canonical [?cancel] → [?await] pattern; zero non-
 # deterministic failures required.
-bench-programs-cancel: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/programs_async_cancel_battery.v
+bench-code-cancel: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_async_cancel_battery.v
 
 # Aggregate runner — drives all three v0.7.6 perf gates back-to-back.
 # Exit code is the FIRST failing gate's exit code (make stops on
 # first non-zero); use individual targets to triage in isolation.
-bench-programs-gates: bench-programs-pattern-compile bench-programs-streaming bench-programs-http
+bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-http
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 

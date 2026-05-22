@@ -12,12 +12,12 @@ version, library version).
 
 ## [Unreleased]
 
-## [0.7.6] — in development on `v0.7.6-dev` (CX programs — the headline release)
+## [0.7.6] — in development on `v0.7.6-dev` (CX code — the headline release)
 
 Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
-(Accepted 2026-05-20), v0.7.6 ships **CX programs** — a unified
+(Accepted 2026-05-20), v0.7.6 ships **CX code** — a unified
 pattern/query/transform language with full integration capabilities
-(visualization, resilience, services, concurrency, async). CX programs
+(visualization, resilience, services, concurrency, async). CX code
 replaces cxpath and cxquery; both are removed from the codebase as
 part of this release.
 
@@ -30,10 +30,10 @@ tests (passed by reduction) and partial specs. Users who need
 production-ready query/transform begin at v0.7.6.
 
 Authoritative design reference:
-[`spec/audits/programs_design_v1.md`](spec/audits/programs_design_v1.md)
-(20 cxpath/cxquery → CX programs side-by-side examples + complete §11
+[`spec/audits/code_design_v1.md`](spec/audits/code_design_v1.md)
+(20 cxpath/cxquery → CX code side-by-side examples + complete §11
 integration-capability specs). Normative spec
-(`spec/programs.md`) is in progress and is a §11.6 release gate.
+(`spec/code.md`) is in progress and is a §11.6 release gate.
 
 ### Added
 
@@ -82,11 +82,11 @@ assigned by subsystem.
 ### Removed
 
 - **cxpath** and **cxquery** implementations deleted from `vcx/`
-  (replaced by CX programs in `vcx/programs/`).
+  (replaced by CX code in `vcx/code/`).
 - **XQuery 4.0 / XPath 4.0 parity scope** retired per ADR 0027's
   supersession of ADR 0022 §D2.
 - `spec/cxpath.md` and `spec/xquery_40_parity.md` retained as
-  historical artifacts; `spec/programs.md` is the normative spec going
+  historical artifacts; `spec/code.md` is the normative spec going
   forward.
 
 ### Release gates
@@ -102,14 +102,14 @@ partial-ship fallback. See ADR 0027 for the gate list.
 ## [0.7.0] — POC, superseded by ADR 0027 (2026-05-20)
 
 > **Status note (2026-05-20).** Everything in the [0.7.0] section
-> below shipped through v0.7.5 as **proof-of-concept**. The CX programs
+> below shipped through v0.7.5 as **proof-of-concept**. The CX code
 > language work it describes (cxpath / cxquery / XQuery 4.0 parity)
 > was structurally incomplete: specs carried TBD markers in
 > normative positions, tests passed by reduction (covering only the
 > implemented subset), and `cx:merge` shipped with material defects
 > (see [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
 > Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md),
-> the entire query/transform surface is being replaced by CX programs in
+> the entire query/transform surface is being replaced by CX code in
 > v0.7.6. Users coming to CX for production query/transform begin
 > there. Other v0.7.x deliverables (WASM build per ADR 0026,
 > `cx:`/`log:` modules per ADR 0023) ship through their own
@@ -117,7 +117,7 @@ partial-ship fallback. See ADR 0027 for the gate list.
 
 Per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
 v0.7.0 was originally framed as the single-cut release that takes the
-cx evaluator from the CX programs 1.0 floor (v0.6.0) to **XQuery 4.0 /
+cx evaluator from the CX code 1.0 floor (v0.6.0) to **XQuery 4.0 /
 XPath 4.0 parity**. That framing is now superseded.
 
 ### Added
@@ -218,8 +218,8 @@ XPath 4.0 parity**. That framing is now superseded.
   `cx_eval_cxl_streaming` → `cx_eval_streaming`.
 - **`cx-version` attribute** → **`cx-eval-version`** with the
   former accepted as a deprecated alias.
-- **Spec / file renames** (F row): `spec/programs.md` → `spec/eval.md`,
-  `examples/cx/` → `examples/cx/`, `conformance/programs.txt` →
+- **Spec / file renames** (F row): `spec/code.md` → `spec/eval.md`,
+  `examples/cx/` → `examples/cx/`, `conformance/code.txt` →
   `conformance/eval.txt`.
 - **`spec/decisions/0021-cxdb-as-database-direction.md`** renamed
   to `0021-cx-database-direction.md`. The `cxdb` / `.cxdb` binary
@@ -256,7 +256,7 @@ XPath 4.0 parity**. That framing is now superseded.
 
 ### Added
 - **`cx_eval_cxl` wired into all 10 bindings** — Python, Go, Rust, Ruby, Java, Kotlin, C#, Swift gained idiomatic `eval_cxl` / `EvalCXL` wrappers (TypeScript and V already had it). program evaluation is now reachable from every binding.
-- **CX programs quickstart block** in all 9 per-binding READMEs — same fleet/svc example across languages.
+- **CX code quickstart block** in all 9 per-binding READMEs — same fleet/svc example across languages.
 - **`cx eval -e <expr> -d <data>`** — inline expression and inline data flags for one-liner program evaluation without files.
 
 ### Fixed
@@ -278,7 +278,7 @@ wire formats, spec-normative grammar).
 - **CSV / TSV / PSV via `--csv` / `--tsv` / `--psv` CLI flags** — delimited conversion now CLI-accessible (was C-ABI-only).
 - **Streaming-write event API** (capability bit 27) — Tier 1 + Tier 2 + CX/XML emits.
 - **Schema validator** — 20/20 spec rules complete on Tier 1 (V core + Python + Go).
-- **CX programs 1.0 evaluator** (V reference; per-binding native rollout deferred to v0.7.0).
+- **CX code 1.0 evaluator** (V reference; per-binding native rollout deferred to v0.7.0).
 - **Parameterized templates** — `?def name :params [a b] :body ...`.
 - **`the evaluation-experience checklist`** — friction-budget gate with 10 hard-fail conditions and 10 time-horizon checkpoints (10s → 1yr+).
 - **CI matrix** (`.github/workflows/ci.yml`) — macOS-14 + ubuntu-22.04/24.04 × 10 bindings.
