@@ -1438,10 +1438,7 @@
     // show a friendly placeholder pointing the user at Tree mode.
     if (!/\[\?[a-z]/i.test(src)) {
       if (diagView.container) diagView.unmount();
-      vizSourceMount.innerHTML =
-        '<div class="cxdv-empty"><p>Graph view renders CX <strong>programs</strong> ' +
-        '(e.g. <code>[?find …]</code>). For pure-data sources, use the ' +
-        '<strong>Tree</strong> view above.</p></div>';
+      vizSourceMount.innerHTML = '<div class="cxdv-empty"><p>Not Available</p></div>';
       return;
     }
     if (!diagView.container) diagView.mount(vizSourceMount);
