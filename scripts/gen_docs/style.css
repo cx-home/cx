@@ -2,7 +2,10 @@
   --bg: #fafaf7;
   --fg: #1a1a1a;
   --muted: #6b7280;
-  --accent: #1f6feb;
+  /* Brand palette — derived from cx-logo.svg cobalt #0039BA. */
+  --accent: #0039BA;
+  --accent-dark: #002A8C;
+  --accent-light: #3B66D3;
   --border: #e6e6e0;
 
   /* Dark code blocks for visual prominence */
@@ -17,7 +20,7 @@
   --side-bg: #f3f3ec;
   --side-fg: #1a1a1a;
   --side-muted: #6b7280;
-  --side-active: #1f6feb;
+  --side-active: #0039BA;
 }
 
 * { box-sizing: border-box; }
