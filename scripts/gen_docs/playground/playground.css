@@ -130,15 +130,22 @@
 .cxp-tab-bar { align-items: center; padding-right: 0.4rem; }
 .cxp-tab-bar .cxp-viz-toggle { margin-left: 0.4rem; }
 
-/* Wide viewports — side-by-side. Threshold per audit §D8. */
-@media (min-width: 1100px) {
+/* Side-by-side: always activate when .has-viz is set on the row.
+   The docs main column after the 220px sidebar is ~1060px on a
+   1280-wide viewport, so the v0.7.6-original 1100px breakpoint
+   left the viz pane permanently stacked. Side-by-side is the
+   intended default; narrow viewports fall back to stacked via the
+   <700px rule below. */
+.cxp-source-row.has-viz,
+.cxp-output-row.has-viz {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+@media (max-width: 699.98px) {
+  /* Narrow viewports — stack viz pane below its primary pane. */
   .cxp-source-row.has-viz,
   .cxp-output-row.has-viz {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
-}
-/* Narrow viewports (<1100px) — stack viz pane below its primary pane. */
-@media (max-width: 1099.98px) {
   .cxp-viz-pane { border-left: 0; border-top: 1px solid var(--code-border); }
 }
 /* Mobile (<700px) — Visualize toggles still render, viz pane starts
@@ -147,6 +154,10 @@
   .cxp-viz-pane { min-height: 200px; }
   .cxp-viz-pane[data-collapsed="true"] .cxp-viz-mount { display: none; }
 }
+
+/* Output pane: header sits above the tab bar — Visualize toggle
+   lives in the header so it matches the Source pane shape. */
+.cxp-output .cxp-pane-header + .cxp-tab-bar { border-top: 0; }
 
 .cxp-pane-header {
   display: flex;
