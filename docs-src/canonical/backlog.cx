@@ -333,20 +333,59 @@
       :owner unassigned
       :builds-on adr-0030
       :ship-target 'v0.8.x (not blocking initial v0.8.0)'
-      :location 'spec/decisions/0031-structural-sharing.md (TBD)']
+      :revision-history '[(2026-05-22: drafted — spine-copy algorithm; cost model O(d) per match; identity invariant; gate 30.5 perf budgets)]'
+      :location 'spec/decisions/0031-structural-sharing.md']
 
     [adr &adr-0032
       :status draft
       :title 'Rename: programs → code across internal API'
       :owner unassigned
-      :scope 'cx_code_eval → cx_code_eval; vcx/code/ → vcx/code/; spec/code.md → spec/code.md; all bindings'
+      :scope 'cx_program_eval → cx_code_eval; vcx/programs/ → vcx/code/; spec/programs.md → spec/code.md; all bindings'
       :ship-target 'after ADRs 0028-0030 land — bundle as one rename pass'
-      :note 'Brand layer (docs) renamed immediately per d-2026-05-22-01']]
+      :note 'Brand layer (docs) renamed immediately per d-2026-05-22-01'
+      :execution 'commit ee6bfcf3 via scripts/rename_programs_to_code.sh — 41 file paths moved, 237 content-substituted, V build + V conformance (156/156) green post-rename'
+      :revision-history '[(2026-05-22: drafted + executed in single session — V-keyword conflict resolved inline by renaming 5 function parameters and 1 local from `code` → `err_code`)]']]
 
   [- ──────────────────────────────────────────────────────────────────
      COMPLETED — moved from `open` when fully verified.
-     Empty at session start.
      ────────────────────────────────────────────────────────────────── -]
 
-  [completed]
+  [completed
+
+    [completed-issue &i-examples-programs-tour-deleted-resolved
+      :resolved 2026-05-22
+      :original 'i-examples-programs-tour-deleted'
+      :resolution 'commit e784b661 — examples/code-tour.cx restored, ported to v0.8.0 surface (CXPath value kind, multi-arm [?match], [?modify], pattern-generator [?for] replacing [?find])'
+      :evidence 'examples/code-tour.cx (210 lines, 15 sections covering every directive family)']
+
+    [completed-issue &i-no-binding-api-parity-fixtures-resolved
+      :resolved 2026-05-22
+      :original 'i-no-binding-api-parity-fixtures'
+      :resolution 'commit aec35d6b — conformance/binding_api.txt with 48 Layer-1 parity fixtures per spec/bindings.md §4.1 (gate 28.6)'
+      :evidence 'conformance/binding_api.txt; covers parse / bytes / hash / equals / eval / select_all / select / modify / find_all / root / name / attr / attrs / children / body / kind. Verification awaits Phase 2 V impl.']
+
+    [completed-issue &i-version-drift-resolved
+      :resolved 2026-05-22
+      :original 'i-version-drift-across-files'
+      :resolution 'commit 22782f94 — VS Code package.json bumped to 0.8.0 via tooling agent. Other binding-side version bumps cascade with Phase 3 binding retargets.'
+      :evidence 'tooling/vscode/package.json (version 0.8.0)']
+
+    [completed-issue &i-no-multi-arm-match-spec-resolved
+      :resolved 2026-05-22
+      :original 'i-no-multi-arm-match'
+      :resolution 'spec layer: ADR 0029 drafted (commit 298a61e7); grammar.ebnf [136]-[140] added; spec/code.md §8.2 multi-arm semantics; 10 conformance fixtures (match-multi-001..010). Impl deferred to Phase 2.'
+      :evidence 'spec/decisions/0029-match-heterogeneous-arms.md + spec/grammar.ebnf + conformance/code.txt match-multi fixtures']
+
+    [completed-issue &i-no-modify-surface-spec-resolved
+      :resolved 2026-05-22
+      :original 'i-no-modify-surface'
+      :resolution 'spec layer: ADR 0030 drafted (5418b469); grammar.ebnf [141]-[148e]; spec/code.md §8.10 [?modify] action vocabulary; 9 conformance fixtures (modify-001..009); ADR 0031 structural-sharing perf basis (20ba051f). Impl deferred to Phase 2.8.'
+      :evidence 'spec/decisions/0030-modify-pure-functional-updates.md + spec/decisions/0031-structural-sharing.md + spec/grammar.ebnf + conformance/code.txt modify fixtures + examples/modify-crud.cx']
+
+    [decision &d-2026-05-22-16
+      :date 2026-05-22
+      :title 'v0.8.0 first full-delivery session — foundation complete; Phase 2 (V impl) deferred to dedicated session'
+      :status accepted
+      :rationale '''The 2026-05-22 full-delivery session landed: ADRs 0028/0029/0030/0031/0032 (drafted); rename executed end-to-end (ee6bfcf3); 6 retired bindings archived (a08683d3); migration tooling + guides + release notes; 48 Layer-1 parity fixtures + 24 XPath 3.1 parity fixtures; XPath 3.1 parity runner; gate-check master runner; 9 canonical-guide sections (2143 lines); v0.8.0 tour examples (cxpath, match-multi, modify, code-tour); tooling refresh (tree-sitter / TextMate / LSP-spec-reservations / VS Code / neovim / completions). V impl of CXPath axes + multi-arm match + modify (Phase 2) is multi-day work and was deliberately left for a dedicated technical session — file `vcx/code/eval.v` is 3915 LOC and adding 12 axes + 11 modify actions + multi-arm match semantics needs focused attention.'''
+      :next-session-scope 'Phase 2 V impl (PathNode AST + parser + evaluator for CXPath / multi-arm [?match] / [?modify]); Phase 3.2-3.6 binding retargets to Layer-1 16-method surface; Phase 4 conformance verification; Phase 6 doc-gen port; Phase 7 wasm + playground; Phase 10 full test sweep']]
 ]
