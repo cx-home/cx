@@ -271,7 +271,7 @@ release-verify:
 # Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
 # Frozen bindings (Java/Kotlin/C#/Ruby/Swift) retain their `test-<lang>`
 # targets for ad-hoc / re-promotion use but are not run by default `test`.
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go test-typescript
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go test-typescript test-docs
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
@@ -286,6 +286,27 @@ test:
 # runs that want low concurrency, or environments where `-j` parallelism
 # causes resource contention.
 test-no-parallel: $(TEST_TARGETS)
+
+# ── Docs / playground catch-net (2026-05-22) ──────────────────────────────────
+# These scripts guard against the failure modes that leaked into v0.7.6
+# this week: V-debug-repr text in rendered HTML, broken anchor links,
+# empty section bodies, and playground starter examples that fail to
+# evaluate. Each is independent and runs in `devbox run --`.
+#
+# test-docs-snapshot — depends on `docs` so the staged tree exists.
+# test-playground-e2e — depends on `docs` for the same reason; spawns a
+#   local http.server against _site_staging/ and checks the corpus baked
+#   into playground.js renders without sentinels.
+# test-docs — composite, runs both.
+.PHONY: test-docs-snapshot test-playground-e2e test-docs
+
+test-docs-snapshot: docs
+	@python3 scripts/dev/test_docs_snapshot.py
+
+test-playground-e2e: docs
+	@python3 scripts/dev/test_playground_e2e.py
+
+test-docs: test-docs-snapshot test-playground-e2e
 
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
