@@ -201,7 +201,27 @@
       :action-vocabulary '[:set, :delete, :using, :rename, :set-attr, :delete-attr,
         :append, :prepend, :insert-before, :insert-after, :replace]'
       :composition 'pipeline via | for multi-step document updates'
-      :perf-contract 'structural sharing: < 1 KB new heap per matched node on 10 MB doc (gate 30.5)']]
+      :perf-contract 'structural sharing: < 1 KB new heap per matched node on 10 MB doc (gate 30.5)']
+
+    [decision &d-2026-05-22-15
+      :date 2026-05-22
+      :title 'Two-layer binding model — Layer 1 canonical + Layer 2 host idioms — normative in spec/bindings.md'
+      :status accepted
+      :rationale '''Two audiences cannot share one surface. CX-native developers
+        want CX vocabulary in every host (Layer 1: identical method names and
+        semantics across V/Python/Go/Rust, conformance-validated). Host-native
+        developers want their language idioms (Layer 2: Pythonic comprehensions,
+        Go filter chains, Rust iterator combinators — all desugar to Layer 1).
+        CXPath strings + data-bin bytes are the two bridges. Layer 1 is the
+        binding parity contract (conformance/binding_api.txt, gate 28.6); Layer 2
+        is binding-private sugar tested via its Layer-1 desugaring.'''
+      :spec spec/bindings.md
+      :layer-1-method-count 16
+      :layer-1-methods '[parse, bytes, hash, equals, eval, select_all, select,
+        modify, find_all, root, name, attr, attrs, children, body, kind]'
+      :builds-on '[d-2026-05-22-07, adr-0028]'
+      :gate 'binding-api-parity (gate 28.6) — byte-identical Layer-1 results across
+        V/Python/Go/Rust on conformance/binding_api.txt']]
 
   [- ──────────────────────────────────────────────────────────────────
      OPEN — issues blocked on ADR ratification or scheduled work.
