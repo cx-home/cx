@@ -428,7 +428,23 @@
   cursor: pointer;
 }
 .cxdv-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
-.cxdv-btn-close { margin-left: auto; }
+.cxdv-btn-fs { margin-left: auto; }
+.cxdv-btn-close { margin-left: 0.3rem; }
+
+/* Fullscreen state — applied to the diagram container by the
+   browser's :fullscreen pseudo + a JS-toggled class fallback. Fills
+   the viewport; toolbar stays anchored at the top; canvas fills the
+   rest. Re-fits on enter via the fullscreenchange handler. */
+.cxdv-fullscreen,
+.cxdv-fullscreen:fullscreen,
+.cxdv-fullscreen:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  background: var(--code-bg);
+  display: flex;
+  flex-direction: column;
+}
+.cxdv-fullscreen .cxdv-canvas { flex: 1; min-height: 0; }
 .cxdv-canvas {
   position: relative;
   height: 100%;
