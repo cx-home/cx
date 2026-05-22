@@ -11,10 +11,8 @@
         <div class="cxp-pane-header">
           <span>CX Source</span>
           <span class="cxp-header-right">
-            <button id="cxp-viz-source" class="cxp-viz-toggle" type="button"
-              aria-pressed="false" title="Show diagram of this program (Mermaid)">
-              Visualize
-            </button>
+            <button class="cxp-viz-mode is-active" data-target="source" data-mode="tree" type="button">Tree</button>
+            <button class="cxp-viz-mode" data-target="source" data-mode="graph" type="button">Graph</button>
             <span id="cxp-source-lang">cx</span>
           </span>
         </div>
@@ -25,9 +23,11 @@
         </div>
       </div>
       <div id="cxp-viz-source-pane" class="cxp-viz-pane" hidden>
-        <div class="cxp-pane-header">
-          <span>Diagram</span>
-          <span class="cxp-header-right cxp-viz-hint">Mermaid · CX program</span>
+        <div class="cxp-pane-header cxp-viz-pane-header">
+          <span></span>
+          <span class="cxp-header-right">
+            <button class="cxp-viz-close" data-target="source" type="button" title="Close" aria-label="Close visualize">×</button>
+          </span>
         </div>
         <div id="cxp-viz-source-mount" class="cxp-viz-mount"></div>
       </div>
@@ -36,12 +36,9 @@
       <div class="cxp-output-col">
         <div class="cxp-output">
           <div class="cxp-pane-header">
-            <span>Output</span>
+            <span>CX Output</span>
             <span class="cxp-header-right">
-              <button id="cxp-viz-output" class="cxp-viz-toggle" type="button"
-                aria-pressed="false" title="Show interactive tree of the parsed value">
-                Visualize
-              </button>
+              <button class="cxp-viz-mode is-active" data-target="output" data-mode="tree" type="button">Tree</button>
             </span>
           </div>
           <div class="cxp-tab-bar">
@@ -55,9 +52,11 @@
         </div>
       </div>
       <div id="cxp-viz-output-pane" class="cxp-viz-pane" hidden>
-        <div class="cxp-pane-header">
-          <span>Tree</span>
-          <span class="cxp-header-right cxp-viz-hint">Containment-only</span>
+        <div class="cxp-pane-header cxp-viz-pane-header">
+          <span></span>
+          <span class="cxp-header-right">
+            <button class="cxp-viz-close" data-target="output" type="button" title="Close" aria-label="Close visualize">×</button>
+          </span>
         </div>
         <div id="cxp-viz-output-mount" class="cxp-viz-mount cxp-viz-tree-mount"></div>
       </div>

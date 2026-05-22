@@ -1037,8 +1037,6 @@
   const status  = document.getElementById('cxp-status');
   const tabs    = document.querySelectorAll('.cxp-tab');
   const panes   = document.querySelectorAll('.cxp-pane');
-  const vizSourceBtn   = document.getElementById('cxp-viz-source');
-  const vizOutputBtn   = document.getElementById('cxp-viz-output');
   const vizSourcePane  = document.getElementById('cxp-viz-source-pane');
   const vizOutputPane  = document.getElementById('cxp-viz-output-pane');
   const vizSourceMount = document.getElementById('cxp-viz-source-mount');
@@ -1107,6 +1105,18 @@
       status.classList.remove('error', 'info');
       statusDefaultHTMLRef.value = status.innerHTML;
     }
+    // The init pass may have toggled Visualize ON before liveActive
+    // flipped — in that case the Source diagram pane is showing the
+    // "Mermaid diagrams require live libcx.wasm" placeholder. Now
+    // that wasm is up, run a deferred Run + refresh so the panes
+    // pick up the live evaluator without an extra user click.
+    try {
+      const outs = liveEvaluate(pick.value);
+      applyOutputs(outs);
+      lastJsonText = outs.json || '';
+    } catch (_) { /* swallow — the panes already show canned outputs */ }
+    if (typeof refreshSourceViz === 'function' && vizSourceOn) refreshSourceViz();
+    if (typeof refreshOutputViz === 'function' && vizOutputOn) refreshOutputViz();
   }
 
   const liveReady = (typeof globalThis !== 'undefined' && globalThis.cxlib && globalThis.cxlib.ready)
@@ -1306,70 +1316,120 @@
   // cxlib.toJson AST (works in both modes — canned JSON is parsed
   // directly). Tree→text bridge: clicking a tree node highlights the
   // first substring match in the active Output text tab.
+  // Source pane viz components — one for each mode. srcVizKind picks
+  // which one's currently mounted to vizSourceMount.
+  const srcTreeView = (globalThis.CxTreeView && vizSourceMount)
+    ? new globalThis.CxTreeView({ onSelect: bridgeHighlight })
+    : null;
   const diagView = (globalThis.CxDiagramView && vizSourceMount)
     ? new globalThis.CxDiagramView({ onClose: () => setVizSource(false) })
     : null;
+  // Output pane viz — Tree only (containment-only structure of the
+  // evaluated value).
   const treeView = (globalThis.CxTreeView && vizOutputMount)
     ? new globalThis.CxTreeView({ onSelect: bridgeHighlight })
     : null;
   let vizSourceOn = false;
   let vizOutputOn = false;
+  let srcVizKind = 'tree';  // 'tree' | 'graph' — Source pane mode
   let lastSource = '';
   let lastJsonText = '';
 
+  // Mode buttons live in the LEFT pane headers (CX Source, CX Output).
+  // syncSourceModeButtons / syncOutputModeButtons reflect the current
+  // (vizSourceOn, srcVizKind) / vizOutputOn state on the button row.
+  function syncSourceModeButtons() {
+    document.querySelectorAll('.cxp-viz-mode[data-target="source"]').forEach((b) => {
+      b.classList.toggle('is-active', vizSourceOn && b.dataset.mode === srcVizKind);
+    });
+  }
+  function syncOutputModeButtons() {
+    document.querySelectorAll('.cxp-viz-mode[data-target="output"]').forEach((b) => {
+      b.classList.toggle('is-active', vizOutputOn && b.dataset.mode === 'tree');
+    });
+  }
+
   function setVizSource(on) {
     vizSourceOn = !!on;
-    if (vizSourceBtn) vizSourceBtn.setAttribute('aria-pressed', vizSourceOn ? 'true' : 'false');
     if (vizSourcePane) {
       if (vizSourceOn) vizSourcePane.removeAttribute('hidden');
       else vizSourcePane.setAttribute('hidden', '');
     }
     if (sourceRow) sourceRow.classList.toggle('has-viz', vizSourceOn);
-    if (vizSourceOn) {
-      if (diagView && !diagView.container) diagView.mount(vizSourceMount);
-      refreshSourceViz();
-    }
+    syncSourceModeButtons();
+    if (vizSourceOn) refreshSourceViz();
   }
 
   function setVizOutput(on) {
     vizOutputOn = !!on;
-    if (vizOutputBtn) vizOutputBtn.setAttribute('aria-pressed', vizOutputOn ? 'true' : 'false');
     if (vizOutputPane) {
       if (vizOutputOn) vizOutputPane.removeAttribute('hidden');
       else vizOutputPane.setAttribute('hidden', '');
     }
     if (outputRow) outputRow.classList.toggle('has-viz', vizOutputOn);
+    syncOutputModeButtons();
     if (vizOutputOn) {
       if (treeView && !treeView.container) treeView.mount(vizOutputMount);
       refreshOutputViz();
     }
   }
 
+  // Source pane has two viz modes (Tree of the source AST, or Graph
+  // via Mermaid). Switching modes unmounts the previous component
+  // and mounts the next at the same vizSourceMount element so the
+  // pane geometry stays put.
+  function setSrcVizKind(kind) {
+    srcVizKind = (kind === 'graph') ? 'graph' : 'tree';
+    // Unmount the previous component so its toolbar/canvas drop out.
+    if (diagView && diagView.container) diagView.unmount();
+    if (srcTreeView && srcTreeView.container) srcTreeView.unmount();
+    syncSourceModeButtons();
+    if (vizSourceOn) refreshSourceViz();
+  }
+
   function refreshSourceViz() {
-    if (!vizSourceOn || !diagView) return;
-    const cxlib = globalThis.cxlib;
-    if (!liveActive || !cxlib || typeof cxlib.diagram !== 'function') {
-      if (vizSourceMount) {
-        vizSourceMount.innerHTML =
-          '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
-      }
-      return;
-    }
+    if (!vizSourceOn || !vizSourceMount) return;
     const src = input.value;
     lastSource = src;
+    const cxlib = globalThis.cxlib;
+    if (srcVizKind === 'tree') {
+      if (!srcTreeView) {
+        vizSourceMount.innerHTML = '<div class="cxdv-empty">Tree view unavailable</div>';
+        return;
+      }
+      if (!srcTreeView.container) srcTreeView.mount(vizSourceMount);
+      let parsed = null;
+      if (liveActive && cxlib && typeof cxlib.toJson === 'function') {
+        try {
+          const jsonText = cxlib.toJson(src);
+          parsed = JSON.parse(jsonText);
+        } catch (_) { parsed = null; }
+      }
+      srcTreeView.update(parsed);
+      return;
+    }
+    // Graph mode — Mermaid via cxlib.diagram (requires live wasm).
+    if (!diagView) {
+      vizSourceMount.innerHTML = '<div class="cxdv-empty">Graph view unavailable</div>';
+      return;
+    }
+    if (!diagView.container) diagView.mount(vizSourceMount);
+    if (!liveActive || !cxlib || typeof cxlib.diagram !== 'function') {
+      vizSourceMount.innerHTML =
+        '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
+      return;
+    }
     try {
       const mermaidText = cxlib.diagram(src, 'mermaid');
       diagView.render(mermaidText);
     } catch (err) {
-      if (vizSourceMount) {
-        vizSourceMount.innerHTML =
-          '<pre class="cxdv-error">' +
-          String(err && err.message ? err.message : err).replace(
-            /[<&>]/g,
-            (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
-          ) +
-          '</pre>';
-      }
+      vizSourceMount.innerHTML =
+        '<pre class="cxdv-error">' +
+        String(err && err.message ? err.message : err).replace(
+          /[<&>]/g,
+          (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
+        ) +
+        '</pre>';
     }
   }
 
@@ -1415,8 +1475,48 @@
     if (mark && mark.scrollIntoView) mark.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
-  if (vizSourceBtn) vizSourceBtn.addEventListener('click', () => setVizSource(!vizSourceOn));
-  if (vizOutputBtn) vizOutputBtn.addEventListener('click', () => setVizOutput(!vizOutputOn));
+  // Viz mode buttons live in the LEFT pane headers (CX Source / CX
+  // Output) and act as openers for the corresponding visual pane:
+  //
+  //   Click Tree (inactive) → open visual pane, mode=tree, render
+  //   Click Graph (inactive) → open visual pane, mode=graph, render
+  //   Click already-active mode → close the visual pane
+  //   Click other mode while pane open → switch mode in place
+  //
+  // The × button in the visual pane header closes that pane and
+  // deactivates the corresponding mode buttons. Listeners are
+  // document-delegated so dynamically-rendered buttons (e.g. from a
+  // future component swap) still respond.
+  document.addEventListener('click', (ev) => {
+    const modeBtn = ev.target.closest && ev.target.closest('.cxp-viz-mode');
+    if (modeBtn) {
+      const target = modeBtn.dataset.target;
+      const mode = modeBtn.dataset.mode;
+      if (target === 'source') {
+        if (vizSourceOn && srcVizKind === mode) {
+          // Same active mode clicked → close.
+          setVizSource(false);
+        } else if (vizSourceOn) {
+          // Different mode while open → switch.
+          setSrcVizKind(mode);
+        } else {
+          // Closed → open in the requested mode.
+          srcVizKind = mode;
+          setVizSource(true);
+        }
+      } else if (target === 'output') {
+        // Output has Tree only — toggle the pane.
+        setVizOutput(!vizOutputOn);
+      }
+      return;
+    }
+    const closeBtn = ev.target.closest && ev.target.closest('.cxp-viz-close');
+    if (closeBtn) {
+      const target = closeBtn.dataset.target;
+      if (target === 'source') setVizSource(false);
+      else if (target === 'output') setVizOutput(false);
+    }
+  });
 
   runBtn.addEventListener('click', () => {
     try {
@@ -1470,6 +1570,11 @@
   // failing to populate the panes.
   try {
     load(pick.value || 'data:atom');
+    // Visualize toggles default ON so users see the diagram + tree
+    // immediately without an extra click. Each toggle is still a
+    // user-controllable switch — clicking turns them off.
+    setVizSource(true);
+    setVizOutput(true);
   } catch (err) {
     setStatus(`Playground failed to initialise: ${err && err.message ? err.message : err}`, 'error');
     // eslint-disable-next-line no-console

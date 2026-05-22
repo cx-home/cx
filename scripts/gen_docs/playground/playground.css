@@ -67,23 +67,36 @@
 .cxp-output-row {
   display: grid;
   grid-template-columns: 1fr;
+  /* Make grid children stretch to the row's full height — keeps
+     the primary pane (Source / Output) and the sibling Visualize
+     pane the same vertical extent so they read as one unit. */
+  align-items: stretch;
   border-bottom: 1px solid var(--code-border);
+  min-height: 280px;
 }
 .cxp-source-row:last-child,
 .cxp-output-row:last-child { border-bottom: 0; }
 
 .cxp-source-col,
-.cxp-output-col { min-width: 0; min-height: 0; }
+.cxp-output-col {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Sibling viz pane — same background palette as the code panes for
-   visual coherence; left-border separator when in side-by-side mode. */
+   visual coherence; left-border separator when in side-by-side mode.
+   align-self: stretch + height 100% so a tall tree-view fills the
+   row, not pushing past it. */
 .cxp-viz-pane {
   display: flex;
   flex-direction: column;
   background: var(--code-bg);
   color: var(--code-fg);
   border-left: 1px solid var(--code-border);
-  min-height: 240px;
+  height: 100%;
+  align-self: stretch;
   overflow: hidden;
 }
 .cxp-viz-pane[hidden] { display: none; }
@@ -126,6 +139,41 @@
   border-color: var(--accent);
   color: white;
 }
+
+/* Viz pane mode tabs (Tree / Graph) — sit in the pane header next to
+   the close button. Active mode highlighted with the brand accent. */
+.cxp-viz-mode {
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--code-label);
+  cursor: pointer;
+}
+.cxp-viz-mode:hover { color: var(--code-fg); border-color: var(--code-label); }
+.cxp-viz-mode.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.cxp-viz-close {
+  font: 14px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  color: var(--code-label);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 0.25rem;
+}
+.cxp-viz-close:hover { color: var(--code-fg); border-color: var(--code-label); }
+/* The right visual panes carry no title — header is just the × row. */
+.cxp-viz-pane-header { justify-content: flex-end; }
 .cxp-tab-spacer { flex: 1; }
 .cxp-tab-bar { align-items: center; padding-right: 0.4rem; }
 .cxp-tab-bar .cxp-viz-toggle { margin-left: 0.4rem; }
@@ -222,10 +270,15 @@
 }
 .cxp-input::selection { background: rgba(125, 211, 252, 0.35); color: transparent; }
 
-/* Copy button for the source pane. Mirrors the global .copy-btn
-   style (style.css) but lifts above the transparent textarea so
-   it remains clickable, and shows on .cxp-editor hover/focus. */
-.cxp-editor .copy-btn { z-index: 3; }
+/* Copy button for the source pane. Always visible (was hover-only,
+   which caused the button to "appear" — a layout bounce — when the
+   pointer entered the pane). Sits above the transparent textarea so
+   it remains clickable; subtle palette keeps it from competing with
+   the source text. */
+.cxp-editor .copy-btn {
+  z-index: 3;
+  opacity: 0.85;
+}
 .cxp-editor:hover .copy-btn,
 .cxp-editor:focus-within .copy-btn { opacity: 1; }
 
