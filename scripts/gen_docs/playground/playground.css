@@ -66,10 +66,15 @@
 .cxp-source-row,
 .cxp-output-row {
   display: grid;
-  grid-template-columns: 1fr;
+  /* Always 50/50 — left primary pane (Source / Output) on the
+     left; right visualize pane on the right. The viz pane uses
+     `visibility: hidden` (not display:none) when closed so the
+     left column's width stays constant — that keeps the centered
+     menu's position stable across open/close transitions. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   /* Make grid children stretch to the row's full height — keeps
-     the primary pane (Source / Output) and the sibling Visualize
-     pane the same vertical extent so they read as one unit. */
+     the primary pane and the sibling Visualize pane the same
+     vertical extent so they read as one unit. */
   align-items: stretch;
   border-bottom: 1px solid var(--code-border);
   min-height: 280px;
@@ -99,7 +104,17 @@
   align-self: stretch;
   overflow: hidden;
 }
-.cxp-viz-pane[hidden] { display: none; }
+/* Closed visualize panes hide via visibility (not display:none) so
+   the grid column slot stays sized — the left primary pane keeps
+   its half-width position, and the centered menu doesn't jump.
+   `[hidden]` is the browser-supplied attribute on the pane element;
+   we redefine its effect rather than rely on the UA default
+   (which is display:none). */
+.cxp-viz-pane[hidden] {
+  display: flex !important;     /* override the UA `[hidden] { display: none }` */
+  visibility: hidden;
+  pointer-events: none;
+}
 
 .cxp-viz-mount {
   flex: 1;
@@ -178,20 +193,15 @@
 .cxp-tab-bar { align-items: center; padding-right: 0.4rem; }
 .cxp-tab-bar .cxp-viz-toggle { margin-left: 0.4rem; }
 
-/* Side-by-side: always activate when .has-viz is set on the row.
-   The docs main column after the 220px sidebar is ~1060px on a
-   1280-wide viewport, so the v0.7.6-original 1100px breakpoint
-   left the viz pane permanently stacked. Side-by-side is the
-   intended default; narrow viewports fall back to stacked via the
-   <700px rule below. */
-.cxp-source-row.has-viz,
-.cxp-output-row.has-viz {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
+/* The 50/50 row layout is set unconditionally above on
+   .cxp-source-row / .cxp-output-row. .has-viz was the old class for
+   toggling the right column on/off — no longer needed since closing
+   the viz pane uses visibility:hidden (slot persists). Narrow-
+   viewport stacking falls back below. */
 @media (max-width: 699.98px) {
   /* Narrow viewports — stack viz pane below its primary pane. */
-  .cxp-source-row.has-viz,
-  .cxp-output-row.has-viz {
+  .cxp-source-row,
+  .cxp-output-row {
     grid-template-columns: minmax(0, 1fr);
   }
   .cxp-viz-pane { border-left: 0; border-top: 1px solid var(--code-border); }
@@ -246,6 +256,7 @@
    share font, padding, and white-space so glyphs align 1:1. */
 .cxp-editor {
   position: relative;
+  flex: 1;                              /* fill remaining height of source col */
   min-height: 240px;
   background: var(--code-bg);
   border-bottom: 1px solid var(--code-border);
@@ -449,9 +460,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 12.5px 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  padding: 0 2rem;
+  font: 12.5px/1.5 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   color: var(--code-label);
+  text-align: center;
 }
+.cxdv-empty p {
+  margin: 0;
+  max-width: 320px;
+  line-height: 1.55;
+}
+.cxdv-empty code  { color: var(--code-fg); }
+.cxdv-empty strong { color: var(--code-fg); font-weight: 600; }
 .cxdv-error {
   color: #fca5a5;
   white-space: pre-wrap;

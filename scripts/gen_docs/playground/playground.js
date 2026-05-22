@@ -1355,6 +1355,8 @@
       if (vizSourceOn) vizSourcePane.removeAttribute('hidden');
       else vizSourcePane.setAttribute('hidden', '');
     }
+    // .has-viz no longer toggles the row layout (grid is always 50/50);
+    // we keep the class set for any CSS that wants to read open-state.
     if (sourceRow) sourceRow.classList.toggle('has-viz', vizSourceOn);
     syncSourceModeButtons();
     if (vizSourceOn) refreshSourceViz();
@@ -1424,12 +1426,25 @@
       vizSourceMount.innerHTML = '<div class="cxdv-empty">Graph view unavailable</div>';
       return;
     }
-    if (!diagView.container) diagView.mount(vizSourceMount);
     if (!liveActive || !cxlib || typeof cxlib.diagram !== 'function') {
+      if (diagView.container) diagView.unmount();
       vizSourceMount.innerHTML =
         '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
       return;
     }
+    // Pre-check: Graph mode renders CX *programs* (a [?find], [?for],
+    // [?match], …). Pure-data sources (no leading [?…] directive)
+    // would fail the program parser with a "unexpected token" error;
+    // show a friendly placeholder pointing the user at Tree mode.
+    if (!/\[\?[a-z]/i.test(src)) {
+      if (diagView.container) diagView.unmount();
+      vizSourceMount.innerHTML =
+        '<div class="cxdv-empty"><p>Graph view renders CX <strong>programs</strong> ' +
+        '(e.g. <code>[?find …]</code>). For pure-data sources, use the ' +
+        '<strong>Tree</strong> view above.</p></div>';
+      return;
+    }
+    if (!diagView.container) diagView.mount(vizSourceMount);
     try {
       const mermaidText = cxlib.diagram(src, 'mermaid');
       diagView.render(mermaidText);
