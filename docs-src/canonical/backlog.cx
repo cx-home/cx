@@ -37,7 +37,7 @@
         is the standard pairing with "data" in industry vernacular.'''
       :scope brand-and-docs
       :applies-to '[docs-src/, READMEs, taglines, public-facing surface]'
-      :defers 'internal API rename (cx_program_eval, vcx/programs/, programs.md) — separate ADR; cascades through every binding']
+      :defers 'internal API rename (cx_code_eval, vcx/code/, code.md) — separate ADR; cascades through every binding']
 
     [decision &d-2026-05-22-02
       :date 2026-05-22
@@ -102,7 +102,7 @@
         opt-in (Pythonic / Go / Rust / etc) that desugars to Layer 1.
         CXPath strings + data-bin bytes are the bridges.'''
       :builds-on adr-0028
-      :validation 'binding-API parity fixtures separate from programs.txt']
+      :validation 'binding-API parity fixtures separate from code.txt']
 
     [decision &d-2026-05-22-08
       :date 2026-05-22
@@ -128,7 +128,7 @@
         gotchas, XPath-4.0-watch) is the deliberate choice.'''
       :supersedes-clause 'd-2026-05-22-01 D2 narrow framing (v0.7.0 subset)'
       :divergences '[
-        (no-construct-duplication: for/let/if/function delegated to CX programs),
+        (no-construct-duplication: for/let/if/function delegated to CX code),
         (value-comparison-only: replaces XPath general/value dual system on = != <),
         (cx-type-vocabulary: replaces xs:integer/xs:string/etc),
         (no-expression-namespace-decls: ns declarations live in data)]'
@@ -140,13 +140,13 @@
       :status accepted
       :rationale '''With Path as a value kind (ADR 0028), the search
         case has the terse spelling //pattern; the binding-capture
-        case is covered by [?for [pattern] :yield expr] (programs.md
+        case is covered by [?for [pattern] :yield expr] (code.md
         §7.5 pattern-generator). [?find] was always sugar for the
         latter (spec said so); three spellings of two operations
         breaks the unified-vocabulary discipline.'''
       :decided-in adr-0028
       :migration 'mechanical — replace [?find with [?for in every fixture and example'
-      :scope '~15 fixtures, ~30 lines spec/programs.md, vcx/programs/tokens.v directive_names']
+      :scope '~15 fixtures, ~30 lines spec/code.md, vcx/code/tokens.v directive_names']
 
     [decision &d-2026-05-22-11
       :date 2026-05-22
@@ -243,13 +243,13 @@
       :symptom 'doc.select_all() removed; host-language nested loops required for any predicate selection'
       :evidence 'lang/python/cxlib/cx.py:749 — "cx_select_all_paths removed"'
       :blocks-on adr-0028
-      :resolution-plan 'CXPath as first-class expression value; bindings expose select_all(path) as Layer-1 method that wraps cx_program_eval']
+      :resolution-plan 'CXPath as first-class expression value; bindings expose select_all(path) as Layer-1 method that wraps cx_code_eval']
 
     [issue &i-no-multi-arm-match
       :priority high
       :title '[?match] is single-arm only; no scalar literals; no :else'
       :symptom 'Shape dispatch over heterogeneous values requires chained [?if] + name() — verbose and unergonomic'
-      :evidence 'spec/programs.md §8.2 single-arm only; conformance program-err-001 locks single-arm error behavior but does not preclude N-arm extension'
+      :evidence 'spec/code.md §8.2 single-arm only; conformance program-err-001 locks single-arm error behavior but does not preclude N-arm extension'
       :blocks-on adr-0029
       :resolution-plan 'Add multi-arm :case / :when / :else + scalar literal patterns + _ wildcard']
 
@@ -270,7 +270,7 @@
     [issue &i-rust-dead-code-warnings
       :priority low
       :title 'Rust binding has unused functions from Tier-2 catchup'
-      :details '[cx_program_eval (unused — wrong arity?), node_from_value, attr_from_value, element_from_value, doc_from_value]'
+      :details '[cx_code_eval (unused — wrong arity?), node_from_value, attr_from_value, element_from_value, doc_from_value]'
       :resolution-plan 'Cleanup commit on v0.8.0-dev']
 
     [issue &i-examples-programs-tour-deleted
@@ -287,7 +287,7 @@
     [issue &i-no-binding-api-parity-fixtures
       :priority medium
       :title 'No binding-API parity test surface (Layer-1 contract)'
-      :symptom 'conformance/programs.txt validates evaluator output; nothing validates that doc.find_all / doc.select / doc.modify exist with identical semantics in every binding'
+      :symptom 'conformance/code.txt validates evaluator output; nothing validates that doc.find_all / doc.select / doc.modify exist with identical semantics in every binding'
       :resolution-plan 'Add conformance/binding_api.txt — input doc + method call + expected result/error; every binding runs the same fixtures']]
 
   [- ──────────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@
       :status draft
       :title 'Rename: programs → code across internal API'
       :owner unassigned
-      :scope 'cx_program_eval → cx_code_eval; vcx/programs/ → vcx/code/; spec/programs.md → spec/code.md; all bindings'
+      :scope 'cx_code_eval → cx_code_eval; vcx/code/ → vcx/code/; spec/code.md → spec/code.md; all bindings'
       :ship-target 'after ADRs 0028-0030 land — bundle as one rename pass'
       :note 'Brand layer (docs) renamed immediately per d-2026-05-22-01']]
 

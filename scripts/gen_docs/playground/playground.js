@@ -9,21 +9,21 @@
 // / toXml). Program examples intermingle data + directives in one CX
 // document; data and code share the same syntax in CX, so the
 // playground passes the same source as both the program and the bound
-// document to cxlib.evalProgram(src, 'cx', src). programs.parse
+// document to cxlib.evalCode(src, 'cx', src). code.parse
 // accepts data literals as expression statements; the directive at
 // the tail walks the data literals at the head.
 //
 // JSON / XML output panes use a *secondary pass* over the program's
 // CX output — `cxlib.toJson(programCxOutput)` produces the clean
 // data-projection JSON (`{"item":[1,2,3]}`) rather than the AST-JSON
-// projection that `evalProgram(..., 'json', ...)` emits (which is
+// projection that `evalCode(..., 'json', ...)` emits (which is
 // useful for renderers but verbose for the playground UX).
 //
 // Two modes, decided at page-load time by detecting `window.cxlib`:
 //
 //  • Live mode: libcx-wasm is bundled with the site. The Run button
 //    is enabled, the PLANNED notice is retired, and Run routes the
-//    *current source textarea* through cxlib.evalProgram / toCx /
+//    *current source textarea* through cxlib.evalCode / toCx /
 //    toJson / toXml — user edits are actually executed.
 //
 //  • Canned mode (no-wasm fallback): the Run button stays disabled,
@@ -1192,7 +1192,7 @@
     }
     pick.appendChild(dataGroup);
     const progGroup = document.createElement('optgroup');
-    progGroup.label = 'Programs — v0.7.6 directives (cxlib.evalProgram)';
+    progGroup.label = 'Programs — v0.7.6 directives (cxlib.evalCode)';
     for (const [key, ex] of Object.entries(programExamples)) {
       const opt = document.createElement('option');
       opt.value = 'program:' + key;
@@ -1330,7 +1330,7 @@
     const ex = found.ex;
     // Data examples carry .input; program examples carry .program
     // (the textarea always shows just the program — the .data is
-    // combined invisibly at evalProgram time).
+    // combined invisibly at evalCode time).
     input.value = ex.input;
     setInputLang('cx');
     refreshOutputs(key);
@@ -1406,10 +1406,10 @@
   // Program examples — textarea is the v0.7.6 program; the bound
   // input document (the example's .data field, optional) lives in
   // the example record. liveEvaluate combines them at Run time and
-  // routes through evalProgram for the CX output, then takes a
+  // routes through evalCode for the CX output, then takes a
   // secondary pass through toJson / toXml on that CX output for
   // the clean data-projection JSON / XML (vs the verbose AST-JSON
-  // that evalProgram(..., 'json', ...) would emit).
+  // that evalCode(..., 'json', ...) would emit).
   function liveEvaluate(key) {
     const src = input.value;
     const cxlib = globalThis.cxlib;
@@ -1422,10 +1422,10 @@
       };
     }
     // Program examples: pass the same source as both program AND
-    // bound document. programs.parse accepts data literals as
+    // bound document. code.parse accepts data literals as
     // expression statements; the directive at the tail walks the
     // data literals at the head.
-    const cxOut = cxlib.evalProgram(src, 'cx', src);
+    const cxOut = cxlib.evalCode(src, 'cx', src);
     return {
       cx:   cxOut,
       json: cxOut ? cxlib.toJson(cxOut) : '',
