@@ -302,11 +302,11 @@
     'block-comment': {
       label: "Block comment \u2014 [- ... -]",
       input: [
-        "[- Site-wide configuration; this comment doesn't render. -]",
+        "[- Site-wide configuration; this comment does not render. -]",
         "[site name=acme port=8080]"
       ].join('\n'),
       cx:    [
-        "[- Site-wide configuration; this comment doesn't render. -]",
+        "[- Site-wide configuration; this comment does not render. -]",
         "[site name=acme port=8080]"
       ].join('\n'),
       json:  [
@@ -318,7 +318,7 @@
         "}"
       ].join('\n'),
       xml:   [
-        "<!-- Site-wide configuration; this comment doesn't render. --->",
+        "<!-- Site-wide configuration; this comment does not render. --->",
         "<site name=\"acme\" port=\"8080\"/>"
       ].join('\n'),
     },
@@ -555,19 +555,19 @@
       label: "Quoted strings \u2014 escapes and special chars",
       input: [
         "[message",
-        "  text=\"She said \\\"hello\\\" loudly.\"",
+        "  text=\"She said \\\\\"hello\\\\\" loudly.\"",
         "  path='/usr/local/bin']"
       ].join('\n'),
-      cx:    "[message text='She said \\' hello\\\" loudly.\" path='/usr/local/bin']",
+      cx:    "[message text='She said \\\\' hello\\\\\" loudly.\" path='/usr/local/bin']",
       json:  [
         "{",
         "  \"message\": {",
-        "    \"text\": \"She said \\\\\",",
-        "    \"_\": \"hello\\\\\\\" loudly.\\\" path='/usr/local/bin'\"",
+        "    \"text\": \"She said \\\\\\\\\",",
+        "    \"_\": \"hello\\\\\\\\\\\" loudly.\\\" path='/usr/local/bin'\"",
         "  }",
         "}"
       ].join('\n'),
-      xml:   "<message text=\"She said \\\">hello\\\" loudly.\" path='/usr/local/bin'</message>",
+      xml:   "<message text=\"She said \\\\\">hello\\\\\" loudly.\" path='/usr/local/bin'</message>",
     },
     'raw-text': {
       label: "Raw text \u2014 [# ... #] preserves bytes",
@@ -962,6 +962,7 @@
       ].join('\n'),
     },
   };
+
 
   // ── Lookup helpers ──────────────────────────────────────────────
   // Picker option values use 'data:<key>' or 'program:<key>' prefixes
