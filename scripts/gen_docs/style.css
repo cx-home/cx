@@ -53,14 +53,23 @@ aside.sidebar {
 
 aside.sidebar .brand {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.05rem;
   letter-spacing: -0.01em;
   margin: 0 0 0.9rem;
   color: var(--side-fg);
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   text-decoration: none;
 }
 aside.sidebar .brand:hover { text-decoration: none; }
+aside.sidebar .brand-mark {
+  display: block;
+  flex-shrink: 0;
+}
+aside.sidebar .brand-text {
+  color: var(--accent);
+}
 
 aside.sidebar .brand-sub {
   display: block;
