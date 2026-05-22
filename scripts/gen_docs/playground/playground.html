@@ -8,13 +8,13 @@
   <div class="cxp-panes">
     <div class="cxp-source-row">
       <div class="cxp-source-col">
-        <div class="cxp-pane-header">
-          <span>CX Source</span>
-          <span class="cxp-header-right">
+        <div class="cxp-pane-header cxp-pane-header-centered">
+          <span class="cxp-pane-title">CX Source</span>
+          <span class="cxp-pane-menu">
             <button class="cxp-viz-mode is-active" data-target="source" data-mode="tree" type="button">Tree</button>
             <button class="cxp-viz-mode" data-target="source" data-mode="graph" type="button">Graph</button>
-            <span id="cxp-source-lang">cx</span>
           </span>
+          <span class="cxp-pane-right"></span>
         </div>
         <div class="cxp-editor">
           <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
@@ -35,11 +35,12 @@
     <div class="cxp-output-row">
       <div class="cxp-output-col">
         <div class="cxp-output">
-          <div class="cxp-pane-header">
-            <span>CX Output</span>
-            <span class="cxp-header-right">
+          <div class="cxp-pane-header cxp-pane-header-centered">
+            <span class="cxp-pane-title">CX Output</span>
+            <span class="cxp-pane-menu">
               <button class="cxp-viz-mode is-active" data-target="output" data-mode="tree" type="button">Tree</button>
             </span>
+            <span class="cxp-pane-right"></span>
           </div>
           <div class="cxp-tab-bar">
             <button class="cxp-tab is-active" data-tab="cx" type="button">CX</button>

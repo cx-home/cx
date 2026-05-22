@@ -219,6 +219,27 @@
   letter-spacing: 0.06em;
 }
 
+/* Centered-menu header — 3-column grid keeps the menu pinned to the
+   pane's center, left-justified at the centerline. Title sits at the
+   start; the right slot stays empty so the menu's vertical position
+   doesn't shift when the right viz pane opens or closes (the row's
+   columns are 1fr auto 1fr — equal-weight side gutters force the
+   middle to the center regardless of pane width). */
+.cxp-pane-header-centered {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cxp-pane-header-centered .cxp-pane-title { justify-self: start; }
+.cxp-pane-header-centered .cxp-pane-menu {
+  justify-self: start;     /* left-justified at the centerline */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.cxp-pane-header-centered .cxp-pane-right { justify-self: end; }
+
 /* Source editor — overlay technique. A highlighted <pre> sits
    behind a transparent <textarea>; the textarea drives input
    and caret while the <pre> renders the colored tokens. Both
