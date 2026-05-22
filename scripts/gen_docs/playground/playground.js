@@ -678,14 +678,21 @@
           'ok'
         );
       }
-      // On-Run viz refresh per audit §D2 (no live-debounce).
-      if (vizSourceOn) refreshSourceViz();
-      if (vizOutputOn) refreshOutputViz();
+      // Viz refresh happens in the finally block below so a failed
+      // live-eval still drives the Source-pane diagram.
     } catch (err) {
       flashRun('failed', 'failed');
       setStatus(`Run failed: ${err && err.message ? err.message : err}`, 'error');
       // eslint-disable-next-line no-console
       console.error('[cx-playground] Run failed:', err);
+    } finally {
+      // Viz refresh runs in finally so a failed live-eval (Output
+      // pane keeps its prior state) still drives the diagram pane
+      // — Source-pane Visualize is a property of the source text,
+      // not the eval result, and the tree falls back to the
+      // previous JSON snapshot when lastJsonText is stale.
+      if (vizSourceOn) refreshSourceViz();
+      if (vizOutputOn) refreshOutputViz();
     }
   });
   tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
