@@ -1,0 +1,100 @@
+[# CXPath tour — every axis, every predicate kind.
+   Showcases ADR 0028 (CXPath as first-class value kind, XPath 3.1 aligned).
+   Run: cx eval examples/cxpath-tour.cx --input examples/cxpath-tour.input.cx #]
+
+[# ─── 1. Selection from the document root ─── #]
+
+[# All users — terse form #]
+[?let $all-users = //user :in
+  [section :title 'all users'
+    [count $all-users]
+    [items $all-users]]]
+
+[# All users — explicit child axis #]
+[?let $explicit = /users/user :in
+  [section :title 'explicit child' [count $explicit]]]
+
+[# ─── 2. Predicates — attribute equality, comparison, function ─── #]
+
+[?let $active = //user[@active=true] :in
+  [section :title 'active' [count $active]]]
+
+[?let $aged = //user[@age>=21] :in
+  [section :title 'aged' [count $aged]]]
+
+[?let $named-alice = //user[@name='Alice'] :in
+  [section :title 'named alice' [count $named-alice]]]
+
+[?let $multi-pred = //user[@active=true][@age>=21] :in
+  [section :title 'active and aged' [count $multi-pred]]]
+
+[?let $positional = //user[1] :in
+  [section :title 'first user' [items $positional]]]
+
+[# ─── 3. Attribute selection — terminal @ step ─── #]
+
+[?let $emails = //user/@email :in
+  [section :title 'every email' [count $emails]]]
+
+[?let $first-name = //user[1]/@name :in
+  [section :title 'first user name' [scalar $first-name]]]
+
+[# ─── 4. The twelve axes ─── #]
+
+[?let $axis-tour =
+  [axes
+    [self     (//user[1]/self::user)]
+    [child    (//section/child::para)]
+    [descendant (//section/descendant::para)]
+    [descendant-or-self (//section/descendant-or-self::*)]
+    [parent   (//user[1]/parent::users)]
+    [ancestor (//user[1]/ancestor::root)]
+    [ancestor-or-self (//user[1]/ancestor-or-self::*)]
+    [following-sibling (//user[1]/following-sibling::user)]
+    [preceding-sibling (//user[2]/preceding-sibling::user)]
+    [following (//user[1]/following::section)]
+    [preceding (//section/preceding::user)]
+    [attribute (//user[1]/attribute::*)]] :in
+  $axis-tour]
+
+[# ─── 5. Paths bound to variables ─── #]
+
+[?let $u = //user[1] :in
+  [user-detail
+    [name $u/@name]
+    [email $u/@email]
+    [siblings (count $u/following-sibling::user)]
+    [parent-name (name $u/parent::*)]]]
+
+[# ─── 6. Sequence operators ─── #]
+
+[?let $young = //user[@age<25] :in
+  [?let $active = //user[@active=true] :in
+    [intersection (count ($young intersect $active))]]]
+
+[?let $or-set = //user[@active=true] union //user[@admin=true] :in
+  [either-active-or-admin (count $or-set)]]
+
+[?let $not-banned = //user except //user[@banned=true] :in
+  [not-banned (count $not-banned)]]
+
+[# ─── 7. Paths inside [?for] :in ─── #]
+
+[?for $u :in //user[@active=true]
+  :yield [active-user $u/@name $u/@email]]
+
+[# ─── 8. Paths inside [?if] cond — truthy iff non-empty ─── #]
+
+[?if //user[@admin=true]
+  :then [admin-banner "Admins present."]
+  :else [admin-banner "No admins."]]
+
+[# ─── 9. Range expression — 1 to N ─── #]
+
+[?for $i :in 1 to 5
+  :yield [pos $i]]
+
+[# ─── 10. String concatenation via || ─── #]
+
+[?for $u :in //user
+  :yield [greeting ($u/@name || " <" || $u/@email || ">")]]
