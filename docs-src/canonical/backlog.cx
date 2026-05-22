@@ -18,7 +18,7 @@
 
   [meta
     title='CX Language Backlog'
-    last-updated=2026-05-22T19:00
+    last-updated=2026-05-22T20:00
     branch=v0.8.0-dev
     rendered-form='docs/internal/backlog.md (deferred — render after ADR 0028)']
 
@@ -156,10 +156,36 @@
         need a 30-second scan to decide if they want to dig into the
         rationale. Every ADR opens with: (1) TL;DR of 3-8 bullets
         listing what changes; (2) syntax-comparison tables showing
-        old vs new for every shape the ADR covers; (3) then the
+        was vs is for every shape the ADR covers; (3) then the
         existing structure (status / context / decision / D-sections /
-        gates / alternatives / discussion).'''
+        gates / alternatives).'''
       :applies-to 'every ADR drafted v0.8.0 forward, retrofitted to 0028 + 0029'
+      :rationale-from 'reviewer feedback (user) 2026-05-22 PM']
+
+    [decision &d-2026-05-22-12
+      :date 2026-05-22
+      :title 'No keyword-comparison synonyms in CXPath; sigils only'
+      :status accepted
+      :rationale '''Sigils = != < <= > >= are the only comparison
+        operators. Keyword forms eq/ne/lt/le/gt/ge are NOT in the
+        grammar. Two ways to spell the same operation is language
+        bloat; sigils are what XPath/SQL/everything else uses in
+        practice. Value-comparison semantics (per ADR 0028 D3) apply
+        to the sigils.'''
+      :applies-to 'adr-0028 D3 (revised in this commit) — synonym table dropped'
+      :rationale-from 'reviewer feedback (user) 2026-05-22 PM']
+
+    [decision &d-2026-05-22-13
+      :date 2026-05-22
+      :title 'ADR length discipline: cut prose to was-vs-is'
+      :status accepted
+      :rationale '''ADRs should be scannable in 2-3 minutes top to
+        bottom, not 10-15. Cut rationale to one-line claims; rely on
+        the was-vs-is tables for substance; drop "Discussion" sections
+        (move to backlog.cx if needed). Each D-section is one rule
+        plus one-line why, not multi-paragraph essay.'''
+      :applies-to 'adrs 0028 + 0029 rewritten in this commit; all future ADRs'
+      :target-length '200-300 lines per ADR (down from 500+)'
       :rationale-from 'reviewer feedback (user) 2026-05-22 PM']]
 
   [- ──────────────────────────────────────────────────────────────────
