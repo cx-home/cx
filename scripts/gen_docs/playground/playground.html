@@ -23,21 +23,57 @@
     <button id="cxp-reset" type="button">Reset</button>
   </div>
   <div class="cxp-panes">
-    <div class="cxp-pane-header"><span>Source</span><span id="cxp-source-lang">cx</span></div>
-    <div class="cxp-editor">
-      <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
-      <textarea id="cxp-input" class="cxp-input" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-      <button id="cxp-input-copy" class="copy-btn" type="button">copy</button>
-    </div>
-    <div class="cxp-output">
-      <div class="cxp-tab-bar">
-        <button class="cxp-tab is-active" data-tab="cx" type="button">Canonical CX</button>
-        <button class="cxp-tab" data-tab="json" type="button">JSON</button>
-        <button class="cxp-tab" data-tab="xml" type="button">XML</button>
+    <div class="cxp-source-row">
+      <div class="cxp-source-col">
+        <div class="cxp-pane-header">
+          <span>Source</span>
+          <span class="cxp-header-right">
+            <button id="cxp-viz-source" class="cxp-viz-toggle" type="button"
+              aria-pressed="false" title="Show diagram of this program (Mermaid)">
+              Visualize
+            </button>
+            <span id="cxp-source-lang">cx</span>
+          </span>
+        </div>
+        <div class="cxp-editor">
+          <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
+          <textarea id="cxp-input" class="cxp-input" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+          <button id="cxp-input-copy" class="copy-btn" type="button">copy</button>
+        </div>
       </div>
-      <pre id="cxp-out-cx" class="cxp-pane is-active"><code class="language-cx"></code></pre>
-      <pre id="cxp-out-json" class="cxp-pane"><code class="language-json"></code></pre>
-      <pre id="cxp-out-xml" class="cxp-pane"><code class="language-xml"></code></pre>
+      <div id="cxp-viz-source-pane" class="cxp-viz-pane" hidden>
+        <div class="cxp-pane-header">
+          <span>Diagram</span>
+          <span class="cxp-header-right cxp-viz-hint">Mermaid · CX program</span>
+        </div>
+        <div id="cxp-viz-source-mount" class="cxp-viz-mount"></div>
+      </div>
+    </div>
+    <div class="cxp-output-row">
+      <div class="cxp-output-col">
+        <div class="cxp-output">
+          <div class="cxp-tab-bar">
+            <button class="cxp-tab is-active" data-tab="cx" type="button">Canonical CX</button>
+            <button class="cxp-tab" data-tab="json" type="button">JSON</button>
+            <button class="cxp-tab" data-tab="xml" type="button">XML</button>
+            <span class="cxp-tab-spacer"></span>
+            <button id="cxp-viz-output" class="cxp-viz-toggle" type="button"
+              aria-pressed="false" title="Show interactive tree of the parsed value">
+              Visualize
+            </button>
+          </div>
+          <pre id="cxp-out-cx" class="cxp-pane is-active"><code class="language-cx"></code></pre>
+          <pre id="cxp-out-json" class="cxp-pane"><code class="language-json"></code></pre>
+          <pre id="cxp-out-xml" class="cxp-pane"><code class="language-xml"></code></pre>
+        </div>
+      </div>
+      <div id="cxp-viz-output-pane" class="cxp-viz-pane" hidden>
+        <div class="cxp-pane-header">
+          <span>Tree</span>
+          <span class="cxp-header-right cxp-viz-hint">Containment-only</span>
+        </div>
+        <div id="cxp-viz-output-mount" class="cxp-viz-mount cxp-viz-tree-mount"></div>
+      </div>
     </div>
   </div>
   <p id="cxp-status" class="cxp-status" aria-live="polite" data-default="Browser-based libcx-wasm evaluator planned — see Concepts → WebAssembly Target for the transition plan. Until that ships, Run is disabled and the output panes carry pre-recorded canned results for each example. The Source pane is fully editable; use Reset to restore the canned source, or switch examples via the dropdown.">
@@ -53,4 +89,6 @@
 <link rel="stylesheet" href="/playground/playground.css">
 <script src="/wasm/libcx.js" defer></script>
 <script src="/wasm/cxlib.js" defer></script>
+<script src="/playground/tree-view.js" defer></script>
+<script src="/playground/diagram-view.js" defer></script>
 <script src="/playground/playground.js" defer></script>

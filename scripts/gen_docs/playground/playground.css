@@ -55,12 +55,97 @@
   opacity: 0.7;
 }
 
-/* Top-bottom layout. Input pane fills first; output panes below.
-   Each pane carries its own header and minimum height so even
-   single-line examples have room to grow. */
+/* Top-bottom layout. Input row, then output row. Each row may host
+   a sibling Visualize pane to the right of its primary pane (wide
+   viewports) or stacked below it (narrow viewports per §D8). */
 .cxp-panes {
   display: flex;
   flex-direction: column;
+}
+
+.cxp-source-row,
+.cxp-output-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  border-bottom: 1px solid var(--code-border);
+}
+.cxp-source-row:last-child,
+.cxp-output-row:last-child { border-bottom: 0; }
+
+.cxp-source-col,
+.cxp-output-col { min-width: 0; min-height: 0; }
+
+/* Sibling viz pane — same background palette as the code panes for
+   visual coherence; left-border separator when in side-by-side mode. */
+.cxp-viz-pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border-left: 1px solid var(--code-border);
+  min-height: 240px;
+  overflow: hidden;
+}
+.cxp-viz-pane[hidden] { display: none; }
+
+.cxp-viz-mount {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+}
+
+.cxp-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.cxp-viz-hint {
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+/* Visualize toggle button — sits in pane headers / tab-bar. Subtle
+   chip; flips palette when aria-pressed. */
+.cxp-viz-toggle {
+  font: 10.5px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--code-label);
+  cursor: pointer;
+}
+.cxp-viz-toggle:hover { color: var(--code-fg); border-color: var(--code-label); }
+.cxp-viz-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.cxp-tab-spacer { flex: 1; }
+.cxp-tab-bar { align-items: center; padding-right: 0.4rem; }
+.cxp-tab-bar .cxp-viz-toggle { margin-left: 0.4rem; }
+
+/* Wide viewports — side-by-side. Threshold per audit §D8. */
+@media (min-width: 1100px) {
+  .cxp-source-row.has-viz,
+  .cxp-output-row.has-viz {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+/* Narrow viewports (<1100px) — stack viz pane below its primary pane. */
+@media (max-width: 1099.98px) {
+  .cxp-viz-pane { border-left: 0; border-top: 1px solid var(--code-border); }
+}
+/* Mobile (<700px) — Visualize toggles still render, viz pane starts
+   collapsed (host JS honours data-collapse-default). */
+@media (max-width: 699.98px) {
+  .cxp-viz-pane { min-height: 200px; }
+  .cxp-viz-pane[data-collapsed="true"] .cxp-viz-mount { display: none; }
 }
 
 .cxp-pane-header {
@@ -229,3 +314,163 @@
    click visibly registers even when the output content is unchanged. */
 #cxp-run.ran    { filter: brightness(1.15); }
 #cxp-run.failed { background: #b91c1c; border-color: #b91c1c; }
+
+/* ────────────── diagram-view (Source Visualize) ────────────── */
+.cxdv-toolbar {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  background: var(--code-border);
+  border-bottom: 1px solid var(--code-border);
+}
+.cxdv-btn {
+  font: 11px/1 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 0.4rem;
+  background: transparent;
+  color: var(--code-label);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.cxdv-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
+.cxdv-btn-close { margin-left: auto; }
+.cxdv-canvas {
+  position: relative;
+  height: 100%;
+  min-height: 220px;
+  background:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--code-bg);
+  cursor: grab;
+  overflow: hidden;
+}
+.cxdv-canvas:active { cursor: grabbing; }
+.cxdv-svg-host {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+  transform: translate(0, 0) scale(1);
+  pointer-events: none;
+}
+.cxdv-svg-host svg { display: block; pointer-events: auto; }
+.cxdv-empty, .cxdv-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 12.5px 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  color: var(--code-label);
+}
+.cxdv-error {
+  color: #fca5a5;
+  white-space: pre-wrap;
+  text-align: left;
+  padding: 1rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+/* ────────────── tree-view (Output Visualize) ────────────── */
+.cxp-viz-tree-mount { overflow: auto; }
+
+.cxtv-toolbar {
+  padding: 0.35rem 0.5rem;
+  background: var(--code-border);
+  border-bottom: 1px solid var(--code-border);
+}
+.cxtv-search {
+  width: 100%;
+  font: 12px 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  padding: 0.25rem 0.45rem;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  outline: none;
+}
+.cxtv-search:focus { border-color: var(--accent); }
+
+.cxtv-body { padding: 0.4rem 0; }
+.cxtv-tree, .cxtv-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  outline: none;
+}
+.cxtv-tree li[role="treeitem"] { margin: 0; padding: 0; }
+.cxtv-tree li.is-hidden { display: none; }
+.cxtv-tree li[aria-expanded="false"] > ul { display: none; }
+
+.cxtv-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.12rem 0.5rem 0.12rem 0;
+  font: 12.5px/1.45 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  color: var(--code-fg);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  white-space: nowrap;
+}
+.cxtv-row:hover { background: rgba(148, 163, 184, 0.12); }
+.cxtv-tree li.is-selected > .cxtv-row {
+  background: rgba(56, 189, 248, 0.22);
+  border-left-color: var(--accent);
+}
+.cxtv-tree li.is-match > .cxtv-row {
+  background: rgba(250, 204, 21, 0.18);
+}
+
+.cxtv-twist {
+  display: inline-block;
+  width: 12px;
+  font-size: 10px;
+  color: var(--code-label);
+  text-align: center;
+  user-select: none;
+}
+.cxtv-twist-empty { opacity: 0.35; }
+
+.cxtv-glyph {
+  display: inline-flex;
+  width: 16px;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+.cxtv-tree li.is-selected > .cxtv-row .cxtv-glyph { color: var(--accent); }
+
+.cxtv-label { display: inline-flex; align-items: baseline; gap: 0.3rem; min-width: 0; }
+.cxtv-element-name { color: #e2e8f0; font-weight: 500; }
+.cxtv-attr-name    { color: #a78bfa; }
+.cxtv-attr-value   { color: #fbbf24; }
+.cxtv-text         { color: #94a3b8; font-style: italic; }
+.cxtv-badge {
+  font-size: 10px;
+  padding: 0 0.35rem;
+  border: 1px solid var(--code-border);
+  border-radius: 8px;
+  color: var(--code-label);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.cxtv-empty {
+  padding: 1.2rem 0.9rem;
+  color: var(--code-label);
+  font: 12.5px 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  text-align: center;
+}
+
+/* Output-pane text highlight when tree node is clicked (bridge). */
+.cxp-pane mark.cxp-bridge-hit {
+  background: rgba(250, 204, 21, 0.35);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
