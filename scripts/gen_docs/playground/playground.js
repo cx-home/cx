@@ -1,18 +1,17 @@
 // CX Playground.
 //
-// Two corpora: pure-data CX examples (round-trip through toCx/toJson/
-// toXml) and CX programs (v0.7.6 directive surface, evaluated via
-// cxlib.evalProgram). The dropdown groups them via <optgroup>.
+// 50 starter examples — 25 data + 25 programs — numbered continuously
+// 1-50 across both optgroups in the dropdown so users can reference
+// "example 32" unambiguously regardless of kind.
 //
-// Program examples carry both their input data and their program in
-// a single textarea, separated by the convention line:
-//
-//     \n--- program ---\n
-//
-// liveEvaluate splits on that separator. Data before the separator
-// becomes the cx_program_eval input; the program after the separator
-// is the source. Pure-data examples have no separator and route
-// through the canonical-conversion entries instead.
+// Every example carries a single `input` field — the verbatim textarea
+// content. Data examples are pure CX (round-trip through toCx / toJson
+// / toXml). Program examples intermingle data + directives in one CX
+// document; data and code share the same syntax in CX, so the
+// playground passes the same source as both the program and the bound
+// document to cxlib.evalProgram(src, 'cx', src). programs.parse
+// accepts data literals as expression statements; the directive at
+// the tail walks the data literals at the head.
 //
 // JSON / XML output panes use a *secondary pass* over the program's
 // CX output — `cxlib.toJson(programCxOutput)` produces the clean
@@ -35,8 +34,6 @@
 // See docs/concepts/wasm and spec/decisions/0026 for the rollout.
 (function () {
   'use strict';
-
-  const PROGRAM_SEP = '\n--- program ---\n';
 
   const dataExamples = {
     'atom': {
@@ -103,6 +100,30 @@
         "}"
       ].join('\n'),
       xml:   "<order xml:id=\"o123\" cx:type=\"paid\">+shipped -refunded total=:decimal=24.99 <line name=\"Margherita\" count=\"2\"/><line name=\"Pepperoni\" count=\"1\"/></order>",
+    },
+    'typed-scalars': {
+      label: "Typed scalars \u2014 int, float, bool, decimal, null",
+      input: [
+        "[row",
+        "  count=42",
+        "  ratio=3.14",
+        "  active=true",
+        "  amount=:decimal=12.50",
+        "  note=:null]"
+      ].join('\n'),
+      cx:    "[row count=42 ratio=3.14 active=true amount=:decimal=12.50 note=:null]",
+      json:  [
+        "{",
+        "  \"row\": {",
+        "    \"count\": 42,",
+        "    \"ratio\": 3.14,",
+        "    \"active\": true,",
+        "    \"amount\": \":decimal=12.50\",",
+        "    \"note\": \":null\"",
+        "  }",
+        "}"
+      ].join('\n'),
+      xml:   "<row count=\"42\" ratio=\"3.14\" active=\"true\" amount=\":decimal=12.50\" note=\":null\"/>",
     },
     'text-body': {
       label: "Text body \u2014 element with prose",
@@ -399,15 +420,15 @@
       label: "Code fence \u2014 embedded language",
       input: [
         "[``` lang=python",
-        "  [| print('hello, world') |]]"
+        "  [| print(hello-world) |]]"
       ].join('\n'),
-      cx:    "[code 'lang=python ' [| print('hello, world') |]]",
+      cx:    "[code 'lang=python ' [| print(hello-world) |]]",
       json:  [
         "{",
-        "  \"code\": \"lang=python  print('hello, world') \"",
+        "  \"code\": \"lang=python  print(hello-world) \"",
         "}"
       ].join('\n'),
-      xml:   "<code>lang=python <cx:block> print('hello, world') </cx:block></code>",
+      xml:   "<code>lang=python <cx:block> print(hello-world) </cx:block></code>",
     },
     'list': {
       label: "List \u2014 ul + li with link items",
@@ -552,80 +573,175 @@
       ].join('\n'),
     },
     'quoted-string': {
-      label: "Quoted strings \u2014 escapes and special chars",
+      label: "Quoted strings \u2014 single + double",
       input: [
         "[message",
-        "  text=\"She said \\\\\"hello\\\\\" loudly.\"",
-        "  path='/usr/local/bin']"
+        "  text=\"She said hello loudly.\"",
+        "  path=/usr/local/bin]"
       ].join('\n'),
-      cx:    "[message text='She said \\\\' hello\\\\\" loudly.\" path='/usr/local/bin']",
+      cx:    "[message text='She said hello loudly.' path=/usr/local/bin]",
       json:  [
         "{",
         "  \"message\": {",
-        "    \"text\": \"She said \\\\\\\\\",",
-        "    \"_\": \"hello\\\\\\\\\\\" loudly.\\\" path='/usr/local/bin'\"",
+        "    \"text\": \"She said hello loudly.\",",
+        "    \"path\": \"/usr/local/bin\"",
         "  }",
         "}"
       ].join('\n'),
-      xml:   "<message text=\"She said \\\\\">hello\\\\\" loudly.\" path='/usr/local/bin'</message>",
+      xml:   "<message text=\"She said hello loudly.\" path=\"/usr/local/bin\"/>",
+    },
+    'triple-quoted': {
+      label: "Triple-quoted \u2014 multi-line verbatim",
+      input: [
+        "[tagline \"\"\"",
+        "  Hand-tossed since 1987.",
+        "  Still tossing.",
+        "\"\"\"]"
+      ].join('\n'),
+      cx:    [
+        "[tagline '",
+        "  Hand-tossed since 1987.",
+        "  Still tossing.",
+        "']"
+      ].join('\n'),
+      json:  [
+        "{",
+        "  \"tagline\": \"\\n  Hand-tossed since 1987.\\n  Still tossing.\\n\"",
+        "}"
+      ].join('\n'),
+      xml:   [
+        "<tagline>",
+        "  Hand-tossed since 1987.",
+        "  Still tossing.",
+        "</tagline>"
+      ].join('\n'),
     },
     'raw-text': {
-      label: "Raw text \u2014 [# ... #] preserves bytes",
+      label: "Raw text \u2014 block content preserves bytes",
       input: [
         "[script lang=js",
-        "  [# if (x < 0 && y > 10) { return 'special'; } #]]"
+        "  [| if (x < 0) { return x; } |]]"
       ].join('\n'),
-      cx:    "[script lang=js [# if (x < 0 && y > 10) { return 'special'; } #]]",
+      cx:    "[script lang=js [| if (x < 0) { return x; } |]]",
       json:  [
         "{",
         "  \"script\": {",
         "    \"lang\": \"js\",",
-        "    \"_\": \" if (x < 0 && y > 10) { return 'special'; } \"",
+        "    \"_\": \" if (x < 0) { return x; } \"",
         "  }",
         "}"
       ].join('\n'),
-      xml:   "<script lang=\"js\"><![CDATA[ if (x < 0 && y > 10) { return 'special'; } ]]></script>",
+      xml:   "<script lang=\"js\"><cx:block> if (x &lt; 0) { return x; } </cx:block></script>",
+    },
+    'collection-seq': {
+      label: "Collection literal \u2014 sequence with parens",
+      input: "[pizza toppings=(cheese, basil, oil)]",
+      cx:    "[pizza toppings=(cheese, basil, oil)]",
+      json:  [
+        "{",
+        "  \"pizza\": {",
+        "    \"toppings\": \"(cheese,\",",
+        "    \"_\": \"basil, oil)\"",
+        "  }",
+        "}"
+      ].join('\n'),
+      xml:   "<pizza toppings=\"(cheese,\">basil, oil)</pizza>",
+    },
+    'collection-map': {
+      label: "Collection literal \u2014 map with braces",
+      input: "[pizza prices={small: 9, medium: 12, large: 15}]",
+      cx:    "[pizza prices={small: 9, medium: 12, large: 15}]",
+      json:  [
+        "{",
+        "  \"pizza\": {",
+        "    \"prices\": \"{small:\",",
+        "    \"_\": \"9, medium: 12, large: 15}\"",
+        "  }",
+        "}"
+      ].join('\n'),
+      xml:   "<pizza prices=\"{small:\">9, medium: 12, large: 15}</pizza>",
+    },
+    'whole-shop': {
+      label: "Whole shop \u2014 every shape in one document",
+      input: [
+        "[shop &flagship name='New Haven Pizza' +open",
+        "  [hours mon-fri=11-22 sat=12-23]",
+        "  [menu :table[name:string size price:decimal vegan:bool]",
+        "    Margherita medium 12.00 true",
+        "    Hawaiian   large  14.00 false]",
+        "  [about",
+        "    [p Founded in [em 1987]. Still [strong hand-tossing] every pie.]]]"
+      ].join('\n'),
+      cx:    [
+        "[shop &flagship name='New Haven Pizza' open=true",
+        "  [hours mon-fri=11-22 sat=12-23]",
+        "  [menu :table[name:string size price:decimal vegan:bool]",
+        "    Margherita medium 12.00 true",
+        "    Hawaiian large 14.00 false",
+        "  ]",
+        "  [about",
+        "    [p 'Founded in ' [em 1987] '. Still ' [strong hand-tossing] ' every pie.']",
+        "  ]",
+        "]"
+      ].join('\n'),
+      json:  [
+        "{",
+        "  \"shop\": {",
+        "    \"name\": \"New Haven Pizza\",",
+        "    \"open\": true,",
+        "    \"hours\": {",
+        "      \"mon-fri\": \"11-22\",",
+        "      \"sat\": \"12-23\"",
+        "    },",
+        "    \"menu\": null,",
+        "    \"about\": {",
+        "      \"p\": {",
+        "        \"_\": \"Founded in . Still  every pie.\",",
+        "        \"em\": 1987,",
+        "        \"strong\": \"hand-tossing\"",
+        "      }",
+        "    }",
+        "  }",
+        "}"
+      ].join('\n'),
+      xml:   [
+        "<shop cx:anchor=\"flagship\" name=\"New Haven Pizza\" open=\"true\">",
+        "  <hours mon-fri=\"11-22\" sat=\"12-23\"/>",
+        "  <menu cx:type=\"table\"/>",
+        "  <about>",
+        "    <p>Founded in <em>1987</em>. Still <strong>hand-tossing</strong> every pie.</p>",
+        "  </about>",
+        "</shop>"
+      ].join('\n'),
     },
   };
 
   const programExamples = {
     'find-simple': {
       label: "[?find] \u2014 pattern match with binding",
-      program: "[?find [user [name $n]] :yield $n]",
-      data:    [
+      input: [
         "[doc",
         "  [user [name Alice]]",
         "  [user [name Bob]]",
-        "  [user [name Carol]]]"
+        "  [user [name Carol]]]",
+        "[?find [user [name $n]] :yield $n]"
       ].join('\n'),
       cx:    [
-        "[name Alice]",
-        "[name Bob]",
-        "[name Carol]"
+        "\"Alice\"",
+        "\"Bob\"",
+        "\"Carol\""
       ].join('\n'),
-      json:  [
-        "{",
-        "  \"name\": [",
-        "    \"Alice\",",
-        "    \"Bob\",",
-        "    \"Carol\"",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<name>Alice</name>",
-        "<name>Bob</name>",
-        "<name>Carol</name>"
-      ].join('\n'),
+      json:  "",
+      xml:   "",
     },
-    'find-attr-bool': {
+    'find-attr-eq': {
       label: "[?find] \u2014 attribute equality predicate",
-      program: "[?find [item @active=true $i] :yield $i]",
-      data:    [
+      input: [
         "[items",
         "  [item active=true  name=pizza]",
         "  [item active=false name=salad]",
-        "  [item active=true  name=soda]]"
+        "  [item active=true  name=soda]]",
+        "[?find [item @active=true $i] :yield $i]"
       ].join('\n'),
       cx:    [
         "[item active=true name=pizza]",
@@ -652,69 +768,88 @@
     },
     'find-pair': {
       label: "[?find] \u2014 yield literal with multiple bindings",
-      program: "[?find [user [name $n] [email $e]] :yield [pair :name $n :email $e]]",
-      data:    [
+      input: [
         "[doc",
         "  [user [name Alice] [email a@x.com]]",
-        "  [user [name Bob]   [email b@x.com]]]"
+        "  [user [name Bob]   [email b@x.com]]]",
+        "[?find [user [name $n] [email $e]] :yield [pair :name $n :email $e]]"
       ].join('\n'),
       cx:    [
-        "[pair :name [name Alice] :email [email a@x.com]]",
-        "[pair :name [name Bob] :email [email b@x.com]]"
+        "[pair :name \"Alice\" :email \"a@x.com\"]",
+        "[pair :name \"Bob\" :email \"b@x.com\"]"
       ].join('\n'),
       json:  [
         "{",
         "  \"pair\": [",
-        "    {",
-        "      \"name\": \"Alice\",",
-        "      \"_\": \" :email \",",
-        "      \"email\": \"a@x.com\"",
-        "    },",
-        "    {",
-        "      \"name\": \"Bob\",",
-        "      \"_\": \" :email \",",
-        "      \"email\": \"b@x.com\"",
-        "    }",
+        "    \"Alice:emaila@x.com\",",
+        "    \"Bob:emailb@x.com\"",
         "  ]",
         "}"
       ].join('\n'),
       xml:   [
-        "<pair cx:type=\"name\"><name>Alice</name> :email <email>a@x.com</email></pair>",
-        "<pair cx:type=\"name\"><name>Bob</name> :email <email>b@x.com</email></pair>"
+        "<pair cx:type=\"name\">Alice:emaila@x.com</pair>",
+        "<pair cx:type=\"name\">Bob:emailb@x.com</pair>"
       ].join('\n'),
     },
     'find-deep': {
       label: "[?find] \u2014 finds at any depth",
-      program: "[?find [name $n] :yield $n]",
-      data:    [
+      input: [
         "[org",
         "  [team [member [name Alice]]]",
         "  [team [member [name Bob]]]",
-        "  [team [member [name Carol]]]]"
+        "  [team [member [name Carol]]]]",
+        "[?find [name $n] :yield $n]"
       ].join('\n'),
       cx:    [
-        "[name Alice]",
-        "[name Bob]",
-        "[name Carol]"
+        "\"Alice\"",
+        "\"Bob\"",
+        "\"Carol\""
+      ].join('\n'),
+      json:  "",
+      xml:   "",
+    },
+    'find-yield-tree': {
+      label: "[?find] \u2014 bind name + price via child-element shape",
+      input: [
+        "[shop",
+        "  [pizza [name Margherita] [price 12]]",
+        "  [pizza [name Hawaiian]   [price 14]]",
+        "  [pizza [name Diavola]    [price 13]]]",
+        "[?find [pizza [name $n] [price $p]] :yield [hit :name $n :price $p]]"
+      ].join('\n'),
+      cx:    [
+        "[hit :name \"Margherita\" :price 12]",
+        "[hit :name \"Hawaiian\" :price 14]",
+        "[hit :name \"Diavola\" :price 13]"
       ].join('\n'),
       json:  [
         "{",
-        "  \"name\": [",
-        "    \"Alice\",",
-        "    \"Bob\",",
-        "    \"Carol\"",
+        "  \"hit\": [",
+        "    \"Margherita:price 12\",",
+        "    \"Hawaiian:price 14\",",
+        "    \"Diavola:price 13\"",
         "  ]",
         "}"
       ].join('\n'),
       xml:   [
-        "<name>Alice</name>",
-        "<name>Bob</name>",
-        "<name>Carol</name>"
+        "<hit cx:type=\"name\">Margherita:price 12</hit>",
+        "<hit cx:type=\"name\">Hawaiian:price 14</hit>",
+        "<hit cx:type=\"name\">Diavola:price 13</hit>"
       ].join('\n'),
+    },
+    'text-extraction': {
+      label: "Text extraction \u2014 body-binding unwraps to a string",
+      input: [
+        "[doc [user [name Alice]]]",
+        "[?find [name $n] :yield $n]"
+      ].join('\n'),
+      cx:    "\"Alice\"",
+      json:  "null",
+      xml:   "Alice",
     },
     'for-seq': {
       label: "[?for] \u2014 comprehension over sequence",
-      program: "[?for $x :in (1, 2, 3, 4, 5) :yield [item $x]]",
+      input: "[?for $x :in (1, 2, 3, 4, 5) :yield [item $x]]",
       cx:    [
         "[item 1]",
         "[item 2]",
@@ -743,7 +878,7 @@
     },
     'for-where': {
       label: "[?for] \u2014 filter with :where",
-      program: "[?for $x :in (1, 2, 3, 4, 5) :where [> $x 2] :yield $x]",
+      input: "[?for $x :in (1, 2, 3, 4, 5) :where [> $x 2] :yield $x]",
       cx:    [
         "3",
         "4",
@@ -758,7 +893,7 @@
     },
     'for-square': {
       label: "[?for] \u2014 transform yielded value",
-      program: "[?for $x :in (1, 2, 3, 4) :yield [sq $x [* $x $x]]]",
+      input: "[?for $x :in (1, 2, 3, 4) :yield [sq $x [* $x $x]]]",
       cx:    [
         "[sq 1 1]",
         "[sq 2 4]",
@@ -792,16 +927,31 @@
         "<sq cx:type=\"int[]\"><item>4</item><item>16</item></sq>"
       ].join('\n'),
     },
+    'for-limit': {
+      label: "[?for] \u2014 :limit caps the output count",
+      input: "[?for $x :in (1, 2, 3, 4, 5, 6, 7, 8) :limit 3 :yield $x]",
+      cx:    [
+        "1",
+        "2",
+        "3"
+      ].join('\n'),
+      json:  "null",
+      xml:   [
+        "1",
+        "2",
+        "3"
+      ].join('\n'),
+    },
     'let-arith': {
       label: "[?let] \u2014 bind and reuse",
-      program: "[?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]",
+      input: "[?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]",
       cx:    "42",
       json:  "null",
       xml:   "42",
     },
     'let-shadow': {
       label: "[?let] \u2014 shadowing in nested scope",
-      program: "[?let $x = 5 :in [?let $x = [* $x 2] :in [item $x]]]",
+      input: "[?let $x = 5 :in [?let $x = [* $x 2] :in [item $x]]]",
       cx:    "[item 10]",
       json:  [
         "{",
@@ -812,7 +962,7 @@
     },
     'if-truthy': {
       label: "[?if] \u2014 conditional branch",
-      program: "[?if [> 5 3] :then [yes [bigger]] :else [no [smaller]]]",
+      input: "[?if [> 5 3] :then [yes [bigger]] :else [no [smaller]]]",
       cx:    "[yes [bigger]]",
       json:  [
         "{",
@@ -827,35 +977,71 @@
         "</yes>"
       ].join('\n'),
     },
+    'match-pattern': {
+      label: "Pattern match \u2014 yield welcome for a user",
+      input: [
+        "[doc [user kind=admin [name Alice]]]",
+        "[?find [user [name $n]] :yield [welcome $n]]"
+      ].join('\n'),
+      cx:    "[welcome \"Alice\"]",
+      json:  [
+        "{",
+        "  \"welcome\": \"Alice\"",
+        "}"
+      ].join('\n'),
+      xml:   "<welcome>Alice</welcome>",
+    },
+    'try-catch': {
+      label: "[?try] \u2014 error recovery",
+      input: "[?try [/ 10 0] :catch [err $e] [recovered]]",
+      cx:    "[/ 10 0]",
+      json:  "null",
+      xml:   "<cx:arr><item>/ 10 0</item></cx:arr>",
+    },
     'pipe-count': {
       label: "Pipe sugar \u2014 count over sequence",
-      program: "(1, 2, 3, 4, 5) | count",
+      input: "(1, 2, 3, 4, 5) | count",
       cx:    "5",
       json:  "null",
       xml:   "5",
     },
     'pipe-upper': {
       label: "Pipe sugar \u2014 string transform",
-      program: "\"hello\" | upper",
+      input: "\"hello\" | upper",
       cx:    "\"HELLO\"",
       json:  "null",
       xml:   "HELLO",
     },
+    'pipe-sum': {
+      label: "Pipe sugar \u2014 sum a sequence",
+      input: "(1, 2, 3, 4, 5) | sum",
+      cx:    "15",
+      json:  "null",
+      xml:   "15",
+    },
     'pipe-find-first': {
       label: "Pipe sugar \u2014 find then first",
-      program: "[?find [user [name $n]] :yield $n] | first",
-      data:    "[doc [user [name Alice]] [user [name Bob]]]",
-      cx:    "[name Alice]",
-      json:  [
-        "{",
-        "  \"name\": \"Alice\"",
-        "}"
+      input: [
+        "[doc [user [name Alice]] [user [name Bob]]]",
+        "[?find [user [name $n]] :yield $n] | first"
       ].join('\n'),
-      xml:   "<name>Alice</name>",
+      cx:    "\"Alice\"",
+      json:  "null",
+      xml:   "Alice",
+    },
+    'pipe-find-last': {
+      label: "Pipe sugar \u2014 find then last",
+      input: [
+        "[doc [user [name Alice]] [user [name Bob]] [user [name Carol]]]",
+        "[?find [user [name $n]] :yield $n] | last"
+      ].join('\n'),
+      cx:    "\"Carol\"",
+      json:  "null",
+      xml:   "Carol",
     },
     'def-double': {
       label: "[?def] \u2014 named closure + invocation",
-      program: [
+      input: [
         "[?def :name double ($x) :body [* $x 2]]",
         "[double(21)]"
       ].join('\n'),
@@ -865,7 +1051,7 @@
     },
     'fn-square': {
       label: "[?fn] \u2014 anonymous closure via pipe",
-      program: "(1, 2, 3, 4) | [?fn $xs [?for $x :in $xs :yield [* $x $x]]]",
+      input: "(1, 2, 3, 4) | [?fn $xs [?for $x :in $xs :yield [* $x $x]]]",
       cx:    [
         "1",
         "4",
@@ -880,113 +1066,56 @@
         "16"
       ].join('\n'),
     },
-    'try-catch': {
-      label: "[?try] \u2014 error recovery",
-      program: "[?try [/ 10 0] :catch [err $e] [recovered]]",
-      cx:    "[/ 10 0]",
-      json:  "null",
-      xml:   "<cx:arr><item>/ 10 0</item></cx:arr>",
-    },
-    'match': {
-      label: "[?match] \u2014 single-value pattern test",
-      program: "[?find [user [name $n]] :yield [welcome $n]]",
-      data:    "[doc [user kind=admin [name Alice]]]",
-      cx:    "[welcome [name Alice]]",
-      json:  [
-        "{",
-        "  \"welcome\": {",
-        "    \"name\": \"Alice\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<welcome>",
-        "  <name>Alice</name>",
-        "</welcome>"
-      ].join('\n'),
-    },
-    'find-yield-tree': {
-      label: "[?find] \u2014 bind name + price via child-element shape",
-      program: "[?find [pizza [name $n] [price $p]] :yield [hit :name $n :price $p]]",
-      data:    [
-        "[shop",
-        "  [pizza [name Margherita] [price 12]]",
-        "  [pizza [name Hawaiian]   [price 14]]",
-        "  [pizza [name Diavola]    [price 13]]]"
-      ].join('\n'),
-      cx:    [
-        "[hit :name [name Margherita] :price [price 12]]",
-        "[hit :name [name Hawaiian] :price [price 14]]",
-        "[hit :name [name Diavola] :price [price 13]]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"hit\": [",
-        "    {",
-        "      \"name\": \"Margherita\",",
-        "      \"_\": \" :price \",",
-        "      \"price\": 12",
-        "    },",
-        "    {",
-        "      \"name\": \"Hawaiian\",",
-        "      \"_\": \" :price \",",
-        "      \"price\": 14",
-        "    },",
-        "    {",
-        "      \"name\": \"Diavola\",",
-        "      \"_\": \" :price \",",
-        "      \"price\": 13",
-        "    }",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<hit cx:type=\"name\"><name>Margherita</name> :price <price>12</price></hit>",
-        "<hit cx:type=\"name\"><name>Hawaiian</name> :price <price>14</price></hit>",
-        "<hit cx:type=\"name\"><name>Diavola</name> :price <price>13</price></hit>"
-      ].join('\n'),
-    },
-    'multi-find': {
+    'multi-find-compose': {
       label: "Pattern composition \u2014 find element + sub-element",
-      program: "[?find [user [name $n] [age $a]] :yield [profile :name $n :age $a]]",
-      data:    [
+      input: [
         "[doc",
         "  [user [name Alice] [email a@x.com] [age 30]]",
-        "  [user [name Bob]   [email b@x.com] [age 25]]]"
+        "  [user [name Bob]   [email b@x.com] [age 25]]]",
+        "[?find [user [name $n] [age $a]] :yield [profile :name $n :age $a]]"
       ].join('\n'),
       cx:    [
-        "[profile :name [name Alice] :age [age 30]]",
-        "[profile :name [name Bob] :age [age 25]]"
+        "[profile :name \"Alice\" :age 30]",
+        "[profile :name \"Bob\" :age 25]"
       ].join('\n'),
       json:  [
         "{",
         "  \"profile\": [",
-        "    {",
-        "      \"name\": \"Alice\",",
-        "      \"_\": \" :age \",",
-        "      \"age\": 30",
-        "    },",
-        "    {",
-        "      \"name\": \"Bob\",",
-        "      \"_\": \" :age \",",
-        "      \"age\": 25",
-        "    }",
+        "    \"Alice:age 30\",",
+        "    \"Bob:age 25\"",
         "  ]",
         "}"
       ].join('\n'),
       xml:   [
-        "<profile cx:type=\"name\"><name>Alice</name> :age <age>30</age></profile>",
-        "<profile cx:type=\"name\"><name>Bob</name> :age <age>25</age></profile>"
+        "<profile cx:type=\"name\">Alice:age 30</profile>",
+        "<profile cx:type=\"name\">Bob:age 25</profile>"
       ].join('\n'),
+    },
+    'intermingled-menu': {
+      label: "Intermingled \u2014 data + directive in one document",
+      input: [
+        "[menu name=Lunch",
+        "  [pizza name=Margherita price=12]",
+        "  [pizza name=Hawaiian   price=14]",
+        "  [pizza name=Diavola    price=13]]",
+        "[?find [pizza @name=$n] :yield $n]"
+      ].join('\n'),
+      cx:    [
+        "\"Margherita\"",
+        "\"Hawaiian\"",
+        "\"Diavola\""
+      ].join('\n'),
+      json:  "",
+      xml:   "",
     },
     'ladder-let': {
       label: "[?let] \u2014 let-chain composing pieces",
-      program: [
+      input: [
+        "[page [meta title='New Haven Pizza' tagline='Hand-tossed since 1987']]",
         "[?let $title = [?find [meta @title=$t] :yield $t] :in",
         " [?let $tag = [?find [meta @tagline=$tl] :yield $tl] :in",
         "  [page [h1 $title] [p $tag]]]]"
       ].join('\n'),
-      data:    "[page [meta title='New Haven Pizza' tagline='Hand-tossed since 1987']]",
       cx:    "[page [h1 \"New Haven Pizza\"] [p \"Hand-tossed since 1987\"]]",
       json:  [
         "{",
@@ -1051,26 +1180,25 @@
   // conversation.
   function populatePicker() {
     pick.innerHTML = '';
+    let n = 1;
     const dataGroup = document.createElement('optgroup');
     dataGroup.label = 'Data — pure CX (round-trips through toCx/toJson/toXml)';
-    let i = 1;
     for (const [key, ex] of Object.entries(dataExamples)) {
       const opt = document.createElement('option');
       opt.value = 'data:' + key;
-      opt.textContent = i + '. ' + ex.label;
+      opt.textContent = n + '. ' + ex.label;
       dataGroup.appendChild(opt);
-      i++;
+      n++;
     }
     pick.appendChild(dataGroup);
     const progGroup = document.createElement('optgroup');
-    progGroup.label = 'Program — v0.7.6 directives (cxlib.evalProgram)';
-    i = 1;
+    progGroup.label = 'Programs — v0.7.6 directives (cxlib.evalProgram)';
     for (const [key, ex] of Object.entries(programExamples)) {
       const opt = document.createElement('option');
       opt.value = 'program:' + key;
-      opt.textContent = i + '. ' + ex.label;
+      opt.textContent = n + '. ' + ex.label;
       progGroup.appendChild(opt);
-      i++;
+      n++;
     }
     pick.appendChild(progGroup);
   }
@@ -1203,7 +1331,7 @@
     // Data examples carry .input; program examples carry .program
     // (the textarea always shows just the program — the .data is
     // combined invisibly at evalProgram time).
-    input.value = found.kind === 'program' ? ex.program : ex.input;
+    input.value = ex.input;
     setInputLang('cx');
     refreshOutputs(key);
     lastJsonText = ex.json || '';
@@ -1293,8 +1421,11 @@
         xml:  cxlib.toXml(src),
       };
     }
-    const data = (found.ex.data || '').trim();
-    const cxOut = cxlib.evalProgram(src, 'cx', data);
+    // Program examples: pass the same source as both program AND
+    // bound document. programs.parse accepts data literals as
+    // expression statements; the directive at the tail walks the
+    // data literals at the head.
+    const cxOut = cxlib.evalProgram(src, 'cx', src);
     return {
       cx:   cxOut,
       json: cxOut ? cxlib.toJson(cxOut) : '',
@@ -1558,7 +1689,7 @@
         // Canned-corpus fallback: re-render the recorded outputs
         // for the selected example. User edits are preserved but
         // not executed — libcx-wasm is not bundled with this site.
-        const orig = found.kind === 'program' ? ex.program : ex.input;
+        const orig = ex.input;
         const edited = input.value !== orig;
         refreshOutputs(key);
         lastJsonText = ex.json || '';
