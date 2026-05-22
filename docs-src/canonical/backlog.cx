@@ -18,7 +18,7 @@
 
   [meta
     title='CX Language Backlog'
-    last-updated=2026-05-22T18:00
+    last-updated=2026-05-22T19:00
     branch=v0.8.0-dev
     rendered-form='docs/internal/backlog.md (deferred — render after ADR 0028)']
 
@@ -146,7 +146,21 @@
         breaks the unified-vocabulary discipline.'''
       :decided-in adr-0028
       :migration 'mechanical — replace [?find with [?for in every fixture and example'
-      :scope '~15 fixtures, ~30 lines spec/programs.md, vcx/programs/tokens.v directive_names']]
+      :scope '~15 fixtures, ~30 lines spec/programs.md, vcx/programs/tokens.v directive_names']
+
+    [decision &d-2026-05-22-11
+      :date 2026-05-22
+      :title 'ADR convention: TL;DR + syntax-at-a-glance table at top'
+      :status accepted
+      :rationale '''ADRs are difficult to review at length; reviewers
+        need a 30-second scan to decide if they want to dig into the
+        rationale. Every ADR opens with: (1) TL;DR of 3-8 bullets
+        listing what changes; (2) syntax-comparison tables showing
+        old vs new for every shape the ADR covers; (3) then the
+        existing structure (status / context / decision / D-sections /
+        gates / alternatives / discussion).'''
+      :applies-to 'every ADR drafted v0.8.0 forward, retrofitted to 0028 + 0029'
+      :rationale-from 'reviewer feedback (user) 2026-05-22 PM']]
 
   [- ──────────────────────────────────────────────────────────────────
      OPEN — issues blocked on ADR ratification or scheduled work.
