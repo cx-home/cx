@@ -268,10 +268,12 @@ release-verify:
 
 # Test fan-out — independent per-language targets, plus the C-ABI conformance
 # harness. Listed once so `test` and `test-no-parallel` stay in sync.
-# Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
-# Frozen bindings (Java/Kotlin/C#/Ruby/Swift) retain their `test-<lang>`
-# targets for ad-hoc / re-promotion use but are not run by default `test`.
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go test-typescript test-docs
+# Active binding set per backlog d-2026-05-22-03 (v0.8.0) — V + Python + Go + Rust.
+# Archived: TypeScript / Java / Kotlin / C# / Ruby / Swift moved to
+# lang/_archived/ in v0.8.0; their test targets are no longer wired into
+# `test`. Restoration is community opt-in once the Layer-1 16-method
+# surface stabilizes (spec/bindings.md §6).
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go test-docs
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
