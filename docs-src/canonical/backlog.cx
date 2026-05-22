@@ -186,7 +186,22 @@
         plus one-line why, not multi-paragraph essay.'''
       :applies-to 'adrs 0028 + 0029 rewritten in this commit; all future ADRs'
       :target-length '200-300 lines per ADR (down from 500+)'
-      :rationale-from 'reviewer feedback (user) 2026-05-22 PM']]
+      :rationale-from 'reviewer feedback (user) 2026-05-22 PM']
+
+    [decision &d-2026-05-22-14
+      :date 2026-05-22
+      :title '[?modify] — pure-functional updates with CXPath focus + action vocabulary'
+      :status accepted
+      :rationale '''CRUD completion for CX code: C=element construction, R=CXPath/[?for],
+        U/D=[?modify]. Lens pattern (Clojure assoc-in / Haskell lens) is the correct
+        resolution: name the focus and the action separately. Original unchanged;
+        structural sharing for perf. XQuery update facility (implicit pending-update-list)
+        rejected as order-dependent and non-homoiconic.'''
+      :decided-in adr-0030
+      :action-vocabulary '[:set, :delete, :using, :rename, :set-attr, :delete-attr,
+        :append, :prepend, :insert-before, :insert-after, :replace]'
+      :composition 'pipeline via | for multi-step document updates'
+      :perf-contract 'structural sharing: < 1 KB new heap per matched node on 10 MB doc (gate 30.5)']]
 
   [- ──────────────────────────────────────────────────────────────────
      OPEN — issues blocked on ADR ratification or scheduled work.
@@ -289,7 +304,8 @@
       :owner unassigned
       :builds-on adr-0028
       :unblocks '[no-modify-surface]'
-      :location 'spec/decisions/0030-modify-directive.md (TBD)']
+      :revision-history '[(2026-05-22: initial draft — action vocabulary :set/:delete/:using/:rename/:set-attr/:delete-attr/:append/:prepend/:insert-before/:insert-after/:replace; structural sharing commitment; pipeline composition via |)]'
+      :location 'spec/decisions/0030-modify-pure-functional-updates.md']
 
     [adr &adr-0031
       :status draft
