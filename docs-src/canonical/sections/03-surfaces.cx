@@ -1,0 +1,213 @@
+[# Section 3 — surfaces and projections.
+   Authored 2026-05-22. Anchored in spec/canonical.md + spec/conversions.md. #]
+
+[section :id surfaces :n 3 :title 'Surfaces and projections'
+
+  [child :id cx-canonical :n 3.1 :title 'CX — the canonical dialect'
+    [intro
+      """CX is itself the canonical surface. Every other supported format
+         is defined as a projection of canonical CX. The normative rules
+         live in [`spec/canonical.md`](../../spec/canonical.md); this
+         section is the working summary."""]
+
+    [body
+      """Canonical CX has the following discipline:"""]
+
+    [list
+      [item """**One quote form per string.** Triple-quoted for multi-line
+              bodies; single-quoted (`'…'`) for single-line strings. Double
+              quotes are accepted on input but emitted as single quotes."""]
+      [item """**Attributes sorted by name.** Within an element, attributes
+              emit in lexicographic order. Source-order is not preserved
+              at the canonical layer — only at the parser level."""]
+      [item """**No insignificant whitespace.** Bodies are joined with
+              single spaces; structural newlines exist only where the
+              parser requires them. The canonical form is unique."""]
+      [item """**ID anchors emit before other attributes.** `#name`
+              precedes any `:attr value` pair on the same element."""]
+      [item """**No comments.** Canonical bytes omit `[# … #]`. Comments
+              are preserved by `cx fmt` (the non-canonical pretty-printer)
+              but stripped by `cx canon`."""]]
+
+    [example :lang cx
+      """[# Source — author-friendly form #]
+         [user
+           :email 'ada@example.com'
+           :id 42
+           +active]
+
+         [# Canonical form — `cx canon` output #]
+         [user :active true :email 'ada@example.com' :id 42]"""]
+
+    [body
+      """The canonical bytes are what the SHA-256 hash is taken over (see
+         [[identity]]) and what the round-trip guarantee is checked
+         against (see [[roundtrip]])."""]]
+
+  [child :id json :n 3.2 :title 'JSON projection'
+    [intro
+      """JSON is the most common interchange surface. CX → JSON mapping
+         is straightforward; JSON → CX is well-defined for the JSON
+         subset that maps cleanly to CX's data model."""]
+
+    [example :lang cx
+      """[user :id 42 :email 'ada@example.com' +active
+              [roles (admin, editor)]]"""]
+
+    [example :lang json
+      """{
+           "user": {
+             "id": 42,
+             "email": "ada@example.com",
+             "active": true,
+             "roles": ["admin", "editor"]
+           }
+         }"""]
+
+    [body
+      """Attributes become object keys; element bodies of pure-element
+         content become nested objects keyed by child element name;
+         sequences become arrays; scalars map directly. Mixed content
+         (prose with inline elements) is not first-class JSON — it
+         projects as an object with a reserved `_cx_prose` key
+         containing an ordered list of runs."""]
+
+    [body
+      """`cx convert doc.cx --to json` and `cx convert doc.json --to cx`
+         are the round-trip pair. See [[roundtrip]] for the guarantees."""]]
+
+  [child :id yaml :n 3.3 :title 'YAML projection'
+    [intro
+      """YAML follows the JSON projection but uses YAML's mapping and
+         sequence syntax. Anchors and merge keys (`<<:`) project to CX's
+         `&` / `*` sigils."""]
+
+    [example :lang cx
+      """[defaults &base :host 'localhost' :tls true]
+         [service-a *base :port 8001]
+         [service-b *base :port 8002]"""]
+
+    [example :lang yaml
+      """defaults: &base
+           host: localhost
+           tls: true
+         service-a:
+           <<: *base
+           port: 8001
+         service-b:
+           <<: *base
+           port: 8002"""]
+
+    [body
+      """YAML's loose schema (untyped scalars, multiple ways to spell the
+         same value) is normalized on input: `yes`/`true`/`True` all map
+         to canonical `true`, numeric strings stay strings, etc. The
+         conversion is documented in
+         [`spec/conversions.md`](../../spec/conversions.md)."""]]
+
+  [child :id toml :n 3.4 :title 'TOML projection'
+    [intro
+      """TOML's table syntax (`[server]`) projects to CX elements; nested
+         tables (`[server.tls]`) project to nested elements; arrays of
+         tables (`[[users]]`) project to repeated child elements."""]
+
+    [example :lang toml
+      """[server]
+         host = "localhost"
+         tls = true
+
+         [server.tls]
+         cert = "site.pem"
+
+         [[users]]
+         id = 1
+         email = "ada@example.com"
+
+         [[users]]
+         id = 2
+         email = "grace@example.com" """]
+
+    [example :lang cx
+      """[config
+           [server :host 'localhost' +tls
+             [tls :cert 'site.pem']]
+           [users
+             [user :id 1 :email 'ada@example.com']
+             [user :id 2 :email 'grace@example.com']]]"""]]
+
+  [child :id xml :n 3.5 :title 'XML projection'
+    [intro
+      """XML is the closest projection — both CX and XML are
+         element-with-attributes-and-body languages. The mapping is
+         essentially one-to-one for element / attribute / text content."""]
+
+    [example :lang cx
+      """[user :id 42 :email 'ada@example.com'
+           [profile
+             [bio """Computing pioneer."""]]]"""]
+
+    [example :lang xml
+      """<user id="42" email="ada@example.com">
+           <profile>
+             <bio>Computing pioneer.</bio>
+           </profile>
+         </user>"""]
+
+    [body
+      """Differences from XML: CX has no DOCTYPE / DTD layer (schemas
+         are first-class CX, see [[schema]]); namespace declarations
+         are CX attributes with the `xmlns:` prefix preserved; CDATA
+         sections project to triple-quoted strings."""]]
+
+  [child :id md :n 3.6 :title 'Markdown projection'
+    [intro
+      """Markdown projects to CX as structured prose. Headings become
+         `[h1] [h2] …`; paragraphs become `[p]`; lists become `[ul]` /
+         `[ol]` / `[li]`; inline code becomes `[code]`; links become
+         `[link]`. Round-trip is the design center — `cx convert
+         README.md --to cx --to md` produces byte-identical output."""]
+
+    [example :lang md
+      """# Hello
+
+         A paragraph with *emphasis* and `code`.
+
+         - item 1
+         - item 2"""]
+
+    [example :lang cx
+      """[h1 'Hello']
+         [p 'A paragraph with ' [em 'emphasis'] ' and ' [code 'code'] '.']
+         [ul
+           [li 'item 1']
+           [li 'item 2']]"""]]
+
+  [child :id roundtrip :n 3.7 :title 'Round-trip guarantees'
+    [intro
+      """The round-trip contract is the single most important property of
+         CX's surface design. Stated:"""]
+
+    [note
+      """For any CX document **D** in canonical form, and any supported
+         projection format **F**, the following identity holds:
+
+         `to_cx(to_F(D)) == D` (as canonical bytes)
+
+         For any document **F** in projection format **F** that was
+         produced by `to_F(D)` for some canonical CX **D**:
+
+         `to_F(to_cx(F)) == F` (as bytes, modulo format-specific
+         whitespace normalization rules in
+         [`spec/conversions.md`](../../spec/conversions.md))."""]
+
+    [body
+      """The conformance suite includes round-trip fixtures for every
+         supported projection. The runner shells out to `cx convert` in
+         both directions and asserts byte equality. Drift on any
+         projection is a release-blocker."""]
+
+    [body
+      """Practically: you can store data as JSON for the JS ecosystem,
+         convert to CX for selection / transformation / hashing, then
+         convert back to JSON for delivery — no information loss, no
+         re-formatting drift, no string-mangling in between."""]]]

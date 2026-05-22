@@ -1,0 +1,307 @@
+[# Section 6 — bindings: C ABI, two-layer model, quickstarts.
+   Anchored in spec/bindings.md + spec/abi.md. v0.8.0 ships V/Python/Go/Rust. #]
+
+[section :id bindings :n 6 :title 'Bindings'
+
+  [child :id c-abi :n 6.1 :title 'The C ABI surface'
+    [intro
+      """libcx is a V library; every other supported language wraps the
+         compiled C ABI. The full ABI surface is documented in
+         [`spec/abi.md`](../../spec/abi.md); this section is the working
+         summary for binding authors."""]
+
+    [body
+      """The ABI is intentionally narrow. Every binding sees the same
+         function set; capability bits (`cx_features()`) tell a binding
+         what optional features the loaded libcx supports."""]
+
+    [list
+      [item """**Init.** `cx_init()` is idempotent; every binding calls
+              it once at module load."""]
+      [item """**Thread registration.** `cx_thread_register()` and
+              `cx_thread_unregister()` are required for host-spawned
+              threads on bindings whose runtime spawns threads outside
+              the V runtime's awareness. Per-binding rules in
+              [`spec/abi.md`](../../spec/abi.md) §1.5.5."""]
+      [item """**Parse and serialize.** `cx_parse(bytes, len)` and
+              `cx_doc_bytes(doc)`."""]
+      [item """**Evaluate.** `cx_code_eval(doc, code, target_format)`
+              evaluates code against a document. The result is a value
+              encoded in the target format (text CX, JSON, etc.)."""]
+      [item """**Select.** `cx_select_all(doc, cxpath)` and
+              `cx_select(doc, cxpath)` are the CXPath path-value
+              entry points (restored in v0.8.0 per ADR
+              [0028](../../spec/decisions/0028-cxpath-as-value-kind.md))."""]
+      [item """**Modify.** `cx_modify(doc, focus_cxpath, action)`
+              returns a new document handle (ADR
+              [0030](../../spec/decisions/0030-modify-pure-functional-updates.md))."""]
+      [item """**Identity.** `cx_doc_hash(doc)`,
+              `cx_doc_equals(a, b)`."""]
+      [item """**Capability features.** `cx_features()` returns a
+              bitfield. Bindings check before calling new entry
+              points."""]]
+
+    [note
+      """**Memory model.** libcx uses Boehm GC internally. Binding code
+         must not free returned handles directly; it releases them via
+         `cx_release()` which decrements the GC root count. Detailed
+         lifetime rules are in
+         [`spec/abi.md`](../../spec/abi.md) §1.6."""]]
+
+  [child :id layer-1 :n 6.2 :title 'Layer 1 — canonical method set'
+    [intro
+      """Layer 1 is the **conformance contract**. Every binding implements
+         identical method names (case-adjusted to host conventions) with
+         identical semantics. Drift between bindings on any Layer-1
+         method is a release-blocker (gate 28.6, Layer-1 parity).
+         Normative spec: [`spec/bindings.md`](../../spec/bindings.md) §2."""]
+
+    [body
+      """**16 canonical methods.** No more, no less, at this layer."""]
+
+    [table :columns (method, returns, description)
+      [row :method 'parse(bytes)' :returns 'Doc' :description 'Parse canonical CX bytes']
+      [row :method 'Doc.bytes()' :returns 'bytes' :description 'Serialize Doc to canonical CX']
+      [row :method 'Doc.hash()' :returns 'string' :description 'SHA-256 of canonical bytes']
+      [row :method 'Doc.equals(other)' :returns 'bool' :description 'Canonical-bytes equality']
+      [row :method 'Doc.eval(code)' :returns 'Value' :description 'Evaluate CX code against doc']
+      [row :method 'Doc.select_all(cxpath)' :returns '[Node]' :description 'CXPath path-value']
+      [row :method 'Doc.select(cxpath)' :returns 'Node?' :description 'First match of select_all']
+      [row :method 'Doc.modify(focus, action)' :returns 'Doc' :description 'Pure-functional update']
+      [row :method 'Doc.find_all(name)' :returns '[Node]' :description 'Name-only convenience']
+      [row :method 'Doc.root()' :returns 'Node' :description 'Root element']
+      [row :method 'Node.name()' :returns 'string' :description 'Element name']
+      [row :method 'Node.attr(name)' :returns 'Value?' :description 'Attribute value']
+      [row :method 'Node.attrs()' :returns 'Map' :description 'All attributes']
+      [row :method 'Node.children()' :returns '[Node]' :description 'Direct children']
+      [row :method 'Node.body()' :returns 'Value' :description 'Element body']
+      [row :method 'Node.kind()' :returns 'string' :description 'Item-kind tag']]
+
+    [body
+      """CXPath strings are the selector vocabulary across every Layer-1
+         selection method. The string is parsed and evaluated by libcx,
+         not by the binding — that keeps semantics identical across hosts
+         and lets evaluator caching work cross-binding."""]
+
+    [example :lang python
+      """# Python — Layer 1
+         emails = doc.select_all("//user[@active=true]/@email")
+         new_doc = doc.modify("//user[@id=1]/@name", cx.Set("Alice"))"""]
+
+    [example :lang go
+      """// Go — Layer 1 (PascalCase per Go style; semantics identical)
+         emails, _ := doc.SelectAll("//user[@active=true]/@email")
+         newDoc, _ := doc.Modify("//user[@id=1]/@name", cx.Set("Alice"))"""]
+
+    [example :lang rust
+      """// Rust — Layer 1
+         let emails = doc.select_all("//user[@active=true]/@email")?;
+         let new_doc = doc.modify("//user[@id=1]/@name", cx::Set("Alice"))?;"""]
+
+    [example :lang v
+      """// V — Layer 1 (native — no wrapper)
+         emails := doc.select_all('//user[@active=true]/@email')!
+         new_doc := doc.modify('//user[@id=1]/@name', cx.Set('Alice'))!"""]]
+
+  [child :id layer-2 :n 6.3 :title 'Layer 2 — host idiom packs'
+    [intro
+      """Layer 2 is **opt-in sugar**. Importing it pulls in host-idiomatic
+         wrappers that compile to Layer-1 calls at the boundary. The
+         compilation is deterministic — every Layer-2 expression has a
+         single, documented Layer-1 desugaring. Spec:
+         [`spec/bindings.md`](../../spec/bindings.md) §3."""]
+
+    [body
+      """Why two layers? Two audiences. **CX-native developers** want CX
+         vocabulary in every host language — they get Layer 1.
+         **Host-native developers** want list comprehensions, filter
+         chains, iterator combinators — they get Layer 2."""]
+
+    [body
+      """**Python — `cxlib.idioms`.** List comprehensions, subscript
+         assignment, generator over relative paths."""]
+
+    [example :lang python
+      """from cxlib import Doc
+         from cxlib.idioms import *      # opt-in
+
+         doc = Doc.parse(open("users.cx", "rb").read())
+
+         # List comprehension — desugars to select_all
+         active = [u for u in doc if u.tag == "user" and u.attr("active")]
+         # ≡ doc.select_all("//user[@active=true]")
+
+         # Subscript with CXPath string
+         new_doc = doc.copy()
+         new_doc["//user[@id=1]/@name"] = "Alice"
+         # ≡ doc.modify("//user[@id=1]/@name", cx.Set("Alice"))
+
+         # Generator over a path
+         for email in doc / "//user/@email":
+             print(email)
+         # ≡ for email in doc.select_all("//user/@email"):"""]
+
+    [body
+      """**Go — `cxlib/idioms`.** Builder filter chains, typed
+         projections via struct tags."""]
+
+    [example :lang go
+      """import "cx/cxlib"
+         import . "cx/cxlib/idioms"
+
+         doc, _ := cxlib.Parse(data)
+
+         // Builder chain → CXPath string
+         emails := doc.Filter("user").Where("@active=true").Get("/@email")
+         // ≡ doc.SelectAll("//user[@active=true]/@email")
+
+         // Typed projection
+         type User struct {
+             ID    int    \`cx:"@id"\`
+             Email string \`cx:"@email"\`
+         }
+         users := Project[User](doc.Filter("user").Where("@active=true"))"""]
+
+    [body
+      """**Rust — `cxlib::idioms`.** Typed iterator combinators,
+         `#[derive(CxData)]` for value-typed projections."""]
+
+    [example :lang rust
+      """use cxlib::Doc;
+         use cxlib::idioms::*;
+
+         let doc = Doc::parse(&data)?;
+
+         let emails: Vec<_> = doc.iter_users()
+             .filter(|u| u.active())
+             .map(|u| u.email())
+             .collect();
+
+         #[derive(CxData)]
+         struct User { id: u32, email: String, #[cx(attr)] active: bool }
+
+         let users: Vec<User> = doc.collect::<User>("//user[@active=true]")?;"""]
+
+    [body
+      """**V — Layer 1 is already idiomatic.** V is the native reference;
+         no separate Layer 2 wrapper. The Layer-1 surface IS the V
+         surface."""]
+
+    [note
+      """Layer-2 idiom packs are **not** conformance-tested at the API
+         level (different bindings have different idioms by design).
+         They ARE tested via their documented Layer-1 desugaring —
+         `cxlib.idioms.explain(expr)` returns the Layer-1 equivalent
+         and is used in fixtures + LSP hovers."""]]
+
+  [child :id schema-codegen :n 6.4 :title 'Schema-driven codegen'
+    [intro
+      """When a CX schema (`.cxs`, see [[schema]]) is available, every
+         binding can generate typed Layer-2 projections from it. This is
+         post-v0.8.0 follow-up work; the spec slot is reserved in
+         [`spec/bindings.md`](../../spec/bindings.md) §7."""]
+
+    [example :lang cx
+      """[# users.cxs #]
+         [schema
+           [element :name user
+             [attribute :name id    :type int    :required true]
+             [attribute :name email :type string :required true]
+             [attribute :name active :type bool  :default true]]]"""]
+
+    [body
+      """`cx schema codegen --target python --in users.cxs --out users.py`
+         emits a Python module with a `User` dataclass, type-checked
+         Layer-2 accessors, and round-trip serialization. The Rust
+         emitter produces `#[derive(CxData)]` structs; the Go emitter
+         produces tagged structs."""]]
+
+  [child :id quickstarts :n 6.5 :title 'Per-language quickstarts'
+    [intro
+      """v0.8.0 ships four bindings: V (native reference), Python, Go,
+         and Rust. Others (TypeScript, Java, C#, Ruby, Kotlin, Swift)
+         are archived under `lang/_archived/`; see [[migration]]
+         for restoration policy."""]
+
+    [child :id v :n 6.5.1 :title 'V (native reference)'
+      [body
+        """V is the native language of libcx. There is no FFI — V code
+           imports the cx module directly. The binding lives in
+           `lang/v/native/cxlib/`."""]
+      [example :lang v
+        """import cx
+
+           fn main() {
+             doc := cx.parse(os.read_file('users.cx')!)!
+             for user in doc.select_all('//user[@active=true]') {
+               println(user.attr('email') or { '<no email>' })
+             }
+             new_doc := doc.modify('//user[@id=1]/@name', cx.Set('Alice'))!
+             println(new_doc.hash())
+           }"""]
+      [body
+        """Errors bubble via V's `!` / `?` propagation. There is no
+           Layer 2 — the Layer 1 surface IS V's idiomatic API."""]]
+
+    [child :id python :n 6.5.2 :title 'Python'
+      [body
+        """Python uses the `cxlib` package; the FFI bridge is in
+           `lang/python/cxlib/_native.py`. Layer 2 sugar lives in
+           `cxlib.idioms`."""]
+      [example :lang python
+        """import cxlib as cx
+
+           doc = cx.parse(open('users.cx', 'rb').read())
+
+           for user in doc.select_all('//user[@active=true]'):
+               print(user.attr('email'))
+
+           new_doc = doc.modify('//user[@id=1]/@name', cx.Set('Alice'))
+           print(new_doc.hash())"""]
+      [body
+        """Install via `pip install cxlib` (once published). The package
+           tracks the parent CX version: v0.8.0 binding requires libcx
+           v0.8.0 or compatible (per cap-bit advertisement)."""]]
+
+    [child :id go :n 6.5.3 :title 'Go'
+      [body
+        """Go uses cgo to call the C ABI. The module lives at
+           `cx/cxlib`; Layer 2 sugar at `cx/cxlib/idioms`."""]
+      [example :lang go
+        """package main
+
+           import (
+             "fmt"
+             "os"
+             "cx/cxlib"
+           )
+
+           func main() {
+             data, _ := os.ReadFile("users.cx")
+             doc, _ := cxlib.Parse(data)
+             emails, _ := doc.SelectAll("//user[@active=true]/@email")
+             for _, e := range emails { fmt.Println(e) }
+             newDoc, _ := doc.Modify("//user[@id=1]/@name", cxlib.Set("Alice"))
+             fmt.Println(newDoc.Hash())
+           }"""]]
+
+    [child :id rust :n 6.5.4 :title 'Rust'
+      [body
+        """Rust uses `bindgen` over the C ABI; the crate lives at
+           `lang/rust/cxlib/`. Layer 2 in `cxlib::idioms`."""]
+      [example :lang rust
+        """use cxlib::Doc;
+           use std::fs;
+
+           fn main() -> cxlib::Result<()> {
+             let data = fs::read("users.cx")?;
+             let doc = Doc::parse(&data)?;
+             for email in doc.select_all("//user[@active=true]/@email")? {
+                 println!("{}", email);
+             }
+             let new_doc = doc.modify("//user[@id=1]/@name", cxlib::Set("Alice"))?;
+             println!("{}", new_doc.hash()?);
+             Ok(())
+           }"""]
+      [body
+        """Add to `Cargo.toml`: `cxlib = "0.8.0"`."""]]]]

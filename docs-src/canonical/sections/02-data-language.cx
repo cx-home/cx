@@ -1,0 +1,307 @@
+[# Section 2 — the CX data language.
+   Authored 2026-05-22. Anchors normative depth in spec/cxdm.md,
+   spec/canonical.md, spec/grammar.ebnf, spec/schema.md, spec/include.md. #]
+
+[section :id data :n 2 :title 'The data language'
+
+  [child :id lexical :n 2.1 :title 'Lexical structure'
+    [intro
+      """Every CX source file is UTF-8 text. The lexer is small: identifiers,
+         scalar literals, brackets (`[`, `]`), parentheses (used for sequences
+         and argument lists), curly braces (used for map literals), sigils,
+         strings, and comments. The full lexical rules are in
+         [`spec/grammar.ebnf`](../../spec/grammar.ebnf)."""]
+
+    [child :id identifiers :n 2.1.1 :title 'Identifiers'
+      [body
+        """An identifier starts with an ASCII letter or underscore and
+           continues with letters, digits, underscores, and hyphens. Hyphens
+           are valid identifier characters (CX leans on the kebab-case
+           convention used by Lisp, Clojure, and Scheme). The reserved tokens
+           `true`, `false`, `null`, and the directive names (starting with
+           `?`) are excluded."""]
+      [example :lang cx
+        """[user-profile :first-name 'Ada' :last-name 'Lovelace']"""]
+      [body
+        """Names of CX elements are stored as Unicode code-point sequences;
+           a single canonical byte form is used at the wire level (see
+           [[canonical]])."""]]
+
+    [child :id comments :n 2.1.2 :title 'Comments (line and block)'
+      [body
+        """CX has one comment form: `[# … #]`. It nests, it spans any number
+           of lines, and it is allowed anywhere whitespace is allowed. The
+           comment is a real lexical element, not a hack on top of a string
+           — the parser drops it before AST construction."""]
+      [example :lang cx
+        """[# A single-line note. #]
+           [config
+             [# This sub-comment is fine, even
+                [# nested #] inside another. #]
+             [host 'localhost']]"""]
+      [note
+        """Older CX dialects used `[-` `-]` for block comments. v0.8.0 keeps
+           the `[# #]` form only. See [[migration]] for the rename."""]]
+
+    [child :id whitespace :n 2.1.3 :title 'Whitespace'
+      [body
+        """Whitespace separates tokens; otherwise it is not significant.
+           Indentation does not change meaning. CX is bracket-structured, so
+           you can compact a document to one line, or pretty-print it across
+           many — the canonical form (see [[cx-canonical]]) is unique and
+           hash-stable either way."""]]]
+
+  [child :id elements :n 2.2 :title 'Elements'
+    [intro
+      """An **element** is the basic CX data structure: a name, zero or more
+         attributes, and a body. Every bracketed form is an element."""]
+
+    [child :id names :n 2.2.1 :title 'Element names'
+      [body
+        """The first token inside `[` is the element name. It is an
+           identifier (or a string literal, if you need spaces, but that is
+           unusual in idiomatic CX)."""]
+      [example :lang cx
+        """[server]                 [# empty element                 #]
+           [server :host 'a.com']   [# attributes only               #]
+           [server [host 'a.com']]  [# nested elements as body       #]"""]]
+
+    [child :id attributes :n 2.2.2 :title 'Attributes'
+      [body
+        """Attributes are key-value pairs introduced with `:`. The key is an
+           identifier; the value is any scalar or expression. Multiple
+           attributes are space-separated."""]
+      [example :lang cx
+        """[user :id 42 :email 'ada@example.com' :active true]"""]
+      [body
+        """Attribute order is preserved by the parser but is **not** part
+           of the canonical identity — re-ordering attributes does not
+           change the SHA-256 of the canonical bytes. See [[canonical]]
+           for the normalization rules."""]]
+
+    [child :id bodies :n 2.2.3 :title 'Body content'
+      [body
+        """The body of an element is everything between the attribute list
+           and the closing `]`. A body may be empty, a single scalar, a
+           sequence of scalars and elements (mixed content / prose — see
+           [[prose]]), or a sequence of just elements."""]
+      [example :lang cx
+        """[empty]
+           [scalar 42]
+           [prose 'Some ' [em 'mixed'] ' content.']
+           [list [item 1] [item 2] [item 3]]"""]]]
+
+  [child :id scalars :n 2.3 :title 'Scalars'
+    [intro
+      """CX has seven scalar kinds: string, int, float, bool, date, datetime,
+         and null. The full set with byte-level encoding is in
+         [`spec/data_bin.md`](../../spec/data_bin.md) §3."""]
+
+    [child :id strings :n 2.3.1 :title 'Strings — single, double, triple-quoted'
+      [body
+        """Strings come in three forms. Single-quoted (`'…'`) and
+           double-quoted (`"…"`) work the same way and support escapes.
+           Triple-quoted (`'''…'''` or `\"\"\"…\"\"\"`) strings span lines,
+           preserve internal whitespace, and need no escaping for the other
+           quote characters."""]
+      [example :lang cx
+        """[greeting 'Hello, world']
+           [path "C:\\Users\\Ada"]
+           [readme \"\"\"
+             This is a
+             multi-line string
+             with 'embedded' quotes.
+           \"\"\"]"""]
+      [body
+        """Triple-quoted strings are the default for any body text longer
+           than one line. They are the building block for the prose form
+           (see [[prose]]) and for the `[?modify]` action `:set` values
+           when those values are documents in their own right."""]]
+
+    [child :id numbers :n 2.3.2 :title 'Numbers — int, float, sized, hex'
+      [body
+        """Integer literals are plain digits, optionally signed:
+           `42`, `-17`, `0`. Float literals contain a decimal point or
+           exponent: `3.14`, `1e9`, `-2.5e-3`. Hex literals are written
+           `0x…`. Sized variants (`:i32`, `:u64`, `:f32`) are available
+           as type-tagged scalars when binding to host languages where
+           the size matters; see [[type]]."""]
+      [example :lang cx
+        """[answer 42]
+           [pi 3.14159]
+           [big 1e18]
+           [color 0xff8800]
+           [port :u16 8080]"""]]
+
+    [child :id booleans :n 2.3.3 :title 'Booleans'
+      [body
+        """`true` and `false`. They are reserved tokens; the identifier
+           `true` always parses as the boolean true value. Use sigil
+           forms (see [[bool]]) for compact attribute syntax."""]]
+
+    [child :id dates :n 2.3.4 :title 'Dates and datetimes'
+      [body
+        """Dates are ISO-8601 calendar dates: `2026-05-22`. Datetimes are
+           ISO-8601 with time and optional zone offset:
+           `2026-05-22T14:30:00Z` or `2026-05-22T14:30:00-04:00`. Both are
+           first-class scalars — they round-trip across every projection
+           and have stable canonical byte encodings."""]]
+
+    [child :id null :n 2.3.5 :title 'Null'
+      [body
+        """`null` is the absent-value scalar. Distinct from the empty
+           sequence `()`. `null` is a value; `()` is the absence of any
+           value. CXPath predicates and `[?if]` treat them differently —
+           `null` is a single-item sequence containing the null scalar;
+           `()` is an empty sequence."""]]]
+
+  [child :id collections :n 2.4 :title 'Collections'
+    [intro
+      """CX has three collection literal forms: sequence, array, and map.
+         The distinction is load-bearing for function signatures — see
+         [`spec/cxdm.md`](../../spec/cxdm.md) §2 D18."""]
+
+    [child :id seq :n 2.4.1 :title 'Sequence literals (a, b, c)'
+      [body
+        """A comma-separated parenthesized list is a sequence: `(1, 2, 3)`.
+           Sequences are flat — concatenating sequences never produces a
+           sequence-of-sequences (the XQuery sequence-flat rule, see
+           [`spec/cxdm.md`](../../spec/cxdm.md) §1)."""]
+      [example :lang cx
+        """[ports (80, 443, 8080)]"""]]
+
+    [child :id arr :n 2.4.2 :title 'Array literals [a, b, c]'
+      [body
+        """A bracketed comma-separated list (distinguished from an element
+           by the absence of a name and the presence of commas) is an
+           array. Arrays preserve nesting — an array of arrays stays
+           shaped that way."""]
+      [example :lang cx
+        """[matrix [[1, 2, 3], [4, 5, 6], [7, 8, 9]]]"""]]
+
+    [child :id map :n 2.4.3 :title 'Map literals {k: v}'
+      [body
+        """Curly braces wrap a map literal: keys are atomic scalars, values
+           are any item. Keys must be unique; insertion order is preserved
+           for round-trip but not for canonical identity."""]
+      [example :lang cx
+        """[env {host: 'a.com', port: 8080, tls: true}]"""]]]
+
+  [child :id sigils :n 2.5 :title 'Sigils'
+    [intro
+      """Sigils are one-character prefixes that change how a token is
+         interpreted. CX has five: `&` (anchor), `*` (merge), `#` (id),
+         `:` (type or attribute key), `+` / `-` (compact booleans)."""]
+
+    [child :id anchor :n 2.5.1 :title 'The & anchor sigil'
+      [body
+        """`&name` declares a reusable shape anchor on an element. Other
+           elements can refer to it later in the same document via the
+           merge sigil. Heavily used in backlog.cx and ADRs."""]
+      [example :lang cx
+        """[defaults &server-base :host 'localhost' :tls true]
+           [service-a *server-base :port 8001]
+           [service-b *server-base :port 8002]"""]]
+
+    [child :id merge :n 2.5.2 :title 'The * merge sigil'
+      [body
+        """`*name` expands the anchor's attributes and body into the
+           current element. Local attributes override merged ones, so you
+           can specialize."""]]
+
+    [child :id id :n 2.5.3 :title 'The # id sigil'
+      [body
+        """`#name` declares an identity on the element. Identities are
+           document-unique and can be referenced via CXPath
+           `id('name')`. Full semantics in
+           [`spec/identity.md`](../../spec/identity.md)."""]
+      [example :lang cx
+        """[user #ada :email 'ada@example.com']
+           [post :author-id #ada """First post"""]"""]]
+
+    [child :id type :n 2.5.4 :title 'The : type sigil'
+      [body
+        """`:` is overloaded by position. In attribute position it
+           introduces an attribute key (`:host 'a.com'`). In value position
+           it introduces a type tag (`:int 42`, `:datetime '2026-05-22'`).
+           The parser disambiguates by context — there is no ambiguity at
+           parse time."""]]
+
+    [child :id bool :n 2.5.5 :title 'The + and - bool sigils'
+      [body
+        """`+name` is shorthand for `:name true`; `-name` for
+           `:name false`. They keep terse attribute lists readable."""]
+      [example :lang cx
+        """[user :email 'ada@example.com' +active -banned]
+           [# equivalent to:
+              [user :email 'ada@example.com' :active true :banned false] #]"""]]]
+
+  [child :id prose :n 2.6 :title 'Mixed content and prose'
+    [intro
+      """Mixed content — text interleaved with elements — is first-class
+         CX, not a separate "string mode". The body of any element may
+         alternate freely between scalars and child elements."""]
+    [example :lang cx
+      """[para
+         """The function """
+         [code 'parse']
+         """ returns a """
+         [link :to 'spec/cxdm.md' 'Document']
+         """ value."""]"""]
+    [body
+      """This is how the canonical Markdown projection (see [[md]]) keeps
+         lossless round-trip — the prose is structured as it is parsed, and
+         emitting back to MD prints text runs and inline elements in
+         order."""]]
+
+  [child :id tables :n 2.7 :title 'Typed columnar tables'
+    [intro
+      """For analytical workloads CX has a typed columnar table form. The
+         normative spec is [`spec/table_api.md`](../../spec/table_api.md);
+         the wire encoding is `spec/data_bin.md` §3.10."""]
+    [example :lang cx
+      """[orders :table
+         :columns (id :int, customer :string, amount :float, ts :datetime)
+         (1, 'Ada',   42.50, 2026-05-22T10:00:00Z)
+         (2, 'Grace', 17.25, 2026-05-22T10:15:00Z)
+         (3, 'Linus', 99.00, 2026-05-22T11:30:00Z)]"""]
+    [body
+      """Tables are dictionary-encoded by default, support nullable columns
+         (`spec/data_bin.md` §3.10.5), and stream in row-group chunks
+         (`spec/data_bin.md` §3.11). Bridges to Arrow and Parquet exist on
+         the analytics-bridge surface (see [[concepts]])."""]]
+
+  [child :id schema :n 2.8 :title 'Schema language (.cxs)'
+    [intro
+      """A `.cxs` file is a CX schema: an element-shape declaration that
+         the validator can enforce. Schemas are CX documents themselves —
+         no separate grammar to learn. Full spec in
+         [`spec/schema.md`](../../spec/schema.md)."""]
+    [example :lang cx
+      """[# users.cxs #]
+         [schema
+           [element :name user
+             [attribute :name id :type int :required true]
+             [attribute :name email :type string :required true]
+             [attribute :name active :type bool :default true]]]"""]
+    [body
+      """Schemas drive two things: validation (`cx validate doc.cx
+         --schema users.cxs`) and binary encoding (data-bin
+         schema-driven mode, see [[data-bin]]). Schema-driven mode omits
+         tag bytes and field names, producing wire formats comparable in
+         size to Protobuf or Avro."""]]
+
+  [child :id includes :n 2.9 :title 'Include resolver'
+    [intro
+      """`[?cx include]` resolves a path to another CX document and
+         splices its contents in place. The full resolver model (relative
+         paths, capability gating, cycle detection) is in
+         [`spec/include.md`](../../spec/include.md)."""]
+    [example :lang cx
+      """[config
+           [?cx include :path 'base.cx']
+           [override :port 9090]]"""]
+    [body
+      """Includes are evaluated at parse time. The canonical bytes of a
+         document with includes are the bytes after resolution — the
+         hash includes everything the document depends on."""]]]

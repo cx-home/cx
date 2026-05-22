@@ -1,0 +1,114 @@
+[# Section 7 — tooling: CLI, editors, LSP, tree-sitter.
+   Cross-refs tooling/* dirs + scripts/gen_docs + docs/playground. #]
+
+[section :id tooling :n 7 :title 'Tooling'
+
+  [child :id cli :n 7.1 :title 'The cx CLI'
+    [intro
+      """`cx` is the one-stop command-line interface. It parses, evaluates,
+         validates, converts, formats, hashes, and lints CX documents.
+         Built from the same V codebase as libcx, so every binding sees
+         identical behavior."""]
+
+    [body
+      """The most common subcommands:"""]
+
+    [table :columns (command, purpose)
+      [row :command 'cx parse FILE' :purpose 'Parse and pretty-print']
+      [row :command 'cx canon FILE' :purpose 'Emit canonical bytes']
+      [row :command 'cx hash FILE' :purpose 'Print SHA-256 of canonical bytes']
+      [row :command 'cx eval FILE CODE' :purpose 'Evaluate code against document']
+      [row :command 'cx select FILE CXPATH' :purpose 'CXPath query']
+      [row :command 'cx modify FILE CXPATH ACTION' :purpose 'Pure-functional update']
+      [row :command 'cx convert FILE --to FORMAT' :purpose 'Project to JSON/YAML/TOML/XML/MD']
+      [row :command 'cx validate FILE --schema FILE.cxs' :purpose 'Schema validation']
+      [row :command 'cx fmt FILE' :purpose 'Pretty-print (preserves comments)']
+      [row :command 'cx lint FILE' :purpose 'Style + correctness lints']
+      [row :command 'cx diff A B' :purpose 'Structural diff']]
+
+    [example :lang cx
+      """$ cx select users.cx '//user[@active=true]/@email'
+         ada@example.com
+         linus@example.com
+
+         $ cx modify users.cx '//user[@id=1]/@name' --set Alice
+         [users [user :id 1 :name 'Alice' +active] ...]
+
+         $ cx hash users.cx
+         3a7bd3e2360a9f12...."""]
+
+    [note
+      """Run `cx --help` for the full subcommand list. The CLI is itself
+         conformance-tested — fixtures under `conformance/cli.txt` lock
+         the surface."""]]
+
+  [child :id editors :n 7.2 :title 'Editor integration'
+    [intro
+      """CX ships first-class editor support for VS Code, Neovim, Helix,
+         and any editor that consumes LSP and tree-sitter. Tooling lives
+         under `tooling/`; the install scripts under `tooling/install/`
+         set everything up."""]
+
+    [list
+      [item """**VS Code** — install the `cx-language` extension
+              (`tooling/vscode/`). Provides syntax highlight, snippets,
+              LSP-backed diagnostics, hover, completion, jump-to-def."""]
+      [item """**Neovim** — see `tooling/neovim/README.md`. Uses
+              `nvim-treesitter` + the bundled LSP server."""]
+      [item """**Helix** — language definition snippets in
+              `tooling/helix.example.toml`; tree-sitter grammar
+              from `tooling/tree-sitter-cx/`."""]
+      [item """**Any LSP client** — the language server binary is
+              `tooling/lsp/` built; speaks LSP 3.17 over stdio."""]]]
+
+  [child :id lsp :n 7.3 :title 'Language server (LSP)'
+    [intro
+      """The LSP server provides the same intelligence to every editor
+         that speaks LSP. Implementation: `tooling/lsp/` (V binary)."""]
+
+    [body
+      """Capabilities:"""]
+
+    [list
+      [item """**Diagnostics.** Parser errors, schema violations, error
+              codes from `cx lint`, unreachable `[?match]` arms, missing
+              `:else` hints, `:where` consolidation suggestions."""]
+      [item """**Hover.** Element schema info, attribute types,
+              directive documentation, **CXPath focus hover** showing
+              match-count + axis docs (new in v0.8.0)."""]
+      [item """**Completion.** Element names from schema, attribute names,
+              directive names, **CXPath axis names + node-kind tests**."""]
+      [item """**Definition / references.** Across `[?cx include]`
+              boundaries — go-to-def follows include resolution."""]
+      [item """**Layer-2 explain.** Hovering a Layer-2 host idiom
+              (Python comprehension, Go filter chain, Rust iterator)
+              shows the desugared Layer-1 form. Implementation calls
+              `cxlib.idioms.explain()` (see [[layer-2]])."""]
+      [item """**`[?modify]` focus type check.** Static error when
+              `:set-attr` / `:delete-attr` target an attribute-step
+              path (per ADR
+              [0030](../../spec/decisions/0030-modify-pure-functional-updates.md) D7)."""]]]
+
+  [child :id tree-sitter :n 7.4 :title 'Tree-sitter grammar'
+    [intro
+      """`tooling/tree-sitter-cx/` is the tree-sitter grammar for CX.
+         Used by VS Code, Neovim, Helix, GitHub syntax highlight, and any
+         tree-sitter consumer."""]
+
+    [body
+      """The grammar covers everything in [`spec/grammar.ebnf`](../../spec/grammar.ebnf):
+         elements, attributes, scalars, sigils, collection literals, all
+         39 directives, CXPath path expressions (`//`, `/`, 12 axes,
+         predicates, `AttrTest`), multi-arm `[?match]` slots
+         (`:case` / `:when` / `:else` / `_`), and `[?modify]` action
+         slots."""]
+
+    [body
+      """Highlight queries live in
+         `tooling/tree-sitter-cx/queries/highlights.scm`; injection
+         queries (for embedded other-language code blocks) in
+         `queries/injections.scm`."""]
+
+    [note
+      """The `make tree-sitter` target rebuilds the parser binary; the
+         CI gate keeps it in sync with `spec/grammar.ebnf`."""]]]

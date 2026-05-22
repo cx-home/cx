@@ -1,0 +1,213 @@
+[# Section 9 — migration: v0.7.x → v0.8.0, cross-format intake,
+   retired surfaces. Anchored in spec/code_migration.md (post-rename),
+   ADRs 0028/0029/0030/0032, backlog.cx decision log. #]
+
+[section :id migration :n 9 :title 'Migration'
+
+  [child :id from-v07x :n 9.1 :title 'From v0.7.x to v0.8.0'
+    [intro
+      """v0.8.0 is the first stable tag after v0.7.5 (v0.7.6 was skipped
+         intentionally — see backlog
+         decision `d-2026-05-22-04`). The changes are mechanical and
+         covered by an automated migration script
+         `scripts/migrate_v07_to_v08.py`. This section is the manual
+         reference."""]
+
+    [body
+      """**Rename: programs → code.** Per ADR
+         [0032](../../spec/decisions/0032-rename-programs-to-code.md),
+         every internal `programs` reference becomes `code`. The brand
+         layer ("CX is data and code") was renamed immediately on
+         d-2026-05-22-01; the internal rename cascades through:"""]
+
+    [table :columns (was, is)
+      [row :was 'cx_program_eval' :is 'cx_code_eval']
+      [row :was 'vcx/programs/' :is 'vcx/code/']
+      [row :was 'spec/programs.md' :is 'spec/code.md']
+      [row :was 'spec/programs_migration.md' :is 'spec/code_migration.md']
+      [row :was 'conformance/programs.txt' :is 'conformance/code.txt']
+      [row :was '_cx_program_diagram (wasm)' :is '_cx_code_diagram (wasm)']
+      [row :was '--- in_cxl (fixture marker)' :is '--- in_code (fixture marker)']]
+
+    [body
+      """**`[?find]` is retired.** Per ADR
+         [0028](../../spec/decisions/0028-cxpath-as-value-kind.md) D8,
+         `[?find]` was always sugar for `[?for]` over a pattern. The
+         migration is one of two forms:"""]
+
+    [table :columns (was, is)
+      [row :was '[?find [user $u] :yield $u]' :is '//user  or  [?for [user $u] :yield $u]']
+      [row :was '[?find [user @active=true $u] :yield $u]' :is '//user[@active=true]']
+      [row :was '[?find [user [email $e]] :yield $e]' :is '//user/email']
+      [row :was 'count([?find [user @active=true $u] :yield $u])' :is 'count(//user[@active=true])']]
+
+    [body
+      """**CXPath is now a value kind.** A path expression like `//user`
+         parses to a `cx.PathNode` value, evaluates to a sequence, and
+         round-trips canonically as the terse form. The retired v0.7.0
+         CXPath subset is replaced by XPath 3.1 alignment — see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]
+
+    [body
+      """**Multi-arm `[?match]`.** Per ADR
+         [0029](../../spec/decisions/0029-match-heterogeneous-arms.md),
+         `[?match]` now supports N arms with `:case` / `:when` / `:else`,
+         scalar literal patterns, `_` wildcard, and `:where` guards.
+         The 2-arg form (single arm, raises `CXER0100` on miss) is
+         preserved unchanged."""]
+
+    [example :lang cx
+      """[# v0.7.x — nested if chain                                    #]
+         [?if (name($n) = 'prose') :then [p $n]
+              :else [?if (name($n) = 'code') :then [pre $n]
+                          :else ()]]
+
+         [# v0.8.0 — multi-arm match                                    #]
+         [?match $n
+           :case [prose $p] :yield [p $p]
+           :case [code $c]  :yield [pre $c]
+           :else            :yield ()]"""]
+
+    [body
+      """**`[?modify]` is new.** Per ADR
+         [0030](../../spec/decisions/0030-modify-pure-functional-updates.md).
+         There was no idiomatic update directive in v0.7.x — code had
+         to rebuild via `[?for]`. v0.8.0 ships the eleven-action
+         vocabulary (`:set` / `:delete` / `:using` / `:rename` /
+         `:set-attr` / `:delete-attr` / `:append` / `:prepend` /
+         `:insert-before` / `:insert-after` / `:replace`). See
+         [[modify]]."""]
+
+    [body
+      """**Two-layer bindings.** Per ADR `d-2026-05-22-07` and
+         [`spec/bindings.md`](../../spec/bindings.md). Layer 1 is the
+         canonical 16-method surface, identical across V/Python/Go/Rust.
+         Layer 2 is opt-in host idiom packs (`cxlib.idioms` in Python,
+         `cxlib/idioms` in Go, `cxlib::idioms` in Rust). v0.7.x had a
+         single flat surface per binding; v0.8.0 codifies the
+         separation. See [[bindings]]."""]
+
+    [body
+      """**Binding scope reduced to four.** Per ADR `d-2026-05-22-03`,
+         v0.8.0 ships only V (native), Python, Go, Rust. The
+         TypeScript, Java, C#, Ruby, Kotlin, and Swift bindings are
+         moved to `lang/_archived/` (preserved, not deleted).
+         Restoration is opt-in once Layer-1 is stable; community
+         contributions accepted but not blocked on. The make tests for
+         archived bindings are no longer in the default `make test`
+         target."""]
+
+    [body
+      """**Automated script.** Run on a clean working tree:"""]
+
+    [example :lang cx
+      """$ python scripts/migrate_v07_to_v08.py path/to/source
+
+         # Performs (with safety checks):
+         #   [?find] → [?for]  or  CXPath equivalent
+         #   in_cxl → in_code  (in fixtures)
+         #   cx_program_eval → cx_code_eval  (in host code)
+         #   programs.txt → code.txt (in references)
+         #   ?cxl  → ?code   (in playground starter ids)"""]
+
+    [note
+      """The script is **mechanical** — it does not attempt to convert
+         hand-rolled nested `[?if]` chains to multi-arm `[?match]`
+         (that requires semantic understanding of what each branch
+         tests). The conversion is straightforward by hand once you
+         know the multi-arm form (see [[match]])."""]]
+
+  [child :id from-xml :n 9.2 :title 'From XML'
+    [intro
+      """XML is the closest projection to CX — same element / attribute /
+         body shape. Migration is one-shot: `cx convert input.xml --to
+         cx --out input.cx`."""]
+
+    [list
+      [item """**DOCTYPE / DTD** — drop. Use a CX schema (`.cxs`)
+              instead. See [[schema]]."""]
+      [item """**Namespaces** — `xmlns:*` declarations become CX
+              attributes on the root element; namespace-qualified
+              element names use the same `prefix:name` form. See
+              [`spec/namespaces.md`](../../spec/namespaces.md)."""]
+      [item """**CDATA** — projects to triple-quoted strings."""]
+      [item """**Processing instructions** — preserved as `[?pi …]`
+              elements; their bodies are opaque text."""]
+      [item """**XPath queries** — port to CXPath. The selection core
+              is identical (see
+              [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md));
+              you drop XPath's `for`/`let`/`if`/`function` constructs
+              in favor of the CX directives."""]
+      [item """**XSLT / XQuery transforms** — port to CX code. There
+              is no automated converter; the structural mapping is
+              direct because the data model is the same."""]]]
+
+  [child :id from-json-yaml :n 9.3 :title 'From JSON / YAML / TOML'
+    [intro
+      """These are projection formats. Migration is again one-shot:
+         `cx convert input.json --to cx --out input.cx`."""]
+
+    [body
+      """The projection rules are deterministic and reversible (see
+         [[json]], [[yaml]], [[toml]]). What you gain on the CX side:"""]
+
+    [list
+      [item """**Comments.** JSON has none; YAML and TOML have ad-hoc
+              comments. CX has structured `[# … #]` comments that
+              survive `cx fmt` and round-trip across projections."""]
+      [item """**Schemas.** JSON Schema / YAML schemas are external
+              artifacts. CX schemas are first-class CX, in the same
+              parser, with the same toolchain."""]
+      [item """**Queries.** JSONPath / `jq` / YAML query systems are
+              format-specific. CXPath works on any projected document
+              regardless of source format."""]
+      [item """**Updates.** No idiomatic pure-functional update for
+              JSON / YAML / TOML at the format level. `[?modify]`
+              gives you one."""]
+      [item """**Identity.** Canonical JSON, JCS, and `jq -S` exist
+              but are not universally adopted. CX has one canonical
+              form built into every tool."""]]]
+
+  [child :id retired-surfaces :n 9.4 :title 'Retired surfaces and replacements'
+    [intro
+      """Surfaces removed or renamed across v0.7.x → v0.8.0, with their
+         replacement."""]
+
+    [table :columns (retired, replacement, source)
+      [row :retired '[?find]' :replacement '[?for] over pattern, or CXPath //name'
+        :source 'ADR 0028 D8']
+      [row :retired '[- comment -]' :replacement '[# comment #]'
+        :source 'lexer consolidation']
+      [row :retired ':contains predicate hack' :replacement 'ancestor:: axis'
+        :source 'ADR 0028 D5']
+      [row :retired ':direct modifier hack' :replacement 'following-sibling:: axis'
+        :source 'ADR 0028 D5']
+      [row :retired 'XPath general-comparison =' :replacement 'value-comparison only'
+        :source 'ADR 0028 D3']
+      [row :retired 'cx_program_eval (C ABI)' :replacement 'cx_code_eval'
+        :source 'ADR 0032']
+      [row :retired 'in_cxl (fixture marker)' :replacement 'in_code'
+        :source 'ADR 0032']
+      [row :retired 'cxl-* playground starter ids' :replacement 'code-* starter ids'
+        :source 'Phase 7.3']
+      [row :retired 'TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'
+        :replacement 'archived under lang/_archived/'
+        :source 'd-2026-05-22-03']
+      [row :retired 'Layer-1-only flat binding surface' :replacement 'Layer 1 + Layer 2'
+        :source 'd-2026-05-22-07']]
+
+    [note
+      """**Archived bindings are not deleted.** Files move to
+         `lang/_archived/<lang>/` and remain in git history. The
+         restoration path: each archived binding can return on opt-in
+         once Layer 1 is stable. Community contributions are welcome
+         on the archived path; they are not blocked on by the core
+         team."""]
+
+    [body
+      """**Doc-gen regression closed.** The v0.7.6-dev `make docs`
+         flat-section regression (backlog issue
+         `i-doc-gen-sectional-regression`) is closed by porting
+         `scripts/gen_docs/build.cx` to v0.8.0 syntax — terse `//`
+         CXPath plus sectional `[?for]` over `//section`. v0.7.5
+         byte-identical baseline restored for unchanged pages."""]]]

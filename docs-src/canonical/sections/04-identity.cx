@@ -1,0 +1,136 @@
+[# Section 4 — identity, hashing, binary wire formats.
+   Anchored in spec/canonical.md, spec/identity.md, spec/ast_bin.md,
+   spec/data_bin.md. #]
+
+[section :id identity :n 4 :title 'Identity'
+
+  [child :id canonical :n 4.1 :title 'Canonical bytes'
+    [intro
+      """Two CX documents are equal iff their canonical bytes are equal.
+         Canonical bytes are the unique serialization produced by `cx
+         canon` — the rules are summarized in [[cx-canonical]] and stated
+         normatively in [`spec/canonical.md`](../../spec/canonical.md)."""]
+
+    [body
+      """Why this matters: every distributed-systems primitive in CX —
+         caching, deduplication, content-addressing, cross-binding equality
+         — depends on byte-stable canonicalization. Without it, two
+         "equal" documents might disagree on hash, on equality, or on
+         what bytes get shipped over the wire. CX takes the same position
+         as JCS for JSON, XCANON for XML, and the Nix store for files:
+         there is one true serialization, and the rules to produce it are
+         minimal and total."""]
+
+    [list
+      [item """**Attribute key order.** Lexicographic by attribute name.
+              Ties broken by Unicode code point."""]
+      [item """**String quoting.** Single quotes for single-line; triple
+              double-quotes for multi-line. Escapes minimal — only what
+              the parser requires."""]
+      [item """**Whitespace.** No insignificant whitespace; bodies joined
+              with single spaces; structural newlines only where the
+              grammar requires them."""]
+      [item """**Numeric form.** Integers as plain digits; floats in the
+              shortest representation that round-trips to the same value
+              (the standard IEEE-754 shortest-form rule)."""]
+      [item """**Boolean form.** `true` / `false`. The sigil shortcuts
+              `+name` / `-name` expand to canonical form."""]
+      [item """**Comments stripped.** `[# … #]` is not part of canonical
+              identity."""]]
+
+    [example :lang cx
+      """[# Source:                                                 #]
+         [user :email 'ada@example.com' :id 42 +active]
+
+         [# `cx canon` output (canonical bytes):                    #]
+         [user :active true :email 'ada@example.com' :id 42]"""]]
+
+  [child :id hash :n 4.2 :title 'SHA-256 content hash'
+    [intro
+      """The identity of a CX document is the SHA-256 of its canonical
+         bytes. The hash is computed over the UTF-8 byte sequence of the
+         canonical form, not over the AST."""]
+
+    [example :lang v
+      """// V binding — Layer 1
+         doc := cx.parse(source)!
+         println(doc.hash())   // "3a7bd3e2360a..."""]
+
+    [example :lang python
+      """# Python binding — Layer 1
+         doc = cx.parse(source)
+         print(doc.hash())     # "3a7bd3e2360a..."""]
+
+    [body
+      """The hash function is stable across bindings: V, Python, Go, and
+         Rust all produce identical strings for identical inputs. This is
+         verified by [`conformance/binding_api.txt`](../../conformance)
+         under gate 28.6 (Layer-1 parity)."""]
+
+    [note
+      """The hash is 64 hex characters. CX uses the full SHA-256, not a
+         truncation, because storage cost is negligible and full hashes
+         interoperate trivially with git, IPFS, Nix, and other
+         content-addressable systems."""]]
+
+  [child :id ast-bin :n 4.3 :title 'ast-bin wire format'
+    [intro
+      """`ast-bin` is the binary serialization of a CX AST. It exists for
+         in-process and cross-process transfer of parsed documents
+         without re-parsing — bindings ship the AST over the C ABI rather
+         than re-tokenizing text. Full spec in
+         [`spec/ast_bin.md`](../../spec/ast_bin.md)."""]
+
+    [body
+      """ast-bin is **not** the canonical form. Canonical bytes are CX
+         text. ast-bin is the **wire** form between processes that have
+         agreed to skip parsing. Two ast-bin payloads can differ
+         (different version, different option bits) and still represent
+         the same canonical document. The hash is always taken over
+         canonical text bytes, never over ast-bin."""]
+
+    [list
+      [item """**Versioned header.** Four-byte magic, format version,
+              capability bits. A reader that sees an unknown cap bit
+              refuses the payload."""]
+      [item """**Capability bits.** Forward-compat advertisement.
+              Currently bits 1–30 assigned (Path AST node and playground
+              diagram use the most recent slots; v0.8.0 introduces
+              PathNode-related bits). See
+              [`spec/ast_bin.md`](../../spec/ast_bin.md)."""]
+      [item """**Length-prefixed strings.** All names and string scalars
+              are length-prefixed UTF-8."""]
+      [item """**Varints for offsets.** Tree topology encoded with
+              zig-zag varints."""]]]
+
+  [child :id data-bin :n 4.4 :title 'data-bin schema-driven format'
+    [intro
+      """`data-bin` is the binary value format for data — not parse
+         structure. Where ast-bin carries AST nodes (with name / kind /
+         child pointers), data-bin carries values (scalars, arrays, maps,
+         tables) with optional schema-driven tag omission. Spec:
+         [`spec/data_bin.md`](../../spec/data_bin.md)."""]
+
+    [body
+      """data-bin has two modes:"""]
+
+    [list
+      [item """**Self-describing.** Every value is tagged with its kind.
+              Comparable to JSON or BSON in flexibility. Used when the
+              schema is not known to both sides."""]
+      [item """**Schema-driven.** Tag bytes and field names are omitted;
+              the schema is the dictionary. Wire size comparable to
+              Protobuf or Avro. Used for high-throughput bindings (e.g.
+              the analytics-bridge Arrow / Parquet path)."""]]
+
+    [body
+      """The schema-driven mode is gated on capability bit (see
+         [`spec/data_bin.md`](../../spec/data_bin.md) §3.13). A reader
+         that does not advertise the schema-driven cap bit gets
+         self-describing payload, never silently corrupted bytes."""]
+
+    [body
+      """Tables (`spec/data_bin.md` §3.10 + §3.11) get dictionary
+         encoding, nullable column wrappers, and chunked row-group
+         streaming. This is the wire format under the typed columnar
+         table form in [[tables]]."""]]]

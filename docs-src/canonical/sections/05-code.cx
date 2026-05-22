@@ -1,0 +1,514 @@
+[# Section 5 — the CX code language.
+   Anchored in spec/code.md (post-rename), spec/cxpath_alignment.md, ADRs
+   0027/0028/0029/0030. Largest section in the guide. #]
+
+[section :id code :n 5 :title 'The code language'
+
+  [child :id overview :n 5.1 :title 'The CX code language'
+    [intro
+      """CX code is CX data with a leading `?` on the element name. A
+         directive like `[?for]` is a normal element to the parser; the
+         evaluator recognizes the `?` prefix and dispatches on the
+         directive name. Everything else — patterns, paths, function
+         calls, builtins — is built from ordinary CX shapes."""]
+
+    [example :lang cx
+      """[# Data is data:                       #]
+         [user :id 1 :email 'ada@example.com']
+
+         [# Code is data, plus a `?`:           #]
+         [?for $u :in //user :yield $u@email]"""]
+
+    [body
+      """The evaluator is `cx_code_eval(doc, code, target_format)` at the
+         C ABI level; every binding's Layer-1 `Doc.eval(code)` wraps it
+         (see [[bindings]]). The full normative spec is
+         [`spec/code.md`](../../spec/code.md). This section is the
+         working developer guide."""]
+
+    [body
+      """Code can do five things: **select** (CXPath, see [[cxpath]]),
+         **iterate** (`[?for]`, see [[for]]), **dispatch**
+         (`[?match]`, see [[match]]), **bind** (`[?let]` / `[?def]` /
+         `[?fn]`), and **update** (`[?modify]`, see [[modify]]). Every
+         other directive is one of these five lifted into a specific
+         domain — concurrency, async, resilience, services."""]]
+
+  [child :id directives :n 5.2 :title 'Directive registry'
+    [intro
+      """v0.8.0 has **39 normative directives**. Adding or removing any
+         directive requires an ADR (per
+         [`spec/governance.md`](../../spec/governance.md) §10). The full
+         registry is in [`spec/code.md`](../../spec/code.md) §4.1."""]
+
+    [body
+      """Core constructs (11):"""]
+
+    [list
+      [item """`[?match]` — pattern dispatch, single- and multi-arm
+              (see [[match]])"""]
+      [item """`[?modify]` — pure-functional update (see [[modify]])"""]
+      [item """`[?for]` — iteration / comprehension (see [[for]])"""]
+      [item """`[?let]` — local binding (see [[let]])"""]
+      [item """`[?fn]` — anonymous function"""]
+      [item """`[?def]` — named definition"""]
+      [item """`[?if]` — conditional with EBV (see [[if]])"""]
+      [item """`[?try]` — error handling block"""]
+      [item """`[?pipe]` — pipeline (canonical form of `|`)"""]
+      [item """`[?par-map]` — parallel map"""]
+      [item """`[?par-reduce]` — parallel reduce"""]]
+
+    [body
+      """Resilience directives (6): `[?retry]`, `[?timeout]`,
+         `[?circuit-breaker]`, `[?fallback]`, `[?rate-limit]`,
+         `[?bulkhead]` (see [[resilience]])."""]
+
+    [body
+      """Services + concurrency + async (22): `[?service]`,
+         `[?service-handle]`, `[?http-client]`, `[?worker]`,
+         `[?worker-handle]`, `[?channel]`, `[?send]`, `[?receive]`,
+         `[?try-send]`, `[?try-receive]`, `[?close]`, `[?select]`,
+         `[?stop]`, `[?wait-for]`, `[?async]`, `[?await]`,
+         `[?await-all]`, `[?await-any]`, `[?await-race]`, `[?cancel]`,
+         `[?check-cancel]`, `[?sleep]` (see [[services]], [[workers]],
+         [[async]])."""]
+
+    [note
+      """**Retired in v0.8.0.** `[?find]` is no longer a directive. Use
+         `[?for]` with a pattern, or CXPath `//pattern`. See
+         [[migration]] for mechanical migration rules and ADR
+         [0028](../../spec/decisions/0028-cxpath-as-value-kind.md) D8
+         for the rationale."""]]
+
+  [child :id cxpath :n 5.3 :title 'CXPath — the universal selector'
+    [intro
+      """CXPath is the single selector vocabulary across reading,
+         iteration, dispatch, and update. It aligns with XPath 3.1
+         (`spec/cxpath_alignment.md`) with deliberate divergences kept
+         minimal. **Path** is a value kind, not parser sugar — paths
+         compile, cache, round-trip, and visualize as themselves."""]
+
+    [body
+      """The simplest CXPath is the descendant search:"""]
+
+    [example :lang cx
+      """//user                       [# every user, anywhere in doc      #]
+         //user[@active=true]         [# every active user                #]
+         //user/@email                [# scalar attribute values          #]
+         //section[1]                 [# first section                    #]
+         //section[h2]                [# section that has an h2 child     #]"""]
+
+    [body
+      """The grammar is the XPath 3.1 **selection core**:"""]
+
+    [example :lang cx
+      """PathExpr   ::= '//' StepList | '/' StepList | StepList
+         Step       ::= ( Axis '::' )? NodeTest Predicate*
+         Predicate  ::= '[' PredExpr ']'
+         PredExpr   ::= AttrTest | INT | FunctionCall | BooleanExpr"""]
+
+    [body
+      """Twelve axes are supported: `child`, `descendant`,
+         `descendant-or-self`, `parent`, `ancestor`,
+         `ancestor-or-self`, `following-sibling`, `preceding-sibling`,
+         `following`, `preceding`, `self`, `attribute`. The default
+         axis is `child` (so `name` ≡ `child::name`)."""]
+
+    [body
+      """**Comparison.** One operator syntax: `= != < <= > >=`. No
+         keyword synonyms (`eq`/`ne`/...) — they are not in the
+         grammar. Semantics are value-comparison: both sides must be
+         single values; multi-valued operand raises CXER0103; no type
+         coercion. This is the deliberate divergence from XPath's
+         general-comparison default (XPath's #1 gotcha — sequences
+         silently matching any pair)."""]
+
+    [body
+      """**Paths on bindings.** A CXPath rooted at a binding navigates
+         from that value:"""]
+
+    [example :lang cx
+      """$u/name           [# direct child element                       #]
+         $u/*              [# all direct children                        #]
+         $u//item          [# descendant                                 #]
+         $u/ancestor::section   [# explicit axis                         #]
+         $u@active         [# attribute access                           #]
+         $u.region         [# map-key access                             #]"""]
+
+    [body
+      """**Paths compose with every construct.** This is the unified
+         vocabulary principle — one selector, every direction:"""]
+
+    [example :lang cx
+      """[?for $u :in //user[@active=true] :yield render($u)]
+         [?if //admin :then [admin-panel] :else ()]
+         [?match $n :case //prose :yield [p $n]]
+         [?let $cfg = //meta/@config :in render($cfg)]
+         [?modify $doc //user/@status :set 'verified']
+         count(//user[@active=true])"""]
+
+    [note
+      """The full XPath 3.1 alignment table — what is adopted, what is
+         deliberately not, what is on the XPath 4.0 watch list — is in
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]]
+
+  [child :id patterns :n 5.4 :title 'Patterns and matching'
+    [intro
+      """A **pattern** is a literal CX subtree extended with binding
+         holes (`$name`), wildcards (`*`, `_`), type guards
+         (`:TypeName`), and scalar literals. Patterns appear in
+         `[?for]`'s first generator, in `[?match]` arms, and in
+         destructuring `[?let]`. The full pattern grammar is
+         [`spec/code.md`](../../spec/code.md) §5."""]
+
+    [example :lang cx
+      """[# element shape pattern                #]
+         [user :email $e]                       [# binds $e to email attr #]
+         [user @active=true $u]                 [# attr filter + bind     #]
+
+         [# scalar literal pattern (ADR 0029)    #]
+         :case 200 :yield :ok
+         :case 'admin' :yield :elevated
+         :case true :yield :enabled
+
+         [# wildcards                            #]
+         [user *]                               [# any user, any body     #]
+         _                                      [# any value (binds none) #]
+
+         [# type guard                           #]
+         [config :ServerConfig $c]              [# schema-typed bind      #]"""]
+
+    [body
+      """**Binding semantics depend on context.** A pattern `[NAME $x]`
+         **without** attribute predicates auto-unwraps the body — text
+         body binds the string, scalar body binds the scalar, empty
+         body binds the element itself. A pattern `[NAME @attr… $x]`
+         **with** attribute predicates always binds `$x` to the
+         matched element. The rationale is in
+         [`spec/code.md`](../../spec/code.md) §5.2 rule 5."""]]
+
+  [child :id bindings :n 5.5 :title 'Bindings and paths'
+    [intro
+      """A binding is a name introduced by `[?let]`, `[?for]`,
+         `[?fn]`, or `[?match]` pattern. Bindings are referenced via
+         `$name`. They are immutable — there is no rebinding (per CX's
+         pure-functional discipline)."""]
+
+    [example :lang cx
+      """[?let $admins = //user[@role='admin']
+            :in [?for $a :in $admins :yield $a@email]]"""]
+
+    [body
+      """A binding's value is whatever expression produced it.
+         Navigation from a binding uses CXPath syntax (see [[cxpath]]
+         under "Paths on bindings"). The path operators that work on
+         bindings are the same operators that work on the implicit
+         document — one vocabulary."""]]
+
+  [child :id constructs :n 5.6 :title 'Core constructs'
+    [intro
+      """The six core constructs are how every CX program is built.
+         Each is documented in the following sub-sections."""]
+
+    [child :id for :n 5.6.1 :title '[?for] — iteration'
+      [body
+        """`[?for]` is the iteration / comprehension primitive. The
+           pattern in `:in` position is either a pattern (matches the
+           generator), a CXPath (yields a sequence to iterate), or any
+           expression that evaluates to a sequence."""]
+      [example :lang cx
+        """[# CXPath generator                                           #]
+           [?for $u :in //user :yield $u@email]
+
+           [# Pattern generator (the `[?find]` replacement)              #]
+           [?for [user @active=true $u] :yield $u@email]
+
+           [# Filter with :where                                         #]
+           [?for $u :in //user :where ($u@age >= 18) :yield $u]
+
+           [# Parallel evaluation                                        #]
+           [?for $r :in //request :par :yield process($r)]
+
+           [# Streaming over large input                                 #]
+           [?for $row :in //logs/row :stream :yield extract($row)]"""]
+      [body
+        """`:par` and `:stream` are evaluation modifiers — same surface,
+           different scheduler. Full semantics in
+           [`spec/code.md`](../../spec/code.md) §7."""]]
+
+    [child :id match :n 5.6.2 :title '[?match] — dispatch'
+      [body
+        """`[?match]` is pattern dispatch. v0.8.0 supports two forms:
+           **2-arg destructure** (single arm, asserts the value
+           matches) and **multi-arm** (first-match-wins across N
+           arms). The multi-arm form is the major addition for v0.8.0
+           — see ADR
+           [0029](../../spec/decisions/0029-match-heterogeneous-arms.md)."""]
+      [example :lang cx
+        """[# 2-arg form — asserts the value matches PAT or raises      #]
+           [?match $result [ok $v] :yield $v]
+
+           [# Multi-arm form — first-match-wins                          #]
+           [?match $node
+             :case [prose $p]   :yield [p $p]
+             :case [code $c]    :yield [pre $c]
+             :case //heading    :yield [h2 $node]
+             :else :yield ()]
+
+           [# SQL Searched-CASE — predicate-only mode                    #]
+           [?match
+             :when ($x > 100)   :yield :big
+             :when ($y > 50)    :yield :medium
+             :else :yield :small]
+
+           [# Guards on :case arms                                       #]
+           [?match $req
+             :case [http-get $u] :where (allowed($u)) :yield [route $u]
+             :else :yield :denied]"""]
+      [body
+        """Arm patterns include element shapes, scalar literals,
+           CXPath paths, and the `_` wildcard. The no-match behavior
+           differs by form: the 2-arg form raises `CXER0100`; the
+           multi-arm form yields `()` if there is no `:else`."""]]
+
+    [child :id if :n 5.6.3 :title '[?if] — boolean branch'
+      [body
+        """`[?if cond :then E1 :else E2]` is the explicit boolean
+           branch. The condition is evaluated with the EBV
+           (effective-boolean-value) rule from
+           [`spec/cxdm.md`](../../spec/cxdm.md) §4.6: empty sequence
+           is false, single-item sequence containing `false` / `0` /
+           `null` / `''` is false, everything else is true."""]
+      [example :lang cx
+        """[?if //admin :then [admin-panel] :else [user-panel]]
+           [?if ($age >= 18) :then :adult :else :minor]"""]
+      [body
+        """For multi-way conditionals prefer `[?match]` multi-arm.
+           `[?if]` stays separate from `[?match]` because they have
+           different contracts — `[?if]` uses EBV, `[?match] :case`
+           does **not** (it tests strictly)."""]]
+
+    [child :id let :n 5.6.4 :title '[?let] — binding'
+      [body
+        """`[?let]` introduces a local binding. The bound name is in
+           scope inside `:in`."""]
+      [example :lang cx
+        """[?let $config = //meta/@config
+             :in render($config)]
+
+           [# Destructuring let — pattern in binding position           #]
+           [?let [user @id=1 $admin] = //user[@id=1]
+             :in $admin@email]"""]]
+
+    [child :id modify :n 5.6.5 :title '[?modify] — pure-functional updates'
+      [body
+        """`[?modify]` is the v0.8.0 update directive. It takes a
+           document (or sub-tree), a CXPath focus, and one or more
+           action slots; it returns a **new** document with the action
+           applied at every focus match. The original is unchanged
+           (pure-functional). See ADR
+           [0030](../../spec/decisions/0030-modify-pure-functional-updates.md)."""]
+
+      [body
+        """The **eleven action slots** are:"""]
+
+      [table :columns (action, description)
+        [row :action ':set V' :description 'Replace matched value or attribute']
+        [row :action ':delete' :description 'Remove matched node or attribute']
+        [row :action ':using F' :description 'Apply function F to each match']
+        [row :action ':rename N' :description 'Rename element (keep attrs + body)']
+        [row :action ':set-attr N V' :description 'Add or overwrite attribute']
+        [row :action ':delete-attr N' :description 'Remove attribute by name']
+        [row :action ':append V' :description 'Add child at end of body']
+        [row :action ':prepend V' :description 'Add child at start of body']
+        [row :action ':insert-before V' :description 'New sibling before match']
+        [row :action ':insert-after V' :description 'New sibling after match']
+        [row :action ':replace V' :description 'Replace entire node with V']]
+
+      [example :lang cx
+        """[# Scalar attribute update                                    #]
+           [?modify $doc //user[@id=1]/@name :set 'Alice']
+
+           [# Delete matching nodes                                      #]
+           [?modify $doc //user[@active=false] :delete]
+
+           [# Transform with :using                                      #]
+           [?modify $doc //price :using [?fn $p :body (* $p 1.1)]]
+
+           [# Append a child                                             #]
+           [?modify $doc //section[@id='intro'] :append [para 'Added.']]
+
+           [# Multi-step pipeline                                        #]
+           $doc
+             | [?modify //user/@status :set 'verified']
+             | [?modify //user[@banned=true] :delete]"""]
+
+      [body
+        """**Structural sharing.** `[?modify]` does not copy the whole
+           tree. Only the spine from root to each matched node is
+           copied; unchanged branches are shared with the original.
+           For a 10 MB document with one matched node, the new heap
+           cost is < 1 KB per matched node (gate 30.5)."""]
+
+      [body
+        """**Multi-match.** The focus path selects a sequence; the
+           action applies to every node in that sequence. Zero matches
+           returns the original unchanged (not an error)."""]]
+
+    [child :id pipe :n 5.6.6 :title 'Pipelines and composition'
+      [body
+        """The pipe operator `|` threads the output of one expression
+           into the input of the next. Pipelines compose `[?modify]`,
+           `[?for]`, builtins, and user-defined functions into
+           readable top-to-bottom data flow."""]
+      [example :lang cx
+        """//user[@active=true]
+           | filter-by-region('EU')
+           | sort-by(@last-login)
+           | take(10)"""]
+      [body
+        """`|` is sugar for `[?pipe]` — the canonical directive form
+           is in the directive registry but the operator form is what
+           you write."""]]]
+
+  [child :id builtins :n 5.7 :title 'Built-in functions'
+    [intro
+      """Built-ins are the standard library at the expression layer.
+         Full table in [`spec/code.md`](../../spec/code.md) §6.5; the
+         subsections below cover the common ones."""]
+
+    [child :id sequence-builtins :n 5.7.1 :title 'Sequence built-ins'
+      [body
+        """`count(seq)`, `length(seq)`, `first(seq)`, `last(seq)`,
+           `reverse(seq)`, `distinct(seq)`, `take(seq, n)`,
+           `drop(seq, n)`, `sort-by(seq, key)`, `group-by(seq, key)`."""]
+      [example :lang cx
+        """count(//user[@active=true])
+           first(//section)
+           sort-by(//user, @last-login)"""]]
+
+    [child :id string-builtins :n 5.7.2 :title 'String built-ins'
+      [body
+        """`upcase(s)`, `lowcase(s)`, `trim(s)`, `split(s, sep)`,
+           `concat(a, b, ...)` (or `a || b`),
+           `starts-with(s, prefix)`, `ends-with(s, suffix)`,
+           `contains(s, substr)`, `replace(s, find, repl)`,
+           `format(template, args...)`."""]]
+
+    [child :id numeric-builtins :n 5.7.3 :title 'Numeric built-ins'
+      [body
+        """`sum(seq)`, `min(seq)`, `max(seq)`, `avg(seq)`,
+           `abs(n)`, `floor(n)`, `ceil(n)`, `round(n)`, `pow(b, e)`,
+           `to-int(v)`, `to-float(v)`, `to-string(v)`."""]]
+
+    [child :id logical-builtins :n 5.7.4 :title 'Logical built-ins'
+      [body
+        """`and(a, b, ...)`, `or(a, b, ...)`, `not(v)`,
+           `some(seq, fn)`, `every(seq, fn)`,
+           `if(c, t, e)` (expression form of `[?if]`),
+           `instance-of(v, type)`."""]]
+
+    [child :id accessor-builtins :n 5.7.5 :title 'Node-accessor built-ins'
+      [body
+        """`name($n)`, `local-name($n)`, `kind($n)`, `attrs($n)`,
+           `children($n)`, `body($n)`, `parent($n)`, `root($n)`.
+           These are the script-level equivalents of the Layer-1
+           binding methods (see [[layer-1]])."""]]]
+
+  [child :id errors :n 5.8 :title 'Errors as values'
+    [intro
+      """CX treats errors as ordinary values. An error is a CX element
+         with kind `cx-err:CXERnnnn`. It can be passed around, pattern
+         matched, transformed, and recovered from. Full error registry
+         in [`spec/code.md`](../../spec/code.md) §9.5."""]
+
+    [body
+      """The propagation operators are postfix `?` and `!`. Reading:
+         `f($x)?` — call `f`; if it errored, propagate the error
+         unchanged through the surrounding directive. `f($x)!` — call
+         `f`; if it errored, raise immediately as a host exception."""]
+
+    [example :lang cx
+      """[?try
+           [?let $u = lookup-user($id)?
+             :in render($u)]
+           :on-error :CXER0204 :yield [error 'no such user']
+           :on-error _ :yield [error 'lookup failed']]"""]
+
+    [body
+      """The `[?try]` block names recoverable error codes via
+         `:on-error CODE` arms; the `_` wildcard catches anything
+         else. The full error-code namespace is reserved per category
+         — for code-language errors specifically, CXER0100 through
+         CXER0299. See [[concepts]] for the namespace layout."""]]
+
+  [child :id concurrency :n 5.9 :title 'Concurrency'
+    [intro
+      """CX has three concurrency surfaces, all spelled as directives.
+         They build on the pure-functional core: every channel send,
+         every worker call, every async await sees only immutable
+         values, so there is no shared-mutable-state hazard. Spec:
+         [`spec/code.md`](../../spec/code.md) §10.4 + §10.5."""]
+
+    [child :id services :n 5.9.1 :title 'Services and clients'
+      [body
+        """`[?service]` declares a named HTTP service with resource
+           handlers. `[?http-client]` is its client side. Resources
+           handle requests and return responses; the bodies are
+           ordinary CX code."""]
+      [example :lang cx
+        """[?service users
+           [resource :get '/users/:id'
+             [?let $u = //user[@id=$req.params.id]
+               :in [response :status 200 :body $u]]]]"""]
+      [body
+        """The service surface (request/response shapes, lifecycle
+           directives `[?stop]` / `[?wait-for]`, error codes) is
+           specified in [`spec/code.md`](../../spec/code.md) §10.3."""]]
+
+    [child :id workers :n 5.9.2 :title 'Workers and channels'
+      [body
+        """`[?worker]` spawns a worker task; `[?channel]` creates a
+           bounded message queue; `[?send]` and `[?receive]` move
+           values across. `[?select]` is the multi-way receive."""]
+      [example :lang cx
+        """[?let $ch = [?channel :capacity 100]
+           :in [?for $i :in (1 to 10) :par :yield
+                  [?send $ch process($i)]]]"""]]
+
+    [child :id async :n 5.9.3 :title 'Async and await'
+      [body
+        """`[?async]` returns a future; `[?await]` blocks for it;
+           `[?await-all]` joins many; `[?await-any]` takes the first
+           to complete; `[?await-race]` is `await-any` with the rest
+           cancelled. `[?cancel]` triggers cooperative cancellation;
+           `[?check-cancel]` polls."""]
+      [example :lang cx
+        """[?let $f1 = [?async fetch(url1)]
+                $f2 = [?async fetch(url2)]
+           :in [?await-all $f1 $f2]]"""]]]
+
+  [child :id resilience :n 5.10 :title 'Resilience directives'
+    [intro
+      """The six resilience directives wrap an inner expression with a
+         failure-handling policy. They are not new control-flow
+         primitives — they are normal CX code with cleanly-named
+         policies. Spec: [`spec/code.md`](../../spec/code.md) §10.2."""]
+
+    [list
+      [item """`[?retry]` — re-run on failure with backoff."""]
+      [item """`[?timeout]` — bound execution time."""]
+      [item """`[?circuit-breaker]` — open on N consecutive failures."""]
+      [item """`[?fallback]` — return a default on failure."""]
+      [item """`[?rate-limit]` — bound calls per interval."""]
+      [item """`[?bulkhead]` — bound concurrent calls."""]]
+
+    [example :lang cx
+      """[?retry :max 3 :backoff exponential
+         [?timeout :ms 5000
+           [?http-get 'https://api.example.com/users']]]"""]
+
+    [body
+      """Resilience directives compose: stack them around any
+         expression in any order. The semantics under composition are
+         documented in [`spec/code.md`](../../spec/code.md) §10.2.8."""]]]

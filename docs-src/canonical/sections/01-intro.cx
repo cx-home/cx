@@ -1,0 +1,148 @@
+[# Section 1 — Hello CX, design philosophy, how to read this guide.
+   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
+   resolves them at emit time. #]
+
+[section :id intro :n 1 :title 'Introduction'
+
+  [child :id hello :n 1.1 :title 'Hello, CX'
+    [intro
+      """CX is one language for **data** and **code**. The same brackets, the
+         same sigils, the same evaluator. You don't pick a templating engine
+         for output, a query language for selection, or a config dialect for
+         deployment — there is one shape, and you write everything in it."""]
+
+    [example :lang cx
+      """[hello :greeting 'world']"""]
+
+    [body
+      """That is a complete CX document. It is also a complete CX program when
+         passed to the evaluator — it evaluates to itself. CX is **homoiconic**:
+         programs are data; data round-trips through every supported surface
+         (JSON, YAML, TOML, XML, Markdown); identity is the SHA-256 of the
+         canonical bytes."""]
+
+    [body
+      """Here is one screen of CX that exercises every category covered later
+         in this guide — data, code, selection, update, and output:"""]
+
+    [example :lang cx
+      """[# 1. Data: a small document
+         #]
+         [users
+           [user :id 1 :email 'ada@example.com' :active true]
+           [user :id 2 :email 'grace@example.com' :active false]
+           [user :id 3 :email 'linus@example.com' :active true]]
+
+         [# 2. Code: select active users with CXPath
+         #]
+         [?for $u :in //user[@active=true] :yield
+           [active-user :email $u@email]]
+
+         [# 3. Pure-functional update: mark one user verified
+         #]
+         [?modify $doc //user[@id=1]/@status :set 'verified']"""]
+
+    [body
+      """Three forms, one language. No string concatenation; no AST mismatch
+         between selectors and templates; no separate type system for queries.
+         The full vocabulary is detailed in [[data]] and [[code]]; this section
+         is just the elevator pitch."""]]
+
+  [child :id philosophy :n 1.2 :title 'Design philosophy'
+    [intro
+      """CX is built on five commitments. Every design choice in the rest of
+         this guide — and every choice deliberately deferred — falls out of
+         one of them."""]
+
+    [body
+      """**1. Data and code share one syntax.** A directive like `[?for]` is
+         spelled the same way as a data element like `[user]`. There is no
+         "template language" embedded inside a "data language". A program is
+         a document; a document is potentially a program. Tooling — parser,
+         lexer, AST, tree-sitter grammar, LSP — is shared end-to-end."""]
+
+    [body
+      """**2. Every projection round-trips.** CX has a canonical surface
+         (the bracket form) and projections for JSON, YAML, TOML, XML, and
+         Markdown. Every projection is lossless in the round-trip sense:
+         CX → JSON → CX produces byte-identical canonical bytes. The
+         normative round-trip rules live in [[surfaces]] and in
+         [`spec/canonical.md`](../../spec/canonical.md)."""]
+
+    [body
+      """**3. Pure-functional updates.** There is no in-place mutation in CX.
+         The `[?modify]` directive (see [[modify]] and ADR
+         [0030](../../spec/decisions/0030-modify-pure-functional-updates.md))
+         takes a document and a CXPath focus, and returns a **new** document.
+         Unchanged branches share structure with the original (the standard
+         persistent-tree technique). Concurrency is safe by construction —
+         no reader ever observes a half-modified tree."""]
+
+    [body
+      """**4. Identity via canonical bytes plus SHA-256.** Two CX documents are
+         equal iff their canonical bytes are equal, and the document's
+         identifier is the SHA-256 of those bytes. This makes caching,
+         deduplication, content-addressable storage, and cross-language
+         equality checks trivially correct. See [[identity]]."""]
+
+    [body
+      """**5. One selector vocabulary everywhere.** CXPath (ADR
+         [0028](../../spec/decisions/0028-cxpath-as-value-kind.md)) is **the**
+         way to point at things — for reading (`select_all`), for iteration
+         (`[?for]`), for type-tests in `[?match]`, and for update focus in
+         `[?modify]`. It aligns with XPath 3.1 (see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)) so that
+         developers coming from the XML ecosystem feel at home, with
+         deliberate divergences to keep it safe and CX-shaped."""]]
+
+  [child :id reading :n 1.3 :title 'How to read this guide'
+    [intro
+      """This guide is the developer-facing reference for CX v0.8.0. Read it
+         linearly the first time. After that, sections are independent
+         enough to use as topic-specific reference."""]
+
+    [body
+      """The flow is data → surfaces → identity → code → bindings → tooling
+         → concepts → migration. Each section calls out the normative spec
+         documents under `spec/*.md` rather than restating them; if you need
+         the formal grammar, error matrix, or wire-format details, the guide
+         points you there."""]
+
+    [list
+      [item """[[data]] — the data language: lexical structure, scalars,
+              collections, sigils, prose, typed columnar tables, schema
+              language, includes. Start here if you've never seen CX."""]
+      [item """[[surfaces]] — the canonical CX form and its JSON / YAML /
+              TOML / XML / Markdown projections, plus the round-trip
+              contract."""]
+      [item """[[identity]] — canonical bytes, SHA-256 hashing, the
+              ast-bin and data-bin binary wire formats."""]
+      [item """[[code]] — the CX code language: the 39 directives, CXPath,
+              patterns, bindings, the six core constructs, builtins,
+              errors-as-values, services / workers / async, resilience."""]
+      [item """[[bindings]] — the C ABI, Layer 1 canonical method set,
+              Layer 2 host idiom packs, and per-language quickstarts for
+              V, Python, Go, and Rust."""]
+      [item """[[tooling]] — LSP, tree-sitter, VS Code, Neovim, Helix,
+              `make docs`, the playground."""]
+      [item """[[concepts]] — pure-functional updates, structural sharing,
+              capability bits, error-code namespace, ABI versioning,
+              governance."""]
+      [item """[[migration]] — v0.7.x → v0.8.0: renames, retired surfaces,
+              the automated migration script, the archived binding set."""]]
+
+    [body
+      """**Conventions used throughout.** Code blocks marked `:lang cx` are
+         literal CX (data or code; the same shape). Code blocks marked
+         `:lang python`, `:lang go`, `:lang rust`, `:lang v` are host-language
+         binding code. Cross-references to other sections use `[[anchor]]`.
+         References to spec documents use ordinary markdown links."""]
+
+    [note
+      """The normative grammar lives in
+         [`spec/grammar.ebnf`](../../spec/grammar.ebnf); the directive
+         registry (39 entries) is in [`spec/code.md`](../../spec/code.md)
+         §4.1; the C ABI surface is in
+         [`spec/abi.md`](../../spec/abi.md). This guide is curated learning
+         + reference path, not a replacement for those documents."""]]]
