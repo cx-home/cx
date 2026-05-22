@@ -310,6 +310,14 @@
   const status  = document.getElementById('cxp-status');
   const tabs    = document.querySelectorAll('.cxp-tab');
   const panes   = document.querySelectorAll('.cxp-pane');
+  const vizSourceBtn   = document.getElementById('cxp-viz-source');
+  const vizOutputBtn   = document.getElementById('cxp-viz-output');
+  const vizSourcePane  = document.getElementById('cxp-viz-source-pane');
+  const vizOutputPane  = document.getElementById('cxp-viz-output-pane');
+  const vizSourceMount = document.getElementById('cxp-viz-source-mount');
+  const vizOutputMount = document.getElementById('cxp-viz-output-mount');
+  const sourceRow = document.querySelector('.cxp-source-row');
+  const outputRow = document.querySelector('.cxp-output-row');
 
   if (!pick || !input) return;
 
@@ -426,8 +434,11 @@
     input.value = ex.input;
     setInputLang(ex.lang);
     refreshOutputs(key);
+    lastJsonText = ex.json || '';
     highlightInput();
     syncScroll();
+    if (vizOutputOn) refreshOutputViz();
+    if (vizSourceOn) refreshSourceViz();
   }
 
   // Refresh the three output tabs without touching the source pane.
@@ -487,12 +498,13 @@
 
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
-  // Live evaluation via cxlib (libcx-wasm). For lang='cx' inputs the
-  // source is parsed and re-emitted through toCx/toJson/toXml. For
-  // lang='cxl' inputs the source carries both data and `[?…]`
-  // directives in one document, so we hand it to cxlib.eval as the
-  // input *and* the program — the CXL evaluator treats the embedded
-  // directives as the template.
+  // Live evaluation via cxlib (libcx-wasm v0.7.6 surface). For
+  // lang='cx' inputs the source is parsed and re-emitted through
+  // toCx/toJson/toXml. For lang='cxl' inputs the source carries both
+  // data and `[?…]` directives in one document, so we hand it to
+  // cxlib.evalProgram as both program and input — the v0.7.6 program
+  // evaluator binds the source as `$doc` and the embedded directives
+  // drive the transform per ADR 0027.
   function liveEvaluate(key) {
     const ex = examples[key];
     const src = input.value;
@@ -500,9 +512,9 @@
     const cxlib = globalThis.cxlib;
     if (lang === 'cxl') {
       return {
-        cx:   cxlib.eval(src, src, 'cx'),
-        json: cxlib.eval(src, src, 'json'),
-        xml:  cxlib.eval(src, src, 'xml'),
+        cx:   cxlib.evalProgram(src, 'cx', src),
+        json: cxlib.evalProgram(src, 'json', src),
+        xml:  cxlib.evalProgram(src, 'xml', src),
       };
     }
     return {
@@ -519,6 +531,125 @@
     highlightOutputs();
   }
 
+  // ── Visualize toggles (gate 17 §D2 + §D3) ───────────────────────
+  // Source pane → Mermaid diagram via cxlib.diagram (live wasm only;
+  // canned mode shows a placeholder since we can't generate Mermaid
+  // from the canned corpus). Output pane → interactive tree from
+  // cxlib.toJson AST (works in both modes — canned JSON is parsed
+  // directly). Tree→text bridge: clicking a tree node highlights the
+  // first substring match in the active Output text tab.
+  const diagView = (globalThis.CxDiagramView && vizSourceMount)
+    ? new globalThis.CxDiagramView({ onClose: () => setVizSource(false) })
+    : null;
+  const treeView = (globalThis.CxTreeView && vizOutputMount)
+    ? new globalThis.CxTreeView({ onSelect: bridgeHighlight })
+    : null;
+  let vizSourceOn = false;
+  let vizOutputOn = false;
+  let lastSource = '';
+  let lastJsonText = '';
+
+  function setVizSource(on) {
+    vizSourceOn = !!on;
+    if (vizSourceBtn) vizSourceBtn.setAttribute('aria-pressed', vizSourceOn ? 'true' : 'false');
+    if (vizSourcePane) {
+      if (vizSourceOn) vizSourcePane.removeAttribute('hidden');
+      else vizSourcePane.setAttribute('hidden', '');
+    }
+    if (sourceRow) sourceRow.classList.toggle('has-viz', vizSourceOn);
+    if (vizSourceOn) {
+      if (diagView && !diagView.container) diagView.mount(vizSourceMount);
+      refreshSourceViz();
+    }
+  }
+
+  function setVizOutput(on) {
+    vizOutputOn = !!on;
+    if (vizOutputBtn) vizOutputBtn.setAttribute('aria-pressed', vizOutputOn ? 'true' : 'false');
+    if (vizOutputPane) {
+      if (vizOutputOn) vizOutputPane.removeAttribute('hidden');
+      else vizOutputPane.setAttribute('hidden', '');
+    }
+    if (outputRow) outputRow.classList.toggle('has-viz', vizOutputOn);
+    if (vizOutputOn) {
+      if (treeView && !treeView.container) treeView.mount(vizOutputMount);
+      refreshOutputViz();
+    }
+  }
+
+  function refreshSourceViz() {
+    if (!vizSourceOn || !diagView) return;
+    const cxlib = globalThis.cxlib;
+    if (!liveActive || !cxlib || typeof cxlib.diagram !== 'function') {
+      if (vizSourceMount) {
+        vizSourceMount.innerHTML =
+          '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
+      }
+      return;
+    }
+    const src = input.value;
+    lastSource = src;
+    try {
+      const mermaidText = cxlib.diagram(src, 'mermaid');
+      diagView.render(mermaidText);
+    } catch (err) {
+      if (vizSourceMount) {
+        vizSourceMount.innerHTML =
+          '<pre class="cxdv-error">' +
+          String(err && err.message ? err.message : err).replace(
+            /[<&>]/g,
+            (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
+          ) +
+          '</pre>';
+      }
+    }
+  }
+
+  function refreshOutputViz() {
+    if (!vizOutputOn || !treeView) return;
+    // Prefer the live JSON we just emitted; fall back to the active
+    // Output JSON tab text (canned-mode path).
+    const jsonText = lastJsonText || (outJson ? outJson.textContent : '');
+    if (!jsonText) {
+      treeView.update(null);
+      return;
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (_) {
+      // canned JSON snippets in the corpus are valid; live emit may
+      // be empty for some directives — surface "No entities" instead.
+      parsed = null;
+    }
+    treeView.update(parsed);
+  }
+
+  function bridgeHighlight(node) {
+    // Tree → text direction only (text → tree deferred per audit §D13).
+    const active = document.querySelector('.cxp-pane.is-active code');
+    if (!active || !node || !node.hint) return;
+    const text = active.textContent;
+    const idx = text.indexOf(node.hint);
+    if (idx < 0) return;
+    // Re-highlight from scratch (escape away any prior <mark>).
+    const before = text.slice(0, idx);
+    const hit = text.slice(idx, idx + node.hint.length);
+    const after = text.slice(idx + node.hint.length);
+    const esc = (s) => s.replace(/[<&>]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+    // Re-run syntax highlight on before/after if present, but keep
+    // the matched span as a flat <mark> (no per-token re-tokenization).
+    const lang = (active.className.match(/language-([\w-]+)/) || [, 'cx'])[1];
+    const h = (s) => (window.CXHighlight ? window.CXHighlight.highlight(s, lang) : esc(s));
+    active.innerHTML = h(before) + '<mark class="cxp-bridge-hit">' + esc(hit) + '</mark>' + h(after);
+    // Scroll the match into view.
+    const mark = active.querySelector('mark.cxp-bridge-hit');
+    if (mark && mark.scrollIntoView) mark.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  if (vizSourceBtn) vizSourceBtn.addEventListener('click', () => setVizSource(!vizSourceOn));
+  if (vizOutputBtn) vizOutputBtn.addEventListener('click', () => setVizOutput(!vizOutputOn));
+
   runBtn.addEventListener('click', () => {
     try {
       const key = pick.value;
@@ -527,7 +658,9 @@
         throw new Error(`no example registered for '${key}'`);
       }
       if (liveActive) {
-        applyOutputs(liveEvaluate(key));
+        const outs = liveEvaluate(key);
+        applyOutputs(outs);
+        lastJsonText = outs.json || '';
         flashRun('evaluated', 'ran');
         setStatus('Source evaluated through libcx.wasm.', 'ok');
       } else {
@@ -536,6 +669,7 @@
         // not executed — libcx-wasm is not bundled with this site.
         const edited = input.value !== ex.input;
         refreshOutputs(key);
+        lastJsonText = ex.json || '';
         flashRun(edited ? 'rendered (no eval)' : 'rendered', 'ran');
         setStatus(
           edited
@@ -544,6 +678,9 @@
           'ok'
         );
       }
+      // On-Run viz refresh per audit §D2 (no live-debounce).
+      if (vizSourceOn) refreshSourceViz();
+      if (vizOutputOn) refreshOutputViz();
     } catch (err) {
       flashRun('failed', 'failed');
       setStatus(`Run failed: ${err && err.message ? err.message : err}`, 'error');
