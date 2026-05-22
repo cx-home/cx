@@ -18,7 +18,7 @@
 
   [meta
     title='CX Language Backlog'
-    last-updated=2026-05-22
+    last-updated=2026-05-22T17:00
     branch=v0.8.0-dev
     rendered-form='docs/internal/backlog.md (deferred — render after ADR 0028)']
 
@@ -114,7 +114,39 @@
         for both reading and writing — one selector vocabulary serves
         both directions.'''
       :builds-on '[adr-0028, adr-0030, adr-0031]'
-      :rejects '[xquery-update-pending-list-semantics, sql-in-place-mutation]']]
+      :rejects '[xquery-update-pending-list-semantics, sql-in-place-mutation]']
+
+    [decision &d-2026-05-22-09
+      :date 2026-05-22
+      :title 'CXPath aligns with XPath 3.1 selection core, not v0.7.0 subset'
+      :status accepted
+      :rationale '''XPath 3.1 is the live W3C standard; users coming
+        from the broader XML ecosystem know it. v0.7.0 CXPath was a
+        bespoke subset with no installed base worth preserving over
+        industry familiarity. Forward-looking alignment with
+        documented divergences (non-duplication, safety-over-XPath-
+        gotchas, XPath-4.0-watch) is the deliberate choice.'''
+      :supersedes-clause 'd-2026-05-22-01 D2 narrow framing (v0.7.0 subset)'
+      :divergences '[
+        (no-construct-duplication: for/let/if/function delegated to CX programs),
+        (value-comparison-only: replaces XPath general/value dual system on = != <),
+        (cx-type-vocabulary: replaces xs:integer/xs:string/etc),
+        (no-expression-namespace-decls: ns declarations live in data)]'
+      :verification 'gate 28.5 — reference comparison against Saxon-HE 11.x per fixture']
+
+    [decision &d-2026-05-22-10
+      :date 2026-05-22
+      :title 'Retire [?find] in favor of [?for] pattern-generator + Path values'
+      :status accepted
+      :rationale '''With Path as a value kind (ADR 0028), the search
+        case has the terse spelling //pattern; the binding-capture
+        case is covered by [?for [pattern] :yield expr] (programs.md
+        §7.5 pattern-generator). [?find] was always sugar for the
+        latter (spec said so); three spellings of two operations
+        breaks the unified-vocabulary discipline.'''
+      :decided-in adr-0028
+      :migration 'mechanical — replace [?find with [?for in every fixture and example'
+      :scope '~15 fixtures, ~30 lines spec/programs.md, vcx/programs/tokens.v directive_names']]
 
   [- ──────────────────────────────────────────────────────────────────
      OPEN — issues blocked on ADR ratification or scheduled work.
@@ -192,10 +224,14 @@
 
     [adr &adr-0028
       :status draft
-      :title 'CXPath expressions as first-class value kind'
+      :title 'CXPath expressions as first-class value kind (XPath 3.1 aligned)'
       :owner unassigned
       :unblocks '[doc-gen-sectional-regression, cxpath-retired-binding-pain, layer-1-binding-contract]'
-      :location 'spec/decisions/0028-cxpath-as-value-kind.md (draft this session)']
+      :retires '[?find]'
+      :revision-history '[
+        (2026-05-22 morning: initial draft — v0.7.0 CXPath subset target),
+        (2026-05-22 afternoon: revised — XPath 3.1 alignment per d-2026-05-22-09; [?find] retirement per d-2026-05-22-10)]'
+      :location 'spec/decisions/0028-cxpath-as-value-kind.md']
 
     [adr &adr-0029
       :status draft
@@ -203,6 +239,7 @@
       :owner unassigned
       :builds-on adr-0028
       :unblocks '[no-multi-arm-match]'
+      :scope-narrowed-to 'multi-arm match only; [?find] retirement decided in adr-0028 D13'
       :location 'spec/decisions/0029-match-heterogeneous-arms.md (TBD)']
 
     [adr &adr-0030
