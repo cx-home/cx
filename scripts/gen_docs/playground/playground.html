@@ -1,24 +1,7 @@
 <div id="cx-playground">
   <div class="cxp-toolbar">
     <label for="cxp-pick">Example</label>
-    <select id="cxp-pick">
-      <option value="atom">CX  1. Atom — element with one attribute</option>
-      <option value="attrs">CX  2. Attributes — typed, sized, sigil-flagged</option>
-      <option value="sigils">CX  3. Sigils — id, anchor, merge, data-type</option>
-      <option value="table">CX  4. Typed table — orders</option>
-      <option value="merge">CX  5. Anchor + merge — shared defaults</option>
-      <option value="mixed">CX  6. Mixed content — prose + markup</option>
-      <option value="multi-doc">CX  7. Multi-document — two menus in one file</option>
-      <option value="cxl-substitute">CXL  8. Substitute a value</option>
-      <option value="cxl-for">CXL  9. Iterate with [?for]</option>
-      <option value="cxl-if">CXL 10. Multi-branch [?if]</option>
-      <option value="cxl-let">CXL 11. Let — bind once, reuse</option>
-      <option value="cxl-filters">CXL 12. Filter pipeline — trim + upper</option>
-      <option value="cxl-templates">CXL 13. Named template — ?def + ?use</option>
-      <option value="cxl-paths">CXL 14. CXPath — axes and predicates</option>
-      <option value="cxl-merge">CXL 15. cx:merge — three-policy semantic merge</option>
-      <option value="cxl-includes">CXL 16. Include — partial composition</option>
-    </select>
+    <select id="cxp-pick" aria-label="Choose an example — populated by playground.js"></select>
     <button id="cxp-run" type="button" disabled data-wasm-pending-title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target." title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target.">Run</button>
     <button id="cxp-reset" type="button">Reset</button>
   </div>
