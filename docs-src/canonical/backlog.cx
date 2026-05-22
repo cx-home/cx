@@ -18,7 +18,7 @@
 
   [meta
     title='CX Language Backlog'
-    last-updated=2026-05-22T17:00
+    last-updated=2026-05-22T18:00
     branch=v0.8.0-dev
     rendered-form='docs/internal/backlog.md (deferred — render after ADR 0028)']
 
@@ -240,7 +240,8 @@
       :builds-on adr-0028
       :unblocks '[no-multi-arm-match]'
       :scope-narrowed-to 'multi-arm match only; [?find] retirement decided in adr-0028 D13'
-      :location 'spec/decisions/0029-match-heterogeneous-arms.md (TBD)']
+      :revision-history '[(2026-05-22: initial draft — heterogeneous :case/:when/:else, scalar literals, _ wildcard, SQL-CASE-discipline value-optional modes)]'
+      :location 'spec/decisions/0029-match-heterogeneous-arms.md']
 
     [adr &adr-0030
       :status draft
