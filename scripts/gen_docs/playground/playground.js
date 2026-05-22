@@ -1399,11 +1399,22 @@
       }
       if (!srcTreeView.container) srcTreeView.mount(vizSourceMount);
       let parsed = null;
-      if (liveActive && cxlib && typeof cxlib.toJson === 'function') {
+      if (liveActive && cxlib && typeof cxlib.programAst === 'function') {
+        // Use programAst() for the structural program tree (directives,
+        // patterns, bindings). cxlib.toJson() returns "null" for any
+        // [?…] source because the universal parser treats directives
+        // as PIs in data context.
         try {
-          const jsonText = cxlib.toJson(src);
+          const jsonText = cxlib.programAst(src);
           parsed = JSON.parse(jsonText);
-        } catch (_) { parsed = null; }
+        } catch (_) {
+          // Fallback for pure-data sources: programAst will error on
+          // non-program input, so retry via the data projection.
+          try {
+            const jsonText = cxlib.toJson(src);
+            parsed = JSON.parse(jsonText);
+          } catch (_) { parsed = null; }
+        }
       }
       srcTreeView.update(parsed);
       return;
