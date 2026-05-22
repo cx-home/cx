@@ -1,0 +1,238 @@
+[# Living decision log + open-issue tracker for the CX language project.
+   Updated with every architectural decision. CX-shaped so it is queryable
+   once the evaluator supports the v0.8.0 surface (post ADR 0028). Numbered
+   ids stay stable across edits — use the &id form on every decision so
+   cross-refs from ADRs and conversations land on a permanent anchor.
+
+   Lifecycle:
+     decisions  →  append-only; status moves accepted → revisited → superseded
+                   but the entry remains in place.
+     open       →  one entry per blocked / pending issue; linked to its
+                   blocking ADR via :blocks-on.
+     adrs       →  the ADR register; one row per draft / proposed / accepted /
+                   superseded ADR; dep graph via :builds-on.
+     completed  →  moved here from `open` when fully done + verified
+                   (not merely merged). #]
+
+[backlog
+
+  [meta
+    title='CX Language Backlog'
+    last-updated=2026-05-22
+    branch=v0.8.0-dev
+    rendered-form='docs/internal/backlog.md (deferred — render after ADR 0028)']
+
+  [- ──────────────────────────────────────────────────────────────────
+     DECISIONS — append-only; date-ordered.
+     ────────────────────────────────────────────────────────────────── -]
+
+  [decisions
+
+    [decision &d-2026-05-22-01
+      :date 2026-05-22
+      :title 'Brand: CX is data and code, not data and programs'
+      :status accepted
+      :rationale '''Reads more naturally; "programs" carries imperative
+        connotation that conflicts with CX's pure functional model. "Code"
+        is the standard pairing with "data" in industry vernacular.'''
+      :scope brand-and-docs
+      :applies-to '[docs-src/, READMEs, taglines, public-facing surface]'
+      :defers 'internal API rename (cx_program_eval, vcx/programs/, programs.md) — separate ADR; cascades through every binding']
+
+    [decision &d-2026-05-22-02
+      :date 2026-05-22
+      :title 'ADR-first design workflow'
+      :status accepted
+      :rationale '''Encode considered-alternatives + rationale in ADRs
+        alongside the decision; design conversations do not recur.
+        Implementation PRs cite the ratified ADR.'''
+      :applies-to 'every architectural change for v0.8.0 forward']
+
+    [decision &d-2026-05-22-03
+      :date 2026-05-22
+      :title 'Reduce binding set for v0.8.0 — V (native) + Python + Go + Rust'
+      :status accepted
+      :rationale '''Concurrent maintenance for 10 bindings prevents
+        validation of design choices; 4 covers static/dynamic ×
+        compiled/interpreted spectrum. Drift sources during v0.7.6
+        (TS GC, Rust ABI catchup, Python decoder ceiling) all
+        consumed Tier-1 design time.'''
+      :archived '[typescript, java, csharp, ruby, kotlin, swift]'
+      :archive-location 'lang/_archived/<lang>/ — preserves history; not deleted'
+      :restoration 'opt-in once Layer-1 method set is stable; community contributions accepted but not blocked on']
+
+    [decision &d-2026-05-22-04
+      :date 2026-05-22
+      :title 'Skip v0.7.6 tag; go v0.7.5 → v0.8.0'
+      :status accepted
+      :rationale '''v0.7.6-dev surface has open design gaps (CXPath
+        retired with no terse replacement; no multi-arm match; no
+        modify directive; doc-gen sectional regression). Tagging
+        would commit to a surface immediately superseded.'''
+      :preservation 'v0.7.6-dev work carries forward on v0.8.0-dev branch (not deleted, just untagged)']
+
+    [decision &d-2026-05-22-05
+      :date 2026-05-22
+      :title 'Single guide: cx-data-and-code-guide — multi-file CX source'
+      :status accepted
+      :rationale '''Authoring in CX (eats own dog food); rendering to MD
+        deferred until evaluator supports sectional structure
+        (post ADR 0028). One canonical guide reduces decision cost for
+        readers; numbered section refs (1.2.3) provide stable anchors
+        for PR diffs and cross-references.'''
+      :source 'docs-src/canonical/sections/*.cx + manifest.cx + template.cx'
+      :artifact 'docs/cx-data-and-code-guide.md (post v0.8.0)'
+      :overflow-policy 'normative depth lives in spec/*.md; the guide curates the learning + reference path']
+
+    [decision &d-2026-05-22-06
+      :date 2026-05-22
+      :title 'Public docs (GitHub Pages) stay on v0.7.5 until v0.8.0 ships'
+      :status accepted
+      :rationale 'docs/ tree is unchanged from v0.7.5 (verified byte-identical). Do NOT run make docs-publish on v0.8.0-dev until the design ADRs ratify and sectional rendering works.'
+      :enforcement 'docs-publish target gated on a CI check that fails on v0.8.0-dev']
+
+    [decision &d-2026-05-22-07
+      :date 2026-05-22
+      :title 'Layer-1 + Layer-2 binding model'
+      :status accepted
+      :rationale '''Two audiences cannot share one binding shape: CX-native
+        devs want CX vocabulary; host-native devs want host idioms.
+        Resolution: Layer 1 mirrors CX (identical across all bindings,
+        conformance-validated); Layer 2 is per-language idiom pack
+        opt-in (Pythonic / Go / Rust / etc) that desugars to Layer 1.
+        CXPath strings + data-bin bytes are the bridges.'''
+      :builds-on adr-0028
+      :validation 'binding-API parity fixtures separate from programs.txt']
+
+    [decision &d-2026-05-22-08
+      :date 2026-05-22
+      :title 'Pure functional updates with lens semantics for CRUD'
+      :status accepted
+      :rationale '''Scala/Clojure/Haskell pattern — every modification
+        returns a new document; structural sharing for perf;
+        parallelism free by construction. CXPath identifies positions
+        for both reading and writing — one selector vocabulary serves
+        both directions.'''
+      :builds-on '[adr-0028, adr-0030, adr-0031]'
+      :rejects '[xquery-update-pending-list-semantics, sql-in-place-mutation]']]
+
+  [- ──────────────────────────────────────────────────────────────────
+     OPEN — issues blocked on ADR ratification or scheduled work.
+     ────────────────────────────────────────────────────────────────── -]
+
+  [open
+
+    [issue &i-doc-gen-sectional-regression
+      :priority high
+      :title 'Doc-gen flat-section render replaces v0.7.5 nested structure'
+      :symptom 'All h2s clumped, then all p clumped — no per-section grouping; ‹section›→content relationship lost'
+      :evidence '_site_staging/quickstart.html structurally different from docs/quickstart.html (v0.7.5 byte-identical baseline)'
+      :blocks-on '[adr-0028, scoped-find-spec-amendment]'
+      :resolution-plan 'After ADR 0028: rewrite build.cx using CXPath value kind + sectional [?for] over //section']
+
+    [issue &i-cxpath-retired-binding-pain
+      :priority high
+      :title 'CXPath retired from C ABI; no terse equivalent in bindings'
+      :symptom 'doc.select_all() removed; host-language nested loops required for any predicate selection'
+      :evidence 'lang/python/cxlib/cx.py:749 — "cx_select_all_paths removed"'
+      :blocks-on adr-0028
+      :resolution-plan 'CXPath as first-class expression value; bindings expose select_all(path) as Layer-1 method that wraps cx_program_eval']
+
+    [issue &i-no-multi-arm-match
+      :priority high
+      :title '[?match] is single-arm only; no scalar literals; no :else'
+      :symptom 'Shape dispatch over heterogeneous values requires chained [?if] + name() — verbose and unergonomic'
+      :evidence 'spec/programs.md §8.2 single-arm only; conformance program-err-001 locks single-arm error behavior but does not preclude N-arm extension'
+      :blocks-on adr-0029
+      :resolution-plan 'Add multi-arm :case / :when / :else + scalar literal patterns + _ wildcard']
+
+    [issue &i-no-modify-surface
+      :priority high
+      :title 'No write/modify directive; cannot express pure-functional updates'
+      :symptom 'CRUD restricted to R; no idiomatic U/D in CX code; bindings cannot offer doc.modify()'
+      :blocks-on adr-0030
+      :resolution-plan '[?modify VAL PATH :set | :delete | :using | :append | :prepend | :replace | :insert-before | :insert-after | :rename]']
+
+    [issue &i-version-drift-across-files
+      :priority low
+      :title 'Version strings stale across binding manifests'
+      :details '[(rust: 0.6.1), (python: 0.6.1), (vcx-binary: 0.7.5), (typescript: 0.7.6)]'
+      :target-version 0.8.0
+      :resolution-plan 'Cleanup commit early on v0.8.0-dev — single PR touches Cargo.toml + pyproject.toml + V version constant + package.json']
+
+    [issue &i-rust-dead-code-warnings
+      :priority low
+      :title 'Rust binding has unused functions from Tier-2 catchup'
+      :details '[cx_program_eval (unused — wrong arity?), node_from_value, attr_from_value, element_from_value, doc_from_value]'
+      :resolution-plan 'Cleanup commit on v0.8.0-dev']
+
+    [issue &i-examples-programs-tour-deleted
+      :priority medium
+      :title 'examples/programs-tour.cx deleted in 3a232283; never ported'
+      :resolution-plan 'Restore on v0.8.0-dev once ADR 0028+0029 land — port to CXPath + multi-arm match syntax']
+
+    [issue &i-playground-graph-mixed-input
+      :priority medium
+      :title 'Playground graph view fails CXER0100 on data+code mixed inputs'
+      :symptom 'Corpus inputs stack [data] then [?find ...]; diagram emitter parses whole as code'
+      :resolution-plan 'Split input before passing to diagram, OR graceful data-only handling (e.g., emit empty diagram + hint)']
+
+    [issue &i-no-binding-api-parity-fixtures
+      :priority medium
+      :title 'No binding-API parity test surface (Layer-1 contract)'
+      :symptom 'conformance/programs.txt validates evaluator output; nothing validates that doc.find_all / doc.select / doc.modify exist with identical semantics in every binding'
+      :resolution-plan 'Add conformance/binding_api.txt — input doc + method call + expected result/error; every binding runs the same fixtures']]
+
+  [- ──────────────────────────────────────────────────────────────────
+     ADR REGISTER — drafted, proposed, accepted, superseded.
+     Status moves draft → proposed → accepted → (superseded by adr-NNNN).
+     ────────────────────────────────────────────────────────────────── -]
+
+  [adrs
+
+    [adr &adr-0028
+      :status draft
+      :title 'CXPath expressions as first-class value kind'
+      :owner unassigned
+      :unblocks '[doc-gen-sectional-regression, cxpath-retired-binding-pain, layer-1-binding-contract]'
+      :location 'spec/decisions/0028-cxpath-as-value-kind.md (draft this session)']
+
+    [adr &adr-0029
+      :status draft
+      :title '[?match] heterogeneous arms (:case / :when / :else, scalar literals, _ wildcard)'
+      :owner unassigned
+      :builds-on adr-0028
+      :unblocks '[no-multi-arm-match]'
+      :location 'spec/decisions/0029-match-heterogeneous-arms.md (TBD)']
+
+    [adr &adr-0030
+      :status draft
+      :title '[?modify] directive with action-slot vocabulary (pure-functional write surface)'
+      :owner unassigned
+      :builds-on adr-0028
+      :unblocks '[no-modify-surface]'
+      :location 'spec/decisions/0030-modify-directive.md (TBD)']
+
+    [adr &adr-0031
+      :status draft
+      :title 'Structural sharing for immutable updates (perf basis for ADR 0030)'
+      :owner unassigned
+      :builds-on adr-0030
+      :ship-target 'v0.8.x (not blocking initial v0.8.0)'
+      :location 'spec/decisions/0031-structural-sharing.md (TBD)']
+
+    [adr &adr-0032
+      :status draft
+      :title 'Rename: programs → code across internal API'
+      :owner unassigned
+      :scope 'cx_program_eval → cx_code_eval; vcx/programs/ → vcx/code/; spec/programs.md → spec/code.md; all bindings'
+      :ship-target 'after ADRs 0028-0030 land — bundle as one rename pass'
+      :note 'Brand layer (docs) renamed immediately per d-2026-05-22-01']]
+
+  [- ──────────────────────────────────────────────────────────────────
+     COMPLETED — moved from `open` when fully verified.
+     Empty at session start.
+     ────────────────────────────────────────────────────────────────── -]
+
+  [completed]
+]
