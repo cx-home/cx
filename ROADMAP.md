@@ -86,6 +86,52 @@ slips to v0.9.0.
 
 ---
 
+## v0.8.0 — LOCKED (in development)
+
+Branch: `v0.8.0-dev`. v0.7.6 skipped per backlog `d-2026-05-22-04`. 42
+§11.6 release gates block tag; see [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md)
+for live state. Drafted [`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md)
+is the source of truth for shipped surface.
+
+**Scope theme.** The "data + code" unification release: CXPath becomes
+a first-class value kind, `[?match]` learns multi-arm dispatch,
+`[?modify]` introduces pure-functional updates with structural
+sharing, a module system (`[?lib]` / `[?def]` / `[?const]` / `cx.lock`)
+lands with bundled `cx-stdlib`, atom joins the scalar kinds, and the
+playground gets formal Tree + Graph views.
+
+**Ratified ADRs (10):**
+
+- [ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md) — CXPath as first-class value kind (XPath 3.1 aligned, 12 axes, sigil-only comparison, retires `[?find]`).
+- [ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md) — `[?match]` multi-arm dispatch (`:case` / `:when` / `:else`; first-match-wins; scalar literal + wildcard patterns).
+- [ADR 0030](spec/decisions/0030-modify-pure-functional-updates.md) — `[?modify]` pure-functional updates over CXPath focus + 11-action vocabulary; pipeline-composable.
+- [ADR 0031](spec/decisions/0031-structural-sharing.md) — Structural sharing for `[?modify]` (spine-copy only; `O(depth)` heap; gate 30.5 perf basis).
+- [ADR 0032](spec/decisions/0032-programs-to-code-rename.md) — `programs` → `code` mechanical rename across spec / V module path / C ABI / fixtures / wasm exports.
+- [ADR 0033](spec/decisions/0033-atom-scalar-kind.md) — Atom scalar kind (`:NAME` literals, type-strict, name-equality, disjoint hash domain).
+- [ADR 0034](spec/decisions/0034-def-module-level-functions.md) — `[?def]` module-level static functions (no closure, no overload, order-independent, optional type annotations + `:pure`/`:impure` modifier).
+- [ADR 0035](spec/decisions/0035-module-loading-scoping-namespacing.md) — `[?lib]` module loading (file / registered / HTTPS) + `cx.lock` lockfile (SHA-384/512 SRI) + `[?const]` + `:scope` visibility.
+- [ADR 0036](spec/decisions/0036-expr-general-predicate.md) — `[expr]` general predicate with `$_` context binding, `$_position` / `$_last`, `:bind NAME` peer-modifier.
+- [ADR 0037](spec/decisions/0037-playground-tree-and-graph-views.md) — Playground Tree View + Graph View (ERD for data, CFG for code; bidirectional selection bridge; new `cx_code_diagram` + `cx_code_tree` C ABI).
+
+**Tier-1 bindings.** V / Python / Go / Rust. TypeScript / Java / C# /
+Ruby / Kotlin / Swift archived to `lang/_archived/` per ADR 0035 D7
+and backlog `d-2026-05-22-03`. Restoration is opt-in once Layer-1
+stabilizes.
+
+**Removed.** `[?find]` directive (ADR 0028 retires it in favor of
+`[?for]` over CXPath); `cxl` / `cx_eval` / `programs.md` / `programs.txt`
+identifiers (ADR 0032 rename); v0.7.0-era CXL evaluator (gate-17 OLD
+POC surface, replaced by ADR 0037's formal views).
+
+**Bundled stdlib.** `cx-stdlib` ships with the binary — 14 sub-packages:
+strings / json / http / re / time / math / io / bytes / format / path /
+log / hash / env / test.
+
+**Effort estimate.** ~150–230 focused sessions to tag (per
+[`spec/v0_8_0_status.md`](spec/v0_8_0_status.md) summary table).
+
+---
+
 ## Now — current branch (toward v0.6.0)
 
 Closing the audit, raising the bar to a level that survives external

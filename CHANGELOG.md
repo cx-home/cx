@@ -12,6 +12,87 @@ version, library version).
 
 ## [Unreleased]
 
+## [0.8.0] — Unreleased (in development on `v0.8.0-dev`)
+
+The "data + code" unification release. CXPath becomes a first-class
+value kind; `[?match]` learns multi-arm dispatch; `[?modify]` introduces
+pure-functional updates with structural sharing; a module system with
+bundled stdlib lands; atom joins the scalar kinds. v0.7.6 skipped per
+backlog `d-2026-05-22-04` — its design pass merged into v0.8.0 scope.
+Tier-1 bindings narrow to V / Python / Go / Rust under a two-layer
+contract ([`spec/bindings.md`](spec/bindings.md)). Authoritative
+release-surface document: [`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md).
+Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
+
+### Added
+
+- **CXPath as first-class value kind** — all 12 XPath 3.1 axes, `//` /
+  `/` step prefixes, `@name` attribute selector, `[expr]` general
+  predicates with `$_` / `$_position` / `$_last` context bindings,
+  `:bind NAME` peer-modifier on path steps. ADRs [0028](spec/decisions/0028-cxpath-as-value-kind.md), [0036](spec/decisions/0036-expr-general-predicate.md).
+- **`[?match]` multi-arm dispatch** — heterogeneous arms (`:case` /
+  `:when` / `:else`); first-match-wins; scalar literal + `_` wildcard
+  patterns. ADR [0029](spec/decisions/0029-match-heterogeneous-arms.md).
+- **`[?modify]` pure-functional updates** — CXPath focus + 11-action
+  vocabulary (`:set`, `:delete`, `:using`, `:rename`, `:set-attr`,
+  `:delete-attr`, `:append`, `:prepend`, `:insert-before`,
+  `:insert-after`, `:replace`); pipeline-composable via `|`; structural
+  sharing (`< 1 KB` new heap per matched node on a 10 MB document).
+  ADRs [0030](spec/decisions/0030-modify-pure-functional-updates.md), [0031](spec/decisions/0031-structural-sharing.md).
+- **Module system** — `[?def]` module-level functions (no closure / no
+  overload / order-independent), `[?lib]` module loading (file /
+  registered / HTTPS resolvers), `cx.lock` lockfile (SHA-384 / SHA-512
+  SRI integrity, HTTPS-only transport), `[?const]` module-level
+  constants, `:scope public` / `:scope private` visibility. ADRs
+  [0034](spec/decisions/0034-def-module-level-functions.md), [0035](spec/decisions/0035-module-loading-scoping-namespacing.md).
+- **Bundled `cx-stdlib`** — 14 sub-packages: strings / json / http /
+  re / time / math / io / bytes / format / path / log / hash / env /
+  test. [`spec/stdlib.md`](spec/stdlib.md).
+- **Atom scalar kind** — `:NAME` literals with type-strict
+  name-equality and a disjoint hash domain. ADR [0033](spec/decisions/0033-atom-scalar-kind.md).
+- **`[expr]` general predicate body** + `:pure` / `:impure` modifier
+  algebra (sound-but-incomplete inference; closed-list builtin
+  classification). ADR [0036](spec/decisions/0036-expr-general-predicate.md) + ADR 0034 D11 amendment.
+- **Playground Tree View + Graph View** — ERD for data sources, CFG
+  for code sources; per-pane toggle; bidirectional selection bridge
+  via byte-offset `loc`. ADR [0037](spec/decisions/0037-playground-tree-and-graph-views.md).
+- **`cx_code_diagram`** (Mermaid emit, ERD-or-CFG auto-detect) +
+  **`cx_code_tree`** (JSON with `loc` byte offsets) C ABI exports.
+- **`cast()` generic builtin** + **`exists()`** in [`spec/code.md §6.5`](spec/code.md).
+- **ast_bin v8 wire format** with PathNode kind discriminator `0x13`
+  (cap bit 36).
+- **42 §11.6 release gates** — 16 v0.7.6 carryover + 14 new for ADRs
+  0028–0036 + 12 new for ADR 0037.
+
+### Changed
+
+- **Internal `programs` → `code` rename** — `spec/programs.md` →
+  `spec/code.md`; `vcx/programs/` → `vcx/code/`; `cx_program_eval*` →
+  `cx_code_eval*`; `_cx_program_*` wasm exports → `_cx_code_*`;
+  `in_cxl:` fixture header → `in_code:`. ADR [0032](spec/decisions/0032-programs-to-code-rename.md).
+- **Tier-1 bindings narrowed** to V / Python / Go / Rust under a
+  two-layer contract (Layer 1 canonical 16 methods; Layer 2 host
+  idiom packs).
+- **Cap bits 31 + 32 re-purposed** — gate-17-era framings never
+  shipped per backlog `d-2026-05-22-04`; now `cx_code_diagram` + `cx_code_tree`
+  per ADR 0037.
+
+### Removed
+
+- **`[?find]` directive** — replaced by `[?for]` (pattern-generator
+  form) and CXPath value-kind `//path`. ADR [0028](spec/decisions/0028-cxpath-as-value-kind.md).
+- **v0.7.0-era CXL POC evaluator surface** — `cx:` module, `log:`
+  module, `inspect:`, `[?cx use-module=...]`, `[?cx pure-only]`.
+- **v0.7.0-era `cx_eval_cxl_*` C ABI symbols.**
+- **Six archived bindings** — TypeScript / Java / C# / Ruby / Kotlin /
+  Swift moved to `lang/_archived/`. Restoration is post-v0.8.0.
+
+### Migration
+
+See [`docs/migrations/v0_8_0.md`](docs/migrations/v0_8_0.md) and the
+automated script
+[`scripts/migrate_v07_to_v08.py`](scripts/migrate_v07_to_v08.py).
+
 ## [0.7.6] — in development on `v0.7.6-dev` (CX code — the headline release)
 
 Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
