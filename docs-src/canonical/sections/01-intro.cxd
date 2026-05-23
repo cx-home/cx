@@ -103,11 +103,13 @@
          enough to use as topic-specific reference."""]
 
     [body
-      """The flow is data → surfaces → identity → code → bindings → tooling
-         → concepts → migration. Each section calls out the normative spec
-         documents under `spec/*.md` rather than restating them; if you need
-         the formal grammar, error matrix, or wire-format details, the guide
-         points you there."""]
+      """The flow is data → surfaces → identity → analytics → code →
+         bindings → tooling → concepts → migration. Each section calls
+         out the normative spec documents under `spec/*.md` rather than
+         restating them; if you need the formal grammar, error matrix,
+         or wire-format details, the guide points you there. Front-matter
+         ([[quickstart]]) and back-matter ([[glossary]] / [[faq]] /
+         [[comparison]]) flank the numbered sequence."""]
 
     [list
       [item """[[data]] — the data language: lexical structure, scalars,
@@ -117,8 +119,13 @@
               TOML / XML / Markdown projections, plus the round-trip
               contract."""]
       [item """[[identity]] — canonical bytes, SHA-256 hashing, the
-              ast-bin and data-bin binary wire formats."""]
-      [item """[[code]] — the CX code language: the 39 directives, CXPath,
+              ast-bin and data-bin binary wire formats, ID/IDREF
+              scoping, capability bits, FFI lifetime."""]
+      [item """[[analytics]] — the columnar / streaming binary surface:
+              :table data shape, CXCol format, Arrow zero-copy bridge,
+              Parquet read/write, ecosystem integrations (DuckDB /
+              Polars / pandas / DataFusion / Spark)."""]
+      [item """[[code]] — the CX code language: the 40 directives, CXPath,
               patterns, bindings, the six core constructs, builtins,
               errors-as-values, services / workers / async, resilience."""]
       [item """[[bindings]] — the C ABI, Layer 1 canonical method set,
