@@ -2,10 +2,10 @@
 # tools/verify-examples.sh — every .cx file in examples/ must:
 # 1. parse + reformat cleanly through `cx fmt`
 # 2. convert to JSON without error
-# 3. CXDB binary round-trip preserves data exactly (via cx eq)
+# 3. CXCol binary round-trip preserves data exactly (via cx eq)
 #
 # Note: CX → JSON → CX round-trip is *not* bijective for typed
-# scalars (JSON has no type annotations); we test CXDB round-trip
+# scalars (JSON has no type annotations); we test CXCol round-trip
 # instead, which IS bijective per spec/data_bin.md.
 #
 # Usage:
