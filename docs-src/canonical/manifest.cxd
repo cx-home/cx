@@ -29,26 +29,53 @@
       [child n=2.2.1 id=names       title='Element names']
       [child n=2.2.2 id=attributes  title='Attributes']
       [child n=2.2.3 id=bodies      title='Body content']]
-    [child n=2.3 id=scalars
+    [child n=2.3 id=scalars         title='Scalar kinds'
       [child n=2.3.1 id=strings     title='Strings — single, double, triple-quoted']
       [child n=2.3.2 id=numbers     title='Numbers — int, float, sized, hex']
       [child n=2.3.3 id=booleans    title='Booleans']
       [child n=2.3.4 id=dates       title='Dates and datetimes']
-      [child n=2.3.5 id=null        title='Null']]
-    [child n=2.4 id=collections
+      [child n=2.3.5 id=null        title='Null']
+      [child n=2.3.6 id=bytes       title='Bytes — raw binary scalars']
+      [child n=2.3.7 id=sized-types title='Sized type tags (:i8 / :i32 / :u64 / :f32 / etc.)']]
+    [child n=2.4 id=collections     title='Collection literals'
       [child n=2.4.1 id=seq         title='Sequence literals (a, b, c)']
       [child n=2.4.2 id=arr         title='Array literals [a, b, c]']
-      [child n=2.4.3 id=map         title='Map literals {k: v}']]
-    [child n=2.5 id=sigils
+      [child n=2.4.3 id=map         title='Map literals {k: v}']
+      [child n=2.4.4 id=seq-flat    title='The sequence-flat principle']
+      [child n=2.4.5 id=container-atom title='Container vs atom distinction']]
+    [child n=2.5 id=sigils          title='Sigils'
       [child n=2.5.1 id=anchor      title='The & anchor sigil']
       [child n=2.5.2 id=merge       title='The * merge sigil']
       [child n=2.5.3 id=id          title='The # id sigil']
       [child n=2.5.4 id=type        title='The : type sigil']
       [child n=2.5.5 id=bool        title='The + and - bool sigils']]
-    [child n=2.6 id=prose           title='Mixed content and prose']
+    [child n=2.6 id=prose           title='Mixed content and prose'
+      [child n=2.6.1 id=entity-refs title='Entity references']
+      [child n=2.6.2 id=xml-space   title='Whitespace preservation (xml:space)']
+      [child n=2.6.3 id=cdata       title='CDATA sections']]
     [child n=2.7 id=tables          title='Typed columnar tables']
-    [child n=2.8 id=schema          title='Schema language (.cxs)']
-    [child n=2.9 id=includes        title='Include resolver']]
+    [child n=2.8 id=schema          title='Schema language (.cxs)'
+      [child n=2.8.1 id=schema-modes title='Open / strict / closed modes']
+      [child n=2.8.2 id=schema-constraints title='Constraint vocabulary']
+      [child n=2.8.3 id=schema-defaults title='Defaults and inheritance']
+      [child n=2.8.4 id=schema-binding title='Binding a schema to a document']]
+    [child n=2.9 id=includes        title='Include resolver'
+      [child n=2.9.1 id=include-paths title='Path resolution']
+      [child n=2.9.2 id=include-cycles title='Cycle detection']
+      [child n=2.9.3 id=include-depth title='Depth limit']
+      [child n=2.9.4 id=include-capabilities title='Capability gating']]
+    [child n=2.10 id=namespaces     title='Namespaces (xmlns:)'
+      [child n=2.10.1 id=ns-prefix-decl  title='Prefix declarations']
+      [child n=2.10.2 id=ns-default       title='Default namespace']
+      [child n=2.10.3 id=ns-reserved     title='Reserved prefixes (xml, cx, xmlns)']
+      [child n=2.10.4 id=ns-equality     title='Equality and canonical form']]
+    [child n=2.11 id=locale         title='Locale and language (cx:lang)']
+    [child n=2.12 id=doctype        title='Doctype declarations']
+    [child n=2.13 id=encoding       title='Document encoding (UTF-8, BOM, alternates)']
+    [child n=2.14 id=streaming-data title='Streaming parse and emission']
+    [child n=2.15 id=limits         title='Limits and quotas']
+    [child n=2.16 id=datetime-detail title='Date / time semantics — timezones, precision, leap seconds']
+    [child n=2.17 id=reserved-tokens title='Reserved tokens and keyword list']]
 
   [section n=3 id=surfaces file='03-surfaces.cxd'
     [child n=3.1 id=cx-canonical title='CX — the canonical dialect']
