@@ -29,16 +29,11 @@ PREFIX ?= /usr/local
 
 UNAME_S := $(shell uname -s)
 
-# ── Python / Ruby / Go / TypeScript / Java / Kotlin / C# / Swift toolchain paths ──────
+# ── Python / Go toolchain paths ──────────────────────────────────────────────
 PYTHON ?= python3
-RUBY := /opt/homebrew/opt/ruby/bin/ruby
-SWIFT := /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift
-SWIFT_FLAGS := SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-DOTNET := DOTNET_ROOT=/opt/homebrew/opt/dotnet/libexec /opt/homebrew/opt/dotnet/libexec/dotnet
-JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 
 .PHONY: all build build-wasm build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
- build-ruby build-go build-go-arrow build-typescript build-java build-java-arrow build-kotlin build-kotlin-arrow build-csharp build-csharp-api build-csharp-arrow build-swift \
+ build-go build-go-arrow \
  build-vscode \
  publish publish-push \
  publish-v publish-v-push \
@@ -46,26 +41,24 @@ JAVA_HOME_ARM64 := /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Hom
  release release-v release-all \
  dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
  test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
- test-ruby test-ruby-api test-go test-go-arrow test-typescript test-java test-java-arrow test-kotlin test-kotlin-arrow test-csharp test-csharp-api test-csharp-arrow test-swift \
- test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-typescript-api test-go-api \
+ test-go test-go-arrow \
+ test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-go-api \
  abi-c-test \
  conform conform-vcx conform-md bench bench-python \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
- examples example-python example-v example-go example-rust example-typescript \
- example-java example-kotlin example-csharp example-ruby example-swift \
- demos demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift \
+ examples example-python example-v example-go example-rust \
+ demos demo-v demo-go demo-rust \
  clean
 
 all: build
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 
-# Active binding set per ADR 0022 §D4 — V + Python + Go + Rust + TypeScript.
-# Python has no compile step. Frozen bindings (Java/Kotlin/C#/Ruby/Swift)
-# are still buildable via their individual targets but excluded from
-# the default `build` so the v0.7.0 ABI rename doesn't make `make`
-# error out of the gate. See lang/<binding>/FROZEN.md for rationale.
-build: build-vcx build-rust build-go build-typescript
+# Active binding set (v0.8.0) — V + Python + Go + Rust (per decision d-2026-05-22-03).
+# Python has no compile step.
+# Archived bindings (TypeScript/Java/Kotlin/C#/Ruby/Swift) live in lang/_archived/
+# and are not wired into build or test targets.
+build: build-vcx build-rust build-go
 
 build-vcx:
 	$(MAKE) -C vcx build
@@ -99,9 +92,6 @@ build-rust: build-vcx
 build-rust-arrow: build-vcx build-lib-arrow
 	cargo build --features arrow --manifest-path lang/rust/cxlib/Cargo.toml --release
 
-build-ruby: build-vcx
-	@echo "Ruby binding: no compile step needed"
-
 build-go: build-vcx
 	cd lang/go/cxlib && go build ./...
 
@@ -110,45 +100,6 @@ build-go: build-vcx
 # `build-go` does not require the apache/arrow/go module.
 build-go-arrow: build-vcx build-lib-arrow
 	cd lang/go/cxlib && go build -tags arrow ./...
-
-build-typescript: build-vcx
-	cd lang/typescript/cxlib && npm install --silent && npm run build
-
-build-java: build-vcx
-	mvn -f lang/java/cxlib/pom.xml -q package -DskipTests
-
-# Apache Arrow C-Data interop binding — gated behind libcx_arrow + the
-# `arrow` Maven profile (pulls arrow-c-data / arrow-vector / arrow-memory-netty).
-# Mirrors test-go-arrow / test-rust-arrow / test-csharp-arrow
-# (Phase 7.74c-cont-bindings-multi-java).
-build-java-arrow: build-vcx build-lib-arrow
-	mvn -f lang/java/cxlib/pom.xml -q -Parrow package -DskipTests
-
-build-kotlin: build-vcx
-	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle assemble -q
-
-# Apache Arrow C-Data interop binding — gated behind libcx_arrow + the
-# `arrow` Gradle source-set (pulls arrow-c-data / arrow-vector /
-# arrow-memory-netty). Mirrors test-go-arrow / test-rust-arrow /
-# test-csharp-arrow / test-java-arrow
-# (Phase 7.74c-cont-bindings-multi-kotlin).
-build-kotlin-arrow: build-vcx build-lib-arrow
-	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle compileArrowKotlin -q
-
-build-csharp: build-vcx
-	$(DOTNET) build lang/csharp/cxlib/cxlib.csproj -c Release --nologo -v:m
-
-build-csharp-api: build-csharp
-	$(DOTNET) build lang/csharp/api_test/api_test.csproj -c Release --nologo -v:m
-
-# Apache Arrow C-Data interop binding — gated behind libcx_arrow + the
-# Apache.Arrow NuGet package; mirrors test-go-arrow / test-rust-arrow
-# (Phase 7.74c-cont-bindings-multi-csharp).
-build-csharp-arrow: build-vcx build-lib-arrow
-	$(DOTNET) build lang/csharp/cxlib_arrow/cxlib_arrow.csproj -c Release --nologo -v:m
-
-build-swift: build-vcx
-	$(SWIFT_FLAGS) $(SWIFT) build --package-path lang/swift/cxlib -c release
 
 build-lib: build-vcx
 
@@ -420,11 +371,6 @@ test-rust-eval-v0-7-0: build-vcx
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test eval_v0_7_0
 
-# Per spec/v0_7_0_status.md H5 — TypeScript-binding parity check for
-# the v0.7.0 evaluator surface (16 tests).
-test-typescript-eval-v0-7-0: build-vcx build-typescript
-	npx tsx lang/typescript/eval_v0_7_0_test.ts
-
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
@@ -439,19 +385,6 @@ test-vcx-api: build-vcx
 
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
-
-test-ruby: build-vcx
-	$(RUBY) lang/ruby/conformance.rb
-	$(RUBY) lang/ruby/test_api.rb
-	$(RUBY) lang/ruby/cxlib/test/test_data_bin_one_shots.rb
-	$(RUBY) lang/ruby/cxlib/test/test_table.rb
-	$(RUBY) lang/ruby/test_namespaces.rb
-	$(RUBY) lang/ruby/test_identity.rb
-	$(RUBY) lang/ruby/test_id_abi.rb
-	$(RUBY) lang/ruby/test_delimited.rb
-
-test-ruby-api: build-vcx
-	$(RUBY) lang/ruby/test_api.rb
 
 test-go: build-go
 	cd lang/go/cxlib && go test ./...
@@ -479,60 +412,6 @@ test-go-arrow-conformance: build-vcx build-lib-arrow
 test-go-eval-v0-7-0: build-vcx
 	cd lang/go/cxlib && go test -v -run TestEvalV070
 
-test-typescript: build-typescript
-	cd lang/typescript/cxlib && npm run conform
-	npx tsx lang/typescript/api_test.ts
-	npx tsx lang/typescript/data_bin_one_shots_test.ts
-	npx tsx lang/typescript/delimited_test.ts
-	npx tsx lang/typescript/namespaces_test.ts
-	npx tsx lang/typescript/identity_test.ts
-
-test-typescript-api: build-typescript
-	npx tsx lang/typescript/api_test.ts
-
-# W3 v0.7.0 — TS Arrow conformance. Mirrors Python/Go/Rust arrow-conformance
-# targets; consumes the same fixtures at conformance/data_bin_arrow.txt and
-# round-trips them through the W7 IPC bridge (apache-arrow JS).
-test-typescript-arrow-conformance: build-typescript
-	npx tsx lang/typescript/arrow_conformance_test.ts
-
-test-java: build-java
-	mvn -f lang/java/cxlib/pom.xml -q test
-
-# Apache Arrow C-Data interop tests for the Java binding
-# (Phase 7.74c-cont-bindings-multi-java). Mirrors test-csharp-arrow:
-# builds libcx_arrow then exercises the round-trip surface for the
-# 10 v0.6.0 supported column types under the `arrow` Maven profile.
-test-java-arrow: build-vcx build-lib-arrow
-	mvn -f lang/java/cxlib/pom.xml -q -Parrow test -Dtest=ArrowTest
-
-test-kotlin: build-kotlin
-	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle test -q
-
-# Apache Arrow C-Data interop tests for the Kotlin binding
-# (Phase 7.74c-cont-bindings-multi-kotlin). Mirrors test-java-arrow:
-# builds libcx_arrow then exercises the round-trip surface for the
-# 10 v0.6.0 supported column types under the Apache Arrow Java JAR.
-test-kotlin-arrow: build-vcx build-lib-arrow
-	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle arrowTest -q
-
-test-csharp: build-csharp build-csharp-api
-	$(DOTNET) run --project lang/csharp/conformance/conformance.csproj -c Release
-	$(DOTNET) run --project lang/csharp/api_test/api_test.csproj -c Release
-
-test-csharp-api: build-csharp-api
-	$(DOTNET) run --project lang/csharp/api_test/api_test.csproj -c Release
-
-# Apache Arrow C-Data interop tests for the C# binding
-# (Phase 7.74c-cont-bindings-multi-csharp). Mirrors test-go-arrow:
-# builds libcx_arrow then exercises the round-trip surface for the
-# 10 v0.6.0 supported column types under the Apache.Arrow NuGet pkg.
-test-csharp-arrow: build-vcx build-lib-arrow build-csharp-arrow
-	$(DOTNET) run --project lang/csharp/cxlib_arrow_test/cxlib_arrow_test.csproj -c Release
-
-test-swift: build-swift
-	$(SWIFT_FLAGS) $(SWIFT) test --package-path lang/swift/cxlib
-
 conform-md: build-vcx
 	$(MAKE) -C vcx conform-md
 
@@ -545,8 +424,7 @@ conform-vcx: build-vcx
 
 # ── Examples (transform showcase) ────────────────────────────────────────────
 
-examples: example-python example-v example-go example-rust example-typescript \
- example-java example-kotlin example-csharp example-ruby example-swift
+examples: example-python example-v example-go example-rust
 
 example-python: build-vcx
 	$(PYTHON) lang/python/examples/transform.py
@@ -560,27 +438,9 @@ example-go: build-go
 example-rust: build-rust
 	cargo run --example transform --manifest-path lang/rust/cxlib/Cargo.toml
 
-example-typescript: build-typescript
-	npx tsx lang/typescript/cxlib/examples/transform.ts
-
-example-java: build-java
-	mvn -f lang/java/cxlib/pom.xml -q exec:java -Dexec.mainClass=cx.examples.Transform
-
-example-kotlin: build-kotlin
-	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle run -q
-
-example-csharp: build-csharp
-	$(DOTNET) run --project lang/csharp/examples/transform/transform.csproj
-
-example-ruby: build-vcx
-	$(RUBY) lang/ruby/cxlib/examples/transform.rb
-
-example-swift: build-swift
-	$(SWIFT_FLAGS) $(SWIFT) run --package-path lang/swift/cxlib transform
-
 # ── Demos (Document Model + Streaming + CXPath + Transform) ──────────────────
 
-demos: demo-v demo-go demo-rust demo-typescript demo-java demo-kotlin demo-csharp demo-ruby demo-swift
+demos: demo-v demo-go demo-rust
 
 demo-v: build-vcx
 	v run lang/v/examples/demo.v
@@ -590,24 +450,6 @@ demo-go: build-go
 
 demo-rust: build-rust
 	cargo run --example demo --manifest-path lang/rust/cxlib/Cargo.toml
-
-demo-typescript: build-typescript
-	npx tsx lang/typescript/cxlib/examples/demo.ts
-
-demo-java: build-java
-	mvn -f lang/java/cxlib/pom.xml -q exec:java -Dexec.mainClass=cx.Demo
-
-demo-kotlin: build-kotlin
-	cd lang/kotlin/cxlib && JAVA_HOME=$(JAVA_HOME_ARM64) gradle demo -q
-
-demo-csharp: build-csharp
-	$(DOTNET) run --project lang/csharp/examples/readme_demo/readme_demo.csproj -c Release
-
-demo-ruby: build-vcx
-	$(RUBY) lang/ruby/cxlib/examples/demo.rb
-
-demo-swift: build-swift
-	$(SWIFT_FLAGS) $(SWIFT) run --package-path lang/swift/cxlib Demo
 
 # ── Publish to public repo ────────────────────────────────────────────────────
 
@@ -720,7 +562,5 @@ clean:
 	$(MAKE) -C vcx clean
 	rm -rf $(DIST_DIR)
 	cargo clean --manifest-path lang/rust/cxlib/Cargo.toml
-	find lang/csharp -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
-	rm -rf lang/kotlin/cxlib/.gradle
 	find lang/python -name '*.pyc' -delete
 	find lang/python -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
