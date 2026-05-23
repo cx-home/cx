@@ -80,7 +80,7 @@
         (post ADR 0028). One canonical guide reduces decision cost for
         readers; numbered section refs (1.2.3) provide stable anchors
         for PR diffs and cross-references.'''
-      :source 'docs-src/canonical/sections/*.cx + manifest.cx + template.cx'
+      :source 'docs-src/canonical/sections/*.cxd + manifest.cxd + template.cx'
       :artifact 'docs/cx-data-and-code-guide.md (post v0.8.0)'
       :overflow-policy 'normative depth lives in spec/*.md; the guide curates the learning + reference path']
 

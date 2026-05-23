@@ -6,59 +6,59 @@
 [# ─── 1. :set — replace a single scalar attribute ─── #]
 
 [?let $d1 = [?modify $doc //user[@id=1]/@name :set "Alice (Renamed)"] :in
-  [step :n 1 :action ':set' :result $d1]]
+  [step n=1 action=':set' result=$d1]]
 
 [# ─── 2. :delete — remove matching nodes ─── #]
 
 [?let $d2 = [?modify $doc //user[@banned=true] :delete] :in
-  [step :n 2 :action ':delete' :remaining (count $d2//user)]]
+  [step n=2 action=':delete' remaining=(count $d2//user)]]
 
 [# ─── 3. :using — apply a lambda to each focused node ─── #]
 
 [?let $d3 = [?modify $doc //user
               :using [?fn $u :body [user $u/@id (upper($u/@name)) $u/@email]]] :in
-  [step :n 3 :action ':using' :result $d3]]
+  [step n=3 action=':using' result=$d3]]
 
 [# ─── 4. :rename — change an element name (preserves attrs + body) ─── #]
 
 [?let $d4 = [?modify $doc //widget :rename component] :in
-  [step :n 4 :action ':rename' :renamed (count $d4//component)]]
+  [step n=4 action=':rename' renamed=(count $d4//component)]]
 
 [# ─── 5. :set-attr — add/update an attribute (must be on element focus) ─── #]
 
 [?let $d5 = [?modify $doc //user[@id=1] :set-attr :status "verified"] :in
-  [step :n 5 :action ':set-attr' :result $d5]]
+  [step n=5 action=':set-attr' result=$d5]]
 
 [# ─── 6. :delete-attr — remove an attribute ─── #]
 
 [?let $d6 = [?modify $doc //user :delete-attr :temp] :in
-  [step :n 6 :action ':delete-attr' :result $d6]]
+  [step n=6 action=':delete-attr' result=$d6]]
 
 [# ─── 7. :append — add a child to the end of body ─── #]
 
 [?let $d7 = [?modify $doc //section[@id="intro"] :append [para "Added paragraph."]] :in
-  [step :n 7 :action ':append' :result $d7]]
+  [step n=7 action=':append' result=$d7]]
 
 [# ─── 8. :prepend — add a child to the start of body ─── #]
 
 [?let $d8 = [?modify $doc //section[@id="intro"] :prepend [para "Leading paragraph."]] :in
-  [step :n 8 :action ':prepend' :result $d8]]
+  [step n=8 action=':prepend' result=$d8]]
 
 [# ─── 9. :insert-before — add a sibling before matched node ─── #]
 
-[?let $d9 = [?modify $doc //user[@id=3] :insert-before [user :id 'placeholder']] :in
-  [step :n 9 :action ':insert-before' :result $d9]]
+[?let $d9 = [?modify $doc //user[@id=3] :insert-before [user id='placeholder']] :in
+  [step n=9 action=':insert-before' result=$d9]]
 
 [# ─── 10. :insert-after — add a sibling after matched node ─── #]
 
-[?let $d10 = [?modify $doc //user[@id=3] :insert-after [user :id 'follower']] :in
-  [step :n 10 :action ':insert-after' :result $d10]]
+[?let $d10 = [?modify $doc //user[@id=3] :insert-after [user id='follower']] :in
+  [step n=10 action=':insert-after' result=$d10]]
 
 [# ─── 11. :replace — swap the matched node out entirely ─── #]
 
 [?let $d11 = [?modify $doc //user[@id=1]
-               :replace [user :id 1 :name 'Alpha' :email 'a@example.org']] :in
-  [step :n 11 :action ':replace' :result $d11]]
+               :replace [user id=1 name='Alpha' email='a@example.org']] :in
+  [step n=11 action=':replace' result=$d11]]
 
 [# ─── 12. Pipeline — chain modifies via | ─── #]
 
@@ -68,21 +68,21 @@
   | [?modify //user[@banned=true] :delete]
   | [?modify //user :using [?fn $u :body [user $u/@id (upper($u/@name))]]]
   :in
-  [pipeline :result $pipelined]]
+  [pipeline result=$pipelined]]
 
 [# ─── 13. Zero-match — modify is a no-op ─── #]
 
 [?let $no-match = [?modify $doc //nonexistent :set "won't happen"] :in
-  [step :n 13 :note 'zero-match' :equals-original (equals $doc $no-match)]]
+  [step n=13 note='zero-match' equals-original=(equals $doc $no-match)]]
 
 [# ─── 14. Multi-match — action applies to every matched node ─── #]
 
 [?let $multi = [?modify $doc //user[@active=false] :set-attr :archived true] :in
-  [step :n 14 :note 'multi-match' :archived-count (count $multi//user[@archived=true])]]
+  [step n=14 note='multi-match' archived-count=(count $multi//user[@archived=true])]]
 
 [# ─── 15. Identity — original $doc unchanged through all of the above ─── #]
 
 [identity-check
-  :unchanged (count $doc//user)
-  :modified-d11 (count $d11//user)
-  :are-different (equals $doc $d11)]
+  unchanged=(count $doc//user)
+  modified-d11=(count $d11//user)
+  are-different=(equals $doc $d11)]

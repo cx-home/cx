@@ -2,9 +2,9 @@
    retired surfaces. Anchored in spec/code_migration.md (post-rename),
    ADRs 0028/0029/0030/0032, backlog.cx decision log. #]
 
-[section :id migration :n 9 :title 'Migration'
+[section id=migration n=9 title='Migration'
 
-  [child :id from-v07x :n 9.1 :title 'From v0.7.x to v0.8.0'
+  [child id=from-v07x n=9.1 title='From v0.7.x to v0.8.0'
     [intro
       """v0.8.0 is the first stable tag after v0.7.5 (v0.7.6 was skipped
          intentionally — see backlog
@@ -20,14 +20,14 @@
          layer ("CX is data and code") was renamed immediately on
          d-2026-05-22-01; the internal rename cascades through:"""]
 
-    [table :columns (was, is)
-      [row :was 'cx_program_eval' :is 'cx_code_eval']
-      [row :was 'vcx/programs/' :is 'vcx/code/']
-      [row :was 'spec/programs.md' :is 'spec/code.md']
-      [row :was 'spec/programs_migration.md' :is 'spec/code_migration.md']
-      [row :was 'conformance/programs.txt' :is 'conformance/code.txt']
-      [row :was '_cx_program_diagram (wasm)' :is '_cx_code_diagram (wasm)']
-      [row :was '--- in_cxl (fixture marker)' :is '--- in_code (fixture marker)']]
+    [table columns=(was, is)
+      [row was='cx_program_eval' is='cx_code_eval']
+      [row was='vcx/programs/' is='vcx/code/']
+      [row was='spec/programs.md' is='spec/code.md']
+      [row was='spec/programs_migration.md' is='spec/code_migration.md']
+      [row was='conformance/programs.txt' is='conformance/code.txt']
+      [row was='_cx_program_diagram (wasm)' is='_cx_code_diagram (wasm)']
+      [row was='--- in_cxl (fixture marker)' is='--- in_code (fixture marker)']]
 
     [body
       """**`[?find]` is retired.** Per ADR
@@ -35,11 +35,11 @@
          `[?find]` was always sugar for `[?for]` over a pattern. The
          migration is one of two forms:"""]
 
-    [table :columns (was, is)
-      [row :was '[?find [user $u] :yield $u]' :is '//user  or  [?for [user $u] :yield $u]']
-      [row :was '[?find [user @active=true $u] :yield $u]' :is '//user[@active=true]']
-      [row :was '[?find [user [email $e]] :yield $e]' :is '//user/email']
-      [row :was 'count([?find [user @active=true $u] :yield $u])' :is 'count(//user[@active=true])']]
+    [table columns=(was, is)
+      [row was='[?find [user $u] :yield $u]' is='//user  or  [?for [user $u] :yield $u]']
+      [row was='[?find [user @active=true $u] :yield $u]' is='//user[@active=true]']
+      [row was='[?find [user [email $e]] :yield $e]' is='//user/email']
+      [row was='count([?find [user @active=true $u] :yield $u])' is='count(//user[@active=true])']]
 
     [body
       """**CXPath is now a value kind.** A path expression like `//user`
@@ -56,7 +56,7 @@
          The 2-arg form (single arm, raises `CXER0100` on miss) is
          preserved unchanged."""]
 
-    [example :lang cx
+    [example lang=cx
       """[# v0.7.x — nested if chain                                    #]
          [?if (name($n) = 'prose') :then [p $n]
               :else [?if (name($n) = 'code') :then [pre $n]
@@ -100,7 +100,7 @@
     [body
       """**Automated script.** Run on a clean working tree:"""]
 
-    [example :lang cx
+    [example lang=cx
       """$ python scripts/migrate_v07_to_v08.py path/to/source
 
          # Performs (with safety checks):
@@ -117,7 +117,7 @@
          tests). The conversion is straightforward by hand once you
          know the multi-arm form (see [[match]])."""]]
 
-  [child :id from-xml :n 9.2 :title 'From XML'
+  [child id=from-xml n=9.2 title='From XML'
     [intro
       """XML is the closest projection to CX — same element / attribute /
          body shape. Migration is one-shot: `cx convert input.xml --to
@@ -142,7 +142,7 @@
               is no automated converter; the structural mapping is
               direct because the data model is the same."""]]]
 
-  [child :id from-json-yaml :n 9.3 :title 'From JSON / YAML / TOML'
+  [child id=from-json-yaml n=9.3 title='From JSON / YAML / TOML'
     [intro
       """These are projection formats. Migration is again one-shot:
          `cx convert input.json --to cx --out input.cx`."""]
@@ -168,33 +168,33 @@
               but are not universally adopted. CX has one canonical
               form built into every tool."""]]]
 
-  [child :id retired-surfaces :n 9.4 :title 'Retired surfaces and replacements'
+  [child id=retired-surfaces n=9.4 title='Retired surfaces and replacements'
     [intro
       """Surfaces removed or renamed across v0.7.x → v0.8.0, with their
          replacement."""]
 
-    [table :columns (retired, replacement, source)
-      [row :retired '[?find]' :replacement '[?for] over pattern, or CXPath //name'
-        :source 'ADR 0028 D8']
-      [row :retired '[- comment -]' :replacement '[# comment #]'
-        :source 'lexer consolidation']
-      [row :retired ':contains predicate hack' :replacement 'ancestor:: axis'
-        :source 'ADR 0028 D5']
-      [row :retired ':direct modifier hack' :replacement 'following-sibling:: axis'
-        :source 'ADR 0028 D5']
-      [row :retired 'XPath general-comparison =' :replacement 'value-comparison only'
-        :source 'ADR 0028 D3']
-      [row :retired 'cx_program_eval (C ABI)' :replacement 'cx_code_eval'
-        :source 'ADR 0032']
-      [row :retired 'in_cxl (fixture marker)' :replacement 'in_code'
-        :source 'ADR 0032']
-      [row :retired 'cxl-* playground starter ids' :replacement 'code-* starter ids'
-        :source 'Phase 7.3']
-      [row :retired 'TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'
-        :replacement 'archived under lang/_archived/'
-        :source 'd-2026-05-22-03']
-      [row :retired 'Layer-1-only flat binding surface' :replacement 'Layer 1 + Layer 2'
-        :source 'd-2026-05-22-07']]
+    [table columns=(retired, replacement, source)
+      [row retired='[?find]' replacement='[?for] over pattern, or CXPath //name'
+        source='ADR 0028 D8']
+      [row retired='[- comment -]' replacement='[# comment #]'
+        source='lexer consolidation']
+      [row retired=':contains predicate hack' replacement='ancestor:: axis'
+        source='ADR 0028 D5']
+      [row retired=':direct modifier hack' replacement='following-sibling:: axis'
+        source='ADR 0028 D5']
+      [row retired='XPath general-comparison =' replacement='value-comparison only'
+        source='ADR 0028 D3']
+      [row retired='cx_program_eval (C ABI)' replacement='cx_code_eval'
+        source='ADR 0032']
+      [row retired='in_cxl (fixture marker)' replacement='in_code'
+        source='ADR 0032']
+      [row retired='cxl-* playground starter ids' replacement='code-* starter ids'
+        source='Phase 7.3']
+      [row retired='TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'
+        replacement='archived under lang/_archived/'
+        source='d-2026-05-22-03']
+      [row retired='Layer-1-only flat binding surface' replacement='Layer 1 + Layer 2'
+        source='d-2026-05-22-07']]
 
     [note
       """**Archived bindings are not deleted.** Files move to

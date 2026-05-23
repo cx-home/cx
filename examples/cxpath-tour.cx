@@ -6,38 +6,38 @@
 
 [# All users — terse form #]
 [?let $all-users = //user :in
-  [section :title 'all users'
+  [section title='all users'
     [count $all-users]
     [items $all-users]]]
 
 [# All users — explicit child axis #]
 [?let $explicit = /users/user :in
-  [section :title 'explicit child' [count $explicit]]]
+  [section title='explicit child' [count $explicit]]]
 
 [# ─── 2. Predicates — attribute equality, comparison, function ─── #]
 
 [?let $active = //user[@active=true] :in
-  [section :title 'active' [count $active]]]
+  [section title='active' [count $active]]]
 
 [?let $aged = //user[@age>=21] :in
-  [section :title 'aged' [count $aged]]]
+  [section title='aged' [count $aged]]]
 
 [?let $named-alice = //user[@name='Alice'] :in
-  [section :title 'named alice' [count $named-alice]]]
+  [section title='named alice' [count $named-alice]]]
 
 [?let $multi-pred = //user[@active=true][@age>=21] :in
-  [section :title 'active and aged' [count $multi-pred]]]
+  [section title='active and aged' [count $multi-pred]]]
 
 [?let $positional = //user[1] :in
-  [section :title 'first user' [items $positional]]]
+  [section title='first user' [items $positional]]]
 
 [# ─── 3. Attribute selection — terminal @ step ─── #]
 
 [?let $emails = //user/@email :in
-  [section :title 'every email' [count $emails]]]
+  [section title='every email' [count $emails]]]
 
 [?let $first-name = //user[1]/@name :in
-  [section :title 'first user name' [scalar $first-name]]]
+  [section title='first user name' [scalar $first-name]]]
 
 [# ─── 4. The twelve axes ─── #]
 

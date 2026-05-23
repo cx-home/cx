@@ -3,16 +3,16 @@
    Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
    resolves them at emit time. #]
 
-[section :id intro :n 1 :title 'Introduction'
+[section id=intro n=1 title='Introduction'
 
-  [child :id hello :n 1.1 :title 'Hello, CX'
+  [child id=hello n=1.1 title='Hello, CX'
     [intro
       """CX is one language for **data** and **code**. The same brackets, the
          same sigils, the same evaluator. You don't pick a templating engine
          for output, a query language for selection, or a config dialect for
          deployment — there is one shape, and you write everything in it."""]
 
-    [example :lang cx
+    [example lang=cx
       """[hello :greeting 'world']"""]
 
     [body
@@ -26,7 +26,7 @@
       """Here is one screen of CX that exercises every category covered later
          in this guide — data, code, selection, update, and output:"""]
 
-    [example :lang cx
+    [example lang=cx
       """[# 1. Data: a small document
          #]
          [users
@@ -49,7 +49,7 @@
          The full vocabulary is detailed in [[data]] and [[code]]; this section
          is just the elevator pitch."""]]
 
-  [child :id philosophy :n 1.2 :title 'Design philosophy'
+  [child id=philosophy n=1.2 title='Design philosophy'
     [intro
       """CX is built on five commitments. Every design choice in the rest of
          this guide — and every choice deliberately deferred — falls out of
@@ -96,7 +96,7 @@
          developers coming from the XML ecosystem feel at home, with
          deliberate divergences to keep it safe and CX-shaped."""]]
 
-  [child :id reading :n 1.3 :title 'How to read this guide'
+  [child id=reading n=1.3 title='How to read this guide'
     [intro
       """This guide is the developer-facing reference for CX v0.8.0. Read it
          linearly the first time. After that, sections are independent

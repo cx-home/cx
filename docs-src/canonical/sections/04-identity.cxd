@@ -2,9 +2,9 @@
    Anchored in spec/canonical.md, spec/identity.md, spec/ast_bin.md,
    spec/data_bin.md. #]
 
-[section :id identity :n 4 :title 'Identity'
+[section id=identity n=4 title='Identity'
 
-  [child :id canonical :n 4.1 :title 'Canonical bytes'
+  [child id=canonical n=4.1 title='Canonical bytes'
     [intro
       """Two CX documents are equal iff their canonical bytes are equal.
          Canonical bytes are the unique serialization produced by `cx
@@ -38,25 +38,25 @@
       [item """**Comments stripped.** `[# … #]` is not part of canonical
               identity."""]]
 
-    [example :lang cx
+    [example lang=cx
       """[# Source:                                                 #]
          [user :email 'ada@example.com' :id 42 +active]
 
          [# `cx canon` output (canonical bytes):                    #]
          [user :active true :email 'ada@example.com' :id 42]"""]]
 
-  [child :id hash :n 4.2 :title 'SHA-256 content hash'
+  [child id=hash n=4.2 title='SHA-256 content hash'
     [intro
       """The identity of a CX document is the SHA-256 of its canonical
          bytes. The hash is computed over the UTF-8 byte sequence of the
          canonical form, not over the AST."""]
 
-    [example :lang v
+    [example lang=v
       """// V binding — Layer 1
          doc := cx.parse(source)!
          println(doc.hash())   // "3a7bd3e2360a..."""]
 
-    [example :lang python
+    [example lang=python
       """# Python binding — Layer 1
          doc = cx.parse(source)
          print(doc.hash())     # "3a7bd3e2360a..."""]
@@ -73,7 +73,7 @@
          interoperate trivially with git, IPFS, Nix, and other
          content-addressable systems."""]]
 
-  [child :id ast-bin :n 4.3 :title 'ast-bin wire format'
+  [child id=ast-bin n=4.3 title='ast-bin wire format'
     [intro
       """`ast-bin` is the binary serialization of a CX AST. It exists for
          in-process and cross-process transfer of parsed documents
@@ -103,7 +103,7 @@
       [item """**Varints for offsets.** Tree topology encoded with
               zig-zag varints."""]]]
 
-  [child :id data-bin :n 4.4 :title 'data-bin schema-driven format'
+  [child id=data-bin n=4.4 title='data-bin schema-driven format'
     [intro
       """`data-bin` is the binary value format for data — not parse
          structure. Where ast-bin carries AST nodes (with name / kind /

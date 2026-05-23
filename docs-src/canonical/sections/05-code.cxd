@@ -2,9 +2,9 @@
    Anchored in spec/code.md (post-rename), spec/cxpath_alignment.md, ADRs
    0027/0028/0029/0030. Largest section in the guide. #]
 
-[section :id code :n 5 :title 'The code language'
+[section id=code n=5 title='The code language'
 
-  [child :id overview :n 5.1 :title 'The CX code language'
+  [child id=overview n=5.1 title='The CX code language'
     [intro
       """CX code is CX data with a leading `?` on the element name. A
          directive like `[?for]` is a normal element to the parser; the
@@ -12,7 +12,7 @@
          directive name. Everything else — patterns, paths, function
          calls, builtins — is built from ordinary CX shapes."""]
 
-    [example :lang cx
+    [example lang=cx
       """[# Data is data:                       #]
          [user :id 1 :email 'ada@example.com']
 
@@ -34,7 +34,7 @@
          other directive is one of these five lifted into a specific
          domain — concurrency, async, resilience, services."""]]
 
-  [child :id directives :n 5.2 :title 'Directive registry'
+  [child id=directives n=5.2 title='Directive registry'
     [intro
       """v0.8.0 has **39 normative directives**. Adding or removing any
          directive requires an ADR (per
@@ -80,7 +80,7 @@
          [0028](../../spec/decisions/0028-cxpath-as-value-kind.md) D8
          for the rationale."""]]
 
-  [child :id cxpath :n 5.3 :title 'CXPath — the universal selector'
+  [child id=cxpath n=5.3 title='CXPath — the universal selector'
     [intro
       """CXPath is the single selector vocabulary across reading,
          iteration, dispatch, and update. It aligns with XPath 3.1
@@ -91,7 +91,7 @@
     [body
       """The simplest CXPath is the descendant search:"""]
 
-    [example :lang cx
+    [example lang=cx
       """//user                       [# every user, anywhere in doc      #]
          //user[@active=true]         [# every active user                #]
          //user/@email                [# scalar attribute values          #]
@@ -101,7 +101,7 @@
     [body
       """The grammar is the XPath 3.1 **selection core**:"""]
 
-    [example :lang cx
+    [example lang=cx
       """PathExpr   ::= '//' StepList | '/' StepList | StepList
          Step       ::= ( Axis '::' )? NodeTest Predicate*
          Predicate  ::= '[' PredExpr ']'
@@ -127,7 +127,7 @@
       """**Paths on bindings.** A CXPath rooted at a binding navigates
          from that value:"""]
 
-    [example :lang cx
+    [example lang=cx
       """$u/name           [# direct child element                       #]
          $u/*              [# all direct children                        #]
          $u//item          [# descendant                                 #]
@@ -139,7 +139,7 @@
       """**Paths compose with every construct.** This is the unified
          vocabulary principle — one selector, every direction:"""]
 
-    [example :lang cx
+    [example lang=cx
       """[?for $u :in //user[@active=true] :yield render($u)]
          [?if //admin :then [admin-panel] :else ()]
          [?match $n :case //prose :yield [p $n]]
@@ -152,7 +152,7 @@
          deliberately not, what is on the XPath 4.0 watch list — is in
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]]
 
-  [child :id patterns :n 5.4 :title 'Patterns and matching'
+  [child id=patterns n=5.4 title='Patterns and matching'
     [intro
       """A **pattern** is a literal CX subtree extended with binding
          holes (`$name`), wildcards (`*`, `_`), type guards
@@ -161,7 +161,7 @@
          destructuring `[?let]`. The full pattern grammar is
          [`spec/code.md`](../../spec/code.md) §5."""]
 
-    [example :lang cx
+    [example lang=cx
       """[# element shape pattern                #]
          [user :email $e]                       [# binds $e to email attr #]
          [user @active=true $u]                 [# attr filter + bind     #]
@@ -187,14 +187,14 @@
          matched element. The rationale is in
          [`spec/code.md`](../../spec/code.md) §5.2 rule 5."""]]
 
-  [child :id bindings :n 5.5 :title 'Bindings and paths'
+  [child id=bindings n=5.5 title='Bindings and paths'
     [intro
       """A binding is a name introduced by `[?let]`, `[?for]`,
          `[?fn]`, or `[?match]` pattern. Bindings are referenced via
          `$name`. They are immutable — there is no rebinding (per CX's
          pure-functional discipline)."""]
 
-    [example :lang cx
+    [example lang=cx
       """[?let $admins = //user[@role='admin']
             :in [?for $a :in $admins :yield $a@email]]"""]
 
@@ -205,18 +205,18 @@
          bindings are the same operators that work on the implicit
          document — one vocabulary."""]]
 
-  [child :id constructs :n 5.6 :title 'Core constructs'
+  [child id=constructs n=5.6 title='Core constructs'
     [intro
       """The six core constructs are how every CX program is built.
          Each is documented in the following sub-sections."""]
 
-    [child :id for :n 5.6.1 :title '[?for] — iteration'
+    [child id=for n=5.6.1 title='[?for] — iteration'
       [body
         """`[?for]` is the iteration / comprehension primitive. The
            pattern in `:in` position is either a pattern (matches the
            generator), a CXPath (yields a sequence to iterate), or any
            expression that evaluates to a sequence."""]
-      [example :lang cx
+      [example lang=cx
         """[# CXPath generator                                           #]
            [?for $u :in //user :yield $u@email]
 
@@ -236,7 +236,7 @@
            different scheduler. Full semantics in
            [`spec/code.md`](../../spec/code.md) §7."""]]
 
-    [child :id match :n 5.6.2 :title '[?match] — dispatch'
+    [child id=match n=5.6.2 title='[?match] — dispatch'
       [body
         """`[?match]` is pattern dispatch. v0.8.0 supports two forms:
            **2-arg destructure** (single arm, asserts the value
@@ -244,7 +244,7 @@
            arms). The multi-arm form is the major addition for v0.8.0
            — see ADR
            [0029](../../spec/decisions/0029-match-heterogeneous-arms.md)."""]
-      [example :lang cx
+      [example lang=cx
         """[# 2-arg form — asserts the value matches PAT or raises      #]
            [?match $result [ok $v] :yield $v]
 
@@ -271,7 +271,7 @@
            differs by form: the 2-arg form raises `CXER0100`; the
            multi-arm form yields `()` if there is no `:else`."""]]
 
-    [child :id if :n 5.6.3 :title '[?if] — boolean branch'
+    [child id=if n=5.6.3 title='[?if] — boolean branch'
       [body
         """`[?if cond :then E1 :else E2]` is the explicit boolean
            branch. The condition is evaluated with the EBV
@@ -279,7 +279,7 @@
            [`spec/cxdm.md`](../../spec/cxdm.md) §4.6: empty sequence
            is false, single-item sequence containing `false` / `0` /
            `null` / `''` is false, everything else is true."""]
-      [example :lang cx
+      [example lang=cx
         """[?if //admin :then [admin-panel] :else [user-panel]]
            [?if ($age >= 18) :then :adult :else :minor]"""]
       [body
@@ -288,11 +288,11 @@
            different contracts — `[?if]` uses EBV, `[?match] :case`
            does **not** (it tests strictly)."""]]
 
-    [child :id let :n 5.6.4 :title '[?let] — binding'
+    [child id=let n=5.6.4 title='[?let] — binding'
       [body
         """`[?let]` introduces a local binding. The bound name is in
            scope inside `:in`."""]
-      [example :lang cx
+      [example lang=cx
         """[?let $config = //meta/@config
              :in render($config)]
 
@@ -300,7 +300,7 @@
            [?let [user @id=1 $admin] = //user[@id=1]
              :in $admin@email]"""]]
 
-    [child :id modify :n 5.6.5 :title '[?modify] — pure-functional updates'
+    [child id=modify n=5.6.5 title='[?modify] — pure-functional updates'
       [body
         """`[?modify]` is the v0.8.0 update directive. It takes a
            document (or sub-tree), a CXPath focus, and one or more
@@ -312,20 +312,20 @@
       [body
         """The **eleven action slots** are:"""]
 
-      [table :columns (action, description)
-        [row :action ':set V' :description 'Replace matched value or attribute']
-        [row :action ':delete' :description 'Remove matched node or attribute']
-        [row :action ':using F' :description 'Apply function F to each match']
-        [row :action ':rename N' :description 'Rename element (keep attrs + body)']
-        [row :action ':set-attr N V' :description 'Add or overwrite attribute']
-        [row :action ':delete-attr N' :description 'Remove attribute by name']
-        [row :action ':append V' :description 'Add child at end of body']
-        [row :action ':prepend V' :description 'Add child at start of body']
-        [row :action ':insert-before V' :description 'New sibling before match']
-        [row :action ':insert-after V' :description 'New sibling after match']
-        [row :action ':replace V' :description 'Replace entire node with V']]
+      [table columns=(action, description)
+        [row action=':set V' description='Replace matched value or attribute']
+        [row action=':delete' description='Remove matched node or attribute']
+        [row action=':using F' description='Apply function F to each match']
+        [row action=':rename N' description='Rename element (keep attrs + body)']
+        [row action=':set-attr N V' description='Add or overwrite attribute']
+        [row action=':delete-attr N' description='Remove attribute by name']
+        [row action=':append V' description='Add child at end of body']
+        [row action=':prepend V' description='Add child at start of body']
+        [row action=':insert-before V' description='New sibling before match']
+        [row action=':insert-after V' description='New sibling after match']
+        [row action=':replace V' description='Replace entire node with V']]
 
-      [example :lang cx
+      [example lang=cx
         """[# Scalar attribute update                                    #]
            [?modify $doc //user[@id=1]/@name :set 'Alice']
 
@@ -355,13 +355,13 @@
            action applies to every node in that sequence. Zero matches
            returns the original unchanged (not an error)."""]]
 
-    [child :id pipe :n 5.6.6 :title 'Pipelines and composition'
+    [child id=pipe n=5.6.6 title='Pipelines and composition'
       [body
         """The pipe operator `|` threads the output of one expression
            into the input of the next. Pipelines compose `[?modify]`,
            `[?for]`, builtins, and user-defined functions into
            readable top-to-bottom data flow."""]
-      [example :lang cx
+      [example lang=cx
         """//user[@active=true]
            | filter-by-region('EU')
            | sort-by(@last-login)
@@ -371,23 +371,23 @@
            is in the directive registry but the operator form is what
            you write."""]]]
 
-  [child :id builtins :n 5.7 :title 'Built-in functions'
+  [child id=builtins n=5.7 title='Built-in functions'
     [intro
       """Built-ins are the standard library at the expression layer.
          Full table in [`spec/code.md`](../../spec/code.md) §6.5; the
          subsections below cover the common ones."""]
 
-    [child :id sequence-builtins :n 5.7.1 :title 'Sequence built-ins'
+    [child id=sequence-builtins n=5.7.1 title='Sequence built-ins'
       [body
         """`count(seq)`, `length(seq)`, `first(seq)`, `last(seq)`,
            `reverse(seq)`, `distinct(seq)`, `take(seq, n)`,
            `drop(seq, n)`, `sort-by(seq, key)`, `group-by(seq, key)`."""]
-      [example :lang cx
+      [example lang=cx
         """count(//user[@active=true])
            first(//section)
            sort-by(//user, @last-login)"""]]
 
-    [child :id string-builtins :n 5.7.2 :title 'String built-ins'
+    [child id=string-builtins n=5.7.2 title='String built-ins'
       [body
         """`upcase(s)`, `lowcase(s)`, `trim(s)`, `split(s, sep)`,
            `concat(a, b, ...)` (or `a || b`),
@@ -395,27 +395,27 @@
            `contains(s, substr)`, `replace(s, find, repl)`,
            `format(template, args...)`."""]]
 
-    [child :id numeric-builtins :n 5.7.3 :title 'Numeric built-ins'
+    [child id=numeric-builtins n=5.7.3 title='Numeric built-ins'
       [body
         """`sum(seq)`, `min(seq)`, `max(seq)`, `avg(seq)`,
            `abs(n)`, `floor(n)`, `ceil(n)`, `round(n)`, `pow(b, e)`,
            `to-int(v)`, `to-float(v)`, `to-string(v)`."""]]
 
-    [child :id logical-builtins :n 5.7.4 :title 'Logical built-ins'
+    [child id=logical-builtins n=5.7.4 title='Logical built-ins'
       [body
         """`and(a, b, ...)`, `or(a, b, ...)`, `not(v)`,
            `some(seq, fn)`, `every(seq, fn)`,
            `if(c, t, e)` (expression form of `[?if]`),
            `instance-of(v, type)`."""]]
 
-    [child :id accessor-builtins :n 5.7.5 :title 'Node-accessor built-ins'
+    [child id=accessor-builtins n=5.7.5 title='Node-accessor built-ins'
       [body
         """`name($n)`, `local-name($n)`, `kind($n)`, `attrs($n)`,
            `children($n)`, `body($n)`, `parent($n)`, `root($n)`.
            These are the script-level equivalents of the Layer-1
            binding methods (see [[layer-1]])."""]]]
 
-  [child :id errors :n 5.8 :title 'Errors as values'
+  [child id=errors n=5.8 title='Errors as values'
     [intro
       """CX treats errors as ordinary values. An error is a CX element
          with kind `cx-err:CXERnnnn`. It can be passed around, pattern
@@ -428,7 +428,7 @@
          unchanged through the surrounding directive. `f($x)!` — call
          `f`; if it errored, raise immediately as a host exception."""]
 
-    [example :lang cx
+    [example lang=cx
       """[?try
            [?let $u = lookup-user($id)?
              :in render($u)]
@@ -442,7 +442,7 @@
          — for code-language errors specifically, CXER0100 through
          CXER0299. See [[concepts]] for the namespace layout."""]]
 
-  [child :id concurrency :n 5.9 :title 'Concurrency'
+  [child id=concurrency n=5.9 title='Concurrency'
     [intro
       """CX has three concurrency surfaces, all spelled as directives.
          They build on the pure-functional core: every channel send,
@@ -450,13 +450,13 @@
          values, so there is no shared-mutable-state hazard. Spec:
          [`spec/code.md`](../../spec/code.md) §10.4 + §10.5."""]
 
-    [child :id services :n 5.9.1 :title 'Services and clients'
+    [child id=services n=5.9.1 title='Services and clients'
       [body
         """`[?service]` declares a named HTTP service with resource
            handlers. `[?http-client]` is its client side. Resources
            handle requests and return responses; the bodies are
            ordinary CX code."""]
-      [example :lang cx
+      [example lang=cx
         """[?service users
            [resource :get '/users/:id'
              [?let $u = //user[@id=$req.params.id]
@@ -466,29 +466,29 @@
            directives `[?stop]` / `[?wait-for]`, error codes) is
            specified in [`spec/code.md`](../../spec/code.md) §10.3."""]]
 
-    [child :id workers :n 5.9.2 :title 'Workers and channels'
+    [child id=workers n=5.9.2 title='Workers and channels'
       [body
         """`[?worker]` spawns a worker task; `[?channel]` creates a
            bounded message queue; `[?send]` and `[?receive]` move
            values across. `[?select]` is the multi-way receive."""]
-      [example :lang cx
+      [example lang=cx
         """[?let $ch = [?channel :capacity 100]
            :in [?for $i :in (1 to 10) :par :yield
                   [?send $ch process($i)]]]"""]]
 
-    [child :id async :n 5.9.3 :title 'Async and await'
+    [child id=async n=5.9.3 title='Async and await'
       [body
         """`[?async]` returns a future; `[?await]` blocks for it;
            `[?await-all]` joins many; `[?await-any]` takes the first
            to complete; `[?await-race]` is `await-any` with the rest
            cancelled. `[?cancel]` triggers cooperative cancellation;
            `[?check-cancel]` polls."""]
-      [example :lang cx
+      [example lang=cx
         """[?let $f1 = [?async fetch(url1)]
                 $f2 = [?async fetch(url2)]
            :in [?await-all $f1 $f2]]"""]]]
 
-  [child :id resilience :n 5.10 :title 'Resilience directives'
+  [child id=resilience n=5.10 title='Resilience directives'
     [intro
       """The six resilience directives wrap an inner expression with a
          failure-handling policy. They are not new control-flow
@@ -503,7 +503,7 @@
       [item """`[?rate-limit]` — bound calls per interval."""]
       [item """`[?bulkhead]` — bound concurrent calls."""]]
 
-    [example :lang cx
+    [example lang=cx
       """[?retry :max 3 :backoff exponential
          [?timeout :ms 5000
            [?http-get 'https://api.example.com/users']]]"""]

@@ -7,7 +7,7 @@ so revisions accumulate alongside the design artifacts they describe.
 **Last revised:** 2026-05-22.
 **Companion documents:**
 - [`backlog.cx`](backlog.cx) — living decision log
-- [`manifest.cx`](manifest.cx) — guide TOC
+- [`manifest.cxd`](manifest.cxd) — guide TOC
 - [`spec/decisions/0028-cxpath-as-value-kind.md`](../../spec/decisions/0028-cxpath-as-value-kind.md)
 - [`spec/decisions/0029-match-heterogeneous-arms.md`](../../spec/decisions/0029-match-heterogeneous-arms.md)
 - [`spec/decisions/0030-modify-pure-functional-updates.md`](../../spec/decisions/0030-modify-pure-functional-updates.md)
@@ -67,7 +67,7 @@ READ FIRST — in this order
 13. conformance/code.txt (fixture format; renamed to code.txt in 1.2)
 14. spec/abi.md (C ABI surface)
 15. Makefile (every target)
-16. docs-src/canonical/manifest.cx (guide TOC, 9 sections)
+16. docs-src/canonical/manifest.cxd (guide TOC, 9 sections)
 17. scripts/gen_docs/build.cx (doc-gen pipeline — broken on v0.8.0-dev)
 18. docs/playground/playground.js (cxl-* starter examples to migrate)
 19. tooling/tree-sitter-cx/grammar.js + queries/highlights.scm
@@ -86,7 +86,7 @@ ALREADY DONE — do not redo
 - conformance/code.txt: in_cxl→in_code, [?find]→[?for], +29 fixtures
   (10 cxpath + 10 match-multi + 9 modify)
 - vcx/code/tokens.v: 'find' removed, 'modify' added
-- docs-src/canonical/{manifest.cx, backlog.cx, v0_8_0_session_prompt.md}
+- docs-src/canonical/{manifest.cxd, backlog.cx, v0_8_0_session_prompt.md}
   scaffolded
 - backlog.cx: decisions d-2026-05-22-01 through d-2026-05-22-15 ratified
 
@@ -286,7 +286,7 @@ PHASE 6 — DOC-GEN
      java, csharp, ruby, kotlin, swift) or move to archive. Update remaining
      V/Python/Go/Rust pages for Layer-1 + Layer-2 surfaces per spec/bindings.md.
 6.11 docs-src/canonical/sections/ — author all 9 sections of the guide
-     per manifest.cx:
+     per manifest.cxd:
      01-intro.cx, 02-data-language.cx, 03-surfaces.cx, 04-identity.cx,
      05-code.cx, 06-bindings.cx, 07-tooling.cx, 08-concepts.cx, 09-migration.cx.
 6.12 docs-src/canonical/template.cx — render template walks manifest,

@@ -25,11 +25,11 @@
      cx eval examples/code-tour.cx --input examples/code-tour.input.cx #]
 
 
-[tour :version '0.8.0'
+[tour version='0.8.0'
 
   [# ─── §1. Lambdas via [?fn] ─── #]
 
-  [section :title 'lambdas'
+  [section title='lambdas'
     [?let $double = [?fn $x :body (* $x 2)] :in
       [example
         [input (1, 2, 3)]
@@ -37,7 +37,7 @@
 
   [# ─── §2. Named closures via [?def] ─── #]
 
-  [section :title 'named closures'
+  [section title='named closures'
     [?def shout [$msg] :body (upper (concat $msg "!"))]
     [example
       [input "hello"]
@@ -45,16 +45,16 @@
 
   [# ─── §3. Lexical binding via [?let] ─── #]
 
-  [section :title 'lexical binding'
+  [section title='lexical binding'
     [?let $x = 10 :in
       [?let $y = (* $x 3) :in
         [example
-          [bindings :x 10 :y 30]
+          [bindings x=10 y=30]
           [result $y]]])]
 
   [# ─── §4. Boolean branch via [?if] ─── #]
 
-  [section :title 'boolean branch'
+  [section title='boolean branch'
     [?for $n :in 1 to 5
       :yield [?if (> $n 2)
                :then [classify $n 'big']
@@ -62,33 +62,33 @@
 
   [# ─── §5. Iteration via [?for] ─── #]
 
-  [section :title 'iteration (basic)'
+  [section title='iteration (basic)'
     [?for $n :in 1 to 3
-      :yield [item :index $n]]]
+      :yield [item index=$n]]]
 
-  [section :title 'iteration (pattern-generator — ADR 0028 D8 replaces [?find])'
+  [section title='iteration (pattern-generator — ADR 0028 D8 replaces [?find])'
     [?for [user $u] :in //user
-      :yield [profile :name ($u/@name) :email ($u/@email)]]]
+      :yield [profile name=($u/@name) email=($u/@email)]]]
 
-  [section :title 'iteration with :where + :let + :order-by'
+  [section title='iteration with :where + :let + :order-by'
     [?for $u :in //user
       :where ($u/@active = true)
       :let $domain = (substring-after $u/@email "@")
       :order-by $domain
-      :yield [active-user :name ($u/@name) :domain $domain]]]
+      :yield [active-user name=($u/@name) domain=$domain]]]
 
   [# ─── §6. Multi-arm match (ADR 0029) ─── #]
 
-  [section :title 'multi-arm match'
+  [section title='multi-arm match'
     [?for $thing :in //thing
       :yield [?match $thing
-        :case [user $_]    :yield [labeled :kind 'user'    :node $thing]
-        :case [group $_]   :yield [labeled :kind 'group'   :node $thing]
-        :case [service $_] :yield [labeled :kind 'service' :node $thing]
-        :when (name($thing) = 'mystery') :yield [labeled :kind 'mystery']
-        :else              :yield [labeled :kind 'other' :name (name($thing))]]]]
+        :case [user $_]    :yield [labeled kind='user'    node=$thing]
+        :case [group $_]   :yield [labeled kind='group'   node=$thing]
+        :case [service $_] :yield [labeled kind='service' node=$thing]
+        :when (name($thing) = 'mystery') :yield [labeled kind='mystery']
+        :else              :yield [labeled kind='other' name=(name($thing))]]]]
 
-  [section :title 'scalar literal match (ADR 0029 D2)'
+  [section title='scalar literal match (ADR 0029 D2)'
     [?for $code :in //response/@status
       :yield [?match $code
         :case 200 :yield 'ok'
@@ -98,15 +98,15 @@
 
   [# ─── §7. Error capture via [?try] ─── #]
 
-  [section :title 'try/catch'
+  [section title='try/catch'
     [?try
       [?for $n :in (1, 0, 2)
         :yield (/ 100 $n)]
-      :catch $err :yield [recovered :from-err ($err/@code)]]]
+      :catch $err :yield [recovered from-err=($err/@code)]]]
 
   [# ─── §8. Pipe composition ─── #]
 
-  [section :title 'pipe — left-to-right composition'
+  [section title='pipe — left-to-right composition'
     //user
       | [?for $u :where ($u/@active = true) :yield $u]
       | [?for $u :yield ($u/@name)]
@@ -114,17 +114,17 @@
 
   [# ─── §9. Pure-functional updates (ADR 0030) ─── #]
 
-  [section :title 'modify — :set on a single attribute'
+  [section title='modify — :set on a single attribute'
     [?modify $doc //user[@id=1]/@name :set "Alice"]]
 
-  [section :title 'modify — :delete with a predicate'
+  [section title='modify — :delete with a predicate'
     [?modify $doc //user[@banned=true] :delete]]
 
-  [section :title 'modify — :using a [?fn] lambda'
+  [section title='modify — :using a [?fn] lambda'
     [?modify $doc //user
       :using [?fn $u :body [user $u/@id (upper $u/@name)]]]]
 
-  [section :title 'modify — pipeline of updates'
+  [section title='modify — pipeline of updates'
     $doc
       | [?modify //user/@status :set "verified"]
       | [?modify //user[@banned=true] :delete]
@@ -132,7 +132,7 @@
 
   [# ─── §10. CXPath value kind (ADR 0028) ─── #]
 
-  [section :title 'cxpath — every axis worked'
+  [section title='cxpath — every axis worked'
     [examples
       [self      (//user[1]/self::user)]
       [child     (//section/child::para)]
@@ -148,52 +148,52 @@
 
   [# ─── §11. Errors as values ─── #]
 
-  [section :title 'postfix ? — default-propagate (documentation-only)'
+  [section title='postfix ? — default-propagate (documentation-only)'
     [?try
       (parse-int "not-a-number")?
       :catch $err :yield [err-handled $err]]]
 
-  [section :title 'postfix ! — escalate to hard error'
+  [section title='postfix ! — escalate to hard error'
     [?try
-      [err :code "CXER0001" :msg "synthetic"]!
+      [err code="CXER0001" msg="synthetic"]!
       :catch $err :yield [escalated-and-caught $err]]]
 
   [# ─── §12. Resilience directives ─── #]
 
-  [section :title 'retry with exponential backoff'
+  [section title='retry with exponential backoff'
     [?retry [http-get "https://flaky.example.org"]
       :max 5
       :strategy 'exponential'
       :base [duration 100 :ms]]]
 
-  [section :title 'timeout + fallback composition'
+  [section title='timeout + fallback composition'
     [?fallback
       [?timeout [http-get "https://slow.example.org"]
         :deadline [duration 250 :ms]
         :on-timeout 'cancel']
-      :on-err [cached-response :stale true]]]
+      :on-err [cached-response stale=true]]]
 
   [# ─── §13. Services ─── #]
 
-  [section :title 'http service + client round-trip'
+  [section title='http service + client round-trip'
     [?service :on http :name "ping"
-      [resource :method GET :path "/ping"
-        :handler [?fn $req :body [response :status 200 :body "pong"]]]]
+      [resource method=GET path="/ping"
+        handler=[?fn $req :body [response status=200 body="pong"]]]]
 
     [?let $client = [?http-client :target "cx-service://ping"] :in
       $client | get("/ping")]]
 
   [# ─── §14. Concurrency ─── #]
 
-  [section :title 'channel + worker pattern'
+  [section title='channel + worker pattern'
     [?channel :name "work" :buffer 16]
 
     [?worker :name "producer" :body
       [?for $i :in 1 to 10
-        :yield [send :channel "work" $i]]]
+        :yield [send channel="work" $i]]]
 
     [?worker :name "consumer" :body
-      [?for $msg :in [receive :channel "work"]
+      [?for $msg :in [receive channel="work"]
         :yield [processed $msg]]]
 
     [?wait-for :worker "producer"]
@@ -201,7 +201,7 @@
 
   [# ─── §15. Async + await ─── #]
 
-  [section :title 'async + await + await-all'
+  [section title='async + await + await-all'
     [?let $f1 = [?async [http-get "/a"]] :in
       [?let $f2 = [?async [http-get "/b"]] :in
         [?let $f3 = [?async [http-get "/c"]] :in

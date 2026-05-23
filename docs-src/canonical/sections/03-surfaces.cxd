@@ -1,9 +1,9 @@
 [# Section 3 — surfaces and projections.
    Authored 2026-05-22. Anchored in spec/canonical.md + spec/conversions.md. #]
 
-[section :id surfaces :n 3 :title 'Surfaces and projections'
+[section id=surfaces n=3 title='Surfaces and projections'
 
-  [child :id cx-canonical :n 3.1 :title 'CX — the canonical dialect'
+  [child id=cx-canonical n=3.1 title='CX — the canonical dialect'
     [intro
       """CX is itself the canonical surface. Every other supported format
          is defined as a projection of canonical CX. The normative rules
@@ -29,7 +29,7 @@
               are preserved by `cx fmt` (the non-canonical pretty-printer)
               but stripped by `cx canon`."""]]
 
-    [example :lang cx
+    [example lang=cx
       """[# Source — author-friendly form #]
          [user
            :email 'ada@example.com'
@@ -44,17 +44,17 @@
          [[identity]]) and what the round-trip guarantee is checked
          against (see [[roundtrip]])."""]]
 
-  [child :id json :n 3.2 :title 'JSON projection'
+  [child id=json n=3.2 title='JSON projection'
     [intro
       """JSON is the most common interchange surface. CX → JSON mapping
          is straightforward; JSON → CX is well-defined for the JSON
          subset that maps cleanly to CX's data model."""]
 
-    [example :lang cx
+    [example lang=cx
       """[user :id 42 :email 'ada@example.com' +active
               [roles (admin, editor)]]"""]
 
-    [example :lang json
+    [example lang=json
       """{
            "user": {
              "id": 42,
@@ -76,18 +76,18 @@
       """`cx convert doc.cx --to json` and `cx convert doc.json --to cx`
          are the round-trip pair. See [[roundtrip]] for the guarantees."""]]
 
-  [child :id yaml :n 3.3 :title 'YAML projection'
+  [child id=yaml n=3.3 title='YAML projection'
     [intro
       """YAML follows the JSON projection but uses YAML's mapping and
          sequence syntax. Anchors and merge keys (`<<:`) project to CX's
          `&` / `*` sigils."""]
 
-    [example :lang cx
+    [example lang=cx
       """[defaults &base :host 'localhost' :tls true]
          [service-a *base :port 8001]
          [service-b *base :port 8002]"""]
 
-    [example :lang yaml
+    [example lang=yaml
       """defaults: &base
            host: localhost
            tls: true
@@ -105,13 +105,13 @@
          conversion is documented in
          [`spec/conversions.md`](../../spec/conversions.md)."""]]
 
-  [child :id toml :n 3.4 :title 'TOML projection'
+  [child id=toml n=3.4 title='TOML projection'
     [intro
       """TOML's table syntax (`[server]`) projects to CX elements; nested
          tables (`[server.tls]`) project to nested elements; arrays of
          tables (`[[users]]`) project to repeated child elements."""]
 
-    [example :lang toml
+    [example lang=toml
       """[server]
          host = "localhost"
          tls = true
@@ -127,7 +127,7 @@
          id = 2
          email = "grace@example.com" """]
 
-    [example :lang cx
+    [example lang=cx
       """[config
            [server :host 'localhost' +tls
              [tls :cert 'site.pem']]
@@ -135,18 +135,18 @@
              [user :id 1 :email 'ada@example.com']
              [user :id 2 :email 'grace@example.com']]]"""]]
 
-  [child :id xml :n 3.5 :title 'XML projection'
+  [child id=xml n=3.5 title='XML projection'
     [intro
       """XML is the closest projection — both CX and XML are
          element-with-attributes-and-body languages. The mapping is
          essentially one-to-one for element / attribute / text content."""]
 
-    [example :lang cx
+    [example lang=cx
       """[user :id 42 :email 'ada@example.com'
            [profile
              [bio """Computing pioneer."""]]]"""]
 
-    [example :lang xml
+    [example lang=xml
       """<user id="42" email="ada@example.com">
            <profile>
              <bio>Computing pioneer.</bio>
@@ -159,7 +159,7 @@
          are CX attributes with the `xmlns:` prefix preserved; CDATA
          sections project to triple-quoted strings."""]]
 
-  [child :id md :n 3.6 :title 'Markdown projection'
+  [child id=md n=3.6 title='Markdown projection'
     [intro
       """Markdown projects to CX as structured prose. Headings become
          `[h1] [h2] …`; paragraphs become `[p]`; lists become `[ul]` /
@@ -167,7 +167,7 @@
          `[link]`. Round-trip is the design center — `cx convert
          README.md --to cx --to md` produces byte-identical output."""]
 
-    [example :lang md
+    [example lang=md
       """# Hello
 
          A paragraph with *emphasis* and `code`.
@@ -175,14 +175,14 @@
          - item 1
          - item 2"""]
 
-    [example :lang cx
+    [example lang=cx
       """[h1 'Hello']
          [p 'A paragraph with ' [em 'emphasis'] ' and ' [code 'code'] '.']
          [ul
            [li 'item 1']
            [li 'item 2']]"""]]
 
-  [child :id roundtrip :n 3.7 :title 'Round-trip guarantees'
+  [child id=roundtrip n=3.7 title='Round-trip guarantees'
     [intro
       """The round-trip contract is the single most important property of
          CX's surface design. Stated:"""]

@@ -7,67 +7,67 @@
 [# Classify a thing by element name #]
 [?for $item :in //thing
   :yield [?match $item
-    :case [user $_]    :yield [labeled :kind 'user'    :item $item]
-    :case [group $_]   :yield [labeled :kind 'group'   :item $item]
-    :case [service $_] :yield [labeled :kind 'service' :item $item]
-    :else              :yield [labeled :kind 'unknown' :item $item]]]
+    :case [user $_]    :yield [labeled kind='user'    item=$item]
+    :case [group $_]   :yield [labeled kind='group'   item=$item]
+    :case [service $_] :yield [labeled kind='service' item=$item]
+    :else              :yield [labeled kind='unknown' item=$item]]]
 
 [# ─── 2. Scalar literal patterns ─── #]
 
 [?for $status :in //request/@status
   :yield [?match $status
-    :case 200 :yield [classify :level 'ok']
-    :case 201 :yield [classify :level 'created']
-    :case 204 :yield [classify :level 'no-content']
-    :case 400 :yield [classify :level 'bad-request']
-    :case 401 :yield [classify :level 'unauthorized']
-    :case 403 :yield [classify :level 'forbidden']
-    :case 404 :yield [classify :level 'not-found']
-    :case 500 :yield [classify :level 'server-error']
-    :else     :yield [classify :level 'unknown' :status $status]]]
+    :case 200 :yield [classify level='ok']
+    :case 201 :yield [classify level='created']
+    :case 204 :yield [classify level='no-content']
+    :case 400 :yield [classify level='bad-request']
+    :case 401 :yield [classify level='unauthorized']
+    :case 403 :yield [classify level='forbidden']
+    :case 404 :yield [classify level='not-found']
+    :case 500 :yield [classify level='server-error']
+    :else     :yield [classify level='unknown' status=$status]]]
 
 [# ─── 3. :when predicates ─── #]
 
 [?for $u :in //user
   :yield [?match $u
-    :when ($u/@age < 18)            :yield [bucket :name 'minor'     :user $u]
-    :when ($u/@age >= 18 and $u/@age < 65) :yield [bucket :name 'adult' :user $u]
-    :when ($u/@age >= 65)           :yield [bucket :name 'senior'    :user $u]
-    :else                           :yield [bucket :name 'unknown-age' :user $u]]]
+    :when ($u/@age < 18)            :yield [bucket name='minor'     user=$u]
+    :when ($u/@age >= 18 and $u/@age < 65) :yield [bucket name='adult' user=$u]
+    :when ($u/@age >= 65)           :yield [bucket name='senior'    user=$u]
+    :else                           :yield [bucket name='unknown-age' user=$u]]]
 
 [# ─── 4. Mixed :case / :when / :else (SQL-CASE discipline) ─── #]
 
 [?for $event :in //event
   :yield [?match $event
-    :case [click $_]              :yield [handler :kind 'mouse-click']
-    :case [keypress $_]           :yield [handler :kind 'keypress']
+    :case [click $_]              :yield [handler kind='mouse-click']
+    :case [keypress $_]           :yield [handler kind='keypress']
     :when (name($event) = 'scroll' and $event/@delta > 100)
-                                  :yield [handler :kind 'fast-scroll']
+                                  :yield [handler kind='fast-scroll']
     :when (name($event) = 'scroll')
-                                  :yield [handler :kind 'slow-scroll']
-    :else                         :yield [handler :kind 'other' :name (name($event))]]]
+                                  :yield [handler kind='slow-scroll']
+    :else                         :yield [handler kind='other' name=(name($event))]]]
 
 [# ─── 5. Pattern bindings — capture sub-shape ─── #]
 
 [?for $req :in //request
   :yield [?match $req
-    :case [request :method 'GET' :path $p]
-      :yield [route :verb 'GET' :path $p]
-    :case [request :method 'POST' :path $p :body $b]
-      :yield [route :verb 'POST' :path $p :body-size (count $b)]
-    :case [request :method $m :path $p]
-      :yield [route :verb $m :path $p]
+    :case [request method='GET' path=$p]
+      :yield [route verb='GET' path=$p]
+    :case [request method='POST' path=$p body=$b]
+      :yield [route verb='POST' path=$p body-size=(count $b)]
+    :case [request method=$m path=$p]
+      :yield [route verb=$m path=$p]
     :else
-      :yield [route :verb 'unknown']]]
+      :yield [route verb='unknown']]]
 
 [# ─── 6. CXPath patterns (ADR 0028 alignment) ─── #]
 
 [?for $node :in //*
   :yield [?match $node
-    :case //user[@admin=true] :yield [annot :role 'admin']
-    :case //user              :yield [annot :role 'plain-user']
-    :case //group             :yield [annot :role 'group']
-    :else                     :yield [annot :role 'other']]]
+    :case //user[@admin=true] :yield [annot role='admin']
+    :case //user              :yield [annot role='plain-user']
+    :case //group             :yield [annot role='group']
+    :else                     :yield [annot role='other']]]
 
 [# ─── 7. Wildcard _ pattern — explicit catch-all without value bind ─── #]
 
@@ -91,4 +91,4 @@
 [?let $maybe = [?match 42
                  :case 1 :yield 'one'
                  :case 2 :yield 'two'] :in
-  [debug :result $maybe :empty (empty $maybe)]]
+  [debug result=$maybe empty=(empty $maybe)]]

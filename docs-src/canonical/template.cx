@@ -1,5 +1,5 @@
 [# template.cx — renders the cx-data-and-code-guide.
-   Walks docs-src/canonical/manifest.cx, loads each section file,
+   Walks docs-src/canonical/manifest.cxd, loads each section file,
    and emits docs/cx-data-and-code-guide.md as one consolidated
    Markdown file with section anchors derived from manifest :id slugs.
 
@@ -10,7 +10,7 @@
 
    Or directly:
      cx eval docs-src/canonical/template.cx
-       --input docs-src/canonical/manifest.cx
+       --input docs-src/canonical/manifest.cxd
        --include-dir docs-src/canonical/sections/
        --output docs/cx-data-and-code-guide.md
 
@@ -40,71 +40,70 @@
 
   [# ─── Table of contents ─── #]
 
-  [toc :title 'Contents'
+  [toc title='Contents'
     [?for $sec :in $top-sections
       :yield [toc-entry
-              :n     ($sec/@n)
-              :id    ($sec/@id)
-              :title ($sec/@title)
-              :children
-              [?for $child :in $sec/child
+              n=($sec/@n)
+              id=($sec/@id)
+              title=($sec/@title)
+              children=[?for $child :in $sec/child
                 :yield [toc-child
-                        :n     ($child/@n)
-                        :id    ($child/@id)
-                        :title ($child/@title)]]]]]
+                        n=($child/@n)
+                        id=($child/@id)
+                        title=($child/@title)]]]]]
 
   [# ─── Body — one section per manifest entry ─── #]
 
   [body
     [?for $sec :in $top-sections
       :yield [?match $sec
-        :case [section :file $file]
+        :case [section file=$file]
           :yield [render-section
-                   :n     ($sec/@n)
-                   :id    ($sec/@id)
-                   :title ($sec/@title)
-                   :content (load-section $file)]
+                   n=($sec/@n)
+                   id=($sec/@id)
+                   title=($sec/@title)
+                   content=(load-section $file)]
         :else
-          :yield [err :section ($sec/@id)
-                       :message 'manifest entry missing :file slot']]]]]
+          :yield [err section=($sec/@id)
+                       message='manifest entry missing :file slot']]]]]
 
 [# ─── Helper: render a section + its children recursively ─── #]
 
 [?def render-section [$n $id $title $content]
   :body
-  [section :n $n :id $id :title $title
-    [heading :level 2 :anchor $id "$n  $title"]
+  [section n=$n id=$id title=$title
+    [heading level=2 anchor=$id "$n  $title"]
     [?for $child :in $content//child
       :yield [render-child
-               :n     ($child/@n)
-               :id    ($child/@id)
-               :title ($child/@title)
-               :content $child]]]]
+               n=($child/@n)
+               id=($child/@id)
+               title=($child/@title)
+               content=$child]]]]
 
 [?def render-child [$n $id $title $content]
   :body
-  [child :n $n :id $id :title $title
-    [heading :level 3 :anchor $id "$n  $title"]
+  [child n=$n id=$id title=$title
+    [heading level=3 anchor=$id "$n  $title"]
     [?for $piece :in $content/*
       :yield [?match (name($piece))
-        :case 'intro'    :yield [paragraph :lead true $piece]
+        :case 'intro'    :yield [paragraph lead=true $piece]
         :case 'body'     :yield [paragraph $piece]
-        :case 'example'  :yield [code-block :lang ($piece/@lang) $piece]
+        :case 'example'  :yield [code-block lang=($piece/@lang) $piece]
         :case 'list'     :yield [bullet-list
                                   [?for $item :in $piece/item
                                     :yield [bullet $item]]]
         :case 'table'    :yield [table
-                                  :columns ($piece/@columns)
+                                  columns=($piece/@columns)
                                   [?for $row :in $piece/row
                                     :yield [table-row $row]]]
-        :case 'note'     :yield [callout :kind 'note' $piece]
-        :case 'link'     :yield [hyperlink :to ($piece/@to) $piece]
+        :case 'note'     :yield [callout kind='note' $piece]
+        :case 'link'     :yield [hyperlink to=($piece/@to) $piece]
         :case 'child'    :yield [render-child
-                                  :n ($piece/@n)
-                                  :id ($piece/@id)
-                                  :title ($piece/@title)
-                                  :content $piece]
-        :else            :yield [unhandled :kind (name($piece)) :content $piece]]]]]
+                                  n=($piece/@n)
+                                  id=($piece/@id)
+                                  title=($piece/@title)
+                                  content=$piece]
+        :else            :yield [unhandled kind=(name($piece)) content=$piece]]]]]
 
 [# ─── Helper: load a section file into a parsed CX tree ─── #]
 
@@ -121,11 +120,11 @@
   :body
   [?match $slug
     :when (exists //section[@id=$slug])
-      :yield [anchor :href (concat "#" $slug)]
+      :yield [anchor href=(concat "#" $slug)]
     :when (exists //child[@id=$slug])
-      :yield [anchor :href (concat "#" $slug)]
+      :yield [anchor href=(concat "#" $slug)]
     :else
-      :yield [warning :unresolved-anchor $slug]]]
+      :yield [warning unresolved-anchor=$slug]]]
 
 ] ] ] ] ]
 [# (close all the [?let] frames; the document expression is the body.) #]

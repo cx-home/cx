@@ -1,9 +1,9 @@
 [# Section 7 — tooling: CLI, editors, LSP, tree-sitter.
    Cross-refs tooling/* dirs + scripts/gen_docs + docs/playground. #]
 
-[section :id tooling :n 7 :title 'Tooling'
+[section id=tooling n=7 title='Tooling'
 
-  [child :id cli :n 7.1 :title 'The cx CLI'
+  [child id=cli n=7.1 title='The cx CLI'
     [intro
       """`cx` is the one-stop command-line interface. It parses, evaluates,
          validates, converts, formats, hashes, and lints CX documents.
@@ -13,20 +13,20 @@
     [body
       """The most common subcommands:"""]
 
-    [table :columns (command, purpose)
-      [row :command 'cx parse FILE' :purpose 'Parse and pretty-print']
-      [row :command 'cx canon FILE' :purpose 'Emit canonical bytes']
-      [row :command 'cx hash FILE' :purpose 'Print SHA-256 of canonical bytes']
-      [row :command 'cx eval FILE CODE' :purpose 'Evaluate code against document']
-      [row :command 'cx select FILE CXPATH' :purpose 'CXPath query']
-      [row :command 'cx modify FILE CXPATH ACTION' :purpose 'Pure-functional update']
-      [row :command 'cx convert FILE --to FORMAT' :purpose 'Project to JSON/YAML/TOML/XML/MD']
-      [row :command 'cx validate FILE --schema FILE.cxs' :purpose 'Schema validation']
-      [row :command 'cx fmt FILE' :purpose 'Pretty-print (preserves comments)']
-      [row :command 'cx lint FILE' :purpose 'Style + correctness lints']
-      [row :command 'cx diff A B' :purpose 'Structural diff']]
+    [table columns=(command, purpose)
+      [row command='cx parse FILE' purpose='Parse and pretty-print']
+      [row command='cx canon FILE' purpose='Emit canonical bytes']
+      [row command='cx hash FILE' purpose='Print SHA-256 of canonical bytes']
+      [row command='cx eval FILE CODE' purpose='Evaluate code against document']
+      [row command='cx select FILE CXPATH' purpose='CXPath query']
+      [row command='cx modify FILE CXPATH ACTION' purpose='Pure-functional update']
+      [row command='cx convert FILE --to FORMAT' purpose='Project to JSON/YAML/TOML/XML/MD']
+      [row command='cx validate FILE --schema FILE.cxs' purpose='Schema validation']
+      [row command='cx fmt FILE' purpose='Pretty-print (preserves comments)']
+      [row command='cx lint FILE' purpose='Style + correctness lints']
+      [row command='cx diff A B' purpose='Structural diff']]
 
-    [example :lang cx
+    [example lang=cx
       """$ cx select users.cx '//user[@active=true]/@email'
          ada@example.com
          linus@example.com
@@ -42,7 +42,7 @@
          conformance-tested — fixtures under `conformance/cli.txt` lock
          the surface."""]]
 
-  [child :id editors :n 7.2 :title 'Editor integration'
+  [child id=editors n=7.2 title='Editor integration'
     [intro
       """CX ships first-class editor support for VS Code, Neovim, Helix,
          and any editor that consumes LSP and tree-sitter. Tooling lives
@@ -61,7 +61,7 @@
       [item """**Any LSP client** — the language server binary is
               `tooling/lsp/` built; speaks LSP 3.17 over stdio."""]]]
 
-  [child :id lsp :n 7.3 :title 'Language server (LSP)'
+  [child id=lsp n=7.3 title='Language server (LSP)'
     [intro
       """The LSP server provides the same intelligence to every editor
          that speaks LSP. Implementation: `tooling/lsp/` (V binary)."""]
@@ -89,7 +89,7 @@
               path (per ADR
               [0030](../../spec/decisions/0030-modify-pure-functional-updates.md) D7)."""]]]
 
-  [child :id tree-sitter :n 7.4 :title 'Tree-sitter grammar'
+  [child id=tree-sitter n=7.4 title='Tree-sitter grammar'
     [intro
       """`tooling/tree-sitter-cx/` is the tree-sitter grammar for CX.
          Used by VS Code, Neovim, Helix, GitHub syntax highlight, and any

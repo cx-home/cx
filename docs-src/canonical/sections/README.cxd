@@ -1,6 +1,6 @@
 [# Section files for cx-data-and-code-guide.
 
-   Each section listed in ../manifest.cx is one file here. Files are
+   Each section listed in ../manifest.cxd is one file here. Files are
    authored in CX. The template (template.cx, deferred) walks the
    manifest and emits the rendered guide.
 
@@ -15,5 +15,5 @@
 
 [readme
   status='scaffold — no section files authored yet'
-  see-also=../manifest.cx
+  see-also=../manifest.cxd
   blocks-on=adr-0028]
