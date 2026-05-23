@@ -298,7 +298,7 @@
   [adrs
 
     [adr &adr-0028
-      :status draft
+      :status accepted-with-impl-in-flight
       :title 'CXPath expressions as first-class value kind (XPath 3.1 aligned)'
       :owner unassigned
       :unblocks '[doc-gen-sectional-regression, cxpath-retired-binding-pain, layer-1-binding-contract]'
@@ -309,7 +309,7 @@
       :location 'spec/decisions/0028-cxpath-as-value-kind.md']
 
     [adr &adr-0029
-      :status draft
+      :status accepted-with-impl-in-flight
       :title '[?match] heterogeneous arms (:case / :when / :else, scalar literals, _ wildcard)'
       :owner unassigned
       :builds-on adr-0028
@@ -319,7 +319,7 @@
       :location 'spec/decisions/0029-match-heterogeneous-arms.md']
 
     [adr &adr-0030
-      :status draft
+      :status accepted-with-impl-in-flight
       :title '[?modify] directive with action-slot vocabulary (pure-functional write surface)'
       :owner unassigned
       :builds-on adr-0028
@@ -337,14 +337,56 @@
       :location 'spec/decisions/0031-structural-sharing.md']
 
     [adr &adr-0032
-      :status draft
+      :status accepted
       :title 'Rename: programs → code across internal API'
       :owner unassigned
       :scope 'cx_program_eval → cx_code_eval; vcx/programs/ → vcx/code/; spec/programs.md → spec/code.md; all bindings'
       :ship-target 'after ADRs 0028-0030 land — bundle as one rename pass'
       :note 'Brand layer (docs) renamed immediately per d-2026-05-22-01'
       :execution 'commit ee6bfcf3 via scripts/rename_programs_to_code.sh — 41 file paths moved, 237 content-substituted, V build + V conformance (156/156) green post-rename'
-      :revision-history '[(2026-05-22: drafted + executed in single session — V-keyword conflict resolved inline by renaming 5 function parameters and 1 local from `code` → `err_code`)]']]
+      :revision-history '[(2026-05-22: drafted + executed in single session — V-keyword conflict resolved inline by renaming 5 function parameters and 1 local from `code` → `err_code`)]']
+
+    [adr &adr-0033
+      :status accepted
+      :title 'Atom as a first-class scalar kind (:NAME, type-strict)'
+      :owner unassigned
+      :execution 'Tier-1 catchup landed Phase 3.7 — V parser + canonical + ast_bin + bindings green'
+      :location 'spec/decisions/0033-atom-scalar-kind.md']
+
+    [adr &adr-0034
+      :status accepted-with-impl-in-flight
+      :title '[?def] module-level static functions (positional/named/:rest params, :pure/:impure)'
+      :owner unassigned
+      :impl-status 'V impl 🚧 — DefNode AST + parser ✅ (Phase 2.12 Part 1); evaluator + strict-mode validation 🚧'
+      :location 'spec/decisions/0034-def-module-level-functions.md']
+
+    [adr &adr-0035
+      :status accepted-with-impl-in-flight
+      :title 'Module loading, scoping, and namespacing ([?lib] + [?const] + cx.lock SRI)'
+      :owner unassigned
+      :impl-status 'V impl 🚧 — LibNode + ConstNode AST + parsers ✅ (Phase 2.12 Parts 2+3); evaluator + cx.lock SRI verify + HTTPS fetch 🚧 (Phase 2.13/2.14)'
+      :location 'spec/decisions/0035-module-loading-scoping-namespacing.md']
+
+    [adr &adr-0036
+      :status accepted-with-impl-in-flight
+      :title '[expr] general predicate with $_ context binding, $_position / $_last, :bind'
+      :owner unassigned
+      :impl-status 'V impl 🚧 — PredicateExpr AST + parser ✅; evaluator 🚧'
+      :location 'spec/decisions/0036-expr-general-predicate.md']
+
+    [adr &adr-0037
+      :status accepted-with-impl-in-flight
+      :title 'Playground Tree View + Graph View (cx_code_tree + cx_code_diagram)'
+      :owner unassigned
+      :impl-status 'V impl 🚧 — diagram emitter ✅ (Phase 2.10, 23/23 ERD+CFG fixtures green); tree-walker 📋 (Phase 7.6, cx_code_tree stubbed in cabi.v)'
+      :location 'spec/decisions/0037-playground-tree-and-graph-views.md']
+
+    [adr &adr-0038
+      :status draft
+      :title 'Content preservation contract (:preserve + paired-comment auto-zones)'
+      :owner unassigned
+      :ship-target 'review window v0.8.0; impl target v0.9.0+'
+      :location 'spec/decisions/0038-content-preservation.md']]
 
   [- ──────────────────────────────────────────────────────────────────
      COMPLETED — moved from `open` when fully verified.
