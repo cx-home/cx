@@ -7,11 +7,12 @@
 #   gen-cx-data-language-guide-diff  Show what publishing would change.
 #   gen-cx-data-language-guide-clean Wipe docs/guide/.
 #
-# When the v0.8.0 cx binary is not yet runnable (CXL surface from
-# ADR 0027 not implemented), the target still completes: it stages
-# CSS / JS / logo / search index shell and writes fallback HTML
-# pages whose body is the verbatim .cxd source. The full render
-# materializes the moment cx is ready — no Make changes required.
+# Rendering pipeline (see scaffold.sh): cx eval scripts/gen_guide/build.cx
+# is the engine that turns .cxd sections into CX render-trees; cx --xml
+# projects to HTML; Python does chrome wrap + anchor resolution only.
+# A section whose .cxd source can't be parsed/rendered by cx falls back
+# to a banner + verbatim source so the page still lands and the failure
+# is visible.
 
 GUIDE_SRC := docs-src/canonical
 GUIDE_OUT := docs/guide
