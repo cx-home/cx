@@ -1,10 +1,10 @@
-[# Section 9 — migration: v0.7.x → v0.8.0, cross-format intake,
+[# Section 10 — migration: v0.7.x → v0.8.0, cross-format intake,
    retired surfaces. Anchored in spec/code_migration.md (post-rename),
    ADRs 0028/0029/0030/0032, backlog.cx decision log. #]
 
-[section id=migration n=9 title='Migration'
+[section id=migration n=10 title='Migration'
 
-  [child id=from-v07x n=9.1 title='From v0.7.x to v0.8.0'
+  [child id=from-v07x n=10.1 title='From v0.7.x to v0.8.0'
     [intro
       """v0.8.0 is the first stable tag after v0.7.5 (v0.7.6 was skipped
          intentionally — see backlog
@@ -117,7 +117,7 @@
          tests). The conversion is straightforward by hand once you
          know the multi-arm form (see [[match]])."""]]
 
-  [child id=from-xml n=9.2 title='From XML'
+  [child id=from-xml n=10.2 title='From XML'
     [intro
       """XML is the closest projection to CX — same element / attribute /
          body shape. Migration is one-shot: `cx convert input.xml --to
@@ -142,7 +142,7 @@
               is no automated converter; the structural mapping is
               direct because the data model is the same."""]]]
 
-  [child id=from-json-yaml n=9.3 title='From JSON / YAML / TOML'
+  [child id=from-json-yaml n=10.3 title='From JSON / YAML / TOML'
     [intro
       """These are projection formats. Migration is again one-shot:
          `cx convert input.json --to cx --out input.cx`."""]
@@ -168,7 +168,7 @@
               but are not universally adopted. CX has one canonical
               form built into every tool."""]]]
 
-  [child id=retired-surfaces n=9.4 title='Retired surfaces and replacements'
+  [child id=retired-surfaces n=10.4 title='Retired surfaces and replacements'
     [intro
       """Surfaces removed or renamed across v0.7.x → v0.8.0, with their
          replacement."""]
@@ -210,4 +210,123 @@
          `i-doc-gen-sectional-regression`) is closed by porting
          `scripts/gen_docs/build.cx` to v0.8.0 syntax — terse `//`
          CXPath plus sectional `[?for]` over `//section`. v0.7.5
-         byte-identical baseline restored for unchanged pages."""]]]
+         byte-identical baseline restored for unchanged pages."""]]
+
+  [child id=extend-contribute n=10.5 title='Extend and contribute'
+    [intro
+      """CX is open to contribution at every layer. This subsection is
+         the developer-facing how-to: filing issues, adding fixtures,
+         proposing changes, shipping a binding, debugging a failure."""]
+
+    [child id=file-bug n=10.5.1 title='Filing an issue'
+      [body
+        """Issues live in the project tracker. Every report should
+           include: minimal CX reproducer (one file), `cx --version`
+           output, error code (e.g. CXER0103) + message, expected vs
+           observed behaviour, and the workaround you used if any.
+           For parse / canon / hash bugs, a 5-line CX snippet is
+           usually enough; for evaluator bugs include the directive
+           shape and the input doc."""]]
+
+    [child id=add-fixture n=10.5.2 title='Adding a conformance fixture'
+      [body
+        """The conformance suite is `conformance/*.txt` files in
+           per-feature buckets (code.txt for directives, data_bin.txt
+           for binary wire, etc.). Each fixture has a `=== test: id`
+           header + `--- in_cx` / `--- call` / `--- out_text` (or
+           `out_err`) blocks. To add one:"""]
+      [list
+        [item """Identify the right file (`code.txt` for code-language
+                features; `binding_api.txt` for Layer-1 parity)."""]
+        [item """Add the fixture block following existing format."""]
+        [item """Run the runner (`devbox run -- make test-vcx` for V
+                conformance; `make test-binding-api-parity` for Layer-1
+                cross-binding)."""]
+        [item """If the runner errors on your fixture, the implementation
+                doesn't handle it — that's the bug; file it. If runner
+                green, your fixture is now a regression gate."""]]]
+
+    [child id=propose-adr n=10.5.3 title='Proposing a design change (ADR)'
+      [body
+        """CX changes that affect the spec / ABI / surface require an
+           ADR (Architecture Decision Record) before implementation.
+           The workflow:"""]
+      [list
+        [item """**Draft** an ADR file `spec/decisions/NNNN-title.md`
+                using the lean format: TL;DR + was-vs-is tables +
+                context + decisions (D1, D2, ...) + alternatives
+                considered + gates. Number is the next sequential
+                slot."""]
+        [item """**Register** the ADR in `docs-src/canonical/backlog.cx`
+                under `[adrs ...]` with `:status draft`."""]
+        [item """**Review window** — submit for owner + community
+                review. Iterate the lean tables until reviewers can
+                scan the design in 2-3 minutes."""]
+        [item """**Ratify** — flip status to `accepted` in backlog.cx,
+                record in the ADR's revision history."""]
+        [item """**Implement** — landing PRs cite the ratified ADR by
+                number. Gates from the ADR's §Gates section block the
+                next release."""]]
+      [body
+        """The lean ADR format (per `d-2026-05-22-11` and
+           `d-2026-05-22-13`) values scannability over verbosity. Target
+           ~200-300 lines, not 500+. ADRs 0028, 0029, 0030 are
+           reference examples of the format."""]]
+
+    [child id=ship-binding n=10.5.4 title='Shipping a new binding'
+      [body
+        """Contributing a binding for a language not currently in the
+           Tier-1 set (V / Python / Go / Rust):"""]
+      [list
+        [item """Implement the 16-method Layer-1 surface
+                (spec/bindings.md §2.1) — case-adjusted for host
+                conventions but otherwise identical."""]
+        [item """FFI extern declarations against the C ABI symbols in
+                `include/cx.h`. Match the version's cap bits."""]
+        [item """Call `cx_init()` once per process; call
+                `cx_thread_register()` at every FFI chokepoint (or
+                use a per-thread guard pattern)."""]
+        [item """Add a quickstart in `docs-src/canonical/sections/07-bindings.cxd`."""]
+        [item """Wire conformance — your binding must pass
+                `conformance/binding_api.txt` byte-identically (gate
+                28.6). The runner pattern lives at
+                `lang/python/conformance_code.py` /
+                `lang/go/cxlib/conformance_code_test.go` —
+                mirror in your language."""]
+        [item """PR to `lang/<your-name>/cxlib/` with the binding code
+                plus the conformance harness."""]]
+      [body
+        """For restoring an archived binding (TypeScript / Java / C# /
+           Ruby / Kotlin / Swift): see
+           `lang/_archived/README.md` for the recipe."""]]
+
+    [child id=debug-investigate n=10.5.5 title='Debugging an implementation'
+      [body
+        """Reproducing and triaging a CX bug:"""]
+      [list
+        [item """**Reduce the repro.** Get to the smallest input that
+                triggers the failure (one CX file, ideally < 20
+                lines)."""]
+        [item """**Capture diagnostic output.** `cx eval --trace`
+                shows per-directive timing + span emission;
+                `cx eval --explain` shows the AST + dispatch path."""]
+        [item """**Bisect** if the bug appeared between versions —
+                `git bisect run sh -c 'cx eval repro.cx; test $? = 0'`."""]
+        [item """**Check the conformance suite** — does a similar
+                fixture exist? If yes, what's different about yours?"""]
+        [item """**File a fixture** alongside the bug report (see
+                §[[add-fixture]]) so the fix lands a regression gate."""]]
+      [body
+        """For V-side debugging: the impl lives at `vcx/code/*.v`
+           (post-rename, was `vcx/programs/`). Build with `devbox run
+           -- make -C vcx build`; run unit tests with `make test-vcx`."""]]
+
+    [child id=memory-update n=10.5.6 title='Updating the project memory'
+      [body
+        """The project memory (`memory/` directory in this repo's
+           CLAUDE.md context) tracks long-running state across
+           sessions: design decisions, deferred work, known issues,
+           perf state. When you land a decision or surface a new
+           issue, update the relevant memory file. The convention is
+           in CLAUDE.md and the `memory/MEMORY.md` index."""]]]
+]
