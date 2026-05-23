@@ -112,10 +112,30 @@
     [child n=3.10 id=roundtrip   title='Round-trip guarantees and lossiness matrix']]
 
   [section n=4 id=identity file='04-identity.cxd'
-    [child n=4.1 id=canonical    title='Canonical bytes']
-    [child n=4.2 id=hash         title='SHA-256 content hash']
-    [child n=4.3 id=ast-bin      title='ast-bin wire format']
-    [child n=4.4 id=data-bin     title='data-bin schema-driven format']]
+    [child n=4.1 id=canonical    title='Canonical bytes'
+      [child n=4.1.1 id=canon-lossless-strict title='Lossless vs strict canonical (recap)']
+      [child n=4.1.2 id=canon-cross-format title='Cross-format identity (hash stable through projections)']]
+    [child n=4.2 id=hash         title='SHA-256 content hash'
+      [child n=4.2.1 id=hash-stability      title='Stability across bindings + machines']
+      [child n=4.2.2 id=hash-truncation     title='Truncation safety (short ids)']
+      [child n=4.2.3 id=hash-use-cases      title='Use cases — cache keys, dedup, content stores']]
+    [child n=4.3 id=ast-bin      title='ast-bin wire format'
+      [child n=4.3.1 id=ast-bin-envelope    title='Buffer envelope']
+      [child n=4.3.2 id=ast-bin-capabilities title='Capability bits (full table)']
+      [child n=4.3.3 id=ast-bin-versioning  title='Version negotiation + forward-compat']]
+    [child n=4.4 id=data-bin     title='data-bin format'
+      [child n=4.4.1 id=data-bin-self-describing title='Self-describing mode']
+      [child n=4.4.2 id=data-bin-schema-driven title='Schema-driven mode (cap bit 1)']
+      [child n=4.4.3 id=data-bin-chunked       title='Chunked tables (§3.11)']
+      [child n=4.4.4 id=data-bin-compression   title='Page-compression wrapper (§3.12)']]
+    [child n=4.5 id=id-anchors title='ID anchors and IDREF resolution'
+      [child n=4.5.1 id=id-scoping            title='Document-unique scoping']
+      [child n=4.5.2 id=idref-resolution      title='IDREF resolution + cycles']
+      [child n=4.5.3 id=id-cross-format       title='Identity preservation across projections']]
+    [child n=4.6 id=ffi-lifetime title='FFI lifetime and memory ownership'
+      [child n=4.6.1 id=ffi-doc-lifetime      title='Doc lifetime per binding']
+      [child n=4.6.2 id=ffi-node-borrowing    title='Node borrowing from a Doc']
+      [child n=4.6.3 id=ffi-thread-register   title='Thread registration (cx_thread_register)']]]
 
   [section n=5 id=analytics file='05-analytics.cxd'
     [child n=5.1 id=overview      title='The analytics lane']
