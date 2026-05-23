@@ -65,59 +65,80 @@
     [child n=4.3 id=ast-bin      title='ast-bin wire format']
     [child n=4.4 id=data-bin     title='data-bin schema-driven format']]
 
-  [section n=5 id=code file='05-code.cxd'
-    [child n=5.1 id=overview     title='The CX code language']
-    [child n=5.2 id=directives   title='Directive registry']
-    [child n=5.3 id=cxpath       title='CXPath — the universal selector']
-    [child n=5.4 id=patterns     title='Patterns and matching']
-    [child n=5.5 id=bindings     title='Bindings and paths']
-    [child n=5.6 id=constructs
-      [child n=5.6.1 id=for      title='[?for] — iteration']
-      [child n=5.6.2 id=match    title='[?match] — dispatch']
-      [child n=5.6.3 id=if       title='[?if] — boolean branch']
-      [child n=5.6.4 id=let      title='[?let] — binding']
-      [child n=5.6.5 id=modify   title='[?modify] — pure-functional updates']
-      [child n=5.6.6 id=pipe     title='Pipelines and composition']]
-    [child n=5.7 id=builtins
-      [child n=5.7.1 id=sequence-builtins title='Sequence built-ins']
-      [child n=5.7.2 id=string-builtins   title='String built-ins']
-      [child n=5.7.3 id=numeric-builtins  title='Numeric built-ins']
-      [child n=5.7.4 id=logical-builtins  title='Logical built-ins']
-      [child n=5.7.5 id=accessor-builtins title='Node-accessor built-ins']]
-    [child n=5.8 id=errors       title='Errors as values']
-    [child n=5.9 id=concurrency
-      [child n=5.9.1 id=services title='Services and clients']
-      [child n=5.9.2 id=workers  title='Workers and channels']
-      [child n=5.9.3 id=async    title='Async and await']]
-    [child n=5.10 id=resilience  title='Resilience directives']]
+  [section n=5 id=analytics file='05-analytics.cxd'
+    [child n=5.1 id=overview      title='The analytics lane']
+    [child n=5.2 id=table-shape   title='The :table data shape']
+    [child n=5.3 id=cxcol         title='CXCol — column-oriented streaming format']
+    [child n=5.4 id=arrow-bridge  title='Arrow bridge — zero-copy interop']
+    [child n=5.5 id=parquet-bridge title='Parquet bridge'
+      [child n=5.5.1 id=parquet-write   title='Writing Parquet']
+      [child n=5.5.2 id=parquet-read    title='Reading Parquet']
+      [child n=5.5.3 id=parquet-types   title='CX ↔ Parquet type mapping']
+      [child n=5.5.4 id=parquet-roundtrip title='Round-trip identity']
+      [child n=5.5.5 id=parquet-metadata title='Metadata preservation']]
+    [child n=5.6 id=streaming     title='Streaming evaluator over columnar data']
+    [child n=5.7 id=integrations  title='Ecosystem integrations'
+      [child n=5.7.1 id=duckdb     title='DuckDB']
+      [child n=5.7.2 id=polars     title='Polars']
+      [child n=5.7.3 id=pandas     title='pandas']
+      [child n=5.7.4 id=datafusion title='DataFusion']
+      [child n=5.7.5 id=spark      title='Spark / cluster-compute']]
+    [child n=5.8 id=performance       title='Performance characteristics']
+    [child n=5.9 id=cxcol-vs-others   title='When to use CXCol vs Parquet vs Arrow vs JSON']]
 
-  [section n=6 id=bindings file='06-bindings.cxd'
-    [child n=6.1 id=c-abi        title='The C ABI surface']
-    [child n=6.2 id=layer-1      title='Layer 1 — canonical method set']
-    [child n=6.3 id=layer-2      title='Layer 2 — host idiom packs']
-    [child n=6.4 id=schema-codegen title='Schema-driven codegen']
-    [child n=6.5 id=quickstarts
-      [child n=6.5.1 id=v        title='V (native reference)']
-      [child n=6.5.2 id=python   title='Python']
-      [child n=6.5.3 id=go       title='Go']
-      [child n=6.5.4 id=rust     title='Rust']]]
+  [section n=6 id=code file='06-code.cxd'
+    [child n=6.1 id=overview     title='The CX code language']
+    [child n=6.2 id=directives   title='Directive registry']
+    [child n=6.3 id=cxpath       title='CXPath — the universal selector']
+    [child n=6.4 id=patterns     title='Patterns and matching']
+    [child n=6.5 id=bindings     title='Bindings and paths']
+    [child n=6.6 id=constructs
+      [child n=6.6.1 id=for      title='[?for] — iteration']
+      [child n=6.6.2 id=match    title='[?match] — dispatch']
+      [child n=6.6.3 id=if       title='[?if] — boolean branch']
+      [child n=6.6.4 id=let      title='[?let] — binding']
+      [child n=6.6.5 id=modify   title='[?modify] — pure-functional updates']
+      [child n=6.6.6 id=pipe     title='Pipelines and composition']]
+    [child n=6.7 id=builtins
+      [child n=6.7.1 id=sequence-builtins title='Sequence built-ins']
+      [child n=6.7.2 id=string-builtins   title='String built-ins']
+      [child n=6.7.3 id=numeric-builtins  title='Numeric built-ins']
+      [child n=6.7.4 id=logical-builtins  title='Logical built-ins']
+      [child n=6.7.5 id=accessor-builtins title='Node-accessor built-ins']]
+    [child n=6.8 id=errors       title='Errors as values']
+    [child n=6.9 id=concurrency
+      [child n=6.9.1 id=services title='Services and clients']
+      [child n=6.9.2 id=workers  title='Workers and channels']
+      [child n=6.9.3 id=async    title='Async and await']]
+    [child n=6.10 id=resilience  title='Resilience directives']]
 
-  [section n=7 id=tooling file='07-tooling.cxd'
-    [child n=7.1 id=cli          title='The cx CLI']
-    [child n=7.2 id=editors      title='Editor integration']
-    [child n=7.3 id=lsp          title='Language server (LSP)']
-    [child n=7.4 id=tree-sitter  title='Tree-sitter grammar']]
+  [section n=7 id=bindings file='07-bindings.cxd'
+    [child n=7.1 id=c-abi        title='The C ABI surface']
+    [child n=7.2 id=layer-1      title='Layer 1 — canonical method set']
+    [child n=7.3 id=layer-2      title='Layer 2 — host idiom packs']
+    [child n=7.4 id=schema-codegen title='Schema-driven codegen']
+    [child n=7.5 id=quickstarts
+      [child n=7.5.1 id=v        title='V (native reference)']
+      [child n=7.5.2 id=python   title='Python']
+      [child n=7.5.3 id=go       title='Go']
+      [child n=7.5.4 id=rust     title='Rust']]]
 
-  [section n=8 id=concepts file='08-concepts.cxd'
-    [child n=8.1 id=homoiconicity      title='Homoiconicity']
-    [child n=8.2 id=errors-as-values   title='Errors as values']
-    [child n=8.3 id=pure-updates       title='Pure-functional updates and lenses']
-    [child n=8.4 id=streaming          title='Streaming']
-    [child n=8.5 id=parallelism        title='Parallelism by construction']]
+  [section n=8 id=tooling file='08-tooling.cxd'
+    [child n=8.1 id=cli          title='The cx CLI']
+    [child n=8.2 id=editors      title='Editor integration']
+    [child n=8.3 id=lsp          title='Language server (LSP)']
+    [child n=8.4 id=tree-sitter  title='Tree-sitter grammar']]
 
-  [section n=9 id=migration file='09-migration.cxd'
-    [child n=9.1 id=from-v07x        title='From v0.7.x to v0.8.0']
-    [child n=9.2 id=from-xml         title='From XML']
-    [child n=9.3 id=from-json-yaml   title='From JSON / YAML / TOML']
-    [child n=9.4 id=retired-surfaces title='Retired surfaces and replacements']]
+  [section n=9 id=concepts file='09-concepts.cxd'
+    [child n=9.1 id=homoiconicity      title='Homoiconicity']
+    [child n=9.2 id=errors-as-values   title='Errors as values']
+    [child n=9.3 id=pure-updates       title='Pure-functional updates and lenses']
+    [child n=9.4 id=streaming          title='Streaming']
+    [child n=9.5 id=parallelism        title='Parallelism by construction']]
+
+  [section n=10 id=migration file='10-migration.cxd'
+    [child n=10.1 id=from-v07x        title='From v0.7.x to v0.8.0']
+    [child n=10.2 id=from-xml         title='From XML']
+    [child n=10.3 id=from-json-yaml   title='From JSON / YAML / TOML']
+    [child n=10.4 id=retired-surfaces title='Retired surfaces and replacements']]
 ]
