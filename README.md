@@ -125,11 +125,11 @@ gains **heterogeneous multi-arm dispatch** with `:case` / `:where` /
 `:else` ([ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md));
 a new **`[?modify]`** directive lands pure-functional updates with
 structural sharing ([ADRs 0030](spec/decisions/0030-modify-pure-functional-updates.md)
-/ [0031](spec/decisions/0031-modify-structural-sharing.md)).
+/ [0031](spec/decisions/0031-structural-sharing.md)).
 **`[?def]`** module-level functions, **`[?lib]`** module loading, and
 the `cx.lock` lockfile add a real module system
-([ADRs 0034](spec/decisions/0034-def-module-functions.md) /
-[0035](spec/decisions/0035-module-loading.md)). General `[expr]`
+([ADRs 0034](spec/decisions/0034-def-module-level-functions.md) /
+[0035](spec/decisions/0035-module-loading-scoping-namespacing.md)). General `[expr]`
 predicates with `$_` / `$_position` / `$_last` context bindings close
 the XPath alignment gap ([ADR 0036](spec/decisions/0036-expr-general-predicate.md)).
 Internal `programs` → `code` rename runs throughout
