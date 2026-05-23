@@ -1,8 +1,16 @@
 // CX Playground.
 //
-// 50 starter examples — 25 data + 25 programs — numbered continuously
-// 1-50 across both optgroups in the dropdown so users can reference
-// "example 32" unambiguously regardless of kind.
+// 12 starter examples — 3 data + 9 programs — numbered continuously
+// 1-12 across both optgroups in the dropdown so users can reference
+// "example 7" unambiguously regardless of kind. The slim corpus is
+// per the Phase 7.3 brief: a tight, walkable tour rather than the
+// v0.7.x 50-example sprawl. Nine starters port forward from v0.7.x
+// (now exercising the v0.8.0 surface); three are net-new and showcase
+// the v0.8.0 marquee ADRs:
+//
+//   • ADR 0028 — CXPath as first-class value kind (`//user[@x=y]`)
+//   • ADR 0029 — multi-arm [?match] (`:case` / `:when` / `:else`)
+//   • ADR 0030 — pure-functional [?modify] (`:set` / `:delete` / …)
 //
 // Every example carries a single `input` field — the verbatim textarea
 // content. Data examples are pure CX (round-trip through toCx / toJson
@@ -31,13 +39,14 @@
 //    outputs for the selected example. User edits are preserved but
 //    never executed.
 //
-// See docs/concepts/wasm and spec/decisions/0026 for the rollout.
+// See docs/concepts/wasm and spec/decisions/0026 + 0037 for the rollout.
 (function () {
   'use strict';
 
+  // ── Data starters (3) — pure CX, round-trips through toCx/toJson/toXml.
   const dataExamples = {
     'atom': {
-      label: "Atom \u2014 element with one attribute",
+      label: "Atom — element with one attribute",
       input: "[pizza size=large]",
       cx:    "[pizza size=large]",
       json:  [
@@ -49,95 +58,8 @@
       ].join('\n'),
       xml:   "<pizza size=\"large\"/>",
     },
-    'multi-attr': {
-      label: "Attributes \u2014 typed, sized, sigil-flagged",
-      input: [
-        "[server",
-        "  host=api.example.com",
-        "  port=:u16=8080",
-        "  +tls",
-        "  -debug",
-        "  ratio=:decimal=3.14159]"
-      ].join('\n'),
-      cx:    "[server host=api.example.com port=:u16=8080 tls=true debug=false ratio=:decimal=3.14159]",
-      json:  [
-        "{",
-        "  \"server\": {",
-        "    \"host\": \"api.example.com\",",
-        "    \"port\": \":u16=8080\",",
-        "    \"tls\": true,",
-        "    \"debug\": false,",
-        "    \"ratio\": \":decimal=3.14159\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<server host=\"api.example.com\" port=\":u16=8080\" tls=\"true\" debug=\"false\" ratio=\":decimal=3.14159\"/>",
-    },
-    'sigils': {
-      label: "Sigils \u2014 id, type-annotation, bool flags",
-      input: [
-        "[order #o123 :paid +shipped -refunded",
-        "  total=:decimal=24.99",
-        "  [line name=Margherita count=2]",
-        "  [line name=Pepperoni count=1]]"
-      ].join('\n'),
-      cx:    "[order #o123 :paid '+shipped -refunded total=:decimal=24.99 ' [line name=Margherita count=2] [line name=Pepperoni count=1]]",
-      json:  [
-        "{",
-        "  \"order\": {",
-        "    \"_\": \"+shipped -refunded total=:decimal=24.99 \",",
-        "    \"line\": [",
-        "      {",
-        "        \"name\": \"Margherita\",",
-        "        \"count\": 2",
-        "      },",
-        "      {",
-        "        \"name\": \"Pepperoni\",",
-        "        \"count\": 1",
-        "      }",
-        "    ]",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<order xml:id=\"o123\" cx:type=\"paid\">+shipped -refunded total=:decimal=24.99 <line name=\"Margherita\" count=\"2\"/><line name=\"Pepperoni\" count=\"1\"/></order>",
-    },
-    'typed-scalars': {
-      label: "Typed scalars \u2014 int, float, bool, decimal, null",
-      input: [
-        "[row",
-        "  count=42",
-        "  ratio=3.14",
-        "  active=true",
-        "  amount=:decimal=12.50",
-        "  note=:null]"
-      ].join('\n'),
-      cx:    "[row count=42 ratio=3.14 active=true amount=:decimal=12.50 note=:null]",
-      json:  [
-        "{",
-        "  \"row\": {",
-        "    \"count\": 42,",
-        "    \"ratio\": 3.14,",
-        "    \"active\": true,",
-        "    \"amount\": \":decimal=12.50\",",
-        "    \"note\": \":null\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<row count=\"42\" ratio=\"3.14\" active=\"true\" amount=\":decimal=12.50\" note=\":null\"/>",
-    },
-    'text-body': {
-      label: "Text body \u2014 element with prose",
-      input: "[h1 Hello, World]",
-      cx:    "[h1 Hello, World]",
-      json:  [
-        "{",
-        "  \"h1\": \"Hello, World\"",
-        "}"
-      ].join('\n'),
-      xml:   "<h1>Hello, World</h1>",
-    },
     'nested': {
-      label: "Nested elements \u2014 containment tree",
+      label: "Nested elements — containment tree",
       input: [
         "[order",
         "  [customer name=Alice]",
@@ -178,491 +100,8 @@
         "</order>"
       ].join('\n'),
     },
-    'mixed-content': {
-      label: "Mixed content \u2014 prose + inline markup",
-      input: [
-        "[article",
-        "  [h1 New Haven Story]",
-        "  [p Founded in [em 1987]. See the [a href=/menu menu].]",
-        "  [p Still [strong hand-tossing] every pie.]]"
-      ].join('\n'),
-      cx:    [
-        "[article",
-        "  [h1 New Haven Story]",
-        "  [p 'Founded in ' [em 1987] '. See the ' [a href=/menu menu] '.']",
-        "  [p 'Still ' [strong hand-tossing] ' every pie.']",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"article\": {",
-        "    \"h1\": \"New Haven Story\",",
-        "    \"p\": [",
-        "      {",
-        "        \"_\": \"Founded in . See the .\",",
-        "        \"em\": 1987,",
-        "        \"a\": {",
-        "          \"href\": \"/menu\",",
-        "          \"_\": \"menu\"",
-        "        }",
-        "      },",
-        "      {",
-        "        \"_\": \"Still  every pie.\",",
-        "        \"strong\": \"hand-tossing\"",
-        "      }",
-        "    ]",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<article>",
-        "  <h1>New Haven Story</h1>",
-        "  <p>Founded in <em>1987</em>. See the <a href=\"/menu\">menu</a>.</p>",
-        "  <p>Still <strong>hand-tossing</strong> every pie.</p>",
-        "</article>"
-      ].join('\n'),
-    },
-    'typed-table': {
-      label: "Typed table \u2014 columnar with declared types",
-      input: [
-        "[orders :table[item:string qty:u32 paid:bool when:date]",
-        "  Margherita 2 true  2026-05-09",
-        "  Hawaiian   1 false 2026-05-09]"
-      ].join('\n'),
-      cx:    [
-        "[orders :table[item:string qty:u32 paid:bool when:date]",
-        "  Margherita 2 true 2026-05-09",
-        "  Hawaiian 1 false 2026-05-09",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"orders\": null",
-        "}"
-      ].join('\n'),
-      xml:   "<orders cx:type=\"table\"/>",
-    },
-    'anchor-merge': {
-      label: "Anchor + merge \u2014 shared defaults",
-      input: [
-        "[defaults &shared timeout=30 retries=3]",
-        "[server *shared name=api]",
-        "[server *shared name=worker retries=5]"
-      ].join('\n'),
-      cx:    [
-        "[defaults &shared timeout=30 retries=3]",
-        "[server *shared name=api]",
-        "[server *shared name=worker retries=5]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"defaults\": {",
-        "    \"timeout\": 30,",
-        "    \"retries\": 3",
-        "  },",
-        "  \"server\": [",
-        "    {",
-        "      \"name\": \"api\"",
-        "    },",
-        "    {",
-        "      \"name\": \"worker\",",
-        "      \"retries\": 5",
-        "    }",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<defaults cx:anchor=\"shared\" timeout=\"30\" retries=\"3\"/>",
-        "<server cx:merge=\"shared\" name=\"api\"/>",
-        "<server cx:merge=\"shared\" name=\"worker\" retries=\"5\"/>"
-      ].join('\n'),
-    },
-    'multi-doc': {
-      label: "Multi-document \u2014 two roots in one file",
-      input: [
-        "[menu name=Lunch  [pizza name=Margherita]]",
-        "---",
-        "[menu name=Dinner [pizza name=Hawaiian]]"
-      ].join('\n'),
-      cx:    [
-        "[menu name=Lunch",
-        "  [pizza name=Margherita]",
-        "]",
-        "---",
-        "[menu name=Dinner",
-        "  [pizza name=Hawaiian]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "[{",
-        "  \"menu\": {",
-        "    \"name\": \"Lunch\",",
-        "    \"pizza\": {",
-        "      \"name\": \"Margherita\"",
-        "    }",
-        "  }",
-        "},{",
-        "  \"menu\": {",
-        "    \"name\": \"Dinner\",",
-        "    \"pizza\": {",
-        "      \"name\": \"Hawaiian\"",
-        "    }",
-        "  }",
-        "}]"
-      ].join('\n'),
-      xml:   [
-        "<menu name=\"Lunch\">",
-        "  <pizza name=\"Margherita\"/>",
-        "</menu>",
-        "---",
-        "<menu name=\"Dinner\">",
-        "  <pizza name=\"Hawaiian\"/>",
-        "</menu>"
-      ].join('\n'),
-    },
-    'block-comment': {
-      label: "Block comment \u2014 [- ... -]",
-      input: [
-        "[- Site-wide configuration; this comment does not render. -]",
-        "[site name=acme port=8080]"
-      ].join('\n'),
-      cx:    [
-        "[- Site-wide configuration; this comment does not render. -]",
-        "[site name=acme port=8080]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"site\": {",
-        "    \"name\": \"acme\",",
-        "    \"port\": 8080",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<!-- Site-wide configuration; this comment does not render. --->",
-        "<site name=\"acme\" port=\"8080\"/>"
-      ].join('\n'),
-    },
-    'line-comment': {
-      label: "Line comment \u2014 # to end of line",
-      input: [
-        "# top-of-file header",
-        "[shop name=NewHaven",
-        "  # opening hours \u2014 bare attrs auto-type",
-        "  [hours mon-fri=11-22 sat=12-23]]"
-      ].join('\n'),
-      cx:    [
-        "[shop name=NewHaven",
-        "  [hours mon-fri=11-22 sat=12-23]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"shop\": {",
-        "    \"name\": \"NewHaven\",",
-        "    \"hours\": {",
-        "      \"mon-fri\": \"11-22\",",
-        "      \"sat\": \"12-23\"",
-        "    }",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<shop name=\"NewHaven\">",
-        "  <hours mon-fri=\"11-22\" sat=\"12-23\"/>",
-        "</shop>"
-      ].join('\n'),
-    },
-    'heading': {
-      label: "Heading \u2014 [#] through [######]",
-      input: [
-        "[# Top-level heading]",
-        "[## Section heading]",
-        "[### Sub-section heading]"
-      ].join('\n'),
-      cx:    [
-        "[h1 Top-level heading]",
-        "[h2 Section heading]",
-        "[h3 Sub-section heading]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"h1\": \"Top-level heading\",",
-        "  \"h2\": \"Section heading\",",
-        "  \"h3\": \"Sub-section heading\"",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<h1>Top-level heading</h1>",
-        "<h2>Section heading</h2>",
-        "<h3>Sub-section heading</h3>"
-      ].join('\n'),
-    },
-    'inline-markup': {
-      label: "Inline markup \u2014 bold / italic / strike",
-      input: [
-        "[p This is [**important] and this is [*emphasised].",
-        "   The crossed-out [~~text] is no longer current.]"
-      ].join('\n'),
-      cx:    "[p 'This is ' [strong important] ' and this is ' '. The crossed-out ' [del text] ' is no longer current.']",
-      json:  [
-        "{",
-        "  \"p\": {",
-        "    \"_\": \"This is  and this is . The crossed-out  is no longer current.\",",
-        "    \"strong\": \"important\",",
-        "    \"del\": \"text\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<p>This is <strong>important</strong> and this is . The crossed-out <del>text</del> is no longer current.</p>",
-    },
-    'code-fence': {
-      label: "Code fence \u2014 embedded language",
-      input: [
-        "[``` lang=python",
-        "  [| print(hello-world) |]]"
-      ].join('\n'),
-      cx:    "[code 'lang=python ' [| print(hello-world) |]]",
-      json:  [
-        "{",
-        "  \"code\": \"lang=python  print(hello-world) \"",
-        "}"
-      ].join('\n'),
-      xml:   "<code>lang=python <cx:block> print(hello-world) </cx:block></code>",
-    },
-    'list': {
-      label: "List \u2014 ul + li with link items",
-      input: [
-        "[ul",
-        "  [li [a href=/menu Menu]]",
-        "  [li [a href=/hours Hours]]",
-        "  [li [a href=/contact Contact]]]"
-      ].join('\n'),
-      cx:    [
-        "[ul",
-        "  [li",
-        "    [a href=/menu Menu]",
-        "  ]",
-        "  [li",
-        "    [a href=/hours Hours]",
-        "  ]",
-        "  [li",
-        "    [a href=/contact Contact]",
-        "  ]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"ul\": {",
-        "    \"li\": [",
-        "      {",
-        "        \"a\": {",
-        "          \"href\": \"/menu\",",
-        "          \"_\": \"Menu\"",
-        "        }",
-        "      },",
-        "      {",
-        "        \"a\": {",
-        "          \"href\": \"/hours\",",
-        "          \"_\": \"Hours\"",
-        "        }",
-        "      },",
-        "      {",
-        "        \"a\": {",
-        "          \"href\": \"/contact\",",
-        "          \"_\": \"Contact\"",
-        "        }",
-        "      }",
-        "    ]",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<ul>",
-        "  <li>",
-        "    <a href=\"/menu\">Menu</a>",
-        "  </li>",
-        "  <li>",
-        "    <a href=\"/hours\">Hours</a>",
-        "  </li>",
-        "  <li>",
-        "    <a href=\"/contact\">Contact</a>",
-        "  </li>",
-        "</ul>"
-      ].join('\n'),
-    },
-    'prolog': {
-      label: "Prolog \u2014 XML declaration",
-      input: [
-        "[?xml version=1.0 encoding=UTF-8]",
-        "[shop name=NewHaven [item name=pizza price=12]]"
-      ].join('\n'),
-      cx:    [
-        "[?xml version=1.0 encoding=UTF-8]",
-        "[shop name=NewHaven",
-        "  [item name=pizza price=12]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"shop\": {",
-        "    \"name\": \"NewHaven\",",
-        "    \"item\": {",
-        "      \"name\": \"pizza\",",
-        "      \"price\": 12",
-        "    }",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<shop name=\"NewHaven\">",
-        "  <item name=\"pizza\" price=\"12\"/>",
-        "</shop>"
-      ].join('\n'),
-    },
-    'dates': {
-      label: "Dates and datetimes \u2014 typed scalars",
-      input: [
-        "[event",
-        "  when=2026-05-21",
-        "  starts=2026-05-21T14:30:00Z",
-        "  duration=:duration=2h30m]"
-      ].join('\n'),
-      cx:    "[event when=2026-05-21 starts=2026-05-21T14:30:00Z duration=:duration=2h30m]",
-      json:  [
-        "{",
-        "  \"event\": {",
-        "    \"when\": \"2026-05-21\",",
-        "    \"starts\": \"2026-05-21T14:30:00Z\",",
-        "    \"duration\": \":duration=2h30m\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<event when=\"2026-05-21\" starts=\"2026-05-21T14:30:00Z\" duration=\":duration=2h30m\"/>",
-    },
-    'namespaces': {
-      label: "Namespaces \u2014 xmlns binding",
-      input: [
-        "[svg xmlns=http://www.w3.org/2000/svg viewBox=\"0 0 100 100\"",
-        "  [circle cx=50 cy=50 r=40 fill=tomato]]"
-      ].join('\n'),
-      cx:    [
-        "[svg xmlns=http://www.w3.org/2000/svg viewBox='0 0 100 100'",
-        "  [circle cx=50 cy=50 r=40 fill=tomato]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"svg\": {",
-        "    \"xmlns\": \"http://www.w3.org/2000/svg\",",
-        "    \"viewBox\": \"0 0 100 100\",",
-        "    \"circle\": {",
-        "      \"cx\": 50,",
-        "      \"cy\": 50,",
-        "      \"r\": 40,",
-        "      \"fill\": \"tomato\"",
-        "    }",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\">",
-        "  <circle cx=\"50\" cy=\"50\" r=\"40\" fill=\"tomato\"/>",
-        "</svg>"
-      ].join('\n'),
-    },
-    'quoted-string': {
-      label: "Quoted strings \u2014 single + double",
-      input: [
-        "[message",
-        "  text=\"She said hello loudly.\"",
-        "  path=/usr/local/bin]"
-      ].join('\n'),
-      cx:    "[message text='She said hello loudly.' path=/usr/local/bin]",
-      json:  [
-        "{",
-        "  \"message\": {",
-        "    \"text\": \"She said hello loudly.\",",
-        "    \"path\": \"/usr/local/bin\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<message text=\"She said hello loudly.\" path=\"/usr/local/bin\"/>",
-    },
-    'triple-quoted': {
-      label: "Triple-quoted \u2014 multi-line verbatim",
-      input: [
-        "[tagline \"\"\"",
-        "  Hand-tossed since 1987.",
-        "  Still tossing.",
-        "\"\"\"]"
-      ].join('\n'),
-      cx:    [
-        "[tagline '",
-        "  Hand-tossed since 1987.",
-        "  Still tossing.",
-        "']"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"tagline\": \"\\n  Hand-tossed since 1987.\\n  Still tossing.\\n\"",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<tagline>",
-        "  Hand-tossed since 1987.",
-        "  Still tossing.",
-        "</tagline>"
-      ].join('\n'),
-    },
-    'raw-text': {
-      label: "Raw text \u2014 block content preserves bytes",
-      input: [
-        "[script lang=js",
-        "  [| if (x < 0) { return x; } |]]"
-      ].join('\n'),
-      cx:    "[script lang=js [| if (x < 0) { return x; } |]]",
-      json:  [
-        "{",
-        "  \"script\": {",
-        "    \"lang\": \"js\",",
-        "    \"_\": \" if (x < 0) { return x; } \"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<script lang=\"js\"><cx:block> if (x &lt; 0) { return x; } </cx:block></script>",
-    },
-    'collection-seq': {
-      label: "Collection literal \u2014 sequence with parens",
-      input: "[pizza toppings=(cheese, basil, oil)]",
-      cx:    "[pizza toppings=(cheese, basil, oil)]",
-      json:  [
-        "{",
-        "  \"pizza\": {",
-        "    \"toppings\": \"(cheese,\",",
-        "    \"_\": \"basil, oil)\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<pizza toppings=\"(cheese,\">basil, oil)</pizza>",
-    },
-    'collection-map': {
-      label: "Collection literal \u2014 map with braces",
-      input: "[pizza prices={small: 9, medium: 12, large: 15}]",
-      cx:    "[pizza prices={small: 9, medium: 12, large: 15}]",
-      json:  [
-        "{",
-        "  \"pizza\": {",
-        "    \"prices\": \"{small:\",",
-        "    \"_\": \"9, medium: 12, large: 15}\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<pizza prices=\"{small:\">9, medium: 12, large: 15}</pizza>",
-    },
     'whole-shop': {
-      label: "Whole shop \u2014 every shape in one document",
+      label: "Whole shop — every data shape in one document",
       input: [
         "[shop &flagship name='New Haven Pizza' +open",
         "  [hours mon-fri=11-22 sat=12-23]",
@@ -716,26 +155,23 @@
     },
   };
 
+  // ── Program starters (9) — six v0.7.x ports + three v0.8.0 ADR debuts.
+  //
+  //   Ports (6):
+  //     find-attr-eq   [?for] over data — attribute predicate
+  //     for-seq        [?for] comprehension over a literal sequence
+  //     for-where      [?for] :where filter
+  //     let-arith      [?let] bind + arithmetic
+  //     if-truthy      [?if] :then / :else
+  //     def-double     [?def] named closure + invocation
+  //
+  //   New for v0.8.0 ADRs (3):
+  //     cxpath-predicate  ADR 0028 — CXPath `//user[@active=true]`
+  //     match-multi       ADR 0029 — multi-arm [?match] :case/:when/:else
+  //     modify-set        ADR 0030 — [?modify] :set (structural sharing)
   const programExamples = {
-    'find-simple': {
-      label: "[?for] \u2014 pattern match with binding",
-      input: [
-        "[doc",
-        "  [user [name Alice]]",
-        "  [user [name Bob]]",
-        "  [user [name Carol]]]",
-        "[?for [user [name $n]] :yield $n]"
-      ].join('\n'),
-      cx:    [
-        "\"Alice\"",
-        "\"Bob\"",
-        "\"Carol\""
-      ].join('\n'),
-      json:  "",
-      xml:   "",
-    },
     'find-attr-eq': {
-      label: "[?for] \u2014 attribute equality predicate",
+      label: "[?for] — attribute equality predicate",
       input: [
         "[items",
         "  [item active=true  name=pizza]",
@@ -766,89 +202,8 @@
         "<item active=\"true\" name=\"soda\"/>"
       ].join('\n'),
     },
-    'find-pair': {
-      label: "[?for] \u2014 yield literal with multiple bindings",
-      input: [
-        "[doc",
-        "  [user [name Alice] [email a@x.com]]",
-        "  [user [name Bob]   [email b@x.com]]]",
-        "[?for [user [name $n] [email $e]] :yield [pair :name $n :email $e]]"
-      ].join('\n'),
-      cx:    [
-        "[pair :name \"Alice\" :email \"a@x.com\"]",
-        "[pair :name \"Bob\" :email \"b@x.com\"]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"pair\": [",
-        "    \"Alice:emaila@x.com\",",
-        "    \"Bob:emailb@x.com\"",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<pair cx:type=\"name\">Alice:emaila@x.com</pair>",
-        "<pair cx:type=\"name\">Bob:emailb@x.com</pair>"
-      ].join('\n'),
-    },
-    'find-deep': {
-      label: "[?for] \u2014 finds at any depth",
-      input: [
-        "[org",
-        "  [team [member [name Alice]]]",
-        "  [team [member [name Bob]]]",
-        "  [team [member [name Carol]]]]",
-        "[?for [name $n] :yield $n]"
-      ].join('\n'),
-      cx:    [
-        "\"Alice\"",
-        "\"Bob\"",
-        "\"Carol\""
-      ].join('\n'),
-      json:  "",
-      xml:   "",
-    },
-    'find-yield-tree': {
-      label: "[?for] \u2014 bind name + price via child-element shape",
-      input: [
-        "[shop",
-        "  [pizza [name Margherita] [price 12]]",
-        "  [pizza [name Hawaiian]   [price 14]]",
-        "  [pizza [name Diavola]    [price 13]]]",
-        "[?for [pizza [name $n] [price $p]] :yield [hit :name $n :price $p]]"
-      ].join('\n'),
-      cx:    [
-        "[hit :name \"Margherita\" :price 12]",
-        "[hit :name \"Hawaiian\" :price 14]",
-        "[hit :name \"Diavola\" :price 13]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"hit\": [",
-        "    \"Margherita:price 12\",",
-        "    \"Hawaiian:price 14\",",
-        "    \"Diavola:price 13\"",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<hit cx:type=\"name\">Margherita:price 12</hit>",
-        "<hit cx:type=\"name\">Hawaiian:price 14</hit>",
-        "<hit cx:type=\"name\">Diavola:price 13</hit>"
-      ].join('\n'),
-    },
-    'text-extraction': {
-      label: "Text extraction \u2014 body-binding unwraps to a string",
-      input: [
-        "[doc [user [name Alice]]]",
-        "[?for [name $n] :yield $n]"
-      ].join('\n'),
-      cx:    "\"Alice\"",
-      json:  "null",
-      xml:   "Alice",
-    },
     'for-seq': {
-      label: "[?for] \u2014 comprehension over sequence",
+      label: "[?for] — comprehension over sequence",
       input: "[?for $x :in (1, 2, 3, 4, 5) :yield [item $x]]",
       cx:    [
         "[item 1]",
@@ -877,7 +232,7 @@
       ].join('\n'),
     },
     'for-where': {
-      label: "[?for] \u2014 filter with :where",
+      label: "[?for] — filter with :where",
       input: "[?for $x :in (1, 2, 3, 4, 5) :where [> $x 2] :yield $x]",
       cx:    [
         "3",
@@ -891,77 +246,15 @@
         "5"
       ].join('\n'),
     },
-    'for-square': {
-      label: "[?for] \u2014 transform yielded value",
-      input: "[?for $x :in (1, 2, 3, 4) :yield [sq $x [* $x $x]]]",
-      cx:    [
-        "[sq 1 1]",
-        "[sq 2 4]",
-        "[sq 3 9]",
-        "[sq 4 16]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"sq\": [",
-        "    1,",
-        "    1,",
-        "    [",
-        "      2,",
-        "      4",
-        "    ],",
-        "    [",
-        "      3,",
-        "      9",
-        "    ],",
-        "    [",
-        "      4,",
-        "      16",
-        "    ]",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<sq cx:type=\"int[]\"><item>1</item><item>1</item></sq>",
-        "<sq cx:type=\"int[]\"><item>2</item><item>4</item></sq>",
-        "<sq cx:type=\"int[]\"><item>3</item><item>9</item></sq>",
-        "<sq cx:type=\"int[]\"><item>4</item><item>16</item></sq>"
-      ].join('\n'),
-    },
-    'for-limit': {
-      label: "[?for] \u2014 :limit caps the output count",
-      input: "[?for $x :in (1, 2, 3, 4, 5, 6, 7, 8) :limit 3 :yield $x]",
-      cx:    [
-        "1",
-        "2",
-        "3"
-      ].join('\n'),
-      json:  "null",
-      xml:   [
-        "1",
-        "2",
-        "3"
-      ].join('\n'),
-    },
     'let-arith': {
-      label: "[?let] \u2014 bind and reuse",
+      label: "[?let] — bind and reuse",
       input: "[?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]",
       cx:    "42",
       json:  "null",
       xml:   "42",
     },
-    'let-shadow': {
-      label: "[?let] \u2014 shadowing in nested scope",
-      input: "[?let $x = 5 :in [?let $x = [* $x 2] :in [item $x]]]",
-      cx:    "[item 10]",
-      json:  [
-        "{",
-        "  \"item\": 10",
-        "}"
-      ].join('\n'),
-      xml:   "<item>10</item>",
-    },
     'if-truthy': {
-      label: "[?if] \u2014 conditional branch",
+      label: "[?if] — conditional branch",
       input: "[?if [> 5 3] :then [yes [bigger]] :else [no [smaller]]]",
       cx:    "[yes [bigger]]",
       json:  [
@@ -977,70 +270,8 @@
         "</yes>"
       ].join('\n'),
     },
-    'match-pattern': {
-      label: "Pattern match \u2014 yield welcome for a user",
-      input: [
-        "[doc [user kind=admin [name Alice]]]",
-        "[?for [user [name $n]] :yield [welcome $n]]"
-      ].join('\n'),
-      cx:    "[welcome \"Alice\"]",
-      json:  [
-        "{",
-        "  \"welcome\": \"Alice\"",
-        "}"
-      ].join('\n'),
-      xml:   "<welcome>Alice</welcome>",
-    },
-    'try-catch': {
-      label: "[?try] \u2014 error recovery",
-      input: "[?try [/ 10 0] :catch [err $e] [recovered]]",
-      cx:    "[/ 10 0]",
-      json:  "null",
-      xml:   "<cx:arr><item>/ 10 0</item></cx:arr>",
-    },
-    'pipe-count': {
-      label: "Pipe sugar \u2014 count over sequence",
-      input: "(1, 2, 3, 4, 5) | count",
-      cx:    "5",
-      json:  "null",
-      xml:   "5",
-    },
-    'pipe-upper': {
-      label: "Pipe sugar \u2014 string transform",
-      input: "\"hello\" | upper",
-      cx:    "\"HELLO\"",
-      json:  "null",
-      xml:   "HELLO",
-    },
-    'pipe-sum': {
-      label: "Pipe sugar \u2014 sum a sequence",
-      input: "(1, 2, 3, 4, 5) | sum",
-      cx:    "15",
-      json:  "null",
-      xml:   "15",
-    },
-    'pipe-find-first': {
-      label: "Pipe sugar \u2014 find then first",
-      input: [
-        "[doc [user [name Alice]] [user [name Bob]]]",
-        "[?for [user [name $n]] :yield $n] | first"
-      ].join('\n'),
-      cx:    "\"Alice\"",
-      json:  "null",
-      xml:   "Alice",
-    },
-    'pipe-find-last': {
-      label: "Pipe sugar \u2014 find then last",
-      input: [
-        "[doc [user [name Alice]] [user [name Bob]] [user [name Carol]]]",
-        "[?for [user [name $n]] :yield $n] | last"
-      ].join('\n'),
-      cx:    "\"Carol\"",
-      json:  "null",
-      xml:   "Carol",
-    },
     'def-double': {
-      label: "[?def] \u2014 named closure + invocation",
+      label: "[?def] — named closure + invocation",
       input: [
         "[?def :name double ($x) :body [* $x 2]]",
         "[double(21)]"
@@ -1049,87 +280,111 @@
       json:  "null",
       xml:   "42",
     },
-    'fn-square': {
-      label: "[?fn] \u2014 anonymous closure via pipe",
-      input: "(1, 2, 3, 4) | [?fn $xs [?for $x :in $xs :yield [* $x $x]]]",
-      cx:    [
-        "1",
-        "4",
-        "9",
-        "16"
-      ].join('\n'),
-      json:  "null",
-      xml:   [
-        "1",
-        "4",
-        "9",
-        "16"
-      ].join('\n'),
-    },
-    'multi-find-compose': {
-      label: "Pattern composition \u2014 find element + sub-element",
+    // ── v0.8.0 ADR debuts ─────────────────────────────────────────
+    'cxpath-predicate': {
+      label: "CXPath — attribute predicate over a document (ADR 0028)",
       input: [
-        "[doc",
-        "  [user [name Alice] [email a@x.com] [age 30]]",
-        "  [user [name Bob]   [email b@x.com] [age 25]]]",
-        "[?for [user [name $n] [age $a]] :yield [profile :name $n :age $a]]"
+        "[users",
+        "  [user name=Alice active=true  age=30]",
+        "  [user name=Bob   active=false age=25]",
+        "  [user name=Carol active=true  age=22]]",
+        "[?for $u :in //user[@active=true]",
+        "  :yield [active-user name=$u/@name age=$u/@age]]"
       ].join('\n'),
       cx:    [
-        "[profile :name \"Alice\" :age 30]",
-        "[profile :name \"Bob\" :age 25]"
+        "[active-user name=\"Alice\" age=30]",
+        "[active-user name=\"Carol\" age=22]"
       ].join('\n'),
       json:  [
         "{",
-        "  \"profile\": [",
-        "    \"Alice:age 30\",",
-        "    \"Bob:age 25\"",
+        "  \"active-user\": [",
+        "    {",
+        "      \"name\": \"Alice\",",
+        "      \"age\": 30",
+        "    },",
+        "    {",
+        "      \"name\": \"Carol\",",
+        "      \"age\": 22",
+        "    }",
         "  ]",
         "}"
       ].join('\n'),
       xml:   [
-        "<profile cx:type=\"name\">Alice:age 30</profile>",
-        "<profile cx:type=\"name\">Bob:age 25</profile>"
+        "<active-user name=\"Alice\" age=\"30\"/>",
+        "<active-user name=\"Carol\" age=\"22\"/>"
       ].join('\n'),
     },
-    'intermingled-menu': {
-      label: "Intermingled \u2014 data + directive in one document",
+    'match-multi': {
+      label: "[?match] — multi-arm :case / :when / :else (ADR 0029)",
       input: [
-        "[menu name=Lunch",
-        "  [pizza name=Margherita price=12]",
-        "  [pizza name=Hawaiian   price=14]",
-        "  [pizza name=Diavola    price=13]]",
-        "[?for [pizza @name=$n] :yield $n]"
+        "[requests",
+        "  [request status=200]",
+        "  [request status=404]",
+        "  [request status=500]",
+        "  [request status=204]]",
+        "[?for $r :in //request",
+        "  :yield [?match $r/@status",
+        "    :case 200 :yield [classify level='ok']",
+        "    :case 204 :yield [classify level='no-content']",
+        "    :case 404 :yield [classify level='not-found']",
+        "    :when ($r/@status >= 500)",
+        "              :yield [classify level='server-error']",
+        "    :else     :yield [classify level='unknown']]]"
       ].join('\n'),
       cx:    [
-        "\"Margherita\"",
-        "\"Hawaiian\"",
-        "\"Diavola\""
+        "[classify level=\"ok\"]",
+        "[classify level=\"not-found\"]",
+        "[classify level=\"server-error\"]",
+        "[classify level=\"no-content\"]"
       ].join('\n'),
-      json:  "",
-      xml:   "",
-    },
-    'ladder-let': {
-      label: "[?let] \u2014 let-chain composing pieces",
-      input: [
-        "[page [meta title='New Haven Pizza' tagline='Hand-tossed since 1987']]",
-        "[?let $title = [?for [meta @title=$t] :yield $t] :in",
-        " [?let $tag = [?for [meta @tagline=$tl] :yield $tl] :in",
-        "  [page [h1 $title] [p $tag]]]]"
-      ].join('\n'),
-      cx:    "[page [h1 \"New Haven Pizza\"] [p \"Hand-tossed since 1987\"]]",
       json:  [
         "{",
-        "  \"page\": {",
-        "    \"h1\": \"New Haven Pizza\",",
-        "    \"p\": \"Hand-tossed since 1987\"",
+        "  \"classify\": [",
+        "    { \"level\": \"ok\" },",
+        "    { \"level\": \"not-found\" },",
+        "    { \"level\": \"server-error\" },",
+        "    { \"level\": \"no-content\" }",
+        "  ]",
+        "}"
+      ].join('\n'),
+      xml:   [
+        "<classify level=\"ok\"/>",
+        "<classify level=\"not-found\"/>",
+        "<classify level=\"server-error\"/>",
+        "<classify level=\"no-content\"/>"
+      ].join('\n'),
+    },
+    'modify-set': {
+      label: "[?modify] — pure-functional :set + :delete (ADR 0030)",
+      input: [
+        "[doc",
+        "  [user id=1 name=Alice banned=false]",
+        "  [user id=2 name=Bob   banned=true]",
+        "  [user id=3 name=Carol banned=false]]",
+        "[?let $clean = [?modify //user[@banned=true] :delete] :in",
+        " [?modify $clean //user[@id=1]/@name :set 'Alice (verified)']]"
+      ].join('\n'),
+      cx:    [
+        "[doc",
+        "  [user id=1 name='Alice (verified)' banned=false]",
+        "  [user id=3 name=Carol banned=false]",
+        "]"
+      ].join('\n'),
+      json:  [
+        "{",
+        "  \"doc\": {",
+        "    \"user\": [",
+        "      { \"id\": 1, \"name\": \"Alice (verified)\", \"banned\": false },",
+        "      { \"id\": 3, \"name\": \"Carol\", \"banned\": false }",
+        "    ]",
         "  }",
         "}"
       ].join('\n'),
       xml:   [
-        "<page>",
-        "  <h1>New Haven Pizza</h1>",
-        "  <p>Hand-tossed since 1987</p>",
-        "</page>"
+        "<doc>",
+        "  <user id=\"1\" name=\"Alice (verified)\" banned=\"false\"/>",
+        "  <user id=\"3\" name=\"Carol\" banned=\"false\"/>",
+        "</doc>"
       ].join('\n'),
     },
   };
@@ -1175,7 +430,7 @@
 
   if (!pick || !input) return;
   // ── Populate dropdown via <optgroup> (data + program corpora) ──
-  // Examples are numbered ("1. Atom — …", "2. Attributes — …") within
+  // Examples are numbered ("1. Atom — …", "2. Nested — …") within
   // their group so they can be referenced by index in writing /
   // conversation.
   function populatePicker() {
@@ -1203,6 +458,22 @@
     pick.appendChild(progGroup);
   }
   populatePicker();
+
+
+  // ── Output-pane Tree | Graph toggle (ADR 0037 D9) ─────────────────
+  // Per-pane session-scoped state — held in component state for the
+  // lifetime of the playground session, defaults to 'tree' on every
+  // fresh source load. cached per source-text identity so an edit
+  // invalidates both tree + graph caches (see refreshOutputViz).
+  let outputViewMode = 'tree';  // 'tree' | 'graph' — Output pane mode
+  const outputCache = { source: null, tree: null, graph: null };
+
+  function syncOutputViewModeButtons() {
+    document.querySelectorAll('.cxp-output-view-mode').forEach((b) => {
+      b.classList.toggle('is-active', b.dataset.mode === outputViewMode);
+    });
+  }
+  syncOutputViewModeButtons();
 
 
   // ── live mode detection (libcx-wasm bundled with the site) ──────────
@@ -1337,6 +608,13 @@
     lastJsonText = ex.json || '';
     highlightInput();
     syncScroll();
+    // Invalidate per-source viz cache on every fresh load (ADR 0037 D9).
+    outputCache.source = null;
+    outputCache.tree = null;
+    outputCache.graph = null;
+    // Fresh source — reset Output view to default 'tree' per ADR 0037 D9.
+    outputViewMode = 'tree';
+    syncOutputViewModeButtons();
     if (vizOutputOn) refreshOutputViz();
     if (vizSourceOn) refreshSourceViz();
   }
@@ -1359,7 +637,14 @@
     panes.forEach(p => p.classList.toggle('is-active', p.id === 'cxp-out-' + name));
   }
 
-  input.addEventListener('input', () => { highlightInput(); syncScroll(); });
+  input.addEventListener('input', () => {
+    highlightInput();
+    syncScroll();
+    // Edit invalidates per-source caches (ADR 0037 D9).
+    outputCache.source = null;
+    outputCache.tree = null;
+    outputCache.graph = null;
+  });
   input.addEventListener('scroll', syncScroll);
 
   // Copy button for the Source pane. Mirrors the global pre>.copy-btn
@@ -1398,12 +683,12 @@
 
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
-  // Live evaluation via cxlib (libcx-wasm v0.7.6 surface).
+  // Live evaluation via cxlib (libcx-wasm v0.8.0 surface — ADR 0037 §D7).
   //
   // Data examples — textarea is pure CX, routed through the
   // canonical-conversion entries (toCx / toJson / toXml).
   //
-  // Program examples — textarea is the v0.7.6 program; the bound
+  // Program examples — textarea is the v0.8.0 program; the bound
   // input document (the example's .data field, optional) lives in
   // the example record. liveEvaluate combines them at Run time and
   // routes through evalCode for the CX output, then takes a
@@ -1440,13 +725,14 @@
     highlightOutputs();
   }
 
-  // ── Visualize toggles (gate 17 §D2 + §D3) ───────────────────────
+  // ── Visualize toggles (ADR 0037 D2 + D3 + D9) ──────────────────
   // Source pane → Mermaid diagram via cxlib.diagram (live wasm only;
   // canned mode shows a placeholder since we can't generate Mermaid
-  // from the canned corpus). Output pane → interactive tree from
-  // cxlib.toJson AST (works in both modes — canned JSON is parsed
-  // directly). Tree→text bridge: clicking a tree node highlights the
-  // first substring match in the active Output text tab.
+  // from the canned corpus). Output pane → Tree | Graph toggle per
+  // ADR 0037 D9: Tree mode walks the cxlib.tree() JSON; Graph mode
+  // runs cxlib.diagram() (CFG for programs, ERD for data). Tree→text
+  // bridge: clicking a tree node highlights the first substring match
+  // in the active Output text tab.
   // Source pane viz components — one for each mode. srcVizKind picks
   // which one's currently mounted to vizSourceMount.
   const srcTreeView = (globalThis.CxTreeView && vizSourceMount)
@@ -1455,10 +741,13 @@
   const diagView = (globalThis.CxDiagramView && vizSourceMount)
     ? new globalThis.CxDiagramView({ onClose: () => setVizSource(false) })
     : null;
-  // Output pane viz — Tree only (containment-only structure of the
-  // evaluated value).
+  // Output pane viz components — Tree (containment-only structure
+  // of the evaluated value) + Diagram (ERD/CFG via cxlib.diagram).
   const treeView = (globalThis.CxTreeView && vizOutputMount)
     ? new globalThis.CxTreeView({ onSelect: bridgeHighlight })
+    : null;
+  const outputDiagView = (globalThis.CxDiagramView && vizOutputMount)
+    ? new globalThis.CxDiagramView({ onClose: () => setVizOutput(false) })
     : null;
   let vizSourceOn = false;
   let vizOutputOn = false;
@@ -1501,10 +790,7 @@
     }
     if (outputRow) outputRow.classList.toggle('has-viz', vizOutputOn);
     syncOutputModeButtons();
-    if (vizOutputOn) {
-      if (treeView && !treeView.container) treeView.mount(vizOutputMount);
-      refreshOutputViz();
-    }
+    if (vizOutputOn) refreshOutputViz();
   }
 
   // Source pane has two viz modes (Tree of the source AST, or Graph
@@ -1520,6 +806,17 @@
     if (vizSourceOn) refreshSourceViz();
   }
 
+  // Output pane's Tree | Graph toggle per ADR 0037 D9. Mode is
+  // per-session, defaults to 'tree' on every fresh source. Cache is
+  // per-source: edit invalidates both tree + graph entries.
+  function setOutputViewMode(mode) {
+    outputViewMode = (mode === 'graph') ? 'graph' : 'tree';
+    if (outputDiagView && outputDiagView.container) outputDiagView.unmount();
+    if (treeView && treeView.container) treeView.unmount();
+    syncOutputViewModeButtons();
+    if (vizOutputOn) refreshOutputViz();
+  }
+
   function refreshSourceViz() {
     if (!vizSourceOn || !vizSourceMount) return;
     const src = input.value;
@@ -1532,21 +829,18 @@
       }
       if (!srcTreeView.container) srcTreeView.mount(vizSourceMount);
       let parsed = null;
-      if (liveActive && cxlib && typeof cxlib.programAst === 'function') {
-        // Use programAst() for the structural program tree (directives,
-        // patterns, bindings). cxlib.toJson() returns "null" for any
-        // [?…] source because the universal parser treats directives
-        // as PIs in data context.
+      if (liveActive && cxlib && typeof cxlib.tree === 'function') {
+        // Prefer the v0.8.0 cx_code_tree projection (ADR 0037 D2) which
+        // carries loc{start,end} for the selection-bridge contract (D5).
         try {
-          const jsonText = cxlib.programAst(src);
-          parsed = JSON.parse(jsonText);
+          parsed = cxlib.tree(src);
         } catch (_) {
-          // Fallback for pure-data sources: programAst will error on
-          // non-program input, so retry via the data projection.
+          // Fallback for pure-data sources where tree() may decline:
+          // retry via the universal data projection.
           try {
             const jsonText = cxlib.toJson(src);
             parsed = JSON.parse(jsonText);
-          } catch (_) { parsed = null; }
+          } catch (__) { parsed = null; }
         }
       }
       srcTreeView.update(parsed);
@@ -1563,17 +857,11 @@
         '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
       return;
     }
-    // Pre-check: Graph mode renders CX *programs* (a [?for], [?for],
-    // [?match], …). Pure-data sources (no leading [?…] directive)
-    // would fail the program parser with a "unexpected token" error;
-    // show a friendly placeholder pointing the user at Tree mode.
-    if (!/\[\?[a-z]/i.test(src)) {
-      if (diagView.container) diagView.unmount();
-      vizSourceMount.innerHTML = '<div class="cxdv-empty"><p>Not Available</p></div>';
-      return;
-    }
     if (!diagView.container) diagView.mount(vizSourceMount);
     try {
+      // ADR 0037 D1 auto-detect: cxlib.diagram emits flowchart (CFG)
+      // for code sources, erDiagram for data sources. No JS-side
+      // pre-classify — the wasm export does the right thing.
       const mermaidText = cxlib.diagram(src, 'mermaid');
       diagView.render(mermaidText);
     } catch (err) {
@@ -1588,36 +876,93 @@
   }
 
   function refreshOutputViz() {
-    if (!vizOutputOn || !treeView) return;
-    // Prefer the live JSON we just emitted; fall back to the active
-    // Output JSON tab text (canned-mode path).
-    const jsonText = lastJsonText || (outJson ? outJson.textContent : '');
-    if (!jsonText) {
-      treeView.update(null);
+    if (!vizOutputOn || !vizOutputMount) return;
+    const cxlib = globalThis.cxlib;
+    // Cache lookup: per-source identity, invalidated on edit / load.
+    const src = input.value;
+    if (outputCache.source !== src) {
+      outputCache.source = src;
+      outputCache.tree = null;
+      outputCache.graph = null;
+    }
+    if (outputViewMode === 'tree') {
+      if (outputDiagView && outputDiagView.container) outputDiagView.unmount();
+      if (!treeView) {
+        vizOutputMount.innerHTML = '<div class="cxdv-empty">Tree view unavailable</div>';
+        return;
+      }
+      if (!treeView.container) treeView.mount(vizOutputMount);
+      let parsed = outputCache.tree;
+      if (parsed === null) {
+        // Prefer the live JSON we just emitted; fall back to the active
+        // Output JSON tab text (canned-mode path).
+        const jsonText = lastJsonText || (outJson ? outJson.textContent : '');
+        if (jsonText) {
+          try { parsed = JSON.parse(jsonText); } catch (_) { parsed = null; }
+        }
+        outputCache.tree = parsed;
+      }
+      treeView.update(parsed);
       return;
     }
-    let parsed = null;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (_) {
-      // canned JSON snippets in the corpus are valid; live emit may
-      // be empty for some directives — surface "No entities" instead.
-      parsed = null;
+    // Graph mode — ADR 0037 D9 toggle: cxlib.diagram on the *Output*
+    // text. ERD if the rendered output is pure data (the common case
+    // for [?for] / [?modify] / data examples); CFG if the source
+    // itself was a program and the diagram applies to the program AST.
+    if (treeView && treeView.container) treeView.unmount();
+    if (!outputDiagView) {
+      vizOutputMount.innerHTML = '<div class="cxdv-empty">Graph view unavailable</div>';
+      return;
     }
-    treeView.update(parsed);
+    if (!liveActive || !cxlib || typeof cxlib.diagram !== 'function') {
+      if (outputDiagView.container) outputDiagView.unmount();
+      vizOutputMount.innerHTML =
+        '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
+      return;
+    }
+    if (!outputDiagView.container) outputDiagView.mount(vizOutputMount);
+    let mermaidText = outputCache.graph;
+    if (mermaidText === null) {
+      try {
+        // Diagram the source so CFG/ERD auto-detect kicks in per D1.
+        // For pure-data starters this renders the ERD; for [?…]
+        // starters the CFG.
+        mermaidText = cxlib.diagram(src, 'mermaid');
+        outputCache.graph = mermaidText;
+      } catch (err) {
+        vizOutputMount.innerHTML =
+          '<pre class="cxdv-error">' +
+          String(err && err.message ? err.message : err).replace(
+            /[<&>]/g,
+            (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
+          ) +
+          '</pre>';
+        return;
+      }
+    }
+    outputDiagView.render(mermaidText);
   }
 
   function bridgeHighlight(node) {
-    // Tree → text direction only (text → tree deferred per audit §D13).
+    // Tree → text direction. ADR 0037 D5: prefer loc{start,end} from
+    // cx_code_tree if present; fall back to substring match against
+    // node.hint for canned-mode trees that lack loc.
     const active = document.querySelector('.cxp-pane.is-active code');
-    if (!active || !node || !node.hint) return;
+    if (!active || !node) return;
     const text = active.textContent;
-    const idx = text.indexOf(node.hint);
-    if (idx < 0) return;
+    let start = -1, end = -1;
+    if (node.loc && typeof node.loc.start === 'number' && typeof node.loc.end === 'number') {
+      start = node.loc.start;
+      end = node.loc.end;
+    } else if (node.hint) {
+      start = text.indexOf(node.hint);
+      end = start < 0 ? -1 : start + node.hint.length;
+    }
+    if (start < 0 || end <= start) return;
     // Re-highlight from scratch (escape away any prior <mark>).
-    const before = text.slice(0, idx);
-    const hit = text.slice(idx, idx + node.hint.length);
-    const after = text.slice(idx + node.hint.length);
+    const before = text.slice(0, start);
+    const hit = text.slice(start, end);
+    const after = text.slice(end);
     const esc = (s) => s.replace(/[<&>]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
     // Re-run syntax highlight on before/after if present, but keep
     // the matched span as a flat <mark> (no per-token re-tokenization).
@@ -1641,7 +986,15 @@
   // deactivates the corresponding mode buttons. Listeners are
   // document-delegated so dynamically-rendered buttons (e.g. from a
   // future component swap) still respond.
+  //
+  // The Output pane carries an additional Tree | Graph toggle in its
+  // header (ADR 0037 D9) — distinct CSS class .cxp-output-view-mode.
   document.addEventListener('click', (ev) => {
+    const outputModeBtn = ev.target.closest && ev.target.closest('.cxp-output-view-mode');
+    if (outputModeBtn) {
+      setOutputViewMode(outputModeBtn.dataset.mode);
+      return;
+    }
     const modeBtn = ev.target.closest && ev.target.closest('.cxp-viz-mode');
     if (modeBtn) {
       const target = modeBtn.dataset.target;
@@ -1683,6 +1036,10 @@
         const outs = liveEvaluate(key);
         applyOutputs(outs);
         lastJsonText = outs.json || '';
+        // Run invalidates the per-source viz cache — new live emit.
+        outputCache.source = null;
+        outputCache.tree = null;
+        outputCache.graph = null;
         flashRun('evaluated', 'ran');
         setStatus('Source evaluated through libcx.wasm.', 'ok');
       } else {
