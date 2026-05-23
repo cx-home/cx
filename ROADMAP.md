@@ -24,65 +24,32 @@ Investment in that scope halted 2026-05-20. The cxpath/cxquery V
 implementation is deleted as part of v0.7.6 work; their specs
 remain as historical artifacts only.
 
-**v0.7.6 — CX code, the headline release per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)**
-(Accepted 2026-05-20). v0.7.6 ships **CX code** — a unified
-pattern/query/transform language replacing both cxpath and cxquery
-— with complete integration capabilities (visualization,
-resilience, services and clients, concurrency, async/await) as
-part of the language surface. Authoritative design in
-[`spec/audits/code_design_v1.md`](spec/audits/code_design_v1.md);
-normative spec in `spec/code.md` (in progress, §11.6 release gate);
-ADR 0027 supersedes ADR 0022 §D2 and §D10. Highlights:
+**v0.7.6 — skipped** (per backlog `d-2026-05-22-04`). The unified
+pattern/query/transform scope drafted for v0.7.6 under
+[ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
+was absorbed into v0.8.0; see the `## v0.8.0 — LOCKED` section
+below for the live scope. Note: ADR 0027's design framing (CX as
+code, error code namespace expansion, Tier-1 binding cut) carried
+forward; the §11.6 sixteen-gate framing was superseded by the
+v0.8.0 forty-two-gate release rubric in
+[`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
 
-- **Core CX code** — patterns as literal CX with `$bindings`; Scala-style
-  for-yield comprehension (`[?for $x :in src :where … :yield …]`);
-  small directive set (`[?find]` / `[?match]` / `[?for]` / `[?if]` /
-  `[?let]` / `[?fn]` / `[?def]` / `[?try]` / `[?pipe]`); three path
-  sigils (`/`, `@`, `.`); errors as first-class CX `[err …]` values
-  with `?` / `!` postfix; `:par` parallelism annotation.
-- **Visualization commitment** (§11.1) — every program renders as a
-  sequence diagram per locked rendering rules; `cx diagram` CLI +
-  `<cx-diagram>` web component + LSP CodeLens integration ship in
-  the release.
-- **Resilience** (§11.2) — `[?retry]` (constant / linear / exponential /
-  fibonacci backoff, jitter modes), `[?timeout]`, `[?circuit-breaker]`,
-  `[?fallback]`, `[?rate-limit]`, `[?bulkhead]`; composable; errors
-  in `cx-err:CXER0140–CXER0159`.
-- **Services and clients** (§11.3) — `[?service :on http :port N]`
-  with `[resource :METHOD PATH]` children; `[?http-client :target
-  URL]`; full HTTP/1.1 + HTTP/2 + TLS + streaming + multipart +
-  WebSocket upgrade.
-- **Concurrency** (§11.4) — `[?worker]`, `[?channel]`, `[?send]` /
-  `[?receive]` (blocking + try-variants), `[?close]`, `[?select]`;
-  CSP-style; FIFO per-pair ordering; locked close/drain semantics;
-  single-process (cross-process out of scope, requires separate ADR).
-- **Async / await** (§11.5) — `[?async]` returns `[future …]`;
-  `[?await]` / `[?await-all]` / `[?await-any]` / `[?await-race]`
-  barriers; `[?cancel]` with cooperative-cancellation contract;
-  `[?check-cancel]` for hot loops.
-- **Error code namespace expansion** — ADR 0024 amended 2026-05-21
-  to reserve `cx-err:CXER0100–CXER0299` for Program runtime errors.
-- **Renames the bindings rule** — V/Python/Go are the Tier-1
-  bindings that gate the §11.6 conformance suite (the cut from nine
-  to five in ADR 0022 §D9 remains; Rust + TypeScript stay in scope
-  but pass the suite asynchronously).
-- **Release gates** — v0.7.6 cannot tag until all sixteen §11.6
-  gates pass (spec completeness, test coverage, implementation
-  completeness, performance floors). No partial-ship fallback.
+**v0.7.x — recently shipped** (proof-of-concept arc, superseded
+2026-05-20). The v0.7.0 → v0.7.5 line shipped as POC and is now
+retired. The cxpath / cxquery / XQuery-4.0-parity surface specced
+in [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+§D2 and §D10 turned out to be structurally incomplete (normative
+TBDs, tests passing by reduction, `cx:merge` defects per
+[`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md));
+the V implementation is deleted in v0.8.0 and the specs remain as
+historical artifacts. Headline v0.7.x ADRs:
 
-Other v0.7.x deliverables (the WASM build per
-[ADR 0026](spec/decisions/0026-wasm-distribution-target.md), the
-`cx:` / `log:` modules per
-[ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md))
-are independent of the cxpath/cxquery POC framing and ship through
-their own trajectories.
-
-**v0.8.0 — stable headline release** (post-v0.7.6). v0.8.0 tags as
-the stable CX code release after a burn-in window during which only bug
-fixes and conformance hardening land — no new surface. BaseX-class
-function-module ecosystem work (see "Later" below) targets v0.8.0
-only if it can land cleanly inside the burn-in scope; otherwise it
-slips to v0.9.0.
+- [ADR 0017](spec/decisions/0017-collection-literals.md) — collection literals (sequence / array / map).
+- [ADR 0021](spec/decisions/0021-cxdb-database-direction.md) — CXDB-as-database lane.
+- [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md) — "CX is one language" v0.7.0 scope (now POC-retired).
+- [ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md) — self-host module + extension interface.
+- [ADR 0026](spec/decisions/0026-wasm-distribution-target.md) — WASM distribution target (v0.7.5 playground).
+- [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md) — unified pattern/query/transform language (carried into v0.8.0).
 
 ---
 
@@ -547,31 +514,44 @@ evaluator" entry under "Now — v0.6.0 scope" below.
 
 Capabilities that are real, planned, but not blocking v0.6.0.
 
-### v0.8.0 — BaseX-class function-module ecosystem (single cut)
+### Post-v0.8.0 — function-module ecosystem (extending cx-stdlib)
 
-Per [ADR 0022 §D1 Amendment #3](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-and [`spec/basex_function_modules.md`](spec/basex_function_modules.md):
-v0.8.0 ships the Tier 2 BaseX-equivalent module wrap as a **single
-tag** (mirroring v0.7.0's single-cut discipline for XQuery 4.0
-expression parity). Implementation priority order within v0.8.0:
+v0.8.0 ships the `cx-stdlib` bundled package (per
+[ADR 0035 §D7](spec/decisions/0035-module-loading-scoping-namespacing.md))
+with 14 sub-packages: **strings / json / http / re / time / math /
+io / bytes / format / path / log / hash / env / test**. That
+covers the load-bearing BaseX-class surface (file I/O via `io` +
+`path`, HTTP client via `http`, JSON via `json`, hashing via
+`hash`, etc.) as a single tag.
 
-1. **`file:`** — read/write/exists/list/etc. Essential I/O.
-2. **`http:`** — HTTP client (`http:send-request`); essential for
-   HTMX consumer workflows and any HTTP-driven processing.
-3. **`json:`** — promote existing cx JSON conversion to module-
-   namespaced surface.
-4. **`hash:`** — md5/sha1/sha256/sha512/hash. Content addressing,
-   integrity checks.
-5. **`convert:`** — base64, hex, byte/string conversions.
-6. **`random:`** — UUIDs, random numbers, gaussian.
-7. **`validate:`** — wrap cxs validation in module-namespaced API.
-8. **`crypto:`** — encrypt/decrypt/sign/verify.
-9. **`archive:`** / **`zip:`** / **`bin:`** — file format handling and
+Post-v0.8.0 work extends the function-module ecosystem with
+**user-installable modules** loaded through the same
+`[?lib]`/`cx.lock` mechanism (no new ABI; ADR 0035 governs the
+loader). Candidate modules in rough priority order:
+
+1. **`convert`** — base64, hex, byte/string conversions
+   (currently partially in `bytes`).
+2. **`random`** — UUIDs, RNG distributions (gaussian, uniform).
+3. **`csv`** — round-tripping the delimited surface as a module
+   (v0.6.0 ships the C ABI; module wrap is the post-v0.8.0 piece).
+4. **`crypto`** — encrypt / decrypt / sign / verify.
+5. **`archive`** / **`zip`** / **`bin`** — file-format and
    binary-data manipulation.
-10. **`inspect:`** — runtime introspection.
-11. **`prof:`** — profiling helpers.
-12. **`html:`** — input parsing (cx already emits HTML).
-13. **`xslt:`** — possibly deferred to v0.9.0+ if no concrete consumer.
+6. **`validate`** — wrap CXS validation in module-namespaced API.
+7. **`inspect`** — runtime introspection (program AST, captured
+   bindings, evaluator state).
+8. **`prof`** — profiling helpers (timers, allocation counters).
+9. **`html`** — input parsing (cx already emits HTML via the
+   conversion surface).
+10. **`dom`** — DOM-ish helpers for HTML / XML tree walking
+    layered on CXPath.
+11. **`xslt`** — XSLT engine wrap, deferred until a concrete
+    consumer surfaces.
+
+These ship through their own ADRs as standalone modules rather
+than a single-cut release tag — the v0.8.0 stability boundary
+means new function-module surface lands additively without
+breaking the bundled stdlib contract.
 
 ### v0.9.0+ — concurrency and parallel processing (separate ADR)
 
