@@ -755,6 +755,21 @@
   let lastSource = '';
   let lastJsonText = '';
 
+  // ADR 0037 D5 — text → tree direction. Source-pane caret moves
+  // walk srcTreeView's flat loc index to select the deepest covering
+  // tree node. Only the source tree carries source-coordinate loc
+  // values; the output tree's coordinates point into the JSON
+  // projection (post-evaluation), so the bridge is one-tree-deep on
+  // v0.8.0. The tree → text direction lives in bridgeHighlight()
+  // and applies to both panes.
+  const selectionBridge = (globalThis.CxSelectionBridge && srcTreeView)
+    ? new globalThis.CxSelectionBridge({
+        editor: input,
+        getTreeView: () => (vizSourceOn && srcVizKind === 'tree' ? srcTreeView : null),
+      })
+    : null;
+  if (selectionBridge) selectionBridge.attach();
+
   // Mode buttons live in the LEFT pane headers (CX Source, CX Output).
   // syncSourceModeButtons / syncOutputModeButtons reflect the current
   // (vizSourceOn, srcVizKind) / vizOutputOn state on the button row.
