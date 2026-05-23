@@ -270,6 +270,15 @@ test-playground-e2e: docs
 
 test-docs: test-docs-snapshot test-playground-e2e
 
+# ── ADR 0037 gate 37.10 — code_diagram / code_tree conformance ────────────
+# Runs conformance/code_diagram.txt through cx_code_diagram and
+# cx_code_tree with structural-equivalence comparison per ADR 0037 §D8.
+# Skips cleanly when the binary lacks the subcommands (Phase 7.1 / 7.6
+# / 7.7 implements them) so this target stays green during scaffold.
+.PHONY: test-code-diagram
+test-code-diagram:
+	@python3 scripts/check_code_diagram_fixtures.py
+
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
 	$(PYTHON) lang/python/conformance_code.py
