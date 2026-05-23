@@ -16,75 +16,29 @@
 
    The template is intentionally CX itself — the doc generator eats
    its own dog food. Every directive used below is v0.8.0 vocabulary
-   (no [?find], no in_cxl; uses CXPath value kind + [?for] + [?match] +
-   [?modify] where appropriate). #]
+   per the canonical ADR stack:
+     ADR 0028 — CXPath as a value kind (steps + predicates)
+     ADR 0029 — multi-arm [?match] (:case PATTERN :yield … :else :yield …)
+     ADR 0030 — pure-functional [?modify] (not used directly here)
+     ADR 0034 — module-top-level [?def] (PARAMS in parens, body as last
+                positional element — no v0.7.6 :body slot)
+     ADR 0035 — [?lib] / [?const] / cx.lock module surface
 
-[?let $manifest = //manifest :in
+   Section files are loaded via the stdlib helper read-file (cx-stdlib/io)
+   wrapped in a [?def] so the manifest walk can fan-out across whichever
+   files appear in the manifest. The parse-time-only [?cx include=path]
+   PI is unsuitable here because the path is data-dependent on the
+   manifest entry; we keep [?cx include] for static graft cases. #]
 
-[?let $title         = $manifest/@title :in
-[?let $subtitle      = $manifest/@subtitle :in
-[?let $branch        = $manifest/@branch :in
+[?lib 'cx-stdlib/io' :only (read-file)]
 
-[?let $top-sections  = $manifest/section :in
+[?def load-section :scope private :returns string (file:string)
+  (read-file (concat "docs-src/canonical/sections/" file))]
 
-[# ─── Frontmatter + introduction ─── #]
-
-[document
-  [frontmatter
-    [title $title]
-    [subtitle $subtitle]
-    [branch $branch]
-    [generated-by 'docs-src/canonical/template.cx']
-    [generated-at (now)]
-    [section-count (count $top-sections)]]
-
-  [# ─── Table of contents ─── #]
-
-  [toc title='Contents'
-    [?for $sec :in $top-sections
-      :yield [toc-entry
-              n=($sec/@n)
-              id=($sec/@id)
-              title=($sec/@title)
-              children=[?for $child :in $sec/child
-                :yield [toc-child
-                        n=($child/@n)
-                        id=($child/@id)
-                        title=($child/@title)]]]]]
-
-  [# ─── Body — one section per manifest entry ─── #]
-
-  [body
-    [?for $sec :in $top-sections
-      :yield [?match $sec
-        :case [section file=$file]
-          :yield [render-section
-                   n=($sec/@n)
-                   id=($sec/@id)
-                   title=($sec/@title)
-                   content=(load-section $file)]
-        :else
-          :yield [err section=($sec/@id)
-                       message='manifest entry missing :file slot']]]]]
-
-[# ─── Helper: render a section + its children recursively ─── #]
-
-[?def render-section [$n $id $title $content]
-  :body
-  [section n=$n id=$id title=$title
-    [heading level=2 anchor=$id "$n  $title"]
-    [?for $child :in $content//child
-      :yield [render-child
-               n=($child/@n)
-               id=($child/@id)
-               title=($child/@title)
-               content=$child]]]]
-
-[?def render-child [$n $id $title $content]
-  :body
-  [child n=$n id=$id title=$title
-    [heading level=3 anchor=$id "$n  $title"]
-    [?for $piece :in $content/*
+[?def render-child :scope private (n:string id:string title:string content)
+  [child n=n id=id title=title
+    [heading level=3 anchor=id (concat n "  " title)]
+    [?for $piece :in content/*
       :yield [?match (name($piece))
         :case 'intro'    :yield [paragraph lead=true $piece]
         :case 'body'     :yield [paragraph $piece]
@@ -99,32 +53,79 @@
         :case 'note'     :yield [callout kind='note' $piece]
         :case 'link'     :yield [hyperlink to=($piece/@to) $piece]
         :case 'child'    :yield [render-child
-                                  n=($piece/@n)
-                                  id=($piece/@id)
-                                  title=($piece/@title)
-                                  content=$piece]
+                                  ($piece/@n)
+                                  ($piece/@id)
+                                  ($piece/@title)
+                                  $piece]
         :else            :yield [unhandled kind=(name($piece)) content=$piece]]]]]
 
-[# ─── Helper: load a section file into a parsed CX tree ─── #]
+[?def render-section :scope private (n:string id:string title:string content)
+  [section n=n id=id title=title
+    [heading level=2 anchor=id (concat n "  " title)]
+    [?for $child :in content//child
+      :yield [render-child
+               ($child/@n)
+               ($child/@id)
+               ($child/@title)
+               $child]]]]
 
-[?def load-section [$file]
-  :body
-  [?cx include :path (concat "docs-src/canonical/sections/" $file)]]
+[?def resolve-anchor :scope private (slug:string)
+  [# Cross-link resolution — [[anchor]] → #anchor.
+     Renderer post-processes [[id]] tokens by looking up the manifest
+     slug, anchoring against the rendered section heading. Unresolved
+     anchors emit a warning (gate 6.13 — make verify-doc-links). #]
+  [?match :when (exists //section[@id=slug])
+            :yield [anchor href=(concat "#" slug)]
+          :when (exists //child[@id=slug])
+            :yield [anchor href=(concat "#" slug)]
+          :else
+            :yield [warning unresolved-anchor=slug]]]
 
-[# ─── Cross-link resolution — [[anchor]] → #anchor ─── #]
-[# The renderer post-processes [[id]] tokens by looking up the manifest
-   slug, anchoring against the rendered section heading. Unresolved
-   anchors emit a warning (gate 6.13 — make verify-doc-links). #]
+[# ─── Top-level emit ─── #]
 
-[?def resolve-anchor [$slug]
-  :body
-  [?match $slug
-    :when (exists //section[@id=$slug])
-      :yield [anchor href=(concat "#" $slug)]
-    :when (exists //child[@id=$slug])
-      :yield [anchor href=(concat "#" $slug)]
-    :else
-      :yield [warning unresolved-anchor=$slug]]]
+[?let $manifest = //manifest
+      $title         = $manifest/@title
+      $subtitle      = $manifest/@subtitle
+      $branch        = $manifest/@branch
+      $top-sections  = $manifest/section
+  :in
+  [document
+    [frontmatter
+      [title $title]
+      [subtitle $subtitle]
+      [branch $branch]
+      [generated-by 'docs-src/canonical/template.cx']
+      [generated-at (now)]
+      [section-count (count $top-sections)]]
 
-] ] ] ] ]
-[# (close all the [?let] frames; the document expression is the body.) #]
+    [# ─── Table of contents ─── #]
+
+    [toc title='Contents'
+      [?for $sec :in $top-sections
+        :yield [toc-entry
+                n=($sec/@n)
+                id=($sec/@id)
+                title=($sec/@title)
+                children=[?for $child :in $sec/child
+                  :yield [toc-child
+                          n=($child/@n)
+                          id=($child/@id)
+                          title=($child/@title)]]]]]
+
+    [# ─── Body — one section per manifest entry.
+         Each manifest section carries a :file slot; missing :file
+         renders an [err] node so make verify-doc-links can catch
+         the omission. ─── #]
+
+    [body
+      [?for $sec :in $top-sections
+        :yield [?match $sec
+          :case [section file=$file]
+            :yield [render-section
+                     ($sec/@n)
+                     ($sec/@id)
+                     ($sec/@title)
+                     (load-section $file)]
+          :else
+            :yield [err section=($sec/@id)
+                        message='manifest entry missing :file slot']]]]]]
