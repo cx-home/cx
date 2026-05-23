@@ -43,16 +43,18 @@ vcx/tests/runners/conformance/conformance_run
 lang/v/examples/transform
 lang/v/examples/demo
 
-# Language binding build artifacts
-lang/swift/cxlib/.build/
-lang/typescript/cxlib/dist/
-lang/typescript/cxlib/node_modules/
-lang/java/cxlib/target/
-lang/kotlin/cxlib/build/
-lang/kotlin/cxlib/.gradle/
-lang/csharp/*/bin/
-lang/csharp/*/obj/
+# Language binding build artifacts (active)
 lang/rust/cxlib/target/
+
+# Archived binding build artifacts (lang/_archived/) — not compiled against
+# v0.8.0 ABI; artifacts from prior development kept out of tracking.
+lang/_archived/**/bin/
+lang/_archived/**/obj/
+lang/_archived/**/target/
+lang/_archived/**/.gradle/
+lang/_archived/**/build/
+lang/_archived/**/.build/
+lang/_archived/**/node_modules/
 
 # Editor tooling build artifacts
 tooling/lsp/node_modules/
