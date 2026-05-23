@@ -219,7 +219,15 @@
     [child n=9.2 id=errors-as-values   title='Errors as values']
     [child n=9.3 id=pure-updates       title='Pure-functional updates and lenses']
     [child n=9.4 id=streaming          title='Streaming']
-    [child n=9.5 id=parallelism        title='Parallelism by construction']]
+    [child n=9.5 id=parallelism        title='Parallelism by construction']
+    [child n=9.6 id=security           title='Security model and untrusted-input handling']
+    [child n=9.7 id=performance        title='Performance characteristics']
+    [child n=9.8 id=abi-stability      title='ABI stability and versioning']
+    [child n=9.9 id=concurrency-model  title='Concurrency model']
+    [child n=9.10 id=wasm-story        title='Wasm / browser story']
+    [child n=9.11 id=quotas-recap      title='Resource quotas (recap)']
+    [child n=9.12 id=determinism       title='Determinism and reproducibility guarantees']
+    [child n=9.13 id=sandboxing        title='Sandboxing untrusted CX code']]
 
   [section n=10 id=migration file='10-migration.cxd'
     [child n=10.1 id=from-v07x        title='From v0.7.x to v0.8.0']
