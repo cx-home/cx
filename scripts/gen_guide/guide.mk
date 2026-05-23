@@ -7,12 +7,11 @@
 #   gen-cx-data-language-guide-diff  Show what publishing would change.
 #   gen-cx-data-language-guide-clean Wipe docs/guide/.
 #
-# Rendering is Python-side (scripts/gen_guide/_render.py) — the
-# target has no dependency on the v0.8.0 cx binary. See _render.py
-# header for the rationale (triple-quoted body-binding in current cx
-# doesn't auto-unwrap, and the .cxd surface uses triple-quoted bodies
-# pervasively, so doing the parse in Python is cleaner than fighting
-# the body-binding shape).
+# When the v0.8.0 cx binary is not yet runnable (CXL surface from
+# ADR 0027 not implemented), the target still completes: it stages
+# CSS / JS / logo / search index shell and writes fallback HTML
+# pages whose body is the verbatim .cxd source. The full render
+# materializes the moment cx is ready — no Make changes required.
 
 GUIDE_SRC := docs-src/canonical
 GUIDE_OUT := docs/guide
