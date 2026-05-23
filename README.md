@@ -112,30 +112,42 @@ with no server.
 
 ## Status
 
-CX is pre-1.0. **v0.7.6** is the current development line, building on
-the v0.6.0 API/format-stability lock — the grammar is stable and the
-C ABI is versioned and forward-compatible.
+CX is pre-1.0. **v0.8.0-dev** is the current development line, off the
+`v0.7.5` tag — v0.7.6 was skipped per
+[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cx). The
+grammar is stable and the C ABI is versioned and forward-compatible.
 
-**v0.7.6 — the CX Data Language consolidation release**, ratified by
-[ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md).
-v0.7.6 unifies the executable subset of CX into one coherent surface:
-patterns as literal CX with `$bindings`, Scala-style for-yield
-comprehensions, a small named directive set (`[?match]`, `[?for]`,
-`[?if]`, `[?let]`, `[?try]`, …), full integration
-capabilities (visualization, resilience, services, concurrency,
-async), and errors-as-values. The "CXL" name from v0.7.0–v0.7.5 is
-retired per [§Positioning](spec/decisions/0027-unified-pattern-query-transform.md#positioning-added-2026-05-21);
-the language and its data substrate now share one brand.
+**v0.8.0 — the CXPath + module-system release.** Building on the
+v0.7.5 unified pattern/query/transform surface, v0.8.0 promotes
+**CXPath** to a first-class value kind ([ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md))
+— XPath 3.1-aligned, 12 axes, `//` and `/` step prefixes. `[?match]`
+gains **heterogeneous multi-arm dispatch** with `:case` / `:where` /
+`:else` ([ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md));
+a new **`[?modify]`** directive lands pure-functional updates with
+structural sharing ([ADRs 0030](spec/decisions/0030-modify-pure-functional-updates.md)
+/ [0031](spec/decisions/0031-modify-structural-sharing.md)).
+**`[?def]`** module-level functions, **`[?lib]`** module loading, and
+the `cx.lock` lockfile add a real module system
+([ADRs 0034](spec/decisions/0034-def-module-functions.md) /
+[0035](spec/decisions/0035-module-loading.md)). General `[expr]`
+predicates with `$_` / `$_position` / `$_last` context bindings close
+the XPath alignment gap ([ADR 0036](spec/decisions/0036-expr-general-predicate.md)).
+Internal `programs` → `code` rename runs throughout
+([ADR 0032](spec/decisions/0032-programs-to-code-rename.md)); a new
+`atom` scalar kind (`:NAME`) joins the value kinds. The playground
+gains Tree View and Graph View (ERD + CFG) per
+[ADR 0037](spec/decisions/0037-playground-tree-and-graph-views.md).
 
-v0.7.6 ships with a Tier-1 binding parity matrix (V, Python, Go),
-with C#, Java, Kotlin, Ruby, Rust, Swift, and TypeScript catching up
-on a per-binding cadence. The current per-binding state is tracked
-in the bindings catalog on the docs site.
+v0.8.0 ships a Tier-1 binding matrix of V, Python, Go, and Rust;
+TypeScript, Java, C#, Ruby, Kotlin, and Swift are archived under
+`lang/_archived/` for this release. Per-binding state is tracked in
+the bindings catalog on the docs site.
 
-v0.8.0 will tag stable after a burn-in window of bug-fix-only
-releases. Formal security review and fuzz-testing infrastructure are
-still ahead, so pin a tested version and apply normal pre-1.0 caution
-before customer-facing use.
+Forty-two §11.6 release gates block the tag (see
+[`spec/v0_8_0_status.md`](spec/v0_8_0_status.md)). Formal security
+review and fuzz-testing infrastructure are still ahead, so pin a
+tested version and apply normal pre-1.0 caution before customer-facing
+use.
 
 ## License
 
