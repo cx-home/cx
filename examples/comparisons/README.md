@@ -14,7 +14,6 @@ alternatives forces a trade-off.
 | ---- | ------------ | ------------------------ |
 | [`typed_int.cx`](typed_int.cx) vs [`typed_int.json`](typed_int.json) / [`typed_int.yaml`](typed_int.yaml) | `int64` precision | JS `Number` floats numbers > 2⁵³ |
 | [`commented_config.cx`](commented_config.cx) vs [`commented_config.json`](commented_config.json) | Comments alongside types | JSON has no comments at all |
-| [`mixed_doc.cx`](mixed_doc.cx) vs `mixed_doc.md` + `mixed_doc.json` | Prose + structured data | MD and JSON force you to maintain two files |
 | [`table_block.cx`](table_block.cx) vs [`table_block.csv`](table_block.csv) | Tabular data with typed columns | CSV has no types; YAML is awkward for many rows |
 
 ## Run any comparison

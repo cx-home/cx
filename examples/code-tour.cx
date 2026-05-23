@@ -3,21 +3,23 @@
    v0.8.0 surface per backlog i-examples-programs-tour-deleted.
 
    Covers every core directive + every v0.8.0 addition:
-     1.  [?fn]         — lambdas
-     2.  [?def]        — named closures
-     3.  [?let]        — lexical binding
-     4.  [?if]         — boolean branch
-     5.  [?for]        — iteration + pattern-generator
-     6.  [?match]      — multi-arm dispatch (ADR 0029)
-     7.  [?try]        — error capture
-     8.  [?pipe] / |   — composition
-     9.  [?modify]     — pure-functional updates (ADR 0030)
-     10. CXPath        — first-class path-value (ADR 0028)
-     11. Errors        — postfix ? and !
-     12. Resilience    — [?retry], [?timeout], [?fallback]
-     13. Services      — [?service], [?http-client]
-     14. Concurrency   — [?channel], [?worker], [?select]
-     15. Async         — [?async], [?await], [?await-all]
+      1. [?fn]                 — lambdas
+      2. [?def]                — named module-scope functions (ADR 0034)
+      3. [?let]                — lexical binding
+      4. [?if]                 — boolean branch
+      5. [?for]                — iteration + pattern-generator (ADR 0028)
+      6. [?match]              — multi-arm dispatch (ADR 0029)
+      7. [?try]                — error capture
+      8. [?pipe] / |           — composition
+      9. [?modify]             — pure-functional updates (ADR 0030)
+     10. CXPath                — first-class path-value (ADR 0028)
+     11. [expr] + $_           — general predicate (ADR 0036)
+     12. [?lib] + [?const]     — module loading + constants (ADR 0035)
+     13. Errors                — postfix ? and !
+     14. Resilience            — [?retry], [?timeout], [?fallback]
+     15. Services              — [?service], [?http-client]
+     16. Concurrency           — [?channel], [?worker], [?select]
+     17. Async                 — [?async], [?await], [?await-all]
 
    Run:
      cx eval examples/code-tour.cx
@@ -35,10 +37,20 @@
         [input (1, 2, 3)]
         [output (map $double (1, 2, 3))]])]
 
-  [# ─── §2. Named closures via [?def] ─── #]
+  [# ─── §2. Module-scope functions via [?def] (ADR 0034) ─── #]
 
-  [section title='named closures'
-    [?def shout [$msg] :body (upper (concat $msg "!"))]
+  [section title='module-scope functions ([?def])'
+    [# Module-private by default; :scope public exports across modules.
+       :pure (default) opts the function into the ADR 0034 D11
+       purity algebra; :impure marks I/O / non-deterministic bodies. #]
+    [?def shout
+      :scope public
+      :pure
+      [$msg]
+      :body (upper (concat $msg "!"))]
+
+    [?def _internal-helper [$n] :body (+ $n 1)]
+
     [example
       [input "hello"]
       [output (shout "hello")]]]
@@ -146,7 +158,53 @@
       [preceding (//section/preceding::user)]
       [attribute (//user[1]/attribute::*)]]]
 
-  [# ─── §11. Errors as values ─── #]
+  [# ─── §11. [expr] general predicate + $_ context (ADR 0036) ─── #]
+
+  [section title='[expr] — atomic-predicate sugar (terse form)'
+    [# Terse  [@active=true]  desugars to PredicateExpr  ($_@active = true).
+       Both forms are equivalent at parse time. #]
+    //user[@active=true]]
+
+  [section title='[expr] — general predicate with $_ context binding'
+    [# Inside any predicate, $_ is the candidate node.
+       Use the general form when sugar can't express the test. #]
+    //user[$_@active and $_@verified]]
+
+  [section title='[expr] — nested predicate, $_ shadows innermost'
+    [# Outer $_ is each team; inner $_ rebinds to each member. #]
+    //team[count($_/member[$_/role = "lead"]) >= 1]]
+
+  [section title='[expr] — $_position / $_last (1-based, no parens)'
+    [examples
+      [first-para  (//section/p[$_position = 1])]
+      [last-para   (//section/p[$_position = $_last])]
+      [rows-2-to-10 (//row[$_position >= 2 and $_position <= 10])]]]
+
+  [section title='[expr] — :bind NAME for outer-scope reference across steps'
+    [# $t carries the team through to the inner predicate, where $_
+       has shadowed to the member. #]
+    //team :bind $t / member[$_@role = "lead" and count($t/member) >= 3]]
+
+  [# ─── §12. Modules via [?lib] + [?const] (ADR 0035) ─── #]
+
+  [section title='[?lib] — three resolver shapes'
+    [# Stdlib (bundled), HTTPS-with-SRI (via cx.lock), and relative file.
+       Module-top-level only; not legal inside expressions. #]
+    [?lib 'cx-stdlib/strings']
+    [?lib 'cx-stdlib/json']
+    [?lib 'github.com/example/regex-helpers' :as regex]
+    [?lib './local-helpers.cx']]
+
+  [section title='[?const] — eager (default) and :lazy'
+    [?const GREETING "hello"]
+    [?const :scope public PUBLIC-VERSION "1.0.0"]
+    [?const PATTERN [regex/compile "^[a-z]+"]]
+    [?const :lazy BIG-TABLE [load-big-table]]
+    [example
+      [eager (concat $GREETING ", world")]
+      [public-exported PUBLIC-VERSION]]]
+
+  [# ─── §13. Errors as values ─── #]
 
   [section title='postfix ? — default-propagate (documentation-only)'
     [?try
@@ -158,7 +216,7 @@
       [err code="CXER0001" msg="synthetic"]!
       :catch $err :yield [escalated-and-caught $err]]]
 
-  [# ─── §12. Resilience directives ─── #]
+  [# ─── §14. Resilience directives ─── #]
 
   [section title='retry with exponential backoff'
     [?retry [http-get "https://flaky.example.org"]
@@ -173,7 +231,7 @@
         :on-timeout 'cancel']
       :on-err [cached-response stale=true]]]
 
-  [# ─── §13. Services ─── #]
+  [# ─── §15. Services ─── #]
 
   [section title='http service + client round-trip'
     [?service :on http :name "ping"
@@ -183,7 +241,7 @@
     [?let $client = [?http-client :target "cx-service://ping"] :in
       $client | get("/ping")]]
 
-  [# ─── §14. Concurrency ─── #]
+  [# ─── §16. Concurrency ─── #]
 
   [section title='channel + worker pattern'
     [?channel :name "work" :buffer 16]
@@ -199,7 +257,7 @@
     [?wait-for :worker "producer"]
     [?wait-for :worker "consumer"]]
 
-  [# ─── §15. Async + await ─── #]
+  [# ─── §17. Async + await ─── #]
 
   [section title='async + await + await-all'
     [?let $f1 = [?async [http-get "/a"]] :in

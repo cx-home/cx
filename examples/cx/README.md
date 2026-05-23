@@ -1,25 +1,28 @@
 # CX code examples
 
-Runnable CX code templates against CX context documents. Each example
-pairs a `.cx` data file with a `.cx` template file.
-
-```sh
-$ cx eval greet.cx --data=greet.cx
-Welcome Alice! Role: admin.
-```
+Two small CX data fixtures used as inputs for `cx eval` demos
+elsewhere in the repo (the canonical tours: `examples/code-tour.cx`,
+`examples/cxpath-tour.cx`, `examples/match-multi.cx`,
+`examples/modify-crud.cx`).
 
 ## Files
 
-| Example | What it demonstrates |
-| ------- | -------------------- |
-| `greet.{cx,cxl}` | `[?if cond :then … :else …]` + `[?= @attr]` interpolation |
-| `users.{cx,cxl}` | `[?for var :in path :return …]` iteration over elements |
+| File | Shape |
+| ---- | ----- |
+| [`greet.cx`](greet.cx) | single `[user]` element with `name=`, `role=`, `active=` attributes |
+| [`users.cx`](users.cx) | `[team]` with three `[member]` rows showing `+flag` / `-flag` shorthand |
 
-## Run them
+## Use them as input
 
 ```sh
-cx eval greet.cx --data=greet.cx
-cx eval users.cx --data=users.cx
+# Inspect the data
+cx eval greet.cx
+cx eval users.cx
+
+# Drive a tour script over one of them
+cx eval ../code-tour.cx --input greet.cx
+cx eval ../cxpath-tour.cx --input users.cx
 ```
 
-For the full Programs reference: [`docs/CX code.md`](../../docs/CX code.md).
+For the full Code surface, see [`docs/CX code.md`](../../docs/CX%20code.md)
+and the v0.8.0 tour at [`examples/code-tour.cx`](../code-tour.cx).
