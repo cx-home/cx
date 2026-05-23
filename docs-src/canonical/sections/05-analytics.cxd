@@ -697,7 +697,7 @@
         """The 200 MB/s target is **realistic-workload** (JSON-shape
            records, ~75 B/record). The toy 25-byte `id:name;` bench
            hits a lower number because it's loop-control-bound, not
-           marshaling-bound. Cite the realistic figure externally."""]]]]
+           marshaling-bound. Cite the realistic figure externally."""]]]
 
   [child id=integrations n=5.7 title='Ecosystem integrations'
     [intro
@@ -783,7 +783,7 @@
         """For DataFrame-style work where zero-copy matters, prefer
            Polars over pandas. pandas remains supported because the
            Python data-science ecosystem assumes it, but the
-           cross-boundary cost is real on large tables."""]]]
+           cross-boundary cost is real on large tables."""]]
 
     [child id=datafusion n=5.7.4 title='DataFusion (post-v0.8.0)'
       [body
@@ -838,7 +838,7 @@
            come back through CXCol via `cx table load
            output.parquet --to=cx`. For round-trip workflows, keep the
            CXCol file as the canonical origin and treat Spark's outputs
-           as derived artifacts."""]]]
+           as derived artifacts."""]]
 
   [child id=performance n=5.8 title='Performance characteristics'
     [intro
