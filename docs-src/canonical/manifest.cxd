@@ -196,10 +196,18 @@
       [child n=7.5.4 id=rust     title='Rust']]]
 
   [section n=8 id=tooling file='08-tooling.cxd'
-    [child n=8.1 id=cli          title='The cx CLI']
-    [child n=8.2 id=editors      title='Editor integration']
-    [child n=8.3 id=lsp          title='Language server (LSP)']
-    [child n=8.4 id=tree-sitter  title='Tree-sitter grammar']]
+    [child n=8.1 id=cli              title='The cx CLI']
+    [child n=8.2 id=editors          title='Editor integration']
+    [child n=8.3 id=lsp              title='Language server (LSP)']
+    [child n=8.4 id=tree-sitter      title='Tree-sitter grammar']
+    [child n=8.5 id=lint             title='Lint rules']
+    [child n=8.6 id=diff             title='Diff semantics']
+    [child n=8.7 id=cookbook         title='Cookbook — common recipes']
+    [child n=8.8 id=diagnostics      title='Diagnostics and debugging']
+    [child n=8.9 id=build-integration title='Build-system integration']
+    [child n=8.10 id=docgen          title='Doc-gen pipeline']
+    [child n=8.11 id=playground      title='Playground']
+    [child n=8.12 id=profiling       title='Profiling and benchmarking']]
 
   [section n=9 id=concepts file='09-concepts.cxd'
     [child n=9.1 id=homoiconicity      title='Homoiconicity']
