@@ -95,7 +95,16 @@
 /* Sibling viz pane — same background palette as the code panes for
    visual coherence; left-border separator when in side-by-side mode.
    align-self: stretch + height 100% so a tall tree-view fills the
-   row, not pushing past it. */
+   row, not pushing past it.
+
+   min-height: 0 is required here because this is a CSS Grid item.
+   Without it, the item contributes its full content height to the
+   grid track's intrinsic sizing — the tree's many nodes push the row
+   taller than the output-col, and overflow: hidden never engages.
+   With min-height: 0 the item contributes 0 to the track minimum, so
+   the row is sized by the output-col instead; the viz pane then fills
+   that bounded height via align-self: stretch, and overflow: hidden
+   clips the tree within the panel. */
 .cxp-viz-pane {
   display: flex;
   flex-direction: column;
@@ -103,6 +112,7 @@
   color: var(--code-fg);
   border-left: 1px solid var(--code-border);
   height: 100%;
+  min-height: 0;
   align-self: stretch;
   overflow: hidden;
 }
