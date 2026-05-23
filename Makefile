@@ -6,6 +6,15 @@
 -include scripts/gen_docs/docs.mk
 # ── v0.7.0 doc pipeline ─────────────────────────────────────────── END gen_docs
 
+# ── v0.8.0 CX Data and Code Language Guide ────────────────────── BEGIN gen_guide
+# Makes `make gen-cx-data-language-guide` first-class. Renders
+# docs-src/canonical/manifest.cxd + sections/*.cxd into docs/guide/.
+# When the v0.8.0 cx binary is not yet runnable, the target stages
+# chrome + assets and falls back to source-as-body pages — see
+# scripts/gen_guide/README.md for the full pipeline.
+-include scripts/gen_guide/guide.mk
+# ── v0.8.0 CX Data and Code Language Guide ──────────────────────── END gen_guide
+
 CONFORMANCE_CORE := conformance/core.txt
 CONFORMANCE_EXT := conformance/extended.txt
 CONFORMANCE_XML := conformance/xml.txt
