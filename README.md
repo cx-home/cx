@@ -120,8 +120,8 @@ C ABI is versioned and forward-compatible.
 [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md).
 v0.7.6 unifies the executable subset of CX into one coherent surface:
 patterns as literal CX with `$bindings`, Scala-style for-yield
-comprehensions, a small named directive set (`[?find]`, `[?match]`,
-`[?for]`, `[?if]`, `[?let]`, `[?try]`, …), full integration
+comprehensions, a small named directive set (`[?match]`, `[?for]`,
+`[?if]`, `[?let]`, `[?try]`, …), full integration
 capabilities (visualization, resilience, services, concurrency,
 async), and errors-as-values. The "CXL" name from v0.7.0–v0.7.5 is
 retired per [§Positioning](spec/decisions/0027-unified-pattern-query-transform.md#positioning-added-2026-05-21);
