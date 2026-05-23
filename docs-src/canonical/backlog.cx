@@ -382,6 +382,14 @@
       :resolution 'spec layer: ADR 0030 drafted (5418b469); grammar.ebnf [141]-[148e]; spec/code.md §8.10 [?modify] action vocabulary; 9 conformance fixtures (modify-001..009); ADR 0031 structural-sharing perf basis (20ba051f). Impl deferred to Phase 2.8.'
       :evidence 'spec/decisions/0030-modify-pure-functional-updates.md + spec/decisions/0031-structural-sharing.md + spec/grammar.ebnf + conformance/code.txt modify fixtures + examples/modify-crud.cx']
 
+    [decision &d-2026-05-22-17
+      :date 2026-05-22
+      :title 'Tier-2 binding archive cleanup complete — gate 28.10 ready for status flip'
+      :status accepted
+      :rationale 'Makefile / CI trimmed (test-typescript,test-java,test-csharp,test-ruby,test-kotlin,test-swift + all build-/example-/demo- counterparts removed; ci.yml matrix reduced to vcx/python/go/rust; toolchain setup steps for Node/JDK/.NET/Ruby removed); lang/_archived/ build artifacts gitignored (19 untracked dirs: bin/,obj/,target/,.gradle/,build/,.build/,node_modules/ across csharp/java/kotlin/swift/typescript); spec/parity_matrix.md active matrix trimmed to V-native/Python/Go/Rust with archived binding rows moved to §2.1 sub-table; lang/_archived/README.md already complete. Three-commit series: 3588b294 (Makefile+CI), 88313e52 (gitignore), docs commit (parity+backlog).'
+      :scope 'Makefile, .github/workflows/ci.yml, .gitignore, spec/parity_matrix.md, lang/_archived/README.md (already complete)'
+      :gate '28.10 ready — flip spec/v0_8_0_status.md in end-of-session reconciliation']
+
     [decision &d-2026-05-22-16
       :date 2026-05-22
       :title 'v0.8.0 first full-delivery session — foundation complete; Phase 2 (V impl) deferred to dedicated session'
