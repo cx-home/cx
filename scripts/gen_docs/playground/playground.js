@@ -718,13 +718,13 @@
 
   const programExamples = {
     'find-simple': {
-      label: "[?find] \u2014 pattern match with binding",
+      label: "[?for] \u2014 pattern match with binding",
       input: [
         "[doc",
         "  [user [name Alice]]",
         "  [user [name Bob]]",
         "  [user [name Carol]]]",
-        "[?find [user [name $n]] :yield $n]"
+        "[?for [user [name $n]] :yield $n]"
       ].join('\n'),
       cx:    [
         "\"Alice\"",
@@ -735,13 +735,13 @@
       xml:   "",
     },
     'find-attr-eq': {
-      label: "[?find] \u2014 attribute equality predicate",
+      label: "[?for] \u2014 attribute equality predicate",
       input: [
         "[items",
         "  [item active=true  name=pizza]",
         "  [item active=false name=salad]",
         "  [item active=true  name=soda]]",
-        "[?find [item @active=true $i] :yield $i]"
+        "[?for [item @active=true $i] :yield $i]"
       ].join('\n'),
       cx:    [
         "[item active=true name=pizza]",
@@ -767,12 +767,12 @@
       ].join('\n'),
     },
     'find-pair': {
-      label: "[?find] \u2014 yield literal with multiple bindings",
+      label: "[?for] \u2014 yield literal with multiple bindings",
       input: [
         "[doc",
         "  [user [name Alice] [email a@x.com]]",
         "  [user [name Bob]   [email b@x.com]]]",
-        "[?find [user [name $n] [email $e]] :yield [pair :name $n :email $e]]"
+        "[?for [user [name $n] [email $e]] :yield [pair :name $n :email $e]]"
       ].join('\n'),
       cx:    [
         "[pair :name \"Alice\" :email \"a@x.com\"]",
@@ -792,13 +792,13 @@
       ].join('\n'),
     },
     'find-deep': {
-      label: "[?find] \u2014 finds at any depth",
+      label: "[?for] \u2014 finds at any depth",
       input: [
         "[org",
         "  [team [member [name Alice]]]",
         "  [team [member [name Bob]]]",
         "  [team [member [name Carol]]]]",
-        "[?find [name $n] :yield $n]"
+        "[?for [name $n] :yield $n]"
       ].join('\n'),
       cx:    [
         "\"Alice\"",
@@ -809,13 +809,13 @@
       xml:   "",
     },
     'find-yield-tree': {
-      label: "[?find] \u2014 bind name + price via child-element shape",
+      label: "[?for] \u2014 bind name + price via child-element shape",
       input: [
         "[shop",
         "  [pizza [name Margherita] [price 12]]",
         "  [pizza [name Hawaiian]   [price 14]]",
         "  [pizza [name Diavola]    [price 13]]]",
-        "[?find [pizza [name $n] [price $p]] :yield [hit :name $n :price $p]]"
+        "[?for [pizza [name $n] [price $p]] :yield [hit :name $n :price $p]]"
       ].join('\n'),
       cx:    [
         "[hit :name \"Margherita\" :price 12]",
@@ -841,7 +841,7 @@
       label: "Text extraction \u2014 body-binding unwraps to a string",
       input: [
         "[doc [user [name Alice]]]",
-        "[?find [name $n] :yield $n]"
+        "[?for [name $n] :yield $n]"
       ].join('\n'),
       cx:    "\"Alice\"",
       json:  "null",
@@ -981,7 +981,7 @@
       label: "Pattern match \u2014 yield welcome for a user",
       input: [
         "[doc [user kind=admin [name Alice]]]",
-        "[?find [user [name $n]] :yield [welcome $n]]"
+        "[?for [user [name $n]] :yield [welcome $n]]"
       ].join('\n'),
       cx:    "[welcome \"Alice\"]",
       json:  [
@@ -1023,7 +1023,7 @@
       label: "Pipe sugar \u2014 find then first",
       input: [
         "[doc [user [name Alice]] [user [name Bob]]]",
-        "[?find [user [name $n]] :yield $n] | first"
+        "[?for [user [name $n]] :yield $n] | first"
       ].join('\n'),
       cx:    "\"Alice\"",
       json:  "null",
@@ -1033,7 +1033,7 @@
       label: "Pipe sugar \u2014 find then last",
       input: [
         "[doc [user [name Alice]] [user [name Bob]] [user [name Carol]]]",
-        "[?find [user [name $n]] :yield $n] | last"
+        "[?for [user [name $n]] :yield $n] | last"
       ].join('\n'),
       cx:    "\"Carol\"",
       json:  "null",
@@ -1072,7 +1072,7 @@
         "[doc",
         "  [user [name Alice] [email a@x.com] [age 30]]",
         "  [user [name Bob]   [email b@x.com] [age 25]]]",
-        "[?find [user [name $n] [age $a]] :yield [profile :name $n :age $a]]"
+        "[?for [user [name $n] [age $a]] :yield [profile :name $n :age $a]]"
       ].join('\n'),
       cx:    [
         "[profile :name \"Alice\" :age 30]",
@@ -1098,7 +1098,7 @@
         "  [pizza name=Margherita price=12]",
         "  [pizza name=Hawaiian   price=14]",
         "  [pizza name=Diavola    price=13]]",
-        "[?find [pizza @name=$n] :yield $n]"
+        "[?for [pizza @name=$n] :yield $n]"
       ].join('\n'),
       cx:    [
         "\"Margherita\"",
@@ -1112,8 +1112,8 @@
       label: "[?let] \u2014 let-chain composing pieces",
       input: [
         "[page [meta title='New Haven Pizza' tagline='Hand-tossed since 1987']]",
-        "[?let $title = [?find [meta @title=$t] :yield $t] :in",
-        " [?let $tag = [?find [meta @tagline=$tl] :yield $tl] :in",
+        "[?let $title = [?for [meta @title=$t] :yield $t] :in",
+        " [?let $tag = [?for [meta @tagline=$tl] :yield $tl] :in",
         "  [page [h1 $title] [p $tag]]]]"
       ].join('\n'),
       cx:    "[page [h1 \"New Haven Pizza\"] [p \"Hand-tossed since 1987\"]]",
@@ -1192,7 +1192,7 @@
     }
     pick.appendChild(dataGroup);
     const progGroup = document.createElement('optgroup');
-    progGroup.label = 'Programs — v0.7.6 directives (cxlib.evalCode)';
+    progGroup.label = 'Programs — v0.8.0 directives (cxlib.evalCode)';
     for (const [key, ex] of Object.entries(programExamples)) {
       const opt = document.createElement('option');
       opt.value = 'program:' + key;
@@ -1563,7 +1563,7 @@
         '<div class="cxdv-empty">Mermaid diagrams require live libcx.wasm</div>';
       return;
     }
-    // Pre-check: Graph mode renders CX *programs* (a [?find], [?for],
+    // Pre-check: Graph mode renders CX *programs* (a [?for], [?for],
     // [?match], …). Pure-data sources (no leading [?…] directive)
     // would fail the program parser with a "unexpected token" error;
     // show a friendly placeholder pointing the user at Tree mode.
