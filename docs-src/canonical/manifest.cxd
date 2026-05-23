@@ -185,15 +185,20 @@
     [child n=6.10 id=resilience  title='Resilience directives']]
 
   [section n=7 id=bindings file='07-bindings.cxd'
-    [child n=7.1 id=c-abi        title='The C ABI surface']
-    [child n=7.2 id=layer-1      title='Layer 1 — canonical method set']
-    [child n=7.3 id=layer-2      title='Layer 2 — host idiom packs']
-    [child n=7.4 id=schema-codegen title='Schema-driven codegen']
-    [child n=7.5 id=quickstarts
-      [child n=7.5.1 id=v        title='V (native reference)']
-      [child n=7.5.2 id=python   title='Python']
-      [child n=7.5.3 id=go       title='Go']
-      [child n=7.5.4 id=rust     title='Rust']]]
+    [child n=7.1 id=c-abi             title='The C ABI surface']
+    [child n=7.2 id=layer-1           title='Layer 1 — canonical method set']
+    [child n=7.3 id=layer-2           title='Layer 2 — host idiom packs']
+    [child n=7.4 id=type-mapping      title='Type mapping per binding']
+    [child n=7.5 id=thread-safety     title='Thread-safety and concurrency model']
+    [child n=7.6 id=cap-bit-negotiation title='Capability bit negotiation']
+    [child n=7.7 id=ffi-lifetime      title='FFI lifetime and memory ownership']
+    [child n=7.8 id=schema-codegen    title='Schema-driven codegen']
+    [child n=7.9 id=install-hello     title='Install + hello world per binding']
+    [child n=7.10 id=quickstarts      title='Quickstarts (V/Python/Go/Rust)'
+      [child n=7.10.1 id=v        title='V (native reference)']
+      [child n=7.10.2 id=python   title='Python']
+      [child n=7.10.3 id=go       title='Go']
+      [child n=7.10.4 id=rust     title='Rust']]]
 
   [section n=8 id=tooling file='08-tooling.cxd'
     [child n=8.1 id=cli              title='The cx CLI']
