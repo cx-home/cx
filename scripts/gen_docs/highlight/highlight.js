@@ -142,7 +142,7 @@
     v: 'go',
     cxl: 'cx',
     cxs: 'cx',
-    cxdb: 'cx',
+    cxcol: 'cx',
     json: [
       [/"[^"\n]*"/g, 'string'],
       [/\b\d+(?:\.\d+)?\b/g, 'number'],

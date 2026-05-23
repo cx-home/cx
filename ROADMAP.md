@@ -737,9 +737,9 @@ gets a one-paragraph summary below.
  encoding parsers is large and the benefit is approximately zero.
 - **MessagePack / CBOR / Protobuf as import-export targets** — see
  .
- Rationale: CXDB v1 binary already covers the "compact wire
+ Rationale: CXCol v1 binary already covers the "compact wire
  format" need, and adding three more binary formats explodes the
- conversion matrix without buying anything CXDB doesn't already
+ conversion matrix without buying anything CXCol doesn't already
  give. Third parties can write codecs against `cx_to_data_bin` if
  they want them.
 - **DOCTYPE-as-active-declaration** — see
