@@ -78,13 +78,38 @@
     [child n=2.17 id=reserved-tokens title='Reserved tokens and keyword list']]
 
   [section n=3 id=surfaces file='03-surfaces.cxd'
-    [child n=3.1 id=cx-canonical title='CX — the canonical dialect']
-    [child n=3.2 id=json         title='JSON projection']
-    [child n=3.3 id=yaml         title='YAML projection']
-    [child n=3.4 id=toml         title='TOML projection']
-    [child n=3.5 id=xml          title='XML projection']
-    [child n=3.6 id=md           title='Markdown projection']
-    [child n=3.7 id=roundtrip    title='Round-trip guarantees']]
+    [child n=3.1 id=cx-canonical title='CX — the canonical dialect'
+      [child n=3.1.1 id=canonical-lossless title='Lossless canonical (cx fmt)']
+      [child n=3.1.2 id=canonical-strict   title='Strict canonical (cx canon / cx hash)']]
+    [child n=3.2 id=json         title='JSON projection'
+      [child n=3.2.1 id=json-mixed-content title='Mixed content via _cx_prose']
+      [child n=3.2.2 id=json-namespaces    title='Namespace handling']
+      [child n=3.2.3 id=json-numbers       title='Number precision and BigInt']
+      [child n=3.2.4 id=json-null          title='null vs missing']]
+    [child n=3.3 id=yaml         title='YAML projection'
+      [child n=3.3.1 id=yaml-tags          title='YAML tags (!!str, !!int, !!binary)']
+      [child n=3.3.2 id=yaml-multiline     title='Multiline scalars (| and >)']
+      [child n=3.3.3 id=yaml-anchors       title='Anchors and aliases']]
+    [child n=3.4 id=toml         title='TOML projection'
+      [child n=3.4.1 id=toml-inline        title='Inline tables vs dotted keys']
+      [child n=3.4.2 id=toml-array-of-tables title='Array of tables']]
+    [child n=3.5 id=xml          title='XML projection'
+      [child n=3.5.1 id=xml-pi              title='Processing instructions and comments']
+      [child n=3.5.2 id=xml-space-roundtrip title='xml:space round-trip']
+      [child n=3.5.3 id=xml-doctype-dtd     title='DOCTYPE and DTD']]
+    [child n=3.6 id=md           title='Markdown projection'
+      [child n=3.6.1 id=md-tables           title='GFM tables']
+      [child n=3.6.2 id=md-fences           title='Fenced code with language']
+      [child n=3.6.3 id=md-frontmatter      title='Frontmatter']
+      [child n=3.6.4 id=md-footnotes        title='Footnotes']
+      [child n=3.6.5 id=md-math             title='Math blocks (KaTeX/MathJax)']]
+    [child n=3.7 id=delimited    title='Delimited projection (CSV / TSV / PSV)'
+      [child n=3.7.1 id=delim-header        title='Header detection']
+      [child n=3.7.2 id=delim-types         title='Type inference']
+      [child n=3.7.3 id=delim-quoting       title='Quoting and escaping']]
+    [child n=3.8 id=jsonl        title='JSONL / NDJSON projection']
+    [child n=3.9 id=bytes-wire   title='Bytes scalar across surfaces']
+    [child n=3.10 id=roundtrip   title='Round-trip guarantees and lossiness matrix']]
 
   [section n=4 id=identity file='04-identity.cxd'
     [child n=4.1 id=canonical    title='Canonical bytes']
