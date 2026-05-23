@@ -15,6 +15,17 @@
   target-output='docs/cx-data-and-code-guide.md (single file) + multi-file emit later'
   status=scaffold
 
+  [# front-matter — appears before [section n=1] in render order #]
+  [section n=0 id=quickstart file='00-quickstart.cxd'
+    [child n=0.1 id=install          title='Install']
+    [child n=0.2 id=hello-cx         title='Hello, CX']
+    [child n=0.3 id=first-file       title='Your first file']
+    [child n=0.4 id=first-conversion title='Convert JSON ↔ CX']
+    [child n=0.5 id=first-selection  title='Select with CXPath']
+    [child n=0.6 id=first-validation title='Validate with a schema']
+    [child n=0.7 id=first-binding    title='Hello from your host language']
+    [child n=0.8 id=next-steps       title='Where to go next']]
+
   [section n=1 id=intro file='01-intro.cxd'
     [child n=1.1 id=hello       title='Hello, CX']
     [child n=1.2 id=philosophy  title='Design philosophy']
@@ -241,4 +252,9 @@
       [child n=10.5.4 id=ship-binding         title='Shipping a new binding']
       [child n=10.5.5 id=debug-investigate    title='Debugging an implementation']
       [child n=10.5.6 id=memory-update        title='Updating the project memory']]]
+
+  [# back-matter — appears after [section n=10] in render order #]
+  [section n=11 id=glossary   file='11-glossary.cxd']
+  [section n=12 id=faq        file='12-faq.cxd']
+  [section n=13 id=comparison file='13-comparison.cxd']
 ]
