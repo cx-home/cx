@@ -387,5 +387,13 @@
       :title 'v0.8.0 first full-delivery session — foundation complete; Phase 2 (V impl) deferred to dedicated session'
       :status accepted
       :rationale '''The 2026-05-22 full-delivery session landed: ADRs 0028/0029/0030/0031/0032 (drafted); rename executed end-to-end (ee6bfcf3); 6 retired bindings archived (a08683d3); migration tooling + guides + release notes; 48 Layer-1 parity fixtures + 24 XPath 3.1 parity fixtures; XPath 3.1 parity runner; gate-check master runner; 9 canonical-guide sections (2143 lines); v0.8.0 tour examples (cxpath, match-multi, modify, code-tour); tooling refresh (tree-sitter / TextMate / LSP-spec-reservations / VS Code / neovim / completions). V impl of CXPath axes + multi-arm match + modify (Phase 2) is multi-day work and was deliberately left for a dedicated technical session — file `vcx/code/eval.v` is 3915 LOC and adding 12 axes + 11 modify actions + multi-arm match semantics needs focused attention.'''
-      :next-session-scope 'Phase 2 V impl (PathNode AST + parser + evaluator for CXPath / multi-arm [?match] / [?modify]); Phase 3.2-3.6 binding retargets to Layer-1 16-method surface; Phase 4 conformance verification; Phase 6 doc-gen port; Phase 7 wasm + playground; Phase 10 full test sweep']]
+      :next-session-scope 'Phase 2 V impl (PathNode AST + parser + evaluator for CXPath / multi-arm [?match] / [?modify]); Phase 3.2-3.6 binding retargets to Layer-1 16-method surface; Phase 4 conformance verification; Phase 6 doc-gen port; Phase 7 wasm + playground; Phase 10 full test sweep']
+
+    [decision &d-2026-05-22-17
+      :date 2026-05-22
+      :title 'doc-gen ported to v0.8.0-dev syntax; make docs green; playground starters parse + eval clean'
+      :status accepted
+      :rationale '''scripts/gen_docs/build.cx and the playground starter corpus carried v0.7.6 [?find] directives that no longer parse on v0.8.0-dev (ADR 0028 retired [?find] per spec/code.md §5.5 + §8.1). Migration is mechanical: every [?find [pat] :yield E] becomes [?for [pat] :yield E] — the §7.5 pattern-generator form, identical semantics. Applied to build.cx (8 occurrences inside the multi-[?let] chain) and playground.js (19 occurrences inside programExamples input strings, 6 labels, 1 inline comment, plus one optgroup label v0.7.6 → v0.8.0). cxlib.js already migrated to evalCode / _cx_code_eval per ADR 0032 — no further wasm-surface work needed. Verified: make docs exits 0 (44 pages rendered to _docs_staging/); 25/25 program examples parse + eval cleanly through the local cx eval CLI.'''
+      :evidence 'scripts/gen_docs/build.cx + scripts/gen_docs/playground/playground.js; commits 4a1ac16f (build.cx port) + bc1d14e0 (playground.js port)'
+      :follow-up 'wasm playground browser smoke pending — local CLI verification is sufficient evidence of parse + eval success per scope envelope']]
 ]
