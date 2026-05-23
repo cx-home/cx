@@ -738,6 +738,46 @@ optimisation stack and next-lever ordering.
 - **Annual binding audit (2027 edition)** — same shape as the 2026-05
  audit, applied to whatever evolved since. Cadence item, not a
  release blocker.
+- **`cx build` — single-binary embed-and-launch (v0.8.0 candidate).**
+ Static-link libcx into a small V launcher that embeds the program
+ source and calls `code.eval_code` at startup; emits a
+ single self-contained executable. AST evaluator stays inside —
+ perf == `cx eval`. No codegen, no static-CX-subset question, no
+ new ABI; one CLI subcommand wrapping the existing C ABI. Fits
+ v0.8.0's stability scope as a tooling win; falls back to v0.9.0
+ if it doesn't land cleanly inside burn-in. Bigger AOT/JIT
+ trajectories (whole-program codegen, per-function `.so` JIT,
+ native LLVM codegen) are deferred — they need their own ADR
+ defining the static CX subset and are unscoped for now.
+- **Native module loader (V `-shared` + dlopen)** — split cx's own
+ stdlib modules (`cx:`, `log:`, future `crypto:` / `regex:` /
+ `http:` / ...) out of the libcx core into per-module `.so`s
+ loaded on first use, behind a stable C ABI. Cx ships a slim
+ core + opt-in module bundles; stdlib bugs can be hot-fixed
+ without recompiling libcx; modules version independently. The
+ same loader and ABI then host third-party function modules
+ (see BaseX-class function-module ecosystem, v0.8.0 line), so
+ the ecosystem inherits a *dogfooded* loader rather than one
+ designed in the abstract. Open design questions: ABI versioning
+ across cx releases, signing / capabilities for untrusted
+ modules, per-platform build matrix (mac / linux / win × arch).
+ Sub-uses unlocked by the same loader:
+ - **Schema validators and lint rules as compiled `.so`** — CXLS
+ rules + lint checks compiled V → `.so` and dlopened, faster
+ than walking schema/lint AST at validate time; lets users ship
+ custom lint plugins.
+ - **`v -live` for `cx run --live foo.cx`** — once per-function
+ `.so` JIT exists (a separate deferred trajectory beyond the
+ `cx build` embed-and-launch entry above), V's `[live]`
+ machinery gives free file-watcher hot reload: edit a `[?fn]`
+ body, save, in-flight `[?service]` picks up the new code
+ without restart. Tightens the playground / `cx diagram` dev
+ loop. Design boundary is what counts as a live-able change
+ (`[?fn]` body yes; `[?def]` of state no, prompts restart).
+ - **WASM caveat** — wasm has no dlopen, so the design forks:
+ desktop/server gets dynamic loading + slim core; wasm ships
+ the full static cut. Module manifest needs a "wasm-safe" bit
+ and the build pipeline produces both flavors.
 
 > **The "CX code 3.1 / CX code 4.0" staging block previously in this section
 > is superseded** by [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
