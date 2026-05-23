@@ -3,15 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The CX Data Language</title>
+<title>CX — One Bracket for Every Data Format</title>
 <style>:root {
   --bg: #fafaf7;
   --fg: #1a1a1a;
   --muted: #6b7280;
-  /* Brand palette — derived from cx-logo.svg cobalt #0039BA. */
-  --accent: #0039BA;
-  --accent-dark: #002A8C;
-  --accent-light: #3B66D3;
+  --accent: #1f6feb;
   --border: #e6e6e0;
 
   /* Dark code blocks for visual prominence */
@@ -26,7 +23,7 @@
   --side-bg: #f3f3ec;
   --side-fg: #1a1a1a;
   --side-muted: #6b7280;
-  --side-active: #0039BA;
+  --side-active: #1f6feb;
 }
 
 * { box-sizing: border-box; }
@@ -58,17 +55,15 @@ aside.sidebar {
 }
 
 aside.sidebar .brand {
-  margin: 0 0 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.9rem;
+  color: var(--side-fg);
   display: block;
   text-decoration: none;
-  line-height: 0;
 }
 aside.sidebar .brand:hover { text-decoration: none; }
-aside.sidebar .brand-mark {
-  display: block;
-  width: 64px;
-  height: 64px;
-}
 
 aside.sidebar .brand-sub {
   display: block;
@@ -360,9 +355,7 @@ td code {
 </head>
 <body>
 <aside class="sidebar">
-  <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
-  </a>
+  <a class="brand" href="index.html">CX</a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <div class="side-search">
     <input id="side-search-input" type="search" placeholder="Search the docs…" autocomplete="off" spellcheck="false" data-prefix="" />
@@ -379,7 +372,7 @@ td code {
     </ul></section>
   <section><h4>Examples</h4><ul>
     <li><a href="tour/data.html">50 Ways to Love Your CX Data</a></li>
-    <li><a href="tour/programs.html">50 Ways to Love Your CX Programs</a></li>
+    <li><a href="tour/code.html">50 Ways to Love Your CXL Code</a></li>
     <li><a href="cookbook.html">Cookbook</a></li>
     <li><a href="showcase.html">Showcase</a></li>
     </ul></section>
@@ -387,13 +380,15 @@ td code {
     <li><a href="concepts/data-model.html">Data Model</a></li>
     <li><a href="concepts/sigils.html">Sigils & Markup</a></li>
     <li><a href="concepts/evaluation.html">Evaluation Model</a></li>
+    <li><a href="concepts/cxpath.html">CXPath</a></li>
     <li><a href="concepts/identity.html">Identity & Canonical</a></li>
     <li><a href="concepts/types.html">Types</a></li>
     <li><a href="concepts/wasm.html">WebAssembly Target</a></li>
     </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="reference/cli.html">CLI</a></li>
-    <li><a href="reference/programs.html">CX Programs</a></li>
+    <li><a href="reference/cxl.html">CXL Language</a></li>
+    <li><a href="reference/cxpath.html">CXPath Functions</a></li>
     <li><a href="reference/schemas.html">Schemas</a></li>
     <li><a href="reference/tables.html">Tables</a></li>
     <li><a href="reference/streaming.html">Streaming</a></li>
@@ -431,85 +426,11 @@ td code {
 </aside>
 <main>
 <doc>
-  <h1>The CX Data Language</h1>
+  <h1>CX — One Bracket for Every Data Format</h1>
   <p>A unified syntax for configuration, data, documents, prose, and programs — losslessly convertible to JSON, YAML, TOML, XML, and Markdown. Built for humans and the AI systems that work alongside them.</p>
   <h2>Hello, CX</h2>
-  <h2>What Makes CX Different</h2>
-  <h2>Built for Humans and AI Alike</h2>
-  <h2>Start Here</h2>
-  <h2>Status</h2>
-  <p>The document below is one CX file. It carries typed configuration, structured data, prose with mixed-content markup, multi-line strings, declared identifiers, references, anchors with merge, a typed columnar table, and a directive that templates a receipt — all in one syntax. The same parser handles every shape; the same evaluator can read, transform, and emit it as any of the six surface dialects CX speaks.</p>
-  <p>Eight concerns, one document, one syntax. The same tree parses and emits as XML, JSON, YAML, TOML, or Markdown; canonical-form bytes are content-addressed via SHA-256; the directive language is just data the evaluator interprets.</p>
-  <p>Each row below is the answer to a real friction in existing formats. The Comparison page walks the same list with side-by-side examples.</p>
-  <p>Modern systems are not just humans editing config files. Agentic LLMs, retrieval pipelines, evaluation harnesses, and multi-step tool-use loops all need to capture, transfer, transform, and emit data alongside prose. The two have lived in separate formats for decades — JSON for the structured side, Markdown for the prose side — which forces every AI system to glue the two back together with brittle string templates and ad-hoc framing.</p>
-  <p>CX unifies them. Prompt context, tool arguments, structured outputs, observation logs, document corpora, and agent memory all fit in one tree shape. The directive language is data the model can read and emit directly; the canonical form gives a stable hash for memoisation and cache keys; the include resolver composes documents from files the same way the agent assembles its working context. One format underneath the whole loop.</p>
-  <p>v0.7.0 is the API and format-stability boundary through 1.0. C ABI symbols are append-only from here forward; ast-bin format versions are forward-compatible; the cross-binding conformance suite gates every release. The full release notes live in the sidebar.</p>
-  <ul>
-    <li>Overview</li>
-    <li>Install</li>
-    <li>Quickstart</li>
-    <li>Tutorial</li>
-    <li>Playground</li>
-    <li>50 Ways to Love Your CX Data</li>
-    <li>50 Ways to Love Your CX Programs</li>
-    <li>Cookbook</li>
-    <li>Showcase</li>
-    <li>Data Model</li>
-    <li>Sigils &amp; Markup</li>
-    <li>Evaluation Model</li>
-    <li>Identity &amp; Canonical</li>
-    <li>Types</li>
-    <li>WebAssembly Target</li>
-    <li>CLI</li>
-    <li>CX Programs</li>
-    <li>Schemas</li>
-    <li>Tables</li>
-    <li>Streaming</li>
-    <li>Includes</li>
-    <li>ast-bin Format</li>
-    <li>data-bin / Arrow</li>
-    <li>Grammar (EBNF)</li>
-    <li>Error Codes</li>
-    <li>Binding Catalog</li>
-    <li>C ABI</li>
-    <li>V</li>
-    <li>Python</li>
-    <li>Go</li>
-    <li>Rust</li>
-    <li>TypeScript</li>
-    <li>Java</li>
-    <li>C#</li>
-    <li>Ruby</li>
-    <li>Kotlin</li>
-    <li>Swift</li>
-    <li>Editors &amp; LSP</li>
-    <li>Tree-sitter</li>
-    <li>Fuzzing &amp; Tests</li>
-    <li>vs JSON, YAML, TOML, XML</li>
-    <li>Performance</li>
-    <li>FAQ</li>
-    <li>Release Notes</li>
-    <li>Six surface dialects, one tree — round-trip CX, JSON, YAML, TOML, XML, and Markdown without losing data</li>
-    <li>Content-addressed identity — SHA-256 over canonical bytes; two trees with the same data have the same hash</li>
-    <li>Evaluator built in — directives are just CX, no separate template engine, no sprintf</li>
-    <li>Five structural sigils — declared ids, references, anchors, merge targets, and data types as first-class syntax</li>
-    <li>Typed columnar tables — sized integer, decimal, datetime survive end-to-end through CSV, Arrow, and Parquet</li>
-    <li>Mixed content first-class — text and structure interleave in one body, the way XML and Markdown do, the way JSON cannot</li>
-    <li>Include resolver — compose documents at parse time and at eval time, with cycle detection and lexical containment</li>
-    <li>Streaming parse and emit — process gigabyte inputs with bounded RSS, callback-driven</li>
-    <li>Tool arguments and structured outputs as CX, parsed by every binding</li>
-    <li>Memoisation by content hash — same input always memoises to the same key, in any dialect</li>
-    <li>Streaming context windows — emit gigabyte traces with bounded RSS</li>
-    <li>Compose prompt frames from partials the same way agents compose plans</li>
-    <li>CX code as a transformation layer — directives are data, no template engine to install</li>
-    <li>Quickstart — five minutes from install to running output</li>
-    <li>Tutorial — exercises from atoms to closures, work end to end</li>
-    <li>50 Ways to Love Your CX Data — short data examples, simple to complex</li>
-    <li>50 Ways to Love Your CX Programs — CX code snippets, simple to complex</li>
-    <li>Playground — try CX in the browser</li>
-  </ul>
-  <pre>
-    <code lang="cx">[- ─────────────────────────────────────────────────────────────
+  <p>The document below is one CX file. It carries typed configuration, structured data, prose with mixed-content markup, multi-line strings, declared identifiers, references, anchors with merge, a typed columnar table, and a CXL directive that templates a receipt — all in one syntax. The same parser handles every shape; the same evaluator can read, transform, and emit it as any of the six surface dialects CX speaks.</p>
+<pre><span class="lang-label">cx</span><code class="language-cx">[- ─────────────────────────────────────────────────────────────
    New Haven Pizza — one document covers every shape on the menu.
    Block comments wrap multi-line notes like this; line comments
    live outside element bodies with the hash sigil.
@@ -546,17 +467,82 @@ td code {
     [p See the [a href=/menu menu] for tonights specials.]]
 
   [- Multi-line string — triple-quoted, verbatim. -]
-  [tagline '''
-    Hand-tossed since 1987.
-    Still tossing.
-  ''']
+  [tagline Hand-tossed since 1987. Still tossing.]
 
-  [- A directive inside the same document. cx eval reads the
+  [- A CXL directive inside the same document. cx eval reads the
      surrounding tree, walks //order/line, and emits a receipt
      row per line item — no separate template engine, no sprintf. -]
-  [?for line :in //order/line :yield
-    [row sku=[?= line/@item] qty=[?= line/@count]]]]</code>
-  </pre>
+  [?for line :in //order/line :return
+    [row sku=[?= line/@item] qty=[?= line/@count]]]]</code></pre>
+  <p>Eight concerns, one document, one syntax. The same tree parses and emits as XML, JSON, YAML, TOML, or Markdown; canonical-form bytes are content-addressed via SHA-256; the directive language is just data the evaluator interprets.</p>
+  <h2>What Makes CX Different</h2>
+  <p>Each row below is the answer to a real friction in existing formats. The Comparison page walks the same list with side-by-side examples.</p>
+  <ul>
+    <li>
+      <a href="comparison.html">Six surface dialects, one tree — round-trip CX, JSON, YAML, TOML, XML, and Markdown without losing data</a>
+    </li>
+    <li>
+      <a href="concepts/identity.html">Content-addressed identity — SHA-256 over canonical bytes; two trees with the same data have the same hash</a>
+    </li>
+    <li>
+      <a href="reference/cxl.html">Evaluator built in — CXL directives are just CX, no separate template engine, no sprintf</a>
+    </li>
+    <li>
+      <a href="concepts/sigils.html">Five structural sigils — declared ids, references, anchors, merge targets, and data types as first-class syntax</a>
+    </li>
+    <li>
+      <a href="reference/tables.html">Typed columnar tables — sized integer, decimal, datetime survive end-to-end through CSV, Arrow, and Parquet</a>
+    </li>
+    <li>
+      <a href="concepts/data-model.html">Mixed content first-class — text and structure interleave in one body, the way XML and Markdown do, the way JSON cannot</a>
+    </li>
+    <li>
+      <a href="reference/includes.html">Include resolver — compose documents at parse time and at eval time, with cycle detection and lexical containment</a>
+    </li>
+    <li>
+      <a href="reference/streaming.html">Streaming parse and emit — process gigabyte inputs with bounded RSS, callback-driven</a>
+    </li>
+  </ul>
+  <h2>Built for Humans and AI Alike</h2>
+  <p>Modern systems are not just humans editing config files. Agentic LLMs, retrieval pipelines, evaluation harnesses, and multi-step tool-use loops all need to capture, transfer, transform, and emit data alongside prose. The two have lived in separate formats for decades — JSON for the structured side, Markdown for the prose side — which forces every AI system to glue the two back together with brittle string templates and ad-hoc framing.</p>
+  <p>CX unifies them. Prompt context, tool arguments, structured outputs, observation logs, document corpora, and agent memory all fit in one tree shape. The directive language is data the model can read and emit directly; the canonical form gives a stable hash for memoisation and cache keys; the include resolver composes documents from files the same way the agent assembles its working context. One format underneath the whole loop.</p>
+  <ul>
+    <li>
+      <a href="cookbook.html">Tool arguments and structured outputs as CX, parsed by every binding</a>
+    </li>
+    <li>
+      <a href="concepts/identity.html">Memoisation by content hash — same input always memoises to the same key, in any dialect</a>
+    </li>
+    <li>
+      <a href="reference/streaming.html">Streaming context windows — emit gigabyte traces with bounded RSS</a>
+    </li>
+    <li>
+      <a href="reference/includes.html">Compose prompt frames from partials the same way agents compose plans</a>
+    </li>
+    <li>
+      <a href="reference/cxl.html">CXL as a transformation layer — directives are data, no template engine to install</a>
+    </li>
+  </ul>
+  <h2>Start Here</h2>
+  <ul>
+    <li>
+      <a href="quickstart.html">Quickstart — five minutes from install to running output</a>
+    </li>
+    <li>
+      <a href="tutorial.html">Tutorial — exercises from atoms to closures, work end to end</a>
+    </li>
+    <li>
+      <a href="tour/data.html">50 Ways to Love Your CX Data — short data examples, simple to complex</a>
+    </li>
+    <li>
+      <a href="tour/code.html">50 Ways to Love Your CXL Code — CXL snippets, simple to complex</a>
+    </li>
+    <li>
+      <a href="playground.html">Playground — try CX in the browser</a>
+    </li>
+  </ul>
+  <h2>Status</h2>
+  <p>v0.7.0 is the API and format-stability boundary through 1.0. C ABI symbols are append-only from here forward; ast-bin format versions are forward-compatible; the cross-binding conformance suite gates every release. The full release notes live in the sidebar.</p>
 </doc>
 </main>
 <script>
