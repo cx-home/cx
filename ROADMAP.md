@@ -99,6 +99,53 @@ log / hash / env / test.
 
 ---
 
+## v0.9.0 — planned (post-v0.8.0 horizon)
+
+The v0.9.0 tag follows v0.8.0 burn-in. Scope is provisional until
+v0.8.0 ships; the items below are the load-bearing candidates that
+already have committed design context.
+
+- **Phase 2.x structural-graft completion** — finish the v0.8.0
+  carry-overs tracked under task #71. The `[?def]` / `[?lib]` /
+  `[?modify]` evaluators reached MVP for v0.8.0; the remaining
+  Phase 2.16 structural-body migration (replace verbatim source
+  with subtree) and the Phase 2.22 purity-checker AST-walk upgrade
+  land here, plus module-loader integration of `check_all`.
+- **CXStore database direction** — the OLAP / index / manifest lane
+  proposed in [ADR 0021](spec/decisions/0021-cxdb-database-direction.md).
+  v0.8.0 leaves CXDB as a hashable wire format; v0.9.0 either
+  commits to DataFusion-wrap + Parquet + arena allocator or
+  renames the surface. Decision required before any user-facing
+  database vocabulary appears in the spec.
+- **Function-module ecosystem extension** — `cx-stdlib` ships at
+  v0.8.0 with 14 sub-packages. v0.9.0 opens the user-installable
+  module trajectory documented under "Post-v0.8.0" below:
+  `convert` / `random` / `csv` / `crypto` / `archive` / `validate`
+  / `inspect` / `prof` / `html` / `dom`. Loader is governed by
+  ADR 0035 — no new ABI required.
+- **Concurrency primitives** — `jobs:` (async / parallel evaluation),
+  `proc:` (subprocess spawning), `web:` (optional HTTP server).
+  Requires a substantive ADR covering evaluator-state isolation
+  and determinism. Pre-conditioned on the function-module loader
+  being battle-tested.
+- **Additional binding tiers** — restore TypeScript / Java / C# /
+  Ruby / Kotlin / Swift bindings (archived in v0.8.0) once
+  Layer-1/Layer-2 surface is stable. Tier-2 catch-up runs once;
+  community-driven restoration acceptable.
+
+## v1.0 — quality + audit horizon
+
+- **External security audit** — third-party review of V core
+  parser, C ABI, and binding FFI shims. Anchors the
+  format/API stability claim.
+- **CXStore database layer** (if v0.9.0 commits to that direction)
+  — Database / Index / Full-text modules comparable to BaseX-as-
+  a-database. Per [ADR 0022 §D1 Amendment #3](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md).
+- **CI matrix** — GitHub Actions running `make test` on multiple
+  OS/arch combinations per PR with per-binding regression gating.
+
+---
+
 ## Now — current branch (toward v0.6.0)
 
 Closing the audit, raising the bar to a level that survives external
