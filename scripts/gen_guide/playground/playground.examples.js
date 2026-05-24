@@ -130,16 +130,17 @@
   const program = {
     'find-attr-eq': {
       label: "[?for] — attribute equality predicate",
-      // Pattern-as-source [?for] needs $doc bound. The data lives in
-      // `data` so cxlib.evalCode(src, 'cx', dataInput) gets the items
-      // doc as $doc; `input` is just the program.
-      data: [
+      // Combined homoiconic source: inert [items ...] document at the
+      // top, directive at the bottom. The playground splits the source
+      // at run time — leading inert structures become $doc, the
+      // trailing [?for] is the program.
+      input: [
         "[items",
         "  [item active=true  name=pizza]",
         "  [item active=false name=salad]",
-        "  [item active=true  name=soda]]"
+        "  [item active=true  name=soda]]",
+        "[?for [item @active=true $i] :yield $i]"
       ].join('\n'),
-      input: "[?for [item @active=true $i] :yield $i]",
       cx:    [
         "[item active=true name=pizza]",
         "[item active=true name=soda]"
