@@ -1,40 +1,12 @@
-data/anchor-merge  e27b2aeee95cd1ea  Anchor + merge — shared defaults
 data/atom  10bc80a18391338c  Atom — element with one attribute
-data/block-comment  28ab296164df6c1d  Block comment — [- ... -]
-data/code-fence  ae953fc509ee2015  Code fence — embedded language
-data/dates  4b0b600435cf8363  Dates and datetimes — typed scalars
-data/heading  4c810127cb15ea01  Heading — [#] through [######]
-data/inline-markup  9138d47400826d8d  Inline markup — bold / italic / strike
-data/line-comment  a8710992b9f2b726  Line comment — # to end of line
-data/list  b5a5d0c7100381df  List — ul + li with link items
-data/mixed-content  332a4b38a8de2752  Mixed content — prose + inline markup
-data/multi-attr  0166446193f9caeb  Attributes — typed, sized, sigil-flagged
-data/multi-doc  62ebdd42a19d6156  Multi-document — two roots in one file
-data/namespaces  a170c6a1fa02087b  Namespaces — xmlns binding
 data/nested  dea4c20abb1e6ea8  Nested elements — containment tree
-data/prolog  8b1e78e1510c4f03  Prolog — XML declaration
-data/quoted-string  60dc724aa6a80c6e  Quoted strings — escapes and special chars
-data/raw-text  acd91af4e54e9b4e  Raw text — [# ... #] preserves bytes
-data/sigils  d5922755cfba6674  Sigils — id, type-annotation, bool flags
-data/text-body  0d083dd6998932b8  Text body — element with prose
-data/typed-table  2c2ce55135fcedc1  Typed table — columnar with declared types
+data/whole-shop  001af7ff6f51b369  Whole shop — every data shape in one document
+program/cxpath-predicate  7ae045c21c676ef3  CXPath — attribute predicate over a document (ADR 0028)
 program/def-double  06a8f6e64b391075  [?def] — named closure + invocation
-program/find-attr-bool  da73452914eaffbf  [?find] — attribute equality predicate
-program/find-deep  48b302fcb0c320fa  [?find] — finds at any depth
-program/find-pair  dcc7d709133036ab  [?find] — yield literal with multiple bindings
-program/find-simple  48b302fcb0c320fa  [?find] — pattern match with binding
-program/find-yield-tree  ce76a1276b00b1bd  [?find] — bind name + price via child-element shape
-program/fn-square  e78cace3a07187b1  [?fn] — anonymous closure via pipe
+program/find-attr-eq  da73452914eaffbf  [?for] — attribute equality predicate
 program/for-seq  db599f79aa9eb79b  [?for] — comprehension over sequence
-program/for-square  141d9c34851973cb  [?for] — transform yielded value
 program/for-where  124b940db83c86cd  [?for] — filter with :where
 program/if-truthy  779ee408823e1e31  [?if] — conditional branch
-program/ladder-let  a7c1243111232c3c  [?let] — let-chain composing pieces
 program/let-arith  06a8f6e64b391075  [?let] — bind and reuse
-program/let-shadow  f2efc9321f93d096  [?let] — shadowing in nested scope
-program/match  a19634ea5c51a4ce  [?match] — single-value pattern test
-program/multi-find  0f80d9f815920810  Pattern composition — find element + sub-element
-program/pipe-count  68795a0a4caed9c3  Pipe sugar — count over sequence
-program/pipe-find-first  d7a1d5e1b120e179  Pipe sugar — find then first
-program/pipe-upper  624f7e011990093f  Pipe sugar — string transform
-program/try-catch  e7c51ac673ef8aab  [?try] — error recovery
+program/match-multi  c9dba80a1a58411a  [?match] — multi-arm :case / :when / :else (ADR 0029)
+program/modify-set  0aebf97c80f65518  [?modify] — pure-functional :set + :delete (ADR 0030)

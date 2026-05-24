@@ -280,9 +280,11 @@
 
     [issue &i-playground-graph-mixed-input
       :priority medium
+      :status resolved
       :title 'Playground graph view fails CXER0100 on data+code mixed inputs'
       :symptom 'Corpus inputs stack [data] then [?find ...]; diagram emitter parses whole as code'
-      :resolution-plan 'Split input before passing to diagram, OR graceful data-only handling (e.g., emit empty diagram + hint)']
+      :resolution-plan 'Split input before passing to diagram, OR graceful data-only handling (e.g., emit empty diagram + hint)'
+      :resolution 'Phase 7.5 (v0.8.0-dev): JS-side graceful fallback in scripts/gen_docs/playground/playground.js — renderDiagramError() catches CXER\d+: from cxlib.diagram(), paints a "Diagram unavailable… Switch to Tree view" hint in a .cxdv-empty placeholder. vcx/ left untouched; Tree view (cx_code_tree) handles the same source unconditionally so the user has a working structural projection.']
 
     [issue &i-no-binding-api-parity-fixtures
       :priority medium

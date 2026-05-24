@@ -4,6 +4,13 @@
     <select id="cxp-pick" aria-label="Choose an example — populated by playground.js"></select>
     <button id="cxp-run" type="button" disabled data-wasm-pending-title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target." title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target.">Run</button>
     <button id="cxp-reset" type="button">Reset</button>
+    <!-- Phase 7.9 — local file load. Hidden native file input driven
+         by the visible "Load…" button so the label can be styled to
+         match the rest of the toolbar palette. Accepts .cx files; the
+         FileReader text content replaces the Source pane verbatim and
+         the Output panes refresh via the existing run pipeline. -->
+    <button id="cxp-load" type="button" title="Load a local .cx file into the Source pane">Load…</button>
+    <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
   </div>
   <div class="cxp-panes">
     <div class="cxp-source-row">

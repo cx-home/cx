@@ -683,6 +683,72 @@
 
   pick.addEventListener('change', () => load(pick.value));
   reset.addEventListener('click', () => load(pick.value));
+
+  // ── Phase 7.9 — Local file load ─────────────────────────────────
+  // "Load…" toolbar button proxies to a hidden <input type="file">.
+  // FileReader.readAsText() drops the file content verbatim into the
+  // Source pane, then the existing pipeline (highlightInput +
+  // refreshSourceViz + refreshOutputViz) picks it up. The Output
+  // panes show canned-mode-style empty state until the user clicks
+  // Run (live mode: routes the loaded source through cxlib.evalCode;
+  // canned mode: panes stay at the last canned outputs).
+  //
+  // For each of the 12 starters: this UI is sourced-side only —
+  // round-trip is verified by selecting a starter, loading its
+  // serialized form via this affordance, and confirming the source
+  // pane round-trips through the existing eval/tree/diagram glue.
+  const loadBtn  = document.getElementById('cxp-load');
+  const loadFile = document.getElementById('cxp-load-file');
+  if (loadBtn && loadFile) {
+    loadBtn.addEventListener('click', () => loadFile.click());
+    loadFile.addEventListener('change', (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      // Soft size guard — playground inputs are walkable-tour scale.
+      // ADR 0037 gate-17 audit noted a ~64 KB soft cap; we surface a
+      // friendly status at 256 KB so a user dragging in a giant log
+      // file gets a clear signal rather than a UI hang.
+      if (file.size > 256 * 1024) {
+        setStatus(
+          `File "${file.name}" exceeds the 256 KB playground guard. ` +
+          'Try a smaller corpus or split the input.',
+          'error'
+        );
+        loadFile.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        input.value = String(reader.result || '');
+        setInputLang('cx');
+        highlightInput();
+        syncScroll();
+        // Invalidate viz caches and refresh — same path as load(key).
+        outputCache.source = null;
+        outputCache.tree = null;
+        outputCache.graph = null;
+        outputViewMode = 'tree';
+        syncOutputViewModeButtons();
+        if (vizSourceOn) refreshSourceViz();
+        if (vizOutputOn) refreshOutputViz();
+        // Status feedback so users see the affordance landed.
+        setStatus(
+          `Loaded "${file.name}" (${file.size} bytes). ` +
+          (liveActive
+            ? 'Click Run to evaluate.'
+            : 'Live evaluator not bundled — Source pane shows the loaded file; Output panes keep the last canned outputs.'),
+          'ok'
+        );
+        // Reset the input so the same file can be re-selected.
+        loadFile.value = '';
+      };
+      reader.onerror = () => {
+        setStatus(`Failed to read "${file.name}": ${reader.error}`, 'error');
+        loadFile.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
   // Live evaluation via cxlib (libcx-wasm v0.8.0 surface — ADR 0037 §D7).
   //
   // Data examples — textarea is pure CX, routed through the
@@ -880,14 +946,45 @@
       const mermaidText = cxlib.diagram(src, 'mermaid');
       diagView.render(mermaidText);
     } catch (err) {
-      vizSourceMount.innerHTML =
-        '<pre class="cxdv-error">' +
-        String(err && err.message ? err.message : err).replace(
-          /[<&>]/g,
-          (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
-        ) +
-        '</pre>';
+      renderDiagramError(vizSourceMount, diagView, err, src);
     }
+  }
+
+  // Phase 7.5 — graceful fallback for `i-playground-graph-mixed-input`.
+  // When the source mixes top-level data + an EvalDirective at the tail,
+  // the v0.8.0 wasm `cx_code_diagram` parser can raise CXER0100 (the V-
+  // side parser's mixed-input limit). Per backlog resolution-plan, we
+  // emit an empty Mermaid `erDiagram` + a friendly hint rather than
+  // surfacing the raw `CXER…:` string in the diagram pane. This keeps
+  // the playground walkable for mixed corpus inputs while the V-side
+  // graceful-degrade landing path catches up.
+  function renderDiagramError(mount, view, err, src) {
+    if (!mount) return;
+    const raw = String(err && err.message ? err.message : err);
+    // CXER0100 (or other CXERnnnn from cx_code_diagram) → soft fallback:
+    // unmount the diagram canvas, paint a plain-language hint that
+    // matches the canned-mode placeholder vocabulary (".cxdv-empty").
+    // The hint nudges the user toward the Tree view, which always
+    // works because `cx_code_tree` doesn't depend on full parse success.
+    if (/CXER\d+/.test(raw)) {
+      if (view && view.container) view.unmount();
+      mount.innerHTML =
+        '<div class="cxdv-empty">' +
+        'Diagram unavailable for this source — mixed data + directives ' +
+        "exceed the v0.8.0 parser's diagram surface. " +
+        'Switch to <strong>Tree</strong> view for a structural projection.' +
+        '</div>';
+      return;
+    }
+    // Non-CXER errors (Mermaid render glitches, etc.) keep the raw
+    // message for debuggability — these are programmer-facing.
+    mount.innerHTML =
+      '<pre class="cxdv-error">' +
+      raw.replace(
+        /[<&>]/g,
+        (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
+      ) +
+      '</pre>';
   }
 
   function refreshOutputViz() {
@@ -945,13 +1042,7 @@
         mermaidText = cxlib.diagram(src, 'mermaid');
         outputCache.graph = mermaidText;
       } catch (err) {
-        vizOutputMount.innerHTML =
-          '<pre class="cxdv-error">' +
-          String(err && err.message ? err.message : err).replace(
-            /[<&>]/g,
-            (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])
-          ) +
-          '</pre>';
+        renderDiagramError(vizOutputMount, outputDiagView, err, src);
         return;
       }
     }
