@@ -857,8 +857,7 @@ optimisation stack and next-lever ordering.
 > (Accepted 2026-05-17). v0.7.0 ships XQuery 4.0 + XPath 4.0
 > expression parity in a single cut (per
 > [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md)); v0.8.0
-> ships the BaseX-class function-module ecosystem (per
-> [`spec/basex_function_modules.md`](spec/basex_function_modules.md));
+> ships the BaseX-class function-module ecosystem;
 > v0.9.0+ adds concurrency primitives behind a separate ADR; v1.0+
 > is the open question on cx-native database. The "CXPath axes at
 > v0.8.0" line above is similarly superseded — axes move to v0.7.0.
