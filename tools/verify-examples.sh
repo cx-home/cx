@@ -30,9 +30,10 @@ check_file() {
  local f="$1"
  local rel="${f#$ROOT/}"
 
- # Known-broken examples under the v0.6 grammar; tracked for v0.6.1
- # parser fix. Raw-text / code-block content with [...] and (...)
- # is not yet bracket-aware in the new collection-literal grammar.
+ # Known-broken examples carried forward from the v0.6 grammar
+ # transition; raw-text / code-block content with [...] and (...)
+ # is not bracket-aware in the collection-literal grammar (still
+ # outstanding at v0.8.0; re-evaluate if grammar tightens).
  case "$rel" in
  examples/vcore.cx|examples/post.cx)
  return # skipped — counted as neither pass nor fail

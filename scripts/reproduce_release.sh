@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reproducible-build runner (BB / v0.7.0).
+# Reproducible-build runner (BB / v0.8.0).
 #
 # Builds libcx / libcx_arrow / cli from a clean checkout with pinned
 # toolchain versions and emits SHA-256 hashes of every release

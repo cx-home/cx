@@ -27,7 +27,8 @@ TARGETS=(
     "$ROOT/include/cx.h"
 )
 
-# If the directory rename hasn't happened yet, fall back to vcx/programs/.
+# Legacy fallback for the pre-ADR-0032 layout (vcx/programs/ → vcx/code/);
+# kept as a defensive guard when running on archived worktrees.
 [[ ! -d "$ROOT/vcx/code" ]] && [[ -d "$ROOT/vcx/programs" ]] && \
     TARGETS=("$ROOT/vcx/programs" "$ROOT/vcx/cx/cabi.v" "$ROOT/vcx/cmd" "$ROOT/include/cx.h")
 
