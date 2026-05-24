@@ -63,8 +63,7 @@ READ FIRST — in this order
 9.  spec/grammar.ebnf [127e] + [130]–[148e]
 10. spec/cxpath_alignment.md
 11. spec/cxdm.md §2 (Path as sixth Item kind)
-12. spec/v0_7_6_status.md (gate format template)
-13. conformance/code.txt (fixture format; renamed to code.txt in 1.2)
+12. conformance/code.txt (fixture format; renamed to code.txt in 1.2)
 14. spec/abi.md (C ABI surface)
 15. Makefile (every target)
 16. docs-src/canonical/manifest.cxd (guide TOC, 9 sections)
@@ -93,7 +92,7 @@ ALREADY DONE — do not redo
 ═════════════════════════════════════════════════════════════════
 PHASE 1 — SPEC COMPLETION
 ═════════════════════════════════════════════════════════════════
-1.1  spec/v0_8_0_status.md — create, modeled on v0_7_6_status.md.
+1.1  spec/v0_8_0_status.md — create, modeled on prior status-doc convention.
      List every gate (Phase 1–11) with ✅/🚧/📋. Update each commit.
 1.2  ADR 0032 — draft (lean format) + execute "programs → code" rename:
      · spec/code.md → spec/code.md (update every internal link)
@@ -385,8 +384,7 @@ PHASE 11 — RELEASE ARTIFACTS
 11.3 docs/migrations/v0_8_0.md (created in 9.2).
 11.4 spec/v0_8_0_status.md — every gate ✅; final commit.
 11.5 Gate evidence bundle — v0.8.0-gate-evidence.tar.gz with all gate
-     artifacts. Released as GitHub release attachment at tag time
-     (per spec/v0_7_6_status.md §11.6 convention).
+     artifacts. Released as GitHub release attachment at tag time.
 11.6 backlog.cx final pass:
      · ADRs 0028 / 0029 / 0030 / 0032 status → accepted
      · Every open issue resolved → moved to [completed] with note

@@ -3,7 +3,7 @@
 #
 # Builds libcx / libcx_arrow / cli from a clean checkout with pinned
 # toolchain versions and emits SHA-256 hashes of every release
-# artifact. Per spec/v0_7_0_status.md BB and docs/reproducible_builds.md.
+# artifact. Cf. docs/reproducible_builds.md.
 #
 # Usage:
 #   scripts/reproduce_release.sh [TAG]

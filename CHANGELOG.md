@@ -324,8 +324,8 @@ XPath 4.0 parity**. That framing is now superseded.
 
 ### Documentation
 
-- `spec/v0_7_0_status.md` — per-row tracker for the 22-row v0.7.0
-  scope (A through CC).
+- v0.7.0 status tracker (since deleted) — per-row tracker for
+  the 22-row v0.7.0 scope (A through CC).
 - `spec/xquery_40_parity.md` — per-feature inventory of the
   XQuery 4.0 surface vs cx's coverage.
 - `spec/abi.md §2.11` — Arrow C Data Interface version-targeting

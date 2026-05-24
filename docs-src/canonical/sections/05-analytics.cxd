@@ -324,7 +324,7 @@
            by its content hash. Local lookup is the default; the
            callback-shaped content-store ABI was deferred from v0.6.0
            and remains a v0.7.x / v0.8.0 follow-up per the ADR 0015
-           tail-closure notes (`spec/v0_7_0_status.md` §HH4)."""]]]
+           tail-closure notes."""]]]
 
   [child id=arrow-bridge n=5.4 title='Arrow bridge — zero-copy interop'
     [intro
@@ -416,9 +416,7 @@
            bytes). `:datetime`, `:decimal`, and dictionary / extension
            columns remain deferred to a future libcx_arrow expansion;
            the wire surface accepts them but the C-Data bridge errors
-           with `arrow-014-unsupported-type-deferred-error` (see
-           [`spec/v0_7_0_status.md`](../../spec/v0_7_0_status.md) HH5
-           closure)."""]]
+           with `arrow-014-unsupported-type-deferred-error`."""]]
 
     [child id=arrow-ipc n=5.4.3 title='Arrow IPC stream format'
       [body
@@ -692,7 +690,7 @@
            flush threshold tuned for page-cluster alignment. The full
            inventory and the path to higher throughput
            (`-prealloc` default, parse-once API, JIT) is recorded in
-           [`spec/v0_7_0_status.md`](../../spec/v0_7_0_status.md) Y6."""]
+           the streaming-perf session memory."""]
       [note
         """The 200 MB/s target is **realistic-workload** (JSON-shape
            records, ~75 B/record). The toy 25-byte `id:name;` bench

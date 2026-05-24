@@ -673,7 +673,7 @@ CX code 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 
 > **Status note.** The v0.7.0 scope below was originally specced by
 > [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-> and tracked in [`spec/v0_7_0_status.md`](spec/v0_7_0_status.md).
+> and tracked in the v0.7.0 status doc (since deleted).
 > Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
 > (Accepted 2026-05-20), the cxpath / cxquery / XQuery-4.0-parity
 > portion of that scope is **retired as proof-of-concept**: the
@@ -759,10 +759,9 @@ Items deferred from v0.7.0 to a v0.7.x point release. Streaming-
 evaluator perf work landed v0.7.0 at ~340 MB/s on the comparable
 bench corpus — about 17% under the comparable JSON benchmark on
 the same workload — crossing the 300 MB/s Y6 target; the 500 MB/s
-stretch target is pushed here. See
-[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) Y6 row and
-session memory `project_y6_streaming_perf.md` for the current
-optimisation stack and next-lever ordering.
+stretch target is pushed here. See session memory
+`project_y6_streaming_perf.md` for the current optimisation stack
+and next-lever ordering.
 
 - **Parse-once / eval-many API** — `cx_eval_streaming_from_ast_bin`
   (or equivalent on the V surface: `eval_cxl_from_doc(prog_doc,

@@ -1,5 +1,5 @@
 {
-  "comment": "v0.7.6: per-binding native-implementation dashboard. Tracks which v0.7.6 program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The v0.7.6 evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Tier 1 (V / Python / Go) is c-abi-passthrough by design and locked at parity per spec/v0_7_6_status.md gate 11. Tier 2 (Rust / TypeScript) catch up once per release per ADR 0022 §D8.",
+  "comment": "v0.7.6: per-binding native-implementation dashboard. Tracks which v0.7.6 program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The v0.7.6 evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Tier 1 (V / Python / Go) is c-abi-passthrough by design and locked at parity per v0.7.6 gate 11. Tier 2 (Rust / TypeScript) catch up once per release per ADR 0022 §D8.",
   "version": "v0.7.6",
   "as_of": "2026-05-21",
   "bindings": {
@@ -14,7 +14,7 @@
       "implementation": "c-abi-passthrough",
       "native_coverage": ["data-bin", "ast-parse", "to-cx", "to-xml", "to-json", "to-yaml", "to-toml", "to-md"],
       "ffi_coverage": ["cx_code_eval", "cx_code_eval_with_len", "cx_code_eval_streaming", "cx_code_diagram", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "cx_data_bin_chunked"],
-      "comment": "Native Python parser for data-bin + AST surfaces; program-eval / diff / hash / canonical via libcx FFI. Arrow + Parquet via pyarrow C-Data bridge. 73/73 cross-binding conformance parity per spec/v0_7_6_status.md gate 11."
+      "comment": "Native Python parser for data-bin + AST surfaces; program-eval / diff / hash / canonical via libcx FFI. Arrow + Parquet via pyarrow C-Data bridge. 73/73 cross-binding conformance parity per v0.7.6 gate 11."
     },
     "go": {
       "tier": 1,
@@ -28,7 +28,7 @@
       "implementation": "c-abi-passthrough",
       "native_coverage": ["data-bin", "ast-parse"],
       "ffi_coverage": ["cx_code_eval", "cx_code_eval_with_len", "cx_code_eval_streaming", "cx_code_diagram", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "cx_data_bin_chunked", "to_*"],
-      "comment": "Native data-bin + AST; everything else routes through libcx FFI via ensure_thread(). Tier 2 catchup at v0.7.6: surface migration from cx_eval to cx_code_eval is pending per spec/v0_7_6_status.md (filed as v0.7.6 follow-up)."
+      "comment": "Native data-bin + AST; everything else routes through libcx FFI via ensure_thread(). Tier 2 catchup at v0.7.6: surface migration from cx_eval to cx_code_eval is pending (filed as v0.7.6 follow-up)."
     },
     "typescript": {
       "tier": 2,

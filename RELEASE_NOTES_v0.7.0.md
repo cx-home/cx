@@ -76,8 +76,7 @@ into one tag.
 
 ## What's new — per row
 
-The per-row tracker in
-[`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) carries the
+The per-row tracker (v0.7.0 status doc, since deleted) carried the
 authoritative state. Quick links:
 
 | Row | Theme | Highlights |
@@ -136,9 +135,6 @@ effect.
   `format-date`, `compare`, `sort` do not yet honour `cx:lang`.
   The accessor is in place; the wiring through the fn library is
   post-v0.7.0.
-
-See [`spec/v0_7_0_status.md`](spec/v0_7_0_status.md) for the
-authoritative status of every row item.
 
 ## Acknowledgments
 
