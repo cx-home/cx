@@ -1847,4 +1847,214 @@
       [note
         """Streaming throughput target: 340 MB/s on the comparable
            bench corpus (M2 Pro, libcx `-prod`) — about 17% under
-           the comparable JSON benchmark on the same workload."""]]]]
+           the comparable JSON benchmark on the same workload."""]]]
+
+  [# Migrated from docs-src/content/{cookbook,showcase,playground}.cx
+     during Phase B docs → guide consolidation (2026-05-24). New
+     §8.7 cookbook recipes (13 from content/cookbook + 3 from
+     content/showcase) and a playground deep-dive (§8.11 fold). #]
+
+  [child id=cookbook-extras n=8.14 title='Cookbook — additional recipes'
+    [intro
+      """Recipes carried forward from the pre-Phase-B docs
+         cookbook + showcase. The §8.7 children above (recipes
+         §8.7.1-§8.7.9) cover the most common nine; this section
+         adds 13 more focused recipes that surfaced as
+         load-bearing in the pre-v0.8.0 doc set."""]
+
+    [child id=recipe-extract n=8.14.1 title='Extract a single value'
+      [example lang=shell """cx eval -e '[?= //server/@host]' --data=config.cx"""]
+      [body
+        """The `-e` flag takes the template inline; `--data` is
+           the input file. The CXPath finds the `host` attribute
+           of any `server` element at any depth."""]]
+
+    [child id=recipe-filter n=8.14.2 title='Filter records by attribute'
+      [body
+        """Run `cx eval -e` with a CX template that filters by
+           predicate. The CXPath predicate `//user[@role='admin']`
+           selects only admins."""]
+      [example lang=shell """cx eval template.cx --data=users.cx"""]]
+
+    [child id=recipe-count n=8.14.3 title='Count records'
+      [example lang=shell """cx eval -e '[?= count(//order)]' --data=orders.cx"""]]
+
+    [child id=recipe-generate-config n=8.14.4 title='Generate a config from a template'
+      [example lang=cx
+        """[server
+             host=[?= //env/@host]
+             port=[?= //env/@port]
+             workers=[?if [//env/@env = "prod", 32, 4]]
+             cache=[?if [//env/@env = "prod", /var/cache/app, /tmp/cache]]]"""]
+      [example lang=shell """cx eval server.cx --data=env.prod.cx --to=toml > server.toml"""]]
+
+    [child id=recipe-write-stream n=8.14.5 title='Write a stream'
+      [example lang=python
+        """with cx.stream_writer(open("out.cx", "wb")) as w:
+               for record in fetch_records():
+                   w.write(record)"""]]
+
+    [child id=recipe-compose-include n=8.14.6 title='Compose a document from files'
+      [example lang=cx
+        """[server
+             [?cx include=lib/defaults.cx]
+             port=8080
+             log-level=info]"""]
+      [example lang=shell """cx --cx --include-root=./conf server.cx > resolved.cx"""]]
+
+    [child id=recipe-render-template n=8.14.7 title='Render a template with includes'
+      [example lang=cx
+        """[?include 'partials/header.cx']
+           [?for item :in //order/line :yield [?include 'partials/line.cx']]
+           [?include 'partials/footer.cx']"""]
+      [example lang=shell """cx eval order.cx --data=order.cx --include-root=./templates"""]]
+
+    [child id=recipe-read-parquet n=8.14.8 title='Read a Parquet file into CX'
+      [example lang=shell """cx table load orders.parquet --to=cx > orders.cx"""]]
+
+    [child id=recipe-anchor-merge n=8.14.9 title='Share defaults across records'
+      [example lang=cx
+        """[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]
+           [server *shared name=worker retries=5]"""]
+      [body
+        """`&` declares an anchor; `*` merges from it. Local
+           fields override; missing ones inherit."""]]
+
+    [child id=recipe-html-safe n=8.14.10 title='HTML-safe templating'
+      [example lang=cx
+        """[?cx output-target=html]
+           [h1 [?= //page/@title]]
+           [?for u :in //user :yield [li [?= u/@name]]]"""]
+      [body
+        """`[?cx output-target=html]` switches the evaluator into
+           context-aware escaping. Substituted values containing
+           `<`, `>`, `&`, or quotes escape correctly with no
+           manual sprintf."""]]
+
+    [child id=recipe-log-structured n=8.14.11 title='Emit structured log records'
+      [example lang=cx
+        """[?cx use-module=log log-level=info]
+           [?log:info ['sale', {pizza: 'Margherita', price: 12}]]
+           [?log:warn ['low-stock', {pizza: 'Diavola', stock: 2}]]"""]
+      [body
+        """The `log` module emits structured records to stderr
+           (default) or a configured sink. Fields are a map;
+           level is one of `trace` / `debug` / `info` / `warn` /
+           `error`."""]]
+
+    [child id=recipe-logfmt-parser n=8.14.12 title='Logfmt parser in CX code'
+      [body
+        """Take a logfmt-style line of key=value records and
+           split it into structured CX."""]
+      [example lang=cx """ts=2026-05-20T18:42:00Z level=info request_id=abc123 msg=ok"""]
+      [example lang=cx
+        """[?for line :in tokenize(input, '\n') :yield
+             [event
+               [?for kv :in tokenize(line, ' ') :yield
+                 [?let pair :be tokenize(kv, '=') :yield
+                   [pair name=[?= pair[1]] value=[?= pair[2]]]]]]]"""]]
+
+    [child id=recipe-build-system n=8.14.13 title='Build system in CX'
+      [body
+        """Targets, depends, run — declared in CX, evaluated by
+           a thirty-line CX code driver."""]
+      [example lang=cx
+        """[targets
+             [target name=all  depends='lib bin']
+             [target name=lib  depends='src/foo.o src/bar.o'  run='ar rcs lib.a src/foo.o src/bar.o']
+             [target name=bin  depends='main.o lib'           run='cc -o bin main.o lib.a']]"""]
+      [example lang=cx
+        """[?def build :params [name] :body
+             [?for t :in //target[@name = $name] :yield
+               [?for d :in tokenize(t/@depends, ' ') :yield [?build d]]
+               [?run t/@run]]]
+           [?build 'all']"""]]]
+
+  [child id=playground-detail n=8.15 title='Playground — visualize, offline, highlight'
+    [intro
+      """Deep-dive on the in-browser playground UI per ADR 0037
+         (gate 17). Section §8.11 above frames the WASM / web
+         component / tier story; this section is the operator
+         reference for the Tree / Graph / Source-diagram bridge."""]
+
+    [child id=pg-how n=8.15.1 title='How it works'
+      [body
+        """The playground runs entirely in the browser. Pick a
+           starter example from the dropdown, edit it in the
+           Source pane, and the three output tabs underneath
+           show the canonical CX form, the JSON projection, and
+           the XML projection of the parsed tree. No server, no
+           signup. Twelve starter examples ship in the corpus
+           — three data shapes (atom, nested element, whole-shop)
+           and nine program snippets covering the v0.8.0
+           directive surface."""]]
+
+    [child id=pg-visualize n=8.15.2 title='Visualize'
+      [body
+        """The Source pane carries a Diagram toggle in its
+           header; the Output pane carries a Tree | Graph view
+           toggle adjacent to the CX | JSON | XML projection
+           tabs (per ADR 0037 §D9). Tree is the default for every
+           fresh source — Graph is opt-in."""]
+      [body
+        """The Source-pane diagram renders the program as a
+           Mermaid graph in a sibling pane. The renderer runs
+           entirely in the browser via libcx.wasm — Mermaid text
+           emitted by `cx_code_diagram`, then rendered to inline
+           SVG by Mermaid.js. Zoom, fit-to-pane, and pan controls
+           layer on top."""]
+      [body
+        """The Output-pane Tree view renders the parsed value as
+           an interactive containment-only tree — folder icons
+           for elements with body, file-text icons for prose
+           leaves, tag and at-sign rows for elements and
+           attributes. Built from `cx_code_tree(source)` whose
+           JSON contract (ADR 0037 §D2) carries a `{kind, name?,
+           value?, loc:{start,end}, children?}` record per node.
+           Search, count badges, and standard tree keyboard
+           navigation come along for free."""]
+      [body
+        """The Output-pane Graph view auto-detects mode per ADR
+           0037 §D1: sources whose top-level program contains at
+           least one `[?directive]` render as a Control-Flow
+           Graph (basic blocks; diamonds for `[?if]`; dispatcher
+           round-rects with per-arm edges for `[?match]`;
+           loop-boxes for `[?for]` with `:bind $x` labels; one
+           update-block per `[?modify]`); pure-data sources
+           render as an Entity-Relationship Diagram with
+           per-instance cardinality inference (`||--o{` for
+           repeating children, `||--||` for singletons). Every
+           `[?def]` body is its own Mermaid sub-graph."""]
+      [note
+        """**Bidirectional selection bridge** (ADR 0037 §D5).
+           Click a tree node and the source-pane editor selects
+           bytes `[loc.start, loc.end]` and scrolls them into
+           view. Move the caret in the source pane and the tree
+           pane binary-searches its loc index for the deepest
+           containing node and scrolls/selects it. Visualizations
+           re-render on Run only — no live debounce — to keep
+           the playground predictable."""]]
+
+    [child id=pg-offline n=8.15.3 title='Offline use'
+      [body
+        """The browser playground is a static page. Clone the
+           repo, render the guide with `make guide`, and serve
+           `docs/guide/` from any HTTP server (or open via
+           `file://`) — the playground works without an internet
+           connection. The example corpus, the TypeScript
+           bundle, and the CSS all live under
+           `scripts/gen_guide/playground/`."""]]
+
+    [child id=pg-highlight n=8.15.4 title='Syntax highlighting'
+      [body
+        """Every code block on the guide is syntax-highlighted by
+           a small in-house JS module at
+           `scripts/gen_guide/highlight/`. It speaks the
+           languages the docs actually use — `cx`, `shell`,
+           `python`, `go`, `rust`, `javascript`, `typescript`,
+           `java`, `c#`, `ruby`, `kotlin`, `swift`, `v`, `sql`,
+           `ebnf`, `xml`, `html`, `json`, `yaml`, `toml`, `md`.
+           The highlighter is regex-based, around 150 lines, no
+           external library. The Playground panes use the same
+           module on every Run."""]]]]

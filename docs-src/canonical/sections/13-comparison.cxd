@@ -474,4 +474,81 @@
          https://github.com/cx-lang/cx — the comparison is
          maintained as a living document; new alternatives and
          new use-case scenarios are added as the ecosystem
-         evolves."""]]]
+         evolves."""]]
+
+  [# Migrated from docs-src/content/comparison.cx during Phase B
+     docs → guide consolidation (2026-05-24). At-a-glance feature
+     table and conversion-loss matrix that complement the
+     per-format children (§13.2-§13.11) above. #]
+
+  [child id=cmp-at-a-glance n=13.13 title='At-a-glance feature matrix'
+    [intro
+      """One-screen feature matrix across CX, JSON, YAML, TOML,
+         and XML. The per-format children (§13.2-§13.11) carry
+         the depth; this matrix is the spreadsheet view."""]
+
+    [body
+      """| Feature | CX | JSON | YAML | TOML | XML |
+         |---|---|---|---|---|---|
+         | Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+         | Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom | ❌ number only | partial (auto-detect) | ✅ int / float / bool / datetime | partial (xs:type) |
+         | Comments | ✅ block and line | ❌ | ✅ # … | ✅ # … | ✅ |
+         | Mixed content | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
+         | Multiple top-level docs | ✅ no wrapper required | ❌ requires array | ✅ via --- separator | ❌ single document | partial |
+         | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
+         | Type fidelity through round-trip | ✅ via CXCol | ❌ int↔float coerced | partial | ✅ preserved | partial |
+         | Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
+         | Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
+         | Built-in query language | ✅ CXPath value kind, all 12 XPath 3.1 axes | ❌ third-party (jq) | ❌ third-party (yq) | ❌ | ✅ XPath 1.0 / XQuery |
+         | Pure-functional transform | ✅ `[?modify]` focus + 11 actions, structural sharing | ❌ | ❌ | ❌ | partial (XSLT) |
+         | Pattern-match dispatch | ✅ `[?match]` heterogeneous arms | ❌ | ❌ | ❌ | ❌ |
+         | Module system | ✅ `[?def]` / `[?lib]` / cx.lock SRI | ❌ | ❌ | ❌ | partial (XInclude) |"""]]
+
+  [child id=cmp-loss-matrix n=13.14 title='Conversion-loss matrix'
+    [intro
+      """Lossless conversion means the data round-trips without
+         semantic loss; presentation details (comments,
+         whitespace, attribute order) may be normalized. The
+         table below is the honest accounting of what survives,
+         what gets normalized, and what is genuinely lossy."""]
+
+    [body
+      """| CX → format → CX | Lossless? | What is preserved | What is normalised or lost |
+         |---|---|---|---|
+         | CX → JSON → CX | data ✅ / presentation 📋 | Element shape, attributes, types via CXCol, values, nesting | Comments dropped; element vs attribute distinction collapses to keys |
+         | CX → YAML → CX | data ✅ / presentation 📋 | Element shape, types via `!!tags`, multiline strings | Comments dropped by most parsers; flow-vs-block style normalised |
+         | CX → TOML → CX | data ✅ / presentation 📋 | Element shape via table headers, strong types | Comments dropped; section ordering normalised; deep nesting flattened |
+         | CX → XML → CX | data ✅ / presentation 📋 | Element shape, attributes, mixed content, namespaces, PIs | Whitespace normalised per `xml:space`; entity references resolved |
+         | CX → Markdown → CX | data 📋 / presentation 📋 | Headings, paragraphs, lists, emphasis, code, links | Data-shaped elements flatten to inline text |
+         | CX → CXCol → CX | bytes ✅ | Everything byte-for-byte | Nothing — CXCol is the strict-canonical form |
+         | CX → CSV → CX | data partial | `:table` block columns and rows | Non-table data not encodable; cell subtyping collapses |"""]
+
+    [note
+      """**Presentation-layer differences** — comments (only XML
+         and CX preserve them; JSON has none; YAML and TOML lose
+         them through most parsers), whitespace (normalised to
+         the target conventions), attribute order (emission may
+         pick a canonical order), anchor names (canonical form
+         renumbers them). These all show up as identical hashes
+         via `cx hash` because the hash operates on
+         strict-canonical bytes, where presentation is
+         stripped."""]]
+
+  [child id=cmp-when-cx n=13.15 title='When CX wins, when it does not'
+    [body
+      """**CX is the right pick** for typed configuration, mixed
+         content alongside structured data, lossless conversion
+         across formats, cases where you need a stable canonical
+         form for hashing or signing, and any pipeline where the
+         query/transform layer (CXPath + `[?match]` + `[?modify]`)
+         should live in the same syntax as the data."""]
+    [body
+      """**Stay with the other formats** for narrower use cases:
+         JSON for browser-native parsing and high-throughput
+         APIs; YAML for human-curated config where indentation
+         matters or where Kubernetes/Helm tooling expects it;
+         TOML for flat single-file config; XML for document-
+         shaped data with namespaces, processing instructions,
+         and an XSLT toolchain already in place; Parquet or
+         Arrow for database-export with type-fidelity at
+         terabyte scale."""]]]

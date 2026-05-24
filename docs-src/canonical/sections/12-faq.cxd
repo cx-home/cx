@@ -480,4 +480,96 @@
            (Python for analytics, Go for services, Rust for
            systems, V as the native reference). Community-
            maintained revivals are welcome and the C ABI stays
-           stable for them."""]]]]
+           stable for them."""]]]
+
+  [# Migrated from docs-src/content/faq.cx during Phase B docs →
+     guide consolidation (2026-05-24). Unique Q&A from the
+     pre-v0.8.0 docs FAQ that complement §12.1-§12.8 above. #]
+
+  [child id=faq-first-thirty n=12.9 title='First thirty minutes — quick answers'
+    [intro
+      """Working answers to questions adopters ask in the first
+         thirty minutes. The §12.1-§12.8 children above cover
+         deeper operational topics; this section is the
+         beginner-question backstop."""]
+
+    [child id=faq-leading-zero n=12.9.1 title='Why does [zip 02134] produce a string?'
+      [body
+        """Leading-zero tokens stay strings unless the prefix is
+           `0x` (hex), `0o` (octal), or `0b` (binary). The rule
+           is deliberately predictable: leading-zero numerics are
+           typically identifiers (postal codes, area codes, BIC
+           codes, account numbers) where the leading zero is
+           data, not a numeric value. CX's design directly
+           inverts YAML's "country: NO" footgun."""]]
+
+    [child id=faq-decimal n=12.9.2 title='What is :decimal for?'
+      [body
+        """Arbitrary-precision decimal — for money, scientific
+           quantities, or any value where IEEE 754 binary floats
+           would lose precision. `0.1 + 0.2` is
+           `0.30000000000000004` in float; in `:decimal` it is
+           `0.3`. Consumer bindings map `:decimal` to their
+           language's decimal type (Python `Decimal`, Java
+           `BigDecimal`, .NET `decimal`, Ruby `BigDecimal`)."""]]
+
+    [child id=faq-brackets n=12.9.3 title='Why brackets instead of braces, indentation, or tags?'
+      [body
+        """Brackets are the lightest balanced delimiter not in
+           heavy use already. Braces are JSON; mixing braces with
+           the rest of CX would create constant visual collision.
+           Indentation breaks under programmatic generation.
+           Tags double the character count for every construct
+           and force closing-tag repetition. Brackets also pun
+           usefully: `[name]` is the thing called `name`, which
+           matches how humans write structured outlines on
+           whiteboards."""]]
+
+    [child id=faq-logfmt n=12.9.4 title='What is logfmt mode?'
+      [body
+        """A CX file made entirely of bare top-level `key=value`
+           attributes. Each line parses as a synthetic Element.
+           Log streams are valid CX. You can `cx --json logs.cx`
+           and get a JSON array of typed log records — no
+           separate logfmt parser needed."""]
+      [example lang=cx
+        """ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
+           ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true"""]]
+
+    [child id=faq-thread-safety n=12.9.5 title='Is CX thread-safe?'
+      [body
+        """The C ABI is documented per-symbol with thread-safety
+           classes. All format converters are stateless and can
+           run concurrently across threads on disjoint inputs.
+           The Boehm GC underneath libcx requires
+           `cx_thread_register` on each calling thread; Tier-1
+           bindings handle this automatically at every FFI
+           chokepoint."""]]
+
+    [child id=faq-confusion-raw n=12.9.6 title='Why does my embedded code get garbled?'
+      [body
+        """The bracket-pipe block-content form is parsed as CX, so
+           child-element brackets inside it open new elements. If
+           your code contains brackets, braces, or quotes, the
+           parser will mangle it. Use the bracket-hash raw-text
+           form instead — nothing inside is parsed, and the
+           terminator is `#]`."""]
+      [example lang=cx
+        """[code [#
+             for (let i = 0; i < arr.length; i++) {
+               console.log(arr[i]);
+             }
+           #]]"""]]
+
+    [child id=faq-license n=12.9.7 title='License and contributing'
+      [body
+        """**License:** Apache 2.0. **Contributing:** the project
+           lives at github.com/cx-home/cx — bug reports, doc
+           fixes, and pull requests welcome. For format-design
+           questions or proposed grammar changes, file an issue
+           first; a recorded design decision (ADR) is a
+           prerequisite for any breaking change. **Security
+           reports:** through GitHub's private vulnerability
+           reporting at
+           github.com/cx-home/cx/security/advisories/new — do not
+           file a public issue for security-sensitive bugs."""]]]]

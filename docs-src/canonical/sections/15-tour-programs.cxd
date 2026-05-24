@@ -1,0 +1,330 @@
+[# Section 15 — appendix: "50 Ways to Love Your CX Programs".
+   Pizzeria-edition tour of CX directives, simple to complex,
+   in 50 examples. Migrated from docs-src/content/tour/programs.cx
+   during Phase B docs → guide consolidation (2026-05-24).
+   Designer pre-approved as guide appendix.
+   File extension .cxd — data-only source. #]
+
+[section id=tour-programs n=15 title='50 Ways to Love Your CX Programs'
+
+  [intro
+    """Fifty short CX code examples — interpolation, paths,
+       filters, conditionals, iteration, functions, modules —
+       that walk from the simplest substitution to a full
+       pipeline with module activation, HTML-safe escaping,
+       function definition, structured logging, semantic merge,
+       and iteration. Each example pairs a tiny data input with a
+       directive snippet."""]
+
+  [child id=tp-1  n=15.1  title='1. A literal value'
+    [body """`[?= expr]` evaluates and prints. Here, the number 42."""]
+    [example lang=cx """[?= 42]"""]]
+
+  [child id=tp-2  n=15.2  title='2. A literal string'
+    [body """Same form; strings and numbers interpolate identically."""]
+    [example lang=cx """[?= 'Hand-tossed since 1987']"""]]
+
+  [child id=tp-3  n=15.3  title='3. Read an attribute — @name'
+    [body """`@name` is a path expression for the attribute named `name`. Prints "Margherita"."""]
+    [example lang=cx
+      """[pizza name=Margherita]
+         [?= @name]"""]]
+
+  [child id=tp-4  n=15.4  title='4. Find anywhere — //'
+    [body """`//` matches a `pizza` element at any depth."""]
+    [example lang=cx
+      """[order [pizza name=Margherita]]
+         [?= //pizza/@name]"""]]
+
+  [child id=tp-5  n=15.5  title='5. Inside body text'
+    [body """A directive sits inside text. The rest stays as written."""]
+    [example lang=cx
+      """[pizza name=Margherita]
+         [receipt Thanks for ordering [?= @name]!]"""]]
+
+  [child id=tp-6  n=15.6  title='6. Inside an attribute value'
+    [body """Interpolation works in attributes and in text. One mechanism, two positions."""]
+    [example lang=cx
+      """[user id=42 name=Joe]
+         [a href=/u/[?= @id]/profile View [?= @name]'s profile]"""]]
+
+  [child id=tp-7  n=15.7  title='7. Several on one line'
+    [body """Each `[?= …]` is independent."""]
+    [example lang=cx
+      """[pizza name=Margherita price=12]
+         [line [?= @name] — [?= @price]€]"""]]
+
+  [child id=tp-8  n=15.8  title='8. Inside a generated element'
+    [body """Per iteration, build a fully-formed `[a href=… …]` element."""]
+    [example lang=cx
+      """[catalog [c cid=42 name=Joe] [c cid=43 name=Ann]]
+         [?for c :in //c :yield [a href=/u/[?= c/@cid] [?= c/@name]]]"""]]
+
+  [child id=tp-9  n=15.9  title='9. Child step'
+    [body """Child steps separated by `/`. Prints "Margherita"."""]
+    [example lang=cx
+      """[shop [menu [pizza name=Margherita]]]
+         [?= //shop/menu/pizza/@name]"""]]
+
+  [child id=tp-10 n=15.10 title='10. Parent axis — parent::*'
+    [body """Walks up one element. Prints "New Haven"."""]
+    [example lang=cx
+      """[shop name='New Haven' [pizza name=Margherita]]
+         [?= //pizza/parent::*/@name]"""]]
+
+  [child id=tp-11 n=15.11 title='11. Ancestor axis'
+    [body """All ancestors of `c`. Prints "mid;top;"."""]
+    [example lang=cx
+      """[a tag=top [b tag=mid [c found]]]
+         [?for x :in //c/ancestor::* :yield [?= x/@tag];]"""]]
+
+  [child id=tp-12 n=15.12 title='12. Following-sibling axis'
+    [body """Walks siblings to the right of the matched node."""]
+    [example lang=cx
+      """[row [cell n=1] [cell n=2] [cell n=3]]
+         [?for x :in //cell[@n=1]/following-sibling::* :yield [?= x/@n];]"""]]
+
+  [child id=tp-13 n=15.13 title='13. Predicate filter — [@attr=value]'
+    [body """Brackets inside path expressions are predicates, not new elements."""]
+    [example lang=cx
+      """[menu [pizza name=Margherita] [pizza name=Hawaiian]]
+         [?= //pizza[@name='Hawaiian']/@name]"""]]
+
+  [child id=tp-14 n=15.14 title='14. Upper-case'
+    [body """Wrap a value with `[?fn [args]]` to call a filter."""]
+    [example lang=cx
+      """[pizza name=margherita]
+         [?= [?upper [@name]]]"""]]
+
+  [child id=tp-15 n=15.15 title='15. Default — fall back when missing'
+    [body """Graceful fallback; no exception."""]
+    [example lang=cx
+      """[pizza name=Mystery]
+         [?= [?default [@price, 0]]]"""]]
+
+  [child id=tp-16 n=15.16 title='16. Composed filters — nested'
+    [body """Inside-out: trim, then upper."""]
+    [example lang=cx
+      """[pizza name='  margherita  ']
+         [?= [?upper [[?trim [@name]]]]]"""]]
+
+  [child id=tp-17 n=15.17 title='17. String length'
+    [body """Counts characters. Prints 10."""]
+    [example lang=cx
+      """[pizza name=Margherita]
+         [?= [?string-length [@name]]]"""]]
+
+  [child id=tp-18 n=15.18 title="18. Today's date"
+    [body """`[?current-date]`, `[?current-dateTime]`, `[?current-time]`."""]
+    [example lang=cx """[?= [?current-date]]"""]]
+
+  [child id=tp-19 n=15.19 title='19. Pipeline |> — left-to-right composition'
+    [body """Same result as composed filters, read top-down instead of inside-out."""]
+    [example lang=cx
+      """[pizza name='  margherita  ']
+         [?= @name |> trim |> upper]"""]]
+
+  [child id=tp-20 n=15.20 title='20. Arrow => — method-call style'
+    [body """XQuery's invocation syntax. Reads as `name.lower()`."""]
+    [example lang=cx
+      """[pizza name=MARGHERITA]
+         [?= @name => lower()]"""]]
+
+  [child id=tp-21 n=15.21 title='21. String concatenation ||'
+    [body """Join strings with double-pipe, like SQL."""]
+    [example lang=cx
+      """[user first=Ada last=Lovelace]
+         [?= @first || ' ' || @last]"""]]
+
+  [child id=tp-22 n=15.22 title='22. Range — M to N'
+    [body """Inclusive range. Prints "1;2;3;4;"."""]
+    [example lang=cx """[?for n :in 1 to 4 :yield [?= n];]"""]]
+
+  [child id=tp-23 n=15.23 title='23. If — positional form'
+    [body """Three slots: condition, then, else."""]
+    [example lang=cx
+      """[pizza stock=0]
+         [?if [@stock > 0, in stock, out of stock]]"""]]
+
+  [child id=tp-24 n=15.24 title='24. If — labeled form'
+    [body """Same semantics, named slots — usually clearer."""]
+    [example lang=cx
+      """[pizza stock=5]
+         [?if @stock > 0 :then in stock :else out of stock]"""]]
+
+  [child id=tp-25 n=15.25 title='25. Skip the else branch'
+    [body """False condition renders nothing."""]
+    [example lang=cx
+      """[pizza featured=true]
+         [?if @featured :then ★ featured!]"""]]
+
+  [child id=tp-26 n=15.26 title='26. Existence check'
+    [body """A node-set is truthy when non-empty."""]
+    [example lang=cx
+      """[pizza [tags vegan]]
+         [?if [//tags, yes, no]]"""]]
+
+  [child id=tp-27 n=15.27 title='27. Multi-branch — no else-if ladder'
+    [body """Each `[cond, value]` is a branch; `*` is the catch-all."""]
+    [example lang=cx
+      """[pizza stock=2]
+         [?if [[@stock > 100, plenty],
+               [@stock > 10, some],
+               [@stock > 0, last few],
+               [*, sold out]]]"""]]
+
+  [child id=tp-28 n=15.28 title='28. For — positional form'
+    [body """Slots: variable, source, body."""]
+    [example lang=cx
+      """[pizza [topping cheese] [topping basil] [topping oil]]
+         [?for [t, //topping, [?= t/@name];]]"""]]
+
+  [child id=tp-29 n=15.29 title='29. For — labeled form'
+    [body """Same semantics with `:in` and `:yield`."""]
+    [example lang=cx
+      """[pizza [topping cheese] [topping basil] [topping oil]]
+         [?for t :in //topping :yield [?= t/@name];]"""]]
+
+  [child id=tp-30 n=15.30 title='30. Range loop — generate elements'
+    [body """Produces `[slot id=1][slot id=2][slot id=3]`."""]
+    [example lang=cx """[?for n :in 1 to 3 :yield [slot id=[?= n]]]"""]]
+
+  [child id=tp-31 n=15.31 title='31. Nested for'
+    [body """Loop over pizzas; inside, loop over each pizza's toppings."""]
+    [example lang=cx
+      """[shop [pizza name=Margherita [topping cheese] [topping basil]]]
+         [?for p :in //pizza :yield
+           [grp [?= p/@name]: [?for t :in p/topping :yield [?= t/@name],]]]"""]]
+
+  [child id=tp-32 n=15.32 title='32. For — over a single element'
+    [body """A single-element source binds once. Prints "Pepe / IT"."""]
+    [example lang=cx
+      """[shop [meta owner=Pepe region=IT]]
+         [?for $m :in //meta :yield [?= $m/@owner] / [?= $m/@region]]"""]]
+
+  [child id=tp-33 n=15.33 title='33. Let — bind an element, project its attrs'
+    [body """Let binds the `meta` element once, then projects two attributes from it."""]
+    [example lang=cx
+      """[shop [meta owner=Pepe region=IT]]
+         [?let $m :be //meta :yield [?= $m/@owner]/[?= $m/@region]]"""]]
+
+  [child id=tp-34 n=15.34 title='34. Let — bind once, reuse'
+    [body """Compute tax once, use it where the binding is in scope."""]
+    [example lang=cx
+      """[pizza price=12]
+         [?let tax :be @price * 0.22 :yield Total: [?= @price + tax]€]"""]]
+
+  [child id=tp-35 n=15.35 title='35. Let — bind a pipeline result'
+    [body """Pipelines and let-bindings compose naturally."""]
+    [example lang=cx
+      """[pizza name='  margherita  ']
+         [?let clean :be @name |> trim |> upper :yield Welcome, [?= clean]!]"""]]
+
+  [child id=tp-36 n=15.36 title='36. Define a template fragment'
+    [body """The body runs in the calling context."""]
+    [example lang=cx
+      """[?def greet :body Hello [?= @name]!]
+         [pizza name=Pepe]
+         [?use greet]"""]]
+
+  [child id=tp-37 n=15.37 title='37. With one parameter'
+    [body """Once defined, the function is callable as `[?shout …]`."""]
+    [example lang=cx
+      """[?def shout :params [x] :body LOUD: [?= x]!]
+         [?shout 'pizza ready']"""]]
+
+  [child id=tp-38 n=15.38 title='38. Multiple parameters'
+    [body """Positional params; prints "cheese / basil"."""]
+    [example lang=cx
+      """[?def pair :params [a, b] :body [?= a] / [?= b]]
+         [?pair 'cheese' 'basil']"""]]
+
+  [child id=tp-39 n=15.39 title='39. Function plus iteration'
+    [body """A reusable per-item template, mapped over a node set."""]
+    [example lang=cx
+      """[?def line :params [item] :body sku=[?= item/@sku];]
+         [order [v sku=A] [v sku=B] [v sku=C]]
+         [?for x :in //v :yield [?line x]]"""]]
+
+  [child id=tp-40 n=15.40 title='40. Higher-order — [?focus] and [?apply]'
+    [body """`[?focus]` builds a function from a body (`_` is the implicit arg); `[?apply]` invokes it."""]
+    [example lang=cx
+      """[pizza [v n=5]]
+         [?let dbl :be [?focus :body [?= _ * 2]]
+           :yield [?for x :in //v :yield [?= [?apply [dbl, x/@n]]]]]"""]]
+
+  [child id=tp-41 n=15.41 title='41. HTML-safe output'
+    [body """One directive switches the evaluator into context-aware escaping. No XSS from the menu."""]
+    [example lang=cx
+      """[pizza name='<script>alert(1)</script>']
+         [?cx output-target=html]
+         [?= @name]"""]]
+
+  [child id=tp-42 n=15.42 title='42. Plain-text output'
+    [body """Useful for terminals and files where escaping would be noise."""]
+    [example lang=cx
+      """[?cx output-target=text]
+         [pizza name='<b>Margherita</b>']
+         [?= @name]"""]]
+
+  [child id=tp-43 n=15.43 title='43. Activate a module'
+    [body """Modules expose new directive namespaces (`cx:`, `log:`, …) once activated."""]
+    [example lang=cx
+      """[?cx use-module=cx]
+         [?= [?cx:canonical [[?cx:parse ['[a   x=1  ]']]]]]"""]]
+
+  [child id=tp-44 n=15.44 title='44. cx:parse — read CX from a string'
+    [body """CX reads its own syntax as data. Code is data."""]
+    [example lang=cx
+      """[?cx use-module=cx]
+         [?= [?cx:parse ['[pizza name=Margherita]']]]"""]]
+
+  [child id=tp-45 n=15.45 title='45. cx:serialize — emit a value back to text'
+    [body """Round-trip: parse then serialize. Prints `[a x=1 y=2]`."""]
+    [example lang=cx
+      """[?cx use-module=cx]
+         [?= [?cx:serialize [[?cx:parse ['[a x=1 y=2]']]]]]"""]]
+
+  [child id=tp-46 n=15.46 title='46. cx:canonical — normalize'
+    [body """Whitespace and attribute order canonicalized; idempotent."""]
+    [example lang=cx
+      """[?cx use-module=cx]
+         [?= [?cx:canonical [[?cx:parse ['[a   x=1   y=2]']]]]]"""]]
+
+  [child id=tp-47 n=15.47 title='47. cx:hash — content digest'
+    [body """Stable hash over the canonical form. Same input always yields the same hash, in every binding."""]
+    [example lang=cx
+      """[?cx use-module=cx]
+         [?= [?cx:hash [[?cx:parse ['[pizza name=Margherita]']]]]]"""]]
+
+  [child id=tp-48 n=15.48 title='48. cx:merge — three-policy semantic merge'
+    [body """Two trees combined by element identity. Coupon's `price=10` overrides the order's."""]
+    [example lang=cx
+      """[?cx use-module=cx]
+         [order [pizza name=Margherita price=12]]
+         [coupon [pizza price=10]]
+         [?= [?cx:merge [//order, //coupon]]]"""]]
+
+  [child id=tp-49 n=15.49 title='49. Structured logging'
+    [body """`[?log:level [msg]]` emits a structured event. Second arg is a map of fields."""]
+    [example lang=cx
+      """[?cx use-module=log log-level=info]
+         [?log:info ['sale', {pizza: 'Margherita', price: 12}]]
+         [?log:debug ['suppressed at info level']]"""]]
+
+  [child id=tp-50 n=15.50 title='50. The whole kitchen'
+    [body """Module activation, HTML-safe escaping, function definition, structured logging, semantic merge, iteration. Six lines; the whole arc."""]
+    [example lang=cx
+      """[?cx use-module=cx output-target=html log-level=info]
+         [?def line :params [p] :body [li [?= p/@name] — [?= p/@price]€]]
+         [order [pizza name='<b>Margherita</b>' price=12]]
+         [coupon [pizza price=10]]
+         [?log:info ['rendering receipt']]
+         [ul [?for p :in [?cx:merge [//order, //coupon]]/pizza :yield [?line p]]]"""]]
+
+  [note
+    """**The arc.** Read a value → put it in context → walk paths
+       → filter and combine → branch → loop → factor into
+       functions → swap output mode → reflect / hash / merge /
+       log. Every step adds exactly one capability; data from §14
+       flows through unchanged."""]]
