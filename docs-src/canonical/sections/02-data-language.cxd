@@ -1054,4 +1054,127 @@
            [ratio :decimal 3.14159]
            [oven-temps :int[] 220 240 260 480]
            [tags :[] cheap fast tasty]"""]]]
+
+  [# Migrated from docs-src/content/reference/{schemas,includes,streaming,tables}.cx
+     during Phase B docs → guide consolidation (2026-05-24). Compact
+     quick-references that complement the per-feature reference
+     above and link out to the normative spec docs. #]
+
+  [child id=reference-quickref n=2.19 title='Reference quick-refs — schemas, includes, streaming, tables'
+    [intro
+      """At-a-glance references for the four big data-language
+         subsystems that get their own normative spec docs.
+         Schemas validate shape; includes compose documents;
+         streaming bounds RSS; tables carry columnar data. The
+         primary children (§2.7, §2.8, §2.9, §2.14) carry the
+         per-feature depth; this section is the cookbook-style
+         summary."""]
+
+    [child id=schema-quickref n=2.19.1 title='Schemas — validate before processing'
+      [body
+        """A schema in CX is itself a CX document. It declares
+           which elements may appear where, what attributes they
+           carry, and what types those attributes hold. The `cx
+           validate` subcommand walks the schema against an input
+           document and reports diagnostics. Three modes
+           determine what counts as a diagnostic: **open** admits
+           undeclared content as warnings; **strict** rejects it
+           as errors; **closed** treats undeclared content as a
+           hard error. The schema may set its own default mode;
+           the `--mode` flag overrides it."""]
+      [example lang=cx
+        """[schema
+             [element name='pizza'
+               [attribute name='size' type='enum' values='small medium large']
+               [attribute name='crust' type='string']]]"""]
+      [example lang=shell
+        """cx validate order.cx --schema=order.cxs
+           cx validate order.cx --schema=order.cxs --mode=strict
+           cx validate order.cx --schema=order.cxs --fail-on=warn"""]
+      [note
+        """**Type catalog.** `string`; `int` with sized variants
+           (`i8`, `u16`, `i64`, …); `float`; `decimal`; `bigint`;
+           `bool`; `date`; `datetime`; `bytes`; `enum` with
+           explicit values; `regex` with a pattern. The validator
+           coerces and bounds-checks each value against the
+           declared type."""]]
+
+    [child id=include-quickref n=2.19.2 title='Includes — parse-time vs eval-time'
+      [body
+        """CX has two include directives that share one resolver.
+           The **parse-time** form `[?cx include=path]` expands
+           files before the document reaches downstream tools —
+           use for static composition (config files, schema
+           fragments, page templates with known paths). The
+           **eval-time** form `[?include path]` expands files
+           while a CX program runs; the path is any CX expression
+           — literal, bound variable, or computed via filters."""]
+      [example lang=shell """cx --cx --include-root=./conf main.cx"""]
+      [example lang=cx
+        """[users
+             [?cx include=lib/admins.cx]
+             [user name=carol]]
+
+           [?include 'layouts/page.cx']
+           [?include [?concat ['layouts/', meta/@layout, '.cx']]]"""]
+      [note
+        """**Security and cycle detection.** Both forms reject
+           absolute paths (`E901`), paths that escape the root
+           after lexical normalisation (`E902`), and URL-shaped
+           paths (`E903`). Cycle detection (`E904`) and depth
+           limits (`E905`, default 8) protect against runaway
+           recursion. Full error catalog in
+           [`spec/include.md`](../../spec/include.md)."""]]
+
+    [child id=streaming-quickref n=2.19.3 title='Streaming — event shape and throughput'
+      [body
+        """Streaming parse and emit move bytes through the runtime
+           without ever holding the whole tree in memory. A
+           streaming parse fires four event kinds: `element_start`
+           (name + attributes), `attribute` (after `element_start`,
+           before any body), `body chunk` (text or scalar value),
+           and `element_end`. The same event shape works on every
+           input format — XML and JSON sources produce the same
+           events. Use streaming when the input is large enough
+           that resident memory matters."""]
+      [example lang=python
+        """import cx
+           with open('events.cx', 'rb') as f:
+               for event in cx.stream(f):
+                   if event.kind == 'element_start' and event.name == 'error':
+                       print(event.attrs)
+
+           with cx.stream_writer(open('out.cx', 'wb')) as w:
+               for record in fetch_records():
+                   w.write(record)"""]
+      [note
+        """**Backpressure.** The streaming sink uses a
+           `flush_after_bytes` threshold to bound buffer
+           residency. Default 64 KiB; lower for memory-constrained
+           environments, higher to amortise callback overhead on
+           small-emit workloads. **Throughput:** ~340 MB/s on the
+           comparable bench corpus (M2 Pro, libcx `-prod`)."""]]
+
+    [child id=tables-quickref n=2.19.4 title='Tables and binary forms'
+      [body
+        """A CX table is a structural form for columnar data.
+           Columns declare a name and a type; rows are records.
+           The Table API exposes count, schema introspection,
+           dump, and load — symmetric inverses with declared
+           types preserved across formats. The on-disk forms are
+           **ast-bin** (binary AST, cap bit 36 advertises v8) and
+           **data-bin** (CXCol v1 — columnar, used by
+           Arrow/Parquet bridges)."""]
+      [example lang=cx
+        """[:table
+             [:col name='size'  type='string']
+             [:col name='count' type='int']
+             [:row [size 'large'] [count 12]]
+             [:row [size 'small'] [count 8]]]"""]
+      [example lang=shell
+        """cx table info orders.cx      # column / row counts, types, byte size
+           cx table dump orders.cx --to=cx
+           cx table load orders.csv --to=cx
+           cx table dump orders.cx --to=parquet > orders.parquet
+           cx table load orders.parquet --to=cx"""]]]
 ]

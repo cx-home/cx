@@ -1585,4 +1585,198 @@
       [example lang=cx
         """[?for $x :in (1, 2, 3) :where [> $x 1] :yield [* $x $x]]
            [?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]
-           (1, 2, 3, 4) | count"""]]]]
+           (1, 2, 3, 4) | count"""]]]
+
+  [# Migrated from docs-src/content/reference/{cxpath,errors}.cx during
+     Phase B docs → guide consolidation (2026-05-24). CXPath
+     reference complements §6.3; errors complements §6.8. #]
+
+  [child id=cxpath-quickref n=6.12 title='CXPath reference — quick form'
+    [intro
+      """At-a-glance CXPath reference. The normative grammar lives
+         in [`spec/grammar.ebnf`](../../spec/grammar.ebnf)
+         productions [130]-[135] (path / predicate base) and
+         [159]-[160] (general PredicateExpr + `:bind` step
+         modifier). XPath 3.1 alignment and divergences are
+         tabulated in
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md).
+         CXPath is a first-class value kind at v0.8.0 (ADR 0028);
+         general predicates with `$_` / `$_position` / `$_last`
+         per ADR 0036."""]
+
+    [child id=cxpath-quick-table n=6.12.1 title='Quick reference'
+      [example lang=cx
+        """# Every user in the document.
+           //user
+
+           # Every user whose @active attribute equals true.
+           //user[@active=true]
+
+           # Email addresses of every active user.
+           //user[@active=true]/@email
+
+           # The third user in document order.
+           //user[3]
+
+           # Anything two levels deep under root.
+           /*/*
+
+           # Every sibling that follows the first user.
+           //user[1]/following-sibling::user
+
+           # Every ancestor element of a [para] node.
+           //para/ancestor::*
+
+           # General predicate — explicit $_ context binding (ADR 0036).
+           //user[$_@age >= 18 and $_@active]
+
+           # Cross-step :bind — name the outer focus, reference from inner predicate.
+           //team :bind t / member[$_@role = "lead" and count($t/member) >= 3]
+
+           # Range and sequence ops — XPath 3.1 idioms.
+           1 to 10
+           //a union //b
+           //x intersect //y
+           //all except //banned"""]]
+
+    [child id=cxpath-four-forms n=6.12.2 title='Four leading forms'
+      [body
+        """Every CXPath has one of four leading-token forms.
+           - **`//` descendant** — `//user` —
+             `descendant-or-self::node()/child::user`; the most
+             common shape.
+           - **`/` absolute** — `/root/item` — child of the
+             document root; rare in well-shaped data.
+           - **relative** — `user/email` — applied against the
+             current evaluation context.
+           - **`$name/` binding** — `$u/email` — rooted at a
+             previously-bound value (per `[?for]` / `[?let]` /
+             `:bind`)."""]]
+
+    [child id=cxpath-axes n=6.12.3 title='Twelve axes'
+      [body
+        """Every step can specify an axis. The default axis is
+           `child::`; the `attribute::` axis has the dedicated
+           `@` sigil per ADR 0028 D1. CX implements all twelve
+           XPath 3.1 axes: `child`, `descendant`,
+           `descendant-or-self`, `parent`, `ancestor`,
+           `ancestor-or-self`, `self`, `following-sibling`,
+           `preceding-sibling`, `following`, `preceding`,
+           `attribute`."""]
+      [body
+        """Composite shortcut forms: `/name` ≡ `child::name`;
+           `//name` ≡ `descendant-or-self::node()/child::name`;
+           `@name` ≡ `attribute::name`; `..` ≡ `parent::node()`;
+           `.` ≡ `self::node()`. Attribute axis is name-disjoint
+           from element axes — `//user/@name` selects the
+           attribute only; `//user/name` selects the child
+           element only (ADR 0028 D13)."""]]
+
+    [child id=cxpath-predicates n=6.12.4 title='General predicate + reserved bindings'
+      [body
+        """Predicates filter the step sequence. v0.8.0 ratified
+           the `[expr]` general predicate per ADR 0036: every
+           predicate body is an arbitrary CX expression coerced
+           to a boolean via the Effective Boolean Value (EBV)
+           rule. Atomic forms — `[@name]`, `[@name=V]`, `[N]`,
+           `[fn(…)]` — remain available as parse-time sugar and
+           round-trip via canonical re-emit when the AST matches
+           a recognised template (ADR 0036 D6)."""]
+      [body
+        """**Three reserved bindings** in scope inside every
+           predicate body: `$_` (current candidate item, type
+           matches the candidate kind), `$_position` (1-based int
+           index — equivalent to XPath `position()`), `$_last`
+           (int cardinality of the candidate sequence —
+           equivalent to XPath `last()`). Predicates are eagerly
+           materialised (ADR 0036 D4), so `$_last` is known on
+           every predicate evaluation."""]
+      [body
+        """**Comparison sigils** are value-comparison only: `=`,
+           `!=`, `<`, `<=`, `>`, `>=`. No keyword synonyms (no
+           `eq`/`ne`/`lt`/etc.). Comparing a sequence with more
+           than one item raises `CXER0103`. **Purity** — every
+           predicate body MUST be pure (ADR 0036 D8); impure
+           callees fail load with `CXER0230`."""]]
+
+    [child id=cxpath-bind n=6.12.5 title=':bind peer-modifier'
+      [body
+        """`:bind NAME` is a peer-modifier slot on a path step,
+           appearing between the NodeTest and any trailing
+           predicates. At most one `:bind` per step. The name
+           binds the step's focus value under the given
+           identifier, and the binding is visible in every
+           predicate enclosed by that step and in every
+           subsequent step of the same PathExpr."""]
+      [example lang=cx
+        """//team :bind t / member[ $_@role = "lead" and count($t/member) >= 3 ]
+
+           # $t — the team the path is currently resolving
+           # $_ — the current member (rebinds at each predicate)"""]
+      [note
+        """`:bind _` is rejected with `CXER0232` (reserved bind
+           name). `:bind` participates in the closed
+           modifier-keyword set for the ADR 0028 D12 path-step
+           disambiguation rule."""]]
+
+    [child id=cxpath-binding-surface n=6.12.6 title='In the host bindings'
+      [body
+        """Every Tier-1 binding exposes CXPath identically through
+           its Layer-1 surface — same selector, same bytes
+           returned across the C ABI."""]
+      [example lang=python """emails = doc.select_all("//user[@active=true]/@email")"""]
+      [example lang=go      """emails, _ := doc.SelectAll("//user[@active=true]/@email")"""]
+      [example lang=rust    """let emails = doc.select_all("//user[@active=true]/@email")?;"""]
+      [example lang=v       """emails := doc.select_all('//user[@active=true]/@email')!"""]]]
+
+  [child id=errors-catalog n=6.13 title='Error code catalog (v0.8.0)'
+    [intro
+      """Every CX error carries a structured payload: `cx-err:CODE`
+         then a unit separator (US, `0x1F`) then a human-readable
+         description then optionally another unit separator and a
+         value. Bindings preserve this shape so `[?try]` / `[?catch]`
+         can match on code rather than on text. The catalog below
+         covers the v0.8.0 ranges; the full normative table lives
+         in [`spec/errors.md`](../../spec/errors.md)."""]
+
+    [child id=errors-security n=6.13.1 title='CXER001x — security caps'
+      [body
+        """- `CXER0010` — function call depth exceeded.
+           - `CXER0011` — collection size cap reached
+             (`sequence_len`, `map_entries`, `capture_size`).
+           - `CXER0014` — eval-time include attempted without
+             `--include-root`."""]]
+
+    [child id=errors-eval-gates n=6.13.2 title='CXER004x — evaluator gates'
+      [body
+        """- `CXER0040` — purity gate: `SideEffect` /
+             `ReadOnly` filter raised under `[?cx pure-only]`.
+           - `CXER0041` — module gate: `on_declaration` module
+             called without `use-module`.
+           - `CXER0042` — eval gate: `cx:eval` invoked without
+             `[?cx allow-eval]`.
+           - `CXER0043` — eval depth gate: `cx:eval` recursion
+             exceeded `max-eval-depth`."""]]
+
+    [child id=errors-include n=6.13.3 title='E9xx — include resolver'
+      [body
+        """- `E901` — absolute path rejected.
+           - `E902` — path escapes include root (lexical or
+             symlink).
+           - `E903` — URL-scheme path rejected.
+           - `E904` — cycle detected.
+           - `E905` — max depth exceeded.
+           - `E906` — file not found.
+           - `E907` — file not readable.
+           - `E908` — path is a directory.
+           - `E909` — I/O error during read.
+           - `E910` — non-UTF-8 content.
+           - `E911` — included file parse failure."""]]
+
+    [child id=errors-catching n=6.13.4 title='Catching with [?try]'
+      [example lang=cx
+        """[?try [BODY,
+                [?catch [err]
+                  [?if [$err:code = 'E906',
+                        file missing,
+                        other error: [?= $err:code]]]]]]"""]]]]

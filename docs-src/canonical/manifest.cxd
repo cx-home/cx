@@ -90,7 +90,12 @@
     [child n=2.18 id=concepts-fold   title='Concept framing — data model, sigils, types'
       [child n=2.18.1 id=cxdm-overview   title='One tree, six surfaces']
       [child n=2.18.2 id=sigils-catalog  title='The five sigils + bool sugar']
-      [child n=2.18.3 id=types-fold      title='Types — auto-typing, sized, decimal, bigint']]]
+      [child n=2.18.3 id=types-fold      title='Types — auto-typing, sized, decimal, bigint']]
+    [child n=2.19 id=reference-quickref title='Reference quick-refs — schemas, includes, streaming, tables'
+      [child n=2.19.1 id=schema-quickref    title='Schemas — validate before processing']
+      [child n=2.19.2 id=include-quickref   title='Includes — parse-time vs eval-time']
+      [child n=2.19.3 id=streaming-quickref title='Streaming — event shape and throughput']
+      [child n=2.19.4 id=tables-quickref    title='Tables and binary forms']]]
 
   [section n=3 id=surfaces file='03-surfaces.cxd'
     [child n=3.1 id=cx-canonical title='CX — the canonical dialect'
@@ -207,7 +212,19 @@
     [child n=6.11 id=evaluation-framing title='Evaluation framing — directives, patterns, comprehensions'
       [child n=6.11.1 id=directives-overview title='Directives turn data into a language']
       [child n=6.11.2 id=patterns-walking    title='Pattern matching — walking the tree']
-      [child n=6.11.3 id=comprehensions      title='Comprehensions and composition']]]
+      [child n=6.11.3 id=comprehensions      title='Comprehensions and composition']]
+    [child n=6.12 id=cxpath-quickref     title='CXPath reference — quick form'
+      [child n=6.12.1 id=cxpath-quick-table     title='Quick reference']
+      [child n=6.12.2 id=cxpath-four-forms      title='Four leading forms']
+      [child n=6.12.3 id=cxpath-axes            title='Twelve axes']
+      [child n=6.12.4 id=cxpath-predicates      title='General predicate + reserved bindings']
+      [child n=6.12.5 id=cxpath-bind            title=':bind peer-modifier']
+      [child n=6.12.6 id=cxpath-binding-surface title='In the host bindings']]
+    [child n=6.13 id=errors-catalog      title='Error code catalog (v0.8.0)'
+      [child n=6.13.1 id=errors-security    title='CXER001x — security caps']
+      [child n=6.13.2 id=errors-eval-gates  title='CXER004x — evaluator gates']
+      [child n=6.13.3 id=errors-include     title='E9xx — include resolver']
+      [child n=6.13.4 id=errors-catching    title='Catching with [?try]']]]
 
   [section n=7 id=bindings file='07-bindings.cxd'
     [child n=7.1 id=c-abi             title='The C ABI surface']
@@ -243,7 +260,12 @@
     [child n=8.9 id=build-integration title='Build-system integration']
     [child n=8.10 id=docgen          title='Doc-gen pipeline']
     [child n=8.11 id=playground      title='Playground']
-    [child n=8.12 id=profiling       title='Profiling and benchmarking']]
+    [child n=8.12 id=profiling       title='Profiling and benchmarking']
+    [child n=8.13 id=tooling-quickref title='Tooling quick references'
+      [child n=8.13.1 id=cli-quickref           title='CLI quick reference']
+      [child n=8.13.2 id=editor-installers      title='Editor installer scripts']
+      [child n=8.13.3 id=tree-sitter-workflow   title='Tree-sitter grammar workflow']
+      [child n=8.13.4 id=conformance-fuzz-bench title='Conformance, fuzzing, benchmarks']]]
 
   [section n=9 id=concepts file='09-concepts.cxd'
     [child n=9.1 id=homoiconicity      title='Homoiconicity']

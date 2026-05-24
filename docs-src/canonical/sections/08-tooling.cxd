@@ -1717,4 +1717,134 @@
       [body
         """CI gates on these numbers via a percentile-aware
            regression check: a single run > 1.5× the rolling
-           median is flagged; > 2× fails the build."""]]]]
+           median is flagged; > 2× fails the build."""]]]
+
+  [# Migrated from docs-src/content/tooling/* and content/reference/cli.cx
+     during Phase B docs → guide consolidation (2026-05-24). Compact
+     quick-references for the CLI, editor install scripts, the
+     tree-sitter grammar, and the conformance/fuzz/bench harnesses. #]
+
+  [child id=tooling-quickref n=8.13 title='Tooling quick references'
+    [intro
+      """Compact reference snippets for the CLI subcommand surface,
+         the editor installer scripts, the tree-sitter grammar
+         workflow, and the conformance / fuzz / bench harnesses.
+         The primary children above (§8.1-§8.12) carry the
+         normative depth; this section is the at-a-glance
+         summary."""]
+
+    [child id=cli-quickref n=8.13.1 title='CLI quick reference'
+      [body
+        """Every subcommand reads from a file or `-` (stdin) and
+           writes to stdout unless `--output FILE` is passed.
+           Format is auto-detected from the extension or set
+           explicitly with `--from FMT` / `--to FMT`."""]
+      [example lang=shell
+        """# Format conversion (one-shot).
+           cx --cx pizza.cx                 # canonical CX form
+           cx --xml pizza.cx                # XML
+           cx --json pizza.cx               # semantic JSON
+           cx --ast pizza.cx                # AST as JSON
+           cx --yaml pizza.cx | cx --toml   # chain conversions
+
+           # From-To.
+           cx --from=yaml --to=json < config.yaml
+           cx convert config.yaml --to=json
+           cx convert order.json --from=json --to=cx --compact
+
+           # Subcommands.
+           cx fmt FILE              # lossless canonical formatter
+           cx canonical FILE        # strict canonical text
+           cx hash FILE             # SHA-256 over canonical bytes
+           cx eq A.cx B.cx          # exit 0 if data-equivalent
+           cx diff A.cx B.cx        # semantic diff
+           cx lint FILE             # style + correctness
+           cx validate FILE --schema=S.cxs
+           cx eval TEMPLATE.cx --data=CTX.cx
+           cx select EXPR --data=CTX.cx
+           cx table info FILE
+           cx scaffold KIND         # drop a skeleton on stdout
+
+           # Include resolution.
+           cx --xml --include-root=./conf main.cx     # resolve [?cx include=…]
+           cx eval template.cx --include-root=./tpl   # also activates [?include]"""]
+      [note
+        """**Exit codes.** `0` = success (no diagnostics at or
+           above the configured `--fail-on` threshold); `1` =
+           diagnostics found (lint / validate) or comparison
+           returned not-equal; `2` = I/O failure, schema load
+           failure, or unrecoverable parse error."""]]
+
+    [child id=editor-installers n=8.13.2 title='Editor installer scripts'
+      [body
+        """The `tooling/install/` directory ships one shell script
+           per editor. Each script writes the editor config,
+           registers the `cx lsp` server, and drops the
+           syntax-highlighting plugin. The CX language server is
+           built into the `cx` binary itself — no separate
+           install."""]
+      [example lang=shell
+        """./tooling/install/install.sh           # interactive — detects editors on PATH
+           ./tooling/install/install-vscode.sh    # VS Code only
+           ./tooling/install/install-nvim.sh      # Neovim only
+           ./tooling/install/install-lsp.sh       # LSP wiring only, no extension
+           ./tooling/install/uninstall.sh         # remove everything"""]
+      [note
+        """**VS Code** — extension at `tooling/vscode`;
+           tree-sitter syntax + vscode-languageclient LSP harness;
+           supports diagnostics, hover, format-on-save via `cx
+           fmt`. **Neovim** — config under `tooling/neovim`;
+           install script writes LSP client config and
+           tree-sitter grammar. **Other editors** — Helix, Emacs
+           (lsp-mode), Sublime Text (LSP plugin), IntelliJ
+           (LSP4IJ) drive `cx lsp` directly. Point the editor at
+           the `cx` binary; register `.cx` / `.cxd` / `.cxs` as
+           file types."""]]
+
+    [child id=tree-sitter-workflow n=8.13.3 title='Tree-sitter grammar workflow'
+      [body
+        """The tree-sitter grammar lives at
+           `tooling/tree-sitter-cx`. It is the source of syntax
+           highlighting, code folding, structural selection, and
+           lightweight static analysis in every editor. Prebuilt
+           artifacts ship inside each editor extension; build
+           from source for grammar work."""]
+      [example lang=shell
+        """cd tooling/tree-sitter-cx
+           tree-sitter generate
+           tree-sitter parse example.cx"""]
+      [note
+        """Highlight, indent, fold, and locals queries ship
+           alongside the grammar. They drive syntax colours,
+           structural selection, and cursor-jump-to-definition
+           behaviour. Queries are versioned with the grammar;
+           updates flow through editor extensions on each
+           release."""]]
+
+    [child id=conformance-fuzz-bench n=8.13.4 title='Conformance, fuzzing, benchmarks'
+      [body
+        """The conformance suite at `conformance/*.txt` is the
+           cross-binding contract. Each fixture declares an input
+           and an expected output (`out_cx`, `out_xml`, `out_json`,
+           `out_text`, or `out_err`). Every binding implements a
+           runner that walks the fixture set; a release is gated
+           on byte-identical output across every binding."""]
+      [example lang=shell
+        """# Conformance.
+           make test            # all bindings, all suites
+           make test-vcx        # V core conformance
+           make test-rust       # Rust binding
+           make test-python     # Python binding
+
+           # Fuzzers — vcx/tests/fuzz/, structured-random input.
+           make fuzz            # 60-second run of every fuzzer
+           make fuzz-parser     # parser only, runs until interrupted
+           make fuzz-replay     # replay the saved crash corpus
+
+           # Benchmarks — vcx/tests/runners/streaming_bench.v + eval_features_bench.v.
+           make bench           # full bench harness, target/bench.json
+           scripts/run_bench_json.py --include-eval"""]
+      [note
+        """Streaming throughput target: 340 MB/s on the comparable
+           bench corpus (M2 Pro, libcx `-prod`) — about 17% under
+           the comparable JSON benchmark on the same workload."""]]]]
