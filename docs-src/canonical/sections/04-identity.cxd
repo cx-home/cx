@@ -549,4 +549,89 @@
            caveat: if you're calling libcx via raw FFI (not through a
            binding), you must call `cx_thread_register()` yourself
            before any other libcx call from that thread."""]]]
+
+  [# Migrated from docs-src/content/concepts/identity.cx,
+     docs-src/content/reference/ast-bin.cx, and
+     docs-src/content/reference/data-bin.cx during Phase B docs →
+     guide consolidation (2026-05-24). Higher-level framing on
+     two-layer identity (content-addressed + declarational) and
+     compact quick-references for ast-bin / data-bin. #]
+
+  [child id=identity-framing n=4.7 title='Identity framing — two layers + binary forms'
+    [intro
+      """Identity in CX has two layers. The first is
+         content-addressed — every tree has a SHA-256 over its
+         canonical bytes; two trees with the same data have the
+         same hash. The second is declarational — an element can
+         carry an id via `#`, and other places in the document can
+         reference it via `@`."""]
+
+    [child id=canonical-recap n=4.7.1 title='Canonical form recap'
+      [body
+        """Canonical mode strips presentation — comments, anchors,
+           whitespace, attribute order normalisation — and emits a
+           data-equivalent byte-identical form. Two documents with
+           the same data emit to the same bytes; the difference
+           between them is something a human added, not something
+           the data carries."""]
+      [example lang=shell
+        """cx canonical menu.cx     # canonical bytes
+           cx hash menu.cx          # SHA-256 hex over canonical bytes
+           cx eq a.cx b.cx          # exit 0 iff canonical(a) == canonical(b)"""]
+      [note
+        """Canonical form is the basis for content-addressed
+           identity (`cx hash`), for byte-identical conformance
+           tests across bindings, and for diff that ignores
+           presentation."""]]
+
+    [child id=declared-ids n=4.7.2 title='Declared identifiers (#id, @ref)'
+      [body
+        """Declared identity is what you write when you want one
+           element to point at another by name. Declare with `#`;
+           reference with `@`. IDs are unique within their scope;
+           the scope is the document root by default."""]
+      [example lang=cx
+        """[order #main
+             [item #latte]
+             [item #scone]]
+           [receipt order=@main]"""]]
+
+    [child id=anchors-merge n=4.7.3 title='Anchors and merge targets'
+      [body
+        """An anchor (`&` sigil) names a value once and lets later
+           places refer to it without repeating it. A merge target
+           (`*` sigil) folds the anchor referent into the current
+           element. Anchors are anonymous handles; the canonical
+           form renumbers them so two documents that bind the same
+           data with different anchor names hash to the same
+           identity."""]
+      [example lang=cx
+        """[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]
+           [server *shared name=worker]"""]]
+
+    [child id=ast-bin-quickref n=4.7.4 title='ast-bin quick reference'
+      [body
+        """ast-bin is the binary serialization of the canonical
+           form. The buffer envelope is `[u32 LE size][payload
+           bytes]`; payload is the AST in a column-major encoding
+           keyed by capability bits. Release the buffer with
+           `cx_free`; never call system `free()`. Capability bit
+           36 advertises the PathNode wire format (ast_bin v8 per
+           ADR 0028); cap bit 3 advertises symmetric AST
+           round-trip. The full bit table is in [`spec/abi.md`
+           §3](../../spec/abi.md)."""]]
+
+    [child id=data-bin-quickref n=4.7.5 title='data-bin quick reference (CXCol v1)'
+      [body
+        """data-bin is the strict-canonical binary data format,
+           branded `CXCol` per ADR 0021 retitle (commit
+           `cbed7754`). Magic bytes are `0x43 0x58 0x44 0x42`
+           (historical, preserved for forward-compat); modes are
+           self-describing (default), schema-driven (cap bit 1 —
+           caller supplies a `.cxs`, payload omits the schema
+           preamble), chunked tables (`spec/data_bin.md` §3.11),
+           and page-compressed (`spec/data_bin.md` §3.12). All
+           four modes round-trip byte-stable through `cx
+           --to=data-bin | cx --from=data-bin`."""]]]
 ]

@@ -86,7 +86,11 @@
     [child n=2.14 id=streaming-data title='Streaming parse and emission']
     [child n=2.15 id=limits         title='Limits and quotas']
     [child n=2.16 id=datetime-detail title='Date / time semantics — timezones, precision, leap seconds']
-    [child n=2.17 id=reserved-tokens title='Reserved tokens and keyword list']]
+    [child n=2.17 id=reserved-tokens title='Reserved tokens and keyword list']
+    [child n=2.18 id=concepts-fold   title='Concept framing — data model, sigils, types'
+      [child n=2.18.1 id=cxdm-overview   title='One tree, six surfaces']
+      [child n=2.18.2 id=sigils-catalog  title='The five sigils + bool sugar']
+      [child n=2.18.3 id=types-fold      title='Types — auto-typing, sized, decimal, bigint']]]
 
   [section n=3 id=surfaces file='03-surfaces.cxd'
     [child n=3.1 id=cx-canonical title='CX — the canonical dialect'
@@ -146,7 +150,13 @@
     [child n=4.6 id=ffi-lifetime title='FFI lifetime and memory ownership'
       [child n=4.6.1 id=ffi-doc-lifetime      title='Doc lifetime per binding']
       [child n=4.6.2 id=ffi-node-borrowing    title='Node borrowing from a Doc']
-      [child n=4.6.3 id=ffi-thread-register   title='Thread registration (cx_thread_register)']]]
+      [child n=4.6.3 id=ffi-thread-register   title='Thread registration (cx_thread_register)']]
+    [child n=4.7 id=identity-framing title='Identity framing — two layers + binary forms'
+      [child n=4.7.1 id=canonical-recap     title='Canonical form recap']
+      [child n=4.7.2 id=declared-ids        title='Declared identifiers (#id, @ref)']
+      [child n=4.7.3 id=anchors-merge       title='Anchors and merge targets']
+      [child n=4.7.4 id=ast-bin-quickref    title='ast-bin quick reference']
+      [child n=4.7.5 id=data-bin-quickref   title='data-bin quick reference (CXCol v1)']]]
 
   [section n=5 id=analytics file='05-analytics.cxd'
     [child n=5.1 id=overview      title='The analytics lane']
@@ -193,7 +203,11 @@
       [child n=6.9.1 id=services title='Services and clients']
       [child n=6.9.2 id=workers  title='Workers and channels']
       [child n=6.9.3 id=async    title='Async and await']]
-    [child n=6.10 id=resilience  title='Resilience directives']]
+    [child n=6.10 id=resilience  title='Resilience directives']
+    [child n=6.11 id=evaluation-framing title='Evaluation framing — directives, patterns, comprehensions'
+      [child n=6.11.1 id=directives-overview title='Directives turn data into a language']
+      [child n=6.11.2 id=patterns-walking    title='Pattern matching — walking the tree']
+      [child n=6.11.3 id=comprehensions      title='Comprehensions and composition']]]
 
   [section n=7 id=bindings file='07-bindings.cxd'
     [child n=7.1 id=c-abi             title='The C ABI surface']
@@ -244,7 +258,18 @@
     [child n=9.10 id=wasm-story        title='Wasm / browser story']
     [child n=9.11 id=quotas-recap      title='Resource quotas (recap)']
     [child n=9.12 id=determinism       title='Determinism and reproducibility guarantees']
-    [child n=9.13 id=sandboxing        title='Sandboxing untrusted CX code']]
+    [child n=9.13 id=sandboxing        title='Sandboxing untrusted CX code']
+    [child n=9.14 id=structural-sharing-detail title='Structural sharing — the spine-copy algorithm'
+      [child n=9.14.1 id=ss-puzzle       title='The puzzle']
+      [child n=9.14.2 id=ss-spine-copy   title='The spine-copy algorithm']
+      [child n=9.14.3 id=ss-cost         title='Cost model']
+      [child n=9.14.4 id=ss-invariant    title='The identity invariant']
+      [child n=9.14.5 id=ss-concurrent   title='Concurrent reads are free']
+      [child n=9.14.6 id=ss-not-cow      title='Why not copy-on-write?']]
+    [child n=9.15 id=wasm-three-tier   title='Wasm three-tier rendering and respin status'
+      [child n=9.15.1 id=wasm-why            title='Why WebAssembly']
+      [child n=9.15.2 id=wasm-three-tier-render title='Three-tier diagram rendering']
+      [child n=9.15.3 id=wasm-status         title='Wasm respin status (v0.8.0)']]]
 
   [section n=10 id=migration file='10-migration.cxd'
     [child n=10.1 id=from-v07x        title='From v0.7.x to v0.8.0']
