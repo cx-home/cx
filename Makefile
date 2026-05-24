@@ -329,9 +329,7 @@ test-python-arrow-conformance: build-vcx build-lib-arrow
 
 # Phase 5 Tier-1 binding parity (Python) — exercises the v0.8.0
 # cx_code_eval* surface (spec/audits/code_abi_v1.md) and its
-# Pythonic eval_code / eval_code_streaming wrappers. The historical
-# v0.7.0 test-python-eval-v0-7-0 target was retired alongside the
-# .cxl POC.
+# Pythonic eval_code / eval_code_streaming wrappers.
 test-python-code-eval: build-vcx
 	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
 	$(PYTHON) lang/python/conformance_code.py
@@ -397,14 +395,6 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-# Rust-binding parity check for the historical v0.7.0 evaluator
-# surface (16 tests). Retained as a regression guard against the
-# Layer-1 binding contract; superseded by test-binding-api-parity
-# (gate 28.6) once Phase 3 lands.
-test-rust-eval-v0-7-0: build-vcx
-	cargo test --manifest-path lang/rust/cxlib/Cargo.toml \
-		--test eval_v0_7_0
-
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
@@ -450,13 +440,6 @@ test-go-arrow: build-vcx build-lib-arrow
 # spec/abi.md §2.11).
 test-go-arrow-conformance: build-vcx build-lib-arrow
 	cd lang/go/cxlib && go test -tags arrow -v -run TestArrowConformance
-
-# Go-binding parity check for the historical v0.7.0 evaluator surface
-# (17 tests). Retained as a regression guard against the Layer-1
-# binding contract; superseded by test-binding-api-parity (gate 28.6)
-# once Phase 3 lands.
-test-go-eval-v0-7-0: build-vcx
-	cd lang/go/cxlib && go test -v -run TestEvalV070
 
 conform-md: build-vcx
 	$(MAKE) -C vcx conform-md
