@@ -2,7 +2,7 @@
 
 **Date:** TBD (target: v0.8.0-dev → main merge + tag)
 **Branch:** v0.8.0-dev (skips the unreleased v0.7.6 design pass per
-[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cx))
+[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cxd))
 
 The release that locks CX's read + write surface on a unified
 selector vocabulary. CXPath is restored as a first-class value kind;
@@ -35,7 +35,7 @@ comprehensions, Go filter chains, Rust iterator combinators).
   conformance-validated byte-for-byte. Layer 2: host idiom packs
   (`cxlib.idioms` in Python, `cxlib/idioms` in Go, `cxlib::idioms`
   in Rust) desugaring to Layer 1.
-- **Binding set narrowed** to V/Python/Go/Rust ([backlog `d-2026-05-22-03`](docs-src/canonical/backlog.cx)).
+- **Binding set narrowed** to V/Python/Go/Rust ([backlog `d-2026-05-22-03`](docs-src/canonical/backlog.cxd)).
   TypeScript / Java / C# / Ruby / Kotlin / Swift archived to
   `lang/_archived/`. Restoration is opt-in once the Layer-1 surface
   stabilizes.
@@ -57,7 +57,7 @@ comprehensions, Go filter chains, Rust iterator combinators).
 ## Carried from v0.7.6 (released as part of v0.8.0)
 
 The v0.7.6 design pass landed substantively on `v0.7.6-dev` but was
-never tagged ([backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cx)).
+never tagged ([backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cxd)).
 Its deliverables ship in v0.8.0:
 
 - §11 capabilities: services, concurrency primitives, async, visualization.
@@ -134,10 +134,10 @@ Layer-1 parity is conformance-validated via
 
 The v0.8.0 design pass synthesized feedback from the v0.7.6 review
 window. Key contributors per the backlog:
-[`d-2026-05-22-01`](docs-src/canonical/backlog.cx) (brand),
-[`d-2026-05-22-11`](docs-src/canonical/backlog.cx) (ADR format),
-[`d-2026-05-22-12`](docs-src/canonical/backlog.cx) (sigils only),
-[`d-2026-05-22-13`](docs-src/canonical/backlog.cx) (ADR length discipline).
+[`d-2026-05-22-01`](docs-src/canonical/backlog.cxd) (brand),
+[`d-2026-05-22-11`](docs-src/canonical/backlog.cxd) (ADR format),
+[`d-2026-05-22-12`](docs-src/canonical/backlog.cxd) (sigils only),
+[`d-2026-05-22-13`](docs-src/canonical/backlog.cxd) (ADR length discipline).
 
 ## Verification
 

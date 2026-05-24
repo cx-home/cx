@@ -53,7 +53,7 @@ STANDING RULES (from memory — apply throughout)
 READ FIRST — in this order
 ═════════════════════════════════════════════════════════════════
 1.  memory/MEMORY.md (auto-loaded)
-2.  docs-src/canonical/backlog.cx
+2.  docs-src/canonical/backlog.cxd
 3.  docs-src/canonical/v0_8_0_session_prompt.md (this file)
 4.  spec/decisions/0028-cxpath-as-value-kind.md
 5.  spec/decisions/0029-match-heterogeneous-arms.md

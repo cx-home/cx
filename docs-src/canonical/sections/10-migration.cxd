@@ -258,7 +258,7 @@
                 context + decisions (D1, D2, ...) + alternatives
                 considered + gates. Number is the next sequential
                 slot."""]
-        [item """**Register** the ADR in `docs-src/canonical/backlog.cx`
+        [item """**Register** the ADR in `docs-src/canonical/backlog.cxd`
                 under `[adrs ...]` with `:status draft`."""]
         [item """**Review window** — submit for owner + community
                 review. Iterate the lean tables until reviewers can

@@ -120,7 +120,7 @@ site is a static bundle and works under `file://` with no server.
 
 CX is pre-1.0. **v0.8.0-dev** is the current development line, off the
 `v0.7.5` tag — v0.7.6 was skipped per
-[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cx). The
+[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cxd). The
 grammar is stable and the C ABI is versioned and forward-compatible.
 
 **v0.8.0 — the CXPath + module-system release.** Building on the
