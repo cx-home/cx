@@ -35,11 +35,26 @@ docs-diff: docs
 ##                   serves the html tree. A .nojekyll file is
 ##                   dropped at the publish root so Pages skips
 ##                   Jekyll on our pre-built html.
+##
+##                   Tag-gated per backlog d-2026-05-22-06: docs-
+##                   publish refuses to run unless HEAD is at an
+##                   exact git tag (e.g. v0.8.0). Dev branches like
+##                   v0.8.0-dev MUST NOT promote into docs/ — the
+##                   public Pages tree stays on the last shipped
+##                   release until the next tag is cut. Override
+##                   for emergency republish only via
+##                   DOCS_PUBLISH_FORCE=1.
 docs-publish: docs
+	@if [ -z "$$DOCS_PUBLISH_FORCE" ] && [ -z "$$(git describe --tags --exact-match 2>/dev/null)" ]; then \
+	  echo "docs-publish: refused — HEAD is not at a tag (backlog d-2026-05-22-06)."; \
+	  echo "  Public docs/ tree only advances on tag commits (e.g. v0.8.0)."; \
+	  echo "  Override (emergency only): DOCS_PUBLISH_FORCE=1 make docs-publish"; \
+	  exit 1; \
+	fi
 	@mkdir -p $(DOCS_OUT)
 	@cp -R $(SITE_STG)/. $(DOCS_OUT)/
 	@touch $(DOCS_OUT)/.nojekyll
-	@echo "docs-publish: promoted $(SITE_STG)/ → $(DOCS_OUT)/"
+	@echo "docs-publish: promoted $(SITE_STG)/ → $(DOCS_OUT)/ (tag: $$(git describe --tags --exact-match 2>/dev/null || echo FORCED))"
 
 ## docs-clean        Wipe $(DOCS_STG)/ and $(SITE_STG)/.
 docs-clean:
