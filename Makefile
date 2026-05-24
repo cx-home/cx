@@ -413,7 +413,16 @@ test-rust-eval-v0-7-0: build-vcx
 test-vcx: build-vcx
 	$(MAKE) -C vcx conform-all
 
-test-v: build-vcx
+# lang/v/cx and lang/v/code are local module-resolution symlinks into
+# vcx/cx and vcx/code respectively. V's importer searches sibling
+# directories of the importing file for `import cx` / `import code`;
+# we keep the canonical sources under vcx/ and surface them here as
+# symlinks (gitignored). Idempotent — re-runs no-op once present.
+lang-v-symlinks:
+	@if [ ! -e lang/v/cx ]; then ln -s ../../vcx/cx lang/v/cx; fi
+	@if [ ! -e lang/v/code ]; then ln -s ../../vcx/code lang/v/code; fi
+
+test-v: build-vcx lang-v-symlinks
 	v run lang/v/conformance.v
 	v test lang/v/tests/api_test.v
 	v test lang/v/tests/stream_test.v
