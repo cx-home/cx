@@ -772,11 +772,18 @@
         xml:  cxlib.toXml(src),
       };
     }
-    // Program examples: pass the same source as both program AND
-    // bound document. code.parse accepts data literals as
-    // expression statements; the directive at the tail walks the
-    // data literals at the head.
-    const cxOut = cxlib.evalCode(src, 'cx', src);
+    // Program examples: the editable Source pane carries the
+    // program; the bound `$doc` (parsed via the data parser at
+    // evalCode time) comes from `ex.data` when the example needs
+    // a document to operate on, and is '' otherwise. Passing the
+    // program text as input would route it through the data parser
+    // — which has its own directive-slot vocabulary (`:return` on
+    // `[?for]` etc.) that diverges from the code-parser surface
+    // (`:yield`), and rejects program-level forms with W021.
+    const dataInput = (found.ex && typeof found.ex.data === 'string')
+      ? found.ex.data
+      : '';
+    const cxOut = cxlib.evalCode(src, 'cx', dataInput);
     return {
       cx:   cxOut,
       json: cxOut ? cxlib.toJson(cxOut) : '',
