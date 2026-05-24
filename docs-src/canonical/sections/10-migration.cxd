@@ -210,7 +210,7 @@
          `scripts/gen_guide/` rendering `docs-src/canonical/` into
          the multi-page guide at `docs/guide/` — eat-our-own-dog-food
          via `cx eval` on every section. See [[docgen]] for the
-         pipeline and [`make gen-cx-data-language-guide`] for the
+         pipeline and [`make guide`] for the
          entry point."""]]
 
   [child id=extend-contribute n=10.5 title='Extend and contribute'

@@ -7,7 +7,7 @@
 # ── v0.7.0 doc pipeline ─────────────────────────────────────────── END gen_docs
 
 # ── v0.8.0 CX Data Language Guide ─────────────────────────────── BEGIN gen_guide
-# Makes `make gen-cx-data-language-guide` first-class. Renders
+# Makes `make guide` first-class. Renders
 # docs-src/canonical/manifest.cxd + sections/*.cxd into docs/guide/.
 # When the v0.8.0 cx binary is not yet runnable, the target stages
 # chrome + assets and falls back to source-as-body pages — see

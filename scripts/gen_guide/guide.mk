@@ -2,10 +2,10 @@
 # CX Data and Code Language Guide.
 #
 # Spliced into the top-level Makefile via `-include`. Provides:
-#   gen-cx-data-language-guide       Build docs/guide/ from
+#   guide       Build docs/guide/ from
 #                                    docs-src/canonical/.
-#   gen-cx-data-language-guide-diff  Show what publishing would change.
-#   gen-cx-data-language-guide-clean Wipe docs/guide/.
+#   guide-diff  Show what publishing would change.
+#   guide-clean Wipe docs/guide/.
 #
 # Rendering pipeline (see scaffold.sh): cx eval scripts/gen_guide/build.cx
 # is the engine that turns .cxd sections into CX render-trees; cx --xml
@@ -18,25 +18,25 @@ GUIDE_SRC := docs-src/canonical
 GUIDE_OUT := docs/guide
 GUIDE_GEN := scripts/gen_guide
 
-.PHONY: gen-cx-data-language-guide \
-        gen-cx-data-language-guide-diff \
-        gen-cx-data-language-guide-clean
+.PHONY: guide \
+        guide-diff \
+        guide-clean
 
-## gen-cx-data-language-guide        Build docs/guide/ from
+## guide        Build docs/guide/ from
 ##                                   docs-src/canonical/.
-gen-cx-data-language-guide:
+guide:
 	@bash $(GUIDE_GEN)/scaffold.sh
 
-## gen-cx-data-language-guide-diff   Preview what re-running the
+## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
-gen-cx-data-language-guide-diff:
+guide-diff:
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
 	 bash $(GUIDE_GEN)/scaffold.sh >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 
-## gen-cx-data-language-guide-clean  Wipe docs/guide/.
-gen-cx-data-language-guide-clean:
+## guide-clean  Wipe docs/guide/.
+guide-clean:
 	@rm -rf $(GUIDE_OUT)
-	@echo "gen-cx-data-language-guide-clean: removed $(GUIDE_OUT)/"
+	@echo "guide-clean: removed $(GUIDE_OUT)/"

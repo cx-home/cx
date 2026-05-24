@@ -17,7 +17,7 @@ is visible on the build console.
 ## Run
 
 ```
-make gen-cx-data-language-guide
+make guide
 ```
 
 Output lands in `docs/guide/`:
