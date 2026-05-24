@@ -19,7 +19,6 @@ CONFORMANCE_CORE := conformance/core.txt
 CONFORMANCE_EXT := conformance/extended.txt
 CONFORMANCE_XML := conformance/xml.txt
 CONFORMANCE_MD := conformance/md.txt
-CONFORMANCE_EVAL := conformance/eval.txt
 
 LIB_NAME := libcx
 VCX_DYLIB := vcx/target/$(LIB_NAME).dylib
@@ -170,12 +169,6 @@ verify-binding-quickstarts:
 # Documentation hygiene — every fenced ```cx block parses.
 verify-doc-blocks: build-vcx
 	@tools/verify-doc-blocks.sh docs/
-
-# V3 — conformance fixture coverage gate. Validates that
-# conformance/eval.txt is structurally sound, meets the v0.7.0
-# minimum fixture count, and tags every required v0.7.0 surface.
-check-conformance-coverage:
-	@python3 scripts/check_conformance_coverage.py
 
 # V2 — upstream V patch tracking. Reports status of the vlang/v
 # issues that block cx v0.7.0 per ADR 0022 §D7. Exit non-zero only

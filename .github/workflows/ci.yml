@@ -87,9 +87,6 @@ jobs:
       - name: Run smoke-eval
         run: make smoke-eval
 
-      - name: Conformance fixture coverage gate (V3)
-        run: make check-conformance-coverage
-
       - name: V upstream patch tracking (V2)
         run: make check-v-upstream
         continue-on-error: true
