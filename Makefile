@@ -1,11 +1,3 @@
-# ── v0.7.0 doc pipeline ───────────────────────────────────────── BEGIN gen_docs
-# Auto-managed include: makes `make docs`, `make site`, `make docs-publish`,
-# etc. first-class targets. Generated layer — regenerate via the
-# cx-docs-author skill if/when scaffolding moves. Remove the stanza between
-# BEGIN gen_docs and END gen_docs to detach the doc pipeline.
--include scripts/gen_docs/docs.mk
-# ── v0.7.0 doc pipeline ─────────────────────────────────────────── END gen_docs
-
 # ── v0.8.0 CX Data Language Guide ─────────────────────────────── BEGIN gen_guide
 # Makes `make guide` first-class. Renders
 # docs-src/canonical/manifest.cxd + sections/*.cxd into docs/guide/.
@@ -66,8 +58,8 @@ build-vcx:
 # v0.7.5 / ADR 0026 §D7 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
 # Opt-in: not invoked by the default `build` target so contributors
-# without emcc on PATH aren't blocked. The docs-site CI lane invokes
-# this before scripts/gen_docs/scaffold.sh so the playground page
+# without emcc on PATH aren't blocked. The guide CI lane invokes
+# this before scripts/gen_guide/scaffold.sh so the playground page
 # bundles the WASM artifacts. Depends on the patched V at
 # third_party/v/v (carries the wasm32-emcc vmemcpy fix); falls back
 # to system V at the cost of broken Option payloads — see

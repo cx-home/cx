@@ -122,8 +122,12 @@ Layer-1 parity is conformance-validated via
 - **TypeScript / Java / C# / Ruby / Kotlin / Swift refresh**. The
   archived snapshots build against the v0.7.6 ABI; they are not
   v0.8.0-compatible. Restoration is post-v0.8.0.
-- **`docs-publish` from `v0.8.0-dev`** is gated. Public docs at
-  cx.land remain on v0.7.5 until v0.8.0 ships.
+- **Public docs site** at cx.land remains on v0.7.5 content until
+  v0.8.0 ships. The v0.8.0 surface is a single canonical guide
+  (`make guide`); the prior `make docs` pipeline (per-page `.cx`
+  source under `docs-src/content/` rendered to `_docs_staging/`)
+  was retired during the v0.8.0-cleanup branch — all unique
+  content folded into `docs-src/canonical/sections/*.cxd`.
 
 ## Acknowledgements
 
