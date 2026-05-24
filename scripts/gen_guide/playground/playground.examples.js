@@ -130,13 +130,16 @@
   const program = {
     'find-attr-eq': {
       label: "[?for] — attribute equality predicate",
-      input: [
+      // Pattern-as-source [?for] needs $doc bound. The data lives in
+      // `data` so cxlib.evalCode(src, 'cx', dataInput) gets the items
+      // doc as $doc; `input` is just the program.
+      data: [
         "[items",
         "  [item active=true  name=pizza]",
         "  [item active=false name=salad]",
-        "  [item active=true  name=soda]]",
-        "[?for [item @active=true $i] :yield $i]"
+        "  [item active=true  name=soda]]"
       ].join('\n'),
+      input: "[?for [item @active=true $i] :yield $i]",
       cx:    [
         "[item active=true name=pizza]",
         "[item active=true name=soda]"
