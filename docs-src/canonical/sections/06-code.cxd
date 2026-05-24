@@ -1527,4 +1527,62 @@
            `[?par-map]`) shares state. Pass `:name STR` to
            key by name instead, enabling cross-position
            sharing (one rate-limit budget enforced by
-           callers in different modules)."""]]]]
+           callers in different modules)."""]]]
+
+  [# Migrated from docs-src/content/concepts/evaluation.cx and
+     docs-src/content/reference/code.cx during Phase B docs → guide
+     consolidation (2026-05-24). Higher-level framing of how
+     directives, patterns, and comprehensions compose. #]
+
+  [child id=evaluation-framing n=6.11 title='Evaluation framing — directives, patterns, comprehensions'
+    [intro
+      """The directive registry above lists each form; this section
+         shows how the forms fit together — directives as the
+         language layer over data, pattern matching as the way
+         programs walk a tree, comprehensions as the composition
+         glue. Aligns with ADR 0028 ([?find] retirement, CXPath as
+         a value kind) and ADR 0036 ([expr] general predicate)."""]
+
+    [child id=directives-overview n=6.11.1 title='Directives turn data into a language'
+      [body
+        """A directive is a CX element whose name starts with `?`.
+           It carries semantics — iteration, branching,
+           substitution, include, function call — that the
+           evaluator interprets when running a CX program.
+           Directives parse as regular CX, evaluate to text or
+           values, and compose with each other through their slot
+           bodies."""]
+      [example lang=cx
+        """[?= EXPR]                                # substitute a value
+           [?for x :in PATH :yield BODY]            # iterate
+           [?if [COND, THEN, ELSE]]                 # branch
+           [?let x :be EXPR :yield BODY]            # bind a name
+           [?def name :params [a, b] :body BODY]    # define a template"""]]
+
+    [child id=patterns-walking n=6.11.2 title='Pattern matching — walking the tree'
+      [body
+        """The v0.8.0 program surface replaces XPath-style queries
+           with `[?for]` pattern generators and CXPath path values
+           (ADR 0028 — `[?find]` retired). A pattern is a CX
+           literal where element names match by shape, attribute
+           predicates restrict by value, and `$bindings` capture
+           matched subtrees. `[?for]` walks the tree (deep by
+           default) and binds for each match; `[?match]` tests a
+           single value (multi-arm dispatch per ADR 0029)."""]
+      [example lang=cx
+        """[?for [user [name $n]] :yield $n]
+           [?for [item @active=true $i] :yield $i]
+           [?for [pizza [name $n] [price $p]]
+                 :yield [hit :name $n :price $p]]"""]]
+
+    [child id=comprehensions n=6.11.3 title='Comprehensions and composition'
+      [body
+        """`[?for]` iterates a sequence (or matches a pattern across
+           the tree) and yields per-iteration values; `:where`
+           filters, `:order-by` sorts, `:group-by` aggregates.
+           `[?let]` binds names; `[?if]` branches. The pipe
+           operator composes them."""]
+      [example lang=cx
+        """[?for $x :in (1, 2, 3) :where [> $x 1] :yield [* $x $x]]
+           [?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]
+           (1, 2, 3, 4) | count"""]]]]

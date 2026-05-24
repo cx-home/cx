@@ -914,4 +914,144 @@
          token, quote it: `['true' value=1]`, `[user 'true'=yes]`. The
          single-quoted form is the canonical escape; double-quoted also
          works on input."""]]
+
+  [# Migrated from docs-src/content/concepts/{data-model, sigils, types}.cx
+     during the Phase B docs → guide consolidation (2026-05-24).
+     Concept-page framing on the data model, sigils, and typed
+     values that complements the per-feature reference above. #]
+
+  [child id=concepts-fold n=2.18 title='Concept framing — data model, sigils, types'
+    [intro
+      """The reference above describes each feature in isolation;
+         the concept framing below shows how they fit together —
+         the one tree shape behind six surfaces, the five sigils as
+         structural reach, the auto-typing rules that pick a type
+         from a lexical shape."""]
+
+    [child id=cxdm-overview n=2.18.1 title='One tree, six surfaces'
+      [body
+        """CXDM is the shape every CX parse produces and every emit
+           walks. Whether the source is CX, XML, JSON, YAML, TOML,
+           or Markdown, the parser yields a tree in this single
+           shape; whether the target is any of those six dialects,
+           the emitter walks the same tree back out. Downstream
+           code never branches on input format because the data
+           model has already absorbed the difference."""]
+      [body
+        """A CXDM node is an Element with a name, an ordered list
+           of attributes, an ordered list of body items, and a few
+           optional structural slots — anchor, merge target,
+           declared id, data type. Body items are Text nodes,
+           Scalar nodes, child Elements, or the collection literals
+           from ADR 0017 — Sequences, Arrays, Maps."""]
+      [example lang=cx
+        """[pizza #margherita :large size=14 crust=thin
+             [topping cheese]
+             [topping basil]
+             Stone-baked since 1987.]"""]
+      [body
+        """Reading this element from the outside in: name `pizza`,
+           declared id `margherita`, data-type annotation `:large`,
+           attributes `size=14` and `crust=thin`, then a body of
+           three items — two child elements and a text node."""]
+      [note
+        """Whitespace inside a body is significant when it sits
+           between text characters and collapses to a single space
+           when it separates body items. The canonical form
+           normalises this so byte-identical content carries the
+           same hash regardless of source author choice."""]]
+
+    [child id=sigils-catalog n=2.18.2 title='The five sigils + bool sugar'
+      [body
+        """CX uses five sigils. Each is a single character in a
+           fixed lexical position that gives a value structural
+           meaning beyond what bare text can carry."""]
+      [body
+        """- **`@`** — attribute prefix in body position; reference
+             to a declared id or anchor.
+           - **`&`** — anchor declaration; names an element so
+             others can refer to or merge from it.
+           - **`*`** — merge target; folds the named anchor's attrs
+             and children into this element.
+           - **`#`** — declared id; stable handle within the
+             document's scope; target of references.
+           - **`:`** — data type annotation; pins the value type,
+             overriding auto-typing."""]
+      [example lang=cx
+        """[order #o1234 customer=alice
+             [line item=@margherita count=2]    # @-sigil reference to declared id
+             [line item=@pepperoni  count=1]]
+           [?for line :in //order/line :yield
+             [row sku=[?= line/@item]]]         # @-sigil attribute access in CXPath"""]
+      [example lang=cx
+        """[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]
+           [server *shared name=worker]"""]
+      [note
+        """The canonical form renumbers anchors so two documents
+           that bind the same data with different anchor names hash
+           to the same identity."""]
+      [body
+        """Two additional sigils — `+` and `-` — are syntactic sugar
+           for boolean attributes. `+name` parses as `name=true`;
+           `-name` parses as `name=false`. Compact form for many
+           booleans."""]
+      [example lang=cx """[pizza +vegan -nuts -gluten +organic]"""]]
+
+    [child id=types-fold n=2.18.3 title='Types — auto-typing, sized, decimal, bigint'
+      [body
+        """CX values fall into a small set of atomic types — `int`,
+           `float`, `bool`, `string`, `null`, `date`, `datetime`,
+           `bytes`, `decimal`, `bigint`, `atom` (ADR 0033) — and
+           arrays of any of these. Most values are auto-typed from
+           their lexical shape; explicit annotations cover the
+           rest."""]
+      [example lang=cx
+        """[demo
+             count=42                      # int
+             pi=3.14                       # float
+             enabled=true                  # bool
+             name=Alice                    # string
+             missing=null                  # null
+             date=2026-05-09               # date
+             start=2026-05-09T10:00:00Z]   # datetime"""]
+      [note
+        """**Leading-zero strings.** Tokens with a leading zero
+           stay strings unless prefixed `0x` (hex), `0o` (octal),
+           or `0b` (binary). Postal codes, area codes, account
+           numbers, BIC codes — anywhere the leading zero is data,
+           not a numeric value."""]
+      [example lang=cx
+        """[zip 02134]               # string "02134", not int 2134
+           [mask 0xFF00FF]           # int 16711935 (hex)
+           [perms 0o755]             # int 493 (octal)
+           [bits 0b1101]             # int 13 (binary)"""]
+      [body
+        """**Sized integer and float.** A colon-type pins the
+           runtime representation and (for sized variants) the
+           legal range. Out-of-range values fail at parse time,
+           not at runtime in some downstream consumer."""]
+      [example lang=cx
+        """[port :u16 8080]              # rejects values over 65535
+           [balance :i64 -1234567890]    # signed 64-bit
+           [ratio :f32 3.14]             # 32-bit float
+           [count :u8 200]               # rejects 256 and up"""]
+      [body
+        """**Decimal and bigint.** IEEE 754 floats lose precision
+           for money and high-precision quantities; signed 64-bit
+           overflows for some IDs. CX has `:decimal` and `:bigint`
+           for both cases, with binding mappings to each language's
+           native big-number type."""]
+      [example lang=cx
+        """[total :decimal 19.99]
+           [user-id :bigint 18446744073709551616]"""]
+      [body
+        """**Typed bodies and arrays.** A colon-type annotation
+           pins not just attribute values but body content as
+           well."""]
+      [example lang=cx
+        """[count :int 42]
+           [ratio :decimal 3.14159]
+           [oven-temps :int[] 220 240 260 480]
+           [tags :[] cheap fast tasty]"""]]]
 ]
