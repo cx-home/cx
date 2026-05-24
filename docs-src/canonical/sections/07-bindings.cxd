@@ -114,8 +114,10 @@
            (per [ADR 0027](../../spec/decisions/0027-unified-pattern-query-transform.md)).
            It replaces the retired v0.7.0 CXPath C symbols
            (`cx_select` / `cx_select_all`); a v0.7.6+ caller writes
-           the equivalent code as a `[?find PATTERN]` program and
-           passes it through `cx_code_eval`."""]
+           the equivalent code as a `[?for PATTERN]` program and
+           passes it through `cx_code_eval`. (At v0.7.6 the directive
+           was spelled `[?find]`; ADR 0028 §D8 retired the alias at
+           v0.8.0.)"""]
       [list
         [item """**`cx_code_eval(doc, code, target_format)`** —
                 evaluate the code expression against the doc and
@@ -132,7 +134,7 @@
       [body
         """Bindings expose `Doc.eval(code)` as their Layer-1 surface;
            `Doc.select_all(cxpath)` and `Doc.select(cxpath)` desugar
-           to `Doc.eval('[?find CXPATH-AS-PATTERN]')` in the binding
+           to `Doc.eval('[?for CXPATH-AS-PATTERN]')` in the binding
            (per ADR 0028 §3) — the binding pays a small parse cost,
            the C ABI stays narrow. See [[cxpath]] for the path
            vocabulary."""]]
