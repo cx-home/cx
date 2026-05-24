@@ -35,11 +35,10 @@
       """The ABI surface partitions into four families: **lifecycle**
          (init / thread registration / feature query), **canonical-form
          transcoding** (parse / serialize / hash / equals),
-         **evaluation** (the v0.7.6 `cx_code_eval*` family that
-         replaces the retired v0.7.0 CXPath C entry points), and
-         **structural accessors** (root, children, attributes, body,
-         kind). Every Layer-1 method on a binding maps to one of
-         these families."""]
+         **evaluation** (the `cx_code_eval*` family — see
+         [[evaluation]]), and **structural accessors** (root,
+         children, attributes, body, kind). Every Layer-1 method
+         on a binding maps to one of these families."""]
 
     [child id=lifecycle n=7.1.1 title='Lifecycle — init, threads, features'
       [body
@@ -73,10 +72,11 @@
                 version-report output."""]]
       [note
         """The handshake check `cx_features() & (1 << 26)` confirms
-           the loaded libcx is v0.6.0+ (when the thread-init handshake
-           was added). Bindings that need the handshake must refuse
-           to load against an older libcx. Bindings that don't need
-           it (V, single-threaded callers) may ignore the bit."""]]
+           the loaded libcx advertises the thread-init handshake.
+           Bindings that need the handshake must refuse to load
+           against a libcx that does not set this bit. Bindings
+           that don't need it (V, single-threaded callers) may
+           ignore the bit."""]]
 
     [child id=transcoding n=7.1.2 title='Canonical-form transcoding'
       [body

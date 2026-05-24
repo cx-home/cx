@@ -52,8 +52,6 @@ check "on a release branch (not detached)" \
 section "Doc presence"
 check "RELEASE_NOTES_v${EXPECTED_VERSION}.md exists" \
  "test -f RELEASE_NOTES_v${EXPECTED_VERSION}.md"
-check "MIGRATION.md exists" \
- "test -f MIGRATION.md"
 check "CHANGELOG.md exists" \
  "test -f CHANGELOG.md"
 check "docs/internal/RELEASE_PROCESS.md exists" \

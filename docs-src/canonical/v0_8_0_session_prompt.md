@@ -346,15 +346,14 @@ PHASE 8 — EXAMPLES
 8.6  make verify-examples green.
 
 ═════════════════════════════════════════════════════════════════
-PHASE 9 — MIGRATION
+PHASE 9 — MIGRATION (agent-only, no external users)
 ═════════════════════════════════════════════════════════════════
-9.1  MIGRATION.md — add v0.7.x → v0.8.0 section. Mechanical rules table.
-9.2  docs/migrations/v0_8_0.md — full migration guide (renames,
-     retirements, new directives, fixture format changes).
-9.3  scripts/migrate_v07_to_v08.py — automated migration script for user
-     codebases. Performs [?find]→[?for], in_cxl→in_code, cx_code_eval→
-     cx_code_eval substitutions with safety checks.
-9.4  cx-data-and-code-guide §9 (Migration section) — fully authored.
+9.3  scripts/migrate_v07_to_v08.py — automated migration script for
+     agents migrating example code, tests, fixtures from v0.7.x to
+     v0.8.0. Performs [?find]→[?for], in_cxl→in_code, cx_program_*→
+     cx_code_* substitutions with safety checks.
+9.4  cx-data-and-code-guide §9 (Migration section) — agent-facing
+     reference for mechanical rename patterns.
 
 ═════════════════════════════════════════════════════════════════
 PHASE 10 — TESTS / BUILD / CI

@@ -57,8 +57,8 @@
 
   [child id=directives n=6.2 title='Directive registry'
     [intro
-      """v0.8.0 has **forty normative directives** — the 39 listed in
-         the v0.7.6 registry plus `[?modify]`, formalized in ADR 0030.
+      """v0.8.0 has **forty normative directives** — including
+         `[?modify]`, formalized in ADR 0030.
          Adding or removing any directive requires a new ADR per
          [`spec/governance.md`](../../spec/governance.md) §10. The
          authoritative registry lives in
@@ -151,10 +151,10 @@
       """**Implementation status.** Multi-arm `[?match]` (ADR 0029),
          `[?modify]` (ADR 0030), and the CXPath value kind in
          constructs other than `[?for]` (ADR 0028) are **fully
-         specified** in v0.7.6 but not all are wired through every
-         binding yet. V (the native reference) carries the
-         spec-conformant implementation; Tier-2 bindings (Python, Go,
-         Rust) follow per the parity matrix in
+         specified** but not all are wired through every binding
+         yet. V (the native reference) carries the spec-conformant
+         implementation; Tier-2 bindings (Python, Go, Rust)
+         follow per the parity matrix in
          [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md). Where
          a feature is spec'd-but-not-shipped this guide says so
          explicitly."""]]
@@ -314,7 +314,7 @@
            per construct."""]
       [body
         """**Status note.** CXPath value-kind at non-`[?for]`
-           positions was specified in ADR 0028 (v0.7.6) and is
+           positions is specified in ADR 0028 and is
            production-ready in V; full Tier-2 binding parity is
            tracked in
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
@@ -635,10 +635,9 @@
            not fail compilation."""]
 
       [note
-        """**Status.** Multi-arm `[?match]` is fully spec'd in
-           v0.7.6 (ADR 0029). V's evaluator carries the
-           production-ready implementation; Tier-2 binding parity
-           is per
+        """**Status.** Multi-arm `[?match]` is fully spec'd
+           (ADR 0029). V's evaluator carries the production-ready
+           implementation; Tier-2 binding parity is per
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)."""]]
 
     [child id=if n=6.6.3 title='[?if] — boolean branch (with EBV)'
@@ -808,8 +807,8 @@
            shape exactly."""]
 
       [note
-        """**Status.** `[?modify]` is fully spec'd in v0.7.6 (ADR
-           0030). The V evaluator carries the production-ready
+        """**Status.** `[?modify]` is fully spec'd (ADR 0030).
+           The V evaluator carries the production-ready
            implementation. Tier-2 binding parity is tracked in
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
            gate 30."""]]

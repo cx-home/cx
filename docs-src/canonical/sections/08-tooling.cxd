@@ -480,7 +480,7 @@
            bash tooling/install/install-vscode.sh"""]
 
       [body
-        """The extension keys off `.cx`, `.cxs`, `.cxd`, and `.cxl`
+        """The extension keys off `.cx`, `.cxs`, and `.cxd`
            file extensions. LSP client config (server path, env vars,
            tracing) lives in the VS Code settings panel under "CX
            Language". A sample workspace settings file is at
@@ -538,7 +538,7 @@
         """JetBrains IDEs gain CX support through their generic LSP
            plugin: install "LSP4IJ" (or the Ultimate-edition built-in
            LSP support on 2024.3+), and register `cx lsp` as the
-           server for `*.cx`, `*.cxs`, `*.cxd`, `*.cxl`. TextMate
+           server for `*.cx`, `*.cxs`, `*.cxd`. TextMate
            highlighting comes from the bundled
            `tooling/syntax/cx.tmLanguage.json` via the TextMate
            plugin. The setup is identical for Rider, GoLand,
@@ -1020,7 +1020,6 @@
         """*.cx    diff=cx
            *.cxd   diff=cx
            *.cxs   diff=cx
-           *.cxl   diff=cx
            *.cxcol diff=cx-binary"""]
 
       [example lang=sh
@@ -1561,7 +1560,7 @@
         """`libcx.wasm` is the WASM build of the V core, exporting
            a **subset** of the C ABI. The exported surface is
            sufficient for: `cx_parse`, `cx_canon`, `cx_hash`,
-           `cx_eval`, `cx_program_eval`, `cx_program_diagram`,
+           `cx_eval`, `cx_code_eval`, `cx_code_diagram`,
            `cx_select`, `cx_lint`, `cx_diff`. The bridge layer
            lives at `tooling/playground/cxlib.js`."""]
 
@@ -1570,11 +1569,11 @@
            [`spec/abi.md`](../../spec/abi.md) §3):"""]
 
       [list
-        [item """**Bit 29** — `_cx_program_diagram` (Mermaid
+        [item """**Bit 29** — `_cx_code_diagram` (Mermaid
                 containment diagram render)."""]
-        [item """**Bit 30** — `_cx_program_tree` (interactive tree
+        [item """**Bit 30** — `_cx_code_tree` (interactive tree
                 model for the output pane)."""]
-        [item """All v0.7.x cap bits the runtime would otherwise
+        [item """All earlier cap bits the runtime would otherwise
                 advertise on native (0-28)."""]]]
 
     [child id=playground-component n=8.11.2 title='The <cx-diagram> web component'
@@ -1592,7 +1591,7 @@
 
       [body
         """The component reads `src` (URL or inline `<textarea>`
-           content), calls `cxlib.program_diagram()` to produce
+           content), calls `cxlib.code_diagram()` to produce
            Mermaid source, and hands the result to a bundled
            Mermaid renderer. Bidirectional selection: clicking a
            tree node in the output pane highlights the source
@@ -1616,7 +1615,7 @@
 
       [note
         """JSON and XML are **not** valid program sources for the
-           diagram — `_cx_program_diagram` accepts CX text only.
+           diagram — `_cx_code_diagram` accepts CX text only.
            Containment-only relationships, no FK inference. See
            [`spec/audits/playground_gate17_design_v1.md`](../../spec/audits/playground_gate17_design_v1.md)
            for the design rationale."""]]

@@ -202,8 +202,7 @@ review. Items here are in flight or imminent on the active branch.
  with new property names (`cols`, `col_count`, `iter_cols`); examples
  + CHEATSHEET + FAQ rewritten to use the actual `:table[<cols>]<rows>`
  grammar (the `[columns ...] [rows ...]` wrapper form they previously
- showed was never supported by the parser). Migration recorded in
- [`MIGRATION.md §2.5`](MIGRATION.md). Wire format unchanged.
+ showed was never supported by the parser). Wire format unchanged.
 - **Document `[?cx include=...]`** in cheatsheet + tutorial; it
  exists in the parser but is undocumented user-facing.
 - **Document anchors / aliases honestly** as merge-only (YAML-style),
@@ -353,8 +352,7 @@ evaluator" entry under "Now — v0.6.0 scope" below.
  validator participation; v0 limitation (V-core only — ast_bin
  wire format does not yet carry it) documented in
  [`spec/identity.md §1.2a`](spec/identity.md). 3 new fixtures
- (id-018..020). [`MIGRATION.md §2.6`](MIGRATION.md) covers all of
- Phases 7.61–7.66. Include-time ID merging (D3) is contracted in
+ (id-018..020). Include-time ID merging (D3) is contracted in
  [`spec/identity.md §2.1`](spec/identity.md) but pending its
  prerequisite — include resolution itself isn't yet implemented;
  tracked separately as the §4 "Include resolution formal spec"
@@ -388,9 +386,7 @@ evaluator" entry under "Now — v0.6.0 scope" below.
  `cx canonical` now sorts xmlns declarations and rewrites prefix
  usage to the lex-smallest in-scope prefix per URI, so
  semantically-equal namespaced documents hash identically under
- `cx hash`. Migration entry at
- [`MIGRATION.md §2.4`](MIGRATION.md). Strictly additive — no
- existing CX or wire format changes.
+ `cx hash`. Strictly additive — no existing CX or wire format changes.
 
 ### Internationalization
 
