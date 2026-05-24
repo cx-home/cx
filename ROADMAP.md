@@ -59,7 +59,7 @@ playground gets formal Tree + Graph views.
 
 **Ratified ADRs (10):**
 
-- [ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md) — CXPath as first-class value kind (XPath 3.1 aligned, 12 axes, sigil-only comparison, retires `[?find]`).
+- [ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md) — CXPath as first-class value kind (XPath 3.1 aligned, 12 axes, sigil-only comparison).
 - [ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md) — `[?match]` multi-arm dispatch (`:case` / `:when` / `:else`; first-match-wins; scalar literal + wildcard patterns).
 - [ADR 0030](spec/decisions/0030-modify-pure-functional-updates.md) — `[?modify]` pure-functional updates over CXPath focus + 11-action vocabulary; pipeline-composable.
 - [ADR 0031](spec/decisions/0031-structural-sharing.md) — Structural sharing for `[?modify]` (spine-copy only; `O(depth)` heap; gate 30.5 perf basis).
@@ -75,10 +75,10 @@ Ruby / Kotlin / Swift archived to `lang/_archived/` per ADR 0035 D7
 and backlog `d-2026-05-22-03`. Restoration is opt-in once Layer-1
 stabilizes.
 
-**Removed.** `[?find]` directive (ADR 0028 retires it in favor of
-`[?for]` over CXPath); `cxl` / `cx_eval` / `programs.md` / `programs.txt`
-identifiers (ADR 0032 rename); v0.7.0-era CXL evaluator (gate-17 OLD
-POC surface, replaced by ADR 0037's formal views).
+**Surface state.** Document selection uses `//path` (CXPath value) +
+`[?for]` (pattern-generator) per ADR 0028. ABI identifiers follow
+ADR 0032 (`cx_code_*`). Doc-view surface follows ADR 0037 (formal
+views).
 
 **Bundled stdlib.** `cx-stdlib` ships with the binary — 14 sub-packages:
 strings / json / http / re / time / math / io / bytes / format / path /
@@ -269,8 +269,8 @@ recorded before implementation.
  tail — required for parsed CX code to round-trip across the
  C ABI. Tier 1 (V/Python/Go) gated; Tier 2/3 decoder rollout
  required in the same release.
-- **C ABI surface** at capability bit 28 — `cx_eval_cxl`,
- `cx_eval_cxl_with_len`, `cx_eval_cxl_streaming` go from W012
+- **C ABI surface** at capability bit 28 — `cx_code_eval`,
+ `cx_code_eval_with_len`, `cx_code_eval_streaming` go from W012
  stubs to fully implemented. Per `spec/abi.md §2.16`.
 - **Conformance fixtures** at `conformance/eval.txt` — per-directive, composition, whitespace, escaping,
  error-path, schema-validated CX code.
@@ -760,9 +760,9 @@ stretch target is pushed here. See session memory
 and next-lever ordering.
 
 - **Parse-once / eval-many API** — `cx_eval_streaming_from_ast_bin`
-  (or equivalent on the V surface: `eval_cxl_from_doc(prog_doc,
+  (or equivalent on the V surface: `eval_code_from_doc(prog_doc,
   input_doc, sink)`) so callers can amortise parse cost across many
-  evaluations. Today `eval_cxl_streaming(input, program, sink)`
+  evaluations. Today `eval_code_streaming(input, program, sink)`
   re-parses both inputs on every call (~1 ms per invocation on the
   medium fixture; `bin_to_doc` from ast_bin is ~2× faster than
   `parse` from CX text). On the streaming bench this is ~1.5% of
