@@ -18,8 +18,7 @@ The cxpath / cxquery / XQuery-4.0-parity surface specced in
 [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
 §D2 and §D10 turned out to be structurally incomplete: normative
 specs carried TBDs, tests passed by reduction (covering only the
-implemented subset), and `cx:merge` shipped with material defects
-(catalogued in [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
+implemented subset), and `cx:merge` shipped with material defects.
 Investment in that scope halted 2026-05-20. The cxpath/cxquery V
 implementation is deleted as part of v0.7.6 work; their specs
 remain as historical artifacts only.
@@ -39,8 +38,7 @@ v0.8.0 forty-two-gate release rubric in
 retired. The cxpath / cxquery / XQuery-4.0-parity surface specced
 in [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
 §D2 and §D10 turned out to be structurally incomplete (normative
-TBDs, tests passing by reduction, `cx:merge` defects per
-[`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md));
+TBDs, tests passing by reduction, `cx:merge` defects);
 the V implementation is deleted in v0.8.0 and the specs remain as
 historical artifacts. Headline v0.7.x ADRs:
 
@@ -680,8 +678,7 @@ CX code 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 > (Accepted 2026-05-20), the cxpath / cxquery / XQuery-4.0-parity
 > portion of that scope is **retired as proof-of-concept**: the
 > implementation was structurally incomplete, tests passed by
-> reduction, and `cx:merge` shipped with material defects (see
-> [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
+> reduction, and `cx:merge` shipped with material defects.
 > CX code replaces the entire surface at v0.7.6 (see top of this
 > document). Items in the list below that are independent of
 > cxpath/cxquery (Arrow+Parquet, reproducible builds, fuzz harness,

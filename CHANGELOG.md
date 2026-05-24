@@ -187,8 +187,7 @@ partial-ship fallback. See ADR 0027 for the gate list.
 > language work it describes (cxpath / cxquery / XQuery 4.0 parity)
 > was structurally incomplete: specs carried TBD markers in
 > normative positions, tests passed by reduction (covering only the
-> implemented subset), and `cx:merge` shipped with material defects
-> (see [`spec/audits/v0_7_0_surface_audit.md`](spec/audits/v0_7_0_surface_audit.md)).
+> implemented subset), and `cx:merge` shipped with material defects.
 > Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md),
 > the entire query/transform surface is being replaced by CX code in
 > v0.7.6. Users coming to CX for production query/transform begin
