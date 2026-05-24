@@ -284,7 +284,7 @@
         [row bit=19 name='workers' meaning='[?worker] / [?channel] / [?select] directives' v='v0.7.6']
         [row bit=20 name='async' meaning='[?async] / [?await] / [?await-all/-any/-race]' v='v0.7.6']
         [row bit=21 name='resilience' meaning='[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]' v='v0.7.6']
-        [row bit=22 name='cxcol-format' meaning='CXCol column-oriented binary format (was CXDB)' v='v0.7.0']
+        [row bit=22 name='cxcol-format' meaning='CXCol column-oriented binary format' v='v0.7.0']
         [row bit=23 name='arrow-bridge' meaning='Arrow C Data Interface zero-copy bridge' v='v0.7.0']
         [row bit=24 name='parquet-bridge' meaning='Parquet read/write via cxlib_arrow' v='v0.7.0']
         [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6']
@@ -293,8 +293,8 @@
         [row bit=28 name='match-multi' meaning='multi-arm [?match] with :case/:when/:else (ADR 0029)' v='v0.8.0']
         [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary (ADR 0030)' v='v0.8.0']
         [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing (ADR 0031)' v='v0.8.x']
-        [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_program_diagram → cx_code_diagram' v='v0.7.6']
-        [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.7.6']]
+        [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0']
+        [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.8.0']]
       [body
         """Bits 33-63 reserved for v0.9.x and beyond. The cap-bit
            layout is fixed; bits are never re-assigned."""]]

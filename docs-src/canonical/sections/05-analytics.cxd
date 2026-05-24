@@ -59,10 +59,9 @@
          summary."""]
 
     [note
-      """**Naming.** `CXCol` (column-oriented streaming format) was
-         working-named CXDB during v0.6.0 design. The `CXDB` /
-         `CXDatabase` namespace is reserved for a future query-engine
-         product (see
+      """**Naming.** `CXCol` is the column-oriented streaming format
+         name. The `CXDB` / `CXDatabase` namespace is reserved for a
+         future query-engine product (see
          [`spec/decisions/0021-cx-database-direction.md`](../../spec/decisions/0021-cx-database-direction.md))
          and does not refer to the file format. Throughout this guide,
          CXCol is the format; `.cxcol` is the file extension; the
@@ -322,9 +321,8 @@
       [note
         """Schema-driven mode requires the reader to retrieve the schema
            by its content hash. Local lookup is the default; the
-           callback-shaped content-store ABI was deferred from v0.6.0
-           and remains a v0.7.x / v0.8.0 follow-up per the ADR 0015
-           tail-closure notes."""]]]
+           callback-shaped content-store ABI is a post-v0.8.0 follow-up
+           per the ADR 0015 tail-closure notes."""]]]
 
   [child id=arrow-bridge n=5.4 title='Arrow bridge — zero-copy interop'
     [intro
@@ -336,8 +334,7 @@
          advertises Arrow when libcx_arrow is loaded."""]
 
     [body
-      """The bridge exports four C ABI symbols at v0.8.0 (unchanged from
-         v0.6.0 ship, per
+      """The bridge exports four C ABI symbols at v0.8.0 (per
          [`spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md`](../../spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md)
          D9): `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
          CXCol → Arrow, and `cx_arrow_import_to_data_bin` /
@@ -386,10 +383,10 @@
 
     [child id=arrow-type-mapping n=5.4.2 title='Type mapping'
       [body
-        """The CX ↔ Arrow type map is normative at v0.6.0 (locked by
+        """The CX ↔ Arrow type map is normative at v0.8.0 (locked by
            [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-           D2) and unchanged through v0.8.0. The full table is in the
-           ADR; the high-level summary:"""]
+           D2). The full table is in the ADR; the high-level
+           summary:"""]
       [list
         [item """`:int` / `:i64` ↔ `Int64`; `:i32` ↔ `Int32`; sized
                 variants (`:i8..:u64`) map to corresponding Arrow
@@ -411,7 +408,7 @@
         [item """`nullable T` → Arrow's standard nullable variant
                 (validity bitmap)."""]]
       [body
-        """v0.6.0 / v0.8.0 column-type coverage in `libcx_arrow` is 9 of
+        """v0.8.0 column-type coverage in `libcx_arrow` is 9 of
            10 types (int / i8 / i16 / i32 / float / bool / string / date /
            bytes). `:datetime`, `:decimal`, and dictionary / extension
            columns remain deferred to a future libcx_arrow expansion;
@@ -543,7 +540,7 @@
 
     [child id=parquet-types n=5.5.3 title='CX ↔ Parquet type mapping'
       [body
-        """The mapping is normative at v0.6.0 and ratified by
+        """The mapping is normative at v0.8.0 and ratified by
            [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
            D2. Most types round-trip cleanly through Arrow; a small
            number of CX types have lossy edges that `--strict` mode
@@ -567,7 +564,7 @@
         [item """`:bigint` → `Decimal256(38, 0)` with diagnostic;
                 `--strict` rejects."""]
         [item """`arr[T]` → `LIST<T-projection>`."""]
-        [item """`map[K, V]` → `MAP<K, V>` (string-keyed at v0.6.0)."""]
+        [item """`map[K, V]` → `MAP<K, V>` (string-keyed at v0.8.0)."""]
         [item """`seq[T]` → `LIST<T-projection>` after sequence flatten;
                 `--strict` rejects (re-import produces `arr[T]`, not
                 `seq[T]`)."""]
@@ -631,7 +628,7 @@
          CXCol chunks one at a time. The gate-15 perf target is **≥ 200
          MB/s sustained on JSON-shape workloads** (per
          [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md) gate 15);
-         the v0.7.6 measurement carried green at 353 MB/s on the
+         the v0.8.0 measurement runs green at 353 MB/s on the
          realistic-marshaling bench."""]
 
     [body
@@ -684,7 +681,7 @@
 
     [child id=streaming-perf n=5.6.2 title='Performance posture'
       [body
-        """The streaming evaluator's optimization stack as of v0.7.6
+        """The streaming evaluator's optimization stack at v0.8.0
            includes pre-compiled CXPath, env-rooted memoization,
            pointer-arithmetic emit into a pre-grown buffer, and a 64 KiB
            flush threshold tuned for page-cluster alignment. The full
@@ -842,13 +839,13 @@
     [intro
       """The analytics lane's perf budgets and where they're measured.
          Numbers below are the spec gates (target floor) and the most
-         recent measurement on the v0.7.6 / v0.8.0-dev branch. Re-run
+         recent measurement on the v0.8.0 branch. Re-run
          instructions live in the per-bench `Makefile` targets."""]
 
     [list
       [item """**Streaming throughput (JSON-shape, ~75 B/record).**
               Spec gate: mean ≥ 200 MB/s, no trial < 80% of mean.
-              Carried green from v0.7.6 at 353 MB/s. Source:
+              Measured at v0.8.0 at 353 MB/s. Source:
               [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
               gate 15; bench: `bench-code-streaming`."""]
       [item """**Parquet write (default Snappy, 2²⁰ row-group).**
@@ -951,8 +948,7 @@
               — the user-facing surface: `cx table` CLI, Parquet
               round-trip type mapping, per-binding adapter conformance."""]
       [item """[`spec/decisions/0021-cx-database-direction.md`](../../spec/decisions/0021-cx-database-direction.md)
-              — the engine direction (formerly CXDB direction; now CXCol
-              direction). Drafted, deferred to v1.0+."""]
+              — the engine direction. Drafted, deferred to v1.0+."""]
       [item """[`spec/table_api.md`](../../spec/table_api.md) — the
               17-member typed columnar Table API ratified across all
               bindings."""]

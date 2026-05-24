@@ -1693,10 +1693,9 @@
 
       [note
         """The Go shim has a known SIGSEGV at 1 MB+ inputs as of
-           2026-05; see the v0.6.0 release notes. The fix is
-           tracked. Python's decoder ceiling (~90 ms at 1 MB,
-           pure-Python floor) is architectural — a C extension is
-           a v0.7.x candidate."""]]
+           2026-05. The fix is tracked. Python's decoder ceiling
+           (~90 ms at 1 MB, pure-Python floor) is architectural —
+           a C extension is a post-v0.8.0 candidate."""]]
 
     [child id=profile-targets n=8.12.4 title='Regression tracking'
       [body

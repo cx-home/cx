@@ -205,12 +205,13 @@
          team."""]
 
     [body
-      """**Doc-gen regression closed.** The v0.7.6-dev `make docs`
-         flat-section regression (backlog issue
-         `i-doc-gen-sectional-regression`) is closed by porting
-         `scripts/gen_docs/build.cx` to v0.8.0 syntax — terse `//`
-         CXPath plus sectional `[?for]` over `//section`. v0.7.5
-         byte-identical baseline restored for unchanged pages."""]]
+      """**Doc-gen pipeline consolidated.** v0.8.0 ships a single
+         pre-publish documentation generator at
+         `scripts/gen_guide/` rendering `docs-src/canonical/` into
+         the multi-page guide at `docs/guide/` — eat-our-own-dog-food
+         via `cx eval` on every section. See [[docgen]] for the
+         pipeline and [`make gen-cx-data-language-guide`] for the
+         entry point."""]]
 
   [child id=extend-contribute n=10.5 title='Extend and contribute'
     [intro

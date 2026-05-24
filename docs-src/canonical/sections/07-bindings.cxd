@@ -109,15 +109,12 @@
 
     [child id=evaluation n=7.1.3 title='Evaluation — cx_code_eval family'
       [body
-        """The v0.7.6 `cx_code_eval*` family is the single evaluator
+        """The `cx_code_eval*` family is the single evaluator
            entry point for code, patterns, paths, and transforms
            (per [ADR 0027](../../spec/decisions/0027-unified-pattern-query-transform.md)).
-           It replaces the retired v0.7.0 CXPath C symbols
-           (`cx_select` / `cx_select_all`); a v0.7.6+ caller writes
-           the equivalent code as a `[?for PATTERN]` program and
-           passes it through `cx_code_eval`. (At v0.7.6 the directive
-           was spelled `[?find]`; ADR 0028 §D8 retired the alias at
-           v0.8.0.)"""]
+           Callers write the equivalent of selection as a
+           `[?for PATTERN]` program (or a path expression) and
+           pass it through `cx_code_eval`."""]
       [list
         [item """**`cx_code_eval(doc, code, target_format)`** —
                 evaluate the code expression against the doc and
@@ -747,16 +744,16 @@
       """**Selected capability bits** (full registry in
          [`spec/abi.md`](../../spec/abi.md) §3):"""]
     [table columns=(bit, mask, feature)
-      [row bit=0 mask='0x1' feature='ast-bin v3 (always set v0.6.0+)']
+      [row bit=0 mask='0x1' feature='ast-bin v3 (always set)']
       [row bit=1 mask='0x2' feature='Schema-driven data-bin encoding']
       [row bit=5 mask='0x20' feature=':bytes scalar wire support']
       [row bit=15 mask='0x8000' feature='Arrow C Data Interface bridge']
       [row bit=16 mask='0x10000' feature='Parquet read/write bridge']
       [row bit=17 mask='0x20000' feature='CXCol chunked columnar streaming']
       [row bit=26 mask='0x4000000' feature='Thread-init handshake (cx_init / cx_thread_register)']
-      [row bit=28 mask='0x10000000' feature='v0.7.6 cx_code_eval family (replaces v0.7.0 CXPath C ABI)']
-      [row bit=29 mask='0x20000000' feature='Program-to-diagram (cx_program_diagram)']
-      [row bit=30 mask='0x40000000' feature='Program-eval with interactive-tree result (cx_program_eval_tree)']]
+      [row bit=28 mask='0x10000000' feature='cx_code_eval family — unified evaluator entry']
+      [row bit=29 mask='0x20000000' feature='Code-to-diagram (cx_code_diagram)']
+      [row bit=30 mask='0x40000000' feature='Code-eval with interactive-tree result (cx_code_eval_tree)']]
 
     [example lang=python
       """import cxlib as cx
