@@ -209,7 +209,13 @@
       [child n=7.10.1 id=v        title='V (native reference)']
       [child n=7.10.2 id=python   title='Python']
       [child n=7.10.3 id=go       title='Go']
-      [child n=7.10.4 id=rust     title='Rust']]]
+      [child n=7.10.4 id=rust     title='Rust']]
+    [child n=7.11 id=binding-detail   title='Per-binding reference snippets'
+      [child n=7.11.1 id=c-abi-detail   title='C ABI — symbol catalog']
+      [child n=7.11.2 id=v-detail       title='V binding — install, Layer 1, atom']
+      [child n=7.11.3 id=python-detail  title='Python binding — install, Layer 1, type map']
+      [child n=7.11.4 id=go-detail      title='Go binding — install, Layer 1, cgo']
+      [child n=7.11.5 id=rust-detail    title='Rust binding — install, Layer 1, threading']]]
 
   [section n=8 id=tooling file='08-tooling.cxd'
     [child n=8.1 id=cli              title='The cx CLI']

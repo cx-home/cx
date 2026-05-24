@@ -1166,4 +1166,350 @@
              }).collect();
              for h in handles { println!("{}", h.join().unwrap()); }
              Ok(())
-           }"""]]]]
+           }"""]]]
+
+  [# Migrated from docs-src/content/bindings/*.cx during the
+     Phase B docs → guide consolidation (2026-05-24). Per-binding
+     reference detail: install command, Layer-1 method list,
+     atom example, type-mapping, threading note. Kept as a
+     consolidated child so the section's primary structure
+     (§7.1–§7.10) stays the reading spine. #]
+
+  [child id=binding-detail n=7.11 title='Per-binding reference snippets'
+    [intro
+      """Compact reference for each Tier-1 binding: install command,
+         the 16-method Layer-1 surface in idiomatic form, the atom
+         scalar kind (ADR 0033), schema validation, and the
+         type-mapping table. The full normative contract is
+         [`spec/bindings.md §2.1`](../../spec/bindings.md); the C ABI
+         is [`spec/abi.md`](../../spec/abi.md)."""]
+
+    [child id=c-abi-detail n=7.11.1 title='C ABI — symbol catalog'
+      [body
+        """The libcx C ABI partitions into nine families:
+           format conversion, canonical+identity, binary forms
+           (ast_bin / data_bin), evaluation (`cx_code_eval*`),
+           diagram+tree (ADR 0037), schema validation, identity
+           and resolution (id / IDREF), streaming events + tables,
+           and threading + memory. Capability bits gate each
+           family; bindings query `cx_features()` at load time and
+           degrade or refuse to load when a required bit is clear.
+           Every `char *` returned by libcx must be released with
+           `cx_free` — never `free()`."""]
+      [example lang=c
+        """/* Format conversion. */
+           char *cx_to_cx        (const char *in, char **err);
+           char *cx_to_xml       (const char *in, char **err);
+           char *cx_to_json      (const char *in, char **err);
+           char *cx_to_yaml      (const char *in, char **err);
+           char *cx_to_toml      (const char *in, char **err);
+           char *cx_to_md        (const char *in, char **err);
+           char *cx_to_csv       (const char *in, char **err);
+           char *cx_from_xml     (const char *in, char **err);
+           /* …yaml / toml / md / csv variants… */
+
+           /* Canonical + identity (cap bit 7). */
+           char *cx_canonical(const char *in, char **err);
+           char *cx_hash     (const char *in, char **err);
+           int   cx_eq       (const char *a, const char *b, char **err);
+           char *cx_diff     (const char *a, const char *b, const char *fmt, char **err);
+           char *cx_lint     (const char *in, const char *fmt, const char *disabled, char **err);
+
+           /* Binary forms. */
+           char *cx_to_ast_bin    (const char *in, char **err);
+           char *cx_ast_bin_to_cx (const char *ast_bin, char **err);
+           char *cx_to_data_bin   (const char *in, char **err);
+           char *cx_from_data_bin (const char *data_bin, char **err);
+
+           /* Evaluation (cap bit 28; renamed from cx_program_eval per ADR 0032). */
+           char *cx_code_eval         (const char *input, const char *program,
+                                       const char *output_target, char **err);
+           char *cx_code_eval_with_len(const char *input,   size_t input_len,
+                                       const char *program, size_t program_len,
+                                       const char *output_target, char **err);
+           char *cx_code_eval_streaming(const char *input,   size_t input_len,
+                                        const char *program, size_t program_len,
+                                        const char *output_target,
+                                        cx_code_write_cb write_cb, void *user,
+                                        char **err);
+
+           /* Diagram + tree (v0.8.0, ADR 0037, cap bits 31 / 32). */
+           char *cx_code_diagram (const char *source, size_t source_len,
+                                  const char *format, size_t format_len);
+           char *cx_code_tree    (const char *source, size_t source_len,
+                                  size_t *out_len);
+           char *cx_code_ast_json(const char *source, size_t source_len);
+
+           /* Schema validation (cap bit 25). */
+           char *cx_validate                (const char *doc, const char *schema, char **err);
+           char *cx_validate_apply_defaults (const char *doc, const char *schema,
+                                             char **modified_doc_out, char **err);
+
+           /* Threading + memory (cap bit 26). */
+           int  cx_init(void);
+           int  cx_thread_register(void);
+           int  cx_thread_unregister(void);
+           void cx_free(char *p);
+
+           /* Capability + version queries. */
+           char *cx_features(void);     /* lowercase hex of 64-bit bitmask */
+           char *cx_abi_version(void);  /* "2.0" */
+           char *cx_version(void);      /* "0.8.0" */
+
+           /* Include-root variants (Phase 3.6). */
+           char *cx_to_cx_with_include_root      (const char *in, const char *root, char **err);
+           char *cx_to_ast_bin_with_include_root (const char *in, const char *root, char **err);
+           char *cx_to_data_bin_with_include_root(const char *in, const char *root, char **err);
+
+           /* Wasm arena tuning (wasm build only). */
+           int cx_wasm_set_arena_size(unsigned int bytes);
+           int cx_wasm_reset(void);"""]
+      [note
+        """v0.8.0 adds bits 31 (`cx_code_diagram`), 32
+           (`cx_code_tree`), 33 (atoms per ADR 0033), 34 (`[?def]`
+           per ADR 0034), 35 (`[?lib]` per ADR 0035), and 36
+           (PathNode wire format / ast_bin v8 per ADR 0028). Bit 28
+           (CX code evaluator) is unchanged from v0.7.6."""]]
+
+    [child id=v-detail n=7.11.2 title='V binding — install, Layer 1, atom'
+      [body
+        """V is the native reference implementation. libcx is
+           written in V; the V binding under `lang/v/native/`
+           imports the `cx` package directly with zero FFI overhead.
+           Every other Tier-1 binding wraps the same C ABI that the
+           V core exports. The `lang/v/cffi/` variant was archived
+           to `lang/_archived/v-cffi/` per ADR 0035 D7 and decision
+           `d-2026-05-22-03`; preserved as a potential FFI-overhead
+           benchmark."""]
+      [example lang=shell """vpm install cx-lang"""]
+      [example lang=v
+        """import cx
+
+           // Doc construction + identity (Layer 1 — 16 methods).
+           doc := cx.parse(bytes) or { panic(err) }
+           out := doc.bytes()
+           h   := doc.hash()
+           eq  := doc.equals(other)
+
+           // Evaluation (wraps cx_code_eval; renamed per ADR 0032 D5).
+           val := doc.eval(code) or { panic(err) }
+
+           // CXPath selection.
+           nodes := doc.select_all('//user[@active=true]/@email')!
+           first := doc.select('//user[@id=1]')!
+
+           // Pure-functional update (ADR 0030).
+           new_doc := doc.modify('//user[@id=1]/@name', cx.set('Alice'))!
+
+           // Convenience + root.
+           users := doc.find_all('user')
+           root  := doc.root()
+
+           // Node accessors.
+           name     := node.name()
+           val_opt  := node.attr('email')
+           attrs    := node.attrs()
+           children := node.children()
+           body     := node.body()
+           kind     := node.kind()  // 'element' / 'scalar' / 'sequence' / 'array' / 'map' / 'path'
+
+           // Includes.
+           doc2 := cx.parse_with_include_root(input, '/proj') or { panic(err) }
+           val2 := doc2.eval_with_include_root(program, '/proj')!
+
+           // Atom scalar (ADR 0033) — type-strict, no string coercion.
+           doc3 := cx.parse('[order :status :paid]') or { panic(err) }
+           status := doc3.select('//order')!.attr('status')
+           assert status.kind() == 'atom'
+           assert status.equals(cx.atom('paid'))
+           assert !status.equals(cx.string('paid'))   // type-strict"""]
+      [note
+        """The V core exports `cx_code_diagram` (auto-detected
+           `erDiagram` or `flowchart` Mermaid output) and
+           `cx_code_tree` (JSON projection with source `loc` ranges
+           for the playground tree pane). These exports power the
+           wasm playground and are not wrapped by the FFI bindings;
+           cap bit 31 (diagram) and bit 32 (tree) advertise
+           availability."""]]
+
+    [child id=python-detail n=7.11.3 title='Python binding — install, Layer 1, type map'
+      [body
+        """The Python binding wraps the libcx C ABI through ctypes.
+           Layer 1 method names are snake_case per Python
+           convention; semantics are identical to V / Go / Rust.
+           Layer 2 idiomatic sugar — comprehensions over Nodes,
+           subscript-with-CXPath, generator division — lives in the
+           opt-in `cxlib.idioms` module and desugars deterministically
+           to Layer 1 calls. The binding asserts on `cx_version_str`
+           at import time to surface ABI drift early."""]
+      [example lang=shell
+        """pip install cx-lang
+           # Or from source:
+           git clone https://github.com/cx-home/cx
+           cd cx/lang/python
+           pip install -e ."""]
+      [example lang=python
+        """import cx
+
+           # Doc construction + identity.
+           doc = cx.parse(open('users.cx', 'rb').read())
+           out = doc.bytes()
+           h   = doc.hash()
+           eq  = doc.equals(other)
+
+           # Evaluation (cx_code_eval, ADR 0032 D5).
+           val = doc.eval(code)
+
+           # CXPath.
+           emails = doc.select_all('//user[@active=true]/@email')
+           first  = doc.select('//user[@id=1]')
+
+           # Pure-functional update (ADR 0030).
+           new_doc = doc.modify('//user[@id=1]/@name', cx.Set('Alice'))
+           new_doc = doc.modify('//user[@banned=true]', cx.Delete())
+           new_doc = doc.modify('//price', cx.Using(lambda p: float(p) * 1.1))
+
+           # Tree access — Pythonic: attrs look like dict; children look like a list.
+           tree = cx.parse('[shop name=Pepe [pizza name=Margherita price=12]]')
+           shop = tree[0]
+           print(shop['name'])              # 'Pepe'
+           print(shop[0]['name'])           # 'Margherita'
+           print(shop[0]['price'])          # 12 (an int, not a string)
+
+           # Atom (ADR 0033).
+           doc2 = cx.parse('[order :status :paid]')
+           status = doc2.select('//order').attr('status')
+           assert status.kind() == 'atom'
+           assert status == cx.atom('paid')
+           assert status != 'paid'             # type-strict
+
+           # Streaming.
+           with open('events.cx', 'rb') as f:
+               for event in cx.stream(f):
+                   if event.kind == 'element_start' and event.name == 'error':
+                       print(event.attrs)
+
+           # Schema validation.
+           diagnostics = cx.validate(
+               open('order.cx').read(),
+               schema=open('order.cxs').read(),
+               mode='strict',
+           )"""]
+      [note
+        """Type mapping (CX → Python): `int → int`, `bigint → int`,
+           `decimal → decimal.Decimal`, `float / f32 / f64 → float`,
+           `bool → bool`, `string → str`, `atom → cx.Atom` (new at
+           v0.8.0), `date → datetime.date`, `datetime →
+           datetime.datetime`, `bytes → bytes`, `null → None`."""]]
+
+    [child id=go-detail n=7.11.4 title='Go binding — install, Layer 1, cgo'
+      [body
+        """The Go binding wraps the libcx C ABI through cgo. Layer 1
+           method names use Go PascalCase per host convention;
+           semantics are identical to V / Python / Rust. Each
+           goroutine that calls into libcx gets a thread
+           registration on first use; the binding manages the Boehm
+           GC handshake at every FFI chokepoint, so calling code
+           does not need to think about it. Stateless format
+           conversions are safe to call concurrently on disjoint
+           inputs."""]
+      [example lang=shell """go get github.com/cx-home/cx/lang/go"""]
+      [example lang=go
+        """import "github.com/cx-home/cx/lang/go/cx"
+
+           // Doc construction + identity.
+           doc, err := cx.Parse(input)
+           out      := doc.Bytes()
+           h        := doc.Hash()
+           eq       := doc.Equals(other)
+
+           // Evaluation (cx_code_eval, ADR 0032 D5).
+           val, err := doc.Eval(code)
+
+           // CXPath.
+           emails, _ := doc.SelectAll("//user[@active=true]/@email")
+           first, _  := doc.Select("//user[@id=1]")
+
+           // Pure-functional update (ADR 0030).
+           newDoc, _ := doc.Modify("//user[@id=1]/@name", cx.Set("Alice"))
+
+           // Tree access.
+           tree, _ := cx.Parse("[shop [pizza name=Margherita price=12]]")
+           shop  := tree.FindAll("shop")[0]
+           pizza := shop.FindAll("pizza")[0]
+           name  := pizza.Attr("name").String()
+           price := pizza.Attr("price").Int()
+
+           // Atom (ADR 0033).
+           doc2, _ := cx.Parse(`[order :status :paid]`)
+           status := doc2.Select("//order").Attr("status")
+           fmt.Println(status.Kind())                     // "atom"
+           fmt.Println(status.Equals(cx.Atom("paid")))    // true
+           fmt.Println(status.Equals(cx.String("paid")))  // false
+
+           // Schema validation.
+           diags, _ := cx.Validate(doc, schema,
+               cx.WithMode(cx.ModeStrict),
+               cx.WithFailOn(cx.SeverityWarn))
+
+           // Streaming.
+           it, _ := cx.Stream(reader)
+           for it.Next() {
+               if e := it.Event(); e.Kind == cx.ElementStart && e.Name == "error" {
+                   fmt.Println(e.Attrs)
+               }
+           }"""]]
+
+    [child id=rust-detail n=7.11.5 title='Rust binding — install, Layer 1, threading'
+      [body
+        """The Rust binding wraps the libcx C ABI through `extern
+           "C"` declarations. Layer 1 method names are snake_case
+           per Rust convention. The binding registers each calling
+           thread with libcx via `ensure_thread` at every FFI
+           chokepoint; `cx_thread_register` and `cx_thread_unregister`
+           fire automatically, so manual setup is unnecessary.
+           Stateless conversions can be called from any thread
+           without coordination. Schema validate is 📋 for Rust at
+           v0.8.0-dev (the one Tier-1 row not yet ✓ in
+           `spec/parity_matrix.md §2`)."""]
+      [example lang=shell """cargo add cx-lang"""]
+      [example lang=rust
+        """use cx_lang::{parse, Doc, Node, Set, Delete, Using, Atom, ValueKind};
+
+           // Doc construction + identity.
+           let doc: Doc = parse(&input)?;
+           let out: Vec<u8> = doc.bytes();
+           let h: String    = doc.hash();
+           let eq: bool     = doc.equals(&other);
+
+           // Evaluation (cx_code_eval, ADR 0032 D5).
+           let val = doc.eval(code)?;
+
+           // CXPath.
+           let emails: Vec<Node> = doc.select_all("//user[@active=true]/@email")?;
+           let first: Option<Node> = doc.select("//user[@id=1]")?;
+
+           // Pure-functional update (ADR 0030).
+           let new_doc = doc.modify("//user[@id=1]/@name", Set("Alice"))?;
+
+           // Atom (ADR 0033).
+           let doc2 = parse(r#"[order :status :paid]"#)?;
+           let status = doc2.select("//order")?.unwrap().attr("status").unwrap();
+           assert_eq!(status.kind(), ValueKind::Atom);
+           assert!(status.equals(&Atom::new("paid").into()));
+           assert!(!status.equals(&"paid".into()));   // type-strict
+
+           // Schema validation (📋 mid-flight at v0.8.0-dev).
+           use cx_lang::{validate, Mode, Severity};
+           let diags = validate(doc, schema)
+               .mode(Mode::Strict)
+               .fail_on(Severity::Warn)
+               .run()?;"""]
+      [note
+        """Type mapping (CX → Rust): `int → i64` (or sized variant
+           if `:iN`/`:uN`), `bigint → num_bigint::BigInt`, `decimal
+           → rust_decimal::Decimal`, `float → f64` (or `f32` if
+           sized), `bool → bool`, `string → String`, `atom →
+           cx_lang::Atom` (new at v0.8.0), `date →
+           chrono::NaiveDate`, `datetime → chrono::DateTime`,
+           `bytes → Vec<u8>`."""]]]]

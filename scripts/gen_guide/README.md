@@ -87,11 +87,11 @@ breakage at review time rather than silently dead-linking.
 ## Playground page
 
 `docs/guide/playground.html` is the self-contained playground inside
-the guide. The page wraps the `<cx-playground>` widget (originally
-authored under `scripts/gen_docs/playground/`) with the guide chrome
-(sidebar, search). The wasm bundle (`docs/guide/wasm/{libcx,cxlib}.js`)
-is mirrored from `dist/wasm/`; the JS/CSS for the widget plus the 50
-starter examples are mirrored from `scripts/gen_docs/playground/`
+the guide. The page wraps the `<cx-playground>` widget (sources live
+at `scripts/gen_guide/playground/`) with the guide chrome (sidebar,
+search). The wasm bundle (`docs/guide/wasm/{libcx,cxlib}.js`) is
+mirrored from `dist/wasm/`; the JS/CSS for the widget plus the
+starter examples are mirrored from `scripts/gen_guide/playground/`
 into `docs/guide/playground/`.
 
 The sidebar's `Playground →` link is page-relative (`playground.html`)
