@@ -96,7 +96,6 @@ PHASE 1 — SPEC COMPLETION
      List every gate (Phase 1–11) with ✅/🚧/📋. Update each commit.
 1.2  ADR 0032 — draft (lean format) + execute "programs → code" rename:
      · spec/code.md → spec/code.md (update every internal link)
-     · spec/code_migration.md → spec/code_migration.md
      · spec/audits/programs_*.md → spec/audits/code_*.md
      · vcx/code/ → vcx/code/ (module rename, v.mod, all imports)
      · cx_code_eval → cx_code_eval (spec/abi.md, C ABI header, every binding)
@@ -108,9 +107,8 @@ PHASE 1 — SPEC COMPLETION
      core fixtures. Scalars belong in attributes. Reshape inputs +
      update selectors to idiomatic CXPath (//user/@email etc.).
      Keep [?for] only where nested structure genuinely needs destructure.
-1.4  spec/code_migration.md — complete v0.7.x → v0.8.0 Rosetta:
-     [?find] retirement, multi-arm [?match], [?modify], CXPath path-value,
-     extended binding paths, in_cxl→in_code, cx_code_eval→cx_code_eval.
+1.4  (migration spec retired during v0.8.0 cleanup — renames committed
+     across codebase; ADR-level migration rules live in the ADRs)
 1.5  spec/parity_matrix.md — update for v0.8.0 binding scope (V/Python/Go/Rust).
      Add Layer-1 method rows from spec/bindings.md §2.1.
      Footnote archived bindings; remove obsolete rows.
@@ -348,10 +346,10 @@ PHASE 8 — EXAMPLES
 ═════════════════════════════════════════════════════════════════
 PHASE 9 — MIGRATION (agent-only, no external users)
 ═════════════════════════════════════════════════════════════════
-9.3  scripts/migrate_v07_to_v08.py — automated migration script for
-     agents migrating example code, tests, fixtures from v0.7.x to
-     v0.8.0. Performs [?find]→[?for], in_cxl→in_code, cx_program_*→
-     cx_code_* substitutions with safety checks.
+9.3  (retired during v0.8.0 cleanup — internal example/fixture renames
+     [[?find]→[?for], in_cxl→in_code, cx_program_*→cx_code_*] were
+     applied directly across the codebase; pre-release with no external
+     users, so no standing migration tooling is needed)
 9.4  cx-data-and-code-guide §9 (Migration section) — agent-facing
      reference for mechanical rename patterns.
 

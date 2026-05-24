@@ -92,9 +92,8 @@ Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
 
 See [`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md) for the
 breaking-change table. The mechanical renames (`programs → code`,
-`cxdb → cxcol`, `cx_program_* → cx_code_*`) are scripted under
-[`scripts/`](scripts/) (see `rename_programs_to_code.sh` and
-`rename_cxdb_to_cxcol.sh`).
+`cxdb → cxcol`, `cx_program_* → cx_code_*`) were applied across the
+codebase as part of this release.
 
 ## [0.7.6] — in development on `v0.7.6-dev` (CX code — the headline release)
 

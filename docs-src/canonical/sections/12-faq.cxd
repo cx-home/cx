@@ -68,16 +68,12 @@
     [child id=faq-find-retired title='Why does my `[?find]` fail with CXER0100?'
       [body
         """`[?find]` was retired in v0.8.0 (ADR 0028 §D8) — it was
-           always sugar for `[?for]` over a pattern. The migration
-           is mechanical and covered by the automated script:"""]
-      [example lang=shell
-        """python scripts/migrate_v07_to_v08.py --apply path/to/code"""]
-      [body
-        """The script rewrites every `[?find pattern :yield body]`
-           to either a direct CXPath (when the pattern is just an
-           element with optional predicates) or to `[?for]` (when
-           the pattern is structurally more complex). See
-           [[from-v07x]] for the full mapping table."""]]
+           always sugar for `[?for]` over a pattern. Rewrite each
+           `[?find pattern :yield body]` to either a direct CXPath
+           (when the pattern is just an element with optional
+           predicates) or to `[?for]` (when the pattern is
+           structurally more complex). See [[from-v07x]] for the
+           full mapping table."""]]
 
     [child id=faq-attr-vs-slot title='Why does `[user :id 42]` parse differently from `[user id=42]`?'
       [body
@@ -448,22 +444,17 @@
 
     [child id=faq-migrate-v07 title='How do I migrate from v0.7.x?'
       [body
-        """The automated script `scripts/migrate_v07_to_v08.py`
-           handles every mechanical rename and the `[?find]` →
-           `[?for]`/CXPath rewrite:"""]
-      [example lang=shell
-        """[# Preview the rewrites                                     #]
-           python scripts/migrate_v07_to_v08.py --dry-run ./codebase
-
-           [# Apply in place                                           #]
-           python scripts/migrate_v07_to_v08.py --apply ./codebase"""]
-      [body
-        """The script is idempotent — re-running on an
-           already-migrated tree is a no-op. The full diff between
-           v0.7.x and v0.8.0 is documented at [[from-v07x]]; the
-           non-mechanical cases (custom directive names that
-           collide with new core directives) are listed at the
-           bottom of that section."""]]
+        """v0.8.0 is the pre-release API/format-stability boundary
+           and ships with no external users, so there is no
+           standing migration tool — the changes are mechanical
+           renames plus the `[?find]` → `[?for]`/CXPath rewrite.
+           The full diff between v0.7.x and v0.8.0 is documented at
+           [[from-v07x]]; the non-mechanical cases (custom directive
+           names that collide with new core directives) are listed
+           at the bottom of that section. If you do need to migrate
+           a v0.7.x codebase, the rename tables and ADRs there give
+           you everything to do it by hand or with a one-off
+           project-local script."""]]
 
     [child id=faq-archived-bindings title='What if I am on TypeScript / Java / C# / Ruby / Kotlin / Swift binding?'
       [body

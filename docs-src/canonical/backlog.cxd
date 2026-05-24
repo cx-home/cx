@@ -345,7 +345,6 @@
       :scope 'cx_program_eval → cx_code_eval; vcx/programs/ → vcx/code/; spec/programs.md → spec/code.md; all bindings'
       :ship-target 'after ADRs 0028-0030 land — bundle as one rename pass'
       :note 'Brand layer (docs) renamed immediately per d-2026-05-22-01'
-      :execution 'commit ee6bfcf3 via scripts/rename_programs_to_code.sh — 41 file paths moved, 237 content-substituted, V build + V conformance (156/156) green post-rename'
       :revision-history '[(2026-05-22: drafted + executed in single session — V-keyword conflict resolved inline by renaming 5 function parameters and 1 local from `code` → `err_code`)]']
 
     [adr &adr-0033

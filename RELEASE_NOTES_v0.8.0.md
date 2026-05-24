@@ -44,8 +44,7 @@ comprehensions, Go filter chains, Rust iterator combinators).
   `vcx/code/`, `cx_program_eval` → `cx_code_eval`. Brand-surface
   rename ("CX is data and code") propagated through the internal API.
 - **`[?find]` retired** — superseded by `[?for]` (pattern-generator
-  form) and CXPath value-kind `//path`. One-line migration via
-  `scripts/migrate_v07_to_v08.py`.
+  form) and CXPath value-kind `//path`.
 - **XPath 3.1 parity verified** against Saxon-HE — new conformance
   gate 28.5 with fixtures tagged `xpath31-parity` /
   `xpath31-divergence`. Documented divergences:
@@ -75,7 +74,7 @@ Its deliverables ship in v0.8.0:
 
 | What | Migration |
 |---|---|
-| `[?find]` directive removed | Use `[?for]` (pattern-generator) or `//path` (selection). Script handles both. |
+| `[?find]` directive removed | Use `[?for]` (pattern-generator) or `//path` (selection). |
 | `cx_program_eval*` C ABI removed | Renamed to `cx_code_eval*`. One substitution per FFI extern decl. |
 | `_cx_program_*` wasm exports renamed | All `_cx_program_*` → `_cx_code_*`. |
 | `spec/programs.md` filename | Renamed to `spec/code.md`. Update any docs you maintain. |
@@ -85,12 +84,8 @@ Its deliverables ship in v0.8.0:
 | Single-arm `[?match]` still accepted | No change to existing code. Multi-arm form is opt-in. |
 | Module `vcx/programs/` → `vcx/code/` | V code: `import vcx.programs` → `import vcx.code`; `programs.eval_program` → `code.eval_code`. |
 
-The mechanical renames are scripted under
-[`scripts/rename_programs_to_code.sh`](scripts/rename_programs_to_code.sh)
-and
-[`scripts/rename_cxdb_to_cxcol.sh`](scripts/rename_cxdb_to_cxcol.sh).
-Agent-facing migration patterns for example code live in
-[`spec/code_migration.md`](spec/code_migration.md).
+The mechanical renames (`programs → code`, `cxdb → cxcol`) have
+been applied across the codebase as part of this release.
 
 ## Layer 1 — the 16 canonical methods
 

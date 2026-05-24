@@ -296,8 +296,7 @@
               the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
               `cx lint`, `cx diff`, and the playground."""]
       [item """**Migrate an existing codebase.** [[migration]]
-              covers v0.7.x → v0.8.0 (automated by
-              `scripts/migrate_v07_to_v08.py`) and intake from
+              covers v0.7.x → v0.8.0 and intake from
               JSON / YAML / TOML / XML."""]
       [item """**Compare against alternatives.** [[comparison]]
               is the side-by-side against JSON, YAML, TOML, XML,

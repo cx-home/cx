@@ -1,17 +1,17 @@
 [# Section 10 — migration: v0.7.x → v0.8.0, cross-format intake,
-   retired surfaces. Anchored in spec/code_migration.md (post-rename),
-   ADRs 0028/0029/0030/0032, backlog.cx decision log. #]
+   retired surfaces. Anchored in ADRs 0028/0029/0030/0032,
+   backlog.cx decision log. #]
 
 [section id=migration n=10 title='Migration'
 
   [child id=from-v07x n=10.1 title='From v0.7.x to v0.8.0'
     [intro
       """v0.8.0 is the first stable tag after v0.7.5 (v0.7.6 was skipped
-         intentionally — see backlog
-         decision `d-2026-05-22-04`). The changes are mechanical and
-         covered by an automated migration script
-         `scripts/migrate_v07_to_v08.py`. This section is the manual
-         reference."""]
+         intentionally — see backlog decision `d-2026-05-22-04`). v0.8.0
+         is the pre-release API/format-stability boundary; there are no
+         external users yet, so the renames below were applied directly
+         across the codebase rather than shipped as user-facing tooling.
+         This section is the reference for the shape of the changes."""]
 
     [body
       """**Rename: programs → code.** Per ADR
@@ -24,7 +24,6 @@
       [row was='cx_program_eval' is='cx_code_eval']
       [row was='vcx/programs/' is='vcx/code/']
       [row was='spec/programs.md' is='spec/code.md']
-      [row was='spec/programs_migration.md' is='spec/code_migration.md']
       [row was='conformance/programs.txt' is='conformance/code.txt']
       [row was='_cx_program_diagram (wasm)' is='_cx_code_diagram (wasm)']
       [row was='--- in_cxl (fixture marker)' is='--- in_code (fixture marker)']]
@@ -97,25 +96,12 @@
          archived bindings are no longer in the default `make test`
          target."""]
 
-    [body
-      """**Automated script.** Run on a clean working tree:"""]
-
-    [example lang=cx
-      """$ python scripts/migrate_v07_to_v08.py path/to/source
-
-         # Performs (with safety checks):
-         #   [?find] → [?for]  or  CXPath equivalent
-         #   in_cxl → in_code  (in fixtures)
-         #   cx_program_eval → cx_code_eval  (in host code)
-         #   programs.txt → code.txt (in references)
-         #   ?cxl  → ?code   (in playground starter ids)"""]
-
     [note
-      """The script is **mechanical** — it does not attempt to convert
-         hand-rolled nested `[?if]` chains to multi-arm `[?match]`
-         (that requires semantic understanding of what each branch
-         tests). The conversion is straightforward by hand once you
-         know the multi-arm form (see [[match]])."""]]
+      """The renames above are **mechanical** — they do not attempt to
+         convert hand-rolled nested `[?if]` chains to multi-arm
+         `[?match]` (that requires semantic understanding of what each
+         branch tests). The conversion is straightforward by hand once
+         you know the multi-arm form (see [[match]])."""]]
 
   [child id=from-xml n=10.2 title='From XML'
     [intro
