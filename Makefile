@@ -43,6 +43,7 @@ PYTHON ?= python3
  test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
  test-go test-go-arrow \
  test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-go-api \
+ test-xpath-parity test-binding-api-parity \
  abi-c-test \
  conform conform-vcx conform-md bench bench-python \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
@@ -278,6 +279,35 @@ test-docs: test-docs-snapshot test-playground-e2e
 .PHONY: test-code-diagram
 test-code-diagram:
 	@python3 scripts/check_code_diagram_fixtures.py
+
+# ── v0.8.0 gate 28.5 — XPath 3.1 parity (Saxon-HE reference) ─────────────
+# Runs conformance/xpath_31_parity.txt fixtures through both `cx eval` and
+# Saxon-HE (via Docker) and asserts byte-identical results for the parity
+# tag and documented divergence for the divergence tag. Requires Docker on
+# PATH; skip-cleanly behaviour lives inside the script (exit 2 on missing
+# prerequisites). Active gate per spec/v0_8_0_status.md §11.6.
+.PHONY: test-xpath-parity
+test-xpath-parity: build-vcx
+	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
+
+# ── v0.8.0 gate 28.6 — Layer-1 binding-API parity ─────────────────────────
+# Runs conformance/binding_api.txt (48 Layer-1 parity fixtures, spec/
+# bindings.md §4.1) through every active binding (V / Python / Go / Rust)
+# and asserts byte-identical results across all four. The per-binding
+# runner is filed under Phase 3 — until it lands, this target is a stub
+# that prints "runner pending" + exits non-zero so CI advertises the gate
+# even though the wiring is incomplete. Tier-2 archived bindings (TS /
+# Java / C# / Ruby / Kotlin / Swift) are out of scope per
+# d-2026-05-22-03.
+.PHONY: test-binding-api-parity
+test-binding-api-parity:
+	@if [ -x scripts/test_binding_api_parity.sh ]; then \
+	    bash scripts/test_binding_api_parity.sh; \
+	else \
+	    echo "[gate 28.6] runner pending — see spec/bindings.md §4.1 + Phase 3 in spec/v0_8_0_status.md"; \
+	    echo "[gate 28.6] fixture available at conformance/binding_api.txt (48 fixtures)"; \
+	    exit 1; \
+	fi
 
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py

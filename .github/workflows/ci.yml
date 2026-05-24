@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, native-data-binding, v0.7.0-dev]
+    branches: [main, v0.8.0-dev, v0.7.0-dev]
   pull_request:
-    branches: [main, v0.7.0-dev]
+    branches: [main, v0.8.0-dev, v0.7.0-dev]
 
 jobs:
   test-matrix:
@@ -96,6 +96,39 @@ jobs:
 
       - name: Pre-commit lint rules (V6)
         run: make check-lint-rules
+
+      # v0.8.0 — ADR 0037 gate 37.10 (code_diagram / code_tree fixtures).
+      - name: code_diagram / code_tree conformance (gate 37.10)
+        run: make test-code-diagram
+
+  v0_8_0-gates:
+    name: v0.8.0 release gates (28.5 / 28.6)
+    runs-on: ubuntu-22.04
+    needs: experience-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install V
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+
+      - name: Build cx
+        run: make build-vcx
+
+      # Gate 28.5 — XPath 3.1 parity vs Saxon-HE. Docker is preinstalled
+      # on GitHub-hosted ubuntu runners; the script exits 2 on prerequisite
+      # failure and 1 on fixture mismatch. continue-on-error until impl
+      # lands per spec/v0_8_0_status.md gate 28.5.
+      - name: XPath 3.1 parity (gate 28.5)
+        run: make test-xpath-parity
+        continue-on-error: true
+
+      # Gate 28.6 — Layer-1 binding-API parity. Runner stub until Phase 3
+      # bindings land per spec/v0_8_0_status.md gate 28.6.
+      - name: Layer-1 binding-API parity (gate 28.6)
+        run: make test-binding-api-parity
+        continue-on-error: true
 
   cold-install:
     name: Cold install + first demo (F1, F2, F5)
