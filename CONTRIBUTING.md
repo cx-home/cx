@@ -7,8 +7,10 @@ spec. Bug reports, doc fixes, and PRs are all welcome.
 This file covers dev setup, the test matrix, the audit-driven coding
 rules every PR is held to, and the commit / PR conventions.
 
-For the format itself, start with [`docs/TUTORIAL.md`](docs/TUTORIAL.md).
-For the formal contracts, see [`spec/`](spec/).
+For the format itself, start with the docs site
+([`docs/guide/index.html`](docs/guide/index.html) locally, or
+[cx-home.github.io/cx](https://cx-home.github.io/cx/) online). For the
+formal contracts, see [`spec/`](spec/).
 
 ---
 
@@ -21,8 +23,10 @@ For the formal contracts, see [`spec/`](spec/).
  `libcx`.
 - A C compiler (clang on macOS, gcc/clang on Linux).
 - For each language binding you intend to test, the corresponding
- toolchain: Python 3.10+, Go 1.21+, Rust 1.75+, Node 18+, JDK 17+,
- Kotlin via Gradle, Swift 5.9+, .NET 8+, Ruby 3.0+.
+ toolchain. v0.8.0 Tier-1 bindings: Python 3.10+, Go 1.21+,
+ Rust 1.75+. (TypeScript / Java / C# / Kotlin / Swift / Ruby are
+ archived under `lang/_archived/` for v0.8.0; restoration is
+ post-tag.)
 
 [devbox](https://www.jetpack.io/devbox) optionally pins all of the
 above; `devbox shell` drops you into an environment with the right
@@ -44,11 +48,10 @@ cx --version
 | ------ | ------ |
 | `make build-vcx` | V core (`libcx`, `cx` CLI) only |
 | `make build-rust` | Rust binding (depends on libcx) |
-| `make build-typescript` | TypeScript binding |
-| `make build-<lang>` | analogous for go / java / kotlin / swift / csharp |
+| `make build-go` | Go binding (depends on libcx) |
 
-The Python and Ruby bindings have no separate build step — they
-load `libcx` at import time.
+The Python binding has no separate build step — it loads `libcx` at
+import time.
 
 ---
 
@@ -104,7 +107,7 @@ them is a release gate. The full text is in
 
 The audit (CB-1..CB-3) found this pattern in every binding — it was
 slow, lossy, and undermined the multi-format guarantees. All five
-findings are closed at v0.6.0; please don't reintroduce them.
+findings closed in the v0.6.0 cycle; please don't reintroduce them.
 
 In practice: when you add a new public function in a binding,
 
@@ -121,8 +124,9 @@ in the binding.
 
 - **Parity matrix** ([`spec/governance.md` §2](spec/governance.md)) —
  every public function exists with consistent signatures across all
- 9 bindings. New API additions touch every binding in the same PR
- series.
+ Tier-1 bindings (V / Python / Go / Rust as of v0.8.0). New API
+ additions touch every Tier-1 binding in the same PR series; see
+ [`spec/bindings.md`](spec/bindings.md) for the two-layer contract.
 - **Strategy declaration** (§3) — each binding's README declares
  which implementation strategy it uses. Updates here travel with
  the code change.

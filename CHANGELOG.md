@@ -1,8 +1,9 @@
 # Changelog
 
 All notable changes to CX are recorded here. Per-release deep-dives
-live in [`docs/releases/`](docs/releases/); migration instructions
-live in [`docs/migrations/`](docs/migrations/).
+live in the top-level `RELEASE_NOTES_v*.md` files; migration
+instructions live alongside each release-notes file (e.g.
+[`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md)).
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
@@ -89,9 +90,11 @@ Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
 
 ### Migration
 
-See [`docs/migrations/v0_8_0.md`](docs/migrations/v0_8_0.md) and the
-automated script
-[`scripts/migrate_v07_to_v08.py`](scripts/migrate_v07_to_v08.py).
+See [`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md) for the
+breaking-change table. The mechanical renames (`programs → code`,
+`cxdb → cxcol`, `cx_program_* → cx_code_*`) are scripted under
+[`scripts/`](scripts/) (see `rename_programs_to_code.sh` and
+`rename_cxdb_to_cxcol.sh`).
 
 ## [0.7.6] — in development on `v0.7.6-dev` (CX code — the headline release)
 

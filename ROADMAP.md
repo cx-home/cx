@@ -4,49 +4,41 @@ This document is CX's living, public roadmap. It tracks what's
 landing in the next release, what's planned for later, and what is
 deliberately *not* on the roadmap.
 
-**The next tag is v0.6.0.** v0.6.0 is the API/format-stability
-boundary: from v0.6.0 onward through 1.0, no breaking changes to the
+**The next tag is v0.8.0.** v0.8.0 is the API/format-stability
+boundary: from v0.8.0 onward through 1.0, no breaking changes to the
 public surface (C ABI, binding APIs, wire formats, spec-normative
-grammar). The "Now" and "Next" scopes below both feed v0.6.0 — Now is
-the work in flight on the active branch, Next is the larger scope that
-follows but ships under the same v0.6.0 tag. "Later" is post-v0.6.0
-work targeting subsequent releases.
+grammar). The "v0.8.0 — LOCKED" section below is the live scope.
+"v0.9.0 — planned" and "v1.0" describe the post-v0.8.0 horizon.
 
-**v0.7.0 → v0.7.5 — proof-of-concept (superseded 2026-05-20).** The
-v0.7.x line up to and including v0.7.5 shipped as proof-of-concept.
-The cxpath / cxquery / XQuery-4.0-parity surface specced in
-[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-§D2 and §D10 turned out to be structurally incomplete: normative
-specs carried TBDs, tests passed by reduction (covering only the
-implemented subset), and `cx:merge` shipped with material defects.
-Investment in that scope halted 2026-05-20. The cxpath/cxquery V
-implementation is deleted as part of v0.7.6 work; their specs
-remain as historical artifacts only.
+**Released history (frozen):**
 
-**v0.7.6 — skipped** (per backlog `d-2026-05-22-04`). The unified
-pattern/query/transform scope drafted for v0.7.6 under
-[ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
-was absorbed into v0.8.0; see the `## v0.8.0 — LOCKED` section
-below for the live scope. Note: ADR 0027's design framing (CX as
-code, error code namespace expansion, Tier-1 binding cut) carried
-forward; the §11.6 sixteen-gate framing was superseded by the
-v0.8.0 forty-two-gate release rubric in
-[`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
+- **v0.6.0** — tagged. API/format-stability boundary originally drafted
+  here; that role moved to v0.8.0 once the v0.7.x line shipped as
+  proof-of-concept.
+- **v0.7.0 → v0.7.5** — proof-of-concept (superseded 2026-05-20).
+  The cxpath / cxquery / XQuery-4.0-parity surface specced in
+  [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+  §D2 and §D10 turned out to be structurally incomplete: normative
+  specs carried TBDs, tests passed by reduction (covering only the
+  implemented subset), and `cx:merge` shipped with material defects.
+  The cxpath / cxquery V implementation is deleted in v0.8.0; the
+  specs remain as historical artifacts only.
+- **v0.7.6** — skipped (per backlog `d-2026-05-22-04`). The unified
+  pattern/query/transform scope drafted under
+  [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
+  was absorbed into v0.8.0. ADR 0027's design framing (CX as code,
+  error-code namespace expansion, Tier-1 binding cut) carried
+  forward; the §11.6 sixteen-gate framing was superseded by the
+  v0.8.0 forty-two-gate release rubric in
+  [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
 
-**v0.7.x — recently shipped** (proof-of-concept arc, superseded
-2026-05-20). The v0.7.0 → v0.7.5 line shipped as POC and is now
-retired. The cxpath / cxquery / XQuery-4.0-parity surface specced
-in [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-§D2 and §D10 turned out to be structurally incomplete (normative
-TBDs, tests passing by reduction, `cx:merge` defects);
-the V implementation is deleted in v0.8.0 and the specs remain as
-historical artifacts. Headline v0.7.x ADRs:
+Headline v0.7.x ADRs (carried forward into v0.8.0 framing):
 
 - [ADR 0017](spec/decisions/0017-collection-literals.md) — collection literals (sequence / array / map).
-- [ADR 0021](spec/decisions/0021-cxdb-database-direction.md) — CXDB-as-database lane.
-- [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md) — "CX is one language" v0.7.0 scope (now POC-retired).
+- [ADR 0021](spec/decisions/0021-cx-database-direction.md) — CX database direction (deferred lane).
+- [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md) — "CX is one language" v0.7.0 scope (POC-retired).
 - [ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md) — self-host module + extension interface.
-- [ADR 0026](spec/decisions/0026-wasm-distribution-target.md) — WASM distribution target (v0.7.5 playground).
+- [ADR 0026](spec/decisions/0026-wasm-distribution-target.md) — WASM distribution target.
 - [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md) — unified pattern/query/transform language (carried into v0.8.0).
 
 ---
@@ -109,9 +101,9 @@ already have committed design context.
   Phase 2.16 structural-body migration (replace verbatim source
   with subtree) and the Phase 2.22 purity-checker AST-walk upgrade
   land here, plus module-loader integration of `check_all`.
-- **CXStore database direction** — the OLAP / index / manifest lane
-  proposed in [ADR 0021](spec/decisions/0021-cxdb-database-direction.md).
-  v0.8.0 leaves CXDB as a hashable wire format; v0.9.0 either
+- **CX database direction** — the OLAP / index / manifest lane
+  proposed in [ADR 0021](spec/decisions/0021-cx-database-direction.md).
+  v0.8.0 leaves CXCol as a hashable wire format; v0.9.0 either
   commits to DataFusion-wrap + Parquet + arena allocator or
   renames the surface. Decision required before any user-facing
   database vocabulary appears in the spec.
@@ -144,10 +136,18 @@ already have committed design context.
 
 ---
 
-## Now — current branch (toward v0.6.0)
+## Historical scope (v0.6.0 era — shipped or superseded)
+
+> **Note:** The sections from here down are preserved as historical
+> record of the v0.6.0 / v0.7.x roadmap. The live v0.8.0 scope is
+> the "v0.8.0 — LOCKED" section above and
+> [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md). Many items here
+> shipped during v0.6.0; others were superseded by later ADRs.
+
+### Now — v0.6.0 era
 
 Closing the audit, raising the bar to a level that survives external
-review. Items here are in flight or imminent on the active branch.
+review.
 
 ### Tooling completion
 

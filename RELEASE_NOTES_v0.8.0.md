@@ -85,8 +85,12 @@ Its deliverables ship in v0.8.0:
 | Single-arm `[?match]` still accepted | No change to existing code. Multi-arm form is opt-in. |
 | Module `vcx/programs/` → `vcx/code/` | V code: `import vcx.programs` → `import vcx.code`; `programs.eval_program` → `code.eval_code`. |
 
-The full migration guide is [`docs/migrations/v0_8_0.md`](docs/migrations/v0_8_0.md).
-The automated migration script is [`scripts/migrate_v07_to_v08.py`](scripts/migrate_v07_to_v08.py).
+The mechanical renames are scripted under
+[`scripts/rename_programs_to_code.sh`](scripts/rename_programs_to_code.sh)
+and
+[`scripts/rename_cxdb_to_cxcol.sh`](scripts/rename_cxdb_to_cxcol.sh).
+Agent-facing migration patterns for example code live in
+[`spec/code_migration.md`](spec/code_migration.md).
 
 ## Layer 1 — the 16 canonical methods
 

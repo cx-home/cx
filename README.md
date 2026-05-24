@@ -112,9 +112,9 @@ binding, the interactive playground — lives at:
 It is the canonical user-facing surface. README is the one-screen
 intro; everything else is over there.
 
-Reading offline? Clone the repo and open [`docs/index.html`](docs/index.html)
-in a browser — the site is a static bundle and works under `file://`
-with no server.
+Reading offline? Clone the repo and open
+[`docs/guide/index.html`](docs/guide/index.html) in a browser — the
+site is a static bundle and works under `file://` with no server.
 
 ## Status
 

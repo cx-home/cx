@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-CX is **pre-1.0**. Only the latest released minor version (0.6.x at
-time of writing) receives security fixes. There has been no security
-review and no fuzz-testing infrastructure yet — see the [Status
-section in `README.md`](README.md#status-pre-10-not-production-hardened)
-for the full caveat.
+CX is **pre-1.0**. Only the latest released minor version (0.7.x at
+time of writing; v0.8.0 in development on `v0.8.0-dev`) receives
+security fixes. There has been no formal security review or
+fuzz-testing infrastructure yet — see the
+[Status section in `README.md`](README.md#status) for the full caveat.
 
 ## Reporting a vulnerability
 
@@ -37,7 +37,9 @@ In scope:
 
 - The V core (`vcx/`) parser, emitters, and conversion logic.
 - The C ABI surface in `libcx`.
-- All 9 language bindings under `lang/`.
+- The Tier-1 language bindings under `lang/` (V / Python / Go / Rust
+  as of v0.8.0). Archived bindings under `lang/_archived/` are not in
+  scope for the current security-fix window.
 - The `cx` CLI.
 
 Out of scope:
