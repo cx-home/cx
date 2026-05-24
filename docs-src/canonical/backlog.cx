@@ -18,7 +18,7 @@
 
   [meta
     title='CX Language Backlog'
-    last-updated=2026-05-22T20:00
+    last-updated='2026-05-22T20:00'
     branch=v0.8.0-dev
     rendered-form='docs/internal/backlog.md (deferred — render after ADR 0028)']
 
