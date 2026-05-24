@@ -580,6 +580,7 @@
     lastSource = src;
     const cxlib = globalThis.cxlib;
     if (srcVizKind === 'tree') {
+      vizSourceMount.classList.add('cxp-viz-tree-mount');
       if (!srcTreeView) {
         vizSourceMount.innerHTML = '<div class="cxdv-empty">Tree view unavailable</div>';
         return;
@@ -604,6 +605,7 @@
       return;
     }
     // Graph mode — Mermaid via cxlib.diagram (requires live wasm).
+    vizSourceMount.classList.remove('cxp-viz-tree-mount');
     if (!diagView) {
       vizSourceMount.innerHTML = '<div class="cxdv-empty">Graph view unavailable</div>';
       return;
@@ -674,6 +676,7 @@
       outputCache.graph = null;
     }
     if (outputViewMode === 'tree') {
+      vizOutputMount.classList.add('cxp-viz-tree-mount');
       if (outputDiagView && outputDiagView.container) outputDiagView.unmount();
       if (!treeView) {
         vizOutputMount.innerHTML = '<div class="cxdv-empty">Tree view unavailable</div>';
@@ -697,6 +700,7 @@
     // text. ERD if the rendered output is pure data (the common case
     // for [?for] / [?modify] / data examples); CFG if the source
     // itself was a program and the diagram applies to the program AST.
+    vizOutputMount.classList.remove('cxp-viz-tree-mount');
     if (treeView && treeView.container) treeView.unmount();
     if (!outputDiagView) {
       vizOutputMount.innerHTML = '<div class="cxdv-empty">Graph view unavailable</div>';
