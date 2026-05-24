@@ -366,8 +366,35 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx
+test-vcx: build-vcx test-vcx-v08
 	$(MAKE) -C vcx conform-all
+
+# ── v0.8.0 V-side ADR surface tests ───────────────────────────────────────
+# Drives the conformance/code.txt fixture-runner tests + the v0.8.0 ADR
+# surface unit tests under vcx/tests/. Files use two prefix conventions:
+#   - `code_*_test.v`        — evaluator / parser / lexer / renderer /
+#                              fixture-runner against conformance/code.txt
+#                              (gate 4 + the per-binding parity input).
+#   - `v08_*_test.v`         — ADR-cycle additions: PathNode + CXPath
+#                              axes (ADR 0028 — gate 28.7), `[?match]`
+#                              multi-arm (0029), `[?modify]` action
+#                              vocabulary (0030 — gate 28.8), atoms
+#                              (0033), `[?def]` (0034 — gate 28.11),
+#                              `[?lib]` / `[?const]` / lockfile / module
+#                              loader (0035 — gate 28.12), `[?expr]`
+#                              general predicate (0036 — gate 28.13),
+#                              `:pure` / `:impure` (0034 D11 — gate
+#                              28.14), `code_diagram` / `code_tree`
+#                              (0037 — gates 37.2 / 37.4 / 37.5 / 37.10),
+#                              ABI v0.8.0 surface (gate 11 / 28.9
+#                              evidence floor).
+#
+# Each gate's coverage commitment is itemised in
+# `spec/v0_8_0_status.md §11.6`; this Make target is the V-side runner.
+# Wired into TEST_TARGETS via the `test-vcx` umbrella above.
+.PHONY: test-vcx-v08
+test-vcx-v08: build-vcx
+	@v test vcx/tests/
 
 # lang/v/cx and lang/v/code are local module-resolution symlinks into
 # vcx/cx and vcx/code respectively. V's importer searches sibling
