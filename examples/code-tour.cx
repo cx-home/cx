@@ -1,6 +1,4 @@
 [# code-tour.cx — comprehensive tour of the CX code language (v0.8.0).
-   Restores examples/programs-tour.cx (deleted in 3a232283) — ported to
-   v0.8.0 surface per backlog i-examples-programs-tour-deleted.
 
    Covers every core directive + every v0.8.0 addition:
       1. [?fn]                 — lambdas
