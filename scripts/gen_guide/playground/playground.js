@@ -434,33 +434,6 @@
   // secondary pass through toJson / toXml on that CX output for
   // the clean data-projection JSON / XML (vs the verbose AST-JSON
   // that evalCode(..., 'json', ...) would emit).
-  // Split a combined homoiconic source into (dataPart, programPart):
-  // every depth-0 [? directive starts the program; everything before
-  // the first such directive is inert data that becomes $doc.
-  // Source-pane content like
-  //
-  //   [items [item active=true]]
-  //   [?for [item @active=true $i] :yield $i]
-  //
-  // splits into data=`[items ...]` + program=`[?for ...]`. If no
-  // top-level directive appears the whole source is the program and
-  // data is empty.
-  function splitHomoiconicSource(src) {
-    let depth = 0;
-    for (let i = 0; i < src.length; i++) {
-      const c = src[i];
-      if (c === '[') {
-        if (depth === 0 && src[i + 1] === '?') {
-          return { data: src.slice(0, i).trim(), program: src.slice(i) };
-        }
-        depth++;
-      } else if (c === ']') {
-        depth--;
-      }
-    }
-    return { data: '', program: src };
-  }
-
   function liveEvaluate(key) {
     const src = input.value;
     const cxlib = globalThis.cxlib;
@@ -472,25 +445,14 @@
         xml:  cxlib.toXml(src),
       };
     }
-    // Program examples: extract $doc binding either from an explicit
-    // ex.data (rare — used when the data file would not parse as a
-    // sibling of the program text) or from the inert prefix of the
-    // editable source itself (the homoiconic default — source pane
-    // shows data and code together, runtime splits at first depth-0
-    // [? directive). Passing the directive text through the data
-    // parser fails (it expects :return slots, programs use :yield),
-    // so we never send a [? prefix as dataInput.
-    let dataInput;
-    let programSrc;
-    if (found.ex && typeof found.ex.data === 'string') {
-      dataInput = found.ex.data;
-      programSrc = src;
-    } else {
-      const split = splitHomoiconicSource(src);
-      dataInput = split.data;
-      programSrc = split.program;
-    }
-    const cxOut = cxlib.evalCode(programSrc, 'cx', dataInput);
+    // Just pass the source straight through. CX is homoiconic — a
+    // single source can carry inert data + active directives at the
+    // same top level. The runtime auto-binds $doc from leading inert
+    // structures when no explicit input is given.
+    const dataInput = (found.ex && typeof found.ex.data === 'string')
+      ? found.ex.data
+      : '';
+    const cxOut = cxlib.evalCode(src, 'cx', dataInput);
     return {
       cx:   cxOut,
       json: cxOut ? cxlib.toJson(cxOut) : '',
