@@ -1,7 +1,7 @@
 name: Reproducibility (BB3)
 
-# BB3 — reproducibility check in CI per spec/v0_7_0_status.md BB row
-# and docs/reproducible_builds.md.
+# Reproducibility check in CI (historical BB3 gate from v0.7.0 status;
+# carried forward into v0.8.0). See docs/reproducible_builds.md.
 #
 # Builds the release artifacts twice with `SOURCE_DATE_EPOCH` fixed
 # to the head commit's timestamp and asserts both runs produce the

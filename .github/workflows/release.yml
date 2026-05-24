@@ -1,8 +1,8 @@
-# V5 v0.7.0: release artifact CI. Triggers on tag push (v*.*.*) and
-# produces:
+# Release artifact CI (historical V5 gate from v0.7.0 status; carried
+# forward into v0.8.0). Triggers on tag push (v*.*.*) and produces:
 #   - signed binary tarballs per OS/arch
 #   - dist/SHA256SUMS.txt
-#   - cx-conformance-v0.7.0.zip bundle (per S7)
+#   - cx-conformance-<tag>.zip bundle
 #
 # The reproducible-build workflow (reproducibility.yml) gates the
 # binaries before they're uploaded.
@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. v0.7.0)'
+        description: 'Tag to release (e.g. v0.8.0)'
         required: true
 
 jobs:

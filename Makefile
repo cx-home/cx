@@ -6,14 +6,14 @@
 -include scripts/gen_docs/docs.mk
 # ── v0.7.0 doc pipeline ─────────────────────────────────────────── END gen_docs
 
-# ── v0.8.0 CX Data and Code Language Guide ────────────────────── BEGIN gen_guide
+# ── v0.8.0 CX Data Language Guide ─────────────────────────────── BEGIN gen_guide
 # Makes `make gen-cx-data-language-guide` first-class. Renders
 # docs-src/canonical/manifest.cxd + sections/*.cxd into docs/guide/.
 # When the v0.8.0 cx binary is not yet runnable, the target stages
 # chrome + assets and falls back to source-as-body pages — see
 # scripts/gen_guide/README.md for the full pipeline.
 -include scripts/gen_guide/guide.mk
-# ── v0.8.0 CX Data and Code Language Guide ──────────────────────── END gen_guide
+# ── v0.8.0 CX Data Language Guide ───────────────────────────────── END gen_guide
 
 CONFORMANCE_CORE := conformance/core.txt
 CONFORMANCE_EXT := conformance/extended.txt
@@ -71,7 +71,7 @@ build-vcx:
 # bundles the WASM artifacts. Depends on the patched V at
 # third_party/v/v (carries the wasm32-emcc vmemcpy fix); falls back
 # to system V at the cost of broken Option payloads — see
-# spec/v0_7_5_status.md row P1.
+# the patched-V README at third_party/v/README.md (P1).
 build-wasm:
 	./scripts/wasm/build_libcx_wasm.sh
 
@@ -321,17 +321,17 @@ test-python-arrow: build-vcx build-lib-arrow
 	$(PYTHON) lang/python/test_arrow.py
 
 # Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
-# fixtures through the Python binding. Cross-binding parity (W3 / W9)
-# means each active binding will have an equivalent runner over the
-# same fixture file. Per spec/v0_7_0_status.md W3.
+# fixtures through the Python binding. Cross-binding parity means each
+# active binding has an equivalent runner over the same fixture file
+# (see spec/abi.md §2.11 + spec/bindings.md §4.1).
 test-python-arrow-conformance: build-vcx build-lib-arrow
 	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
 
-# Phase 5 Tier-1 binding parity (Python) — exercises the v0.7.6
+# Phase 5 Tier-1 binding parity (Python) — exercises the v0.8.0
 # cx_code_eval* surface (spec/audits/code_abi_v1.md) and its
-# Pythonic eval_code / eval_code_streaming wrappers. The
+# Pythonic eval_code / eval_code_streaming wrappers. The historical
 # v0.7.0 test-python-eval-v0-7-0 target was retired alongside the
-# cxl POC in Phase 7.
+# .cxl POC.
 test-python-code-eval: build-vcx
 	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
 	$(PYTHON) lang/python/conformance_code.py
@@ -392,13 +392,15 @@ test-rust-arrow: build-vcx build-lib-arrow
 
 # Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
 # fixtures through the Rust binding. Mirrors test-python-arrow-conformance
-# and test-go-arrow-conformance. Per spec/v0_7_0_status.md W3.
+# and test-go-arrow-conformance (cross-binding parity per spec/abi.md §2.11).
 test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-# Per spec/v0_7_0_status.md H4 — Rust-binding parity check for the
-# v0.7.0 evaluator surface (16 tests).
+# Rust-binding parity check for the historical v0.7.0 evaluator
+# surface (16 tests). Retained as a regression guard against the
+# Layer-1 binding contract; superseded by test-binding-api-parity
+# (gate 28.6) once Phase 3 lands.
 test-rust-eval-v0-7-0: build-vcx
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test eval_v0_7_0
@@ -444,12 +446,15 @@ test-go-arrow: build-vcx build-lib-arrow
 
 # Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
 # fixtures through the Go binding. Mirrors test-python-arrow-conformance;
-# both consume the same fixture file. Per spec/v0_7_0_status.md W3.
+# both consume the same fixture file (cross-binding parity per
+# spec/abi.md §2.11).
 test-go-arrow-conformance: build-vcx build-lib-arrow
 	cd lang/go/cxlib && go test -tags arrow -v -run TestArrowConformance
 
-# Per spec/v0_7_0_status.md H3 — Go-binding parity check for the
-# v0.7.0 evaluator surface (17 tests).
+# Go-binding parity check for the historical v0.7.0 evaluator surface
+# (17 tests). Retained as a regression guard against the Layer-1
+# binding contract; superseded by test-binding-api-parity (gate 28.6)
+# once Phase 3 lands.
 test-go-eval-v0-7-0: build-vcx
 	cd lang/go/cxlib && go test -v -run TestEvalV070
 
@@ -556,10 +561,10 @@ bench-streaming: build-vcx
 bench-eval: build-vcx
 	v run vcx/tests/runners/eval_features_bench.v
 
-# ── v0.7.6 §11.6 release-gate harnesses ────────────────────────────────────────
+# ── v0.8.0 §11.6 release-gate harnesses ────────────────────────────────────────
 #
-# Each target runs one of the three perf gates blocking the v0.7.6 tag
-# (spec/v0_7_6_status.md §11.6, spec/code.md §11.4.4). Exit code
+# Each target runs one of the three perf gates blocking the v0.8.0 tag
+# (spec/v0_8_0_status.md §11.6, spec/code.md §11.4.4). Exit code
 # is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
 # The benches print their threshold + measured numbers so PASS/FAIL is
 # self-evident in logs. Env knobs documented in each .v file header.
@@ -592,7 +597,7 @@ bench-code-soak: build-vcx
 bench-code-cancel: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_async_cancel_battery.v
 
-# Aggregate runner — drives all three v0.7.6 perf gates back-to-back.
+# Aggregate runner — drives all three v0.8.0 perf gates back-to-back.
 # Exit code is the FIRST failing gate's exit code (make stops on
 # first non-zero); use individual targets to triage in isolation.
 bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-http

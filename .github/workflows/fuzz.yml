@@ -1,7 +1,8 @@
 name: Fuzz (CC5)
 
-# CC5 — nightly fuzz runs per spec/v0_7_0_status.md CC row and
-# docs/fuzzing.md. Runs scripts/fuzz_cx.py for 1 hour against the
+# Nightly fuzz runs (historical CC5 gate from v0.7.0 status; carried
+# forward into v0.8.0 as a continuous-integration regression guard).
+# See docs/fuzzing.md. Runs scripts/fuzz_cx.py for 1 hour against the
 # parser + buffered eval + streaming eval + ABI-passthrough surfaces.
 # A new crash fails the job and uploads the archive so the on-call
 # can triage.

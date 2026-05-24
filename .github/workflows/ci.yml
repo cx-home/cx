@@ -48,8 +48,11 @@ jobs:
       - name: Run binding test
         run: make test-${{ matrix.lang }}
 
-      # v0.7.0 H-row evaluator-surface tests — active Tier-1 bindings only.
-      # V-side surface is exercised by cxl_test.v / cx_lang_test.v via make test-vcx.
+      # Historical v0.7.0 evaluator-surface parity tests — active Tier-1
+      # bindings only. Retained as a regression guard against the Layer-1
+      # binding contract; superseded by test-binding-api-parity (gate 28.6)
+      # once Phase 3 lands. V-side surface is exercised by cx_lang_test.v
+      # via make test-vcx.
       - name: Run v0.7.0 evaluator-surface tests
         if: matrix.lang == 'python' || matrix.lang == 'go' || matrix.lang == 'rust'
         run: make test-${{ matrix.lang }}-eval-v0-7-0
