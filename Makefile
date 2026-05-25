@@ -282,24 +282,21 @@ test-code-diagram:
 test-xpath-parity: build-vcx
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
 
-# ── v0.8.0 gate 28.6 — Layer-1 binding-API parity ─────────────────────────
-# Runs conformance/binding_api.txt (48 Layer-1 parity fixtures, spec/
+# ── v0.8.0 gates 28.6 + 28.9 — Layer-1 binding-API parity ────────────────
+# Runs conformance/binding_api.txt (49 Layer-1 parity fixtures, spec/
 # bindings.md §4.1) through every active binding (V / Python / Go / Rust)
-# and asserts byte-identical results across all four. The per-binding
-# runner is filed under Phase 3 — until it lands, this target is a stub
-# that prints "runner pending" + exits non-zero so CI advertises the gate
-# even though the wiring is incomplete. Tier-2 archived bindings (TS /
-# Java / C# / Ruby / Kotlin / Swift) are out of scope per
+# and asserts byte-identical results across all four. Tier-2 archived
+# bindings (TS / Java / C# / Ruby / Kotlin / Swift) are out of scope per
 # d-2026-05-22-03.
+#
+# Driver architecture: `scripts/compile_binding_api_fixtures.py` parses
+# the fixture file and emits a JSONL op-tree per fixture; per-binding
+# drivers under `lang/<lang>/binding_api_driver/` execute each op-tree
+# through their Layer-1 surface. The shell harness diffs the four
+# outputs and surfaces divergence cleanly.
 .PHONY: test-binding-api-parity
 test-binding-api-parity:
-	@if [ -x scripts/test_binding_api_parity.sh ]; then \
-	    bash scripts/test_binding_api_parity.sh; \
-	else \
-	    echo "[gate 28.6] runner pending — see spec/bindings.md §4.1 + Phase 3 in spec/v0_8_0_status.md"; \
-	    echo "[gate 28.6] fixture available at conformance/binding_api.txt (48 fixtures)"; \
-	    exit 1; \
-	fi
+	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_binding_api_parity.sh
 
 test-python: build-vcx
 	$(PYTHON) lang/python/conformance.py
