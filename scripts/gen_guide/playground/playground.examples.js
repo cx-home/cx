@@ -329,15 +329,18 @@
       json:  "{\n  \"err\": { \"code\": \"cx-err:CXER0141\", \"elapsed\": \"100ms\" }\n}",
       xml:   "<err code=\"cx-err:CXER0141\" elapsed=\"100ms\"/>",
     },
-    'par-map-mock': {
-      label: "[?par-map] — parallel map with :mock sleep (instant)",
+    'map-par-mock': {
+      label: "[?map :par] — parallel map with :mock sleep (instant)",
       // Parallel-shape demo that's instant in the browser: each task
       // logically takes 50ms, but :mock makes that virtual — total
       // wall-clock < 1ms. Real parallel speedup needs wall-clock
-      // sleeps (see the `par-map-wall` example).
+      // sleeps (see the `map-par-wall` example). Per ADR 0040: :par
+      // alone is unordered (faster); add :ordered for source-order
+      // output preservation.
       input: [
-        "[?par-map (1, 2, 3, 4, 5, 6, 7, 8)",
-        "  :via [?fn $n [?let $_ = [?sleep 50ms :mock] :in [* $n $n]]]]"
+        "[?map (1, 2, 3, 4, 5, 6, 7, 8)",
+        "  :using [?fn $n [?let $_ = [?sleep 50ms :mock] :in [* $n $n]]]",
+        "  :par :ordered]"
       ].join('\n'),
       cx:    "(1, 4, 9, 16, 25, 36, 49, 64)",
       json:  "null",
@@ -390,15 +393,20 @@
       json:  "null",
       xml:   "(<ok value=\"a\"/>, <ok value=\"b\"/>)",
     },
-    'par-map-wall': {
-      label: "[?par-map] — wall-clock sleep (shows real delay)",
-      // Same shape as par-map-mock, but bare [?sleep 250ms] takes
-      // wall-clock time. The Web Worker host opts into blocking
-      // sleep so the UI stays responsive; switching to main-thread
-      // eval would raise CXER0270 instead. ~1s end-to-end.
+    'map-par-wall': {
+      label: "[?map :par] — wall-clock sleep (shows real delay)",
+      // Same shape as map-par-mock, but bare [?sleep 250ms] takes
+      // wall-clock time. Under the playground's ASYNCIFY wasm build
+      // the main thread yields cooperatively through each sleep so
+      // the UI stays responsive; ~1s end-to-end. Per ADR 0040, :par
+      // without :ordered is unordered (fastest); :ordered would add
+      // completion-tracking + reassembly overhead — not worth it
+      // here since the result happens to land in source order under
+      // the v0.8.0 single-threaded eval anyway.
       input: [
-        "[?par-map (1, 2, 3, 4)",
-        "  :via [?fn $n [?let $_ = [?sleep 250ms] :in [* $n $n]]]]"
+        "[?map (1, 2, 3, 4)",
+        "  :using [?fn $n [?let $_ = [?sleep 250ms] :in [* $n $n]]]",
+        "  :par]"
       ].join('\n'),
       cx:    "(1, 4, 9, 16)",
       json:  "null",
