@@ -27,15 +27,27 @@ GUIDE_GEN := scripts/gen_guide
 guide: build-playground-wasm-for-guide
 	@bash $(GUIDE_GEN)/scaffold.sh
 
-# Ensure the playground wasm is built with ASYNCIFY=1 (so file:// can
-# do wall-clock [?sleep]) + SINGLE_FILE=0 (so the loader fetches the
-# .wasm sibling instead of base64-decoding an inline blob that some
-# browsers reject — ADR 0039 D8). The scaffold.sh script then copies
-# the freshly built artifacts into docs/guide/wasm/. Idempotent —
-# emcc skips re-link when sources are unchanged.
+# Ensure the playground wasm is built with ASYNCIFY=1 + SINGLE_FILE=1:
+#
+#   - ASYNCIFY=1: lets bare wall-clock [?sleep DUR] yield through the
+#     JS event loop on the main browser thread (ADR 0039 D8). Without
+#     this, file:// playgrounds can only run :mock examples.
+#
+#   - SINGLE_FILE=1: base64-embeds the .wasm payload inside libcx.js.
+#     The docs/guide deployment is designed to work under both http://
+#     and file:// — and Chrome/Edge refuse a `fetch()` of sibling
+#     file:// resources from a `null`-origin page, so a separate
+#     libcx.wasm sibling can't be loaded under file://. SINGLE_FILE
+#     trades ~3-4MB extra .js size (libcx.js grows to ~5.6MB with
+#     ASYNCIFY) for a self-contained playground that opens by double-
+#     click. Browsers that hit the historical "unknown type form: 61"
+#     base64-decode bug were workaround'd elsewhere; ASYNCIFY builds
+#     appear unaffected.
+#
+# Idempotent — emcc skips re-link when sources are unchanged.
 .PHONY: build-playground-wasm-for-guide
 build-playground-wasm-for-guide:
-	@SINGLE_FILE=0 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
