@@ -389,10 +389,46 @@
            bracket grammar is inherently sequential. The
            **streaming evaluator** is single-threaded per stream
            but multiple streams can run concurrently, and
-           `[?par-map]` / `[?par-reduce]` parallelise across
+           `[?map :par]` / `[?reduce :par]` parallelise across
            bounded worker pools. For analytical workloads on
            tabular data, CXCol scans are SIMD-accelerated where
            the host CPU supports it."""]]
+
+    [child id=faq-playground-slower title='Why is the playground slower than running cx in the terminal?'
+      [body
+        """The playground is a constrained demonstration surface
+           bundled into the browser. It carries unavoidable
+           overhead — Asyncify instrumentation (so `[?sleep]` can
+           yield through the JS event loop), pthreads runtime (so
+           `:par` runs real OS threads), and the wasm format
+           itself. Production CX deployments use the native CLI
+           (~5 MB binary), the language bindings (~1.5 MB per
+           wrapper), or libcx as a shared library directly —
+           those paths have no Asyncify overhead, no
+           SharedArrayBuffer requirement, no bundle-size
+           pressure. The playground exists to make CX explorable
+           from any browser without an install step; native CX
+           is the performance target. See [[wasm-story]] for the
+           full framing, including the three playground delivery
+           modes (GitHub Pages, file://, `make guide-http`)."""]]
+
+    [child id=faq-playground-par-no-speedup title='I ran [?map :par] in the playground and it did not speed up — bug?'
+      [body
+        """Not a bug — your playground is most likely running in
+           single-thread mode. Three delivery modes (ADR
+           [0040](../../spec/decisions/0040-map-reduce-using-redesign.md)
+           D9): GitHub Pages and `file://` both serve the
+           single-threaded Asyncify build (no cross-origin
+           isolation possible without custom HTTP headers, and
+           browsers gate SharedArrayBuffer behind that). `:par`
+           is honoured (output multiset is correct, sequential is
+           one valid ordering) but doesn't accelerate. For real
+           parallel speedup in the playground, run
+           `make guide-http` — the V veb server sends the
+           required cross-origin-isolation headers, the
+           pthreads-enabled wasm loads, and `:par` uses real OS
+           threads. The playground's adaptive footer tells you
+           which mode you're in."""]]
 
     [child id=faq-parquet-perf title='How fast is Parquet round-trip vs native CXCol?'
       [body

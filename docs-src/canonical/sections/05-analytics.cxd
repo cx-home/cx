@@ -650,7 +650,7 @@
     [body
       """The directive-level view: any directive that takes a CXPath
          iterator works on a CXCol stream. `[?for]` / `[?modify]` /
-         `[?par-map]` / `[?par-reduce]` (see [[code]]) all participate.
+         `[?map]` / `[?reduce]` (see [[code]]) all participate.
          Bounded memory is preserved end-to-end: a pipeline of N stages
          holds N row groups in flight, not N × row-count."""]
 

@@ -79,8 +79,8 @@
       [row directive='[?if]' purpose='Boolean branch with EBV condition (see [[if]] + [[ebv]])']
       [row directive='[?try]' purpose='Error-handling block with :on-error arms (see [[errors]])']
       [row directive='[?pipe]' purpose='Pipeline — canonical form of the `|` operator (see [[pipe]])']
-      [row directive='[?par-map]' purpose='Parallel map — apply function to each item concurrently']
-      [row directive='[?par-reduce]' purpose='Parallel reduce — associative fold with bounded workers']]
+      [row directive='[?map]' purpose='Map a closure over a sequence (sequential by default; :par enables parallel evaluation, :ordered preserves source order)']
+      [row directive='[?reduce]' purpose='Fold a sequence to a single value via a binary closure starting from :init (sequential left-fold by default; :par requires associativity)']]
 
     [body
       """**Resilience (6).** Wrap an inner expression with a
@@ -1524,7 +1524,7 @@
            default state is keyed by lexical source-text
            position — every evaluation of the same source
            node (including iterated under `[?for]` or
-           `[?par-map]`) shares state. Pass `:name STR` to
+           `[?map :par]`) shares state. Pass `:name STR` to
            key by name instead, enabling cross-position
            sharing (one rate-limit budget enforced by
            callers in different modules)."""]]]

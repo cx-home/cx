@@ -457,10 +457,10 @@
 
   [child id=g-parallel title='parallel'
     [body
-      """The CX concurrency posture — `[?par-map]` and
-         `[?par-reduce]` distribute work across bounded worker
-         pools; immutability makes the result deterministic. See
-         [[parallelism]]."""]]
+      """The CX concurrency posture — `[?map :par]` and
+         `[?reduce :par]` (and `[?for ... :par]`) distribute work
+         across bounded worker pools; immutability makes the result
+         deterministic. See [[parallelism]]."""]]
 
   [child id=g-parquet title='parquet'
     [body
@@ -690,8 +690,29 @@
     [body
       """The WebAssembly build of libcx used by the playground
          and any browser-hosted CX tooling. Exposes a subset of
-         the C ABI plus `_cx_code_diagram` and friends. See
-         [[playground]]."""]]
+         the C ABI plus `_cx_code_diagram` and friends. Two
+         artifacts at v0.8.0: `libcx-async.js` (Asyncify, no
+         pthreads — works under file:// and any HTTP host),
+         `libcx-pthreads.{js,wasm}` (real OS threads via
+         SharedArrayBuffer — requires HTTP with COOP/COEP
+         headers). The playground auto-selects based on
+         `crossOriginIsolated`. See [[g-playground]] and
+         [[wasm-story]]."""]]
+
+  [child id=g-playground title='playground'
+    [body
+      """A constrained demonstration surface for CX inside the
+         browser, not the performance target. Three delivery
+         modes per ADR
+         [0040](../../spec/decisions/0040-map-reduce-using-redesign.md)
+         D9: GitHub Pages static (HTTPS), local clone file://
+         (double-click `playground.html`), and `make guide-http`
+         (V veb server with cross-origin isolation enabled). Only
+         the third mode runs `:par` examples on real OS threads;
+         the first two run sequentially under the same surface.
+         Production CX (CLI, language bindings, libcx as shared
+         library) has no browser-environment overhead. See
+         [[wasm-story]] for the full framing."""]]
 
   [child id=g-whitespace-preservation title='whitespace preservation'
     [body
