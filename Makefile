@@ -79,17 +79,29 @@ build-wasm:
 # build-wasm fails noisily upstream and this target is never reached;
 # scripts/test_playground_smoke.sh then reports its documented
 # "playground-preview not built" failure.
-build-playground: build-wasm
+build-playground:
+	@echo "[build-playground] (re)building wasm with SINGLE_FILE=0 for playground"
+	@SINGLE_FILE=0 ./scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
+	@mkdir -p dist/playground-preview/playground
+	@mkdir -p dist/playground-preview/wasm
 	@mkdir -p dist/playground-preview/dist/wasm
 	@cp scripts/gen_guide/playground/playground.html dist/playground-preview/
-	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/
-	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/
-	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/
-	@cp scripts/gen_guide/playground/tree-view.js dist/playground-preview/
-	@cp scripts/gen_guide/playground/diagram-view.js dist/playground-preview/
-	@cp scripts/gen_guide/playground/selection-bridge.js dist/playground-preview/
+	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/playground.worker.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/tree-view.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/diagram-view.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/selection-bridge.js dist/playground-preview/playground/
+	@cp dist/wasm/libcx.js dist/playground-preview/wasm/libcx.js
+	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
+	@if [ -f dist/wasm/libcx.wasm ]; then cp dist/wasm/libcx.wasm dist/playground-preview/wasm/libcx.wasm; fi
+	@# Smoke-test compatibility: also stage flat copies under dist/wasm/
+	@# so scripts/test_playground_smoke.sh (which queries dist/wasm/*
+	@# directly) keeps working alongside the absolute-URL layout that
+	@# matches docs/guide/ deployment.
 	@cp dist/wasm/libcx.js dist/playground-preview/dist/wasm/libcx.js
 	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
 	@if [ -f dist/wasm/libcx.wasm ]; then cp dist/wasm/libcx.wasm dist/playground-preview/dist/wasm/libcx.wasm; fi

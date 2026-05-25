@@ -316,6 +316,94 @@
         "<classify level=\"no-content\"/>"
       ].join('\n'),
     },
+    'sleep-mock': {
+      label: "[?sleep] — :mock for deterministic logical-clock advance",
+      // ADR 0039: bare [?sleep DUR] is wall-clock (Worker-only in
+      // the wasm playground); :mock advances env.state.now_ns without
+      // blocking. Used here to make a [?timeout] fire deterministically.
+      input: [
+        "[?timeout 100ms",
+        "  :body [?let $_ = [?sleep 500ms :mock] :in [ok :value 'never']]]"
+      ].join('\n'),
+      cx:    "[err :code \"cx-err:CXER0141\" :elapsed 100ms]",
+      json:  "{\n  \"err\": { \"code\": \"cx-err:CXER0141\", \"elapsed\": \"100ms\" }\n}",
+      xml:   "<err code=\"cx-err:CXER0141\" elapsed=\"100ms\"/>",
+    },
+    'par-map-mock': {
+      label: "[?par-map] — parallel map with :mock sleep (instant)",
+      // Parallel-shape demo that's instant in the browser: each task
+      // logically takes 50ms, but :mock makes that virtual — total
+      // wall-clock < 1ms. Real parallel speedup needs wall-clock
+      // sleeps (see the `par-map-wall` example).
+      input: [
+        "[?par-map (1, 2, 3, 4, 5, 6, 7, 8)",
+        "  :via [?fn $n [?let $_ = [?sleep 50ms :mock] :in [* $n $n]]]]"
+      ].join('\n'),
+      cx:    "(1, 4, 9, 16, 25, 36, 49, 64)",
+      json:  "null",
+      xml:   "1\n4\n9\n16\n25\n36\n49\n64",
+    },
+    'for-par-wall': {
+      label: "[?for :par] — wall-clock comprehension (needs HTTP server)",
+      // The playground runs eval in a Web Worker that opts into
+      // wall-clock [?sleep] via cx_wasm_set_wall_sleep(true). Each
+      // task takes ~50ms; with :par the outermost generator runs the
+      // tasks concurrently. Output order is preserved at parse-time
+      // shape, but wall-clock dispatch is parallel.
+      input: [
+        "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8)",
+        "      :yield [?let $_ = [?sleep 50ms] :in [item :n $n :sq [* $n $n]]]",
+        "      :par]"
+      ].join('\n'),
+      cx:    [
+        "[item :n 1 :sq 1]",
+        "[item :n 2 :sq 4]",
+        "[item :n 3 :sq 9]",
+        "[item :n 4 :sq 16]",
+        "[item :n 5 :sq 25]",
+        "[item :n 6 :sq 36]",
+        "[item :n 7 :sq 49]",
+        "[item :n 8 :sq 64]"
+      ].join('\n'),
+      json:  "null",
+      xml:   [
+        "<item n=\"1\" sq=\"1\"/>",
+        "<item n=\"2\" sq=\"4\"/>",
+        "<item n=\"3\" sq=\"9\"/>",
+        "<item n=\"4\" sq=\"16\"/>",
+        "<item n=\"5\" sq=\"25\"/>",
+        "<item n=\"6\" sq=\"36\"/>",
+        "<item n=\"7\" sq=\"49\"/>",
+        "<item n=\"8\" sq=\"64\"/>"
+      ].join('\n'),
+    },
+    'async-future-mock': {
+      label: "[?async] / [?await] — fire-and-forget futures (mock)",
+      // [?async] returns a future immediately; [?await] blocks until
+      // the future is terminal. :mock keeps the demo instant.
+      input: [
+        "[?let $fast = [?async [?let $_ = [?sleep 50ms :mock]  :in [ok :value 'a']]]",
+        " :in [?let $slow = [?async [?let $_ = [?sleep 200ms :mock] :in [ok :value 'b']]]",
+        "      :in [?await-all ($fast, $slow)]]]"
+      ].join('\n'),
+      cx:    "([ok :value \"a\"], [ok :value \"b\"])",
+      json:  "null",
+      xml:   "(<ok value=\"a\"/>, <ok value=\"b\"/>)",
+    },
+    'par-map-wall': {
+      label: "[?par-map] — wall-clock sleep (needs HTTP server)",
+      // Same shape as par-map-mock, but bare [?sleep 250ms] takes
+      // wall-clock time. The Web Worker host opts into blocking
+      // sleep so the UI stays responsive; switching to main-thread
+      // eval would raise CXER0270 instead. ~1s end-to-end.
+      input: [
+        "[?par-map (1, 2, 3, 4)",
+        "  :via [?fn $n [?let $_ = [?sleep 250ms] :in [* $n $n]]]]"
+      ].join('\n'),
+      cx:    "(1, 4, 9, 16)",
+      json:  "null",
+      xml:   "1\n4\n9\n16",
+    },
     'modify-set': {
       label: "[?modify] — pure-functional :set + :delete (ADR 0030)",
       input: [

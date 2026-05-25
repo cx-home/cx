@@ -182,13 +182,16 @@
     // "Mermaid diagrams require live libcx.wasm" placeholder. Now
     // that wasm is up, run a deferred Run + refresh so the panes
     // pick up the live evaluator without an extra user click.
-    try {
-      const outs = liveEvaluate(pick.value);
-      applyOutputs(outs);
-      lastJsonText = outs.json || '';
-    } catch (_) { /* swallow — the panes already show canned outputs */ }
-    if (typeof refreshSourceViz === 'function' && vizSourceOn) refreshSourceViz();
-    if (typeof refreshOutputViz === 'function' && vizOutputOn) refreshOutputViz();
+    liveEvaluate(pick.value)
+      .then((outs) => {
+        applyOutputs(outs);
+        lastJsonText = outs.json || '';
+      })
+      .catch(() => { /* swallow — the panes already show canned outputs */ })
+      .finally(() => {
+        if (typeof refreshSourceViz === 'function' && vizSourceOn) refreshSourceViz();
+        if (typeof refreshOutputViz === 'function' && vizOutputOn) refreshOutputViz();
+      });
   }
 
   const liveReady = (typeof globalThis !== 'undefined' && globalThis.cxlib && globalThis.cxlib.ready)
@@ -434,7 +437,7 @@
   // secondary pass through toJson / toXml on that CX output for
   // the clean data-projection JSON / XML (vs the verbose AST-JSON
   // that evalCode(..., 'json', ...) would emit).
-  function liveEvaluate(key) {
+  async function liveEvaluate(key) {
     const src = input.value;
     const cxlib = globalThis.cxlib;
     const found = lookupExample(key);
@@ -452,7 +455,14 @@
     const dataInput = (found.ex && typeof found.ex.data === 'string')
       ? found.ex.data
       : '';
-    const cxOut = cxlib.evalCode(src, 'cx', dataInput);
+    // ADR 0039 D8: route program evals through the Worker host so
+    // bare wall-clock [?sleep DUR] doesn't freeze the main thread.
+    // The Worker opts into wasm_wall_sleep_allowed at init; main-
+    // thread eval would raise CXER0270 instead. For [?sleep DUR :mock]
+    // demos the round-trip is harmless (~1ms overhead).
+    const cxOut = (typeof cxlib.evalCodeAsync === 'function')
+      ? await cxlib.evalCodeAsync(src, 'cx', dataInput)
+      : cxlib.evalCode(src, 'cx', dataInput);
     return {
       cx:   cxOut,
       json: cxOut ? cxlib.toJson(cxOut) : '',
@@ -811,7 +821,7 @@
     }
   });
 
-  runBtn.addEventListener('click', () => {
+  runBtn.addEventListener('click', async () => {
     try {
       const key = pick.value;
       const found = lookupExample(key); const ex = found && found.ex;
@@ -819,7 +829,10 @@
         throw new Error(`no example registered for '${key}'`);
       }
       if (liveActive) {
-        const outs = liveEvaluate(key);
+        // Async evaluate via the Worker host (ADR 0039 D8) so bare
+        // wall-clock [?sleep DUR] examples don't freeze the UI.
+        setStatus('Evaluating…', 'pending');
+        const outs = await liveEvaluate(key);
         applyOutputs(outs);
         lastJsonText = outs.json || '';
         // Run invalidates the per-source viz cache — new live emit.
