@@ -80,8 +80,16 @@ build-wasm:
 # scripts/test_playground_smoke.sh then reports its documented
 # "playground-preview not built" failure.
 build-playground:
-	@echo "[build-playground] (re)building wasm with SINGLE_FILE=0 for playground"
-	@SINGLE_FILE=0 ./scripts/wasm/build_libcx_wasm.sh
+	@echo "[build-playground] (re)building wasm with SINGLE_FILE=0 + ASYNCIFY=1 for playground"
+	@# ASYNCIFY=1 instruments the wasm with the emscripten Asyncify
+	@# runtime so wall-clock [?sleep DUR] can yield through the JS
+	@# event loop on the main browser thread without a Web Worker.
+	@# This is what lets file:// playground demos run wall-clock
+	@# parallelism examples without freezing the UI. Per-call perf
+	@# overhead (~10%) is acceptable for a playground; the default
+	@# `make build-wasm` keeps ASYNCIFY=0 so CLI/binding consumers
+	@# don't pay it. Per ADR 0039 D8.
+	@SINGLE_FILE=0 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground

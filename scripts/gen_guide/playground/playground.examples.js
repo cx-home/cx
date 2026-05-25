@@ -344,7 +344,7 @@
       xml:   "1\n4\n9\n16\n25\n36\n49\n64",
     },
     'for-par-wall': {
-      label: "[?for :par] — wall-clock comprehension (needs HTTP server)",
+      label: "[?for :par] — wall-clock parallel comprehension",
       // The playground runs eval in a Web Worker that opts into
       // wall-clock [?sleep] via cx_wasm_set_wall_sleep(true). Each
       // task takes ~50ms; with :par the outermost generator runs the
@@ -391,7 +391,7 @@
       xml:   "(<ok value=\"a\"/>, <ok value=\"b\"/>)",
     },
     'par-map-wall': {
-      label: "[?par-map] — wall-clock sleep (needs HTTP server)",
+      label: "[?par-map] — wall-clock sleep (shows real delay)",
       // Same shape as par-map-mock, but bare [?sleep 250ms] takes
       // wall-clock time. The Web Worker host opts into blocking
       // sleep so the UI stays responsive; switching to main-thread
