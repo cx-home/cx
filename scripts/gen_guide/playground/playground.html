@@ -82,7 +82,9 @@
   </p>
 </div>
 <link rel="stylesheet" href="/playground/playground.css">
-<script src="/wasm/libcx.js" defer></script>
+<!-- cxlib.js dynamically injects libcx-async.js or libcx-pthreads.js
+     based on detected runtime mode (crossOriginIsolated + SAB). Per
+     ADR 0040 D9.3. -->
 <script src="/wasm/cxlib.js" defer></script>
 <script src="/playground/tree-view.js" defer></script>
 <script src="/playground/diagram-view.js" defer></script>
