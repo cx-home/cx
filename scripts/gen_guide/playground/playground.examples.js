@@ -1,283 +1,120 @@
-// scripts/gen_guide/playground/playground.examples.js
+// CX Playground — example library.
 //
-// Starter examples for the v0.8.0 CX playground — data examples + program
-// examples. Loaded via a classic <script src> tag in playground.html BEFORE
-// playground.js so this works under file:// (where fetch / XHR / ES modules
-// are blocked by browser security but DOM script loads are allowed).
+// Each entry: { label, input, note? }. `input` is the CX source the
+// editor shows + the runtime evaluates. `note` is prose appended as
+// a trailing `[- … -]` block comment so the example documents itself
+// in-pane; the parser strips block comments at eval time so the
+// comment is purely cosmetic.
 //
-// playground.js reads:
-//   const dataExamples    = window.cxPlaygroundExamples.data;
-//   const programExamples = window.cxPlaygroundExamples.program;
-//
-// To author a new example, edit the corresponding object literal below.
+// Grouped by `data` (inert structure, round-tripped through the
+// CX/JSON/XML projections) and `program` (active directives that
+// the runtime evaluates).
 
 (function () {
   'use strict';
 
-  // ── Data starters — pure CX, round-trips through toCx/toJson/toXml.
   const data = {
     'atom': {
       label: "Atom — element with one attribute",
       input: "[pizza size=large]",
-      cx:    "[pizza size=large]",
-      json:  [
-        "{",
-        "  \"pizza\": {",
-        "    \"size\": \"large\"",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   "<pizza size=\"large\"/>",
+      note:  "The simplest CX shape: one element, one attribute. Switch the Output tab to JSON or XML to see the same value in each projection."
     },
     'nested': {
-      label: "Nested elements — containment tree",
+      label: "Nested — containment tree",
       input: [
         "[order",
         "  [customer name=Alice]",
         "  [item name=pizza qty=2]",
         "  [item name=salad qty=1]]"
       ].join('\n'),
-      cx:    [
-        "[order",
-        "  [customer name=Alice]",
-        "  [item name=pizza qty=2]",
-        "  [item name=salad qty=1]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"order\": {",
-        "    \"customer\": {",
-        "      \"name\": \"Alice\"",
-        "    },",
-        "    \"item\": [",
-        "      {",
-        "        \"name\": \"pizza\",",
-        "        \"qty\": 2",
-        "      },",
-        "      {",
-        "        \"name\": \"salad\",",
-        "        \"qty\": 1",
-        "      }",
-        "    ]",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<order>",
-        "  <customer name=\"Alice\"/>",
-        "  <item name=\"pizza\" qty=\"2\"/>",
-        "  <item name=\"salad\" qty=\"1\"/>",
-        "</order>"
-      ].join('\n'),
+      note:  "Elements nest by containment, like XML. Children appear in document order. JSON projection turns the children list into an object; XML round-trips verbatim."
     },
     'whole-shop': {
-      label: "Whole shop — every data shape in one document",
+      label: "Whole shop — multi-record document",
       input: [
-        "[shop &flagship name='New Haven Pizza' +open",
-        "  [hours mon-fri=11-22 sat=12-23]",
-        "  [menu :table[name:string size price:decimal vegan:bool]",
-        "    Margherita medium 12.00 true",
-        "    Hawaiian   large  14.00 false]",
-        "  [about",
-        "    [p Founded in [em 1987]. Still [strong hand-tossing] every pie.]]]"
+        "[shop name='Slice Society'",
+        "  [menu",
+        "    [pizza id=1 name=Margherita price=12]",
+        "    [pizza id=2 name=Pepperoni  price=14]]",
+        "  [staff",
+        "    [chef name=Alice]",
+        "    [server name=Bob]]]"
       ].join('\n'),
-      cx:    [
-        "[shop &flagship name='New Haven Pizza' open=true",
-        "  [hours mon-fri=11-22 sat=12-23]",
-        "  [menu :table[name:string size price:decimal vegan:bool]",
-        "    Margherita medium 12.00 true",
-        "    Hawaiian large 14.00 false",
-        "  ]",
-        "  [about",
-        "    [p 'Founded in ' [em 1987] '. Still ' [strong hand-tossing] ' every pie.']",
-        "  ]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"shop\": {",
-        "    \"name\": \"New Haven Pizza\",",
-        "    \"open\": true,",
-        "    \"hours\": {",
-        "      \"mon-fri\": \"11-22\",",
-        "      \"sat\": \"12-23\"",
-        "    },",
-        "    \"menu\": null,",
-        "    \"about\": {",
-        "      \"p\": {",
-        "        \"_\": \"Founded in . Still  every pie.\",",
-        "        \"em\": 1987,",
-        "        \"strong\": \"hand-tossing\"",
-        "      }",
-        "    }",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<shop cx:anchor=\"flagship\" name=\"New Haven Pizza\" open=\"true\">",
-        "  <hours mon-fri=\"11-22\" sat=\"12-23\"/>",
-        "  <menu cx:type=\"table\"/>",
-        "  <about>",
-        "    <p>Founded in <em>1987</em>. Still <strong>hand-tossing</strong> every pie.</p>",
-        "  </about>",
-        "</shop>"
-      ].join('\n'),
+      note:  "A realistic shape — attributes for scalars, nested elements for containment. CX's homoiconic surface means the same syntax later carries directives (programs)."
     },
   };
 
-  // ── Program starters — CX code (programs) executed via cxlib.evalCode.
   const program = {
     'find-attr-eq': {
-      label: "[?for] — attribute equality predicate",
-      // Combined homoiconic source: inert [items ...] document at the
-      // top, directive at the bottom. The playground splits the source
-      // at run time — leading inert structures become $doc, the
-      // trailing [?for] is the program.
-      input: [
-        "[items",
-        "  [item active=true  name=pizza]",
-        "  [item active=false name=salad]",
-        "  [item active=true  name=soda]]",
-        "[?for [item @active=true $i] :yield $i]"
-      ].join('\n'),
-      cx:    [
-        "[item active=true name=pizza]",
-        "[item active=true name=soda]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"item\": [",
-        "    {",
-        "      \"active\": true,",
-        "      \"name\": \"pizza\"",
-        "    },",
-        "    {",
-        "      \"active\": true,",
-        "      \"name\": \"soda\"",
-        "    }",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<item active=\"true\" name=\"pizza\"/>",
-        "<item active=\"true\" name=\"soda\"/>"
-      ].join('\n'),
-    },
-    'for-seq': {
-      label: "[?for] — comprehension over sequence",
-      input: "[?for $x :in (1, 2, 3, 4, 5) :yield [item $x]]",
-      cx:    [
-        "[item 1]",
-        "[item 2]",
-        "[item 3]",
-        "[item 4]",
-        "[item 5]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"item\": [",
-        "    1,",
-        "    2,",
-        "    3,",
-        "    4,",
-        "    5",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<item>1</item>",
-        "<item>2</item>",
-        "<item>3</item>",
-        "<item>4</item>",
-        "<item>5</item>"
-      ].join('\n'),
-    },
-    'for-where': {
-      label: "[?for] — filter with :where",
-      input: "[?for $x :in (1, 2, 3, 4, 5) :where [> $x 2] :yield $x]",
-      cx:    [
-        "3",
-        "4",
-        "5"
-      ].join('\n'),
-      json:  "null",
-      xml:   [
-        "3",
-        "4",
-        "5"
-      ].join('\n'),
-    },
-    'let-arith': {
-      label: "[?let] — bind and reuse",
-      input: "[?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]",
-      cx:    "42",
-      json:  "null",
-      xml:   "42",
-    },
-    'if-truthy': {
-      label: "[?if] — conditional branch",
-      input: "[?if [> 5 3] :then [yes [bigger]] :else [no [smaller]]]",
-      cx:    "[yes [bigger]]",
-      json:  [
-        "{",
-        "  \"yes\": {",
-        "    \"bigger\": null",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<yes>",
-        "  <bigger/>",
-        "</yes>"
-      ].join('\n'),
-    },
-    'def-double': {
-      label: "[?def] — named closure + invocation",
-      input: [
-        "[?def :name double ($x) :body [* $x 2]]",
-        "[double(21)]"
-      ].join('\n'),
-      cx:    "42",
-      json:  "null",
-      xml:   "42",
-    },
-    // ── v0.8.0 ADR debuts ─────────────────────────────────────────
-    'cxpath-predicate': {
-      label: "CXPath — attribute predicate over a document (ADR 0028)",
+      label: "CXPath — find by attribute value",
       input: [
         "[users",
-        "  [user name=Alice active=true  age=30]",
-        "  [user name=Bob   active=false age=25]",
-        "  [user name=Carol active=true  age=22]]",
+        "  [user name=Alice  role=admin]",
+        "  [user name=Bob    role=editor]",
+        "  [user name=Carol  role=admin]]",
+        "[?for $u :in //user[@role='admin']",
+        "  :yield [admin name=$u/@name]]"
+      ].join('\n'),
+      note:  "CXPath predicate filter. `//user[@role='admin']` selects users whose `role` attribute equals `admin`. The `[?for]` comprehension iterates the matches and `:yield`s a new shape per match."
+    },
+    'for-seq': {
+      label: "[?for] — iterate a literal sequence",
+      input: [
+        "[?for $n :in (1, 2, 3, 4, 5)",
+        "  :yield [square :n $n :sq [* $n $n]]]"
+      ].join('\n'),
+      note:  "Plain comprehension over a literal sequence `(…)`. Each `:yield` emits one record into the result sequence. `[* $n $n]` is the math directive — CX's arithmetic uses the same `[? …]` shape as everything else."
+    },
+    'for-where': {
+      label: "[?for] — :where filter clause",
+      input: [
+        "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)",
+        "  :where [> $n 5]",
+        "  :yield [big :n $n]]"
+      ].join('\n'),
+      note:  "`:where` filters the iteration. Only items passing the predicate reach `:yield`. Predicates use the bracket directive form: `[> $n 5]` reads as `$n > 5`."
+    },
+    'let-arith': {
+      label: "[?let] — bind a value, then compute",
+      input: [
+        "[?let $price = 12 :in",
+        " [?let $qty   = 3  :in",
+        "  [order :subtotal [* $price $qty]",
+        "         :tax      [* [* $price $qty] 0.08]]]]"
+      ].join('\n'),
+      note:  "`[?let]` introduces a binding scoped to its `:in` body. Nested `[?let]` chains build local scopes — the same shape Lisp lets you do."
+    },
+    'if-truthy': {
+      label: "[?if] — branch on a predicate",
+      input: [
+        "[?let $score = 87 :in",
+        " [?if [>= $score 80]",
+        "   :then [grade :letter 'A']",
+        "   :else [grade :letter 'B']]]"
+      ].join('\n'),
+      note:  "`[?if]` evaluates its predicate and runs `:then` or `:else`. Like `[?let]`, the body is a CX expression — no special statement / expression split. Predicates use the bracket form: `[>= $score 80]`."
+    },
+    'fn-via-map': {
+      label: "[?fn] — anonymous function via [?map :using]",
+      input: [
+        "[?map (1, 2, 3, 4, 5) :using [?fn $x [* $x $x]]]"
+      ].join('\n'),
+      note:  "`[?fn $x BODY]` is an anonymous function. `[?map xs :using fn]` invokes it on each element of `xs`. This is the working v0.8.0 surface for user-defined behavior — closure-passing into higher-order directives. `[?def]` for named module-level functions is also part of the surface (see ADR 0034) but uses richer syntax not shown here."
+    },
+    'cxpath-predicate': {
+      label: "CXPath — boolean attribute predicate",
+      input: [
+        "[users",
+        "  [user name=Alice  active=true  age=30]",
+        "  [user name=Bob    active=false age=25]",
+        "  [user name=Carol  active=true  age=22]]",
         "[?for $u :in //user[@active=true]",
-        "  :yield [active-user name=$u/@name age=$u/@age]]"
+        "  :yield [active-user :name $u/@name :age $u/@age]]"
       ].join('\n'),
-      cx:    [
-        "[active-user name=\"Alice\" age=30]",
-        "[active-user name=\"Carol\" age=22]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"active-user\": [",
-        "    {",
-        "      \"name\": \"Alice\",",
-        "      \"age\": 30",
-        "    },",
-        "    {",
-        "      \"name\": \"Carol\",",
-        "      \"age\": 22",
-        "    }",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<active-user name=\"Alice\" age=\"30\"/>",
-        "<active-user name=\"Carol\" age=\"22\"/>"
-      ].join('\n'),
+      note:  "Predicates accept any value — including booleans. `[@active=true]` keeps only users whose `active` attribute is `true`."
     },
     'match-multi': {
-      label: "[?match] — multi-arm :case / :when / :else (ADR 0029)",
+      label: "[?match] — multi-arm :case / :else",
       input: [
         "[requests",
         "  [request status=200]",
@@ -286,161 +123,69 @@
         "  [request status=204]]",
         "[?for $r :in //request",
         "  :yield [?match $r/@status",
-        "    :case 200 :yield [classify level='ok']",
-        "    :case 204 :yield [classify level='no-content']",
-        "    :case 404 :yield [classify level='not-found']",
-        "    :when ($r/@status >= 500)",
-        "              :yield [classify level='server-error']",
-        "    :else     :yield [classify level='unknown']]]"
+        "    :case \"200\" :yield [classify :level 'ok']",
+        "    :case \"204\" :yield [classify :level 'no-content']",
+        "    :case \"404\" :yield [classify :level 'not-found']",
+        "    :case \"500\" :yield [classify :level 'server-error']",
+        "    :else        :yield [classify :level 'unknown']]]"
       ].join('\n'),
-      cx:    [
-        "[classify level=\"ok\"]",
-        "[classify level=\"not-found\"]",
-        "[classify level=\"server-error\"]",
-        "[classify level=\"no-content\"]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"classify\": [",
-        "    { \"level\": \"ok\" },",
-        "    { \"level\": \"not-found\" },",
-        "    { \"level\": \"server-error\" },",
-        "    { \"level\": \"no-content\" }",
-        "  ]",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<classify level=\"ok\"/>",
-        "<classify level=\"not-found\"/>",
-        "<classify level=\"server-error\"/>",
-        "<classify level=\"no-content\"/>"
-      ].join('\n'),
+      note:  "Multi-arm `[?match]` per ADR 0029. Each `:case` matches an exact value; `:else` is the fallback. Arms evaluate top-down; the first match wins. Attribute values come through as strings, so the cases quote the numeric codes."
     },
     'sleep-mock': {
-      label: "[?sleep] — :mock for deterministic logical-clock advance",
-      // ADR 0039: bare [?sleep DUR] is wall-clock (Worker-only in
-      // the wasm playground); :mock advances env.state.now_ns without
-      // blocking. Used here to make a [?timeout] fire deterministically.
+      label: "[?sleep] — :mock for instant logical-clock advance",
       input: [
         "[?timeout 100ms",
         "  :body [?let $_ = [?sleep 500ms :mock] :in [ok :value 'never']]]"
       ].join('\n'),
-      cx:    "[err :code \"cx-err:CXER0141\" :elapsed 100ms]",
-      json:  "{\n  \"err\": { \"code\": \"cx-err:CXER0141\", \"elapsed\": \"100ms\" }\n}",
-      xml:   "<err code=\"cx-err:CXER0141\" elapsed=\"100ms\"/>",
+      note:  "Per ADR 0039: `[?sleep DUR :mock]` advances a logical clock instantly — useful for testing `[?timeout]` / `[?retry]` deterministically. The outer `[?timeout 100ms]` fires because the inner mock-sleep advances the clock past 100ms."
     },
     'map-par-mock': {
-      label: "[?map :par] — parallel map with :mock sleep (instant)",
-      note: "Parallel-shape demo. :mock makes [?sleep] virtual (advances a logical clock, \
-no wall-clock wait), so total elapsed is sub-millisecond regardless of the sleep duration. \
-The :ordered flag preserves source order; drop it for faster unordered output (ADR 0040). \
-For wall-clock parallelism see the map-par-wall example.",
+      label: "[?map :par] — parallel-shape demo (instant via :mock)",
       input: [
         "[?map (1, 2, 3, 4, 5, 6, 7, 8)",
         "  :using [?fn $n [?let $_ = [?sleep 500ms :mock] :in [* $n $n]]]",
         "  :par :ordered]"
       ].join('\n'),
-      cx:    "(1, 4, 9, 16, 25, 36, 49, 64)",
-      json:  "null",
-      xml:   "1\n4\n9\n16\n25\n36\n49\n64",
+      note:  "Parallel-shape demo that's instant because `:mock` makes the sleep virtual. Add or drop `:ordered` to choose source-order vs unordered output. For real wall-clock parallelism see `map-par-wall`."
     },
     'for-par-wall': {
       label: "[?for :par] — wall-clock parallel comprehension",
-      note: "Wall-clock parallelism demo. In `make guide-http` mode (COOP+COEP headers \
-unlock pthreads + SharedArrayBuffer), the eight 500ms sleeps overlap on real OS threads — \
-wall-clock ~500ms. In file:// or generic-HTTP mode the wasm runtime is single-threaded so \
-:par is honored as an annotation but the workers run sequentially (~4s). Output is in \
-source order either way: [?for :par] streams :yield results in source order. Watch the \
-output pane fill in incrementally — each item appears as its worker completes.",
       input: [
         "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8)",
         "      :yield [?let $_ = [?sleep 500ms] :in [item :n $n :sq [* $n $n]]]",
         "      :par]"
       ].join('\n'),
-      cx:    [
-        "[item :n 1 :sq 1]",
-        "[item :n 2 :sq 4]",
-        "[item :n 3 :sq 9]",
-        "[item :n 4 :sq 16]",
-        "[item :n 5 :sq 25]",
-        "[item :n 6 :sq 36]",
-        "[item :n 7 :sq 49]",
-        "[item :n 8 :sq 64]"
-      ].join('\n'),
-      json:  "null",
-      xml:   [
-        "<item n=\"1\" sq=\"1\"/>",
-        "<item n=\"2\" sq=\"4\"/>",
-        "<item n=\"3\" sq=\"9\"/>",
-        "<item n=\"4\" sq=\"16\"/>",
-        "<item n=\"5\" sq=\"25\"/>",
-        "<item n=\"6\" sq=\"36\"/>",
-        "<item n=\"7\" sq=\"49\"/>",
-        "<item n=\"8\" sq=\"64\"/>"
-      ].join('\n'),
+      note:  "Wall-clock parallelism. Under `make guide-http` (pthreads + SharedArrayBuffer) the 8 sleeps overlap on real OS threads — total ~500ms. Under file:// or generic HTTP the wasm runtime is single-threaded, so `:par` is an annotation but execution is sequential — total ~4s. Items appear one at a time as workers complete."
     },
     'async-future-mock': {
-      label: "[?async] / [?await] — fire-and-forget futures (mock)",
-      // [?async] returns a future immediately; [?await] blocks until
-      // the future is terminal. :mock keeps the demo instant.
+      label: "[?async] + [?await-all] — two futures, mock-clocked",
       input: [
-        "[?let $fast = [?async [?let $_ = [?sleep 50ms :mock]  :in [ok :value 'a']]]",
-        " :in [?let $slow = [?async [?let $_ = [?sleep 200ms :mock] :in [ok :value 'b']]]",
-        "      :in [?await-all ($fast, $slow)]]]"
+        "[?let $fast = [?async [?let $_ = [?sleep 100ms :mock]  :in [ok :value 'a']]] :in",
+        " [?let $slow = [?async [?let $_ = [?sleep 400ms :mock] :in [ok :value 'b']]] :in",
+        "  [?await-all ($fast, $slow)]]]"
       ].join('\n'),
-      cx:    "([ok :value \"a\"], [ok :value \"b\"])",
-      json:  "null",
-      xml:   "(<ok value=\"a\"/>, <ok value=\"b\"/>)",
+      note:  "Two `[?async]` futures awaited together. With `:mock` sleeps the futures resolve instantly in logical time. `[?await-all]` returns the per-future results in source order."
     },
     'map-par-wall': {
-      label: "[?map :par] — wall-clock sleep (shows real delay)",
-      note: "Wall-clock parallelism demo. Bare [?sleep 500ms] really sleeps. In `make \
-guide-http` mode the four workers run on real OS threads — total ~500ms, and items \
-appear in completion order (which under unordered :par with identical work is unspecified). \
-In file:// or generic-HTTP mode V's spawn falls back to inline synchronous execution so \
-the four sleeps happen one after another — total ~2s, items always in source order. The \
-output pane streams per-result: you should see each item appear as its worker finishes.",
+      label: "[?map :par] — wall-clock sleep (visible streaming)",
       input: [
         "[?map (1, 2, 3, 4)",
         "  :using [?fn $n [?let $_ = [?sleep 500ms] :in [* $n $n]]]",
         "  :par]"
       ].join('\n'),
-      cx:    "1\n4\n9\n16",
-      json:  "null",
-      xml:   "1\n4\n9\n16",
+      note:  "Bare `[?sleep 500ms]` really sleeps. Under `make guide-http` mode the 4 workers overlap on real OS threads — total ~500ms, completion-order output. Under file:// or generic HTTP V's spawn falls back to inline execution — total ~2s, source order. The output streams: each item appears as its worker finishes."
     },
-    'modify-set': {
-      label: "[?modify] — pure-functional :set + :delete (ADR 0030)",
+    'modify-delete': {
+      label: "[?modify] — pure-functional :delete",
       input: [
-        "[doc",
-        "  [user id=1 name=Alice banned=false]",
-        "  [user id=2 name=Bob   banned=true]",
-        "  [user id=3 name=Carol banned=false]]",
-        "[?let $clean = [?modify //user[@banned=true] :delete] :in",
-        " [?modify $clean //user[@id=1]/@name :set 'Alice (verified)']]"
+        "[?let $doc = [users",
+        "               [user id=1 name=Alice  banned=false]",
+        "               [user id=2 name=Bob    banned=true]",
+        "               [user id=3 name=Carol  banned=false]",
+        "               [user id=4 name=Dave   banned=true]] :in",
+        "  [?modify $doc //user[@banned=true] :delete]]"
       ].join('\n'),
-      cx:    [
-        "[doc",
-        "  [user id=1 name='Alice (verified)' banned=false]",
-        "  [user id=3 name=Carol banned=false]",
-        "]"
-      ].join('\n'),
-      json:  [
-        "{",
-        "  \"doc\": {",
-        "    \"user\": [",
-        "      { \"id\": 1, \"name\": \"Alice (verified)\", \"banned\": false },",
-        "      { \"id\": 3, \"name\": \"Carol\", \"banned\": false }",
-        "    ]",
-        "  }",
-        "}"
-      ].join('\n'),
-      xml:   [
-        "<doc>",
-        "  <user id=\"1\" name=\"Alice (verified)\" banned=\"false\"/>",
-        "  <user id=\"3\" name=\"Carol\" banned=\"false\"/>",
-        "</doc>"
-      ].join('\n'),
+      note:  "`[?modify]` is pure-functional: it returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` selects banned users; `:delete` removes them. Compose multiple `[?modify]` calls with `[?let]` to chain transformations (per ADR 0030)."
     },
   };
 

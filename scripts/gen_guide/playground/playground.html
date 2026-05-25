@@ -1,92 +1,55 @@
-<div id="cx-playground">
-  <div class="cxp-toolbar">
-    <label for="cxp-pick">Example</label>
-    <select id="cxp-pick" aria-label="Choose an example — populated by playground.js"></select>
-    <button id="cxp-run" type="button" disabled data-wasm-pending-title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target." title="Browser-based libcx-wasm evaluator planned — not yet built. See Concepts → WebAssembly Target.">Run</button>
-    <button id="cxp-reset" type="button">Reset</button>
-    <!-- Phase 7.9 — local file load. Hidden native file input driven
-         by the visible "Load…" button so the label can be styled to
-         match the rest of the toolbar palette. Accepts .cx files; the
-         FileReader text content replaces the Source pane verbatim and
-         the Output panes refresh via the existing run pipeline. -->
-    <button id="cxp-load" type="button" title="Load a local .cx file into the Source pane">Load…</button>
-    <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
-  </div>
-  <div class="cxp-panes">
-    <div class="cxp-source-row">
-      <div class="cxp-source-col">
-        <div class="cxp-pane-header cxp-pane-header-centered">
-          <span class="cxp-pane-title">CX Source</span>
-          <span class="cxp-pane-menu">
-            <button class="cxp-viz-mode is-active" data-target="source" data-mode="tree" type="button">Tree</button>
-            <button class="cxp-viz-mode" data-target="source" data-mode="graph" type="button">Graph</button>
-          </span>
-          <span class="cxp-pane-right"></span>
-        </div>
-        <div class="cxp-editor">
-          <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
-          <textarea id="cxp-input" class="cxp-input" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-          <button id="cxp-input-copy" class="copy-btn" type="button">copy</button>
-        </div>
-      </div>
-      <div id="cxp-viz-source-pane" class="cxp-viz-pane" hidden>
-        <div class="cxp-pane-header cxp-viz-pane-header">
-          <span></span>
-          <span class="cxp-header-right">
-            <button class="cxp-viz-close" data-target="source" type="button" title="Close" aria-label="Close visualize">×</button>
-          </span>
-        </div>
-        <div id="cxp-viz-source-mount" class="cxp-viz-mount"></div>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CX Playground</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="playground/playground.css">
+</head>
+<body class="cxp-body">
+<header class="cxp-toolbar">
+  <a class="cxp-brand" href="index.html" title="CX Guide">
+    <img src="assets/cx-logo.svg" alt="CX" width="22" height="22">
+    <span>Playground</span>
+  </a>
+  <span class="cxp-spacer"></span>
+  <label class="cxp-pick-label" for="cxp-pick">Example</label>
+  <select id="cxp-pick" aria-label="Choose an example"></select>
+  <button id="cxp-run" class="cxp-btn cxp-btn-primary" type="button" disabled>Run</button>
+  <button id="cxp-reset" class="cxp-btn" type="button">Reset</button>
+  <button id="cxp-load" class="cxp-btn" type="button" title="Load a local .cx file">Load…</button>
+  <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
+</header>
+<main class="cxp-main">
+  <section class="cxp-pane">
+    <div class="cxp-pane-head">Source</div>
+    <textarea id="cxp-input" class="cxp-source" spellcheck="false"
+              autocorrect="off" autocapitalize="off" wrap="soft"
+              placeholder="// Loading…"></textarea>
+  </section>
+  <section class="cxp-pane">
+    <div class="cxp-pane-head">
+      <span>Output</span>
+      <span class="cxp-tabs" role="tablist">
+        <button class="cxp-tab is-active" data-tab="cx" type="button">CX</button>
+        <button class="cxp-tab"           data-tab="json" type="button">JSON</button>
+        <button class="cxp-tab"           data-tab="xml" type="button">XML</button>
+      </span>
     </div>
-    <div class="cxp-output-row">
-      <div class="cxp-output-col">
-        <div class="cxp-output">
-          <div class="cxp-pane-header cxp-pane-header-centered">
-            <span class="cxp-pane-title">CX Output</span>
-            <span class="cxp-pane-menu">
-              <button class="cxp-viz-mode is-active" data-target="output" data-mode="tree" type="button">Tree</button>
-            </span>
-            <span class="cxp-pane-right"></span>
-          </div>
-          <div class="cxp-tab-bar">
-            <button class="cxp-tab is-active" data-tab="cx" type="button">CX</button>
-            <button class="cxp-tab" data-tab="json" type="button">JSON</button>
-            <button class="cxp-tab" data-tab="xml" type="button">XML</button>
-          </div>
-          <pre id="cxp-out-cx" class="cxp-pane is-active"><code class="language-cx"></code></pre>
-          <pre id="cxp-out-json" class="cxp-pane"><code class="language-json"></code></pre>
-          <pre id="cxp-out-xml" class="cxp-pane"><code class="language-xml"></code></pre>
-        </div>
-      </div>
-      <div id="cxp-viz-output-pane" class="cxp-viz-pane" hidden>
-        <div class="cxp-pane-header cxp-viz-pane-header">
-          <span></span>
-          <span class="cxp-header-right">
-            <button class="cxp-viz-close" data-target="output" type="button" title="Close" aria-label="Close visualize">×</button>
-          </span>
-        </div>
-        <div id="cxp-viz-output-mount" class="cxp-viz-mount"></div>
-      </div>
-    </div>
-  </div>
-  <p id="cxp-status" class="cxp-status" aria-live="polite" data-default="Browser-based libcx-wasm evaluator planned — see Concepts → WebAssembly Target for the transition plan. Until that ships, Run is disabled and the output panes carry pre-recorded canned results for each example. The Source pane is fully editable; use Reset to restore the canned source, or switch examples via the dropdown.">
-    <span class="cxp-status-badge">PLANNED</span>
-    <strong>Browser-based libcx-wasm evaluator planned</strong> — see
-    <a href="concepts/wasm.html">Concepts → WebAssembly Target</a> for the
-    transition plan. Until that ships, <strong>Run is disabled</strong> and
-    the output panes carry pre-recorded canned results for each example.
-    The Source pane is fully editable; use Reset to restore the canned
-    source, or switch examples via the dropdown.
-  </p>
-</div>
-<link rel="stylesheet" href="/playground/playground.css">
-<!-- cxlib.js dynamically injects libcx-async.js or libcx-pthreads.js
-     based on detected runtime mode (crossOriginIsolated + SAB). Per
-     ADR 0040 D9.3. -->
-<script src="/wasm/cxlib.js" defer></script>
-<script src="/playground/tree-view.js" defer></script>
-<script src="/playground/diagram-view.js" defer></script>
-<script src="/playground/selection-bridge.js" defer></script>
-<script src="/playground/playground.examples.js" defer></script>
-<script src="/playground/playground.js" defer></script>
+    <pre id="cxp-out-cx"   class="cxp-output is-active"></pre>
+    <pre id="cxp-out-json" class="cxp-output"></pre>
+    <pre id="cxp-out-xml"  class="cxp-output"></pre>
+  </section>
+</main>
+<footer id="cxp-status" class="cxp-status" aria-live="polite">
+  Loading <code>libcx.wasm</code>…
+</footer>
+<!-- cxlib.js dynamically loads libcx-async.js (file:// + generic HTTP) or
+     libcx-pthreads.js (HTTP with COOP+COEP) based on crossOriginIsolated.
+     See ADR 0040 D9.3. -->
+<script src="wasm/cxlib.js" defer></script>
+<script src="playground/playground.examples.js" defer></script>
+<script src="playground/playground.js" defer></script>
+</body>
+</html>

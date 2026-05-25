@@ -99,10 +99,6 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
-	@cp scripts/gen_guide/playground/playground.worker.js dist/playground-preview/playground/
-	@cp scripts/gen_guide/playground/tree-view.js dist/playground-preview/playground/
-	@cp scripts/gen_guide/playground/diagram-view.js dist/playground-preview/playground/
-	@cp scripts/gen_guide/playground/selection-bridge.js dist/playground-preview/playground/
 	@cp dist/wasm/libcx.js dist/playground-preview/wasm/libcx.js
 	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
 	@if [ -f dist/wasm/libcx.wasm ]; then cp dist/wasm/libcx.wasm dist/playground-preview/wasm/libcx.wasm; fi
