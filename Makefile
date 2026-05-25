@@ -615,6 +615,109 @@ bench-code-cancel: build-vcx
 # first non-zero); use individual targets to triage in isolation.
 bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-http
 
+# ── v0.8.0 §11.6 gate-evidence targets (5 / 6 / 9 / 12 / 28.7 / 28.8 / 30.5) ──
+#
+# Each target below corresponds to a §11.6 release gate that the master
+# gate-check (`scripts/v0_8_0_gate_check.sh`) invokes by name. The
+# underlying test files all exist and already pass via the `test-vcx-v08`
+# umbrella; these targets are narrowly-scoped gate-evidence pointers so
+# the gate-check can verify each gate's coverage in isolation rather
+# than relying on the umbrella having run a moment earlier. Per
+# spec/v0_8_0_status.md §11.6.
+
+# ── Gate 5 — resilience composition matrix ────────────────────────────────
+# Drives the 67 resilience fixtures in conformance/code.txt (31 single-
+# directive + 36 composition matrix) via vcx/tests/code_eval_fixtures_test.v
+# whose `supported_fixtures` whitelist covers all 67. The fixture runner
+# parses each block, evaluates in_code with $doc bound, and compares the
+# rendered result against out_text. Asserts at runtime that at least one
+# fixture executed. Per spec/v0_8_0_status.md §11.6 gate 5.
+.PHONY: test-vcx-resilience-matrix
+test-vcx-resilience-matrix: build-vcx
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
+
+# ── Gate 6 — service + client round-trip ──────────────────────────────────
+# Drives the 21 services + clients fixtures in conformance/code.txt via
+# the same vcx/tests/code_eval_fixtures_test.v whose `supported_fixtures`
+# whitelist covers all 21 program-svc-NNN fixtures (HTTP verbs + status
+# codes + TLS + streaming body + graceful-stop + handle lookup). Per
+# spec/v0_8_0_status.md §11.6 gate 6.
+.PHONY: test-vcx-services
+test-vcx-services: build-vcx
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
+
+# ── Gate 9 — diagram round-trip (SVG / PNG / Mermaid) ─────────────────────
+# Diagram round-trip coverage already lives under `test-code-diagram`
+# (drives conformance/code_diagram.txt through cx_code_diagram +
+# cx_code_tree with structural-equivalence per ADR 0037 §D8 — 29/29
+# fixtures). This target is the §11.6-named alias plus the V-side
+# diagram unit tests that exercise the emitter + round-trip directly.
+# Per spec/v0_8_0_status.md §11.6 gate 9.
+.PHONY: test-vcx-diagram-roundtrip
+test-vcx-diagram-roundtrip: build-vcx
+	$(MAKE) test-code-diagram
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_diagram_roundtrip_test.v \
+		vcx/tests/v08_code_diagram_test.v
+
+# ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────
+# Drives the V-side renderer test suite — `code_render_test.v` covers
+# the production code renderer (vcx/code/render.v: body-quote selection,
+# attribute serialisation, scalar typing, directive shape, structural
+# vs. text round-trips); `v08_path_renderer_test.v` covers the
+# PathNode → source emitter introduced for ADR 0028 §D2. LSP CodeLens
+# tests are not yet authored; this target tracks the V-side renderer
+# coverage. Per spec/v0_8_0_status.md §11.6 gate 12.
+.PHONY: test-renderer
+test-renderer: build-vcx
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_render_test.v \
+		vcx/tests/v08_path_renderer_test.v
+
+# ── Gate 28.7 — CXPath axis coverage (all 12 axes) ────────────────────────
+# Drives the V-side per-axis test files: forward axes (21 tests:
+# child / descendant / descendant-or-self / following-sibling / following
+# / attribute / self / parent), reverse axes (17 tests: ancestor /
+# ancestor-or-self / preceding-sibling / preceding), misc/expression
+# scaffolding (21 tests: predicates, unions, integer-literal predicate,
+# attribute-axis short-form), and dispatcher integration (3 tests:
+# `[?find …/axis::…]` end-to-end). 62 tests total exercising ADR 0028
+# §D1's 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
+.PHONY: test-cxpath-axis-coverage
+test-cxpath-axis-coverage: build-vcx
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/v08_cxpath_forward_test.v \
+		vcx/tests/v08_cxpath_reverse_test.v \
+		vcx/tests/v08_cxpath_misc_test.v \
+		vcx/tests/v08_cxpath_dispatcher_test.v
+
+# ── Gate 28.8 — [?modify] action coverage (all 11 actions) ────────────────
+# Drives the V-side modify test files: `v08_modify_eval_test.v` covers
+# the structural evaluator with one positive case per ADR 0030 D1
+# action (:set / :delete / :using / :rename / :set-attr / :delete-attr /
+# :append / :prepend / :insert-before / :insert-after / :replace) plus
+# action-chain semantics, focus-miss-skip-not-error, pure-functional
+# invariant, multi-match focus, and Z79g path-aware dispatcher hop;
+# `v08_modify_node_test.v` + `_codec_test.v` cover the ModifyNode shape
+# + binary codec round-trip; `v08_modify_parser_test.v` covers the
+# `[?modify]` directive parser. Per spec/v0_8_0_status.md §11.6 gate
+# 28.8 (structural-sharing perf budget lives at gate 30.5).
+.PHONY: test-modify-action-coverage
+test-modify-action-coverage: build-vcx
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/v08_modify_eval_test.v \
+		vcx/tests/v08_modify_node_test.v \
+		vcx/tests/v08_modify_node_codec_test.v \
+		vcx/tests/v08_modify_parser_test.v
+
+# ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
+# Drives vcx/tests/runners/code_modify_sharing_bench.v — single-match
+# `:set` heap delta + 1000-match `:set-attr` heap delta + identity-hash
+# invariant. Per ADR 0031 D5: < 1 KB new heap per matched node on
+# 10 MB doc. v0.8.0 ships with sharing-ratio + identity invariants
+# enforced; the absolute-byte budgets are ADVISORY per the bench
+# header's Element + Attribute diet analysis (post-diet residual cost
+# is spine-frame overhead that closes to v0.9.0+ with HAMT-backed
+# items containers). Per spec/v0_8_0_status.md §11.6 gate 30.5.
+bench-code-modify-sharing: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_modify_sharing_bench.v
+
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
 clean:
