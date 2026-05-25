@@ -853,6 +853,21 @@
         // Async evaluate via the Worker host (ADR 0039 D8) so bare
         // wall-clock [?sleep DUR] examples don't freeze the UI.
         setStatus('Evaluating…', 'pending');
+        // Yield to the browser so the cleared panes actually paint
+        // before we kick off the eval. Without this, instant evals
+        // (data examples, :mock examples) clear-and-fill within one
+        // microtask flush and the user perceives "no change" — the
+        // cleared state never reaches the screen. rAF guarantees a
+        // paint when the tab is visible; setTimeout backstop covers
+        // hidden tabs (where rAF is throttled or paused entirely)
+        // so the eval doesn't hang waiting for a frame that never
+        // arrives. Whichever fires first wins.
+        await new Promise(r => {
+          let done = false;
+          const resolve = () => { if (!done) { done = true; r(); } };
+          requestAnimationFrame(resolve);
+          setTimeout(resolve, 30);
+        });
         const outs = await liveEvaluate(key);
         applyOutputs(outs);
         lastJsonText = outs.json || '';
