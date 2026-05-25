@@ -306,16 +306,14 @@
     // Data examples carry .input; program examples carry .program
     // (the textarea always shows just the program — the .data is
     // combined invisibly at evalCode time).
-    input.value = ex.input;
+    // Inline-comment notes (ADR 0040 D12.1 v2 — 2026-05-25). Per-example
+    // explanatory prose lives in the example record's `note` field and
+    // is appended to the editor content as a trailing CX block comment
+    // (`[# … #]`) instead of a separate UI element. The parser strips
+    // it, eval is unaffected, and edits to the source preserve / remove
+    // the comment naturally. Reset re-installs it.
+    input.value = ex.note ? `${ex.input}\n\n[# ${ex.note} #]` : ex.input;
     setInputLang('cx');
-    // Per-example "what to expect" prose (ADR 0040 D12.1). Renders
-    // above the editor as a slate-accented info block; hidden when
-    // the example has no `note` field.
-    const noteEl = document.getElementById('cxp-example-note');
-    if (noteEl) {
-      if (ex.note) { noteEl.textContent = ex.note; noteEl.hidden = false; }
-      else         { noteEl.textContent = '';      noteEl.hidden = true; }
-    }
     refreshOutputs(key);
     lastJsonText = ex.json || '';
     highlightInput();
@@ -886,24 +884,19 @@
         // completes. Wall-clock examples can take seconds; without
         // the clear, the panes appear frozen on the previous result.
         applyOutputs({ cx: '', json: '', xml: '' });
-        // Async evaluate via the Worker host (ADR 0039 D8) so bare
-        // wall-clock [?sleep DUR] examples don't freeze the UI.
         setStatus('Evaluating…', 'pending');
-        // Yield to the browser so the cleared panes actually paint
-        // before we kick off the eval. Without this, instant evals
-        // (data examples, :mock examples) clear-and-fill within one
-        // microtask flush and the user perceives "no change" — the
-        // cleared state never reaches the screen. rAF guarantees a
-        // paint when the tab is visible; setTimeout backstop covers
-        // hidden tabs (where rAF is throttled or paused entirely)
-        // so the eval doesn't hang waiting for a frame that never
-        // arrives. Whichever fires first wins.
-        await new Promise(r => {
-          let done = false;
-          const resolve = () => { if (!done) { done = true; r(); } };
-          requestAnimationFrame(resolve);
-          setTimeout(resolve, 30);
-        });
+        // Force a paint of the cleared state, then hold for 500ms
+        // so the user unambiguously sees "the previous output is
+        // gone" before fresh results start streaming in. Wall-clock
+        // :par demos can drop their first chunk within a few ms; a
+        // bare microtask-flush yield isn't enough to register the
+        // clear as a distinct state. The 500ms hold is intentionally
+        // perceptible — it's the difference between "I think it
+        // re-ran" and "I saw it re-run". Plain setTimeout (no
+        // requestAnimationFrame) so the hold still works in tabs
+        // that are hidden or backgrounded (rAF is throttled or
+        // paused entirely in non-foreground tabs in Chrome).
+        await new Promise(r => setTimeout(r, 500));
         const outs = await liveEvaluate(key);
         applyOutputs(outs);
         lastJsonText = outs.json || '';

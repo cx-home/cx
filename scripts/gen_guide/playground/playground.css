@@ -404,21 +404,6 @@
    action or after a timeout. The static default carries a
    highlighted accent-bar + PLANNED badge so the 'wasm not built'
    reality reads at a glance. */
-/* Per-example "what to expect" note shown above the Source editor —
-   ADR 0040 D12.1. Hidden when the loaded example has no `note` field.
-   Subtle background + left-rule to read as info, not warning. */
-.cxp-example-note {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-dim, #57534e);
-  margin: 0;
-  padding: 0.5rem 0.8rem 0.5rem 0.9rem;
-  background: #f1f5f9;                  /* cool slate-50, ambient */
-  border-bottom: 1px solid var(--border);
-  border-left: 3px solid #64748b;       /* slate accent — neutral, not amber-warning */
-}
-.cxp-example-note[hidden] { display: none; }
-
 .cxp-status {
   font-size: 12.5px;
   line-height: 1.5;

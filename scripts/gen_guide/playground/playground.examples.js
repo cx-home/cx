@@ -331,20 +331,13 @@
     },
     'map-par-mock': {
       label: "[?map :par] — parallel map with :mock sleep (instant)",
-      note: "Parallel-shape demo that's instant in the browser because :mock makes \
-the sleep virtual (advances the logical clock, no wall-clock wait). With :par :ordered, \
-output preserves source order. Per ADR 0040, drop :ordered to get unordered output (faster \
-when the caller doesn't care). Real wall-clock speedup needs a non-:mock sleep — see the \
-`map-par-wall` example.",
-      // Parallel-shape demo that's instant in the browser: each task
-      // logically takes 50ms, but :mock makes that virtual — total
-      // wall-clock < 1ms. Real parallel speedup needs wall-clock
-      // sleeps (see the `map-par-wall` example). Per ADR 0040: :par
-      // alone is unordered (faster); add :ordered for source-order
-      // output preservation.
+      note: "Parallel-shape demo. :mock makes [?sleep] virtual (advances a logical clock, \
+no wall-clock wait), so total elapsed is sub-millisecond regardless of the sleep duration. \
+The :ordered flag preserves source order; drop it for faster unordered output (ADR 0040). \
+For wall-clock parallelism see the map-par-wall example.",
       input: [
         "[?map (1, 2, 3, 4, 5, 6, 7, 8)",
-        "  :using [?fn $n [?let $_ = [?sleep 50ms :mock] :in [* $n $n]]]",
+        "  :using [?fn $n [?let $_ = [?sleep 500ms :mock] :in [* $n $n]]]",
         "  :par :ordered]"
       ].join('\n'),
       cx:    "(1, 4, 9, 16, 25, 36, 49, 64)",
@@ -353,19 +346,15 @@ when the caller doesn't care). Real wall-clock speedup needs a non-:mock sleep �
     },
     'for-par-wall': {
       label: "[?for :par] — wall-clock parallel comprehension",
-      note: "What to expect: in HTTP-mode playground (make guide-http), the eight 50ms \
-sleeps overlap on real threads — wall-clock is ~50-100ms, not 400ms. In file:// or static \
-playground mode the eval runs single-threaded (browser limit, see footer); the example \
-still produces correct output but takes the full ~400ms. Output stays in source order \
-because :ordered is implicit on [?for :par].",
-      // The playground runs eval in a Web Worker that opts into
-      // wall-clock [?sleep] via cx_wasm_set_wall_sleep(true). Each
-      // task takes ~50ms; with :par the outermost generator runs the
-      // tasks concurrently. Output order is preserved at parse-time
-      // shape, but wall-clock dispatch is parallel.
+      note: "Wall-clock parallelism demo. In `make guide-http` mode (COOP+COEP headers \
+unlock pthreads + SharedArrayBuffer), the eight 500ms sleeps overlap on real OS threads — \
+wall-clock ~500ms. In file:// or generic-HTTP mode the wasm runtime is single-threaded so \
+:par is honored as an annotation but the workers run sequentially (~4s). Output is in \
+source order either way: [?for :par] streams :yield results in source order. Watch the \
+output pane fill in incrementally — each item appears as its worker completes.",
       input: [
         "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8)",
-        "      :yield [?let $_ = [?sleep 50ms] :in [item :n $n :sq [* $n $n]]]",
+        "      :yield [?let $_ = [?sleep 500ms] :in [item :n $n :sq [* $n $n]]]",
         "      :par]"
       ].join('\n'),
       cx:    [
@@ -405,25 +394,18 @@ because :ordered is implicit on [?for :par].",
     },
     'map-par-wall': {
       label: "[?map :par] — wall-clock sleep (shows real delay)",
-      note: "Bare [?sleep 250ms] takes wall-clock time. In HTTP-mode (make guide-http) \
-the four sleeps overlap on real OS threads — wall-clock ~250ms. In file:// or static mode \
-the eval runs sequentially — ~1s. Per ADR 0040, :par without :ordered is unordered; the \
-output items may emerge in completion order. For small N with uniform task duration that's \
-often source order, but don't rely on it — that's exactly what :ordered exists to express.",
-      // Same shape as map-par-mock, but bare [?sleep 250ms] takes
-      // wall-clock time. Under the playground's ASYNCIFY wasm build
-      // the main thread yields cooperatively through each sleep so
-      // the UI stays responsive; ~1s end-to-end. Per ADR 0040, :par
-      // without :ordered is unordered (fastest); :ordered would add
-      // completion-tracking + reassembly overhead — not worth it
-      // here since the result happens to land in source order under
-      // the v0.8.0 single-threaded eval anyway.
+      note: "Wall-clock parallelism demo. Bare [?sleep 500ms] really sleeps. In `make \
+guide-http` mode the four workers run on real OS threads — total ~500ms, and items \
+appear in completion order (which under unordered :par with identical work is unspecified). \
+In file:// or generic-HTTP mode V's spawn falls back to inline synchronous execution so \
+the four sleeps happen one after another — total ~2s, items always in source order. The \
+output pane streams per-result: you should see each item appear as its worker finishes.",
       input: [
         "[?map (1, 2, 3, 4)",
-        "  :using [?fn $n [?let $_ = [?sleep 250ms] :in [* $n $n]]]",
+        "  :using [?fn $n [?let $_ = [?sleep 500ms] :in [* $n $n]]]",
         "  :par]"
       ].join('\n'),
-      cx:    "(1, 4, 9, 16)",
+      cx:    "1\n4\n9\n16",
       json:  "null",
       xml:   "1\n4\n9\n16",
     },
