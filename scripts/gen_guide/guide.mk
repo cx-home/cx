@@ -47,7 +47,13 @@ guide: build-playground-wasm-for-guide
 # Idempotent — emcc skips re-link when sources are unchanged.
 .PHONY: build-playground-wasm-for-guide
 build-playground-wasm-for-guide:
-	@SINGLE_FILE=1 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
+	@# SINGLE_FILE=0 because a pre-existing emscripten base64-decode bug
+	@# in SINGLE_FILE=1 + ASYNCIFY=1 + bumped stack causes "section was
+	@# shorter than expected" CompileError on instantiation. Tracked as
+	@# a known issue; file:// playground support requires the
+	@# SINGLE_FILE fix. HTTP / HTTPS deployments are unaffected because
+	@# the loader fetches the .wasm sibling directly.
+	@SINGLE_FILE=0 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.

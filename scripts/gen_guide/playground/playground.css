@@ -404,6 +404,21 @@
    action or after a timeout. The static default carries a
    highlighted accent-bar + PLANNED badge so the 'wasm not built'
    reality reads at a glance. */
+/* Per-example "what to expect" note shown above the Source editor —
+   ADR 0040 D12.1. Hidden when the loaded example has no `note` field.
+   Subtle background + left-rule to read as info, not warning. */
+.cxp-example-note {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-dim, #57534e);
+  margin: 0;
+  padding: 0.5rem 0.8rem 0.5rem 0.9rem;
+  background: #f1f5f9;                  /* cool slate-50, ambient */
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid #64748b;       /* slate accent — neutral, not amber-warning */
+}
+.cxp-example-note[hidden] { display: none; }
+
 .cxp-status {
   font-size: 12.5px;
   line-height: 1.5;
@@ -416,6 +431,22 @@
   min-height: 1.2em;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
+/* Adaptive disclaimer modes — adopted by playground.js per ADR 0040
+   D12.2 to communicate the runtime mode + parallelism story. */
+.cxp-status.is-mode-pthreads {
+  background: #ecfdf5;                  /* cool green-50 */
+  border-left-color: #059669;           /* emerald */
+  color: #064e3b;
+}
+.cxp-status.is-mode-pthreads a { color: #047857; }
+.cxp-status.is-mode-pthreads a:hover { color: #065f46; }
+.cxp-status.is-mode-async {
+  background: #eff6ff;                  /* cool blue-50 */
+  border-left-color: #2563eb;
+  color: #1e3a8a;
+}
+.cxp-status.is-mode-async a { color: #1d4ed8; }
+.cxp-status.is-mode-async a:hover { color: #1e40af; }
 .cxp-status strong { font-weight: 600; }
 .cxp-status a { color: #b45309; text-decoration: underline; }
 .cxp-status a:hover { color: #92400e; }

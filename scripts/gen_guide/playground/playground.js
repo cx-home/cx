@@ -166,14 +166,42 @@
       runBtn.disabled = false;
       runBtn.removeAttribute('title');
     }
-    // Retire the PLANNED notice — swap in a one-line "Powered by
-    // libcx.wasm vX.Y.Z" footer per ADR 0026 §D6.
+    // Retire the PLANNED notice. Replace with an adaptive disclaimer
+    // banner per ADR 0040 D12.2 that communicates the parallelism
+    // story of the current runtime mode:
+    //
+    //   pthreads (crossOriginIsolated=true, USE_PTHREADS wasm loaded) —
+    //     real OS threads under :par
+    //   async (single-threaded ASYNCIFY, file:// or HTTP without COOP/COEP) —
+    //     :par produces correct output but doesn't accelerate
+    //
+    // The runtimeMode is reported by cxlib (ADR 0040 D9.3). Falls back
+    // to `async` if the loader didn't surface it.
     if (status) {
       const cxlib = globalThis.cxlib;
       const ver = (cxlib && cxlib.version) ? cxlib.version() : 'wasm';
-      status.innerHTML = 'Powered by <strong>libcx.wasm ' + ver + '</strong> — '
-        + 'edits to the Source pane are evaluated live. '
-        + '<a href="concepts/wasm.html">Concepts → WebAssembly Target</a>.';
+      const mode = (cxlib && typeof cxlib.runtimeMode === 'string')
+        ? cxlib.runtimeMode : 'async';
+      status.classList.remove('error', 'info', 'is-mode-pthreads', 'is-mode-async');
+      if (mode === 'pthreads') {
+        status.classList.add('is-mode-pthreads');
+        status.innerHTML = 'Powered by <strong>libcx.wasm ' + ver
+          + '</strong> (pthreads + SharedArrayBuffer) — <code>:par</code> '
+          + 'examples run on real OS threads. The playground bundles ~6&nbsp;MB '
+          + 'of wasm runtime; native CX is ~5&nbsp;MB and language bindings '
+          + '~1.5&nbsp;MB per wrapper — wasm bloat is browser overhead, not a CX '
+          + 'property. <a href="concepts.html#webassembly-target">Concepts → '
+          + 'WebAssembly Target</a>.';
+      } else {
+        status.classList.add('is-mode-async');
+        status.innerHTML = 'Powered by <strong>libcx.wasm ' + ver
+          + '</strong> (single-threaded ASYNCIFY — browser-environment limit). '
+          + '<code>:par</code> examples produce correct output but don\'t '
+          + 'accelerate. For real parallelism: run <code>cx</code> in your terminal, '
+          + 'use a language binding, or <code>make guide-http</code> for the '
+          + 'multi-threaded HTTP playground. <a href="concepts.html#webassembly-target">'
+          + 'Concepts → WebAssembly Target</a>.';
+      }
       status.classList.remove('error', 'info');
       statusDefaultHTMLRef.value = status.innerHTML;
     }
@@ -280,6 +308,14 @@
     // combined invisibly at evalCode time).
     input.value = ex.input;
     setInputLang('cx');
+    // Per-example "what to expect" prose (ADR 0040 D12.1). Renders
+    // above the editor as a slate-accented info block; hidden when
+    // the example has no `note` field.
+    const noteEl = document.getElementById('cxp-example-note');
+    if (noteEl) {
+      if (ex.note) { noteEl.textContent = ex.note; noteEl.hidden = false; }
+      else         { noteEl.textContent = '';      noteEl.hidden = true; }
+    }
     refreshOutputs(key);
     lastJsonText = ex.json || '';
     highlightInput();

@@ -331,6 +331,11 @@
     },
     'map-par-mock': {
       label: "[?map :par] — parallel map with :mock sleep (instant)",
+      note: "Parallel-shape demo that's instant in the browser because :mock makes \
+the sleep virtual (advances the logical clock, no wall-clock wait). With :par :ordered, \
+output preserves source order. Per ADR 0040, drop :ordered to get unordered output (faster \
+when the caller doesn't care). Real wall-clock speedup needs a non-:mock sleep — see the \
+`map-par-wall` example.",
       // Parallel-shape demo that's instant in the browser: each task
       // logically takes 50ms, but :mock makes that virtual — total
       // wall-clock < 1ms. Real parallel speedup needs wall-clock
@@ -348,6 +353,11 @@
     },
     'for-par-wall': {
       label: "[?for :par] — wall-clock parallel comprehension",
+      note: "What to expect: in HTTP-mode playground (make guide-http), the eight 50ms \
+sleeps overlap on real threads — wall-clock is ~50-100ms, not 400ms. In file:// or static \
+playground mode the eval runs single-threaded (browser limit, see footer); the example \
+still produces correct output but takes the full ~400ms. Output stays in source order \
+because :ordered is implicit on [?for :par].",
       // The playground runs eval in a Web Worker that opts into
       // wall-clock [?sleep] via cx_wasm_set_wall_sleep(true). Each
       // task takes ~50ms; with :par the outermost generator runs the
@@ -395,6 +405,11 @@
     },
     'map-par-wall': {
       label: "[?map :par] — wall-clock sleep (shows real delay)",
+      note: "Bare [?sleep 250ms] takes wall-clock time. In HTTP-mode (make guide-http) \
+the four sleeps overlap on real OS threads — wall-clock ~250ms. In file:// or static mode \
+the eval runs sequentially — ~1s. Per ADR 0040, :par without :ordered is unordered; the \
+output items may emerge in completion order. For small N with uniform task duration that's \
+often source order, but don't rely on it — that's exactly what :ordered exists to express.",
       // Same shape as map-par-mock, but bare [?sleep 250ms] takes
       // wall-clock time. Under the playground's ASYNCIFY wasm build
       // the main thread yields cooperatively through each sleep so
