@@ -23,7 +23,7 @@ UNAME_S := $(shell uname -s)
 # ── Python / Go toolchain paths ──────────────────────────────────────────────
 PYTHON ?= python3
 
-.PHONY: all build build-wasm build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
+.PHONY: all build build-wasm build-playground build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
  build-go build-go-arrow \
  build-vscode \
  publish publish-push \
@@ -66,6 +66,34 @@ build-vcx:
 # the patched-V README at third_party/v/README.md (P1).
 build-wasm:
 	./scripts/wasm/build_libcx_wasm.sh
+
+# Gate 17 — stage the playground bundle under dist/playground-preview/
+# so scripts/test_playground_smoke.sh has a docroot to boot Python's
+# http.server against. The layout matches the URL probes the smoke
+# script issues: playground.{html,js,css} at the root, wasm artifacts
+# under dist/wasm/ (nested), so a `cd dist/playground-preview &&
+# python3 -m http.server` exposes /playground.html, /playground.js,
+# /playground.css, /dist/wasm/libcx.js, /dist/wasm/cxlib.js — the
+# exact set the smoke check curl-probes. Depends on build-wasm so the
+# wasm artifacts exist before we copy. When emcc is unavailable,
+# build-wasm fails noisily upstream and this target is never reached;
+# scripts/test_playground_smoke.sh then reports its documented
+# "playground-preview not built" failure.
+build-playground: build-wasm
+	@echo "[build-playground] staging dist/playground-preview/"
+	@rm -rf dist/playground-preview
+	@mkdir -p dist/playground-preview/dist/wasm
+	@cp scripts/gen_guide/playground/playground.html dist/playground-preview/
+	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/
+	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/
+	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/
+	@cp scripts/gen_guide/playground/tree-view.js dist/playground-preview/
+	@cp scripts/gen_guide/playground/diagram-view.js dist/playground-preview/
+	@cp scripts/gen_guide/playground/selection-bridge.js dist/playground-preview/
+	@cp dist/wasm/libcx.js dist/playground-preview/dist/wasm/libcx.js
+	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
+	@if [ -f dist/wasm/libcx.wasm ]; then cp dist/wasm/libcx.wasm dist/playground-preview/dist/wasm/libcx.wasm; fi
+	@echo "[build-playground] OK — dist/playground-preview/ ready for gate 17 smoke"
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
