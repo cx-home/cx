@@ -455,11 +455,27 @@
     const dataInput = (found.ex && typeof found.ex.data === 'string')
       ? found.ex.data
       : '';
-    // ADR 0039 D8: route program evals through the Worker host so
-    // bare wall-clock [?sleep DUR] doesn't freeze the main thread.
-    // The Worker opts into wasm_wall_sleep_allowed at init; main-
-    // thread eval would raise CXER0270 instead. For [?sleep DUR :mock]
-    // demos the round-trip is harmless (~1ms overhead).
+    // Streaming path: route each [?for] :yield emit through the
+    // streaming C ABI so the CX output pane fills in incrementally
+    // (visible per-chunk progress instead of one final flush after
+    // every wall-clock sleep completes). The streaming wrapper falls
+    // back to one-shot eval when the build doesn't expose addFunction
+    // / Asyncify. JSON / XML re-derive from the final CX once stream
+    // completes — they're not chunk-shaped.
+    if (typeof cxlib.evalCodeStreamingAsync === 'function') {
+      let accumulated = '';
+      if (outCx) outCx.textContent = '';
+      await cxlib.evalCodeStreamingAsync(src, 'cx', (chunk) => {
+        accumulated += chunk;
+        if (outCx) outCx.textContent = accumulated;
+      }, dataInput);
+      return {
+        cx:   accumulated,
+        json: accumulated ? cxlib.toJson(accumulated) : '',
+        xml:  accumulated ? cxlib.toXml(accumulated) : '',
+      };
+    }
+    // Fallback: one-shot async eval.
     const cxOut = (typeof cxlib.evalCodeAsync === 'function')
       ? await cxlib.evalCodeAsync(src, 'cx', dataInput)
       : cxlib.evalCode(src, 'cx', dataInput);
@@ -829,6 +845,11 @@
         throw new Error(`no example registered for '${key}'`);
       }
       if (liveActive) {
+        // Clear stale output panes on each Run so the user sees a
+        // visible "something happened" reset before the new eval
+        // completes. Wall-clock examples can take seconds; without
+        // the clear, the panes appear frozen on the previous result.
+        applyOutputs({ cx: '', json: '', xml: '' });
         // Async evaluate via the Worker host (ADR 0039 D8) so bare
         // wall-clock [?sleep DUR] examples don't freeze the UI.
         setStatus('Evaluating…', 'pending');
