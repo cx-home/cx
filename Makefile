@@ -396,23 +396,27 @@ test-vcx: build-vcx test-vcx-v08
 test-vcx-v08: build-vcx
 	@v test vcx/tests/
 
-# lang/v/cx and lang/v/code are local module-resolution symlinks into
-# vcx/cx and vcx/code respectively. V's importer searches sibling
-# directories of the importing file for `import cx` / `import code`;
-# we keep the canonical sources under vcx/ and surface them here as
-# symlinks (gitignored). Idempotent — re-runs no-op once present.
-lang-v-symlinks:
-	@if [ ! -e lang/v/cx ]; then ln -s ../../vcx/cx lang/v/cx; fi
-	@if [ ! -e lang/v/code ]; then ln -s ../../vcx/code lang/v/code; fi
+# V module search path. `lang/v/native/` + `lang/v/conformance.v` import
+# `cx` and `code` modules whose source lives under `vcx/`. The historical
+# fix was to symlink `lang/v/cx → ../../vcx/cx` and `lang/v/code →
+# ../../vcx/code`; that broke on Windows (where symlinks need developer
+# mode + a git config flag) and required a Makefile bootstrap step.
+#
+# Cross-platform replacement: V's `-path` flag prepends a directory to
+# the module-resolver search order. Setting it via `VFLAGS` propagates
+# through `v test`'s per-file fork; setting it via `-path` directly on
+# `v run` also works. `@vlib` and `@vmodules` are the V-runtime
+# placeholders (stdlib + `$VMODULES`).
+V_MODULE_PATH := @vlib|@vmodules|vcx
+VFLAGS_VCX := -path "$(V_MODULE_PATH)"
 
-test-v: build-vcx lang-v-symlinks
-	v run lang/v/conformance.v
-	v test lang/v/tests/api_test.v
-	v test lang/v/tests/stream_test.v
-	v test lang/v/tests/table_test.v
+test-v: build-vcx
+	VFLAGS='$(VFLAGS_VCX)' v $(VFLAGS_VCX) run lang/v/conformance.v
+	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/v0_8_0_surface_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/native_atom_test.v
 
 test-vcx-api: build-vcx
-	v test lang/v/tests/api_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/v0_8_0_surface_test.v
 
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
