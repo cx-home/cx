@@ -24,8 +24,18 @@ GUIDE_GEN := scripts/gen_guide
 
 ## guide        Build docs/guide/ from
 ##                                   docs-src/canonical/.
-guide:
+guide: build-playground-wasm-for-guide
 	@bash $(GUIDE_GEN)/scaffold.sh
+
+# Ensure the playground wasm is built with ASYNCIFY=1 (so file:// can
+# do wall-clock [?sleep]) + SINGLE_FILE=0 (so the loader fetches the
+# .wasm sibling instead of base64-decoding an inline blob that some
+# browsers reject — ADR 0039 D8). The scaffold.sh script then copies
+# the freshly built artifacts into docs/guide/wasm/. Idempotent —
+# emcc skips re-link when sources are unchanged.
+.PHONY: build-playground-wasm-for-guide
+build-playground-wasm-for-guide:
+	@SINGLE_FILE=0 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
