@@ -62,10 +62,19 @@ build-playground-wasm-for-guide:
 	@#                              on real OS threads via Web Workers
 	@#                              with SharedArrayBuffer-backed
 	@#                              linear memory.
-	@# SINGLE_FILE=0 for both because the SINGLE_FILE=1 base64-decode
-	@# is broken with the current ASYNCIFY_STACK_SIZE; file:// support
-	@# via inline base64 requires a separate emscripten fix (tracked).
-	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
+	@# libcx-async ships as a single self-contained .js (SINGLE_FILE=1)
+	@# so all three playground modes Just Work:
+	@#   - file:// double-click: Chrome blocks fetch() of sibling file://
+	@#     resources from a null-origin page, so a separate .wasm sibling
+	@#     can't load. Inline base64 sidesteps the fetch entirely.
+	@#     (The historical "base64-decode bug" comment in earlier
+	@#     revisions was stale — verified working 2026-05-25.)
+	@#   - GitHub Pages / generic HTTP: one file, no MIME-type pitfalls.
+	@#   - HTTP fallback when COOP+COEP missing: same single file.
+	@# libcx-pthreads keeps SINGLE_FILE=0 because emscripten's pthread
+	@# runtime needs the separate .wasm to spawn Worker threads sharing
+	@# the same wasm module instance via SharedArrayBuffer.
+	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
 	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-http   Build docs/guide/ + boot the V veb static server
