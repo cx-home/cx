@@ -77,7 +77,7 @@ build-playground-wasm-for-guide:
 .PHONY: guide-http
 guide-http: guide
 	@echo "[guide-http] building cx-guide-serve"
-	@v -o vcx/target/cx-guide-serve vcx/cmd/guide_serve.v
+	@v -o vcx/target/cx-guide-serve vcx/cmd/guide_serve/
 	@echo "[guide-http] starting server"
 	@vcx/target/cx-guide-serve
 
