@@ -11,47 +11,47 @@
 
   const program = {
     "01-atom-element": {
-      label: "[01] Element \u2014 one attribute",
+      label: "[1] Element \u2014 one attribute",
       input: "[pizza size=large]",
       note:  "**Introduces:** the simplest CX shape \u2014 one element with one attribute. Eval returns the value unchanged. Switch the Output tab to JSON / XML to see the same value across projections.",
     },
     "02-string-scalar": {
-      label: "[02] String \u2014 bare scalar",
+      label: "[2] String \u2014 bare scalar",
       input: "\"hello, world\"",
       note:  "**Introduces:** scalar literals. Strings (`\"\u2026\"`) are first-class values; everything in CX is a value, including bare scalars at the top level.",
     },
     "03-number-scalars": {
-      label: "[03] Numbers \u2014 int / float / negative",
+      label: "[3] Numbers \u2014 int / float / negative",
       input: "[stats min=-5 mid=0 max=99.5 ratio=0.001]",
       note:  "**Introduces:** numeric attribute values. Positive / negative / int / float / sub-unit \u2014 all round-trip through projections.",
     },
     "04-boolean-scalars": {
-      label: "[04] Booleans \u2014 feature flags",
+      label: "[4] Booleans \u2014 feature flags",
       input: "[user active=true verified=false admin=true blocked=false]",
       note:  "**Introduces:** boolean attributes. `true` / `false` are typed scalars (not strings); JSON projects them as booleans.",
     },
     "05-atom-values": {
-      label: "[05] Atoms \u2014 `:kebab-case`",
+      label: "[5] Atoms \u2014 `:kebab-case`",
       input: "[response status=:ok]",
       note:  "**Introduces:** atoms \u2014 `:kebab-case` identifiers that evaluate to themselves. Use atoms for enum-like markers without quoting (ADR 0033).",
     },
     "06-string-quoting": {
-      label: "[06] Strings \u2014 quoting variants",
+      label: "[6] Strings \u2014 quoting variants",
       input: "[note\n  single='single quotes'\n  double=\"double quotes\"\n  apostrophe=\"can't\"]",
       note:  "**Introduces:** string quoting \u2014 both `'\u2026'` and `\"\u2026\"`. Pick whichever avoids the most escapes.",
     },
     "07-triple-quoted": {
-      label: "[07] Strings \u2014 triple-quoted (multiline)",
+      label: "[7] Strings \u2014 triple-quoted (multiline)",
       input: "[doc\n  body='''line 1\nline 2\nline 3''']",
       note:  "**Introduces:** triple-quoted strings `'''\u2026'''`. Multi-line content with embedded newlines, useful for prose or code blocks.",
     },
     "08-nested-elements": {
-      label: "[08] Nested elements \u2014 containment",
+      label: "[8] Nested elements \u2014 containment",
       input: "[order\n  [customer name=Alice]\n  [item name=pizza qty=2]\n  [item name=salad qty=1]]",
       note:  "**Introduces:** nesting by containment. Children appear in document order. JSON projects child-element lists as arrays; XML round-trips verbatim.",
     },
     "09-attrs-vs-children": {
-      label: "[09] Attributes vs child elements",
+      label: "[9] Attributes vs child elements",
       input: "[user id=1 active=true\n  [email \"a@x.com\"]\n  [phone \"+1-555\"]]",
       note:  "**Introduces:** the attribute-vs-child distinction. Attributes (`id`, `active`) live on the open tag; child elements (`[email \u2026]`) live inside the body. Both project cleanly.",
     },
@@ -317,7 +317,7 @@
     },
     "62-modify-set-attr": {
       label: "[62] [?modify] \u2014 :set-attr on every match",
-      input: "[?let $doc = [users\n  [user id=1 [name Alice]]\n  [user id=2 [name Bob]]] :in\n  [?modify $doc //user :set-attr status \"active\"]]",
+      input: "[?let $doc = [users\n  [user id=1 [name \"Alice\"]]\n  [user id=2 [name \"Bob\"]]] :in\n  [?modify $doc //user :set-attr status \"active\"]]",
       note:  "**Introduces:** `:set-attr NAME VALUE` \u2014 writes an attribute on every matched node. Adds `status=active` to every user.",
     },
     "63-modify-chain": {
@@ -347,7 +347,7 @@
     },
     "68-pipe-modify": {
       label: "[68] [?pipe] \u2014 chained [?modify]",
-      input: "[?let $doc = [users [user [name Alice]] [user [name Bob]]] :in\n  $doc | [?modify //user :set-attr verified true]]",
+      input: "[?let $doc = [users [user [name \"Alice\"]] [user [name \"Bob\"]]] :in\n  $doc | [?modify //user :set-attr verified true]]",
       note:  "**Introduces:** pipe + `[?modify]` \u2014 common pattern for read-then-transform. The doc flows into modify; result is the transformed doc.",
     },
     "69-fallback-recover": {

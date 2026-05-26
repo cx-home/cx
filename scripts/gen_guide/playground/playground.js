@@ -76,8 +76,6 @@
       catch (_) { return text; }
     }
     if (lang === 'xml') {
-      // Insert newline + indent after `>` followed by `<` (open/close
-      // tag boundary). Keep text-content inside elements untouched.
       let depth = 0, out = '';
       const tokens = text.split(/(<\/?[^>]+>)/g);
       for (const tok of tokens) {
@@ -93,8 +91,13 @@
       }
       return out.replace(/^\n/, '');
     }
-    // CX
-    return text;
+    // CX — route through cxlib.toCx if available; falls back to a
+    // local bracket-depth-aware indenter when wasm isn't ready.
+    const cxlib = globalThis.cxlib;
+    if (cxlib && typeof cxlib.toCx === 'function') {
+      try { return cxlib.toCx(text); } catch (_) {}
+    }
+    return cxPrettyFallback(text);
   }
   function minimised(lang, text) {
     if (!text) return '';
@@ -103,7 +106,42 @@
       catch (_) { return text.replace(/\s+/g, ' ').trim(); }
     }
     if (lang === 'xml') return text.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+    const cxlib = globalThis.cxlib;
+    if (cxlib && typeof cxlib.toCxCompact === 'function') {
+      try { return cxlib.toCxCompact(text); } catch (_) {}
+    }
     return text.replace(/\s+/g, ' ').trim();
+  }
+
+  // Bracket-aware CX indenter used as fallback when cxlib.toCx isn't
+  // available. Wraps a child element / sequence onto its own line when
+  // depth changes, indents two spaces per nest level.
+  function cxPrettyFallback(text) {
+    let depth = 0, out = '', i = 0, inString = false, sq = false;
+    while (i < text.length) {
+      const c = text[i];
+      if (inString) {
+        out += c;
+        if (c === '\\' && i + 1 < text.length) { out += text[i+1]; i += 2; continue; }
+        if ((!sq && c === '"') || (sq && c === '\'')) inString = false;
+        i++; continue;
+      }
+      if (c === '"' || c === '\'') { inString = true; sq = (c === '\''); out += c; i++; continue; }
+      if (c === '[') {
+        if (out && !out.endsWith('\n') && !out.endsWith(' ')) out += '\n' + '  '.repeat(depth);
+        out += '[';
+        depth++;
+        i++; continue;
+      }
+      if (c === ']') {
+        depth = Math.max(0, depth - 1);
+        out += ']';
+        i++; continue;
+      }
+      out += c;
+      i++;
+    }
+    return out.replace(/\n{2,}/g, '\n').trim();
   }
 
   function applyOutputProjection() {
@@ -388,12 +426,54 @@
     wrap.innerHTML = rowHtml(toggle, head);
     const kids = document.createElement('div');
     kids.className = 'cxt-children';
-    for (const k of keys) {
-      if (k === 'loc') continue;
-      kids.appendChild(renderNode(node[k], k, loc));
+    // Special-case `attribute` nodes: synthesize name + value sub-rows
+    // with computed sub-locs so each piece is individually selectable
+    // in the source pane. cxlib gives one loc per attribute (covering
+    // "name=value"); we split it in JS by walking the source span.
+    if (node.kind === 'attribute' && loc && nodeRegistrySource) {
+      const span = nodeRegistrySource.slice(loc.start, loc.end);
+      const eq = span.indexOf('=');
+      if (eq >= 0) {
+        const nameLoc  = { start: loc.start,           end: loc.start + eq };
+        // Value starts after `=`; if quoted, the quote chars are part
+        // of the literal span — we keep them so the highlight matches
+        // what the user actually sees in source.
+        const valLoc   = { start: loc.start + eq + 1,  end: loc.end };
+        kids.appendChild(makeLeaf('name',  node.name,
+          'cxt-label-attr',  nameLoc));
+        kids.appendChild(makeLeaf('value', node.value,
+          inferValueClass(node.value), valLoc));
+      }
+    } else {
+      for (const k of keys) {
+        if (k === 'loc') continue;
+        kids.appendChild(renderNode(node[k], k, loc));
+      }
     }
     wrap.appendChild(kids);
     return wrap;
+  }
+
+  // Synthesize a leaf row with a hand-rolled loc — used to split an
+  // attribute into name+value rows. Each leaf is registered for the
+  // cursor-to-tree bridge just like a real AST node.
+  function makeLeaf(label, value, valueCls, leafLoc) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cxt-node';
+    wrap.dataset.loc = JSON.stringify(leafLoc);
+    nodeRegistry.push({ start: leafLoc.start, end: leafLoc.end, el: wrap });
+    const display = (typeof value === 'string')
+      ? `<span class="cxt-label-string">"${escapeHtml(value)}"</span>`
+      : `<span class="${valueCls}">${escapeHtml(String(value))}</span>`;
+    wrap.innerHTML = `<span class="cxt-toggle">·</span><span class="cxt-row">` +
+      `<span class="cxt-label-attr">${escapeHtml(label)}</span>: ${display}</span>`;
+    return wrap;
+  }
+  function inferValueClass(v) {
+    if (typeof v === 'string')  return 'cxt-label-string';
+    if (typeof v === 'number')  return 'cxt-label-number';
+    if (typeof v === 'boolean') return 'cxt-label-boolean';
+    return 'cxt-label-meta';
   }
   function labelPart(label) {
     if (label == null) return '';
