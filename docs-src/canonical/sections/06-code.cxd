@@ -1585,7 +1585,57 @@
       [example lang=cx
         """[?for $x :in (1, 2, 3) :where [> $x 1] :yield [* $x $x]]
            [?let $a = 10 :in [?let $b = 32 :in [+ $a $b]]]
-           (1, 2, 3, 4) | count"""]]]
+           (1, 2, 3, 4) | count"""]
+
+      [child id=comprehensions-future-surface n=6.11.3.1
+             title='Future surface — ranges, slices, Iterator (ADR 0041)'
+        [body
+          """ADR 0041 (locked draft, 2026-05-25) extends the
+             comprehension surface with **strided ranges**
+             (`1 to 99 by 2`, `1 to *`), **slice expressions on a
+             binding postfix** (`$xs[2:5]`, `$xs[::-1]`,
+             `$xs[:, "name"]`), **first-class slice values** (`[?def
+             $s [2:$_last by 2]]`), and a new **`Iterator` value
+             kind** in CXDM §2 alongside Sequence / Array / Map.
+             Comprehensions become lazy by default; named iterators
+             (`[?def`]) memoize on first walk so re-use is safe."""]
+
+        [body
+          """Eight worked examples land in
+             [`spec/decisions/0041-...md`](../../spec/decisions/0041-strided-ranges-slices-comprehensions-and-iterator-kind.md)
+             §W1–§W8. Each example has a paired conformance fixture
+             `program-adr-0041-wN-*` in
+             [`conformance/code.txt`](../../conformance/code.txt);
+             until the implementation lands the fixtures are
+             `out_err: cx-err:CXER0100` (parse-deferred), then flip
+             to `out_text` in a single commit per fixture. The
+             reconciliation test
+             `program-adr-0041-reconciliation-b15-composition`
+             verifies grammar disambiguation against the B15
+             closure (`spec/cxpath.md` §2.2) — bare-fn-call, path
+             predicate, and slice postfix coexist."""]
+
+        [example lang=cx
+          """[# W1 — strided range, then slice, then comprehension #]
+             [?def $odds [1 to 99 by 2]]
+             [?def $first-ten $odds[:10]]
+             [?def $squares [?for $x :in $first-ten :yield [* $x $x]]]
+
+             [# W5 — infinite range with :take #]
+             [?for $x :in 1 to * :where [prime? $x] :take 100 :yield $x]
+
+             [# W7 — map comprehension over CXPath source #]
+             [?for $u :in //user :yield-map $u@id => $u@email]"""]
+
+        [body
+          """The path-to-iterator taxonomy (D26): a CXPath value is
+             **not** an `Iterator` — it is a *description of a
+             selection*. Evaluation materialises it to a `sequence`
+             (eager, the kind that ships in v0.8.0). The `sequence`
+             flows into Iterator combinators on opt-in via `[?for]`
+             or the explicit `[?to-iterator]` directive. There is no
+             `iterator → path` direction — paths describe; iterators
+             walk."""]]]]
 
   [# Migrated from docs-src/content/reference/{cxpath,errors}.cx during
      Phase B docs → guide consolidation (2026-05-24). CXPath
