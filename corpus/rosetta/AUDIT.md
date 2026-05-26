@@ -5,9 +5,11 @@ which surface gaps each surfaced. Refresh per release boundary.
 
 Initial seed: 5 of 20 programs (per ADR 0045 D3 acceptance criteria
 #1 — minimum five). Programs 03/04, 07–12, 14–20 still to write.
+Extension #21 added 2026-05-26 to close [ADR 0047 §D8 gate
+47.7](../../spec/decisions/0047-stdlib-surface-v0_8_0.md) — exercises
+the new `url` + `csv` + `validate` triad.
 
-Last revised: 2026-05-26 against `v0.8.0-dev` HEAD `74fe4f5b` (the
-working-tree HEAD this audit was authored on).
+Last revised: 2026-05-26 against `v0.8.0-dev` HEAD `e44de53c`.
 
 | Program | Last-revised HEAD | Status | Gap count | ADRs motivated |
 |---|---|---|---|---|
@@ -16,12 +18,13 @@ working-tree HEAD this audit was authored on).
 | 05-rpn-calculator | `74fe4f5b` | blocked | 4 | `$path/child` empty-vs-CXER0001 (NEW or amend `spec/cxpath.md` §6) · predicate-context arithmetic on `last()` (extends ADR 0043) · multi-arg `[?fn]` re-confirm · no stack abstraction (note under ADR 0040) |
 | 06-bfs | `74fe4f5b` | workaround | 5 | `$bind/child` single-match (CONFIRMED in 0045 register) · no `[?loop]` / `[?recur]` (NEW) · no mutable state (deliberate-gap note) · no set ops (NEW) · pattern destructure of `:key val` attribute style (spec note) |
 | 13-config-validator | `74fe4f5b` | green | 4 | `exists()` builtin missing (NEW; one-line) · `:where` outer-match modifier (spec clarification) · schema-path alternative (aligns with ADR 0009) · `$bind/child` re-confirm |
+| 21-fetch-csv-validate | `e44de53c` | blocked (expected pre-impl) | 0 | ADR 0047 url + csv + validate skeleton bodies pending — flips to green when Phase 3.x V impl ratifies the three companion specs |
 
 ## Summary
 
 - **green**: 1 (#13)
 - **workaround**: 2 (#02, #06)
-- **blocked**: 2 (#01, #05)
+- **blocked**: 3 (#01, #05, #21 — #21 expected pre-impl, not a surface gap)
 
 ## Cross-program gap clusters (≥2 programs)
 
