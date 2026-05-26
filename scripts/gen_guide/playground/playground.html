@@ -13,43 +13,57 @@
     <img src="assets/cx-logo.svg" alt="CX" width="22" height="22">
     <span>Playground</span>
   </a>
-  <span class="cxp-spacer"></span>
   <label class="cxp-pick-label" for="cxp-pick">Example</label>
   <select id="cxp-pick" aria-label="Choose an example"></select>
   <button id="cxp-run" class="cxp-btn cxp-btn-primary" type="button" disabled>Run</button>
   <button id="cxp-reset" class="cxp-btn" type="button">Reset</button>
   <button id="cxp-load" class="cxp-btn" type="button" title="Load a local .cx file">Load…</button>
   <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
+  <span class="cxp-spacer"></span>
 </header>
 <main class="cxp-main">
-  <section class="cxp-pane">
-    <div class="cxp-pane-head">Source</div>
-    <textarea id="cxp-input" class="cxp-source" spellcheck="false"
-              autocorrect="off" autocapitalize="off" wrap="soft"
-              placeholder="// Loading…"></textarea>
+  <section class="cxp-pane cxp-source-pane">
+    <div class="cxp-pane-head">SOURCE</div>
+    <div class="cxp-editor-wrap">
+      <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
+      <textarea id="cxp-input" class="cxp-source" spellcheck="false"
+                autocorrect="off" autocapitalize="off" wrap="soft"
+                placeholder="// Loading…"></textarea>
+    </div>
   </section>
-  <section class="cxp-pane">
+  <section class="cxp-pane cxp-output-pane">
     <div class="cxp-pane-head">
-      <span>Output</span>
+      <span>OUTPUT</span>
       <span class="cxp-tabs" role="tablist">
-        <button class="cxp-tab is-active" data-tab="cx" type="button">CX</button>
+        <button class="cxp-tab is-active" data-tab="cx"   type="button">CX</button>
         <button class="cxp-tab"           data-tab="json" type="button">JSON</button>
-        <button class="cxp-tab"           data-tab="xml" type="button">XML</button>
+        <button class="cxp-tab"           data-tab="xml"  type="button">XML</button>
       </span>
     </div>
-    <pre id="cxp-out-cx"   class="cxp-output is-active"></pre>
-    <pre id="cxp-out-json" class="cxp-output"></pre>
-    <pre id="cxp-out-xml"  class="cxp-output"></pre>
+    <pre id="cxp-out-cx"   class="cxp-output is-active"><code class="language-cx"></code></pre>
+    <pre id="cxp-out-json" class="cxp-output"><code class="language-json"></code></pre>
+    <pre id="cxp-out-xml"  class="cxp-output"><code class="language-xml"></code></pre>
+  </section>
+  <section class="cxp-pane cxp-viz-pane">
+    <div class="cxp-pane-head">
+      <span>VIEW</span>
+      <span class="cxp-tabs" role="tablist">
+        <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
+        <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>
+      </span>
+    </div>
+    <div id="cxp-viz-tree" class="cxp-viz-content is-active">
+      <p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>
+    </div>
+    <pre id="cxp-viz-graph" class="cxp-viz-content"><code class="language-mermaid"></code></pre>
   </section>
 </main>
 <footer id="cxp-status" class="cxp-status" aria-live="polite">
   Loading <code>libcx.wasm</code>…
 </footer>
-<!-- cxlib.js dynamically loads libcx-async.js (file:// + generic HTTP) or
-     libcx-pthreads.js (HTTP with COOP+COEP) based on crossOriginIsolated.
-     See ADR 0040 D9.3. -->
 <script src="wasm/cxlib.js" defer></script>
 <script src="playground/playground.examples.js" defer></script>
+<script src="highlight/highlight.js" defer></script>
 <script src="playground/playground.js" defer></script>
 </body>
 </html>

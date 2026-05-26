@@ -1,20 +1,35 @@
-/* CX Playground — full-viewport two-pane layout.
-   No sidebar, no diagrams, no tree views. Just source + output. */
+/* CX Playground — full-viewport dark theme, 3-region layout.
+   Source top-left, Output bottom-left, View (Tree/Graph) right column. */
 
 :root {
-  --bg:           #ffffff;
-  --bg-muted:     #f8fafc;
-  --bg-toolbar:   #fafaf9;
-  --bg-head:      #f1f5f9;
-  --border:       #e5e7eb;
-  --border-strong:#d1d5db;
-  --text:         #1f2937;
+  /* Dark base palette — One Dark-ish */
+  --bg-app:       #1e2127;
+  --bg-pane:      #1c1f24;
+  --bg-head:      #21252b;
+  --bg-toolbar:   #181a1f;
+  --bg-input:     #1e2127;
+  --bg-hover:     #2c313a;
+  --border:       #181a1f;
+  --border-soft:  #3a3f4b;
+  --text:         #c8ccd4;
   --text-dim:     #6b7280;
-  --accent:       #2563eb;
-  --accent-hover: #1d4ed8;
-  --ok:           #15803d;
-  --err:          #b91c1c;
-  --pending:      #b45309;
+  --text-strong:  #e5e9f0;
+  --accent:       #61afef;
+  --accent-hover: #82c0ff;
+  --ok:           #98c379;
+  --err:          #e06c75;
+  --pending:      #d19a66;
+
+  /* Syntax palette (used by highlight.js + tree view) */
+  --syn-keyword:  #c678dd;   /* directives [?...] */
+  --syn-string:   #98c379;
+  --syn-number:   #d19a66;
+  --syn-comment:  #5c6370;
+  --syn-name:     #e5c07b;   /* element names */
+  --syn-attr:     #56b6c2;   /* attribute keys */
+  --syn-binding:  #e06c75;   /* $name */
+  --syn-punct:    #abb2bf;
+
   --code-font:    ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
@@ -27,7 +42,7 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-app);
 }
 
 .cxp-body {
@@ -43,73 +58,89 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 6px 12px;
   background: var(--bg-toolbar);
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border);
 }
 .cxp-brand {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  color: var(--text);
+  color: var(--text-strong);
   font-weight: 600;
+  padding-right: 14px;
+  border-right: 1px solid var(--border-soft);
+  margin-right: 6px;
 }
-.cxp-brand img { display: block; }
+.cxp-brand img { display: block; filter: brightness(1.1); }
 .cxp-spacer { flex: 1; }
 .cxp-pick-label {
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 12px;
+  margin-left: 4px;
 }
 #cxp-pick {
   padding: 4px 8px;
-  font-size: 13px;
-  border: 1px solid var(--border-strong);
+  font-size: 12.5px;
+  border: 1px solid var(--border-soft);
   border-radius: 4px;
-  background: white;
-  min-width: 240px;
+  background: var(--bg-pane);
+  color: var(--text);
+  min-width: 320px;
+  max-width: 480px;
+  font-family: inherit;
 }
 .cxp-btn {
-  padding: 5px 12px;
-  font-size: 13px;
-  border: 1px solid var(--border-strong);
+  padding: 4px 12px;
+  font-size: 12.5px;
+  border: 1px solid var(--border-soft);
   border-radius: 4px;
-  background: white;
+  background: var(--bg-pane);
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
 }
-.cxp-btn:hover:not(:disabled) { background: var(--bg-muted); }
+.cxp-btn:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--accent); }
 .cxp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .cxp-btn-primary {
   background: var(--accent);
-  color: white;
+  color: #0e1116;
   border-color: var(--accent);
+  font-weight: 600;
 }
 .cxp-btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
 }
-.cxp-btn.is-running {
+.cxp-btn-primary.is-running {
   background: var(--pending);
   border-color: var(--pending);
 }
 
-/* ── Main split ─────────────────────────────────────────────── */
+/* ── Main 3-region grid ─────────────────────────────────────── */
 .cxp-main {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "src viz"
+    "out viz";
   gap: 1px;
-  background: var(--border-strong);
+  background: var(--border);
   min-height: 0;
   overflow: hidden;
 }
 
+.cxp-source-pane { grid-area: src; }
+.cxp-output-pane { grid-area: out; }
+.cxp-viz-pane    { grid-area: viz; }
+
 .cxp-pane {
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--bg-pane);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -124,76 +155,152 @@ html, body {
   padding: 6px 12px;
   background: var(--bg-head);
   border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  user-select: none;
 }
 
-/* ── Source textarea ───────────────────────────────────────── */
-.cxp-source {
+/* ── Source editor — textarea over highlighted render layer ── */
+.cxp-editor-wrap {
   flex: 1 1 auto;
-  width: 100%;
-  border: none;
-  outline: none;
-  padding: 12px 14px;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.cxp-editor-render,
+.cxp-source {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  margin: 0;
+  padding: 10px 14px;
   font-family: var(--code-font);
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text);
-  background: var(--bg);
-  resize: none;
-  /* wrap long lines (including inline `[- … -]` notes) so they're
-     readable without horizontal scroll */
   white-space: pre-wrap;
   word-break: break-word;
   overflow: auto;
+  background: transparent;
   tab-size: 2;
 }
-.cxp-source:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cxp-editor-render {
+  pointer-events: none;
+  color: var(--text);
+  z-index: 1;
+}
+.cxp-editor-render code {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cxp-source {
+  z-index: 2;
+  color: transparent;
+  caret-color: var(--text-strong);
+  border: none;
+  outline: none;
+  resize: none;
+  /* Transparent so the highlighted render layer underneath shows
+     through; the visible bg comes from the wrap. */
+  background: transparent;
+}
+.cxp-editor-wrap { background: var(--bg-input); }
+.cxp-source::selection { background: rgba(97, 175, 239, 0.3); color: transparent; }
+.cxp-source:focus { outline: none; }
 
 /* ── Output ─────────────────────────────────────────────────── */
 .cxp-tabs {
   display: inline-flex;
-  gap: 0;
+  gap: 1px;
   text-transform: none;
   letter-spacing: 0;
-}
-.cxp-tab {
-  padding: 4px 10px;
-  font-size: 12px;
   font-weight: 500;
-  border: 1px solid var(--border-strong);
-  border-right: none;
-  background: white;
+}
+.cxp-tab, .cxp-viz-tab {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-pane);
   color: var(--text-dim);
   cursor: pointer;
   font-family: inherit;
+  text-transform: uppercase;
 }
-.cxp-tab:first-child { border-radius: 4px 0 0 4px; }
-.cxp-tab:last-child { border-right: 1px solid var(--border-strong); border-radius: 0 4px 4px 0; }
-.cxp-tab.is-active {
+.cxp-tab + .cxp-tab,
+.cxp-viz-tab + .cxp-viz-tab { border-left: none; }
+.cxp-tab:first-child, .cxp-viz-tab:first-child { border-radius: 3px 0 0 3px; }
+.cxp-tab:last-child,  .cxp-viz-tab:last-child  { border-radius: 0 3px 3px 0; }
+.cxp-tab:hover, .cxp-viz-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cxp-tab.is-active, .cxp-viz-tab.is-active {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: #0e1116;
 }
 
 .cxp-output {
   flex: 1 1 auto;
   margin: 0;
-  padding: 12px 14px;
+  padding: 10px 14px;
   font-family: var(--code-font);
   font-size: 13px;
   line-height: 1.55;
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-input);
   white-space: pre-wrap;
   word-break: break-word;
   overflow: auto;
   display: none;
 }
 .cxp-output.is-active { display: block; }
+.cxp-output code { background: transparent; color: inherit; font: inherit; }
+
+/* ── View pane (Tree / Graph) ─────────────────────────────── */
+.cxp-viz-content {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 10px 14px;
+  overflow: auto;
+  display: none;
+  font-family: var(--code-font);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg-input);
+}
+.cxp-viz-content.is-active { display: block; }
+.cxp-viz-placeholder {
+  color: var(--text-dim);
+  font-style: italic;
+  margin: 0;
+}
+#cxp-viz-graph code { display: block; white-space: pre-wrap; word-break: break-word; }
+
+/* Tree view */
+.cxt-node { padding-left: 1.1em; position: relative; }
+.cxt-toggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1em;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-dim);
+  user-select: none;
+}
+.cxt-toggle:hover { color: var(--accent); }
+.cxt-node.is-collapsed > .cxt-children { display: none; }
+.cxt-label-name    { color: var(--syn-name);    font-weight: 600; }
+.cxt-label-attr    { color: var(--syn-attr); }
+.cxt-label-string  { color: var(--syn-string); }
+.cxt-label-number  { color: var(--syn-number); }
+.cxt-label-boolean { color: var(--syn-keyword); }
+.cxt-label-meta    { color: var(--text-dim); font-style: italic; }
 
 /* ── Status bar ─────────────────────────────────────────────── */
 .cxp-status {
@@ -208,25 +315,42 @@ html, body {
 }
 .cxp-status code {
   font-family: var(--code-font);
-  background: rgba(0,0,0,0.05);
-  padding: 1px 4px;
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
   border-radius: 3px;
+  color: var(--text);
 }
-.cxp-status a { color: var(--accent); }
+.cxp-status a { color: var(--accent); text-decoration: none; }
+.cxp-status a:hover { text-decoration: underline; }
 .cxp-status.is-ok { color: var(--ok); }
-.cxp-status.is-error { color: var(--err); background: #fef2f2; border-top-color: #fecaca; }
+.cxp-status.is-error { color: var(--err); background: #2b1d1f; border-top-color: #5c2a2e; }
 .cxp-status.is-pending { color: var(--pending); }
 
-/* ── Mobile / narrow ────────────────────────────────────────── */
-@media (max-width: 760px) {
+/* ── Syntax highlighting — class names from scripts/gen_guide/highlight/highlight.js ── */
+.hl-comment   { color: var(--syn-comment); font-style: italic; }
+.hl-string    { color: var(--syn-string); }
+.hl-number    { color: var(--syn-number); }
+.hl-literal   { color: var(--syn-keyword); }
+.hl-keyword   { color: var(--syn-keyword); font-weight: 600; }
+.hl-directive { color: var(--syn-keyword); font-weight: 600; }
+.hl-element   { color: var(--syn-name); }
+.hl-sigil     { color: var(--syn-binding); }
+.hl-type      { color: var(--syn-attr); }
+.hl-attr      { color: var(--syn-attr); }
+.hl-fn        { color: var(--accent); }
+.hl-tag       { color: var(--syn-name); }
+
+/* ── Narrow viewport — stack everything ─────────────────────── */
+@media (max-width: 900px) {
   .cxp-main {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-areas:
+      "src"
+      "out"
+      "viz";
   }
-  .cxp-toolbar {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  #cxp-pick { min-width: 160px; flex: 1; }
+  .cxp-toolbar { flex-wrap: wrap; gap: 6px; }
+  #cxp-pick { min-width: 200px; flex: 1; }
   .cxp-brand span { display: none; }
 }
