@@ -1,809 +1,512 @@
-// CX Playground — example library (auto-generated).
-// 51 data + 108 program entries — all CLI-verified.
+// CX Playground — 100 progressive eval examples.
+// Single ordered list. Each entry's note calls out what feature it introduces.
+// Generator: /tmp/gen_examples_v3.py — every entry CLI-audited before deploy.
 
 (function () {
   'use strict';
 
-  const data = {
-    "atom-element": {
-      label: "Element \u2014 single atom",
-      input: "[pizza size=large]",
-      note:  "The simplest CX shape: one element, one attribute. Switch the Output tab to JSON / XML to see the same value across projections.",
-    },
-    "scalar-string": {
-      label: "Scalar \u2014 string",
-      input: "\"hello, world\"",
-      note:  "A bare string literal. CX scalars are first-class values; everything in CX is a value.",
-    },
-    "scalar-int": {
-      label: "Scalar \u2014 integer",
-      input: "42",
-      note:  "Bare integer scalar. Type-inferred at parse time.",
-    },
-    "scalar-float": {
-      label: "Scalar \u2014 float",
-      input: "3.14159",
-      note:  "Bare float scalar.",
-    },
-    "scalar-bool-true": {
-      label: "Scalar \u2014 boolean true",
-      input: "true",
-      note:  "Bare boolean literal \u2014 `true` / `false` are reserved scalar names.",
-    },
-    "scalar-bool-false": {
-      label: "Scalar \u2014 boolean false",
-      input: "false",
-      note:  "Bare boolean literal `false`.",
-    },
-    "scalar-atom": {
-      label: "Scalar \u2014 atom",
-      input: ":ok",
-      note:  "An atom \u2014 a kebab-case identifier that evaluates to itself (ADR 0033). Use atoms for enum-like markers.",
-    },
-    "element-empty": {
-      label: "Element \u2014 empty body",
-      input: "[user]",
-      note:  "Element with no attributes and no children. The minimal element shape.",
-    },
-    "element-attr": {
-      label: "Element \u2014 one attribute",
-      input: "[user id=42]",
-      note:  "Attribute name=value pairs after the element name, before children.",
-    },
-    "element-multi-attr": {
-      label: "Element \u2014 many attributes",
-      input: "[user id=42 name=Alice active=true role=admin]",
-      note:  "Multiple attributes on one tag; order preserved across projections.",
-    },
-    "element-quoted-attr": {
-      label: "Element \u2014 quoted attribute value",
-      input: "[user name=\"Alice O'Brien\" email=\"a@x.com\"]",
-      note:  "Attribute values containing spaces or special characters must be quoted.",
-    },
-    "element-text-child": {
-      label: "Element \u2014 text child",
-      input: "[paragraph \"This is body text.\"]",
-      note:  "An element whose body is a single string \u2014 common for prose / leaf nodes.",
-    },
-    "element-nested": {
-      label: "Element \u2014 single nested child",
-      input: "[outer\n  [inner value=42]]",
-      note:  "One level of nesting. Indentation is conventional, not significant.",
-    },
-    "element-many-children": {
-      label: "Element \u2014 many siblings",
-      input: "[list\n  [item id=1]\n  [item id=2]\n  [item id=3]\n  [item id=4]\n  [item id=5]]",
-      note:  "Multiple children of the same element. JSON projects this as an array under `list.item`.",
-    },
-    "element-mixed": {
-      label: "Element \u2014 mixed content",
-      input: "[doc\n  [heading \"Welcome\"]\n  [paragraph \"Body text.\"]\n  [footer \"Bye.\"]]",
-      note:  "Heterogeneous children \u2014 different element names side by side. The containment tree preserves order.",
-    },
-    "order": {
-      label: "Order \u2014 invoice shape",
-      input: "[order id=ord-1001 status=paid\n  [customer name=Alice email=\"a@x.com\"]\n  [item sku=p-01 qty=2 price=12.00]\n  [item sku=p-02 qty=1 price=8.50]]",
-      note:  "A realistic order document \u2014 top-level attributes plus structured children. Round-trips cleanly through CX/JSON/XML.",
-    },
-    "user-profile": {
-      label: "User \u2014 profile with addresses",
-      input: "[user id=42 name=Alice\n  [address kind=home city=Paris zip=75001]\n  [address kind=work city=London zip=\"WC1A 1AA\"]\n  [phone kind=mobile number=\"+33-1-23-45\"]]",
-      note:  "User with multiple typed addresses + phones. The `kind` attribute discriminates child variants.",
-    },
-    "product-catalog": {
-      label: "Catalog \u2014 small product list",
-      input: "[catalog\n  [product sku=p-01 name=\"Pizza\" price=12 in-stock=true]\n  [product sku=p-02 name=\"Salad\" price=8.5 in-stock=true]\n  [product sku=p-03 name=\"Pasta\" price=10 in-stock=false]]",
-      note:  "A small product catalog \u2014 repeated child element shape with attributes only (no nested bodies).",
-    },
-    "blog-post": {
-      label: "Blog post \u2014 prose document",
-      input: "[post\n  [title \"On homoiconicity\"]\n  [author name=Alice slug=alice]\n  [body\n    [paragraph \"CX shares its data and code surface.\"]\n    [paragraph \"That means programs are values.\"]]]",
-      note:  "Prose-shaped document \u2014 title + author + body of paragraphs. The body uses nested elements rather than mixed text.",
-    },
-    "invoice": {
-      label: "Invoice \u2014 totals + line items",
-      input: "[invoice id=inv-2025-042 issued=2025-05-25\n  [bill-to name=\"Acme Corp\"]\n  [line description=\"Consulting\" hours=20 rate=150]\n  [line description=\"Travel\" amount=420]\n  [total amount=3420 currency=USD]]",
-      note:  "Invoice with heterogeneous children \u2014 bill-to, multiple line items, total.",
-    },
-    "event-calendar": {
-      label: "Calendar \u2014 event list",
-      input: "[calendar year=2025\n  [event date=2025-05-25 title=\"CX launch\"]\n  [event date=2025-06-01 title=\"Workshop\"]\n  [event date=2025-07-04 title=\"Holiday\"]]",
-      note:  "Event calendar \u2014 repeated event children with a date attribute. JSON renders the events as an array.",
-    },
-    "config": {
-      label: "Config \u2014 settings tree",
-      input: "[config app=cx env=production\n  [database host=\"db.local\" port=5432 ssl=true]\n  [cache provider=redis ttl=300]\n  [logging level=warn format=json]]",
-      note:  "Configuration document \u2014 top-level app/env attributes, nested service blocks. Hostnames are quoted (the `.` is meaningful in attribute paths so bare hostnames need quotes).",
-    },
-    "svg-like": {
-      label: "SVG-like \u2014 graphical primitives",
-      input: "[svg width=200 height=100\n  [rect x=10 y=10 width=80 height=80 fill=blue]\n  [circle cx=140 cy=50 r=40 fill=red]\n  [text x=100 y=95 anchor=middle \"CX\"]]",
-      note:  "SVG-shaped document \u2014 XML round-trip is exact (CX \u2192 XML produces an SVG you could paste into a browser).",
-    },
-    "html-fragment": {
-      label: "HTML-like \u2014 semantic markup",
-      input: "[article\n  [h1 \"Title\"]\n  [section class=intro\n    [p \"Lead paragraph.\"]]\n  [section class=body\n    [p \"Main content.\"]]]",
-      note:  "HTML-shaped document. XML projection is valid HTML you could insert into a page.",
-    },
-    "settings-list": {
-      label: "Settings \u2014 flat key-value pairs",
-      input: "[settings\n  [pair key=theme value=dark]\n  [pair key=lang value=en]\n  [pair key=tz value=UTC]]",
-      note:  "Key-value pairs as repeated `pair` elements. An alternative shape vs attribute-only or map-literal.",
-    },
-    "tree-with-depth": {
-      label: "Tree \u2014 recursive structure",
-      input: "[node label=root\n  [node label=a\n    [node label=a1]\n    [node label=a2]]\n  [node label=b\n    [node label=b1]]]",
-      note:  "Recursive tree where each level uses the same element name. Common shape for filesystem / org-chart docs.",
-    },
-    "graph-adjacency": {
-      label: "Graph \u2014 adjacency list",
-      input: "[graph kind=directed\n  [node id=A]\n  [node id=B]\n  [node id=C]\n  [edge from=A to=B]\n  [edge from=B to=C]\n  [edge from=C to=A]]",
-      note:  "Graph as a flat node + edge list. The :kind attribute discriminates directed / undirected.",
-    },
-    "table-rows": {
-      label: "Table \u2014 header + rows",
-      input: "[table\n  [columns id name role]\n  [row id=1 name=Alice role=admin]\n  [row id=2 name=Bob   role=editor]\n  [row id=3 name=Carol role=viewer]]",
-      note:  "Tabular shape \u2014 column manifest + row records. Round-trips through CSV-style projections (via toJson \u2192 array of objects).",
-    },
-    "nested-comments": {
-      label: "Nested comments \u2014 discussion thread",
-      input: "[thread topic=\"Release plan\"\n  [post author=Alice \"Should we ship Friday?\"\n    [post author=Bob   \"Sounds risky.\"\n      [post author=Carol \"Let's do Monday.\"]]\n    [post author=Dave  \"Friday is fine.\"]]]",
-      note:  "Discussion / comment thread modelled as nested posts. Containment hierarchy = reply relationship.",
-    },
-    "sequence-numbers": {
-      label: "Sequence \u2014 integers",
-      input: "(1, 2, 3, 4, 5)",
-      note:  "Ordered sequence of integers. JSON renders as an array; CX preserves the literal form.",
-    },
-    "sequence-mixed": {
-      label: "Sequence \u2014 mixed scalars",
-      input: "(1, 2.5, \"three\", true, :four)",
-      note:  "Heterogeneous sequence \u2014 CX holds any scalar mix in one container.",
-    },
-    "sequence-of-elements": {
-      label: "Sequence \u2014 of elements",
-      input: "([user id=1 name=A], [user id=2 name=B], [user id=3 name=C])",
-      note:  "Sequence whose items are elements. The outer container is a flat sequence, not a wrapper element.",
-    },
-    "map-shop-hours": {
-      label: "Map \u2014 shop hours by day",
-      input: "{mon: \"09-17\", tue: \"09-17\", wed: \"09-17\", thu: \"09-17\", fri: \"09-21\", sat: \"10-21\", sun: \"closed\"}",
-      note:  "Map literal with string keys + values. JSON renders as a flat object.",
-    },
-    "map-mixed-values": {
-      label: "Map \u2014 mixed value types",
-      input: "{name: \"Alice\", age: 30, active: true, tags: (:admin, :verified)}",
-      note:  "Map with values of mixed types \u2014 string, int, bool, sequence.",
-    },
-    "map-of-elements": {
-      label: "Map \u2014 element values",
-      input: "{admin: [user name=Alice], editor: [user name=Bob]}",
-      note:  "Map whose values are elements. The map literal nests CX shapes naturally.",
-    },
-    "durations": {
-      label: "Durations \u2014 first-class scalars",
-      input: "[timing\n  short=50ms\n  medium=2s\n  long=15m\n  very-long=2h]",
-      note:  "Duration scalars: `Nms`, `Ns`, `Nm`, `Nh`. First-class type recognized by `[?sleep]`, `[?timeout]`, etc. (ADR 0039).",
-    },
-    "instants": {
-      label: "Instants \u2014 ISO date attribute",
-      input: "[event at=\"2025-05-25T14:30:00Z\"]",
-      note:  "ISO-8601 instant as a quoted attribute value \u2014 round-trips verbatim through CX / JSON / XML.",
-    },
-    "attrs-and-body": {
-      label: "Element \u2014 attrs AND text body",
-      input: "[link href=\"https://cx-home.github.io\" \"CX Guide\"]",
-      note:  "An element can carry both attributes and a body in the same tag \u2014 common for link / button shapes.",
-    },
-    "self-similar": {
-      label: "Self-similar \u2014 wrapper of children",
-      input: "[group\n  [group\n    [group label=leaf]]]",
-      note:  "Same element name nested at multiple depths. JSON projection turns this into `{group:{group:{group:{...}}}}`.",
-    },
-    "empty-document": {
-      label: "Empty \u2014 wrapper element only",
-      input: "[doc]",
-      note:  "An empty document \u2014 useful as a placeholder or a default `[?let $doc = [doc] :in \u2026]` seed.",
-    },
-    "hyphenated-names": {
-      label: "Element \u2014 hyphenated names",
-      input: "[user-profile is-active=true\n  [contact-info\n    [phone-number kind=mobile value=\"+1-555\"]]]",
-      note:  "Element and attribute names support kebab-case (`user-profile`, `is-active`, `phone-number`). The hyphen is part of the identifier.",
-    },
-    "numbers-various": {
-      label: "Numbers \u2014 int / float / negative",
-      input: "[stats min=-5 mid=0 max=99.5 ratio=0.001]",
-      note:  "Numeric attribute values \u2014 positive / negative / int / float / sub-unit. All round-trip through projections.",
-    },
-    "booleans-on-attrs": {
-      label: "Booleans \u2014 feature flags",
-      input: "[user active=true verified=false admin=true blocked=false]",
-      note:  "Boolean attributes \u2014 `true` / `false` are typed scalars (not strings).",
-    },
-    "strings-special": {
-      label: "Strings \u2014 quoting variants",
-      input: "[note\n  single='single quotes'\n  double=\"double quotes\"\n  apostrophe=\"can't\"]",
-      note:  "String quoting \u2014 single OR double quotes. Pick whichever avoids the most escapes.",
-    },
-    "triple-quote": {
-      label: "Strings \u2014 triple-quoted (multiline)",
-      input: "[doc\n  body='''line 1\nline 2\nline 3''']",
-      note:  "Triple-quoted string allows multi-line content with embedded newlines. Useful for prose / code blocks.",
-    },
-    "seq-empty": {
-      label: "Sequence \u2014 empty",
-      input: "()",
-      note:  "An empty sequence \u2014 distinct from `null`. JSON renders as `[]`.",
-    },
-    "map-empty": {
-      label: "Map \u2014 empty",
-      input: "{}",
-      note:  "An empty map \u2014 distinct from `null`. JSON renders as `{}`.",
-    },
-    "library-catalog": {
-      label: "Library \u2014 book catalog",
-      input: "[library\n  [book isbn=\"978-0-13-110362-7\" title=\"The C Programming Language\" year=1988]\n  [book isbn=\"978-0-201-83595-3\" title=\"SICP\" year=1996]\n  [book isbn=\"978-1-491-95023-5\" title=\"Programming Rust\" year=2021]]",
-      note:  "Bibliographic catalog \u2014 ISBN + metadata. JSON projection arrays the books cleanly.",
-    },
-    "recipe": {
-      label: "Recipe \u2014 instructions + ingredients",
-      input: "[recipe name=\"Pizza\" serves=4\n  [ingredient name=flour qty=500 unit=g]\n  [ingredient name=water qty=300 unit=ml]\n  [ingredient name=salt qty=10 unit=g]\n  [step \"Mix flour, water, and salt.\"]\n  [step \"Knead for 10 minutes.\"]\n  [step \"Rise for 2 hours.\"]]",
-      note:  "Mixed-shape document \u2014 ingredients (with attrs) + steps (with text body).",
-    },
-    "playlist": {
-      label: "Playlist \u2014 track list",
-      input: "[playlist name=\"Focus\" duration=42m\n  [track id=1 title=\"Reverie\"          artist=\"Debussy\" duration=252s]\n  [track id=2 title=\"Gymnop\u00e9die No. 1\" artist=\"Satie\"   duration=228s]\n  [track id=3 title=\"Clair de Lune\"    artist=\"Debussy\" duration=321s]]",
-      note:  "Playlist \u2014 track sequence with rich metadata per track. Per-track durations in seconds (composite `4m12s` form isn't parsed at attribute position; use raw seconds).",
-    },
-    "address-book": {
-      label: "Address book \u2014 contact list",
-      input: "[contacts\n  [contact id=1 name=Alice\n    [email \"a@x.com\"]\n    [phone \"+1-555-0100\"]]\n  [contact id=2 name=Bob\n    [email \"b@x.com\"]]\n  [contact id=3 name=Carol\n    [phone \"+1-555-0103\"]]]",
-      note:  "Contact list \u2014 each entry has heterogeneous child sub-records (email / phone), and some are missing.",
-    },
-  };
-
   const program = {
-    "for-yield-square": {
-      label: "For-comp \u2014 yield squared values",
-      input: "[?for $n :in (1, 2, 3, 4, 5)\n  :yield [square :n $n :sq [* $n $n]]]",
-      note:  "`[?for $n :in xs :yield EXPR]` is the comprehension form \u2014 iterate `xs`, evaluate `EXPR` per item, collect results. Each `:yield` emits one element into the output sequence.",
+    "01-atom-element": {
+      label: "[01] Atom element \u2014 one attribute",
+      input: "[pizza size=large]",
+      note:  "**Introduces:** the simplest CX shape \u2014 one element with one attribute. Eval returns the value unchanged. Switch the Output tab to JSON / XML to see the same value in each projection.",
     },
-    "for-yield-where": {
-      label: "For-comp \u2014 :where filter clause",
-      input: "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)\n  :where [> $n 5]\n  :yield [big :n $n]]",
-      note:  "`:where` filters the iteration. Predicates use the bracket directive form: `[> $n 5]` reads as `$n > 5`. Only items passing the predicate reach `:yield`.",
+    "02-string-scalar": {
+      label: "[02] String \u2014 bare scalar",
+      input: "\"hello, world\"",
+      note:  "**Introduces:** scalar literals. Strings (`\"\u2026\"`) are first-class values; everything in CX is a value, including bare scalars at the top level.",
     },
-    "for-yield-conditional": {
-      label: "For-comp \u2014 :yield conditional",
-      input: "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)\n  :yield [?if [> $n 5] :then [big :n $n] :else [small :n $n]]]",
-      note:  "Conditional emit inside `:yield`. Every iteration yields one element; the branch decides which shape.",
+    "03-numbers": {
+      label: "[03] Numbers \u2014 int / float / negative",
+      input: "[stats min=-5 mid=0 max=99.5 ratio=0.001]",
+      note:  "**Introduces:** numeric attribute values. Positive / negative / int / float / sub-unit \u2014 all round-trip through projections.",
     },
-    "for-yield-nested": {
-      label: "For-comp \u2014 nested iteration",
-      input: "[?for $i :in (1, 2, 3)\n  :yield [?for $j :in (1, 2, 3)\n    :yield [pair :i $i :j $j]]]",
-      note:  "Nested comprehensions \u2014 outer iteration's `:yield` body itself is a comprehension. Produces a 2D shape (rows of pairs).",
+    "04-booleans": {
+      label: "[04] Booleans \u2014 feature flags",
+      input: "[user active=true verified=false admin=true blocked=false]",
+      note:  "**Introduces:** boolean attributes. `true` / `false` are typed scalars (not strings); JSON projects them as booleans.",
     },
-    "par-map-wall-streamed": {
-      label: "Map :par \u2014 wall-clock streaming",
-      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?let $_ = [?sleep 500ms] :in [* $n $n]]]\n  :par]",
-      note:  "Wall-clock parallelism. Bare `[?sleep 500ms]` really sleeps. Under `make guide-http` mode the 4 workers run on real OS threads \u2014 total ~500ms, completion-order output. Under file:// or generic HTTP V's spawn falls back to inline execution \u2014 total ~2s. The output streams: each item appears as its worker finishes.",
+    "05-atoms": {
+      label: "[05] Atom values \u2014 `:kebab-case`",
+      input: "[response :status :ok]",
+      note:  "**Introduces:** atoms \u2014 `:kebab-case` identifiers that evaluate to themselves. Use atoms for enum-like markers without quoting (ADR 0033).",
     },
-    "par-map-wall-ordered": {
-      label: "Map :par :ordered \u2014 wall-clock, source order",
-      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?let $_ = [?sleep 500ms] :in [* $n $n]]]\n  :par :ordered]",
-      note:  "Same as `par-map-wall` but with `:ordered` \u2014 output is reassembled in source order regardless of completion timing. Trade-off: order-preservation requires holding completed results in a buffer.",
+    "06-quoted-strings": {
+      label: "[06] Strings \u2014 quoting variants",
+      input: "[note\n  single='single quotes'\n  double=\"double quotes\"\n  apostrophe=\"can't\"]",
+      note:  "**Introduces:** string quoting \u2014 both `'\u2026'` and `\"\u2026\"`. Pick whichever avoids the most escapes.",
     },
-    "par-for-wall": {
-      label: "For :par \u2014 wall-clock comprehension",
-      input: "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8)\n      :yield [?let $_ = [?sleep 500ms] :in [item :n $n :sq [* $n $n]]]\n      :par]",
-      note:  "`[?for :par]` parallelizes the outermost generator. Under pthreads the 8 sleeps overlap on real threads \u2014 wall-clock ~500ms. Under file:// or generic HTTP execution is sequential \u2014 total ~4s. `[?for]` always streams :yield results in source order.",
+    "07-triple-quote": {
+      label: "[07] Strings \u2014 triple-quoted (multiline)",
+      input: "[doc\n  body='''line 1\nline 2\nline 3''']",
+      note:  "**Introduces:** triple-quoted strings `'''\u2026'''`. Multi-line content with embedded newlines, useful for prose or code blocks.",
     },
-    "par-map-mock": {
-      label: "Map :par \u2014 :mock sleep (instant)",
-      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  :using [?fn $n [?let $_ = [?sleep 500ms :mock] :in [* $n $n]]]\n  :par :ordered]",
-      note:  "Parallel-shape demo with `:mock` sleep \u2014 virtual time advances instantly, no wall-clock wait. Useful for testing parallel composition without real delays.",
+    "08-nested": {
+      label: "[08] Nested elements \u2014 containment",
+      input: "[order\n  [customer name=Alice]\n  [item name=pizza qty=2]\n  [item name=salad qty=1]]",
+      note:  "**Introduces:** nesting by containment. Children appear in document order. JSON projects child-element lists as arrays; XML round-trips verbatim.",
     },
-    "atom-001-bare-literal-in-code": {
-      label: "Atoms \u2014 bare literal in code",
-      input: ":ok",
-      note:  "Atom literal \u2014 a kebab-case identifier evaluates to itself, the simplest CX value (ADR 0033).",
+    "09-attrs-vs-children": {
+      label: "[09] Attributes vs child elements",
+      input: "[user id=1 active=true\n  [email \"a@x.com\"]\n  [phone \"+1-555\"]]",
+      note:  "**Introduces:** the attribute-vs-child distinction. Attributes (`id`, `active`) live on the open tag; child elements (`[email \u2026]`) live inside the body. Both project cleanly.",
     },
-    "atom-002-returned-from-let": {
-      label: "Atoms \u2014 returned from let",
-      input: "[?let $status = :ok :in $status]",
-      note:  "Atom literal \u2014 a kebab-case identifier evaluates to itself, the simplest CX value (ADR 0033).",
+    "10-mixed-content": {
+      label: "[10] Element \u2014 attrs AND text body",
+      input: "[link href=\"https://cx-home.github.io\" \"CX Guide\"]",
+      note:  "**Introduces:** an element carrying both attributes AND a body in the same tag \u2014 common for link / button shapes.",
     },
-    "cast-string-to-int": {
-      label: "Casts \u2014 cast string to int",
-      input: "[cast \"42\" :int]",
-      note:  "Type cast \u2014 `[cast TYPE VALUE]` converts between scalar types per ADR 0033. CXER0290 is the parse / type-mismatch failure mode.",
+    "11-sequence": {
+      label: "[11] Sequence \u2014 ordered values",
+      input: "(1, 2, 3, 4, 5)",
+      note:  "**Introduces:** sequence literal `(a, b, c)`. Ordered, heterogeneous, evaluated to themselves. JSON projects as an array.",
     },
-    "cast-string-to-float": {
-      label: "Casts \u2014 cast string to float",
-      input: "[cast \"3.14\" :float]",
-      note:  "Type cast \u2014 `[cast TYPE VALUE]` converts between scalar types per ADR 0033. CXER0290 is the parse / type-mismatch failure mode.",
+    "12-sequence-mixed": {
+      label: "[12] Sequence \u2014 mixed scalar types",
+      input: "(1, 2.5, \"three\", true, :four)",
+      note:  "**Introduces:** heterogeneous sequences \u2014 CX holds any scalar mix in one container.",
     },
-    "cast-string-to-bool": {
-      label: "Casts \u2014 cast string to bool",
-      input: "[cast \"true\" :bool]",
-      note:  "Type cast \u2014 `[cast TYPE VALUE]` converts between scalar types per ADR 0033. CXER0290 is the parse / type-mismatch failure mode.",
+    "13-sequence-of-elements": {
+      label: "[13] Sequence \u2014 element values",
+      input: "([user id=1 name=A], [user id=2 name=B], [user id=3 name=C])",
+      note:  "**Introduces:** sequences whose items are elements. The outer container is a flat sequence, not a wrapper element.",
     },
-    "cast-string-to-atom": {
-      label: "Casts \u2014 cast string to atom",
-      input: "[cast \"hello\" :atom]",
-      note:  "Type cast \u2014 `[cast TYPE VALUE]` converts between scalar types per ADR 0033. CXER0290 is the parse / type-mismatch failure mode.",
+    "14-map-literal": {
+      label: "[14] Map \u2014 string keys",
+      input: "{name: 'Alice', age: 30, active: true}",
+      note:  "**Introduces:** map literal `{key: value, \u2026}`. String-typed keys; JSON projects as an object.",
     },
-    "cast-int-to-float": {
-      label: "Casts \u2014 cast int to float",
-      input: "[cast 5 :float]",
-      note:  "Type cast \u2014 `[cast TYPE VALUE]` converts between scalar types per ADR 0033. CXER0290 is the parse / type-mismatch failure mode.",
+    "15-map-mixed": {
+      label: "[15] Map \u2014 mixed value types",
+      input: "{name: \"Alice\", age: 30, active: true, tags: (:admin, :verified)}",
+      note:  "**Introduces:** maps with values of any type \u2014 string, int, bool, sequence, even elements.",
     },
-    "cast-float-to-int-truncate": {
-      label: "Casts \u2014 cast float to int truncate",
-      input: "[cast 3.7 :int]",
-      note:  "Type cast \u2014 `[cast TYPE VALUE]` converts between scalar types per ADR 0033. CXER0290 is the parse / type-mismatch failure mode.",
+    "16-durations": {
+      label: "[16] Durations \u2014 first-class scalars",
+      input: "[timing short=50ms medium=2s long=15m very-long=2h]",
+      note:  "**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc. (ADR 0039).",
     },
-    "element-whitespace-form-stays-element": {
-      label: "Element construction \u2014 element whitespace form stays element",
-      input: "[first \"a\"]",
-      note:  "Build an element shape from parts. Paren-form `(name :attr v)` is the call-style construction; the bracket form `[name :attr v]` is the literal.",
+    "17-hyphenated": {
+      label: "[17] Hyphenated names \u2014 kebab identifiers",
+      input: "[user-profile is-active=true\n  [contact-info\n    [phone-number kind=mobile value=\"+1-555\"]]]",
+      note:  "**Introduces:** kebab-case identifiers. Element and attribute names can carry hyphens (`user-profile`, `is-active`).",
     },
-    "element-construction-dynamic-attr": {
-      label: "Element construction \u2014 element construction dynamic attr",
+    "18-recursive-shape": {
+      label: "[18] Recursive shapes \u2014 same name nested",
+      input: "[group\n  [group\n    [group label=leaf]]]",
+      note:  "**Introduces:** self-similar / recursive containment. JSON projection turns into `{group:{group:{group:{...}}}}`.",
+    },
+    "19-table-rows": {
+      label: "[19] Realistic \u2014 table-of-records shape",
+      input: "[table\n  [columns id name role]\n  [row id=1 name=Alice role=admin]\n  [row id=2 name=Bob   role=editor]\n  [row id=3 name=Carol role=viewer]]",
+      note:  "**Introduces:** tabular shape \u2014 column manifest + row records. Round-trips through CSV-style data layers.",
+    },
+    "20-invoice": {
+      label: "[20] Realistic \u2014 invoice document",
+      input: "[invoice id=inv-2025-042 issued=2025-05-25\n  [bill-to name=\"Acme Corp\"]\n  [line description=\"Consulting\" hours=20 rate=150]\n  [line description=\"Travel\" amount=420]\n  [total amount=3420 currency=USD]]",
+      note:  "**Introduces:** a realistic invoice shape \u2014 top-level attributes + heterogeneous children. The shape is also a valid template for code that would consume it.",
+    },
+    "21-let-basic": {
+      label: "[21] [?let] \u2014 bind a value, then use it",
+      input: "[?let $name = 'Alice' :in [greeting :hello $name]]",
+      note:  "**Introduces:** `[?let $var = VALUE :in BODY]` \u2014 lexical binding. `$name` substitutes its value inside BODY. The bracket `[greeting :hello $name]` builds a new element with the substituted value.",
+    },
+    "22-let-nested": {
+      label: "[22] [?let] \u2014 nested bindings",
+      input: "[?let $price = 12 :in\n [?let $qty   = 3  :in\n  [order :subtotal [* $price $qty]\n         :tax      [* [* $price $qty] 0.08]]]]",
+      note:  "**Introduces:** nested `[?let]` chains build local scopes. `[* $price $qty]` is the multiplication directive \u2014 CX's arithmetic uses the same `[? \u2026]` shape as every other op.",
+    },
+    "23-let-substitution": {
+      label: "[23] [?let] \u2014 substitution into element body",
       input: "[?let $l = \"cx\" :in [code lang=$l \"hello\"]]",
-      note:  "Build an element shape from parts. Paren-form `(name :attr v)` is the call-style construction; the bracket form `[name :attr v]` is the literal.",
+      note:  "**Introduces:** `$binding` substitution at attribute-value position. The `lang=$l` reads `lang=\"cx\"` after substitution.",
     },
-    "element-construction-multi-attr": {
-      label: "Element construction \u2014 element construction multi attr",
-      input: "[?let $l = \"cx\" :in [?let $h = \"main\" :in [code lang=$l hl=$h \"body\"]]]",
-      note:  "Build an element shape from parts. Paren-form `(name :attr v)` is the call-style construction; the bracket form `[name :attr v]` is the literal.",
+    "24-arith-add": {
+      label: "[24] Arithmetic \u2014 add",
+      input: "[+ 1 2 3 4 5]",
+      note:  "**Introduces:** the `[+ a b c \u2026]` builtin \u2014 prefix-form addition over any number of arguments.",
     },
-    "match-multi-001-element-dispatch": {
-      label: "Pattern matching \u2014 match multi 001 element dispatch",
-      input: "[?let $n = [prose \"hello\"] :in\n  [?match $n\n    :case [prose $p] :yield [p $p]\n    :case [code $c]  :yield [pre $c]\n    :else            :yield ()]]",
-      note:  "`[?match]` evaluates the scrutinee then dispatches to the first matching arm (ADR 0029). `:case` matches literal values, `:when` carries a predicate, `:else` is the fallback.",
+    "25-arith-mixed": {
+      label: "[25] Arithmetic \u2014 sub / mul / div",
+      input: "[?let $x = 10 :in [?let $y = 3 :in [stats :sum [+ $x $y] :diff [- $x $y] :prod [* $x $y]]]]",
+      note:  "**Introduces:** `[-]` (subtract) and `[*]` (multiply). All arithmetic is prefix-form.",
     },
-    "match-multi-002-scalar-literal": {
-      label: "Pattern matching \u2014 match multi 002 scalar literal",
-      input: "[?let $s = 200 :in\n  [?match $s\n    :case 200 :yield :ok\n    :case 404 :yield :not-found\n    :else     :yield :err]]",
-      note:  "`[?match]` evaluates the scrutinee then dispatches to the first matching arm (ADR 0029). `:case` matches literal values, `:when` carries a predicate, `:else` is the fallback.",
+    "26-string-concat": {
+      label: "[26] Strings \u2014 concat builtin",
+      input: "[concat \"hello\" \", \" \"world\"]",
+      note:  "**Introduces:** `[concat str\u2081 str\u2082 \u2026]` \u2014 string concatenation.",
     },
-    "match-multi-003-else-arm": {
-      label: "Pattern matching \u2014 match multi 003 else arm",
-      input: "[?let $s = 500 :in\n  [?match $s\n    :case 200 :yield :ok\n    :case 404 :yield :not-found\n    :else     :yield :err]]",
-      note:  "`[?match]` evaluates the scrutinee then dispatches to the first matching arm (ADR 0029). `:case` matches literal values, `:when` carries a predicate, `:else` is the fallback.",
+    "27-string-length": {
+      label: "[27] Strings \u2014 string-length",
+      input: "[string-length \"hello\"]",
+      note:  "**Introduces:** `[string-length s]` \u2014 character count of a string.",
     },
-    "match-multi-004-no-else-returns-empty": {
-      label: "Pattern matching \u2014 match multi 004 no else returns empty",
-      input: "[?let $s = 500 :in\n  [?match $s\n    :case 200 :yield :ok\n    :case 404 :yield :not-found]]",
-      note:  "`[?match]` evaluates the scrutinee then dispatches to the first matching arm (ADR 0029). `:case` matches literal values, `:when` carries a predicate, `:else` is the fallback.",
+    "28-string-contains": {
+      label: "[28] Strings \u2014 contains",
+      input: "[contains \"foobar\" \"oob\"]",
+      note:  "**Introduces:** `[contains haystack needle]` \u2014 boolean test for substring presence.",
     },
-    "match-multi-007-wildcard": {
-      label: "Pattern matching \u2014 match multi 007 wildcard",
-      input: "[?let $v = \"surprise\" :in\n  [?match $v\n    :case 200    :yield :http-ok\n    :case _      :yield :other]]",
-      note:  "`[?match]` evaluates the scrutinee then dispatches to the first matching arm (ADR 0029). `:case` matches literal values, `:when` carries a predicate, `:else` is the fallback.",
+    "29-comparison-eq": {
+      label: "[29] Comparison \u2014 equality",
+      input: "[?let $x = 7 :in [= $x 7]]",
+      note:  "**Introduces:** `[= a b]` \u2014 equality predicate. Returns `true` / `false`.",
     },
-    "match-multi-008-scalar-type-strict": {
-      label: "Pattern matching \u2014 match multi 008 scalar type strict",
-      input: "[?let $v = \"200\" :in\n  [?match $v\n    :case 200   :yield :int-match\n    :case \"200\" :yield :string-match\n    :else       :yield :no-match]]",
-      note:  "`[?match]` evaluates the scrutinee then dispatches to the first matching arm (ADR 0029). `:case` matches literal values, `:when` carries a predicate, `:else` is the fallback.",
+    "30-logical": {
+      label: "[30] Logical \u2014 and / or / not",
+      input: "[?let $on = true :in [and $on [or false true] [not false]]]",
+      note:  "**Introduces:** `[and \u2026]` / `[or \u2026]` / `[not x]` \u2014 boolean operators with short-circuit semantics.",
     },
-    "builtin-contains": {
-      label: "Builtins \u2014 builtin contains",
-      input: "contains(\"hello world\", \"world\")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "31-if-basic": {
+      label: "[31] [?if] \u2014 branch on a predicate",
+      input: "[?let $score = 87 :in\n [?if [>= $score 80] :then [grade :letter 'A']\n                    :else [grade :letter 'B']]]",
+      note:  "**Introduces:** `[?if PRED :then EXPR :else EXPR]`. Predicate is any expression; truthy values pick `:then`, falsy pick `:else`. Bracket-form predicate `[>= $score 80]`.",
     },
-    "builtin-contains-empty-sub": {
-      label: "Builtins \u2014 builtin contains empty sub",
-      input: "contains(\"hello world\", \"\")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "32-if-nested": {
+      label: "[32] [?if] \u2014 chained branches",
+      input: "[?let $n = 25 :in\n [?if [< $n 10]  :then :small\n :else [?if [< $n 50] :then :medium :else :large]]]",
+      note:  "**Introduces:** chaining `[?if]` via nested `:else`. The inner `[?if]` itself returns a value, so it's a valid `:else` body.",
     },
-    "builtin-starts-with": {
-      label: "Builtins \u2014 builtin starts with",
-      input: "starts-with(\"hello world\", \"hello\")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "33-match-scalar": {
+      label: "[33] [?match] \u2014 multi-arm on a scalar",
+      input: "[?let $s = 200 :in\n [?match $s\n   :case 200 :yield :ok\n   :case 404 :yield :not-found\n   :else     :yield :err]]",
+      note:  "**Introduces:** `[?match scrutinee :case V :yield E \u2026]`. First matching `:case` wins; `:else` is the fallback (ADR 0029).",
     },
-    "builtin-ends-with": {
-      label: "Builtins \u2014 builtin ends with",
-      input: "ends-with(\"hello world\", \"world\")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "34-match-else": {
+      label: "[34] [?match] \u2014 :else arm fires",
+      input: "[?let $s = 500 :in\n [?match $s\n   :case 200 :yield :ok\n   :case 404 :yield :not-found\n   :else     :yield :err]]",
+      note:  "**Introduces:** the `:else` fallback. When no `:case` matches, `:else` fires.",
     },
-    "builtin-substring": {
-      label: "Builtins \u2014 builtin substring",
-      input: "substring(\"hello world\", 7, 5)",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "35-match-no-else": {
+      label: "[35] [?match] \u2014 no :else returns ()",
+      input: "[?let $s = 500 :in\n [?match $s\n   :case 200 :yield :ok\n   :case 404 :yield :not-found]]",
+      note:  "**Introduces:** missing `:else` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()` (ADR 0029 D9).",
     },
-    "builtin-substring-to-end": {
-      label: "Builtins \u2014 builtin substring to end",
-      input: "substring(\"hello world\", 7)",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "36-match-wildcard": {
+      label: "[36] [?match] \u2014 wildcard `_`",
+      input: "[?let $v = \"surprise\" :in\n [?match $v\n   :case 200    :yield :http-ok\n   :case _      :yield :other]]",
+      note:  "**Introduces:** the wildcard `_` pattern. Matches any value \u2014 equivalent to `:else` but lets you bind via richer patterns.",
     },
-    "builtin-string-length": {
-      label: "Builtins \u2014 builtin string length",
-      input: "string-length(\"hello\")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "37-match-element-shape": {
+      label: "[37] [?match] \u2014 element shape dispatch",
+      input: "[?let $n = [prose \"hello\"] :in\n [?match $n\n   :case [prose $p] :yield [p $p]\n   :case [code $c]  :yield [pre $c]\n   :else            :yield ()]]",
+      note:  "**Introduces:** matching on element shape with binding. `[prose $p]` matches any `prose` element and binds its body to `$p` for use in `:yield`.",
     },
-    "builtin-normalize-space": {
-      label: "Builtins \u2014 builtin normalize space",
-      input: "normalize-space(\"  hello   world  \")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "38-match-type-strict": {
+      label: "[38] [?match] \u2014 type-strict scalar",
+      input: "[?let $v = 200 :in\n [?match $v\n   :case \"200\" :yield :string-match\n   :case 200   :yield :int-match\n   :else       :yield :other]]",
+      note:  "**Introduces:** type-strict scalar matching. `200` (int) \u2260 `\"200\"` (string).",
     },
-    "builtin-concat": {
-      label: "Builtins \u2014 builtin concat",
-      input: "concat(\"hello\", \" \", \"world\")",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "39-cast-string-int": {
+      label: "[39] [cast] \u2014 string to int",
+      input: "[cast \"42\" :int]",
+      note:  "**Introduces:** `[cast VALUE :TYPE]` \u2014 explicit scalar conversion per ADR 0033. `CXER0290` on invalid.",
     },
-    "builtin-distinct": {
-      label: "Builtins \u2014 builtin distinct",
-      input: "distinct((1, 2, 2, 3, 1, 4))",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "40-cast-float-int": {
+      label: "[40] [cast] \u2014 float to int (truncate)",
+      input: "[cast 3.7 :int]",
+      note:  "**Introduces:** float \u2192 int truncation via `[cast]`. Result is `3`, not rounded.",
     },
-    "builtin-reverse": {
-      label: "Builtins \u2014 builtin reverse",
-      input: "reverse((1, 2, 3, 4))",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "41-for-sequence": {
+      label: "[41] [?for] \u2014 iterate a literal sequence",
+      input: "[?for $n :in (1, 2, 3, 4, 5)\n  :yield [square :n $n :sq [* $n $n]]]",
+      note:  "**Introduces:** the comprehension `[?for $var :in source :yield EXPR]`. Iterates `source`, evaluates `EXPR` per item, collects results.",
     },
-    "builtin-head": {
-      label: "Builtins \u2014 builtin head",
-      input: "head((10, 20, 30))",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "42-for-where": {
+      label: "[42] [?for] \u2014 :where filter",
+      input: "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)\n  :where [> $n 5]\n  :yield [big :n $n]]",
+      note:  "**Introduces:** the `:where` clause. Filters items before `:yield`. Predicates use the bracket form: `[> $n 5]` reads as `$n > 5`.",
     },
-    "builtin-tail": {
-      label: "Builtins \u2014 builtin tail",
-      input: "tail((10, 20, 30))",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "43-for-yield-cond": {
+      label: "[43] [?for] \u2014 conditional :yield body",
+      input: "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8)\n  :yield [?if [> $n 5] :then [big :n $n] :else [small :n $n]]]",
+      note:  "**Introduces:** conditional inside `:yield`. Every iteration yields one element; the branch decides which shape.",
     },
-    "builtin-nth": {
-      label: "Builtins \u2014 builtin nth",
-      input: "nth((10, 20, 30, 40), 3)",
-      note:  "Built-in function. Most builtins follow `[FN arg\u2081 arg\u2082 \u2026]` shape and are pure / total.",
+    "44-for-nested": {
+      label: "[44] [?for] \u2014 nested iteration",
+      input: "[?for $i :in (1, 2, 3)\n  :yield [?for $j :in (1, 2, 3)\n    :yield [pair :i $i :j $j]]]",
+      note:  "**Introduces:** nested comprehensions. The outer `:yield` body is itself a comprehension. Produces a 2D shape.",
     },
-    "matrix-001-retry-retry": {
-      label: "Composition matrix \u2014 retry retry",
-      input: "[?retry :max 1 :backoff constant :delay 1ms :jitter none :body [?retry :max 1 :backoff constant :delay 1ms :jitter none :body [?test-always-err]]]",
-      note:  "Resilience composition \u2014 outer wraps inner. Failures bubble up the stack until handled.",
+    "45-for-multi-source": {
+      label: "[45] [?for] \u2014 multiple sources",
+      input: "[?for $a :in (1, 2, 3)\n      $b :in (10, 20, 30)\n  :yield [pair $a $b]]",
+      note:  "**Introduces:** multiple `$var :in source` clauses. Iterates the FIRST source as outer loop, second as inner (Cartesian product).",
     },
-    "matrix-002-retry-timeout": {
-      label: "Composition matrix \u2014 retry timeout",
-      input: "[?retry :max 1 :backoff constant :delay 1ms :jitter none :body [?timeout 10ms :body [?let $_ = [?sleep 100ms :mock] :in [ok :value \"x\"]]]]",
-      note:  "Resilience composition \u2014 outer wraps inner. Failures bubble up the stack until handled.",
+    "46-for-let-binding": {
+      label: "[46] [?for] \u2014 :let clause for derived values",
+      input: "[?for $n :in (1, 2, 3, 4, 5)\n  :let  $sq = [* $n $n]\n  :yield [pair :n $n :sq $sq]]",
+      note:  "**Introduces:** `:let` clause \u2014 bind a derived value once per iteration, reuse in subsequent clauses.",
     },
-    "matrix-003-retry-cb": {
-      label: "Composition matrix \u2014 retry cb",
-      input: "[?retry :max 1 :backoff constant :delay 1ms :jitter none :body [?test-cb-open]]",
-      note:  "Resilience composition \u2014 outer wraps inner. Failures bubble up the stack until handled.",
+    "47-fn-via-map": {
+      label: "[47] [?fn] \u2014 anonymous function via [?map]",
+      input: "[?map (1, 2, 3, 4, 5) :using [?fn $x [* $x $x]]]",
+      note:  "**Introduces:** `[?fn $param BODY]` \u2014 anonymous closure. `[?map xs :using fn]` invokes it on each element of `xs` (ADR 0040).",
     },
-    "matrix-004-retry-fallback": {
-      label: "Composition matrix \u2014 retry fallback",
-      input: "[?retry :max 1 :backoff constant :delay 1ms :jitter none :body [?fallback :body [err :code \"p\"] :recover-with [err :code \"s\"]]]",
-      note:  "Resilience composition \u2014 outer wraps inner. Failures bubble up the stack until handled.",
+    "48-map-with-cube": {
+      label: "[48] [?map] \u2014 composition with builtins",
+      input: "[?map (1, 2, 3, 4) :using [?fn $n [* $n [* $n $n]]]]",
+      note:  "**Introduces:** composed builtins inside `[?fn]`. `[* $n [* $n $n]]` is `$n \u00d7 $n \u00d7 $n` \u2014 cube.",
     },
-    "compose-001-retry-over-timeout": {
-      label: "Composition \u2014 retry over timeout",
-      input: "[?retry :max 3 :backoff constant :delay 10ms :jitter none\n   :body [?timeout 100ms\n            :body [?let $_ = [?sleep 500ms :mock] :in [ok :value \"never\"]]]]",
-      note:  "Layered composition of integration directives. Read top-down: outer directive wraps inner.",
+    "49-reduce-sum": {
+      label: "[49] [?reduce] \u2014 fold to one value",
+      input: "[?reduce (1, 2, 3, 4, 5) :using [?fn ($a, $b) [+ $a $b]] :init 0]",
+      note:  "**Introduces:** `[?reduce xs :using fn :init z]` \u2014 strict left-fold. `fn(z, x\u2081)` \u2192 `fn(prev, x\u2082)` \u2192 \u2026 Returns the final accumulator.",
     },
-    "pipe-001-canonical-form": {
-      label: "Pipe \u2014 canonical form",
-      input: "[?pipe (1, 2, 3, 4) :through [?fn $xs [?for $x :in $xs :where [> $x 2] :yield $x]]\n                    :through count]",
-      note:  "Pipeline \u2014 values flow left to right through each stage. Canonical `[?pipe IN :through F :through G]` \u2261 infix `IN | F | G`.",
+    "50-reduce-product": {
+      label: "[50] [?reduce] \u2014 fold to a product",
+      input: "[?reduce (1, 2, 3, 4, 5) :using [?fn ($a, $b) [* $a $b]] :init 1]",
+      note:  "**Introduces:** another `[?reduce]` shape \u2014 product (5! = 120). `:init 1` is the multiplicative identity.",
     },
-    "pipe-002-infix-sugar": {
-      label: "Pipe \u2014 infix sugar",
+    "51-let-element-body": {
+      label: "[51] [?let] \u2014 substitute into element body",
+      input: "[?let $msg = \"all clear\" :in [alert :level :info :body $msg]]",
+      note:  "**Introduces:** `$binding` substitution into a body slot. `:body $msg` writes the bound string into the element's body.",
+    },
+    "52-element-body": {
+      label: "[52] Element body \u2014 text + nested mix",
+      input: "[?let $title = \"On Homoiconicity\" :in\n [post [title $title]\n       [paragraph \"CX shares its data and code surface.\"]]]",
+      note:  "**Introduces:** building elements with substituted attribute values + literal nested children.",
+    },
+    "53-fn-binary": {
+      label: "[53] [?fn] \u2014 binary function",
+      input: "[?let $add = [?fn ($a, $b) [+ $a $b]] :in $add]",
+      note:  "**Introduces:** `[?fn ($a, $b) BODY]` \u2014 binary anonymous function. Returns a closure value (rendered as a sentinel element).",
+    },
+    "54-builtin-head": {
+      label: "[54] Sequence \u2014 head + tail",
+      input: "[?let $xs = (10, 20, 30, 40) :in [list :first [head $xs] :rest [tail $xs]]]",
+      note:  "**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).",
+    },
+    "55-builtin-nth": {
+      label: "[55] Sequence \u2014 nth (0-indexed)",
+      input: "[nth (10, 20, 30, 40) 2]",
+      note:  "**Introduces:** `[nth xs i]` \u2014 zero-indexed element access. Returns `30`.",
+    },
+    "56-builtin-distinct": {
+      label: "[56] Sequence \u2014 distinct",
+      input: "[distinct (1, 2, 1, 3, 2, 4, 1)]",
+      note:  "**Introduces:** `[distinct xs]` \u2014 preserves first occurrence, drops duplicates.",
+    },
+    "57-builtin-reverse": {
+      label: "[57] Sequence \u2014 reverse",
+      input: "[reverse (1, 2, 3, 4, 5)]",
+      note:  "**Introduces:** `[reverse xs]` \u2014 flips order.",
+    },
+    "58-builtin-position": {
+      label: "[58] Sequence \u2014 position",
+      input: "[position (10, 20, 30, 20, 40) 20]",
+      note:  "**Introduces:** `[position xs needle]` \u2014 index of first occurrence (0-based), or -1.",
+    },
+    "59-numeric-abs": {
+      label: "[59] Numeric \u2014 abs",
+      input: "[abs -42]",
+      note:  "**Introduces:** `[abs n]` \u2014 absolute value.",
+    },
+    "60-numeric-round": {
+      label: "[60] Numeric \u2014 round",
+      input: "[round 3.7]",
+      note:  "**Introduces:** `[round f]` \u2014 to-nearest-integer rounding.",
+    },
+    "61-modify-delete": {
+      label: "[61] [?modify] \u2014 pure-functional :delete",
+      input: "[?let $doc = [users\n  [user id=1 name=Alice  banned=false]\n  [user id=2 name=Bob    banned=true]\n  [user id=3 name=Carol banned=false]\n  [user id=4 name=Dave   banned=true]] :in\n  [?modify $doc //user[@banned=true] :delete]]",
+      note:  "**Introduces:** `[?modify DOC PATH :ACTION]` (ADR 0030). Pure-functional \u2014 returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` is a CXPath predicate filter; `:delete` removes the matches.",
+    },
+    "62-modify-set-attr": {
+      label: "[62] [?modify] \u2014 :set-attr on every match",
+      input: "[?let $doc = [users\n  [user id=1 [name Alice]]\n  [user id=2 [name Bob]]] :in\n  [?modify $doc //user :set-attr status \"active\"]]",
+      note:  "**Introduces:** `:set-attr NAME VALUE` \u2014 writes an attribute on every matched node. Adds `status=active` to every user.",
+    },
+    "63-cxpath-axes": {
+      label: "[63] CXPath \u2014 child + attribute axes",
+      input: "[?let $doc = [order [item qty=2] [item qty=3] [item qty=5]] :in\n  [?for $i :in $doc/item :yield $i/@qty]]",
+      note:  "**Introduces:** CXPath axes \u2014 `/item` selects direct children named `item`; `/@qty` selects the `qty` attribute.",
+    },
+    "64-cxpath-where": {
+      label: "[64] CXPath \u2014 filter via :where",
+      input: "[?let $doc = [users\n  [user name=Alice active=true age=30]\n  [user name=Bob   active=false age=25]\n  [user name=Carol active=true age=22]] :in\n  [?for $u :in $doc/user\n   :where [= $u/@active true]\n   :yield [active-user :name $u/@name :age $u/@age]]]",
+      note:  "**Introduces:** filtering a CXPath result via `:where`. `$doc/user` selects direct children named `user`; `:where [= $u/@active true]` filters them. Booleans, ints, strings all compare via `[= a b]`.",
+    },
+    "65-sleep-mock-timeout": {
+      label: "[65] [?sleep :mock] inside [?timeout]",
+      input: "[?timeout 100ms\n  :body [?let $_ = [?sleep 500ms :mock] :in [ok :value 'never']]]",
+      note:  "**Introduces:** `[?sleep DUR :mock]` \u2014 virtual time, instant in wall-clock (ADR 0039). The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms. `[?timeout]` returns `[err :code \"cx-err:CXER0141\"]`.",
+    },
+    "66-modify-chain": {
+      label: "[66] [?modify] \u2014 chained transformations via [?let]",
+      input: "[?let $doc = [users\n  [user id=1 name=Alice banned=false]\n  [user id=2 name=Bob   banned=true]\n  [user id=3 name=Carol banned=false]] :in\n  [?let $clean = [?modify $doc //user[@banned=true] :delete] :in\n    [?modify $clean //user :set-attr role \"member\"]]]",
+      note:  "**Introduces:** composing multiple `[?modify]` steps with `[?let]`. First delete banned users, then set `role=member` on the survivors. Each `[?modify]` returns a new doc; `[?let]` threads them.",
+    },
+    "67-pipe-canonical": {
+      label: "[67] [?pipe] \u2014 canonical pipeline",
+      input: "[?pipe (1, 2, 3, 4) :through [?fn $xs [?for $x :in $xs :where [> $x 2] :yield $x]] :through count]",
+      note:  "**Introduces:** `[?pipe IN :through STAGE :through STAGE]` \u2014 value flows through each stage. `count` is the sequence-length builtin.",
+    },
+    "68-pipe-infix": {
+      label: "[68] [?pipe] \u2014 infix `|` sugar",
       input: "(1, 2, 3, 4) | [?fn $xs [?for $x :in $xs :where [> $x 2] :yield $x]] | count",
-      note:  "Pipeline \u2014 values flow left to right through each stage. Canonical `[?pipe IN :through F :through G]` \u2261 infix `IN | F | G`.",
+      note:  "**Introduces:** infix `|` sugar for `[?pipe]`. Identical semantics, more compact.",
     },
-    "retry-001-happy-path": {
-      label: "Retry \u2014 happy path",
-      input: "[?retry :max 3 :body [ok :value 42]]",
-      note:  "`[?retry]` re-evaluates `:body` until success or `:max` attempts. Backoff / jitter configurable per \u00a710.2.1.",
+    "69-pipe-modify": {
+      label: "[69] [?pipe] \u2014 chained [?modify]",
+      input: "[?let $doc = [users [user [name Alice]] [user [name Bob]]] :in\n  $doc | [?modify //user :set-attr verified true]]",
+      note:  "**Introduces:** pipe + `[?modify]` \u2014 common pattern for read-then-transform. The doc flows into modify; result is the transformed doc.",
     },
-    "retry-002-success-on-third-attempt": {
-      label: "Retry \u2014 success on third attempt",
-      input: "[?retry :max 5\n        :body [?test-err-then-ok :err-count 2 :ok-value [ok :value \"done\"]]]",
-      note:  "`[?retry]` re-evaluates `:body` until success or `:max` attempts. Backoff / jitter configurable per \u00a710.2.1.",
-    },
-    "retry-003-exhaustion": {
-      label: "Retry \u2014 exhaustion",
-      input: "[?retry :max 3 :body [?test-always-err]]",
-      note:  "`[?retry]` re-evaluates `:body` until success or `:max` attempts. Backoff / jitter configurable per \u00a710.2.1.",
-    },
-    "retry-004-on-predicate-bails": {
-      label: "Retry \u2014 on predicate bails",
-      input: "[?retry :max 5\n        :on [?fn $e [?if [= $e@code \"permanent\"] :then false :else true]]\n        :body [err :code \"permanent\" :message \"give up\"]]",
-      note:  "`[?retry]` re-evaluates `:body` until success or `:max` attempts. Backoff / jitter configurable per \u00a710.2.1.",
-    },
-    "retry-005-constant-backoff": {
-      label: "Retry \u2014 constant backoff",
-      input: "[?retry :max 3 :backoff constant :delay 100ms :jitter none\n        :body [?test-always-err]]",
-      note:  "`[?retry]` re-evaluates `:body` until success or `:max` attempts. Backoff / jitter configurable per \u00a710.2.1.",
-    },
-    "timeout-001-completes-within": {
-      label: "Timeout \u2014 completes within",
-      input: "[?timeout 1s :body [ok :value \"fast\"]]",
-      note:  "`[?timeout DUR :body \u2026]` bounds wall-clock for `:body`. Exceeded \u2192 `[err :code \"cx-err:CXER0141\"]`.",
-    },
-    "timeout-002-deadline-exceeded": {
-      label: "Timeout \u2014 deadline exceeded",
-      input: "[?timeout 100ms :body [?let $_ = [?sleep 500ms :mock] :in [ok :value \"never\"]]]",
-      note:  "`[?timeout DUR :body \u2026]` bounds wall-clock for `:body`. Exceeded \u2192 `[err :code \"cx-err:CXER0141\"]`.",
-    },
-    "timeout-003-on-timeout-recovery": {
-      label: "Timeout \u2014 on timeout recovery",
-      input: "[?timeout 100ms\n   :body [?let $_ = [?sleep 500ms :mock] :in [ok :value \"never\"]]\n   :on-timeout [ok :value \"fallback\"]]",
-      note:  "`[?timeout DUR :body \u2026]` bounds wall-clock for `:body`. Exceeded \u2192 `[err :code \"cx-err:CXER0141\"]`.",
-    },
-    "cb-001-closed-passthrough": {
-      label: "Circuit breaker \u2014 closed passthrough",
-      input: "[?circuit-breaker :threshold 0.5 :window 60s :reset 30s :min-samples 10\n   :body [ok :value 7]]",
-      note:  "`[?circuit-breaker]` opens after `:threshold` failure ratio over `:window`; rejects with CXER0150 until `:reset` elapses.",
-    },
-    "cb-002-trips-open": {
-      label: "Circuit breaker \u2014 trips open",
-      input: "[?for $i :in (1, 2, 3, 4, 5)\n      :yield [?circuit-breaker :threshold 0.5 :window 60s :reset 30s\n                               :min-samples 2 :name \"cb-002\"\n              :body [?test-always-err]]]",
-      note:  "`[?circuit-breaker]` opens after `:threshold` failure ratio over `:window`; rejects with CXER0150 until `:reset` elapses.",
-    },
-    "cb-003-half-open-after-reset": {
-      label: "Circuit breaker \u2014 half open after reset",
-      input: "[?let $a = [?circuit-breaker :threshold 0.0 :window 60s :reset 30s\n                             :min-samples 1 :name \"cb-003\"\n            :body [?test-err-then-ok :err-count 1 :ok-value [ok :value \"probe-ok\"]]]\n :in [?let $_ = [?test-clock :advance 31s]\n      :in [?let $b = [?circuit-breaker :threshold 0.0 :window 60s :reset 30s\n                                       :min-samples 1 :name \"cb-003\"\n                       :body [?test-err-then-ok :err-count 1 :ok-value [ok :value \"probe-ok\"]]]\n           :in ([a $a], [b $b])]]]",
-      note:  "`[?circuit-breaker]` opens after `:threshold` failure ratio over `:window`; rejects with CXER0150 until `:reset` elapses.",
-    },
-    "cb-005-below-min-samples-no-trip": {
-      label: "Circuit breaker \u2014 below min samples no trip",
-      input: "[?for $i :in (1, 2)\n      :yield [?circuit-breaker :threshold 0.5 :window 60s :reset 30s\n                               :min-samples 10 :name \"cb-005\"\n              :body [?test-always-err]]]",
-      note:  "`[?circuit-breaker]` opens after `:threshold` failure ratio over `:window`; rejects with CXER0150 until `:reset` elapses.",
-    },
-    "ratelimit-001-under-limit": {
-      label: "Rate limit \u2014 under limit",
-      input: "[?for $i :in (1, 2, 3)\n      :yield [?rate-limit :max 5 :per 1s :name \"rl-001\"\n              :body [ok :value $i]]]",
-      note:  "`[?rate-limit :max N :per DUR]` admits up to N invocations per window; saturated \u2192 CXER0151.",
-    },
-    "ratelimit-002-over-limit": {
-      label: "Rate limit \u2014 over limit",
-      input: "[?for $i :in (1, 2, 3, 4)\n      :yield [?rate-limit :max 2 :per 1s :name \"rl-002\"\n              :body [ok :value $i]]]",
-      note:  "`[?rate-limit :max N :per DUR]` admits up to N invocations per window; saturated \u2192 CXER0151.",
-    },
-    "ratelimit-003-replenish-after-window": {
-      label: "Rate limit \u2014 replenish after window",
-      input: "[?let $a = [?rate-limit :max 1 :per 1s :name \"rl-003\" :body [ok :value \"a\"]]\n :in [?let $b = [?rate-limit :max 1 :per 1s :name \"rl-003\" :body [ok :value \"b\"]]\n      :in [?let $_ = [?test-clock :advance 1100ms]\n           :in [?let $c = [?rate-limit :max 1 :per 1s :name \"rl-003\" :body [ok :value \"c\"]]\n                :in ([a $a], [b $b], [c $c])]]]]",
-      note:  "`[?rate-limit :max N :per DUR]` admits up to N invocations per window; saturated \u2192 CXER0151.",
-    },
-    "bulkhead-001-under-cap": {
-      label: "Bulkhead \u2014 under cap",
-      input: "[?bulkhead :max-concurrent 4 :queue 0 :body [ok :value \"ran\"]]",
-      note:  "`[?bulkhead :max-concurrent N]` caps concurrent `:body` invocations. Saturated \u2192 CXER0152, or queues per `:queue N`.",
-    },
-    "bulkhead-002-saturated-no-queue": {
-      label: "Bulkhead \u2014 saturated no queue",
-      input: "[?test-concurrent :tasks (\n   [?bulkhead :max-concurrent 1 :queue 0 :name \"bh-002\"\n              :body [?let $_ = [?sleep 500ms :mock] :in [ok :value \"first\"]]],\n   [?bulkhead :max-concurrent 1 :queue 0 :name \"bh-002\"\n              :body [ok :value \"second\"]])]",
-      note:  "`[?bulkhead :max-concurrent N]` caps concurrent `:body` invocations. Saturated \u2192 CXER0152, or queues per `:queue N`.",
-    },
-    "bulkhead-003-queue-fifo": {
-      label: "Bulkhead \u2014 queue fifo",
-      input: "[?test-concurrent :tasks (\n   [?bulkhead :max-concurrent 1 :queue 2 :name \"bh-003\"\n              :body [?let $_ = [?sleep 100ms :mock] :in [ok :value \"a\"]]],\n   [?bulkhead :max-concurrent 1 :queue 2 :name \"bh-003\"\n              :body [ok :value \"b\"]],\n   [?bulkhead :max-concurrent 1 :queue 2 :name \"bh-003\"\n              :body [ok :value \"c\"]])]",
-      note:  "`[?bulkhead :max-concurrent N]` caps concurrent `:body` invocations. Saturated \u2192 CXER0152, or queues per `:queue N`.",
-    },
-    "fallback-001-primary-success": {
-      label: "Fallback \u2014 primary success",
-      input: "[?fallback :body [ok :value \"primary\"] :recover-with [ok :value \"secondary\"]]",
-      note:  "`[?fallback :body \u2026 :on-err \u2026]` runs `:body`; on err runs `:on-err` with `$err` bound.",
-    },
-    "fallback-002-primary-err-secondary-ok": {
-      label: "Fallback \u2014 primary err secondary ok",
-      input: "[?fallback :body [err :code \"down\"] :recover-with [ok :value \"secondary\"]]",
-      note:  "`[?fallback :body \u2026 :on-err \u2026]` runs `:body`; on err runs `:on-err` with `$err` bound.",
-    },
-    "fallback-003-both-err-no-wrap": {
-      label: "Fallback \u2014 both err no wrap",
+    "70-fallback-recover": {
+      label: "[70] [?fallback] \u2014 on err, recover",
       input: "[?fallback :body [err :code \"down-primary\"] :recover-with [err :code \"down-secondary\"]]",
-      note:  "`[?fallback :body \u2026 :on-err \u2026]` runs `:body`; on err runs `:on-err` with `$err` bound.",
+      note:  "**Introduces:** `[?fallback :body \u2026 :recover-with \u2026]`. If `:body` is an err, evaluate `:recover-with` and return that. Otherwise return the body's value.",
     },
-    "sleep-001-mock-explicit": {
-      label: "Sleep \u2014 mock explicit",
-      input: "[?let $_ = [?sleep 500ms :mock] :in [ok :value \"instant\"]]",
-      note:  "`[?sleep DUR]` blocks wall-clock by default; `:mock` advances a logical clock instantly without waiting (ADR 0039).",
+    "71-retry-happy": {
+      label: "[71] [?retry] \u2014 happy path (first try wins)",
+      input: "[?retry :max 3 :body [ok :value 'first-try']]",
+      note:  "**Introduces:** `[?retry :max N :body EXPR]`. Re-runs `:body` until it returns a non-err value or `:max` is hit. Here it succeeds on attempt 1.",
     },
-    "sleep-002-mock-flag-advances-now-ns": {
-      label: "Sleep \u2014 mock flag advances now ns",
-      input: "[?timeout 100ms :body [?let $_ = [?sleep 500ms :mock] :in [ok :value \"never\"]]]",
-      note:  "`[?sleep DUR]` blocks wall-clock by default; `:mock` advances a logical clock instantly without waiting (ADR 0039).",
+    "72-retry-eventually": {
+      label: "[72] [?retry] \u2014 succeeds after some failures",
+      input: "[?retry :max 5\n  :body [?test-err-then-ok :err-count 2 :ok-value [ok :value 'recovered']]]",
+      note:  "**Introduces:** `[?test-err-then-ok]` \u2014 fixture helper that returns err N times then OK. Combined with `[?retry]` shows the retry succeeding after 2 transient failures.",
     },
-    "sleep-003-mock-cancellation-immediate": {
-      label: "Sleep \u2014 mock cancellation immediate",
-      input: "[?let $f = [?async [?sleep 60s :mock]]\n :in [?let $_ = [?cancel $f] :in [?await $f]]]",
-      note:  "`[?sleep DUR]` blocks wall-clock by default; `:mock` advances a logical clock instantly without waiting (ADR 0039).",
+    "73-retry-exhaustion": {
+      label: "[73] [?retry] \u2014 exhausted \u2192 CXER0140",
+      input: "[?retry :max 3 :body [?test-always-err]]",
+      note:  "**Introduces:** `[?retry]` exhaustion. When `:max` is hit and `:body` still errs, returns `[err :code \"cx-err:CXER0140\" :attempts N :cause \u2026]`.",
     },
-    "sleep-004-grammar-mock-flag-parses": {
-      label: "Sleep \u2014 grammar mock flag parses",
-      input: "[?sleep 1ms :mock]",
-      note:  "`[?sleep DUR]` blocks wall-clock by default; `:mock` advances a logical clock instantly without waiting (ADR 0039).",
+    "74-timeout-fires": {
+      label: "[74] [?timeout] \u2014 fires after mock sleep",
+      input: "[?timeout 50ms\n  :body [?let $_ = [?sleep 200ms :mock] :in [ok :value 'too-slow']]]",
+      note:  "**Introduces:** `[?timeout DUR :body EXPR]`. If `:body` takes longer than `DUR`, returns CXER0141. Mock-sleep makes the timeout deterministic.",
     },
-    "conc-001-channel-send-receive-buffered": {
-      label: "Channels \u2014 channel send receive buffered",
-      input: "[?let $ch = [?channel :name \"c1\" :buffer 1]\n :in [?let $_ = [?send \"hello\" :to $ch]\n      :in [?receive :from $ch]]]",
-      note:  "`[?channel :name S :buffer N]` is a typed queue. `[?send]` enqueues, `[?receive]` dequeues, `[?close]` signals end-of-stream.",
+    "75-circuit-breaker-trips": {
+      label: "[75] [?circuit-breaker] \u2014 trips after failures",
+      input: "[?for $i :in (1, 2, 3, 4)\n  :yield [?circuit-breaker :threshold 0.5 :window 1s :reset 10s :min-samples 2\n            :body [?test-always-err]]]",
+      note:  "**Introduces:** `[?circuit-breaker]`. After `:min-samples` samples and `:threshold` failure ratio, opens for `:reset` time and rejects without invoking `:body`.",
     },
-    "conc-002-channel-synchronous-rendezvous": {
-      label: "Channels \u2014 channel synchronous rendezvous",
-      input: "[?let $ch = [?channel :name \"c2\" :buffer 0]\n :in [?test-concurrent :tasks (\n        [?send \"sync\" :to $ch],\n        [?receive :from $ch])]]",
-      note:  "`[?channel :name S :buffer N]` is a typed queue. `[?send]` enqueues, `[?receive]` dequeues, `[?close]` signals end-of-stream.",
+    "76-rate-limit-allow": {
+      label: "[76] [?rate-limit] \u2014 under the limit",
+      input: "[?for $i :in (1, 2, 3)\n  :yield [?rate-limit :max 10 :per 1s :body [ok :i $i]]]",
+      note:  "**Introduces:** `[?rate-limit :max N :per DUR]`. Admits up to N invocations per window. Within the limit, just passes through.",
     },
-    "conc-003-send-to-closed": {
-      label: "Channels \u2014 send to closed",
-      input: "[?let $ch = [?channel :name \"c3\" :buffer 1]\n :in [?let $_ = [?close $ch]\n      :in [?send \"late\" :to $ch]]]",
-      note:  "`[?channel :name S :buffer N]` is a typed queue. `[?send]` enqueues, `[?receive]` dequeues, `[?close]` signals end-of-stream.",
+    "77-rate-limit-over": {
+      label: "[77] [?rate-limit] \u2014 exceeds the limit",
+      input: "[?for $i :in (1, 2, 3, 4, 5)\n  :yield [?rate-limit :max 2 :per 1s :body [ok :i $i]]]",
+      note:  "**Introduces:** over-limit behaviour. After `:max` admits, further calls return `[err :code \"cx-err:CXER0151\" :retry-after DUR]`.",
     },
-    "conc-004-receive-drained-closed": {
-      label: "Channels \u2014 receive drained closed",
-      input: "[?let $ch = [?channel :name \"c4\" :buffer 2]\n :in [?let $_ = [?send \"a\" :to $ch]\n      :in [?let $_ = [?close $ch]\n           :in [?let $first = [?receive :from $ch]\n                :in [?let $second = [?receive :from $ch]\n                     :in ([first $first], [second $second])]]]]]",
-      note:  "`[?channel :name S :buffer N]` is a typed queue. `[?send]` enqueues, `[?receive]` dequeues, `[?close]` signals end-of-stream.",
+    "78-bulkhead-pass": {
+      label: "[78] [?bulkhead] \u2014 under cap",
+      input: "[?bulkhead :max-concurrent 4 :queue 0 :body [ok :value \"in-flight\"]]",
+      note:  "**Introduces:** `[?bulkhead :max-concurrent N]`. Sequential evaluator: passes when current concurrent count < N. Saturated \u2192 CXER0152.",
     },
-    "conc-005-try-send-timeout": {
-      label: "Channels \u2014 try send timeout",
-      input: "[?let $ch = [?channel :name \"c5\" :buffer 1]\n :in [?let $_ = [?send \"first\" :to $ch]\n      :in [?try-send \"second\" :to $ch :timeout 50ms]]]",
-      note:  "`[?channel :name S :buffer N]` is a typed queue. `[?send]` enqueues, `[?receive]` dequeues, `[?close]` signals end-of-stream.",
+    "79-fallback-success": {
+      label: "[79] [?fallback] \u2014 body succeeds, no recover",
+      input: "[?fallback :body [ok :value \"healthy\"] :recover-with [ok :value \"never\"]]",
+      note:  "**Introduces:** `[?fallback]` happy path. When `:body` returns a non-err value, that value is returned and `:recover-with` is never evaluated.",
     },
-    "conc-006-try-receive-timeout": {
-      label: "Channels \u2014 try receive timeout",
-      input: "[?let $ch = [?channel :name \"c6\" :buffer 1]\n :in [?try-receive :from $ch :timeout 50ms]]",
-      note:  "`[?channel :name S :buffer N]` is a typed queue. `[?send]` enqueues, `[?receive]` dequeues, `[?close]` signals end-of-stream.",
+    "80-composition": {
+      label: "[80] Composition \u2014 retry + timeout + circuit-breaker",
+      input: "[?retry :max 3 :body\n  [?timeout 100ms :body\n    [?circuit-breaker :threshold 0.5 :window 1s :reset 10s\n      :body [ok :value \"layered\"]]]]",
+      note:  "**Introduces:** layered resilience composition. Outer `[?retry]` wraps inner `[?timeout]` wraps inner `[?circuit-breaker]`. Each err bubbles up the stack.",
     },
-    "conc-009-worker-happy-path": {
-      label: "Workers \u2014 worker happy path",
-      input: "[?let $w = [?worker :name \"w1\" :body [ok :value 42]]\n :in [?wait-for :worker $w]]",
-      note:  "`[?worker]` registers a long-running task with `:body` evaluated under the cooperative `[?test-concurrent]` scheduler.",
+    "81-async-await": {
+      label: "[81] [?async] + [?await] \u2014 minimal future",
+      input: "[?let $f = [?async [ok :value 42]] :in [?await $f]]",
+      note:  "**Introduces:** `[?async EXPR]` returns a future handle. `[?await $f]` resolves it. Futures are lazy: the body runs on first await.",
     },
-    "conc-010-worker-handle-lookup-miss": {
-      label: "Workers \u2014 worker handle lookup miss",
-      input: "[?worker-handle :name \"does-not-exist\"]",
-      note:  "`[?worker]` registers a long-running task with `:body` evaluated under the cooperative `[?test-concurrent]` scheduler.",
+    "82-async-mock-sleep": {
+      label: "[82] [?async] \u2014 mock sleep then resolve",
+      input: "[?let $f = [?async [?let $_ = [?sleep 100ms :mock] :in [ok :value 'done']]] :in [?await $f]]",
+      note:  "**Introduces:** futures with internal mock-sleep. The future resolves in logical time.",
     },
-    "conc-011-worker-panic": {
-      label: "Workers \u2014 worker panic",
-      input: "[?let $w = [?worker :name \"w2\" :body [err :code \"kaboom\"]]\n :in [?wait-for :worker $w]]",
-      note:  "`[?worker]` registers a long-running task with `:body` evaluated under the cooperative `[?test-concurrent]` scheduler.",
+    "83-await-all": {
+      label: "[83] [?await-all] \u2014 wait on every future",
+      input: "[?let $fast = [?async [?let $_ = [?sleep 100ms :mock] :in [ok :value 'a']]] :in\n [?let $slow = [?async [?let $_ = [?sleep 400ms :mock] :in [ok :value 'b']]] :in\n  [?await-all ($fast, $slow)]]]",
+      note:  "**Introduces:** `[?await-all (futures\u2026)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).",
     },
-    "conc-013-worker-handle-lookup-hit": {
-      label: "Workers \u2014 worker handle lookup hit",
-      input: "[?let $_ = [?worker :name \"w4\" :body [ok :value \"lookupable\"]]\n :in [?let $h = [?worker-handle :name \"w4\"]\n      :in [?wait-for :worker $h]]]",
-      note:  "`[?worker]` registers a long-running task with `:body` evaluated under the cooperative `[?test-concurrent]` scheduler.",
+    "84-await-any": {
+      label: "[84] [?await-any] \u2014 first success wins",
+      input: "[?let $broken = [?async [err :code \"down\"]] :in\n [?let $good   = [?async [ok :value 'survivor']] :in\n  [?await-any ($broken, $good)]]]",
+      note:  "**Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.",
     },
-    "conc-014-select-first-channel": {
-      label: "Select \u2014 select first channel",
-      input: "[?let $a = [?channel :name \"sa\" :buffer 1]\n :in [?let $b = [?channel :name \"sb\" :buffer 1]\n      :in [?let $_ = [?send \"from-a\" :to $a]\n           :in [?select\n                 :case [:from $a $msg [picked :ch \"a\" :value $msg]]\n                 :case [:from $b $msg [picked :ch \"b\" :value $msg]]]]]]",
-      note:  "`[?select :on ((:receive-from $ch1 :yield \u2026), \u2026)]` waits on multiple channel reads; the first ready wins.",
+    "85-await-race": {
+      label: "[85] [?await-race] \u2014 first to resolve wins",
+      input: "[?let $fast = [?async [?let $_ = [?sleep 100ms :mock] :in [ok :value 'fast']]] :in\n [?let $slow = [?async [?let $_ = [?sleep 500ms :mock] :in [ok :value 'slow']]] :in\n  [?await-race ($fast, $slow)]]]",
+      note:  "**Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.",
     },
-    "conc-015-select-timeout-case": {
-      label: "Select \u2014 select timeout case",
-      input: "[?let $a = [?channel :name \"sc\" :buffer 1]\n :in [?select\n        :case [:from $a $msg [picked :ch \"a\" :value $msg]]\n        :case [:timeout 50ms [timeout-fired]]]]",
-      note:  "`[?select :on ((:receive-from $ch1 :yield \u2026), \u2026)]` waits on multiple channel reads; the first ready wins.",
+    "86-channel-basic": {
+      label: "[86] [?channel] \u2014 buffered send / receive",
+      input: "[?let $ch = [?channel :name \"c\" :buffer 4] :in\n [?let $_  = [?send 42 :to $ch] :in\n  [?receive :from $ch]]]",
+      note:  "**Introduces:** `[?channel :name S :buffer N]` is a typed FIFO queue. `[?send V :to $ch]` enqueues; `[?receive :from $ch]` dequeues.",
     },
-    "async-001-await-done": {
-      label: "Async \u2014 await done",
-      input: "[?let $f = [?async [ok :value 42]]\n :in [?await $f]]",
-      note:  "`[?async EXPR]` returns a future handle; `[?await $f]` resolves it. Futures are lazy \u2014 body runs on first await.",
+    "87-channel-close": {
+      label: "[87] [?channel] \u2014 :close signals end",
+      input: "[?let $ch = [?channel :name \"c\" :buffer 4] :in\n [?let $_  = [?send 1 :to $ch] :in\n [?let $_  = [?close $ch] :in\n  [?receive :from $ch]]]]",
+      note:  "**Introduces:** `[?close $ch]` \u2014 signals end-of-stream. Receivers still drain remaining values; further sends err.",
     },
-    "async-002-await-failed-propagates": {
-      label: "Async \u2014 await failed propagates",
-      input: "[?let $f = [?async [err :code \"user-fault\" :message \"x\"]]\n :in [?await $f]]",
-      note:  "`[?async EXPR]` returns a future handle; `[?await $f]` resolves it. Futures are lazy \u2014 body runs on first await.",
+    "88-worker-basic": {
+      label: "[88] [?worker] \u2014 long-running task",
+      input: "[?worker :name \"w\" :body [ok :value 'worked']]",
+      note:  "**Introduces:** `[?worker :name S :body EXPR]` \u2014 registers a worker. In the sequential substrate the body runs to completion synchronously.",
     },
-    "async-003-await-timeout": {
-      label: "Async \u2014 await timeout",
-      input: "[?let $f = [?async [?let $_ = [?sleep 10s :mock] :in [ok :value \"never\"]]]\n :in [?await $f :timeout 50ms]]",
-      note:  "`[?async EXPR]` returns a future handle; `[?await $f]` resolves it. Futures are lazy \u2014 body runs on first await.",
+    "89-select": {
+      label: "[89] [?select] \u2014 pick first ready channel",
+      input: "[?let $a = [?channel :name \"sa\" :buffer 1] :in\n [?let $b = [?channel :name \"sb\" :buffer 1] :in\n  [?let $_ = [?send \"hi-a\" :to $a] :in\n   [?select\n     :case [:from $a $msg [picked :ch \"a\" :value $msg]]\n     :case [:from $b $msg [picked :ch \"b\" :value $msg]]]]]]",
+      note:  "**Introduces:** `[?select :case [:from $ch $msg BODY]]`. Waits on multiple channel reads. The first ready channel's `:case` body runs with the dequeued value bound to `$msg`.",
     },
-    "async-004-await-cancelled": {
-      label: "Async \u2014 await cancelled",
-      input: "[?let $f = [?async [?let $_ = [?sleep 10s :mock] :in [ok :value \"never\"]]]\n :in [?let $_ = [?cancel $f]\n      :in [?await $f]]]",
-      note:  "`[?async EXPR]` returns a future handle; `[?await $f]` resolves it. Futures are lazy \u2014 body runs on first await.",
+    "90-cancel": {
+      label: "[90] [?cancel] \u2014 abort a future",
+      input: "[?let $f = [?async [?let $_ = [?sleep 1s :mock] :in [ok :value 'never']]] :in\n [?let $_ = [?cancel $f] :in [?await $f]]]",
+      note:  "**Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code \"cx-err:CXER0260\"]`.",
     },
-    "async-015-compose-with-timeout": {
-      label: "Async \u2014 compose with timeout",
-      input: "[?let $f = [?async [?timeout 50ms :body [?let $_ = [?sleep 10s :mock] :in [ok :value \"never\"]]]]\n :in [?await $f]]",
-      note:  "`[?async EXPR]` returns a future handle; `[?await $f]` resolves it. Futures are lazy \u2014 body runs on first await.",
+    "91-map-par-mock": {
+      label: "[91] [?map :par] \u2014 instant via :mock",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  :using [?fn $n [?let $_ = [?sleep 500ms :mock] :in [* $n $n]]]\n  :par :ordered]",
+      note:  "**Introduces:** `[?map :par]` \u2014 parallel map. With `:mock` sleep this is instant (virtual time). `:ordered` preserves source order; drop it for completion-order output.",
     },
-    "async-005-await-all-success": {
-      label: "await-all \u2014 await all success",
-      input: "[?let $a = [?async [ok :value 1]]\n :in [?let $b = [?async [ok :value 2]]\n      :in [?let $c = [?async [ok :value 3]]\n           :in [?await-all ($a, $b, $c)]]]]",
-      note:  "`[?await-all ($f1, $f2, \u2026)]` waits on every future; returns the sequence of results (or an aggregated CXER0240 err).",
+    "92-map-par-wall": {
+      label: "[92] [?map :par] \u2014 wall-clock streaming",
+      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?let $_ = [?sleep 500ms] :in [* $n $n]]]\n  :par]",
+      note:  "**Introduces:** wall-clock `[?map :par]`. Under `make guide-http` mode the 4 workers run on real OS threads \u2014 ~500ms total. Under file:// the wasm runtime is single-threaded \u2014 ~2s. Items stream as each worker completes.",
     },
-    "async-006-await-all-one-failed": {
-      label: "await-all \u2014 await all one failed",
-      input: "[?let $a = [?async [ok :value 1]]\n :in [?let $b = [?async [err :code \"down\"]]\n      :in [?let $c = [?async [ok :value 3]]\n           :in [?await-all ($a, $b, $c)]]]]",
-      note:  "`[?await-all ($f1, $f2, \u2026)]` waits on every future; returns the sequence of results (or an aggregated CXER0240 err).",
+    "93-map-par-ordered": {
+      label: "[93] [?map :par :ordered] \u2014 order-preserving",
+      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?let $_ = [?sleep 500ms] :in [* $n $n]]]\n  :par :ordered]",
+      note:  "**Introduces:** `:ordered` reassembles results in source order regardless of completion timing. Trade-off: a completion-tracking buffer.",
     },
-    "async-007-await-all-cancelled-counts": {
-      label: "await-all \u2014 await all cancelled counts",
-      input: "[?let $a = [?async [ok :value 1]]\n :in [?let $b = [?async [?let $_ = [?sleep 10s :mock] :in [ok :value \"never\"]]]\n      :in [?let $_ = [?cancel $b]\n           :in [?await-all ($a, $b)]]]]",
-      note:  "`[?await-all ($f1, $f2, \u2026)]` waits on every future; returns the sequence of results (or an aggregated CXER0240 err).",
+    "94-for-par": {
+      label: "[94] [?for :par] \u2014 parallel comprehension",
+      input: "[?for $n :in (1, 2, 3, 4, 5, 6, 7, 8)\n      :yield [?let $_ = [?sleep 500ms] :in [item :n $n :sq [* $n $n]]]\n      :par]",
+      note:  "**Introduces:** `[?for :par]` \u2014 parallelizes the outermost generator. Under pthreads the 8 sleeps overlap on real threads.",
     },
-    "async-008-await-any-first-success": {
-      label: "await-any \u2014 await any first success",
-      input: "[?let $fast = [?async [ok :value \"fast\"]]\n :in [?let $slow = [?async [?let $_ = [?sleep 10s :mock] :in [ok :value \"slow\"]]]\n      :in [?await-any ($fast, $slow)]]]",
-      note:  "`[?await-any (\u2026)]` returns the first successful future; ignores subsequent failures.",
-    },
-    "async-009-await-any-skips-failed": {
-      label: "await-any \u2014 await any skips failed",
-      input: "[?let $bad = [?async [err :code \"bad\"]]\n :in [?let $good = [?async [ok :value \"good\"]]\n      :in [?await-any ($bad, $good)]]]",
-      note:  "`[?await-any (\u2026)]` returns the first successful future; ignores subsequent failures.",
-    },
-    "async-010-await-race-first-terminal": {
-      label: "await-race \u2014 await race first terminal",
-      input: "[?let $err = [?async [err :code \"first-err\"]]\n :in [?let $ok = [?async [?let $_ = [?sleep 10s :mock] :in [ok :value \"slow\"]]]\n      :in [?await-race ($err, $ok)]]]",
-      note:  "`[?await-race (\u2026)]` returns the first future to resolve (success or fail), then cancels the losers.",
-    },
-    "async-011-await-race-cancels-losers": {
-      label: "await-race \u2014 await race cancels losers",
-      input: "[?let $fast = [?async [ok :value \"fast\"]]\n :in [?let $slow = [?async [?let $_ = [?sleep 10s :mock] :in [ok :value \"slow\"]]]\n      :in [?let $winner = [?await-race ($fast, $slow)]\n           :in [?let $slow-state = [?await $slow]\n                :in [pair :winner $winner :slow-state $slow-state]]]]]",
-      note:  "`[?await-race (\u2026)]` returns the first future to resolve (success or fail), then cancels the losers.",
-    },
-    "async-012-cancel-honored-at-sleep": {
-      label: "Cancel \u2014 cancel honored at sleep",
-      input: "[?let $f = [?async [?sleep 10s :mock]]\n :in [?let $_ = [?cancel $f]\n      :in [?await $f]]]",
-      note:  "`[?cancel $handle]` requests cancellation. Sleep / check-cancel observe via `current_future_id` and raise CXER0260.",
-    },
-    "map-001-par-ordered-source-order": {
-      label: "Map \u2014 par ordered source order",
-      input: "[?map (1, 2, 3, 4) :using [?fn $x [* $x 10]] :par :ordered]",
-      note:  "`[?map xs :using fn]` applies `fn` to each element. `:par` parallelizes; `:ordered` preserves source order (ADR 0040).",
-    },
-    "map-002-sequential": {
-      label: "Map \u2014 sequential",
-      input: "[?map (1, 2, 3, 4) :using [?fn $x [* $x 10]]]",
-      note:  "`[?map xs :using fn]` applies `fn` to each element. `:par` parallelizes; `:ordered` preserves source order (ADR 0040).",
-    },
-    "sleep-008-map-par-with-mock-sleep": {
-      label: "Map \u2014 map par with mock sleep",
-      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?let $_ = [?sleep 10ms :mock] :in [* $n $n]]]\n  :par :ordered]",
-      note:  "`[?map xs :using fn]` applies `fn` to each element. `:par` parallelizes; `:ordered` preserves source order (ADR 0040).",
-    },
-    "reduce-001-par-associative": {
-      label: "Reduce \u2014 par associative",
+    "95-reduce-par": {
+      label: "[95] [?reduce :par] \u2014 associative tree-reduce",
       input: "[?reduce (1, 2, 3, 4, 5, 6, 7, 8) :using [?fn ($a, $b) [+ $a $b]] :init 0 :par]",
-      note:  "`[?reduce xs :using fn :init z]` folds the sequence to one value. `:par` enables associative tree-reduce.",
+      note:  "**Introduces:** `[?reduce :par]` \u2014 tree-split reduce. `:using` MUST be associative; `:init` MUST be the identity. Returns 36 either way.",
     },
-    "reduce-002-sequential-left-fold": {
-      label: "Reduce \u2014 sequential left fold",
-      input: "[?reduce (1, 2, 3, 4) :using [?fn ($a, $b) [- $a $b]] :init 10]",
-      note:  "`[?reduce xs :using fn :init z]` folds the sequence to one value. `:par` enables associative tree-reduce.",
+    "96-par-fn-shared": {
+      label: "[96] [?map :par] \u2014 shared closure body",
+      input: "[?let $sqr = [?fn $n [* $n $n]] :in\n  [?map (1, 2, 3, 4, 5, 6, 7, 8) :using $sqr :par :ordered]]",
+      note:  "**Introduces:** closure-passing. Define `$sqr` once with `[?let]`, pass it as `:using` \u2014 same shape, decoupled definition from use.",
     },
-    "svc-001-get-happy-path": {
-      label: "Services \u2014 get happy path",
-      input: "[?test-service-client\n   :service [?service :on http :port 0 :name \"svc-001\"\n              [resource :get \"/hello\"\n                 :body [response :status 200 :body \"world\"]]]\n   :client-call [?let $c = [?http-client :target $test-target]\n                 :in $c | get(\"/hello\")]]",
-      note:  "`[?service]` defines an HTTP service shape; `[?test-service-client]` orchestrates spawn + client call + stop in one fixture.",
+    "97-par-bulkhead": {
+      label: "[97] [?map :par] \u2014 wrapped in [?bulkhead]",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  :using [?fn $n [?bulkhead :max-concurrent 2 :body [?let $_ = [?sleep 100ms :mock] :in $n]]]\n  :par]",
+      note:  "**Introduces:** the canonical parallel-with-bound-concurrency idiom. Default `:par` is unbounded; wrap the `:using` body in `[?bulkhead]` to cap fan-out. `cx lsp` emits CXLS005 if you forget the wrap (ADR 0040 D14).",
     },
-    "svc-002-post-happy-path": {
-      label: "Services \u2014 post happy path",
-      input: "[?test-service-client\n   :service [?service :on http :port 0 :name \"svc-002\"\n              [resource :post \"/echo\"\n                 :body [response :status 200 :body $request/body]]]\n   :client-call [?let $c = [?http-client :target $test-target]\n                 :in $c | post(\"/echo\", [payload :value 42])]]",
-      note:  "`[?service]` defines an HTTP service shape; `[?test-service-client]` orchestrates spawn + client call + stop in one fixture.",
+    "98-par-with-cb": {
+      label: "[98] [?map :par] \u2014 shared [?circuit-breaker]",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)\n  :using [?fn $n [?circuit-breaker :threshold 0.5 :window 1s :reset 10s :name \"shared\"\n                    :body [* $n $n]]]\n  :par]",
+      note:  "**Introduces:** state-sharing under `:par`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md \u00a710.2.7 \u2014 same source-text directive = one shared breaker.",
     },
-    "svc-003-put-happy-path": {
-      label: "Services \u2014 put happy path",
-      input: "[?test-service-client\n   :service [?service :on http :port 0 :name \"svc-003\"\n              [resource :put \"/items/:id\"\n                 :body [response :status 200\n                        :body [stored :id $request/path-params/id\n                                      :value $request/body]]]]\n   :client-call [?let $c = [?http-client :target $test-target]\n                 :in $c | put(\"/items/7\", [item :name \"widget\"])]]",
-      note:  "`[?service]` defines an HTTP service shape; `[?test-service-client]` orchestrates spawn + client call + stop in one fixture.",
+    "99-par-let-shape": {
+      label: "[99] [?map :par] \u2014 building rich shapes",
+      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?let $_ = [?sleep 250ms] :in [point :x $n :y [* $n 2] :z [* $n $n]]]]\n  :par]",
+      note:  "**Introduces:** rich-shape per-item output. Each worker emits a `[point]` with three computed slots. The streaming pane fills in as workers complete.",
     },
-    "svc-004-delete-happy-path": {
-      label: "Services \u2014 delete happy path",
-      input: "[?test-service-client\n   :service [?service :on http :port 0 :name \"svc-004\"\n              [resource :delete \"/items/:id\"\n                 :body [response :status 200\n                        :body [deleted :id $request/path-params/id]]]]\n   :client-call [?let $c = [?http-client :target $test-target]\n                 :in $c | delete(\"/items/9\")]]",
-      note:  "`[?service]` defines an HTTP service shape; `[?test-service-client]` orchestrates spawn + client call + stop in one fixture.",
-    },
-    "svc-015-client-connection-refused": {
-      label: "HTTP clients \u2014 client connection refused",
-      input: "[?let $c = [?http-client :target \"http://localhost:1\"]\n :in $c | get(\"/\")]",
-      note:  "`[?http-client]` issues a request against a `:target`. Integrates with `[?retry]` / `[?timeout]` / `[?circuit-breaker]`.",
-    },
-    "svc-016-client-tls-handshake-failed": {
-      label: "HTTP clients \u2014 client tls handshake failed",
-      input: "[?test-service-client\n   :service [?service :on http :port 0 :name \"svc-016\"\n              [resource :get \"/\" :body [response :status 200 :body \"plaintext\"]]]\n   :client-call [?let $c = [?http-client :target $test-target :tls [?test-tls-config]]\n                 :in $c | get(\"/\")]]",
-      note:  "`[?http-client]` issues a request against a `:target`. Integrates with `[?retry]` / `[?timeout]` / `[?circuit-breaker]`.",
-    },
-    "svc-017-client-invalid-response": {
-      label: "HTTP clients \u2014 client invalid response",
-      input: "[?test-service-client\n   :service [?service :on http :port 0 :name \"svc-017\"\n              [resource :get \"/garbled\"\n                 :body [response :status 200\n                        :headers [[header :name \"Content-Type\" :value \"application/cx\"]]\n                        :body [opts :raw-bytes \"}}}not-cx{{{\"]]]]\n   :client-call [?let $c = [?http-client :target $test-target]\n                 :in $c | get(\"/garbled\")]]",
-      note:  "`[?http-client]` issues a request against a `:target`. Integrates with `[?retry]` / `[?timeout]` / `[?circuit-breaker]`.",
+    "100-par-everything": {
+      label: "[100] [?map :par] \u2014 composition with everything",
+      input: "[?map (1, 2, 3, 4)\n  :using [?fn $n [?retry :max 3 :body\n                  [?timeout 200ms :body\n                    [?let $_ = [?sleep 50ms] :in [computed :n $n :sq [* $n $n]]]]]]\n  :par :ordered]",
+      note:  "**Introduces:** the full composition \u2014 `[?map :par]` over a `:using` closure that nests `[?retry]` + `[?timeout]` + `[?sleep]`. Demonstrates that parallel workers compose freely with resilience directives.",
     },
   };
 
-  window.cxPlaygroundExamples = { data, program };
+  window.cxPlaygroundExamples = { program };
 })();

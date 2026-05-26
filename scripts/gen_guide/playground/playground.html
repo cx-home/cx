@@ -13,11 +13,12 @@
     <img src="assets/cx-logo.svg" alt="CX" width="22" height="22">
     <span>Playground</span>
   </a>
-  <label class="cxp-pick-label" for="cxp-pick">Example</label>
   <select id="cxp-pick" aria-label="Choose an example"></select>
-  <button id="cxp-run" class="cxp-btn cxp-btn-primary" type="button" disabled>Run</button>
+  <button id="cxp-prev" class="cxp-btn cxp-btn-icon" type="button" title="Previous example">◀</button>
+  <button id="cxp-next" class="cxp-btn cxp-btn-icon" type="button" title="Next example">▶</button>
+  <button id="cxp-run"   class="cxp-btn cxp-btn-primary" type="button" disabled>Run</button>
   <button id="cxp-reset" class="cxp-btn" type="button">Reset</button>
-  <button id="cxp-load" class="cxp-btn" type="button" title="Load a local .cx file">Load…</button>
+  <button id="cxp-load"  class="cxp-btn" type="button" title="Load a local .cx file">Load…</button>
   <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
   <span class="cxp-spacer"></span>
 </header>
@@ -47,6 +48,10 @@
   <section class="cxp-pane cxp-viz-pane">
     <div class="cxp-pane-head">
       <span>VIEW</span>
+      <span class="cxp-tabs cxp-viz-source-tabs" role="tablist">
+        <button class="cxp-viz-src-tab is-active" data-vizsrc="source" type="button">Source</button>
+        <button class="cxp-viz-src-tab"           data-vizsrc="output" type="button">Output</button>
+      </span>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
         <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>
@@ -55,7 +60,9 @@
     <div id="cxp-viz-tree" class="cxp-viz-content is-active">
       <p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>
     </div>
-    <pre id="cxp-viz-graph" class="cxp-viz-content"><code class="language-mermaid"></code></pre>
+    <div id="cxp-viz-graph" class="cxp-viz-content">
+      <p class="cxp-viz-placeholder">Run a program to see its diagram.</p>
+    </div>
   </section>
 </main>
 <footer id="cxp-status" class="cxp-status" aria-live="polite">
@@ -64,6 +71,11 @@
 <script src="wasm/cxlib.js" defer></script>
 <script src="playground/playground.examples.js" defer></script>
 <script src="highlight/highlight.js" defer></script>
+<!-- Mermaid via jsDelivr CDN. Works under HTTP and (in most modern
+     browsers) file://. We pull it async; the Graph tab shows the
+     raw Mermaid source until the lib finishes loading. -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
+        crossorigin="anonymous" defer></script>
 <script src="playground/playground.js" defer></script>
 </body>
 </html>

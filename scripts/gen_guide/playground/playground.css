@@ -117,18 +117,28 @@ html, body {
   background: var(--pending);
   border-color: var(--pending);
 }
+.cxp-btn-icon {
+  padding: 4px 8px;
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: -0.02em;
+}
+.cxp-viz-source-tabs { margin-right: auto; margin-left: 12px; }
 
 /* ── Main 3-region grid ─────────────────────────────────────── */
+/* Source + Output stack in the left 2/3; View pane takes the right 1/3.
+   Dividers (3px gap with a brighter color) read clearly without dragging
+   focus from the panes. */
 .cxp-main {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "src viz"
     "out viz";
-  gap: 1px;
-  background: var(--border);
+  gap: 3px;
+  background: var(--border-soft);
   min-height: 0;
   overflow: hidden;
 }
@@ -282,7 +292,15 @@ html, body {
 #cxp-viz-graph code { display: block; white-space: pre-wrap; word-break: break-word; }
 
 /* Tree view */
-.cxt-node { padding-left: 1.1em; position: relative; }
+.cxt-node { padding-left: 1.1em; position: relative; cursor: default; }
+.cxt-row {
+  display: inline-block;
+  padding: 1px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.cxt-row:hover { background: var(--bg-hover); }
+.cxt-node.is-selected > .cxt-row { background: rgba(97, 175, 239, 0.25); outline: 1px solid var(--accent); }
 .cxt-toggle {
   position: absolute;
   left: 0;
@@ -301,6 +319,10 @@ html, body {
 .cxt-label-number  { color: var(--syn-number); }
 .cxt-label-boolean { color: var(--syn-keyword); }
 .cxt-label-meta    { color: var(--text-dim); font-style: italic; }
+
+/* Mermaid output overrides the dark code-pane bg + lets SVG own its size. */
+#cxp-viz-graph svg { max-width: 100%; height: auto; display: block; }
+#cxp-viz-graph .cxp-viz-placeholder { color: var(--text-dim); font-style: italic; }
 
 /* ── Status bar ─────────────────────────────────────────────── */
 .cxp-status {
