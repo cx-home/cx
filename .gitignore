@@ -34,6 +34,8 @@ vcx/cx/*.dylib
 vcx/code/*.dylib
 vcx/code/*.so
 vcx/cx/*.so
+vcx/tests/*.dylib
+vcx/tests/*.so
 lang/rust/cxlib/target/
 lang/v/.cache/
 
