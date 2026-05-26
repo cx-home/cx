@@ -731,6 +731,22 @@ test-modify-action-coverage: build-vcx
 bench-code-modify-sharing: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_modify_sharing_bench.v
 
+# ── ADR 0045 D5 — Rosetta corpus cadence audit ──────────────────────────────
+#
+# `make corpus-audit` re-audits every program under corpus/rosetta/ against
+# the current HEAD: runs each `NN-*.cx` via vcx/target/cx, classifies the
+# live status (green / workaround / blocked / missing), and diffs against
+# the table in corpus/rosetta/AUDIT.md. Exits 0 on full agreement, 1 on
+# drift — drift is the cadence signal that a Wave-N fix has re-classified
+# a program (or that AUDIT.md is stale). Per ADR 0045 D5; closure of the
+# task tracker's W1-H #32 item.
+#
+# Override knobs: CX_BIN=path (default vcx/target/cx),
+# CORPUS_DIR=path (default corpus/rosetta).
+.PHONY: corpus-audit
+corpus-audit: build-vcx
+	@bash scripts/corpus_audit.sh
+
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
 clean:
