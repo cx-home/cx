@@ -40,6 +40,7 @@
         <button class="cxp-tab"           data-tab="json" type="button">JSON</button>
         <button class="cxp-tab"           data-tab="xml"  type="button">XML</button>
       </span>
+      <button id="cxp-format" class="cxp-mini-btn" type="button" title="Toggle pretty / minified output across all tabs">Pretty</button>
     </div>
     <pre id="cxp-out-cx"   class="cxp-output is-active"><code class="language-cx"></code></pre>
     <pre id="cxp-out-json" class="cxp-output"><code class="language-json"></code></pre>
@@ -61,7 +62,14 @@
       <p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>
     </div>
     <div id="cxp-viz-graph" class="cxp-viz-content">
-      <p class="cxp-viz-placeholder">Run a program to see its diagram.</p>
+      <div class="cxp-graph-controls">
+        <button id="cxp-graph-zoom-out" class="cxp-mini-btn" type="button" title="Zoom out">−</button>
+        <button id="cxp-graph-fit"      class="cxp-mini-btn" type="button" title="Reset zoom">⊙</button>
+        <button id="cxp-graph-zoom-in"  class="cxp-mini-btn" type="button" title="Zoom in">+</button>
+      </div>
+      <div class="cxp-graph-canvas">
+        <p class="cxp-viz-placeholder">Run a program to see its diagram.</p>
+      </div>
     </div>
   </section>
 </main>

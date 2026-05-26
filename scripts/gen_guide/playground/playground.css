@@ -320,9 +320,44 @@ html, body {
 .cxt-label-boolean { color: var(--syn-keyword); }
 .cxt-label-meta    { color: var(--text-dim); font-style: italic; }
 
-/* Mermaid output overrides the dark code-pane bg + lets SVG own its size. */
-#cxp-viz-graph svg { max-width: 100%; height: auto; display: block; }
+/* Graph view: zoom toolbar pinned top-right; canvas scrolls so a
+   large diagram is fully reachable via pan (drag) + zoom buttons. */
+#cxp-viz-graph { position: relative; padding: 0; }
+.cxp-graph-controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  z-index: 5;
+}
+.cxp-graph-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 30px 14px 14px;
+  cursor: grab;
+}
+.cxp-graph-canvas:active { cursor: grabbing; }
+.cxp-graph-svg { transform-origin: top left; transition: transform 0.1s ease-out; }
+#cxp-viz-graph svg { max-width: none; height: auto; display: block; }
 #cxp-viz-graph .cxp-viz-placeholder { color: var(--text-dim); font-style: italic; }
+
+/* Mini button — used by the Pretty/Minified toggle and graph zoom. */
+.cxp-mini-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  background: var(--bg-pane);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+}
+.cxp-mini-btn:hover { background: var(--bg-hover); color: var(--text); border-color: var(--accent); }
 
 /* ── Status bar ─────────────────────────────────────────────── */
 .cxp-status {

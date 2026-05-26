@@ -1,27 +1,12 @@
 // CX Playground — controller.
-//
-// Toolbar: example dropdown + prev/next + Run / Reset / Load.
-// Source pane (top-left): textarea overlaid on a highlighted render
-//   layer. Edits trigger re-highlight + AST re-parse (for the tree).
-// Output pane (bottom-left): CX / JSON / XML tabs. Streamed CX fills
-//   in chunk-by-chunk; JSON / XML re-derive from the final CX.
-// View pane (right column, 1/3 width): Source ↔ Output toggle + Tree
-//   ↔ Graph toggle. Tree is interactive; Graph renders Mermaid via
-//   the global `mermaid` lib (CDN-loaded).
-// Selection bridge: clicking a tree node selects the corresponding
-//   text range in the source / output pane (via the AST's loc info).
 
 (function () {
   'use strict';
 
-  const examples = (window.cxPlaygroundExamples || { data: {}, program: {} });
+  const examples = (window.cxPlaygroundExamples || { program: {} });
   const programEntries = examples.program || {};
-  const dataEntries    = examples.data    || {};
-
-  // Flat ordered list — single dropdown, no optgroup separation.
   const ALL_ENTRIES = [];
   for (const [key, ex] of Object.entries(programEntries)) ALL_ENTRIES.push({ key, kind: 'program', ex });
-  for (const [key, ex] of Object.entries(dataEntries))    ALL_ENTRIES.push({ key, kind: 'data',    ex });
 
   const pick     = document.getElementById('cxp-pick');
   const prevBtn  = document.getElementById('cxp-prev');
@@ -30,6 +15,7 @@
   const resetBtn = document.getElementById('cxp-reset');
   const loadBtn  = document.getElementById('cxp-load');
   const loadFile = document.getElementById('cxp-load-file');
+  const fmtBtn   = document.getElementById('cxp-format');
   const status   = document.getElementById('cxp-status');
   const input    = document.getElementById('cxp-input');
   const renderEl = document.getElementById('cxp-input-render');
@@ -48,11 +34,20 @@
   };
   const vizTreeEl  = document.getElementById('cxp-viz-tree');
   const vizGraphEl = document.getElementById('cxp-viz-graph');
+  const graphZoomBtns = {
+    zoomIn:  document.getElementById('cxp-graph-zoom-in'),
+    zoomOut: document.getElementById('cxp-graph-zoom-out'),
+    fit:     document.getElementById('cxp-graph-fit'),
+  };
   const vizPanes   = { tree: vizTreeEl, graph: vizGraphEl };
 
   // ── State ─────────────────────────────────────────────────
-  let vizSource = 'source';   // which pane the View pane visualizes
-  let lastEvalOutput = '';    // last successful CX-projection output
+  let vizSource = 'source';         // 'source' | 'output' — which content the view pane visualizes
+  let prettyMode = true;            // output panes are pretty-printed by default
+  let lastEvalRawCx   = '';         // last successful raw streaming CX output
+  let nodeRegistry    = [];         // [{start, end, el, kind, key}, …] — for source ↔ tree bridge
+  let nodeRegistrySource = '';      // which content (source vs output) nodeRegistry maps onto
+  let graphScale      = 1;          // current SVG zoom factor
 
   // ── Highlighting ──────────────────────────────────────────
   function highlight(lang, src) {
@@ -65,6 +60,59 @@
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ── Pretty / minimised projection ────────────────────────
+  // CX is line-oriented — pretty form is the streamed output as-is;
+  // minimised form collapses runs of whitespace to a single space.
+  // JSON is JSON.parse + JSON.stringify (indent 2 vs no indent).
+  // XML pretty: insert newlines between tags; min: strip inter-tag
+  // whitespace. Both are best-effort; rendering won't break if a
+  // projection isn't valid JSON / XML.
+  function pretty(lang, text) {
+    if (!text) return '';
+    if (lang === 'json') {
+      try { return JSON.stringify(JSON.parse(text), null, 2); }
+      catch (_) { return text; }
+    }
+    if (lang === 'xml') {
+      // Insert newline + indent after `>` followed by `<` (open/close
+      // tag boundary). Keep text-content inside elements untouched.
+      let depth = 0, out = '';
+      const tokens = text.split(/(<\/?[^>]+>)/g);
+      for (const tok of tokens) {
+        if (!tok) continue;
+        if (tok.startsWith('</')) { depth = Math.max(0, depth - 1); out += '\n' + '  '.repeat(depth) + tok; }
+        else if (tok.startsWith('<')) {
+          out += (out && !out.endsWith('\n') ? '\n' : '') + '  '.repeat(depth) + tok;
+          if (!tok.endsWith('/>') && !tok.startsWith('<?') && !tok.startsWith('<!')) depth++;
+        } else {
+          const t = tok.trim();
+          if (t) out += t;
+        }
+      }
+      return out.replace(/^\n/, '');
+    }
+    // CX
+    return text;
+  }
+  function minimised(lang, text) {
+    if (!text) return '';
+    if (lang === 'json') {
+      try { return JSON.stringify(JSON.parse(text)); }
+      catch (_) { return text.replace(/\s+/g, ' ').trim(); }
+    }
+    if (lang === 'xml') return text.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  function applyOutputProjection() {
+    for (const [lang, el] of Object.entries(outs)) {
+      const raw = el.dataset.raw || '';
+      const text = prettyMode ? pretty(lang, raw) : minimised(lang, raw);
+      el.innerHTML = highlight(lang, text);
+    }
+    if (fmtBtn) fmtBtn.textContent = prettyMode ? 'Pretty' : 'Minified';
   }
 
   // ── Example dropdown ─────────────────────────────────────
@@ -85,12 +133,23 @@
     return idx >= 0 ? { idx, ...ALL_ENTRIES[idx] } : null;
   }
 
+  // ANNOTATION_RE matches the trailing `[-- … --]` block we append to
+  // each example's source. We strip it before feeding source to
+  // cxlib.tree() / cxlib.diagram() (wasm tree builder bug with block
+  // comments) and we use its position to figure out where the program
+  // ends in the editor (for the cursor-to-tree bridge).
+  const ANNOTATION_RE = /\n*\[-{2,}[\s\S]*?-{2,}\]\s*$/;
+  function annotationStart(src) {
+    const m = src.match(ANNOTATION_RE);
+    return m ? m.index : src.length;
+  }
+  function stripAnnotation(src) {
+    return src.replace(ANNOTATION_RE, '').replace(/\s+$/, '');
+  }
+
   function composeSource(ex) {
     if (!ex) return '';
     if (ex.note) {
-      // Trailing `[-- … --]` dash-block comment. Parser strips it
-      // at eval time; the editor still shows the prose so each
-      // example self-documents.
       return `${ex.input}\n\n[--------------------------------------------\n${ex.note}\n--------------------------------------------]\n`;
     }
     return ex.input;
@@ -111,10 +170,10 @@
     if (!found) return;
     input.value = composeSource(found.ex);
     syncRender();
-    for (const k of Object.keys(outs)) outs[k].textContent = '';
-    lastEvalOutput = '';
+    for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
+    lastEvalRawCx = '';
     resetVizPanes();
-    refreshView();  // populate tree from the source even before Run
+    refreshView();
   }
 
   pick.addEventListener('change', () => loadExample(pick.value));
@@ -131,9 +190,8 @@
   }
   input.addEventListener('input', () => { syncRender(); refreshView(); });
   input.addEventListener('scroll', syncScroll);
-  // Cursor change → highlight covering tree node.
   ['keyup','mouseup','click','select'].forEach(ev =>
-    input.addEventListener(ev, () => highlightTreeAtCursor()));
+    input.addEventListener(ev, () => highlightTreeAtSourceCursor()));
 
   // ── Load local file ─────────────────────────────────────
   loadBtn.addEventListener('click', () => loadFile.click());
@@ -144,8 +202,8 @@
     reader.onload = () => {
       input.value = String(reader.result || '');
       syncRender();
-      for (const k of Object.keys(outs)) outs[k].textContent = '';
-      lastEvalOutput = '';
+      for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
+      lastEvalRawCx = '';
       resetVizPanes();
       refreshView();
       setStatus(`Loaded ${escapeHtml(f.name)} (${f.size} bytes). Click Run.`, 'ok');
@@ -154,7 +212,7 @@
     loadFile.value = '';
   });
 
-  // ── Output tab switching ─────────────────────────────────
+  // ── Output tab + projection toggle ────────────────────────
   outTabs.forEach(t => t.addEventListener('click', () => setOutTab(t.dataset.tab)));
   function setOutTab(name) {
     outTabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === name));
@@ -162,19 +220,22 @@
       outPres[k].classList.toggle('is-active', k === name);
     }
   }
+  if (fmtBtn) {
+    fmtBtn.addEventListener('click', () => {
+      prettyMode = !prettyMode;
+      applyOutputProjection();
+    });
+  }
 
-  // ── View tab switching (Tree / Graph) ────────────────────
+  // ── View tab switching ───────────────────────────────────
   vizTabs.forEach(t => t.addEventListener('click', () => setVizTab(t.dataset.viz)));
   function setVizTab(name) {
     vizTabs.forEach(t => t.classList.toggle('is-active', t.dataset.viz === name));
     for (const k of Object.keys(vizPanes)) {
       vizPanes[k].classList.toggle('is-active', k === name);
     }
-    // Re-render the just-revealed tab if the source changed since.
     refreshView();
   }
-
-  // ── View source toggle (Source / Output) ─────────────────
   vizSrcTabs.forEach(t => t.addEventListener('click', () => {
     vizSource = t.dataset.vizsrc;
     vizSrcTabs.forEach(x => x.classList.toggle('is-active', x.dataset.vizsrc === vizSource));
@@ -183,7 +244,8 @@
 
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';
-    vizGraphEl.innerHTML = '<p class="cxp-viz-placeholder">Run a program to see its diagram.</p>';
+    vizGraphEl.querySelector('.cxp-graph-canvas').innerHTML =
+      '<p class="cxp-viz-placeholder">Run a program to see its diagram.</p>';
   }
 
   // ── Status ─────────────────────────────────────────────
@@ -197,7 +259,6 @@
       statusTimer = setTimeout(() => setReadyStatus(), 4000);
     }
   }
-
   function setReadyStatus() {
     const cxlib = globalThis.cxlib;
     const ver = (cxlib && cxlib.version) ? cxlib.version() : 'wasm';
@@ -216,19 +277,21 @@
   }
 
   // ── Tree view builder ───────────────────────────────────
-  // Walk a tree-JSON object, emit collapsible HTML. Records the
-  // node-to-loc mapping so cursor-in-source → highlight-in-tree
-  // works (and vice-versa).
-  let nodeRegistry = [];   // [{loc:{start,end}, el:HTMLElement}, …]
-  function renderTree(treeJson) {
+  //
+  // Walk the cxlib.tree() JSON into nested HTML rows. Each `<div
+  // class="cxt-node">` carries `data-loc='{start, end}'` when the
+  // AST node has loc info. Scalar / attribute values inherit their
+  // parent's loc so clicking a leaf value still highlights the
+  // covering bracket in the source.
+  function renderTree(treeJson, sourceText) {
     nodeRegistry = [];
+    nodeRegistrySource = sourceText || '';
     if (treeJson == null) {
       vizTreeEl.innerHTML = '<p class="cxp-viz-placeholder">(empty tree)</p>';
       return;
     }
     vizTreeEl.innerHTML = '';
-    vizTreeEl.appendChild(renderNode(treeJson));
-    // Toggle clicks + row clicks
+    vizTreeEl.appendChild(renderNode(treeJson, null, null));
     vizTreeEl.querySelectorAll('.cxt-toggle').forEach(t => {
       t.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -243,29 +306,45 @@
         const node = row.closest('.cxt-node');
         const locStr = node && node.dataset.loc;
         if (!locStr) return;
-        const { start, end } = JSON.parse(locStr);
-        // Source-pane: select text range matching loc.
-        input.focus();
-        input.setSelectionRange(start, end);
-        // Mark this tree node as selected (for visual feedback).
-        vizTreeEl.querySelectorAll('.cxt-node.is-selected').forEach(n => n.classList.remove('is-selected'));
-        node.classList.add('is-selected');
+        let { start, end } = JSON.parse(locStr);
+        // For source-mode, translate loc offsets (which are computed
+        // against the stripped source) onto the textarea's offsets.
+        // The annotation we append lives strictly AFTER the stripped
+        // source, so program-side offsets are stable — but if the
+        // user has deleted content above the click target, the loc
+        // may now point past the end. Clamp.
+        const target = (vizSource === 'source') ? input.value : '';
+        if (vizSource === 'source') {
+          const cap = annotationStart(target);
+          if (end > cap) end = cap;
+          if (start > cap) start = cap;
+          input.focus();
+          input.setSelectionRange(start, end);
+        }
+        markSelected(node);
       });
     });
   }
 
-  function renderNode(node, label) {
+  function renderNode(node, label, inheritedLoc) {
     const wrap = document.createElement('div');
     wrap.className = 'cxt-node';
-    // Capture loc info if the node carries one.
+    // Carry loc; scalars / attribute leaves inherit from the
+    // nearest ancestor that has one.
+    let loc = inheritedLoc;
     if (node && typeof node === 'object' && node.loc && typeof node.loc.start === 'number') {
-      wrap.dataset.loc = JSON.stringify({ start: node.loc.start, end: node.loc.end });
-      nodeRegistry.push({ start: node.loc.start, end: node.loc.end, el: wrap });
+      loc = { start: node.loc.start, end: node.loc.end };
+    }
+    if (loc) {
+      wrap.dataset.loc = JSON.stringify(loc);
+      nodeRegistry.push({ start: loc.start, end: loc.end, el: wrap });
     }
     const rowHtml = (toggle, body) =>
       `${toggle}<span class="cxt-row">${labelPart(label)}${body}</span>`;
+
     if (node === null || node === undefined) {
-      wrap.innerHTML = rowHtml('<span class="cxt-toggle">·</span>', '<span class="cxt-label-meta">null</span>');
+      wrap.innerHTML = rowHtml('<span class="cxt-toggle">·</span>',
+        '<span class="cxt-label-meta">null</span>');
       return wrap;
     }
     if (typeof node === 'string') {
@@ -288,7 +367,7 @@
       wrap.innerHTML = rowHtml(toggle, `<span class="cxt-label-meta">array(${node.length})</span>`);
       const kids = document.createElement('div');
       kids.className = 'cxt-children';
-      node.forEach((c, i) => kids.appendChild(renderNode(c, `[${i}]`)));
+      node.forEach((c, i) => kids.appendChild(renderNode(c, `[${i}]`, loc)));
       wrap.appendChild(kids);
       return wrap;
     }
@@ -310,8 +389,8 @@
     const kids = document.createElement('div');
     kids.className = 'cxt-children';
     for (const k of keys) {
-      if (k === 'loc') continue;  // suppress noisy meta
-      kids.appendChild(renderNode(node[k], k));
+      if (k === 'loc') continue;
+      kids.appendChild(renderNode(node[k], k, loc));
     }
     wrap.appendChild(kids);
     return wrap;
@@ -321,11 +400,26 @@
     return `<span class="cxt-label-attr">${escapeHtml(String(label))}</span>: `;
   }
 
-  function highlightTreeAtCursor() {
+  function markSelected(node) {
+    vizTreeEl.querySelectorAll('.cxt-node.is-selected').forEach(n => n.classList.remove('is-selected'));
+    if (!node) return;
+    node.classList.add('is-selected');
+    // Expand ancestors.
+    let p = node.parentElement;
+    while (p && p !== vizTreeEl) {
+      if (p.classList && p.classList.contains('cxt-node')) {
+        p.classList.remove('is-collapsed');
+      }
+      p = p.parentElement;
+    }
+    node.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+  }
+
+  function highlightTreeAtSourceCursor() {
     if (vizSource !== 'source') return;
     if (!nodeRegistry.length) return;
     const pos = input.selectionStart;
-    // Find tightest node covering pos (smallest span).
+    // Tightest node covering pos.
     let best = null, bestSpan = Infinity;
     for (const n of nodeRegistry) {
       if (n.start <= pos && pos <= n.end) {
@@ -333,68 +427,68 @@
         if (span < bestSpan) { best = n; bestSpan = span; }
       }
     }
-    vizTreeEl.querySelectorAll('.cxt-node.is-selected').forEach(el => el.classList.remove('is-selected'));
-    if (best) {
-      best.el.classList.add('is-selected');
-      // Auto-expand ancestors so the selected node is visible.
-      let p = best.el.parentElement;
-      while (p && p !== vizTreeEl) {
-        if (p.classList && p.classList.contains('cxt-node')) {
-          p.classList.remove('is-collapsed');
-        }
-        p = p.parentElement;
-      }
-      best.el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-    }
+    markSelected(best ? best.el : null);
   }
 
-  // Strip the trailing `[-- … --]` annotation block before feeding
-  // source to cxlib.tree() / cxlib.diagram() — the wasm tree builder
-  // currently chokes on block comments inside the parsed program.
-  function stripAnnotation(src) {
-    return src.replace(/\n*\[-{2,}[\s\S]*?-{2,}\]\s*$/, '').trim();
-  }
-
+  // ── Graph rendering ─────────────────────────────────────
   let mermaidIdCounter = 0;
   function renderGraph(src) {
+    const canvas = vizGraphEl.querySelector('.cxp-graph-canvas');
+    if (!canvas) return;
     if (!src) {
-      vizGraphEl.innerHTML = '<p class="cxp-viz-placeholder">(no diagram available)</p>';
+      canvas.innerHTML = '<p class="cxp-viz-placeholder">(no diagram available)</p>';
       return;
     }
-    // Strip the `%%cx:<base64>%%` leading comment + any markdown
-    // fence wrapping cxlib.diagram() may emit. Keep just the
-    // mermaid body (flowchart / sequenceDiagram + nodes).
     let body = src.replace(/^%%cx:[^\n]*\n?/m, '').trim();
     body = body.replace(/^```mermaid\s*/, '').replace(/```\s*$/, '').trim();
     if (!body) {
-      vizGraphEl.innerHTML = '<p class="cxp-viz-placeholder">(no diagram body)</p>';
+      canvas.innerHTML = '<p class="cxp-viz-placeholder">(empty diagram)</p>';
       return;
     }
     if (!window.mermaid || typeof window.mermaid.render !== 'function') {
-      // Fallback: show the source as a code block.
-      vizGraphEl.innerHTML = `<pre><code>${escapeHtml(body)}</code></pre>`;
+      canvas.innerHTML = `<pre><code>${escapeHtml(body)}</code></pre>`;
       return;
     }
     const id = `cxp-mmd-${++mermaidIdCounter}`;
     window.mermaid.render(id, body).then(({ svg }) => {
-      vizGraphEl.innerHTML = svg;
+      canvas.innerHTML = svg;
+      // Tag the SVG so zoom/pan can target it.
+      const svgEl = canvas.querySelector('svg');
+      if (svgEl) {
+        svgEl.classList.add('cxp-graph-svg');
+        graphScale = 1;
+        applyGraphTransform();
+      }
     }).catch(err => {
-      vizGraphEl.innerHTML =
+      canvas.innerHTML =
         `<p class="cxp-viz-placeholder">Mermaid render failed: ${escapeHtml(err.message)}</p>` +
         `<pre><code>${escapeHtml(body)}</code></pre>`;
     });
   }
 
+  function applyGraphTransform() {
+    const svg = vizGraphEl.querySelector('svg.cxp-graph-svg');
+    if (!svg) return;
+    svg.style.transform = `scale(${graphScale})`;
+    svg.style.transformOrigin = 'top left';
+  }
+  if (graphZoomBtns.zoomIn)  graphZoomBtns.zoomIn .addEventListener('click', () => { graphScale = Math.min(4, graphScale * 1.25); applyGraphTransform(); });
+  if (graphZoomBtns.zoomOut) graphZoomBtns.zoomOut.addEventListener('click', () => { graphScale = Math.max(0.25, graphScale / 1.25); applyGraphTransform(); });
+  if (graphZoomBtns.fit)     graphZoomBtns.fit    .addEventListener('click', () => { graphScale = 1; applyGraphTransform(); });
+
   function refreshView() {
     const cxlib = globalThis.cxlib;
     if (!cxlib || !cxlib.ready) return;
-    const sourceMode = vizSource === 'source';
-    const srcForViz = sourceMode
+    const srcForViz = (vizSource === 'source')
       ? stripAnnotation(input.value)
-      : (lastEvalOutput || '');
+      : (lastEvalRawCx || '');
+    const canvas = vizGraphEl.querySelector('.cxp-graph-canvas');
     if (!srcForViz) {
-      vizTreeEl.innerHTML = `<p class="cxp-viz-placeholder">${sourceMode ? 'Source is empty.' : 'No evaluated output yet — click Run.'}</p>`;
-      vizGraphEl.innerHTML = `<p class="cxp-viz-placeholder">${sourceMode ? 'Source is empty.' : 'No evaluated output yet — click Run.'}</p>`;
+      const msg = (vizSource === 'source')
+        ? 'Source is empty.'
+        : 'No evaluated output yet — click Run.';
+      vizTreeEl.innerHTML = `<p class="cxp-viz-placeholder">${msg}</p>`;
+      if (canvas) canvas.innerHTML = `<p class="cxp-viz-placeholder">${msg}</p>`;
       nodeRegistry = [];
       return;
     }
@@ -402,7 +496,7 @@
     try {
       const treeJson = (typeof cxlib.tree === 'function') ? cxlib.tree(srcForViz) : null;
       const parsed = typeof treeJson === 'string' ? JSON.parse(treeJson) : treeJson;
-      renderTree(parsed);
+      renderTree(parsed, srcForViz);
     } catch (e) {
       vizTreeEl.innerHTML = `<p class="cxp-viz-placeholder">Tree view unavailable: ${escapeHtml(e.message)}</p>`;
       nodeRegistry = [];
@@ -412,7 +506,7 @@
       const d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(srcForViz, 'mermaid') : '';
       renderGraph(d);
     } catch (e) {
-      vizGraphEl.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
+      if (canvas) canvas.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
     }
   }
 
@@ -424,7 +518,6 @@
   ready.then(() => {
     runBtn.disabled = false;
     setReadyStatus();
-    // Initialize Mermaid once the lib has loaded.
     if (window.mermaid && typeof window.mermaid.initialize === 'function') {
       try {
         window.mermaid.initialize({
@@ -452,7 +545,7 @@
       setStatus('Source is empty. Pick an example or type something to evaluate.', 'error');
       return;
     }
-    for (const k of Object.keys(outs)) outs[k].textContent = '';
+    for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
     runBtn.classList.add('is-running');
     runBtn.disabled = true;
     setStatus('Evaluating…', 'pending');
@@ -472,18 +565,15 @@
         accumulated = cxlib.evalCode(src, 'cx', '');
         outs.cx.textContent = accumulated;
       }
+      outs.cx.dataset.raw = accumulated;
       if (accumulated) {
-        try { outs.json.textContent = cxlib.toJson(accumulated); }
-        catch (e) { outs.json.textContent = `// JSON projection failed: ${e.message}`; }
-        try { outs.xml.textContent  = cxlib.toXml(accumulated); }
-        catch (e) { outs.xml.textContent = `// XML projection failed: ${e.message}`; }
+        try { outs.json.dataset.raw = cxlib.toJson(accumulated); }
+        catch (e) { outs.json.dataset.raw = `// JSON projection failed: ${e.message}`; }
+        try { outs.xml.dataset.raw  = cxlib.toXml(accumulated); }
+        catch (e) { outs.xml.dataset.raw = `// XML projection failed: ${e.message}`; }
       }
-      // Re-highlight output panes.
-      Object.entries(outs).forEach(([lang, el]) => {
-        const t = el.textContent;
-        if (t) el.innerHTML = highlight(lang, t);
-      });
-      lastEvalOutput = accumulated;
+      applyOutputProjection();
+      lastEvalRawCx = accumulated;
       refreshView();
       setStatus(`Evaluated — ${accumulated.length} bytes.`, 'ok');
     } catch (err) {
