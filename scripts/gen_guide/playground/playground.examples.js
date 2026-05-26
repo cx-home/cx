@@ -696,9 +696,9 @@
     },
     "115-project-attrs": {
       label: "[115] Transform \u2014 project (keep only some attrs)",
-      input: "[?let $doc = [users [user id=1 name=A age=30 ssn=secret] [user id=2 name=B age=25 ssn=secret]] :in\n  [?for $u :in $doc//user :yield [user id=$u/@id name=$u/@name]]]",
-      note:  "**Pattern:** keep only certain attributes (the SQL `SELECT a, b` shape). **Uses:** `[?for]` + explicit attribute construction. Useful for shedding sensitive or redundant fields.",
-      tags:  ["cxpath", "descendant", "for", "in", "let", "yield"],
+      input: "[?let $doc = [users [user id=1 name=A age=30 ssn=secret] [user id=2 name=B age=25 ssn=secret]] :in\n  [?for $u :in $doc/user :yield [user id=$u/@id name=$u/@name]]]",
+      note:  "**Pattern:** keep only certain attributes (the SQL `SELECT a, b` shape). **Uses:** `[?for]` + explicit attribute construction over `$doc/user` (child axis returns every `user` child after ADR 0045 Wave 1 gap A). Useful for shedding sensitive or redundant fields.",
+      tags:  ["cxpath", "for", "in", "let", "yield"],
     },
     "116-reorder": {
       label: "[116] Transform \u2014 reorder children",
@@ -750,21 +750,21 @@
     },
     "124-sum-attr": {
       label: "[124] Aggregate \u2014 sum an attribute",
-      input: "[?let $doc = [order [line qty=2 price=10] [line qty=1 price=20] [line qty=3 price=5]] :in\n  [sum $doc//line/@price]]",
-      note:  "**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price`.",
-      tags:  ["builtin", "cxpath", "descendant", "in", "let", "sum"],
+      input: "[?let $doc = [order [line qty=2 price=10] [line qty=1 price=20] [line qty=3 price=5]] :in\n  [sum $doc/line/@price]]",
+      note:  "**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price` on child axis (gap A fix: `$doc/line` enumerates every `line` child).",
+      tags:  ["builtin", "cxpath", "in", "let", "sum"],
     },
     "125-min-max": {
       label: "[125] Aggregate \u2014 min / max",
-      input: "[?let $doc = [scores [s v=42] [s v=88] [s v=15] [s v=77]] :in\n  [stats lo=[min $doc//s/@v] hi=[max $doc//s/@v] avg=[avg $doc//s/@v]]]",
-      note:  "**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins. Compose into a single summary element.",
-      tags:  ["avg", "builtin", "cxpath", "descendant", "in", "let", "max", "min"],
+      input: "[?let $doc = [scores [s v=42] [s v=88] [s v=15] [s v=77]] :in\n  [stats lo=[min $doc/s/@v] hi=[max $doc/s/@v] avg=[avg $doc/s/@v]]]",
+      note:  "**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element.",
+      tags:  ["avg", "builtin", "cxpath", "in", "let", "max", "min"],
     },
     "126-group-aggregate": {
       label: "[126] Aggregate \u2014 group-by attribute \u2192 count per group",
-      input: "[?let $doc = [orders [o region=US amt=100] [o region=EU amt=200] [o region=US amt=50] [o region=EU amt=80] [o region=APAC amt=300]] :in\n  [?for $o :in $doc//o :group-by $o/@region :yield $o/@region]]",
-      note:  "**Pattern:** what are the distinct group keys? **Uses:** `:group-by`. Yields `(US, EU, APAC)`. Aggregations per group await ADR 0041's `[?group-by]` iterator combinator.",
-      tags:  ["cxpath", "descendant", "for", "group-by", "in", "let", "yield"],
+      input: "[?let $doc = [orders [o region=US amt=100] [o region=EU amt=200] [o region=US amt=50] [o region=EU amt=80] [o region=APAC amt=300]] :in\n  [?for $o :in $doc/o :group-by $o/@region :yield $o/@region]]",
+      note:  "**Pattern:** what are the distinct group keys? **Uses:** `:group-by` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await ADR 0041's `[?group-by]` iterator combinator.",
+      tags:  ["cxpath", "for", "group-by", "in", "let", "yield"],
     },
     "127-deep-descendant": {
       label: "[127] Tree \u2014 deep descendants at any depth",
@@ -774,9 +774,9 @@
     },
     "128-flatten-one-level": {
       label: "[128] Tree \u2014 flatten one level",
-      input: "[?let $doc = [groups [g [item \"a\"] [item \"b\"]] [g [item \"c\"]] [g [item \"d\"] [item \"e\"]]] :in\n  [?for $g :in $doc//g :yield $g//item]]",
-      note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over the outer container, `:yield $g/item` to splat the inner items. The output is a flat sequence.",
-      tags:  ["cxpath", "descendant", "for", "in", "let", "yield"],
+      input: "[?let $doc = [groups [g [item \"a\"] [item \"b\"]] [g [item \"c\"]] [g [item \"d\"] [item \"e\"]]] :in\n  [?for $g :in $doc/g :yield $g/item]]",
+      note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `:yield $g/item` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence.",
+      tags:  ["cxpath", "for", "in", "let", "yield"],
     },
     "129-name-via-builtin": {
       label: "[129] Tree \u2014 node name via local-name()",
@@ -853,7 +853,7 @@
     "141-reachability-1hop": {
       label: "[141] Graph \u2014 one-hop reachability",
       input: "[?let $g = [triples [t s=A p=knows o=B] [t s=A p=knows o=C] [t s=B p=knows o=D]] :in\n  [?for $t :in $g//t[and [= @s \"A\"] [= @p \"knows\"]] :yield $t/@o]]",
-      note:  "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= @s \"A\"] [= @p \"knows\"]]` compound predicate. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.",
+      note:  "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= @s \"A\"] [= @p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) \u2014 bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from ADR 0045 gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.",
       tags:  ["and", "builtin", "cxpath", "descendant", "eq", "for", "in", "let", "yield"],
     },
     "142-set-union": {
@@ -882,9 +882,9 @@
     },
     "146-pivot-rows-to-attrs": {
       label: "[146] ETL \u2014 pivot (row-shape \u2192 attr-shape)",
-      input: "[?let $doc = [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]] :in\n [?let $cpu = $doc//m[@k=\"cpu\"] :in\n [?let $mem = $doc//m[@k=\"mem\"] :in\n [?let $disk = $doc//m[@k=\"disk\"] :in\n  [snapshot cpu=$cpu@v mem=$mem@v disk=$disk@v]]]]]",
-      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** chained `/m[@k=\u2026]/@v`. The shape pivots from skinny-tall to wide. (G4 closed in ADR 0043.)",
-      tags:  ["attr", "cxpath", "descendant", "in", "let"],
+      input: "[?let $doc = [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]] :in\n  [snapshot cpu=$doc/m[@k=\"cpu\"]/@v mem=$doc/m[@k=\"mem\"]/@v disk=$doc/m[@k=\"disk\"]/@v]]",
+      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[@k=\u2026]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly \u2014 no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; bind the row via `[?let $cpu = $doc/m[@k=\"cpu\"]` and read `$cpu@v` when you need the raw scalar `87`. The shape still pivots skinny-tall \u2192 wide. (G4 closed in ADR 0043.)",
+      tags:  ["cxpath", "in", "let"],
     },
     "147-unpivot": {
       label: "[147] ETL \u2014 unpivot (attrs \u2192 rows)",
@@ -894,9 +894,9 @@
     },
     "148-transpose-matrix": {
       label: "[148] ETL \u2014 transpose a 2D table",
-      input: "[?let $m = [matrix\n  [row a=1 b=2 c=3]\n  [row a=4 b=5 c=6]\n  [row a=7 b=8 c=9]] :in\n [?let $r1 = $m//row[1] :in\n [?let $r2 = $m//row[2] :in\n [?let $r3 = $m//row[3] :in\n  [transposed\n    [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]\n    [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]\n    [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]]]]",
-      note:  "**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed in ADR 0043), explicit attribute reads. For arbitrary dimensions, lazy `[?zip]` is the right tool (ADR 0041).",
-      tags:  ["attr", "cxpath", "descendant", "in", "let"],
+      input: "[?let $m = [matrix\n  [row a=1 b=2 c=3]\n  [row a=4 b=5 c=6]\n  [row a=7 b=8 c=9]] :in\n [?let $r1 = $m/row[1] :in\n [?let $r2 = $m/row[2] :in\n [?let $r3 = $m/row[3] :in\n  [transposed\n    [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]\n    [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]\n    [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]]]]",
+      note:  "**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed in ADR 0043) on the child axis `$m/row[N]` (gap A: child axis now returns every match \u2014 picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool (ADR 0041).",
+      tags:  ["attr", "cxpath", "in", "let"],
     },
     "149-group-then-sum": {
       label: "[149] ETL \u2014 group-aggregate (region \u2192 total)",
@@ -906,9 +906,9 @@
     },
     "150-join-by-key": {
       label: "[150] ETL \u2014 join two collections by attribute",
-      input: "[?let $orders = [o-set [o id=1 user=\"A\" amt=100] [o id=2 user=\"B\" amt=200] [o id=3 user=\"A\" amt=50]] :in\n  [?for $o :in $orders//o\n   :let $email = [?match $o/@user\n     :case \"A\" :yield \"a@x.com\"\n     :case \"B\" :yield \"b@x.com\"\n     :else :yield \"\"]\n   :yield [joined order-id=$o/@id amt=$o/@amt email=$email]]]",
-      note:  "**Pattern:** inner-join two collections by a shared key \u2014 pivot each row's foreign key into a per-row lookup value. **Uses:** `[?match]` over `$o/@user` selects the matching email per row. (Generic predicate-based path lookup `$users//u[@name=$o/@user]/@email` is a hypothesis in ADR 0045's discovery register; the explicit match form unblocks the join pattern today.)",
-      tags:  ["case", "cxpath", "descendant", "else", "for", "in", "let", "match", "yield"],
+      input: "[?let $orders = [o-set [o id=1 user=\"A\" amt=100] [o id=2 user=\"B\" amt=200] [o id=3 user=\"A\" amt=50]] :in\n [?let $users = [u-set [u name=\"A\" email=\"a@x.com\"] [u name=\"B\" email=\"b@x.com\"]] :in\n  [?for $o :in $orders//o :yield [joined order-id=$o/@id amt=$o/@amt email=$users//u[@name=$o/@user]/@email]]]]",
+      note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (ADR 0045 gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
+      tags:  ["cxpath", "descendant", "for", "in", "let", "yield"],
     },
   };
 
