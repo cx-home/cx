@@ -36,6 +36,30 @@ Last revised: 2026-05-26 against `v0.8.0-dev` HEAD post-ADR-0046.
 | String ops surface (`split`, `tokenize`, `format`, regex-as-data) | #02 (#03 / #04 / #10 / #15 / #16 expected) | New ADR (hypothesis #34) |
 | Paren-expression with operators (`$x > 4`, `$a + $b`) | #01 (potentially most programs) | Fixture-recheck or new ADR — `conformance/code.txt:3495` currently parse-fails |
 
+## Hypothesis-register probes (ADR 0045 §register, 2026-05-26)
+
+Direct probes of the ADR 0045 confidence-ranked hypothesis register
+(probe-then-decide per D6), not corpus programs. Each is WORKS (fixture
+added) / FIXED (cheap impl + fixture) / GAP (writeup + parked stub).
+
+| # | Hypothesis | Verdict | Evidence / disposition |
+|---|---|---|---|
+| #33 | Map iteration `[?for $k, $v :in $m]` / `:keys` / `:values` | **GAP** | Two-binding generator does not parse (`CXER0100` on the comma); single-bind `$kv :in $m` binds the whole map, not entries — `iterate()` + `materialize_to_items()` have no `cx.MapNode` case. Crosses parser + a missing entry-iteration *protocol* + eval binding; over the 30-line cap. Parked → **ADR 0051** (`spec/decisions/0051-map-iteration.md`). |
+| #35 | `:order-by EXPR :desc` + multi-key | **WORKS** (desc) / **GAP** (then-by, with workaround) | `:desc` works — but the direction is a **bare ident** `desc` (`:order-by $u/@age desc`), NOT a colon-clause; `:desc` raises "unknown for-comprehension clause". Eval already honors `bc.direction == 'desc'` (`eval.v` ~5972) with a stable insertion sort. `:then-by` does NOT exist, but multi-key sort is fully expressible by **chaining `:order-by`** (sort secondary-key first; the stable sort preserves it within primary ties). Fixtures `program-order-by-desc-001`, `program-order-by-multikey-001`. |
+| #42 | Char-level string access `"hello"[0]` | **WORKS-AS-DESIGNED** | `$s[1]` returns the whole string and `$s[2:4]` is empty — strings are scalars, `iterate(scalar)` → 1-element seq, so `[]` does not do char access (intentional; not a gap). The blessed path is the `substring(s, start, len)` builtin (1-indexed, XPath `fn:substring` convention): `[substring $s 2 3]` → `"ell"`, `[substring $s 1 1]` → `"h"`. Documented + fixture `program-string-index-001`. |
+
+**Single most important gap for the next ADR cycle:** map entry
+iteration (#33 → ADR 0051). It blocks corpus program #10 (word-count,
+needs sort-by-count over a frequency map) and is the only one of the
+three probes requiring real design (a Map-entry iteration protocol /
+value-kind decision), not a doc note or a cheap flip.
+
+**Surface-syntax footgun surfaced (worth a guide note):** the
+`:order-by` direction is a bare `asc`/`desc` ident, not `:asc`/`:desc`.
+Every other modifier in the for-comprehension is a colon-clause, so
+`:desc` reads natural and silently fails to parse. Candidate for a
+playground-cookbook clarification or accepting `:desc` as an alias.
+
 ## Acceptance-criteria status (ADR 0045)
 
 Re-checking the five criteria from ADR 0045 §"Acceptance criteria":
