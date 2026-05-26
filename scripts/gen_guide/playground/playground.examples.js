@@ -940,6 +940,36 @@
       note:  "**Pattern:** classic LIMIT/OFFSET shape. **Uses:** `:drop` to skip-prefix + `:take` to bound the page. Result is `(31, 32, 33, 34, 35)` \u2014 the 5-item page starting at offset 30. `:drop` runs BEFORE `:take`'s counter, so the page is correctly placed (ADR 0041 D14).",
       tags:  ["for", "in", "yield"],
     },
+    "156-slice-range": {
+      label: "[156] Slice \u2014 single-axis range `$xs[1:3]`",
+      input: "[?let $xs = (\"a\", \"b\", \"c\", \"d\", \"e\") :in $xs[1:3]]",
+      note:  "**Pattern:** sub-sequence by inclusive index bounds. **Uses:** `$xs[1:3]` \u2014 the slice postfix on a `$binding` (ADR 0041 W5c). Indices are 1-based and STOP is INCLUSIVE (D4/D5), so the result is `(\"a\", \"b\", \"c\")`. Out-of-range or wrong-direction slices return the empty sequence rather than erroring (D20).",
+      tags:  ["in", "let"],
+    },
+    "157-slice-last-three": {
+      label: "[157] Slice \u2014 last N via negative start `$xs[-3:]`",
+      input: "[?let $xs = (\"a\", \"b\", \"c\", \"d\", \"e\") :in $xs[-3:]]",
+      note:  "**Pattern:** \"last three\" / pagination tail. **Uses:** negative indices resolve from the end at apply time (`-1` = last, `-3` = third-from-last per ADR 0041 D9). Equivalent to Python's `xs[-3:]`. Open-stop walks through the end of the sequence.",
+      tags:  ["in", "let"],
+    },
+    "158-slice-reverse": {
+      label: "[158] Slice \u2014 reverse with `$xs[::-1]`",
+      input: "[?let $xs = (\"a\", \"b\", \"c\", \"d\", \"e\") :in $xs[::-1]]",
+      note:  "**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (ADR 0041 D5 + reverse-stride convention). Equivalent to `[reverse $xs]` but more direct when you're already in slice territory.",
+      tags:  ["in", "let"],
+    },
+    "159-slice-every-other": {
+      label: "[159] Slice \u2014 every other with `$xs[::2]`",
+      input: "[?let $xs = (\"a\", \"b\", \"c\", \"d\", \"e\") :in $xs[::2]]",
+      note:  "**Pattern:** stride a sequence. **Uses:** open start/stop + step `2` \u2014 yields elements at 0-based positions `0, 2, 4` (1-based `1, 3, 5`). Composes with negative stride (`[::-2]` \u2192 every-other backwards) and explicit bounds (`[5::-2]` \u2192 walk from index 5 backwards by 2).",
+      tags:  ["in", "let"],
+    },
+    "160-slice-trim-ends": {
+      label: "[160] Slice \u2014 trim ends with `$_last`",
+      input: "[?let $xs = (\"a\", \"b\", \"c\", \"d\", \"e\") :in $xs[2:[- $_last 1]]]",
+      note:  "**Pattern:** drop the first and last item. **Uses:** the `$_last` sigil (ADR 0041 D11) resolves to the receiver's cardinality at slice-apply time, so `[- $_last 1]` evaluates to `n - 1` regardless of the source. Stop is inclusive, so `[2:n-1]` keeps items 2 through n-1 \u2014 i.e. everything except the first and last.",
+      tags:  ["in", "let", "sub"],
+    },
   };
 
   window.cxPlaygroundExamples = { program };
