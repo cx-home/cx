@@ -87,10 +87,22 @@ html, body {
   border-radius: 4px;
   background: var(--bg-pane);
   color: var(--text);
-  min-width: 320px;
-  max-width: 480px;
+  min-width: 280px;
+  max-width: 440px;
   font-family: inherit;
 }
+.cxp-search {
+  padding: 4px 8px;
+  font-size: 12.5px;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  background: var(--bg-pane);
+  color: var(--text);
+  width: 220px;
+  font-family: inherit;
+}
+.cxp-search:focus { outline: none; border-color: var(--accent); }
+.cxp-search::placeholder { color: var(--text-dim); }
 .cxp-btn {
   padding: 4px 12px;
   font-size: 12.5px;

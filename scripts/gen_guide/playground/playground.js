@@ -9,6 +9,7 @@
   for (const [key, ex] of Object.entries(programEntries)) ALL_ENTRIES.push({ key, kind: 'program', ex });
 
   const pick     = document.getElementById('cxp-pick');
+  const searchEl = document.getElementById('cxp-search');
   const prevBtn  = document.getElementById('cxp-prev');
   const nextBtn  = document.getElementById('cxp-next');
   const runBtn   = document.getElementById('cxp-run');
@@ -154,16 +155,50 @@
   }
 
   // ── Example dropdown ─────────────────────────────────────
-  function populatePicker() {
+  function populatePicker(filter) {
     pick.innerHTML = '';
+    const q = (filter || '').trim().toLowerCase();
+    let shown = 0;
     for (const e of ALL_ENTRIES) {
+      if (q && !exampleMatches(e, q)) continue;
       const o = document.createElement('option');
       o.value = `${e.kind}:${e.key}`;
       o.textContent = e.ex.label || e.key;
       pick.appendChild(o);
+      shown++;
+    }
+    if (shown === 0) {
+      const o = document.createElement('option');
+      o.disabled = true;
+      o.textContent = `(no matches for "${q}")`;
+      pick.appendChild(o);
     }
   }
+  // Match an example against a lowercased query: label, tags array,
+  // and source text all participate. Multi-word queries AND-match
+  // (every word must appear somewhere).
+  function exampleMatches(e, q) {
+    const haystack = [
+      (e.ex.label || '').toLowerCase(),
+      (e.ex.tags || []).join(' ').toLowerCase(),
+      (e.ex.input || '').toLowerCase(),
+    ].join(' ');
+    const words = q.split(/\s+/).filter(Boolean);
+    return words.every(w => haystack.includes(w));
+  }
   populatePicker();
+
+  if (searchEl) {
+    searchEl.addEventListener('input', () => {
+      populatePicker(searchEl.value);
+      // After re-populating, auto-select the first visible option so
+      // Run / Reset / prev / next operate on something sensible.
+      if (pick.options.length > 0 && !pick.options[0].disabled) {
+        pick.selectedIndex = 0;
+        loadExample(pick.value);
+      }
+    });
+  }
 
   function lookup(key) {
     if (!key) return null;
