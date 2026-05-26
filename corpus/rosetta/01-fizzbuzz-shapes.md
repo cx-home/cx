@@ -35,23 +35,35 @@ Observed output (truncated; 30 lines total):
 ```
 1
 2
-3
+:fizz
 4
-5
+:buzz
+:fizz
+7
+8
+:fizz
+:buzz
+11
+:fizz
+13
+14
+:fizzbuzz
 …
-29
-30
+:fizzbuzz
 ```
 
-**Status:** BLOCKED. Every `:when` arm contains `[mod $n N]`, which is
-not a recognised builtin — it stays as an unevaluated element shape,
-so the `[= ... 0]` comparison is false for every arm, and the
-`:else :yield $n` fall-through fires for every iteration. The program
-*parses*, but the output is wrong (1..30 instead of fizzbuzz pattern).
+**Status:** GREEN as of ADR 0046 (math-operator surface). `[mod $n N]`
+now dispatches through `dispatch_call('mod', [...])` in all four call
+shapes (operator-element / element-paren / XPath-call / directive
+multi-arg). The natural shape-yielding FizzBuzz body in §"Actual run"
+runs to completion and produces the canonical fizz / buzz / fizzbuzz
+sequence — matching the Python / Clojure / jq reference renditions.
 
 ## Workarounds attempted
 
-| Attempt | Result |
+(Historical — kept for ADR 0046's discovery-process trail.)
+
+| Attempt (pre-ADR-0046) | Result |
 |---|---|
 | `[mod $n 3]` as a directive | Returns the literal `[mod $n 3]` Element — `mod` is not a registered builtin |
 | `($n mod 3)` XPath-style infix | Parser rejects `mod` as an unknown token at the `mod` position |
@@ -59,6 +71,11 @@ so the `[= ... 0]` comparison is false for every arm, and the
 | Hand-enumerated `:case` arms (`:case 3 :yield :fizz`, `:case 5 :yield :buzz`, etc., up to 30 cases) | Works correctly but defeats the purpose of the exercise |
 | `[?def imod (a b) ...]` ADR 0034 function | Parse error — `[?def NAME (params) body]` form not implemented yet on `v0.8.0-dev` |
 | Multi-arg `[?fn ($a, $b) :body BODY]` | Body never substitutes `$a`/`$b` when called; only single-arg `[?fn ($x) :body ...]` works correctly |
+
+After ADR 0046, items #1 and #2 are closed in surface-element /
+XPath-call / directive forms. The infix `$n mod 3` form remains
+parse-deferred (ADR 0046 D5 / "scope — out") and continues to
+require the operator-element `[mod $n 3]` shape.
 
 The hand-enumerated `:case` workaround does exercise a different
 real gap: `:else :yield $n` in a `[?match]` whose subject is `$n`

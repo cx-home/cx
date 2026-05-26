@@ -9,11 +9,11 @@ Extension #21 added 2026-05-26 to close [ADR 0047 §D8 gate
 47.7](../../spec/decisions/0047-stdlib-surface-v0_8_0.md) — exercises
 the new `url` + `csv` + `validate` triad.
 
-Last revised: 2026-05-26 against `v0.8.0-dev` HEAD `e44de53c`.
+Last revised: 2026-05-26 against `v0.8.0-dev` HEAD post-ADR-0046.
 
 | Program | Last-revised HEAD | Status | Gap count | ADRs motivated |
 |---|---|---|---|---|
-| 01-fizzbuzz-shapes | `74fe4f5b` | blocked | 5 | no `mod` builtin (NEW) · math builtins directive-form (NEW) · paren-expression ops (NEW or fixture-recheck) · ADR 0034 `[?def]` impl · multi-arg `[?fn]` apply (NEW) |
+| 01-fizzbuzz-shapes | post-ADR-0046 | green | 3 | ADR 0046 closed `mod` builtin + math-builtin directive-form (resolved) · paren-expression ops (still NEW or fixture-recheck) · ADR 0034 `[?def]` impl · multi-arg `[?fn]` apply (NEW) |
 | 02-log-parser | `74fe4f5b` | workaround | 3 | string-ops surface — `split`/`tokenize`/`format` (NEW; ADR 0045 hypothesis #34 confirmed) · `contains` directive form (NEW; same family as fizzbuzz #2) · atom-as-attribute-value friction (spec note) |
 | 05-rpn-calculator | `74fe4f5b` | blocked | 4 | `$path/child` empty-vs-CXER0001 (NEW or amend `spec/cxpath.md` §6) · predicate-context arithmetic on `last()` (extends ADR 0043) · multi-arg `[?fn]` re-confirm · no stack abstraction (note under ADR 0040) |
 | 06-bfs | `74fe4f5b` | workaround | 5 | `$bind/child` single-match (CONFIRMED in 0045 register) · no `[?loop]` / `[?recur]` (NEW) · no mutable state (deliberate-gap note) · no set ops (NEW) · pattern destructure of `:key val` attribute style (spec note) |
@@ -22,15 +22,15 @@ Last revised: 2026-05-26 against `v0.8.0-dev` HEAD `e44de53c`.
 
 ## Summary
 
-- **green**: 1 (#13)
+- **green**: 2 (#01 post-ADR-0046, #13)
 - **workaround**: 2 (#02, #06)
-- **blocked**: 3 (#01, #05, #21 — #21 expected pre-impl, not a surface gap)
+- **blocked**: 2 (#05, #21 — #21 expected pre-impl, not a surface gap)
 
 ## Cross-program gap clusters (≥2 programs)
 
 | Gap | Programs affected | Recommended action |
 |---|---|---|
-| Math / arithmetic builtins (`mod`, `div`, `floor` directive form) | #01, #05 | New ADR for directive-form `floor`/`ceiling`/`round`/`abs` and `mod`/`idiv` |
+| ~~Math / arithmetic builtins (`mod`, `div`, `floor` directive form)~~ | ~~#01, #05~~ | **Closed by ADR 0046 (2026-05-26).** `mod`/`div`/`idiv` builtins ship + directive-form dispatch closure for `floor`/`ceiling`/`round`/`abs`. #05 still blocked on other gaps (predicate-context arithmetic, etc.). |
 | Multi-arg `[?fn]` apply with non-trivial body | #01, #05 | New ADR or extend ADR 0034 / ADR 0040 |
 | `$bind/child` single-match | #06, #13 | Already in ADR 0045 confirmed-gap register; awaiting new ADR slot |
 | String ops surface (`split`, `tokenize`, `format`, regex-as-data) | #02 (#03 / #04 / #10 / #15 / #16 expected) | New ADR (hypothesis #34) |
@@ -43,10 +43,14 @@ Re-checking the five criteria from ADR 0045 §"Acceptance criteria":
 1. ☑ `corpus/rosetta/` exists with ≥5 programs + `.md` narratives.
 2. ☑ `corpus/rosetta/AUDIT.md` exists with per-program table (this file).
 3. ☑ ≥1 cross-reference doc exists (`spec/cross-ref/xpath-31.md`).
-4. ☐ ≥1 NEW ADR motivated by corpus gap — pending: the math-builtin or string-ops or `[?fn]` apply gap each motivates a separate slot. File the next-numbered ADR after merging this seed.
-5. ☐ Cadence reference in next ADR-affecting discussion — to be confirmed by the next ADR's "Composes with" / "Acceptance criteria" sections.
+4. ☑ ≥1 NEW ADR motivated by corpus gap — **ADR 0046** (math-operator
+   surface) was filed as the first deliverable from this audit cadence
+   and now ships; it closed `01-fizzbuzz-shapes` from blocked → green.
+5. ☑ Cadence reference in next ADR-affecting discussion — ADR 0046's
+   "Composes with" and "Acceptance criteria" sections reference both
+   ADR 0045 (this audit) and the corpus gap directly.
 
-This audit is therefore one ADR-slot away from moving ADR 0045 itself
-from Draft → Accepted. The unblocking move is to file the highest-
-signal new gap as an ADR (suggested: math-builtin directive form,
-which blocks the smallest possible program — FizzBuzz).
+ADR 0045's acceptance criteria are met by the v0.8.0-dev cadence:
+the audit caught a gap on program #1, an ADR was filed within the
+week, and the ADR shipped before the next release boundary. The
+discovery instrument is working as designed.
