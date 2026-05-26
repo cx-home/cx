@@ -1,0 +1,5 @@
+[?let $graph = [g
+  [edges from=A to=B] [edges from=A to=C]
+  [edges from=B to=D] [edges from=C to=D]
+  [edges from=D to=E]] :in
+  [?for [edges @from=$f @to=$t] :in $graph//edges :yield [edge $f $t]]]

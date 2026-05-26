@@ -1,0 +1,7 @@
+[?reduce (3, 4, :plus, 5, :times)
+  :using [?fn ($acc, $tok)
+    [?match $tok
+      :case :plus  :yield [stack [n [+ nth($acc/n, 1) nth($acc/n, 2)]]]
+      :case :times :yield [stack [n [* nth($acc/n, 1) nth($acc/n, 2)]]]
+      :case $v     :yield [stack [n $v] $acc/n]]]
+  :init [stack]]

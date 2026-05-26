@@ -1,0 +1,7 @@
+[?let $config = [config
+  [port 8080]
+  [host "localhost"]
+  [retry max=3 :backoff 100ms]] :in
+  [?match true
+    :when [and [> count($config//port) 0] [> count($config//host) 0]] :yield :valid
+    :else :yield :invalid]]

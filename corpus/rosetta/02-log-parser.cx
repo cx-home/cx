@@ -1,0 +1,11 @@
+[?let $lines = (
+  "2026-05-26 10:00:00 INFO  app starting",
+  "2026-05-26 10:00:01 WARN  config file missing",
+  "2026-05-26 10:00:02 ERROR fatal"
+) :in
+  [?for $line :in $lines :yield
+    [?match true
+      :when contains($line, "ERROR") :yield [entry :level :error :msg $line]
+      :when contains($line, "WARN")  :yield [entry :level :warn  :msg $line]
+      :when contains($line, "INFO")  :yield [entry :level :info  :msg $line]
+      :else :yield [entry :level :unknown :msg $line]]]]
