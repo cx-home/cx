@@ -910,6 +910,36 @@
       note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (ADR 0045 gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
       tags:  ["cxpath", "descendant", "for", "in", "let", "yield"],
     },
+    "151-range-by-stride": {
+      label: "[151] Range \u2014 strided with `by`",
+      input: "[?for $x :in 1 to 10 by 2 :yield $x]",
+      note:  "**Pattern:** every other integer in a range. **Uses:** `:in N to M by S` \u2014 the `by` stride keyword (ADR 0041 D1). Result is `(1, 3, 5, 7, 9)`. Negative stride reverses: `10 to 1 by -2`.",
+      tags:  ["for", "in", "yield"],
+    },
+    "152-range-reverse-stride": {
+      label: "[152] Range \u2014 reverse with negative `by`",
+      input: "[?for $x :in 20 to 4 by -4 :yield $x]",
+      note:  "**Pattern:** countdown by step. **Uses:** negative stride. Empty when direction disagrees with step (`5 to 3 by 1` \u2192 empty per ADR 0041 D20).",
+      tags:  ["for", "in", "yield"],
+    },
+    "153-take-prefix": {
+      label: "[153] Comprehension \u2014 `:take N` short-circuit",
+      input: "[?for $x :in 1 to 1000000 :where [> $x 100] :take 5 :yield $x]",
+      note:  "**Pattern:** first N matching items, stop early. **Uses:** `:take 5` \u2014 comprehension short-circuits after 5 yields without evaluating the rest of the range. Critical for any pipeline over a large or infinite source (ADR 0041 D14).",
+      tags:  ["for", "gt", "in", "where", "yield"],
+    },
+    "154-drop-prefix": {
+      label: "[154] Comprehension \u2014 `:drop N` skip-prefix",
+      input: "[?for $x :in 1 to 10 :drop 7 :yield $x]",
+      note:  "**Pattern:** ignore the first N items, yield the tail. **Uses:** `:drop 7` \u2014 skips the first 7 candidates BEFORE any `:where` filter or `:yield` body fires. Composes with `:take` for pagination (ADR 0041 D14).",
+      tags:  ["for", "in", "yield"],
+    },
+    "155-drop-take-page": {
+      label: "[155] Comprehension \u2014 paginate via `:drop + :take`",
+      input: "[?for $x :in 1 to 100 :drop 30 :take 5 :yield $x]",
+      note:  "**Pattern:** classic LIMIT/OFFSET shape. **Uses:** `:drop` to skip-prefix + `:take` to bound the page. Result is `(31, 32, 33, 34, 35)` \u2014 the 5-item page starting at offset 30. `:drop` runs BEFORE `:take`'s counter, so the page is correctly placed (ADR 0041 D14).",
+      tags:  ["for", "in", "yield"],
+    },
   };
 
   window.cxPlaygroundExamples = { program };
