@@ -22,7 +22,7 @@
   const renderEl = document.getElementById('cxp-input-render');
   const outTabs  = [...document.querySelectorAll('.cxp-tab')];
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
-  const vizSrcTabs = [...document.querySelectorAll('.cxp-viz-src-tab')];
+  const vizSrcToggle = document.getElementById('cxp-viz-src-toggle');
   const outs     = {
     cx:   document.querySelector('#cxp-out-cx code'),
     json: document.querySelector('#cxp-out-json code'),
@@ -309,11 +309,14 @@
     }
     refreshView();
   }
-  vizSrcTabs.forEach(t => t.addEventListener('click', () => {
-    vizSource = t.dataset.vizsrc;
-    vizSrcTabs.forEach(x => x.classList.toggle('is-active', x.dataset.vizsrc === vizSource));
-    refreshView();
-  }));
+  if (vizSrcToggle) {
+    vizSrcToggle.addEventListener('click', () => {
+      vizSource = (vizSource === 'source') ? 'output' : 'source';
+      vizSrcToggle.dataset.vizsrc = vizSource;
+      vizSrcToggle.textContent = (vizSource === 'source') ? 'Source' : 'Output';
+      refreshView();
+    });
+  }
 
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';

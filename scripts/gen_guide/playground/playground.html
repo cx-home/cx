@@ -52,10 +52,9 @@
   <section class="cxp-pane cxp-viz-pane">
     <div class="cxp-pane-head">
       <span>VIEW</span>
-      <span class="cxp-tabs cxp-viz-source-tabs" role="tablist">
-        <button class="cxp-viz-src-tab is-active" data-vizsrc="source" type="button">Source</button>
-        <button class="cxp-viz-src-tab"           data-vizsrc="output" type="button">Output</button>
-      </span>
+      <button id="cxp-viz-src-toggle" class="cxp-mini-btn cxp-viz-src-toggle"
+              type="button" data-vizsrc="source"
+              title="Toggle which content the view pane visualizes">Source</button>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
         <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>

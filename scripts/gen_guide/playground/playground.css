@@ -135,7 +135,16 @@ html, body {
   font-size: 11px;
   letter-spacing: -0.02em;
 }
-.cxp-viz-source-tabs { margin-right: auto; margin-left: 12px; }
+.cxp-viz-src-toggle {
+  margin-right: auto;
+  margin-left: 12px;
+  min-width: 64px;
+  text-align: center;
+}
+.cxp-viz-src-toggle::before {
+  content: '⇄  ';
+  opacity: 0.6;
+}
 
 /* ── Main 3-region grid ─────────────────────────────────────── */
 /* Source + Output stack in the left 2/3; View pane takes the right 1/3.
