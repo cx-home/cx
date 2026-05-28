@@ -277,19 +277,60 @@ html, body {
 .cxp-output {
   flex: 1 1 auto;
   margin: 0;
-  padding: 10px 14px;
+  background: var(--bg-input);
+  display: none;
+  min-height: 0;
+  overflow: hidden;
+}
+.cxp-output.is-active { display: flex; }
+.cxp-output > pre {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 10px 14px 10px 8px;
   font-family: var(--code-font);
   font-size: 13px;
   line-height: 1.55;
   color: var(--text);
-  background: var(--bg-input);
   white-space: pre-wrap;
   word-break: break-word;
   overflow: auto;
-  display: none;
+  min-width: 0;
 }
-.cxp-output.is-active { display: block; }
 .cxp-output code { background: transparent; color: inherit; font: inherit; }
+
+/* ── Line-number gutter (source + outputs) ────────────────── */
+/* Right-aligned monospace column, scroll-synced with the
+   neighbouring textarea/pre. JS keeps the gutter content in
+   step with the editor/output line count. */
+.cxp-gutter {
+  flex: 0 0 auto;
+  width: 3.2em;
+  padding: 10px 6px 10px 8px;
+  font-family: var(--code-font);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  background: var(--bg-head);
+  border-right: 1px solid var(--border);
+  text-align: right;
+  white-space: pre;
+  overflow: hidden;
+  user-select: none;
+  pointer-events: none;
+  min-width: 0;
+}
+/* Source editor gutter is layered (textarea+render are absolute),
+   so the gutter participates as a sibling absolute layer. */
+.cxp-editor-wrap > .cxp-gutter {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  z-index: 3;
+}
+/* Push the source textarea + render layer past the gutter. */
+.cxp-editor-wrap > .cxp-editor-render,
+.cxp-editor-wrap > .cxp-source {
+  left: 3.2em;
+}
 
 /* ── View pane (Tree / Graph) ─────────────────────────────── */
 .cxp-viz-content {

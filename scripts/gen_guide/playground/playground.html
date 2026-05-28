@@ -29,6 +29,7 @@
   <section class="cxp-pane cxp-source-pane">
     <div class="cxp-pane-head">SOURCE</div>
     <div class="cxp-editor-wrap">
+      <div id="cxp-input-gutter" class="cxp-gutter" aria-hidden="true"></div>
       <pre class="cxp-editor-render" aria-hidden="true"><code id="cxp-input-render" class="language-cx"></code></pre>
       <textarea id="cxp-input" class="cxp-source" spellcheck="false"
                 autocorrect="off" autocapitalize="off" wrap="soft"
@@ -45,9 +46,18 @@
       </span>
       <button id="cxp-format" class="cxp-mini-btn" type="button" title="Toggle pretty / minified output across all tabs">Pretty</button>
     </div>
-    <pre id="cxp-out-cx"   class="cxp-output is-active"><code class="language-cx"></code></pre>
-    <pre id="cxp-out-json" class="cxp-output"><code class="language-json"></code></pre>
-    <pre id="cxp-out-xml"  class="cxp-output"><code class="language-xml"></code></pre>
+    <div id="cxp-out-cx"   class="cxp-output is-active">
+      <div class="cxp-gutter" aria-hidden="true"></div>
+      <pre><code class="language-cx"></code></pre>
+    </div>
+    <div id="cxp-out-json" class="cxp-output">
+      <div class="cxp-gutter" aria-hidden="true"></div>
+      <pre><code class="language-json"></code></pre>
+    </div>
+    <div id="cxp-out-xml"  class="cxp-output">
+      <div class="cxp-gutter" aria-hidden="true"></div>
+      <pre><code class="language-xml"></code></pre>
+    </div>
   </section>
   <section class="cxp-pane cxp-viz-pane">
     <div class="cxp-pane-head">

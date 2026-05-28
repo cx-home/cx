@@ -41,6 +41,29 @@
     fit:     document.getElementById('cxp-graph-fit'),
   };
   const vizPanes   = { tree: vizTreeEl, graph: vizGraphEl };
+  const inputGutter = document.getElementById('cxp-input-gutter');
+  const outGutters  = {
+    cx:   outPres.cx   && outPres.cx  .querySelector('.cxp-gutter'),
+    json: outPres.json && outPres.json.querySelector('.cxp-gutter'),
+    xml:  outPres.xml  && outPres.xml .querySelector('.cxp-gutter'),
+  };
+
+  // ── Line-number gutter helpers ────────────────────────────
+  // Renders a `\n`-separated column of line numbers and keeps the
+  // gutter's scrollTop in sync with the source/output element's.
+  function updateGutter(gutterEl, text) {
+    if (!gutterEl) return;
+    const n = (text || '').split('\n').length;
+    let s = '';
+    for (let i = 1; i <= n; i++) s += i + '\n';
+    gutterEl.textContent = s;
+  }
+  function wireGutterScroll(gutterEl, scrollEl) {
+    if (!gutterEl || !scrollEl) return;
+    scrollEl.addEventListener('scroll', () => {
+      gutterEl.scrollTop = scrollEl.scrollTop;
+    });
+  }
 
   // ── State ─────────────────────────────────────────────────
   let vizSource = 'source';         // 'source' | 'output' — which content the view pane visualizes
@@ -150,8 +173,15 @@
       const raw = el.dataset.raw || '';
       const text = prettyMode ? pretty(lang, raw) : minimised(lang, raw);
       el.innerHTML = highlight(lang, text);
+      updateGutter(outGutters[lang], text);
     }
     if (fmtBtn) fmtBtn.textContent = prettyMode ? 'Pretty' : 'Minified';
+  }
+
+  // Wire output-pane scroll → gutter sync once.
+  for (const k of Object.keys(outPres)) {
+    const pre = outPres[k] && outPres[k].querySelector('pre');
+    wireGutterScroll(outGutters[k], pre);
   }
 
   // ── Example dropdown ─────────────────────────────────────
@@ -231,11 +261,13 @@
   function syncRender() {
     if (!renderEl) return;
     renderEl.innerHTML = highlight('cx', input.value);
+    updateGutter(inputGutter, input.value);
   }
   function syncScroll() {
     if (!renderEl) return;
     renderEl.parentElement.scrollTop  = input.scrollTop;
     renderEl.parentElement.scrollLeft = input.scrollLeft;
+    if (inputGutter) inputGutter.scrollTop = input.scrollTop;
   }
 
   function loadExample(key) {
