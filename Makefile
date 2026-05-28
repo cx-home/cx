@@ -80,16 +80,26 @@ build-wasm:
 # scripts/test_playground_smoke.sh then reports its documented
 # "playground-preview not built" failure.
 build-playground:
-	@echo "[build-playground] (re)building wasm with SINGLE_FILE=0 + ASYNCIFY=1 for playground"
-	@# ASYNCIFY=1 instruments the wasm with the emscripten Asyncify
-	@# runtime so wall-clock [?sleep DUR] can yield through the JS
-	@# event loop on the main browser thread without a Web Worker.
-	@# This is what lets file:// playground demos run wall-clock
-	@# parallelism examples without freezing the UI. Per-call perf
-	@# overhead (~10%) is acceptable for a playground; the default
-	@# `make build-wasm` keeps ASYNCIFY=0 so CLI/binding consumers
-	@# don't pay it. Per ADR 0039 D8.
-	@SINGLE_FILE=0 ASYNCIFY=1 ./scripts/wasm/build_libcx_wasm.sh
+	@echo "[build-playground] (re)building libcx-async + libcx-pthreads variants"
+	@# Two wasm variants — cxlib.js dynamically loads one or the other
+	@# at runtime based on crossOriginIsolated + SharedArrayBuffer
+	@# availability (cxlib.js §init, ~line 47-70):
+	@#   - libcx-async (SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0) — generic
+	@#     HTTP + file:// + GitHub Pages. SINGLE_FILE inlines the wasm
+	@#     so file:// double-click works (Chrome blocks sibling fetch
+	@#     on null-origin pages).
+	@#   - libcx-pthreads (SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1) — when
+	@#     COOP+COEP headers permit SharedArrayBuffer; real parallel
+	@#     :par via Web Workers. Needs separate .wasm for pthread
+	@#     workers to share the module instance via SAB.
+	@# ASYNCIFY=1 lets wall-clock [?sleep DUR] yield through the JS
+	@# event loop on the main thread without freezing the UI. ~10%
+	@# per-call overhead; the default `make build-wasm` keeps ASYNCIFY=0
+	@# so CLI/binding consumers don't pay it. Per ADR 0039 D8.
+	@# Build recipe mirrors scripts/gen_guide/guide.mk lines 77-78 so
+	@# `build-playground` and `guide` stay consistent.
+	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
@@ -99,17 +109,19 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
-	@cp dist/wasm/libcx.js dist/playground-preview/wasm/libcx.js
 	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
-	@if [ -f dist/wasm/libcx.wasm ]; then cp dist/wasm/libcx.wasm dist/playground-preview/wasm/libcx.wasm; fi
+	@cp dist/wasm/libcx-async.js dist/playground-preview/wasm/libcx-async.js
+	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/wasm/libcx-pthreads.js; fi
+	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/wasm/libcx-pthreads.wasm; fi
 	@# Smoke-test compatibility: also stage flat copies under dist/wasm/
 	@# so scripts/test_playground_smoke.sh (which queries dist/wasm/*
 	@# directly) keeps working alongside the absolute-URL layout that
 	@# matches docs/guide/ deployment.
-	@cp dist/wasm/libcx.js dist/playground-preview/dist/wasm/libcx.js
 	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
-	@if [ -f dist/wasm/libcx.wasm ]; then cp dist/wasm/libcx.wasm dist/playground-preview/dist/wasm/libcx.wasm; fi
-	@echo "[build-playground] OK — dist/playground-preview/ ready for gate 17 smoke"
+	@cp dist/wasm/libcx-async.js dist/playground-preview/dist/wasm/libcx-async.js
+	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/dist/wasm/libcx-pthreads.js; fi
+	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/dist/wasm/libcx-pthreads.wasm; fi
+	@echo "[build-playground] OK — dist/playground-preview/ ready (libcx-async + libcx-pthreads staged)"
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
