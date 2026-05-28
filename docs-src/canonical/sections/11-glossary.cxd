@@ -234,7 +234,7 @@
 
   [child id=g-ebv title='effective boolean value (EBV)'
     [body
-      """The truthiness coercion rule applied by `[?if]` and `:where`
+      """The truthiness coercion rule applied by `[?if]` and `[where …]`
          guards. Defined in [`spec/cxdm.md`](../../spec/cxdm.md)
          §4.6. Empty sequence / `false` / `0` / `''` / `null` are
          false; everything else is true. See [[if]]."""]]
@@ -403,8 +403,8 @@
     [body
       """`[?match]` — pattern dispatch. Single-arm form is an
          assertion that raises `CXER0100` on miss; multi-arm form
-         (ADR 0029) selects the first matching `:case` arm. See
-         [[match]]."""]]
+         (ADR 0029) selects the first matching `[case …]` clause.
+         See [[match]]."""]]
 
   [child id=g-merge-sigil title='merge sigil (*)'
     [body
@@ -415,14 +415,14 @@
   [child id=g-modify title='modify'
     [body
       """`[?modify]` — pure-functional update. Takes a document, a
-         CXPath focus, and an action (`:set` / `:delete` / …);
-         returns a new document. ADR 0030. See [[modify]]."""]]
+         CXPath focus, and an action clause (`[set …]` / `[delete]`
+         / …); returns a new document. ADR 0030. See [[modify]]."""]]
 
   [child id=g-multi-arm-match title='multi-arm match'
     [body
-      """The N-arm form of `[?match]` with `:case` / `:when` /
-         `:else` arms and optional `:where` guards. ADR 0029. See
-         [[match]]."""]]
+      """The N-arm form of `[?match]` with `[case …]` / `[when …]` /
+         `[else …]` arms and optional `[where …]` guards. ADR 0029.
+         See [[match]]."""]]
 
   [child id=g-namespace title='namespace'
     [body
@@ -457,10 +457,10 @@
 
   [child id=g-parallel title='parallel'
     [body
-      """The CX concurrency posture — `[?map :par]` and
-         `[?reduce :par]` (and `[?for ... :par]`) distribute work
-         across bounded worker pools; immutability makes the result
-         deterministic. See [[parallelism]]."""]]
+      """The CX concurrency posture — `[?map par=true]` and
+         `[?reduce par=true]` (and `[?for ... par=true]`) distribute
+         work across bounded worker pools; immutability makes the
+         result deterministic. See [[parallelism]]."""]]
 
   [child id=g-parquet title='parquet'
     [body
@@ -708,7 +708,7 @@
          D9: GitHub Pages static (HTTPS), local clone file://
          (double-click `playground.html`), and `make guide-http`
          (V veb server with cross-origin isolation enabled). Only
-         the third mode runs `:par` examples on real OS threads;
+         the third mode runs `par=true` examples on real OS threads;
          the first two run sequentially under the same surface.
          Production CX (CLI, language bindings, libcx as shared
          library) has no browser-environment overhead. See

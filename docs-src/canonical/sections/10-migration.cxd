@@ -35,10 +35,10 @@
          migration is one of two forms:"""]
 
     [table columns=(was, is)
-      [row was='[?find [user $u] :yield $u]' is='//user  or  [?for [user $u] :yield $u]']
+      [row was='[?find [user $u] :yield $u]' is='//user  or  [?for [user $u] [yield $u]]']
       [row was='[?find [user @active=true $u] :yield $u]' is='//user[@active=true]']
       [row was='[?find [user [email $e]] :yield $e]' is='//user/email']
-      [row was='count([?find [user @active=true $u] :yield $u])' is='count(//user[@active=true])']]
+      [row was='count([?find [user @active=true $u] :yield $u])' is='[$count //user[@active=true]]']]
 
     [body
       """**CXPath is now a value kind.** A path expression like `//user`
@@ -50,32 +50,32 @@
     [body
       """**Multi-arm `[?match]`.** Per ADR
          [0029](../../spec/decisions/0029-match-heterogeneous-arms.md),
-         `[?match]` now supports N arms with `:case` / `:when` / `:else`,
-         scalar literal patterns, `_` wildcard, and `:where` guards.
-         The 2-arg form (single arm, raises `CXER0100` on miss) is
-         preserved unchanged."""]
+         `[?match]` now supports N arms with `[case …]` / `[when …]` /
+         `[else …]` clause children, scalar literal patterns, `_`
+         wildcard, and `[where …]` guards. The 2-arg form (single arm,
+         raises `CXER0100` on miss) is preserved unchanged."""]
 
     [example lang=cx
-      """[# v0.7.x — nested if chain                                    #]
+      """[# v0.7.x — nested if chain (legacy slot form)                 #]
          [?if (name($n) = 'prose') :then [p $n]
               :else [?if (name($n) = 'code') :then [pre $n]
                           :else ()]]
 
-         [# v0.8.0 — multi-arm match                                    #]
+         [# v0.8.0 — multi-arm match (clause-child form)                #]
          [?match $n
-           :case [prose $p] :yield [p $p]
-           :case [code $c]  :yield [pre $c]
-           :else            :yield ()]"""]
+           [case [prose $p] [p $p]]
+           [case [code $c]  [pre $c]]
+           [else            ()]]"""]
 
     [body
       """**`[?modify]` is new.** Per ADR
          [0030](../../spec/decisions/0030-modify-pure-functional-updates.md).
          There was no idiomatic update directive in v0.7.x — code had
          to rebuild via `[?for]`. v0.8.0 ships the eleven-action
-         vocabulary (`:set` / `:delete` / `:using` / `:rename` /
-         `:set-attr` / `:delete-attr` / `:append` / `:prepend` /
-         `:insert-before` / `:insert-after` / `:replace`). See
-         [[modify]]."""]
+         vocabulary (`[set V]` / `[delete]` / `[using F]` /
+         `[rename N]` / `[set-attr N V]` / `[delete-attr N]` /
+         `[append V]` / `[prepend V]` / `[insert-before V]` /
+         `[insert-after V]` / `[replace V]`). See [[modify]]."""]
 
     [body
       """**Two-layer bindings.** Per ADR `d-2026-05-22-07` and

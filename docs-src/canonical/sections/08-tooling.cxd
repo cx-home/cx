@@ -607,10 +607,10 @@
                 that don't have a CLI surface. Reserved at v0.8.0:"""]]
 
       [table columns=(code, severity, trigger)
-        [row code='CXLS001' severity='warning' trigger='unreachable [?match] arm (after :else or :case _)']
-        [row code='CXLS002' severity='hint'    trigger='[?match] with no :else (silent () fallout)']
-        [row code='CXLS003' severity='hint'    trigger='sibling :case arms with similar :when predicates (consolidation suggestion)']
-        [row code='CXLS004' severity='error'   trigger='[?modify] :set-attr / :delete-attr on attribute-step path (compile-time mirror of CXER0100)']]
+        [row code='CXLS001' severity='warning' trigger='unreachable [?match] arm (after [else …] or [case _ …])']
+        [row code='CXLS002' severity='hint'    trigger='[?match] with no [else …] (silent () fallout)']
+        [row code='CXLS003' severity='hint'    trigger='sibling [case …] arms with similar [when …] predicates (consolidation suggestion)']
+        [row code='CXLS004' severity='error'   trigger='[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]
 
       [body
         """Codes are stable strings; editor configs may key off them
@@ -675,8 +675,8 @@
       [list
         [item """**CXLS001** (unreachable arm) — "remove unreachable
                 arm". Deletes the arm."""]
-        [item """**CXLS002** (no `:else`) — "add `:else` arm". Inserts
-                an empty `:else (())` slot."""]
+        [item """**CXLS002** (no `[else …]`) — "add `[else]` arm".
+                Inserts an empty `[else ()]` clause."""]
         [item """**CX-L001** (comment style) — "convert `[# #]` to
                 `# line comment`" (and vice versa)."""]
         [item """**CX-L002** (type-alias style) — "expand to
@@ -704,7 +704,7 @@
         [row token='namespace' example='module prefixes, schema-qualified names']
         [row token='keyword'   example='directive names ([?for], [?if], [?match]...)']
         [row token='variable'  example='$ctx, $-bound names from [?let]']
-        [row token='parameter' example='labeled slot names (:case, :when, :else)']
+        [row token='parameter' example='function-parameter names and pattern $bindings']
         [row token='property'  example='attribute names']
         [row token='string'    example='string literals (single, double, triple quoted)']
         [row token='number'    example='int, float, hex, sized-type literals']
@@ -1905,7 +1905,7 @@
     [child id=recipe-render-template n=8.14.7 title='Render a template with includes'
       [example lang=cx
         """[?include 'partials/header.cx']
-           [?for item :in //order/line :yield [?include 'partials/line.cx']]
+           [?for [in $item //order/line] [yield [?include 'partials/line.cx']]]
            [?include 'partials/footer.cx']"""]
       [example lang=shell """cx eval order.cx --data=order.cx --include-root=./templates"""]]
 
@@ -1924,8 +1924,8 @@
     [child id=recipe-html-safe n=8.14.10 title='HTML-safe templating'
       [example lang=cx
         """[?cx output-target=html]
-           [h1 [?= //page/@title]]
-           [?for u :in //user :yield [li [?= u/@name]]]"""]
+           [h1 //page/@title]
+           [?for [in $u //user] [yield [li $u/@name]]]"""]
       [body
         """`[?cx output-target=html]` switches the evaluator into
            context-aware escaping. Substituted values containing
@@ -1949,11 +1949,11 @@
            split it into structured CX."""]
       [example lang=cx """ts=2026-05-20T18:42:00Z level=info request_id=abc123 msg=ok"""]
       [example lang=cx
-        """[?for line :in tokenize(input, '\n') :yield
+        """[?for [in $line [$tokenize $input '\n']] [yield
              [event
-               [?for kv :in tokenize(line, ' ') :yield
-                 [?let pair :be tokenize(kv, '=') :yield
-                   [pair name=[?= pair[1]] value=[?= pair[2]]]]]]]"""]]
+               [?for [in $kv [$tokenize $line ' ']] [yield
+                 [?let [= $pair [$tokenize $kv '=']]
+                   [pair name=$pair[1] value=$pair[2]]]]]]]]"""]]
 
     [child id=recipe-build-system n=8.14.13 title='Build system in CX'
       [body
@@ -1965,10 +1965,10 @@
              [target name=lib  depends='src/foo.o src/bar.o'  run='ar rcs lib.a src/foo.o src/bar.o']
              [target name=bin  depends='main.o lib'           run='cc -o bin main.o lib.a']]"""]
       [example lang=cx
-        """[?def build :params [name] :body
-             [?for t :in //target[@name = $name] :yield
-               [?for d :in tokenize(t/@depends, ' ') :yield [?build d]]
-               [?run t/@run]]]
+        """[?def build ($name)
+             [?for [in $t //target[@name = $name]] [yield
+               [?for [in $d [$tokenize $t/@depends ' ']] [yield [?build $d]]]
+               [?run $t/@run]]]]
            [?build 'all']"""]]]
 
   [child id=playground-detail n=8.15 title='Playground — visualize, offline, highlight'
