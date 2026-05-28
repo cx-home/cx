@@ -589,7 +589,45 @@
   }
   if (graphZoomBtns.zoomIn)  graphZoomBtns.zoomIn .addEventListener('click', () => { graphScale = Math.min(4, graphScale * 1.25); applyGraphTransform(); });
   if (graphZoomBtns.zoomOut) graphZoomBtns.zoomOut.addEventListener('click', () => { graphScale = Math.max(0.25, graphScale / 1.25); applyGraphTransform(); });
-  if (graphZoomBtns.fit)     graphZoomBtns.fit    .addEventListener('click', () => { graphScale = 1; applyGraphTransform(); });
+  if (graphZoomBtns.fit)     graphZoomBtns.fit    .addEventListener('click', () => { graphScale = 1; applyGraphTransform(); vizGraphEl.querySelector('.cxp-graph-canvas').scrollTo(0, 0); });
+
+  // ── Diagram pan (drag) + wheel zoom ──────────────────────
+  // Pan: hold mouse on canvas, drag to scroll. Wheel + ctrl: zoom.
+  // Wheel alone: native scroll (delegated to canvas overflow:auto).
+  (function wireGraphPan() {
+    const canvas = vizGraphEl.querySelector('.cxp-graph-canvas');
+    if (!canvas) return;
+    let dragging = false;
+    let startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
+    canvas.addEventListener('mousedown', (e) => {
+      // Only left button, only on background / svg (not on buttons).
+      if (e.button !== 0) return;
+      if (e.target.closest('.cxp-graph-controls')) return;
+      dragging = true;
+      startX = e.pageX; startY = e.pageY;
+      scrollLeft = canvas.scrollLeft; scrollTop = canvas.scrollTop;
+      canvas.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      canvas.scrollLeft = scrollLeft - (e.pageX - startX);
+      canvas.scrollTop  = scrollTop  - (e.pageY - startY);
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      canvas.style.cursor = '';
+    });
+    // Ctrl/Cmd + wheel = zoom; bare wheel = native scroll.
+    canvas.addEventListener('wheel', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      graphScale = Math.max(0.25, Math.min(4, graphScale * factor));
+      applyGraphTransform();
+    }, { passive: false });
+  })();
 
   function refreshView() {
     const cxlib = globalThis.cxlib;
