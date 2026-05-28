@@ -77,18 +77,20 @@ build-playground-wasm-for-guide:
 	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
 	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
 
-## guide-http   Build docs/guide/ + boot the V veb static server
-##                                   with COOP+COEP headers so the
+## guide-http   Build docs/guide/ + boot the dog-food CX HTTP static
+##                                   server (scripts/gen_guide/guide_serve.cx)
+##                                   with COOP+COEP+CORP headers so the
 ##                                   pthreads wasm runtime can load.
 ##                                   Per ADR 0040 D9.4 — this is the
 ##                                   playground mode (c) where :par
 ##                                   actually parallelises.
+##                                   Per ADR 0065 — `[?http-service]`
+##                                   with `[block true]` + `[$serve-file]`
+##                                   replaces the historical V/veb shim.
 .PHONY: guide-http
 guide-http: guide
-	@echo "[guide-http] building cx-guide-serve"
-	@v -o vcx/target/cx-guide-serve vcx/cmd/guide_serve/
-	@echo "[guide-http] starting server"
-	@vcx/target/cx-guide-serve
+	@echo "[guide-http] starting cx-guide-serve via cx eval"
+	@vcx/target/cx eval scripts/gen_guide/guide_serve.cx
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.

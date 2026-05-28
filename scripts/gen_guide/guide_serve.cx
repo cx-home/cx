@@ -1,0 +1,12 @@
+[?http-service
+  [name "cx-guide-serve"]
+  [on http]
+  [port 8767]
+  [root "./docs/guide"]
+  [block true]
+  [default-headers
+    Cross-Origin-Opener-Policy="same-origin"
+    Cross-Origin-Embedder-Policy="require-corp"
+    Cross-Origin-Resource-Policy="same-origin"]
+  [resource [GET "/"] [$serve-file "index.html"]]
+  [resource [GET "/*"] [$serve-file]]]
