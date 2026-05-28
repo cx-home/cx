@@ -843,7 +843,10 @@
     }
     // Graph
     try {
-      const d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(srcForViz, 'mermaid') : '';
+      // Encode the View pane's current detail level into the format
+      // suffix; the V side parses `mermaid:LEVEL` per render_diagram.
+      const fmtWithDetail = `mermaid:${detailLevel}`;
+      const d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(srcForViz, fmtWithDetail) : '';
       renderGraph(d);
     } catch (e) {
       if (canvas) canvas.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
