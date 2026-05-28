@@ -36,8 +36,8 @@
 
          [# 2. Code: select active users with CXPath
          #]
-         [?for $u :in //user[@active=true] :yield
-           [active-user :email $u@email]]
+         [?for [in $u //user[@active=true]] [yield
+           [active-user :email $u@email]]]
 
          [# 3. Pure-functional update: mark one user verified
          #]

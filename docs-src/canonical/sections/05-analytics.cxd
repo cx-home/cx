@@ -643,9 +643,9 @@
          The [?for] consumes one row group at a time; [?yield] emits
          a new CXCol stream downstream. Memory is bounded by the
          largest row group, not the table size. #]
-         [?for $row :in [?cx-read 'big.cxcol']
-           :where ($row/@amount > 1000)
-           :yield [transaction :id ($row/@id) :amount ($row/@amount)]]"""]
+         [?for [in $row [?cx-read 'big.cxcol']]
+           [where [> $row/@amount 1000]]
+           [yield [transaction id=$row/@id amount=$row/@amount]]]"""]
 
     [body
       """The directive-level view: any directive that takes a CXPath

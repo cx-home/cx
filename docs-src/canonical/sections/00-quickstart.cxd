@@ -89,7 +89,7 @@
          yields:"""]
 
     [example lang=shell
-      """echo '[?for $x :in (1, 2, 3) :yield [n $x]]' | cx eval"""]
+      """echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx eval"""]
 
     [example lang=cx
       """([n 1], [n 2], [n 3])"""]]
@@ -180,8 +180,8 @@
       """The same path drives iteration in a program:"""]
 
     [example lang=cx
-      """[?for $u :in //user[@active=true] :yield
-           [active-user email=$u@email]]"""]]
+      """[?for [in $u //user[@active=true]] [yield
+           [active-user email=$u@email]]]"""]]
 
   [child id=first-validation n=0.6 title='Validate with a schema'
     [intro
@@ -518,7 +518,7 @@
            element whose name starts with `?`. Directives parse
            as regular CX and evaluate against the surrounding
            tree when `cx eval` runs the document."""]
-      [example lang=cx """[h1 [?= //page/@title]]"""]]
+      [example lang=cx """[h1 //page/@title]"""]]
 
     [child id=tut-13 n=0.9.13 title='Path expressions (CXPath)'
       [body
@@ -531,13 +531,13 @@
       [body
         """`[?let]` binds a name once and reuses it. `[?for]`
            iterates a path expression result."""]
-      [example lang=cx """[?let tax :be 0.22 :yield [?= @price * (1 + tax)]]"""]]
+      [example lang=cx """[?let [= $tax 0.22] [* @price [+ 1 $tax]]]"""]]
 
     [child id=tut-15 n=0.9.15 title='Filters'
       [body
         """Filter directives transform values. Compose with pipes
            or nest them."""]
-      [example lang=cx """[?= @name |> trim |> upper]"""]]
+      [example lang=cx """[?pipe @name [through [$trim $_]] [through [$upper $_]]]"""]]
 
     [child id=tut-16 n=0.9.16 title='Multi-branch conditional'
       [body
@@ -549,7 +549,7 @@
       [body
         """`[?def]` defines a reusable fragment. `[?use]` invokes
            it; parameterised templates take positional args."""]
-      [example lang=cx """[?def line :params [item] :body [tr [td [?= item/@name]] [td [?= item/@qty]]]]"""]]
+      [example lang=cx """[?def line ($item) [tr [td $item/@name] [td $item/@qty]]]"""]]
 
     [child id=tut-18 n=0.9.18 title='Includes'
       [body

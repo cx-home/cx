@@ -416,12 +416,15 @@
 
     [child id=type n=2.5.4 title='The : type sigil'
       [body
-        """`:` is overloaded by position. In attribute position inside a
-           **directive** (`[?for ... :in ... :yield ...]`) it introduces a
-           labeled slot (per `spec/grammar.ebnf [127e]`). In **value
-           position** anywhere (`[port :u16 8080]`) it introduces a type
-           tag. The parser disambiguates by context — there is no
-           ambiguity at parse time."""]
+        """`:` is reserved for two surface roles. In **value position**
+           (`[port :u16 8080]`) it introduces a type tag (the long-name
+           ascription form `::T` is the canonical spelling — `:u16` here
+           is the short-name shorthand). In **atom position** (`:ok`,
+           `:not-found`) it introduces a symbolic atom literal. The
+           parser disambiguates by context. Per ADR 0063, `:` is no
+           longer used to introduce labeled directive slots — every
+           clause is now an explicit child element (`[then …]`,
+           `[else …]`, `[yield …]`, `[where …]`)."""]
       [body
         """Type tags are explicit; the eight scalar kinds (see [[scalars]])
            plus sized variants (see [[sized-types]]) all use the `:` sigil
@@ -795,9 +798,9 @@
     [example lang=cx
       """[# Stream a 100 GB log file, count error records — never
             materializes the full file in memory. #]
-         [?for $rec :in [?cx-read-stream 'logs.cx']
-           :where (name($rec) = 'error')
-           :yield $rec/@code]"""]
+         [?for [in $rec [?cx-read-stream 'logs.cx']]
+           [where [= [$name $rec] 'error']]
+           [yield $rec/@code]]"""]
     [body
       """Measured throughput: 353 MB/s sustained on JSON-shape workloads
          (gate 15 in [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)).
@@ -981,8 +984,8 @@
         """[order #o1234 customer=alice
              [line item=@margherita count=2]    # @-sigil reference to declared id
              [line item=@pepperoni  count=1]]
-           [?for line :in //order/line :yield
-             [row sku=[?= line/@item]]]         # @-sigil attribute access in CXPath"""]
+           [?for [in $line //order/line] [yield
+             [row sku=$line/@item]]]            # @-sigil attribute access in CXPath"""]
       [example lang=cx
         """[defaults &shared timeout=30 retries=3]
            [server *shared name=api]

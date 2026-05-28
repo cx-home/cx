@@ -290,7 +290,7 @@
         [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6']
         [row bit=26 name='thread-register' meaning='cx_thread_register required for cross-thread FFI' v='v0.6.0']
         [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind (ADR 0028)' v='v0.8.0']
-        [row bit=28 name='match-multi' meaning='multi-arm [?match] with :case/:when/:else (ADR 0029)' v='v0.8.0']
+        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children (ADR 0029)' v='v0.8.0']
         [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary (ADR 0030)' v='v0.8.0']
         [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing (ADR 0031)' v='v0.8.x']
         [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0']
