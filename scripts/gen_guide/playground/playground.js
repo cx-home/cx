@@ -626,6 +626,51 @@
   if (graphZoomBtns.zoomOut) graphZoomBtns.zoomOut.addEventListener('click', () => { graphScale = Math.max(0.25, graphScale / 1.25); applyGraphTransform(); });
   if (graphZoomBtns.fit)     graphZoomBtns.fit    .addEventListener('click', () => { graphScale = 1; applyGraphTransform(); vizGraphEl.querySelector('.cxp-graph-canvas').scrollTo(0, 0); });
 
+  // ── Draggable pane dividers ──────────────────────────────
+  // Two strips inside .cxp-main: a vertical column divider (between
+  // the left column and the view pane) and a horizontal row divider
+  // (between source and output). Mousedown captures, mousemove
+  // rewrites --col1-pct / --row1-pct on .cxp-main, mouseup releases.
+  (function wireDividers() {
+    const main = document.querySelector('.cxp-main');
+    const colDiv = document.getElementById('cxp-divider-col');
+    const rowDiv = document.getElementById('cxp-divider-row');
+    if (!main) return;
+    function startDrag(axis, divEl) {
+      return (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        divEl.classList.add('is-dragging');
+        document.body.classList.add('cxp-resizing', `is-${axis}`);
+        const rect = main.getBoundingClientRect();
+        function onMove(ev) {
+          if (axis === 'col') {
+            const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+            const clamped = Math.max(20, Math.min(85, pct));
+            main.style.setProperty('--col1-pct', `${clamped}%`);
+          } else {
+            const pct = ((ev.clientY - rect.top) / rect.height) * 100;
+            const clamped = Math.max(15, Math.min(85, pct));
+            main.style.setProperty('--row1-pct', `${clamped}%`);
+          }
+        }
+        function onUp() {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          divEl.classList.remove('is-dragging');
+          document.body.classList.remove('cxp-resizing', 'is-col', 'is-row');
+        }
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      };
+    }
+    if (colDiv) colDiv.addEventListener('mousedown', startDrag('col', colDiv));
+    if (rowDiv) rowDiv.addEventListener('mousedown', startDrag('row', rowDiv));
+    // Double-click resets the dragged divider to its default.
+    if (colDiv) colDiv.addEventListener('dblclick', () => main.style.removeProperty('--col1-pct'));
+    if (rowDiv) rowDiv.addEventListener('dblclick', () => main.style.removeProperty('--row1-pct'));
+  })();
+
   // ── Diagram pan (drag) + wheel zoom ──────────────────────
   // Pan: hold mouse on canvas, drag to scroll. Wheel + ctrl: zoom.
   // Wheel alone: native scroll (delegated to canvas overflow:auto).

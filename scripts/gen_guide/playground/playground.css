@@ -153,16 +153,53 @@ html, body {
 .cxp-main {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: var(--col1-pct, 66.67%) 1fr;
+  grid-template-rows: var(--row1-pct, 50%) 1fr;
   grid-template-areas:
     "src viz"
     "out viz";
-  gap: 3px;
   background: var(--border-soft);
   min-height: 0;
   overflow: hidden;
+  position: relative;
+  gap: 0;
 }
+
+/* ── Draggable dividers ────────────────────────────────────── */
+/* Two strips overlaid on the grid: a vertical column divider
+   (between left column + view pane) and a horizontal row divider
+   (between source + output, spans only the left column). JS picks
+   up mousedown/move and rewrites --col1-pct / --row1-pct on
+   .cxp-main, which the grid template tracks live. */
+.cxp-divider {
+  position: absolute;
+  background: var(--border-soft);
+  z-index: 20;
+  transition: background 0.15s ease-out;
+}
+.cxp-divider:hover, .cxp-divider.is-dragging {
+  background: var(--accent);
+}
+.cxp-divider-col {
+  top: 0;
+  bottom: 0;
+  left: calc(var(--col1-pct, 66.67%) - 2px);
+  width: 5px;
+  cursor: col-resize;
+}
+.cxp-divider-row {
+  left: 0;
+  width: calc(var(--col1-pct, 66.67%) - 2px);
+  top: calc(var(--row1-pct, 50%) - 2px);
+  height: 5px;
+  cursor: row-resize;
+}
+body.cxp-resizing {
+  user-select: none;
+  cursor: inherit;
+}
+body.cxp-resizing.is-col { cursor: col-resize; }
+body.cxp-resizing.is-row { cursor: row-resize; }
 
 .cxp-source-pane { grid-area: src; }
 .cxp-output-pane { grid-area: out; }
@@ -469,6 +506,7 @@ html, body {
       "out"
       "viz";
   }
+  .cxp-divider { display: none; }
   .cxp-toolbar { flex-wrap: wrap; gap: 6px; }
   #cxp-pick { min-width: 200px; flex: 1; }
   .cxp-brand span { display: none; }
