@@ -103,7 +103,7 @@
     "16-let-basic": {
       label: "[16] [?let] \u2014 bind a value, then use it",
       input: "[?let [= $name 'Alice'] [greeting hello=$name]]",
-      note:  "**Introduces:** `[?let $var = VALUE :in BODY]` \u2014 lexical binding. `$name` substitutes its value inside BODY. Attribute form `hello=$name` reads the binding.",
+      note:  "**Introduces:** `[?let [= $var VALUE] BODY]` \u2014 lexical binding. `$name` substitutes its value inside BODY. Attribute form `hello=$name` reads the binding.",
       tags:  ["eq", "let"],
     },
     "17-let-nested": {
@@ -163,43 +163,43 @@
     "26-if-basic": {
       label: "[26] [?if] \u2014 branch on a predicate",
       input: "[?let [= $score 87] [?if [>= $score 80] [then [grade letter='A']] [else [grade letter='B']]]]",
-      note:  "**Introduces:** `[?if PRED :then EXPR :else EXPR]`. Predicate is any expression; truthy values pick `:then`, falsy pick `:else`.",
+      note:  "**Introduces:** `[?if PRED [then EXPR] [else EXPR]]`. Predicate is any expression; truthy values pick `[then \u2026]`, falsy pick `[else \u2026]`.",
       tags:  ["eq", "ge", "if", "let"],
     },
     "27-if-chained": {
       label: "[27] [?if] \u2014 chained branches",
       input: "[?let [= $n 25] [?if [< $n 10] [then :small] [else [?if [< $n 50] [then :medium] [else :large]]]]]",
-      note:  "**Introduces:** chaining `[?if]` via nested `:else`. The inner `[?if]` itself returns a value, so it's a valid `:else` body.",
+      note:  "**Introduces:** chaining `[?if]` via nested `[else \u2026]`. The inner `[?if]` itself returns a value, so it's a valid `[else \u2026]` body.",
       tags:  ["eq", "if", "let", "lt"],
     },
     "28-match-scalar": {
       label: "[28] [?match] \u2014 multi-arm on a scalar",
       input: "[?let [= $s 200] [?match $s [case 200 :ok] [case 404 :not-found] [else :err]]]",
-      note:  "**Introduces:** `[?match scrutinee :case V :yield E \u2026]`. First matching `:case` wins; `:else` is the fallback (ADR 0029).",
+      note:  "**Introduces:** `[?match SCRUTINEE [case PATTERN RESULT] \u2026]`. First matching `[case \u2026]` wins; `[else \u2026]` is the fallback (ADR 0029).",
       tags:  ["eq", "let", "match"],
     },
     "29-match-else-fallback": {
-      label: "[29] [?match] \u2014 :else fires",
+      label: "[29] [?match] \u2014 [else \u2026] fires",
       input: "[?let [= $s 500] [?match $s [case 200 :ok] [case 404 :not-found] [else :err]]]",
-      note:  "**Introduces:** the `:else` fallback. When no `:case` matches, `:else` fires.",
+      note:  "**Introduces:** the `[else \u2026]` fallback. When no `[case \u2026]` matches, `[else \u2026]` fires.",
       tags:  ["eq", "let", "match"],
     },
     "30-match-no-else": {
-      label: "[30] [?match] \u2014 no :else returns ()",
+      label: "[30] [?match] \u2014 no [else \u2026] returns ()",
       input: "[?let [= $s 500] [?match $s [case 200 :ok] [case 404 :not-found]]]",
-      note:  "**Introduces:** missing `:else` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()` (ADR 0029 D9).",
+      note:  "**Introduces:** missing `[else \u2026]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()` (ADR 0029 D9).",
       tags:  ["eq", "let", "match"],
     },
     "31-match-wildcard": {
       label: "[31] [?match] \u2014 wildcard `_`",
       input: "[?let [= $v \"surprise\"] [?match $v [case 200 :http-ok] [case _ :other]]]",
-      note:  "**Introduces:** the wildcard `_` pattern. Matches any value \u2014 equivalent to `:else` but lets you bind via richer patterns.",
+      note:  "**Introduces:** the wildcard `_` pattern. Matches any value \u2014 equivalent to `[else \u2026]` but lets you bind via richer patterns.",
       tags:  ["eq", "let", "match"],
     },
     "32-match-element-shape": {
       label: "[32] [?match] \u2014 element shape dispatch",
       input: "[?let [= $n [prose \"hello\"]] [?match $n [case [prose $p] [p body=$p]] [case [code $c] [pre body=$c]] [else ()]]]",
-      note:  "**Introduces:** matching on element shape with binding. `[prose $p]` matches any `prose` element and binds its body to `$p` for use in `:yield`.",
+      note:  "**Introduces:** matching on element shape with binding. `[prose $p]` matches any `prose` element and binds its body to `$p` for use in `[yield \u2026]`.",
       tags:  ["eq", "let", "match"],
     },
     "33-match-type-strict": {
@@ -223,31 +223,31 @@
     "36-for-sequence": {
       label: "[36] [?for] \u2014 iterate a literal sequence",
       input: "[?for [in $n (1, 2, 3, 4, 5)] [yield [square n=$n sq=[* $n $n]]]]",
-      note:  "**Introduces:** the comprehension `[?for $var :in source :yield EXPR]`. Iterates `source`, evaluates `EXPR` per item, collects results.",
+      note:  "**Introduces:** the comprehension `[?for [in $var SOURCE] [yield EXPR]]`. Iterates `source`, evaluates `EXPR` per item, collects results.",
       tags:  ["for", "mul"],
     },
     "37-for-where": {
-      label: "[37] [?for] \u2014 :where filter",
+      label: "[37] [?for] \u2014 [where] filter",
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)] [where [> $n 5]] [yield [big n=$n]]]",
-      note:  "**Introduces:** the `:where` clause. Filters items before `:yield`. Predicates use the bracket form: `[> $n 5]`.",
+      note:  "**Introduces:** the `[where \u2026]` clause. Filters items before `[yield \u2026]`. Predicates use the bracket form: `[> $n 5]`.",
       tags:  ["for", "gt"],
     },
     "38-for-yield-cond": {
-      label: "[38] [?for] \u2014 conditional :yield body",
+      label: "[38] [?for] \u2014 conditional [yield] body",
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)] [yield [?if [> $n 5] [then [big n=$n]] [else [small n=$n]]]]]",
-      note:  "**Introduces:** conditional inside `:yield`. Every iteration yields one element; the branch decides which shape.",
+      note:  "**Introduces:** conditional inside `[yield \u2026]`. Every iteration yields one element; the branch decides which shape.",
       tags:  ["for", "gt", "if"],
     },
     "39-for-nested": {
       label: "[39] [?for] \u2014 nested iteration",
       input: "[?for [in $i (1, 2, 3)] [yield [?for [in $j (1, 2, 3)] [yield [pair i=$i j=$j]]]]]",
-      note:  "**Introduces:** nested comprehensions. The outer `:yield` body is itself a comprehension. Produces a 2D shape.",
+      note:  "**Introduces:** nested comprehensions. The outer `[yield \u2026]` body is itself a comprehension. Produces a 2D shape.",
       tags:  ["for"],
     },
     "40-for-multi-source": {
       label: "[40] [?for] \u2014 multiple sources",
       input: "[?for [in $a (1, 2, 3)] [in $b (10, 20, 30)] [yield [pair a=$a b=$b]]]",
-      note:  "**Introduces:** multiple `$var :in source` clauses. Outer source iterates outer loop, inner source iterates inner (Cartesian product).",
+      note:  "**Introduces:** multiple `$var `[in $var SOURCE]` clause` clauses. Outer source iterates outer loop, inner source iterates inner (Cartesian product).",
       tags:  ["for"],
     },
     "41-for-let": {
@@ -271,7 +271,7 @@
     "44-for-yield-stream": {
       label: "[44] [?for] \u2014 yield streams as items complete",
       input: "[?for [in $n (1, 2, 3, 4)] [yield [?let [= $_ [?sleep 300ms]] [tick n=$n]]]]",
-      note:  "**Introduces:** `[?for]` streaming. Each `:yield` flushes one chunk to the output pane; you see items appear one at a time at the sleep cadence.",
+      note:  "**Introduces:** `[?for]` streaming. Each `[yield \u2026]` flushes one chunk to the output pane; you see items appear one at a time at the sleep cadence.",
       tags:  ["eq", "for", "let", "sleep", "streaming"],
     },
     "45-for-empty": {
@@ -283,7 +283,7 @@
     "46-fn-via-map": {
       label: "[46] [?fn] \u2014 anonymous function via [?map]",
       input: "[?map (1, 2, 3, 4, 5) [using [?fn $x [* $x $x]]]]",
-      note:  "**Introduces:** `[?fn $param BODY]` \u2014 anonymous closure. `[?map xs :using fn]` invokes it on each element of `xs` (ADR 0040).",
+      note:  "**Introduces:** `[?fn ($param) BODY]` \u2014 anonymous closure. `[?map XS [using FN]]` invokes it on each element of `xs` (ADR 0040).",
       tags:  ["fn", "map", "mul"],
     },
     "47-map-cube": {
@@ -319,25 +319,25 @@
     "52-fn-passed": {
       label: "[52] [?fn] \u2014 define once, pass to [?map]",
       input: "[?let [= $sqr [?fn $n [* $n $n]]] [?map (1, 2, 3, 4, 5, 6, 7, 8) [using $sqr] [par] [ordered]]]",
-      note:  "**Introduces:** closure-passing. Define `$sqr` once with `[?let]`, pass it as `:using` \u2014 decouples definition from use.",
+      note:  "**Introduces:** closure-passing. Define `$sqr` once with `[?let]`, pass it as `[using]` \u2014 decouples definition from use.",
       tags:  ["eq", "fn", "let", "map", "mul"],
     },
     "53-reduce-sum": {
       label: "[53] [?reduce] \u2014 fold to one value (sum)",
       input: "[?reduce (1, 2, 3, 4, 5) [using [?fn ($a, $b) [+ $a $b]]] [init 0]]",
-      note:  "**Introduces:** `[?reduce xs :using fn :init z]` \u2014 strict left-fold. `fn(z, x\u2081)` \u2192 `fn(prev, x\u2082)` \u2192 \u2026 Returns the final accumulator.",
+      note:  "**Introduces:** `[?reduce XS [using FN] [init Z]]` \u2014 strict left-fold. `fn(z, x\u2081)` \u2192 `fn(prev, x\u2082)` \u2192 \u2026 Returns the final accumulator.",
       tags:  ["add", "fn", "reduce"],
     },
     "54-reduce-product": {
       label: "[54] [?reduce] \u2014 fold to a product",
       input: "[?reduce (1, 2, 3, 4, 5) [using [?fn ($a, $b) [* $a $b]]] [init 1]]",
-      note:  "**Introduces:** another `[?reduce]` shape \u2014 product (5! = 120). `:init 1` is the multiplicative identity.",
+      note:  "**Introduces:** another `[?reduce]` shape \u2014 product (5! = 120). `[init 1]` is the multiplicative identity.",
       tags:  ["fn", "mul", "reduce"],
     },
     "55-reduce-par": {
-      label: "[55] [?reduce :par] \u2014 associative tree-reduce",
+      label: "[55] [?reduce SRC [using FN] [init Z] [par]] \u2014 associative tree-reduce",
       input: "[?reduce (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn ($a, $b) [+ $a $b]]] [init 0] [par]]",
-      note:  "**Introduces:** `[?reduce :par]` \u2014 tree-split reduce. `:using` MUST be associative; `:init` MUST be the identity. Returns 36 either way.",
+      note:  "**Introduces:** `[?reduce SRC [using FN] [init Z] [par]]` \u2014 tree-split reduce. `[using]` MUST be associative; `[init \u2026]` MUST be the identity. Returns 36 either way.",
       tags:  ["add", "fn", "parallel", "reduce"],
     },
     "56-map-then-reduce": {
@@ -349,13 +349,13 @@
     "57-map-par-bulkhead": {
       label: "[57] [?map :par] \u2014 bounded with [?bulkhead]",
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn $n [?bulkhead max-concurrent=2 [?let [= $_ [?sleep 100ms :mock]] [* $n $n]]]]] [par]]",
-      note:  "**Introduces:** the canonical bounded-parallelism idiom. Default `:par` is unbounded; wrap the `:using` body in `[?bulkhead]` to cap fan-out. `cx lsp` emits CXLS005 if you forget the wrap (ADR 0040 D14).",
+      note:  "**Introduces:** the canonical bounded-parallelism idiom. Default `[par]` is unbounded; wrap the `[using]` body in `[?bulkhead]` to cap fan-out. `cx lsp` emits CXLS005 if you forget the wrap (ADR 0040 D14).",
       tags:  ["bulkhead", "eq", "fn", "let", "map", "mock", "mul", "parallel", "resilience", "sleep"],
     },
     "58-par-shared-cb": {
       label: "[58] [?map :par] \u2014 shared [?circuit-breaker]",
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) [using [?fn $n [?circuit-breaker threshold=0.5 window=1s reset=10s name=\"shared\" [* $n $n]]]] [par]]",
-      note:  "**Introduces:** state-sharing under `:par`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md \u00a710.2.7 \u2014 same source-text directive = one shared breaker.",
+      note:  "**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md \u00a710.2.7 \u2014 same source-text directive = one shared breaker.",
       tags:  ["circuit-breaker", "fn", "map", "mul", "parallel", "resilience"],
     },
     "59-par-rich-shape": {
@@ -367,7 +367,7 @@
     "60-par-with-composition": {
       label: "[60] [?map :par] \u2014 composed with everything",
       input: "[?map (1, 2, 3, 4) [using [?fn $n [?retry max=3 [?timeout 200ms [?let [= $_ [?sleep 50ms]] [computed n=$n sq=[* $n $n]]]]]]] [par] [ordered]]",
-      note:  "**Introduces:** the full composition \u2014 `[?map :par]` over a `:using` closure that nests `[?retry]` + `[?timeout]` + `[?sleep]`. Parallel workers compose freely with resilience directives.",
+      note:  "**Introduces:** the full composition \u2014 `[?map :par]` over a `[using]` closure that nests `[?retry]` + `[?timeout]` + `[?sleep]`. Parallel workers compose freely with resilience directives.",
       tags:  ["eq", "fn", "let", "map", "mul", "parallel", "retry", "sleep", "timeout"],
     },
     "61-modify-delete": {
@@ -395,15 +395,15 @@
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "65-cxpath-where": {
-      label: "[65] CXPath \u2014 filter via :where",
+      label: "[65] CXPath \u2014 filter via [where]",
       input: "[?let [= $doc [users\n  [user name=Alice active=true age=30]\n  [user name=Bob   active=false age=25]\n  [user name=Carol active=true age=22]]] [?for [in $u $doc/user] [where [= $u/@active true]] [yield [active-user name=$u/@name age=$u/@age]]]]",
-      note:  "**Introduces:** filtering a CXPath result via `:where`. `$doc/user` selects direct children named `user`; `:where [= $u/@active true]` filters them.",
+      note:  "**Introduces:** filtering a CXPath result via `[where \u2026]`. `$doc/user` selects direct children named `user`; `[where [= $u/@active true]]` filters them.",
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "66-pipe-canonical": {
       label: "[66] [?pipe] \u2014 canonical pipeline",
       input: "[?pipe (1, 2, 3, 4) [through [?fn $xs [?for [in $x $xs] [where [> $x 2]] [yield $x]]]] [through count]]",
-      note:  "**Introduces:** `[?pipe IN :through STAGE :through STAGE]` \u2014 value flows through each stage. `count` is the sequence-length builtin.",
+      note:  "**Introduces:** `[?pipe IN [through STAGE] [through STAGE]]` \u2014 value flows through each stage. `count` is the sequence-length builtin.",
       tags:  ["fn", "for", "gt", "pipe"],
     },
     "67-pipe-infix": {
@@ -421,13 +421,13 @@
     "69-fallback-recover": {
       label: "[69] [?fallback] \u2014 on err, recover",
       input: "[?fallback [err code=\"down-primary\"] [recover-with [err code=\"down-secondary\"]]]",
-      note:  "**Introduces:** `[?fallback :body \u2026 :recover-with \u2026]`. If `:body` is an err, evaluate `:recover-with` and return that. Otherwise return the body's value.",
+      note:  "**Introduces:** `[?fallback BODY [recover-with R]]`. If positional body is an err, evaluate `[recover-with \u2026]` and return that. Otherwise return the body's value.",
       tags:  ["fallback"],
     },
     "70-fallback-success": {
       label: "[70] [?fallback] \u2014 body succeeds, no recover",
       input: "[?fallback [ok value=\"healthy\"] [recover-with [ok value=\"never\"]]]",
-      note:  "**Introduces:** `[?fallback]` happy path. When `:body` returns a non-err value, that value is returned and `:recover-with` is never evaluated.",
+      note:  "**Introduces:** `[?fallback]` happy path. When positional body returns a non-err value, that value is returned and `[recover-with \u2026]` is never evaluated.",
       tags:  ["fallback"],
     },
     "71-builtin-head-tail": {
@@ -541,7 +541,7 @@
     "89-worker-basic": {
       label: "[89] [?worker] \u2014 long-running task",
       input: "[?worker name=\"w\" [ok value='worked']]",
-      note:  "**Introduces:** `[?worker :name S :body EXPR]` \u2014 registers a worker. In the sequential substrate the body runs to completion synchronously.",
+      note:  "**Introduces:** `[?worker name=S BODY]` \u2014 registers a worker. In the sequential substrate the body runs to completion synchronously.",
       tags:  ["worker"],
     },
     "90-cancel": {
@@ -553,7 +553,7 @@
     "91-retry-happy": {
       label: "[91] [?retry] \u2014 first try wins",
       input: "[?retry max=3 [ok value='first-try']]",
-      note:  "**Introduces:** `[?retry :max N :body EXPR]`. Re-runs `:body` until it returns a non-err value or `:max` is hit. Here it succeeds on attempt 1.",
+      note:  "**Introduces:** `[?retry max=N BODY]`. Re-runs positional body until it returns a non-err value or `max=N` is hit. Here it succeeds on attempt 1.",
       tags:  ["retry"],
     },
     "92-retry-eventually": {
@@ -565,19 +565,19 @@
     "93-retry-exhaustion": {
       label: "[93] [?retry] \u2014 exhausted \u2192 CXER0140",
       input: "[?retry max=3 [?test-always-err ]]",
-      note:  "**Introduces:** `[?retry]` exhaustion. When `:max` is hit and `:body` still errs, returns `[err :code \"cx-err:CXER0140\" \u2026]`.",
+      note:  "**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and positional body still errs, returns `[err :code \"cx-err:CXER0140\" \u2026]`.",
       tags:  ["retry", "test-always-err"],
     },
     "94-timeout-fires": {
       label: "[94] [?timeout] \u2014 fires after mock sleep",
       input: "[?timeout 50ms [?let [= $_ [?sleep 200ms :mock]] [ok value='too-slow']]]",
-      note:  "**Introduces:** `[?timeout DUR :body EXPR]`. If `:body` takes longer than `DUR`, returns CXER0141.",
+      note:  "**Introduces:** `[?timeout DUR BODY]`. If positional body takes longer than `DUR`, returns CXER0141.",
       tags:  ["eq", "let", "mock", "sleep", "timeout"],
     },
     "95-circuit-breaker-trips": {
       label: "[95] [?circuit-breaker] \u2014 trips after failures",
       input: "[?for [in $i (1, 2, 3, 4)] [yield [?circuit-breaker threshold=0.5 window=1s reset=10s min-samples=2 [?test-always-err ]]]]",
-      note:  "**Introduces:** `[?circuit-breaker]`. After `:min-samples` samples and `:threshold` failure ratio, opens for `:reset` time and rejects without invoking `:body`.",
+      note:  "**Introduces:** `[?circuit-breaker]`. After `min-samples=N` samples and `threshold=T` failure ratio, opens for `reset=DUR` time and rejects without invoking positional body.",
       tags:  ["circuit-breaker", "for", "resilience", "test-always-err"],
     },
     "96-rate-limit-allow": {
@@ -589,7 +589,7 @@
     "97-rate-limit-over": {
       label: "[97] [?rate-limit] \u2014 exceeds the limit",
       input: "[?for [in $i (1, 2, 3, 4, 5)] [yield [?rate-limit max=2 per=1s [ok i=$i]]]]",
-      note:  "**Introduces:** over-limit behaviour. After `:max` admits, further calls return `[err :code \"cx-err:CXER0151\" :retry-after DUR]`.",
+      note:  "**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err :code \"cx-err:CXER0151\" :retry-after DUR]`.",
       tags:  ["for", "rate-limit", "resilience"],
     },
     "98-bulkhead-pass": {
@@ -613,13 +613,13 @@
     "101-cxpath-descendant": {
       label: "[101] CXPath \u2014 descendant axis `//`",
       input: "[?let [= $doc [tree\n  [branch [leaf id=1] [leaf id=2]]\n  [branch [leaf id=3]]\n  [branch [leaf id=4] [leaf id=5]]]] [?for [in $l $doc//leaf] [yield $l/@id]]]",
-      note:  "**Pattern:** find descendants at any depth. **Uses:** `//`, `:yield`, attribute access. The `//leaf` step matches every `leaf` element under `$doc`, no matter how deeply nested. (G1 closed in ADR 0043.)",
+      note:  "**Pattern:** find descendants at any depth. **Uses:** `//`, `[yield \u2026]`, attribute access. The `//leaf` step matches every `leaf` element under `$doc`, no matter how deeply nested. (G1 closed in ADR 0043.)",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "102-cxpath-child": {
       label: "[102] CXPath \u2014 child axis `/`",
       input: "[?let [= $doc [shop [item id=1] [item id=2] [staff [member id=99]]]] [?for [in $i $doc//item] [yield $i/@id]]]",
-      note:  "**Pattern:** select direct children only. **Uses:** `/`, `:yield`. `/item` finds direct children of `$doc` named `item`; the nested `[member id=A]` inside `staff` is ignored.",
+      note:  "**Pattern:** select direct children only. **Uses:** `/`, `[yield \u2026]`. `/item` finds direct children of `$doc` named `item`; the nested `[member id=A]` inside `staff` is ignored.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "103-cxpath-attr-access": {
@@ -679,7 +679,7 @@
     "112-unwrap-singleton": {
       label: "[112] Transform \u2014 strip a wrapper element",
       input: "[?let [= $doc [wrapper [payload value=42]]] [?for [in $p $doc/payload] [yield $p]]]",
-      note:  "**Pattern:** unwrap a singleton parent. **Uses:** `:in $doc/payload :yield $p`. Drop the outer `wrapper` and emit the child directly. Generalizes when there are N payloads.",
+      note:  "**Pattern:** unwrap a singleton parent. **Uses:** `[in $p $doc/payload] [yield $p]`. Drop the outer `wrapper` and emit the child directly. Generalizes when there are N payloads.",
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "113-wrap-each": {
@@ -703,13 +703,13 @@
     "116-reorder": {
       label: "[116] Transform \u2014 reorder children",
       input: "[?let [= $doc [list [item id=3] [item id=1] [item id=2]]] [?for [in $i $doc//item] [order-by $i/@id] [yield $i]]]",
-      note:  "**Pattern:** reorder by a derived key. **Uses:** `:order-by EXPR` comprehension clause (ascending). Output preserves the new order.",
+      note:  "**Pattern:** reorder by a derived key. **Uses:** `[order-by EXPR]` comprehension clause (ascending). Output preserves the new order.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "117-filter-where": {
       label: "[117] Filter \u2014 keep matches",
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)] [where [> $n 5]] [yield [big n=$n]]]",
-      note:  "**Pattern:** drop everything that doesn't match. **Uses:** `:where` clause + bracket-form predicate `[> $n 5]`. Items failing the predicate are skipped entirely.",
+      note:  "**Pattern:** drop everything that doesn't match. **Uses:** `[where \u2026]` clause + bracket-form predicate `[> $n 5]`. Items failing the predicate are skipped entirely.",
       tags:  ["for", "gt"],
     },
     "118-odd-even-partition": {
@@ -721,13 +721,13 @@
     "119-top-n": {
       label: "[119] Filter \u2014 top-N by attribute",
       input: "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77] [s v=33]]] [?for [in $s $doc//s] [order-by $s/@v] [limit 3] [yield $s/@v]]]",
-      note:  "**Pattern:** keep the lowest 3 by score. **Uses:** `:order-by` + `:limit N`. Returns 15, 33, 42. For top-N descending, reverse the sequence or invert the key.",
+      note:  "**Pattern:** keep the lowest 3 by score. **Uses:** `[order-by]` + `[limit N]`. Returns 15, 33, 42. For top-N descending, reverse the sequence or invert the key.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "120-distinct-by-key": {
       label: "[120] Filter \u2014 distinct by key",
       input: "[?let [= $doc [log [hit user=alice] [hit user=bob] [hit user=alice] [hit user=carol] [hit user=bob]]] [?for [in $h $doc//hit] [group-by $h/@user] [yield $h/@user]]]",
-      note:  "**Pattern:** unique values of a derived key. **Uses:** `:group-by` clause \u2014 each distinct key appears once. Different from `[distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.",
+      note:  "**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause \u2014 each distinct key appears once. Different from `[distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "121-composite-predicate": {
@@ -763,7 +763,7 @@
     "126-group-aggregate": {
       label: "[126] Aggregate \u2014 group-by attribute \u2192 count per group",
       input: "[?let [= $doc [orders [o region=US amt=100] [o region=EU amt=200] [o region=US amt=50] [o region=EU amt=80] [o region=APAC amt=300]]] [?for [in $o $doc/o] [group-by $o/@region] [yield $o/@region]]]",
-      note:  "**Pattern:** what are the distinct group keys? **Uses:** `:group-by` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await ADR 0041's `[?group-by]` iterator combinator.",
+      note:  "**Pattern:** what are the distinct group keys? **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await ADR 0041's `[?group-by]` iterator combinator.",
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "127-deep-descendant": {
@@ -775,7 +775,7 @@
     "128-flatten-one-level": {
       label: "[128] Tree \u2014 flatten one level",
       input: "[?let [= $doc [groups [g [item \"a\"] [item \"b\"]] [g [item \"c\"]] [g [item \"d\"] [item \"e\"]]]] [?for [in $g $doc/g] [yield $g/item]]]",
-      note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `:yield $g/item` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence.",
+      note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence.",
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "129-name-via-builtin": {
@@ -817,7 +817,7 @@
     "135-read-rewrite": {
       label: "[135] Compose \u2014 read, transform, emit",
       input: "[?let [= $doc [items [item q=2 p=10] [item q=3 p=5]]] [?for [in $i $doc/item] [= $total [* $i/@q $i/@p]] [yield [line qty=$i/@q price=$i/@p total=$total]]]]",
-      note:  "**Pattern:** comprehension with `:let` for derived per-iteration values. **Uses:** `:let` clause, `[* \u2026]` arithmetic, reshape on `:yield`.",
+      note:  "**Pattern:** comprehension with `:let` for derived per-iteration values. **Uses:** `:let` clause, `[* \u2026]` arithmetic, reshape on `[yield \u2026]`.",
       tags:  ["cxpath", "eq", "for", "let", "mul"],
     },
     "136-rdf-triples-shape": {
@@ -865,7 +865,7 @@
     "143-set-intersection": {
       label: "[143] Set \u2014 intersection (in both)",
       input: "[?let [= $a (1, 2, 3, 4)] [?let [= $b (3, 4, 5, 6)] [?for [in $x $a] [where [or [= $x 3] [= $x 4]]] [yield $x]]]]",
-      note:  "**Pattern:** keep items that appear in both sequences. **Uses:** explicit `:where` filter \u2014 the v0.8.0 surface doesn't have a generic `[in $x $set]` predicate yet, so the filter spells out membership.",
+      note:  "**Pattern:** keep items that appear in both sequences. **Uses:** explicit `[where \u2026]` filter \u2014 the v0.8.0 surface doesn't have a generic `[in $x $set]` predicate yet, so the filter spells out membership.",
       tags:  ["builtin", "eq", "for", "let", "or"],
     },
     "144-set-difference": {
@@ -913,7 +913,7 @@
     "151-range-by-stride": {
       label: "[151] Range \u2014 strided with `by`",
       input: "[?for [in $x 1 to 10 by 2] [yield $x]]",
-      note:  "**Pattern:** every other integer in a range. **Uses:** `:in N to M by S` \u2014 the `by` stride keyword (ADR 0041 D1). Result is `(1, 3, 5, 7, 9)`. Negative stride reverses: `10 to 1 by -2`.",
+      note:  "**Pattern:** every other integer in a range. **Uses:** `[in $var N to M by S]` \u2014 the `by` stride keyword (ADR 0041 D1). Result is `(1, 3, 5, 7, 9)`. Negative stride reverses: `10 to 1 by -2`.",
       tags:  ["for"],
     },
     "152-range-reverse-stride": {
@@ -931,7 +931,7 @@
     "154-drop-prefix": {
       label: "[154] Comprehension \u2014 `:drop N` skip-prefix",
       input: "[?for [in $x 1 to 10] [drop 7] [yield $x]]",
-      note:  "**Pattern:** ignore the first N items, yield the tail. **Uses:** `:drop 7` \u2014 skips the first 7 candidates BEFORE any `:where` filter or `:yield` body fires. Composes with `:take` for pagination (ADR 0041 D14).",
+      note:  "**Pattern:** ignore the first N items, yield the tail. **Uses:** `:drop 7` \u2014 skips the first 7 candidates BEFORE any `[where \u2026]` filter or `[yield \u2026]` body fires. Composes with `:take` for pagination (ADR 0041 D14).",
       tags:  ["for"],
     },
     "155-drop-take-page": {
