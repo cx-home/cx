@@ -1006,6 +1006,42 @@
       note:  "**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples #161-163.",
       tags:  ["eq", "for", "gt", "if", "let"],
     },
+    "167-erd-mid-shop-orders": {
+      label: "[167] ERD \u2014 shop / customer / order / item (mid)",
+      input: "[shop [product sku=\"A1\" name=\"widget\" price=9.99] [product sku=\"A2\" name=\"gadget\" price=19.99] [customer id=1 name=\"alice\" [order id=100 [item sku=\"A1\" qty=2] [item sku=\"A2\" qty=1]]] [customer id=2 name=\"bob\" [order id=102 [item sku=\"A2\" qty=3]]]]",
+      note:  "**Pattern:** classic e-commerce shape \u2014 products, customers, orders containing items. **Diagram:** ERD with four entity types; cardinality classifier draws `customer \u2016--o{ order` (repeating child), `order \u2016--o{ item` (repeating), `shop \u2016--o{ product` (repeating), `shop \u2016--o{ customer` (repeating). At `full` level the per-attribute value enumeration shows e.g. `string @sku \"A1, A2\"` and the synthetic `DOCUMENT` root surfaces source metadata. Mid-size: 4 types, ~12 nodes, ~4 relationships \u2014 enough to exercise the cardinality classifier without crowding the view.",
+      tags:  ["erd", "data", "mid"],
+    },
+    "168-erd-large-org-structure": {
+      label: "[168] ERD \u2014 company / department / team / project (large)",
+      input: "[company [department id=1 name=\"engineering\" [team id=10 name=\"parser\" [employee id=100 name=\"alice\" role=\"lead\"] [employee id=101 name=\"bob\" role=\"engineer\"]] [team id=11 name=\"runtime\" [employee id=102 name=\"carol\" role=\"engineer\"]]] [department id=2 name=\"design\" [team id=20 name=\"ux\" [employee id=200 name=\"dave\" role=\"designer\"]]] [project id=1000 name=\"v0.8.0\" [owner employee-id=100] [milestone date=\"2026-06-01\" status=\"active\"] [milestone date=\"2026-08-01\" status=\"planned\"]] [project id=1001 name=\"docs\" [owner employee-id=200] [milestone date=\"2026-07-01\" status=\"active\"]]]",
+      note:  "**Pattern:** organizational hierarchy with cross-cutting projects \u2014 the canonical 'real schema' shape. **Diagram:** large ERD with 7 types (company, department, team, employee, project, owner, milestone); `full` level surfaces the inferred-FK candidate `owner.employee-id \u2192 employee.id` as a dashed link (FK inference is name-only \u2014 no schema). 4-deep nesting + sibling-projects exercises the path-walker. Use this as the 'step-back' test: at `compact` the layout stays readable; at `full` per-attribute value enumeration is where the renderer must decide what to truncate.",
+      tags:  ["erd", "data", "large", "fk-inference"],
+    },
+    "169-cfg-small-bare-if": {
+      label: "[169] CFG \u2014 bare `[?if]` (small)",
+      input: "[?if true [then \"yes\"] [else \"no\"]]",
+      note:  "**Pattern:** the smallest CFG \u2014 one decision, two arms. **Diagram:** flowchart TD with a single diamond and two leaf nodes. Min-level shows just `[?if]` head; compact shows the diamond + both arm labels; full adds INPUT/OUTPUT terminals + per-arm yield enumeration + source spans. Use as a baseline for the per-level pruning rules.",
+      tags:  ["cfg", "code", "if", "small"],
+    },
+    "170-cfg-large-def-match-process": {
+      label: "[170] CFG \u2014 `[?def]` + `[?match]` + `[?for]` pipeline (large)",
+      input: "[?def classify (n) [?match n [case 0 :zero] [else :nonzero]]] [?def process (items) [?for [in $i items] [yield [classify $i]]]] [$process (3, 0, 7, 0, 1)]",
+      note:  "**Pattern:** the classic structured pipeline \u2014 two defs (one with `[?match]`, one with `[?for]`), then a top-level call that ties them together. **Diagram:** large CFG; the `classify` def becomes a sub-graph with a 2-arm match dispatcher; the `process` def becomes a sub-graph with a loop-box; the top-level expression connects them via dashed call edges. At `full` level: per-binding bridges from `i` to its `[in]` clause; cross-def call edges from `[classify i]` and `[process \u2026]` to the def sub-graph anchors; INPUT terminal showing the literal sequence; OUTPUT terminal showing `seq of atom`. Use as the 'graph everything' stress test for the CFG-full step-back rules.",
+      tags:  ["cfg", "code", "def", "match", "for", "large"],
+    },
+    "171-seq-mid-producer-consumer": {
+      label: "[171] Sequence \u2014 producer / consumer over a channel (mid)",
+      input: "[?let [= $ch [?channel name=\"jobs\" buffer=4]] [?let [= $_ [?worker name=\"producer\" [?for [in $i 1 to 3] [yield [?send $i to=$ch]]]]] [?worker name=\"consumer\" [?let [= $msg [?receive from=$ch]] [received value=$msg]]]]]",
+      note:  "**Pattern:** classic actor-channel-actor shape. **Diagram:** sequenceDiagram with three actor lanes (producer, jobs, consumer); 3 synchronous send arrows from producer to jobs, 3 receive arrows from jobs to consumer. At `compact` the activation/deactivation blocks frame each `[?worker]` body. At `full` each arrow carries the payload value (`producer ->>+ jobs : 1`, `jobs -->>- consumer : 1`, etc.) and source spans. Mid-size: 3 actors, 6 messages \u2014 small enough to read end-to-end, large enough to exercise channel-lane flow.",
+      tags:  ["seq", "code", "channel", "worker", "send", "for", "mid"],
+    },
+    "172-seq-large-workers-with-backpressure": {
+      label: "[172] Sequence \u2014 dispatcher + 2 workers + collector (large)",
+      input: "[?let [= $jobs [?channel name=\"jobs\" buffer=8]] [?let [= $results [?channel name=\"results\" buffer=16]] [?let [= $_d [?worker name=\"dispatcher\" [?for [in $job 1 to 6] [yield [?send $job to=$jobs]]]]] [?let [= $_a [?worker name=\"worker-a\" [?let [= $j [?receive from=$jobs]] [?send [processed by=\"a\" value=$j] to=$results]]]] [?let [= $_b [?worker name=\"worker-b\" [?let [= $j [?receive from=$jobs]] [?send [processed by=\"b\" value=$j] to=$results]]]] [?worker name=\"collector\" [?let [= $r [?receive from=$results]] $r]]]]]]]",
+      note:  "**Pattern:** fan-out / fan-in across two channels \u2014 dispatcher pushes jobs to a worker pool, workers process and push results, collector drains. **Diagram:** large sequenceDiagram with 6 actor lanes (dispatcher, jobs, worker-a, worker-b, results, collector); 6 dispatch arrows + 6 result arrows + 6 collect arrows = 18 messages. Use as the SEQ step-back test \u2014 with 6 actors and 18 events the renderer should activate the 'collapse channels with >50 messages to summary' rule at `full` (won't trigger here at 18, but the layout density is the calibration target). Also tests `[?close]` rendering (channel-close arrow with a special glyph) and per-worker activation blocks isolating the body events.",
+      tags:  ["seq", "code", "channel", "worker", "close", "let", "send", "large"],
+    },
   };
 
   window.cxPlaygroundExamples = { program };
