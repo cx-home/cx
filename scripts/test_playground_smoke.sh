@@ -50,7 +50,8 @@ fail() {
 }
 
 # Probe each required asset
-for asset in playground.html playground.js playground.css \
+for asset in playground.html playground/playground.js playground/playground.css \
+             playground/playground.examples.js \
              dist/wasm/libcx.js dist/wasm/cxlib.js; do
     if ! curl -sf -o /dev/null "http://localhost:$PORT/$asset"; then
         fail "$asset returned non-200"
