@@ -136,7 +136,6 @@ html, body {
   letter-spacing: -0.02em;
 }
 .cxp-viz-src-toggle {
-  margin-right: auto;
   margin-left: 12px;
   min-width: 64px;
   text-align: center;
@@ -145,6 +144,36 @@ html, body {
   content: '⇄  ';
   opacity: 0.6;
 }
+.cxp-detail-group { margin-right: auto; margin-left: 6px; }
+.cxp-detail-tab {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-pane);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+}
+.cxp-detail-tab + .cxp-detail-tab { border-left: none; }
+.cxp-detail-tab:first-child { border-radius: 3px 0 0 3px; }
+.cxp-detail-tab:last-child  { border-radius: 0 3px 3px 0; }
+.cxp-detail-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cxp-detail-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0e1116;
+}
+/* Inline-attr chip used at Compact/Full detail levels. */
+.cxt-attr-chip { color: var(--syn-attr); margin-left: 6px; font-size: 0.9em; }
+.cxt-attr-chip + .cxt-attr-chip { margin-left: 4px; }
+.cxt-attr-chip .v { color: var(--text); }
+.cxt-attr-more { color: var(--text-dim); font-style: italic; margin-left: 6px; font-size: 0.9em; }
+.cxt-inline-scalar { color: var(--syn-string); margin-left: 6px; }
+.cxt-inline-scalar.num { color: var(--syn-number); }
+.cxt-inline-scalar.bool { color: var(--syn-keyword); }
 
 /* ── Main 3-region grid ─────────────────────────────────────── */
 /* Source + Output stack in the left 2/3; View pane takes the right 1/3.

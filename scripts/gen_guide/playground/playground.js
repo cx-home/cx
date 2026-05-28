@@ -23,6 +23,7 @@
   const outTabs  = [...document.querySelectorAll('.cxp-tab')];
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
   const vizSrcToggle = document.getElementById('cxp-viz-src-toggle');
+  const detailTabs = [...document.querySelectorAll('.cxp-detail-tab')];
   const outs     = {
     cx:   document.querySelector('#cxp-out-cx code'),
     json: document.querySelector('#cxp-out-json code'),
@@ -72,6 +73,19 @@
   let nodeRegistry    = [];         // [{start, end, el, kind, key}, …] — for source ↔ tree bridge
   let nodeRegistrySource = '';      // which content (source vs output) nodeRegistry maps onto
   let graphScale      = 1;          // current SVG zoom factor
+  // Detail level controls how much element-shape information shows up
+  // in the View pane (Tree + Graph). 'min' = element name only;
+  // 'compact' (default) = name + first 2 attrs + (+N more) + inlined
+  // scalar bodies of leaf children; 'full' = name + all attrs +
+  // scalar bodies. Persists to localStorage per-browser.
+  const COMPACT_ATTR_CAP = 2;
+  let detailLevel = 'compact';
+  try {
+    const stored = localStorage.getItem('cxp.detailLevel');
+    if (stored === 'min' || stored === 'compact' || stored === 'full') {
+      detailLevel = stored;
+    }
+  } catch (_) { /* sandboxed / disabled — keep default */ }
 
   // ── Highlighting ──────────────────────────────────────────
   function highlight(lang, src) {
@@ -349,6 +363,16 @@
       refreshView();
     });
   }
+  function applyDetailActiveState() {
+    detailTabs.forEach(t => t.classList.toggle('is-active', t.dataset.detail === detailLevel));
+  }
+  applyDetailActiveState();
+  detailTabs.forEach(t => t.addEventListener('click', () => {
+    detailLevel = t.dataset.detail;
+    applyDetailActiveState();
+    try { localStorage.setItem('cxp.detailLevel', detailLevel); } catch (_) {}
+    refreshView();
+  }));
 
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';
@@ -434,6 +458,43 @@
     });
   }
 
+  // ── Inline-attr + inline-scalar helpers (detail-level aware) ──
+  // Renders `attrs` as small space-separated chips (`@name=value`) on
+  // the element's head row. At Compact, caps at COMPACT_ATTR_CAP and
+  // appends `(+K more)`; at Full shows all.
+  function renderAttrChips(attrs, level) {
+    if (!attrs || attrs.length === 0) return '';
+    const cap = (level === 'full') ? attrs.length : COMPACT_ATTR_CAP;
+    let out = '';
+    for (let i = 0; i < Math.min(attrs.length, cap); i++) {
+      const a = attrs[i];
+      const name = (a && typeof a === 'object') ? a.name : '';
+      const val  = (a && typeof a === 'object') ? a.value : a;
+      out += `<span class="cxt-attr-chip">@${escapeHtml(String(name))}=<span class="v">${formatAttrValue(val)}</span></span>`;
+    }
+    const remaining = attrs.length - cap;
+    if (remaining > 0) {
+      out += `<span class="cxt-attr-more">(+${remaining} more attr${remaining === 1 ? '' : 's'})</span>`;
+    }
+    return out;
+  }
+  function formatAttrValue(v) {
+    if (v === null || v === undefined) return '<span class="cxt-label-meta">null</span>';
+    if (typeof v === 'string')  return `"${escapeHtml(v)}"`;
+    if (typeof v === 'number')  return String(v);
+    if (typeof v === 'boolean') return String(v);
+    return escapeHtml(String(v));
+  }
+  // Renders a single inlined scalar leaf body next to its parent
+  // element's name row (Compact/Full only).
+  function renderInlineScalar(node) {
+    const v = (node && typeof node === 'object') ? node.value : node;
+    if (typeof v === 'string')  return `<span class="cxt-inline-scalar">"${escapeHtml(v)}"</span>`;
+    if (typeof v === 'number')  return `<span class="cxt-inline-scalar num">${v}</span>`;
+    if (typeof v === 'boolean') return `<span class="cxt-inline-scalar bool">${v}</span>`;
+    return `<span class="cxt-inline-scalar">${escapeHtml(String(v))}</span>`;
+  }
+
   function renderNode(node, label, inheritedLoc) {
     const wrap = document.createElement('div');
     wrap.className = 'cxt-node';
@@ -481,6 +542,52 @@
     }
     // Object
     const keys = Object.keys(node);
+    // ── Element specialization (detail-level aware) ─────────────
+    // Elements get inline attr chips + inline-scalar leaf bodies at
+    // compact/full; Min hides attrs entirely. Skip keys 'attrs' /
+    // 'items' from the default walk and handle them ourselves.
+    const isElement = node.kind === 'element' && typeof node.name === 'string';
+    let skipKeys = null;
+    let inlineScalarValue = null;
+    if (isElement) {
+      const attrs = Array.isArray(node.attrs) ? node.attrs : [];
+      const items = Array.isArray(node.items) ? node.items : [];
+      skipKeys = new Set(['kind', 'name', 'attrs', 'items']);
+      // Inline scalar leaf body? Only when a single scalar item lives
+      // under this element and the user wants at least Compact detail.
+      if (detailLevel !== 'min' && items.length === 1) {
+        const only = items[0];
+        if (only && typeof only === 'object' && only.kind === 'scalar') {
+          inlineScalarValue = only;
+        }
+      }
+      const showChildren = !(inlineScalarValue && attrs.length === 0);
+      const hasChildren = items.length > 0 || (Object.keys(node).some(k => !skipKeys.has(k)));
+      const toggleChar = (showChildren && hasChildren && !inlineScalarValue) ? '▾' : '·';
+      let head = `<span class="cxt-label-name">${escapeHtml(node.name)}</span>`;
+      if (detailLevel !== 'min' && attrs.length > 0) {
+        head += renderAttrChips(attrs, detailLevel);
+      }
+      if (inlineScalarValue) {
+        head += renderInlineScalar(inlineScalarValue);
+      }
+      wrap.innerHTML = rowHtml(`<span class="cxt-toggle">${toggleChar}</span>`, head);
+      // Walk only non-skip keys (excludes attrs/items handled above)
+      const kids = document.createElement('div');
+      kids.className = 'cxt-children';
+      // Walk items as children unless we inlined the single scalar.
+      if (!inlineScalarValue) {
+        for (const child of items) {
+          kids.appendChild(renderNode(child, '', loc));
+        }
+      }
+      for (const k of keys) {
+        if (skipKeys.has(k) || k === 'loc') continue;
+        kids.appendChild(renderNode(node[k], k, loc));
+      }
+      wrap.appendChild(kids);
+      return wrap;
+    }
     const toggle = keys.length > 0 ? '<span class="cxt-toggle">▾</span>' : '<span class="cxt-toggle">·</span>';
     let head;
     if (node.kind && node.name) {
