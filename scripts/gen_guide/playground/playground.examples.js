@@ -970,6 +970,42 @@
       note:  "**Pattern:** drop the first and last item. **Uses:** the `$_last` sigil (ADR 0041 D11) resolves to the receiver's cardinality at slice-apply time, so `[- $_last 1]` evaluates to `n - 1` regardless of the source. Stop is inclusive, so `[2:n-1]` keeps items 2 through n-1 \u2014 i.e. everything except the first and last.",
       tags:  ["eq", "let", "sub"],
     },
+    "161-sequence-worker-top": {
+      label: "[161] Sequence diagram \u2014 top-level `[?worker]`",
+      input: "[?worker name=\"task\" [?let [= $_ [?sleep 100ms :mock]] [ok value=\"done\"]]]",
+      note:  "**Pattern:** background task as program entry-point. **Diagram:** because `[?worker]` sits at the top level the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. Try wrapping the same body in `[?let [= $w [?worker \u2026]] $w]` and watch the diagram revert to a flowchart \u2014 `[?worker]` only steers the dialect when it's the outermost form.",
+      tags:  ["eq", "let", "mock", "sleep", "worker"],
+    },
+    "162-sequence-select-channels": {
+      label: "[162] Sequence diagram \u2014 `[?select]` across channels",
+      input: "[?let [= $ch1 [?channel name=\"a\" buffer=1]] [?let [= $ch2 [?channel name=\"b\" buffer=1]] [?let [= $_ [?send 1 to=$ch1]] [?select [case [from $ch1 $v] [ok value=$v]] [case [from $ch2 $v] [ok value=$v]] [case [timeout 50ms] [err code=\"timeout\"]]]]]]",
+      note:  "**Pattern:** wait on the first of several channels (with a timeout escape hatch). **Diagram:** top-level `[?select]` triggers `sequenceDiagram` \u2014 each `[case [from CH $v] \u2026]` arm becomes an arrow from the channel actor; the `[timeout]` arm becomes a self-loop with a duration label. The case-envelope shape `[case [from $ch $msg] HANDLER]` is the ADR 0063 (5.a) split-selector form: selector head is the case kind, handler is positional.",
+      tags:  ["channel", "eq", "let", "select", "send", "timeout"],
+    },
+    "163-sequence-http-service": {
+      label: "[163] Sequence diagram \u2014 `[?http-service]` config",
+      input: "[?http-service name=\"hello\" :on http [resource [get \"/\"] [response status=200 [body \"hi\"]]]]",
+      note:  "**Pattern:** declare a service endpoint and its routes. **Diagram:** top-level `[?http-service]` triggers `sequenceDiagram` \u2014 the service is one actor, each `[resource [METHOD PATH] HANDLER]` becomes an inbound message arrow from a generic `client` actor. **Note:** this is the in-process conformance shape; the real-socket variant (port>0 + `[$serve-file]`) is the topic of ADR 0065.",
+      tags:  ["http-service"],
+    },
+    "164-graph-state-machine-data": {
+      label: "[164] Graph view \u2014 state machine as data",
+      input: "[state-machine [state idle] [state running] [state stopped] [transition from=idle to=running on=start] [transition from=running to=stopped on=stop] [transition from=stopped to=idle on=reset]]",
+      note:  "**Pattern:** a state machine described as pure CX data (no directives). **Diagram:** because the root isn't a directive, the emitter classifies this as a data document and renders an `erDiagram` (entity-relationship). The Tree pane shows the full nested structure; the Graph pane shows entity-style boxes for each `[state]` / `[transition]`. (Caveat: `flowchart TD` projection of data-shape graphs \u2014 turning each `[transition]` into a real directed arrow \u2014 is the proposed evolution of the `(2) detail-level` playground item; today the renderer falls back to `erDiagram`.)",
+      tags:  [],
+    },
+    "165-graph-workflow-dag": {
+      label: "[165] Graph view \u2014 workflow DAG as data",
+      input: "[workflow [task id=\"fetch\" cmd=\"curl\"] [task id=\"parse\" cmd=\"jq\"] [task id=\"store\" cmd=\"psql\"] [edge from=\"fetch\" to=\"parse\"] [edge from=\"parse\" to=\"store\"]]",
+      note:  "**Pattern:** a build / orchestration DAG described as data. **Diagram:** renders as an entity diagram (`erDiagram` because the root is data); each `[task]` + each `[edge]` becomes an entity. As with #164, a true directed-graph projection awaits the (2) detail-level work; this example exists so the Tree pane reflects how the relationships are encoded.",
+      tags:  [],
+    },
+    "166-flowchart-control-flow": {
+      label: "[166] Flowchart \u2014 nested if / for control flow",
+      input: "[?let [= $xs (1, 2, 3, 4, 5)] [?for [in $x $xs] [yield [?if [> $x 2] [then [hi value=$x]] [else [lo value=$x]]]]]]",
+      note:  "**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples #161-163.",
+      tags:  ["eq", "for", "gt", "if", "let"],
+    },
   };
 
   window.cxPlaygroundExamples = { program };
