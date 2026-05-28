@@ -1,9 +1,3 @@
-
-  stable-aarch64-apple-darwin unchanged - rustc 1.95.0 (59807616e 2026-04-14)
-
-
-  stable-aarch64-apple-darwin unchanged - rustc 1.95.0 (59807616e 2026-04-14)
-
 // CX Playground — 100 progressive eval examples.
 // Single ordered list. Groups (simple → complex, related together):
 //   1-15   pure data  ·  16-25  bindings/arith  ·  26-35  control flow
