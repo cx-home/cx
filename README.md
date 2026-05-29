@@ -2,9 +2,9 @@
 
 [![Version](https://img.shields.io/badge/version-v0.8.0--dev-blue.svg)](spec/v0_8_0_status.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-stable_grammar-brightgreen.svg)](spec/grammar.ebnf)
-[![ABI](https://img.shields.io/badge/C_ABI-versioned-brightgreen.svg)](spec/abi.md)
-[![Bindings](https://img.shields.io/badge/Tier--1_bindings-V_·_Python_·_Go_·_Rust-blueviolet.svg)](spec/bindings.md)
+[![Spec](https://img.shields.io/badge/spec-stable_grammar-brightgreen.svg)](spec/core/grammar.ebnf)
+[![ABI](https://img.shields.io/badge/C_ABI-versioned-brightgreen.svg)](spec/core/abi.md)
+[![Bindings](https://img.shields.io/badge/Tier--1_bindings-V_·_Python_·_Go_·_Rust-blueviolet.svg)](spec/misc/bindings.md)
 
 > **The CX Data Language** — one syntax for configs, queries, transforms,
 > and full code. Every config, document, query, transform, and
