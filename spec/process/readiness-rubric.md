@@ -60,9 +60,9 @@ Status reflects branch HEAD, not the latest released version.
 | Whitespace normalization documented | ✅ | `core/grammar.ebnf` |
 | Numeric literals (int, float, hex, underscored) | ✅ | `core/grammar.ebnf` |
 | String literals (single, triple, escape rules) | ✅ | `core/grammar.ebnf` |
-| UTF-8 encoding required | ✅ | `core/abi.md` |
-| BOM handling | ✅ | `core/conversions.md` |
-| Line-ending policy (CR / LF / CRLF) | ✅ | `core/conversions.md` |
+| UTF-8 encoding required | ✅ | `core/abi.md` §1.7, `core/conversions.md` §0.4 |
+| BOM handling | ✅ | `core/conversions.md` §0.4, `core/code.md` §3.1 |
+| Line-ending policy (CR / LF / CRLF) | ✅ | `core/conversions.md` §0.4, `core/canonical.md` §2.2 |
 | Reserved-character escape table | ✅ | `core/grammar.ebnf` |
 
 ## 2 — Type system
@@ -161,9 +161,9 @@ Status reflects branch HEAD, not the latest released version.
 | Pull-based event stream parser | ✅ | `core/streaming.md` |
 | Streaming write API | ✅ | `core/streaming.md` |
 | Partial materialization | ✅ | `core/streaming.md` |
-| Memory bounds documented | ✅ | `core/cxdm.md` |
-| Recursion-limit policy | ✅ | `core/cxdm.md` |
-| Maximum element / attribute count | ✅ | `core/cxdm.md` |
+| Memory bounds documented | ✅ | `core/data-bin.md` §4 |
+| Recursion-limit policy | ✅ | `core/data-bin.md` §4 |
+| Maximum element / attribute count | ✅ | `core/data-bin.md` §4 |
 | Large-file (multi-GB) handling | ✅ | `core/streaming.md` |
 
 ## 9 — Tooling
@@ -195,9 +195,9 @@ Status reflects branch HEAD, not the latest released version.
 | Governance / process rules | ✅ | `process/governance.md` |
 | Versioning policy | ✅ | `process/governance.md` |
 | Conformance suite documented | ✅ | `conformance/` |
-| User tutorial | ✅ | `docs/TUTORIAL.md` |
-| Cheatsheet | ✅ | `docs/CHEATSHEET.md` |
-| FAQ | ✅ | `docs/FAQ.md` |
+| User tutorial | ✅ | `docs/guide/intro.html`, `docs/guide/quickstart.html`, `docs/guide/tour-data.html`, `docs/guide/tour-programs.html` |
+| Cheatsheet | ✅ | `docs/guide/surfaces.html`, `docs/guide/code.html` |
+| FAQ | ✅ | `docs/guide/faq.html` |
 | Working examples | ✅ | `examples/` |
 
 ## 11 — Multi-language ecosystem
@@ -225,9 +225,9 @@ Status reflects branch HEAD, not the latest released version.
 | External-entity / billion-laughs immune | ✅ | by-design |
 | Vulnerability reporting policy | ✅ | `SECURITY.md` |
 | Threat model document | ✅ | `process/threat-model.md` |
-| Fuzz-testing harness | 📋 | post-v0.8.0 |
+| Fuzz-testing harness | ✅ | `.github/workflows/fuzz.yml` (nightly 1h budget; `scripts/fuzz_cx.py` against parser + buffered eval + streaming eval + ABI-passthrough) |
 | External security audit | 📋 | v1.0 |
-| Reproducible builds | 📋 | post-v0.8.0 |
+| Reproducible builds | ✅ | `.github/workflows/reproducibility.yml` (per-tag + weekly double-build SHA-256 diff under fixed `SOURCE_DATE_EPOCH`) |
 
 ## 13 — Performance
 
@@ -248,7 +248,7 @@ Status reflects branch HEAD, not the latest released version.
 | Deprecation policy | ✅ | `process/governance.md` |
 | Spec-change workflow | ✅ | `process/governance.md` |
 | Annual binding audit cadence | ✅ | `process/governance.md` |
-| Release process documented | ✅ | `docs/RELEASE_PROCESS.md` |
+| Release process documented | 🚧 | covered inline in `process/governance.md` §9 + §10.4; standalone `docs/RELEASE_PROCESS.md` planned post-v0.8.0 |
 | Adoption-review gate (this rubric) | ✅ | this document |
 | Public roadmap | ✅ | `ROADMAP.md` |
 | Third-party conformance certification | ✅ | `process/governance.md` |

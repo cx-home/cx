@@ -49,7 +49,7 @@ CX reads files from an attacker-controlled source. CX is not yet hardened for th
 
 CX participates in three trust boundaries. Hardening at one does not automatically protect another.
 
-1. **Input parser boundary.** Bytes from an external source enter the CX parser via `cx_to_data_bin`, `cx_parse_*`, the CLI, or a binding's `loads` / `parse_*`. The parser converts those bytes to in-process AST or data structures.
+1. **Input parser boundary.** Bytes from an external source enter the CX parser via `cx_to_data_bin` / `cx_to_data_bin_with_len`, the `cx_*_to_ast_bin` family (`cx_xml_to_ast_bin`, `cx_json_to_ast_bin`, `cx_yaml_to_ast_bin`, `cx_toml_to_ast_bin`, `cx_md_to_ast_bin`, plus the symmetric `cx_ast_bin_to_*` emitters), `cx_events_open` / `cx_events_open_fd` for the streaming surface, the CLI entry points (`cx parse`, `cx eval`, `cx fmt`, `cx canonical`, `cx hash`, `cx validate`), or any binding's `loads` / `parse` / `parse_xml` / `parse_json` / etc. The parser converts those bytes to in-process AST or data structures.
 2. **C ABI boundary.** Every binding crosses the FFI boundary into `libcx`. Inputs are passed as `(pointer, length)` byte buffers; outputs return as framed `[u32 LE size][payload]` buffers per [`../core/abi.md`](../core/abi.md).
 3. **Inclusion boundary.** When a CX document contains `[?cx include=PATH]`, the parser opens and parses an additional file. Path resolution is part of this boundary; semantics are normative in [`../core/code.md`](../core/code.md) §13.
 
@@ -105,9 +105,9 @@ An attacker uses the events streaming API (`cx_events_open` / `next` / `close`) 
 
 ### T9 — ReDoS via regex functions
 
-`fn:matches`, `fn:tokenize`, `fn:replace`, and `fn:analyze-string` (plus schema `:pat=` validation) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
+The `cx-stdlib/re` module ([`../std-lib/re.md`](../std-lib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](../core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
 
-**Mitigation:** all regex call sites route through the vendored RE2 shim. Matching is **linear-time in the input length** with no exposure to backtracking explosion. The same engine backs schema `:pat=` validation, so cross-binding regex-flavour drift is also eliminated.
+**Mitigation:** all regex call sites route through the vendored RE2 engine inside `libcx`. Matching is **linear-time in the input length** with no exposure to backtracking explosion. The same engine backs `cx-stdlib/re` and the schema `[pattern …]` constraint, so cross-binding regex-flavour drift is also eliminated.
 
 ### T10 — Function-recursion DoS
 
@@ -127,11 +127,31 @@ The streaming evaluator takes a host-supplied callback invoked once per emitted 
 
 **Mitigation:** the streaming evaluator inherits T10 + T11 budgets. The sink callback is documented as synchronous-best-effort; the core does not enforce a per-chunk timer. Consumers wrapping the streaming API for untrusted-network sinks MUST apply their own timeout.
 
+**Streaming-write surface (symmetric threats).** The streaming-write API (`cx_events_writer_open` / `_emit` / `_close` per [`../core/streaming.md`](../core/streaming.md) §3) has two adjacent threat shapes that share T12's caller-responsibility framing:
+
+- *Malicious-sink amplification.* A writer pointed at an attacker-controlled sink may be coerced into emitting unbounded bytes by interleaving cheap directives in the source program. The T10 (call-depth) and T11 (sequence-length) budgets bound per-call work but not aggregate bytes-out; the host MUST apply a byte-budget around the writer handle and apply per-emit wall-clock timeouts as in the buffered streaming case above.
+- *Partial-write resource pinning.* A writer that observes an attacker-pinned sink holds its internal buffer plus the underlying file-descriptor / socket until close. `cx_events_writer_close` releases every owned resource (buffer, fd, allocator arena) deterministically. `W009` ("emit not supported for this event kind / target") is **fail-closed** — the writer raises and aborts the streaming session before any partial-write side-effect, so a malformed source program cannot leak bytes nor pin the handle past the first invalid emit.
+
 ### T13 — Schema-validation bypass via dynamic xs: constructors
 
 Without a strict parse, an attacker could submit a non-numeric string through `xs:integer($user_input)` / `xs:double(...)` and have it silently coerced to 0 (integer) or 0.0 (double) instead of raising an error. Downstream code treating the result as a "validated number" then acts on attacker-supplied garbage.
 
 **Mitigation:** every `xs:int*`, `xs:double`, `xs:float`, `xs:decimal`, `xs:nonNegativeInteger`, `xs:positiveInteger`, and `cast-as` target routes through a strict parse path. Inputs that don't parse as a number raise an `FORG0001`-class error carrying the offending value. Numeric scalar inputs pass through unchanged. Callers wanting lenient behaviour use explicit `[?try]` / `[?castable-as]` guards.
+
+### T14 — CSRP network surface (`cx-store://`)
+
+A network-deployed CXStore Remote Protocol server ([`../misc/cxstore-remote-protocol.md`](../misc/cxstore-remote-protocol.md), CSRP) is reachable from untrusted clients; the wire protocol carries auth tokens, query / mutation payloads, and result-set bytes that an attacker could intercept, replay, or amplify.
+
+**Mitigation:**
+
+- Bearer-token authentication per `cxstore-remote-protocol.md §2.1`; tokens are presented in `Authorization: Bearer <token>` headers. Token rotation policy is per deployment (not specified by CSRP) and the server returns `CXER1702 E_CSRP_AUTH_REQUIRED` for missing tokens and `CXER1703 E_CSRP_AUTH_INVALID` for bad ones.
+- HTTPS-only is RECOMMENDED for any non-loopback deployment; plaintext HTTP is documented as dev-only. Transport security inherits from the deploying webserver / reverse proxy.
+- Server-side payload-size limits per the `capabilities` response (`max-request-bytes`, `max-response-bytes`); an over-cap request returns 413 with `CXER1705 E_CSRP_PAYLOAD_TOO_LARGE`.
+- Server-side rate limits per the `capabilities` response (`requests-per-minute`, `bytes-per-second`).
+- Doc-ID integrity verification on the client: the SHA-256 hash domain for a returned document is strict-canonical bytes (per `canonical.md §1.2`), and the client cross-checks the wire-claimed hash against the locally-computed hash before trusting the body. A mismatch raises `CXER1720 E_CSRP_INTEGRITY_MISMATCH`.
+- Replay protection beyond Bearer-token freshness is the operator's responsibility (out of CSRP scope).
+
+Operator-network threats — DDoS, traffic analysis, infrastructure compromise — are inherited from the deployment substrate and are not covered by CX governance.
 
 ## 5 — Hardening currently in place
 
@@ -163,9 +183,9 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Reproducible `libcx` builds | partial (consumer SHA-256 verification ships; build determinism is roadmap) |
 | Signed release artifacts | absent (1.0 milestone) |
 | Streaming-write per-chunk timer | absent — caller responsibility (T12) |
-| BOM / line-ending policy | undefined (1.0 blocker) |
+| BOM / line-ending policy | **defined** — UTF-8 mandatory; UTF-8 BOM tolerated on parse and never emitted; LF / CRLF / CR all tolerated on parse; canonical emit produces LF only (per [`../core/conversions.md §0.4`](../core/conversions.md), [`../core/canonical.md §2.2`](../core/canonical.md), and [`../core/code.md §3.1`](../core/code.md)) |
 | Unicode normalization policy | **defined** — input bytes preserved; NFC applied only for duplicate-key comparison, never to stored strings (per [`../core/abi.md §1.7`](../core/abi.md)) |
-| Hard sandboxing for the evaluator | absent — `[?cx pure-only]` is a discipline gate, not a sandbox |
+| Hard sandboxing for the evaluator | **defined by composition** — the purity classifier (`pure` modifier on `[?def]` per [`../core/code.md §12.2`](../core/code.md), enforced against the closed builtin-purity table at [`../core/code.md §6.5.x`](../core/code.md)) refuses any reach into impure surfaces; `cx:eval` runs adversary-controlled program fragments under the five-mitigation sandbox at [`../modules/cx.md §3`](../modules/cx.md) (impurity refusal, context-map isolation, library-set non-widening, recursion-depth cap, and shared T10/T11/T9 budgets — see §10 and §11 of this document). A process-level hard sandbox (cgroup / seccomp / ulimit) remains the caller's responsibility for adversary-controlled inputs. |
 
 Each row is tracked in `ROADMAP.md` and moves to §5 as it closes.
 
