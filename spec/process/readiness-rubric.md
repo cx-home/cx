@@ -175,8 +175,8 @@ Status reflects branch HEAD, not the latest released version.
 | `cx canonical` (strict canonical) | ✅ | `core/canonical.md` |
 | `cx hash` (SHA-256 of strict canonical) | ✅ | `core/canonical.md` |
 | `cx eq` (data equivalence) | ✅ | `core/cxdm.md` |
-| `cx diff` | ✅ | `core/abi.md` |
-| `cx lint` | ✅ | `core/abi.md` |
+| `cx diff` | ✅ | `core/abi.md §2.17` |
+| `cx lint` | ✅ | `core/abi.md §2.18` |
 | Tree-sitter grammar | ✅ | `modules/tree-sitter.md` |
 | Language Server Protocol (LSP) | ✅ | external (`tooling/lsp/`) |
 | VSCode extension | ✅ | external (`tooling/vscode/`) |

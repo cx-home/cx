@@ -83,7 +83,10 @@ against every binding; drift on any fixture blocks the release.
 | `Doc.select_all(cxpath)` | sequence | CXPath path-value evaluation |
 | `Doc.select(cxpath)` | optional Node | First match of `select_all` |
 | `Doc.modify(focus, action)` | Doc | Pure-functional update per [`core/code.md §8.10`](../core/code.md) |
-| `Doc.find_all(name)` | sequence | Name-only convenience (no CXPath parse) |
+| `Doc.diff(other)` | Doc | Structured semantic diff document (wraps `cx_diff`, see [`core/abi.md §2.17`](../core/abi.md)) |
+| `Doc.lint(ruleset=None)` | Doc | Structured diagnostics document (wraps `cx_lint`, see [`core/abi.md §2.18`](../core/abi.md)); `ruleset` is an optional `.cxs` Document for custom rules |
+| `Doc.find_first(name)` | optional Node | Name-only convenience (no CXPath parse); first match |
+| `Doc.find_all(name)` | sequence | Name-only convenience (no CXPath parse); all matches |
 | `Doc.root()` | Node | Root element |
 | `Node.name()` | string | Element name |
 | `Node.attr(name)` | optional value | Attribute value |
@@ -92,9 +95,9 @@ against every binding; drift on any fixture blocks the release.
 | `Node.body()` | value | Element body |
 | `Node.kind()` | string | `element` / `scalar` / `array` / `map` / `sequence` / `path` |
 
-**16 methods total.** Bindings MAY expose additional methods strictly
+**19 methods total.** Bindings MAY expose additional methods strictly
 above this set (typed projections, streaming helpers, etc.) but the
-16 above MUST be present with identical names and semantics. The
+19 above MUST be present with identical names and semantics. The
 in-place build-mode methods (`set_attr`, `append`, etc.) are
 specified in [`misc/api.md §4.1`](api.md).
 

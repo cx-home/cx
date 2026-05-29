@@ -39,7 +39,9 @@ canonical bytes for the same input.
 | Document / Element traversal | ✓ | ✓ | ✓ | ✓ |
 | Mutation (set_attr / append / …) | ✓ | ✓ | ✓ | ✓ |
 | Immutable transform | ✓ | ✓ | ✓ | ✓ |
-| CXPath — `select` / `select_all` | ✓ | ✓ | ✓ | ✓ |
+| CXPath — `select` / `select_all` (route through `cx_code_eval`) | ✓ | ✓ | ✓ | ✓ |
+| `diff` (wraps `cx_diff`, `core/abi.md §2.17`) | ✓ | ✓ | ✓ | ✓ |
+| `lint` (wraps `cx_lint`, `core/abi.md §2.18`) | ✓ | ✓ | ✓ | ✓ |
 | Streaming parse (event iterator) | ✓ | ✓ | ✓ | ✓ |
 | `:table` block — read | ✓ | ✓ | ✓ | ✓ |
 | `:table` block — write (Table API) | (✓) | (✓) | (✓) | (✓) |
@@ -55,7 +57,7 @@ canonical bytes for the same input.
 | `version()` accessor | ✓ | ✓ | ✓ | ✓ |
 | Native dict/list `loads` / `dumps` | — | ✓ | ✓ | ✓ |
 | Atom scalar | ✓ | ✓ | ✓ | ✓ |
-| Layer-1 16-method API (see [`misc/bindings.md §2.1`](bindings.md)) | 16/16 | 16/16 | 16/16 | 16/16 |
+| Layer-1 19-method API (see [`misc/bindings.md §2.1`](bindings.md)) | 19/19 | 19/19 | 19/19 | 19/19 |
 | Schema validate | ✓ | ✓ | ✓ | 📋 |
 | CXPath as value kind | 🚧 | 📋 | 📋 | 📋 |
 | `[?match]` multi-arm | 📋 | 📋 | 📋 | 📋 |
@@ -138,8 +140,15 @@ bindings:
 - Emit paths use `cx_ast_bin_to_<fmt>` — one C call.
 - One-shot conversions use `cx_to_data_bin` / `cx_data_bin_to_<fmt>` —
   one C call.
-- CXPath uses `cx_select`.
+- CXPath routes through `cx_code_eval` with a path-value expression
+  (the standalone `cx_select` / `cx_select_all` C ABI was retired at
+  v0.8.0 — see [`core/abi.md §2.7`](../core/abi.md)). Bindings retain
+  their `Doc.select()` / `Doc.select_all()` Layer-1 surfaces; only the
+  underlying ABI symbol changed.
 - Streaming uses the `cx_events_*` family.
+- Diff / lint use `cx_diff` / `cx_lint`
+  ([`core/abi.md §2.17`](../core/abi.md) and
+  [`§2.18`](../core/abi.md)).
 
 No binding routes through a host-language intermediate format.
 
