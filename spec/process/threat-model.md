@@ -83,7 +83,7 @@ An attacker exploits a CX-to-target-format conversion to coerce a value (e.g., a
 
 An attacker crafts two CX documents that hash to the same value despite differing in semantically meaningful content.
 
-**Mitigation:** `cx hash` is SHA-256 of strict canonical bytes ([`../core/canonical.md`](../core/canonical.md)). Strict canonical removes comments, normalizes whitespace, sorts attributes deterministically, and emits binary CXCol. Two semantically distinct documents producing the same SHA-256 input is an attack on SHA-256, not on CX. Cross-binding determinism is enforced by [`governance.md`](governance.md) §2.3.
+**Mitigation:** `cx hash` is SHA-256 of strict canonical bytes ([`../core/canonical.md §1.2`](../core/canonical.md)). Strict canonical removes comments, expands anchors/aliases, resolves merges, normalises datetime offsets to UTC, and preserves attribute and map-key order from source (canonical does NOT sort — see [`../core/canonical.md §2.1`](../core/canonical.md)); the binary lane (`cx_to_data_bin`, [`../core/canonical.md §4`](../core/canonical.md)) is the compact alternative when both sides agree to use it. Two semantically distinct documents producing the same SHA-256 input is an attack on SHA-256, not on CX. Cross-binding determinism is enforced by [`governance.md`](governance.md) §2.3.
 
 ### T6 — Supply-chain / artifact tampering
 
@@ -164,7 +164,7 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Signed release artifacts | absent (1.0 milestone) |
 | Streaming-write per-chunk timer | absent — caller responsibility (T12) |
 | BOM / line-ending policy | undefined (1.0 blocker) |
-| Unicode normalization policy | undefined (1.0 blocker) |
+| Unicode normalization policy | **defined** — input bytes preserved; NFC applied only for duplicate-key comparison, never to stored strings (per [`../core/abi.md §1.7`](../core/abi.md)) |
 | Hard sandboxing for the evaluator | absent — `[?cx pure-only]` is a discipline gate, not a sandbox |
 
 Each row is tracked in `ROADMAP.md` and moves to §5 as it closes.
