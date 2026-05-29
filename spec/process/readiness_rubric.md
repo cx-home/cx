@@ -110,7 +110,7 @@ Status reflects branch HEAD, not the latest released version.
 | Capability | Status | Reference |
 |---|---|---|
 | Schema language (`.cxs`) | ✅ | `core/schema.md` |
-| Schema validation engine | ✅ | `std_lib/validate.md` |
+| Schema validation engine | ✅ | `std-lib/validate.md` |
 | Schema-driven defaults + coercion | ✅ | `core/schema.md` |
 | Required vs optional attribute markers | ✅ | `core/schema.md` |
 | Cardinality constraints | ✅ | `core/schema.md` |
@@ -139,8 +139,8 @@ Status reflects branch HEAD, not the latest released version.
 | Parquet bridge (via Arrow) | 📋 | post-v0.8.0 |
 | Binary AST format (`cx_ast_bin`) | ✅ | `core/ast_bin.md` |
 | Data-bin one-shot loaders/dumpers | ✅ | `core/abi.md` |
-| Delimited (CSV / TSV / PSV) | ✅ | `std_lib/csv.md`, `core/conversions.md` |
-| Auto-typing on delimited → CX | ✅ | `std_lib/csv.md` |
+| Delimited (CSV / TSV / PSV) | ✅ | `std-lib/csv.md`, `core/conversions.md` |
+| Auto-typing on delimited → CX | ✅ | `std-lib/csv.md` |
 | Protobuf / MessagePack | ❌ | deliberate non-feature |
 
 ## 7 — Internationalization
@@ -150,8 +150,8 @@ Status reflects branch HEAD, not the latest released version.
 | UTF-8 input/output | ✅ | `core/abi.md` |
 | Unicode-correct identifier rules | ✅ | `core/grammar.ebnf` |
 | Unicode normalization policy | ✅ | `core/canonical.md` |
-| Bidirectional text handling | ✅ | `std_lib/i18n.md` |
-| Language-tag attribute | ✅ | `std_lib/i18n.md` |
+| Bidirectional text handling | ✅ | `std-lib/i18n.md` |
+| Language-tag attribute | ✅ | `std-lib/i18n.md` |
 | Locale-independent number formatting | ✅ | `core/canonical.md` |
 
 ## 8 — Streaming & scale

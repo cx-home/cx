@@ -150,7 +150,7 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](../core/abi.md); [`governance.md`](governance.md) §1.2 |
 | Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data_bin.md`](../core/data_bin.md) |
 | Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](../core/canonical.md); [`governance.md`](governance.md) §2.3 |
-| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../std_lib/re.md`](../std_lib/re.md) |
+| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../std-lib/re.md`](../std-lib/re.md) |
 | Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |
 | Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](../core/code.md) |
 | Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](../core/code.md) |

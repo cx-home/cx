@@ -21,9 +21,9 @@ The CX language and its companion specifications, organised into five directorie
 | `lockfile.md` | `cx.lock` format for `[?lib]` module pinning. |
 | `streaming.md` | Streaming event protocol (read + write). |
 
-## `std_lib/` — standard library (29 modules + README)
+## `std-lib/` — standard library (29 modules + README)
 
-The `cx-stdlib` module specs. See [`std_lib/README.md`](std_lib/README.md) for the per-module index.
+The `cx-stdlib` module specs. See [`std-lib/README.md`](std-lib/README.md) for the per-module index.
 
 ## `modules/` — external-system integrations (3 files)
 
