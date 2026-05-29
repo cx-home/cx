@@ -1,7 +1,7 @@
 [# Section 5 — analytics, columnar formats, and bridges.
    Authored 2026-05-22 against the v0.8.0-dev branch.
-   Anchored in spec/decisions/0015 + 0019 + 0021 + spec/table_api.md +
-   spec/data_bin.md §3.10-3.13 + spec/streaming.md.
+   Anchored in spec/decisions/0015 + 0019 + 0021 + spec/misc/table-api.md +
+   spec/core/data-bin.md §3.10-3.13 + spec/streaming.md.
    Cross-links use [[anchor]] form. #]
 
 [section id=analytics n=5 title='Analytics, columnar formats, and bridges'
@@ -20,7 +20,7 @@
       """The three pieces are: a **logical data shape** (the `:table` type
          tag, with typed columns and nullable cells); a **physical wire
          format** (CXCol, the column-oriented streaming binary form,
-         tag `0x63` in [`spec/data_bin.md`](../../spec/data_bin.md) §3.11);
+         tag `0x63` in [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.11);
          and **bridges to the broader ecosystem** (Apache Arrow C Data
          Interface for zero-copy interop, Apache Parquet for cross-tool
          storage)."""]
@@ -49,8 +49,8 @@
 
     [body
       """The rest of this section walks each piece. The normative spec
-         documents are [`spec/data_bin.md`](../../spec/data_bin.md)
-         §3.10-3.13 (wire format), [`spec/table_api.md`](../../spec/table_api.md)
+         documents are [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
+         §3.10-3.13 (wire format), [`spec/misc/table-api.md`](../../spec/misc/table-api.md)
          (host binding API), and
          [`spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md`](../../spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md)
          /
@@ -97,8 +97,8 @@
          `:bytes`, `:date`, `:datetime`, `:decimal(precision, scale)`,
          `:bigint`, plus collection columns (`arr[T]`, `map[K, V]`,
          `seq[T]`) per ADR 0017 §D15. The full type catalogue with byte
-         encodings is in [`spec/data_bin.md`](../../spec/data_bin.md)
-         §3.10 + [`spec/type_mapping.md`](../../spec/type_mapping.md)."""]
+         encodings is in [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
+         §3.10 + [`spec/misc/type-mapping.md`](../../spec/misc/type-mapping.md)."""]
 
     [child id=nullable n=5.2.1 title='Nullable columns'
       [body
@@ -114,7 +114,7 @@
              (3, 'Linus', '555-9999')]"""]
       [body
         """Nullable wire encoding is the def/rep-level pattern from
-           [`spec/data_bin.md`](../../spec/data_bin.md) §3.10.5; the host
+           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.10.5; the host
            binding's `Table.cell(r, c)` returns the host's null sentinel
            (`None` in Python, `nil` in Go, `Option::None` in Rust)."""]]
 
@@ -129,7 +129,7 @@
       [body
         """Dictionary encoding is automatic, not a user-visible flag.
            The threshold (≥ 4× compression vs. raw on the chunk) lives
-           in [`spec/data_bin.md`](../../spec/data_bin.md) §3.10.4. CXPath
+           in [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.10.4. CXPath
            `=` and `[?match]` value comparison operate on the decoded
            string, so user code is dictionary-agnostic."""]]
 
@@ -155,7 +155,7 @@
         """Bindings expose a `Table` value type when `loads` encounters a
            `:table` block. Methods match across bindings up to host-idiom
            differences; the canonical surface is documented in
-           [`spec/table_api.md`](../../spec/table_api.md)."""]
+           [`spec/misc/table-api.md`](../../spec/misc/table-api.md)."""]
       [example lang=python
         """import cxlib
            doc = cxlib.loads(open('orders.cx').read())
@@ -173,7 +173,7 @@
         """The 17-member canonical surface (`cols` / `types` / `row` /
            `column` / `cell` / `slice` / `head` / `tail` / `select` /
            iteration + adapters) is described in
-           [`spec/table_api.md`](../../spec/table_api.md) §3. The same
+           [`spec/misc/table-api.md`](../../spec/misc/table-api.md) §3. The same
            shape exists in V, Go, Rust, and TypeScript with the naming
            conventions of each host."""]]]
 
@@ -183,7 +183,7 @@
          row-group-chunked, content-addressable, and streamable in bounded
          memory. The data-bin tag is `0x63`; the file extension is
          `.cxcol`. The normative byte-level layout is in
-         [`spec/data_bin.md`](../../spec/data_bin.md) §3.11."""]
+         [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.11."""]
 
     [body
       """The format is a single sequential pass: header, schema preamble,
@@ -258,7 +258,7 @@
       [intro
         """Bindings expose a handle-based streaming API mirroring the
            C ABI in
-           [`spec/data_bin.md`](../../spec/data_bin.md) §3.11.6
+           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.11.6
            (10 symbols under capability bit 21). The Python / Go / Rust /
            V shapes follow each host's resource-management idiom."""]
       [example lang=python
@@ -316,7 +316,7 @@
            silently promote the encoder. The schema reference forms
            (`0x10` content-hash, `0x11` inline, `0x12` content-hash +
            name hint) are documented in
-           [`spec/data_bin.md`](../../spec/data_bin.md) §3.13 and locked
+           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.13 and locked
            by ADR 0015 D4."""]
       [note
         """Schema-driven mode requires the reader to retrieve the schema
@@ -949,10 +949,10 @@
               round-trip type mapping, per-binding adapter conformance."""]
       [item """[`spec/decisions/0021-cx-database-direction.md`](../../spec/decisions/0021-cx-database-direction.md)
               — the engine direction. Drafted, deferred to v1.0+."""]
-      [item """[`spec/table_api.md`](../../spec/table_api.md) — the
+      [item """[`spec/misc/table-api.md`](../../spec/misc/table-api.md) — the
               17-member typed columnar Table API ratified across all
               bindings."""]
-      [item """[`spec/data_bin.md`](../../spec/data_bin.md) §3.10-3.13 —
+      [item """[`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.10-3.13 —
               chunked-table wire format, page-compression wrapper,
               schema-driven mode."""]
       [item """[`spec/streaming.md`](../../spec/streaming.md) — streaming

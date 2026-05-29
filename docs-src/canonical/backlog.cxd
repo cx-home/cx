@@ -429,8 +429,8 @@
       :date 2026-05-22
       :title 'Tier-2 binding archive cleanup complete — gate 28.10 ready for status flip'
       :status accepted
-      :rationale 'Makefile / CI trimmed (test-typescript,test-java,test-csharp,test-ruby,test-kotlin,test-swift + all build-/example-/demo- counterparts removed; ci.yml matrix reduced to vcx/python/go/rust; toolchain setup steps for Node/JDK/.NET/Ruby removed); lang/_archived/ build artifacts gitignored (19 untracked dirs: bin/,obj/,target/,.gradle/,build/,.build/,node_modules/ across csharp/java/kotlin/swift/typescript); spec/parity_matrix.md active matrix trimmed to V-native/Python/Go/Rust with archived binding rows moved to §2.1 sub-table; lang/_archived/README.md already complete. Three-commit series: 3588b294 (Makefile+CI), 88313e52 (gitignore), docs commit (parity+backlog).'
-      :scope 'Makefile, .github/workflows/ci.yml, .gitignore, spec/parity_matrix.md, lang/_archived/README.md (already complete)'
+      :rationale 'Makefile / CI trimmed (test-typescript,test-java,test-csharp,test-ruby,test-kotlin,test-swift + all build-/example-/demo- counterparts removed; ci.yml matrix reduced to vcx/python/go/rust; toolchain setup steps for Node/JDK/.NET/Ruby removed); lang/_archived/ build artifacts gitignored (19 untracked dirs: bin/,obj/,target/,.gradle/,build/,.build/,node_modules/ across csharp/java/kotlin/swift/typescript); spec/misc/parity-matrix.md active matrix trimmed to V-native/Python/Go/Rust with archived binding rows moved to §2.1 sub-table; lang/_archived/README.md already complete. Three-commit series: 3588b294 (Makefile+CI), 88313e52 (gitignore), docs commit (parity+backlog).'
+      :scope 'Makefile, .github/workflows/ci.yml, .gitignore, spec/misc/parity-matrix.md, lang/_archived/README.md (already complete)'
       :gate '28.10 ready — flip spec/v0_8_0_status.md in end-of-session reconciliation']
 
     [decision &d-2026-05-22-16

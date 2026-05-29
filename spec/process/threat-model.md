@@ -14,8 +14,8 @@ Vulnerability reports are handled via [`SECURITY.md`](../../SECURITY.md).
 - The C ABI surface (every `cx_*` symbol declared in [`../core/abi.md`](../core/abi.md)).
 - The CX CLI.
 - All language bindings under `lang/` and the native V binding at `lang/v/native/`.
-- The CXCol v1 binary wire format ([`../core/data_bin.md`](../core/data_bin.md)).
-- The binary AST wire format ([`../core/ast_bin.md`](../core/ast_bin.md)).
+- The CXCol v1 binary wire format ([`../core/data-bin.md`](../core/data-bin.md)).
+- The binary AST wire format ([`../core/ast-bin.md`](../core/ast-bin.md)).
 - The streaming event protocol ([`../core/streaming.md`](../core/streaming.md)).
 
 ### Out of scope
@@ -77,7 +77,7 @@ An attacker crafts `[?cx include=../../../etc/passwd]` or `[?cx include=https://
 
 An attacker exploits a CX-to-target-format conversion to coerce a value (e.g., an integer expected, but a string slips through silently due to a format round-trip).
 
-**Mitigation:** type fidelity through CXCol v1 is the design north star ([`../core/data_bin.md`](../core/data_bin.md)). String-format round-trips are forbidden on hot paths; type-bearing values cross format boundaries through binary AST, not text. Consumer code that re-derives types from JSON-emitted strings is on the consumer.
+**Mitigation:** type fidelity through CXCol v1 is the design north star ([`../core/data-bin.md`](../core/data-bin.md)). String-format round-trips are forbidden on hot paths; type-bearing values cross format boundaries through binary AST, not text. Consumer code that re-derives types from JSON-emitted strings is on the consumer.
 
 ### T5 — Hash-collision / canonical-form bypass
 
@@ -141,14 +141,14 @@ Defenses present at the V core and inherited by every binding, each testable thr
 |---|---|---|
 | Recursion limit | configurable depth cap (default 64), enforced at parse and AST traversal | [`../core/code.md`](../core/code.md) |
 | Element / attribute count caps | configurable per-document and per-element | [`../core/code.md`](../core/code.md) |
-| Payload-size cap | per-allocation budget on binary decoders | [`../core/data_bin.md`](../core/data_bin.md) |
-| Varint validation | overlong / truncated varints rejected | [`../core/data_bin.md`](../core/data_bin.md) |
+| Payload-size cap | per-allocation budget on binary decoders | [`../core/data-bin.md`](../core/data-bin.md) |
+| Varint validation | overlong / truncated varints rejected | [`../core/data-bin.md`](../core/data-bin.md) |
 | External-entity rejection | DOCTYPE parsed but inert; no entity expansion | [`../core/grammar.ebnf`](../core/grammar.ebnf) |
 | XXE / billion-laughs immunity | follows from external-entity rejection | (by-construction) |
 | Include-resolution scoping | path-only, caller-supplied root, depth cap, absolute-path refusal | [`../core/code.md`](../core/code.md) §13 |
 | UTF-8 validation | invalid UTF-8 in any input is an error | [`../core/abi.md`](../core/abi.md) |
 | Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](../core/abi.md); [`governance.md`](governance.md) §1.2 |
-| Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data_bin.md`](../core/data_bin.md) |
+| Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data-bin.md`](../core/data-bin.md) |
 | Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](../core/canonical.md); [`governance.md`](governance.md) §2.3 |
 | Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../std-lib/re.md`](../std-lib/re.md) |
 | Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |

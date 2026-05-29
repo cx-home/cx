@@ -28,10 +28,10 @@ Every method signature in API-bearing specs ([`../misc/api.md`](../misc/api.md),
 2. What it returns when the target is absent (not an error).
 3. What constitutes a programming error (panic/throw) vs a soft return.
 
-Every binary-format spec ([`../core/data_bin.md`](../core/data_bin.md), [`../core/ast_bin.md`](../core/ast_bin.md), [`../core/streaming.md`](../core/streaming.md)) must include a hex-annotated test vector.
+Every binary-format spec ([`../core/data-bin.md`](../core/data-bin.md), [`../core/ast-bin.md`](../core/ast-bin.md), [`../core/streaming.md`](../core/streaming.md)) must include a hex-annotated test vector.
 
 ## 3 — Companion documents
 
 - [`governance.md`](governance.md) — release process, audit framework, and the load-bearing G1/G2/G3 rules.
-- [`readiness_rubric.md`](readiness_rubric.md) — release-readiness gates; quality criteria here are a precondition for any spec row to pass.
-- [`threat_model.md`](threat_model.md) — security threat model that hardening-bearing specs cross-reference.
+- [`readiness-rubric.md`](readiness-rubric.md) — release-readiness gates; quality criteria here are a precondition for any spec row to pass.
+- [`threat-model.md`](threat-model.md) — security threat model that hardening-bearing specs cross-reference.

@@ -1,7 +1,7 @@
 [# Section 4 — identity, hashing, binary wire formats.
    Authored 2026-05-22, expanded with cap-bits + ID/IDREF + FFI lifetime.
-   Anchored in spec/canonical.md, spec/identity.md, spec/ast_bin.md,
-   spec/data_bin.md, spec/abi.md. #]
+   Anchored in spec/canonical.md, spec/identity.md, spec/core/ast-bin.md,
+   spec/core/data-bin.md, spec/abi.md. #]
 
 [section id=identity n=4 title='Identity'
 
@@ -14,8 +14,8 @@
        working reference; normative depth in
        [`spec/canonical.md`](../../spec/canonical.md),
        [`spec/identity.md`](../../spec/identity.md),
-       [`spec/ast_bin.md`](../../spec/ast_bin.md), and
-       [`spec/data_bin.md`](../../spec/data_bin.md)."""]
+       [`spec/core/ast-bin.md`](../../spec/core/ast-bin.md), and
+       [`spec/core/data-bin.md`](../../spec/core/data-bin.md)."""]
 
   [child id=canonical n=4.1 title='Canonical bytes'
     [intro
@@ -220,7 +220,7 @@
          for in-process and cross-process transfer of parsed documents
          without re-parsing — bindings ship the AST over the C ABI
          rather than re-tokenizing text. Full spec in
-         [`spec/ast_bin.md`](../../spec/ast_bin.md)."""]
+         [`spec/core/ast-bin.md`](../../spec/core/ast-bin.md)."""]
 
     [body
       """ast-bin is **not** the canonical form. Canonical bytes are CX
@@ -326,7 +326,7 @@
          structure. Where ast-bin carries AST nodes (with name / kind /
          child pointers), data-bin carries values (scalars, arrays,
          maps, tables) with optional schema-driven tag omission. Spec:
-         [`spec/data_bin.md`](../../spec/data_bin.md)."""]
+         [`spec/core/data-bin.md`](../../spec/core/data-bin.md)."""]
 
     [child id=data-bin-self-describing n=4.4.1 title='Self-describing mode'
       [body
@@ -339,7 +339,7 @@
            `0x03` = float, `0x10` = string, `0x20` = array, `0x21` =
            map, etc.) followed by the value bytes. Length prefix where
            applicable. Full tag table in
-           [`spec/data_bin.md §3`](../../spec/data_bin.md)."""]]
+           [`spec/core/data-bin.md §3`](../../spec/core/data-bin.md)."""]]
 
     [child id=data-bin-schema-driven n=4.4.2 title='Schema-driven mode (cap bit 1)'
       [body
@@ -383,7 +383,7 @@
     [child id=data-bin-compression n=4.4.4 title='Page-compression wrapper (§3.12)'
       [body
         """An optional page-compression wrapper (`0x90` envelope, per
-           [`spec/data_bin.md §3.12`](../../spec/data_bin.md)) wraps
+           [`spec/core/data-bin.md §3.12`](../../spec/core/data-bin.md)) wraps
            ranges of bytes inside the payload with a compression
            codec. Supported codecs: Snappy (default), Zstd, LZ4, Gzip.
            The wrapper is gated by cap bit 1 alongside schema-driven
@@ -630,8 +630,8 @@
            (historical, preserved for forward-compat); modes are
            self-describing (default), schema-driven (cap bit 1 —
            caller supplies a `.cxs`, payload omits the schema
-           preamble), chunked tables (`spec/data_bin.md` §3.11),
-           and page-compressed (`spec/data_bin.md` §3.12). All
+           preamble), chunked tables (`spec/core/data-bin.md` §3.11),
+           and page-compressed (`spec/core/data-bin.md` §3.12). All
            four modes round-trip byte-stable through `cx
            --to=data-bin | cx --from=data-bin`."""]]]
 ]

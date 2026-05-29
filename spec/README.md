@@ -16,8 +16,8 @@ The CX language and its companion specifications, organised into five directorie
 | `schema.md` | `.cxs` schema language. |
 | `conversions.md` | Format conversions (CX ↔ XML / JSON / YAML / TOML / CSV / MD). |
 | `abi.md` | C ABI for language bindings. |
-| `ast_bin.md` | Binary AST wire format. |
-| `data_bin.md` | Binary value wire format (CXCol v1). |
+| `ast-bin.md` | Binary AST wire format. |
+| `data-bin.md` | Binary value wire format (CXCol v1). |
 | `lockfile.md` | `cx.lock` format for `[?lib]` module pinning. |
 | `streaming.md` | Streaming event protocol (read + write). |
 
@@ -39,19 +39,19 @@ The `cx-stdlib` module specs. See [`std-lib/README.md`](std-lib/README.md) for t
 |---|---|
 | `api.md` | Public document API surface. |
 | `bindings.md` | Per-binding language surface (V / Python / Go / Rust). |
-| `table_api.md` | Streaming table reader/writer API. |
-| `type_mapping.md` | CX ↔ host-language type mapping. |
-| `cxstore_remote_protocol.md` | cx-store remote wire protocol. |
-| `parity_matrix.md` | Per-binding parity matrix. |
+| `table-api.md` | Streaming table reader/writer API. |
+| `type-mapping.md` | CX ↔ host-language type mapping. |
+| `cxstore-remote-protocol.md` | cx-store remote wire protocol. |
+| `parity-matrix.md` | Per-binding parity matrix. |
 
 ## `process/` — governance + operational (4 files)
 
 | File | Purpose |
 |---|---|
 | `governance.md` | Project governance, release gating, spec-corpus rules (G1 / G2 / G3). |
-| `readiness_rubric.md` | Release-readiness gates. |
-| `spec_authoring_guide.md` | Authoring conventions for spec authors. |
-| `threat_model.md` | Security threat model. |
+| `readiness-rubric.md` | Release-readiness gates. |
+| `spec-authoring-guide.md` | Authoring conventions for spec authors. |
+| `threat-model.md` | Security threat model. |
 
 ## `_archive/` — historical (read-only)
 

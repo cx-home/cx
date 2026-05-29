@@ -78,7 +78,7 @@ Status reflects branch HEAD, not the latest released version.
 | Date / datetime / time | ✅ | `core/cxdm.md` |
 | Atom scalar | ✅ | `core/cxdm.md` |
 | Typed and mixed-type arrays | ✅ | `core/cxdm.md` |
-| Type fidelity through round-trip | ✅ | `core/data_bin.md` |
+| Type fidelity through round-trip | ✅ | `core/data-bin.md` |
 | Null vs empty vs missing distinction | ✅ | `core/cxdm.md` |
 | Schema-driven type narrowing | ✅ | `core/schema.md` |
 
@@ -91,7 +91,7 @@ Status reflects branch HEAD, not the latest released version.
 | Nesting with recursion limit | ✅ | `core/cxdm.md` |
 | Multiple top-level documents | ✅ | `core/grammar.ebnf` |
 | Tabular `:table` block | ✅ | `core/cxdm.md` |
-| Public Table API per binding | ✅ | `misc/table_api.md` |
+| Public Table API per binding | ✅ | `misc/table-api.md` |
 | Empty-element shorthand | ✅ | `core/grammar.ebnf` |
 
 ## 4 — References & composition
@@ -130,14 +130,14 @@ Status reflects branch HEAD, not the latest released version.
 | Per-format caveats documented | ✅ | `core/conversions.md` |
 | CX program evaluator (rendering / querying / transformation) | ✅ | `core/code.md` |
 | Collection literals (Array / Map / Sequence) | ✅ | `core/cxdm.md` |
-| Wire-format binary (CXCol) | ✅ | `core/data_bin.md` |
-| Chunked-table format | ✅ | `core/data_bin.md` |
-| Page-compression wrapper (zstd) | ✅ | `core/data_bin.md` |
-| Schema-driven encoding | ✅ | `core/data_bin.md` |
+| Wire-format binary (CXCol) | ✅ | `core/data-bin.md` |
+| Chunked-table format | ✅ | `core/data-bin.md` |
+| Page-compression wrapper (zstd) | ✅ | `core/data-bin.md` |
+| Schema-driven encoding | ✅ | `core/data-bin.md` |
 | Streaming Table C ABI | ✅ | `core/abi.md` |
 | Apache Arrow C-Data interop | ✅ | `core/abi.md` |
 | Parquet bridge (via Arrow) | 📋 | post-v0.8.0 |
-| Binary AST format (`cx_ast_bin`) | ✅ | `core/ast_bin.md` |
+| Binary AST format (`cx_ast_bin`) | ✅ | `core/ast-bin.md` |
 | Data-bin one-shot loaders/dumpers | ✅ | `core/abi.md` |
 | Delimited (CSV / TSV / PSV) | ✅ | `std-lib/csv.md`, `core/conversions.md` |
 | Auto-typing on delimited → CX | ✅ | `std-lib/csv.md` |
@@ -189,8 +189,8 @@ Status reflects branch HEAD, not the latest released version.
 | Normative grammar | ✅ | `core/grammar.ebnf` |
 | Conversion contract per format pair | ✅ | `core/conversions.md` |
 | C ABI surface documented | ✅ | `core/abi.md` |
-| AST / data-binary wire format spec | ✅ | `core/ast.md`, `core/ast_bin.md`, `core/data_bin.md` |
-| Type-mapping rules per binding language | ✅ | `misc/type_mapping.md` |
+| AST / data-binary wire format spec | ✅ | `core/ast.md`, `core/ast-bin.md`, `core/data-bin.md` |
+| Type-mapping rules per binding language | ✅ | `misc/type-mapping.md` |
 | Streaming API contract | ✅ | `core/streaming.md` |
 | Governance / process rules | ✅ | `process/governance.md` |
 | Versioning policy | ✅ | `process/governance.md` |
@@ -209,7 +209,7 @@ Status reflects branch HEAD, not the latest released version.
 | Go binding | ✅ | `lang/go/` |
 | Rust binding | ✅ | `lang/rust/` |
 | Native-V binding | ✅ | `lang/v/native/` |
-| Per-binding parity matrix | ✅ | `misc/parity_matrix.md` |
+| Per-binding parity matrix | ✅ | `misc/parity-matrix.md` |
 | Per-binding strategy declaration | ✅ | each binding's README |
 | Cross-binding determinism | ✅ | `process/governance.md` |
 | C ABI version negotiation | ✅ | `process/governance.md` |
@@ -221,10 +221,10 @@ Status reflects branch HEAD, not the latest released version.
 |---|---|---|
 | Recursion-depth parser hardening | ✅ | `core/cxdm.md` |
 | Element / attribute count caps | ✅ | `core/cxdm.md` |
-| Varint validation in binary formats | ✅ | `core/data_bin.md` |
+| Varint validation in binary formats | ✅ | `core/data-bin.md` |
 | External-entity / billion-laughs immune | ✅ | by-design |
 | Vulnerability reporting policy | ✅ | `SECURITY.md` |
-| Threat model document | ✅ | `process/threat_model.md` |
+| Threat model document | ✅ | `process/threat-model.md` |
 | Fuzz-testing harness | 📋 | post-v0.8.0 |
 | External security audit | 📋 | v1.0 |
 | Reproducible builds | 📋 | post-v0.8.0 |

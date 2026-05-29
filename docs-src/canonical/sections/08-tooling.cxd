@@ -89,7 +89,7 @@
         """Parses input and pretty-prints. With `--emit ast`, emits a
            JSON AST per [`spec/ast.md`](../../spec/ast.md). With
            `--emit ast-bin`, emits the binary AST per
-           [`spec/data_bin.md`](../../spec/data_bin.md). The default
+           [`spec/core/data-bin.md`](../../spec/core/data-bin.md). The default
            emit (`--emit cx`) is the same shape as `cx fmt`."""]
 
       [list

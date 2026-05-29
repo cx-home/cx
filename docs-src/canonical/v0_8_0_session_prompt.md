@@ -109,11 +109,11 @@ PHASE 1 — SPEC COMPLETION
      Keep [?for] only where nested structure genuinely needs destructure.
 1.4  (migration spec retired during v0.8.0 cleanup — renames committed
      across codebase; ADR-level migration rules live in the ADRs)
-1.5  spec/parity_matrix.md — update for v0.8.0 binding scope (V/Python/Go/Rust).
+1.5  spec/misc/parity-matrix.md — update for v0.8.0 binding scope (V/Python/Go/Rust).
      Add Layer-1 method rows from spec/bindings.md §2.1.
      Footnote archived bindings; remove obsolete rows.
 1.6  spec/ast.md — add PathNode AST entry; PathNode kind enum value.
-1.7  spec/ast_bin.md — wire format for PathNode; cap bit increment
+1.7  spec/core/ast-bin.md — wire format for PathNode; cap bit increment
      (cap bits 29+30 used by playground gate 17; use 31 next).
 1.8  spec/abi.md — Layer-1 method surface per spec/bindings.md:
      cx_code_eval, doc.select_all, doc.select, doc.modify(focus, action).

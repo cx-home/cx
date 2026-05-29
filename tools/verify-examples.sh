@@ -6,7 +6,7 @@
 #
 # Note: CX → JSON → CX round-trip is *not* bijective for typed
 # scalars (JSON has no type annotations); we test CXCol round-trip
-# instead, which IS bijective per spec/data_bin.md.
+# instead, which IS bijective per spec/core/data-bin.md.
 #
 # Usage:
 # tools/verify-examples.sh

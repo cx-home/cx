@@ -1,6 +1,6 @@
 [# Section 2 — the CX data language.
    Authored 2026-05-22. Anchors normative depth in spec/cxdm.md,
-   spec/canonical.md, spec/grammar.ebnf, spec/data_bin.md, spec/schema.md,
+   spec/canonical.md, spec/grammar.ebnf, spec/core/data-bin.md, spec/schema.md,
    spec/namespaces.md, spec/include.md, spec/i18n.md, spec/streaming.md.
    File extension: .cxd (data-only source, per d-2026-05-22-05). #]
 
@@ -133,7 +133,7 @@
       """CX has **eight** scalar kinds per [`spec/cxdm.md`](../../spec/cxdm.md)
          §2.2: string, int, float, bool, date, datetime, bytes, null. The
          wire encoding for each kind is in
-         [`spec/data_bin.md`](../../spec/data_bin.md) §3. Each kind can be
+         [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3. Each kind can be
          introduced literally (e.g. `42` for int) or with an explicit type
          tag (e.g. `:int 42` or `:u32 42`)."""]
 
@@ -509,7 +509,7 @@
          logical shape is `[name :table :columns (col-spec, ...) row-tuples...]`;
          the physical wire format is CXCol (see [[cxcol]]) and the
          normative table API is in
-         [`spec/table_api.md`](../../spec/table_api.md)."""]
+         [`spec/misc/table-api.md`](../../spec/misc/table-api.md)."""]
     [example lang=cx
       """[orders :table
          :columns (id :int, customer :string, amount :float, ts :datetime)

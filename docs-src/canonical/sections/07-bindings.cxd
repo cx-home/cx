@@ -1,6 +1,6 @@
 [# Section 7 — bindings: C ABI, two-layer model, type mapping,
    thread safety, lifetime, codegen, quickstarts.
-   Anchored in spec/bindings.md + spec/abi.md + spec/parity_matrix.md +
+   Anchored in spec/bindings.md + spec/abi.md + spec/misc/parity-matrix.md +
    spec/decisions/0028-cxpath-as-value-kind.md. v0.8.0 ships
    V (native reference), Python, Go, Rust as Tier-1 bindings.
    File extension .cxd — data-only source. #]
@@ -19,7 +19,7 @@
        [[migration]]. Normative spec:
        [`spec/bindings.md`](../../spec/bindings.md). C ABI surface:
        [`spec/abi.md`](../../spec/abi.md). Per-binding gate status:
-       [`spec/parity_matrix.md`](../../spec/parity_matrix.md)."""]
+       [`spec/misc/parity-matrix.md`](../../spec/misc/parity-matrix.md)."""]
 
   [child id=c-abi n=7.1 title='The C ABI surface'
     [intro
@@ -328,7 +328,7 @@
          `V.Doc.parse(B).eval(C).bytes() == Python.… == Go.… == Rust.…`.
          A binding that drifts on a single byte of output blocks the
          release. The matrix lives in
-         [`spec/parity_matrix.md`](../../spec/parity_matrix.md)."""]]
+         [`spec/misc/parity-matrix.md`](../../spec/misc/parity-matrix.md)."""]]
 
   [child id=layer-2 n=7.3 title='Layer 2 — host idiom packs'
     [intro
@@ -1028,7 +1028,7 @@
       [body
         """If any binding produces a different hash, that binding
            has drifted from the canonical-bytes contract — file
-           against [`spec/parity_matrix.md`](../../spec/parity_matrix.md)
+           against [`spec/misc/parity-matrix.md`](../../spec/misc/parity-matrix.md)
            and the conformance harness will catch it on next
            CI run."""]]]
 
@@ -1471,7 +1471,7 @@
            Stateless conversions can be called from any thread
            without coordination. Schema validate is 📋 for Rust at
            v0.8.0-dev (the one Tier-1 row not yet ✓ in
-           `spec/parity_matrix.md §2`)."""]
+           `spec/misc/parity-matrix.md §2`)."""]
       [example lang=shell """cargo add cx-lang"""]
       [example lang=rust
         """use cx_lang::{parse, Doc, Node, Set, Delete, Using, Atom, ValueKind};

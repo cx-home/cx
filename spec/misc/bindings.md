@@ -12,7 +12,7 @@ In-scope bindings: V (native reference), Python, Go, Rust.
 Companion specs: [`core/abi.md`](../core/abi.md) (C ABI),
 [`core/code.md`](../core/code.md) (program surface),
 [`misc/api.md`](api.md) (Document API),
-[`misc/parity_matrix.md`](parity_matrix.md) (per-binding gates).
+[`misc/parity-matrix.md`](parity-matrix.md) (per-binding gates).
 
 ---
 
@@ -320,7 +320,7 @@ Layer-1 output to the documented desugaring.
 A release gate. All four bindings (V, Python, Go, Rust) MUST pass
 `conformance/binding_api.txt` byte-identically. Drift on any fixture
 blocks the release. Tracked in
-[`misc/parity_matrix.md`](parity_matrix.md).
+[`misc/parity-matrix.md`](parity-matrix.md).
 
 ---
 

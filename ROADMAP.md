@@ -198,7 +198,7 @@ review.
  `vcx/tests/v34_delimited_test.v` byte-exact.
 - ✅ **`columns` → `cols` rename** in the Table API field name —
  landed 2026-05-08 (Phase 7.46). V core `TableData.cols` /
- `DataTable.cols`; spec [`table_api.md`](spec/table_api.md) updated
+ `DataTable.cols`; spec [`table-api.md`](spec/misc/table-api.md) updated
  with new property names (`cols`, `col_count`, `iter_cols`); examples
  + CHEATSHEET + FAQ rewritten to use the actual `:table[<cols>]<rows>`
  grammar (the `[columns ...] [rows ...]` wrapper form they previously
@@ -400,7 +400,7 @@ evaluator" entry under "Now — v0.6.0 scope" below.
 
 ### Tabular API surface
 
-- **Public Table API across all 10 bindings.** `spec/table_api.md`
+- **Public Table API across all 10 bindings.** `spec/misc/table-api.md`
  defines a 17-member API (4 properties + 13 methods spanning
  row/column/cell access, slicing, iteration, and 5 conversions).
  None of it is implemented yet — the internal `TableData` struct
