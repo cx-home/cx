@@ -48,7 +48,7 @@ canonical bytes for the same input.
 | `data_bin` one-shot loaders/dumpers | ✓ | ✓ | ✓ | ✓ |
 | Chunked-table one-shot | ✓ | (✓) | (✓) | (✓) |
 | Streaming Table reader / writer | ✓ | (✓) | (✓) | (✓) |
-| Schema-driven CXCol encoding | ✓ | (✓) | (✓) | (✓) |
+| Schema-driven encoding | ✓ | (✓) | (✓) | (✓) |
 | Arrow C-Data interop (`libcx_arrow`) | ✓ | ✓ | ✓ | ✓ |
 | `fmt` (lossless canonical) | ✓ | ✓ | ✓ | ✓ |
 | `canonical` (strict canonical) | ✓ | ✓ | ✓ | ✓ |

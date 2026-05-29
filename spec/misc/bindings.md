@@ -351,3 +351,56 @@ the v0.8.0 tag. ABI cap bits (from `cx_features()`, per
 [`core/abi.md §3`](../core/abi.md)) provide forward compatibility — a
 Layer-1 binding can advertise that it understands cap bit N and fall
 back gracefully if a newer libcx adds cap bit N+1.
+
+---
+
+## 7 — Wire-format negotiation
+
+CX itself does not mandate a transport-level format-negotiation
+protocol; the language is host-agnostic and treats wire-format choice
+as a host concern. The following conventions apply when a binding is
+exposed across an IPC or HTTP boundary.
+
+### 7.1 Producer / consumer obligations
+
+- A producer MUST emit one of the named formats in
+  [`core/conversions.md`](../core/conversions.md) (`cx`, `xml`, `json`,
+  `yaml`, `toml`, `csv`, `tsv`, `psv`, `md`) or one of the binary wire
+  formats (`ast_bin`, `data_bin`, events).
+- A consumer MUST accept any format whose tag it advertises through its
+  capability surface; rejecting an advertised format is a conformance
+  failure.
+- Format detection from byte sniffing is not normative — peers MUST
+  negotiate explicitly, not heuristically.
+
+### 7.2 HTTP context — suggested Content-Types
+
+The following media-type strings are SUGGESTED for HTTP transports.
+They are not IANA-registered at v0.8.0; consumers MAY also accept the
+generic `application/octet-stream` for binary wire formats.
+
+| Wire format | Suggested Content-Type |
+|---|---|
+| CX text | `application/cx` |
+| CX strict canonical | `application/cx` + `; profile=canonical` |
+| AST binary (`ast_bin`) | `application/cx-ast` |
+| Data binary (`data_bin`) | `application/cx-data` |
+| Event stream (`events`, `events_bin`) | `application/cx-events` |
+| XML | `application/xml` |
+| JSON | `application/json` |
+| YAML | `application/yaml` |
+| TOML | `application/toml` |
+| CSV | `text/csv` |
+
+CSRP (`cxstore-remote-protocol.md`) uses `application/cx` and
+`application/cx-data` for its request/response bodies and is the
+reference for HTTP-level CX content negotiation.
+
+### 7.3 Native IPC
+
+For native (in-process, shared-memory, or pipe) IPC, peers negotiate
+the wire format at handshake by exchanging the capability bitmask
+returned by `cx_features()`. The handshake protocol is binding- and
+transport-specific; what is normative is that both peers agree on a
+format whose cap bit is set in BOTH bitmasks before any payload is
+sent.

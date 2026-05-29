@@ -33,12 +33,13 @@ The `cx-stdlib` module specs. See [`std-lib/README.md`](std-lib/README.md) for t
 | `sqlite.md` | SQLite external integration. |
 | `tree-sitter.md` | tree-sitter external integration. |
 
-## `misc/` — host APIs + wire formats (6 files)
+## `misc/` — host APIs + wire formats (7 files)
 
 | File | Purpose |
 |---|---|
 | `api.md` | Public document API surface. |
-| `bindings.md` | Per-binding language surface (V / Python / Go / Rust). |
+| `bindings.md` | Per-binding language surface (V / Python / Go / Rust); wire-format negotiation. |
+| `cli.md` | `cx` command-line interface — subcommands, exit codes, env vars. |
 | `table-api.md` | Streaming table reader/writer API. |
 | `type-mapping.md` | CX ↔ host-language type mapping. |
 | `cxstore-remote-protocol.md` | cx-store remote wire protocol. |
