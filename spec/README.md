@@ -4,7 +4,7 @@
 
 The CX language and its companion specifications, organised into five directories. Read in the order listed; each later layer depends on the earlier ones.
 
-## `core/` — language foundation (12 files)
+## `core/` — language foundation (13 files)
 
 | File | Purpose |
 |---|---|
