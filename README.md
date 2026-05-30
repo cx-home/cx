@@ -1,6 +1,6 @@
 # CX
 
-[![Version](https://img.shields.io/badge/version-v0.8.0--dev-blue.svg)](spec/v0_8_0_status.md)
+[![Version](https://img.shields.io/badge/version-v0.8.0--dev-blue.svg)](spec/README.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Spec](https://img.shields.io/badge/spec-stable_grammar-brightgreen.svg)](spec/core/grammar.ebnf)
 [![ABI](https://img.shields.io/badge/C_ABI-versioned-brightgreen.svg)](spec/core/abi.md)
@@ -125,32 +125,27 @@ grammar is stable and the C ABI is versioned and forward-compatible.
 
 **v0.8.0 — the CXPath + module-system release.** Building on the
 v0.7.5 unified pattern/query/transform surface, v0.8.0 promotes
-**CXPath** to a first-class value kind ([ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md))
-— XPath 3.1-aligned, 12 axes, `//` and `/` step prefixes. `[?match]`
-gains **heterogeneous multi-arm dispatch** with `:case` / `:where` /
-`:else` ([ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md));
-a new **`[?modify]`** directive lands pure-functional updates with
-structural sharing ([ADRs 0030](spec/decisions/0030-modify-pure-functional-updates.md)
-/ [0031](spec/decisions/0031-structural-sharing.md)).
-**`[?def]`** module-level functions, **`[?lib]`** module loading, and
-the `cx.lock` lockfile add a real module system
-([ADRs 0034](spec/decisions/0034-def-module-level-functions.md) /
-[0035](spec/decisions/0035-module-loading-scoping-namespacing.md)). General `[expr]`
-predicates with `$_` / `$_position` / `$_last` context bindings close
-the XPath alignment gap ([ADR 0036](spec/decisions/0036-expr-general-predicate.md)).
-Internal `programs` → `code` rename runs throughout
-([ADR 0032](spec/decisions/0032-programs-to-code-rename.md)); a new
-`atom` scalar kind (`:NAME`) joins the value kinds. The playground
-gains Tree View and Graph View (ERD + CFG) per
-[ADR 0037](spec/decisions/0037-playground-tree-and-graph-views.md).
+**CXPath** to a first-class value kind — XPath 3.1-aligned, 12 axes,
+`//` and `/` step prefixes. `[?match]` gains **heterogeneous multi-arm
+dispatch** with `[case …]` / `[else …]` clause arms; a new
+**`[?modify]`** directive lands pure-functional updates with
+structural sharing. **`[?def]`** module-level functions, **`[?lib]`**
+module loading, and the `cx.lock` lockfile add a real module system.
+General `[expr]` predicates with `$_` / `$_position` / `$_last` context
+bindings close the XPath alignment gap. The internal `programs` →
+`code` rename runs throughout; a new `atom` scalar kind (`:NAME`) joins
+the value kinds. The playground gains Tree View and Graph View
+(ERD + CFG). Normative detail lives in
+[`spec/core/`](spec/core/) — the code language in
+[`spec/core/code.md`](spec/core/code.md), the grammar in
+[`spec/core/grammar.ebnf`](spec/core/grammar.ebnf).
 
 v0.8.0 ships a Tier-1 binding matrix of V, Python, Go, and Rust;
 TypeScript, Java, C#, Ruby, Kotlin, and Swift are archived under
 `lang/_archived/` for this release. Per-binding state is tracked in
 the bindings catalog on the docs site.
 
-Forty-two §11.6 release gates block the tag (see
-[`spec/v0_8_0_status.md`](spec/v0_8_0_status.md)). Formal security
+A suite of release gates blocks the tag. Formal security
 review and fuzz-testing infrastructure are still ahead, so pin a
 tested version and apply normal pre-1.0 caution before customer-facing
 use.
