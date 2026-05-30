@@ -4,7 +4,7 @@
 
 The CX language and its companion specifications, organised into five directories. Read in the order listed; each later layer depends on the earlier ones.
 
-## `core/` — language foundation (13 files)
+## `core/` — language foundation (14 files)
 
 | File | Purpose |
 |---|---|
@@ -14,6 +14,7 @@ The CX language and its companion specifications, organised into five directorie
 | `canonical.md` | Canonical forms (lossless and strict). |
 | `formatting.md` | Declarative formatting profiles (axes, built-ins, `cx-format.cx`). |
 | `code.md` | Program language: patterns, queries, transforms, module system, `[?cx include]`. |
+| `security.md` | Capability-based, deny-by-default security model (`[?with-caps]`, `E_CAP_DENIED`). |
 | `schema.md` | `.cxs` schema language. |
 | `conversions.md` | Format conversions (CX ↔ XML / JSON / YAML / TOML / CSV / MD). |
 | `abi.md` | C ABI for language bindings. |
@@ -34,13 +35,14 @@ The `cx-stdlib` module specs. See [`std-lib/README.md`](std-lib/README.md) for t
 | `sqlite.md` | SQLite external integration. |
 | `tree-sitter.md` | tree-sitter external integration. |
 
-## `misc/` — host APIs + wire formats (7 files)
+## `misc/` — host APIs + wire formats (8 files)
 
 | File | Purpose |
 |---|---|
 | `api.md` | Public document API surface. |
 | `bindings.md` | Per-binding language surface (V / Python / Go / Rust); wire-format negotiation. |
 | `cli.md` | `cx` command-line interface — subcommands, exit codes, env vars. |
+| `debug.md` | Debugging surface (local + remote): breakpoints, stepping, DAP adapter, record-replay. |
 | `table-api.md` | Streaming table reader/writer API. |
 | `type-mapping.md` | CX ↔ host-language type mapping. |
 | `cxstore-remote-protocol.md` | cx-store remote wire protocol. |
