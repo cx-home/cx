@@ -12,6 +12,7 @@ The CX language and its companion specifications, organised into five directorie
 | `grammar.ebnf` | Concrete syntax (EBNF). |
 | `ast.md` | Parse-AST node shapes. |
 | `canonical.md` | Canonical forms (lossless and strict). |
+| `formatting.md` | Declarative formatting profiles (axes, built-ins, `cx-format.cx`). |
 | `code.md` | Program language: patterns, queries, transforms, module system, `[?cx include]`. |
 | `schema.md` | `.cxs` schema language. |
 | `conversions.md` | Format conversions (CX ↔ XML / JSON / YAML / TOML / CSV / MD). |
