@@ -174,6 +174,8 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |
 | Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](../core/code.md) |
 | Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](../core/code.md) |
+| Capability-based sandboxing | deny-by-default capability set; no ambient authority; a program may only narrow its set, never widen it; denial raises `CXER0271` | [`../core/security.md`](../core/security.md) |
+| Secret redaction | secret values redact at every serialization / log / error / debug boundary unless declassified (`secret-reveal`) | [`../core/cxdm.md`](../core/cxdm.md) §12 |
 
 ## 6 — Known unhardened areas
 
@@ -218,7 +220,7 @@ If a report is unclear which side it falls on, file it; the maintainers will rou
 
 The evaluator C-ABI surface (`cx_code_eval`, `cx_code_eval_streaming`, and the per-binding wrappers) takes three caller-supplied inputs: a CX data document (the context), a CX code template (the program), and an output target (`text` / `cx` / `html`).
 
-`cx_code_eval` is **not** a sandbox between mutually distrusting parties. A template can read any node in the data document and emit any value derived from it. Capability separation is the caller's responsibility.
+`cx_code_eval` is **not** a sandbox between mutually distrusting parties. A template can read any node in the data document and emit any value derived from it. Capability separation is the caller's responsibility **unless a capability set is supplied** ([`../core/security.md`](../core/security.md)): with deny-by-default capabilities the runtime enforces separation at the effect point (a denied effect raises `CXER0271`), and `cx:eval` fragments run under a non-wideable subset of the caller's set.
 
 **Data-untrusted posture.** The data document comes from an untrusted source; the template is operator-authored. Untrusted-data DoS scenarios (T1, T9–T11) are bounded by the documented hardening. Output sanitisation for the chosen target (auto-escape on `html`) is enforced.
 
