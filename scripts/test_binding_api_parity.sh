@@ -36,7 +36,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-FIXTURES="$ROOT/conformance/binding_api.txt"
+FIXTURES="$ROOT/conformance/binding_api.cxd"
 COMPILER="$ROOT/scripts/compile_binding_api_fixtures.py"
 PY_DRIVER="$ROOT/lang/python/cmd/binding_api_driver.py"
 GO_DRIVER_SRC="$ROOT/lang/go/binding_api_driver"
