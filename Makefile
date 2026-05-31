@@ -327,6 +327,7 @@ test-binding-api-parity:
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_binding_api_parity.sh
 
 test-python: build-vcx
+	$(PYTHON) lang/python/test_fixture_loader.py
 	$(PYTHON) lang/python/conformance.py
 	$(PYTHON) lang/python/conformance_code.py
 	$(PYTHON) lang/python/test_api.py
