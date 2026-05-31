@@ -239,6 +239,21 @@ install-hooks:
 	@echo "[install-hooks] git core.hooksPath set to .githooks"
 	@ls -1 .githooks/ | sed 's/^/  - /'
 
+# std-lib conformance coverage report — GENERATED ARTIFACT (never hand-edit).
+# Regenerates both outputs from the LIVE specs + fixtures:
+#   conformance/stdlib/coverage.cx  — canonical CX data the guide CXPaths into
+#   docs/stdlib-coverage.md         — human-readable report
+# Public-function denominator = `[?def NAME scope=public …]` in spec/std-lib/*.md;
+# numerator = conformance/stdlib/*.cxd cases, parsed by shelling to `cx --ast
+# --json` (cx parses its own format — dogfooded). Override knob: CX_BIN=path
+# (default vcx/target/cx). Subset with MODULES=a,b,c.
+.PHONY: stdlib-coverage
+stdlib-coverage: CX_BIN ?= $(CURDIR)/vcx/target/cx
+stdlib-coverage: build-vcx
+	@$(PYTHON) scripts/stdlib_coverage.py \
+		--cx-bin "$(CX_BIN)" \
+		$(if $(MODULES),--modules "$(MODULES)",)
+
 # V7 — bench harness JSON runner. Drives bench-streaming and emits
 # a stable JSON shape consumable by scripts/compare_bench.py.
 bench-json:
