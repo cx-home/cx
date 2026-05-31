@@ -84,6 +84,47 @@ to a fragment under their owning section file (e.g. `[[hello]]` →
 `<span class="xref-unresolved">[[name]]</span>` so authors notice
 breakage at review time rather than silently dead-linking.
 
+## Generated section: Standard library (§16)
+
+`docs-src/canonical/sections/16-libraries.cxd` is a **generated artifact —
+never hand-edit it.** It is emitted from the conformance coverage data
+document by `scripts/gen_guide_libraries.py`:
+
+```
+make guide-libraries          # uses vcx/target/cx by default
+make guide-libraries CX_BIN=$(which cx)
+```
+
+Data flow:
+
+```
+spec/std-lib/*.md  ──(make stdlib-coverage, scripts/stdlib_coverage.py)──┐
+conformance/stdlib/*.cxd ────────────────────────────────────────────────┤
+                                                                          ▼
+                                          conformance/stdlib/coverage.cx
+                                                                          │
+              scripts/gen_guide_libraries.py  (reads via `cx --ast --json`,
+              + each module's spec/std-lib/<module>.md §1 Scope prose)
+                                                                          ▼
+              docs-src/canonical/sections/16-libraries.cxd
+              + section-16 TOC block synced into manifest.cxd
+```
+
+- One `[section id=libraries n=16]` with a coverage-summary `[intro]`, then
+  one `[child id=lib-<module> n=16.M]` per module (29), in coverage-declaration
+  order. Each child carries the module's §1 purpose prose plus a per-public-
+  function `[body]` (signature → return → fixture counts; `**AMBIGUOUS**` /
+  `**UNCOVERED**` flags surfaced) and one representative `[example lang=cx]`
+  (preferring a happy-path fixture) drawn straight from the conformance suite.
+- The full per-function fixture set stays in `coverage.cx`; the section shows
+  one example per function and links back to the data document.
+- **To refresh:** run `make stdlib-coverage` first (regenerates `coverage.cx`
+  from the live specs + fixtures), then `make guide-libraries`.
+- **Reuse:** the `coverage_to_section()` transform in the generator takes the
+  parsed coverage tree + a `{module: prose}` map and an optional `modules=[…]`
+  subset, so per-module guide pages can be split out later without touching
+  the data plumbing.
+
 ## Playground page
 
 `docs/guide/playground.html` is the self-contained playground inside
