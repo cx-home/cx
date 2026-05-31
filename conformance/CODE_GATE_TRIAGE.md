@@ -71,9 +71,17 @@ Bucket 4 (pending with reason).
 
 ## Bucket 3 — implementation gap (spec is clear; impl missing)
 
-- **CXPath predicate bindings (11, pred-\*)** — if 2b decides in-scope: parser
-  must accept `$_`/`$_@attr`/`$_position`/`$_last` inside `[ … ]` predicates,
-  and eval must bind them. `vcx/code/parser.v` (predicate body), `nav.v`.
+- **CXPath predicate bindings (11, pred-\*)** — IN-SCOPE: code.md §
+  (lines 593–641) fully specs `$_position`/`$_last`/`$_@name` + the
+  `[@name]`/`[N]`/`[@name=V]` desugarings. **Root cause (diagnosed):** predicate
+  bodies use **infix** comparison (`$_@age >= 18`, `$_position = 1`), but
+  `parse_path_predicate_general` (parser.v:722) routes the body through the
+  **prefix** `parse_expr`, which parses the first operand (`$_position`) then
+  can't consume the infix `>=`/`=`/… → "expected ']' closing CXPath predicate".
+  Note `$x@age` (normal binding + `@attr`) and standalone `$_@age` parse fine —
+  the gap is specifically (a) an infix-comparison expression grammar for
+  predicate bodies and (b) binding `$_position`/`$_last`/`$_` + evaluating them
+  in `nav.v`'s candidate loop. Substantial parser+eval feature, not a one-liner.
 - **`program-for-*` (6)** — `-005-sort-limit` (sort+limit ordering: got Carol,
   want Alice), `-006/-009` (`name()` raising on a multi-item sequence where the
   spec expects element selection), `-011` (attribute path step on non-element),
