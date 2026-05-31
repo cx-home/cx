@@ -230,35 +230,53 @@ $ echo $?
 0
 ```
 
-Three `cx 0.8.0` behaviours diverge from `spec/core/schema.md` and shaped the
-draft (each worth a separate fix/ticket — not blockers for the schema):
+Three `cx 0.8.0` behaviours used to diverge from `spec/core/schema.md` and
+shaped the draft. **All three are now fixed in the V reference
+implementation** (conformance fixtures `sv-058`…`sv-061`); the draft's
+workarounds can be unwound:
 
-- **`schema-name` directive rejected.** `[?cx schema-name '…']` (spec §2,
+- **`schema-name` directive rejected.** ~~`[?cx schema-name '…']` (spec §2,
   shown in the spec's own example) fails the validator's schema parser with
-  `S009: expected name`. Dropped from the draft.
-- **`schema-version` ceiling is 0.6, not 0.8.** `[?cx schema-version 0.8]`
-  (the literal value in the spec §2 example) is rejected `S020` — "this
-  implementation supports 0.6 only". Omitted from the draft.
-- **Atom enums / atom attr values broken.** `[attr x::atom [enum :a :b]]`
-  registers only the *last* atom (enum becomes `[:b]`), and an attr written
-  `x=:a` parses the value as the string `'a'`, never an atom — so atom enums
-  can't match. The draft uses `::string [enum core extended]` for `level` and
-  `expect-severity` to route around this. Atom values inside a `[list atom]`
-  *body* (e.g. `expect-codes`) are unaffected and work.
+  `S009: expected name`.~~ **Fixed:** the directive parser now accepts a
+  quoted positional argument. Fixture `sv-058`.
+- **`schema-version` ceiling is 0.6, not 0.8.** ~~`[?cx schema-version 0.8]`
+  (the literal value in the spec §2 example) is rejected `S020`.~~ **Fixed:**
+  the supported schema-dialect version tracks the 0.8.0 release. Fixture
+  `sv-059`. (`0.7` is still rejected `S020` — see `sv-035`.)
+- **Atom enums / atom attr values broken.** ~~`[attr x::atom [enum :a :b]]`
+  registers only the *last* atom, and an attr written `x=:a` parses the value
+  as the string `'a'`.~~ **Fixed:** the parser no longer eats the first atom
+  as a schema slot-label, so every enum member is registered, and atom enum
+  members are stored canonically so they compare equal to atom-typed attribute
+  values. Fixtures `sv-060` / `sv-061`. Atom values inside a `[list atom]`
+  *body* (e.g. `expect-codes`) were always unaffected.
 
 - **Collection bodies require the array literal.** A `[list T]` / `[seq T]`
   body matches the `[a, b]` array literal but **not** the `(a, b)` sequence
   literal (`S005: declared :arr, got :seq`). Draft uses `[…]` for
   `expect-codes`. Not necessarily a bug — but worth a spec note since the two
   literals look interchangeable at the surface.
-- **Quoted string with brackets + escaped quotes mis-parses.** A body like
+- **`cx validate` multidoc-detects `---` inside RawText.** A `---` line inside
+  a `[#…#]` payload makes `cx validate` bail with "multi-document inputs not yet
+  supported", even though `cx --ast` correctly parses the file as a single
+  document. Repro: `[test-suite [case [in-cx [#⏎---⏎#]]]]`. Blocks `cx validate`
+  on 5 suites (code, code_diagram, md, extended, xml) whose CX examples contain
+  multidoc separators. The byte-exact `_audit_fixture.py` gate is unaffected
+  (it uses `cx --ast`).
+- **RawText `&rsqb;` escape not honored.** `grammar.ebnf` [31] says a literal
+  `#]` inside RawText is written `#&rsqb;`, but cx 0.8.0 leaves `&rsqb;`
+  literal (no entity resolution in RawText). **Converter workaround:** a `#]`
+  in a payload is carried by splitting across adjacent RawText siblings
+  (`split_raw`), which needs no escape.
+- **Quoted string with brackets + escaped quotes mis-parses.** ~~A body like
   ``[title 'S008 … [pattern \'[a-z]+\']']`` (single-quoted string containing
-  `[`, `]` and `\'`) parses as *unterminated quoted text*. This is the §7.1
-  "parser does not enter in-quoted-string sub-state around `[`/`]`" limitation
-  biting in body position, not just schema-flag position. **Workaround in the
-  converter:** free text (`title`) is carried as verbatim RawText `[#…#]`, not
-  a quoted string — so escaping/quote/bracket hazards vanish. This is also why
-  `id` is split off as a bare slug.
+  `[`, `]` and `\'`) parses as *unterminated quoted text*.~~ **Fixed:** the
+  quoted-string readers now decode grammar [11] escape sequences (`\'` no
+  longer terminates the string early; `[`/`]` were already atomic inside
+  quotes), and the emitter round-trips an embedded `'` by switching to a
+  double-quote wrapper. Conformance fixtures `046` / `047` (extended). The
+  converter can now carry free text (`title`) as a quoted string instead of
+  verbatim RawText `[#…#]`.
 
 ---
 
