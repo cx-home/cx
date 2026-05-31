@@ -7,10 +7,10 @@
 -include scripts/gen_guide/guide.mk
 # ── v0.8.0 CX Data Language Guide ───────────────────────────────── END gen_guide
 
-CONFORMANCE_CORE := conformance/core.txt
-CONFORMANCE_EXT := conformance/extended.txt
-CONFORMANCE_XML := conformance/xml.txt
-CONFORMANCE_MD := conformance/md.txt
+CONFORMANCE_CORE := conformance/core.cxd
+CONFORMANCE_EXT := conformance/extended.cxd
+CONFORMANCE_XML := conformance/xml.cxd
+CONFORMANCE_MD := conformance/md.cxd
 
 LIB_NAME := libcx
 VCX_DYLIB := vcx/target/$(LIB_NAME).dylib
