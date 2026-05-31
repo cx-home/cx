@@ -1,0 +1,58 @@
+[# Conformance gate policy (toggle manifest).
+
+   DEFAULT = enforced (deny-by-default, mirroring spec/core/security.md's grant
+   model): a failing fixture BLOCKS its gate. A suite/module marked `advisory`
+   is the spec-first frontier — its failures are RUN and REPORTED but do NOT
+   block the gate. Promote `advisory -> enforced` as the implementation lands;
+   that promotion is the gate-progression control.
+
+   Resolution order for a fixture's effective gate (most specific wins):
+     per-case `gate=` attr  >  per-module entry here  >  per-suite default  >  enforced
+
+   This manifest is module/suite-level. Per-case overrides live on the [case]
+   itself (gate=advisory|pending|skip). See conformance/stdlib/AUTHORING.md and
+   conformance/stdlib/SPEC-FINDINGS.md. #]
+
+[gate-policy default=enforced
+
+  [# core program + format suites: fully enforced (no frontier carve-out — the
+     code.txt frontier is driven to zero by the spec-compliance effort). #]
+  [suite name=code default=enforced]
+
+  [# stdlib: implemented modules are enforced; not-yet-implemented modules are
+     advisory (their fixtures are the spec-first worklist — red until built,
+     must not block). Flip a module to enforced the moment it lands. #]
+  [suite name=stdlib default=enforced
+    [# implemented + enforced: bytes env format hash path random strings time uuid
+       (left at the suite default; listed here for the reader) #]
+    [module name=bytes   gate=enforced]
+    [module name=env     gate=enforced]
+    [module name=format  gate=enforced]
+    [module name=hash    gate=enforced]
+    [module name=path    gate=enforced]
+    [module name=random  gate=enforced]
+    [module name=strings gate=enforced]
+    [module name=time    gate=enforced]
+    [module name=uuid    gate=enforced]
+
+    [# not yet implemented -> advisory (spec-first frontier) #]
+    [module name=crypto   gate=advisory reason='unimplemented']
+    [module name=csv      gate=advisory reason='unimplemented']
+    [module name=email    gate=advisory reason='unimplemented']
+    [module name=ft       gate=advisory reason='unimplemented']
+    [module name=geo      gate=advisory reason='unimplemented']
+    [module name=html     gate=advisory reason='unimplemented']
+    [module name=i18n     gate=advisory reason='unimplemented']
+    [module name=io       gate=advisory reason='unimplemented']
+    [module name=json     gate=advisory reason='unimplemented']
+    [module name=locale   gate=advisory reason='unimplemented']
+    [module name=log      gate=advisory reason='unimplemented']
+    [module name=math     gate=advisory reason='unimplemented']
+    [module name=mime     gate=advisory reason='unimplemented']
+    [module name=process  gate=advisory reason='unimplemented']
+    [module name=prof     gate=advisory reason='unimplemented']
+    [module name=re       gate=advisory reason='unimplemented']
+    [module name=store    gate=advisory reason='unimplemented']
+    [module name=test     gate=advisory reason='unimplemented']
+    [module name=url      gate=advisory reason='unimplemented']
+    [module name=validate gate=advisory reason='unimplemented']]]
