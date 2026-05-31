@@ -6,9 +6,14 @@ test_all_code_fixtures_evaluate`, over `conformance/code.cxd`) is **enforced**
 **passes**, is **corrected to match the current spec**, or is **explicitly
 moved to `gate=pending` with a reason** — no silent whitelist.
 
-**Status: 103 → 82** failures (`[?sleep DUR mock]` bareword fix, commit
-`7f406a85`, cleared 21). The remaining 82 failures span **55 distinct cases**,
-triaged below into the four buckets (fix order: fixture-invalid →
+**Status: 103 → 58.** Resolved so far:
+- `[?sleep DUR mock]` bareword (`7f406a85`): −21.
+- `level=visualization` render-spec fixtures skipped from eval (validated by
+  `code_diagram_roundtrip_test.v`), viz-022 → pending (`6dd5b8cb`): −21.
+- `[$div]` int/int → integer division per §6.5 (impl bug, fixtures were right)
+  (`<this commit>`): −3.
+
+Remaining 58 failures, triaged below (fix order: fixture-invalid →
 spec-decision → impl-gap → future-pending).
 
 ---
