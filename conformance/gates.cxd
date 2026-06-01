@@ -37,7 +37,7 @@
 
     [# not yet implemented -> advisory (spec-first frontier) #]
     [module name=crypto   gate=advisory reason='unimplemented']
-    [module name=csv      gate=advisory reason='unimplemented']
+    [module name=csv      gate=advisory reason='RFC-4180 impl complete (35/38); csv-007 comma quote-convention, csv-013 nth-over-array, csv-032 crlf (SPEC-FINDINGS J)']
     [module name=email    gate=advisory reason='unimplemented']
     [module name=ft       gate=advisory reason='unimplemented']
     [module name=geo      gate=advisory reason='unimplemented']
@@ -54,5 +54,5 @@
     [module name=re       gate=advisory reason='RE2 impl complete + spec-faithful; 22 fixtures blocked by re.cxd double-quote string convention (harness render_value renders bare/single, see SPEC-FINDINGS I)']
     [module name=store    gate=enforced reason='mem:// backend implemented (functional matrix + file:// deny paths)']
     [module name=test     gate=advisory reason='unimplemented']
-    [module name=url      gate=advisory reason='unimplemented']
+    [module name=url      gate=advisory reason='RFC-3986 impl complete (32/38); 6 fixtures blocked by render-contract/spec-order defects (SPEC-FINDINGS K)']
     [module name=validate gate=advisory reason='unimplemented']]]
