@@ -51,7 +51,7 @@
     [module name=mime     gate=advisory reason='unimplemented']
     [module name=process  gate=advisory reason='unimplemented']
     [module name=prof     gate=advisory reason='unimplemented']
-    [module name=re       gate=advisory reason='unimplemented']
+    [module name=re       gate=advisory reason='RE2 impl complete + spec-faithful; 22 fixtures blocked by re.cxd double-quote string convention (harness render_value renders bare/single, see SPEC-FINDINGS I)']
     [module name=store    gate=enforced reason='mem:// backend implemented (functional matrix + file:// deny paths)']
     [module name=test     gate=advisory reason='unimplemented']
     [module name=url      gate=advisory reason='unimplemented']
