@@ -38,7 +38,7 @@
     [# not yet implemented -> advisory (spec-first frontier) #]
     [module name=crypto   gate=advisory reason='full §3 impl complete + spec-faithful (47/49); 18 capability-denial cases now ENFORCED+green (random cap-guard on the 4 entropy generators, SPEC-FINDINGS M/N); module stays advisory only for crypto-015/028 which use the [?fallback] 2-arg shorthand the directive grammar rejects']
     [module name=csv      gate=advisory reason='RFC-4180 impl complete (35/38); csv-007 comma quote-convention, csv-013 nth-over-array, csv-032 crlf (SPEC-FINDINGS J)']
-    [module name=email    gate=advisory reason='unimplemented']
+    [module name=email    gate=advisory reason='full §3 impl complete + spec-faithful (40/61); all 21 misses are the render_value quote-convention defect (space-bearing/empty/MIME-word strings + a string sequence), no genuine gaps; all 9 CXER1300-1306 error cases pass (SPEC-FINDINGS Q)']
     [module name=ft       gate=advisory reason='unimplemented']
     [module name=geo      gate=advisory reason='full impl complete + spec-faithful (54/58); 4 fixtures blocked outside impl: geo-052/053 WKT quote-convention (render_value single-quotes; fixtures want double), geo-043/044 construct an out-of-range lon=190 [point] that point() rejects with CXER3601 per geo-004 contract (SPEC-FINDINGS L)']
     [module name=html     gate=advisory reason='unimplemented']
