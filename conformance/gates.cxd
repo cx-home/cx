@@ -36,7 +36,7 @@
     [module name=uuid    gate=enforced]
 
     [# not yet implemented -> advisory (spec-first frontier) #]
-    [module name=crypto   gate=advisory reason='full §3 impl complete + spec-faithful (47/49); 18 capability-denial cases advisory pending crypto cap wiring, crypto-015/028 use the [?fallback] 2-arg shorthand the directive grammar rejects (SPEC-FINDINGS N)']
+    [module name=crypto   gate=advisory reason='full §3 impl complete + spec-faithful (47/49); 18 capability-denial cases now ENFORCED+green (random cap-guard on the 4 entropy generators, SPEC-FINDINGS M/N); module stays advisory only for crypto-015/028 which use the [?fallback] 2-arg shorthand the directive grammar rejects']
     [module name=csv      gate=advisory reason='RFC-4180 impl complete (35/38); csv-007 comma quote-convention, csv-013 nth-over-array, csv-032 crlf (SPEC-FINDINGS J)']
     [module name=email    gate=advisory reason='unimplemented']
     [module name=ft       gate=advisory reason='unimplemented']
