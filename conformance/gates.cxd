@@ -44,7 +44,7 @@
     [module name=html     gate=advisory reason='unimplemented']
     [module name=i18n     gate=advisory reason='unimplemented']
     [module name=io       gate=advisory reason='unimplemented']
-    [module name=json     gate=advisory reason='unimplemented']
+    [module name=json     gate=advisory reason='impl complete + spec-faithful; 4 fixtures blocked outside impl: json-005 harness bare-string render, json-030 ensure-ascii fixture bug, json-031/037 @length projection on string/sequence (core gap)']
     [module name=locale   gate=advisory reason='unimplemented']
     [module name=log      gate=advisory reason='unimplemented']
     [module name=math     gate=advisory reason='unimplemented']
