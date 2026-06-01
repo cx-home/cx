@@ -46,7 +46,7 @@
     [module name=io       gate=advisory reason='unimplemented']
     [module name=json     gate=advisory reason='impl complete + spec-faithful; 4 fixtures blocked outside impl: json-005 harness bare-string render, json-030 ensure-ascii fixture bug, json-031/037 @length projection on string/sequence (core gap)']
     [module name=locale   gate=advisory reason='full §3 impl complete + spec-faithful (50/66); all 28 error cases pass; 14 misses render_value quote-convention, 2 f64-scientific render (parse-number-locale exact value, renderer emits 1.23e+06) — no impl gaps (SPEC-FINDINGS T)']
-    [module name=log      gate=advisory reason='unimplemented']
+    [module name=log      gate=advisory reason='full §3 impl complete; 25/27 under render_value (leveled emit, structured fields, configure/min-level/sink/format, is-enabled); only log-012/013 ([$log:current-scope] reading a [?with-scope] map context) mismatch — dyn_context scope-read gap (SPEC-FINDINGS V)']
     [module name=math     gate=advisory reason='unimplemented']
     [module name=mime     gate=advisory reason='full impl complete + spec-faithful (23/45 under real render_value); 21 fixtures blocked by the double-quote string convention vs harness render_value (SPEC-FINDINGS O), mime-043 by a core CXPath node-set gap ($seq/membername does not select sequence members)']
     [module name=process  gate=advisory reason='unimplemented']
