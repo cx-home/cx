@@ -6,7 +6,38 @@ test_all_code_fixtures_evaluate`, over `conformance/code.cxd`) is **enforced**
 **passes**, is **corrected to match the current spec**, or is **explicitly
 moved to `gate=pending` with a reason** — no silent whitelist.
 
-**Status: 103 → 58.** Resolved so far:
+**Status: 103 → 58 → 0 ENFORCED (GATE GREEN, 2026-05-31).** The
+`conformance/code` eval gate now passes: 0 enforced failures, with **2
+tracked `gate=pending`** deferrals (the harness honors per-case
+`gate=pending`):
+- `program-with-error-hook-001` — `[?with-error-hook]` is a tier-3
+  effectful directive; the effect-context model is unbuilt at v0.8.0.
+- `pred-017-purity-unclassified-builtin` — `CXER0234` is "a reference to
+  a BUILTIN missing from the purity table", but under §6.5 bare-head=data
+  `[no-such-builtin-name]` is a data element, not a builtin reference, so
+  `CXER0234` is unreachable from conformant user code (an internal
+  table-completeness guard, not a user-facing conformance case).
+
+The 58→0 burn-down cleared: CXPath predicates (infix grammar + TextNode
+equality/sort + node-set-source no-unwrap), program-for (§6.5
+bare-head=data, n-ary `- * /`, filter/map/reduce head-dispatch builtins),
+async/concurrency (cause-shape + future `@state`/`@value`), the full 17
+module/`[?lib]` bucket (in-memory test-module registration, two-pass
+`[?const]`, CXER0214/0216), def/type (compound-type annotations parse,
+two-pass recursion, CXER0204/0205, --strict CXER0206/0207), atom
+type-strictness, fn-not-serializable CXER0291, multi-valued case-path
+CXER0103, and modify `:using` trap CXER0104. Two background worktree
+agents (async, modules) contributed. Design principle locked: atomize in
+comparison/arithmetic, serialization/`[yield]` preserves nodes
+(bijection). Full `vcx/` suite: only the 5 pre-existing failing files
+throughout (arrow build, the gate file itself when run standalone passes,
+code_parser `[?str]`, match_multi `[?let]`-colon, render quote-style).
+
+---
+
+### Historical (the original 58-item triage, now resolved)
+
+Resolved so far:
 - `[?sleep DUR mock]` bareword (`7f406a85`): −21.
 - `level=visualization` render-spec fixtures skipped from eval (validated by
   `code_diagram_roundtrip_test.v`), viz-022 → pending (`6dd5b8cb`): −21.
