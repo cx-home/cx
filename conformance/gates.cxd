@@ -53,6 +53,6 @@
     [module name=prof     gate=advisory reason='unimplemented']
     [module name=re       gate=advisory reason='RE2 impl complete + spec-faithful; 22 fixtures blocked by re.cxd double-quote string convention (harness render_value renders bare/single, see SPEC-FINDINGS I)']
     [module name=store    gate=enforced reason='mem:// backend implemented (functional matrix + file:// deny paths)']
-    [module name=test     gate=advisory reason='unimplemented']
+    [module name=test     gate=advisory reason='full §3 impl complete; 29/30 under render_value (assert-eq/true/false, assert-throws via [?fn] thunk through the eval.v env-hook, lifecycle hooks, assert-snapshot in-memory); only test-009-assert-shape-pass mismatches — the assert-shape→cx-stdlib/validate schema-delegation seam']
     [module name=url      gate=advisory reason='RFC-3986 impl complete (32/38); 6 fixtures blocked by render-contract/spec-order defects (SPEC-FINDINGS K)']
     [module name=validate gate=advisory reason='DATA-RECORD validator impl complete + spec-faithful (21/39); 13 fixtures blocked by render_value quote convention (SPEC-FINDINGS P.1), 5 by env-unreachable extends/validate-with const+FN refs (P.2/P.3)']]]
