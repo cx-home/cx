@@ -55,4 +55,4 @@
     [module name=store    gate=enforced reason='mem:// backend implemented (functional matrix + file:// deny paths)']
     [module name=test     gate=advisory reason='unimplemented']
     [module name=url      gate=advisory reason='RFC-3986 impl complete (32/38); 6 fixtures blocked by render-contract/spec-order defects (SPEC-FINDINGS K)']
-    [module name=validate gate=advisory reason='unimplemented']]]
+    [module name=validate gate=advisory reason='DATA-RECORD validator impl complete + spec-faithful (21/39); 13 fixtures blocked by render_value quote convention (SPEC-FINDINGS P.1), 5 by env-unreachable extends/validate-with const+FN refs (P.2/P.3)']]]
