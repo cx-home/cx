@@ -48,7 +48,7 @@
     [module name=locale   gate=advisory reason='unimplemented']
     [module name=log      gate=advisory reason='unimplemented']
     [module name=math     gate=advisory reason='unimplemented']
-    [module name=mime     gate=advisory reason='unimplemented']
+    [module name=mime     gate=advisory reason='full impl complete + spec-faithful (23/45 under real render_value); 21 fixtures blocked by the double-quote string convention vs harness render_value (SPEC-FINDINGS O), mime-043 by a core CXPath node-set gap ($seq/membername does not select sequence members)']
     [module name=process  gate=advisory reason='unimplemented']
     [module name=prof     gate=advisory reason='unimplemented']
     [module name=re       gate=advisory reason='RE2 impl complete + spec-faithful; 22 fixtures blocked by re.cxd double-quote string convention (harness render_value renders bare/single, see SPEC-FINDINGS I)']
