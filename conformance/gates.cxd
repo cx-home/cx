@@ -26,7 +26,7 @@
     [# implemented + enforced: bytes env format hash path random strings time uuid
        (left at the suite default; listed here for the reader) #]
     [module name=bytes   gate=enforced]
-    [module name=env     gate=enforced]
+    [module name=env     gate=enforced reason='ENFORCED, all cases green; env-038 unblocked — operator-elements now propagate err-value operands uniformly with calls (§9.2), so [= [$env:vars] [$env:vars]] surfaces CXER0271 instead of comparing the two errs (SPEC-FINDINGS AK)']
     [module name=format  gate=enforced]
     [module name=hash    gate=enforced]
     [module name=path    gate=enforced]
