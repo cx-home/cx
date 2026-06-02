@@ -7,7 +7,7 @@
       4. [?if]                 — boolean branch
       5. [?for]                — iteration + pattern-generator (ADR 0028)
       6. [?match]              — multi-arm dispatch (ADR 0029)
-      7. [?try]                — error capture
+      7. [?match] on [err]     — error recovery (no [?try]; §9.3)
       8. [?pipe] / |           — composition
       9. [?modify]             — pure-functional updates (ADR 0030)
      10. CXPath                — first-class path-value (ADR 0028)
@@ -106,13 +106,14 @@
         :case 500 :yield 'server-error'
         :else     :yield 'unknown']]]
 
-  [# ─── §7. Error capture via [?try] ─── #]
+  [# ─── §7. Error recovery via [?match] on the [err] channel ─── #]
 
-  [section title='try/catch'
-    [?try
+  [section title='recover via [?match]'
+    [?match
       [?for $n :in (1, 0, 2)
         :yield (/ 100 $n)]
-      :catch $err :yield [recovered from-err=($err/@code)]]]
+      :case [err $err] :yield [recovered from-err=($err/@code)]
+      :case $v :yield $v]]
 
   [# ─── §8. Pipe composition ─── #]
 
@@ -205,14 +206,16 @@
   [# ─── §13. Errors as values ─── #]
 
   [section title='postfix ? — default-propagate (documentation-only)'
-    [?try
+    [?match
       (parse-int "not-a-number")?
-      :catch $err :yield [err-handled $err]]]
+      :case [err $err] :yield [err-handled $err]
+      :case $v :yield $v]]
 
-  [section title='postfix ! — escalate to hard error'
-    [?try
+  [section title='postfix ! — escalate to hard error (catchable value-form)'
+    [?match
       [err code="CXER0001" msg="synthetic"]!
-      :catch $err :yield [escalated-and-caught $err]]]
+      :case [err $err] :yield [escalated-and-caught $err]
+      :case $v :yield $v]]
 
   [# ─── §14. Resilience directives ─── #]
 
