@@ -771,9 +771,9 @@
 
            [# Multi-step pipeline composition (see [[pipe]])             #]
            [?pipe $doc
-             [through [?modify $_ //user/@status [set 'verified']]]
-             [through [?modify $_ //user[@banned=true] [delete]]]
-             [through [?modify $_ //user [set-attr last-audit '2026-05-22']]]]"""]
+             [?modify //user/@status [set 'verified']]
+             [?modify //user[@banned=true] [delete]]
+             [?modify //user [set-attr last-audit '2026-05-22']]]"""]
 
       [body
         """**Pure-functional — structural sharing.** `[?modify]`
@@ -817,38 +817,55 @@
            data flow."""]
       [example lang=cx
         """[?pipe //user[@active=true]
-           [through [$filter-by-region $_ 'EU']]
-           [through [$sort-by $_ @last-login]]
-           [through [$take $_ 10]]]"""]
+           [$filter-by-region _ 'EU']
+           [$sort-by _ @last-login]
+           [$take _ 10]]"""]
       [body
-        """**Semantics.** `[?pipe SRC [through B]]` evaluates `SRC`,
-           then evaluates `B` with the result available as `$_`
-           (the implicit threaded value). Most builtins are written
-           to consume `$_` as their first argument, so
-           `[?pipe seq [through [$first $_]]]` ≡ `[$first seq]`.
-           User-defined functions whose first parameter is the
-           threaded value compose the same way."""]
+        """**Stages are bare transforms.** `[?pipe SRC STAGE …]`
+           evaluates `SRC`, then supplies the value to each `STAGE`
+           left-to-right. A stage is a transform — a bare name, a
+           `$ref`, or a `[$call …]` — never wrapped in a keyword
+           (there is no `[through]` clause). `[?pipe 5 add1 add1]`
+           → `7`."""]
       [body
-        """**Fan-out behavior.** When `SRC` evaluates to a
-           sequence, the next `[through …]` sees the sequence as a
-           single value (the sequence-flat principle — no implicit
-           per-item dispatch). To run a per-item transform, use
-           `[?for]` explicitly:"""]
+        """**Stage invocation (§8.9.1).** How the value is supplied
+           depends on the stage shape: a **hole-form** stage carries
+           a single partial-application hole `_` and the value fills
+           it (`[$get _ '/users/42']` → `get(client, '/users/42')`);
+           a **no-hole** stage receives the value **appended as its
+           final positional argument** (`count` ≡ `[$count _]`). A
+           pipe threads exactly one value, so a stage may carry **at
+           most one** `_` (two or more → `cx-err:CXER0100`). A
+           non-callable stage (a literal, map, or data element) is
+           `cx-err:CXER0100` — it never silently passes the value
+           through."""]
+      [body
+        """**Fan-out behavior.** When `SRC` evaluates to a sequence,
+           a stage sees the whole sequence as a single value (the
+           sequence-flat principle — no implicit per-item dispatch).
+           For a per-item transform, thread a `[?fn]` lambda that
+           runs the comprehension:"""]
       [example lang=cx
         """[?pipe //user
-           [through [?for [in $u $_] [yield [$decorate $u]]]]
-           [through [$sort-by $_ @name]]]"""]
+           [?fn ($us) [?for [in $u $us] [yield [$decorate $u]]]]
+           [$sort-by _ @name]]"""]
       [body
-        """**Left-to-right composition** — each `[through …]` is
-           applied in source order. The infix `|` reader (legacy
-           v0.7 surface) still parses but desugars to `[?pipe]`
-           and is being retired across the corpus."""]
+        """**`[tap f]` — observe without diverting (§8.9.2).** A
+           `[tap f]` stage applies `f` to the current value for its
+           **side effect**; the value passes through unchanged and
+           `f`'s return is discarded. Inside a stage, `_` names the
+           current value, so `[tap [$log:info 'seen' fields={v: _}]]`
+           logs and flows on. A tap propagates an `[err]` only when
+           its code is `CXER0001` (panic) or `CXER0260`
+           (cancellation); every other error is discarded for the
+           data flow (the error-hook still observes it)."""]
       [body
-        """**Implicit threaded value.** `$_` is the binding name
-           for the value flowing in from the previous stage. Inside
-           a `[through …]` clause the binding is established
-           automatically — write `[through [$f $_ arg]]` to apply
-           `f(threaded, arg)`."""]]]
+        """**Railway short-circuit (§8.9.3).** The pipe is a
+           single-channel failure railway: the first stage to yield
+           `[err …]` skips every remaining stage — taps included —
+           and that `[err]` is the result. An empty result is **not**
+           a short-circuit; it flows to the next stage. There is no
+           infix `|` and no `[through]` wrapper — both retired."""]]]
 
   [child id=builtins n=6.7 title='Built-in functions'
     [intro
@@ -904,7 +921,7 @@
         """[$count //user[@active=true]]
            [$sort-by //user @last-login]
            [$distinct //tag]
-           [?pipe [$range 1 100] [through [$take $_ 10]]]
+           [?pipe [$range 1 100] [$take _ 10]]
            [$some //user [?fn ($u) [= $u@role 'admin']]]"""]]
 
     [child id=string-builtins n=6.7.2 title='String built-ins'
@@ -1206,7 +1223,7 @@
         """[?let [= $c [?http-client target='https://api.example.com'
                                     timeout=30s
                                     resilience=([?retry max=3])]]
-             [?pipe $c [through [$get $_ '/users/42']]]]"""]
+             [?pipe $c [$get _ '/users/42']]]"""]
 
       [body
         """**Status.** Services are a v0.8.0-stable surface;
@@ -1413,7 +1430,7 @@
       [example lang=cx
         """[?retry max=5 backoff=exponential delay=200ms jitter=equal
            [on [?fn ($e) [= $e@code 'CXER0163']]]        [# only on timeout #]
-           [?pipe $client [through [$get $_ '/users/42']]]]"""]]
+           [?pipe $client [$get _ '/users/42']]]"""]]
 
     [child id=timeout n=6.10.2 title='[?timeout] — hard deadline'
       [body
@@ -1455,7 +1472,7 @@
         """[?circuit-breaker
              threshold=0.5 window=60s reset=30s min-samples=20
              name='users-api'
-             [?pipe $client [through [$get $_ '/users/42']]]]"""]]
+             [?pipe $client [$get _ '/users/42']]]"""]]
 
     [child id=fallback n=6.10.4 title='[?fallback] — alternative on error'
       [body
@@ -1467,7 +1484,7 @@
         [row parameter='[recover-with SECONDARY]' default='(required)' semantics='Fallback expression evaluated only on primary err']]
       [example lang=cx
         """[?fallback
-             [?pipe $client [through [$get $_ '/users/42']]]
+             [?pipe $client [$get _ '/users/42']]
              [recover-with [$load-from-cache 42]]]"""]
       [note
         """**Status.** `[?fallback]`'s clause-child form is parsed
@@ -1489,7 +1506,7 @@
         [row parameter='body (positional)' default='(required)' semantics='Inner expression']]
       [example lang=cx
         """[?rate-limit max=100 per=1s name='github-api'
-             [?pipe $client [through [$get $_ '/repos/cx-home/cx']]]]"""]]
+             [?pipe $client [$get _ '/repos/cx-home/cx']]]"""]]
 
     [child id=bulkhead n=6.10.6 title='[?bulkhead] — bound concurrent calls'
       [body
@@ -1592,7 +1609,7 @@
       [example lang=cx
         """[?for [in $x (1, 2, 3)] [where [> $x 1]] [yield [* $x $x]]]
            [?let [= $a 10] [?let [= $b 32] [+ $a $b]]]
-           [?pipe (1, 2, 3, 4) [through [$count $_]]]"""]
+           [?pipe (1, 2, 3, 4) count]"""]
 
       [child id=comprehensions-future-surface n=6.11.3.1
              title='Future surface — ranges, slices, Iterator'

@@ -122,13 +122,13 @@
     [body """Same result as composed filters, read top-down instead of inside-out."""]
     [example lang=cx
       """[pizza name='  margherita  ']
-         [?pipe @name [through [$trim $_]] [through [$upper $_]]]"""]]
+         [?pipe @name [$trim _] [$upper _]]"""]]
 
   [child id=tp-20 n=15.20 title='20. Method-call style via pipe'
-    [body """Reads as "take name, then lower it". The implicit `$_` threads through."""]
+    [body """Reads as "take name, then lower it". The value threads through each bare stage; `_` is the threaded value."""]
     [example lang=cx
       """[pizza name=MARGHERITA]
-         [?pipe @name [through [$lower $_]]]"""]]
+         [?pipe @name [$lower _]]"""]]
 
   [child id=tp-21 n=15.21 title='21. String concatenation'
     [body """Join strings with `[$concat …]`."""]
@@ -220,7 +220,7 @@
     [body """Pipelines and let-bindings compose naturally."""]
     [example lang=cx
       """[pizza name='  margherita  ']
-         [?let [= $clean [?pipe @name [through [$trim $_]] [through [$upper $_]]]]
+         [?let [= $clean [?pipe @name [$trim _] [$upper _]]]
            [?str "Welcome, {$clean}!"]]"""]]
 
   [child id=tp-36 n=15.36 title='36. Define a template fragment'

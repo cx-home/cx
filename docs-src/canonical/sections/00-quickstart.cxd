@@ -537,7 +537,7 @@
       [body
         """Filter directives transform values. Compose with pipes
            or nest them."""]
-      [example lang=cx """[?pipe @name [through [$trim $_]] [through [$upper $_]]]"""]]
+      [example lang=cx """[?pipe @name [$trim _] [$upper _]]"""]]
 
     [child id=tut-16 n=0.9.16 title='Multi-branch conditional'
       [body
