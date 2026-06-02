@@ -1301,16 +1301,16 @@
            simultaneous readiness:"""]
       [example lang=cx
         """[?select
-           [case [from=$jobs   $job [$handle-job $job]]]
-           [case [from=$signal $sig [$handle-signal $sig]]]
-           [case [timeout=5s        [$heartbeat]]]]"""]
+           [case [from $jobs   $job [$handle-job $job]]]
+           [case [from $signal $sig [$handle-signal $sig]]]
+           [case [timeout 5s        [$heartbeat]]]]"""]
       [note
-        """**Status.** The exact `[case [from CH $msg H]]` clause-child
-           micro-syntax for `[?select]` is still design-pending
-           (open Q); the spec/code.md
-           registry holds the authoritative shape. The legacy
-           `:case [:from CH $msg H]` form is dual-accepted while the
-           target shape is being settled."""]]
+        """**Shape.** `[?select]` clauses are clause-children:
+           `[case [from CH $msg HANDLER]]` for a receive and
+           `[case [timeout DURATION HANDLER]]` for a deadline. The
+           spec/core/code.md §10.4.7 registry holds the
+           authoritative shape. The v0.7.x `:case [:from CH $msg H]`
+           colon-slot form is retired — there is no dual-accept."""]]
 
     [child id=async n=6.9.3 title='Async, await, and cancellation'
       [body
