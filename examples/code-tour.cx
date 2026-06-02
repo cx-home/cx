@@ -7,7 +7,7 @@
       4. [?if]                 — boolean branch
       5. [?for]                — iteration + pattern-generator (ADR 0028)
       6. [?match]              — multi-arm dispatch (ADR 0029)
-      7. [?match] on [err]     — error recovery (no [?try]; §9.3)
+      7. [?match] on [err]     — error recovery (§9.3)
       8. [?pipe] / |           — composition
       9. [?modify]             — pure-functional updates (ADR 0030)
      10. CXPath                — first-class path-value (ADR 0028)
