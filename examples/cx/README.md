@@ -10,7 +10,7 @@ elsewhere in the repo (the canonical tours: `examples/code-tour.cx`,
 | File | Shape |
 | ---- | ----- |
 | [`greet.cx`](greet.cx) | single `[user]` element with `name=`, `role=`, `active=` attributes |
-| [`users.cx`](users.cx) | `[team]` with three `[member]` rows showing `+flag` / `-flag` shorthand |
+| [`users.cx`](users.cx) | `[team]` with three `[member]` rows carrying boolean `active=` attributes |
 
 ## Use them as input
 
@@ -19,9 +19,10 @@ elsewhere in the repo (the canonical tours: `examples/code-tour.cx`,
 cx eval greet.cx
 cx eval users.cx
 
-# Drive a tour script over one of them
+# Drive a tour script over its sample document
 cx eval ../code-tour.cx --data=../code-tour.input.cx
-cx eval ../cxpath-tour.cx --data=users.cx
+cx eval ../cxpath-tour.cx --data=../cxpath-tour.input.cx
+cx eval ../modify-crud.cx --data=../modify-crud.input.cx
 ```
 
 For the full Code surface, see [`docs/CX code.md`](../../docs/CX%20code.md)

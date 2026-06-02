@@ -1,100 +1,131 @@
-[# CXPath tour — every axis, every predicate kind.
-   Showcases ADR 0028 (CXPath as first-class value kind, XPath 3.1 aligned).
-   Run: cx eval examples/cxpath-tour.cx --input examples/cxpath-tour.input.cx #]
+[# cxpath-tour.cx — CXPath tour: every axis, every predicate kind (v0.8.0).
+   CXPath is a first-class value kind (§5.5), XPath 3.1 aligned.
 
-[# ─── 1. Selection from the document root ─── #]
+   A CX module's value is its last expression, so the sections live in
+   one [cxpath-tour …] element.
 
-[# All users — terse form #]
-[?let $all-users = //user :in
-  [section title='all users'
-    [count $all-users]
-    [items $all-users]]]
+   Run:
+     cx eval examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx #]
 
-[# All users — explicit child axis #]
-[?let $explicit = /users/user :in
-  [section title='explicit child' [count $explicit]]]
+[cxpath-tour version='0.8.0'
 
-[# ─── 2. Predicates — attribute equality, comparison, function ─── #]
+  [# ─── §1. Selection from the document root ─── #]
 
-[?let $active = //user[@active=true] :in
-  [section title='active' [count $active]]]
+  [section title='all users — terse descendant form'
+    [?let [= $all-users //user]
+      [example total=[$count $all-users] [items $all-users]]]]
 
-[?let $aged = //user[@age>=21] :in
-  [section title='aged' [count $aged]]]
+  [section title='explicit child-axis steps'
+    [# Grammar [130] also admits the rooted '/root/users/user' spelling,
+       but the evaluator currently rejects single-slash-rooted paths in
+       expression position (triage F9) — the '//' anchor is the
+       impl-portable form. #]
+    [?let [= $explicit //users/user]
+      [example total=[$count $explicit]]]]
 
-[?let $named-alice = //user[@name='Alice'] :in
-  [section title='named alice' [count $named-alice]]]
+  [# ─── §2. Predicates — attribute equality, comparison, position ─── #]
 
-[?let $multi-pred = //user[@active=true][@age>=21] :in
-  [section title='active and aged' [count $multi-pred]]]
+  [section title='attribute equality'
+    [example total=[$count //user[@active=true]]]]
 
-[?let $positional = //user[1] :in
-  [section title='first user' [items $positional]]]
+  [section title='attribute comparison'
+    [example total=[$count //user[@age>=21]]]]
 
-[# ─── 3. Attribute selection — terminal @ step ─── #]
+  [section title='string equality'
+    [example total=[$count //user[@name='Alice']]]]
 
-[?let $emails = //user/@email :in
-  [section title='every email' [count $emails]]]
+  [section title='stacked predicates — implicit AND'
+    [example total=[$count //user[@active=true][@age>=21]]]]
 
-[?let $first-name = //user[1]/@name :in
-  [section title='first user name' [scalar $first-name]]]
+  [section title='positional predicate'
+    [example [items //user[1]]]]
 
-[# ─── 4. The twelve axes ─── #]
+  [# ─── §3. Attribute selection — terminal @ step ─── #]
 
-[?let $axis-tour =
-  [axes
-    [self     (//user[1]/self::user)]
-    [child    (//section/child::para)]
-    [descendant (//section/descendant::para)]
-    [descendant-or-self (//section/descendant-or-self::*)]
-    [parent   (//user[1]/parent::users)]
-    [ancestor (//user[1]/ancestor::root)]
-    [ancestor-or-self (//user[1]/ancestor-or-self::*)]
-    [following-sibling (//user[1]/following-sibling::user)]
-    [preceding-sibling (//user[2]/preceding-sibling::user)]
-    [following (//user[1]/following::section)]
-    [preceding (//section/preceding::user)]
-    [attribute (//user[1]/attribute::*)]] :in
-  $axis-tour]
+  [section title='every email'
+    [example total=[$count //user/@email]]]
 
-[# ─── 5. Paths bound to variables ─── #]
+  [section title='first user name'
+    [# A [?for] over a positional path binds the single node itself,
+       so glued / slashed attribute reads yield the scalar. #]
+    [?for [in $u //user[1]]
+      [yield [example value=$u/@name]]]]
 
-[?let $u = //user[1] :in
-  [user-detail
-    [name $u/@name]
-    [email $u/@email]
-    [siblings (count $u/following-sibling::user)]
-    [parent-name (name $u/parent::*)]]]
+  [# ─── §4. The twelve axes ─── #]
 
-[# ─── 6. Sequence operators ─── #]
+  [section title='the twelve axes'
+    [axes
+      [self      //user[1]/self::user]
+      [child     //section/child::para]
+      [descendant //section/descendant::para]
+      [descendant-or-self //section/descendant-or-self::*]
+      [parent    //user[1]/parent::users]
+      [ancestor  //user[1]/ancestor::root]
+      [ancestor-or-self //user[1]/ancestor-or-self::*]
+      [following-sibling //user[1]/following-sibling::user]
+      [preceding-sibling //user[2]/preceding-sibling::user]
+      [following //user[1]/following::section]
+      [preceding //section/preceding::user]
+      [attribute //user[1]/attribute::*]]]
 
-[?let $young = //user[@age<25] :in
-  [?let $active = //user[@active=true] :in
-    [intersection (count ($young intersect $active))]]]
+  [# ─── §5. Paths bound to variables ─── #]
 
-[?let $or-set = //user[@active=true] union //user[@admin=true] :in
-  [either-active-or-admin (count $or-set)]]
+  [section title='node bound to a variable, then navigated'
+    [# Two current impl limits steer the spelling here (both triaged):
+       axis steps on a binding path ($u/following-sibling::user) are
+       grammar-admitted [135a] but rejected at '::' (F10), and a
+       [?let]-bound node-set does not distribute attribute steps per
+       §6.2 O4 (F12) — so bind via a single-iteration [?for] and anchor
+       axis walks at the document. #]
+    [?for [in $u //user[1]]
+      [yield [user-detail
+        name=$u/@name
+        email=$u/@email
+        siblings=[$count //user[1]/following-sibling::user]
+        parent-name=[$name //user[1]/parent::*]]]]]
 
-[?let $not-banned = //user except //user[@banned=true] :in
-  [not-banned (count $not-banned)]]
+  [# ─── §6. Set algebra via general predicates (§5.5.2) ───
+     The infix combinators union / intersect / except / || survive only
+     inside CXPath predicate bodies (grammar [134], PredExpr-only) —
+     at program level, set combinations over one document are expressed
+     as predicate combinators. #]
 
-[# ─── 7. Paths inside [?for] :in ─── #]
+  [section title='intersection — young AND active'
+    [example total=[$count //user[$_@age < 25 and $_@active = true]]]]
 
-[?for $u :in //user[@active=true]
-  :yield [active-user $u/@name $u/@email]]
+  [section title='union — active OR admin'
+    [example total=[$count //user[$_@active = true or $_@admin = true]]]]
 
-[# ─── 8. Paths inside [?if] cond — truthy iff non-empty ─── #]
+  [section title='difference — all except banned'
+    [# not($_@banned = true) is spec-admissible but the XPath-call arg
+       parser currently rejects comparisons inside call parens (triage
+       F11); bare-truthy not($_@banned) and the = false spelling both
+       work. #]
+    [example total=[$count //user[$_@banned = false]]]]
 
-[?if //user[@admin=true]
-  :then [admin-banner "Admins present."]
-  :else [admin-banner "No admins."]]
+  [# ─── §7. Paths drive [?for] generators ─── #]
 
-[# ─── 9. Range expression — 1 to N ─── #]
+  [section title='paths inside [?for]'
+    [?for [in $u //user[@active=true]]
+      [yield [active-user name=$u/@name email=$u/@email]]]]
 
-[?for $i :in 1 to 5
-  :yield [pos $i]]
+  [# ─── §8. Paths inside [?if] cond — truthy iff non-empty ─── #]
 
-[# ─── 10. String concatenation via || ─── #]
+  [section title='paths inside [?if]'
+    [?if //user[@admin=true]
+      [then [admin-banner "Admins present."]]
+      [else [admin-banner "No admins."]]]]
 
-[?for $u :in //user
-  :yield [greeting ($u/@name || " <" || $u/@email || ">")]]
+  [# ─── §9. Range generator — 1 to N ─── #]
+
+  [section title='range generator'
+    [?for [in $i 1 to 5]
+      [yield [pos $i]]]]
+
+  [# ─── §10. String concatenation ─── #]
+
+  [section title='string concatenation'
+    [?for [in $u //user]
+      [yield [greeting [$concat $u/@name " <" $u/@email ">"]]]]]
+
+]

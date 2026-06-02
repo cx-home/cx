@@ -1,0 +1,15 @@
+[# Sample document for modify-crud.cx — feeds every [?modify] action.
+   Every attribute an action touches is present on every user
+   (missing-attribute reads hard-error per §6.2). Run:
+     cx eval examples/modify-crud.cx --data=examples/modify-crud.input.cx #]
+
+[db
+  [user id=1 name='ada' email='ada@alpha.io'  active=true  banned=false status='new' temp='t1']
+  [user id=2 name='bob' email='bob@beta.io'   active=false banned=true  status='new' temp='t2']
+  [user id=3 name='cy'  email='cy@gamma.dev'  active=true  banned=false status='new' temp='t3']
+  [user id=4 name='dee' email='dee@delta.net' active=false banned=false status='new' temp='t4']
+  [widget id='w1']
+  [widget id='w2']
+  [section id='intro'
+    [para "First paragraph."]
+    [para "Second paragraph."]]]
