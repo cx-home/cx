@@ -66,8 +66,19 @@ The `COVERAGE` + `RED-COMPLETE` gate evidence: every Stage-A normative clause ha
 ## §9.1.2.1 null-totality matrix
 `sap-null-01-arith-clean-err` (G), `-02-concat-value` (G), `-03-eq` (G), `-04-count` (G), `-05-first` (G).
 
-## §10.5.7 concurrency precedence
-`sap-cancel-01-checkcancel-after-cancel` (A — cancel → CXER0260).
+## §10.5.7 structured concurrency — RAII over handles + cancel-revokes-caps (Phase C5)
+| clause | fixtures | gate |
+|---|---|---|
+| §10.5.7.2 check-cancel after cancel → CXER0260 | `sap-cancel-01-checkcancel-after-cancel` | G |
+| §10.5.7.1 RAII over a future handle (close cancels-and-joins; value preserved) | `sap-raii-01-with-open-future` | G |
+| §10.5.7.1 RAII over a worker handle | `sap-raii-02-with-open-worker` | G |
+| §10.5.7.2 cancel revokes caps — raw effect → CXER0271 backstop | `sap-revoke-01-cap-revoked-after-cancel` | G |
+| §10.5.7.2 precedence — cancellation point ▷ cap (CXER0260, not CXER0271) | `sap-revoke-02-cancel-before-cap-precedence` | G |
+
+The CXLS005 §7.3 extension (warn on a `[par]` body calling an impure builtin
+without a `[?bulkhead]` wrap) is an LSP-side diagnostic, not a conformance
+fixture; it is unit-tested via `code.node_calls_impure_builtin`
+(`vcx/tests/v08_purity_checker_test.v`).
 
 ## §3 `cx-stdlib/fp` (all advisory — Phase C4)
 sequence/Maybe (`fp-001..006`), result railway (`fp-010/011`), E_NO_INSTANCE=CXER4400 (`fp-020`), fold (`fp-030`), laws (`fp-040..042`), traverse/sequence (`fp-050/051`).
