@@ -30,7 +30,19 @@ Every method signature in API-bearing specs ([`../misc/api.md`](../misc/api.md),
 
 Every binary-format spec ([`../core/data-bin.md`](../core/data-bin.md), [`../core/ast-bin.md`](../core/ast-bin.md), [`../core/streaming.md`](../core/streaming.md)) must include a hex-annotated test vector.
 
-## 3 — Companion documents
+## 3 — Orthogonality (uniform application)
+
+A language feature MUST apply uniformly across its **natural domain** — every value kind it could sensibly act on, every position, every type. A user must never have to discover *by trial* that a feature works on X but not the cognate Y. The canonical smell: a `sort` that silently works on ints but not floats is **broken**, not "limited." Asymmetry forces every user to carry a standing question — *how limited is this feature?* — which is a tax on every use and a first-class defect, the same way ambiguity is (§1).
+
+Any cell a feature does **not** cover MUST be a **documented, justified exception**, never an accident. Three obligations make this enforceable:
+
+1. **Applicability Matrix (required per feature).** Every feature's spec section carries a matrix of its domain dimensions × ✅ / ❌ / — (not-applicable), with a one-line rationale on every ❌ **and** every —. Limits become visible at spec-read time, not at use time. A — must be genuinely meaningless (e.g. "spread a scalar" — a scalar has no members), not a hole wearing a dash.
+2. **The `UNIFORM` review gate (G3 blocker).** A feature cannot graduate until its matrix is complete and every ❌ is justified *in writing*. An ❌ with no rationale is a defect, not a documented limit. For features with observable surface, every ✅ cell has ≥1 conformance fixture and every justified ❌ has a negative fixture pinning the documented limit.
+3. **Cognate-coverage rule.** When a capability is admitted for one value kind (e.g. `*`/`**` spread over element children), the same capability for cognate kinds (sequence/array members) is admitted **in the same pass**, or its absence is justified in the matrix. This is the no-dual-accept discipline (`governance.md`, no-migration-runway posture) applied to feature *domains*: you do not ship the asymmetry now and "generalize later."
+
+**Worked example (the audit that motivated this section).** `[?match]`/`[case]` pattern matching ranges over the value kinds {scalar, element-tag, element-attributes, sequence, array, map} × the pattern operations {literal, `$bind`, `_` wildcard, spread/partial, type-test}. A 2026-06-01 audit found it matched element tags and exact sequences richly but silently failed on element attributes, sequence spread (while *element-child* spread worked — the cognate gap), array/map structure, and type-tests. Each hole was a latent "how limited is this?" surprise. The fix was not to patch the one cell someone happened to hit, but to specify the **complete** grammar to an all-✅ matrix. The matrix is the artifact that turns "we think it's general" into "here is the proof, cell by cell."
+
+## 4 — Companion documents
 
 - [`governance.md`](governance.md) — release process, audit framework, and the load-bearing G1/G2/G3 rules.
 - [`readiness-rubric.md`](readiness-rubric.md) — release-readiness gates; quality criteria here are a precondition for any spec row to pass.
