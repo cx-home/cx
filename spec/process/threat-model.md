@@ -136,7 +136,7 @@ The streaming evaluator takes a host-supplied callback invoked once per emitted 
 
 Without a strict parse, an attacker could submit a non-numeric string through `xs:integer($user_input)` / `xs:double(...)` and have it silently coerced to 0 (integer) or 0.0 (double) instead of raising an error. Downstream code treating the result as a "validated number" then acts on attacker-supplied garbage.
 
-**Mitigation:** every `xs:int*`, `xs:double`, `xs:float`, `xs:decimal`, `xs:nonNegativeInteger`, `xs:positiveInteger`, and `cast-as` target routes through a strict parse path. Inputs that don't parse as a number raise an `FORG0001`-class error carrying the offending value. Numeric scalar inputs pass through unchanged. Callers wanting lenient behaviour use explicit `[?try]` / `[?castable-as]` guards.
+**Mitigation:** every `xs:int*`, `xs:double`, `xs:float`, `xs:decimal`, `xs:nonNegativeInteger`, `xs:positiveInteger`, and `cast-as` target routes through a strict parse path. Inputs that don't parse as a number raise an `FORG0001`-class error carrying the offending value. Numeric scalar inputs pass through unchanged. Callers wanting lenient behaviour use explicit `[?match]` / `[?else]` / `[?castable-as]` guards.
 
 ### T14 — CSRP network surface (`cx-store://`)
 
