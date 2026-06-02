@@ -30,11 +30,11 @@ Every method signature in API-bearing specs ([`../misc/api.md`](../misc/api.md),
 
 Every binary-format spec ([`../core/data-bin.md`](../core/data-bin.md), [`../core/ast-bin.md`](../core/ast-bin.md), [`../core/streaming.md`](../core/streaming.md)) must include a hex-annotated test vector.
 
-> **Candidate refinement (awaiting G3, tied to the errors/effects/fp SAP §1).** When the four-channel value model is admitted, the API-bearing checklist above (items 1–3) refines for **CX language/stdlib** specs to the four channels: what it returns as a **value**, on **absence** (empty node-set/sequence), as a **failure** (`[err]`, auto-propagating), and as a **reported problem** (`[invalid …]`, flows as data). Until SAP §1 graduates, the three-item form above remains current. *(Not yet admitted — does not bind authors until G3.)*
+**Four-channel refinement (CX language/stdlib specs).** The API-bearing checklist above (items 1–3) refines for **CX language/stdlib** specs to the four outcome channels (`../core/code.md` §9.1.2): what it returns as a **value**, on **absence** (empty node-set/sequence), as a **failure** (`[err]`, auto-propagating), and as a **reported problem** (`[invalid …]`, flows as data).
 
 ## 3 — Orthogonality (uniform application)
 
-> **Status: CANDIDATE — awaiting G3.** This section was authored alongside the errors/effects/fp SAP and is **not yet admitted**; it does not bind authors until the user approves it (`governance.md` §13 G3). The rest of this guide is Current for v0.8.0. On approval, drop this banner and add §3 to the readiness rubric's reviewer checklist.
+**Status: Current for v0.8.0** (admitted with the errors/effects/fp SAP migration). This section binds authors per the rollout scope below; the `UNIFORM` review gate is a reviewer checklist item in [`readiness-rubric.md`](readiness-rubric.md).
 
 A language feature MUST apply uniformly across its **natural domain** — every value kind it could sensibly act on, every position, every type. A user must never have to discover *by trial* that a feature works on X but not the cognate Y. The canonical smell: a `sort` that silently works on ints but not floats is **broken**, not "limited." Asymmetry forces every user to carry a standing question — *how limited is this feature?* — which is a tax on every use and a first-class defect, the same way ambiguity is (§1).
 

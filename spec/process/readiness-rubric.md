@@ -195,6 +195,7 @@ Status reflects branch HEAD, not the latest released version.
 | Governance / process rules | ✅ | `process/governance.md` |
 | Versioning policy | ✅ | `process/governance.md` |
 | Conformance suite documented | ✅ | `conformance/` |
+| **`UNIFORM` orthogonality gate** — a feature newly admitted/materially changed carries a complete Applicability Matrix (domain × ✅/❌/—), every ❌/— justified in writing, cognate kinds covered same-pass; reviewer checklist item | ✅ | `process/spec-authoring-guide.md` §3 |
 | User tutorial | ✅ | `docs/guide/intro.html`, `docs/guide/quickstart.html`, `docs/guide/tour-data.html`, `docs/guide/tour-programs.html` |
 | Cheatsheet | ✅ | `docs/guide/surfaces.html`, `docs/guide/code.html` |
 | FAQ | ✅ | `docs/guide/faq.html` |
