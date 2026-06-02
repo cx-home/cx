@@ -332,7 +332,7 @@ PHASE 8 — EXAMPLES
 ═════════════════════════════════════════════════════════════════
 8.1  Restore examples/programs-tour.cx as examples/code-tour.cx — port to
      v0.8.0. Cover: CXPath, [?for], [?match] multi-arm, [?modify],
-     [?let], [?fn], [?if], [?try], [?pipe].
+     [?let], [?fn], [?if], [?match]-on-err recovery, [?pipe].
 8.2  Audit every examples/*.cx — replace [?find] → [?for] or //path.
      Update for code-language rename.
 8.3  Add new examples specific to v0.8.0:

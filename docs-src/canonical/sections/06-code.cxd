@@ -77,7 +77,7 @@
       [row directive='[?fn]' purpose='Anonymous function literal — body of $bindings → expression']
       [row directive='[?def]' purpose='Named top-level definition (function or value)']
       [row directive='[?if]' purpose='Boolean branch with EBV condition (see [[if]] + [[ebv]])']
-      [row directive='[?try]' purpose='Error-handling block with [on-error …] arms (see [[errors]])']
+      [row directive='[?else]' purpose='Value-or-default coalesce — recover on [err] or absence (getOrElse; see [[errors]])']
       [row directive='[?pipe]' purpose='Pipeline — canonical form of the `|` operator (see [[pipe]])']
       [row directive='[?map]' purpose='Map a closure over a sequence (sequential by default; par=true enables parallel evaluation, ordered=true preserves source order)']
       [row directive='[?reduce]' purpose='Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; par=true requires associativity)']]
@@ -91,7 +91,7 @@
       [row directive='[?retry]' purpose='Re-run on failure with backoff + jitter; bounded by max=']
       [row directive='[?timeout]' purpose='Bound execution time; cancel + return [on-timeout …] on expiry']
       [row directive='[?circuit-breaker]' purpose='Open after threshold-exceeded failures in a rolling window']
-      [row directive='[?fallback]' purpose='Run [recover-with …] secondary if primary returns [result status=err …]']
+      [row directive='[?fallback]' purpose='Run [recover-with …] secondary if primary returns [err …] ($err bound in the recovery)']
       [row directive='[?rate-limit]' purpose='Token-bucket cap — max= calls per per= duration']
       [row directive='[?bulkhead]' purpose='Bound max-concurrent= in-flight; optional [queue …]']]
 
@@ -1060,19 +1060,24 @@
               the error from a value to a runtime trap."""]]
 
     [example lang=cx
-      """[?try
-           [?let [= $u [$lookup-user $id]?]
-             [$render $u]]
-           [on-error :CXER0204 [error 'no such user']]
-           [on-error :CXER0163 [error 'lookup timed out']]
-           [on-error _ [error 'lookup failed']]]"""]
+      """[?match [?let [= $u [$lookup-user $id]?] [$render $u]]
+           [case [err code='CXER0204'] [err message='no such user']]
+           [case [err code='CXER0163'] [err message='lookup timed out']]
+           [else [err message='lookup failed']]]"""]
 
     [body
-      """The `[?try]` block names recoverable error codes via
-         `[on-error CODE …]` arms; the `_` wildcard catches anything
-         else. Arms evaluate first-match-wins; a missing arm with
-         no `_` catch-all propagates the error to the next
-         enclosing `[?try]` or out of the program."""]
+      """Recovery is `[?match]` (see [[match]]) over the `[err]`
+         channel: the errorable expression is the scrutinee, and an
+         `[err]` it produces is captured (not propagated) so a
+         `[case [err …] …]` arm can dispatch on its code. Match by
+         plain attribute equality (`[err code='CXER0204']`) or capture
+         the code (`[err @code=$c]`). Arms evaluate first-match-wins; an
+         `[else …]` (or bare `$err` capture) is the catch-all. With no
+         catch-all and no match, the `[err]` propagates to the next
+         enclosing `[?match]` or out of the program. For a plain
+         value-or-default, `[?else EXPR DEFAULT]` (§8.13) is the
+         lighter sugar; `[?fallback PRIMARY [recover-with …]]` (§10.2.4)
+         binds `$err` in the recovery."""]
 
     [child id=error-registry n=6.8.1 title='Error code registry (CXER0100–0299)'
       [body
@@ -1088,13 +1093,13 @@
         [row code='CXER0100' symbolic='PARSE_ERROR' meaning='Pattern syntax invalid; directive name not in registry; arity mismatch' recovery='Fix source — this is author error, not runtime']
         [row code='CXER0101' symbolic='ANCHOR_ERROR' meaning='Duplicate &anchor; cyclic *merge; unresolved *name' recovery='Author error — flagged at parse time']
         [row code='CXER0102' symbolic='DUPLICATE_KEY' meaning='Map literal with duplicate key' recovery='Author error']
-        [row code='CXER0103' symbolic='TYPE_ERROR' meaning='Value-comparison on multi-valued operand; sized-overflow; type-coerce failure' recovery='Wrap in [?try] with [on-error CXER0103 …]; explicit coercion via to-int/to-float']]
+        [row code='CXER0103' symbolic='TYPE_ERROR' meaning='Value-comparison on multi-valued operand; sized-overflow; type-coerce failure' recovery='[?match] [case [err code="CXER0103"] …]; explicit coercion via to-int/to-float']]
 
       [body
         """**Resilience — CXER014x / CXER015x:**"""]
       [table columns=(code, symbolic, meaning, recovery)
-        [row code='CXER0140' symbolic='RETRY_EXHAUSTED' meaning='[?retry] reached max= attempts without success' recovery='[on-error CXER0140 …]; tune max= / backoff=']
-        [row code='CXER0141' symbolic='TIMEOUT' meaning='[?timeout] DURATION elapsed' recovery='[on-timeout EXPR] or [on-error CXER0141 …]']
+        [row code='CXER0140' symbolic='RETRY_EXHAUSTED' meaning='[?retry] reached max= attempts without success' recovery='[?match] [case [err code="CXER0140"] …]; tune max= / backoff=']
+        [row code='CXER0141' symbolic='TIMEOUT' meaning='[?timeout] DURATION elapsed' recovery='[on-timeout EXPR] or [?match] [case [err code="CXER0141"] …]']
         [row code='CXER0150' symbolic='BREAKER_OPEN' meaning='[?circuit-breaker] tripped; rejecting calls' recovery='Wait :reset DURATION; fallback path']
         [row code='CXER0151' symbolic='RATE_LIMITED' meaning='[?rate-limit] tokens exhausted' recovery='Honor :retry-after slot in the err; back off']
         [row code='CXER0152' symbolic='BULKHEAD_FULL' meaning='[?bulkhead] max-concurrent= + queue= exhausted' recovery='Backpressure caller; reduce concurrency']]
@@ -1107,7 +1112,7 @@
         [row code='CXER0162' symbolic='NOT_FOUND' meaning='HTTP 404 — no resource matched path + method' recovery='Return 404; client checks URL']
         [row code='CXER0163' symbolic='REQUEST_TIMEOUT' meaning='HTTP 408 — :read-timeout exceeded' recovery='Retry with backoff; reduce request size']
         [row code='CXER0164' symbolic='PAYLOAD_TOO_LARGE' meaning='HTTP 413 — body > max-body-bytes=' recovery='Chunk upload; increase max-body-bytes= if appropriate']
-        [row code='CXER0165' symbolic='INTERNAL_ERROR' meaning='HTTP 500 — unhandled err in resource body' recovery='Wrap the body in [?try]; log and return generic 500 to client']
+        [row code='CXER0165' symbolic='INTERNAL_ERROR' meaning='HTTP 500 — unhandled err in resource body' recovery='Recover the body with [?match]/[?fallback]; log and return generic 500 to client']
         [row code='CXER0166' symbolic='SHUTTING_DOWN' meaning='HTTP 503 — service in shutdown drain' recovery='Client retries elsewhere; do not retry same instance']]
 
       [body
@@ -1123,7 +1128,7 @@
         [row code='CXER0200' symbolic='CHANNEL_CLOSED' meaning='Receive from drained-closed channel; send to closed channel' recovery='Treat as normal stream-end; [?match] on err code']
         [row code='CXER0201' symbolic='SEND_TIMEOUT' meaning='[?try-send] buffer-full timeout' recovery='Drop, queue elsewhere, or back off']
         [row code='CXER0202' symbolic='RECV_TIMEOUT' meaning='[?try-receive] empty timeout' recovery='Poll again; abandon work if pattern persists']
-        [row code='CXER0203' symbolic='CHANNEL_ALREADY_CLOSED' meaning='Second [?close] on same channel' recovery='Idempotent close idiom — [on-error CXER0203 ()]']
+        [row code='CXER0203' symbolic='CHANNEL_ALREADY_CLOSED' meaning='Second [?close] on same channel' recovery='Idempotent close idiom — [?else [?close $ch] ()]']
         [row code='CXER0220' symbolic='WORKER_PANIC' meaning='Worker body raised unhandled err' recovery='Inspect cause= attribute; restart worker or supervisor pattern']
         [row code='CXER0221' symbolic='WORKER_CANCELLED' meaning='Worker terminated via [?cancel]' recovery='Expected on graceful shutdown; clean up resources']
         [row code='CXER0222' symbolic='WORKER_NOT_FOUND' meaning='[?worker-handle] lookup miss' recovery='Use [?worker-handle :name N :optional true] or check exists']]
@@ -1487,11 +1492,12 @@
              [?pipe $client [$get _ '/users/42']]
              [recover-with [$load-from-cache 42]]]"""]
       [note
-        """**Status.** `[?fallback]`'s clause-child form is parsed
-           today but the eval side still expects the legacy
-           `:recover-with` slot for some shapes. The legacy
-           `:recover-with`/`:body` form is dual-accepted while the
-           eval catches up."""]]
+        """**`$err` in `[recover-with …]`.** Inside the recovery
+           scope, `$err` is bound to the primary's `[err …]` value, so
+           recovery can introspect the failure (e.g. `[recover-with
+           [response status=500 reason=$err/@message]]`). The
+           clause-child `[recover-with …]` form is the sole accepted
+           shape (no legacy colon-slot)."""]]
 
     [child id=rate-limit n=6.10.5 title='[?rate-limit] — token-bucket cap'
       [body
@@ -1806,8 +1812,8 @@
       """Every CX error carries a structured payload: `cx-err:CODE`
          then a unit separator (US, `0x1F`) then a human-readable
          description then optionally another unit separator and a
-         value. Bindings preserve this shape so `[?try]` / `[?catch]`
-         can match on code rather than on text. The catalog below
+         value. Bindings preserve this shape so `[?match]` can match
+         on code rather than on text. The catalog below
          covers the v0.8.0 ranges; the full normative table lives
          in [`spec/errors.md`](../../spec/errors.md)."""]
 
@@ -1845,10 +1851,9 @@
            - `E910` — non-UTF-8 content.
            - `E911` — included file parse failure."""]]
 
-    [child id=errors-catching n=6.13.4 title='Catching with [?try]'
+    [child id=errors-catching n=6.13.4 title='Recovering with [?match]'
       [example lang=cx
-        """[?try [BODY,
-                [?catch [err]
-                  [?if [$err:code = 'E906',
-                        file missing,
-                        other error: [?= $err:code]]]]]]"""]]]]
+        """[?match [$read-file $path]
+             [case [err @code=$c] [where [= $c 'E906']] [file-missing]]
+             [case [err $e] [other-error code=$e/@code]]
+             [case $v $v]]"""]]]]

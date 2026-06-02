@@ -226,7 +226,7 @@
       [child n=6.13.1 id=errors-security    title='CXER001x — security caps']
       [child n=6.13.2 id=errors-eval-gates  title='CXER004x — evaluator gates']
       [child n=6.13.3 id=errors-include     title='E9xx — include resolver']
-      [child n=6.13.4 id=errors-catching    title='Catching with [?try]']]]
+      [child n=6.13.4 id=errors-catching    title='Recovering with [?match]']]]
 
   [section n=7 id=bindings file='07-bindings.cxd'
     [child n=7.1 id=c-abi             title='The C ABI surface']
