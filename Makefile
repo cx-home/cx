@@ -224,9 +224,9 @@ verify-doc-blocks: build-vcx
 check-v-upstream:
 	@python3 scripts/check_v_upstream_patches.py
 
-# V6 — pre-commit lint rules over .cx / .cx files. Catches the
-# pre-ADR-0017 syntax forms the v0.7.0 parser rejects, plus the
-# cx-version=/cx-eval-version= rename window deprecation.
+# V6 — pre-commit lint rules over .cx files. Catches the retired
+# v0.7.x syntax forms the v0.8.0 parser rejects, plus the
+# cxl-version=/cx-eval-version= rename window deprecation.
 check-lint-rules:
 	@python3 scripts/check_lint_rules.py
 
@@ -290,7 +290,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-effect-alignment
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-stale-version check-effect-alignment
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -299,6 +299,14 @@ TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-n
 .PHONY: check-no-legacy-try
 check-no-legacy-try:
 	@python3 scripts/check_no_legacy_try.py
+
+# ── NO-STALE-VERSION gate — the retired language name `CXL` must not reappear
+# in conformance/ + docs-src/ + examples/ + scripts/ + tooling/ + top-level
+# project prose. Token-aware, not a raw grep (live identifiers cxlib / cxl: /
+# CXLS / CXLib are not matched; _archive*/_archived/_gate_evidence excluded).
+.PHONY: check-no-stale-version
+check-no-stale-version:
+	@python3 scripts/check_no_stale_version.py
 
 # ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
 # capability-alignment invariant: (1) every capability-gated effect point is
