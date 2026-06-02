@@ -1,6 +1,6 @@
 [# Section 5 — analytics, columnar formats, and bridges.
    Authored 2026-05-22 against the v0.8.0-dev branch.
-   Anchored in spec/decisions/0015 + 0019 + 0021 + spec/misc/table-api.md +
+   Anchored in spec/misc/table-api.md +
    spec/core/data-bin.md §3.10-3.13 + spec/streaming.md.
    Cross-links use [[anchor]] form. #]
 
@@ -50,20 +50,16 @@
     [body
       """The rest of this section walks each piece. The normative spec
          documents are [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
-         §3.10-3.13 (wire format), [`spec/misc/table-api.md`](../../spec/misc/table-api.md)
-         (host binding API), and
-         [`spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md`](../../spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md)
-         /
-         [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-         (design rationale). This guide is the working developer
+         §3.10-3.13 (wire format) and
+         [`spec/misc/table-api.md`](../../spec/misc/table-api.md)
+         (host binding API). This guide is the working developer
          summary."""]
 
     [note
       """**Naming.** `CXCol` is the column-oriented streaming format
          name. The `CXDB` / `CXDatabase` namespace is reserved for a
-         future query-engine product (see
-         [`spec/decisions/0021-cx-database-direction.md`](../../spec/decisions/0021-cx-database-direction.md))
-         and does not refer to the file format. Throughout this guide,
+         future query-engine product and does not refer to the file
+         format. Throughout this guide,
          CXCol is the format; `.cxcol` is the file extension; the
          `cxcol_*` prefix appears on host-binding identifiers."""]]
 
@@ -96,7 +92,7 @@
          `:f32` / `:f64` / `:f16` (floats), `:bool`, `:string`,
          `:bytes`, `:date`, `:datetime`, `:decimal(precision, scale)`,
          `:bigint`, plus collection columns (`arr[T]`, `map[K, V]`,
-         `seq[T]`) per ADR 0017 §D15. The full type catalogue with byte
+         `seq[T]`). The full type catalogue with byte
          encodings is in [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
          §3.10 + [`spec/misc/type-mapping.md`](../../spec/misc/type-mapping.md)."""]
 
@@ -316,13 +312,12 @@
            silently promote the encoder. The schema reference forms
            (`0x10` content-hash, `0x11` inline, `0x12` content-hash +
            name hint) are documented in
-           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.13 and locked
-           by ADR 0015 D4."""]
+           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.13."""]
       [note
         """Schema-driven mode requires the reader to retrieve the schema
            by its content hash. Local lookup is the default; the
-           callback-shaped content-store ABI is a post-v0.8.0 follow-up
-           per the ADR 0015 tail-closure notes."""]]]
+           callback-shaped content-store ABI is a post-v0.8.0
+           follow-up."""]]]
 
   [child id=arrow-bridge n=5.4 title='Arrow bridge — zero-copy interop'
     [intro
@@ -334,9 +329,8 @@
          advertises Arrow when libcx_arrow is loaded."""]
 
     [body
-      """The bridge exports four C ABI symbols at v0.8.0 (per
-         [`spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md`](../../spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md)
-         D9): `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
+      """The bridge exports four C ABI symbols at v0.8.0:
+         `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
          CXCol → Arrow, and `cx_arrow_import_to_data_bin` /
          `cx_arrow_import_to_data_bin_fd` for Arrow → CXCol. Bindings
          wrap them as `to_arrow()` / `from_arrow()` on the Table value
@@ -383,10 +377,8 @@
 
     [child id=arrow-type-mapping n=5.4.2 title='Type mapping'
       [body
-        """The CX ↔ Arrow type map is normative at v0.8.0 (locked by
-           [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-           D2). The full table is in the ADR; the high-level
-           summary:"""]
+        """The CX ↔ Arrow type map is normative at v0.8.0. The
+           high-level summary:"""]
       [list
         [item """`:int` / `:i64` ↔ `Int64`; `:i32` ↔ `Int32`; sized
                 variants (`:i8..:u64`) map to corresponding Arrow
@@ -433,9 +425,7 @@
         """The `cx table dump --to=arrow` CLI subcommand
            (`spec/cx_table_cli.md`) writes the IPC stream form by
            default; `--arrow-format=file` opts into the file-format
-           variant. See
-           [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-           D1 for the full flag set."""]]
+           variant."""]]
 
     [child id=arrow-flight n=5.4.4 title='Arrow Flight (post-v0.8.0)'
       [body
@@ -444,8 +434,7 @@
            the IPC stream — a Flight server publishes batches by
            descriptor; a Flight client subscribes. CX integration is
            **post-v0.8.0**: no Flight surface ships in v0.8.0; the
-           tooling-layer story when it lands will live in a follow-up
-           ADR slot."""]
+           tooling-layer story will be specified when it lands."""]
       [note
         """For cross-process CXCol transport in v0.8.0, use Arrow IPC
            over your existing transport (HTTP, pipe, socket). The
@@ -459,10 +448,8 @@
          dependency** — adding one would couple every binding to a
          heavyweight build-time toolchain. The Parquet adapter is a
          binding-specific library (PyArrow for Python, arrow-rs for
-         Rust, parquet-go for Go, etc.) chained off the Arrow bridge.
-         The full per-binding adapter table is in
-         [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-         D4."""]
+         Rust, parquet-go for Go, etc.) chained off the Arrow
+         bridge."""]
 
     [child id=parquet-write n=5.5.1 title='Writing Parquet'
       [intro
@@ -485,10 +472,9 @@
         """Defaults are the Parquet-ecosystem defaults (Snappy, not
            zstd) — output is meant to be consumed by Parquet readers
            that assume Snappy. Zstd is CX's default for CXCol's `0x90`
-           page compression (per
-           [`spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md`](../../spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md)
-           D2); the two formats use their own ecosystem defaults to
-           minimize friction with the consumers of each."""]
+           page compression; the two formats use their own ecosystem
+           defaults to minimize friction with the consumers of
+           each."""]
       [example lang=rust
         """use cxlib::cxcol;
            use parquet::file::writer::*;
@@ -540,9 +526,8 @@
 
     [child id=parquet-types n=5.5.3 title='CX ↔ Parquet type mapping'
       [body
-        """The mapping is normative at v0.8.0 and ratified by
-           [`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-           D2. Most types round-trip cleanly through Arrow; a small
+        """The mapping is normative at v0.8.0. Most types round-trip
+           cleanly through Arrow; a small
            number of CX types have lossy edges that `--strict` mode
            rejects rather than silently coerces."""]
       [list
@@ -789,9 +774,7 @@
            it with the same zero-copy guarantees as Polars."""]
       [body
         """Status: **post-v0.8.0**. A `libcx_query` C ABI is
-           **drafted** in
-           [`spec/decisions/0021-cx-database-direction.md`](../../spec/decisions/0021-cx-database-direction.md)
-           but not in scope for v0.8.0. Adopters who need DataFusion
+           **drafted** but not in scope for v0.8.0. Adopters who need DataFusion
            today wire it manually via the Arrow bridge — the path
            works, it just lacks the convenience layer."""]
       [example lang=rust
@@ -940,15 +923,6 @@
       [item """[[code#streaming]] — the directive-level streaming view:
               `[?for]` / `[?modify]` over CXCol inputs in bounded
               memory."""]
-      [item """[`spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md`](../../spec/decisions/0015-chunked-tables-schema-driven-and-bridge.md)
-              — the library-level analytics-bridge foundation: chunked
-              tables, page compression, schema-driven encoding,
-              libcx_arrow."""]
-      [item """[`spec/decisions/0019-analytics-bridge-public-surface.md`](../../spec/decisions/0019-analytics-bridge-public-surface.md)
-              — the user-facing surface: `cx table` CLI, Parquet
-              round-trip type mapping, per-binding adapter conformance."""]
-      [item """[`spec/decisions/0021-cx-database-direction.md`](../../spec/decisions/0021-cx-database-direction.md)
-              — the engine direction. Drafted, deferred to v1.0+."""]
       [item """[`spec/misc/table-api.md`](../../spec/misc/table-api.md) — the
               17-member typed columnar Table API ratified across all
               bindings."""]

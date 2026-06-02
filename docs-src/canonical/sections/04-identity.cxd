@@ -273,7 +273,7 @@
         [row bit=8  name='doctype-active' meaning='doctype declaration triggers auto-schema-binding' v='reserved for v0.9.x']
         [row bit=9  name='namespaces' meaning='xmlns: declarations resolved' v='v0.5.0']
         [row bit=10 name='cx-lang' meaning='cx:lang scoping honored' v='v0.5.0']
-        [row bit=11 name='collection-literals' meaning='() [] {} literal forms' v='v0.6.0 (ADR 0017)']
+        [row bit=11 name='collection-literals' meaning='() [] {} literal forms' v='v0.6.0']
         [row bit=12 name='ast-bin-v4' meaning='ast-bin format version 4' v='v0.6.0']
         [row bit=13 name='delimited-csv' meaning='CSV / TSV / PSV projections' v='v0.6.0']
         [row bit=14 name='diff-tree' meaning='cx diff produces tree-structured diff' v='v0.6.0']
@@ -289,10 +289,10 @@
         [row bit=24 name='parquet-bridge' meaning='Parquet read/write via cxlib_arrow' v='v0.7.0']
         [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6']
         [row bit=26 name='thread-register' meaning='cx_thread_register required for cross-thread FFI' v='v0.6.0']
-        [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind (ADR 0028)' v='v0.8.0']
-        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children (ADR 0029)' v='v0.8.0']
-        [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary (ADR 0030)' v='v0.8.0']
-        [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing (ADR 0031)' v='v0.8.x']
+        [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind' v='v0.8.0']
+        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children' v='v0.8.0']
+        [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary' v='v0.8.0']
+        [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing' v='v0.8.x']
         [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0']
         [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.8.0']]
       [body
@@ -392,7 +392,7 @@
         """Compression operates on column buffers, not on the structural
            header — so readers can navigate the page index without
            decompressing the value bodies. The hash is taken over the
-           canonical (uncompressed) bytes per ADR 0015 D11."""]]]
+           canonical (uncompressed) bytes."""]]]
 
   [child id=id-anchors n=4.5 title='ID anchors and IDREF resolution'
     [intro
@@ -435,8 +435,7 @@
            **merge** references (via the `*` sigil — see [[merge]])
            ARE errors and raise CXER0101."""]
       [body
-        """Per [`spec/decisions/0003-id-idref.md`](../../spec/decisions/0003-id-idref.md)
-           the ID/IDREF model is XML-compatible: round-trip through
+        """The ID/IDREF model is XML-compatible: round-trip through
            XML preserves the references; round-trip through JSON
            encodes them as `{"$ref": "name"}` envelopes per
            [`spec/conversions.md §4`](../../spec/conversions.md)."""]]
@@ -517,10 +516,10 @@
            owned by the caller. Modifying or freeing it does not
            affect the Doc."""]
       [body
-        """**[?modify] returns a NEW Doc:** the input Doc is unchanged
-           (per ADR 0030). The new Doc has its own lifetime; the input
+        """**[?modify] returns a NEW Doc:** the input Doc is unchanged.
+           The new Doc has its own lifetime; the input
            Doc continues to exist independently. Structural sharing
-           (per ADR 0031) means the two Docs share most of their
+           means the two Docs share most of their
            underlying memory but libcx tracks the references so both
            Docs are valid until both are released."""]]
 
@@ -617,15 +616,15 @@
            bytes]`; payload is the AST in a column-major encoding
            keyed by capability bits. Release the buffer with
            `cx_free`; never call system `free()`. Capability bit
-           36 advertises the PathNode wire format (ast_bin v8 per
-           ADR 0028); cap bit 3 advertises symmetric AST
+           36 advertises the PathNode wire format (ast_bin v8);
+           cap bit 3 advertises symmetric AST
            round-trip. The full bit table is in [`spec/abi.md`
            §3](../../spec/abi.md)."""]]
 
     [child id=data-bin-quickref n=4.7.5 title='data-bin quick reference (CXCol v1)'
       [body
         """data-bin is the strict-canonical binary data format,
-           branded `CXCol` per ADR 0021 retitle (commit
+           branded `CXCol` (retitled in commit
            `cbed7754`). Magic bytes are `0x43 0x58 0x44 0x42`
            (historical, preserved for forward-compat); modes are
            self-describing (default), schema-driven (cap bit 1 —

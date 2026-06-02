@@ -5,8 +5,8 @@
    reordering or inserting sections does not require renumbering.
 
    STATUS: scaffold only. Section files do not yet exist. Authoring
-   begins after ADR 0028 lands so the guide can render with full
-   sectional structure. This manifest is the working outline. #]
+   begins once the guide can render with full sectional structure.
+   This manifest is the working outline. #]
 
 [manifest
   title='CX — The CX Data and Code Language'
@@ -306,7 +306,7 @@
     [child n=10.5 id=extend-contribute title='Extend and contribute'
       [child n=10.5.1 id=file-bug             title='Filing an issue']
       [child n=10.5.2 id=add-fixture          title='Adding a conformance fixture']
-      [child n=10.5.3 id=propose-adr          title='Proposing a design change (ADR)']
+      [child n=10.5.3 id=propose-adr          title='Proposing a design change']
       [child n=10.5.4 id=ship-binding         title='Shipping a new binding']
       [child n=10.5.5 id=debug-investigate    title='Debugging an implementation']
       [child n=10.5.6 id=memory-update        title='Updating the project memory']]]

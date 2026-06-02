@@ -1,6 +1,5 @@
 [# Section 10 — migration: v0.7.x → v0.8.0, cross-format intake,
-   retired surfaces. Anchored in ADRs 0028/0029/0030/0032,
-   backlog.cx decision log. #]
+   retired surfaces. #]
 
 [section id=migration n=10 title='Migration'
 
@@ -14,9 +13,8 @@
          This section is the reference for the shape of the changes."""]
 
     [body
-      """**Rename: programs → code.** Per ADR
-         [0032](../../spec/decisions/0032-rename-programs-to-code.md),
-         every internal `programs` reference becomes `code`. The brand
+      """**Rename: programs → code.** Every internal `programs`
+         reference becomes `code`. The brand
          layer ("CX is data and code") was renamed immediately on
          d-2026-05-22-01; the internal rename cascades through:"""]
 
@@ -29,10 +27,9 @@
       [row was='--- in_cxl (fixture marker)' is='--- in_code (fixture marker)']]
 
     [body
-      """**`[?find]` is retired.** Per ADR
-         [0028](../../spec/decisions/0028-cxpath-as-value-kind.md) D8,
-         `[?find]` was always sugar for `[?for]` over a pattern. The
-         migration is one of two forms:"""]
+      """**`[?find]` is retired.** `[?find]` was always sugar for
+         `[?for]` over a pattern. The migration is one of two
+         forms:"""]
 
     [table columns=(was, is)
       [row was='[?find [user $u] :yield $u]' is='//user  or  [?for [user $u] [yield $u]]']
@@ -48,9 +45,8 @@
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]
 
     [body
-      """**Multi-arm `[?match]`.** Per ADR
-         [0029](../../spec/decisions/0029-match-heterogeneous-arms.md),
-         `[?match]` now supports N arms with `[case …]` / `[when …]` /
+      """**Multi-arm `[?match]`.** `[?match]` now supports N arms
+         with `[case …]` / `[when …]` /
          `[else …]` clause children, scalar literal patterns, `_`
          wildcard, and `[where …]` guards. The 2-arg form (single arm,
          raises `CXER0100` on miss) is preserved unchanged."""]
@@ -68,9 +64,8 @@
            [else            ()]]"""]
 
     [body
-      """**`[?modify]` is new.** Per ADR
-         [0030](../../spec/decisions/0030-modify-pure-functional-updates.md).
-         There was no idiomatic update directive in v0.7.x — code had
+      """**`[?modify]` is new.** There was no idiomatic update
+         directive in v0.7.x — code had
          to rebuild via `[?for]`. v0.8.0 ships the eleven-action
          vocabulary (`[set V]` / `[delete]` / `[using F]` /
          `[rename N]` / `[set-attr N V]` / `[delete-attr N]` /
@@ -78,7 +73,7 @@
          `[insert-after V]` / `[replace V]`). See [[modify]]."""]
 
     [body
-      """**Two-layer bindings.** Per ADR `d-2026-05-22-07` and
+      """**Two-layer bindings.** See
          [`spec/bindings.md`](../../spec/bindings.md). Layer 1 is the
          canonical 16-method surface, identical across V/Python/Go/Rust.
          Layer 2 is opt-in host idiom packs (`cxlib.idioms` in Python,
@@ -87,8 +82,8 @@
          separation. See [[bindings]]."""]
 
     [body
-      """**Binding scope reduced to four.** Per ADR `d-2026-05-22-03`,
-         v0.8.0 ships only V (native), Python, Go, Rust. The
+      """**Binding scope reduced to four.** v0.8.0 ships only V
+         (native), Python, Go, Rust. The
          TypeScript, Java, C#, Ruby, Kotlin, and Swift bindings are
          moved to `lang/_archived/` (preserved, not deleted).
          Restoration is opt-in once Layer-1 is stable; community
@@ -161,19 +156,19 @@
 
     [table columns=(retired, replacement, source)
       [row retired='[?find]' replacement='[?for] over pattern, or CXPath //name'
-        source='ADR 0028 D8']
+        source='CXPath value-kind alignment']
       [row retired='[- comment -]' replacement='[# comment #]'
         source='lexer consolidation']
       [row retired=':contains predicate hack' replacement='ancestor:: axis'
-        source='ADR 0028 D5']
+        source='CXPath value-kind alignment']
       [row retired=':direct modifier hack' replacement='following-sibling:: axis'
-        source='ADR 0028 D5']
+        source='CXPath value-kind alignment']
       [row retired='XPath general-comparison =' replacement='value-comparison only'
-        source='ADR 0028 D3']
+        source='CXPath value-kind alignment']
       [row retired='cx_program_eval (C ABI)' replacement='cx_code_eval'
-        source='ADR 0032']
+        source='programs → code rename']
       [row retired='in_cxl (fixture marker)' replacement='in_code'
-        source='ADR 0032']
+        source='programs → code rename']
       [row retired='cxl-* playground starter ids' replacement='code-* starter ids'
         source='Phase 7.3']
       [row retired='TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'
@@ -233,32 +228,31 @@
                 doesn't handle it — that's the bug; file it. If runner
                 green, your fixture is now a regression gate."""]]]
 
-    [child id=propose-adr n=10.5.3 title='Proposing a design change (ADR)'
+    [child id=propose-adr n=10.5.3 title='Proposing a design change'
       [body
-        """CX changes that affect the spec / ABI / surface require an
-           ADR (Architecture Decision Record) before implementation.
+        """CX changes that affect the spec / ABI / surface are made by
+           editing the spec — the spec is the single source of truth.
            The workflow:"""]
       [list
-        [item """**Draft** an ADR file `spec/decisions/NNNN-title.md`
-                using the lean format: TL;DR + was-vs-is tables +
-                context + decisions (D1, D2, ...) + alternatives
-                considered + gates. Number is the next sequential
-                slot."""]
-        [item """**Register** the ADR in `docs-src/canonical/backlog.cxd`
-                under `[adrs ...]` with `:status draft`."""]
+        [item """**Draft** the change as an edit to the relevant spec
+                file under `spec/`, with was-vs-is tables, context,
+                the specific decisions, alternatives considered, and
+                conformance gates."""]
+        [item """**Register** any new backlog item in
+                `docs-src/canonical/backlog.cxd` with `:status
+                draft`."""]
         [item """**Review window** — submit for owner + community
-                review. Iterate the lean tables until reviewers can
-                scan the design in 2-3 minutes."""]
-        [item """**Ratify** — flip status to `accepted` in backlog.cx,
-                record in the ADR's revision history."""]
-        [item """**Implement** — landing PRs cite the ratified ADR by
-                number. Gates from the ADR's §Gates section block the
-                next release."""]]
+                review. Iterate the tables until reviewers can scan
+                the design in 2-3 minutes."""]
+        [item """**Ratify** — flip status to `accepted` in
+                `backlog.cxd`."""]
+        [item """**Implement** — landing PRs cite the ratified spec
+                change. Its conformance gates block the next
+                release."""]]
       [body
-        """The lean ADR format (per `d-2026-05-22-11` and
-           `d-2026-05-22-13`) values scannability over verbosity. Target
-           ~200-300 lines, not 500+. ADRs 0028, 0029, 0030 are
-           reference examples of the format."""]]
+        """Keep spec edits scannable: lead with was-vs-is tables and
+           keep the prose tight so reviewers can grasp the design
+           quickly."""]]
 
     [child id=ship-binding n=10.5.4 title='Shipping a new binding'
       [body

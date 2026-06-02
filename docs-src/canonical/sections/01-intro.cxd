@@ -72,8 +72,7 @@
 
     [body
       """**3. Pure-functional updates.** There is no in-place mutation in CX.
-         The `[?modify]` directive (see [[modify]] and ADR
-         [0030](../../spec/decisions/0030-modify-pure-functional-updates.md))
+         The `[?modify]` directive (see [[modify]])
          takes a document and a CXPath focus, and returns a **new** document.
          Unchanged branches share structure with the original (the standard
          persistent-tree technique). Concurrency is safe by construction —
@@ -87,8 +86,7 @@
          equality checks trivially correct. See [[identity]]."""]
 
     [body
-      """**5. One selector vocabulary everywhere.** CXPath (ADR
-         [0028](../../spec/decisions/0028-cxpath-as-value-kind.md)) is **the**
+      """**5. One selector vocabulary everywhere.** CXPath is **the**
          way to point at things — for reading (`select_all`), for iteration
          (`[?for]`), for type-tests in `[?match]`, and for update focus in
          `[?modify]`. It aligns with XPath 3.1 (see

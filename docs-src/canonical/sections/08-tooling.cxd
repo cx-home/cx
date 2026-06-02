@@ -1,8 +1,6 @@
 [# Section 8 — tooling: CLI, editors, LSP, tree-sitter, lint, diff,
    cookbook, diagnostics, build integration, doc-gen, playground,
-   profiling. Anchors normative depth in spec/decisions/0012 (cx diff),
-   0013 (cx lint), 0025 (LSP-first highlighting), 0026 (wasm), 0028
-   (LSP hover/completion), 0029 (match), 0030 (modify); plus
+   profiling. Anchors normative depth in
    tooling/lsp/v0_8_0_diagnostics.md, tooling/tree-sitter-cx/,
    scripts/gen_docs/, vcx/cmd/. Authored 2026-05-22 against v0.8.0-dev.
    File extension: .cxd (data-only). #]
@@ -215,9 +213,7 @@
            $ cx diff prod.cx proposed.cx && echo no-op   # CI gate"""]
 
       [note
-        """Exit codes match `diff(1)`: 0 equal, 1 differs, 2 error.
-           Per ADR
-           [0012](../../spec/decisions/0012-cx-diff.md)."""]]
+        """Exit codes match `diff(1)`: 0 equal, 1 differs, 2 error."""]]
 
     [child id=cli-lint n=8.1.8 title='cx lint'
       [body
@@ -347,9 +343,7 @@
       [body
         """Pure-functional update. Reads a document, applies the
            action, prints the new document. The original file is
-           unchanged unless you pass `--write`. See ADR
-           [0030](../../spec/decisions/0030-modify-pure-functional-updates.md)
-           for the semantics."""]
+           unchanged unless you pass `--write`."""]
 
       [list
         [item """`--set EXPR` / `--set-attr NAME=VALUE` /
@@ -576,7 +570,7 @@
         [row method='textDocument/publishDiagnostics'             status='shipped' notes='parse + lint + schema + CXLS001-004']
         [row method='textDocument/hover'                          status='shipped' notes='element, attr, directive, CXPath']
         [row method='textDocument/completion'                     status='shipped' notes='triggers : / @ $']
-        [row method='textDocument/semanticTokens/full'            status='shipped' notes='10-token legend per ADR 0025']
+        [row method='textDocument/semanticTokens/full'            status='shipped' notes='10-token legend']
         [row method='textDocument/formatting'                     status='shipped' notes='lossless fmt']
         [row method='textDocument/definition'                     status='shipped' notes='cross-include and anchor']
         [row method='textDocument/references'                     status='shipped' notes='anchor + alias + merge']
@@ -632,7 +626,7 @@
                 directive page in this guide."""]
         [item """**CXPath path expression** — resolved XPath
                 production, live match-count against the current
-                document, axis-name doc. Per ADR 0028."""]
+                document, axis-name doc."""]
         [item """**Layer-2 host idiom** — desugared Layer-1 form
                 (Python comprehension, Go filter chain, Rust
                 iterator). Implementation calls
@@ -659,7 +653,7 @@
         [item """**`$`** — variable names from `[?let]` bindings in
                 scope."""]
         [item """**`/`** — CXPath axes + element names + node-kind
-                tests. Per ADR 0028 §completion."""]]
+                tests."""]]
 
       [body
         """All completion items carry `data.kind` so editors can
@@ -693,9 +687,7 @@
 
     [child id=lsp-semantic-tokens n=8.3.6 title='Semantic tokens'
       [body
-        """Per ADR
-           [0025](../../spec/decisions/0025-lsp-first-highlighting-architecture.md),
-           the LSP semanticTokens response is the **canonical
+        """The LSP semanticTokens response is the **canonical
            highlighting source** for editors that consume it.
            The 10-token legend maps directly to TextMate scopes for
            cross-editor consistency:"""]
@@ -742,9 +734,7 @@
   [child id=tree-sitter n=8.4 title='Tree-sitter grammar'
     [intro
       """`tooling/tree-sitter-cx/` is the tree-sitter grammar for CX.
-         Per ADR
-         [0025](../../spec/decisions/0025-lsp-first-highlighting-architecture.md),
-         tree-sitter is scoped to **structural and embedded-language-
+         Tree-sitter is scoped to **structural and embedded-language-
          injection duty** — element / attribute / scalar tokenisation
          + opaque-PI rendering of `[? ... ]` directives. Per-directive
          highlighting comes from the LSP semanticTokens, not from
@@ -763,7 +753,7 @@
            `# line`). Directives — every `[?Name ...]` form — are
            tokenised as a single opaque `(directive)` region; the
            internal labeled slots and bodies are not pre-parsed at
-           the tree-sitter layer (per ADR 0025)."""]]
+           the tree-sitter layer."""]]
 
     [child id=ts-queries n=8.4.2 title='Highlight + injection queries'
       [body
@@ -808,8 +798,7 @@
   [child id=lint n=8.5 title='Lint rules'
     [intro
       """`cx lint` warns about issues a formatter can't or shouldn't
-         fix automatically. Per ADR
-         [0013](../../spec/decisions/0013-cx-lint.md), lint and fmt are
+         fix automatically. Lint and fmt are
          distinct: `cx fmt` *applies* safe transformations; `cx lint`
          *warns* about issues that need human judgement to fix. The
          two never overlap — if a check has a safe auto-fix, it
@@ -828,9 +817,7 @@
 
       [body
         """Each check has a normative ID, a default severity, and a
-           documented rationale in ADR
-           [0013](../../spec/decisions/0013-cx-lint.md) §D2.
-           Suppression directives and CLI flags accept the ID
+           documented rationale. Suppression directives and CLI flags accept the ID
            verbatim."""]]
 
     [child id=lint-severity n=8.5.2 title='Severity levels'
@@ -907,9 +894,7 @@
     [child id=lint-custom n=8.5.6 title='Custom rule plugins (post-v0.8.0)'
       [body
         """A plugin model for user-defined checks is post-v0.8.0
-           (ADR
-           [0013](../../spec/decisions/0013-cx-lint.md) §A3 rejected
-           it for v0.6.0; the question is reopened in
+           (rejected for v0.6.0; the question is reopened in
            [`ROADMAP.md`](../../ROADMAP.md) "Later"). For v0.8.0,
            extending the check set means contributing a check to
            `vcx/cx/lint.v` upstream. Schema-violation checks are a
@@ -919,8 +904,7 @@
   [child id=diff n=8.6 title='Diff semantics'
     [intro
       """`cx diff` produces a **semantic** diff — tree-structured,
-         canonical-byte-aware, formatting-blind. Per ADR
-         [0012](../../spec/decisions/0012-cx-diff.md), two
+         canonical-byte-aware, formatting-blind. Two
          data-equivalent inputs diff to nothing, even if they differ
          at the text level. This is what makes `cx diff` usable as a
          CI gate: it reports semantic deltas, not formatting noise."""]
@@ -993,8 +977,7 @@
 
     [child id=diff-json n=8.6.3 title='JSON change-record shape'
       [body
-        """Each record has a stable shape (normative per ADR
-           [0012](../../spec/decisions/0012-cx-diff.md) §D4):"""]
+        """Each record has a stable shape:"""]
 
       [list
         [item """`kind` — one of `element-added`, `element-removed`,
@@ -1551,8 +1534,7 @@
     [intro
       """The CX playground is a browser-embeddable interactive
          evaluator. It runs the same `libcx` core as the CLI,
-         compiled to WebAssembly per ADR
-         [0026](../../spec/decisions/0026-wasm-distribution-target.md).
+         compiled to WebAssembly.
          No server round-trip — everything runs in the browser."""]
 
     [child id=playground-wasm n=8.11.1 title='WASM distribution'
@@ -1707,10 +1689,8 @@
         [item """**Streaming evaluator** — 340 MB/s on the
                 JSON-shape workload (`bench_streaming_json.v`);
                 300 MB/s target met."""]
-        [item """**`cx diff` 1 MiB / 1% change** — < 50 ms (ADR
-                0012 D7)."""]
-        [item """**`cx lint` 1 MiB / all checks** — < 50 ms (ADR
-                0013 D9)."""]
+        [item """**`cx diff` 1 MiB / 1% change** — < 50 ms."""]
+        [item """**`cx lint` 1 MiB / all checks** — < 50 ms."""]
         [item """**`cx hash` 1 MiB** — < 30 ms (canonical-bytes +
                 SHA-256)."""]]
 
@@ -1973,8 +1953,7 @@
 
   [child id=playground-detail n=8.15 title='Playground — visualize, offline, highlight'
     [intro
-      """Deep-dive on the in-browser playground UI per ADR 0037
-         (gate 17). Section §8.11 above frames the WASM / web
+      """Deep-dive on the in-browser playground UI. Section §8.11 above frames the WASM / web
          component / tier story; this section is the operator
          reference for the Tree / Graph / Source-diagram bridge."""]
 
@@ -1995,7 +1974,7 @@
         """The Source pane carries a Diagram toggle in its
            header; the Output pane carries a Tree | Graph view
            toggle adjacent to the CX | JSON | XML projection
-           tabs (per ADR 0037 §D9). Tree is the default for every
+           tabs. Tree is the default for every
            fresh source — Graph is opt-in."""]
       [body
         """The Source-pane diagram renders the program as a
@@ -2010,13 +1989,12 @@
            for elements with body, file-text icons for prose
            leaves, tag and at-sign rows for elements and
            attributes. Built from `cx_code_tree(source)` whose
-           JSON contract (ADR 0037 §D2) carries a `{kind, name?,
+           JSON contract carries a `{kind, name?,
            value?, loc:{start,end}, children?}` record per node.
            Search, count badges, and standard tree keyboard
            navigation come along for free."""]
       [body
-        """The Output-pane Graph view auto-detects mode per ADR
-           0037 §D1: sources whose top-level program contains at
+        """The Output-pane Graph view auto-detects mode: sources whose top-level program contains at
            least one `[?directive]` render as a Control-Flow
            Graph (basic blocks; diamonds for `[?if]`; dispatcher
            round-rects with per-arm edges for `[?match]`;
@@ -2027,7 +2005,7 @@
            repeating children, `||--||` for singletons). Every
            `[?def]` body is its own Mermaid sub-graph."""]
       [note
-        """**Bidirectional selection bridge** (ADR 0037 §D5).
+        """**Bidirectional selection bridge**.
            Click a tree node and the source-pane editor selects
            bytes `[loc.start, loc.end]` and scrolls them into
            view. Move the caret in the source pane and the tree

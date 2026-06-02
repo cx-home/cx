@@ -1,7 +1,7 @@
 [# Section 7 — bindings: C ABI, two-layer model, type mapping,
    thread safety, lifetime, codegen, quickstarts.
-   Anchored in spec/bindings.md + spec/abi.md + spec/misc/parity-matrix.md +
-   spec/decisions/0028-cxpath-as-value-kind.md. v0.8.0 ships
+   Anchored in spec/bindings.md + spec/abi.md + spec/misc/parity-matrix.md.
+   v0.8.0 ships
    V (native reference), Python, Go, Rust as Tier-1 bindings.
    File extension .cxd — data-only source. #]
 
@@ -110,8 +110,7 @@
     [child id=evaluation n=7.1.3 title='Evaluation — cx_code_eval family'
       [body
         """The `cx_code_eval*` family is the single evaluator
-           entry point for code, patterns, paths, and transforms
-           (per [ADR 0027](../../spec/decisions/0027-unified-pattern-query-transform.md)).
+           entry point for code, patterns, paths, and transforms.
            Callers write the equivalent of selection as a
            `[?for PATTERN]` program (or a path expression) and
            pass it through `cx_code_eval`."""]
@@ -132,7 +131,7 @@
         """Bindings expose `Doc.eval(code)` as their Layer-1 surface;
            `Doc.select_all(cxpath)` and `Doc.select(cxpath)` desugar
            to `Doc.eval('[?for CXPATH-AS-PATTERN]')` in the binding
-           (per ADR 0028 §3) — the binding pays a small parse cost,
+           — the binding pays a small parse cost,
            the C ABI stays narrow. See [[cxpath]] for the path
            vocabulary."""]]
 
@@ -168,9 +167,8 @@
     [child id=modify-abi n=7.1.5 title='Modify — pure-functional updates'
       [body
         """**`cx_modify(doc, focus_cxpath, action_program)`** returns
-           a new Doc handle. The input Doc is unchanged. Per
-           [ADR 0030](../../spec/decisions/0030-modify-pure-functional-updates.md)
-           this is the single update entry point — every mutation
+           a new Doc handle. The input Doc is unchanged.
+           This is the single update entry point — every mutation
            pattern at the Layer-1 surface routes through it."""]
       [body
         """Bindings expose `Doc.modify(focus, action)` directly.
@@ -239,8 +237,7 @@
          selection method. The path string is parsed and evaluated by
          libcx, not by the binding — that keeps semantics identical
          across hosts and lets the evaluator's program cache work
-         cross-binding. Per [ADR 0028](../../spec/decisions/0028-cxpath-as-value-kind.md)
-         a CXPath is a first-class value kind; bindings expose it as
+         cross-binding. A CXPath is a first-class value kind; bindings expose it as
          a typed value where ergonomic (Rust `Cxpath` newtype; Python
          `CxPath` class) and as a plain string where not (Go
          `string`; V `string`)."""]
@@ -584,8 +581,7 @@
     [child id=ts-doc-immutability n=7.5.1 title='Document immutability'
       [body
         """A parsed `Doc` is logically immutable. `Doc.modify()`
-           returns a new Doc (per [ADR 0030](../../spec/decisions/0030-modify-pure-functional-updates.md));
-           there is no in-place mutation API at any layer. This
+           returns a new Doc; there is no in-place mutation API at any layer. This
            means a single Doc handle can be shared across N threads
            with no synchronization — every thread sees the same
            bytes, every thread's `hash()` returns the same digest,
@@ -1179,7 +1175,7 @@
     [intro
       """Compact reference for each Tier-1 binding: install command,
          the 16-method Layer-1 surface in idiomatic form, the atom
-         scalar kind (ADR 0033), schema validation, and the
+         scalar kind, schema validation, and the
          type-mapping table. The full normative contract is
          [`spec/bindings.md §2.1`](../../spec/bindings.md); the C ABI
          is [`spec/abi.md`](../../spec/abi.md)."""]
@@ -1189,7 +1185,7 @@
         """The libcx C ABI partitions into nine families:
            format conversion, canonical+identity, binary forms
            (ast_bin / data_bin), evaluation (`cx_code_eval*`),
-           diagram+tree (ADR 0037), schema validation, identity
+           diagram+tree, schema validation, identity
            and resolution (id / IDREF), streaming events + tables,
            and threading + memory. Capability bits gate each
            family; bindings query `cx_features()` at load time and
@@ -1221,7 +1217,7 @@
            char *cx_to_data_bin   (const char *in, char **err);
            char *cx_from_data_bin (const char *data_bin, char **err);
 
-           /* Evaluation (cap bit 28; renamed from cx_program_eval per ADR 0032). */
+           /* Evaluation (cap bit 28; renamed from cx_program_eval). */
            char *cx_code_eval         (const char *input, const char *program,
                                        const char *output_target, char **err);
            char *cx_code_eval_with_len(const char *input,   size_t input_len,
@@ -1233,7 +1229,7 @@
                                         cx_code_write_cb write_cb, void *user,
                                         char **err);
 
-           /* Diagram + tree (v0.8.0, ADR 0037, cap bits 31 / 32). */
+           /* Diagram + tree (v0.8.0, cap bits 31 / 32). */
            char *cx_code_diagram (const char *source, size_t source_len,
                                   const char *format, size_t format_len);
            char *cx_code_tree    (const char *source, size_t source_len,
@@ -1266,9 +1262,9 @@
            int cx_wasm_reset(void);"""]
       [note
         """v0.8.0 adds bits 31 (`cx_code_diagram`), 32
-           (`cx_code_tree`), 33 (atoms per ADR 0033), 34 (`[?def]`
-           per ADR 0034), 35 (`[?lib]` per ADR 0035), and 36
-           (PathNode wire format / ast_bin v8 per ADR 0028). Bit 28
+           (`cx_code_tree`), 33 (atoms), 34 (`[?def]`),
+           35 (`[?lib]`), and 36
+           (PathNode wire format / ast_bin v8). Bit 28
            (CX code evaluator) is unchanged from v0.7.6."""]]
 
     [child id=v-detail n=7.11.2 title='V binding — install, Layer 1, atom'
@@ -1278,8 +1274,7 @@
            imports the `cx` package directly with zero FFI overhead.
            Every other Tier-1 binding wraps the same C ABI that the
            V core exports. The `lang/v/cffi/` variant was archived
-           to `lang/_archived/v-cffi/` per ADR 0035 D7 and decision
-           `d-2026-05-22-03`; preserved as a potential FFI-overhead
+           to `lang/_archived/v-cffi/`; preserved as a potential FFI-overhead
            benchmark."""]
       [example lang=shell """vpm install cx-lang"""]
       [example lang=v
@@ -1291,14 +1286,14 @@
            h   := doc.hash()
            eq  := doc.equals(other)
 
-           // Evaluation (wraps cx_code_eval; renamed per ADR 0032 D5).
+           // Evaluation (wraps cx_code_eval).
            val := doc.eval(code) or { panic(err) }
 
            // CXPath selection.
            nodes := doc.select_all('//user[@active=true]/@email')!
            first := doc.select('//user[@id=1]')!
 
-           // Pure-functional update (ADR 0030).
+           // Pure-functional update.
            new_doc := doc.modify('//user[@id=1]/@name', cx.set('Alice'))!
 
            // Convenience + root.
@@ -1317,7 +1312,7 @@
            doc2 := cx.parse_with_include_root(input, '/proj') or { panic(err) }
            val2 := doc2.eval_with_include_root(program, '/proj')!
 
-           // Atom scalar (ADR 0033) — type-strict, no string coercion.
+           // Atom scalar — type-strict, no string coercion.
            doc3 := cx.parse('[order :status :paid]') or { panic(err) }
            status := doc3.select('//order')!.attr('status')
            assert status.kind() == 'atom'
@@ -1357,14 +1352,14 @@
            h   = doc.hash()
            eq  = doc.equals(other)
 
-           # Evaluation (cx_code_eval, ADR 0032 D5).
+           # Evaluation (cx_code_eval).
            val = doc.eval(code)
 
            # CXPath.
            emails = doc.select_all('//user[@active=true]/@email')
            first  = doc.select('//user[@id=1]')
 
-           # Pure-functional update (ADR 0030).
+           # Pure-functional update.
            new_doc = doc.modify('//user[@id=1]/@name', cx.Set('Alice'))
            new_doc = doc.modify('//user[@banned=true]', cx.Delete())
            new_doc = doc.modify('//price', cx.Using(lambda p: float(p) * 1.1))
@@ -1376,7 +1371,7 @@
            print(shop[0]['name'])           # 'Margherita'
            print(shop[0]['price'])          # 12 (an int, not a string)
 
-           # Atom (ADR 0033).
+           # Atom.
            doc2 = cx.parse('[order :status :paid]')
            status = doc2.select('//order').attr('status')
            assert status.kind() == 'atom'
@@ -1423,14 +1418,14 @@
            h        := doc.Hash()
            eq       := doc.Equals(other)
 
-           // Evaluation (cx_code_eval, ADR 0032 D5).
+           // Evaluation (cx_code_eval).
            val, err := doc.Eval(code)
 
            // CXPath.
            emails, _ := doc.SelectAll("//user[@active=true]/@email")
            first, _  := doc.Select("//user[@id=1]")
 
-           // Pure-functional update (ADR 0030).
+           // Pure-functional update.
            newDoc, _ := doc.Modify("//user[@id=1]/@name", cx.Set("Alice"))
 
            // Tree access.
@@ -1440,7 +1435,7 @@
            name  := pizza.Attr("name").String()
            price := pizza.Attr("price").Int()
 
-           // Atom (ADR 0033).
+           // Atom.
            doc2, _ := cx.Parse(`[order :status :paid]`)
            status := doc2.Select("//order").Attr("status")
            fmt.Println(status.Kind())                     // "atom"
@@ -1482,17 +1477,17 @@
            let h: String    = doc.hash();
            let eq: bool     = doc.equals(&other);
 
-           // Evaluation (cx_code_eval, ADR 0032 D5).
+           // Evaluation (cx_code_eval).
            let val = doc.eval(code)?;
 
            // CXPath.
            let emails: Vec<Node> = doc.select_all("//user[@active=true]/@email")?;
            let first: Option<Node> = doc.select("//user[@id=1]")?;
 
-           // Pure-functional update (ADR 0030).
+           // Pure-functional update.
            let new_doc = doc.modify("//user[@id=1]/@name", Set("Alice"))?;
 
-           // Atom (ADR 0033).
+           // Atom.
            let doc2 = parse(r#"[order :status :paid]"#)?;
            let status = doc2.select("//order")?.unwrap().attr("status").unwrap();
            assert_eq!(status.kind(), ValueKind::Atom);

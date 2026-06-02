@@ -421,7 +421,7 @@
            ascription form `::T` is the canonical spelling — `:u16` here
            is the short-name shorthand). In **atom position** (`:ok`,
            `:not-found`) it introduces a symbolic atom literal. The
-           parser disambiguates by context. Per ADR 0063, `:` is no
+           parser disambiguates by context. The `:` sigil is no
            longer used to introduce labeled directive slots — every
            clause is now an explicit child element (`[then …]`,
            `[else …]`, `[yield …]`, `[where …]`)."""]
@@ -471,8 +471,7 @@
            character on canonical emit. External entity references (the
            `<!ENTITY foo SYSTEM "..."> &foo;` pattern from XML) are
            accepted on parse but resolution is gated by the include
-           capability bit — see [[include-capabilities]] and
-           [`spec/decisions/0004-external-entity-references.md`](../../spec/decisions/0004-external-entity-references.md)."""]]
+           capability bit — see [[include-capabilities]]."""]]
 
     [child id=xml-space n=2.6.2 title='Whitespace preservation (xml:space)'
       [body
@@ -491,8 +490,7 @@
         """`xml:space=default` re-enables the default collapse behavior in
            a nested scope. The attribute survives XML round-trip
            identically; in JSON/YAML/TOML it round-trips as a regular
-           attribute. Per
-           [`spec/decisions/0005-xml-space-preserve.md`](../../spec/decisions/0005-xml-space-preserve.md)."""]]
+           attribute."""]]
 
     [child id=cdata n=2.6.3 title='CDATA sections'
       [body
@@ -748,8 +746,7 @@
     [intro
       """A `[?cx doctype=…]` directive at the top of a document declares
          the document type. In v0.8.0 doctype is informational metadata;
-         the validator MAY use it as a default schema-binding hint. Per
-         [`spec/decisions/0008-doctype-as-active-declaration.md`](../../spec/decisions/0008-doctype-as-active-declaration.md)."""]
+         the validator MAY use it as a default schema-binding hint."""]
     [example lang=cx
       """[?cx doctype='users-v1' encoding=utf-8]
          [users
@@ -765,8 +762,7 @@
       """CX source is UTF-8 by default. The parser accepts a UTF-8 BOM at
          the start of file (and strips it) but does not emit a BOM in
          canonical form. Alternative encodings are accepted when the
-         document opens with `[?cx encoding=…]`. Per
-         [`spec/decisions/0006-multi-encoding.md`](../../spec/decisions/0006-multi-encoding.md)."""]
+         document opens with `[?cx encoding=…]`."""]
     [body
       """Supported encodings: utf-8 (default), utf-16, utf-16le,
          utf-16be, utf-32, iso-8859-1, windows-1252, shift_jis,
@@ -946,7 +942,7 @@
            optional structural slots — anchor, merge target,
            declared id, data type. Body items are Text nodes,
            Scalar nodes, child Elements, or the collection literals
-           from ADR 0017 — Sequences, Arrays, Maps."""]
+           — Sequences, Arrays, Maps."""]
       [example lang=cx
         """[pizza #margherita :large size=14 crust=thin
              [topping cheese]
@@ -1005,7 +1001,7 @@
       [body
         """CX values fall into a small set of atomic types — `int`,
            `float`, `bool`, `string`, `null`, `date`, `datetime`,
-           `bytes`, `decimal`, `bigint`, `atom` (ADR 0033) — and
+           `bytes`, `decimal`, `bigint`, `atom` — and
            arrays of any of these. Most values are auto-typed from
            their lexical shape; explicit annotations cover the
            rest."""]

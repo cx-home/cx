@@ -1,7 +1,7 @@
 [# Section 6 — the CX code language.
    Authored / expanded 2026-05-22 against the v0.8.0-dev branch.
    Anchored in spec/code.md (post-rename from programs.md), spec/cxpath_alignment.md,
-   spec/cxdm.md §4.6 (EBV), ADRs 0027 / 0028 / 0029 / 0030.
+   spec/cxdm.md §4.6 (EBV).
    Largest section in the guide. Cross-links use [[anchor]] form.
    File extension .cxd — data-only source. #]
 
@@ -58,8 +58,8 @@
   [child id=directives n=6.2 title='Directive registry'
     [intro
       """v0.8.0 has **forty normative directives** — including
-         `[?modify]`, formalized in ADR 0030.
-         Adding or removing any directive requires a new ADR per
+         `[?modify]`.
+         Adding or removing any directive requires a governance change per
          [`spec/governance.md`](../../spec/governance.md) §10. The
          authoritative registry lives in
          [`spec/code.md`](../../spec/code.md) §4.1; this subsection is
@@ -142,15 +142,14 @@
     [note
       """**Retired in v0.8.0.** `[?find]` is no longer a directive. Use
          `[?for]` with a pattern generator, or CXPath `//pattern`. See
-         [[migration]] for mechanical migration rules and ADR
-         [0028](../../spec/decisions/0028-cxpath-as-value-kind.md) D8
-         for the rationale — CXPath is the universal selector, so the
+         [[migration]] for mechanical migration rules. The rationale:
+         CXPath is the universal selector, so the
          `[?find]` shape was redundant with `[?for]`+CXPath."""]
 
     [note
-      """**Implementation status.** Multi-arm `[?match]` (ADR 0029),
-         `[?modify]` (ADR 0030), and the CXPath value kind in
-         constructs other than `[?for]` (ADR 0028) are **fully
+      """**Implementation status.** Multi-arm `[?match]`,
+         `[?modify]`, and the CXPath value kind in
+         constructs other than `[?for]` are **fully
          specified** but not all are wired through every binding
          yet. V (the native reference) carries the spec-conformant
          implementation; Tier-2 bindings (Python, Go, Rust)
@@ -166,8 +165,7 @@
          (see [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
          with deliberate divergences kept minimal. **Path is a value
          kind**, not parser sugar — paths compile, cache, round-trip
-         through every projection, and visualize as themselves (per
-         ADR [0028](../../spec/decisions/0028-cxpath-as-value-kind.md))."""]
+         through every projection, and visualize as themselves."""]
 
     [body
       """The simplest CXPath is the descendant search:"""]
@@ -294,7 +292,7 @@
            anchored at `$u`. Use `//x` to escape upward when you
            already have a binding."""]]
 
-    [child id=cxpath-context n=6.3.5 title='Where CXPath values are accepted (ADR 0028)'
+    [child id=cxpath-context n=6.3.5 title='Where CXPath values are accepted'
       [body
         """CXPath is a value kind. Every construct that takes "a
            selector" accepts a CXPath value:"""]
@@ -310,12 +308,11 @@
            appears as a `[?for]` generator, as an `[?if]` condition,
            as a `[?match]` arm, as a `[?let]` initializer, as a
            `[?modify]` focus, and as a builtin argument. This is the
-           unification ADR 0028 ratifies: no separate "path syntax"
+           unification CX ratifies: no separate "path syntax"
            per construct."""]
       [body
         """**Status note.** CXPath value-kind at non-`[?for]`
-           positions is specified in ADR 0028 and is
-           production-ready in V; full Tier-2 binding parity is
+           positions is production-ready in V; full Tier-2 binding parity is
            tracked in
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
            gate 26.4."""]]
@@ -335,7 +332,7 @@
                 bugs."""]
         [item """**Path is a value kind** — XPath paths are syntactic
                 fragments inside XPath expressions only. In CX they
-                are first-class values (per ADR 0028)."""]
+                are first-class values."""]
         [item """**1-indexed positions** — adopted from XPath
                 verbatim (`//x[1]` is the first), but CX explicitly
                 rejects `[0]` (raises `CXER0100`); XPath silently
@@ -388,7 +385,7 @@
            element", so the bind value is the element; when you
            don't, the bind value is the inner content."""]]
 
-    [child id=pattern-scalar n=6.4.2 title='Scalar literal patterns (ADR 0029)'
+    [child id=pattern-scalar n=6.4.2 title='Scalar literal patterns'
       [body
         """Scalar literals are valid patterns. They match by
            value-equality:"""]
@@ -408,7 +405,7 @@
            to `nan` (per IEEE-754). Use `is-nan($x)` to test for NaN
            explicitly."""]]
 
-    [child id=pattern-cxpath n=6.4.3 title='CXPath patterns (ADR 0028 D8)'
+    [child id=pattern-cxpath n=6.4.3 title='CXPath patterns'
       [body
         """A CXPath value used as a pattern matches if the
            candidate value is in the path's result sequence:"""]
@@ -570,8 +567,7 @@
            forms: **2-arg destructure** (single arm, asserts the
            value matches or raises) and **multi-arm** (first-match-
            wins across N arms). The multi-arm form is the major
-           addition for v0.8.0 — see ADR
-           [0029](../../spec/decisions/0029-match-heterogeneous-arms.md)."""]
+           addition for v0.8.0."""]
 
       [body
         """**Single-arm form** — pattern-bind a value and assert
@@ -606,7 +602,7 @@
              [else                                     [400 bad-request]]]"""]
 
       [body
-        """**Arm semantics (ADR 0029):**"""]
+        """**Arm semantics:**"""]
       [list
         [item """**`[case PAT R]` — match against pattern `PAT`.**
                 Arms evaluate top-to-bottom; the first one whose
@@ -635,8 +631,8 @@
            not fail compilation."""]
 
       [note
-        """**Status.** Multi-arm `[?match]` is fully spec'd
-           (ADR 0029). V's evaluator carries the production-ready
+        """**Status.** Multi-arm `[?match]` is fully spec'd.
+           V's evaluator carries the production-ready
            implementation; Tier-2 binding parity is per
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)."""]]
 
@@ -721,14 +717,13 @@
            a value that is used multiple times, `[?let]` is
            idiomatic."""]]
 
-    [child id=modify n=6.6.5 title='[?modify] — pure-functional updates (ADR 0030)'
+    [child id=modify n=6.6.5 title='[?modify] — pure-functional updates'
       [body
         """`[?modify]` is the v0.8.0 update directive. It takes a
            document (or sub-tree), a CXPath focus, and one or
            more action slots; it returns a **new** document with
            the action applied at every focus match. The original
-           is unchanged (pure-functional). See ADR
-           [0030](../../spec/decisions/0030-modify-pure-functional-updates.md)."""]
+           is unchanged (pure-functional)."""]
 
       [body
         """The **eleven action slots** are:"""]
@@ -807,7 +802,7 @@
            shape exactly."""]
 
       [note
-        """**Status.** `[?modify]` is fully spec'd (ADR 0030).
+        """**Status.** `[?modify]` is fully spec'd.
            The V evaluator carries the production-ready
            implementation. Tier-2 binding parity is tracked in
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
@@ -865,7 +860,7 @@
          subsections below organize the ~80 names by category."""]
 
     [body
-      """**Invocation.** Per ADR 0063 every call uses the
+      """**Invocation.** Every call uses the
          bracket head-dispatch form: `[$name args…]` for the
          $-bound surface, or `[prefix/name args…]` for
          module-qualified calls. The legacy paren form
@@ -1289,8 +1284,8 @@
            [case [timeout=5s        [$heartbeat]]]]"""]
       [note
         """**Status.** The exact `[case [from CH $msg H]]` clause-child
-           micro-syntax for `[?select]` is still design-pending per
-           ADR 0063 implementation plan §1 (open Q); the spec/code.md
+           micro-syntax for `[?select]` is still design-pending
+           (open Q); the spec/code.md
            registry holds the authoritative shape. The legacy
            `:case [:from CH $msg H]` form is dual-accepted while the
            target shape is being settled."""]]
@@ -1477,8 +1472,7 @@
       [note
         """**Status.** `[?fallback]`'s clause-child form is parsed
            today but the eval side still expects the legacy
-           `:recover-with` slot for some shapes — see ADR 0063
-           implementation plan §1 "eval gaps". The legacy
+           `:recover-with` slot for some shapes. The legacy
            `:recover-with`/`:body` form is dual-accepted while the
            eval catches up."""]]
 
@@ -1553,8 +1547,8 @@
          shows how the forms fit together — directives as the
          language layer over data, pattern matching as the way
          programs walk a tree, comprehensions as the composition
-         glue. Aligns with ADR 0028 ([?find] retirement, CXPath as
-         a value kind) and ADR 0036 ([expr] general predicate)."""]
+         glue. CXPath is a value kind (with `[?find]` retired) and
+         `[expr]` is the general predicate."""]
 
     [child id=directives-overview n=6.11.1 title='Directives turn data into a language'
       [body
@@ -1576,12 +1570,12 @@
       [body
         """The v0.8.0 program surface replaces XPath-style queries
            with `[?for]` pattern generators and CXPath path values
-           (ADR 0028 — `[?find]` retired). A pattern is a CX
+           (`[?find]` retired). A pattern is a CX
            literal where element names match by shape, attribute
            predicates restrict by value, and `$bindings` capture
            matched subtrees. `[?for]` walks the tree (deep by
            default) and binds for each match; `[?match]` tests a
-           single value (multi-arm dispatch per ADR 0029)."""]
+           single value (multi-arm dispatch)."""]
       [example lang=cx
         """[?for [user [name $n]] [yield $n]]
            [?for [item @active=true $i] [yield $i]]
@@ -1601,9 +1595,9 @@
            [?pipe (1, 2, 3, 4) [through [$count $_]]]"""]
 
       [child id=comprehensions-future-surface n=6.11.3.1
-             title='Future surface — ranges, slices, Iterator (ADR 0041)'
+             title='Future surface — ranges, slices, Iterator'
         [body
-          """ADR 0041 (locked draft, 2026-05-25) extends the
+          """A future surface extends the
              comprehension surface with **strided ranges**
              (`1 to 99 by 2`, `1 to *`), **slice expressions on a
              binding postfix** (`$xs[2:5]`, `$xs[::-1]`,
@@ -1614,9 +1608,8 @@
              (`[?def`]) memoize on first walk so re-use is safe."""]
 
         [body
-          """Eight worked examples land in
-             [`spec/decisions/0041-...md`](../../spec/decisions/0041-strided-ranges-slices-comprehensions-and-iterator-kind.md)
-             §W1–§W8. Each example has a paired conformance fixture
+          """Eight worked examples (§W1–§W8) each have a paired
+             conformance fixture
              `program-adr-0041-wN-*` in
              [`conformance/code.txt`](../../conformance/code.txt);
              until the implementation lands the fixtures are
@@ -1663,9 +1656,8 @@
          modifier). XPath 3.1 alignment and divergences are
          tabulated in
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md).
-         CXPath is a first-class value kind at v0.8.0 (ADR 0028);
-         general predicates with `$_` / `$_position` / `$_last`
-         per ADR 0036."""]
+         CXPath is a first-class value kind at v0.8.0;
+         general predicates with `$_` / `$_position` / `$_last`."""]
 
     [child id=cxpath-quick-table n=6.12.1 title='Quick reference'
       [example lang=cx
@@ -1690,7 +1682,7 @@
            # Every ancestor element of a [para] node.
            //para/ancestor::*
 
-           # General predicate — explicit $_ context binding (ADR 0036).
+           # General predicate — explicit $_ context binding.
            //user[$_@age >= 18 and $_@active]
 
            # Cross-step :bind — name the outer focus, reference from inner predicate.
@@ -1720,7 +1712,7 @@
       [body
         """Every step can specify an axis. The default axis is
            `child::`; the `attribute::` axis has the dedicated
-           `@` sigil per ADR 0028 D1. CX implements all twelve
+           `@` sigil. CX implements all twelve
            XPath 3.1 axes: `child`, `descendant`,
            `descendant-or-self`, `parent`, `ancestor`,
            `ancestor-or-self`, `self`, `following-sibling`,
@@ -1733,18 +1725,18 @@
            `.` ≡ `self::node()`. Attribute axis is name-disjoint
            from element axes — `//user/@name` selects the
            attribute only; `//user/name` selects the child
-           element only (ADR 0028 D13)."""]]
+           element only."""]]
 
     [child id=cxpath-predicates n=6.12.4 title='General predicate + reserved bindings'
       [body
         """Predicates filter the step sequence. v0.8.0 ratified
-           the `[expr]` general predicate per ADR 0036: every
+           the `[expr]` general predicate: every
            predicate body is an arbitrary CX expression coerced
            to a boolean via the Effective Boolean Value (EBV)
            rule. Atomic forms — `[@name]`, `[@name=V]`, `[N]`,
            `[fn(…)]` — remain available as parse-time sugar and
            round-trip via canonical re-emit when the AST matches
-           a recognised template (ADR 0036 D6)."""]
+           a recognised template."""]
       [body
         """**Three reserved bindings** in scope inside every
            predicate body: `$_` (current candidate item, type
@@ -1752,14 +1744,14 @@
            index — equivalent to XPath `position()`), `$_last`
            (int cardinality of the candidate sequence —
            equivalent to XPath `last()`). Predicates are eagerly
-           materialised (ADR 0036 D4), so `$_last` is known on
+           materialised, so `$_last` is known on
            every predicate evaluation."""]
       [body
         """**Comparison sigils** are value-comparison only: `=`,
            `!=`, `<`, `<=`, `>`, `>=`. No keyword synonyms (no
            `eq`/`ne`/`lt`/etc.). Comparing a sequence with more
            than one item raises `CXER0103`. **Purity** — every
-           predicate body MUST be pure (ADR 0036 D8); impure
+           predicate body MUST be pure; impure
            callees fail load with `CXER0230`."""]]
 
     [child id=cxpath-bind n=6.12.5 title=':bind peer-modifier'
@@ -1779,7 +1771,7 @@
       [note
         """`:bind _` is rejected with `CXER0232` (reserved bind
            name). `:bind` participates in the closed
-           modifier-keyword set for the ADR 0028 D12 path-step
+           modifier-keyword set for the path-step
            disambiguation rule."""]]
 
     [child id=cxpath-binding-surface n=6.12.6 title='In the host bindings'

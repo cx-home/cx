@@ -1,7 +1,6 @@
 [# Section 3 — surfaces and projections.
    Authored 2026-05-22, expanded with full per-surface detail.
-   Anchored in spec/canonical.md + spec/conversions.md + spec/decisions/0001
-   (delimited) + spec/decisions/0010 (output shape). #]
+   Anchored in spec/canonical.md + spec/conversions.md. #]
 
 [section id=surfaces n=3 title='Surfaces and projections'
 
@@ -394,8 +393,7 @@
       """CSV (comma-separated), TSV (tab-separated), and PSV
          (pipe-separated) all project via the same delimited-data
          pipeline. Per
-         [`spec/canonical.md §9`](../../spec/canonical.md) and
-         [`spec/decisions/0001-delimited-conversion.md`](../../spec/decisions/0001-delimited-conversion.md).
+         [`spec/canonical.md §9`](../../spec/canonical.md).
          Delimited round-trip is well-defined but **lossy** (column
          types are not preserved on emit, only on the in-memory
          CX side)."""]

@@ -67,7 +67,7 @@
 
     [child id=faq-find-retired title='Why does my `[?find]` fail with CXER0100?'
       [body
-        """`[?find]` was retired in v0.8.0 (ADR 0028 §D8) — it was
+        """`[?find]` was retired in v0.8.0 — it was
            always sugar for `[?for]` over a pattern. Rewrite each
            `[?find pattern [yield body]]` to either a direct CXPath
            (when the pattern is just an element with optional
@@ -97,9 +97,8 @@
            [# Wrong — :id on a data element looks like a type tag     #]
            [user :id 42]"""]
       [note
-        """The two-form distinction is by design — see ADR
-           [0017](../../spec/decisions/0017-collection-literals.md)
-           and the body discussion at [[attributes]]."""]]
+        """The two-form distinction is by design — see the body
+           discussion at [[attributes]]."""]]
 
     [child id=faq-count-container title='Why does `count(arr)` error but `count(seq)` work?'
       [body
@@ -172,7 +171,7 @@
     [child id=faq-find-vs-for title='What is the difference between `[?for]` and the old `[?find]`?'
       [body
         """They are the same operation. `[?find]` was retired in
-           v0.8.0 (ADR 0028 §D8) because it was always
+           v0.8.0 because it was always
            pattern-driven `[?for]` with one less keyword. Anything
            you wrote in `[?find]` form can be expressed as `[?for]`
            over a pattern, or — more directly — as a CXPath
@@ -190,9 +189,9 @@
     [child id=faq-dispatch-on-type title='How do I dispatch on element type?'
       [body
         """Use multi-arm `[?match]` with `[case …]` clause-children
-           that name the element type. ADR 0029 specifies the form;
-           each `[case …]` is a pattern + result, the first one that
-           matches wins, and `[else …]` is the catch-all."""]
+           that name the element type. Each `[case …]` is a pattern +
+           result, the first one that matches wins, and `[else …]` is
+           the catch-all."""]
       [example lang=cx
         """[?for [in $n //*] [yield
              [?match $n
@@ -203,7 +202,7 @@
 
     [child id=faq-update-value title='How do I update a value?'
       [body
-        """Use `[?modify]` (ADR 0030). It takes a document, a CXPath
+        """Use `[?modify]`. It takes a document, a CXPath
            focus, and an action; it returns a new document. There is
            no in-place mutation in CX — see the next question."""]
       [example lang=cx
@@ -222,8 +221,7 @@
            and structural sharing makes it cheap: unchanged branches
            of the tree are reused between the input and the output,
            so `[?modify]` is O(log n) in the document size for a
-           single-focus update. See [[pure-updates]] and ADR
-           [0031](../../spec/decisions/0031-pure-update-structural-sharing.md)."""]]
+           single-focus update. See [[pure-updates]]."""]]
 
     [child id=faq-pipeline-implicit-bind title='What does `$1` mean in a pipeline?'
       [body
@@ -415,9 +413,8 @@
     [child id=faq-playground-par-no-speedup title='I ran [?map par=true] in the playground and it did not speed up — bug?'
       [body
         """Not a bug — your playground is most likely running in
-           single-thread mode. Three delivery modes (ADR
-           [0040](../../spec/decisions/0040-map-reduce-using-redesign.md)
-           D9): GitHub Pages and `file://` both serve the
+           single-thread mode. Three delivery modes: GitHub Pages
+           and `file://` both serve the
            single-threaded Asyncify build (no cross-origin
            isolation possible without custom HTTP headers, and
            browsers gate SharedArrayBuffer behind that). `par=true`
@@ -488,7 +485,7 @@
            [[from-v07x]]; the non-mechanical cases (custom directive
            names that collide with new core directives) are listed
            at the bottom of that section. If you do need to migrate
-           a v0.7.x codebase, the rename tables and ADRs there give
+           a v0.7.x codebase, the rename tables there give
            you everything to do it by hand or with a one-off
            project-local script."""]]
 
@@ -603,7 +600,7 @@
            lives at github.com/cx-home/cx — bug reports, doc
            fixes, and pull requests welcome. For format-design
            questions or proposed grammar changes, file an issue
-           first; a recorded design decision (ADR) is a
+           first; a recorded design decision is a
            prerequisite for any breaking change. **Security
            reports:** through GitHub's private vulnerability
            reporting at

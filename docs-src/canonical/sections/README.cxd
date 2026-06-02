@@ -4,10 +4,10 @@
    authored in CX. The template (template.cx, deferred) walks the
    manifest and emits the rendered guide.
 
-   STATUS: directory is a scaffold. Content authoring begins after
-   ADR 0028 lands so the guide can be rendered with full sectional
-   structure (the same blocker affecting docs-src/content/ pages
-   today — see backlog.cx i-doc-gen-sectional-regression).
+   STATUS: directory is a scaffold. Content authoring begins once the
+   guide can be rendered with full sectional structure (the same
+   blocker affecting docs-src/content/ pages today — see backlog.cx
+   i-doc-gen-sectional-regression).
 
    Naming: NN-slug.cx matching the manifest's :file attribute.
    E.g., manifest's [section :n 1 :id intro :file '01-intro.cx']
@@ -15,5 +15,4 @@
 
 [readme
   status='scaffold — no section files authored yet'
-  see-also=../manifest.cxd
-  blocks-on=adr-0028]
+  see-also=../manifest.cxd]

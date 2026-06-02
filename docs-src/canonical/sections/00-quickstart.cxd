@@ -363,7 +363,7 @@
         """The `libcx-wasm` bundle powers the live evaluator in
            the playground; on v0.8.0 it exports the
            `_cx_code_eval` family plus `_cx_code_diagram` and
-           `_cx_code_tree` per ADR 0037. The bundle ships
+           `_cx_code_tree`. The bundle ships
            alongside the `cx` binary on release tags."""]]
 
     [child id=install-source n=0.10.6 title='Build from source'

@@ -172,7 +172,7 @@
          (`[?match]`), and update focus (`[?modify]`). XPath 3.1
          aligned with deliberate divergences (see
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
-         and a value-kind in v0.8.0 per ADR 0028. See [[cxpath]]."""]]
+         and a value-kind in v0.8.0. See [[cxpath]]."""]]
 
   [child id=g-data-bin title='data-bin'
     [body
@@ -403,7 +403,7 @@
     [body
       """`[?match]` — pattern dispatch. Single-arm form is an
          assertion that raises `CXER0100` on miss; multi-arm form
-         (ADR 0029) selects the first matching `[case …]` clause.
+         selects the first matching `[case …]` clause.
          See [[match]]."""]]
 
   [child id=g-merge-sigil title='merge sigil (*)'
@@ -416,12 +416,12 @@
     [body
       """`[?modify]` — pure-functional update. Takes a document, a
          CXPath focus, and an action clause (`[set …]` / `[delete]`
-         / …); returns a new document. ADR 0030. See [[modify]]."""]]
+         / …); returns a new document. See [[modify]]."""]]
 
   [child id=g-multi-arm-match title='multi-arm match'
     [body
       """The N-arm form of `[?match]` with `[case …]` / `[when …]` /
-         `[else …]` arms and optional `[where …]` guards. ADR 0029.
+         `[else …]` arms and optional `[where …]` guards.
          See [[match]]."""]]
 
   [child id=g-namespace title='namespace'
@@ -703,9 +703,7 @@
     [body
       """A constrained demonstration surface for CX inside the
          browser, not the performance target. Three delivery
-         modes per ADR
-         [0040](../../spec/decisions/0040-map-reduce-using-redesign.md)
-         D9: GitHub Pages static (HTTPS), local clone file://
+         modes: GitHub Pages static (HTTPS), local clone file://
          (double-click `playground.html`), and `make guide-http`
          (V veb server with cross-origin isolation enabled). Only
          the third mode runs `par=true` examples on real OS threads;
