@@ -290,7 +290,15 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try
+
+# ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
+# surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
+# Token-aware, not a raw grep ([?try-send]/[?try-receive] + the CSV dialect
+# [on-error "…"] option + the retirement-pinning negatives are allowlisted).
+.PHONY: check-no-legacy-try
+check-no-legacy-try:
+	@python3 scripts/check_no_legacy_try.py
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
