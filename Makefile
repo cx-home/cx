@@ -290,7 +290,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-effect-alignment
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-effect-alignment check-null-absence-conflation
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -299,6 +299,18 @@ TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-n
 .PHONY: check-no-legacy-try
 check-no-legacy-try:
 	@python3 scripts/check_no_legacy_try.py
+
+# ── check-null-absence-conflation gate (SAP C1 / spec/core/code.md §9.1.2.1
+# rule (b)) — the no-conflation guard: no builtin returns `null` to mean
+# "absent." An optional read signals "nothing here" via the absence channel
+# (the empty sequence `()`), never `null`. Token-aware: it flags the
+# `[returns [or T null]]` declared-optional-return shape in the stdlib def
+# surface (spec/std-lib/*.md + the vcx/code bundle sources); unit-null
+# `[returns null]` and param-position `[or T null]` are deliberately not
+# flagged. Permanent gate, not migration-only.
+.PHONY: check-null-absence-conflation
+check-null-absence-conflation:
+	@python3 scripts/check_null_absence_conflation.py
 
 # ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
 # capability-alignment invariant: (1) every capability-gated effect point is
