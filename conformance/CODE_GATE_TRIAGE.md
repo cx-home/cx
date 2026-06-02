@@ -35,6 +35,38 @@ code_parser `[?str]`, match_multi `[?let]`-colon, render quote-style).
 
 ---
 
+## Open spec⇄impl findings — 2026-06-02 (code-tour port + tooling migration) — UNTRIAGED
+
+Surfaced while porting `examples/code-tour.cx` to the v0.8.0 surface (commit
+`735c4158`) and during the editor-tooling migration the same day. All are
+**spec-admits-but-impl-diverges** gaps with **no enforced fixture covering
+them** (the gate is green because nothing exercises these paths). Each needs a
+spec-first fixture before any impl fix; none is currently tracked elsewhere.
+
+Severity key: **S** = silent wrong answer · **E** = hard error where spec says
+value/absence · **M** = missing surface · **D** = spec-doc staleness.
+
+| # | Sev | Finding | Spec anchor | Observed |
+|---|---|---|---|---|
+| F1 | E | `(bind $name)` path-step annotation parses but the path walker never populates the binding | code.md §5.5.2 (worked example), grammar `[160a]` | `//team (bind $t) / member[… $t …]` → `CXER0001 unbound variable $t` at eval; fixture `pred-006` sidesteps via two-generator `[?for]` |
+| F2 | **S** | Attribute reads inside **nested** predicates silently match nothing | §5.5.2 (predicate bodies are full CX exprs) | `//team[count($_/member[$_@role="lead"]) >= 1]` → empty; child-element `$_/role` works (`pred-005` uses child elements only) |
+| F3 | E | Missing-attribute read hard-errors instead of riding the absence channel | §9.1.2.2 (optional attr miss = absence) | `$u/@absent` and `$u@absent` → `CXER0001 no attribute` (kills any `[?for]`/`[where]` over heterogeneous nodes) |
+| F4 | M/E | `[?const]` modifiers: `scope=public` rejected; spec's bare `lazy` parses but the const **never binds** (impl wants `:lazy` atom) | §12.3 | `[?const scope=public K 42]` → `CXER0212`; `[?const lazy K 42]` parses, `$K` unbound on read; `[?const :lazy K …]` (fixture surface) works |
+| F5 | M | `[?lib]` selective import unimplemented — modifier parser is still v0.7-shaped | §12.1.2 | clause `[only x]` → `CXLIB_PARSE "expected modifier :LABEL, attr=value, or ]"`; attr `only=(x)` → `CXLIB_UNKNOWN_MODIFIER "expected as"`; legacy `:only (x)` parses but the refer never binds ("no callable") |
+| F6 | M | Single-arm `[?match]` rejects bind-only / scalar patterns | §8.2, grammar `[136]`/`[140a]` (MatchPattern admits `$name` + scalar literals) | `[?match 5 $n [yield …]]` → `CXER0001 "[?match] second slot must be a pattern"`; element patterns work |
+| F7 | D | §10.3.4 documents client ops as `$c \| get(PATH)` — infix pipe + paren-call, both retired by §8.9; §8.10 "Pipeline composition" example also uses infix `\|` | §10.3.4, §8.10 vs §8.9 tombstones | impl surface is `[$get $client PATH]` (client as first positional arg; `cx-test://NAME` targets hit the in-substrate service) — spec text needs the §8.9-conformant rewrite |
+| F8 | **S** | `[?http-service]` handler given as `[?fn]` leaks the closure into the response body instead of being invoked with the request | §10.3.2 (`HANDLER` trailing positional) | `[resource [get "/ping"] [?fn ($req) [response …]]]` → `[response status=200 [body [__cx_closure__ …]]]`; a direct-expression handler evaluates correctly |
+
+Non-findings confirmed by design while porting (documented in
+`examples/code-tour.cx` comments / session memory): module value = **last
+top-level expression** (tour files need one wrapper element); eval input flag
+is `--data=` (`--input` never existed); postfix `?`/`!` attach only to
+`[$call …]` forms (grammar `[125]`); scalar `[case 200 …]` does not match
+attr-sourced values (strict match, no atomization — the
+atomize-in-comparison-only principle).
+
+---
+
 ### Historical (the original 58-item triage, now resolved)
 
 Resolved so far:
