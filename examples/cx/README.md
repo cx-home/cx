@@ -20,8 +20,8 @@ cx eval greet.cx
 cx eval users.cx
 
 # Drive a tour script over one of them
-cx eval ../code-tour.cx --input greet.cx
-cx eval ../cxpath-tour.cx --input users.cx
+cx eval ../code-tour.cx --data=../code-tour.input.cx
+cx eval ../cxpath-tour.cx --data=users.cx
 ```
 
 For the full Code surface, see [`docs/CX code.md`](../../docs/CX%20code.md)

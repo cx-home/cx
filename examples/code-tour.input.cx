@@ -1,0 +1,21 @@
+[# Sample document for code-tour.cx — feeds the document-driven
+   sections (pattern-generator, multi-arm match, CXPath axes,
+   predicates). Run:
+     cx eval examples/code-tour.cx --data=examples/code-tour.input.cx #]
+
+[db
+  [user id=1 name='ada' email='ada@alpha.io' active=true verified=true]
+  [user id=2 name='bob' email='bob@beta.io' active=true verified=false]
+  [user id=3 name='cy' email='cy@gamma.dev' active=false verified=true]
+  [inventory
+    [user id=9 name='zed' email='zed@alpha.io' active=false verified=false]
+    [group id='ops']
+    [service id='api']
+    [mystery id='m1']
+    [widget id='w1']]
+  [section id='intro' [p "first"] [p "middle"] [p "last"]]
+  [team id='t1'
+    [member name='kim' [role lead]]
+    [member name='lee' [role dev]]
+    [member name='max' [role dev]]]
+  [row 1] [row 2] [row 3] [row 4]]
