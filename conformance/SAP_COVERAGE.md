@@ -66,6 +66,23 @@ The `COVERAGE` + `RED-COMPLETE` gate evidence: every Stage-A normative clause ha
 ## §9.1.2.1 null-totality matrix
 `sap-null-01-arith-clean-err` (G), `-02-concat-value` (G), `-03-eq` (G), `-04-count` (G), `-05-first` (G).
 
+## §9.1.2 absence cutover — the null/absence catalog (Phase C1)
+The no-conflation guard (§9.1.2.1 rule b): no builtin returns `null` for "absent."
+Each catalogued absent-null return migrated to the absence channel (the empty
+sequence `()`); extraction is `[?else]` (getOrElse, §8.13). These live in the
+stdlib `.cxd` files and run enforced under a least-privilege `grant=`.
+| catalog site | channel | fixtures | gate |
+|---|---|---|---|
+| `env:var` unset → absence (`stdlib/env.cxd`) | absence (`()`) | `sap-absence-env-01-var-unset-empty`, `-02-…-count-zero`, `-03-…-else-default` | G |
+| `env:var` deny-lane (cap masks the read) | CXER0271 | `env-001-var-cap-denied` | G |
+| `store:get-alias` miss → absence (`stdlib/store.cxd`) | absence (`()`) | `store-alias-002-get-missing-absence` (migrated from `-null`), `sap-absence-store-01-alias-miss-else` | G |
+| `store:get-alias` HIT still returns the hash (present flows) | value | `sap-absence-store-02-alias-hit-value` | G |
+| `process:poll` / `wait-timeout` no-result → absence | absence (`()`) | manual-grant verification (real-spawn nondeterminism; deny-lane = `process-016-poll-cap-denied`, same discipline as the 27 process deny-lane cases) | G |
+
+The `check-null-absence-conflation` standing guard (`scripts/check_null_absence_conflation.py`,
+wired into `make test`) makes the no-conflation guarantee permanent: it fails on
+any `[returns [or T null]]` declared-optional-return in the stdlib def surface.
+
 ## §10.5.7 structured concurrency — RAII over handles + cancel-revokes-caps (Phase C5)
 | clause | fixtures | gate |
 |---|---|---|
