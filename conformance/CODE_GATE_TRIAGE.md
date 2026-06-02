@@ -37,8 +37,10 @@ code_parser `[?str]`, match_multi `[?let]`-colon, render quote-style).
 
 ## Open spec⇄impl findings — 2026-06-02 (code-tour port + tooling migration) — UNTRIAGED
 
-Surfaced while porting `examples/code-tour.cx` to the v0.8.0 surface (commit
-`735c4158`) and during the editor-tooling migration the same day. All are
+F1–F8 surfaced while porting `examples/code-tour.cx` to the v0.8.0 surface
+(commit `735c4158`) and during the editor-tooling migration the same day;
+F9–F12 surfaced porting `examples/cxpath-tour.cx` / `examples/modify-crud.cx`
+later that day. All are
 **spec-admits-but-impl-diverges** gaps with **no enforced fixture covering
 them** (the gate is green because nothing exercises these paths). Each needs a
 spec-first fixture before any impl fix; none is currently tracked elsewhere.
@@ -56,6 +58,10 @@ value/absence · **M** = missing surface · **D** = spec-doc staleness.
 | F6 | M | Single-arm `[?match]` rejects bind-only / scalar patterns | §8.2, grammar `[136]`/`[140a]` (MatchPattern admits `$name` + scalar literals) | `[?match 5 $n [yield …]]` → `CXER0001 "[?match] second slot must be a pattern"`; element patterns work |
 | F7 | D | §10.3.4 documents client ops as `$c \| get(PATH)` — infix pipe + paren-call, both retired by §8.9; §8.10 "Pipeline composition" example also uses infix `\|` | §10.3.4, §8.10 vs §8.9 tombstones | impl surface is `[$get $client PATH]` (client as first positional arg; `cx-test://NAME` targets hit the in-substrate service) — spec text needs the §8.9-conformant rewrite |
 | F8 | **S** | `[?http-service]` handler given as `[?fn]` leaks the closure into the response body instead of being invoked with the request | §10.3.2 (`HANDLER` trailing positional) | `[resource [get "/ping"] [?fn ($req) [response …]]]` → `[response status=200 [body [__cx_closure__ …]]]`; a direct-expression handler evaluates correctly |
+| F9 | E | Single-slash-rooted paths rejected in expression position | grammar `[130]` (`PathExpr ::= … \| '/' StepList \| …`) | `/root/users/user` → `CXER0100 unexpected token '/' in expression position` in every context tried (element body, `[?let]` value, `[?for]` generator); `//`-anchored paths work |
+| F10 | E | Axis steps on a binding path rejected at `::` | grammar `[135a]` (`BindingStep ::= '/' Step` — "child / wildcard / **axis**"; comment names `$x/axis::name`) | `$u/parent::*`, `$u/following-sibling::user` → `CXER0100 unexpected token '::'`; the same axis anchored at the document (`//user[1]/parent::*`) works |
+| F11 | E | Comparison expressions rejected inside XPath-call argument parens in predicates | §5.5.2 (predicate bodies are full CX exprs) | `//user[not($_@banned = true)]` → `CXER0100 expected ')', got =`; bare-truthy `not($_@banned)` and `$_@banned = false` both parse + evaluate |
+| F12 | E | A `[?let]`-bound node-set does not distribute attribute steps over its members | §6.2 O4 (normative: `$seq/@x` over `([a x=1], [a x=2])` yields `(1, 2)`, "not a `no attribute` error") | `[?let [= $u //user[1]] … $u/@name]` and `[?let [= $s //user] … $s/@email]` → `CXER0001 no attribute` even though every member carries the attribute; `[?for]`-bound single nodes read fine (workaround used in `examples/cxpath-tour.cx`) |
 
 Non-findings confirmed by design while porting (documented in
 `examples/code-tour.cx` comments / session memory): module value = **last
