@@ -290,7 +290,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-effect-alignment
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -299,6 +299,18 @@ TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-n
 .PHONY: check-no-legacy-try
 check-no-legacy-try:
 	@python3 scripts/check_no_legacy_try.py
+
+# ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
+# capability-alignment invariant: (1) every capability-gated effect point is
+# reached only through an `impure` builtin (gated ⇒ impure, by construction in
+# builtin_purity_table); (2) every impure-without-capability builtin is in the
+# closed, enumerated exception table. NOT symmetric. The V test owns both
+# directions + drift canaries (process- prefix, env- minus pure prims, io
+# read/write/open). Runs as part of `test-vcx` too; this dedicated target is
+# the named gate.
+.PHONY: check-effect-alignment
+check-effect-alignment: build-vcx
+	@v test vcx/tests/effect_alignment_test.v
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
