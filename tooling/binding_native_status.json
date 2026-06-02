@@ -1,5 +1,5 @@
 {
-  "comment": "v0.7.6: per-binding native-implementation dashboard. Tracks which v0.7.6 program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The v0.7.6 evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Tier 1 (V / Python / Go) is c-abi-passthrough by design and locked at parity per v0.7.6 gate 11. Tier 2 (Rust / TypeScript) catch up once per release per ADR 0022 §D8.",
+  "comment": "v0.7.6: per-binding native-implementation dashboard. Tracks which v0.7.6 program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The v0.7.6 evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Tier 1 (V / Python / Go) is c-abi-passthrough by design and locked at parity per v0.7.6 gate 11. Tier 2 (Rust / TypeScript) catch up once per release.",
   "version": "v0.7.6",
   "as_of": "2026-05-21",
   "bindings": {
@@ -39,11 +39,11 @@
     }
   },
   "frozen_bindings": {
-    "csharp": {"tier": 3, "status": "frozen per ADR 0022 §D4", "reason": "Not in Tier-1 / Tier-2 parity matrix at v0.7.6"},
-    "java":   {"tier": 3, "status": "frozen per ADR 0022 §D4", "reason": "Same"},
-    "kotlin": {"tier": 3, "status": "frozen per ADR 0022 §D4", "reason": "Same"},
-    "ruby":   {"tier": 3, "status": "frozen per ADR 0022 §D4", "reason": "Same"},
-    "swift":  {"tier": 3, "status": "frozen per ADR 0022 §D4", "reason": "Same"}
+    "csharp": {"tier": 3, "status": "frozen", "reason": "Not in Tier-1 / Tier-2 parity matrix at v0.7.6"},
+    "java":   {"tier": 3, "status": "frozen", "reason": "Same"},
+    "kotlin": {"tier": 3, "status": "frozen", "reason": "Same"},
+    "ruby":   {"tier": 3, "status": "frozen", "reason": "Same"},
+    "swift":  {"tier": 3, "status": "frozen", "reason": "Same"}
   },
   "v0_7_x_native_port_roadmap": {
     "comment": "v0.7.x / v0.8.0 candidates for native-implementation expansion. Order: data-bin → emitters → cx_code_eval (the latter is large and binding-specific — the v0.7.6 program evaluator is a substantial body of work to port natively).",
