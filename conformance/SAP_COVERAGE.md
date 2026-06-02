@@ -107,3 +107,27 @@ sequence/Maybe (`fp-001..006`), result railway (`fp-010/011`), E_NO_INSTANCE=CXE
 - pipe skip-proof counter harness — the current `sap-pipe-08/09` pin the err
   result; the captured-counter probe is added when `[tap]`/log side effects land.
 - queryable-instance check + binding-parity (Phase C4/C6).
+
+## §C6 — PARITY across the 4 bindings + the §0.1 docs guardrail (Phase C6)
+- **PARITY.** The V eval-fixtures runner (`code_eval_fixtures_test.v`) runs every
+  `[case id=…]` in `code.cxd` with no whitelist, so all 65 enforced `sap-*` cases
+  are exercised V-side. The Python (`conformance_code.py`) + Go
+  (`conformance_code_test.go`) corpus whitelists gained the full 65-id SAP block;
+  Rust (`tests/program_eval.rs`, Tier-1 smoke) gained 8 SAP smoke tests (one per
+  surface). Numbers: V 80/80, Python 252/252, Go 252/252, Rust 16/16.
+- **Two binding-runner fixes (toward the V oracle):** the Python whitelist's stale
+  `program-find-*`→`program-for-*` drift (28 fixtures) corrected; both runners now
+  check `out_err` against the rendered RETURN (§9.1.2 errors-are-values: an `[err]`
+  is a value `eval_code` returns, not necessarily a raise — sap-pipe-08/09).
+- **§0.1 Tier-1-only docs guardrail** = `scripts/check_docs_tier1_guardrail.py`,
+  wired into `make test` (`TEST_TARGETS`): the beginner sections (quickstart §0 +
+  intro §1) are Tier-1-only — no fp.md / monad / functor / typeclass. Standing
+  gate (cross-linked from `readiness-rubric.md`).
+- **Archived (C6):** the two superseded drafts (`error_handling_posture.md` +
+  `scala_gap_closure.md`, in `spec/_archive/` since promotion) tombstone-relinked;
+  the superseded Stage-B `sap_fixtures_preview.cxd` moved to `spec/_archive/`.
+- **Spec⇄impl gaps logged (SPEC-FINDINGS §AP):** def-body block-comment apostrophe;
+  `[?lib [only …]]`/scope/in-memory/version parser-rejected; let-bound single-node
+  rebind-then-navigate returns empty. Pre-existing, non-blocking.
+- **Graduation:** NOT performed — user-only G3 (the SAP §§ stay in
+  `spec/03-accepted-working/`).

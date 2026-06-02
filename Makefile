@@ -290,7 +290,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-stale-version check-effect-alignment check-null-absence-conflation
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -331,6 +331,18 @@ check-null-absence-conflation:
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
 	@v test vcx/tests/effect_alignment_test.v
+
+# ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
+# guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
+# show Tier 1 ONLY, and fp.md / the words "monad"/"functor"/"typeclass" never
+# appear in beginner material. Makes §0.1's reviewer rule a permanent gate so
+# the entry surface cannot silently drift into advanced theory. Token-aware
+# (whole-word advanced terms); a deferring mention ("no monads required") is
+# allowlistable. Tier 2/3 sections (concepts §9, libraries §16) are out of
+# scope by design — they carry the opt-in/advanced markers.
+.PHONY: check-docs-tier1-guardrail
+check-docs-tier1-guardrail:
+	@python3 scripts/check_docs_tier1_guardrail.py
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
