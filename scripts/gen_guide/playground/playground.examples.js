@@ -37,7 +37,7 @@
     "05-atom-values": {
       label: "[5] Atoms \u2014 `:kebab-case`",
       input: "[response status=:ok]",
-      note:  "**Introduces:** atoms \u2014 `:kebab-case` identifiers that evaluate to themselves. Use atoms for enum-like markers without quoting (ADR 0033).",
+      note: "**Introduces:** atoms \u2014 `:kebab-case` identifiers that evaluate to themselves. Use atoms for enum-like markers without quoting.",
       tags:  [],
     },
     "06-string-quoting": {
@@ -91,7 +91,7 @@
     "14-durations": {
       label: "[14] Durations \u2014 first-class scalars",
       input: "[timing short=50ms medium=2s long=15m very-long=2h]",
-      note:  "**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc. (ADR 0039).",
+      note: "**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc.",
       tags:  [],
     },
     "15-hyphenated-names": {
@@ -175,7 +175,7 @@
     "28-match-scalar": {
       label: "[28] [?match] \u2014 multi-arm on a scalar",
       input: "[?let\n  [= $s 200]\n  [?match $s\n    [case 200 :ok]\n    [case 404 :not-found]\n    [else :err]]]",
-      note:  "**Introduces:** `[?match SCRUTINEE [case PATTERN RESULT] \u2026]`. First matching `[case \u2026]` wins; `[else \u2026]` is the fallback (ADR 0029).",
+      note: "**Introduces:** `[?match SCRUTINEE [case PATTERN RESULT] \u2026]`. First matching `[case \u2026]` wins; `[else \u2026]` is the fallback.",
       tags:  ["eq", "let", "match"],
     },
     "29-match-else-fallback": {
@@ -187,7 +187,7 @@
     "30-match-no-else": {
       label: "[30] [?match] \u2014 no [else \u2026] returns ()",
       input: "[?let\n  [= $s 500]\n  [?match $s\n    [case 200 :ok]\n    [case 404 :not-found]]]",
-      note:  "**Introduces:** missing `[else \u2026]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()` (ADR 0029 D9).",
+      note: "**Introduces:** missing `[else \u2026]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()`.",
       tags:  ["eq", "let", "match"],
     },
     "31-match-wildcard": {
@@ -211,7 +211,7 @@
     "34-cast-string-int": {
       label: "[34] [cast] \u2014 string to int",
       input: "[cast \"42\" :int]",
-      note:  "**Introduces:** `[cast VALUE :TYPE]` \u2014 explicit scalar conversion per ADR 0033. `CXER0290` on invalid.",
+      note: "**Introduces:** `[cast VALUE :TYPE]` \u2014 explicit scalar conversion. `CXER0290` on invalid.",
       tags:  ["builtin", "cast", "in"],
     },
     "35-cast-float-int": {
@@ -283,7 +283,7 @@
     "46-fn-via-map": {
       label: "[46] [?fn] \u2014 anonymous function via [?map]",
       input: "[?map (1, 2, 3, 4, 5) [using [?fn $x [* $x $x]]]]",
-      note:  "**Introduces:** `[?fn ($param) BODY]` \u2014 anonymous closure. `[?map XS [using FN]]` invokes it on each element of `xs` (ADR 0040).",
+      note: "**Introduces:** `[?fn ($param) BODY]` \u2014 anonymous closure. `[?map XS [using FN]]` invokes it on each element of `xs`.",
       tags:  ["fn", "map", "mul"],
     },
     "47-map-cube": {
@@ -349,7 +349,7 @@
     "57-map-par-bulkhead": {
       label: "[57] [?map :par] \u2014 bounded with [?bulkhead]",
       input: "[?map\n  (1, 2, 3, 4, 5, 6, 7, 8)\n  [using\n    [?fn $n\n      [?bulkhead max-concurrent=2\n        [?let\n          [= $_ [?sleep 100ms :mock]]\n          [* $n $n]]]]]\n  [par]]",
-      note:  "**Introduces:** the canonical bounded-parallelism idiom. Default `[par]` is unbounded; wrap the `[using]` body in `[?bulkhead]` to cap fan-out. `cx lsp` emits CXLS005 if you forget the wrap (ADR 0040 D14).",
+      note: "**Introduces:** the canonical bounded-parallelism idiom. Default `[par]` is unbounded; wrap the `[using]` body in `[?bulkhead]` to cap fan-out. `cx lsp` emits CXLS005 if you forget the wrap.",
       tags:  ["bulkhead", "eq", "fn", "let", "map", "mock", "mul", "parallel", "resilience", "sleep"],
     },
     "58-par-shared-cb": {
@@ -373,7 +373,7 @@
     "61-modify-delete": {
       label: "[61] [?modify] \u2014 pure-functional :delete",
       input: "[?let\n  [= $doc\n    [users\n      [user id=1 name=Alice banned=false]\n      [user id=2 name=Bob banned=true]\n      [user id=3 name=Carol banned=false]\n      [user id=4 name=Dave banned=true]]]\n  [?modify $doc //user[@banned=true]\n    [delete]]]",
-      note:  "**Introduces:** `[?modify DOC PATH :ACTION]` (ADR 0030). Pure-functional \u2014 returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` is a CXPath predicate filter; `:delete` removes the matches.",
+      note: "**Introduces:** `[?modify DOC PATH :ACTION]`. Pure-functional \u2014 returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` is a CXPath predicate filter; `:delete` removes the matches.",
       tags:  ["attr", "descendant", "eq", "let", "modify"],
     },
     "62-modify-set-attr": {
@@ -493,7 +493,7 @@
     "81-sleep-mock-timeout": {
       label: "[81] [?sleep :mock] inside [?timeout]",
       input: "[?timeout 100ms\n  [?let\n    [= $_ [?sleep 500ms :mock]]\n    [ok value='never']]]",
-      note:  "**Introduces:** `[?sleep DUR :mock]` \u2014 virtual time, instant in wall-clock (ADR 0039). The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms.",
+      note: "**Introduces:** `[?sleep DUR :mock]` \u2014 virtual time, instant in wall-clock. The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms.",
       tags:  ["eq", "let", "mock", "sleep", "timeout"],
     },
     "82-sleep-wall": {
@@ -613,7 +613,7 @@
     "101-cxpath-descendant": {
       label: "[101] CXPath \u2014 descendant axis `//`",
       input: "[?let\n  [= $doc\n    [tree\n      [branch [leaf id=1] [leaf id=2]]\n      [branch [leaf id=3]]\n      [branch [leaf id=4] [leaf id=5]]]]\n  [?for\n    [in $l $doc//leaf]\n    [yield $l/@id]]]",
-      note:  "**Pattern:** find descendants at any depth. **Uses:** `//`, `[yield \u2026]`, attribute access. The `//leaf` step matches every `leaf` element under `$doc`, no matter how deeply nested. (G1 closed in ADR 0043.)",
+      note: "**Pattern:** find descendants at any depth. **Uses:** `//`, `[yield \u2026]`, attribute access. The `//leaf` step matches every `leaf` element under `$doc`, no matter how deeply nested. (G1 closed.)",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "102-cxpath-child": {
@@ -637,7 +637,7 @@
     "105-cxpath-position": {
       label: "[105] CXPath \u2014 position predicate `[N]`",
       input: "[?let\n  [= $doc [list [item id=1] [item id=2] [item id=3] [item id=4]]]\n  $doc/item[2]]",
-      note:  "**Pattern:** pick the Nth match. **Uses:** `[N]` inline predicate (1-indexed per XPath convention). Returns the second `item`. (G3 closed in ADR 0043.)",
+      note: "**Pattern:** pick the Nth match. **Uses:** `[N]` inline predicate (1-indexed per XPath convention). Returns the second `item`. (G3 closed.)",
       tags:  ["cxpath", "eq", "let"],
     },
     "106-cxpath-last": {
@@ -649,19 +649,19 @@
     "107-cxpath-compound": {
       label: "[107] CXPath \u2014 compound predicate `[and \u2026]`",
       input: "[?let\n  [= $doc\n    [users\n      [user active=true age=30]\n      [user active=false age=40]\n      [user active=true age=22]]]\n  $doc/user[and [= @active true] [> @age 25]]]",
-      note:  "**Pattern:** filter by multiple conditions. **Uses:** `[and a b]` predicate body wrapping `[= @attr v]` and `[> @attr v]` comparisons. The bracket-form predicates compose; `or` works the same way. Per ADR 0036's `[expr]` general predicate framing.",
+      note: "**Pattern:** filter by multiple conditions. **Uses:** `[and a b]` predicate body wrapping `[= @attr v]` and `[> @attr v]` comparisons. The bracket-form predicates compose; `or` works the same way. Per `[expr]` general predicate framing.",
       tags:  ["and", "attr", "builtin", "cxpath", "eq", "gt", "let"],
     },
     "108-cxpath-parent": {
       label: "[108] CXPath \u2014 parent axis `..`",
       input: "[?let\n  [= $doc\n    [orders\n      [order id=1 [line p=10]]\n      [order id=2 [line p=20]]\n      [order id=3 [line p=30]]]]\n  [?for\n    [in $l $doc//line]\n    [yield $l/../@id]]]",
-      note:  "**Pattern:** find the container of a match. **Uses:** `..` parent axis, chained with `/@id`. For each `line` element, navigate up to its `order` parent and read that order's `id`. (G2 closed in ADR 0043.)",
+      note: "**Pattern:** find the container of a match. **Uses:** `..` parent axis, chained with `/@id`. For each `line` element, navigate up to its `order` parent and read that order's `id`. (G2 closed.)",
       tags:  ["cxpath", "descendant", "eq", "for", "let", "parallel"],
     },
     "109-rename-via-attr": {
       label: "[109] Transform \u2014 rename element via attribute",
       input: "[?let\n  [= $doc\n    [doc\n      [item name=apple qty=3]\n      [item name=pear qty=5]\n      [item name=carrot qty=2]]]\n  [?for\n    [in $i $doc//item]\n    [yield [(:atom $i/@name) qty=$i/@qty]]]]",
-      note:  "**Pattern:** synthesize an element whose name comes from the source's attribute. **Uses:** `[(:atom EXPR) attrs]` dynamic head (G5, ADR 0044), `$i/@name` to compute the name, `$i/@qty` to copy a value across. The fruit/veg `item` records become `[apple qty=3]`, `[pear qty=5]`, `[carrot qty=2]`.",
+      note: "**Pattern:** synthesize an element whose name comes from the source's attribute. **Uses:** `[(:atom EXPR) attrs]` dynamic head (G5), `$i/@name` to compute the name, `$i/@qty` to copy a value across. The fruit/veg `item` records become `[apple qty=3]`, `[pear qty=5]`, `[carrot qty=2]`.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "110-attr-to-child": {
@@ -697,7 +697,7 @@
     "115-project-attrs": {
       label: "[115] Transform \u2014 project (keep only some attrs)",
       input: "[?let\n  [= $doc\n    [users\n      [user id=1 name=A age=30 ssn=secret]\n      [user id=2 name=B age=25 ssn=secret]]]\n  [?for\n    [in $u $doc/user]\n    [yield [user id=$u/@id name=$u/@name]]]]",
-      note:  "**Pattern:** keep only certain attributes (the SQL `SELECT a, b` shape). **Uses:** `[?for]` + explicit attribute construction over `$doc/user` (child axis returns every `user` child after ADR 0045 Wave 1 gap A). Useful for shedding sensitive or redundant fields.",
+      note: "**Pattern:** keep only certain attributes (the SQL `SELECT a, b` shape). **Uses:** `[?for]` + explicit attribute construction over `$doc/user` (child axis returns every `user` child after Wave 1 gap A). Useful for shedding sensitive or redundant fields.",
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "116-reorder": {
@@ -733,7 +733,7 @@
     "121-composite-predicate": {
       label: "[121] Filter \u2014 composite predicate",
       input: "[?let\n  [= $doc\n    [users\n      [user active=true age=30 role=admin]\n      [user active=true age=22 role=user]\n      [user active=false age=40 role=admin]]]\n  $doc/user[and [= @active true] [>= @age 25]]]",
-      note:  "**Pattern:** combine multiple filter conditions inline. **Uses:** `[and [= @a v] [>= @b N]]` inline predicate with two clauses. Each `[op @attr value]` is an independent boolean; `and` short-circuits. (G3 closed in ADR 0043.)",
+      note: "**Pattern:** combine multiple filter conditions inline. **Uses:** `[and [= @a v] [>= @b N]]` inline predicate with two clauses. Each `[op @attr value]` is an independent boolean; `and` short-circuits. (G3 closed.)",
       tags:  ["and", "attr", "builtin", "cxpath", "eq", "ge", "let"],
     },
     "122-attr-presence": {
@@ -763,7 +763,7 @@
     "126-group-aggregate": {
       label: "[126] Aggregate \u2014 group-by attribute \u2192 count per group",
       input: "[?let\n  [= $doc\n    [orders\n      [o region=US amt=100]\n      [o region=EU amt=200]\n      [o region=US amt=50]\n      [o region=EU amt=80]\n      [o region=APAC amt=300]]]\n  [?for\n    [in $o $doc/o]\n    [group-by $o/@region]\n    [yield $o/@region]]]",
-      note:  "**Pattern:** what are the distinct group keys? **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await ADR 0041's `[?group-by]` iterator combinator.",
+      note: "**Pattern:** what are the distinct group keys? **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await `[?group-by]` iterator combinator.",
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "127-deep-descendant": {
@@ -853,13 +853,13 @@
     "141-reachability-1hop": {
       label: "[141] Graph \u2014 one-hop reachability",
       input: "[?let\n  [= $g\n    [triples\n      [t s=A p=knows o=B]\n      [t s=A p=knows o=C]\n      [t s=B p=knows o=D]]]\n  [?for\n    [in $t $g//t[and [= @s \"A\"] [= @p \"knows\"]]]\n    [yield $t/@o]]]",
-      note:  "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= @s \"A\"] [= @p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) \u2014 bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from ADR 0045 gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.",
+      note: "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= @s \"A\"] [= @p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) \u2014 bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.",
       tags:  ["and", "builtin", "cxpath", "descendant", "eq", "for", "let"],
     },
     "142-set-union": {
       label: "[142] Set \u2014 union (concat + distinct)",
       input: "[?let\n  [= $a (1, 2, 3, 4)]\n  [?let\n    [= $b (3, 4, 5, 6)]\n    [distinct ((1, 2, 3, 4, 3, 4, 5, 6))]]]",
-      note:  "**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (Lazy `[?chain]` + `[?distinct]` combinators await ADR 0041.)",
+      note: "**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (Lazy `[?chain]` + `[?distinct]` combinators are a planned addition.)",
       tags:  ["builtin", "distinct", "eq", "let"],
     },
     "143-set-intersection": {
@@ -883,79 +883,79 @@
     "146-pivot-rows-to-attrs": {
       label: "[146] ETL \u2014 pivot (row-shape \u2192 attr-shape)",
       input: "[?let\n  [= $doc [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]]]\n  [snapshot\n    cpu=$doc/m[@k=\"cpu\"]/@v\n    mem=$doc/m[@k=\"mem\"]/@v\n    disk=$doc/m[@k=\"disk\"]/@v]]",
-      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[@k=\u2026]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly \u2014 no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; bind the row via `[?let $cpu = $doc/m[@k=\"cpu\"]` and read `$cpu@v` when you need the raw scalar `87`. The shape still pivots skinny-tall \u2192 wide. (G4 closed in ADR 0043.)",
+      note: "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[@k=\u2026]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly \u2014 no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; bind the row via `[?let $cpu = $doc/m[@k=\"cpu\"]` and read `$cpu@v` when you need the raw scalar `87`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
       tags:  ["cxpath", "eq", "let"],
     },
     "147-unpivot": {
       label: "[147] ETL \u2014 unpivot (attrs \u2192 rows)",
       input: "[?let\n  [= $row [snapshot cpu=87 mem=62 disk=44]]\n  ([m k=cpu v=$row/@cpu], [m k=mem v=$row/@mem], [m k=disk v=$row/@disk])]",
-      note:  "**Pattern:** the inverse of pivot. **Uses:** literal sequence + `$row/@\u2026` reads. Output is the skinny-tall form. Generalizes when there's a known attribute set; an arbitrary-attr unpivot waits on ADR 0041 iterator combinators.",
+      note: "**Pattern:** the inverse of pivot. **Uses:** literal sequence + `$row/@\u2026` reads. Output is the skinny-tall form. Generalizes when there's a known attribute set; an arbitrary-attr unpivot waits on iterator combinators.",
       tags:  ["cxpath", "eq", "let"],
     },
     "148-transpose-matrix": {
       label: "[148] ETL \u2014 transpose a 2D table",
       input: "[?let\n  [= $m\n    [matrix [row a=1 b=2 c=3] [row a=4 b=5 c=6] [row a=7 b=8 c=9]]]\n  [?let\n    [= $r1 $m/row[1]]\n    [?let\n      [= $r2 $m/row[2]]\n      [?let\n        [= $r3 $m/row[3]]\n        [transposed\n          [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]\n          [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]\n          [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]]]]",
-      note:  "**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed in ADR 0043) on the child axis `$m/row[N]` (gap A: child axis now returns every match \u2014 picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool (ADR 0041).",
+      note: "**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed) on the child axis `$m/row[N]` (gap A: child axis now returns every match \u2014 picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool.",
       tags:  ["attr", "cxpath", "eq", "let"],
     },
     "149-group-then-sum": {
       label: "[149] ETL \u2014 group-aggregate (region \u2192 total)",
       input: "[?let\n  [= $doc\n    [orders\n      [o region=US amt=100]\n      [o region=EU amt=200]\n      [o region=US amt=50]\n      [o region=EU amt=80]]]\n  [totals\n    us=[sum $doc//o[@region=\"US\"]/@amt]\n    eu=[sum $doc//o[@region=\"EU\"]/@amt]]]",
-      note:  "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[@region=\"US\"]`, `[sum \u2026]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits ADR 0041.)",
+      note: "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[@region=\"US\"]`, `[sum \u2026]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits.)",
       tags:  ["builtin", "cxpath", "descendant", "eq", "let", "sum"],
     },
     "150-join-by-key": {
       label: "[150] ETL \u2014 join two collections by attribute",
       input: "[?let\n  [= $orders\n    [o-set\n      [o id=1 user=\"A\" amt=100]\n      [o id=2 user=\"B\" amt=200]\n      [o id=3 user=\"A\" amt=50]]]\n  [?let\n    [= $users\n      [u-set\n        [u name=\"A\" email=\"a@x.com\"]\n        [u name=\"B\" email=\"b@x.com\"]]]\n    [?for\n      [in $o $orders//o]\n      [yield\n        [joined\n          order-id=$o/@id\n          amt=$o/@amt\n          email=$users//u[@name=$o/@user]/@email]]]]]",
-      note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (ADR 0045 gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
+      note: "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "151-range-by-stride": {
       label: "[151] Range \u2014 strided with `by`",
       input: "[?for\n  [in $x 1 to 10 by 2]\n  [yield $x]]",
-      note:  "**Pattern:** every other integer in a range. **Uses:** `[in $var N to M by S]` \u2014 the `by` stride keyword (ADR 0041 D1). Result is `(1, 3, 5, 7, 9)`. Negative stride reverses: `10 to 1 by -2`.",
+      note: "**Pattern:** every other integer in a range. **Uses:** `[in $var N to M by S]` \u2014 the `by` stride keyword. Result is `(1, 3, 5, 7, 9)`. Negative stride reverses: `10 to 1 by -2`.",
       tags:  ["for"],
     },
     "152-range-reverse-stride": {
       label: "[152] Range \u2014 reverse with negative `by`",
       input: "[?for\n  [in $x 20 to 4 by -4]\n  [yield $x]]",
-      note:  "**Pattern:** countdown by step. **Uses:** negative stride. Empty when direction disagrees with step (`5 to 3 by 1` \u2192 empty per ADR 0041 D20).",
+      note: "**Pattern:** countdown by step. **Uses:** negative stride. Empty when direction disagrees with step (`5 to 3 by 1` \u2192 empty).",
       tags:  ["for"],
     },
     "153-take-prefix": {
       label: "[153] Comprehension \u2014 `:take N` short-circuit",
       input: "[?for\n  [in $x 1 to 1000000]\n  [where [> $x 100]]\n  [take 5]\n  [yield $x]]",
-      note:  "**Pattern:** first N matching items, stop early. **Uses:** `:take 5` \u2014 comprehension short-circuits after 5 yields without evaluating the rest of the range. Critical for any pipeline over a large or infinite source (ADR 0041 D14).",
+      note: "**Pattern:** first N matching items, stop early. **Uses:** `:take 5` \u2014 comprehension short-circuits after 5 yields without evaluating the rest of the range. Critical for any pipeline over a large or infinite source.",
       tags:  ["for", "gt"],
     },
     "154-drop-prefix": {
       label: "[154] Comprehension \u2014 `:drop N` skip-prefix",
       input: "[?for\n  [in $x 1 to 10]\n  [drop 7]\n  [yield $x]]",
-      note:  "**Pattern:** ignore the first N items, yield the tail. **Uses:** `:drop 7` \u2014 skips the first 7 candidates BEFORE any `[where \u2026]` filter or `[yield \u2026]` body fires. Composes with `:take` for pagination (ADR 0041 D14).",
+      note: "**Pattern:** ignore the first N items, yield the tail. **Uses:** `:drop 7` \u2014 skips the first 7 candidates BEFORE any `[where \u2026]` filter or `[yield \u2026]` body fires. Composes with `:take` for pagination.",
       tags:  ["for"],
     },
     "155-drop-take-page": {
       label: "[155] Comprehension \u2014 paginate via `:drop + :take`",
       input: "[?for\n  [in $x 1 to 100]\n  [drop 30]\n  [take 5]\n  [yield $x]]",
-      note:  "**Pattern:** classic LIMIT/OFFSET shape. **Uses:** `:drop` to skip-prefix + `:take` to bound the page. Result is `(31, 32, 33, 34, 35)` \u2014 the 5-item page starting at offset 30. `:drop` runs BEFORE `:take`'s counter, so the page is correctly placed (ADR 0041 D14).",
+      note: "**Pattern:** classic LIMIT/OFFSET shape. **Uses:** `:drop` to skip-prefix + `:take` to bound the page. Result is `(31, 32, 33, 34, 35)` \u2014 the 5-item page starting at offset 30. `:drop` runs BEFORE `:take`'s counter, so the page is correctly placed.",
       tags:  ["for"],
     },
     "156-slice-range": {
       label: "[156] Slice \u2014 single-axis range `$xs[1:3]`",
       input: "[?let\n  [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[1:3]]",
-      note:  "**Pattern:** sub-sequence by inclusive index bounds. **Uses:** `$xs[1:3]` \u2014 the slice postfix on a `$binding` (ADR 0041 W5c). Indices are 1-based and STOP is INCLUSIVE (D4/D5), so the result is `(\"a\", \"b\", \"c\")`. Out-of-range or wrong-direction slices return the empty sequence rather than erroring (D20).",
+      note: "**Pattern:** sub-sequence by inclusive index bounds. **Uses:** `$xs[1:3]` \u2014 the slice postfix on a `$binding`. Indices are 1-based and STOP is INCLUSIVE (D4/D5), so the result is `(\"a\", \"b\", \"c\")`. Out-of-range or wrong-direction slices return the empty sequence rather than erroring (D20).",
       tags:  ["eq", "let"],
     },
     "157-slice-last-three": {
       label: "[157] Slice \u2014 last N via negative start `$xs[-3:]`",
       input: "[?let\n  [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[-3:]]",
-      note:  "**Pattern:** \"last three\" / pagination tail. **Uses:** negative indices resolve from the end at apply time (`-1` = last, `-3` = third-from-last per ADR 0041 D9). Equivalent to Python's `xs[-3:]`. Open-stop walks through the end of the sequence.",
+      note: "**Pattern:** \"last three\" / pagination tail. **Uses:** negative indices resolve from the end at apply time (`-1` = last, `-3` = third-from-last). Equivalent to Python's `xs[-3:]`. Open-stop walks through the end of the sequence.",
       tags:  ["eq", "let"],
     },
     "158-slice-reverse": {
       label: "[158] Slice \u2014 reverse with `$xs[::-1]`",
       input: "[?let\n  [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[::-1]]",
-      note:  "**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (ADR 0041 D5 + reverse-stride convention). Equivalent to `[reverse $xs]` but more direct when you're already in slice territory.",
+      note: "**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[reverse $xs]` but more direct when you're already in slice territory.",
       tags:  ["eq", "let"],
     },
     "159-slice-every-other": {
@@ -967,7 +967,7 @@
     "160-slice-trim-ends": {
       label: "[160] Slice \u2014 trim ends with `$_last`",
       input: "[?let\n  [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[2:[- $_last 1]]]",
-      note:  "**Pattern:** drop the first and last item. **Uses:** the `$_last` sigil (ADR 0041 D11) resolves to the receiver's cardinality at slice-apply time, so `[- $_last 1]` evaluates to `n - 1` regardless of the source. Stop is inclusive, so `[2:n-1]` keeps items 2 through n-1 \u2014 i.e. everything except the first and last.",
+      note: "**Pattern:** drop the first and last item. **Uses:** the `$_last` sigil resolves to the receiver's cardinality at slice-apply time, so `[- $_last 1]` evaluates to `n - 1` regardless of the source. Stop is inclusive, so `[2:n-1]` keeps items 2 through n-1 \u2014 i.e. everything except the first and last.",
       tags:  ["eq", "let", "sub"],
     },
     "161-sequence-worker-top": {
@@ -979,13 +979,13 @@
     "162-sequence-select-channels": {
       label: "[162] Sequence diagram \u2014 `[?select]` across channels",
       input: "[?let\n  [= $ch1 [?channel name=\"a\" buffer=1]]\n  [?let\n    [= $ch2 [?channel name=\"b\" buffer=1]]\n    [?let\n      [= $_ [?send 1 to=$ch1]]\n      [?select\n        [case [from $ch1 $v] [ok value=$v]]\n        [case [from $ch2 $v] [ok value=$v]]\n        [case [timeout 50ms] [err code=\"timeout\"]]]]]]",
-      note:  "**Pattern:** wait on the first of several channels (with a timeout escape hatch). **Diagram:** top-level `[?select]` triggers `sequenceDiagram` \u2014 each `[case [from CH $v] \u2026]` arm becomes an arrow from the channel actor; the `[timeout]` arm becomes a self-loop with a duration label. The case-envelope shape `[case [from $ch $msg] HANDLER]` is the ADR 0063 (5.a) split-selector form: selector head is the case kind, handler is positional.",
+      note: "**Pattern:** wait on the first of several channels (with a timeout escape hatch). **Diagram:** top-level `[?select]` triggers `sequenceDiagram` \u2014 each `[case [from CH $v] \u2026]` arm becomes an arrow from the channel actor; the `[timeout]` arm becomes a self-loop with a duration label. The case-envelope shape `[case [from $ch $msg] HANDLER]` is the split-selector form: selector head is the case kind, handler is positional.",
       tags:  ["channel", "eq", "let", "select", "send", "timeout"],
     },
     "163-sequence-http-service": {
       label: "[163] Sequence diagram \u2014 `[?http-service]` config",
       input: "[?http-service name=\"hello\" :on http\n  [resource [get \"/\"] [response status=200 [body \"hi\"]]]]",
-      note:  "**Pattern:** declare a service endpoint and its routes. **Diagram:** top-level `[?http-service]` triggers `sequenceDiagram` \u2014 the service is one actor, each `[resource [METHOD PATH] HANDLER]` becomes an inbound message arrow from a generic `client` actor. **Note:** this is the in-process conformance shape; the real-socket variant (port>0 + `[$serve-file]`) is the topic of ADR 0065.",
+      note: "**Pattern:** declare a service endpoint and its routes. **Diagram:** top-level `[?http-service]` triggers `sequenceDiagram` \u2014 the service is one actor, each `[resource [METHOD PATH] HANDLER]` becomes an inbound message arrow from a generic `client` actor. **Note:** this is the in-process conformance shape; the real-socket variant (port>0 + `[$serve-file]`) is a separate topic.",
       tags:  ["http-service"],
     },
     "164-graph-state-machine-data": {

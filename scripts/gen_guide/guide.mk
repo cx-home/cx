@@ -52,7 +52,7 @@ guide-libraries:
 # Ensure the playground wasm is built with ASYNCIFY=1 + SINGLE_FILE=1:
 #
 #   - ASYNCIFY=1: lets bare wall-clock [?sleep DUR] yield through the
-#     JS event loop on the main browser thread (ADR 0039 D8). Without
+# JS event loop on the main browser thread. Without
 #     this, file:// playgrounds can only run :mock examples.
 #
 #   - SINGLE_FILE=1: base64-embeds the .wasm payload inside libcx.js.
@@ -103,10 +103,10 @@ build-playground-wasm-for-guide:
 ##                                   server (scripts/gen_guide/guide_serve.cx)
 ##                                   with COOP+COEP+CORP headers so the
 ##                                   pthreads wasm runtime can load.
-##                                   Per ADR 0040 D9.4 — this is the
+## Per this is the
 ##                                   playground mode (c) where :par
 ##                                   actually parallelises.
-##                                   Per ADR 0065 — `[?http-service]`
+## Per `[?http-service]`
 ##                                   with `[block true]` + `[$serve-file]`
 ##                                   replaces the historical V/veb shim.
 .PHONY: guide-http
