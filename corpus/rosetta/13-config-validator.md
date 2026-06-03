@@ -13,7 +13,7 @@ and the `[?match]` truth-value-of-`:when` flow.
 - **Python (pydantic)**: `class Config(BaseModel): port: int; host: str`
 - **JSON-schema**: `{"required": ["port", "host"], "properties": {...}}`
 - **TypeScript / Zod**: `z.object({port: z.number(), host: z.string()})`
-- **CX schema (alternative path)**: `[?schema [config :requires (port, host)]]` (ADR 0009 design surface) — not used here because we want the in-program shape, not the schema-validator path.
+- **CX schema (alternative path)**: `[?schema [config :requires (port, host)]]` (the `spec/schema.md` design surface) — not used here because we want the in-program shape, not the schema-validator path.
 
 ## Actual run
 
@@ -49,13 +49,13 @@ returns `:valid` correctly. Removing either `[port 8080]` or
 
 ## Open gap log
 
-ADR 0045 hypothesis confirmations:
+Surface-completeness hypothesis confirmations:
 
-1. **`exists()` builtin missing.** XPath 3.1 §3.6.2 has both `exists` and `empty`. CX has `empty` but not `exists`. Trivial fix (one-line addition); should land alongside `boolean()` / `not()` audit. **Files a minor ADR or amends `spec/code.md §6.5`.**
+1. **`exists()` builtin missing.** XPath 3.1 §3.6.2 has both `exists` and `empty`. CX has `empty` but not `exists`. Trivial fix (one-line addition); should land alongside `boolean()` / `not()` audit. **Amends `spec/code.md §6.5`.**
 
 2. **`[?match $subject :where PREDICATE :yield X :else :yield Y]` modifier form.** Per `spec/code.md §8.4`, `:where` is a per-arm modifier, not an outer-match modifier. The task brief's example uses it as an outer modifier — that doesn't work. This is a spec-clarity issue, not a parser gap; worth a `spec/code.md` clarification.
 
-3. **Schema-validator path (ADR 0009) is the "real" answer here.** The fact that an in-program `[?match]` works at all is good, but production config-validation would lean on `[?schema]` / `validate` — confirming the schema surface in ADR 0009 is the right place for this class of program. **No new ADR; aligns with existing roadmap.**
+3. **Schema-validator path (`spec/schema.md`) is the "real" answer here.** The fact that an in-program `[?match]` works at all is good, but production config-validation would lean on `[?schema]` / `validate` — confirming the schema surface is the right place for this class of program. **No new surface needed; aligns with existing roadmap.**
 
 4. **Child-axis-vs-descendant-axis disparity (CONFIRMED, already in 0045 gap register).** Re-confirmed: `$config/port` returns 0 (or 1, depending on which way the single-match gap cuts); `$config//port` returns the correct count. Same gap as in program #06.
 

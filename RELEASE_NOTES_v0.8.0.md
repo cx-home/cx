@@ -14,16 +14,16 @@ comprehensions, Go filter chains, Rust iterator combinators).
 
 ## Headline
 
-- **CXPath as first-class value kind** ([ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md))
+- **CXPath as first-class value kind** ([`spec/code.md`](spec/code.md))
   — `//user[@active=true]/@email` is an expression; usable directly
   in `[?for]`, `[?if]`, `[?match]`, `[?modify]`, and binding `select_all`.
   All 12 XPath 3.1 axes; value-comparison semantics on sigils
   `= != < <= > >=`; no keyword-comparison synonyms (sigils only).
-- **Multi-arm `[?match]`** ([ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md))
+- **Multi-arm `[?match]`** ([`spec/code.md`](spec/code.md))
   — `:case PAT :yield E` / `:when PRED :yield E` / `:else :yield E`.
   Scalar literal patterns. `_` wildcard. First-match-wins, top-down.
   CXER0100 still flags the single-arm-with-no-match for back-compat.
-- **`[?modify]` directive** ([ADR 0030](spec/decisions/0030-modify-pure-functional-updates.md))
+- **`[?modify]` directive** ([`spec/code.md`](spec/code.md))
   — pure-functional updates via CXPath focus + action vocabulary.
   Eleven actions: `:set`, `:delete`, `:using`, `:rename`,
   `:set-attr`, `:delete-attr`, `:append`, `:prepend`,
@@ -39,7 +39,7 @@ comprehensions, Go filter chains, Rust iterator combinators).
   TypeScript / Java / C# / Ruby / Kotlin / Swift archived to
   `lang/_archived/`. Restoration is opt-in once the Layer-1 surface
   stabilizes.
-- **`programs` → `code` rename** ([ADR 0032](spec/decisions/0032-programs-to-code-rename.md))
+- **`programs` → `code` rename**
   — `spec/programs.md` → `spec/code.md`, `vcx/programs/` →
   `vcx/code/`, `cx_program_eval` → `cx_code_eval`. Brand-surface
   rename ("CX is data and code") propagated through the internal API.

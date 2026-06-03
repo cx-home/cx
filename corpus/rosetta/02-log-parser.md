@@ -54,14 +54,14 @@ shape is BLOCKED on the missing string-ops surface.
 
 | Idiomatic | Used | Reason |
 |---|---|---|
-| `split($line, " ")` to break into tokens | `contains($line, "ERROR")` to classify only | No `split` / `tokenize` builtin exists; ADR 0045 hypothesis #34 (string regex / split / format) confirmed |
+| `split($line, " ")` to break into tokens | `contains($line, "ERROR")` to classify only | No `split` / `tokenize` builtin exists; string regex / split / format gap confirmed |
 | Bind timestamp as `substring($line, 0, 19)` | (skipped — substring works but only by hard-coded offsets) | `substring()` exists as XPath call but using it pre-supposes a regex/anchor surface we don't have |
 | `[contains $line "ERROR"]` directive form | Used XPath form `contains($line, "ERROR")` | `contains` is XPath-call-only; the directive form returns the literal element (same bug as `floor`) |
 | `:case [entry :level $l] :yield ...` pattern destructure | (not attempted here) | The match is on a *string*, not a structured shape — destructuring isn't relevant for this stage |
 
 ## Open gap log
 
-ADR 0045 hypothesis confirmations:
+Surface-completeness hypothesis confirmations:
 
 1. **String ops beyond basics missing — `split` / `tokenize` / `format` / interpolation.** Listed in 0045 §"Confidence-ranked gap inventory" as "Very high" confidence (hypothesis #34 in the task brief). Confirmed here: no way to split a log line into timestamp / level / message. RE2 shim is built (per memory `project_v_re2_gap` and `vcx/Makefile` `LIB_RE2`) but not exposed in the code surface. **Files a NEW ADR (string-ops surface).**
 

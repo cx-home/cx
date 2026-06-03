@@ -69,7 +69,7 @@ guide-libraries:
 # Idempotent — emcc skips re-link when sources are unchanged.
 .PHONY: build-playground-wasm-for-guide
 build-playground-wasm-for-guide:
-	@# Build BOTH playground wasm artifacts per ADR 0040 D9.1:
+	@# Build BOTH playground wasm artifacts:
 	@#   libcx-async.{js,wasm}    — single-threaded ASYNCIFY runtime.
 	@#                              Loaded by playground when the host
 	@#                              is NOT cross-origin-isolated (file://,

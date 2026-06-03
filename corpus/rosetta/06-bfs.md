@@ -47,19 +47,19 @@ not a path from A to E. Multiple gaps compose to block the real BFS.
 
 | Idiomatic | Used | Reason |
 |---|---|---|
-| `$graph/edges` to iterate children | `$graph//edges` (descendant axis) | ADR 0045's confirmed gap: `$bind/child` returns only the *first* match, not all matches |
-| Queue + visited-set + loop | (none — abandoned) | No mutable state surface; no `[?loop]` / `[?recur]`; recursion-via-`[?def]` blocked by ADR 0034 not-yet-implemented |
-| `[?def bfs (g s e) ...]` recursive helper | (impossible) | `[?def]` ADR 0034 parse-form unimplemented (confirmed in program #01) |
+| `$graph/edges` to iterate children | `$graph//edges` (descendant axis) | Confirmed gap: `$bind/child` returns only the *first* match, not all matches |
+| Queue + visited-set + loop | (none — abandoned) | No mutable state surface; no `[?loop]` / `[?recur]`; recursion-via-`[?def]` blocked by the not-yet-implemented `[?def]` parse-form |
+| `[?def bfs (g s e) ...]` recursive helper | (impossible) | `[?def]` module-level function parse-form unimplemented (confirmed in program #01) |
 | `[?reduce]` over a worklist | (impossible) | Two-arg `[?fn]` with non-trivial body doesn't work (confirmed in program #05) |
-| Set difference `visited - to-visit` | (impossible) | No set-difference builtin; ADR 0045 hypothesis "set operations" listed Medium |
+| Set difference `visited - to-visit` | (impossible) | No set-difference builtin; "set operations" hypothesis listed Medium |
 
 ## Open gap log
 
-ADR 0045 hypothesis confirmations:
+Surface-completeness hypothesis confirmations:
 
-1. **CXPath `$bind/child` single-match (CONFIRMED, already in 0045 gap register).** Re-confirmed: `$graph/edges` returns 1 of 5 `edges` children; `$graph//edges` returns all 5. The descendant-axis workaround is fine for this shape but trips on cross-binding predicates per the other 0045-confirmed gap (`[@a=$o/@x]` RHS not evaluated against binding env).
+1. **CXPath `$bind/child` single-match (CONFIRMED, already in the gap register).** Re-confirmed: `$graph/edges` returns 1 of 5 `edges` children; `$graph//edges` returns all 5. The descendant-axis workaround is fine for this shape but trips on cross-binding predicates per the other confirmed gap (`[@a=$o/@x]` RHS not evaluated against binding env).
 
-2. **No looping / fixed-point combinator.** `[?reduce]` is the closest surface; `[?for]` is the closest comprehension. Neither models BFS's "until queue empty" condition. Filing this is structural — fits ADR 0045 hypothesis "Concurrency primitives beyond `[?channel]`" only loosely. Probably **files a NEW ADR (`[?recur]` / `[?loop]` / Y-combinator surface).**
+2. **No looping / fixed-point combinator.** `[?reduce]` is the closest surface; `[?for]` is the closest comprehension. Neither models BFS's "until queue empty" condition. Filing this is structural — fits the "Concurrency primitives beyond `[?channel]`" hypothesis only loosely. Probably **motivates a new `[?recur]` / `[?loop]` / Y-combinator surface.**
 
 3. **No mutable state / accumulator outside `[?reduce]`.** Confirms an implicit assumption — CX is purely functional in the corpus-program surface today. That's a design choice (memory `feedback_v0_6_0_design_philosophy` aligns with this) but worth documenting as a *deliberate* gap rather than an oversight.
 

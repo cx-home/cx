@@ -27,7 +27,7 @@ TARGETS=(
     "$ROOT/include/cx.h"
 )
 
-# Legacy fallback for the pre-ADR-0032 layout (vcx/programs/ → vcx/code/);
+# Legacy fallback for the old layout (vcx/programs/ → vcx/code/);
 # kept as a defensive guard when running on archived worktrees.
 [[ ! -d "$ROOT/vcx/code" ]] && [[ -d "$ROOT/vcx/programs" ]] && \
     TARGETS=("$ROOT/vcx/programs" "$ROOT/vcx/cx/cabi.v" "$ROOT/vcx/cmd" "$ROOT/include/cx.h")

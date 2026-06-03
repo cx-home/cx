@@ -8,9 +8,7 @@ so revisions accumulate alongside the design artifacts they describe.
 **Companion documents:**
 - [`backlog.cx`](backlog.cx) — living decision log
 - [`manifest.cxd`](manifest.cxd) — guide TOC
-- [`spec/decisions/0028-cxpath-as-value-kind.md`](../../spec/decisions/0028-cxpath-as-value-kind.md)
-- [`spec/decisions/0029-match-heterogeneous-arms.md`](../../spec/decisions/0029-match-heterogeneous-arms.md)
-- [`spec/decisions/0030-modify-pure-functional-updates.md`](../../spec/decisions/0030-modify-pure-functional-updates.md)
+- [`spec/code.md`](../../spec/code.md) — CXPath value kind, `[?match]`, `[?modify]`
 - [`spec/bindings.md`](../../spec/bindings.md)
 - [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)
 
@@ -55,10 +53,7 @@ READ FIRST — in this order
 1.  memory/MEMORY.md (auto-loaded)
 2.  docs-src/canonical/backlog.cxd
 3.  docs-src/canonical/v0_8_0_session_prompt.md (this file)
-4.  spec/decisions/0028-cxpath-as-value-kind.md
-5.  spec/decisions/0029-match-heterogeneous-arms.md
-6.  spec/decisions/0030-modify-pure-functional-updates.md
-7.  spec/code.md (full — normative; renamed to spec/code.md in Phase 1.2)
+4.  spec/code.md (full — normative; CXPath value kind, `[?match]`, `[?modify]`)
 8.  spec/bindings.md (two-layer binding contract)
 9.  spec/grammar.ebnf [127e] + [130]–[148e]
 10. spec/cxpath_alignment.md
@@ -74,7 +69,7 @@ READ FIRST — in this order
 
 ALREADY DONE — do not redo
 ═════════════════════════════════════════════════════════════════
-- ADRs 0028, 0029, 0030 drafted (lean format: TL;DR + was-vs-is tables)
+- CXPath value kind, `[?match]`, `[?modify]` designs drafted
 - spec/code.md: §5.2 rule 8, §5.5 CXPath, §6.2 extended binding
   paths, §7.5 pattern-generator, §8.1 [?find] retirement, §8.2 multi-arm
   [?match], §8.10 [?modify], §8.11 integration directives
@@ -94,7 +89,7 @@ PHASE 1 — SPEC COMPLETION
 ═════════════════════════════════════════════════════════════════
 1.1  spec/v0_8_0_status.md — create, modeled on prior status-doc convention.
      List every gate (Phase 1–11) with ✅/🚧/📋. Update each commit.
-1.2  ADR 0032 — draft (lean format) + execute "programs → code" rename:
+1.2  "programs → code" rename — draft design + execute:
      · spec/code.md → spec/code.md (update every internal link)
      · spec/audits/programs_*.md → spec/audits/code_*.md
      · vcx/code/ → vcx/code/ (module rename, v.mod, all imports)
@@ -127,8 +122,9 @@ PHASE 1 — SPEC COMPLETION
 1.14 CHANGELOG.md — v0.8.0 entry (Added/Changed/Removed/Migration).
 1.15 README.md — v0.8.0 highlights (CXPath restored, multi-arm [?match],
      [?modify], V/Python/Go/Rust scope, two-layer bindings).
-1.16 backlog.cx — flip ADR 0028/0029/0030/0032 status draft→accepted as
-     each implementation completes. Move resolved open issues to [completed].
+1.16 backlog.cx — flip the CXPath / `[?match]` / `[?modify]` / rename
+     designs status draft→accepted as each implementation completes.
+     Move resolved open issues to [completed].
 
 ═════════════════════════════════════════════════════════════════
 PHASE 2 — IMPLEMENTATION (vcx/code/ after 1.2 rename)
@@ -173,9 +169,9 @@ PHASE 2 — IMPLEMENTATION (vcx/code/ after 1.2 rename)
      · :set-attr / :delete-attr on attribute-step path → static CXER0100
 2.9  Renderer — render.v: PathNode canonical emit (terse //).
 2.10 Diagram emitter — diagram.v:
-     · Path values as query boxes (ADR 0028 D11)
-     · Multi-arm [?match] as N-branch diamond (ADR 0029 D11)
-     · [?modify] as update-box (focus → action → new-doc) (ADR 0030 D9)
+     · Path values as query boxes
+     · Multi-arm [?match] as N-branch diamond
+     · [?modify] as update-box (focus → action → new-doc)
      · Pipeline of modifies as sequential update-boxes
 2.11 cabi.v — Layer-1 surface per spec/bindings.md:
      cx_code_eval, cx_code_diagram, doc.select_all, doc.modify.
@@ -247,7 +243,7 @@ PHASE 5 — TOOLING
 5.3  tooling/tree-sitter-cx/queries/injections.scm — if Path needs special.
 5.4  tooling/syntax/cx.tmLanguage.json — TextMate grammar update for same.
 5.5  tooling/lsp/ — diagnostics:
-     · Unreachable [?match] arm warning (ADR 0029 D2)
+     · Unreachable [?match] arm warning
      · Missing :else hint
      · :where consolidation suggestion
      · CXPath focus hover: match-count + axis docs

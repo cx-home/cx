@@ -55,11 +55,11 @@ empty-path-as-empty-sequence" XPath divergence.
 
 1. **`$path/child` raises `CXER0001` instead of returning empty sequence when the parent has no such child.** This contradicts the XPath 3.1 model (where `/a/missing-child` is empty, not an error). Filing this would close cleanly via a one-line eval-loop change. **Files a NEW ADR or an amendment to `spec/cxpath.md` §6.**
 
-2. **Predicate-context arithmetic on positional builtins.** `last()-1` doesn't parse inside `[...]` predicate. Filing under existing CXPath predicate completeness work (ADR 0043 spirit). **May close as an extension to ADR 0043.**
+2. **Predicate-context arithmetic on positional builtins.** `last()-1` doesn't parse inside `[...]` predicate. Filing under existing CXPath predicate completeness work. **May close as an extension to that work.**
 
 3. **`[?fn]` two-arg apply with non-trivial bodies — re-confirmed.** Same gap as #01. Two-arg `[?fn]` with body containing `[?match]` arms doesn't substitute parameters cleanly into the match subject; we observed `[* 5 [+ 4 (3, ())]]` as the result — the operator outer was reduced but the inner `[+ 4 (3, ())]` was left because `(3, ())` is a sequence-of-one, not a scalar, and the integer arithmetic builtin doesn't atomize. (Atomization fix may apply here per the precedent in commit `252218bb` which fixed `min`/`max`/`avg` over attribute-shaped Elements.)
 
-4. **No native "stack" abstraction.** This is design-level: CX neither has a list-as-stack with `push`/`pop`/`peek` builtins nor a deque. The XPath sequence is immutable and grow-from-tail-only via concat. Worth noting under ADR 0040 (`[?reduce]` companions) as a gap in the surface that motivates real stack-based programs.
+4. **No native "stack" abstraction.** This is design-level: CX neither has a list-as-stack with `push`/`pop`/`peek` builtins nor a deque. The XPath sequence is immutable and grow-from-tail-only via concat. Worth noting alongside the `[?reduce]` companions work as a gap in the surface that motivates real stack-based programs.
 
 The fact that #1 *blocks* the program at the first token is a real
 finding — the corpus surfaces the gap before any new ADR cycle could

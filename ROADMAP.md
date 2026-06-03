@@ -16,30 +16,29 @@ grammar). The "v0.8.0 — LOCKED" section below is the live scope.
   here; that role moved to v0.8.0 once the v0.7.x line shipped as
   proof-of-concept.
 - **v0.7.0 → v0.7.5** — proof-of-concept (superseded 2026-05-20).
-  The cxpath / cxquery / XQuery-4.0-parity surface specced in
-  [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-  §D2 and §D10 turned out to be structurally incomplete: normative
+  The cxpath / cxquery / XQuery-4.0-parity surface specced for the
+  v0.7.0 "CX is one language" scope
+  turned out to be structurally incomplete: normative
   specs carried TBDs, tests passed by reduction (covering only the
   implemented subset), and `cx:merge` shipped with material defects.
   The cxpath / cxquery V implementation is deleted in v0.8.0; the
   specs remain as historical artifacts only.
 - **v0.7.6** — skipped (per backlog `d-2026-05-22-04`). The unified
-  pattern/query/transform scope drafted under
-  [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
-  was absorbed into v0.8.0. ADR 0027's design framing (CX as code,
+  pattern/query/transform scope drafted for the v0.7.6 line
+  was absorbed into v0.8.0. Its design framing (CX as code,
   error-code namespace expansion, Tier-1 binding cut) carried
   forward; the §11.6 sixteen-gate framing was superseded by the
   v0.8.0 forty-two-gate release rubric in
   [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
 
-Headline v0.7.x ADRs (carried forward into v0.8.0 framing):
+Headline v0.7.x scope (carried forward into v0.8.0 framing):
 
-- [ADR 0017](spec/decisions/0017-collection-literals.md) — collection literals (sequence / array / map).
-- [ADR 0021](spec/decisions/0021-cx-database-direction.md) — CX database direction (deferred lane).
-- [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md) — "CX is one language" v0.7.0 scope (POC-retired).
-- [ADR 0023](spec/decisions/0023-cx-self-host-module-and-extension-interface.md) — self-host module + extension interface.
-- [ADR 0026](spec/decisions/0026-wasm-distribution-target.md) — WASM distribution target.
-- [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md) — unified pattern/query/transform language (carried into v0.8.0).
+- collection literals (sequence / array / map).
+- CX database direction (deferred lane).
+- "CX is one language" v0.7.0 scope (POC-retired).
+- self-host module + extension interface.
+- WASM distribution target.
+- unified pattern/query/transform language (carried into v0.8.0).
 
 ---
 
@@ -57,28 +56,28 @@ sharing, a module system (`[?lib]` / `[?def]` / `[?const]` / `cx.lock`)
 lands with bundled `cx-stdlib`, atom joins the scalar kinds, and the
 playground gets formal Tree + Graph views.
 
-**Ratified ADRs (10):**
+**Ratified surface (10 features):**
 
-- [ADR 0028](spec/decisions/0028-cxpath-as-value-kind.md) — CXPath as first-class value kind (XPath 3.1 aligned, 12 axes, sigil-only comparison).
-- [ADR 0029](spec/decisions/0029-match-heterogeneous-arms.md) — `[?match]` multi-arm dispatch (`:case` / `:when` / `:else`; first-match-wins; scalar literal + wildcard patterns).
-- [ADR 0030](spec/decisions/0030-modify-pure-functional-updates.md) — `[?modify]` pure-functional updates over CXPath focus + 11-action vocabulary; pipeline-composable.
-- [ADR 0031](spec/decisions/0031-structural-sharing.md) — Structural sharing for `[?modify]` (spine-copy only; `O(depth)` heap; gate 30.5 perf basis).
-- [ADR 0032](spec/decisions/0032-programs-to-code-rename.md) — `programs` → `code` mechanical rename across spec / V module path / C ABI / fixtures / wasm exports.
-- [ADR 0033](spec/decisions/0033-atom-scalar-kind.md) — Atom scalar kind (`:NAME` literals, type-strict, name-equality, disjoint hash domain).
-- [ADR 0034](spec/decisions/0034-def-module-level-functions.md) — `[?def]` module-level static functions (no closure, no overload, order-independent, optional type annotations + `:pure`/`:impure` modifier).
-- [ADR 0035](spec/decisions/0035-module-loading-scoping-namespacing.md) — `[?lib]` module loading (file / registered / HTTPS) + `cx.lock` lockfile (SHA-384/512 SRI) + `[?const]` + `:scope` visibility.
-- [ADR 0036](spec/decisions/0036-expr-general-predicate.md) — `[expr]` general predicate with `$_` context binding, `$_position` / `$_last`, `:bind NAME` peer-modifier.
-- [ADR 0037](spec/decisions/0037-playground-tree-and-graph-views.md) — Playground Tree View + Graph View (ERD for data, CFG for code; bidirectional selection bridge; new `cx_code_diagram` + `cx_code_tree` C ABI).
+- CXPath as first-class value kind (XPath 3.1 aligned, 12 axes, sigil-only comparison).
+- `[?match]` multi-arm dispatch (`:case` / `:when` / `:else`; first-match-wins; scalar literal + wildcard patterns).
+- `[?modify]` pure-functional updates over CXPath focus + 11-action vocabulary; pipeline-composable.
+- Structural sharing for `[?modify]` (spine-copy only; `O(depth)` heap; gate 30.5 perf basis).
+- `programs` → `code` mechanical rename across spec / V module path / C ABI / fixtures / wasm exports.
+- Atom scalar kind (`:NAME` literals, type-strict, name-equality, disjoint hash domain).
+- `[?def]` module-level static functions (no closure, no overload, order-independent, optional type annotations + `:pure`/`:impure` modifier).
+- `[?lib]` module loading (file / registered / HTTPS) + `cx.lock` lockfile (SHA-384/512 SRI) + `[?const]` + `:scope` visibility.
+- `[expr]` general predicate with `$_` context binding, `$_position` / `$_last`, `:bind NAME` peer-modifier.
+- Playground Tree View + Graph View (ERD for data, CFG for code; bidirectional selection bridge; new `cx_code_diagram` + `cx_code_tree` C ABI).
 
 **Tier-1 bindings.** V / Python / Go / Rust. TypeScript / Java / C# /
-Ruby / Kotlin / Swift archived to `lang/_archived/` per ADR 0035 D7
-and backlog `d-2026-05-22-03`. Restoration is opt-in once Layer-1
+Ruby / Kotlin / Swift archived to `lang/_archived/` per the module-loading
+scope and backlog `d-2026-05-22-03`. Restoration is opt-in once Layer-1
 stabilizes.
 
 **Surface state.** Document selection uses `//path` (CXPath value) +
-`[?for]` (pattern-generator) per ADR 0028. ABI identifiers follow
-ADR 0032 (`cx_code_*`). Doc-view surface follows ADR 0037 (formal
-views).
+`[?for]` (pattern-generator). ABI identifiers follow the
+`programs` → `code` rename (`cx_code_*`). Doc-view surface follows the
+formal Tree + Graph views.
 
 **Bundled stdlib.** `cx-stdlib` ships with the binary — 14 sub-packages:
 strings / json / http / re / time / math / io / bytes / format / path /
@@ -102,7 +101,7 @@ already have committed design context.
   with subtree) and the Phase 2.22 purity-checker AST-walk upgrade
   land here, plus module-loader integration of `check_all`.
 - **CX database direction** — the OLAP / index / manifest lane
-  proposed in [ADR 0021](spec/decisions/0021-cx-database-direction.md).
+  (the deferred CX-database direction).
   v0.8.0 leaves CXCol as a hashable wire format; v0.9.0 either
   commits to DataFusion-wrap + Parquet + arena allocator or
   renames the surface. Decision required before any user-facing
@@ -112,10 +111,10 @@ already have committed design context.
   module trajectory documented under "Post-v0.8.0" below:
   `convert` / `random` / `csv` / `crypto` / `archive` / `validate`
   / `inspect` / `prof` / `html` / `dom`. Loader is governed by
-  ADR 0035 — no new ABI required.
+  the `[?lib]` module-loading surface — no new ABI required.
 - **Concurrency primitives** — `jobs:` (async / parallel evaluation),
   `proc:` (subprocess spawning), `web:` (optional HTTP server).
-  Requires a substantive ADR covering evaluator-state isolation
+  Requires substantive design covering evaluator-state isolation
   and determinism. Pre-conditioned on the function-module loader
   being battle-tested.
 - **Additional binding tiers** — restore TypeScript / Java / C# /
@@ -130,7 +129,7 @@ already have committed design context.
   format/API stability claim.
 - **CXStore database layer** (if v0.9.0 commits to that direction)
   — Database / Index / Full-text modules comparable to BaseX-as-
-  a-database. Per [ADR 0022 §D1 Amendment #3](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md).
+  a-database. Per the v1.0+ open question on CX-database direction.
 - **CI matrix** — GitHub Actions running `make test` on multiple
   OS/arch combinations per PR with per-binding regression gating.
 
@@ -557,8 +556,7 @@ Capabilities that are real, planned, but not blocking v0.6.0.
 
 ### Post-v0.8.0 — function-module ecosystem (extending cx-stdlib)
 
-v0.8.0 ships the `cx-stdlib` bundled package (per
-[ADR 0035 §D7](spec/decisions/0035-module-loading-scoping-namespacing.md))
+v0.8.0 ships the `cx-stdlib` bundled package
 with 14 sub-packages: **strings / json / http / re / time / math /
 io / bytes / format / path / log / hash / env / test**. That
 covers the load-bearing BaseX-class surface (file I/O via `io` +
@@ -567,8 +565,8 @@ covers the load-bearing BaseX-class surface (file I/O via `io` +
 
 Post-v0.8.0 work extends the function-module ecosystem with
 **user-installable modules** loaded through the same
-`[?lib]`/`cx.lock` mechanism (no new ABI; ADR 0035 governs the
-loader). Candidate modules in rough priority order:
+`[?lib]`/`cx.lock` mechanism (no new ABI; the module-loading surface
+governs the loader). Candidate modules in rough priority order:
 
 1. **`convert`** — base64, hex, byte/string conversions
    (currently partially in `bytes`).
@@ -605,7 +603,7 @@ breaking the bundled stdlib contract.
 16. **`web:` module** — possible HTTP server framework if cx grows
     that ambition (parallel to BaseX RESTXQ).
 
-### v1.0+ — open question (per ADR 0022 §D1 Amendment #3)
+### v1.0+ — open question (CX-database direction)
 
 17. **Cx-native database layer** — possible storage / indexing /
     query-optimization layer comparable to BaseX-as-a-database.
@@ -665,13 +663,13 @@ CX code 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
  properly; an identifier followed by `/` or `[` is never scientific
  notation.
 
-### v0.7.0 — POC, superseded by ADR 0027 (2026-05-20)
+### v0.7.0 — POC, superseded 2026-05-20
 
 > **Status note.** The v0.7.0 scope below was originally specced by
-> [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
+> the "CX is one language" v0.7.0 scope
 > and tracked in the v0.7.0 status doc (since deleted).
-> Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
-> (Accepted 2026-05-20), the cxpath / cxquery / XQuery-4.0-parity
+> As of 2026-05-20, with the unified pattern/query/transform scope,
+> the cxpath / cxquery / XQuery-4.0-parity
 > portion of that scope is **retired as proof-of-concept**: the
 > implementation was structurally incomplete, tests passed by
 > reduction, and `cx:merge` shipped with material defects.
@@ -681,11 +679,11 @@ CX code 1.0 fixes surfaced during v0.6.0 RC doc work (2026-05-12):
 > `cx:lang`, comparative benchmarks) carry forward into v0.7.6 / v0.8.0
 > on their own merits and are not POC.
 
-Historical scope from ADR 0022 (now superseded for the query/transform
+Historical v0.7.0 scope (now superseded for the query/transform
 items; carried forward for the rest):
 
-- ~~**Full XQuery 4.0 / XPath 4.0 parity**~~ — superseded by CX code
-  (ADR 0027). The cxpath / cxquery V implementation is deleted as
+- ~~**Full XQuery 4.0 / XPath 4.0 parity**~~ — superseded by CX code.
+  The cxpath / cxquery V implementation is deleted as
   part of v0.7.6 work.
 - ~~**CXPath axes**~~ — superseded; CX patterns replace axis syntax.
 - **Arrow + Parquet** — carried forward to v0.7.6 with binding parity
@@ -702,15 +700,15 @@ items; carried forward for the rest):
 single-evaluator model. V is the reference implementation; Python and
 Go are the Tier-1 bindings gating the §11.6 conformance suite. Rust
 and TypeScript stay in scope but pass the suite asynchronously per
-the ADR 0022 §D9 cut.
+the v0.7.0 binding-tier cut.
 
-### v0.7.5 — libcx-wasm + live playground (point release per [ADR 0026](spec/decisions/0026-wasm-distribution-target.md))
+### v0.7.5 — libcx-wasm + live playground (WASM distribution point release)
 
 WASM as a v0.7.x point-release distribution target — additive
 infrastructure, no language-semantics change. Single goal: replace
 the playground's canned-corpus fallback with live in-browser
-evaluation against a `libcx.wasm` build. Decisions locked in
-[ADR 0026](spec/decisions/0026-wasm-distribution-target.md):
+evaluation against a `libcx.wasm` build. Decisions locked for the
+WASM distribution target:
 
 - **Build path: V-emit-C → emcc** (not V's native `-b wasm`
   backend, which is experimental for the browser target).
@@ -735,14 +733,14 @@ evaluation against a `libcx.wasm` build. Decisions locked in
   through `cxlib.eval` when `window.cxlib` is present; canned-
   corpus path retained as offline fallback. Run button un-
   disabled; PLANNED notice replaced with a "Powered by
-  libcx.wasm" footer linking to ADR 0026.
+  libcx.wasm" footer.
 - **`make build-wasm`** new top-level target. Opt-in: default
   `make build` does not require emscripten.
 - **Parity contract: byte-identical to native `cx`** across the
   non-regex subset of the v0.7.0 conformance corpus (38/42
   fixtures).
-- **Frozen-binding re-promotion runs in parallel.** Per ADR 0022
-  Amendment #5, C# / Java / Kotlin / Ruby / Swift catch-up is
+- **Frozen-binding re-promotion runs in parallel.** C# / Java /
+  Kotlin / Ruby / Swift catch-up is
   its own v0.7.x sequence on its own timeline; v0.7.5 does not
   bundle that work.
 - **v0.8.0 BaseX-modules scope untouched.** v0.7.5 is additive
@@ -845,12 +843,12 @@ and next-lever ordering.
  and the build pipeline produces both flavors.
 
 > **The "CX code 3.1 / CX code 4.0" staging block previously in this section
-> is superseded** by [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-> (Accepted 2026-05-17). v0.7.0 ships XQuery 4.0 + XPath 4.0
+> is superseded** by the "CX is one language" v0.7.0 scope
+> (settled 2026-05-17). v0.7.0 ships XQuery 4.0 + XPath 4.0
 > expression parity in a single cut (per
 > [`spec/xquery_40_parity.md`](spec/xquery_40_parity.md)); v0.8.0
 > ships the BaseX-class function-module ecosystem;
-> v0.9.0+ adds concurrency primitives behind a separate ADR; v1.0+
+> v0.9.0+ adds concurrency primitives behind separate design work; v1.0+
 > is the open question on cx-native database. The "CXPath axes at
 > v0.8.0" line above is similarly superseded — axes move to v0.7.0.
 > Historical text preserved below for provenance:
@@ -861,14 +859,14 @@ and next-lever ordering.
  - **CX release v0.8.0 — CXPath axes.** Adds parent / ancestor /
  following-sibling / preceding-sibling (deferred in CXPath v1).
  CX code picks up upward navigation automatically with no CX code version
- bump. **(Superseded — moves to v0.7.0 per ADR 0022 §D2 Amendment #4.)**
+ bump. **(Superseded — moves to v0.7.0.)**
  - **CX code 3.1 — CX release v0.9.0+.** XQuery 3.1 feature equivalence.
  Adds `[?let]`, `[?fn]`, `[?match]`, `[?try]` EvalNames; full
  FLWOR on `[?for]` with `:let` / `:where` / `:order` / `:return`
  (XQuery 3.1-aligned `order` spelling); user-defined functions;
  maps and arrays as CXDM value kinds; arrow operator `=>`; aggregate
- filters; group-by; try/catch. **(Superseded — folded into v0.7.0
- single-cut per ADR 0022.)**
+ filters; group-by; try/catch. **(Superseded — folded into the v0.7.0
+ single-cut.)**
  - **CX code 4.0 — CX release v1.x+ (target).** XQuery 4.0 feature
  equivalence once XQuery 4.0 stabilizes — pipeline operator `|>`,
  partial function application, member maps, enhanced types,

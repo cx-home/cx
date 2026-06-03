@@ -1633,13 +1633,13 @@
         [body
           """Eight worked examples (§W1–§W8) each have a paired
              conformance fixture
-             `program-adr-0041-wN-*` in
+             `program-slice-wN-*` in
              [`conformance/code.txt`](../../conformance/code.txt);
              until the implementation lands the fixtures are
              `out_err: cx-err:CXER0100` (parse-deferred), then flip
              to `out_text` in a single commit per fixture. The
              reconciliation test
-             `program-adr-0041-reconciliation-b15-composition`
+             `program-cxpath-fncall-slice-composition`
              verifies grammar disambiguation against the B15
              closure (`spec/cxpath.md` §2.2) — bare-fn-call, path
              predicate, and slice postfix coexist."""]

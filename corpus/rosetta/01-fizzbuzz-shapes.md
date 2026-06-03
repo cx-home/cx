@@ -17,7 +17,7 @@ fall-through all have to compose.
 
 ## Actual run
 
-Program (the natural form, per the ADR 0045 brief):
+Program (the natural form, per the Rosetta-corpus brief):
 
 ```
 [?for $n :in 1 to 30 :yield
@@ -52,7 +52,7 @@ Observed output (truncated; 30 lines total):
 :fizzbuzz
 ```
 
-**Status:** GREEN as of ADR 0046 (math-operator surface). `[mod $n N]`
+**Status:** GREEN as of the math-operator surface landing. `[mod $n N]`
 now dispatches through `dispatch_call('mod', [...])` in all four call
 shapes (operator-element / element-paren / XPath-call / directive
 multi-arg). The natural shape-yielding FizzBuzz body in §"Actual run"
@@ -61,20 +61,20 @@ sequence — matching the Python / Clojure / jq reference renditions.
 
 ## Workarounds attempted
 
-(Historical — kept for ADR 0046's discovery-process trail.)
+(Historical — kept for the math-operator discovery-process trail.)
 
-| Attempt (pre-ADR-0046) | Result |
+| Attempt (pre-math-operator surface) | Result |
 |---|---|
 | `[mod $n 3]` as a directive | Returns the literal `[mod $n 3]` Element — `mod` is not a registered builtin |
 | `($n mod 3)` XPath-style infix | Parser rejects `mod` as an unknown token at the `mod` position |
 | `floor($n / 3)` then `[- $n [* floor(...) 3]]` | XPath `$n / 3` rejects `/` between bindings; even with literals `[/ N 3]` returns float, then `[floor X]` in directive position does NOT reduce — `floor`/`ceiling`/`round` are XPath-call-only builtins, never directive-callable. The chain stays unevaluated. |
 | Hand-enumerated `:case` arms (`:case 3 :yield :fizz`, `:case 5 :yield :buzz`, etc., up to 30 cases) | Works correctly but defeats the purpose of the exercise |
-| `[?def imod (a b) ...]` ADR 0034 function | Parse error — `[?def NAME (params) body]` form not implemented yet on `v0.8.0-dev` |
+| `[?def imod (a b) ...]` module-level function | Parse error — `[?def NAME (params) body]` form not implemented yet on `v0.8.0-dev` |
 | Multi-arg `[?fn ($a, $b) :body BODY]` | Body never substitutes `$a`/`$b` when called; only single-arg `[?fn ($x) :body ...]` works correctly |
 
-After ADR 0046, items #1 and #2 are closed in surface-element /
-XPath-call / directive forms. The infix `$n mod 3` form remains
-parse-deferred (ADR 0046 D5 / "scope — out") and continues to
+After the math-operator surface landed, items #1 and #2 are closed in
+surface-element / XPath-call / directive forms. The infix `$n mod 3` form
+remains parse-deferred (out of scope) and continues to
 require the operator-element `[mod $n 3]` shape.
 
 The hand-enumerated `:case` workaround does exercise a different
@@ -84,7 +84,7 @@ binding a catchall via `:case $x :yield ...` recovers the value.
 
 ## Open gap log
 
-ADR 0045 hypothesis confirmations from this program:
+Surface-completeness hypothesis confirmations from this program:
 
 1. **Numeric coercion / integer arithmetic edge — `mod` / `div` / `idiv` missing.** Listed in 0045 §"Confidence-ranked gap inventory" row "High — Numeric coercion / promotion edges." Confirmed here: no integer modulo, no integer division, no XPath `mod` / `div` / `idiv` infix tokens. **Files a NEW ADR.**
 
@@ -92,11 +92,11 @@ ADR 0045 hypothesis confirmations from this program:
 
 3. **Paren-expression `(EXPR OP EXPR)` rejects comparison / arithmetic ops.** `($score >= 90)`, `($x > 4)`, `(1 = 1)`, `($a + $b)` all parse-fail. Only the directive forms `[>= $score 90]` / `[> $x 4]` / `[= 1 1]` / `[+ $a $b]` work. This contradicts the conformance-fixture example at `conformance/code.txt:3495` (`:when ($score >= 90)`), which itself fails on current HEAD. **Files a NEW ADR or surfaces an open fixture-status item.**
 
-4. **`[?def NAME (params) body]` ADR 0034 form unimplemented.** Per `spec/code.md §12.2.1` this is the v0.8.0 normative function-declaration form. `[?def add (a b) [+ a b]]` parse-fails on current HEAD. Existing memory: ADR 0034 is drafted; V reference impl is Phase 2 work (per spec/v0_8_0_status.md row 2.12). **Tracked under ADR 0034 implementation.**
+4. **`[?def NAME (params) body]` module-level function form unimplemented.** Per `spec/code.md §12.2.1` this is the v0.8.0 normative function-declaration form. `[?def add (a b) [+ a b]]` parse-fails on current HEAD. The form is specced; V reference impl is Phase 2 work (per spec/v0_8_0_status.md row 2.12). **Tracked under `[?def]` implementation.**
 
 5. **Multi-arg `[?fn ($a, $b) :body BODY]` body does not substitute parameters on application.** `[?let $f = [?fn ($a, $b) :body [+ $a $b]] :in $f(1, 2)]` returns the literal body. Single-arg form works. **Files a NEW ADR.**
 
 The blocking nature of (1) and (2) is striking: FizzBuzz is the
 canonical 30-second exercise. The natural form is unwritable. This
-is exactly the surface-completeness drift ADR 0045 was created to
-catch — and it caught it on program #1.
+is exactly the surface-completeness drift the Rosetta-corpus process was
+created to catch — and it caught it on program #1.

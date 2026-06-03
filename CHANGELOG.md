@@ -30,58 +30,57 @@ Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
 - **CXPath as first-class value kind** — all 12 XPath 3.1 axes, `//` /
   `/` step prefixes, `@name` attribute selector, `[expr]` general
   predicates with `$_` / `$_position` / `$_last` context bindings,
-  `:bind NAME` peer-modifier on path steps. ADRs [0028](spec/decisions/0028-cxpath-as-value-kind.md), [0036](spec/decisions/0036-expr-general-predicate.md).
+  `:bind NAME` peer-modifier on path steps.
 - **`[?match]` multi-arm dispatch** — heterogeneous arms (`:case` /
   `:when` / `:else`); first-match-wins; scalar literal + `_` wildcard
-  patterns. ADR [0029](spec/decisions/0029-match-heterogeneous-arms.md).
+  patterns.
 - **`[?modify]` pure-functional updates** — CXPath focus + 11-action
   vocabulary (`:set`, `:delete`, `:using`, `:rename`, `:set-attr`,
   `:delete-attr`, `:append`, `:prepend`, `:insert-before`,
   `:insert-after`, `:replace`); pipeline-composable via `|`; structural
   sharing (`< 1 KB` new heap per matched node on a 10 MB document).
-  ADRs [0030](spec/decisions/0030-modify-pure-functional-updates.md), [0031](spec/decisions/0031-structural-sharing.md).
 - **Module system** — `[?def]` module-level functions (no closure / no
   overload / order-independent), `[?lib]` module loading (file /
   registered / HTTPS resolvers), `cx.lock` lockfile (SHA-384 / SHA-512
   SRI integrity, HTTPS-only transport), `[?const]` module-level
-  constants, `:scope public` / `:scope private` visibility. ADRs
-  [0034](spec/decisions/0034-def-module-level-functions.md), [0035](spec/decisions/0035-module-loading-scoping-namespacing.md).
+  constants, `:scope public` / `:scope private` visibility.
 - **Bundled `cx-stdlib`** — 14 sub-packages: strings / json / http /
   re / time / math / io / bytes / format / path / log / hash / env /
   test. [`spec/stdlib.md`](spec/stdlib.md).
 - **Atom scalar kind** — `:NAME` literals with type-strict
-  name-equality and a disjoint hash domain. ADR [0033](spec/decisions/0033-atom-scalar-kind.md).
+  name-equality and a disjoint hash domain.
 - **`[expr]` general predicate body** + `:pure` / `:impure` modifier
   algebra (sound-but-incomplete inference; closed-list builtin
-  classification). ADR [0036](spec/decisions/0036-expr-general-predicate.md) + ADR 0034 D11 amendment.
+  classification).
 - **Playground Tree View + Graph View** — ERD for data sources, CFG
   for code sources; per-pane toggle; bidirectional selection bridge
-  via byte-offset `loc`. ADR [0037](spec/decisions/0037-playground-tree-and-graph-views.md).
+  via byte-offset `loc`.
 - **`cx_code_diagram`** (Mermaid emit, ERD-or-CFG auto-detect) +
   **`cx_code_tree`** (JSON with `loc` byte offsets) C ABI exports.
 - **`cast()` generic builtin** + **`exists()`** in [`spec/code.md §6.5`](spec/code.md).
 - **ast_bin v8 wire format** with PathNode kind discriminator `0x13`
   (cap bit 36).
-- **42 §11.6 release gates** — 16 v0.7.6 carryover + 14 new for ADRs
-  0028–0036 + 12 new for ADR 0037.
+- **42 §11.6 release gates** — 16 v0.7.6 carryover + 14 new for the
+  CXPath / `[?match]` / `[?modify]` / module-system surface + 12 new
+  for the playground views.
 
 ### Changed
 
 - **Internal `programs` → `code` rename** — `spec/programs.md` →
   `spec/code.md`; `vcx/programs/` → `vcx/code/`; `cx_program_eval*` →
   `cx_code_eval*`; `_cx_program_*` wasm exports → `_cx_code_*`;
-  `in_cxl:` fixture header → `in_code:`. ADR [0032](spec/decisions/0032-programs-to-code-rename.md).
+  `in_cxl:` fixture header → `in_code:`.
 - **Tier-1 bindings narrowed** to V / Python / Go / Rust under a
   two-layer contract (Layer 1 canonical 16 methods; Layer 2 host
   idiom packs).
 - **Cap bits 31 + 32 re-purposed** — gate-17-era framings never
   shipped per backlog `d-2026-05-22-04`; now `cx_code_diagram` + `cx_code_tree`
-  per ADR 0037.
+  for the playground views.
 
 ### Removed
 
 - **`[?find]` directive** — replaced by `[?for]` (pattern-generator
-  form) and CXPath value-kind `//path`. ADR [0028](spec/decisions/0028-cxpath-as-value-kind.md).
+  form) and CXPath value-kind `//path`.
 - **v0.7.0-era CXL POC evaluator surface** — `cx:` module, `log:`
   module, `inspect:`, `[?cx use-module=...]`, `[?cx pure-only]`.
 - **v0.7.0-era `cx_eval_cxl_*` C ABI symbols.**
@@ -97,16 +96,15 @@ codebase as part of this release.
 
 ## [0.7.6] — in development on `v0.7.6-dev` (CX code — the headline release)
 
-Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md)
-(Accepted 2026-05-20), v0.7.6 ships **CX code** — a unified
+As of 2026-05-20, v0.7.6 ships **CX code** — a unified
 pattern/query/transform language with full integration capabilities
 (visualization, resilience, services, concurrency, async). CX code
 replaces cxpath and cxquery; both are removed from the codebase as
 part of this release.
 
-ADR 0027 supersedes [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md)
-§D2 (full XQuery 4.0 evaluator surface) and §D10 (v0.7.0 ships the
-complete evaluator). The v0.7.0–v0.7.5 line is **frozen as
+This supersedes the v0.7.0 "CX is one language" scope —
+the full XQuery 4.0 evaluator surface and the "v0.7.0 ships the
+complete evaluator" goal. The v0.7.0–v0.7.5 line is **frozen as
 proof-of-concept** — see the marker at the top of [0.7.0] below. The
 v0.7.0 cxpath/cxquery implementation was incomplete, with falsified
 tests (passed by reduction) and partial specs. Users who need
@@ -137,8 +135,8 @@ server.
 linear / exponential / fibonacci backoff and none / full / equal /
 decorrelated jitter), `[?timeout]`, `[?circuit-breaker]`,
 `[?fallback]`, `[?rate-limit]`, `[?bulkhead]`. Composable. Errors
-in the `cx-err:CXER0140–CXER0159` range per ADR 0024 amendment
-2026-05-21.
+in the `cx-err:CXER0140–CXER0159` range (error-namespace amendment
+2026-05-21).
 
 **§11.3 Services and clients** — `[?service :on http :port N]` with
 `[resource :METHOD PATH]` children; `[?http-client :target URL]`
@@ -158,7 +156,7 @@ barriers; `[?cancel]` with cooperative-cancellation contract;
 `[?check-cancel]` for hot loops. Async error codes in the
 `cx-err:CXER0240–CXER0279` range.
 
-**Error code namespace expansion** — ADR 0024 amended 2026-05-21
+**Error code namespace expansion** — amended 2026-05-21
 to reserve `cx-err:CXER0100–CXER0299` for Program runtime errors,
 assigned by subsystem.
 
@@ -166,8 +164,8 @@ assigned by subsystem.
 
 - **cxpath** and **cxquery** implementations deleted from `vcx/`
   (replaced by CX code in `vcx/code/`).
-- **XQuery 4.0 / XPath 4.0 parity scope** retired per ADR 0027's
-  supersession of ADR 0022 §D2.
+- **XQuery 4.0 / XPath 4.0 parity scope** retired as part of the
+  CX-code unification superseding the v0.7.0 scope.
 - `spec/cxpath.md` and `spec/xquery_40_parity.md` retained as
   historical artifacts; `spec/code.md` is the normative spec going
   forward.
@@ -177,12 +175,12 @@ assigned by subsystem.
 v0.7.6 cannot tag until all sixteen §11.6 conformance gates pass
 across four categories (spec completeness, test coverage,
 implementation completeness, performance floors). No exceptions, no
-partial-ship fallback. See ADR 0027 for the gate list.
+partial-ship fallback.
 
 ---
 
 ## [0.7.5] — 2026-05 (tagged, **proof-of-concept**)
-## [0.7.0] — POC, superseded by ADR 0027 (2026-05-20)
+## [0.7.0] — POC, superseded 2026-05-20
 
 > **Status note (2026-05-20).** Everything in the [0.7.0] section
 > below shipped through v0.7.5 as **proof-of-concept**. The CX code
@@ -190,15 +188,15 @@ partial-ship fallback. See ADR 0027 for the gate list.
 > was structurally incomplete: specs carried TBD markers in
 > normative positions, tests passed by reduction (covering only the
 > implemented subset), and `cx:merge` shipped with material defects.
-> Per [ADR 0027](spec/decisions/0027-unified-pattern-query-transform.md),
-> the entire query/transform surface is being replaced by CX code in
+> With the CX-code unification, the entire query/transform surface is
+> being replaced by CX code in
 > v0.7.6. Users coming to CX for production query/transform begin
-> there. Other v0.7.x deliverables (WASM build per ADR 0026,
-> `cx:`/`log:` modules per ADR 0023) ship through their own
+> there. Other v0.7.x deliverables (WASM build,
+> `cx:`/`log:` modules) ship through their own
 > trajectories and are not subject to the POC marker.
 
-Per [ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
-v0.7.0 was originally framed as the single-cut release that takes the
+In the original v0.7.0 "CX is one language" framing,
+v0.7.0 was the single-cut release that takes the
 cx evaluator from the CX code 1.0 floor (v0.6.0) to **XQuery 4.0 /
 XPath 4.0 parity**. That framing is now superseded.
 
@@ -279,7 +277,7 @@ XPath 4.0 parity**. That framing is now superseded.
 **Parquet (X row):**
 - Read/write bridges in Python (`cxlib.parquet`), Go
   (`cxlib.ParquetWriteFile` / `ParquetReadFile`), and Rust
-  (`cxlib::parquet::{write_file, read_file}`) per ADR 0015 D11's
+  (`cxlib::parquet::{write_file, read_file}`) per the
   no-Parquet-in-libcx policy.
 
 **Conformance suite (L row):**
@@ -303,10 +301,10 @@ XPath 4.0 parity**. That framing is now superseded.
 - **Spec / file renames** (F row): `spec/code.md` → `spec/eval.md`,
   `examples/cx/` → `examples/cx/`, `conformance/code.txt` →
   `conformance/eval.txt`.
-- **`spec/decisions/0021-cxdb-as-database-direction.md`** renamed
-  to `0021-cx-database-direction.md`. The `cxdb` / `.cxdb` binary
-  file format keeps its name; the deferred engine direction is now
-  called "CX database".
+- **CX-database direction record** renamed from
+  `cxdb-as-database-direction` to `cx-database-direction`. The `cxdb` /
+  `.cxdb` binary file format keeps its name; the deferred engine
+  direction is now called "CX database".
 - **Active-binding set** (D4 / H row): cut from 9 to 5 — V, Python,
   Go, Rust, TypeScript. The five frozen bindings live under
   `lang/<name>/frozen/`.

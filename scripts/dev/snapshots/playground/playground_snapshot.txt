@@ -1,12 +1,12 @@
 data/atom  10bc80a18391338c  Atom — element with one attribute
 data/nested  dea4c20abb1e6ea8  Nested elements — containment tree
 data/whole-shop  001af7ff6f51b369  Whole shop — every data shape in one document
-program/cxpath-predicate  7ae045c21c676ef3  CXPath — attribute predicate over a document (ADR 0028)
+program/cxpath-predicate  7ae045c21c676ef3  CXPath — attribute predicate over a document
 program/def-double  06a8f6e64b391075  [?def] — named closure + invocation
 program/find-attr-eq  da73452914eaffbf  [?for] — attribute equality predicate
 program/for-seq  db599f79aa9eb79b  [?for] — comprehension over sequence
 program/for-where  124b940db83c86cd  [?for] — filter with :where
 program/if-truthy  779ee408823e1e31  [?if] — conditional branch
 program/let-arith  06a8f6e64b391075  [?let] — bind and reuse
-program/match-multi  c9dba80a1a58411a  [?match] — multi-arm :case / :when / :else (ADR 0029)
-program/modify-set  0aebf97c80f65518  [?modify] — pure-functional :set + :delete (ADR 0030)
+program/match-multi  c9dba80a1a58411a  [?match] — multi-arm :case / :when / :else
+program/modify-set  0aebf97c80f65518  [?modify] — pure-functional :set + :delete
