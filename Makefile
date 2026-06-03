@@ -23,7 +23,7 @@ UNAME_S := $(shell uname -s)
 # ── Python / Go toolchain paths ──────────────────────────────────────────────
 PYTHON ?= python3
 
-.PHONY: all build build-wasm build-playground build-vcx build-lib build-lib-arrow build-rust build-rust-arrow \
+.PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow build-rust build-rust-arrow \
  build-go build-go-arrow \
  build-vscode \
  publish publish-push \
@@ -54,6 +54,12 @@ build: build-vcx build-rust build-go
 
 build-vcx:
 	$(MAKE) -C vcx build
+
+# Unoptimised dev build of libcx + cx (no -prod/-Os). Functionally
+# identical for tests but compiles far faster; the test path depends on
+# this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
+build-vcx-dev:
+	$(MAKE) -C vcx build-dev
 
 # v0.7.5 / ADR 0026 §D7 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
@@ -487,8 +493,19 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx test-vcx-v08
+test-vcx: build-vcx-dev test-vcx-v08
 	$(MAKE) -C vcx conform-all
+
+# Convenience wrapper: run the full V suite ONCE, stream live output to a
+# log, then print a digest of just the FAIL lines + per-file counts. Uses
+# `bash -o pipefail` so the recipe exits with the real `test-vcx` status
+# (a plain `... | grep` would mask failures behind grep's exit code).
+.PHONY: test-vcx-summary
+test-vcx-summary:
+	@bash -o pipefail -c '$(MAKE) test-vcx 2>&1 | tee /tmp/cx-test-vcx.log'; st=$$?; \
+	echo "──── failures / counts ────"; \
+	grep -iE 'FAIL|[0-9]+ passed, [0-9]+ failed|[0-9]+ errored' /tmp/cx-test-vcx.log || true; \
+	echo "full log: /tmp/cx-test-vcx.log"; exit $$st
 
 # ── v0.8.0 V-side ADR surface tests ───────────────────────────────────────
 # Drives the conformance/code.txt fixture-runner tests + the v0.8.0 ADR
@@ -514,7 +531,7 @@ test-vcx: build-vcx test-vcx-v08
 # `spec/v0_8_0_status.md §11.6`; this Make target is the V-side runner.
 # Wired into TEST_TARGETS via the `test-vcx` umbrella above.
 .PHONY: test-vcx-v08
-test-vcx-v08: build-vcx
+test-vcx-v08: build-vcx-dev
 	@v test vcx/tests/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
