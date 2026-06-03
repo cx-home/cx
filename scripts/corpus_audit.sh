@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rosetta corpus cadence audit (ADR 0045 D5).
+# Rosetta corpus cadence audit.
 # Iterates corpus/rosetta/NN-*.cx, runs each via vcx/target/cx eval,
 # computes a live status, and compares against corpus/rosetta/AUDIT.md.
 # Exits 0 if every live status matches recorded; exits 1 on drift.
