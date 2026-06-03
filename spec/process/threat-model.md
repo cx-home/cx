@@ -117,7 +117,7 @@ A `[?def]` body that recurses unconditionally, or a partial-application chain th
 
 ### T11 — Sequence-length DoS
 
-The XPath `to` operator and the `[?range from to]` directive can materialise enormous sequences (e.g., `1 to 9999999999`).
+The `[$range lo hi step?]` builtin (and the open-ended `[$range lo *]` / `[$iterate]` / `[$unfold]` generators) can materialise enormous sequences (e.g., `[$range 1 9999999999]`).
 
 **Mitigation:** a configurable per-evaluator sequence-length cap (default 1,000,000 items) is checked before any allocation. Over-cap surfaces as an evaluator error.
 
