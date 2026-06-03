@@ -3,44 +3,52 @@
 The `COVERAGE` + `RED-COMPLETE` gate evidence: every Stage-A normative clause has
 ≥ 1 conformance fixture. **G** = grounded (enforced, true today); **A** = advisory
 (expected-red, flips enforced when its impl lands in Stage C). Fixtures live in
-`conformance/code.cxd` (core) and `conformance/stdlib/fp.cxd` (fp, all advisory).
+`conformance/code.cxd` (core) and `conformance/stdlib/fp.cxd` (fp).
+
+> **2026-06-03 audit reconciliation (SAP_AUDIT_REPORT.md F-C1):** the core
+> `sap-*` cases below were marked `A` while Stage C was in flight. Stage C +
+> D014 have landed: `conformance/code.cxd` carries **zero** `gate=advisory`
+> cases and `code_eval_fixtures_test.v` runs all 65 `sap-*` cases **enforced**
+> (unset gate = blocking) and green (suite exit 0, no advisory report). The
+> core rows are therefore now **G** (grounded), flipped below. (fp.cxd
+> enforcement is tracked separately and was not re-audited here.)
 
 ## §8.13 `[?else]` value-or-default (truth table)
 | clause | fixtures | gate |
 |---|---|---|
-| err → default | `sap-else-01-err-defaults` | A |
-| empty → default | `sap-else-02-empty-defaults` | A |
-| null passes | `sap-else-03-null-passes` | A |
-| false/0/''/[]/{} pass (not EBV-coalescing) | `sap-else-04..08` | A |
-| `[invalid]` passes | `sap-else-09-invalid-passes` | A |
-| value passes | `sap-else-10-value-passes` | A |
-| lazy default | `sap-else-11-lazy-default` | A |
+| err → default | `sap-else-01-err-defaults` | G |
+| empty → default | `sap-else-02-empty-defaults` | G |
+| null passes | `sap-else-03-null-passes` | G |
+| false/0/''/[]/{} pass (not EBV-coalescing) | `sap-else-04..08` | G |
+| `[invalid]` passes | `sap-else-09-invalid-passes` | G |
+| value passes | `sap-else-10-value-passes` | G |
+| lazy default | `sap-else-11-lazy-default` | G |
 
 ## §8.2 `[?match]` scrutinee + O1 uniform pattern grammar
 | clause | fixtures | gate |
 |---|---|---|
 | bind-first err catch (V1a) | `sap-match-01-catch-bindfirst` | G |
-| inline ProgramExpr scrutinee (§9.2-exempt) | `sap-match-02-inline-scrutinee` | A |
+| inline ProgramExpr scrutinee (§9.2-exempt) | `sap-match-02-inline-scrutinee` | G |
 | wildcard `_` | `sap-O1-00-wildcard` | G |
 | attr `@a=v` predicate (rule 6) | `sap-O1-01-attr-predicate` | G |
-| plain `a=v` equality (rule 9, conformance gap) | `sap-O1-01p-attr-plain-equality` | A |
-| attr capture `@a=$c` (rule 10) | `sap-O1-01b-attr-capture` | A |
+| plain `a=v` equality (rule 9, conformance gap) | `sap-O1-01p-attr-plain-equality` | G |
+| attr capture `@a=$c` (rule 10) | `sap-O1-01b-attr-capture` | G |
 | map literal (rule 11) | `sap-O1-02-map-literal` | G |
-| map capture `{k: $x}` | `sap-O1-02b-map-capture` | A |
-| map rest `{k:v, *$rest}` | `sap-O1-02c-map-rest` | A |
+| map capture `{k: $x}` | `sap-O1-02b-map-capture` | G |
+| map rest `{k:v, *$rest}` | `sap-O1-02c-map-rest` | G |
 | sequence closed-arity (rule 12) | `sap-O1-03-seq-closed` | G |
-| sequence spread `(1, *$rest)` | `sap-O1-03b-seq-spread` | A |
-| array literal `[1,$x,3]` (rule 13) | `sap-O1-04-array-literal` | A |
-| array rest `[1, *$rest]` | `sap-O1-04b-array-rest` | A |
-| `::T` typed bind / anon (rule 14) — int/str/float/bool/null/atom | `sap-O1-05..10` | A |
-| attr type-test `@a::T` | `sap-O1-11-attr-type-test` | A |
-| scalar-spread NON-MATCH (n/a, falls to else) | `sap-O1-12-scalar-spread-nonmatch` | A |
+| sequence spread `(1, *$rest)` | `sap-O1-03b-seq-spread` | G |
+| array literal `[1,$x,3]` (rule 13) | `sap-O1-04-array-literal` | G |
+| array rest `[1, *$rest]` | `sap-O1-04b-array-rest` | G |
+| `::T` typed bind / anon (rule 14) — int/str/float/bool/null/atom | `sap-O1-05..10` | G |
+| attr type-test `@a::T` | `sap-O1-11-attr-type-test` | G |
+| scalar-spread NON-MATCH (n/a, falls to else) | `sap-O1-12-scalar-spread-nonmatch` | G |
 
 ## O4 path/@attr distribution over sequence
-`sap-O4-01-path-over-seq` (A), `-02-empty-in-empty-out` (A), `-03-missing-attr-skipped` (A), `-04-nonelement-skipped` (A).
+`sap-O4-01-path-over-seq` (G), `-02-empty-in-empty-out` (G), `-03-missing-attr-skipped` (G), `-04-nonelement-skipped` (G).
 
 ## O2 `[?fallback]` binds `$err`
-`sap-O2-01-fallback-binds-err` (A).
+`sap-O2-01-fallback-binds-err` (G).
 
 ## §8.9 `[?pipe]` reshape
 | clause | fixtures | gate |
@@ -48,18 +56,18 @@ The `COVERAGE` + `RED-COMPLETE` gate evidence: every Stage-A normative clause ha
 | bare stages | `sap-pipe-01-bare-stages` | G |
 | absence continues (railway on err only) | `sap-pipe-02-absence-continues` | G |
 | infix `|` removed | `sap-pipe-03-infix-removed` | G (neg) |
-| `[through]` removed | `sap-pipe-04-through-removed` | A (neg) |
-| non-callable stage → CXER0100 | `sap-pipe-05-noncallable-stage` | A (neg) |
-| `[tap]` passes through | `sap-pipe-06-tap-passes` | A |
-| `[tap]` fn-errors, value survives | `sap-pipe-07-tap-error-survives` | A |
-| railway short-circuit on err | `sap-pipe-08-skip-on-err` | A |
-| tap skipped after upstream err | `sap-pipe-09-tap-skipped-after-err` | A |
+| `[through]` removed | `sap-pipe-04-through-removed` | G (neg) |
+| non-callable stage → CXER0100 | `sap-pipe-05-noncallable-stage` | G (neg) |
+| `[tap]` passes through | `sap-pipe-06-tap-passes` | G |
+| `[tap]` fn-errors, value survives | `sap-pipe-07-tap-error-survives` | G |
+| railway short-circuit on err | `sap-pipe-08-skip-on-err` | G |
+| tap skipped after upstream err | `sap-pipe-09-tap-skipped-after-err` | G |
 
 ## §8.8/§9.3 `[?try]`/`[catch]`/`[on-error]` retirement
 | clause | fixtures | gate |
 |---|---|---|
-| `[?try]` → unknown directive (neg) | `sap-try-01-removed-negative` | A (neg) |
-| `[on-error]` → unknown clause (neg) | `sap-try-02-on-error-removed-negative` | A (neg) |
+| `[?try]` → unknown directive (neg) | `sap-try-01-removed-negative` | G (neg) |
+| `[on-error]` → unknown clause (neg) | `sap-try-02-on-error-removed-negative` | G (neg) |
 | V2: `[on-error]` ≡ yield-body `[?match]` | `sap-try-03-onerror-equiv-match` | G |
 | catchability: arithmetic / unbound | `sap-catch-01-arith`, `sap-catch-02-unbound` | G |
 
