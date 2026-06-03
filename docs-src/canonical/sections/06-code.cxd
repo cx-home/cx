@@ -793,10 +793,10 @@
            ordering hazard between matches."""]
 
       [body
-        """**Identity invariant.** `[?modify $doc //x :set v]`
+        """**Identity invariant.** `[?modify $doc //x [set v]]`
            where `//x` matches no nodes returns `$doc` unchanged
            — same canonical bytes, same SHA-256. `[?modify $doc
-           //x :delete]` where every `//x` is removed returns a
+           //x [delete]]` where every `//x` is removed returns a
            value with `count(//x) = 0`. Round-trip through
            ast-bin / data-bin / JSON preserves the post-modify
            shape exactly."""]
