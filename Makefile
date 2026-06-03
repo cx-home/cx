@@ -61,7 +61,7 @@ build-vcx:
 build-vcx-dev:
 	$(MAKE) -C vcx build-dev
 
-# v0.7.5 / ADR 0026 §D7 — build libcx.wasm + libcx.js (emscripten
+# v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
 # Opt-in: not invoked by the default `build` target so contributors
 # without emcc on PATH aren't blocked. The guide CI lane invokes
@@ -101,7 +101,7 @@ build-playground:
 	@# ASYNCIFY=1 lets wall-clock [?sleep DUR] yield through the JS
 	@# event loop on the main thread without freezing the UI. ~10%
 	@# per-call overhead; the default `make build-wasm` keeps ASYNCIFY=0
-	@# so CLI/binding consumers don't pay it. Per ADR 0039 D8.
+	@# so CLI/binding consumers don't pay it.
 	@# Build recipe mirrors scripts/gen_guide/guide.mk lines 77-78 so
 	@# `build-playground` and `guide` stay consistent.
 	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
@@ -225,7 +225,7 @@ verify-doc-blocks: build-vcx
 	@tools/verify-doc-blocks.sh docs/
 
 # V2 — upstream V patch tracking. Reports status of the vlang/v
-# issues that block cx v0.7.0 per ADR 0022 §D7. Exit non-zero only
+# issues that block cx v0.7.0. Exit non-zero only
 # on a closed-unfixed (upstream-rejected) outcome.
 check-v-upstream:
 	@python3 scripts/check_v_upstream_patches.py
@@ -296,7 +296,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -359,6 +359,15 @@ check-effect-alignment: build-vcx
 check-docs-tier1-guardrail:
 	@python3 scripts/check_docs_tier1_guardrail.py
 
+# ── NO-ADR-CITATION gate — the spec (spec/core/*.md) is the only source of
+# truth. Decision records are archived (under the guarded decisions dir) and
+# MUST NOT be cited from the live tree; such a citation pins live code/docs to
+# a non-authoritative record and corrupts the single-source model. The gate is
+# token-aware; the gate script + the SAP audit report are allowlisted.
+.PHONY: check-no-adr-citations
+check-no-adr-citations:
+	@python3 scripts/check_no_adr_citations.py
+
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
 TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 8)
@@ -373,9 +382,9 @@ test:
 # causes resource contention.
 test-no-parallel: $(TEST_TARGETS)
 
-# ── ADR 0037 gate 37.10 — code_diagram / code_tree conformance ────────────
+# ── gate 37.10 — code_diagram / code_tree conformance ────────────
 # Runs conformance/code_diagram.txt through cx_code_diagram and
-# cx_code_tree with structural-equivalence comparison per ADR 0037 §D8.
+# cx_code_tree with structural-equivalence comparison.
 # Skips cleanly when the binary lacks the subcommands (Phase 7.1 / 7.6
 # / 7.7 implements them) so this target stays green during scaffold.
 .PHONY: test-code-diagram
@@ -522,17 +531,17 @@ test-vcx-summary:
 #   - `code_*_test.v`        — evaluator / parser / lexer / renderer /
 #                              fixture-runner against conformance/code.txt
 #                              (gate 4 + the per-binding parity input).
-#   - `v08_*_test.v`         — ADR-cycle additions: PathNode + CXPath
-#                              axes (ADR 0028 — gate 28.7), `[?match]`
-#                              multi-arm (0029), `[?modify]` action
-#                              vocabulary (0030 — gate 28.8), atoms
-#                              (0033), `[?def]` (0034 — gate 28.11),
+#   - `v08_*_test.v`         — v0.8.0 additions: PathNode + CXPath
+#                              axes (gate 28.7), `[?match]`
+#                              multi-arm, `[?modify]` action
+#                              vocabulary (gate 28.8), atoms,
+#                              `[?def]` (gate 28.11),
 #                              `[?lib]` / `[?const]` / lockfile / module
-#                              loader (0035 — gate 28.12), `[?expr]`
-#                              general predicate (0036 — gate 28.13),
-#                              `:pure` / `:impure` (0034 D11 — gate
+#                              loader (gate 28.12), `[?expr]`
+#                              general predicate (gate 28.13),
+#                              `:pure` / `:impure` (gate
 #                              28.14), `code_diagram` / `code_tree`
-#                              (0037 — gates 37.2 / 37.4 / 37.5 / 37.10),
+#                              (gates 37.2 / 37.4 / 37.5 / 37.10),
 #                              ABI v0.8.0 surface (gate 11 / 28.9
 #                              evidence floor).
 #
@@ -768,7 +777,7 @@ test-vcx-services: build-vcx
 # ── Gate 9 — diagram round-trip (SVG / PNG / Mermaid) ─────────────────────
 # Diagram round-trip coverage already lives under `test-code-diagram`
 # (drives conformance/code_diagram.txt through cx_code_diagram +
-# cx_code_tree with structural-equivalence per ADR 0037 §D8 — 29/29
+# cx_code_tree with structural-equivalence — 29/29
 # fixtures). This target is the §11.6-named alias plus the V-side
 # diagram unit tests that exercise the emitter + round-trip directly.
 # Per spec/v0_8_0_status.md §11.6 gate 9.
@@ -783,7 +792,7 @@ test-vcx-diagram-roundtrip: build-vcx
 # the production code renderer (vcx/code/render.v: body-quote selection,
 # attribute serialisation, scalar typing, directive shape, structural
 # vs. text round-trips); `v08_path_renderer_test.v` covers the
-# PathNode → source emitter introduced for ADR 0028 §D2. LSP CodeLens
+# PathNode → source emitter introduced for the CXPath value kind. LSP CodeLens
 # tests are not yet authored; this target tracks the V-side renderer
 # coverage. Per spec/v0_8_0_status.md §11.6 gate 12.
 .PHONY: test-renderer
@@ -798,8 +807,8 @@ test-renderer: build-vcx
 # ancestor-or-self / preceding-sibling / preceding), misc/expression
 # scaffolding (21 tests: predicates, unions, integer-literal predicate,
 # attribute-axis short-form), and dispatcher integration (3 tests:
-# `[?find …/axis::…]` end-to-end). 62 tests total exercising ADR 0028
-# §D1's 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
+# `[?find …/axis::…]` end-to-end). 62 tests total exercising the
+# 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
 .PHONY: test-cxpath-axis-coverage
 test-cxpath-axis-coverage: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/v08_cxpath_forward_test.v \
@@ -809,7 +818,7 @@ test-cxpath-axis-coverage: build-vcx
 
 # ── Gate 28.8 — [?modify] action coverage (all 11 actions) ────────────────
 # Drives the V-side modify test files: `v08_modify_eval_test.v` covers
-# the structural evaluator with one positive case per ADR 0030 D1
+# the structural evaluator with one positive case per
 # action (:set / :delete / :using / :rename / :set-attr / :delete-attr /
 # :append / :prepend / :insert-before / :insert-after / :replace) plus
 # action-chain semantics, focus-miss-skip-not-error, pure-functional
@@ -828,7 +837,7 @@ test-modify-action-coverage: build-vcx
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
 # Drives vcx/tests/runners/code_modify_sharing_bench.v — single-match
 # `:set` heap delta + 1000-match `:set-attr` heap delta + identity-hash
-# invariant. Per ADR 0031 D5: < 1 KB new heap per matched node on
+# invariant. Budget: < 1 KB new heap per matched node on
 # 10 MB doc. v0.8.0 ships with sharing-ratio + identity invariants
 # enforced; the absolute-byte budgets are ADVISORY per the bench
 # header's Element + Attribute diet analysis (post-diet residual cost
@@ -837,14 +846,14 @@ test-modify-action-coverage: build-vcx
 bench-code-modify-sharing: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_modify_sharing_bench.v
 
-# ── ADR 0045 D5 — Rosetta corpus cadence audit ──────────────────────────────
+# ── Rosetta corpus cadence audit ──────────────────────────────
 #
 # `make corpus-audit` re-audits every program under corpus/rosetta/ against
 # the current HEAD: runs each `NN-*.cx` via vcx/target/cx, classifies the
 # live status (green / workaround / blocked / missing), and diffs against
 # the table in corpus/rosetta/AUDIT.md. Exits 0 on full agreement, 1 on
 # drift — drift is the cadence signal that a Wave-N fix has re-classified
-# a program (or that AUDIT.md is stale). Per ADR 0045 D5; closure of the
+# a program (or that AUDIT.md is stale). Closure of the
 # task tracker's W1-H #32 item.
 #
 # Override knobs: CX_BIN=path (default vcx/target/cx),
