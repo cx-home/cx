@@ -296,7 +296,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -305,6 +305,15 @@ TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-n
 .PHONY: check-no-legacy-try
 check-no-legacy-try:
 	@python3 scripts/check_no_legacy_try.py
+
+# ── NO-INFIX-RANGE gate (generator-family reshape, C-gen-1) — the retired
+# infix range operators `to`/`by` must not reappear in conformance/ + docs-src/
+# + examples/ + lang/. Ranges are the prefix builtin [$range lo hi step?].
+# Token-aware, not a raw grep (English to/by prose, to=/by= named args, and the
+# colon slice-stride [a:b:s] are not matched; the negatives are allowlisted).
+.PHONY: check-no-infix-range
+check-no-infix-range:
+	@python3 scripts/check_no_infix_range.py
 
 # ── NO-STALE-VERSION gate — the retired language name `CXL` must not reappear
 # in conformance/ + docs-src/ + examples/ + scripts/ + tooling/ + top-level

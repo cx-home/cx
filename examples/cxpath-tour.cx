@@ -119,7 +119,7 @@
   [# ─── §9. Range generator — 1 to N ─── #]
 
   [section title='range generator'
-    [?for [in $i 1 to 5]
+    [?for [in $i [$range 1 5]]
       [yield [pos $i]]]]
 
   [# ─── §10. String concatenation ─── #]

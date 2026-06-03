@@ -138,7 +138,7 @@
 
   [child id=tp-22 n=15.22 title='22. Range — M to N'
     [body """Inclusive range. Prints "1;2;3;4;"."""]
-    [example lang=cx """[?for [in $n 1 to 4] [yield [?str "{$n};"]]]"""]]
+    [example lang=cx """[?for [in $n [$range 1 4]] [yield [?str "{$n};"]]]"""]]
 
   [child id=tp-23 n=15.23 title='23. If — bracket-clause form'
     [body """Three clauses: condition, [then …], [else …]."""]
@@ -188,7 +188,7 @@
 
   [child id=tp-30 n=15.30 title='30. Range loop — generate elements'
     [body """Produces `[slot id=1][slot id=2][slot id=3]`."""]
-    [example lang=cx """[?for [in $n 1 to 3] [yield [slot id=$n]]]"""]]
+    [example lang=cx """[?for [in $n [$range 1 3]] [yield [slot id=$n]]]"""]]
 
   [child id=tp-31 n=15.31 title='31. Nested for'
     [body """Loop over pizzas; inside, loop over each pizza's toppings."""]

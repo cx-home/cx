@@ -1251,7 +1251,7 @@
                  [?for [in $i [$range 1 100]]
                        [yield [?send $i to=$ch]]]]
                [?worker name='consumer'
-                 [?for [in $msg (1 to 100)]
+                 [?for [in $msg [$range 1 100]]
                        [yield [$process [?receive from=$ch]]]]]]"""]
 
       [body
@@ -1622,10 +1622,10 @@
         [body
           """A future surface extends the
              comprehension surface with **strided ranges**
-             (`1 to 99 by 2`, `1 to *`), **slice expressions on a
+             (`[$range 1 99 2]`, `[$range 1 *]`), **slice expressions on a
              binding postfix** (`$xs[2:5]`, `$xs[::-1]`,
              `$xs[:, "name"]`), **first-class slice values** (`[?def
-             $s [2:$_last by 2]]`), and a new **`Iterator` value
+             $s [2:$_last:2]]`), and a new **`Iterator` value
              kind** in CXDM §2 alongside Sequence / Array / Map.
              Comprehensions become lazy by default; named iterators
              (`[?def`]) memoize on first walk so re-use is safe."""]
@@ -1646,12 +1646,12 @@
 
         [example lang=cx
           """[# W1 — strided range, then slice, then comprehension #]
-             [?def $odds [1 to 99 by 2]]
+             [?def $odds [$range 1 99 2]]
              [?def $first-ten $odds[:10]]
              [?def $squares [?for [in $x $first-ten] [yield [* $x $x]]]]
 
              [# W5 — infinite range with [take …] #]
-             [?for [in $x 1 to *] [where [$prime? $x]] [take 100] [yield $x]]
+             [?for [in $x [$range 1 *]] [where [$prime? $x]] [take 100] [yield $x]]
 
              [# W7 — map comprehension over CXPath source #]
              [?for [in $u //user] [yield-map [$u@id $u@email]]]"""]
@@ -1712,7 +1712,7 @@
            //team :bind t / member[$_@role = "lead" and count($t/member) >= 3]
 
            # Range and sequence ops — XPath 3.1 idioms.
-           1 to 10
+           [$range 1 10]
            //a union //b
            //x intersect //y
            //all except //banned"""]]
