@@ -36,7 +36,7 @@ PYTHON ?= python3
  test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-go-api \
  test-xpath-parity test-binding-api-parity \
  abi-c-test \
- conform conform-vcx conform-md bench bench-python \
+ conform conform-vcx conform-md bench bench-python bench-streaming bench-cxparse \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
  examples example-python example-v example-go example-rust \
  demos demo-v demo-go demo-rust \
@@ -693,6 +693,14 @@ bench-python: build-vcx
 PATCHED_V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 bench-streaming: build-vcx
 	$(PATCHED_V) -prod run vcx/tests/runners/streaming_bench.v
+
+# cxparse unification — parser perf baseline / per-phase N3 gate
+# (spec/02-inprogress/cxparse_unification_PLAN.md §6). MUST use the patched V:
+# the PATH/devbox V bundles a boehm GC source-compile that corrupts the heap
+# during collection and segfaults in -prod on macOS (the patched V carries the
+# hardened-runtime libgc bypass — same reason bench-streaming uses $(PATCHED_V)).
+bench-cxparse: build-vcx
+	VFLAGS='-path "@vlib|@vmodules|vcx"' $(PATCHED_V) -prod run vcx/tests/runners/cxparse_baseline_bench.v
 
 # T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
 # surface additions (FLWOR clauses, ?fn calls, partial application,
