@@ -23,7 +23,7 @@
     workers=4
   ]
 
-  [- 3. Collection-literal attribute values (ADR 0017) ]
+  [- 3. Collection-literal attribute values ]
   [tags :string[] cx markup format tutorial]
   [scores :float[] 1.0 2.5 3.14]
 
@@ -152,7 +152,7 @@ cx --version
     [pre [# [server host=x :u16 port=80 +tls] #]]
   ]
 
-  [- 12. Body-position references (ADR 0003 D1). The ref element
+  [- 12. Body-position references. The ref element
      reads its body from another element identified by id. ]
   [snippet #greeting Hello world]
   [output [ref @greeting]]
