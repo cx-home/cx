@@ -196,7 +196,7 @@ Status reflects branch HEAD, not the latest released version.
 | Versioning policy | ✅ | `process/governance.md` |
 | Conformance suite documented | ✅ | `conformance/` |
 | **`UNIFORM` orthogonality gate** — a feature newly admitted/materially changed carries a complete Applicability Matrix (domain × ✅/❌/—), every ❌/— justified in writing, cognate kinds covered same-pass; reviewer checklist item | ✅ | `process/spec-authoring-guide.md` §3 |
-| **§0.1 learnability guardrail** — the guide intro/quickstart show **Tier 1 only** and the *fun* path first; fp.md and the words "monad"/"functor"/"typeclass" never appear in beginner material; Tier 2/3 features carry an opt-in/advanced marker. A docs reviewer applies §0.1's three rules; the Tier-1-only constraint on the beginner sections is a **standing executable gate** | ✅ | SAP §0.1 (`spec/03-accepted-working/sap_errors_effects_composition.md`), `scripts/check_docs_tier1_guardrail.py` (wired into `make test`) |
+| **learnability guardrail** — the guide intro/quickstart show **Tier 1 only** and the *fun* path first; fp.md and the words "monad"/"functor"/"typeclass" never appear in beginner material; Tier 2/3 features carry an opt-in/advanced marker. A docs reviewer applies §4's three rules; the Tier-1-only constraint on the beginner sections is a **standing executable gate** | ✅ | `process/spec-authoring-guide.md` §4, `scripts/check_docs_tier1_guardrail.py` (wired into `make test`) |
 | User tutorial | ✅ | `docs/guide/intro.html`, `docs/guide/quickstart.html`, `docs/guide/tour-data.html`, `docs/guide/tour-programs.html` |
 | Cheatsheet | ✅ | `docs/guide/surfaces.html`, `docs/guide/code.html` |
 | FAQ | ✅ | `docs/guide/faq.html` |

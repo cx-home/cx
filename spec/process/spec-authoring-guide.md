@@ -48,7 +48,27 @@ Any cell a feature does **not** cover MUST be a **documented, justified exceptio
 
 **Worked example (the audit that motivated this section — and a lesson in auditing *correctly*).** `[?match]`/`[case]` pattern matching ranges over the value kinds {scalar, element + attrs, sequence, array, map, …} × {literal, `$bind`, `_`, spread, type-test}. The first audit pass *misreported* the matrix: it tested attributes with bare `code=x` and concluded attributes "didn't match" — but CX *admits* attribute matching via **`@code=x`** (rule 6, which the build runs today) **and** plain **`code=x`** (rule 9, spec-valid but with a current build conformance gap); the bug was the **audit method**, not the feature. A corrected pass found the genuine gaps were narrower: attribute/map value-*capture*, sequence/array *spread*, array *literals*, and *type-kind* tests. Three lessons the guardrail enforces: **(1)** build the matrix by **running the real parser with the real surface** (a wrong-syntax probe produces a false ❌ — audit-before-trust); **(2)** reconcile against the **spec text**, not just the impl — a form the spec admits but the build rejects is a *conformance gap* (a ✅-with-an-impl-bug), not a ❌; **(3)** the fix is to specify the **complete** grammar to an all-✅-or-justified matrix, not to patch the one cell someone hit. The matrix is the artifact that turns "we think it's general" into "here is the proof, cell by cell" — *provided the proof was run correctly*.
 
-## 4 — Companion documents
+## 4 — Learnability (progressive disclosure)
+
+**Status: Current for v0.8.0** (admitted with the errors/effects/fp SAP migration). This section binds authors of beginner-facing material; the Tier-1-only constraint on the guide intro/quickstart is a **standing executable gate** (`scripts/check_docs_tier1_guardrail.py`, wired into `make test`) and a reviewer checklist item in [`readiness-rubric.md`](readiness-rubric.md).
+
+CX's mantra is **"easy to learn and fun to code."** The language carries real *conceptual* depth (the four-channel value model, the `fp` protocol, effect-totality, structured concurrency); that depth is **available, never required**. To keep the mantra a design constraint rather than an afterthought, the surface is laddered, and **beginner-facing material MUST lead with Tier 1 only**:
+
+| Tier | Surface | Audience |
+|---|---|---|
+| **1 — the first hour (≈5 things)** | values flow · absence (empty) flows inertly · `[?else]` for defaults · `[?pipe seed f g]` (bare-stage prefix pipe) for pipelines · `[?match]` to handle | **every** user; the *only* surface the guide intro/quickstart shows |
+| **2 — intermediate (opt-in)** | the four-channel model (`code.md §9.1.1`) · `[?fallback]` · `[?with-error-hook]` observability · capabilities (`security.md`) | reached when a real need appears |
+| **3 — advanced (opt-in, walled off)** | `std-lib/fp.md` (functor/monad/`traverse`) · effect-totality (`code.md §6.5`) · structured concurrency (`code.md §10`) · `--strict` typing / `[throws T]` (RESERVE) | power users; **never a prerequisite to be productive** |
+
+Three normative rules (gate: a guide/docs reviewer applies them, and the Tier-1 surface files are scanned by `scripts/check_docs_tier1_guardrail.py`):
+
+1. **The guide intro/quickstart shows only Tier 1** — and it demonstrates the *fun* path (`[?else]`, `[?pipe]`, absence-flows) **before** any channel/monad/effect theory. The first CX a learner sees is shorter than the try/catch it replaces.
+2. **`fp.md` (and the words "monad" / "functor" / "typeclass") never appear in beginner material.** `fp.md` is documented as an advanced, optional module; a CX author is fully productive without ever opening it.
+3. **Tier 2/3 features carry an "opt-in / advanced" marker** wherever introduced, so the closed-but-deep model never reads as "you must understand all of this."
+
+The intent: the language you must learn to be productive **shrank** (try/catch ceremony and null-guards are gone); the sophistication is there when you want it, but descending is the reader's choice, not a toll on entry.
+
+## 5 — Companion documents
 
 - [`governance.md`](governance.md) — release process, audit framework, and the load-bearing G1/G2/G3 rules.
 - [`readiness-rubric.md`](readiness-rubric.md) — release-readiness gates; quality criteria here are a precondition for any spec row to pass.
