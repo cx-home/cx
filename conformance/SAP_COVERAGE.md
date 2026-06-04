@@ -5,7 +5,7 @@ The `COVERAGE` + `RED-COMPLETE` gate evidence: every Stage-A normative clause ha
 (expected-red, flips enforced when its impl lands in Stage C). Fixtures live in
 `conformance/code.cxd` (core) and `conformance/stdlib/fp.cxd` (fp).
 
-> **2026-06-03 audit reconciliation (SAP_AUDIT_REPORT.md F-C1):** the core
+> **2026-06-03 audit reconciliation (SAP audit, finding F-C1):** the core
 > `sap-*` cases below were marked `A` while Stage C was in flight. Stage C +
 > D014 have landed: `conformance/code.cxd` carries **zero** `gate=advisory`
 > cases and `code_eval_fixtures_test.v` runs all 65 `sap-*` cases **enforced**
