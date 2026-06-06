@@ -7,6 +7,18 @@
 -include scripts/gen_guide/guide.mk
 # ── v0.8.0 CX Data Language Guide ───────────────────────────────── END gen_guide
 
+# Prefer the patched V toolchain (third_party/v/v) for EVERY recipe that
+# invokes `v`. It carries the macOS hardened-runtime libgc / -prod fixes and
+# the picoev shared-listener patch (`new_with_listen_fd`) the http
+# multi-reactor code needs to compile. Without this, recipes that invoke a
+# bare `v` (e.g. `make test-vcx-v08`) pick whatever is first on PATH — under
+# devbox that is the unpatched /usr/local/bin/v, which fails to compile the
+# `code` module on the http branch. Prepending the submodule dir makes bare
+# `v` resolve to the patched binary; if the submodule isn't built yet the dir
+# simply contains no `v` and PATH falls through to the system V (the
+# documented degraded fallback). Mirrors vcx/Makefile's `V := …/third_party/v/v`.
+export PATH := $(CURDIR)/third_party/v:$(PATH)
+
 CONFORMANCE_CORE := conformance/core.cxd
 CONFORMANCE_EXT := conformance/extended.cxd
 CONFORMANCE_XML := conformance/xml.cxd
