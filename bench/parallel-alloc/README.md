@@ -1,0 +1,57 @@
+# Parallel-allocation scaling — findings + reproducible harness
+
+**Question (1.0-blocking):** can cx run allocation-heavy work in parallel across
+multiple processors? A tree-walking interpreter allocates a node per eval step,
+so the allocator's multi-thread behaviour bounds *all* parallel cx workloads.
+
+**Answer:** not on the stock Boehm GC — its single global allocation mutex
+serializes and *degrades* under threads. The hardware is fine; the substrate is
+the wall. A per-thread bump arena over Boehm fixes it (validated below) without
+forking V or switching languages.
+
+Run `./run.sh` (macOS arm64; uses the patched libgc in `third_party/v`).
+
+## Measured (12-core M-series, markers=1, 64-byte objects, 20M allocs/thread)
+
+| allocator | 1T | 2T | 4T | 8T | per-thread 1T→8T |
+|---|--:|--:|--:|--:|---|
+| **Boehm `GC_MALLOC`** (free-each, 0 collections) | 77.5 | 34.8 | 12.2 | 15.8 M/s | 77 → 2 (**39× worse**) |
+| **Boehm** (drop, 4 GB heap, 0 collections) | 67.9 | 41.0 | 24.7 | 27.9 M/s | anti-scales |
+| **System `malloc`/`free`** (control) | 50.8 | 81.4 | 157.7 | 252.1 M/s | scales ~5× aggregate |
+| **Per-thread arena over Boehm** (the fix) | 199.6 | 379.6 | 281.9 | 281.9 M/s | scales; **18× Boehm @ 8T** |
+
+## What this isolates
+
+- **It is the Boehm allocation lock**, not GC collection: the free-each and
+  4 GB-heap rows do **zero** collections (`gc_no=1`) and still collapse.
+- **It is not the hardware/OS**: the system allocator scales 5× on the same box.
+- **It is not fixable by Boehm config**: a rebuilt bdwgc with thread-local-alloc
+  on, parallel-mark off, and `--enable-large-config` collapses identically. The
+  single `GC_allocate_ml` mutex is fundamental to Boehm's design; macOS's
+  `psynch` mutex makes the contention catastrophic. (cx already caps Boehm
+  parallel-mark to one marker on macOS — see `cmain.v` in the fork — which is a
+  separate, real fix for stop-the-world coordination, not this alloc-lock issue.)
+- **Boehm's thread-local-alloc is active but insufficient**: it batches the lock
+  to ~1 acquisition per heap block (~64 objects of 64 B), but at interpreter
+  allocation rates across many cores even that contends fatally.
+
+## The fix: per-thread bump arena
+
+`arena.c` grabs one large block from Boehm per ~65k allocations and bump-allocates
+within it. The block is ordinary GC memory, so Boehm still traces it (pointers
+stay valid; whole blocks collect when unreachable) — **no manual free, no escape
+analysis, no fork**. It hits the global lock ~1000× less often and therefore
+scales. cx's real allocation rate sits far inside the scaling region, so routing
+transient `cx.Node` allocation through such an arena (reset at request / eval-scope
+boundaries) removes allocation as a parallel-scaling constraint.
+
+The arena's residual plateau (~282 M/s at 4–8T) is the block-refill still touching
+Boehm + tracing the big blocks; refilling from raw `mmap`/`malloc` would push it
+higher, but 282 M/s already dwarfs any cx workload's allocation demand.
+
+## Files
+
+- `cbench.c` — Boehm `GC_MALLOC` scaling (`./cbench THREADS PER FREE`).
+- `malloc_ctl.c` — system-allocator control (built with `-fno-builtin-*` so the
+  alloc/free pair is not elided).
+- `arena.c` — per-thread bump arena over Boehm (the validated fix shape).
