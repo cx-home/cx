@@ -49,6 +49,43 @@ The arena's residual plateau (~282 M/s at 4–8T) is the block-refill still touc
 Boehm + tracing the big blocks; refilling from raw `mmap`/`malloc` would push it
 higher, but 282 M/s already dwarfs any cx workload's allocation demand.
 
+## At the cx level (vcx/tests/runners/parallel_eval_bench.v)
+
+The substrate finding manifests directly in cx evaluation. N threads each run an
+allocation-heavy, I/O-free program (`range→map→sum`, 20k) via `code.eval_code`
+(fresh env per call — no shared cx state; the GC is the only shared resource):
+
+| threads | aggregate evals/s | per-thread |
+|--:|--:|--:|
+| 1 | 52 | 52 |
+| 2 | **27** | 14 |
+| 4 | **18** | 4 |
+| 8 | **15** | 2 |
+
+Parallel cx eval doesn't merely fail to scale — it *degrades* (2 threads is half
+of 1; per-thread collapses 26×). This is the 1.0 blocker, quantified.
+
+## Negative result: a transparent bump-arena does NOT work
+
+Routing V's scanned `malloc` through a per-thread bump arena (gated `-d cx_arena`,
+now reverted) was prototyped and **ruled out**. Decisive isolation, 1 thread,
+arena build: **GC disabled → 79 evals/s** (faster than baseline); **GC enabled →
+2 evals/s (40× slower)**. The transparent arena trades the alloc-lock contention
+for a catastrophic **conservative-scan tax**: Boehm is a *conservative* collector,
+so it scans every word of the large pointer-bearing arena blocks on each GC and
+false-retains (integer fields look like pointers), ballooning the heap. A block is
+also pinned until its *last* object dies, so retained eval objects keep big blocks
+scanned. The microbench arena (`arena.c`) scaled only because it retained nothing.
+
+**Conclusion.** Boehm is a conservative + stop-the-world + single-global-lock
+collector — a trifecta hostile to parallel allocation-heavy interpreters. Fixing
+the lock alone (arena) hits the conservative-scan wall. A viable in-process fix
+must keep transient memory **out of the scanned heap and bulk-freed at scope
+boundaries** (scope-aware regions reset per request/eval), or replace the
+collector. The robust near-term parallelism story is **multiple processes**
+(separate heaps → separate locks → linear scaling), which is how the server leg
+can scale today without touching the allocator.
+
 ## Files
 
 - `cbench.c` — Boehm `GC_MALLOC` scaling (`./cbench THREADS PER FREE`).
