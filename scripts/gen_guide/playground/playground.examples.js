@@ -1,10 +1,10 @@
-// CX Playground — 100 progressive eval examples.
-// Single ordered list. Groups (simple → complex, related together):
-//   1-15   pure data  ·  16-25  bindings/arith  ·  26-35  control flow
-//   36-45  comprehensions  ·  46-60  map/reduce (incl. :par)
-//   61-70  modify/pipe/cxpath  ·  71-80  builtins
-//   81-90  concurrency  ·  91-100 resilience
-// Generator: /tmp/gen_examples_v4.py — every entry CLI-audited.
+// CX Playground — 182 progressive eval examples (every entry CLI-audited).
+// Single ordered list, simple → complex:
+//   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])
+//   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience
+//   101-160 cxpath + transforms / composition  ·  161-172 diagrams
+//   173-182 functional composition (cx-stdlib/fp)
+// Generator: scripts/gen_guide/playground/gen_examples.py — re-run (or `make guide`) after any syntax change.
 
 (function () {
   'use strict';
@@ -263,9 +263,9 @@
       tags:  ["eq", "for", "let", "mul", "parallel", "sleep"],
     },
     "43-for-yield-par-mock": {
-      label: "[43] [?for :par] \u2014 :mock sleep (instant)",
-      input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)] [yield [?let [= $_ [?sleep 500ms]] [item n=$n sq=[* $n $n]]]] [par]]",
-      note:  "**Introduces:** `[?for :par]` with `:mock` sleep \u2014 instant in wall-clock. Useful for testing parallel composition semantics without real delays.",
+      label: "[43] [?for] \u2014 parallel comprehension (instant via mock sleep)",
+      input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)] [yield [?let [= $_ [?sleep 500ms mock]] [item n=$n sq=[* $n $n]]]] [par]]",
+      note:  "**Introduces:** `[par]` parallelizes the outermost generator; `[?sleep DUR mock]` advances *virtual* time so this is instant. Under `make guide-http` the 8 sleeps overlap on real OS threads (~500ms); under file:// the wasm runtime is single-threaded. Items stream in source order.",
       tags:  ["eq", "for", "let", "mul", "parallel", "sleep"],
     },
     "44-for-yield-stream": {
@@ -299,9 +299,9 @@
       tags:  ["eq", "fn", "let", "map", "mul"],
     },
     "49-map-par-mock": {
-      label: "[49] [?map :par] \u2014 instant via :mock",
-      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn $n [?let [= $_ [?sleep 500ms]] [* $n $n]]]] [par] [ordered]]",
-      note:  "**Introduces:** `[?map :par]` parallel map. With `:mock` sleep this is instant (virtual time). `:ordered` preserves source order; drop it for completion-order output.",
+      label: "[49] [?map] \u2014 parallel map (instant via mock sleep)",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn $n [?let [= $_ [?sleep 500ms mock]] [* $n $n]]]] [par] [ordered]]",
+      note:  "**Introduces:** `[?map \u2026 [par] [ordered]]` \u2014 parallel map with source order preserved. With `[?sleep DUR mock]` (virtual time) this is instant. Drop `[ordered]` for completion-order output.",
       tags:  ["eq", "fn", "let", "map", "mul", "parallel", "sleep"],
     },
     "50-map-par-wall": {
@@ -325,31 +325,31 @@
     "53-reduce-sum": {
       label: "[53] [?reduce] \u2014 fold to one value (sum)",
       input: "[?reduce (1, 2, 3, 4, 5) [using [?fn ($a $b) [+ $a $b]]] [init 0]]",
-      note:  "**Introduces:** `[?reduce XS [using FN] [init Z]]` \u2014 strict left-fold. `fn(z, x\u2081)` \u2192 `fn(prev, x\u2082)` \u2192 \u2026 Returns the final accumulator.",
+      note:  "**Introduces:** `[?reduce SRC [using FN] [init Z]]` \u2014 fold a sequence to a single value. `[using \u2026]` and `[init \u2026]` are named clauses; the closure takes `($acc $item)`.",
       tags:  ["add", "fn", "reduce"],
     },
     "54-reduce-product": {
       label: "[54] [?reduce] \u2014 fold to a product",
       input: "[?reduce (1, 2, 3, 4, 5) [using [?fn ($a $b) [* $a $b]]] [init 1]]",
-      note:  "**Introduces:** another `[?reduce]` shape \u2014 product (5! = 120). `[init 1]` is the multiplicative identity.",
+      note:  "**Introduces:** the same fold with a different combiner + identity. `[init 1]` is the multiplicative identity, so the product of 1..5 is 120.",
       tags:  ["fn", "mul", "reduce"],
     },
     "55-reduce-par": {
-      label: "[55] [?reduce SRC [using FN] [init Z] [par]] \u2014 associative tree-reduce",
+      label: "[55] [?reduce \u2026 [par]] \u2014 associative tree-reduce",
       input: "[?reduce (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn ($a $b) [+ $a $b]]] [init 0] [par]]",
-      note:  "**Introduces:** `[?reduce SRC [using FN] [init Z] [par]]` \u2014 tree-split reduce. `[using]` MUST be associative; `[init \u2026]` MUST be the identity. Returns 36 either way.",
+      note:  "**Introduces:** `[par]` on a reduce \u2014 an associative tree-reduce. The combiner must be associative; under `make guide-http` the tree levels run on real threads.",
       tags:  ["add", "fn", "parallel", "reduce"],
     },
     "56-map-then-reduce": {
       label: "[56] Map \u2192 reduce composition",
       input: "[?reduce [?map (1, 2, 3, 4, 5) [using [?fn $n [* $n $n]]]] [using [?fn ($a $b) [+ $a $b]]] [init 0]]",
-      note:  "**Introduces:** common map-then-reduce idiom. Square each, then sum the squares (= 55).",
+      note:  "**Pattern:** map then reduce \u2014 square each item, then sum the squares (1+4+9+16+25 = 55). The inner `[?map]` feeds the `[?reduce]` source directly.",
       tags:  ["add", "fn", "map", "mul", "reduce"],
     },
     "57-map-par-bulkhead": {
-      label: "[57] [?map :par] \u2014 bounded with [?bulkhead]",
-      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn $n [?bulkhead max-concurrent=2 [?let [= $_ [?sleep 100ms]] [* $n $n]]]]] [par]]",
-      note:  "**Introduces:** the canonical bounded-parallelism idiom. Default `[par]` is unbounded; wrap the `[using]` body in `[?bulkhead]` to cap fan-out. `cx lsp` emits CXLS005 if you forget the wrap.",
+      label: "[57] [?map \u2026 [par]] \u2014 bounded with [?bulkhead]",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8) [using [?fn $n [?bulkhead max-concurrent=2 [?let [= $_ [?sleep 100ms mock]] [* $n $n]]]]] [par]]",
+      note:  "**Introduces:** `[?bulkhead max-concurrent=N \u2026]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` \u2014 backpressure surfaced as values.",
       tags:  ["bulkhead", "eq", "fn", "let", "map", "mul", "parallel", "resilience", "sleep"],
     },
     "58-par-shared-cb": {
@@ -401,21 +401,21 @@
       tags:  ["cxpath", "eq", "for", "let"],
     },
     "66-pipe-canonical": {
-      label: "[66] [?pipe] \u2014 canonical pipeline",
-      input: "[?pipe (1, 2, 3, 4) [?fn $xs [?for [in $x $xs] [where [> $x 2]] [yield $x]]] count]",
-      note:  "**Introduces:** `[?pipe IN [through STAGE] [through STAGE]]` \u2014 value flows through each stage. `count` is the sequence-length builtin.",
+      label: "[66] [?pipe] \u2014 canonical pipeline (bare stages)",
+      input: "[?pipe (1, 2, 3, 4) [?fn ($xs) [?for [in $x $xs] [where [> $x 2]] [yield $x]]] count]",
+      note:  "**Introduces:** `[?pipe SEED STAGE \u2026]` \u2014 each bare stage is a transform applied to the threaded value (the `[through \u2026]` wrapper is retired). Here: filter `> 2` (\u2192 3,4) then `count` (\u2192 2).",
       tags:  ["fn", "for", "gt", "pipe"],
     },
-    "67-pipe-infix": {
-      label: "[67] [?pipe] \u2014 infix `|` sugar",
-      input: "[?pipe (1, 2, 3, 4) [?fn $xs [?for [in $x $xs] [where [> $x 2]] [yield $x]]] count]",
-      note:  "**Introduces:** infix `|` sugar for `[?pipe]`. Identical semantics, more compact.",
-      tags:  ["fn", "for", "gt", "pipe"],
+    "67-pipe-multistage": {
+      label: "[67] [?pipe] \u2014 multi-stage threading",
+      input: "[?pipe (5, 3, 8, 1, 9) [?fn ($xs) [?for [in $x $xs] [where [> $x 3]] [yield $x]]] [?fn ($xs) [?reduce $xs [using [?fn ($a $b) [+ $a $b]]] [init 0]]]]",
+      note:  "**Pattern:** two function stages thread left-to-right. Filter `> 3` (\u2192 5,8,9) then sum (\u2192 22). Each stage receives the previous stage's output as its single argument.",
+      tags:  ["add", "fn", "for", "gt", "pipe", "reduce"],
     },
     "68-pipe-modify": {
-      label: "[68] [?pipe] \u2014 chained [?modify]",
+      label: "[68] [?pipe] \u2014 a [?modify] stage",
       input: "[?let [= $doc [users [user [name \"Alice\"]] [user [name \"Bob\"]]]] [?pipe $doc [?modify //user [set-attr verified true]]]]",
-      note:  "**Introduces:** pipe + `[?modify]` \u2014 common pattern for read-then-transform. The doc flows into modify; result is the transformed doc.",
+      note:  "**Pattern:** a `[?modify PATH OP]` directive is a valid pipe stage \u2014 it receives the threaded document. Here every `[user]` gets `verified=true`.",
       tags:  ["builtin", "descendant", "eq", "let", "modify", "name", "pipe"],
     },
     "69-fallback-recover": {
@@ -491,9 +491,9 @@
       tags:  ["builtin", "normalize-space"],
     },
     "81-sleep-mock-timeout": {
-      label: "[81] [?sleep :mock] inside [?timeout]",
-      input: "[?timeout 100ms [?let [= $_ [?sleep 500ms]] [ok value='never']]]",
-      note:  "**Introduces:** `[?sleep DUR :mock]` \u2014 virtual time, instant in wall-clock. The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms.",
+      label: "[81] [?sleep \u2026 mock] inside [?timeout]",
+      input: "[?timeout 100ms [?let [= $_ [?sleep 500ms mock]] [ok value='never']]]",
+      note:  "**Introduces:** `[?sleep DUR mock]` \u2014 virtual time, instant in wall-clock. The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms, returning `[err cx-err:CXER0141]`.",
       tags:  ["eq", "let", "sleep", "timeout"],
     },
     "82-sleep-wall": {
@@ -510,15 +510,15 @@
     },
     "84-async-mock-sleep": {
       label: "[84] [?async] \u2014 mock sleep then resolve",
-      input: "[?let [= $f [?async [?let [= $_ [?sleep 100ms]] [ok value='done']]]] [?await $f]]",
+      input: "[?let [= $f [?async [?let [= $_ [?sleep 100ms :mock]] [ok value='done']]]] [?await $f]]",
       note:  "**Introduces:** futures with internal mock-sleep. The future resolves in logical time.",
-      tags:  ["async", "await", "eq", "let", "sleep"],
+      tags:  ["async", "await", "eq", "let", "mock", "sleep"],
     },
     "85-await-all": {
       label: "[85] [?await-all] \u2014 wait on every future",
-      input: "[?let [= $fast [?async [?let [= $_ [?sleep 100ms]] [ok value='a']]]] [?let [= $slow [?async [?let [= $_ [?sleep 400ms]] [ok value='b']]]] [?await-all ($fast, $slow)]]]",
+      input: "[?let [= $fast [?async [?let [= $_ [?sleep 100ms :mock]] [ok value='a']]]] [?let [= $slow [?async [?let [= $_ [?sleep 400ms :mock]] [ok value='b']]]] [?await-all ($fast, $slow)]]]",
       note:  "**Introduces:** `[?await-all (futures\u2026)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).",
-      tags:  ["async", "await-all", "eq", "let", "sleep"],
+      tags:  ["async", "await-all", "eq", "let", "mock", "sleep"],
     },
     "86-await-any": {
       label: "[86] [?await-any] \u2014 first success wins",
@@ -528,9 +528,9 @@
     },
     "87-await-race": {
       label: "[87] [?await-race] \u2014 first to resolve wins",
-      input: "[?let [= $fast [?async [?let [= $_ [?sleep 100ms]] [ok value='fast']]]] [?let [= $slow [?async [?let [= $_ [?sleep 500ms]] [ok value='slow']]]] [?await-race ($fast, $slow)]]]",
+      input: "[?let [= $fast [?async [?let [= $_ [?sleep 100ms :mock]] [ok value='fast']]]] [?let [= $slow [?async [?let [= $_ [?sleep 500ms :mock]] [ok value='slow']]]] [?await-race ($fast, $slow)]]]",
       note:  "**Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.",
-      tags:  ["async", "await-race", "eq", "let", "sleep"],
+      tags:  ["async", "await-race", "eq", "let", "mock", "sleep"],
     },
     "88-channel-basic": {
       label: "[88] [?channel] \u2014 buffered send / receive",
@@ -570,8 +570,8 @@
     },
     "94-timeout-fires": {
       label: "[94] [?timeout] \u2014 fires after mock sleep",
-      input: "[?timeout 50ms [?let [= $_ [?sleep 200ms]] [ok value='too-slow']]]",
-      note:  "**Introduces:** `[?timeout DUR BODY]`. If positional body takes longer than `DUR`, returns CXER0141.",
+      input: "[?timeout 50ms [?let [= $_ [?sleep 200ms mock]] [ok value='too-slow']]]",
+      note:  "**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the timeout returns `[err cx-err:CXER0141 elapsed=50ms]` rather than the body value.",
       tags:  ["eq", "let", "sleep", "timeout"],
     },
     "95-circuit-breaker-trips": {
@@ -659,9 +659,9 @@
       tags:  ["cxpath", "descendant", "eq", "for", "let", "parallel"],
     },
     "109-rename-via-attr": {
-      label: "[109] Transform \u2014 rename element via attribute",
+      label: "[109] Transform \u2014 rename element via computed name",
       input: "[?let [= $doc [doc [item name=apple qty=3] [item name=pear qty=5] [item name=carrot qty=2]]] [?for [in $i $doc//item] [yield [?element $i/@name qty=$i/@qty]]]]",
-      note:  "**Pattern:** synthesize an element whose name comes from the source's attribute. **Uses:** `[(:atom EXPR) attrs]` dynamic head (G5), `$i/@name` to compute the name, `$i/@qty` to copy a value across. The fruit/veg `item` records become `[apple qty=3]`, `[pear qty=5]`, `[carrot qty=2]`.",
+      note:  "**Introduces:** `[?element NAME-EXPR \u2026]` \u2014 a computed element name. Each `[item name=apple]` is reshaped into `[apple \u2026]`, lifting the `@name` attribute to the tag.",
       tags:  ["cxpath", "descendant", "element", "eq", "for", "let"],
     },
     "110-attr-to-child": {
@@ -799,20 +799,20 @@
     "132-pipe-of-modifies": {
       label: "[132] Compose \u2014 pipe of [?modify] stages",
       input: "[?let [= $doc [users [user id=1 banned=true] [user id=2 banned=false] [user id=3 banned=true]]] [?pipe $doc [?modify //user[@banned=true] [delete]] [?modify //user [set-attr role \"member\"]]]]",
-      note:  "**Pattern:** chain transformations with `|`. **Uses:** infix pipe, two `[?modify]` stages. First drop banned users, then mark survivors as members. Each stage takes a document, returns a transformed document.",
+      note:  "**Pattern:** chain two `[?modify]` stages \u2014 first delete banned users (predicate `[@banned=true]`), then tag the survivors `role=member`. Stages thread the document left to right.",
       tags:  ["attr", "descendant", "eq", "let", "modify", "pipe"],
     },
     "133-filter-map-reduce": {
       label: "[133] Compose \u2014 filter \u2192 map \u2192 reduce",
-      input: "[?pipe (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) [?fn $xs [?for [in $x $xs] [where [> $x 4]] [yield [* $x $x]]]] [?fn $xs [?reduce $xs [using [?fn ($a $b) [+ $a $b]]] [init 0]]]]",
-      note:  "**Pattern:** the classic three-step pipeline. **Uses:** `|` pipe + closure-shaped stages. Filters items > 4, squares them, sums the squares (= 355).",
+      input: "[?pipe (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) [?fn ($xs) [?for [in $x $xs] [where [> $x 4]] [yield [* $x $x]]]] [?fn ($xs) [?reduce $xs [using [?fn ($a $b) [+ $a $b]]] [init 0]]]]",
+      note:  "**Pattern:** a classic data pipeline \u2014 keep `> 4`, square, then sum (25+36+49+64+81+100 = 355). Two function stages over a `[?pipe]`.",
       tags:  ["add", "fn", "for", "gt", "mul", "pipe", "reduce"],
     },
     "134-build-index": {
-      label: "[134] Compose \u2014 build an index, then look up",
-      input: "[?let [= $user [u name=Alice score=30]] [?let [= $tier [?if [>= $user/@score 25] [then :gold] [else :silver]]] [profile name=$user/@name tier=$tier]]]",
-      note:  "**Pattern:** name an intermediate via `[?let]`, then refer to it twice. **Uses:** nested `[?let]`, attribute-path reads. The intermediate `$users` is computed once.",
-      tags:  ["cxpath", "eq", "ge", "if", "let"],
+      label: "[134] Compose \u2014 index with a computed tier",
+      input: "[?let [= $users [users [user name=Alice score=30] [user name=Bob score=20]]] [?for [in $u $users//user] [yield [?element $u/@name tier=[?if [>= $u/@score 25] [then :gold] [else :silver]]]]]]",
+      note:  "**Pattern:** build a name-keyed index whose tag is the user name and whose `tier` attribute is computed by an inline `[?if]` on `@score`. Combines computed names (`[?element]`) with a branch.",
+      tags:  ["cxpath", "descendant", "element", "eq", "for", "ge", "if", "let"],
     },
     "135-read-rewrite": {
       label: "[135] Compose \u2014 read, transform, emit",
@@ -911,33 +911,33 @@
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
     },
     "151-range-by-stride": {
-      label: "[151] Range \u2014 strided with `by`",
+      label: "[151] Range \u2014 strided `[$range lo hi step]`",
       input: "[?for [in $x [$range 1 10 2]] [yield $x]]",
-      note:  "**Pattern:** every other integer in a range. **Uses:** `[in $var N to M by S]` \u2014 the `by` stride keyword. Result is `(1, 3, 5, 7, 9)`. Negative stride reverses: `10 to 1 by -2`.",
+      note:  "**Introduces:** `[$range lo hi step]` \u2014 the prefix range generator (infix `to`/`by` is retired). Stride 2 over 1..10 yields the odds 1,3,5,7,9.",
       tags:  ["for"],
     },
     "152-range-reverse-stride": {
-      label: "[152] Range \u2014 reverse with negative `by`",
+      label: "[152] Range \u2014 descending with negative step",
       input: "[?for [in $x [$range 20 4 -4]] [yield $x]]",
-      note:  "**Pattern:** countdown by step. **Uses:** negative stride. Empty when direction disagrees with step (`5 to 3 by 1` \u2192 empty).",
+      note:  "**Introduces:** a descending range via a negative step. `[$range 20 4 -4]` counts down 20,16,12,8,4.",
       tags:  ["for"],
     },
     "153-take-prefix": {
-      label: "[153] Comprehension \u2014 `:take N` short-circuit",
-      input: "[?for [in $x [$range 1 1000000]] [where [> $x 100]] [take 5] [yield $x]]",
-      note:  "**Pattern:** first N matching items, stop early. **Uses:** `:take 5` \u2014 comprehension short-circuits after 5 yields without evaluating the rest of the range. Critical for any pipeline over a large or infinite source.",
+      label: "[153] Comprehension \u2014 `[take N]` over an open range",
+      input: "[?for [in $x [$range 1 *]] [where [> $x 100]] [take 5] [yield $x]]",
+      note:  "**Introduces:** `[$range 1 *]` \u2014 an *open* (infinite) range \u2014 made finite by `[take 5]`. Laziness matters: only enough items to find 5 past 100 are produced (101..105).",
       tags:  ["for", "gt"],
     },
     "154-drop-prefix": {
-      label: "[154] Comprehension \u2014 `:drop N` skip-prefix",
+      label: "[154] Comprehension \u2014 `[drop N]` skip-prefix",
       input: "[?for [in $x [$range 1 10]] [drop 7] [yield $x]]",
-      note:  "**Pattern:** ignore the first N items, yield the tail. **Uses:** `:drop 7` \u2014 skips the first 7 candidates BEFORE any `[where \u2026]` filter or `[yield \u2026]` body fires. Composes with `:take` for pagination.",
+      note:  "**Introduces:** `[drop N]` \u2014 skip the first N items of the stream. Dropping 7 of 1..10 leaves 8,9,10.",
       tags:  ["for"],
     },
     "155-drop-take-page": {
-      label: "[155] Comprehension \u2014 paginate via `:drop + :take`",
+      label: "[155] Comprehension \u2014 paginate via [drop] + [take]",
       input: "[?for [in $x [$range 1 100]] [drop 30] [take 5] [yield $x]]",
-      note:  "**Pattern:** classic LIMIT/OFFSET shape. **Uses:** `:drop` to skip-prefix + `:take` to bound the page. Result is `(31, 32, 33, 34, 35)` \u2014 the 5-item page starting at offset 30. `:drop` runs BEFORE `:take`'s counter, so the page is correctly placed.",
+      note:  "**Pattern:** `[drop OFFSET] [take SIZE]` is page-N slicing. Offset 30, size 5 yields items 31..35 \u2014 the standard pagination window.",
       tags:  ["for"],
     },
     "156-slice-range": {
@@ -972,9 +972,9 @@
     },
     "161-sequence-worker-top": {
       label: "[161] Sequence diagram \u2014 top-level `[?worker]`",
-      input: "[?worker name=\"task\" [?let [= $_ [?sleep 100ms]] [ok value=\"done\"]]]",
+      input: "[?worker name=\"task\" [?let [= $_ [?sleep 100ms :mock]] [ok value=\"done\"]]]",
       note:  "**Pattern:** background task as program entry-point. **Diagram:** because `[?worker]` sits at the top level the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. Try wrapping the same body in `[?let [= $w [?worker \u2026]] $w]` and watch the diagram revert to a flowchart \u2014 `[?worker]` only steers the dialect when it's the outermost form.",
-      tags:  ["eq", "let", "sleep", "worker"],
+      tags:  ["eq", "let", "mock", "sleep", "worker"],
     },
     "162-sequence-select-channels": {
       label: "[162] Sequence diagram \u2014 `[?select]` across channels",
@@ -984,8 +984,8 @@
     },
     "163-sequence-http-service": {
       label: "[163] Sequence diagram \u2014 `[?http-service]` config",
-      input: "[?http-service name=\"hello\" on=http [resource [get \"/\"] [response status=200 [body \"hi\"]]]]",
-      note:  "**Pattern:** declare a service endpoint and its routes. **Diagram:** top-level `[?http-service]` triggers `sequenceDiagram` \u2014 the service is one actor, each `[resource [METHOD PATH] HANDLER]` becomes an inbound message arrow from a generic `client` actor. **Note:** this is the in-process conformance shape; the real-socket variant (port>0 + `[$serve-file]`) is a separate topic.",
+      input: "[?http-service on=http port=0 name=\"hello\" [resource [get \"/\"] [response status=200 [body \"hi\"]]]]",
+      note:  "**Pattern:** declare a service endpoint and its routes. `on=http` selects the protocol and `port=0` is the in-process conformance shape (no real socket). **Diagram:** a top-level `[?http-service]` triggers `sequenceDiagram` \u2014 the service is one actor and each `[resource [METHOD PATH] HANDLER]` becomes an inbound arrow from a generic `client`. **http mode:** the real-socket variant (port>0, served by `cx` under `make guide-http`) actually binds and answers requests; here it just returns a `[service-handle]`.",
       tags:  ["http-service"],
     },
     "164-graph-state-machine-data": {
@@ -1005,6 +1005,102 @@
       input: "[?let [= $xs (1, 2, 3, 4, 5)] [?for [in $x $xs] [yield [?if [> $x 2] [then [hi value=$x]] [else [lo value=$x]]]]]]",
       note:  "**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples #161-163.",
       tags:  ["eq", "for", "gt", "if", "let"],
+    },
+    "167-erd-mid-shop-orders": {
+      label: "[167] ERD \u2014 shop / customer / order / item (mid)",
+      input: "[shop\n  [product sku=\"A1\" name=\"widget\" price=9.99]\n  [product sku=\"A2\" name=\"gadget\" price=19.99]\n  [customer id=1 name=\"alice\"\n    [order id=100 [item sku=\"A1\" qty=2] [item sku=\"A2\" qty=1]]]\n  [customer id=2 name=\"bob\" [order id=102 [item sku=\"A2\" qty=3]]]]",
+      note:  "**Pattern:** classic e-commerce shape \u2014 products, customers, orders containing items. **Diagram:** ERD with four entity types; cardinality classifier draws `customer \u2016--o{ order` (repeating child), `order \u2016--o{ item` (repeating), `shop \u2016--o{ product` (repeating), `shop \u2016--o{ customer` (repeating). At `full` level the per-attribute value enumeration shows e.g. `string @sku \"A1, A2\"` and the synthetic `DOCUMENT` root surfaces source metadata. Mid-size: 4 types, ~12 nodes, ~4 relationships \u2014 enough to exercise the cardinality classifier without crowding the view.",
+      tags:  [],
+    },
+    "168-erd-large-org-structure": {
+      label: "[168] ERD \u2014 company / department / team / project (large)",
+      input: "[company\n  [department id=1 name=\"engineering\"\n    [team id=10 name=\"parser\"\n      [employee id=100 name=\"alice\" role=\"lead\"]\n      [employee id=101 name=\"bob\" role=\"engineer\"]]\n    [team id=11 name=\"runtime\"\n      [employee id=102 name=\"carol\" role=\"engineer\"]]]\n  [department id=2 name=\"design\"\n    [team id=20 name=\"ux\"\n      [employee id=200 name=\"dave\" role=\"designer\"]]]\n  [project id=1000 name=\"v0.8.0\"\n    [owner employee-id=100]\n    [milestone date=\"2026-06-01\" status=\"active\"]\n    [milestone date=\"2026-08-01\" status=\"planned\"]]\n  [project id=1001 name=\"docs\"\n    [owner employee-id=200]\n    [milestone date=\"2026-07-01\" status=\"active\"]]]",
+      note:  "**Pattern:** organizational hierarchy with cross-cutting projects \u2014 the canonical 'real schema' shape. **Diagram:** large ERD with 7 types (company, department, team, employee, project, owner, milestone); `full` level surfaces the inferred-FK candidate `owner.employee-id \u2192 employee.id` as a dashed link (FK inference is name-only \u2014 no schema). 4-deep nesting + sibling-projects exercises the path-walker. Use this as the 'step-back' test: at `compact` the layout stays readable; at `full` per-attribute value enumeration is where the renderer must decide what to truncate.",
+      tags:  [],
+    },
+    "169-cfg-small-bare-if": {
+      label: "[169] CFG \u2014 bare `[?if]` (small)",
+      input: "[?if true\n  [then \"yes\"]\n  [else \"no\"]]",
+      note:  "**Pattern:** the smallest CFG \u2014 one decision, two arms. **Diagram:** flowchart TD with a single diamond and two leaf nodes. Min-level shows just `[?if]` head; compact shows the diamond + both arm labels; full adds INPUT/OUTPUT terminals + per-arm yield enumeration + source spans. Use as a baseline for the per-level pruning rules.",
+      tags:  ["if"],
+    },
+    "170-cfg-large-def-match-process": {
+      label: "[170] CFG \u2014 `[?def]` + `[?match]` + `[?for]` pipeline",
+      input: "[?def classify ($n) [?match $n [case 0 :zero] [else :nonzero]]]\n[?def process ($items) [?for [in $i $items] [yield [$classify $i]]]]\n[$process (3, 0, 7, 0, 1)]",
+      note:  "**Pattern:** two `[?def]`s composed \u2014 `classify` maps a number to an atom via `[?match]`, `process` maps it over a sequence. Parameters carry the `$` sigil and defined functions are called as `[$name \u2026]`. **Diagram:** the control-flow graph shows the match branches and the for-loop.",
+      tags:  ["def", "for", "match"],
+    },
+    "171-seq-mid-producer-consumer": {
+      label: "[171] Sequence \u2014 producer / consumer over a channel",
+      input: "[?let [= $ch [?channel name=\"jobs\" buffer=4]] [?let [= $prod [?worker name=\"producer\" [body [?let [= $_ [?for [in $i [$range 1 3]] [yield [?send $i to=$ch]]]] [?close $ch]]]]] [?let [= $cons [?worker name=\"consumer\" [body [?for [in $i [$range 1 3]] [yield [?receive from=$ch]]]]]] [?let [= $_ [?wait-for worker=$prod]] [?wait-for worker=$cons]]]]]",
+      note:  "**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=\u2026]`. **Diagram:** top-level workers render as `sequenceDiagram` actors with channel arrows. **http mode:** under file:// the wasm runtime is single-threaded (workers interleave cooperatively); under `make guide-http` they run on real OS threads.",
+      tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
+    },
+    "172-seq-large-workers-with-backpressure": {
+      label: "[172] Sequence \u2014 dispatcher + worker + collector",
+      input: "[?let [= $jobs [?channel name=\"jobs\" buffer=8]] [?let [= $results [?channel name=\"results\" buffer=16]] [?let [= $d [?worker name=\"dispatcher\" [body [?let [= $_ [?for [in $j [$range 1 4]] [yield [?send $j to=$jobs]]]] [?close $jobs]]]]] [?let [= $w [?worker name=\"worker\" [body [?for [in $j [$range 1 4]] [yield [?send [processed value=[?receive from=$jobs]] to=$results]]]]]] [?let [= $_ [?wait-for worker=$d]] [?for [in $k [$range 1 4]] [yield [?receive from=$results]]]]]]]]",
+      note:  "**Pattern:** a two-stage pipeline across two channels \u2014 a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed \u2026]` on `results`, and the main thread drains `results`. **Diagram:** multiple top-level workers + channels render as a `sequenceDiagram`. **http mode:** real parallelism (and true channel backpressure on the bounded buffers) only happens under `make guide-http`; file:// interleaves cooperatively.",
+      tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
+    },
+    "173-fp-map": {
+      label: "[173] fp \u2014 `[$fp:map]` (functor map)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:map (1, 2, 3) [?fn ($x) [* $x $x]]]",
+      note:  "**Introduces:** `cx-stdlib/fp` \u2014 composition over the value channels. `[$fp:map F fn]` maps `fn` inside the container `F`; over a sequence it is the ordinary element map (\u2192 1,4,9). Pure \u2014 runs live in the wasm playground.",
+      tags:  ["fn", "lib", "mul"],
+    },
+    "174-fp-flat-map": {
+      label: "[174] fp \u2014 `[$fp:flat-map]` (monad bind)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:flat-map (1, 2, 3) [?fn ($x) ($x, [* $x 10])]]",
+      note:  "**Introduces:** `[$fp:flat-map F fn]` \u2014 map then flatten one level. Each item expands to a 2-element sequence, concatenated into `(1,10,2,20,3,30)`.",
+      tags:  ["fn", "lib", "mul"],
+    },
+    "175-fp-pure": {
+      label: "[175] fp \u2014 `[$fp:pure]` (lift)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:pure 42]",
+      note:  "**Introduces:** `[$fp:pure x]` lifts a value into the default `sequence` instance \u2014 `pure 42 = (42)`. `[$fp:pure x tag=result]` would lift into `[ok x]` instead.",
+      tags:  ["lib"],
+    },
+    "176-fp-fold": {
+      label: "[176] fp \u2014 `[$fp:fold]` (reduce)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:fold (1, 2, 3, 4) 0 [?fn ($acc $x) [+ $acc $x]]]",
+      note:  "**Introduces:** `[$fp:fold F init fn]` \u2014 an err-boundary reduce over the container's items (\u2192 10). Unlike `map`/`flat-map` it may inspect an `[err]`-holding item rather than auto-propagating it.",
+      tags:  ["add", "fn", "lib"],
+    },
+    "177-fp-sequence-results": {
+      label: "[177] fp \u2014 `[$fp:sequence]` over results",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:sequence ([ok 1], [ok 2], [ok 3])]",
+      note:  "**Introduces:** `[$fp:sequence F]` turns a structure of containers inside-out. A sequence of `[ok]`s collapses to one `[ok]` of the sequence \u2014 `[ok (1,2,3)]`.",
+      tags:  ["lib"],
+    },
+    "178-fp-sequence-err": {
+      label: "[178] fp \u2014 `[$fp:sequence]` short-circuits on `[err]`",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:sequence ([ok 1], [err code='cx-err:CXER9999' message='boom'], [ok 3])]",
+      note:  "**Introduces:** the railway. The first `[err]` in the sequence short-circuits and is returned unchanged \u2014 `sequence` is the err-boundary form of `traverse`.",
+      tags:  ["lib"],
+    },
+    "179-fp-traverse-result": {
+      label: "[179] fp \u2014 `[$fp:traverse]` (result applicative)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:traverse (1, 2, 3) [?fn ($x) [ok $x]]]",
+      note:  "**Introduces:** `[$fp:traverse F fn]` maps an effectful `fn: (a) \u2192 G b` across `F` and swaps the layers to `G (F b)`. Here `fn` returns `[ok \u2026]`, so the result is `[ok (1,2,3)]` \u2014 the applicative `G` is dispatched from what `fn` returns.",
+      tags:  ["fn", "lib"],
+    },
+    "180-fp-traverse-maybe": {
+      label: "[180] fp \u2014 `[$fp:traverse]` over Maybe (= the \u22641 sequence)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:traverse (1, 2, 3) [?fn ($x) ($x)]]",
+      note:  "**Introduces:** Maybe is **not** a boxed type in CX \u2014 it is the sequence at cardinality \u2264 1 (`Some(x)=(x)`, `None=()`). `fn` returning `(x)` makes `traverse` swap into the sequence/list applicative \u2014 `((1,2,3))`.",
+      tags:  ["fn", "lib"],
+    },
+    "181-fp-traverse-none": {
+      label: "[181] fp \u2014 Maybe short-circuit (a `None` collapses the result)",
+      input: "[?lib 'cx-stdlib/fp']\n[$fp:traverse (1, 2, 3) [?fn ($x) [?if [= $x 2] () ($x)]]]",
+      note:  "**Introduces:** because `None=()` zeroes the list-applicative product, a single `()` from `fn` collapses the whole traverse to `()` \u2014 the Maybe short-circuit, for free, with no `[just]`/`[none]` heads.",
+      tags:  ["eq", "fn", "if", "lib"],
+    },
+    "182-fp-traverse-http": {
+      label: "[182] fp \u2014 `[$fp:traverse]` over HTTP calls (http mode)",
+      input: "[?lib 'cx-stdlib/fp']\n[?lib 'cx-stdlib/http']\n[$fp:traverse (\"https://example.com/a\", \"https://example.com/b\") [?fn ($u) [$http:get $u]]]",
+      note:  "**Pattern:** the real-world `traverse` \u2014 fan a fallible effect across a list and collect results on the railway (all `[ok]` \u2192 one `[ok (\u2026)]`; first `[err]` short-circuits). **http mode only:** this makes live network calls \u2014 run it under `make guide-http` (or `cx --allow-net` in your terminal). The file:// wasm playground has no network/capabilities, so it returns a capability-denied `[err cx-err:CXER0271]`.",
+      tags:  ["descendant", "fn", "lib"],
     },
   };
 
