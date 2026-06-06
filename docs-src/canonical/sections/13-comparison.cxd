@@ -512,43 +512,30 @@
          table below is the honest accounting of what survives,
          what gets normalized, and what is genuinely lossy."""]
 
-    [body
-      """| CX → format → CX | Lossless? | What is preserved | What is normalised or lost |
-         |---|---|---|---|
-         | CX → JSON → CX | data ✅ / presentation 📋 | Element shape, attributes, types via CXCol, values, nesting | Comments dropped; element vs attribute distinction collapses to keys |
-         | CX → YAML → CX | data ✅ / presentation 📋 | Element shape, types via `!!tags`, multiline strings | Comments dropped by most parsers; flow-vs-block style normalised |
-         | CX → TOML → CX | data ✅ / presentation 📋 | Element shape via table headers, strong types | Comments dropped; section ordering normalised; deep nesting flattened |
-         | CX → XML → CX | data ✅ / presentation 📋 | Element shape, attributes, mixed content, namespaces, PIs | Whitespace normalised per `xml:space`; entity references resolved |
-         | CX → Markdown → CX | data 📋 / presentation 📋 | Headings, paragraphs, lists, emphasis, code, links | Data-shaped elements flatten to inline text |
-         | CX → CXCol → CX | bytes ✅ | Everything byte-for-byte | Nothing — CXCol is the strict-canonical form |
-         | CX → CSV → CX | data partial | `:table` block columns and rows | Non-table data not encodable; cell subtyping collapses |"""]
+    [table
+      [tr [th 'CX → format → CX'] [th 'Lossless?'] [th 'What is preserved'] [th 'What is normalised or lost']]
+      [tr [td 'CX → JSON → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, types via CXCol, values, nesting'] [td 'Comments dropped; element vs attribute distinction collapses to keys']]
+      [tr [td 'CX → YAML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, types via ' [code '!!tags'] ', multiline strings'] [td 'Comments dropped by most parsers; flow-vs-block style normalised']]
+      [tr [td 'CX → TOML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape via table headers, strong types'] [td 'Comments dropped; section ordering normalised; deep nesting flattened']]
+      [tr [td 'CX → XML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, mixed content, namespaces, PIs'] [td 'Whitespace normalised per ' [code 'xml:space'] '; entity references resolved']]
+      [tr [td 'CX → CXCol → CX'] [td 'bytes ✅'] [td 'Everything byte-for-byte'] [td 'Nothing — CXCol is the strict-canonical form']]
+      [tr [td 'CX → CSV → CX'] [td 'data partial'] [td [code ':table'] ' block columns and rows'] [td 'Non-table data not encodable; cell subtyping collapses']]]
 
     [note
-      """**Presentation-layer differences** — comments (only XML
-         and CX preserve them; JSON has none; YAML and TOML lose
-         them through most parsers), whitespace (normalised to
-         the target conventions), attribute order (emission may
-         pick a canonical order), anchor names (canonical form
-         renumbers them). These all show up as identical hashes
-         via `cx hash` because the hash operates on
-         strict-canonical bytes, where presentation is
-         stripped."""]]
+      [b 'Presentation-layer differences'] ' — comments (only XML '
+      'and CX preserve them; JSON has none; YAML and TOML lose '
+      'them through most parsers), whitespace (normalised to the '
+      'target conventions), attribute order (emission may pick a '
+      'canonical order), anchor names (canonical form renumbers '
+      'them). These all show up as identical hashes via '
+      [code 'cx hash'] ' because the hash operates on strict-canonical '
+      'bytes, where presentation is stripped.']]
 
-  [child id=cmp-when-cx n=13.15 title='When CX wins, when it does not'
+  [child id=cmp-when-cx n=13.15 title='When CX wins'
     [body
-      """**CX is the right pick** for typed configuration, mixed
-         content alongside structured data, lossless conversion
-         across formats, cases where you need a stable canonical
-         form for hashing or signing, and any pipeline where the
-         query/transform layer (CXPath + `[?match]` + `[?modify]`)
-         should live in the same syntax as the data."""]
-    [body
-      """**Stay with the other formats** for narrower use cases:
-         JSON for browser-native parsing and high-throughput
-         APIs; YAML for human-curated config where indentation
-         matters or where Kubernetes/Helm tooling expects it;
-         TOML for flat single-file config; XML for document-
-         shaped data with namespaces, processing instructions,
-         and an XSLT toolchain already in place; Parquet or
-         Arrow for database-export with type-fidelity at
-         terabyte scale."""]]]
+      [b 'CX is the right pick'] ' for typed configuration, mixed '
+      'content alongside structured data, lossless conversion across '
+      'formats, cases where you need a stable canonical form for '
+      'hashing or signing, and any pipeline where the query/transform '
+      'layer (' [code 'CXPath'] ' + ' [code '[?match]'] ' + '
+      [code '[?modify]'] ') should live in the same syntax as the data.']]]

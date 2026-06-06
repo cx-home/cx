@@ -1,0 +1,90 @@
+<!--
+  ════════════════════════════════════════════════════════════════════════
+  HAND-AUTHORED PAGE — DO NOT REGENERATE.
+
+  This is the one page in the guide that is NOT produced by the dogfooded
+  CX renderer (scripts/gen_guide/build.cx). It is authored by hand and
+  copied VERBATIM through wrap_page() by scaffold.sh. Per the author's
+  directive, scripts and agents MUST NOT rewrite, reformat, or regenerate
+  the prose below — only Erik Peterson edits this content.
+
+  Sections marked [DRAFT — Erik to revise] are scaffolding placeholders:
+  substance the author intends to fill in or correct. They are deliberately
+  left as prompts rather than invented.
+  ════════════════════════════════════════════════════════════════════════
+-->
+<article class="about">
+
+  <h1>About CX</h1>
+
+  <p class="lede">
+    CX is one language for data and code. The same brackets that hold a
+    configuration file hold a query, a transform, and the program that emits
+    the report — one shape, one parser, one canonical form. This page is the
+    story of why it exists.
+  </p>
+
+  <h2>The problem</h2>
+
+  <p>
+    A typical system speaks half a dozen serialization dialects at once: JSON
+    on the wire, YAML for configuration, TOML for a tool here and there, XML
+    for documents, CSV for tables, plus a templating language to produce
+    output and a query language to pick things out of it. Every boundary
+    between them is a lossy conversion and a place for bugs to hide. Comments
+    vanish. Types soften. The same value hashes differently depending on which
+    tool last touched it. None of these formats can describe both the data and
+    the computation over the data, so every project re-invents a glue layer.
+  </p>
+
+  <h2>The idea</h2>
+
+  <p>
+    CX collapses that stack into a single bracketed surface. Everything is a
+    <code>[head …]</code> form: an element, a directive, a call, a value. Data
+    is a program that evaluates to itself, so the same syntax that holds your
+    configuration also expresses the query (<code>CXPath</code>), the
+    pattern match (<code>[?match]</code>), and the transform
+    (<code>[?modify]</code>) over it. Conversions to and from JSON, YAML,
+    TOML, and XML are defined to round-trip without semantic loss, and every
+    document has a stable identity: the SHA-256 of its canonical bytes,
+    unchanged by whitespace, comments, or attribute order.
+  </p>
+
+  <p>
+    The design follows a few rules that show up everywhere in the language:
+    one shape for everything; every construct reads left-to-right; nothing is
+    lost in a round-trip that doesn't have to be; and the canonical form is
+    the source of identity. The rest of this guide is the working-out of those
+    rules.
+  </p>
+
+  <h2>A brief history</h2>
+
+  <p class="note">
+    [DRAFT — Erik to revise] CX began in <em>[year]</em> out of
+    <em>[the specific itch — the project or frustration that started it]</em>.
+    The early sketches were <em>[what they looked like]</em>; the turning
+    point was <em>[the insight that made it one language instead of a format]</em>.
+    Milestones worth noting: <em>[v0.x — first working evaluator; the surface
+    reshape to the homoiconic bracket form; …]</em>.
+  </p>
+
+  <h2>Why the name</h2>
+
+  <p class="note">
+    [DRAFT — Erik to revise] <em>[Where "CX" comes from and what it stands
+    for, if anything.]</em>
+  </p>
+
+  <h2>From the author</h2>
+
+  <p class="note">
+    [DRAFT — Erik to revise, first person] <em>[A short personal note: why you
+    built this, who it's for, and where you want it to go. A paragraph or two
+    in your own voice.]</em>
+  </p>
+
+  <p class="byline">— Erik Peterson</p>
+
+</article>
