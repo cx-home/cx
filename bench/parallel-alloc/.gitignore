@@ -2,3 +2,4 @@ cbench
 arena
 malloc_ctl
 *.dSYM/
+vgc_repro
