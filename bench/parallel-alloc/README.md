@@ -86,6 +86,30 @@ collector. The robust near-term parallelism story is **multiple processes**
 (separate heaps → separate locks → linear scaling), which is how the server leg
 can scale today without touching the allocator.
 
+## Validated fix mechanism: scope-aware regions (`region.c`)
+
+The scope-aware region — the thing the transparent arena was NOT — works. Each
+thread owns ONE raw (non-GC) block, registered as a GC root **once** via
+`GC_add_roots` (the correct, supported use of roots: pointers from region objects
+to GC objects stay traced), reused across scopes (scope end = reset offset to 0;
+a real impl deep-copies the small result to the GC heap first). Transient
+bump-allocations never touch the GC heap, so there is no per-alloc global lock and
+no conservative-scan tax (the region stays small + is reset):
+
+| threads | aggregate | per-thread | shared GC obj survived 50 forced GCs |
+|--:|--:|--:|:--:|
+| 1 | 962 M/s | 962 | yes |
+| 2 | 820 | 410 | yes |
+| 4 | 1010 | 252 | yes |
+| 8 | **1285 M/s** | 160 | yes |
+
+Aggregate **scales up** (≈80× Boehm's 8-thread throughput) and stays GC-correct.
+The remaining work is the cx-eval *integration*: route transient `cx.Node`
+allocation into a thread-local current region (set at `[?worker]`/`[?async]`/
+request scope entry), deep-copy the result out to the GC heap, reset at scope
+exit — with escape-safety the careful part. This is the v0.8.0 in-process
+parallelism fix; the substrate mechanism above de-risks it.
+
 ## Files
 
 - `cbench.c` — Boehm `GC_MALLOC` scaling (`./cbench THREADS PER FREE`).
