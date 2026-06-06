@@ -733,6 +733,14 @@ bench-code-streaming: build-vcx
 bench-code-http: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_throughput_bench.v
 
+# HTTP backend-direction isolation bench — settles whether the ~10k
+# req/s ceiling is transport-bound (net.http socket stack) or
+# interpreter-bound (code.eval + env.clone) before any backend rewrite.
+# Two-point: in-process code.eval leg vs real net.http listener on :0
+# with a trivial no-op handler. Prints a ratio + verdict, no PASS/FAIL.
+bench-code-http-isolation: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_isolation_bench.v
+
 # Gate 7 — concurrency soak. Loops a buffered send/receive workload
 # detecting deadlocks (per-iter wall-clock cap) and registry leaks
 # across an extended run. Default is a 30 s smoke; release candidate
