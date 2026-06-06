@@ -168,7 +168,39 @@ retained nothing and reset every 1000 small nodes.
 - **Gate 3 (scaling):** demonstrated for the intended bounded shape (positive
   1→4T scaling, 2–6× baseline); bulk bodies remain the wrong shape (documented).
 
-## Next: take the win to the HTTP request-handler path (2a)
+## HTTP request-handler wiring (2a) — wired + correct, but NO throughput win
+
+`invoke_handler` (services_listener) now wraps the handler eval in
+`cx_region_enter` → eval body → `cx_response_to_wire` → `cx_region_exit`. The
+wire serialization fully materializes the response into a `WireResp` of plain
+ints/strings/maps, so NO region value outlives the reset — the cleanest possible
+work unit (no `region_export` needed). Channel-using handlers skip the region
+(`body_uses_channels`), same as workers. Inert in the default build.
+
+Validation (live picoev server, both builds):
+- **Correct:** byte-identical responses; 200 concurrent requests across reactor
+  threads with zero corruption; heavy 16 KB / 400-row responses byte-identical.
+- **No throughput win:** `wrk -t8 -c128`
+  - trivial handler: default 25 816 vs regions 25 852 req/s (≈equal).
+  - heavy handler:   default 71 vs regions 70 req/s (≈equal).
+
+**Why:** HTTP serving is NOT eval-allocation-bound. A trivial handler is
+transport-bound (the project's prior isolation finding: transport ~145 µs/req
+vs interpreter ~10 µs/req — `project_http_backend_isolation_finding`). A heavy
+handler is bottlenecked on response *rendering* (which allocates GC strings, not
+region-scanned nodes) plus GC stop-the-world across reactor threads — neither of
+which the region touches. The region optimizes eval-time scanned-node allocation,
+which is a small fraction of HTTP request cost.
+
+**Conclusion.** The scope-aware region delivers in-process scaling for bounded
+*compute* work units (Gate 3 bounded-worker bench: 2–6× over baseline, positive
+1→4T), but NOT for HTTP serving (transport/render-bound) and NOT for high-churn
+bulk loops (block overflow). The multi-process story (path C) remains the HTTP
+parallelism answer. The handler wiring is kept (correct, inert, gated) and may
+matter if/when transport + rendering are optimized, but provides no measured win
+today.
+
+### Original next-step note (superseded by the measurement above)
 
 The bounded-worker bench caps at ~4 threads on per-eval parse/render that is not
 regioned. The request-handler model removes that ceiling: parse the handler/route
