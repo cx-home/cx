@@ -19,6 +19,15 @@
 # documented degraded fallback). Mirrors vcx/Makefile's `V := …/third_party/v/v`.
 export PATH := $(CURDIR)/third_party/v:$(PATH)
 
+# Explicit handle on the patched V toolchain. The PATH export above is meant to
+# make a bare `v` resolve to third_party/v/v, but `v test` recipes have been
+# observed re-resolving to the system V (e.g. /usr/local/bin/v) — under which
+# the http branch's `code` module fails to compile (it calls the patched
+# builtin's cx_region_* / picoev helpers). Recipes that MUST use the patched
+# toolchain reference $(V) directly. Mirrors vcx/Makefile's V definition; falls
+# back to a bare `v` when the submodule binary isn't built yet.
+V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
+
 CONFORMANCE_CORE := conformance/core.cxd
 CONFORMANCE_EXT := conformance/extended.cxd
 CONFORMANCE_XML := conformance/xml.cxd
@@ -562,7 +571,7 @@ test-vcx-summary:
 # Wired into TEST_TARGETS via the `test-vcx` umbrella above.
 .PHONY: test-vcx-v08
 test-vcx-v08: build-vcx-dev
-	@v test vcx/tests/
+	@$(V) test vcx/tests/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
