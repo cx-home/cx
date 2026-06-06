@@ -689,9 +689,19 @@
 
   // ── Graph rendering ─────────────────────────────────────
   let mermaidIdCounter = 0;
-  function renderGraph(src) {
+  // Mermaid's render() appends a temporary `d<id>` measurement node to <body>
+  // and, on a parse failure, injects a "Syntax error" bomb SVG that it does NOT
+  // remove — so with an incrementing id these orphans STACK indefinitely. Sweep
+  // them before/after every render.
+  function sweepMermaidOrphans() {
+    document.querySelectorAll(
+      'body > [id^="dcxp-mmd-"], body > svg[id^="cxp-mmd-"], body > [id^="cxp-mmd-"]'
+    ).forEach(n => n.remove());
+  }
+  async function renderGraph(src) {
     const canvas = vizGraphEl.querySelector('.cxp-graph-canvas');
     if (!canvas) return;
+    sweepMermaidOrphans();
     if (!src) {
       canvas.innerHTML = '<p class="cxp-viz-placeholder">(no diagram available)</p>';
       return;
@@ -706,21 +716,37 @@
       canvas.innerHTML = `<pre><code>${escapeHtml(body)}</code></pre>`;
       return;
     }
+    // Validate FIRST: mermaid.parse() only validates (no DOM injection), so a
+    // bad diagram surfaces a clean inline message instead of mermaid injecting
+    // an orphaned bomb SVG into <body>.
+    if (typeof window.mermaid.parse === 'function') {
+      try {
+        await window.mermaid.parse(body);
+      } catch (err) {
+        canvas.innerHTML =
+          `<p class="cxp-viz-placeholder">Diagram not renderable: ${escapeHtml((err && err.message) || String(err))}</p>` +
+          `<pre><code>${escapeHtml(body)}</code></pre>`;
+        sweepMermaidOrphans();
+        return;
+      }
+    }
     const id = `cxp-mmd-${++mermaidIdCounter}`;
-    window.mermaid.render(id, body).then(({ svg }) => {
+    try {
+      const { svg } = await window.mermaid.render(id, body);
       canvas.innerHTML = svg;
-      // Tag the SVG so zoom/pan can target it.
       const svgEl = canvas.querySelector('svg');
       if (svgEl) {
         svgEl.classList.add('cxp-graph-svg');
         graphScale = 1;
         applyGraphTransform();
       }
-    }).catch(err => {
+    } catch (err) {
       canvas.innerHTML =
         `<p class="cxp-viz-placeholder">Mermaid render failed: ${escapeHtml(err.message)}</p>` +
         `<pre><code>${escapeHtml(body)}</code></pre>`;
-    });
+    } finally {
+      sweepMermaidOrphans();
+    }
   }
 
   function applyGraphTransform() {
