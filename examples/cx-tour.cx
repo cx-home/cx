@@ -48,38 +48,39 @@
     port:u16=8080
   ]
 
-  [- 6. Prose markup. The square-bracket prose forms render styled text. ]
+  [- 6. Rich prose via ordinary named elements. CX has NO markdown syntax
+     (ruling D-B); styled text is just elements — strong, em, code, etc. ]
   [section #prose
     [h2 Prose markup]
     [p
-      Inline forms: [** bold], [* italic], [` inline code], [~~ strike],
-      [^ superscript], [~ subscript], [__ underline]. Combine them:
-      [** bold with [* italic] inside].
+      Inline forms: [strong bold], [em italic], [code inline code],
+      [del strike], [sup superscript], [sub subscript], [u underline].
+      Combine them: [strong bold with [em italic] inside].
     ]
 
-    [- Headings: one to six hash marks. ]
-    [# H1 top-level heading]
-    [## H2 section heading]
-    [### H3 subsection heading]
-    [#### H4]
-    [##### H5]
-    [###### H6 deepest]
+    [- Headings one through six are ordinary elements. ]
+    [h1 H1 top-level heading]
+    [h2 H2 section heading]
+    [h3 H3 subsection heading]
+    [h4 H4]
+    [h5 H5]
+    [h6 H6 deepest]
 
     [blockquote
       [p
-        The goal of CX is to be [** as readable as YAML] yet
-        [** as expressive as XML] without the verbosity of either.
+        The goal of CX is to be [strong as readable as YAML] yet
+        [strong as expressive as XML] without the verbosity of either.
       ]
       [cite CX specification, section 1]
     ]
 
     [ul
       [li First item]
-      [li Second item with [* emphasis]]
+      [li Second item with [em emphasis]]
       [li
         [ol
           [li Nested ordered]
-          [li Items can hold [` code] too]
+          [li Items can hold [code code] too]
         ]
       ]
     ]
@@ -103,29 +104,29 @@
     ]
   ]
 
-  [- 8. Code blocks with embedded-language injection.
-     Triple-backtick open plus lang=NAME triggers highlighting of the
-     embedded source (tree-sitter injection path in Neovim). ]
+  [- 8. Code blocks — embedded source as raw text. CX has no fenced-code
+     syntax; embed any language verbatim in a [#…#] raw-text node (the
+     lang attr drives tree-sitter injection / highlighting). ]
   [section #code-blocks
     [h2 Code blocks]
 
-    [``` lang=python [|
+    [pre [code lang=python [#
 def square(n: int) -> int:
     return n * n
-|]]
+#]]]
 
-    [``` lang=json [|
+    [pre [code lang=json [#
 {"port": 8080, "tls": true, "workers": 4}
-|]]
+#]]]
 
-    [``` lang=sql [|
+    [pre [code lang=sql [#
 SELECT name, score FROM users WHERE score > 50 ORDER BY score DESC;
-|]]
+#]]]
 
-    [``` lang=bash [|
+    [pre [code lang=bash [#
 brew install cx-home/tap/cx
 cx --version
-|]]
+#]]]
   ]
 
   [- 9. Entity and character references. ]
