@@ -26,7 +26,7 @@ if [[ ! -d "$PLAYGROUND" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$PLAYGROUND/dist/wasm/libcx.wasm" && ! -f "$PLAYGROUND/dist/wasm/libcx.js" ]]; then
+if [[ ! -f "$PLAYGROUND/dist/wasm/libcx-async.js" ]]; then
     echo "Gate 17 FAIL — wasm artifacts missing under $PLAYGROUND."
     exit 1
 fi
@@ -52,33 +52,41 @@ fail() {
 # Probe each required asset
 for asset in playground.html playground/playground.js playground/playground.css \
              playground/playground.examples.js \
-             dist/wasm/libcx.js dist/wasm/cxlib.js; do
+             dist/wasm/libcx-async.js dist/wasm/cxlib.js; do
     if ! curl -sf -o /dev/null "http://localhost:$PORT/$asset"; then
         fail "$asset returned non-200"
     fi
 done
 
-# Symbol smoke check — fetch the wasm-loader JS and grep for the new
-# v0.8.0 export name. (Full boot test requires a real browser.)
-js="$(curl -sf "http://localhost:$PORT/dist/wasm/libcx.js")"
-if ! echo "$js" | grep -q '_cx_code_eval'; then
-    fail "_cx_code_eval not present in libcx.js — wasm not rebuilt against v0.8.0 ABI"
+# Symbol smoke check — grep the wasm-loader JS for the v0.8.0 export names.
+# Use the pthreads variant: it is NOT SINGLE_FILE, so its emscripten loader JS
+# references the export symbols as greppable text. The async variant is
+# SINGLE_FILE (wasm inlined as base64 — symbols not greppable, and its ~16 MB
+# size breaks the pipe). (Full boot test requires a real browser.)
+# NOTE: use grep here-strings (`<<<`), not `echo "$js" | grep -q`. Under
+# `set -o pipefail`, grep -q exits on the first match while echo is still
+# writing the large (~250 KB) buffer → echo takes SIGPIPE (141) → pipefail
+# propagates it → the `if !` fires a false failure. A here-string is fed by
+# the shell, so there is no upstream process to receive SIGPIPE.
+js="$(curl -sf "http://localhost:$PORT/dist/wasm/libcx-pthreads.js")"
+if ! grep -q '_cx_code_eval' <<< "$js"; then
+    fail "_cx_code_eval not present in libcx-pthreads.js — wasm not rebuilt against v0.8.0 ABI"
 fi
-if ! echo "$js" | grep -q '_cx_code_diagram'; then
-    fail "_cx_code_diagram not present in libcx.js — diagram export missing"
+if ! grep -q '_cx_code_diagram' <<< "$js"; then
+    fail "_cx_code_diagram not present in libcx-pthreads.js — diagram export missing"
 fi
 
 # cxlib.js JS surface — check Layer-1 method names per spec/bindings.md
 cxlib_js="$(curl -sf "http://localhost:$PORT/dist/wasm/cxlib.js")"
 for method in eval selectAll modify findAll parse bytes hash equals; do
-    if ! echo "$cxlib_js" | grep -q "\\b$method\\b"; then
+    if ! grep -q "\\b$method\\b" <<< "$cxlib_js"; then
         fail "cxlib.js missing Layer-1 method: $method"
     fi
 done
 
 echo "Gate 17 smoke: ✅"
 echo "  - playground.html / playground.js / playground.css all 200"
-echo "  - dist/wasm/libcx.js exports _cx_code_eval + _cx_code_diagram"
+echo "  - dist/wasm/libcx-pthreads.js exports _cx_code_eval + _cx_code_diagram"
 echo "  - dist/wasm/cxlib.js has all 8 sampled Layer-1 methods"
 echo
 echo "Browser-level verification (Mermaid render, tree, bridge):"
