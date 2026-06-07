@@ -427,8 +427,13 @@ and is not duplicated here.
 | `CXER4200–CXER4209` | `module-sqlite` | `spec/modules/sqlite.md` |
 | `CXER4300–CXER4309` | `module-tree-sitter` | `spec/modules/tree-sitter.md` |
 | `CXER4400–CXER4409` | `cx-stdlib/fp` (functor/monad protocol; `CXER4400 E_NO_INSTANCE`) | `spec/std-lib/fp.md` |
-| `CXER4500–CXER4524` | `cx-stdlib/net` (L4 networking — `E_NET_*`; allocated above fp's 4400-band) | `spec/02-inprogress/stdlib_net.md` |
-| `CXER4525–CXER4589` | `cx-stdlib/http` (L7 HTTP/1.1 client + server — `E_HTTP_*`; allocated above net's 4500-band; 4544–4589 SSE/streaming) | `spec/02-inprogress/stdlib_http.md` |
+| `CXER4500–CXER4524` | `cx-stdlib/net` (L4 networking — `E_NET_*`; allocated above fp's 4400-band) | `spec/02-working/stdlib_net.md` |
+| `CXER4525–CXER4589` | `cx-stdlib/http` (L7 HTTP/1.1 client + server — `E_HTTP_*`; allocated above net's 4500-band; 4544–4589 SSE/streaming) | `spec/02-working/stdlib_http.md` |
+| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`) | `spec/02-working/stdlib_journal.md` |
+| `CXER4650–CXER4699` | `cx-stdlib/bus` (in-process pub/sub, ordered dispatch — `E_BUS_*`) | `spec/02-working/stdlib_bus.md` |
+| `CXER4700–CXER4799` | `cx-stdlib/authz` (authorization / trust model — `E_AUTHZ_*`) | `spec/02-working/stdlib_authz.md` |
+| `CXER4800–CXER4849` | `cx-stdlib/session` (`(principal, tenant)` sessions — `E_SESSION_*`) | `spec/02-working/stdlib_session.md` |
+| `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/02-working/stdlib_sched.md` |
 
 **Invariants:**
 
