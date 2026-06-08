@@ -1,0 +1,36 @@
+[# scripts/gen_stdlib_docs/probe.cx — Phase 1 projection proof.
+
+   Walks one bundle module's on-disk source, reads its co-located
+   [module-doc] + [fn-doc] blocks via [$cx:parse] + CXPath, and re-emits a
+   clean digest tree per documented function. Proves the schema in
+   spec/02-inprogress/stdlib_colocated_docs.md is machine-readable from CX
+   (the extraction idiom: iterate `node/*`, [?match] each child, bind text
+   via [case [tag $t] …] — the same idiom scripts/gen_guide/guide_build.cx
+   uses).
+
+   Run: cx scripts/gen_stdlib_docs/probe.cx --allow-read   (reads stdlib/path.cx) #]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/cx']
+
+[# extract an [example …] element's [code]/[expect] children, text verbatim. #]
+[?def example-digest scope=public ($e)
+  [example
+    [?for [in $ec $e/*] [yield
+      [?match $ec
+        [case [code $t]   [code $t]]
+        [case [expect $t] [expect $t]]
+        [else ()]]]]]]
+
+[?let [= $d [$cx:parse [$io:read-file "stdlib/path.cx"]]]
+  [module
+    [?for [in $m $d//module-doc] [yield
+      [module-name $m@name]]]
+    [?for [in $fd $d//fn-doc] [yield
+      [fn name=$fd@name scope=$fd@scope purity=$fd@purity
+        [?for [in $c $fd/*] [yield
+          [?match $c
+            [case [sig $t]     [sig $t]]
+            [case [summary $t] [summary $t]]
+            [case [example $e] [$example-digest $c]]
+            [else ()]]]]]]]]]
