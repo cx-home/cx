@@ -1,0 +1,140 @@
+# scripts/stdlib_catalogue_gate.cx -- stdlib catalogue drift gate.
+#
+# Eat-our-own-dog-food: this gate is written entirely in CX and runs
+# under `cx eval`. It verifies ONE invariant about the standard-library
+# catalogue, whose single source of truth is the [module-meta ...] block
+# fenced near the top of each spec under spec/03-approved/std-lib/*.md:
+#
+#     SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
+#
+# where
+#   SPEC_SET     = name= of every [module-meta] with status=current in
+#                  spec/03-approved/std-lib/*.md. status=new modules
+#                  (e.g. xap in spec/01-new) are EXCLUDED -- not yet
+#                  implemented.
+#   BUNDLE_SET   = basenames of stdlib/*.cx (the .cx stripped).
+#   DISPATCH_SET = every <name>_stdlib_builtin prefix in
+#                  vcx/code/stdlib_dispatch.v, deduplicated.
+#
+# The gate FAILS (process exit 1) when either direction breaks:
+#   (1) a SPEC_SET module is in neither BUNDLE_SET nor DISPATCH_SET
+#       -- a specced module with no implementation; OR
+#   (2) a BUNDLE_SET/DISPATCH_SET module is not in SPEC_SET
+#       -- an orphan impl/bundle with no spec.
+#
+# On success it RETURNS a one-line OK with the catalogue count (exit 0).
+#
+# -- Output / exit mechanism --------------------------------------------
+# `cx eval` prints the program's RETURN VALUE to stdout and exits 0; a
+# raised failure prints to stderr (`cx eval: <code>: <message>`) and
+# exits 1. On the happy path we simply RETURN the OK line. On drift we
+# route the full multi-line report through the panic-postfix `!` on a
+# call that returns an [err] whose `code` carries the report -- `!`
+# converts the err-value into a thrown failure, surfacing the report on
+# stderr and forcing exit 1. (NOTE: in a program, `[- ... -]` is the
+# subtraction operator, not a comment; comments are `#` to end-of-line.)
+#
+# Run via:  vcx/target/cx eval scripts/stdlib_catalogue_gate.cx --allow-all
+# (or:      make stdlib-catalogue-gate)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# Drift is surfaced by routing the report text through the `code` slot of
+# an [err] value and panicking on it with postfix `!`. `cx eval` prints
+# the resulting failure (report and all) to stderr and exits 1.
+[?def fail-with scope=public ($report::string)
+  [err code=$report message='stdlib catalogue drift']]
+
+# -- SPEC_SET -----------------------------------------------------------
+# One [module-meta name=... tier=... status=...] line per spec file. Pull
+# the name= and status= via RE2; keep only status=current.
+[?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_]+) tier=[A-D] status=([a-z]+)"]]
+
+  [?let [= $spec-set
+    [?for [in $f [$io:glob "spec/03-approved/std-lib/*.md"]]
+      [= $m [$re:find $meta-rx [$io:read-file $f]]]
+      [where [not [?match $m [case [no-match] true] [else false]]]]
+      [where [= [$re:group $m 2] "current"]]
+      [yield [$re:group $m 1]]]]
+
+    # -- BUNDLE_SET -----------------------------------------------------
+    # basenames of stdlib/*.cx with the extension stripped.
+    [?let [= $bundle-set
+      [?for [in $b [$io:glob "stdlib/*.cx"]]
+        [yield [$path:stem $b]]]]
+
+      # -- DISPATCH_SET -------------------------------------------------
+      # every <name>_stdlib_builtin prefix in stdlib_dispatch.v. find-all
+      # yields one match per occurrence; the membership tests below
+      # tolerate duplicates and the orphan walk dedups explicitly.
+      [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
+        [?let [= $dispatch-set
+          [?for [in $dm [$re:find-all $dispatch-rx [$io:read-file "vcx/code/stdlib_dispatch.v"]]]
+            [yield [$re:group $dm 1]]]]
+
+          # -- Direction (1): specced modules with no implementation.
+          # A spec module is satisfied iff it is a member of BUNDLE_SET
+          # OR DISPATCH_SET.
+          [?let [= $missing
+            [?for [in $s $spec-set]
+              [where [not [or
+                [> [$count [?for [in $bx $bundle-set]   [where [= $bx $s]] [yield $bx]]] 0]
+                [> [$count [?for [in $dx $dispatch-set] [where [= $dx $s]] [yield $dx]]] 0]]]]
+              [yield $s]]]
+
+            # -- Direction (2): orphan impls/bundles with no spec.
+            # Walk BUNDLE_SET; then DISPATCH_SET, skipping any name already
+            # in BUNDLE_SET so the union is reported once. Membership of
+            # $spec-set decides the orphan condition.
+            [?let [= $orphan-bundle
+              [?for [in $b $bundle-set]
+                [where [not [> [$count [?for [in $sx $spec-set] [where [= $sx $b]] [yield $sx]]] 0]]]
+                [yield $b]]]
+
+              [?let [= $orphan-dispatch
+                [?for [in $d $dispatch-set]
+                  [where [not [> [$count [?for [in $bx $bundle-set] [where [= $bx $d]] [yield $bx]]] 0]]]
+                  [where [not [> [$count [?for [in $sx $spec-set]   [where [= $sx $d]] [yield $sx]]] 0]]]
+                  [yield $d]]]
+
+                # Pre-format each violation list into one line per module.
+                # An empty list joins to "" and is dropped below.
+                [?let [= $missing-lines
+                  [?for [in $s $missing]
+                    [yield [$concat "  [specced, no impl]  " $s "  -- in SPEC_SET but in neither BUNDLE_SET nor DISPATCH_SET"]]]]
+                  [?let [= $orphan-bundle-lines
+                    [?for [in $b $orphan-bundle]
+                      [yield [$concat "  [orphan bundle]     " $b "  -- stdlib/" $b ".cx exists but no status=current spec"]]]]
+                    [?let [= $orphan-dispatch-lines
+                      [?for [in $d $orphan-dispatch]
+                        [yield [$concat "  [orphan dispatch]   " $d "  -- " $d "_stdlib_builtin dispatched but no status=current spec"]]]]
+
+                      [?let [= $n-violations
+                        [+ [$count $missing] [+ [$count $orphan-bundle] [$count $orphan-dispatch]]]]
+
+                        [?if [= $n-violations 0]
+                          # PASS: one-line OK with the catalogue count.
+                          [then
+                            [$concat "stdlib-catalogue-gate OK -- "
+                              [$count $spec-set]
+                              " specced (status=current) modules, all implemented via bundle and/or dispatch; no orphans."]]
+
+                          # FAIL: gather every non-empty violation block,
+                          # join with newlines, prepend a header, and panic
+                          # on the result so it reaches stderr with exit 1.
+                          [else
+                            [?let [= $blocks
+                              [?for [in $blk (
+                                  [$strings:join $missing-lines "\n"],
+                                  [$strings:join $orphan-bundle-lines "\n"],
+                                  [$strings:join $orphan-dispatch-lines "\n"])]
+                                [where [not [= $blk ""]]]
+                                [yield $blk]]]
+                              [$fail-with
+                                [$concat "SPEC_SET != (BUNDLE_SET union DISPATCH_SET) -- "
+                                  $n-violations
+                                  " violation(s):\n"
+                                  [$strings:join $blocks "\n"]]]!]]]]]]]]]]]]]]]

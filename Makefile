@@ -281,6 +281,19 @@ stdlib-coverage: build-vcx
 		--cx-bin "$(CX_BIN)" \
 		$(if $(MODULES),--modules "$(MODULES)",)
 
+# stdlib catalogue drift gate — verifies the single invariant
+#   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
+# i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
+# is implemented (stdlib/*.cx bundle and/or a *_stdlib_builtin entry in
+# vcx/code/stdlib_dispatch.v), and there are no orphan impls/bundles
+# without a current spec. The gate is itself written in CX (dog-food) and
+# run by `cx eval`; its nonzero exit on drift propagates through make.
+# Override the binary with CX_BIN=path (default vcx/target/cx).
+.PHONY: stdlib-catalogue-gate
+stdlib-catalogue-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+stdlib-catalogue-gate: build-vcx
+	@"$(CX_BIN)" eval scripts/stdlib_catalogue_gate.cx --allow-all
+
 # V7 — bench harness JSON runner. Drives bench-streaming and emits
 # a stable JSON shape consumable by scripts/compare_bench.py.
 bench-json:
