@@ -7,12 +7,12 @@
 #   guide-diff  Show what publishing would change.
 #   guide-clean Wipe docs/guide/.
 #
-# Rendering pipeline (see scaffold.sh): cx eval scripts/gen_guide/build.cx
-# is the engine that turns .cxd sections into CX render-trees; cx --xml
-# projects to HTML; Python does chrome wrap + anchor resolution only.
-# A section whose .cxd source can't be parsed/rendered by cx falls back
-# to a banner + verbatim source so the page still lands and the failure
-# is visible.
+# Rendering pipeline: scripts/gen_guide/guide_build.cx is a single CX
+# program (run via `cx <file>`, CLI default-eval) that reads
+# docs-src/canonical/ and emits the whole docs/guide/ site —
+# render = .cx, dogfooded end to end (read → [$cx:parse] → transform →
+# [$xml:emit] → [$io:write-file]; no subprocess, no Python). It needs
+# --allow-read / --allow-write capability grants.
 
 GUIDE_SRC := docs-src/canonical
 GUIDE_OUT := docs/guide
@@ -30,8 +30,9 @@ GUIDE_GEN := scripts/gen_guide
 ##                                   artifact — refresh it from coverage.cx
 ##                                   with `make guide-libraries` whenever the
 ##                                   stdlib specs/fixtures change.
-guide: build-playground-wasm-for-guide
-	@bash $(GUIDE_GEN)/scaffold.sh
+guide: build-playground-wasm-for-guide build-vcx
+	@$(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write
+	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
 ## guide-libraries  Regenerate the "Standard library" guide section
 ##                                   (docs-src/canonical/sections/16-libraries.cxd)
@@ -116,10 +117,10 @@ guide-http: guide
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
-guide-diff:
+guide-diff: build-vcx
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 bash $(GUIDE_GEN)/scaffold.sh >/dev/null; \
+	 $(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 

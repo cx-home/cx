@@ -5,63 +5,74 @@ into a multi-page HTML site at `docs/guide/`.
 
 ## Status
 
-**Live, cx-eval-driven.** `build.cx` runs through the v0.8.0
-CXPath / `[?match]` / `[?modify]` surface landed in ADRs 0027–0033;
-`.cxd` body content is parsed and projected by the cx evaluator,
-never by Python. Sections whose source contains a cx-eval-blocking
-shape (e.g. an attribute value with both single and double quotes
-that the eval-side renderer cannot losslessly re-emit) fall back to
-a banner + verbatim source so the page still lands and the failure
-is visible on the build console.
+**CX-native, single program.** `guide_build.cx` is one CX program that reads the
+canonical sources and emits the entire site — render = `.cx`, dogfooded end to
+end. There is **no Python and no shell logic** in the build: the program globs
+and reads the `.cxd` files, parses them with `[$cx:parse]`, transforms them with
+`[?match]`/`[?modify]`/CXPath into an HTML-shaped CX tree, projects that to HTML
+with `[$xml:emit]`, resolves `[[anchor]]` cross-refs, wraps each page in the
+chrome, copies the static assets, and builds the search index — all in memory
+(`codec.md §1`), no subprocess.
+
+(The standard-library section generator, `scripts/gen_guide_libraries.py`, is
+still Python — see "Generated section" below; converting it to CX is the one
+remaining Python piece.)
 
 ## Run
 
 ```
-make guide
+make guide        # builds the cx binary + playground wasm, then runs guide_build.cx
 ```
 
-Output lands in `docs/guide/`:
+or directly:
 
-- `docs/guide/index.html` — landing page with the manifest TOC.
-- `docs/guide/<slug>.html` — one page per top-level section
-  (slug = section filename with the leading `NN-` stripped and
-  `.cxd` removed, e.g. `02-data-language.cxd` → `data-language.html`).
-- `docs/guide/style.css`, `docs/guide/highlight/`, `docs/guide/search/`,
-  `docs/guide/assets/` — static assets, copied from `scripts/gen_docs/`
-  and `docs-src/assets/`.
-- `docs/guide/search-index.js` — populated by scaffold.sh after
-  pages render; empty array until then.
+```
+cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+```
 
-## Pipeline
+The `--allow-read` / `--allow-write` grants are required (the program reads
+`docs-src/` and writes `docs/guide/`).
+
+Output in `docs/guide/`:
+
+- `index.html` — landing page with the table of contents.
+- `<slug>.html` — one page per top-level section (slug = section filename with
+  the leading `NN-` stripped and `.cxd` removed, e.g. `02-data-language.cxd` →
+  `data-language.html`).
+- `about.html` — the hand-authored `docs-src/canonical/about.html`, wrapped in
+  the guide chrome (its body is copied verbatim, never regenerated).
+- `playground.html` — the standalone playground, copied verbatim (no chrome).
+- `style.css`, `highlight/`, `search/`, `assets/`, `playground/`, `wasm/` —
+  static assets copied from `scripts/gen_guide/`, `docs-src/assets/`, and
+  `dist/wasm/` (wasm/playground bundles are copied only if present).
+- `search-index.js` — `window.CXSearchIndex = [{slug,title,summary,text}, …]`,
+  built from the freshly rendered pages.
+
+## Pipeline (all inside `guide_build.cx`)
 
 ```
 docs-src/canonical/sections/NN-*.cxd
-        │
-        │  scaffold.sh wraps each section in [doc ...]
+        │  [$io:glob] + [$io:read-file] + [$cx:parse]  → DocumentNode
         ▼
-cx eval scripts/gen_guide/build.cx --data=<ctx>
-        │
-        │  build.cx walks [section]/[child]/[intro]/[body]/
-        │  [example]/[note]/[list] and emits an HTML-shaped
-        │  CX render tree (h1/h2/h3/h4/p/pre/code/section/ul/li/a).
+render-doc:  //section → walk [child]/[intro]/[body]/[example]/[note]/[list]/
+        │    [table], retagging prose in place ([?modify … [rename …]]) and
+        │    emitting an HTML-shaped CX tree (h1/h2/h3/h4/p/pre/code/section/ul/li)
         ▼
-cx --xml
-        │
-        │  XML projection produces an HTML body fragment.
+[$xml:emit]  → HTML body fragment
+        │     post-body: strip the empty-name <>/</> sequence wrappers,
+        │     rewrite <code lang="X"> → <code class="language-X">
         ▼
-_post.py (Python — glue only, no .cxd body parsing)
-        │
-        │  Resolves [[anchor]] cross-refs against manifest.cxd;
-        │  rewrites <code lang="X"> into <code class="language-X">
-        │  for highlight.js.
+resolve-anchors:  fold the manifest's section/child ids over the body,
+        │    [[name]] → <a class="xref" href="slug.html#frag">name</a>;
+        │    unknown [[name]] → <span class="xref-unresolved"> (via re:replace)
         ▼
-wrap_page  (bash heredoc in scaffold.sh)
-        │
-        │  Sidebar nav built from manifest.cxd; doctype, CSS,
-        │  highlight.js, search.js, search-index.js link tags.
+wrap-page:   sidebar nav (from the section metadata) + <head> + script tags
         ▼
-docs/guide/<slug>.html
+[$io:write-file]  docs/guide/<slug>.html
 ```
+
+Section metadata (number, slug, title) is read straight from each section
+file's own `[section n= id= title=]` header; glob order is the reading order.
 
 ## Mapping: .cxd directives → HTML
 
@@ -72,90 +83,54 @@ docs/guide/<slug>.html
 | `[intro "prose"]`                  | `<p>prose</p>`                                |
 | `[body "prose"]`                   | `<p>prose</p>`                                |
 | `[note "prose"]`                   | `<p class="note">prose</p>`                   |
-| `[example lang=X "code"]`          | `<pre><code lang=X>code</code></pre>` then `_post.py` rewrites to `class="language-X"` |
+| `[example lang=X "code"]`          | `<pre><code class="language-X">code</code></pre>` |
 | `[list [item "..."] …]`            | `<ul><li>...</li>…</ul>`                      |
-| `[table [row ...] …]`              | `<table><row …/>…</table>` (lossless; styled per columns) |
+| `[table [row ...] …]`              | `<table><row …/>…</table>`                    |
 | `[[anchor]]` (inside prose)        | `<a class="xref" href="<target>">anchor</a>`  |
 
-The anchor resolver consults the manifest: top-level section IDs map
-to the file (e.g. `[[data]]` → `data-language.html`); child IDs map
-to a fragment under their owning section file (e.g. `[[hello]]` →
-`intro.html#hello`). Unknown anchors render as
-`<span class="xref-unresolved">[[name]]</span>` so authors notice
-breakage at review time rather than silently dead-linking.
+The anchor resolver consults the manifest: top-level section IDs map to the
+file (`[[data]]` → `data-language.html`); child IDs map to a fragment under
+their owning section file (`[[hello]]` → `intro.html#hello`). Unknown anchors
+render as `<span class="xref-unresolved">[[name]]</span>` so authors notice
+breakage at review time.
 
 ## Generated section: Standard library (§16)
 
 `docs-src/canonical/sections/16-libraries.cxd` is a **generated artifact —
-never hand-edit it.** It is emitted from the conformance coverage data
-document by `scripts/gen_guide_libraries.py`:
+never hand-edit it.** It is emitted from the conformance coverage data document
+by `scripts/gen_guide_libraries.py` (the one remaining Python tool):
 
 ```
 make guide-libraries          # uses vcx/target/cx by default
 make guide-libraries CX_BIN=$(which cx)
 ```
 
-Data flow:
-
-```
-spec/std-lib/*.md  ──(make stdlib-coverage, scripts/stdlib_coverage.py)──┐
-conformance/stdlib/*.cxd ────────────────────────────────────────────────┤
-                                                                          ▼
-                                          conformance/stdlib/coverage.cx
-                                                                          │
-              scripts/gen_guide_libraries.py  (reads via `cx --ast --json`,
-              + each module's spec/std-lib/<module>.md §1 Scope prose)
-                                                                          ▼
-              docs-src/canonical/sections/16-libraries.cxd
-              + section-16 TOC block synced into manifest.cxd
-```
-
-- One `[section id=libraries n=16]` with a coverage-summary `[intro]`, then
-  one `[child id=lib-<module> n=16.M]` per module (29), in coverage-declaration
-  order. Each child carries the module's §1 purpose prose plus a per-public-
-  function `[body]` (signature → return → fixture counts; `**AMBIGUOUS**` /
-  `**UNCOVERED**` flags surfaced) and one representative `[example lang=cx]`
-  (preferring a happy-path fixture) drawn straight from the conformance suite.
-- The full per-function fixture set stays in `coverage.cx`; the section shows
-  one example per function and links back to the data document.
-- **To refresh:** run `make stdlib-coverage` first (regenerates `coverage.cx`
-  from the live specs + fixtures), then `make guide-libraries`.
-- **Reuse:** the `coverage_to_section()` transform in the generator takes the
-  parsed coverage tree + a `{module: prose}` map and an optional `modules=[…]`
-  subset, so per-module guide pages can be split out later without touching
-  the data plumbing.
+Data flow: `spec/std-lib/*.md` + `conformance/stdlib/*.cxd` →
+(`make stdlib-coverage`) → `conformance/stdlib/coverage.cx` →
+(`gen_guide_libraries.py`, reading via `cx --ast --json` + each module's §1
+prose) → `16-libraries.cxd` + the section-16 TOC block in `manifest.cxd`.
+**To refresh:** run `make stdlib-coverage` first, then `make guide-libraries`.
 
 ## Playground page
 
-`docs/guide/playground.html` is the self-contained playground inside
-the guide. The page wraps the `<cx-playground>` widget (sources live
-at `scripts/gen_guide/playground/`) with the guide chrome (sidebar,
-search). The wasm bundle (`docs/guide/wasm/{libcx,cxlib}.js`) is
-mirrored from `dist/wasm/`; the JS/CSS for the widget plus the
-starter examples are mirrored from `scripts/gen_guide/playground/`
-into `docs/guide/playground/`.
-
-The sidebar's `Playground →` link is page-relative (`playground.html`)
-so the guide is portable as a directory tree — `file://…/docs/guide/`
-loads everything without a web server.
+`docs/guide/playground.html` is the self-contained playground (sources at
+`scripts/gen_guide/playground/`), copied verbatim. The wasm bundle
+(`docs/guide/wasm/…`) is mirrored from `dist/wasm/`; the widget JS/CSS +
+starter examples are mirrored from `scripts/gen_guide/playground/`. The
+sidebar's `Playground →` link is page-relative so the guide is portable as a
+directory tree (opens under `file://`).
 
 ## Open follow-ups
 
-- **cx-eval renderer attr-quote bug.** `vcx/code/render.v` `render_attr_value_to`
-  always wraps attribute values in double-quote, even when the value contains
-  embedded `"`. This breaks downstream re-parsing for `.cxd` rows whose attribute
-  values carry XML/JSON examples with both quote styles (currently affects
-  `03-surfaces.cxd`, `04-identity.cxd`, and partially `05-analytics.cxd`).
-  Fix: route through the same `choose_render_quote()` policy as scalar bodies.
-- **05-analytics.cxd bracket-balance error.** Line 700 in that source file
-  ends `"""]]]]` with one closing bracket too many — a source authoring bug
-  that this renderer cannot fix in scope.
-- **Anchor resolution into `build.cx`.** Once `[?include]` can load the
-  manifest alongside the section context, the python anchor pass in
-  `_post.py` migrates into a `[?modify]` pass over the render tree.
-- **Recursion via named function.** The four-level dispatch in `build.cx`
-  is unrolled because the locked v0.8.0 surface does not include
-  user-defined functions. If a future ADR adds them, collapse the
-  unrolled chain into a `render-child/2` call.
-- **Cross-link audit.** `xref-unresolved` spans should be promoted to a
-  CI lint that fails the build when present.
+- **Triple-quote `\"` escape semantics + render bijection.** A few code
+  examples that embed inner `"""` via `\"\"\"` render with literal backslashes
+  under the in-memory path (the old multi-subprocess pipeline masked this via a
+  non-idempotent text round-trip). This is a core-language question, tracked in
+  `spec/02-inprogress/triple_quote_escape_bijection.md` — not a renderer bug.
+- **`gen_guide_libraries.py` → CX.** Converting the §16 generator to CX would
+  remove the last Python from the guide toolchain.
+- **Collapse the 4-level child unroll.** `render-doc` unrolls `[child]` nesting
+  to four levels; now that CX has user-defined functions (`[?def]`), it could be
+  a single recursive `render-block` call.
+- **Cross-link audit.** Promote `xref-unresolved` spans to a CI lint that fails
+  the build when present.
