@@ -1,0 +1,226 @@
+[# scripts/gen_guide/guide_build.cx — the CX-native guide build driver.
+
+   Replaces scaffold.sh + the _*.py helpers. ONE cx program reads
+   docs-src/canonical/ and emits the multi-page site at docs/guide/ —
+   render = .cx, dogfooded end to end (codec.md §1 in-memory pipeline:
+   read → [$cx:parse] → transform → [$xml:emit] → [$io:write-file], no
+   subprocess, no Python).
+
+   Run: cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+   (the Makefile `guide` target builds the binary + passes the grants).
+
+   Pipeline per section:
+     1. read sections/NN-slug.cxd, [$cx:parse] → DocumentNode
+     2. //section → the section element; render its children into an
+        HTML-shaped CX tree (h1 + blocks + nested child sections)
+     3. [$xml:emit] → HTML fragment; post-process (strip the empty-name
+        <>/</> sequence wrappers [$xml:emit] puts around [?for] bodies,
+        rewrite <code lang="X"> → class="language-X")
+     4. wrap with chrome (sidebar nav + head + scripts) → write <slug>.html
+
+   Section metadata (number, slug, title) comes straight from each
+   section file's own [section n= id= title=] header — no separate
+   manifest parse needed; glob order is the reading order. #]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/cx']
+[?lib 'cx-stdlib/xml']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/format']
+[?lib 'cx-stdlib/json']
+[?lib 'cx-stdlib/re']
+[?lib 'cx-stdlib/fp']
+
+[# ── string helpers ──────────────────────────────────────────────────── #]
+
+[# cat: join string parts with no separator. #]
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+
+[# slug-of: '…/sections/02-data-language.cxd' → 'data-language'
+   (basename, strip NN- prefix + .cxd). #]
+[?def slug-of scope=public ($f)
+  [?let [= $b [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]]]
+        [= $i [$strings:find $b '-']]
+    [$strings:replace [$strings:slice $b [+ $i 1] [$strings:length $b]] '.cxd' '']]]
+
+[# post-body: clean an [$xml:emit] fragment.
+   - strip the empty-name <>/</> wrappers [$xml:emit] emits around a
+     [?for]/yield sequence in body position (structural noise, the
+     in-program analogue of the old cx --xml <__cx_seq__> wrapper);
+   - rewrite <code lang="X"> → <code class="language-X"> for highlight.js. #]
+[?def post-body scope=public ($h)
+  [$strings:replace
+    [$strings:replace
+      [$strings:replace $h '</>' '']
+      '<>' '']
+    '<code lang="' '<code class="language-']]
+
+[# ── per-section render (4-level child unroll, mirrors build.cx) ────────
+   Children emit directly into their container's body via [?for]/[yield];
+   prose blocks (intro/body/note) are RETAGGED in place with
+   [?modify … [rename …]] so mixed inline content is preserved. #]
+[?def render-doc scope=public impure ($doc)
+  [?let [= $s $doc//section]
+    [$post-body [$xml:emit
+      [section id=$s@id
+        [h1 $s@title]
+        [?for [in $c $s/*] [yield
+          [?match $c
+            [case [intro] [?modify $c //intro [rename p]]]
+            [case [body]  [?modify $c //body  [rename p]]]
+            [case [note]  [?modify $c //note  [set-attr class 'note'] [rename p]]]
+            [case [example $code]
+              [pre [code lang=$c@lang $code]]]
+            [case [list]
+              [ul [?for [in $i $c/*] [yield
+                [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
+            [case [table]
+              [table [?for [in $r $c/*] [yield $r]]]]
+            [case [child]
+              [section id=$c@id
+                [h2 $c@title]
+                [?for [in $c2 $c/*] [yield
+                  [?match $c2
+                    [case [intro] [?modify $c2 //intro [rename p]]]
+                    [case [body]  [?modify $c2 //body  [rename p]]]
+                    [case [note]  [?modify $c2 //note  [set-attr class 'note'] [rename p]]]
+                    [case [example $code] [pre [code lang=$c2@lang $code]]]
+                    [case [list]
+                      [ul [?for [in $i $c2/*] [yield
+                        [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
+                    [case [table]
+                      [table [?for [in $r $c2/*] [yield $r]]]]
+                    [case [child]
+                      [section id=$c2@id
+                        [h3 $c2@title]
+                        [?for [in $c3 $c2/*] [yield
+                          [?match $c3
+                            [case [intro] [?modify $c3 //intro [rename p]]]
+                            [case [body]  [?modify $c3 //body  [rename p]]]
+                            [case [note]  [?modify $c3 //note  [set-attr class 'note'] [rename p]]]
+                            [case [example $code] [pre [code lang=$c3@lang $code]]]
+                            [case [list]
+                              [ul [?for [in $i $c3/*] [yield
+                                [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
+                            [case [table]
+                              [table [?for [in $r $c3/*] [yield $r]]]]
+                            [case [child]
+                              [section id=$c3@id
+                                [h4 $c3@title]
+                                [?for [in $c4 $c3/*] [yield
+                                  [?match $c4
+                                    [case [intro] [?modify $c4 //intro [rename p]]]
+                                    [case [body]  [?modify $c4 //body  [rename p]]]
+                                    [case [note]  [?modify $c4 //note  [set-attr class 'note'] [rename p]]]
+                                    [case [example $code] [pre [code lang=$c4@lang $code]]]
+                                    [case [list]
+                                      [ul [?for [in $i $c4/*] [yield
+                                        [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
+                                    [case [table]
+                                      [table [?for [in $r $c4/*] [yield $r]]]]
+                                    [else [p class="unhandled" "[unhandled directive at depth 4]"]]]]]]]
+                            [else [p class="unhandled" "[unhandled directive at depth 3]"]]]]]]]
+                    [else [p class="unhandled" "[unhandled directive at depth 2]"]]]]]]]
+            [else [p class="unhandled" "[unhandled directive at section level]"]]]]]]]]]]
+
+[# ── chrome ──────────────────────────────────────────────────────────── #]
+
+[# nav-item: one <li> for the sidebar contents list. #]
+[?def nav-item scope=public ($m $active)
+  [$cat ('    <li><a',
+         [?if [= $m@slug $active] [then ' class="active"'] [else '']],
+         ' href="', $m@slug, '.html"><span class="sec-n">', [$format:compact $m@n],
+         '</span> ', $m@title, '</a></li>\n')]]
+
+[# nav-html: the full sidebar <aside> for a page. #]
+[?def nav-html scope=public ($metas $active)
+  [$cat (
+    '<aside class="sidebar">\n',
+    '  <a class="brand" href="index.html" aria-label="CX — home">\n',
+    '    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />\n',
+    '  </a>\n',
+    '  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>\n',
+    '  <a class="brand-sub" href="playground.html">Playground →</a>\n',
+    '  <a class="brand-sub" href="about.html">About →</a>\n',
+    '  <div class="side-search">\n',
+    '    <input id="side-search-input" type="search"\n',
+    '           placeholder="Search the guide…"\n',
+    '           autocomplete="off" spellcheck="false" data-prefix="" />\n',
+    '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
+    '  </div>\n',
+    '  <section><h4>Contents</h4><ul>\n',
+    [$strings:join [?for [in $m $metas] [yield [$nav-item $m $active]]] ''],
+    '  </ul></section>\n',
+    '</aside>\n')]]
+
+[# wrap-page: body fragment + chrome → full HTML document string. #]
+[?def wrap-page scope=public ($title $active $metas $body)
+  [$cat (
+    '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
+    '<title>', $title, ' — CX Guide</title>\n',
+    '<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">\n',
+    '<link rel="stylesheet" href="style.css">\n</head>\n<body>\n',
+    [$nav-html $metas $active],
+    '<main>\n', $body, '\n</main>\n',
+    '<script src="highlight/highlight.js" defer></script>\n',
+    '<script src="search-index.js" defer></script>\n',
+    '<script src="search/search.js" defer></script>\n',
+    '</body>\n</html>\n')]]
+
+[# ── [[anchor]] cross-reference resolution ───────────────────────────────
+   The manifest carries the TOC: each [section id= file=] and its nested
+   [child id=] entries. Section ids resolve to <slug>.html; child ids to
+   <slug>.html#<child-id> (slug = owning section's file slug). A reference
+   on its own page drops to a bare #fragment. Unknown [[name]] tokens become
+   a visible <span class="xref-unresolved">. #]
+
+[# anchor-href: target href for one reference, given the current page slug. #]
+[?def anchor-href scope=public ($cur $slug $frag $name)
+  [?let [= $base [?if [= $slug $cur] [then ''] [else [$cat ($slug, '.html')]]]]
+        [= $wf [?if [= $frag ''] [then $base] [else [$cat ($base, '#', $frag)]]]]
+    [?if [= $wf ''] [then [$cat ('#', $name)]] [else $wf]]]]
+
+[# anchor-sub: replace every [[name]] of one anchor with its <a> link. #]
+[?def anchor-sub scope=public ($acc $cur $a)
+  [$strings:replace $acc [$cat ('[[', $a@name, ']]')]
+    [$cat ('<a class="xref" href="', [$anchor-href $cur $a@slug $a@frag $a@name],
+           '">', $a@name, '</a>')]]]
+
+[# resolve-anchors: fold every known anchor into $body, then wrap any
+   remaining [[…]] token in the unresolved span. #]
+[?def resolve-anchors scope=public impure ($body $cur $sec $chl)
+  [$re:replace [$re:compile '\[\[[a-z][a-z0-9-]*\]\]']
+    [$fp:fold $chl
+      [$fp:fold $sec $body [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
+      [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
+    '<span class="xref-unresolved">$0</span>']]
+
+[# ── section metadata ────────────────────────────────────────────────────
+   One [m n= slug= file= title=] per section file (glob = reading order).
+   README.cxd carries no [section], so the inner [?for] yields nothing and
+   it is skipped. #]
+[?def load-metas scope=public impure ($src)
+  [?for [in $f [$io:glob [$cat ($src, '/sections/*.cxd')]]] [yield
+    [?let [= $d [$cx:parse [$io:read-file $f]]]
+          [= $s $d//section]
+      [?if [$empty $s] [then ()] [else
+        [m n=$s@n slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]
+
+[# ── main: render every section page ─────────────────────────────────── #]
+[?let
+  [= $src 'docs-src/canonical']
+  [= $out 'docs/guide']
+  [= $metas [$load-metas $src]]
+  [= $man [$cx:parse [$io:read-file [$cat ($src, '/manifest.cxd')]]]]
+  [= $sec-ancs [?for [in $s $man//section] [yield
+    [anc name=$s@id slug=[$slug-of $s@file] frag='']]]]
+  [= $child-ancs [$fp:flat-map $man//section [?fn ($s)
+    [?for [in $c $s//child] [yield
+      [anc name=$c@id slug=[$slug-of $s@file] frag=$c@id]]]]]]
+  [?for [in $m $metas] [yield
+    [?let [= $doc [$cx:parse [$io:read-file $m@srcpath]]]
+          [= $raw [$render-doc $doc]]
+          [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
+          [= $page [$wrap-page $m@title $m@slug $metas $body]]
+      [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]]]
