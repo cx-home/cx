@@ -330,7 +330,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -401,6 +401,19 @@ check-docs-tier1-guardrail:
 .PHONY: check-no-adr-citations
 check-no-adr-citations:
 	@python3 scripts/check_no_adr_citations.py
+
+# ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle
+# (vcx/code/*.v) must contain no fake-success stub: an effectful prim returning
+# a deterministic synthetic success value instead of performing the real effect
+# (the failure mode that shipped the http client / net layer as placeholders and
+# sailed through the gate because fixtures asserted the fake shape). Flags the
+# fake-success confession phrases only; honest fail-closed errors
+# (mk_err(... not yet implemented / unsupported ...)) are NOT flagged — refusing
+# an effect is correct, faking it is the bug. A new effect must be real + carry a
+# behavioral (real socket/process/file) test, or fail closed.
+.PHONY: check-no-stub-impl
+check-no-stub-impl:
+	@python3 scripts/check_no_stub_impl.py
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
