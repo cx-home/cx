@@ -22,31 +22,28 @@
 #   (2) a BUNDLE_SET/DISPATCH_SET module is not in SPEC_SET
 #       -- an orphan impl/bundle with no spec.
 #
-# On success it RETURNS a one-line OK with the catalogue count (exit 0).
+# On success it writes a one-line OK to stdout and exits 0.
 #
 # -- Output / exit mechanism --------------------------------------------
-# `cx eval` prints the program's RETURN VALUE to stdout and exits 0; a
-# raised failure prints to stderr (`cx eval: <code>: <message>`) and
-# exits 1. On the happy path we simply RETURN the OK line. On drift we
-# route the full multi-line report through the panic-postfix `!` on a
-# call that returns an [err] whose `code` carries the report -- `!`
-# converts the err-value into a thrown failure, surfacing the report on
-# stderr and forcing exit 1. (NOTE: in a program, `[- ... -]` is the
+# A normal CLI shape: write the human-facing report with cx-stdlib/io's
+# `write-line` to the cx-stdlib/env standard-stream handle -- stdout on the
+# happy path, stderr on drift -- then terminate with `env:exit <code>` (0
+# pass / 1 fail). `write-line` to a std-stream flushes immediately, and
+# `env:exit` flushes pending stdout/stderr before terminating, so no output
+# is lost. Effect-then-exit is sequenced with `[?let]` (bind the write, then
+# evaluate the exit in the body). (NOTE: in a program, `[- ... -]` is the
 # subtraction operator, not a comment; comments are `#` to end-of-line.)
 #
+# Capabilities: glob / read-file need `read`; write-line needs `write`;
+# the env standard streams + exit are ambient (never gated, env.md §7).
 # Run via:  vcx/target/cx eval scripts/stdlib_catalogue_gate.cx --allow-all
 # (or:      make stdlib-catalogue-gate)
 
 [?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
-
-# Drift is surfaced by routing the report text through the `code` slot of
-# an [err] value and panicking on it with postfix `!`. `cx eval` prints
-# the resulting failure (report and all) to stderr and exits 1.
-[?def fail-with scope=public ($report::string)
-  [err code=$report message='stdlib catalogue drift']]
 
 # -- SPEC_SET -----------------------------------------------------------
 # One [module-meta name=... tier=... status=...] line per spec file. Pull
@@ -116,15 +113,17 @@
                         [+ [$count $missing] [+ [$count $orphan-bundle] [$count $orphan-dispatch]]]]
 
                         [?if [= $n-violations 0]
-                          # PASS: one-line OK with the catalogue count.
+                          # PASS: write a one-line OK to stdout, exit 0.
                           [then
-                            [$concat "stdlib-catalogue-gate OK -- "
-                              [$count $spec-set]
-                              " specced (status=current) modules, all implemented via bundle and/or dispatch; no orphans."]]
+                            [?let [= $_ok [$io:write-line [$env:stdout]
+                                [$concat "stdlib-catalogue-gate OK -- "
+                                  [$count $spec-set]
+                                  " specced (status=current) modules, all implemented via bundle and/or dispatch; no orphans."]]]
+                              [$env:exit 0]]]
 
-                          # FAIL: gather every non-empty violation block,
-                          # join with newlines, prepend a header, and panic
-                          # on the result so it reaches stderr with exit 1.
+                          # FAIL: gather every non-empty violation block, join
+                          # with newlines, prepend a header, write the full
+                          # report to stderr, and exit 1.
                           [else
                             [?let [= $blocks
                               [?for [in $blk (
@@ -133,8 +132,9 @@
                                   [$strings:join $orphan-dispatch-lines "\n"])]
                                 [where [not [= $blk ""]]]
                                 [yield $blk]]]
-                              [$fail-with
-                                [$concat "SPEC_SET != (BUNDLE_SET union DISPATCH_SET) -- "
-                                  $n-violations
-                                  " violation(s):\n"
-                                  [$strings:join $blocks "\n"]]]!]]]]]]]]]]]]]]]
+                              [?let [= $_fail [$io:write-line [$env:stderr]
+                                  [$concat "SPEC_SET != (BUNDLE_SET union DISPATCH_SET) -- "
+                                    $n-violations
+                                    " violation(s):\n"
+                                    [$strings:join $blocks "\n"]]]]
+                                [$env:exit 1]]]]]]]]]]]]]]]]]
