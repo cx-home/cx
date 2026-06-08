@@ -262,9 +262,9 @@
          [`spec/conversions.md §3`](../../spec/conversions.md)."""]
 
     [example lang=cx
-      """[user id=42 email='ada@example.com'
+      '''[user id=42 email='ada@example.com'
            [profile
-             [bio \"\"\"Computing pioneer.\"\"\"]]]"""]
+             [bio """Computing pioneer."""]]]''']
 
     [example lang=xml
       """<user id="42" email="ada@example.com">
