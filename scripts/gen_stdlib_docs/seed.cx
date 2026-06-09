@@ -1,0 +1,110 @@
+[# scripts/gen_stdlib_docs/seed.cx — one-time co-located-docs seeder.
+
+   Reads the (nested) conformance coverage document — which has already joined
+   each public function to its signature, return type, and VERIFIED example
+   fixtures — and emits a first-pass [module-doc] + [fn-doc] block per module,
+   appending it to the bundle source stdlib/<m>.cx. The co-located docs then
+   become the single source of truth (the projection in guide_build.cx reads
+   them); coverage.cx + the Python tool are retired afterwards.
+
+   fn-doc blocks are built as CX VALUES and [$cx:emit]'d — the canonical
+   emitter handles all quoting/escaping, so no hand-built CX text. Summaries
+   are intentionally minimal first-pass (the signature + a verified example are
+   the value); they get hand-polished in place afterwards.
+
+   Idempotent: a module that already has a [module-doc] is skipped (so the
+   hand-authored path.cx is preserved and re-runs don't double-append).
+
+   Dry run (inspect, no writes):  cx scripts/gen_stdlib_docs/seed.cx --allow-read
+   Apply (append to stdlib/*.cx):  cx scripts/gen_stdlib_docs/seed.cx --allow-read --allow-write --data=APPLY #]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/cx']
+[?lib 'cx-stdlib/strings']
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def stdlib-slug scope=public ($f)
+  [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.cx' '']]
+
+[# unwrap: pull the inner text out of an emitted rawtext payload (the
+   hash-bracket form the coverage tool wraps text in). The tool guarantees the
+   closing marker never appears inside the body, so the first occurrence after
+   the opening marker is always the close. #]
+[?def unwrap scope=public impure ($node)
+  [?let [= $s [$cx:emit $node]]
+        [= $i [+ [$strings:find $s '[#'] 2]]
+        [= $rest [$strings:slice $s $i [$strings:length $s]]]
+        [= $j [$strings:find $rest '#]']]
+    [$strings:trim [$strings:slice $rest 0 $j]]]]
+
+[# purity of a function from its (unwrapped) signature line. #]
+[?def purity-of scope=public ($sig)
+  [?if [>= [$strings:find $sig 'impure'] 0] [then 'impure'] [else 'pure']]]
+
+[# module scope: the first [- … -] header comment in the bundle source (it
+   already carries a one-line purpose), stripped of the 'cx-stdlib/<m> — ' lead. #]
+[?def header-scope scope=public impure ($f)
+  [?let [= $t [$io:read-file $f]]
+        [= $i [+ [$strings:find $t '[-'] 2]]
+        [= $rest [$strings:slice $t $i [$strings:length $t]]]
+        [= $j [$strings:find $rest '-]']]
+        [= $raw [$strings:trim [$strings:slice $rest 0 $j]]]
+        [= $dash [$strings:find $raw '— ']]
+    [?if [< $dash 0] [then $raw]
+      [else [$strings:trim [$strings:slice $raw [+ $dash 4] [$strings:length $raw]]]]]]]
+
+[# tq-unsafe: can this string NOT be wrapped in a raw triple-quoted payload?
+   Unsafe if it contains a triple-double-quote, or begins/ends with a double
+   quote (which would fuse with the opening/closing delimiter into an
+   ambiguous run — the lexer can't resolve `""""…`). Such cases are rare;
+   the example is skipped (signature still documents the function). #]
+[?def tq-unsafe scope=public ($s)
+  [?if [>= [$strings:find $s '"""'] 0] [then true]
+    [else [?if [= [$strings:slice $s 0 1] '"'] [then true]
+      [else [= [$strings:slice $s [- [$strings:length $s] 1] [$strings:length $s]] '"']]]]]]
+[?def has-tq scope=public ($a $b)
+  [?if [$tq-unsafe $a] [then true] [else [$tq-unsafe $b]]]]
+
+[# fn-doc-text: the [fn-doc] block TEXT for one [function] coverage node.
+   Built as text with raw triple-quoted payloads for sig/summary/code/expect —
+   [$cx:emit] of a CX-like string emits it unquoted (breaks round-trip), so the
+   block is assembled directly. Summary is empty first-pass (refine in place);
+   the first fixture is the verified example. #]
+[# example-text: '' if no fixture or the example contains a triple-quote,
+   else the [example …] line for the first fixture. #]
+[?def example-text scope=public impure ($fx)
+  [?if [$empty $fx]
+    [then '']
+    [else [?let [= $code [$unwrap $fx/in-code]] [= $exp [$unwrap $fx/expected]]
+      [?if [$has-tq $code $exp]
+        [then '']
+        [else [$cat ('  [example [code """', $code, '"""] [expect """', $exp, '"""]]\n')]]]]]]]
+
+[?def fn-doc-text scope=public impure ($m $fn)
+  [?let [= $ret [$unwrap $fn/returns]]
+        [= $pty [$purity-of [$unwrap $fn/signature]]]
+    [$cat ('[fn-doc name=', $fn@name, ' scope=public purity=', $pty, '\n',
+           '  [sig """-> ', $ret, '"""]\n  [summary """"""]\n',
+           [$example-text $fn/fixture[1]],
+           ']\n')]]]
+
+[# the appended block for one module: a header comment + module-doc + fn-docs. #]
+[?def module-block scope=public impure ($m $cov)
+  [$cat (
+    '\n[- co-located docs (seeded — refine in place). -]\n',
+    '[module-doc name=', $m, '\n  [scope """', [$header-scope [$cat ('stdlib/', $m, '.cx')]], '"""]]\n',
+    [$strings:join [?for [in $fn $cov//function] [yield
+      [?if [= $fn@module $m] [then [$fn-doc-text $m $fn]] [else '']]]] ''])]]
+
+[# Appends to each stdlib/<m>.cx that lacks a [module-doc]. Idempotent (a
+   re-run skips modules already seeded) and preserves hand-authored modules.
+   Run with --allow-read --allow-write; git is the safety net for review. #]
+[?let [= $cov [$cx:parse [$io:read-file 'conformance/stdlib/coverage.cx']]]
+  [?for [in $f [$io:glob 'stdlib/*.cx']] [yield
+    [?let [= $m [$stdlib-slug $f]]
+          [= $existing [$cx:parse [$io:read-file $f]]]
+      [?if [$empty $existing//module-doc]
+        [then (
+          [$io:write-file $f [$cat ([$io:read-file $f], [$module-block $m $cov])]],
+          [$cat ('seeded: ', $m, '\n')])]
+        [else [$cat ('skip (already documented): ', $m, '\n')]]]]]]]

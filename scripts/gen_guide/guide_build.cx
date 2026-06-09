@@ -289,7 +289,7 @@
   [section id=[$cat ('fn-', $m, '-', $fd@name)] class="fn"
     [h3 [$cat ($m, ':', $fd@name)]]
     [p class="fn-sig" [code [$cat ('[$', $m, ':', $fd@name, ']  ', [$sig-of $fd])]]
-       [$cat ('  —  ', [$summary-of $fd])]]
+       [?let [= $s [$summary-of $fd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
     [?for [in $ex $fd/example] [yield
       [div class="example"
         [pre [code lang=cx [$ex-part $ex 'code']]]
