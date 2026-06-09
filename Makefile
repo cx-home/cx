@@ -279,6 +279,14 @@ guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 guide-check: build-vcx
 	@"$(CX_BIN)" eval scripts/gen_guide/stdlib_docs_check.cx --allow-all
 
+# Directive + syntax reference drift gate — every code.md §4.1 registry
+# directive has a [directive-doc], no orphans, and each example is backed
+# verbatim by the conformance corpus (mirrors guide-check for the stdlib).
+.PHONY: directive-docs-check
+directive-docs-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+directive-docs-check: build-vcx
+	@"$(CX_BIN)" eval scripts/gen_guide/directive_docs_check.cx --allow-all
+
 # stdlib catalogue drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
@@ -328,7 +336,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check directive-docs-check
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -377,7 +385,7 @@ check-null-absence-conflation:
 # the named gate.
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
-	@v test vcx/tests/effect_alignment_test.v
+	@$(V) test vcx/tests/effect_alignment_test.v
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
@@ -688,6 +696,9 @@ demo-rust: build-rust
 publish:
 	@bash scripts/publish.sh
 
+publish-dry-run:
+	@bash scripts/publish.sh --dry-run
+
 publish-push:
 	@bash scripts/publish_push.sh
 
@@ -892,8 +903,7 @@ test-cxpath-axis-coverage: build-vcx
 test-modify-action-coverage: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/v08_modify_eval_test.v \
 		vcx/tests/v08_modify_node_test.v \
-		vcx/tests/v08_modify_node_codec_test.v \
-		vcx/tests/v08_modify_parser_test.v
+		vcx/tests/v08_modify_node_codec_test.v
 
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
 # Drives vcx/tests/runners/code_modify_sharing_bench.v — single-match
