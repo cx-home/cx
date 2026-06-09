@@ -55,73 +55,42 @@
       '<>' '']
     '<code lang="' '<code class="language-']]
 
-[# ── per-section render (4-level child unroll, mirrors build.cx) ────────
-   Children emit directly into their container's body via [?for]/[yield];
-   prose blocks (intro/body/note) are RETAGGED in place with
-   [?modify … [rename …]] so mixed inline content is preserved. #]
+[# ── per-section render (recursive) ─────────────────────────────────────
+   render-section renders a [section] element to an HTML fragment string;
+   render-block dispatches one content block, recursing into nested [child]
+   subsections (h2…h6 by depth). Prose blocks (intro/body/note) are RETAGGED
+   in place with [?modify … [rename …]] so mixed inline content survives.
+   Children emit into their container's body via [?for]/[yield] — the empty
+   <>/</> sequence wrappers are stripped by post-body. #]
+[?def heading scope=public ($depth $title)
+  [?if [<= $depth 2] [then [h2 $title]]
+    [else [?if [= $depth 3] [then [h3 $title]]
+      [else [?if [= $depth 4] [then [h4 $title]]
+        [else [?if [= $depth 5] [then [h5 $title]] [else [h6 $title]]]]]]]]]]
+[?def render-block scope=public impure ($c $depth)
+  [?match $c
+    [case [intro] [?modify $c //intro [rename p]]]
+    [case [body]  [?modify $c //body  [rename p]]]
+    [case [note]  [?modify $c //note  [set-attr class 'note'] [rename p]]]
+    [case [output $t] [pre class="sample-output" [code $t]]]
+    [case [example $code] [pre [code lang=$c@lang $code]]]
+    [case [list]
+      [ul [?for [in $i $c/*] [yield
+        [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
+    [case [table]
+      [table [?for [in $r $c/*] [yield $r]]]]
+    [case [child]
+      [section id=$c@id
+        [$heading $depth $c@title]
+        [?for [in $k $c/*] [yield [$render-block $k [+ $depth 1]]]]]]
+    [else [p class="unhandled" "[unhandled directive]"]]]]
+[?def render-section scope=public impure ($s)
+  [$post-body [$xml:emit
+    [section id=$s@id
+      [h1 $s@title]
+      [?for [in $c $s/*] [yield [$render-block $c 2]]]]]]]
 [?def render-doc scope=public impure ($doc)
-  [?let [= $s $doc//section]
-    [$post-body [$xml:emit
-      [section id=$s@id
-        [h1 $s@title]
-        [?for [in $c $s/*] [yield
-          [?match $c
-            [case [intro] [?modify $c //intro [rename p]]]
-            [case [body]  [?modify $c //body  [rename p]]]
-            [case [note]  [?modify $c //note  [set-attr class 'note'] [rename p]]]
-            [case [example $code]
-              [pre [code lang=$c@lang $code]]]
-            [case [list]
-              [ul [?for [in $i $c/*] [yield
-                [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
-            [case [table]
-              [table [?for [in $r $c/*] [yield $r]]]]
-            [case [child]
-              [section id=$c@id
-                [h2 $c@title]
-                [?for [in $c2 $c/*] [yield
-                  [?match $c2
-                    [case [intro] [?modify $c2 //intro [rename p]]]
-                    [case [body]  [?modify $c2 //body  [rename p]]]
-                    [case [note]  [?modify $c2 //note  [set-attr class 'note'] [rename p]]]
-                    [case [example $code] [pre [code lang=$c2@lang $code]]]
-                    [case [list]
-                      [ul [?for [in $i $c2/*] [yield
-                        [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
-                    [case [table]
-                      [table [?for [in $r $c2/*] [yield $r]]]]
-                    [case [child]
-                      [section id=$c2@id
-                        [h3 $c2@title]
-                        [?for [in $c3 $c2/*] [yield
-                          [?match $c3
-                            [case [intro] [?modify $c3 //intro [rename p]]]
-                            [case [body]  [?modify $c3 //body  [rename p]]]
-                            [case [note]  [?modify $c3 //note  [set-attr class 'note'] [rename p]]]
-                            [case [example $code] [pre [code lang=$c3@lang $code]]]
-                            [case [list]
-                              [ul [?for [in $i $c3/*] [yield
-                                [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
-                            [case [table]
-                              [table [?for [in $r $c3/*] [yield $r]]]]
-                            [case [child]
-                              [section id=$c3@id
-                                [h4 $c3@title]
-                                [?for [in $c4 $c3/*] [yield
-                                  [?match $c4
-                                    [case [intro] [?modify $c4 //intro [rename p]]]
-                                    [case [body]  [?modify $c4 //body  [rename p]]]
-                                    [case [note]  [?modify $c4 //note  [set-attr class 'note'] [rename p]]]
-                                    [case [example $code] [pre [code lang=$c4@lang $code]]]
-                                    [case [list]
-                                      [ul [?for [in $i $c4/*] [yield
-                                        [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
-                                    [case [table]
-                                      [table [?for [in $r $c4/*] [yield $r]]]]
-                                    [else [p class="unhandled" "[unhandled directive at depth 4]"]]]]]]]
-                            [else [p class="unhandled" "[unhandled directive at depth 3]"]]]]]]]
-                    [else [p class="unhandled" "[unhandled directive at depth 2]"]]]]]]]
-            [else [p class="unhandled" "[unhandled directive at section level]"]]]]]]]]]]
+  [$render-section $doc//section]]
 
 [# ── chrome ──────────────────────────────────────────────────────────── #]
 
