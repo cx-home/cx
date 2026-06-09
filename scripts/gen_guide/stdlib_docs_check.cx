@@ -1,0 +1,115 @@
+# scripts/gen_guide/stdlib_docs_check.cx -- co-located stdlib doc freshness gate.
+#
+# Eat-our-own-dog-food: written entirely in CX, run under `cx eval`. It
+# guards the co-located documentation in stdlib/*.cx ([module-doc] /
+# [fn-doc]) against drift from the implementation and the conformance
+# corpus. It enforces, for every bundled module:
+#
+#   (1) PRESENCE PARITY  -- every public [?def NAME ...] has a matching
+#       [fn-doc name=NAME ...], and every [fn-doc] names a real public def
+#       (no orphan docs). This is what makes a "38 != N functions" drift
+#       impossible to ship silently.
+#   (2) PURITY AGREEMENT -- each [?def]'s `pure`/`impure` keyword matches
+#       its [fn-doc]'s `purity=` attribute.
+#   (3) EXAMPLE BACKING  -- every [fn-doc]/[example]'s code block AND its
+#       expected output appear verbatim in the module's conformance corpus
+#       (conformance/stdlib/<m>.cxd). Because that corpus is executed green
+#       by `make test-vcx-v08` (test_stdlib_module_fixtures), a documented
+#       example that is backed by it is, transitively, an example that runs
+#       green -- and a hand-edited example that drifts from real behavior
+#       (wrong call or wrong output) is no longer backed and fails here.
+#       Modules with no .cxd (the new `xap`, whose examples come from the
+#       live demo ladder, not a fixture file) are skipped for backing.
+#
+# Module-set parity (the bundle vs the status=current spec set, incl. the
+# bundled-but-separately-specced `xap`) is owned by a separate gate,
+# `make stdlib-catalogue-gate` (SPEC == BUNDLE union DISPATCH); it is not
+# re-checked here.
+#
+# Why example-backing rather than "examples ARE the fixtures": the per-
+# module .cxd is the full conformance matrix (happy + error + edge +
+# ambiguous, with err-codes and levels) -- typically far more cases than
+# the one illustrative example per function -- so collapsing the test
+# source onto the doc examples would discard negative/edge coverage. The
+# .cxd stays authoritative; the examples are pinned to it. (Design note
+# recorded in spec/02-working/stdlib_colocated_docs.md.)
+#
+# Capabilities: glob / read-file need `read`; the env standard streams +
+# exit are ambient (env.md §7). Run:
+#   vcx/target/cx eval scripts/gen_guide/stdlib_docs_check.cx --allow-read
+#   (or: make guide-check)
+
+[?lib 'cx-stdlib/cx']
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# example child-text extractors (mirror guide_build's ex-part).
+[?def ex-code ($ex)
+  [$strings:join [?for [in $c $ex/*] [yield [?match $c [case [code $t] $t] [else ()]]]] '']]
+[?def ex-expect ($ex)
+  [$strings:join [?for [in $c $ex/*] [yield [?match $c [case [expect $t] $t] [else ()]]]] '']]
+
+# RE2 over the raw module text: every public [?def] with its purity word.
+[?def def-rx () [$re:compile "\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
+
+[?let [= $rx [$def-rx]]
+  [?let [= $bundle-files [$io:glob "stdlib/*.cx"]]
+
+    # --- per-module (1)(2)(4): one violation blob per module -----------
+    [?let [= $blobs
+      [?for [in $f $bundle-files]
+        [= $m [$path:stem $f]]
+        [= $txt [$io:read-file $f]]
+        [= $d [$cx:parse $txt]]
+        [= $cxdpath [$concat "conformance/stdlib/" $m ".cxd"]]
+        [= $has-cxd [$io:exists $cxdpath]]
+        [= $cxdraw [?if $has-cxd [then [$io:read-file $cxdpath]] [else ""]]]
+        [= $defviol
+          [?for [in $dm [$re:find-all $rx $txt]]
+            [= $nm [$re:group $dm 1]]
+            [= $dpur [$re:group $dm 3]]
+            [= $doc-exists [> [$count [?for [in $fd $d//fn-doc] [where [= $fd@name $nm]] [yield 1]]] 0]]
+            [= $pur-ok [or [= $dpur ""]
+                           [> [$count [?for [in $fd $d//fn-doc] [where [= $fd@name $nm]] [where [= $fd@purity $dpur]] [yield 1]]] 0]]]
+            [= $line [?if [not $doc-exists]
+                       [then [$concat "  [" $m "] missing [fn-doc] for public def: " $nm]]
+                       [else [?if [not $pur-ok]
+                               [then [$concat "  [" $m "] purity mismatch on " $nm ": def=" $dpur " but fn-doc differs"]]
+                               [else ""]]]]]
+            [where [not [= $line ""]]]
+            [yield $line]]]
+        [= $docviol
+          [?for [in $fd $d//fn-doc]
+            [= $nm $fd@name]
+            [= $def-exists [> [$count [?for [in $dm [$re:find-all $rx $txt]] [where [= [$re:group $dm 1] $nm]] [yield 1]]] 0]]
+            [where [not $def-exists]]
+            [yield [$concat "  [" $m "] orphan [fn-doc] with no public def: " $nm]]]]
+        [= $exviol
+          [?for [in $ex $d//example]
+            [= $code [$strings:trim [$ex-code $ex]]]
+            [= $expect [$strings:trim [$ex-expect $ex]]]
+            [where $has-cxd]
+            [where [not [and [$strings:contains $cxdraw $code] [$strings:contains $cxdraw $expect]]]]
+            [yield [$concat "  [" $m "] example not backed by " $m ".cxd:\n      " $code "\n      => " $expect]]]]
+
+        [= $parts [?for [in $blk ([$strings:join $defviol "\n"], [$strings:join $docviol "\n"], [$strings:join $exviol "\n"])]
+                    [where [not [= $blk ""]]] [yield $blk]]]
+        [= $blob [$strings:join $parts "\n"]]
+        [where [not [= $blob ""]]]
+        [yield $blob]]]
+
+    [?let [= $n-bad [$count $blobs]]
+      [?if [= $n-bad 0]
+        [then
+          [?let [= $_ok [$io:write-line [$env:stdout]
+              [$concat "guide-check OK -- " [$count $bundle-files]
+                       " modules: every public def has a [fn-doc] (presence + purity), and every example is backed by its conformance corpus."]]]
+            [$env:exit 0]]]
+        [else
+          [?let [= $_fail [$io:write-line [$env:stderr]
+              [$concat "guide-check FAILED -- co-located stdlib docs drifted:\n"
+                       [$strings:join $blobs "\n"]]]]
+            [$env:exit 1]]]]]]]]

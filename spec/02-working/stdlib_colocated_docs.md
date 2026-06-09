@@ -84,28 +84,62 @@ inert at load time and add **no language change**.
   with its `[?def]` (presence parity + signature/scope/purity match), so the
   restatement cannot silently drift (see §4).
 
-## §3. Derived views (consumers)
+## §3. Derived views (consumers) — REALIZED
 
-One CX projection program (`scripts/gen_*`, Phase 4) walks every
-`/stdlib/<m>.cx`, reads `[module-doc]` + `[fn-doc]` via `[$cx:parse]` + CXPath,
-and emits:
+The single CX projection program is
+[`scripts/gen_guide/guide_build.cx`](../../scripts/gen_guide/guide_build.cx). It
+walks every `stdlib/<m>.cx`, reads `[module-doc]` + `[fn-doc]` via `[$cx:parse]`
++ CXPath, and emits the **Standard-library guide pages directly** — the landing
+`libraries.html` (module index, one row per module using the scope's first
+sentence) and one `lib-<m>.html` per module (scope lede + every function's
+signature, summary, and verified example). There is **no intermediate generated
+artifact**: the old `conformance/stdlib/coverage.cx`, the generated
+`docs-src/canonical/sections/16-libraries.cxd` guide section, and the two Python
+generators (`scripts/stdlib_coverage.py`, `scripts/gen_guide_libraries.py`) were
+all retired — the co-located blocks are the single source and the guide projects
+from them at build time, so the pages cannot drift from the shipped bundle.
 
-1. **Coverage data** — replaces `conformance/stdlib/coverage.cx`; nested
-   (per-module → per-function), not the legacy flat shape.
-2. **Guide §16** — `docs-src/canonical/sections/16-libraries.cxd`, covering ALL
-   bundled modules.
-3. **Spec mirror** — `spec/std-lib/<m>.md`, regenerated from the bundle.
+A spec mirror (`spec/03-approved/std-lib/<m>.md`) is **not** regenerated; the
+spec remains the hand-authored normative source and the co-located scope/summary
+prose is derived FROM it (by a human or a one-time pass), not the reverse.
 
-## §4. Gates (Phase 5)
+## §4. Gates — REALIZED as `make guide-check`
+
+[`scripts/gen_guide/stdlib_docs_check.cx`](../../scripts/gen_guide/stdlib_docs_check.cx)
+(CX-native, `cx eval`) enforces, for every bundled module:
 
 - **Presence parity:** every public `[?def NAME]` has a matching `[fn-doc
-  name=NAME]` and vice-versa.
-- **Signature freshness:** each `[fn-doc]`'s `scope`/`purity`/`sig` agrees with
-  its `[?def]`.
-- **Examples as fixtures:** every `[example]`'s `code`→`expect` runs green
-  through conformance.
-- **Derived-view freshness:** regenerate coverage + §16 + spec mirror and assert
-  unchanged in CI; a deliberately-stale artifact fails.
+  name=NAME]` and vice-versa (no orphan docs).
+- **Purity agreement:** each `[?def]`'s `pure`/`impure` keyword matches its
+  `[fn-doc]`'s `purity=`.
+- **Example backing:** every `[example]`'s `code` block **and** its `expect`
+  appear verbatim in the module's conformance corpus
+  (`conformance/stdlib/<m>.cxd`).
+
+Module-set parity (bundle vs. the status=current spec set, including the
+bundled-but-separately-specced `xap`) stays with the existing
+`make stdlib-catalogue-gate` (SPEC == BUNDLE ∪ DISPATCH); `guide-check` does not
+duplicate it.
+
+### §4.1 Decision — examples↔fixtures: pin docs to the corpus (NOT "examples ARE the fixtures")
+
+The original Phase-2 sketch was "the `[fn-doc]` examples ARE the conformance
+fixtures" (one source). **Rejected.** A module's `conformance/stdlib/<m>.cxd` is
+the full conformance matrix — happy + error + edge + ambiguous cases, with
+err-codes and levels (e.g. `bytes` has 55 fixture cases vs. 36 functions). Each
+`[fn-doc]` carries only **one illustrative happy-path example** per function.
+Collapsing the test source onto the doc examples would discard all negative/edge
+coverage.
+
+**End state (chosen):** the `.cxd` corpus remains the authoritative, executed
+test source (run green by `make test-vcx-v08`’s `test_stdlib_module_fixtures`);
+the doc examples are **pinned to it** by `guide-check`’s example-backing check.
+Because every documented example must match a corpus case verbatim, and the
+corpus is run green, a documented example is transitively a green example — and
+a hand-edited example that drifts from real behavior (wrong call or wrong
+output) is no longer backed and fails the gate. This keeps ONE authoritative
+source for *behavior* (the corpus) while letting the docs stay co-located and
+self-verifying.
 
 ## §5. Non-goals / open
 

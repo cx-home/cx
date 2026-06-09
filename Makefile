@@ -266,20 +266,18 @@ install-hooks:
 	@echo "[install-hooks] git core.hooksPath set to .githooks"
 	@ls -1 .githooks/ | sed 's/^/  - /'
 
-# std-lib conformance coverage report — GENERATED ARTIFACT (never hand-edit).
-# Regenerates both outputs from the LIVE specs + fixtures:
-#   conformance/stdlib/coverage.cx  — canonical CX data the guide CXPaths into
-#   docs/stdlib-coverage.md         — human-readable report
-# Public-function denominator = `[?def NAME scope=public …]` in spec/std-lib/*.md;
-# numerator = conformance/stdlib/*.cxd cases, parsed by shelling to `cx --ast
-# --json` (cx parses its own format — dogfooded). Override knob: CX_BIN=path
-# (default vcx/target/cx). Subset with MODULES=a,b,c.
-.PHONY: stdlib-coverage
-stdlib-coverage: CX_BIN ?= $(CURDIR)/vcx/target/cx
-stdlib-coverage: build-vcx
-	@$(PYTHON) scripts/stdlib_coverage.py \
-		--cx-bin "$(CX_BIN)" \
-		$(if $(MODULES),--modules "$(MODULES)",)
+# std-lib documentation freshness gate — CX-native (dog-food), run by
+# `cx eval`. Verifies the co-located [module-doc]/[fn-doc] in stdlib/*.cx:
+# presence parity (every public [?def] has a [fn-doc] and vice-versa),
+# purity agreement, and that every [fn-doc] example is backed verbatim by
+# the module's conformance corpus (conformance/stdlib/<m>.cxd, run green by
+# `make test-vcx-v08`). Nonzero exit on drift propagates through make.
+# Module-set parity is owned by `make stdlib-catalogue-gate`.
+# Override the binary with CX_BIN=path (default vcx/target/cx).
+.PHONY: guide-check
+guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+guide-check: build-vcx
+	@"$(CX_BIN)" eval scripts/gen_guide/stdlib_docs_check.cx --allow-all
 
 # stdlib catalogue drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
@@ -330,7 +328,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.

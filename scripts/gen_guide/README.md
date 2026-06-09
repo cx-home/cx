@@ -14,9 +14,13 @@ with `[$xml:emit]`, resolves `[[anchor]]` cross-refs, wraps each page in the
 chrome, copies the static assets, and builds the search index — all in memory
 (`codec.md §1`), no subprocess.
 
-(The standard-library section generator, `scripts/gen_guide_libraries.py`, is
-still Python — see "Generated section" below; converting it to CX is the one
-remaining Python piece.)
+The **Standard-library** pages are projected straight from the co-located
+`[module-doc]`/`[fn-doc]` blocks in `stdlib/*.cx` by this same program — there is
+no separate generator and no intermediate artifact (the old
+`scripts/gen_guide_libraries.py`, `scripts/stdlib_coverage.py`,
+`conformance/stdlib/coverage.cx`, and the generated `16-libraries.cxd` section
+were all retired). The guide toolchain is now **fully Python-free**. Run
+`make guide-check` to gate the co-located docs against drift.
 
 ## Run
 
@@ -94,22 +98,22 @@ their owning section file (`[[hello]]` → `intro.html#hello`). Unknown anchors
 render as `<span class="xref-unresolved">[[name]]</span>` so authors notice
 breakage at review time.
 
-## Generated section: Standard library (§16)
+## Standard-library pages (projected, not generated-to-disk)
 
-`docs-src/canonical/sections/16-libraries.cxd` is a **generated artifact —
-never hand-edit it.** It is emitted from the conformance coverage data document
-by `scripts/gen_guide_libraries.py` (the one remaining Python tool):
+The Standard-library landing (`libraries.html`) and per-module pages
+(`lib-<m>.html`) are projected **at build time** by `guide_build.cx` directly
+from the co-located `[module-doc]`/`[fn-doc]` blocks in `stdlib/*.cx` — the
+single source of truth. There is no checked-in `16-libraries.cxd` section and no
+intermediate coverage document; the module set is the glob of `stdlib/*.cx`, so a
+new module gets a page automatically. Each function page shows the `[fn-doc]`
+signature, summary, and verified example.
 
-```
-make guide-libraries          # uses vcx/target/cx by default
-make guide-libraries CX_BIN=$(which cx)
-```
-
-Data flow: `spec/std-lib/*.md` + `conformance/stdlib/*.cxd` →
-(`make stdlib-coverage`) → `conformance/stdlib/coverage.cx` →
-(`gen_guide_libraries.py`, reading via `cx --ast --json` + each module's §1
-prose) → `16-libraries.cxd` + the section-16 TOC block in `manifest.cxd`.
-**To refresh:** run `make stdlib-coverage` first, then `make guide-libraries`.
+**Freshness gate:** `make guide-check`
+(`scripts/gen_guide/stdlib_docs_check.cx`, CX-native) verifies, for every
+module, presence parity (`[?def]` ⇄ `[fn-doc]`), purity agreement, and that each
+example is backed verbatim by `conformance/stdlib/<m>.cxd` (the corpus run green
+by `make test-vcx-v08`). Wired into `TEST_TARGETS`. Module-set parity is owned by
+`make stdlib-catalogue-gate`.
 
 ## Playground page
 
@@ -127,8 +131,6 @@ directory tree (opens under `file://`).
   under the in-memory path (the old multi-subprocess pipeline masked this via a
   non-idempotent text round-trip). This is a core-language question, tracked in
   `spec/02-inprogress/triple_quote_escape_bijection.md` — not a renderer bug.
-- **`gen_guide_libraries.py` → CX.** Converting the §16 generator to CX would
-  remove the last Python from the guide toolchain.
 - **Collapse the 4-level child unroll.** `render-doc` unrolls `[child]` nesting
   to four levels; now that CX has user-defined functions (`[?def]`), it could be
   a single recursive `render-block` call.

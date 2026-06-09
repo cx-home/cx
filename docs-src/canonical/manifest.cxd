@@ -321,38 +321,9 @@
   [section n=14 id=tour-data      file='14-tour-data.cxd']
   [section n=15 id=tour-programs  file='15-tour-programs.cxd']
 
-  [# reference — GENERATED from conformance/stdlib/coverage.cx via
-     scripts/gen_guide_libraries.py (`make guide-libraries`). The child
-     list mirrors the modules in coverage.cx; regenerate both together so
-     the manifest TOC stays in sync with the section. #]
-  [section n=16 id=libraries      file='16-libraries.cxd'
-    [child n=16.1 id=lib-bytes title='bytes']
-    [child n=16.2 id=lib-crypto title='crypto']
-    [child n=16.3 id=lib-csv title='csv']
-    [child n=16.4 id=lib-email title='email']
-    [child n=16.5 id=lib-env title='env']
-    [child n=16.6 id=lib-format title='format']
-    [child n=16.7 id=lib-ft title='ft']
-    [child n=16.8 id=lib-geo title='geo']
-    [child n=16.9 id=lib-hash title='hash']
-    [child n=16.10 id=lib-html title='html']
-    [child n=16.11 id=lib-i18n title='i18n']
-    [child n=16.12 id=lib-io title='io']
-    [child n=16.13 id=lib-json title='json']
-    [child n=16.14 id=lib-locale title='locale']
-    [child n=16.15 id=lib-log title='log']
-    [child n=16.16 id=lib-math title='math']
-    [child n=16.17 id=lib-mime title='mime']
-    [child n=16.18 id=lib-path title='path']
-    [child n=16.19 id=lib-process title='process']
-    [child n=16.20 id=lib-prof title='prof']
-    [child n=16.21 id=lib-random title='random']
-    [child n=16.22 id=lib-re title='re']
-    [child n=16.23 id=lib-store title='store']
-    [child n=16.24 id=lib-strings title='strings']
-    [child n=16.25 id=lib-test title='test']
-    [child n=16.26 id=lib-time title='time']
-    [child n=16.27 id=lib-url title='url']
-    [child n=16.28 id=lib-uuid title='uuid']
-    [child n=16.29 id=lib-validate title='validate']]
+  [# The "Standard library" area (libraries.html + lib-<m>.html) and the
+     "XAP" area are NOT manifest sections: guide_build.cx projects them
+     directly from the co-located [module-doc]/[fn-doc] in stdlib/*.cx and
+     from spec/03-approved/xap/demos/, so there is no section file or TOC
+     block to keep in sync here. #]
 ]
