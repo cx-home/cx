@@ -1,0 +1,1 @@
+[why-allowed allowed='true' [chain [delegation id=d-dial-guestbook from=principal:dana to=agent:greeter-1 [scope :guestbook] [setting :semi-auto]]] [accountable principal=principal:dana]]

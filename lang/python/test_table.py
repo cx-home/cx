@@ -1,4 +1,4 @@
-"""Public Table API tests per ADR 0018 D1 — Python binding."""
+"""Public Table API tests — Python binding."""
 
 import json
 import sys
@@ -11,7 +11,7 @@ from cxlib import Table
 # ── Construction ─────────────────────────────────────────────────────────────
 
 def test_from_cx_simple_table():
-    src = """[users :table[name age:int]
+    src = """[users [table[name age::int]]
   alice 30
   bob 25
 ]"""
@@ -28,8 +28,8 @@ def test_from_cx_no_table_errors():
 
 def test_from_cx_all_finds_multiple():
     src = """[doc
-  [t1 :table[a] x]
-  [t2 :table[b] y]
+  [t1 [table[a]] x]
+  [t2 [table[b]] y]
 ]"""
     tables = Table.from_cx_all(src)
     # At least the inner tables should be found.
@@ -138,7 +138,7 @@ def test_to_cx_roundtrip():
     out = t.to_cx()
     assert "alice 30" in out
     assert "bob 25" in out
-    assert ":table[name age:int]" in out
+    assert "[table[name age::int]]" in out
 
 
 def test_to_csv():

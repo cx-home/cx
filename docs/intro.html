@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a class="active" href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="intro">
+  <h1>Introduction</h1>
+  
+    <section id="hello">
+      <h2>Hello, CX</h2>
+      
+        <p>CX is one language for **data** and **code**. The same brackets, the
+         same sigils, the same evaluator. You don't pick a templating engine
+         for output, a query language for selection, or a config dialect for
+         deployment — there is one shape, and you write everything in it.</p>
+        <pre>
+          <code class="language-cx">[hello :greeting 'world']</code>
+        </pre>
+        <p>That is a complete CX document. It is also a complete CX program when
+         passed to the evaluator — it evaluates to itself. CX is **homoiconic**:
+         programs are data; data round-trips through every supported surface
+         (JSON, YAML, TOML, XML, Markdown); identity is the SHA-256 of the
+         canonical bytes.</p>
+        <p>Here is one screen of CX that exercises every category covered later
+         in this guide — data, code, selection, update, and output:</p>
+        <pre>
+          <code class="language-cx">[# 1. Data: a small document
+         #]
+         [users
+           [user :id 1 :email 'ada@example.com' :active true]
+           [user :id 2 :email 'grace@example.com' :active false]
+           [user :id 3 :email 'linus@example.com' :active true]]
+
+         [# 2. Code: select active users with CXPath
+         #]
+         [?for [in $u //user[@active=true]] [yield
+           [active-user :email $u@email]]]
+
+         [# 3. Pure-functional update: mark one user verified
+         #]
+         [?modify $doc //user[@id=1]/@status :set 'verified']</code>
+        </pre>
+        <p>Three forms, one language. No string concatenation; no AST mismatch
+         between selectors and templates; no separate type system for queries.
+         The full vocabulary is detailed in <a class="xref" href="data-language.html">data</a> and <a class="xref" href="code.html">code</a>; this section
+         is just the elevator pitch.</p>
+      
+    </section>
+    <section id="philosophy">
+      <h2>Design philosophy</h2>
+      
+        <p>CX is built on six commitments. Every design choice in the rest of
+         this guide — and every choice deliberately deferred — falls out of
+         one of them.</p>
+        <p>**1. Data and code share one syntax.** A directive like `[?for]` is
+         spelled the same way as a data element like `[user]`. There is no
+         "template language" embedded inside a "data language". A program is
+         a document; a document is potentially a program. Tooling — parser,
+         lexer, AST, tree-sitter grammar, LSP — is shared end-to-end.</p>
+        <p>**2. Every projection round-trips.** CX has a canonical surface
+         (the bracket form) and projections for JSON, YAML, TOML, XML, and
+         Markdown. Every projection is lossless in the round-trip sense:
+         CX → JSON → CX produces byte-identical canonical bytes. The
+         normative round-trip rules live in <a class="xref" href="surfaces.html">surfaces</a> and in
+         [`spec/canonical.md`](../../spec/canonical.md).</p>
+        <p>**3. Pure-functional updates.** There is no in-place mutation in CX.
+         The `[?modify]` directive (see <a class="xref" href="code.html#modify">modify</a>)
+         takes a document and a CXPath focus, and returns a **new** document.
+         Unchanged branches share structure with the original (the standard
+         persistent-tree technique). Concurrency is safe by construction —
+         no reader ever observes a half-modified tree.</p>
+        <p>**4. Identity via canonical bytes plus SHA-256.** Two CX documents are
+         equal iff their canonical bytes are equal, and the document's
+         identifier is the SHA-256 of those bytes. This makes caching,
+         deduplication, content-addressable storage, and cross-language
+         equality checks trivially correct. See <a class="xref" href="identity.html">identity</a>.</p>
+        <p>**5. One selector vocabulary everywhere.** CXPath is **the**
+         way to point at things — for reading (`select_all`), for iteration
+         (`[?for]`), for type-tests in `[?match]`, and for update focus in
+         `[?modify]`. It aligns with XPath 3.1 (see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)) so that
+         developers coming from the XML ecosystem feel at home, with
+         deliberate divergences to keep it safe and CX-shaped.</p>
+        <p>**6. Orthogonality — one rule, no exceptions.** CX has exactly one
+         syntactic form: `[head …]`. Calls, operators, directives, and data
+         elements are all that one shape, distinguished only by the head. There
+         is no statement/expression divide, no infix, no special slots, and no
+         keyword the grammar treats as a privileged exception. Even the
+         constructs other languages hard-code — `if`, `lambda`, `quote`,
+         `for` — are in CX ordinary forms obeying the same rule. Read it like
+         XML, program it like Lisp; CX is more uniform than either, because in
+         CX the surface *is* the rule. And the discipline extends from syntax
+         to features: every feature must apply uniformly across its natural
+         domain or carry a written, justified exception — enforced by the
+         UNIFORM review gate in
+         [`spec/process/spec-authoring-guide.md`](../../spec/process/spec-authoring-guide.md)
+         §3, not merely aspired to.</p>
+        <p>**Orthogonality in context.** Orthogonality is the *uniform
+         application of a small rule set* — features compose without special
+         cases. It is not the same as simplicity: a language can be small yet
+         riddled with privileged built-ins user code cannot reproduce, or large
+         yet principled. The table below ranks CX against the languages CX binds
+         to, plus Lisp-1 and Scala, on this one axis. It is illustrative, not a
+         leaderboard — and orthogonality is only one axis. Where CX trades it
+         away (ecosystem maturity, library breadth) is the honest accounting in
+         <a class="xref" href="comparison.html">comparison</a>.</p>
+        <table>
+          
+            <row language="CX" tier="Reference" why="One grammar production; every construct is the same [head …] form. No statement/expression split, no infix, no privileged keyword — even special forms obey the one rule."/>
+            <row language="Lisp-1 (Scheme)" tier="Near-reference" why="Homoiconic S-expressions; single namespace (more uniform than Lisp-2). Loses only because quote, lambda and if are privileged special forms — CX folds even those into the one rule."/>
+            <row language="Scala" tier="High (uniform model)" why="Everything is an expression; functions are objects; operators are methods; uniform access. Diluted by a large sugary surface — implicits/givens, two dialects."/>
+            <row language="Ruby" tier="High (uniform model)" why="Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars)."/>
+            <row language="V" tier="Moderate" why="Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split."/>
+            <row language="Kotlin" tier="Moderate" why="Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop."/>
+            <row language="Python" tier="Moderate" why="Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, lambda is crippled."/>
+            <row language="Swift" tier="Moderate" why="Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders."/>
+            <row language="Rust" tier="Low–moderate" why="Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal."/>
+            <row language="C#" tier="Low" why="Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide."/>
+            <row language="Java" tier="Low" why="The classic wart — primitives vs objects — plus special-cased arrays, no operator overloading, erasure generics, statement-heavy ceremony."/>
+            <row language="Go" tier="Low" why="Simple but not orthogonal — magic built-ins user code cannot replicate (make, append, len, cap, delete), special slice/map/channel semantics, retrofitted generics, error-by-convention."/>
+            <row language="TypeScript / JavaScript" tier="Lowest" why="Most accreted — this-rebinding, hoisting, prototype vs class, == vs ===; TypeScript layers an entire erased second language over the runtime."/>
+          
+        </table>
+        <p class="note">**Two distinctions drive the ranking.** *Simplicity vs
+         orthogonality*: Go and V are simple, but Go is not orthogonal — its
+         magic built-ins are unreproducible by user code. *Uniform model vs
+         uniform surface*: Scala and Ruby have uniform semantic cores but large
+         sugary surfaces; CX is the only entry whose surface itself is the
+         single rule, because it is homoiconic (see <a class="xref" href="concepts.html#homoiconicity">homoiconicity</a>) — there
+         is no gap between model and syntax for uniformity to fall out of.</p>
+      
+    </section>
+    <section id="reading">
+      <h2>How to read this guide</h2>
+      
+        <p>This guide is the developer-facing reference for CX v0.8.0. Read it
+         linearly the first time. After that, sections are independent
+         enough to use as topic-specific reference.</p>
+        <p>The flow is data → surfaces → identity → analytics → code →
+         bindings → tooling → concepts → migration. Each section calls
+         out the normative spec documents under `spec/*.md` rather than
+         restating them; if you need the formal grammar, error matrix,
+         or wire-format details, the guide points you there. Front-matter
+         (<a class="xref" href="quickstart.html">quickstart</a>) and back-matter (<a class="xref" href="glossary.html">glossary</a> / <a class="xref" href="faq.html">faq</a> /
+         <a class="xref" href="comparison.html">comparison</a>) flank the numbered sequence.</p>
+        <ul>
+          
+            <li><a class="xref" href="data-language.html">data</a> — the data language: lexical structure, scalars,
+              collections, sigils, prose, typed columnar tables, schema
+              language, includes. Start here if you've never seen CX.</li>
+            <li><a class="xref" href="surfaces.html">surfaces</a> — the canonical CX form and its JSON / YAML /
+              TOML / XML / Markdown projections, plus the round-trip
+              contract.</li>
+            <li><a class="xref" href="identity.html">identity</a> — canonical bytes, SHA-256 hashing, the
+              ast-bin and data-bin binary wire formats, ID/IDREF
+              scoping, capability bits, FFI lifetime.</li>
+            <li><a class="xref" href="analytics.html">analytics</a> — the columnar / streaming binary surface:
+              :table data shape, CXCol format, Arrow zero-copy bridge,
+              Parquet read/write, ecosystem integrations (DuckDB /
+              Polars / pandas / DataFusion / Spark).</li>
+            <li><a class="xref" href="code.html">code</a> — the CX code language: the 40 directives, CXPath,
+              patterns, bindings, the six core constructs, builtins,
+              errors-as-values, services / workers / async, resilience.</li>
+            <li><a class="xref" href="bindings.html">bindings</a> — the C ABI, Layer 1 canonical method set,
+              Layer 2 host idiom packs, and per-language quickstarts for
+              V, Python, Go, and Rust.</li>
+            <li><a class="xref" href="tooling.html">tooling</a> — LSP, tree-sitter, VS Code, Neovim, Helix,
+              `make docs`, the playground.</li>
+            <li><a class="xref" href="concepts.html">concepts</a> — pure-functional updates, structural sharing,
+              capability bits, error-code namespace, ABI versioning,
+              governance.</li>
+            <li><a class="xref" href="migration.html">migration</a> — v0.7.x → v0.8.0: renames, retired surfaces,
+              the automated migration script, the archived binding set.</li>
+          
+        </ul>
+        <p>**Conventions used throughout.** Code blocks marked `:lang cx` are
+         literal CX (data or code; the same shape). Code blocks marked
+         `:lang python`, `:lang go`, `:lang rust`, `:lang v` are host-language
+         binding code. Cross-references to other sections use `<a class="xref" href="data-language.html#anchor">anchor</a>`.
+         References to spec documents use ordinary markdown links.</p>
+        <p class="note">The normative grammar lives in
+         [`spec/grammar.ebnf`](../../spec/grammar.ebnf); the directive
+         registry (39 entries) is in [`spec/code.md`](../../spec/code.md)
+         §4.1; the C ABI surface is in
+         [`spec/abi.md`](../../spec/abi.md). This guide is curated learning
+         + reference path, not a replacement for those documents.</p>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

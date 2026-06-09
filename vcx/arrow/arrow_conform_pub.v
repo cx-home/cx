@@ -6,21 +6,21 @@ module arrow
 // Arrow C-Data ABI without binding-internal access; these helpers
 // expose just enough to do that.
 
-// round_trip_cxdb pushes a framed CXDB chunked-table payload through
+// round_trip_cxcol pushes a framed CXCol chunked-table payload through
 // the Arrow C-Data ABI export path and pulls it back through the
-// import path, returning the framed CXDB bytes the importer
+// import path, returning the framed CXCol bytes the importer
 // produces. The conformance runner asserts data equivalence between
 // the input and the output (round-trip-only; no Arrow-byte
 // assertions, since Arrow's binary form isn't stable across
 // versions).
-pub fn round_trip_cxdb(framed []u8) ![]u8 {
+pub fn round_trip_cxcol(framed []u8) ![]u8 {
 	stream := alloc_zero_arrow_stream()
 	defer { unsafe { free(voidptr(stream)) } }
 	export_populate_stream_bytes(voidptr(stream), framed)!
 	return import_drain_to_bytes(voidptr(stream))
 }
 
-// schema_formats decodes the Arrow schema for a framed CXDB
+// schema_formats decodes the Arrow schema for a framed CXCol
 // chunked-table payload and returns the per-column Arrow C-Data
 // format strings (e.g., 'l', 'tdD', 'tsn:UTC'). Used by the
 // conformance runner's `arrow_children_formats` assertion.

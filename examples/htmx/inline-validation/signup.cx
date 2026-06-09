@@ -1,5 +1,0 @@
-[signup
-  [field name=email value=alice@example.com valid=yes]
-  [field name=password value=hunter2 valid=yes]
-  [field name=username value=al valid=no error='Username must be at least 3 characters']
-]

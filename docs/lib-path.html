@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>path — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a class="active" href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-path">
+  <h1>path</h1>
+  <p class="lede">Filesystem path manipulation — splitting, joining, normalizing, and comparing OS paths. Distinct from the CXPath value kind (spec/cxpath.md): this is OS-path territory. Most operations are lexical and pure; the few that touch the filesystem (`absolute`, `canonical`) are marked impure. Path logic such as normalization, relative-path computation, globbing, and containment is implemented in native primitives since it is not expressible in pure CX.</p>
+  
+    <section id="fn-path-dirname" class="fn">
+      <h3>path:dirname</h3>
+      <p class="fn-sig"><code>[$path:dirname]  ($p::string) -> string</code>  —  Return the directory portion of a path — everything up to (but not including) the final separator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:dirname "/a/b/c.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'/a/b'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-basename" class="fn">
+      <h3>path:basename</h3>
+      <p class="fn-sig"><code>[$path:basename]  ($p::string) -> string</code>  —  Return the final component of a path (the part after the last separator).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:basename "/a/b/c.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'c.txt'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-extension" class="fn">
+      <h3>path:extension</h3>
+      <p class="fn-sig"><code>[$path:extension]  ($p::string) -> string</code>  —  Return the file extension of the final component, including the leading dot; empty if none.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:extension "/a/b/c.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'.txt'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-stem" class="fn">
+      <h3>path:stem</h3>
+      <p class="fn-sig"><code>[$path:stem]  ($p::string) -> string</code>  —  Return the final component with its extension removed.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:stem "/a/b/c.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'c'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-parent" class="fn">
+      <h3>path:parent</h3>
+      <p class="fn-sig"><code>[$path:parent]  ($p::string) -> string</code>  —  Return the parent directory of a path (its dirname).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:parent "/a/b/c.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'/a/b'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-parts" class="fn">
+      <h3>path:parts</h3>
+      <p class="fn-sig"><code>[$path:parts]  ($p::string) -> [sequence string]</code>  —  Split a path into its component segments, in order.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:parts "/a/b/c.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>('a', 'b', 'c.txt')</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-join" class="fn">
+      <h3>path:join</h3>
+      <p class="fn-sig"><code>[$path:join]  (*$parts::string) -> string</code>  —  Join path segments with the platform separator, collapsing redundant separators.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:join "a" "b" "c"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a/b/c'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-join-seq" class="fn">
+      <h3>path:join-seq</h3>
+      <p class="fn-sig"><code>[$path:join-seq]  ($parts::[sequence string]) -> string</code>  —  Join a sequence of path segments with the platform separator (the list form of `join`).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:join-seq ("a/", "/b/", "/c")]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a/b/c'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-normalize" class="fn">
+      <h3>path:normalize</h3>
+      <p class="fn-sig"><code>[$path:normalize]  ($p::string) -> string</code>  —  Lexically normalize a path: resolve '.' and '..' segments and collapse redundant separators, without touching the filesystem.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:normalize "a/./b/../c"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a/c'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-absolute" class="fn">
+      <h3>path:absolute</h3>
+      <p class="fn-sig"><code>[$path:absolute]  ($p::string) -> string</code>  —  Resolve a path to an absolute one against the current working directory (does not require the path to exist).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:is-absolute [$path:absolute "x"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-relative" class="fn">
+      <h3>path:relative</h3>
+      <p class="fn-sig"><code>[$path:relative]  ($from::string $to::string) -> string</code>  —  Compute the relative path from `$from` to `$to`.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:relative "/a/b" "/a/c/d"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'../c/d'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-canonical" class="fn">
+      <h3>path:canonical</h3>
+      <p class="fn-sig"><code>[$path:canonical]  ($p::string) -> string</code>  —  Resolve a path to its real absolute form on disk, following symlinks; raises CXER2600 if it does not exist.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:canonical "/no/such/path/abcxyz-does-not-exist-12345"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER2600</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-is-absolute" class="fn">
+      <h3>path:is-absolute</h3>
+      <p class="fn-sig"><code>[$path:is-absolute]  ($p::string) -> bool</code>  —  Report whether a path is absolute (rooted).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:is-absolute "/foo"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-is-relative" class="fn">
+      <h3>path:is-relative</h3>
+      <p class="fn-sig"><code>[$path:is-relative]  ($p::string) -> bool</code>  —  Report whether a path is relative (not rooted).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:is-relative "foo"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-is-posix-style" class="fn">
+      <h3>path:is-posix-style</h3>
+      <p class="fn-sig"><code>[$path:is-posix-style]  ($p::string) -> bool</code>  —  Report whether a path uses POSIX (forward-slash) separators.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:is-posix-style "/foo/bar"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-is-windows-style" class="fn">
+      <h3>path:is-windows-style</h3>
+      <p class="fn-sig"><code>[$path:is-windows-style]  ($p::string) -> bool</code>  —  Report whether a path uses Windows-style separators or a drive letter.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:is-windows-style "C:\\foo\\bar"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-has-extension" class="fn">
+      <h3>path:has-extension</h3>
+      <p class="fn-sig"><code>[$path:has-extension]  ($p::string) -> bool</code>  —  Report whether the final component has a file extension.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:has-extension "a.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-with-extension" class="fn">
+      <h3>path:with-extension</h3>
+      <p class="fn-sig"><code>[$path:with-extension]  ($p::string $ext::string) -> string</code>  —  Return the path with its extension replaced by $ext (a leading dot is optional).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:with-extension "a.txt" ".md"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a.md'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-with-stem" class="fn">
+      <h3>path:with-stem</h3>
+      <p class="fn-sig"><code>[$path:with-stem]  ($p::string $stem::string) -> string</code>  —  Return the path with its stem (the name without its extension) replaced.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:with-stem "a/b.txt" "c"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a/c.txt'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-with-name" class="fn">
+      <h3>path:with-name</h3>
+      <p class="fn-sig"><code>[$path:with-name]  ($p::string $name::string) -> string</code>  —  Return the path with its final component replaced.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:with-name "a/b.txt" "c.md"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a/c.md'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-append" class="fn">
+      <h3>path:append</h3>
+      <p class="fn-sig"><code>[$path:append]  ($p::string $suffix::string) -> string</code>  —  Append a suffix path onto a base path, collapsing redundant separators.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:append "a/b" "/c"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a/b/c'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-match-glob" class="fn">
+      <h3>path:match-glob</h3>
+      <p class="fn-sig"><code>[$path:match-glob]  ($pattern::string $p::string) -> bool</code>  —  Report whether a path matches a glob pattern (`*`, `?`, `[…]`, `**`); raises CXER2602 on a malformed pattern.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:match-glob "**/*.cx" "a/b/c.cx"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-separator" class="fn">
+      <h3>path:separator</h3>
+      <p class="fn-sig"><code>[$path:separator]  () -> string</code>  —  Return the platform path separator (`/` on POSIX).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:separator]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'/'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-list-separator" class="fn">
+      <h3>path:list-separator</h3>
+      <p class="fn-sig"><code>[$path:list-separator]  () -> string</code>  —  Return the platform path-list separator used in variables like PATH (`:` on POSIX).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:list-separator]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>':'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-is-within" class="fn">
+      <h3>path:is-within</h3>
+      <p class="fn-sig"><code>[$path:is-within]  ($dir::string $candidate::string) -> bool</code>  —  Report whether a candidate path lies within a directory after normalization (no `..` escape).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:is-within "/srv/www" "/srv/www/../etc/passwd"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-safe-join" class="fn">
+      <h3>path:safe-join</h3>
+      <p class="fn-sig"><code>[$path:safe-join]  ($base::string $untrusted::string) -> string</code>  —  Join an untrusted segment onto a trusted base, raising CXER2603 if the result would escape the base.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:safe-join "/srv/www" "a/b.txt"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'/srv/www/a/b.txt'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-path-equals-case-insensitive" class="fn">
+      <h3>path:equals-case-insensitive</h3>
+      <p class="fn-sig"><code>[$path:equals-case-insensitive]  ($a::string $b::string) -> bool</code>  —  Compare two paths for equality, ignoring case.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/path']
+[$path:equals-case-insensitive "/A/B" "/a/b"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

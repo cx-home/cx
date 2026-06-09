@@ -1,0 +1,128 @@
+[# template.cx — renders the cx-data-and-code-guide (v0.8.0 surface).
+   Walks docs-src/canonical/manifest.cxd, loads each section file, and
+   emits a single consolidated document tree with section anchors
+   derived from each manifest entry's id slug.
+
+   Run (the manifest is the input document):
+     cx eval docs-src/canonical/template.cx \
+       --data=docs-src/canonical/manifest.cxd --allow-read
+
+   --allow-read grants the read capability the QName-dispatched
+   [$io:read-file] needs (§9.5 capability gating). Without it, every
+   section read returns an [err] carrying cx-err:CXER0271; the [?match]
+   err boundary in load-section (§9.3) degrades that to a [missing …]
+   stub so the template still renders to completion (useful for a
+   structure-only dry run). Module members are referenced by their
+   QName (§12.1.1): [$io:read-file …].
+
+   The template is intentionally CX itself — the doc generator eats its
+   own dog food. Every directive used below is v0.8.0 vocabulary:
+     §5.5  CXPath as a value kind (steps + predicates)
+     §8.2  multi-arm [?match] ([case PATTERN RESULT] / [else RESULT])
+     §8.3  [?for] comprehension (clause-children: [in], [where], [yield])
+     §12.1 [?lib] module import; §12.2 module-top-level [?def]
+
+   [?def] params carry glued ::T type annotations (grammar [26]); the
+   return type is the [returns T] clause; `scope=public` exports a def
+   across modules (private is the default). #]
+
+[?lib 'cx-stdlib/io']
+
+[?def section-title scope=private [returns string] ($node)
+  [# Manifest title fallback: not every [section]/[child] carries a
+     `title=` attribute (container children derive their label from
+     id), and a missing-attribute read is a hard error. Match-capture
+     the title when present; otherwise fall back to the id slug. #]
+  [?match $node
+    [case [section title=$t] $t]
+    [case [child title=$t]   $t]
+    [else                    $node@id]]]
+
+[?def load-section scope=private [returns string] ($file::string)
+  [# Reads a section file under sections/. The read is capability-gated
+     (§9.5); a denied or failed read is caught here and rendered as a
+     [missing …] stub rather than aborting the whole document. #]
+  [?match [$io:read-file [$concat "docs-src/canonical/sections/" $file]]
+    [case [err $e] [missing file=$file reason=$e/@code]]
+    [case $v $v]]]
+
+[?def render-child scope=private ($node)
+  [# $node is a manifest [child] entry (source of n / id / title).
+     Emits a level-3 heading and recurses over any nested [child]
+     entries for sub-headings. Defs are head-dispatched: [$render-child …].
+     The section prose body is loaded as text at the section level
+     (see render-section) — walking parsed section bodies as a tree
+     awaits an eval-time parse builtin (§9.5 wire-code map). #]
+  [child n=$node@n id=$node@id title=[$section-title $node]
+    [heading level=3 anchor=$node@id
+      [$concat $node@n "  " [$section-title $node]]]
+    [?for [in $sub $node/child]
+      [yield [$render-child $sub]]]]]
+
+[?def render-section scope=private ($node $body)
+  [# $node is the manifest [section]; $body is the loaded section text.
+     The manifest [child] entries supply heading metadata; the loaded
+     text is embedded verbatim in a [source] block. #]
+  [section n=$node@n id=$node@id title=[$section-title $node]
+    [heading level=2 anchor=$node@id
+      [$concat $node@n "  " [$section-title $node]]]
+    [outline
+      [?for [in $child $node/child]
+        [yield [$render-child $child]]]]
+    [source file=$node@file $body]]]
+
+[?def resolve-anchor scope=private ($slug::string)
+  [# Cross-link resolution — [[anchor]] → #anchor. The renderer
+     post-processes [[id]] tokens by looking up the manifest slug and
+     anchoring against the rendered section heading. Unresolved anchors
+     emit a warning (gate: make verify-doc-links). #]
+  [?match
+    [when [$exists //section[@id=$slug]] [anchor href=[$concat "#" $slug]]]
+    [when [$exists //child[@id=$slug]]   [anchor href=[$concat "#" $slug]]]
+    [else                                [warning unresolved-anchor=$slug]]]]
+
+[# ─── Top-level emit ───
+   The manifest root is bound per-node via [?for [in $manifest //manifest]]
+   so its attributes atomize for the frontmatter; the document tree is the
+   single yielded value (the manifest is single-rooted). #]
+
+[?for [in $manifest //manifest]
+ [yield
+  [?let [= $title $manifest@title]
+        [= $subtitle $manifest@subtitle]
+        [= $branch $manifest@branch]
+        [= $top-sections $manifest/section]
+  [document
+    [frontmatter
+      [title $title]
+      [subtitle $subtitle]
+      [branch $branch]
+      [generated-by 'docs-src/canonical/template.cx']
+      [section-count [$count $top-sections]]]
+
+    [# ─── Table of contents ─── #]
+
+    [toc title='Contents'
+      [?for [in $sec $top-sections]
+        [yield [toc-entry
+                n=$sec@n
+                id=$sec@id
+                title=[$section-title $sec]
+                children=[?for [in $child $sec/child]
+                  [yield [toc-child
+                          n=$child@n
+                          id=$child@id
+                          title=[$section-title $child]]]]]]]]
+
+    [# ─── Body — one section per manifest entry. Each manifest section
+         carries a `file=` attribute; a missing `file` renders an [err]
+         node so make verify-doc-links can catch the omission. ─── #]
+
+    [body
+      [?for [in $sec $top-sections]
+        [yield [?match $sec
+          [case [section file=$file]
+            [$render-section $sec [load-section $file]]]
+          [else
+            [err section=$sec@id
+                 message='manifest entry missing file= attribute']]]]]]]]]]

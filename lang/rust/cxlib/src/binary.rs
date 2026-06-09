@@ -10,7 +10,7 @@
 use std::io::{Cursor, Read};
 use serde_json::Value;
 
-use crate::ast::{Attr, Document, Element, Node};
+use crate::ast::{Attr, Document, Element, MapEntry, Node};
 use crate::stream::{StreamEvent, StreamEventType};
 
 // ── low-level reader ──────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ fn read_attr(b: &mut BufReader<'_>, version: u8) -> Result<Attr, String> {
     let value     = coerce(&type_str, &value_str);
     let data_type = if type_str == "string" { None } else { Some(type_str) };
     let is_ref    = if version >= 2 { b.u8()? == 1 } else { false };
-    // v3.5 (ADR 0016): BracketBody attribute body tail — format version 5.
+    // v3.5: BracketBody attribute body tail — format version 5.
     let body = if version >= 5 {
         let flag = b.u8()?;
         match flag {
@@ -115,9 +115,9 @@ fn read_node(b: &mut BufReader<'_>, version: u8) -> Result<Node, String> {
             let anchor    = b.optstr()?;
             let data_type = b.optstr()?;
             let merge     = b.optstr()?;
-            // v3.4 (ADR 0003): syntactic ID declaration — version 2+.
+            // v3.4: syntactic ID declaration — version 2+.
             let id        = if version >= 2 { b.optstr()? } else { None };
-            // v3.4 (ADR 0003 D1): body-position reference — version 3+.
+            // v3.4: body-position reference — version 3+.
             let body_ref  = if version >= 3 { b.optstr()? } else { None };
             let attr_count = b.u16()? as usize;
             let mut attrs = Vec::with_capacity(attr_count);
@@ -188,12 +188,12 @@ fn read_node(b: &mut BufReader<'_>, version: u8) -> Result<Node, String> {
             Ok(Node::BlockContent(items))
         }
         0x0D => {
-            // v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+            // v3.5 [58] — `[?=EXPR]`.
             let expr = b.str_()?;
             Ok(Node::Interpolation { expr })
         }
         0x0E => {
-            // v3.5 (ADR 0016) [59] — `[?Name attrs body]`.
+            // v3.5 [59] — `[?Name attrs body]`.
             let name = b.str_()?;
             let attr_count = b.u16()? as usize;
             let mut attrs = Vec::with_capacity(attr_count);
@@ -206,6 +206,34 @@ fn read_node(b: &mut BufReader<'_>, version: u8) -> Result<Node, String> {
                 items.push(read_node(b, version)?);
             }
             Ok(Node::EvalDirective { name, attrs, items })
+        }
+        0x0F | 0x10 => {
+            // v0.8.0 [56a/56b] — SequenceNode (0x0F) `(a, b, c)` /
+            // ArrayNode (0x10) `[a, b, c]`: u16:item_count nodes[].
+            let count = b.u16()? as usize;
+            let mut items = Vec::with_capacity(count);
+            for _ in 0..count {
+                items.push(read_node(b, version)?);
+            }
+            Ok(if tid == 0x0F {
+                Node::SequenceNode(items)
+            } else {
+                Node::ArrayNode(items)
+            })
+        }
+        0x11 => {
+            // v0.8.0 [56c] — MapNode `{k: v, …}`: u16:entry_count entries[];
+            // entry = str:key_type str:key_value node:value (ast_bin §4.3).
+            let count = b.u16()? as usize;
+            let mut entries = Vec::with_capacity(count);
+            for _ in 0..count {
+                let key_type = b.str_()?;
+                let key_str = b.str_()?;
+                let key_value = coerce(&key_type, &key_str);
+                let value = read_node(b, version)?;
+                entries.push(MapEntry { key_type, key_value, value });
+            }
+            Ok(Node::MapNode(entries))
         }
         0xFF => {
             // skip node — no payload, return empty text
@@ -240,9 +268,9 @@ fn read_stream_attr(b: &mut BufReader<'_>) -> Result<Attr, String> {
     let type_str  = b.str_()?;
     let value     = coerce(&type_str, &value_str);
     let data_type = if type_str == "string" { None } else { Some(type_str) };
-    // v3.4 (ADR 0003): is_ref flag — events buffer follows ast_bin v2.
+    // v3.4: is_ref flag — events buffer follows ast_bin v2.
     let is_ref    = b.u8()? == 1;
-    // v3.5 (ADR 0016): BracketBody attr body tail (events buffer
+    // v3.5: BracketBody attr body tail (events buffer
     // follows ast_bin v5 attr layout). Body items are read but
     // discarded — events are a flattened view of the AST.
     let body_flag = b.u8()?;
@@ -356,9 +384,9 @@ fn enc_attr(out: &mut Vec<u8>, a: &Attr) {
     let dt = a.data_type.as_deref().unwrap_or("string");
     enc_str(out, &scalar_value_str(&a.value));
     enc_str(out, dt);
-    // v3.4 (ADR 0003): is_ref flag — format version 2.
+    // v3.4: is_ref flag — format version 2.
     out.push(if a.is_ref { 1 } else { 0 });
-    // v3.5 (ADR 0016): BracketBody attribute body tail — format version 5.
+    // v3.5: BracketBody attribute body tail — format version 5.
     match &a.body {
         None => out.push(0),
         Some(body) => {
@@ -377,9 +405,9 @@ fn enc_node(out: &mut Vec<u8>, n: &Node) {
             enc_optstr(out, e.anchor.as_deref());
             enc_optstr(out, e.data_type.as_deref());
             enc_optstr(out, e.merge.as_deref());
-            // v3.4 (ADR 0003): syntactic ID declaration — format version 2.
+            // v3.4: syntactic ID declaration — format version 2.
             enc_optstr(out, e.id.as_deref());
-            // v3.4 (ADR 0003 D1): body-position reference — format version 3.
+            // v3.4: body-position reference — format version 3.
             enc_optstr(out, e.body_ref.as_deref());
             enc_u16(out, e.attrs.len() as u16);
             for a in &e.attrs { enc_attr(out, a); }
@@ -423,18 +451,37 @@ fn enc_node(out: &mut Vec<u8>, n: &Node) {
             for it in items { enc_node(out, it); }
         }
         Node::Interpolation { expr } => {
-            // v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+            // v3.5 [58] — `[?=EXPR]`.
             out.push(0x0D);
             enc_str(out, expr);
         }
         Node::EvalDirective { name, attrs, items } => {
-            // v3.5 (ADR 0016) [59] — `[?Name attrs body]`.
+            // v3.5 [59] — `[?Name attrs body]`.
             out.push(0x0E);
             enc_str(out, name);
             enc_u16(out, attrs.len() as u16);
             for a in attrs { enc_attr(out, a); }
             enc_u16(out, items.len() as u16);
             for it in items { enc_node(out, it); }
+        }
+        Node::SequenceNode(items) => {
+            out.push(0x0F);
+            enc_u16(out, items.len() as u16);
+            for it in items { enc_node(out, it); }
+        }
+        Node::ArrayNode(items) => {
+            out.push(0x10);
+            enc_u16(out, items.len() as u16);
+            for it in items { enc_node(out, it); }
+        }
+        Node::MapNode(entries) => {
+            out.push(0x11);
+            enc_u16(out, entries.len() as u16);
+            for e in entries {
+                enc_str(out, &e.key_type);
+                enc_str(out, &scalar_value_str(&e.key_value));
+                enc_node(out, &e.value);
+            }
         }
         Node::DoctypeDecl { .. } => {
             // DTD nodes aren't round-tripped by bindings; emit 0xFF skip.
@@ -449,7 +496,7 @@ pub fn encode_ast(doc: &Document) -> Vec<u8> {
     let mut payload = Vec::new();
     payload.push(0x05); // version — bumped 4 → 5 for v0.6.0 grammar v3.5
                         //           (Interpolation/EvalDirective tags +
-                        //            BracketBody attr body tail, ADR 0016)
+                        // BracketBody attr body tail)
     enc_u16(&mut payload, doc.prolog.len() as u16);
     for n in &doc.prolog { enc_node(&mut payload, n); }
     enc_u16(&mut payload, doc.elements.len() as u16);

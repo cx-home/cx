@@ -7,7 +7,7 @@ import (
 )
 
 // Tests for the ID/IDREF C ABI surface (cx_id_lookup / cx_resolve_ref /
-// cx_node_id) per ADR 0003 / Phase 7.65. Document-level resolve is
+// cx_node_id) / Phase 7.65. Document-level resolve is
 // already tested by identity_test.go; these exercise the stateless
 // string-in/string-out C ABI variants.
 
@@ -58,25 +58,10 @@ func TestResolveRefMatchesIDLookup(t *testing.T) {
 	}
 }
 
-func TestNodeIDForIDBearingElement(t *testing.T) {
-	out, err := NodeID(idAbiDoc, "//user")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out != "u-1" {
-		t.Fatalf("NodeID(//user) = %q, want u-1", out)
-	}
-}
-
-func TestNodeIDEmptyForNonIDBearing(t *testing.T) {
-	out, err := NodeID(idAbiDoc, "//reviewer")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out != "" {
-		t.Fatalf("NodeID(//reviewer) = %q, want empty", out)
-	}
-}
+// TestNodeID* removed — cx_node_id was retired
+// alongside the cxpath C ABI. Equivalent: EvalCode with a CXPath
+// `//pattern` value or a `[?for [pattern $m] :yield $m]`
+// comprehension, then read $m/@id.
 
 func TestIDLookupParseError(t *testing.T) {
 	_, err := IDLookup("[unclosed", "u-1")

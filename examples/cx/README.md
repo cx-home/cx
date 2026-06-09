@@ -1,25 +1,29 @@
-# CXL examples
+# CX code examples
 
-Runnable CXL templates against CX context documents. Each example
-pairs a `.cx` data file with a `.cxl` template file.
-
-```sh
-$ cx eval greet.cxl --data=greet.cx
-Welcome Alice! Role: admin.
-```
+Two small CX data fixtures used as inputs for `cx eval` demos
+elsewhere in the repo (the canonical tours: `examples/code-tour.cx`,
+`examples/cxpath-tour.cx`, `examples/match-multi.cx`,
+`examples/modify-crud.cx`).
 
 ## Files
 
-| Example | What it demonstrates |
-| ------- | -------------------- |
-| `greet.{cx,cxl}` | `[?if cond :then … :else …]` + `[?= @attr]` interpolation |
-| `users.{cx,cxl}` | `[?for var :in path :return …]` iteration over elements |
+| File | Shape |
+| ---- | ----- |
+| [`greet.cx`](greet.cx) | single `[user]` element with `name=`, `role=`, `active=` attributes |
+| [`users.cx`](users.cx) | `[team]` with three `[member]` rows carrying boolean `active=` attributes |
 
-## Run them
+## Use them as input
 
 ```sh
-cx eval greet.cxl --data=greet.cx
-cx eval users.cxl --data=users.cx
+# Inspect the data
+cx eval greet.cx
+cx eval users.cx
+
+# Drive a tour script over its sample document
+cx eval ../code-tour.cx --data=../code-tour.input.cx
+cx eval ../cxpath-tour.cx --data=../cxpath-tour.input.cx
+cx eval ../modify-crud.cx --data=../modify-crud.input.cx
 ```
 
-For the full CXL reference: [`docs/CXL.md`](../../docs/CXL.md).
+For the full Code surface, see [`docs/CX code.md`](../../docs/CX%20code.md)
+and the v0.8.0 tour at [`examples/code-tour.cx`](../code-tour.cx).

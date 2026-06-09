@@ -1,0 +1,131 @@
+[# cxpath-tour.cx — CXPath tour: every axis, every predicate kind (v0.8.0).
+   CXPath is a first-class value kind (§5.5), XPath 3.1 aligned.
+
+   A CX module's value is its last expression, so the sections live in
+   one [cxpath-tour …] element.
+
+   Run:
+     cx eval examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx #]
+
+[cxpath-tour version='0.8.0'
+
+  [# ─── §1. Selection from the document root ─── #]
+
+  [section title='all users — terse descendant form'
+    [?let [= $all-users //user]
+      [example total=[$count $all-users] [items $all-users]]]]
+
+  [section title='explicit child-axis steps'
+    [# Grammar [130] also admits the rooted '/root/users/user' spelling,
+       but the evaluator currently rejects single-slash-rooted paths in
+       expression position (triage F9) — the '//' anchor is the
+       impl-portable form. #]
+    [?let [= $explicit //users/user]
+      [example total=[$count $explicit]]]]
+
+  [# ─── §2. Predicates — attribute equality, comparison, position ─── #]
+
+  [section title='attribute equality'
+    [example total=[$count //user[@active=true]]]]
+
+  [section title='attribute comparison'
+    [example total=[$count //user[@age>=21]]]]
+
+  [section title='string equality'
+    [example total=[$count //user[@name='Alice']]]]
+
+  [section title='stacked predicates — implicit AND'
+    [example total=[$count //user[@active=true][@age>=21]]]]
+
+  [section title='positional predicate'
+    [example [items //user[1]]]]
+
+  [# ─── §3. Attribute selection — terminal @ step ─── #]
+
+  [section title='every email'
+    [example total=[$count //user/@email]]]
+
+  [section title='first user name'
+    [# A [?for] over a positional path binds the single node itself,
+       so glued / slashed attribute reads yield the scalar. #]
+    [?for [in $u //user[1]]
+      [yield [example value=$u/@name]]]]
+
+  [# ─── §4. The twelve axes ─── #]
+
+  [section title='the twelve axes'
+    [axes
+      [self      //user[1]/self::user]
+      [child     //section/child::para]
+      [descendant //section/descendant::para]
+      [descendant-or-self //section/descendant-or-self::*]
+      [parent    //user[1]/parent::users]
+      [ancestor  //user[1]/ancestor::root]
+      [ancestor-or-self //user[1]/ancestor-or-self::*]
+      [following-sibling //user[1]/following-sibling::user]
+      [preceding-sibling //user[2]/preceding-sibling::user]
+      [following //user[1]/following::section]
+      [preceding //section/preceding::user]
+      [attribute //user[1]/attribute::*]]]
+
+  [# ─── §5. Paths bound to variables ─── #]
+
+  [section title='node bound to a variable, then navigated'
+    [# Two current impl limits steer the spelling here (both triaged):
+       axis steps on a binding path ($u/following-sibling::user) are
+       grammar-admitted [135a] but rejected at '::' (F10), and a
+       [?let]-bound node-set does not distribute attribute steps per
+       §6.2 O4 (F12) — so bind via a single-iteration [?for] and anchor
+       axis walks at the document. #]
+    [?for [in $u //user[1]]
+      [yield [user-detail
+        name=$u/@name
+        email=$u/@email
+        siblings=[$count //user[1]/following-sibling::user]
+        parent-name=[$name //user[1]/parent::*]]]]]
+
+  [# ─── §6. Set algebra via general predicates (§5.5.2) ───
+     The infix combinators union / intersect / except / || survive only
+     inside CXPath predicate bodies (grammar [134], PredExpr-only) —
+     at program level, set combinations over one document are expressed
+     as predicate combinators. #]
+
+  [section title='intersection — young AND active'
+    [example total=[$count //user[$_@age < 25 and $_@active = true]]]]
+
+  [section title='union — active OR admin'
+    [example total=[$count //user[$_@active = true or $_@admin = true]]]]
+
+  [section title='difference — all except banned'
+    [# not($_@banned = true) is spec-admissible but the XPath-call arg
+       parser currently rejects comparisons inside call parens (triage
+       F11); bare-truthy not($_@banned) and the = false spelling both
+       work. #]
+    [example total=[$count //user[$_@banned = false]]]]
+
+  [# ─── §7. Paths drive [?for] generators ─── #]
+
+  [section title='paths inside [?for]'
+    [?for [in $u //user[@active=true]]
+      [yield [active-user name=$u/@name email=$u/@email]]]]
+
+  [# ─── §8. Paths inside [?if] cond — truthy iff non-empty ─── #]
+
+  [section title='paths inside [?if]'
+    [?if //user[@admin=true]
+      [then [admin-banner "Admins present."]]
+      [else [admin-banner "No admins."]]]]
+
+  [# ─── §9. Range generator — 1 to N ─── #]
+
+  [section title='range generator'
+    [?for [in $i [$range 1 5]]
+      [yield [pos $i]]]]
+
+  [# ─── §10. String concatenation ─── #]
+
+  [section title='string concatenation'
+    [?for [in $u //user]
+      [yield [greeting [$concat $u/@name " <" $u/@email ">"]]]]]
+
+]

@@ -4,8 +4,8 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "cxlib"
-version = "0.6.1"
-description = "CX format library — parse, stream, and convert CX/XML/JSON/YAML/TOML/Markdown"
+version = "0.8.0"
+description = "CX format library — parse, stream, and convert CX/XML/JSON/YAML/TOML"
 readme = "cxlib/README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"

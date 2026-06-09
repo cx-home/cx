@@ -1,0 +1,2 @@
+[users [user name="Alice"] [user name="Bob"] [admin name="Carol"]]
+[?for [in $u //user] [yield $u]]

@@ -1,9 +1,10 @@
-// Streaming-callback dispatch for cgo. cx_eval_streaming takes a C
-// function pointer (cx_eval_write_cb); Go closures can't be passed
-// directly. The pattern below registers each call's callback in a
-// process-wide table keyed by a monotonic token; the C side calls
-// the exported cxGoStreamTrampoline with the token through the
-// user pointer, which looks up and dispatches the Go closure.
+// Streaming-callback dispatch for cgo. cx_code_eval_streaming
+// takes a C function pointer (cx_code_write_cb); Go closures
+// can't be passed directly. The pattern below registers each call's
+// callback in a process-wide table keyed by a monotonic token; the
+// C side calls the exported cxGoStreamTrampoline with the token
+// through the user pointer, which looks up and dispatches the Go
+// closure. Per spec/audits/code_abi_v1.md §3.3.
 
 package cxlib
 

@@ -1,14 +1,14 @@
 [doc title="Embedding Test"
 
   [- Demonstrates code blocks containing foreign-syntax content.
-     Use [# ... #] (raw, never parsed) when the embedded code
-     contains brackets or quotes; [| ... |] is for parsed-body
-     content where you want CX to parse inline. ]
+     Use [# ... #] (raw text, never parsed) when the embedded code
+     contains brackets or quotes; the lang attr drives tree-sitter
+     injection / syntax highlighting of the embedded source. ]
 
   [section
     [h1 Embedded JSON]
     [p Here is some JSON configuration:]
-    [``` lang=json [#
+    [pre [code lang=json [#
 {
   "name": "example",
   "version": "1.0.0",
@@ -16,23 +16,23 @@
   "count": 42,
   "tags": ["cx", "test"]
 }
-    #]]
+#]]]
   ]
 
   [section
     [h2 Embedded Bash]
-    [``` lang=bash [#
+    [pre [code lang=bash [#
 #!/bin/bash
 for f in *.cx; do
   echo "Processing $f"
   cx --json "$f" > "dist/$(basename "$f" .cx).json"
 done
-    #]]
+#]]]
   ]
 
   [section
     [h3 Embedded Python]
-    [``` lang=python [#
+    [pre [code lang=python [#
 import cx
 
 def parse_cx(path: str) -> dict:
@@ -41,12 +41,12 @@ def parse_cx(path: str) -> dict:
 
 result = parse_cx("doc.cx")
 print(result["title"])
-    #]]
+#]]]
   ]
 
   [section
     [h4 Embedded YAML]
-    [``` lang=yaml [#
+    [pre [code lang=yaml [#
 server:
   host: localhost
   port: 8080
@@ -54,6 +54,6 @@ server:
 features:
   - auth
   - logging
-    #]]
+#]]]
   ]
 ]

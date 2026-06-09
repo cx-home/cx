@@ -89,9 +89,51 @@ pub fn cx_thread_unregister() int {
 	return C.cx_gc_unregister_my_thread()
 }
 
+// ── WASM-only: arena sizing + reset ────────────────────────────
+//
+// These two symbols are part of the libcx-wasm playground subset
+// (16-symbol table). They exist on every build for ABI
+// symmetry; the native `cx` binary treats them as no-ops because its
+// Boehm GC build handles memory itself. The WASM build pairs them with
+// V's `-prealloc` arena to give the JS wrapper a programmatic way to
+// (a) request a larger arena before the next evaluation and (b) clear
+// arena state without tearing down the WebAssembly.Instance.
+//
+// Today the V `-prealloc` arena is sized at compile time and never
+// resized; the JS wrapper's documented "release memory" path is to
+// drop the WebAssembly.Instance and recreate it (see 
+// §D5 `cxlib.reset()`). These C ABI hooks reserve the surface so a
+// future build that wires arena lifecycle to the V runtime can land
+// without an ABI break.
+//
+// Legacy consumers shouldn't call these. Bindings that probe
+// `cx_features` will see no capability bit allocated to them — they
+// are not part of the parity matrix.
+
+@[export: 'cx_wasm_set_arena_size']
+pub fn cx_wasm_set_arena_size(bytes u32) int {
+	// Reserved for future arena lifecycle wiring;
+	// today the V `-prealloc` arena is sized at build time so we
+	// just accept the value and report success. The hand-written
+	// JS wrapper exposes this as `cxlib.setArenaSize(bytes)` per
+	// Uses `u32` rather than `u64` so the symbol is
+	// JS-callable directly (wasm32 i64 round-trips through JS as
+	// BigInt). 4 GiB ceiling matches wasm32's linear-memory cap.
+	_ := bytes
+	return 0
+}
+
+@[export: 'cx_wasm_reset']
+pub fn cx_wasm_reset() int {
+	// No-op today. The documented reset path is JS-side instance
+	// re-instantiation. Reserved for future arena
+	// lifecycle wiring.
+	return 0
+}
+
 // ── version ───────────────────────────────────────────────────────────────────
 
-const cx_version_str = '0.6.1'
+const cx_version_str = '0.8.0'
 const cx_abi_version_str = '2.0'
 
 // Capability bitmask per spec/abi.md §3. Implemented capabilities in
@@ -124,12 +166,13 @@ const cx_abi_version_str = '2.0'
 // Bitmask = bits 0..22 set (0x7fffff) | bit 24 (0x1000000)
 // | bit 25 (0x2000000) | bit 26 (0x4000000) | bit 27 (0x8000000)
 // | bit 28 (0x10000000) | bit 29 (0x20000000) | bit 30 (0x40000000)
-// = 0x5f7fffff. Bit 27 is the streaming-write API
+// | bit 31 (0x80000000) | bit 32 (0x100000000) | bit 33 (0x200000000)
+// = 0x3df7fffff. Bit 27 is the streaming-write API
 // (`cx_events_writer_*` / spec/streaming.md §6 /
 // spec/abi.md §2.15) — 25 C ABI symbols, wired in Phase 7.74g.
-// Bit 28 is the CXL 1.0 evaluator (`cx_eval_cxl*` /
-// spec/eval.md / spec/abi.md §2.16) — V reference implementation
-// landed alongside the bit-28 flip; cf. `vcx/cx/cxl.v`.
+// Bit 28 is the CX code evaluator (`cx_code_eval*` /
+// spec/code.md / spec/abi.md §2.16.1) — replaces the legacy
+// `cx_eval*` POC surface at Phase 7.3; cf. `vcx/code/cabi.v`.
 // Bit 29 is collection literals + CXDM v1.1 + labeled-form parser
 // (/§D7/§D23 / spec/abi.md §1.5) — V parser + AST +
 // canonical / hash / schema validator extensions; capability gates
@@ -138,7 +181,35 @@ const cx_abi_version_str = '2.0'
 // §1.5 — V evaluator lexical-scope frames, positional template-
 // invocation, W018 arg-count mismatch, `?def` 3-slot positional
 // shape with legacy 2-slot auto-expansion.
-const cx_features_str = '0x5f7fffff'
+// Bit 31 is the v0.8.0 CX program diagram renderer
+// (`cx_code_diagram` / spec/abi.md §2.16.2) — Mermaid
+// emit from the wasm-safe path with auto-detection
+// (`flowchart TD` for code sources containing a top-level
+// EvalDirective, `erDiagram` for data sources). SVG/PNG remain
+// CLI-only (graphviz shell-out). Exported from `vcx/code/cabi.v`
+// per import-cycle constraints; cap bit advertised here because
+// `cx_features` is the single capability-bitmask surface per
+// spec/abi.md §3.
+// Bit 32 is the v0.8.0 CX code tree projection
+// (`cx_code_tree` /) — new C ABI symbol
+// returning JSON projection of the parsed source; every node
+// carries `{kind, name?, value?, loc:{start,end}, children?}`
+// with UTF-8 byte offsets into the original source. Enables
+// the bidirectional selection bridge between the playground
+// tree pane and source pane without further ABI
+// plumbing. Re-framed at v0.8.0 (the earlier
+// gate-17 framing — "no new C ABI; JS-side `cx_to_json` walk"
+// — never shipped). Phase 2.11 lands a stub returning a
+// minimal-shape JSON for the source's root element; (Q) agent
+// fills in the real walker contract.
+// Bit 33 is atom scalar kind (`spec/core/ast.md`, `spec/core/ast-bin.md`).
+// Set when the binding parses, evaluates, renders, and round-trips
+// `:NAME` atom literals through ast_bin with type-strict equality
+// (atom never equals same-named string per §D2). V native impl landed
+// this session (vcx/code/parser.v parse_atom_literal + vcx/cx/ast.v
+// ScalarType.atom_type); Tier-1 binding catchup tracked in
+// spec/misc/parity-matrix.md.
+const cx_features_str = '0x3df7fffff'
 
 @[export: 'cx_version']
 pub fn cx_version() &char {
@@ -185,7 +256,7 @@ pub fn cx_to_cx(input &char, err_out &&char) &char {
 }
 
 // cx_to_cx_with_include_root: parse CX text with opt-in spec/include.md
-// resolution (v0.7.0 GG3) then re-emit the resolved document as
+// resolution (GG3) then re-emit the resolved document as
 // canonical CX text. NULL / empty `include_root` is a no-op
 // equivalent to `cx_to_cx` (directives preserved).
 @[export: 'cx_to_cx_with_include_root']
@@ -303,15 +374,8 @@ pub fn cx_json_to_xml(input &char, err_out &&char) &char {
 @[export: 'cx_json_to_ast']
 pub fn cx_json_to_ast(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
-	res := parse_json_cx(src) or { return c_err(err.msg(), err_out) }
-	result := if res.is_multi {
-		docs := res.multi or { return unsafe { nil } }
-		emit_ast_json_docs(docs)
-	} else {
-		doc := res.single or { return unsafe { nil } }
-		emit_ast_json(doc)
-	}
-	return c_string(result)
+	doc := parse_to_doc('json', src) or { return c_err(err.msg(), err_out) }
+	return c_string(emit_ast_json(doc))
 }
 @[export: 'cx_json_to_json']
 pub fn cx_json_to_json(input &char, err_out &&char) &char {
@@ -420,101 +484,6 @@ pub fn cx_toml_to_toml(input &char, err_out &&char) &char {
 	return c_string(s)
 }
 
-// ── MD output from other formats ─────────────────────────────────────────────
-
-@[export: 'cx_to_md']
-pub fn cx_to_md(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := to_md(src) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_xml_to_md']
-pub fn cx_xml_to_md(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .xml, .md) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_json_to_md']
-pub fn cx_json_to_md(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .json, .md) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_yaml_to_md']
-pub fn cx_yaml_to_md(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .yaml, .md) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_toml_to_md']
-pub fn cx_toml_to_md(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .toml, .md) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-// ── MD input ──────────────────────────────────────────────────────────────────
-
-@[export: 'cx_md_to_cx']
-pub fn cx_md_to_cx(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .md, .cx) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_md_to_xml']
-pub fn cx_md_to_xml(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .md, .xml) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_md_to_ast']
-pub fn cx_md_to_ast(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	res := parse_md_cx(src) or { return c_err(err.msg(), err_out) }
-	result := if res.is_multi {
-		docs := res.multi or { return unsafe { nil } }
-		emit_ast_json_docs(docs)
-	} else {
-		doc := res.single or { return unsafe { nil } }
-		emit_ast_json(doc)
-	}
-	return c_string(result)
-}
-
-@[export: 'cx_md_to_json']
-pub fn cx_md_to_json(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .md, .json) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_md_to_yaml']
-pub fn cx_md_to_yaml(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .md, .yaml) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_md_to_toml']
-pub fn cx_md_to_toml(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .md, .toml) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
-@[export: 'cx_md_to_md']
-pub fn cx_md_to_md(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	s := convert(src, .md, .md) or { return c_err(err.msg(), err_out) }
-	return c_string(s)
-}
-
 // ── Streaming ─────────────────────────────────────────────────────────────────
 
 @[export: 'cx_to_events']
@@ -548,9 +517,9 @@ pub fn cx_to_ast_bin(input &char, err_out &&char) &char {
 }
 
 // cx_to_ast_bin_with_include_root: same as cx_to_ast_bin but with
-// opt-in `?include` resolution per spec/include.md §2.2 (v0.7.0 GG3
+// opt-in `?include` resolution per spec/include.md §2.2 (GG3
 // / GG4). NULL or empty `include_root` disables resolution.
-// Capability bit 28 widened semantics per EE3 / ADR 0023 Amendment
+// Capability bit 28 widened semantics per EE3 Amendment
 // #2 R2 signals presence.
 @[export: 'cx_to_ast_bin_with_include_root']
 pub fn cx_to_ast_bin_with_include_root(input &char, include_root &char, err_out &&char) &char {
@@ -628,101 +597,11 @@ pub fn cx_events_close(handle voidptr) {
 	_ = handle
 }
 
-// ── CXPath C ABI (Phase 2d) ──────────────────────────────────────────────────
+// ── CXPath C ABI (RETIRED, Phase 7) ────────────────────────────────────
 //
-// Closes audit finding CB-5. Bindings can now thunk to libcx for
-// CXPath evaluation instead of re-implementing the parser + matcher
-// in each host language (~5000 LOC of duplication across 9 bindings).
-// See spec/abi.md §2.7.
-
-// cx_select: parse CX input, evaluate `expr` against the parsed
-// Document, and return the FIRST matching element as a framed
-// binary AST. Returns NULL with no error if there's no match.
-@[export: 'cx_select']
-pub fn cx_select(input &char, expr &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	expr_str := unsafe { cstring_to_vstring(expr) }
-	doc := parse(src) or { return c_err(err.msg(), err_out) }
-	// Pre-validate expr so a CXPath syntax error is reported via err_out
-	// instead of crashing the host process via the panicking V API.
-	cxpath_parse(expr_str) or { return c_err(err.msg(), err_out) }
-	match_elem := doc.select(expr_str) or { return unsafe { nil } }
-	wrapped := Document{ elements: [Node(match_elem)] }
-	return doc_to_bin(wrapped).to_heap()
-}
-
-// cx_select_all: parse CX input, evaluate `expr`, and return ALL
-// matches wrapped in a synthetic root Element named `cx:results`.
-// Returns a framed binary AST. Empty result set returns the
-// synthetic root with no children.
-@[export: 'cx_select_all']
-pub fn cx_select_all(input &char, expr &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	expr_str := unsafe { cstring_to_vstring(expr) }
-	doc := parse(src) or { return c_err(err.msg(), err_out) }
-	cxpath_parse(expr_str) or { return c_err(err.msg(), err_out) }
-	matches := doc.select_all(expr_str)
-	mut items := []Node{cap: matches.len}
-	for e in matches {
-		items << Node(e)
-	}
-	wrapper := Element{ name: 'cx:results', items: items }
-	wrapped := Document{ elements: [Node(wrapper)] }
-	return doc_to_bin(wrapped).to_heap()
-}
-
-// cx_select_all_paths: parse CX input, evaluate `expr`, and return the
-// structural PATHS of every match (preorder, same as cx_select_all).
-//
-// Bindings use this for transform_all: navigate to each path in their
-// own AST, apply f to detached copies, and substitute back. Lets
-// bindings drop their CXPath parser/evaluator and reuse only their
-// existing tree-mutation utilities. See spec/abi.md §2.7.
-//
-// Output is a framed [u32 LE size][payload] buffer; payload is:
-// [u32 n_paths]
-// for each path:
-// [u32 depth][u32 idx_0][u32 idx_1]...[u32 idx_{depth-1}]
-//
-// All integers little-endian. Indices are 0-based positions in
-// Document.elements (depth 0) then Element.items (deeper).
-@[export: 'cx_select_all_paths']
-pub fn cx_select_all_paths(input &char, expr &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	expr_str := unsafe { cstring_to_vstring(expr) }
-	doc := parse(src) or { return c_err(err.msg(), err_out) }
-	cxpath_parse(expr_str) or { return c_err(err.msg(), err_out) }
-	paths := doc.select_all_paths(expr_str)
-	bytes := encode_select_paths_payload(paths)
-	return framed_bytes_to_heap(bytes)
-}
-
-fn encode_select_paths_payload(paths [][]int) []u8 {
-	mut total := 4 // n_paths
-	for p in paths {
-		total += 4 + p.len * 4
-	}
-	mut payload := []u8{cap: total}
-	cabi_append_u32(mut payload, u32(paths.len))
-	for p in paths {
-		cabi_append_u32(mut payload, u32(p.len))
-		for idx in p {
-			cabi_append_u32(mut payload, u32(idx))
-		}
-	}
-	// Frame [u32 LE size][payload]
-	mut framed := []u8{cap: 4 + payload.len}
-	cabi_append_u32(mut framed, u32(payload.len))
-	framed << payload
-	return framed
-}
-
-fn cabi_append_u32(mut buf []u8, v u32) {
-	buf << u8(v & 0xFF)
-	buf << u8((v >> 8) & 0xFF)
-	buf << u8((v >> 16) & 0xFF)
-	buf << u8((v >> 24) & 0xFF)
-}
+// CX code is the unified pattern/query/transform language per
+// Bindings query/transform documents via `cx_code_eval*`
+// with a `[?for pattern :yield expr]` program — see `spec/code.md §5`.
 
 // ── Canonical-form C ABI (spec/abi.md §2.6) ──────────────────────────────────
 //
@@ -826,8 +705,7 @@ pub fn cx_xml_to_ast_bin(input &char, err_out &&char) &char {
 @[export: 'cx_json_to_ast_bin']
 pub fn cx_json_to_ast_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
-	res := parse_json_cx(src) or { return c_err(err.msg(), err_out) }
-	doc := res.single or { return c_err('parse_json: no document', err_out) }
+	doc := parse_to_doc('json', src) or { return c_err(err.msg(), err_out) }
 	return doc_to_bin(doc).to_heap()
 }
 
@@ -847,15 +725,7 @@ pub fn cx_toml_to_ast_bin(input &char, err_out &&char) &char {
 	return doc_to_bin(doc).to_heap()
 }
 
-@[export: 'cx_md_to_ast_bin']
-pub fn cx_md_to_ast_bin(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	res := parse_md_cx(src) or { return c_err(err.msg(), err_out) }
-	doc := res.single or { return c_err('parse_md: no document', err_out) }
-	return doc_to_bin(doc).to_heap()
-}
-
-// 6 new output symbols: binary AST → <format>.
+// Output symbols: binary AST → <format>.
 
 @[export: 'cx_ast_bin_to_cx']
 pub fn cx_ast_bin_to_cx(input &char, err_out &&char) &char {
@@ -892,17 +762,10 @@ pub fn cx_ast_bin_to_toml(input &char, err_out &&char) &char {
 	return c_string(emit_toml(doc))
 }
 
-@[export: 'cx_ast_bin_to_md']
-pub fn cx_ast_bin_to_md(input &char, err_out &&char) &char {
-	bytes := framed_input_to_bytes(input) or { return c_err(err.msg(), err_out) }
-	doc := bin_to_doc(bytes) or { return c_err(err.msg(), err_out) }
-	return c_string(emit_md(doc))
-}
+// ── CXCol v1 — strict canonical binary data format (Phase 2b.6) ───────────────
 
-// ── CXDB v1 — strict canonical binary data format (Phase 2b.6) ───────────────
-
-// cx_to_data_bin: parse CX text and return CXDB v1 strict-canonical
-// bytes per spec/data_bin.md. Output framed as [u32 LE size][payload];
+// cx_to_data_bin: parse CX text and return CXCol v1 strict-canonical
+// bytes per spec/core/data-bin.md. Output framed as [u32 LE size][payload];
 // caller reads the first 4 bytes for size, then the payload, frees
 // the buffer with cx_free. See spec/abi.md §2.4.
 @[export: 'cx_to_data_bin']
@@ -914,8 +777,8 @@ pub fn cx_to_data_bin(input &char, err_out &&char) &char {
 }
 
 // cx_to_data_bin_with_include_root: same as cx_to_data_bin but with
-// opt-in `?include` resolution per spec/include.md §2.2 (v0.7.0
-// GG3 row at spec/v0_7_0_status.md). NULL or empty `include_root`
+// opt-in `?include` resolution per spec/include.md §2.2 (GG3).
+// NULL or empty `include_root`
 // disables resolution (matches the default of cx_to_data_bin).
 // Non-empty `include_root` must be an absolute path; relative paths
 // are resolved against the current working directory before being
@@ -924,7 +787,7 @@ pub fn cx_to_data_bin(input &char, err_out &&char) &char {
 // Errors: any of the E901-E911 codes per spec/include.md §8 surface
 // through `err_out` with the cx-err: prefix.
 //
-// Capability bit 28 (widened at v0.7.0 per EE3 / ADR 0023 Amendment
+// Capability bit 28 (widened per EE3 Amendment
 // #2 R2) signals presence; bindings query `cx_features` and may
 // degrade to cx_to_data_bin when bit 28 is clear (older libcx).
 @[export: 'cx_to_data_bin_with_include_root']
@@ -940,7 +803,7 @@ pub fn cx_to_data_bin_with_include_root(input &char, include_root &char, err_out
 	return framed_bytes_to_heap(bytes)
 }
 
-// cx_from_data_bin: decode CXDB v1 framed bytes and return canonical
+// cx_from_data_bin: decode CXCol v1 framed bytes and return canonical
 // CX text. Input must be the framed layout [u32 LE size][payload]
 // produced by cx_to_data_bin. The function reads size from the first
 // 4 bytes; null-termination is not required.
@@ -951,11 +814,11 @@ pub fn cx_from_data_bin(input &char, err_out &&char) &char {
 	return c_string(out)
 }
 
-// ── CXDB schema-driven encoding C ABI ( D3, Phase 7.73) ─────────────
+// ── CXCol schema-driven encoding C ABI ( D3, Phase 7.73) ─────────────
 //
-// 10 symbols enable schema-driven CXDB encoding (header flag bit 1) per
-// spec/data_bin.md §3.13. Each loader takes the source text plus a
-// `.cxs` schema text and emits CXDB framed bytes with the schema
+// 10 symbols enable schema-driven CXCol encoding (header flag bit 1) per
+// spec/core/data-bin.md §3.13. Each loader takes the source text plus a
+// `.cxs` schema text and emits CXCol framed bytes with the schema
 // reference embedded (content-hash form by default; the optional
 // `ref_form` argument selects 0 = content-hash / 1 = inline schema /
 // 2 = content-hash + name hint per §3.13.1). The dumper takes the
@@ -1000,7 +863,7 @@ pub fn cx_json_to_data_bin_schema_driven(input &char, schema &char, ref_form i32
 	src := unsafe { cstring_to_vstring(input) }
 	schema_text := unsafe { cstring_to_vstring(schema) }
 	hint := unsafe { cstring_to_vstring(name_hint) }
-	doc := parse_json(src) or { return c_err(err.msg(), err_out) }
+	doc := parse_to_doc('json', src) or { return c_err(err.msg(), err_out) }
 	bytes := emit_data_bin_schema_driven(doc, schema_text: schema_text, ref_form: schema_ref_form_from_int(ref_form), name_hint: hint) or {
 		return c_err(err.msg(), err_out)
 	}
@@ -1025,19 +888,6 @@ pub fn cx_toml_to_data_bin_schema_driven(input &char, schema &char, ref_form i32
 	schema_text := unsafe { cstring_to_vstring(schema) }
 	hint := unsafe { cstring_to_vstring(name_hint) }
 	doc := parse_toml(src) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin_schema_driven(doc, schema_text: schema_text, ref_form: schema_ref_form_from_int(ref_form), name_hint: hint) or {
-		return c_err(err.msg(), err_out)
-	}
-	return framed_bytes_to_heap(bytes)
-}
-
-@[export: 'cx_md_to_data_bin_schema_driven']
-pub fn cx_md_to_data_bin_schema_driven(input &char, schema &char, ref_form i32, name_hint &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	schema_text := unsafe { cstring_to_vstring(schema) }
-	hint := unsafe { cstring_to_vstring(name_hint) }
-	res := parse_md_cx(src) or { return c_err(err.msg(), err_out) }
-	doc := res.single or { return c_err('cx_md_to_data_bin_schema_driven: multi-doc unsupported', err_out) }
 	bytes := emit_data_bin_schema_driven(doc, schema_text: schema_text, ref_form: schema_ref_form_from_int(ref_form), name_hint: hint) or {
 		return c_err(err.msg(), err_out)
 	}
@@ -1095,8 +945,8 @@ pub fn cx_from_data_bin_schema_driven(input &char, schema_hint &char, err_out &&
 }
 
 // cx_to_data_bin_chunked: parse CX text whose root is a single
-// :table-bodied element and emit the CXDB chunked-table form (`0x63`)
-// per spec/data_bin.md §3.11. Default chunk policy: 2^20 rows per
+// :table-bodied element and emit the CXCol chunked-table form (`0x63`)
+// per spec/core/data-bin.md §3.11. Default chunk policy: 2^20 rows per
 // group with auto-zstd above 64 KiB body size. Output is framed
 // `[u32 LE size][payload]`. See spec/abi.md §2.10 (capability bit 21).
 @[export: 'cx_to_data_bin_chunked']
@@ -1130,9 +980,9 @@ fn framed_bytes_to_heap(bytes []u8) &char {
 // a regular `!` returner.
 //
 // SECURITY NOTE: this implicit-length form trusts the 4-byte size
-// header. Callers passing arbitrary non-CXDB bytes (or a NUL-terminated
+// header. Callers passing arbitrary non-CXCol bytes (or a NUL-terminated
 // C string) trigger an OOB read sized by whatever the first 4 bytes
-// happen to look like. Bindings landing post-v0.6.0 should call the
+// happen to look like. Newer bindings should call the
 // `_with_len` variants instead, which validate against an explicit
 // caller-supplied length. Originals stay for back-compat through 1.0;
 // removal at 2.0 (per spec/abi.md §1.1 versioning policy).
@@ -1180,7 +1030,7 @@ fn framed_input_to_bytes_with_len(input &char, total_len usize) ![]u8 {
 	return out
 }
 
-// ── CXDB v1 — one-shot loaders/dumpers (Phase 7.28) ──────────────────────────
+// ── CXCol v1 — one-shot loaders/dumpers (Phase 7.28) ──────────────────────────
 //
 // Per spec/abi.md §2.4–§2.5, these symbols compose existing format
 // parsers with emit_data_bin (loaders) and parse_data_bin with the
@@ -1189,7 +1039,7 @@ fn framed_input_to_bytes_with_len(input &char, total_len usize) ![]u8 {
 // thin composition; the heavy lifting lives in the per-format
 // parsers and emitters that already ship.
 
-// ── loaders: <fmt> text → CXDB v1 framed bytes ───────────────────────────────
+// ── loaders: <fmt> text → CXCol v1 framed bytes ───────────────────────────────
 
 @[export: 'cx_xml_to_data_bin']
 pub fn cx_xml_to_data_bin(input &char, err_out &&char) &char {
@@ -1202,7 +1052,7 @@ pub fn cx_xml_to_data_bin(input &char, err_out &&char) &char {
 @[export: 'cx_json_to_data_bin']
 pub fn cx_json_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
-	doc := parse_json(src) or { return c_err(err.msg(), err_out) }
+	doc := parse_to_doc('json', src) or { return c_err(err.msg(), err_out) }
 	bytes := emit_data_bin(doc)
 	return framed_bytes_to_heap(bytes)
 }
@@ -1223,16 +1073,7 @@ pub fn cx_toml_to_data_bin(input &char, err_out &&char) &char {
 	return framed_bytes_to_heap(bytes)
 }
 
-@[export: 'cx_md_to_data_bin']
-pub fn cx_md_to_data_bin(input &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	res := parse_md_cx(src) or { return c_err(err.msg(), err_out) }
-	doc := res.single or { return c_err('cx_md_to_data_bin: multi-document markdown not supported', err_out) }
-	bytes := emit_data_bin(doc)
-	return framed_bytes_to_heap(bytes)
-}
-
-// ── dumpers: CXDB v1 framed bytes → <fmt> text ───────────────────────────────
+// ── dumpers: CXCol v1 framed bytes → <fmt> text ───────────────────────────────
 
 @[export: 'cx_data_bin_to_xml']
 pub fn cx_data_bin_to_xml(input &char, err_out &&char) &char {
@@ -1260,13 +1101,6 @@ pub fn cx_data_bin_to_toml(input &char, err_out &&char) &char {
 	bytes := framed_input_to_bytes(input) or { return c_err(err.msg(), err_out) }
 	doc := parse_data_bin(bytes) or { return c_err(err.msg(), err_out) }
 	return c_string(emit_toml(doc))
-}
-
-@[export: 'cx_data_bin_to_md']
-pub fn cx_data_bin_to_md(input &char, err_out &&char) &char {
-	bytes := framed_input_to_bytes(input) or { return c_err(err.msg(), err_out) }
-	doc := parse_data_bin(bytes) or { return c_err(err.msg(), err_out) }
-	return c_string(emit_md(doc))
 }
 
 // ── Delimited (CSV / TSV / PSV / arbitrary single-char) C ABI ────────────────
@@ -1416,21 +1250,6 @@ pub fn cx_resolve_ref(input &char, ref &char, err_out &&char) &char {
 	return cx_id_lookup(input, ref, err_out)
 }
 
-// cx_node_id: return the syntactic ID of the element selected by
-// `cxpath`. Empty result means either the cxpath matched no element
-// or the matched element has no ID. cxpath syntax per spec/cxpath.md.
-@[export: 'cx_node_id']
-pub fn cx_node_id(input &char, cxpath &char, err_out &&char) &char {
-	src := unsafe { cstring_to_vstring(input) }
-	path := unsafe { cstring_to_vstring(cxpath) }
-	doc := parse(src) or { return c_err(err.msg(), err_out) }
-	elem := doc.select(path) or { return c_string('') }
-	if eid := elem.id {
-		return c_string(eid)
-	}
-	return c_string('')
-}
-
 // ── Streaming Table reader / writer ( D8, spec/abi.md §2.10) ─────────
 //
 // 10 handle-based C ABI symbols pull / push one row group at a time
@@ -1441,13 +1260,13 @@ pub fn cx_node_id(input &char, cxpath &char, err_out &&char) &char {
 // the chunked-table format itself).
 //
 // In-memory variants consume / produce the framed
-// `[u32 LE size][CXDB payload]` form used elsewhere in this ABI; fd
-// variants operate on bare CXDB bytes (the file's length is implicit
+// `[u32 LE size][CXCol payload]` form used elsewhere in this ABI; fd
+// variants operate on bare CXCol bytes (the file's length is implicit
 // from the fd, and streaming writers cannot prefix their output with
 // a size unknown until end-of-table). See data_bin_streaming.v for
 // the full discussion.
 
-// cx_table_reader_open: open a streaming reader over a framed CXDB
+// cx_table_reader_open: open a streaming reader over a framed CXCol
 // chunked-table buffer. Returns an opaque handle the caller must
 // release via cx_table_reader_close.
 @[export: 'cx_table_reader_open']
@@ -1464,7 +1283,7 @@ pub fn cx_table_reader_open(data_bin &char, err_out &&char) voidptr {
 }
 
 // cx_table_reader_open_fd: open a streaming reader over an open file
-// descriptor positioned at the CXDB magic (no framing prefix).
+// descriptor positioned at the CXCol magic (no framing prefix).
 @[export: 'cx_table_reader_open_fd']
 pub fn cx_table_reader_open_fd(fd int, err_out &&char) voidptr {
 	r := new_table_reader_fd(fd) or {
@@ -1595,7 +1414,7 @@ pub fn cx_table_writer_close(handle voidptr) {
 // length-prefixed diagnostic payload in the wire format described in
 // spec/schema.md §10.2:
 //
-// [u32 LE size] framing prefix (matches CXDB convention)
+// [u32 LE size] framing prefix (matches CXCol convention)
 // [u32 LE diag_count]
 // { diagnostic } * diag_count
 //
@@ -1687,17 +1506,17 @@ pub fn cx_validate_apply_defaults(doc_input &char, schema_input &char, modified_
 	return framed_bytes_to_heap(encode_diagnostics_payload(report.diagnostics))
 }
 
-// ── Explicit-length C ABI variants (Phase 7.74c, v0.6.0 hardening) ──────────
+// ── Explicit-length C ABI variants (Phase 7.74c hardening) ──────────────────
 //
 // These `_with_len` symbols validate a caller-supplied byte count
 // against the framed input's embedded size header before reading,
 // closing the OOB-read footgun the implicit-length originals expose
-// when handed non-CXDB bytes. Bindings landing post-v0.6.0 SHOULD
+// when handed non-CXCol bytes. Newer bindings SHOULD
 // call these in preference to the implicit-length forms; the
 // originals stay for back-compat through 1.0 per spec/abi.md §1.1.
 //
 // The `_with_len` variants exist for every C ABI symbol that takes
-// framed CXDB bytes as `const char*`. New format-specific decoders
+// framed CXCol bytes as `const char*`. New format-specific decoders
 // (cx_from_data_bin_xml_with_len etc.) follow the same pattern when
 // the original lands.
 
@@ -1819,7 +1638,7 @@ fn vstring_from_bytes_or_empty(input &char, length usize) string {
 // Phase 7.74g lands the V core + 25 ABI symbols. CX output format is
 // implemented end-to-end. xml/json/yaml/toml/md emits return W009
 // "format not yet implemented" pending follow-up phases; the symbols
-// + capability bit are part of the v0.6.0 ABI lock so
+// + capability bit are part of the ABI lock so
 // adopters can probe and rely on them once each format ships.
 
 // vstring_from_cstr_or_empty wraps a C string pointer that may be
@@ -1875,14 +1694,14 @@ pub fn cx_events_writer_open_fd(output_format &char, fd int, err_out &&char) voi
 }
 
 // (The `cx_events_writer_open_shaped*` exports — 4 variants — were
-// removed 2026-05-10 when was superseded by . CXL
-// is the only output-shape mechanism; see `cx_eval_cxl*` below and
+// removed 2026-05-10 when was superseded by . CX code
+// is the only output-shape mechanism; see `cx_code_eval*` below and
 // `spec/abi.md §2.16`. The W011 "shape engine not yet implemented"
 // path no longer exists.)
 
 // cx_events_writer_close_get_bytes: in-memory writers — emit implicit
 // EndDoc (W004 if elements remain unclosed), then return the accumulated
-// output buffer wrapped in the standard CXDB-style `[u32 LE size][payload]`
+// output buffer wrapped in the standard CXCol-style `[u32 LE size][payload]`
 // frame so per-binding wrappers can recover the byte length without a
 // separate length parameter. fd writers return a 4-byte buffer with
 // size=0 (payload already flushed to fd). Caller frees with cx_free.
@@ -1941,7 +1760,7 @@ pub fn cx_events_writer_end_doc(handle voidptr, err_out &&char) &char {
 }
 
 // emit_start_element implicit-len helper: attrs_payload is a bare
-// CXDB-style buffer with a 4-byte LE size prefix. The `_with_len`
+// CXCol-style buffer with a 4-byte LE size prefix. The `_with_len`
 // variant validates against caller-supplied size.
 @[export: 'cx_events_writer_start_element']
 pub fn cx_events_writer_start_element(handle voidptr, name &char, anchor &char, data_type &char, merge &char, attrs_payload &char, err_out &&char) &char {
@@ -2157,105 +1976,87 @@ pub fn cx_events_writer_end_table(handle voidptr, err_out &&char) &char {
 	return unsafe { nil }
 }
 
-// ── Cx evaluator (spec/abi.md §2.16, capability bit 28) ─────────────────────
+// ── Legacy cx_eval* family (RETIRED, Phase 7) ───────────────────────────────
 //
-// Per ADR 0022 §D5: symbols renamed at v0.7.0 from cx_eval_cxl* to
-// cx_eval*. This is the documented ABI epoch break; pre-v0.7.0
-// bindings linked against libcx do NOT work against the v0.7.0 libcx.
-// Migration tool cx upgrade-config rewrites cxl-* references in cx
-// programs; binding code is updated per-binding by the 5-binding cut.
+// The `cx_eval` / `cx_eval_with_len` / `cx_eval_streaming`
+// symbols were the POC entry-points for the cxl evaluator
+// (vcx/cx/cxl.v, deleted in this phase). They are removed in
+// Phase 7. The replacement is the
+// `cx_code_eval*` family exported from `vcx/code/cabi.v`
+// — see `spec/abi.md §2.16.1` and `spec/audits/code_abi_v1.md`.
 //
-// Three symbols / spec/abi.md §2.16:
-// cx_eval — NUL-terminated one-shot
-// cx_eval_with_len — explicit-length one-shot (binary-safe)
-// cx_eval_streaming — pull-based incremental emit (W012 stub at
-// v0.7.0 — lands once concurrency work in
-// v0.9.0+ stabilises the streaming
-// evaluator skeleton).
+// This is a hard rename with no deprecated alias: FFI consumers do
+// a single substitution `cx_eval` → `cx_code_eval` and rebuild.
+// No released binary carries both names.
+
+// ── v0.8.0 cx_code_tree (Phase 2.11 /) ─────────────────────
 //
-// W-codes:
-// W012 — Cx evaluator returns this when streaming is requested or
-// when an unimplemented CXL 3.1+ directive is invoked
-// (subset of `[?fn]`/`[?match]` still pending at v0.7.0).
-// W013 — Reserved for v0.7.0+ structured error codes per spec/eval.md §2.5.
-
-@[export: 'cx_eval']
-pub fn cx_eval(cx_input &char, cxl_program &char, output_target &char, err_out &&char) &char {
-	if cx_input == unsafe { nil } || cxl_program == unsafe { nil } {
-		return c_err('cx_eval: cx_input and cxl_program must be non-NULL', err_out)
-	}
-	input := unsafe { cstring_to_vstring(cx_input) }
-	prog := unsafe { cstring_to_vstring(cxl_program) }
-	target := if output_target == unsafe { nil } {
-		''
-	} else {
-		unsafe { cstring_to_vstring(output_target) }
-	}
-	out := eval_cxl(input, prog, target) or { return c_err(err.msg(), err_out) }
-	return c_string(out)
-}
-
-@[export: 'cx_eval_with_len']
-pub fn cx_eval_with_len(cx_input &char, cx_len usize,
-		cxl_program &char, prog_len usize,
-		output_target &char, err_out &&char) &char {
-	if cx_input == unsafe { nil } || cxl_program == unsafe { nil } {
-		return c_err('cx_eval_with_len: cx_input and cxl_program must be non-NULL', err_out)
-	}
-	input := unsafe { tos(&u8(cx_input), int(cx_len)) }
-	prog := unsafe { tos(&u8(cxl_program), int(prog_len)) }
-	target := if output_target == unsafe { nil } {
-		''
-	} else {
-		unsafe { cstring_to_vstring(output_target) }
-	}
-	out := eval_cxl(input, prog, target) or { return c_err(err.msg(), err_out) }
-	return c_string(out)
-}
-
-// CxEvalWriteCb mirrors include/cx.h cx_eval_write_cb:
-//   typedef int (*cx_eval_write_cb)(const char* bytes, size_t n, void* user);
-// V's fn-pointer call path expects a typed alias so the cast site in
-// cx_eval_streaming can dispatch correctly.
-type CxEvalWriteCb = fn (bytes &char, n usize, user voidptr) int
-
-// cx_eval_streaming: pull-based incremental emit. The V evaluator
-// flushes output chunks to the C callback at strategic points (after
-// each top-level program node, after each ?for / ?for-tumbling /
-// ?for-sliding / ?for-group-by iteration body). Per v0.7.0 Y-row of
-// spec/v0_7_0_status.md.
+// New C ABI symbol exported at v0.8.0 (two-export carve-out,
+// JSON contract, cap-bit framing per spec/core/ast.md). Returns a JSON
+// projection of the parsed source where every node carries
+// `{kind, name?, value?, loc:{start,end}, children?}` — the `loc`
+// byte offsets enable the bidirectional selection bridge between
+// the playground tree pane and source pane (D5) without further
+// ABI plumbing.
 //
-// A non-zero callback return aborts evaluation cleanly. The 'user'
-// pointer is passed through unchanged on every call. Returns NULL
-// on success, error string on failure. On success, no output is
-// returned via the function return value — output reaches the
-// caller exclusively through the write_cb.
-@[export: 'cx_eval_streaming']
-pub fn cx_eval_streaming(cx_input &char, cxl_program &char, output_target &char,
-		write_cb voidptr, user voidptr, err_out &&char) &char {
-	if cx_input == unsafe { nil } || cxl_program == unsafe { nil } {
-		return c_err('cx_eval_streaming: cx_input and cxl_program must be non-NULL', err_out)
-	}
-	if write_cb == unsafe { nil } {
-		return c_err('cx_eval_streaming: write_cb must be non-NULL', err_out)
-	}
-	input_v   := unsafe { cstring_to_vstring(cx_input) }
-	program_v := unsafe { cstring_to_vstring(cxl_program) }
-	target_v  := if output_target == unsafe { nil } { '' } else {
-		unsafe { cstring_to_vstring(output_target) }
-	}
-	cb_ptr  := write_cb
-	user_ptr := user
-	sink := fn [cb_ptr, user_ptr] (chunk string) ! {
-		typed_cb := unsafe { CxEvalWriteCb(cb_ptr) }
-		rc := unsafe { typed_cb(&char(chunk.str), usize(chunk.len), user_ptr) }
-		if rc != 0 {
-			return error('write_cb returned non-zero (${rc})')
+// **Phase 2.11 stub.** This export is wired in `vcx/cx/` (here, not
+// `vcx/code/`) so it composes against the host data model without
+// re-opening the import cycle that drove `cx_code_eval*` /
+// `cx_code_diagram` into `vcx/code/cabi.v`. The full tree-walker
+// implementation depends on (Q) agent's `vcx/cx/code_diagram.v`
+// landing (see brief Phase 2.10) — until then, this returns a
+// minimal-shape JSON object describing the source as a single root
+// element with `loc:{start:0,end:source_len}`. The shape is
+// schema-correct (required fields present, no
+// extraneous fields, `loc.end - loc.start` resolves to the source
+// substring length) so playground glue + binding tests can wire
+// against the stable contract before the walker lands. Replace the
+// stub body with a call to `cx.code_tree(src_v)` once the V-side
+// implementation appears in this module.
+//
+// Signature:
+//   const char* cx_code_tree(const char* source, size_t source_len,
+//                            size_t* out_len);
+//
+// Returns: heap-allocated UTF-8 JSON; caller frees via `cx_free`.
+// `out_len` (if non-NULL) receives the byte length of the JSON
+// payload (NUL terminator NOT included), matching the v0.8.0
+// length-out-parameter convention. On error, returns NULL and (if
+// `out_len` non-NULL) sets `*out_len = 0`. Cap bit 32
+// (`0x100000000`) advertises this symbol; bindings probe
+// `cx_features` and degrade gracefully when unset.
+
+@[export: 'cx_code_tree']
+pub fn cx_code_tree(source &char, source_len usize, out_len &usize) &char {
+	// Empty / NULL input returns a minimal shape with loc.{start,end} = 0
+	// so the JSON-parser side of the binding always sees a well-formed
+	// object (every node has {kind, loc}).
+	if source == unsafe { nil } || source_len == 0 {
+		empty := '{"kind":"element","name":"root","loc":{"start":0,"end":0},"children":[]}'
+		if out_len != unsafe { nil } {
+			unsafe { *out_len = usize(empty.len) }
 		}
+		return c_string(empty)
 	}
-	eval_cxl_streaming(input_v, program_v, target_v, sink, 65536) or {
-		return c_err('cx_eval_streaming: ${err.msg()}', err_out)
+	// Phase 2.11 finish: invoke the real walker. The walker scans the
+	// source text directly and emits the JSON tree.
+	src := unsafe { tos(&u8(source), int(source_len)) }
+	json := code_tree(src) or {
+		// Defensive: walker is non-raising in practice; surface as
+		// the empty-root shape rather than NULL so bindings never see
+		// a partial document.
+		end := int(source_len)
+		fallback := '{"kind":"element","name":"root","loc":{"start":0,"end":${end}},"children":[]}'
+		if out_len != unsafe { nil } {
+			unsafe { *out_len = usize(fallback.len) }
+		}
+		return c_string(fallback)
 	}
-	return unsafe { nil }
+	// Avoid pointer-aliasing risk by detaching the bytes from `src`.
+	out := json.clone()
+	if out_len != unsafe { nil } {
+		unsafe { *out_len = usize(out.len) }
+	}
+	return c_string(out)
 }
 

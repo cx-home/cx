@@ -1,4 +1,10 @@
-" cx.vim — Vim/Neovim syntax for CX markup/configuration
+" cx.vim — Vim/Neovim syntax for the CX language (v0.8.0 surface)
+"
+" v0.8.0 has NO Markdown sigils (lexicon [L83]): the retired heading
+" (`[# …]`), inline-markup (`[** …]`, `[* …]`, `[~~ …]`, `[~ …]`, `[^ …]`,
+" `[__ …]`, `[` …]`, `[> …]`), and fenced code-block (`[``` lang=X …]`)
+" surfaces are gone. `#`, `>`, `~`, `^`, the backtick are ordinary
+" content/operators, never element-head openers. `[#…#]` is RawText / CDATA.
 if exists("b:current_syntax") | finish | endif
 
 syn case match
@@ -7,18 +13,7 @@ syn case match
 syn region cxComment       start=/\[-/ end=/\]/ contains=cxComment,cxCommentBracket
 syn region cxCommentBracket start=/\[/  end=/\]/ contains=cxComment,cxCommentBracket contained
 
-" ── Headings  [# …] through [###### …]  (must come before raw-text) ──────────
-" Most-specific patterns first so [######] doesn't match as [#].
-syn region cxH6 matchgroup=cxH6Mark start=/\[######\(\s\|\]\)/  end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement,cxString
-syn region cxH5 matchgroup=cxH5Mark start=/\[#####\(\s\|\]\)/   end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement,cxString
-syn region cxH4 matchgroup=cxH4Mark start=/\[####\(\s\|\]\)/    end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement,cxString
-syn region cxH3 matchgroup=cxH3Mark start=/\[###\(\s\|\]\)/     end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement,cxString
-syn region cxH2 matchgroup=cxH2Mark start=/\[##\(\s\|\]\)/      end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement,cxString
-syn region cxH1 matchgroup=cxH1Mark start=/\[#\(\s\|\]\)/       end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement,cxString
-" Alias for contains= lists
-syn cluster cxHeadings contains=cxH1,cxH2,cxH3,cxH4,cxH5,cxH6
-
-" ── Raw text  [# … #] ─────────────────────────────────────────────────────────
+" ── Raw text  [# … #]  (CDATA, grammar.ebnf [31]) ─────────────────────────────
 syn region cxRawText start=/\[#/ end=/#\]/
 
 " ── Block content  [| … |] ────────────────────────────────────────────────────
@@ -27,29 +22,79 @@ syn region cxBlockContent start=/\[|/ end=/|\]/
 " ── Triple-quoted  ''' … ''' ──────────────────────────────────────────────────
 syn region cxTripleQuoted start=/'''/ end=/'''/
 
-" ── Inline markup ─────────────────────────────────────────────────────────────
-" bold must come before italic; strikethrough before subscript
-syn region cxBold        matchgroup=cxMarkupTag start=/\[\*\*/             end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement
-syn region cxItalic      matchgroup=cxMarkupTag start=/\[\*\ze[^a-zA-Z_*]/ end=/\]/ contains=cxBold,cxItalic,cxInlineCode,cxElement
-syn region cxStrike      matchgroup=cxMarkupTag start=/\[~~/               end=/\]/ contains=cxBold,cxItalic
-syn region cxSubscript   matchgroup=cxMarkupTag start=/\[~\ze[^~]/         end=/\]/ contains=cxBold,cxItalic
-syn region cxSuperscript matchgroup=cxMarkupTag start=/\[\^/               end=/\]/ contains=cxBold,cxItalic
-syn region cxUnderline   matchgroup=cxMarkupTag start=/\[__/               end=/\]/ contains=cxBold,cxItalic
-syn region cxInlineCode  matchgroup=cxMarkupTag start=/\[`\ze[^`]/         end=/\]/
-
-" ── Blockquote  [> …] ─────────────────────────────────────────────────────────
-syn region cxBlockquote matchgroup=cxMarkupTag start=/\[>/ end=/\]/
-  \ contains=cxBold,cxItalic,cxInlineCode,cxElement
-
 " ── PI  [? … ] ────────────────────────────────────────────────────────────────
-syn match cxPI /\[\?[^\]]*\]/
+" v0.8.0: directive interior is opaque at the Vim syntax layer (same
+" structural-only discipline as tree-sitter). Per-directive interior
+" coloring (modify action clauses, match arm clauses, CXPath axes) is
+" delivered by `cx lsp` semanticTokens. Directives recognised at v0.8.0:
+"   * [?modify] (code.md §8.10 — [set] / [delete] / [using] / [rename] /
+"     [set-attr] / [delete-attr] / [append] / [prepend] / [insert-before] /
+"     [insert-after] / [replace])
+"   * [?match]  (code.md §8.2 — multi-arm with [case] / [when] / [else] /
+"     [where] clause-children; wildcard _)
+"   * [?for] / [?for-array] / [?for-map] / [?let] / [?fn] / [?if] /
+"     [?def] / [?lib] / [?const] / [?pipe] / iterator stdlib /
+"     resilience / services / concurrency / async / with-* family
+"     (full registry per code.md §4.1; `find`, `try`, `par-map`,
+"     `par-reduce` are retired and not in the registry).
+" A REGION (not a single match) so bracket-bearing directives ([?pipe] with
+" [tap …], [?let [= $x E] …], [?fn …], iterator/concurrency/with-* families)
+" don't fragment on nested `]`: nested bracket items are contained and consume
+" their own `]`, so the outer directive continues. The head `[?name` colors as
+" the directive; the body is transparent so children keep their own colors.
+syn region cxPI matchgroup=cxPIHead
+  \ start=/\[?[a-z][a-z0-9-]*/ end=/\]/
+  \ transparent
+  \ contains=cxComment,cxRawText,cxBlockContent,cxTripleQuoted,cxPI,cxDecl,
+  \   cxCall,cxOperator,cxAlias,cxElement,cxCXPathPrefix,cxCXPathAxis,
+  \   cxProgramBinding,cxAttribute,cxTypeAnnotation,cxAtom,cxFloat,cxInteger,
+  \   cxBoolean,cxNull,cxString,cxEntityRef
+
+" ── Declaration / doctype  [!…]  (lexicon [L83] structural opener) ─────────────
+syn match cxDecl /\[![^\]]*\]/
+
+" ── Call  [$name …] / module member [$prefix:local …]  (code.md §6.3) ─────────
+" The `[$` structural opener glues to the head Name. The head colors as a
+" function; the body is transparent so arguments keep their own highlighting.
+" Symbolic operator heads ([+ …], [= …], [- …], [* …], …) are NOT modelled —
+" `-`/`*` collide with [- comment / [* alias, `=`/`<`/`>` with attr/path; that
+" coloring is `cx lsp`'s job.
+syn region cxCall matchgroup=cxCallHead
+  \ start=/\[\$[a-zA-Z_][a-zA-Z0-9._:-]*/ end=/\]/
+  \ transparent
+  \ contains=cxComment,cxRawText,cxBlockContent,cxTripleQuoted,cxPI,cxDecl,
+  \   cxCall,cxOperator,cxAlias,cxElement,cxProgramBinding,cxAttribute,
+  \   cxTypeAnnotation,cxAtom,cxFloat,cxInteger,cxBoolean,cxNull,cxString,cxEntityRef
+
+" ── Operator head  [op …]  (code.md §6.5 reserved bare operators) ─────────────
+" `+ * / = != < <= > >= and or not cast`. A trailing space after the op keeps
+" `[* …]` multiply distinct from the `[*name]` alias. Subtraction `[- …]` is the
+" by-design data↔program comment/operator fork — left as a comment (cxComment),
+" coloring deferred to `cx lsp`.
+syn region cxOperator matchgroup=cxOperatorHead
+  \ start=/\[\(!=\|<=\|>=\|+\|\*\|\/\|=\|<\|>\|and\|or\|not\|cast\)\ze\s/ end=/\]/
+  \ transparent
+  \ contains=cxComment,cxRawText,cxBlockContent,cxTripleQuoted,cxPI,cxDecl,
+  \   cxCall,cxOperator,cxAlias,cxElement,cxProgramBinding,cxAttribute,
+  \   cxTypeAnnotation,cxAtom,cxFloat,cxInteger,cxBoolean,cxNull,cxString,cxEntityRef
+
+" ── CXPath value expressions (code.md §5.5) ──────────────────────────────────────
+" Top-level `//descendant` / `/child` selectors. Match-fragment only —
+" tree-sitter / LSP semanticTokens handle interior detail.
+syn match cxCXPathPrefix /\v\/\/?\ze[A-Za-z_*@]/
+syn match cxCXPathAxis /\v(child|descendant-or-self|descendant|parent|ancestor-or-self|ancestor|following-sibling|preceding-sibling|following|preceding|self|attribute)::/
+
+" ── v0.8.0 code bindings  $name (spec/code.md §3.6) ──────────────────────────
+syn match cxProgramBinding /\$[a-zA-Z_][a-zA-Z0-9_-]*/
 
 " ── Alias  [*name] ────────────────────────────────────────────────────────────
 syn match cxAlias /\[\*[a-zA-Z_][a-zA-Z0-9._-]*\]/
 
-" ── Type annotations  :int  :string[]  :[] ───────────────────────────────────
-syn match cxTypeAnnotation /:\(int\|float\|bool\|string\|null\)\(\[\]\)\?/
-syn match cxTypeAnnotation /:\(\[\]\)/
+" ── Type annotations  ::int  ::string[]  ::[]  (glued, grammar.ebnf [26]) ─────
+" Single-colon `:name` is an atom literal (code.md §3.6), never a type.
+syn match cxTypeAnnotation /::\([A-Za-z][A-Za-z0-9_-]*\)\(\[\]\)\?/
+syn match cxTypeAnnotation /::\(\[\]\)/
+syn match cxAtom /\(:\)\@<!:[A-Za-z_][A-Za-z0-9_-]*/
 
 " ── Scalar values ─────────────────────────────────────────────────────────────
 syn match   cxFloat   /-\?\b[0-9]\+\.[0-9]\+\([eE][+-]\?[0-9]\+\)\?\b/
@@ -71,87 +116,29 @@ syn match cxAttribute
   \ /[a-zA-Z_][a-zA-Z0-9._-]*\s*=\s*\("[^"]*"\|'[^']*'\|[^\s\]]*\)/
   \ contains=cxAttrName,cxAttrEq,cxAttrValue
 
-" ── Embedded-language code blocks  [``` lang=LANG [| … |] ] ──────────────────
-" Helper: load a runtime syntax file into a cluster, then define the two regions.
-" Usage: call s:EmbedLang('JSON', 'json', 'json')
-"        call s:EmbedLang('Bash', '\(bash\|sh\|shell\)', 'sh')
-function! s:EmbedLang(tag, lang_re, runtime) abort
-  let save = get(b:, 'current_syntax', '')
-  unlet! b:current_syntax
-  try | exe 'syn include @cx' . a:tag . 'Syn syntax/' . a:runtime . '.vim' | catch | endtry
-  if save != '' | let b:current_syntax = save | endif
-
-  exe 'syn region cxCode' . a:tag
-    \ . ' matchgroup=cxCodeFence'
-    \ . ' start=/\[```[^\]]*lang[=:]' . a:lang_re . '/'
-    \ . ' end=/\]/'
-    \ . ' contains=cxEmbed' . a:tag . ',cxAttribute'
-  exe 'syn region cxEmbed' . a:tag
-    \ . ' start=/\[|/ end=/|\]/ contained'
-    \ . ' contains=@cx' . a:tag . 'Syn'
-endfunction
-
-call s:EmbedLang('JSON',   'json',                      'json')
-call s:EmbedLang('XML',    'xml',                        'xml')
-call s:EmbedLang('CSS',    'css',                        'css')
-call s:EmbedLang('HTML',   'html',                       'html')
-call s:EmbedLang('JS',     '\(js\|javascript\)',          'javascript')
-call s:EmbedLang('Python', '\(python\|py\)',              'python')
-call s:EmbedLang('Bash',   '\(bash\|sh\|shell\)',         'sh')
-call s:EmbedLang('SQL',    'sql',                        'sql')
-call s:EmbedLang('YAML',   '\(yaml\|yml\)',               'yaml')
-
-" Generic code block (no embedded highlighting)
-syn region cxCodeBlock matchgroup=cxCodeFence start=/\[```/ end=/\]/
-  \ contains=cxBlockContent,cxAttribute
-
-" Nested CX inside [``` lang=cx [| … |] ]
-syn region cxCodeCX matchgroup=cxCodeFence
-  \ start=/\[```[^\]]*lang[=:]cx/ end=/\]/
-  \ contains=cxEmbedCX,cxAttribute
-syn region cxEmbedCX start=/\[|/ end=/|\]/ contained contains=TOP
-
-" ── Prose element regions ─────────────────────────────────────────────────────
-" Known MD/markup elements highlighted with cxProseTag (distinct from cxTag).
-" Must be defined before cxElement so Vim gives it higher priority on match.
-syn region cxProseElement matchgroup=cxProseTag
-  \ start=/\[\(p\|ul\|ol\|li\|table\|hr\|br\|a\|img\|doc\|article\|strong\|b\|em\|i\|del\|s\|u\|sub\|sup\|c\)\ze\([\s\]]\)/ end=/\]/
-  \ transparent
-  \ contains=cxComment,@cxHeadings,cxRawText,cxBlockContent,cxTripleQuoted,
-  \   cxCodeJSON,cxCodeXML,cxCodeCSS,cxCodeHTML,cxCodeJS,cxCodePython,
-  \   cxCodeBash,cxCodeSQL,cxCodeYAML,cxCodeCX,cxCodeBlock,
-  \   cxBold,cxItalic,cxStrike,cxSubscript,cxSuperscript,cxUnderline,
-  \   cxInlineCode,cxBlockquote,cxPI,cxAlias,cxProseElement,cxElement,
-  \   cxAttribute,cxTypeAnnotation,cxFloat,cxInteger,cxBoolean,cxNull,
-  \   cxString,cxEntityRef
-
 " ── Element regions ───────────────────────────────────────────────────────────
 " matchgroup highlights [tagname … and … ] with cxTag; content is transparent.
 " Listed order of contains determines priority at the same start position.
 syn region cxElement matchgroup=cxTag
   \ start=/\[[a-zA-Z_][a-zA-Z0-9._-]*/ end=/\]/
   \ transparent
-  \ contains=cxComment,@cxHeadings,cxRawText,cxBlockContent,cxTripleQuoted,
-  \   cxCodeJSON,cxCodeXML,cxCodeCSS,cxCodeHTML,cxCodeJS,cxCodePython,
-  \   cxCodeBash,cxCodeSQL,cxCodeYAML,cxCodeCX,cxCodeBlock,
-  \   cxBold,cxItalic,cxStrike,cxSubscript,cxSuperscript,cxUnderline,
-  \   cxInlineCode,cxBlockquote,cxPI,cxAlias,cxProseElement,cxElement,
-  \   cxAttribute,cxTypeAnnotation,cxFloat,cxInteger,cxBoolean,cxNull,
-  \   cxString,cxEntityRef
+  \ contains=cxComment,cxRawText,cxBlockContent,cxTripleQuoted,cxPI,cxDecl,
+  \   cxCall,cxOperator,cxAlias,cxElement,cxProgramBinding,cxAttribute,
+  \   cxTypeAnnotation,cxAtom,cxFloat,cxInteger,cxBoolean,cxNull,cxString,cxEntityRef
 
 " ── Highlight links ───────────────────────────────────────────────────────────
-" Use treesitter @markup.* groups on Neovim (picked up by modern colorschemes);
+" Use treesitter @* groups on Neovim (picked up by modern colorschemes);
 " fall back to classic Vim groups elsewhere.
-" tokyonight palette notes (storm/night):
-"   @function → Function → c.blue      (#7aa2f7)  — used for element names
-"   @property → c.green1  (#73daca)               — used for attr names
-"   @type     → Type      → c.blue1    (#2ac3de)  — used for type annotations
-"   @operator → c.blue5                            — used for =
-"   @markup.* → structural markup (bold/italic/etc)
-"   @tag      → Label → Statement → c.magenta     — AVOID (pink-purple)
-"   @keyword  → c.purple                           — AVOID (purple)
+"   @function → element names / call heads
+"   @property → attr names
+"   @type     → type annotations
+"   @operator → =
 
 if has('nvim')
+  " v0.8.0 CXPath highlights
+  hi def link cxCXPathPrefix   @keyword.operator
+  hi def link cxCXPathAxis     @keyword.coroutine
+
   " comments, strings, scalars
   hi def link cxComment        @comment
   hi def link cxString         @string
@@ -163,49 +150,31 @@ if has('nvim')
   hi def link cxNull           @constant.builtin
   hi def link cxEntityRef      @string.special
 
-  " headings — @markup.heading.N gives rainbow levels in tokyonight
-  hi def link cxH1Mark         @markup.heading.1
-  hi def link cxH1             @markup.heading.1
-  hi def link cxH2Mark         @markup.heading.2
-  hi def link cxH2             @markup.heading.2
-  hi def link cxH3Mark         @markup.heading.3
-  hi def link cxH3             @markup.heading.3
-  hi def link cxH4Mark         @markup.heading.4
-  hi def link cxH4             @markup.heading.4
-  hi def link cxH5Mark         @markup.heading.5
-  hi def link cxH5             @markup.heading.5
-  hi def link cxH6Mark         @markup.heading.6
-  hi def link cxH6             @markup.heading.6
+  " raw text / block content — opaque literal payloads
+  hi def link cxRawText        @string.special
+  hi def link cxBlockContent   @string
 
-  " inline markup — delimiters are dimmed so styled content stands out
-  hi def link cxMarkupTag      @comment
-  hi def link cxBold           @markup.strong
-  hi def link cxItalic         @markup.italic
-  hi def link cxStrike         @markup.strikethrough
-  hi def link cxSubscript      @markup.italic
-  hi def link cxSuperscript    @markup.italic
-  hi def link cxUnderline      @markup.underline
-  hi def link cxInlineCode     @markup.raw
-  hi def link cxBlockquote     @markup.quote
-  hi def link cxRawText        @markup.raw
-  hi def link cxBlockContent   @markup.raw
-
-  " elements — @function (blue) not @tag (magenta/pink-purple)
-  " prose elements — @markup.link (teal/cyan) distinct from domain @function
+  " elements + calls — @function (blue) not @tag (magenta/pink-purple)
   hi def link cxTag            @function
-  hi def link cxProseTag       @markup.link
-  hi def link cxCodeFence      @punctuation.special
+  hi def link cxCallHead       @function.call
+  hi def link cxOperatorHead   @operator
+  hi def link cxPIHead         @keyword.directive
   hi def link cxPI             @keyword.directive
+  hi def link cxDecl           @keyword.directive
   hi def link cxAlias          @variable.member
+  hi def link cxProgramBinding @variable.parameter
 
   " attributes
   hi def link cxAttrName       @property
   hi def link cxAttrEq         @operator
   hi def link cxAttrValue      @string
 
-  " type annotations
+  " type annotations + atoms
   hi def link cxTypeAnnotation @type
+  hi def link cxAtom           @constant
 else
+  hi def link cxCXPathPrefix   Operator
+  hi def link cxCXPathAxis     Statement
   hi def link cxComment        Comment
   hi def link cxString         String
   hi def link cxTripleQuoted   String
@@ -215,38 +184,21 @@ else
   hi def link cxBoolean        Boolean
   hi def link cxNull           Constant
   hi def link cxEntityRef      Special
-  hi def link cxH1Mark         Title
-  hi def link cxH1             Title
-  hi def link cxH2Mark         Title
-  hi def link cxH2             Title
-  hi def link cxH3Mark         Title
-  hi def link cxH3             Title
-  hi def link cxH4Mark         Title
-  hi def link cxH4             Title
-  hi def link cxH5Mark         Title
-  hi def link cxH5             Title
-  hi def link cxH6Mark         Title
-  hi def link cxH6             Title
-  hi def link cxMarkupTag      Comment
-  hi def link cxBold           Bold
-  hi def link cxItalic         Italic
-  hi def link cxStrike         Comment
-  hi def link cxSubscript      Special
-  hi def link cxSuperscript    Special
-  hi def link cxUnderline      Underlined
-  hi def link cxInlineCode     Constant
-  hi def link cxBlockquote     String
   hi def link cxRawText        String
   hi def link cxBlockContent   String
   hi def link cxTag            Function
-  hi def link cxProseTag       Special
-  hi def link cxCodeFence      Special
+  hi def link cxCallHead       Function
+  hi def link cxOperatorHead   Operator
+  hi def link cxPIHead         PreProc
   hi def link cxPI             PreProc
+  hi def link cxDecl           PreProc
   hi def link cxAlias          Identifier
+  hi def link cxProgramBinding Identifier
   hi def link cxAttrName       Identifier
   hi def link cxAttrEq         Operator
   hi def link cxAttrValue      String
   hi def link cxTypeAnnotation Type
+  hi def link cxAtom           Constant
 endif
 
 let b:current_syntax = "cx"

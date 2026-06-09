@@ -1,13 +1,21 @@
 pub mod ast;
+pub mod atom;
 pub mod binary;
-pub mod cxpath;
+pub mod code;
 pub mod data_bin;
 pub mod event_writer;
+pub mod fixtures;
+pub mod idioms;
 pub mod schema_driven;
 pub mod stream;
 pub mod streaming_table;
 pub mod validate;
 pub mod table;
+
+// Layer-1 atom re-exports — keep the top-level surface flat
+// per spec/bindings.md (Rust uses snake_case + free functions at the
+// crate root for the Layer-1 primitives).
+pub use atom::{Atom, is_atom, atom_name};
 
 #[cfg(feature = "arrow")]
 pub mod arrow;
@@ -35,6 +43,8 @@ extern "C" {
 
     fn cx_free(s: *mut c_char);
     fn cx_version() -> *mut c_char;
+    fn cx_abi_version() -> *mut c_char;
+    fn cx_features() -> *mut c_char;
 
     // CX input
     fn cx_to_cx         (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -45,24 +55,47 @@ extern "C" {
     fn cx_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
-    // CXL evaluator (capability bit 28; spec/eval.md)
-    fn cx_eval(
-        input: *const c_char,
-        program: *const c_char,
+    // v0.7.6 CX code evaluator family (spec/abi.md §2.16.1).
+    // Replaces cx_eval / cx_eval_streaming retired in Phase 7. The
+    // Rust binding only links the *_with_len + *_streaming variants —
+    // the NUL-terminated `cx_code_eval` symbol is exposed by libcx
+    // but never used here (we always have an explicit length and
+    // bytes may contain NULs per spec/abi.md §2.14).
+    fn cx_code_eval_with_len(
+        input: *const c_char,        input_len: usize,
+        program: *const c_char,      program_len: usize,
         output_target: *const c_char,
         err_out: *mut *mut c_char,
     ) -> *mut c_char;
-
-    // Streaming evaluator (v0.7.0 Y-row; spec/eval.md §6 + spec/v0_7_0_status.md Y)
-    fn cx_eval_streaming(
-        input: *const c_char,
-        program: *const c_char,
+    fn cx_code_eval_streaming(
+        input: *const c_char,        input_len: usize,
+        program: *const c_char,      program_len: usize,
         output_target: *const c_char,
         write_cb: extern "C" fn(*const c_char, usize, *mut c_void) -> c_int,
         user: *mut c_void,
         err_out: *mut *mut c_char,
+    ) -> *mut c_char;
+    // v0.7.6 program diagram renderer (spec/abi.md §2.16.2, gate 17).
+    // Error wire format: in-band CXERnnnn:msg in the returned string.
+    // Symbol name on the C side is `cx_code_diagram`; aliased on the
+    // Rust side to avoid a collision with the public `cx_code_diagram`
+    // wrapper free function below.
+    #[link_name = "cx_code_diagram"]
+    fn ffi_cx_code_diagram(
+        source: *const c_char, source_len: usize,
+        format: *const c_char, format_len: usize,
+    ) -> *mut c_char;
+    // v0.8.0 cx_code_tree (Phase 2.11, cap bit 32).
+    // Returns heap-allocated UTF-8 JSON; caller frees via cx_free.
+    // `out_len` (if non-NULL) receives the byte length of the JSON
+    // payload (NUL terminator NOT included). On error returns NULL
+    // and sets `*out_len = 0`. Aliased on the Rust side for the same
+    // reason as `ffi_cx_code_diagram`.
+    #[link_name = "cx_code_tree"]
+    fn ffi_cx_code_tree(
+        source: *const c_char, source_len: usize,
+        out_len: *mut usize,
     ) -> *mut c_char;
 
     // XML input
@@ -72,7 +105,6 @@ extern "C" {
     fn cx_xml_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_xml_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_xml_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_xml_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // JSON input
     fn cx_json_to_cx  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -81,7 +113,6 @@ extern "C" {
     fn cx_json_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_json_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_json_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_json_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // YAML input
     fn cx_yaml_to_cx  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -90,7 +121,6 @@ extern "C" {
     fn cx_yaml_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_yaml_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_yaml_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_yaml_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // TOML input
     fn cx_toml_to_cx  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -99,16 +129,6 @@ extern "C" {
     fn cx_toml_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_toml_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_toml_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_toml_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-
-    // MD input
-    fn cx_md_to_cx  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_xml (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_ast (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // Binary output (CX input only)
     fn cx_to_ast_bin   (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -117,9 +137,9 @@ extern "C" {
     ) -> *mut c_char;
     fn cx_to_events_bin(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
-    // CXPath path-tracking C ABI (Phase 4 / CB-5).
-    fn cx_select_all_paths(input: *const c_char, expr: *const c_char,
-                           err_out: *mut *mut c_char) -> *mut c_char;
+    // (CXPath path-tracking C ABI cx_select_all_paths was retired at
+    // v0.7.6 Phase 7. Equivalent: cx_code_eval with a `//path` CXPath
+    // value — see vcx/README.md migration table.)
 
     // Phase 5 / CB-1 — ast_bin → text format
     fn cx_ast_bin_to_cx  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -127,14 +147,12 @@ extern "C" {
     fn cx_ast_bin_to_json(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_ast_bin_to_yaml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_ast_bin_to_toml(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_ast_bin_to_md  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // Phase 5 / CB-2 — text → ast_bin (returns framed binary)
     fn cx_xml_to_ast_bin (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_json_to_ast_bin(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_yaml_to_ast_bin(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_toml_to_ast_bin(input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_ast_bin  (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
     // Phase 5 / CB-4 — events handle API
     fn cx_events_open (input: *const c_char, err_out: *mut *mut c_char) -> *mut std::ffi::c_void;
@@ -147,16 +165,18 @@ extern "C" {
     fn cx_hash     (input: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_eq       (a: *const c_char, b: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
-    // Phase 7.47 — cx diff (ADR 0012). format = "unified" | "json" | "summary".
+    // Phase 7.47 — cx diff. format = "unified" | "json" | "summary".
     fn cx_diff     (a: *const c_char, b: *const c_char, format: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
-    // Phase 7.49 — cx lint (ADR 0013). format = "text" | "json" | "summary".
+    // Phase 7.49 — cx lint. format = "text" | "json" | "summary".
     fn cx_lint     (input: *const c_char, format: *const c_char, disabled: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
 
-    // Phase 7.65 — ID/IDREF C ABI (ADR 0003).
+    // Phase 7.65 — ID/IDREF C ABI.
     fn cx_id_lookup  (input: *const c_char, id: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_resolve_ref(input: *const c_char, r#ref: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_node_id    (input: *const c_char, cxpath: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
+    // (cx_node_id was retired at v0.7.6 Phase 7 alongside CXPath. The
+    // equivalent in v0.8.0 is cx_code_eval with a `//pattern` CXPath
+    // value, then reading @id from each match.)
 
 }
 
@@ -219,7 +239,6 @@ pub(crate) fn call_ast_bin_to_text(ast_bin: &[u8], fn_name: &str) -> Result<Stri
             "cx_ast_bin_to_json" => cx_ast_bin_to_json(p, &mut err_ptr),
             "cx_ast_bin_to_yaml" => cx_ast_bin_to_yaml(p, &mut err_ptr),
             "cx_ast_bin_to_toml" => cx_ast_bin_to_toml(p, &mut err_ptr),
-            "cx_ast_bin_to_md"   => cx_ast_bin_to_md  (p, &mut err_ptr),
             other => return Err(format!("unknown ast_bin_to_* function: {}", other)),
         }
     };
@@ -248,7 +267,6 @@ pub(crate) fn call_text_to_ast_bin(input: &str, fn_name: &str) -> Result<Vec<u8>
             "cx_json_to_ast_bin" => cx_json_to_ast_bin(c_input.as_ptr(), &mut err_ptr),
             "cx_yaml_to_ast_bin" => cx_yaml_to_ast_bin(c_input.as_ptr(), &mut err_ptr),
             "cx_toml_to_ast_bin" => cx_toml_to_ast_bin(c_input.as_ptr(), &mut err_ptr),
-            "cx_md_to_ast_bin"   => cx_md_to_ast_bin  (c_input.as_ptr(), &mut err_ptr),
             other => return Err(format!("unknown text_to_ast_bin function: {}", other)),
         }
     };
@@ -346,63 +364,9 @@ impl Drop for EventStream {
     fn drop(&mut self) { self.close(); }
 }
 
-/// Call cx_select_all_paths and decode the framed [u32 size][payload]
-/// output into a list of structural paths. Each path is a `Vec<usize>`
-/// of 0-based indices: first into Document.elements, subsequent into
-/// Element.items. Match order is preorder (same as cx_select_all).
-pub(crate) fn select_all_paths(cx_text: &str, expr: &str) -> Result<Vec<Vec<usize>>, String> {
-    ensure_thread();
-    let c_input = CString::new(cx_text).map_err(|e| e.to_string())?;
-    let c_expr  = CString::new(expr).map_err(|e| e.to_string())?;
-    let mut err_ptr: *mut c_char = ptr::null_mut();
-    let raw_ptr: *mut c_char = unsafe {
-        cx_select_all_paths(c_input.as_ptr(), c_expr.as_ptr(), &mut err_ptr)
-    };
-    if raw_ptr.is_null() {
-        if err_ptr.is_null() {
-            return Err("unknown error".to_owned());
-        }
-        let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
-        unsafe { cx_free(err_ptr) };
-        return Err(msg);
-    }
-    let payload = unsafe {
-        let hdr = std::slice::from_raw_parts(raw_ptr as *const u8, 4);
-        let size = u32::from_le_bytes([hdr[0], hdr[1], hdr[2], hdr[3]]) as usize;
-        let payload_ptr = raw_ptr.add(4) as *const u8;
-        let bytes = std::slice::from_raw_parts(payload_ptr, size).to_vec();
-        cx_free(raw_ptr);
-        bytes
-    };
-    if payload.len() < 4 {
-        return Err("cx_select_all_paths: payload too short".to_owned());
-    }
-    let n_paths = u32::from_le_bytes([payload[0], payload[1], payload[2], payload[3]]) as usize;
-    let mut off = 4;
-    let mut out = Vec::with_capacity(n_paths);
-    for i in 0..n_paths {
-        if off + 4 > payload.len() {
-            return Err(format!("cx_select_all_paths: truncated path[{}] depth", i));
-        }
-        let depth = u32::from_le_bytes([
-            payload[off], payload[off+1], payload[off+2], payload[off+3],
-        ]) as usize;
-        off += 4;
-        if off + 4 * depth > payload.len() {
-            return Err(format!("cx_select_all_paths: truncated path[{}] indices", i));
-        }
-        let mut path = Vec::with_capacity(depth);
-        for _ in 0..depth {
-            let v = u32::from_le_bytes([
-                payload[off], payload[off+1], payload[off+2], payload[off+3],
-            ]) as usize;
-            path.push(v);
-            off += 4;
-        }
-        out.push(path);
-    }
-    Ok(out)
-}
+// (select_all_paths helper retired at v0.7.6 Phase 7 alongside CXPath.
+// Equivalent: build a `//pattern` CXPath value and eval it
+// with eval_code.)
 
 // ── internal helpers ───────────────────────────────────────────────────────────
 
@@ -480,7 +444,7 @@ fn extract_bin_payload(raw_ptr: *mut c_char, err_ptr: *mut c_char) -> Result<Vec
     Ok(payload)
 }
 
-// ── version ────────────────────────────────────────────────────────────────────
+// ── version + capability bitmask ──────────────────────────────────────────────
 
 pub fn version() -> String {
     ensure_thread();
@@ -490,6 +454,43 @@ pub fn version() -> String {
         cx_free(ptr);
         s
     }
+}
+
+/// Returns libcx's ABI major.minor version string (e.g., `"2.0"`).
+/// Bindings call this on load and refuse mismatched majors per
+/// spec/abi.md §1.1.
+pub fn abi_version() -> String {
+    ensure_thread();
+    unsafe {
+        let ptr = cx_abi_version();
+        let s = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+        cx_free(ptr);
+        s
+    }
+}
+
+/// Returns the libcx capability bitmask as a u64. Parses the
+/// NUL-terminated lowercase hex string from `cx_features()` per
+/// spec/abi.md §3. Returns 0 on parse failure (zero bitmask cleanly
+/// disables every capability gate; for explicit error handling see
+/// the per-capability probes in this module).
+///
+/// To check for atom support (cap bit 33):
+///
+/// ```ignore
+/// if cxlib::features() & (1u64 << 33) != 0 { /* atoms available */ }
+/// ```
+pub fn features() -> u64 {
+    ensure_thread();
+    let s = unsafe {
+        let ptr = cx_features();
+        let s = CStr::from_ptr(ptr).to_string_lossy().into_owned();
+        cx_free(ptr);
+        s
+    };
+    // Strip leading `0x` if present, then parse as hex.
+    let trimmed = s.strip_prefix("0x").unwrap_or(&s);
+    u64::from_str_radix(trimmed, 16).unwrap_or(0)
 }
 
 // ── public API ─────────────────────────────────────────────────────────────────
@@ -514,7 +515,6 @@ wrap! {
     to_json => cx_to_json;
     to_yaml => cx_to_yaml;
     to_toml => cx_to_toml;
-    to_md   => cx_to_md;
 
     // XML input
     xml_to_cx   => cx_xml_to_cx;
@@ -523,7 +523,6 @@ wrap! {
     xml_to_json => cx_xml_to_json;
     xml_to_yaml => cx_xml_to_yaml;
     xml_to_toml => cx_xml_to_toml;
-    xml_to_md   => cx_xml_to_md;
 
     // JSON input
     json_to_cx   => cx_json_to_cx;
@@ -532,7 +531,6 @@ wrap! {
     json_to_json => cx_json_to_json;
     json_to_yaml => cx_json_to_yaml;
     json_to_toml => cx_json_to_toml;
-    json_to_md   => cx_json_to_md;
 
     // YAML input
     yaml_to_cx   => cx_yaml_to_cx;
@@ -541,7 +539,6 @@ wrap! {
     yaml_to_json => cx_yaml_to_json;
     yaml_to_yaml => cx_yaml_to_yaml;
     yaml_to_toml => cx_yaml_to_toml;
-    yaml_to_md   => cx_yaml_to_md;
 
     // TOML input
     toml_to_cx   => cx_toml_to_cx;
@@ -550,16 +547,6 @@ wrap! {
     toml_to_json => cx_toml_to_json;
     toml_to_yaml => cx_toml_to_yaml;
     toml_to_toml => cx_toml_to_toml;
-    toml_to_md   => cx_toml_to_md;
-
-    // MD input
-    md_to_cx   => cx_md_to_cx;
-    md_to_xml  => cx_md_to_xml;
-    md_to_ast  => cx_md_to_ast;
-    md_to_json => cx_md_to_json;
-    md_to_yaml => cx_md_to_yaml;
-    md_to_toml => cx_md_to_toml;
-    md_to_md   => cx_md_to_md;
 }
 
 // ── binary API ─────────────────────────────────────────────────────────────────
@@ -611,8 +598,6 @@ pub fn eq(a: &str, b: &str) -> Result<bool, String> {
 /// Style + correctness warnings. `format` is `"text"`, `"json"`, or
 /// `"summary"`. `disabled` is a comma-separated list of check IDs to
 /// suppress (`""` runs all). Empty result means no findings.
-///
-/// Per `spec/decisions/0013-cx-lint.md`.
 pub fn lint(input: &str, format: &str, disabled: &str) -> Result<String, String> {
     ensure_thread();
     let ci = CString::new(input).map_err(|e| e.to_string())?;
@@ -636,8 +621,6 @@ pub fn lint(input: &str, format: &str, disabled: &str) -> Result<String, String>
 /// Semantic diff between two CX inputs, walking the strict-canonical
 /// forms. `format` is `"unified"`, `"json"`, or `"summary"`. Empty
 /// result means data-equivalent.
-///
-/// Per `spec/decisions/0012-cx-diff.md`.
 pub fn diff(a: &str, b: &str, format: &str) -> Result<String, String> {
     ensure_thread();
     let ca = CString::new(a).map_err(|e| e.to_string())?;
@@ -658,7 +641,7 @@ pub fn diff(a: &str, b: &str, format: &str) -> Result<String, String> {
     Ok(s)
 }
 
-// ── Phase 7.65 / ID/IDREF C ABI (ADR 0003) ───────────────────────────────────
+// ── Phase 7.65 / ID/IDREF C ABI ───────────────────────────────────
 
 /// Shared shape for the three ID/IDREF wrappers: takes two strings and an
 /// err pointer, returns `Ok(None)` for empty result, `Ok(Some(s))` for a
@@ -686,20 +669,30 @@ fn call_id_abi(
     if s.is_empty() { Ok(None) } else { Ok(Some(s)) }
 }
 
-/// Evaluate a CXL program against a CX context document and return the
-/// rendered output. `output_target` may be `""` (honour the program's
-/// `[?cx output-target=…]` directive, default `"text"`) or one of
-/// `"text"` / `"cx"` / `"html"` at CXL 1.0 (v0.6.0).
-pub fn eval_cxl(input: &str, program: &str, output_target: &str) -> Result<String, String> {
+/// Evaluate a CX code program against an optional input document
+/// and return the rendered output. `output_target` may be `""`
+/// (default `"text"`) or one of `"text"` / `"cx"` / `"json"` /
+/// `"yaml"` / `"xml"` / `"csv"` / `"tsv"` / `"mermaid"` (the last
+/// renders the program AST per spec/code.md §10.1.2).
+///
+/// Binary-safe per spec/abi.md §2.14: routes through
+/// `cx_code_eval_with_len`. NUL bytes in input or program are
+/// preserved.
+pub fn eval_code(input: &str, program: &str, output_target: &str) -> Result<String, String> {
     ensure_thread();
-    let ci = CString::new(input).map_err(|e| e.to_string())?;
-    let cp = CString::new(program).map_err(|e| e.to_string())?;
     let ct = CString::new(output_target).map_err(|e| e.to_string())?;
     let mut err_ptr: *mut c_char = ptr::null_mut();
-    let out = unsafe { cx_eval(ci.as_ptr(), cp.as_ptr(), ct.as_ptr(), &mut err_ptr) };
+    let out = unsafe {
+        cx_code_eval_with_len(
+            input.as_ptr() as *const c_char, input.len(),
+            program.as_ptr() as *const c_char, program.len(),
+            ct.as_ptr(),
+            &mut err_ptr,
+        )
+    };
     if out.is_null() {
         if err_ptr.is_null() {
-            return Err("cx_eval: unknown error".to_owned());
+            return Err("cx_code_eval: unknown error".to_owned());
         }
         let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
         unsafe { cx_free(err_ptr) };
@@ -710,14 +703,15 @@ pub fn eval_cxl(input: &str, program: &str, output_target: &str) -> Result<Strin
     Ok(s)
 }
 
-/// Evaluate a CXL program with pull-based incremental output (v0.7.0
-/// Y-row). `on_chunk` is invoked with each output chunk as a `&[u8]`;
+/// Evaluate a v0.7.6 CX program with pull-based incremental output.
+/// `on_chunk` is invoked with each output chunk as a `&[u8]`;
 /// returning `Err(_)` aborts evaluation cleanly.
 ///
-/// The user closure is passed through `cx_eval_streaming`'s `user`
-/// pointer wrapped as a `*mut dyn FnMut`. The exported trampoline
+/// Routes through `cx_code_eval_streaming` per spec/abi.md
+/// §2.16.1. The user closure is passed through the `user` pointer
+/// wrapped as `*mut StreamState`; the exported trampoline
 /// `rust_stream_trampoline` unwraps and dispatches per chunk.
-pub fn eval_cxl_streaming<F>(
+pub fn eval_code_streaming<F>(
     input: &str,
     program: &str,
     output_target: &str,
@@ -727,8 +721,6 @@ where
     F: FnMut(&[u8]) -> Result<(), String>,
 {
     ensure_thread();
-    let ci = CString::new(input).map_err(|e| e.to_string())?;
-    let cp = CString::new(program).map_err(|e| e.to_string())?;
     let ct = CString::new(output_target).map_err(|e| e.to_string())?;
     let mut err_ptr: *mut c_char = ptr::null_mut();
     let mut state: StreamState = StreamState {
@@ -737,9 +729,9 @@ where
     };
     let user_ptr = &mut state as *mut StreamState as *mut c_void;
     unsafe {
-        cx_eval_streaming(
-            ci.as_ptr(),
-            cp.as_ptr(),
+        cx_code_eval_streaming(
+            input.as_ptr() as *const c_char, input.len(),
+            program.as_ptr() as *const c_char, program.len(),
             ct.as_ptr(),
             rust_stream_trampoline,
             user_ptr,
@@ -755,6 +747,102 @@ where
         return Err(e);
     }
     Ok(())
+}
+
+/// Render a CX source as a diagram (cap bit 31).
+/// The returned text is a Mermaid `flowchart TD` with the original
+/// source embedded as `%%cx:<base64>%%` for round-trip recovery
+/// (gate-9 contract).
+///
+/// `format` MUST be `"mermaid"` at v0.8.0; other formats return
+/// `CXER0001` (SVG/PNG go through the CLI tier per audit §D5).
+/// Error wire format: in-band `CXERnnnn:msg` in the returned
+/// string — callers detect by prefix and the result is re-mapped
+/// to `Err("cx-err:CXERnnnn:msg")` for parity with the other
+/// helpers in this module.
+///
+/// Canonical v0.8.0 name: mirrors the C ABI
+/// symbol `cx_code_diagram` directly so Layer-1 conformance
+/// fixtures (`conformance/binding_api.txt`) bind against the
+/// shared vocabulary.
+pub fn cx_code_diagram(source: &str, format: &str) -> Result<String, String> {
+    ensure_thread();
+    let raw = unsafe {
+        ffi_cx_code_diagram(
+            source.as_ptr() as *const c_char, source.len(),
+            format.as_ptr() as *const c_char, format.len(),
+        )
+    };
+    if raw.is_null() {
+        return Err("cx_code_diagram: unknown error".to_owned());
+    }
+    let s = unsafe { CStr::from_ptr(raw).to_string_lossy().into_owned() };
+    unsafe { cx_free(raw) };
+    if s.starts_with("CXER") {
+        return Err(format!("cx-err:{}", s));
+    }
+    Ok(s)
+}
+
+/// JSON projection of the parsed CX source (cap
+/// bit 32). Each node carries
+/// `{kind, name?, value?, loc:{start,end}, children?}`; the `loc`
+/// byte offsets index into the original UTF-8 source so the
+/// playground bidirectional selection bridge can wire against
+/// stable contracts.
+///
+/// The Phase 2.11 stub returns a single-root element with
+/// `loc:{0,len(source)}`; this wrapper is forward-compatible with
+/// both the stub and the eventual full walker.
+///
+/// Returns `Err` on allocation failure (NULL return) or invalid
+/// JSON payload (defensive — the V emitter guarantees well-formed
+/// JSON).
+pub fn cx_code_tree(source: &str) -> Result<serde_json::Value, String> {
+    ensure_thread();
+    let mut out_len: usize = 0;
+    let raw = unsafe {
+        ffi_cx_code_tree(
+            source.as_ptr() as *const c_char, source.len(),
+            &mut out_len as *mut usize,
+        )
+    };
+    if raw.is_null() {
+        return Err("cx_code_tree: NULL return (allocation failure)".to_owned());
+    }
+    // Slice by out_len to be NUL-safe in case the JSON ever embeds
+    // NUL bytes (it shouldn't, but the C ABI returns the length so
+    // we honour it).
+    let payload: &[u8] = if out_len == 0 {
+        unsafe { CStr::from_ptr(raw).to_bytes() }
+    } else {
+        unsafe { std::slice::from_raw_parts(raw as *const u8, out_len) }
+    };
+    let text = std::str::from_utf8(payload)
+        .map_err(|e| format!("cx_code_tree: payload is not valid UTF-8: {}", e))?
+        .to_owned();
+    unsafe { cx_free(raw) };
+    serde_json::from_str::<serde_json::Value>(&text)
+        .map_err(|e| format!("cx_code_tree: payload is not valid JSON: {}", e))
+}
+
+/// Re-export of `eval_code` under the canonical name
+/// (`cx_code_eval`) for Layer-1 vocabulary symmetry with
+/// `cx_code_diagram` / `cx_code_tree`. Identical semantics —
+/// routes through `cx_code_eval_with_len`.
+#[inline]
+pub fn cx_code_eval(input: &str, program: &str, output_target: &str) -> Result<String, String> {
+    eval_code(input, program, output_target)
+}
+
+/// Backward-compat alias for `cx_code_diagram` — the v0.7.6 Rust
+/// surface exposed `program_diagram`. Removed name from spec at
+/// v0.8.0; kept here as a thin forward to ease
+/// migration of existing test files (`tests/program_eval.rs`).
+#[deprecated(since = "0.8.0", note = "renamed to cx_code_diagram")]
+#[inline]
+pub fn program_diagram(source: &str, format: &str) -> Result<String, String> {
+    cx_code_diagram(source, format)
 }
 
 struct StreamState<'a> {
@@ -797,12 +885,8 @@ pub fn resolve_ref(input: &str, r#ref: &str) -> Result<Option<String>, String> {
     call_id_abi(cx_resolve_ref, input, r#ref)
 }
 
-/// Run CXPath `cxpath` against `input` and return the syntactic ID of
-/// the matched element. Returns `Ok(None)` when nothing matched or the
-/// matched element has no ID.
-pub fn node_id(input: &str, cxpath: &str) -> Result<Option<String>, String> {
-    call_id_abi(cx_node_id, input, cxpath)
-}
+// (node_id retired at v0.7.6 Phase 7. Equivalent: eval a `//pattern`
+// CXPath value via eval_code, then read @id on each match.)
 
 /// Parse a CX string into a stream of `StreamEvent`s.
 ///

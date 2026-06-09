@@ -6,7 +6,7 @@ static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 use cxlib::event_writer::{EventAttr, EventWriter, StartElementOpts, has_capability};
 
-/// 2-col col_spec wire form (spec/data_bin.md §3.10.1):
+/// 2-col col_spec wire form (spec/core/data-bin.md §3.10.1):
 /// name:string (0x30), score:i32 (0x12).
 fn col_spec_2() -> Vec<u8> {
     let mut out = Vec::with_capacity(32);

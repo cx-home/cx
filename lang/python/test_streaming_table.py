@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import cxlib
 
 SIX_ROW_INPUT = (
-    '[points :table[name:string score:i32]\n'
+    '[points [table[name::string score::i32]]\n'
     '  alice 91\n'
     '  bob 88\n'
     '  carol 73\n'
@@ -76,7 +76,7 @@ def test_streaming_table_fd_round_trip():
         schema = r.schema()
         groups = list(r)
 
-    fd_path = tempfile.mktemp(prefix='cx_streaming_table_py_', suffix='.cxdb')
+    fd_path = tempfile.mktemp(prefix='cx_streaming_table_py_', suffix='.cxcol')
     wfd = os.open(fd_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
     try:
         with cxlib.TableWriter(schema, fd=wfd) as w:

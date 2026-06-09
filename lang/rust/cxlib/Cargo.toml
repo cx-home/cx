@@ -1,6 +1,6 @@
 [package]
 name = "cxlib"
-version = "0.6.1"
+version = "0.8.0"
 edition = "2021"
 description = "CX format library — thin wrapper around libcx"
 
@@ -26,15 +26,13 @@ arrow = ["dep:arrow"]
 parquet = ["arrow", "dep:parquet"]
 
 [[example]]
-name = "transform"
-
-[[example]]
-name = "demo"
-
-[[example]]
 name = "parquet_smoke"
 required-features = ["parquet"]
 
 [[bin]]
 name = "bench_time"
 path = "src/bin/bench_time.rs"
+
+[[bin]]
+name = "binding_api_driver"
+path = "src/bin/binding_api_driver.rs"

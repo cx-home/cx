@@ -30,28 +30,28 @@ def _run(fn):
 # ── Emit ─────────────────────────────────────────────────────────────────────
 
 def test_emit_table_direct():
-    src = '[users :table[name:string age:int active:bool]\n  alice 30 true\n  bob 25 false\n]'
+    src = '[users [table[name::string age::int active::bool]]\n  alice 30 true\n  bob 25 false\n]'
     out = cxlib.to_csv(src)
     assert out == 'name,age,active\r\nalice,30,true\r\nbob,25,false\r\n', repr(out)
 
 def test_emit_repeated_row():
-    src = '[users\n  [user id=1 name=alice +admin]\n  [user id=2 name=bob]\n  [user id=3 name=carol +admin]\n]'
+    src = '[users\n  [user id=1 name=alice admin=true]\n  [user id=2 name=bob]\n  [user id=3 name=carol admin=true]\n]'
     out = cxlib.to_csv(src)
     assert out == 'id,name,admin\r\n1,alice,true\r\n2,bob,\r\n3,carol,true\r\n', repr(out)
 
 def test_emit_dotted_path():
-    src = '[config\n  [server host=localhost port=8080 +tls]\n  [logging level=info format=json]\n]'
+    src = '[config\n  [server host=localhost port=8080 tls=true]\n  [logging level=info format=json]\n]'
     out = cxlib.to_csv(src)
     expected = 'server.host,server.port,server.tls,logging.level,logging.format\r\nlocalhost,8080,true,info,json\r\n'
     assert out == expected, repr(out)
 
 def test_emit_tsv():
-    src = '[t :table[a b c]\n  x y z\n]'
+    src = '[t [table[a b c]]\n  x y z\n]'
     out = cxlib.to_tsv(src)
     assert out == 'a\tb\tc\r\nx\ty\tz\r\n', repr(out)
 
 def test_emit_psv():
-    src = '[t :table[a b]\n  x y\n]'
+    src = '[t [table[a b]]\n  x y\n]'
     out = cxlib.to_psv(src)
     assert out == 'a|b\r\nx|y\r\n', repr(out)
 
@@ -61,33 +61,33 @@ def test_emit_psv():
 def test_parse_csv_basic_autotypes():
     csv_in = 'name,age,active\nalice,30,true\nbob,25,false\n'
     out = cxlib.from_csv(csv_in)
-    expected = '[table :table[name age:int active:bool]\n  alice 30 true\n  bob 25 false\n]'
+    expected = '[table [table[name age::int active::bool]]\n  alice 30 true\n  bob 25 false\n]'
     assert out == expected, repr(out)
 
 def test_parse_quoted_stays_string():
     csv_in = 'name,age\nalice,"30"\nbob,"25"\n'
     out = cxlib.from_csv(csv_in)
-    expected = '[table :table[name age]\n  alice 30\n  bob 25\n]'
+    expected = '[table [table[name age]]\n  alice 30\n  bob 25\n]'
     assert out == expected, repr(out)
 
 def test_parse_empty_cell_is_null():
     csv_in = 'name,age\nalice,30\nbob,\n'
     out = cxlib.from_csv(csv_in)
-    expected = '[table :table[name age:int]\n  alice 30\n  bob null\n]'
+    expected = '[table [table[name age::int]]\n  alice 30\n  bob null\n]'
     assert out == expected, repr(out)
 
 
 # ── Arbitrary delimiter + data_bin one-shots ─────────────────────────────────
 
 def test_to_delimited_arbitrary():
-    src = '[t :table[a b]\n  x y\n]'
+    src = '[t [table[a b]]\n  x y\n]'
     out = cxlib.to_delimited(src, ';')
     assert out == 'a;b\r\nx;y\r\n', repr(out)
 
 def test_csv_to_data_bin_round_trip():
     framed = cxlib.csv_to_data_bin('name,age\nalice,30\nbob,25\n')
     assert isinstance(framed, bytes)
-    assert framed[4:8] == b'CXDB'
+    assert framed[4:9] == b'CXCol'
     out = cxlib.data_bin_to_csv(framed)
     assert out == 'name,age\r\nalice,30\r\nbob,25\r\n', repr(out)
 

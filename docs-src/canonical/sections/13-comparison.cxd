@@ -1,0 +1,541 @@
+[# Section 13 — Comparison to alternatives. Back-matter; appears
+   after §12 FAQ. Authored 2026-05-22 against the v0.8.0-dev branch.
+
+   The goal is to help an evaluator decide whether to adopt CX. Be
+   honest where CX loses — ecosystem maturity, library breadth,
+   tooling familiarity — and concrete where it wins. Cross-links use
+   [[anchor]] form. File extension .cxd — data-only source. #]
+
+[section id=comparison n=13 title='Comparison to alternatives'
+
+  [intro
+    """CX is one of many serialization / config / wire formats. This
+       section is the honest side-by-side: what CX brings, where the
+       incumbents are better, and which workloads should pick which
+       tool. Each comparison covers feature parity, performance,
+       ecosystem, learning curve, schema, identity / hash, and
+       round-trip lossiness, with a closing "when to pick X"
+       sentence."""]
+
+  [child id=when-to-use n=13.1 title='When to use CX'
+    [intro
+      """The decision tree. Top-to-bottom, first match wins:"""]
+
+    [list
+      [item """**You need one syntax for data and code** (config that
+              is also a program, templates that are also data, a
+              schema that is also a value). CX is the only format
+              in this comparison that is homoiconic; pick CX."""]
+      [item """**You need content-addressable identity** across
+              languages and platforms (cache keys, dedup, signed
+              documents, distributed ledgers). The CX SHA-256 of
+              canonical bytes is the most boring possible
+              implementation; pick CX."""]
+      [item """**You round-trip between JSON / YAML / TOML / XML /
+              Markdown** and lose information each time. CX is the
+              superset that preserves all of them losslessly; pick
+              CX."""]
+      [item """**Your workload is bulk analytical scan on tabular
+              data** at terabyte scale, exchanged with the broader
+              ecosystem (DuckDB / Spark / pandas). Use **Parquet**
+              for storage, **Arrow** for in-memory, optionally
+              with CX as the metadata / config layer."""]
+      [item """**Your workload is wire-format throughput between
+              microservices** with a fixed schema, and you control
+              both ends. Use **Protocol Buffers** or **MessagePack**
+              — they will be smaller and faster on the wire than
+              any text format."""]
+      [item """**You need a single-file human-edited config** with
+              no programmability and no cross-system identity
+              requirements. **TOML** (Cargo, pyproject) or **YAML**
+              (Kubernetes, CI) are everywhere; the ecosystem
+              advantage is real."""]
+      [item """**You need a typed, programmable config language**
+              with a strong type system. **Dhall** or **Pkl** are
+              good fits if the type-system rigor matters more than
+              the homoiconic data-and-code unification."""]
+      [item """**Otherwise** (general data / config / interchange
+              with mixed workloads, mid-size documents, multiple
+              consumers in different languages): CX is the
+              all-purpose default."""]]]
+
+  [child id=cx-vs-json n=13.2 title='CX vs JSON'
+    [intro
+      """JSON is the universal interchange baseline. CX is a
+         superset projection — anything that round-trips through
+         JSON also round-trips through CX. The interesting
+         comparisons are where CX has features JSON does not, and
+         where JSON has ecosystem JSON does not."""]
+
+    [table columns=(dimension, json, cx)
+      [row dimension='Schema' json='JSON Schema (separate spec)'
+           cx='.cxs — same syntax as data (see [[schema]])']
+      [row dimension='Identity / hash' json='No canonical form; hash drifts on key reorder'
+           cx='SHA-256 of canonical bytes; stable across platforms (see [[hash]])']
+      [row dimension='Comments' json='None (in the standard); JSON5 / JSONC are extensions'
+           cx='[# … #] preserved by cx fmt, stripped by cx canon']
+      [row dimension='Trailing commas' json='Forbidden' cx='Not applicable — bracket form, no commas in attribute list']
+      [row dimension='Number precision' json='Underspecified; JS doubles by default'
+           cx='Sized type tags (:i64, :u32, :f32) (see [[sized-types]])']
+      [row dimension='Multi-line strings' json='Escaped only' cx='Triple-quoted, whitespace-preserving (see [[strings]])']
+      [row dimension='Date / datetime' json='String only' cx='First-class :date / :datetime scalar (see [[dates]])']
+      [row dimension='Bytes' json='Base64 in a string' cx='First-class :bytes scalar (see [[bytes]])']
+      [row dimension='Tooling ecosystem' json='Vast — every language, every editor, every CDN'
+           cx='Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing']
+      [row dimension='Wire size' json='Baseline' cx='Comparable text form; data-bin / CXCol smaller']
+      [row dimension='Parse speed' json='Highly optimized parsers everywhere'
+           cx='Reference parser ~600 MB/s on the gate-15 workload']
+      [row dimension='Learning curve' json='Trivial' cx='Bracket-and-sigil form; ~one hour for the data subset']]
+
+    [body
+      """**When to pick JSON instead of CX.** Your consumers are
+         browser JavaScript, a CDN-served config endpoint, or any
+         interface where you cannot install a CX parser. JSON
+         remains the right wire-format choice for ubiquity
+         alone."""]
+
+    [body
+      """**When to pick CX instead of JSON.** You want identity,
+         schema, comments, mixed content, dates, or bytes without
+         layering JSON Schema + JSON5 + base64 + custom date
+         string conventions on top of JSON. CX gives you the
+         whole stack in one syntax."""]]
+
+  [child id=cx-vs-yaml n=13.3 title='CX vs YAML'
+    [intro
+      """YAML optimises for human readability of multi-line
+         strings and config-as-code. The cost is the famously
+         large surface area (indentation sensitivity, tag system,
+         anchor / alias / merge keys, the Norway problem)."""]
+
+    [table columns=(dimension, yaml, cx)
+      [row dimension='Indentation' yaml='Semantic (whitespace-sensitive)'
+           cx='Insignificant — bracket-structured']
+      [row dimension='Anchors and aliases' yaml='&anchor / *alias / << merge keys'
+           cx='&anchor / *merge sigils — same idea, no separate merge keyword (see [[anchor]] / [[merge]])']
+      [row dimension='Multiline strings' yaml='| (literal) and > (folded)'
+           cx='Triple-quoted (always literal)']
+      [row dimension='Norway problem' yaml='no parses as false in YAML 1.1' cx='Only true/false are bools; no /yes is a string']
+      [row dimension='Schema' yaml='JSON Schema (separate)' cx='.cxs (same syntax)']
+      [row dimension='Identity / hash' yaml='No canonical form'
+           cx='SHA-256 of canonical bytes (see [[hash]])']
+      [row dimension='Comments' yaml='# line comments only'
+           cx='[# … #] nest, span lines, preserved by cx fmt']
+      [row dimension='Tooling' yaml='Kubernetes, GitLab CI, Ansible'
+           cx='Growing — LSP + tree-sitter + VS Code; analytical pipelines']
+      [row dimension='Round-trip' yaml='Lossy in many YAML 1.1 → 1.2 cases'
+           cx='Lossless by spec (see [[roundtrip]])']]
+
+    [body
+      """**When to pick YAML.** Your config consumers are
+         Kubernetes manifests, Ansible playbooks, GitHub Actions
+         workflows, or any tool whose schema is in YAML. The
+         ecosystem advantage is decisive."""]
+
+    [body
+      """**When to pick CX.** Anywhere you would have wanted YAML
+         minus the indentation footguns, the Norway problem, and
+         the lossy round-trip. The triple-quoted multiline string
+         is as readable as YAML literal blocks without the
+         indentation rules."""]]
+
+  [child id=cx-vs-toml n=13.4 title='CX vs TOML'
+    [intro
+      """TOML's pitch is "obviously correct config for
+         configuration files." It excels at flat key-value
+         configs (Cargo.toml, pyproject.toml) and struggles with
+         deep nesting."""]
+
+    [table columns=(dimension, toml, cx)
+      [row dimension='Nesting' toml='Dotted keys / [[arrays of tables]] — awkward past 2-3 levels'
+           cx='Native — every element nests']
+      [row dimension='Schema' toml='No standard schema language' cx='.cxs (see [[schema]])']
+      [row dimension='Identity / hash' toml='No canonical form'
+           cx='SHA-256 of canonical bytes']
+      [row dimension='Tooling' toml='Cargo, pip, Poetry — narrow but deep'
+           cx='LSP + tree-sitter; broader workloads than configs alone']
+      [row dimension='Round-trip' toml='Lossy — comment placement and key order'
+           cx='Lossless']
+      [row dimension='Mixed content' toml='Not supported' cx='Native (prose form, see [[prose]])']
+      [row dimension='Date / datetime' toml='Native :datetime' cx='Native :date / :datetime / :time']]
+
+    [body
+      """**When to pick TOML.** Your config is flat — language
+         toolchain manifests, Cargo dependencies, app
+         configuration with two levels of nesting. TOML reads
+         beautifully at that scale."""]
+
+    [body
+      """**When to pick CX.** Your config is genuinely
+         hierarchical, you need cross-config identity, or the
+         same documents will also be processed as data (e.g.
+         shipped as configuration *and* hashed for a release
+         manifest). CX scales up where TOML hits its ceiling."""]]
+
+  [child id=cx-vs-xml n=13.5 title='CX vs XML'
+    [intro
+      """XML is CX's closest structural cousin — both are
+         tree-shaped, both support attributes and mixed content,
+         both have namespaces. The differences are syntactic
+         density and the surrounding ecosystem (XSLT, XPath,
+         XSD)."""]
+
+    [table columns=(dimension, xml, cx)
+      [row dimension='Syntax verbosity' xml='Open + close tag pair' cx='Single bracket pair']
+      [row dimension='Attribute syntax' xml='name="value" inside open tag'
+           cx='name=value inside bracket (see [[attributes]])']
+      [row dimension='Mixed content' xml='Native' cx='Native (see [[prose]])']
+      [row dimension='Namespaces' xml='xmlns:prefix=URI' cx='xmlns:prefix=URI (XML-aligned, see [[namespaces]])']
+      [row dimension='Selector' xml='XPath 3.1' cx='CXPath — XPath 3.1 aligned (see [[cxpath]])']
+      [row dimension='Schema' xml='XSD (large, complex) or RELAX NG' cx='.cxs (CX syntax, small)']
+      [row dimension='Identity / hash' xml='C14N (XML Canonicalization)'
+           cx='cx canon + SHA-256']
+      [row dimension='Templating' xml='XSLT (separate language)'
+           cx='[?for] / [?modify] — same language as data']
+      [row dimension='Tooling' xml='Vast in enterprise / publishing; less in modern web'
+           cx='Growing; same ecosystem reach is the long-term goal']
+      [row dimension='Learning curve' xml='Familiar to a generation of developers'
+           cx='Lower if XML is new; comparable if XML is known']]
+
+    [body
+      """**When to pick XML.** You are working in publishing /
+         document workflows (DITA, DocBook, SVG), or your
+         consumers are XML-native (SOAP, XHTML, RDF/XML). The
+         tooling depth is unmatched in those niches."""]
+
+    [body
+      """**When to pick CX.** You want the XML data model
+         (attributes, mixed content, namespaces, XPath) without
+         the syntactic verbosity, without XSD, and with code-as-
+         data unification. CX is what XML would look like if
+         designed today."""]]
+
+  [child id=cx-vs-protobuf n=13.6 title='CX vs Protocol Buffers'
+    [intro
+      """Protobuf is the schema-first binary wire format for
+         service-to-service traffic. It is the right tool when
+         you control both ends, the schema rarely changes, and
+         every byte on the wire matters."""]
+
+    [table columns=(dimension, protobuf, cx)
+      [row dimension='Wire format' protobuf='Binary — varint + length-prefix'
+           cx='Text (CX), or data-bin / CXCol (binary)']
+      [row dimension='Schema requirement' protobuf='Required — wire is unparseable without .proto'
+           cx='Optional — value is self-describing']
+      [row dimension='Wire size' protobuf='Typically smallest of any format here'
+           cx='Comparable text size; data-bin closer to protobuf']
+      [row dimension='Throughput' protobuf='Very high — compiled (de)serializers'
+           cx='High but text-shaped; data-bin closes the gap']
+      [row dimension='Schema evolution' protobuf='Tag-numbered fields — strong forward/backward compat'
+           cx='Schema modes (open/strict/closed); attribute order is data-only']
+      [row dimension='Tooling' protobuf='protoc + every major language'
+           cx='Tier-1 V/Python/Go/Rust; growing']
+      [row dimension='Human readability' protobuf='None — binary opaque'
+           cx='Text-first; binary is an optimization']
+      [row dimension='Identity / hash' protobuf='Wire bytes — stable iff schema is fixed'
+           cx='Canonical bytes — stable regardless of schema']]
+
+    [body
+      """**When to pick Protobuf.** You have a controlled RPC
+         system, the schema is well-understood, and the bandwidth
+         / CPU savings are real (mobile, embedded, hot-path
+         services). Honest concession: Protobuf wins on wire
+         throughput in the steady state."""]
+
+    [body
+      """**When to pick CX.** Your data is also config, also
+         logs, also human-edited at the boundary, also stored on
+         disk for later inspection. Protobuf loses to text
+         formats outside the wire-only path."""]]
+
+  [child id=cx-vs-msgpack n=13.7 title='CX vs MessagePack'
+    [intro
+      """MessagePack is "binary JSON" — schemaless, more compact
+         than text JSON, slightly slower than protobuf because
+         it carries kind tags."""]
+
+    [table columns=(dimension, msgpack, cx)
+      [row dimension='Wire format' msgpack='Binary, schemaless' cx='Text (CX) or binary (data-bin)']
+      [row dimension='Schema' msgpack='None' cx='.cxs (optional)']
+      [row dimension='Wire size' msgpack='Smaller than JSON; comparable to data-bin'
+           cx='data-bin similar; CXCol smaller for tabular']
+      [row dimension='Type richness' msgpack='Scalars + map + array; ext-type extension'
+           cx='Eight scalar kinds, elements with attributes, mixed content, namespaces']
+      [row dimension='Identity / hash' msgpack='Wire bytes — stable iff serializer is deterministic'
+           cx='Canonical bytes — stable by construction']
+      [row dimension='Tooling' msgpack='Wide language coverage'
+           cx='Tier-1 V/Python/Go/Rust']]
+
+    [body
+      """**When to pick MessagePack.** You want JSON semantics
+         on the wire without JSON wire size, and your data is
+         flat / tabular / homogeneous. MessagePack is excellent
+         at being "JSON minus the text."."""]
+
+    [body
+      """**When to pick CX.** Your data has shape — attributes,
+         mixed content, namespaces, hierarchical structure that
+         MessagePack would force into nested maps. data-bin
+         covers the wire-size argument without giving up the
+         shape."""]]
+
+  [child id=cx-vs-pkl n=13.8 title='CX vs Apache Pkl'
+    [intro
+      """Pkl is Apple's configuration language — declarative,
+         strongly typed, programmable. The closest "config that
+         is also code" peer to CX, with a different design
+         centre."""]
+
+    [table columns=(dimension, pkl, cx)
+      [row dimension='Surface' pkl='Custom syntax — class-oriented' cx='Bracket form — homoiconic']
+      [row dimension='Typing' pkl='Strong, static, gradual'
+           cx='Schema-validated (.cxs); type tags on scalars']
+      [row dimension='Computation' pkl='Lambdas, comprehensions, methods'
+           cx='Directives — [?for], [?match], [?modify], [?let]']
+      [row dimension='Output formats' pkl='JSON / YAML / Plist / Properties + custom renderers'
+           cx='CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']
+      [row dimension='Identity / hash' pkl='Not built-in' cx='SHA-256 of canonical bytes']
+      [row dimension='Module system' pkl='Imports, packages, semantic versioning'
+           cx='[?cx include] — capability-gated path resolution']
+      [row dimension='Tooling' pkl='LSP, IntelliJ plugin, CLI — solid'
+           cx='LSP + tree-sitter + VS Code — comparable']
+      [row dimension='Ecosystem' pkl='Apple-backed; growing community'
+           cx='Open-source; growing community']]
+
+    [body
+      """**When to pick Pkl.** You want a strongly typed config
+         language with class-oriented composition and your
+         consumers are JSON / YAML output. Pkl's type system is
+         richer than the CX schema language."""]
+
+    [body
+      """**When to pick CX.** The same documents are also data
+         to be hashed, queried, transformed, or shipped as
+         payloads. Pkl is config-first; CX is data-and-code by
+         design."""]]
+
+  [child id=cx-vs-dhall n=13.9 title='CX vs Dhall'
+    [intro
+      """Dhall is the typed-config purist's pick — total,
+         non-Turing-complete, with a sound type system and
+         normalised import semantics."""]
+
+    [table columns=(dimension, dhall, cx)
+      [row dimension='Type system' dhall='Total, sound, dependent-ish (System Fω)'
+           cx='Schema validation; type tags on scalars']
+      [row dimension='Computation' dhall='λ-calculus — total, no recursion without bound'
+           cx='Directives — [?for] / [?match] / [?modify]; bounded by resilience directives']
+      [row dimension='Surface' dhall='Haskell-flavoured ML syntax' cx='Bracket form']
+      [row dimension='Output formats' dhall='JSON / YAML / Text' cx='CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']
+      [row dimension='Imports' dhall='Content-addressed by hash — same idea as CX'
+           cx='[?cx include] with capability gating']
+      [row dimension='Identity / hash' dhall='Standard form hash for imports'
+           cx='Canonical bytes + SHA-256 for any value']
+      [row dimension='Learning curve' dhall='Steep — ML / Haskell familiarity helps'
+           cx='Moderate — bracket form is unfamiliar but small']
+      [row dimension='Tooling' dhall='LSP, type-aware; narrow' cx='LSP + tree-sitter + VS Code']]
+
+    [body
+      """**When to pick Dhall.** You want totality, soundness,
+         and a small surface area as design goals; you are
+         willing to pay for the steeper learning curve. Dhall is
+         the right tool for safety-critical config."""]
+
+    [body
+      """**When to pick CX.** You want the content-addressed
+         identity, the schema-validated config, and the
+         programmable updates of Dhall — plus the ability to
+         carry rich data (mixed content, columnar tables,
+         dates, bytes) in the same syntax. Dhall is config; CX
+         is config + data + code."""]]
+
+  [child id=cx-vs-parquet n=13.10 title='CX vs Parquet'
+    [intro
+      """Parquet is the columnar storage standard for analytical
+         workloads — terabyte-scale scans, predicate pushdown,
+         compression. CX is not Parquet's competitor; CXCol is,
+         and Parquet is CX's export target."""]
+
+    [table columns=(dimension, parquet, cx-cxcol)
+      [row dimension='Layout' parquet='Column-oriented, on-disk'
+           cx-cxcol='Column-oriented (CXCol), in-memory; on-disk possible']
+      [row dimension='Compression' parquet='Snappy / Gzip / Zstd / LZ4 page-level'
+           cx-cxcol='Dictionary encoding on; compression optional']
+      [row dimension='Schema' parquet='Embedded — required for read'
+           cx-cxcol='.cxs schema or embedded type tags']
+      [row dimension='Ecosystem' parquet='Spark, DuckDB, Polars, pandas, Athena, BigQuery'
+           cx-cxcol='Native CX pipelines; Arrow bridge for everything else']
+      [row dimension='Bridge' parquet='—'
+           cx-cxcol='CX ↔ Parquet bridge via Arrow (see [[parquet-bridge]])']
+      [row dimension='Identity / hash' parquet='File hash — sensitive to write order'
+           cx-cxcol='Canonical bytes of the logical value']
+      [row dimension='Streaming' parquet='Row-group oriented'
+           cx-cxcol='Native streaming evaluator (see [[streaming]])']
+      [row dimension='Write speed' parquet='~150 MB/s on the reference benchmark'
+           cx-cxcol='Faster — no compression overhead by default']]
+
+    [body
+      """**When to pick Parquet.** Your data is large, tabular,
+         queried by external tools (Spark / Athena / BigQuery /
+         DuckDB), and stored on object storage. Parquet is the
+         lingua franca."""]
+
+    [body
+      """**When to pick CXCol.** Your data is tabular but the
+         producers and consumers are CX-native (pipelines, in-
+         memory analytical jobs, services that ship columnar
+         payloads). When you need to interchange with the
+         broader ecosystem, export to Parquet."""]]
+
+  [child id=cx-vs-arrow n=13.11 title='CX vs Arrow'
+    [intro
+      """Arrow is the in-memory columnar standard. Like
+         MessagePack, it is not a CX competitor — it is a layer
+         CX integrates with."""]
+
+    [table columns=(dimension, arrow, cx-cxcol)
+      [row dimension='Layout' arrow='Column-oriented, in-memory'
+           cx-cxcol='Column-oriented, in-memory (compatible)']
+      [row dimension='Wire format' arrow='Flight (gRPC streaming) / IPC'
+           cx-cxcol='data-bin chunked tables']
+      [row dimension='Interop' arrow='pandas, Polars, DuckDB, Datafusion — zero-copy'
+           cx-cxcol='CX ↔ Arrow bridge (zero-copy, see [[arrow-bridge]])']
+      [row dimension='Schema' arrow='Embedded' cx-cxcol='.cxs or embedded']
+      [row dimension='Identity / hash' arrow='None standard' cx-cxcol='Canonical bytes + SHA-256']
+      [row dimension='Use case' arrow='Cross-process / cross-language analytics'
+           cx-cxcol='Same plus document semantics']]
+
+    [body
+      """**When to pick Arrow.** You are doing pure analytics —
+         no document semantics, no identity requirements, no
+         schema as a value. Arrow is the right cross-engine
+         in-memory layout."""]
+
+    [body
+      """**When to pick CXCol over Arrow.** You want Arrow's
+         column-orientation plus CX's document semantics (mixed
+         content rows, hierarchical headers, namespaced columns,
+         hash-stable identity). Use the bridge — they share
+         memory zero-copy."""]]
+
+  [child id=cmp-summary n=13.12 title='Summary table'
+    [intro
+      """At a glance, the headline trade-offs for each
+         alternative. **Pick CX** is the column that matters
+         most for an evaluator question."""]
+
+    [table columns=(format, strength, weakness, pick-cx-when)
+      [row format='JSON' strength='Universal ecosystem'
+           weakness='No schema, no comments, no identity'
+           pick-cx-when='You need any of: schema / comments / identity / mixed content / dates / bytes']
+      [row format='YAML' strength='Human-readable config'
+           weakness='Indentation footguns, lossy round-trip, Norway problem'
+           pick-cx-when='You want YAML readability without the footguns']
+      [row format='TOML' strength='Flat config readability'
+           weakness='Awkward at depth, no schema'
+           pick-cx-when='Your config is hierarchical or grows beyond config']
+      [row format='XML' strength='Tree-shaped, mixed content, XPath ecosystem'
+           weakness='Verbose, XSD complexity, no homoiconic code-as-data'
+           pick-cx-when='You want the XML data model in a denser syntax with code-as-data unified']
+      [row format='Protobuf' strength='Wire size and throughput'
+           weakness='Schema-required, opaque without .proto, no document semantics'
+           pick-cx-when='Your data is also config / docs / hashed payloads, not just RPC wire']
+      [row format='MessagePack' strength='Compact binary JSON'
+           weakness='Flat / no document semantics'
+           pick-cx-when='Your data has shape (attributes / mixed content / namespaces)']
+      [row format='Pkl' strength='Strongly typed config language'
+           weakness='Config-only; no data identity, narrower output formats'
+           pick-cx-when='The same documents are data and code, not just config']
+      [row format='Dhall' strength='Total, sound, content-addressed imports'
+           weakness='Steep learning curve, config-only'
+           pick-cx-when='You want Dhall semantics plus rich data shape and broad outputs']
+      [row format='Parquet' strength='Analytical scan, ecosystem'
+           weakness='File-format only, no document semantics'
+           pick-cx-when='Producer and consumer are CX-native; export to Parquet for interchange']
+      [row format='Arrow' strength='Zero-copy in-memory columnar'
+           weakness='No document semantics, no identity'
+           pick-cx-when='You want Arrow plus CX semantics (use the bridge — they coexist)']]
+
+    [body
+      """**The honest summary.** CX wins on **unification**:
+         data + code + schema + identity in one syntax. It
+         loses on **ecosystem maturity** — JSON, YAML, and
+         Protobuf all have decades of library / editor / CDN
+         depth. The question for an evaluator is whether the
+         unification value exceeds the ecosystem-depth gap for
+         your specific workload. For workloads in §13.1's
+         "otherwise" bucket, the answer in 2026 is increasingly
+         yes; for the niches above the "otherwise" line, pick
+         the specialist."""]
+
+    [note
+      """If you have a workload that does not match any row of
+         this table or §13.1's decision tree, file an issue at
+         https://github.com/cx-lang/cx — the comparison is
+         maintained as a living document; new alternatives and
+         new use-case scenarios are added as the ecosystem
+         evolves."""]]
+
+  [# Migrated from docs-src/content/comparison.cx during Phase B
+     docs → guide consolidation (2026-05-24). At-a-glance feature
+     table and conversion-loss matrix that complement the
+     per-format children (§13.2-§13.11) above. #]
+
+  [child id=cmp-at-a-glance n=13.13 title='At-a-glance feature matrix'
+    [intro
+      """One-screen feature matrix across CX, JSON, YAML, TOML,
+         and XML. The per-format children (§13.2-§13.11) carry
+         the depth; this matrix is the spreadsheet view."""]
+
+    [body
+      """| Feature | CX | JSON | YAML | TOML | XML |
+         |---|---|---|---|---|---|
+         | Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+         | Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom | ❌ number only | partial (auto-detect) | ✅ int / float / bool / datetime | partial (xs:type) |
+         | Comments | ✅ block and line | ❌ | ✅ # … | ✅ # … | ✅ |
+         | Mixed content | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
+         | Multiple top-level docs | ✅ no wrapper required | ❌ requires array | ✅ via --- separator | ❌ single document | partial |
+         | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
+         | Type fidelity through round-trip | ✅ via CXCol | ❌ int↔float coerced | partial | ✅ preserved | partial |
+         | Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
+         | Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
+         | Built-in query language | ✅ CXPath value kind, all 12 XPath 3.1 axes | ❌ third-party (jq) | ❌ third-party (yq) | ❌ | ✅ XPath 1.0 / XQuery |
+         | Pure-functional transform | ✅ `[?modify]` focus + 11 actions, structural sharing | ❌ | ❌ | ❌ | partial (XSLT) |
+         | Pattern-match dispatch | ✅ `[?match]` heterogeneous arms | ❌ | ❌ | ❌ | ❌ |
+         | Module system | ✅ `[?def]` / `[?lib]` / cx.lock SRI | ❌ | ❌ | ❌ | partial (XInclude) |"""]]
+
+  [child id=cmp-loss-matrix n=13.14 title='Conversion-loss matrix'
+    [intro
+      """Lossless conversion means the data round-trips without
+         semantic loss; presentation details (comments,
+         whitespace, attribute order) may be normalized. The
+         table below is the honest accounting of what survives,
+         what gets normalized, and what is genuinely lossy."""]
+
+    [table
+      [tr [th 'CX → format → CX'] [th 'Lossless?'] [th 'What is preserved'] [th 'What is normalised or lost']]
+      [tr [td 'CX → JSON → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, types via CXCol, values, nesting'] [td 'Comments dropped; element vs attribute distinction collapses to keys']]
+      [tr [td 'CX → YAML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, types via ' [code '!!tags'] ', multiline strings'] [td 'Comments dropped by most parsers; flow-vs-block style normalised']]
+      [tr [td 'CX → TOML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape via table headers, strong types'] [td 'Comments dropped; section ordering normalised; deep nesting flattened']]
+      [tr [td 'CX → XML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, mixed content, namespaces, PIs'] [td 'Whitespace normalised per ' [code 'xml:space'] '; entity references resolved']]
+      [tr [td 'CX → CXCol → CX'] [td 'bytes ✅'] [td 'Everything byte-for-byte'] [td 'Nothing — CXCol is the strict-canonical form']]
+      [tr [td 'CX → CSV → CX'] [td 'data partial'] [td [code ':table'] ' block columns and rows'] [td 'Non-table data not encodable; cell subtyping collapses']]]
+
+    [note
+      [b 'Presentation-layer differences'] ' — comments (only XML '
+      'and CX preserve them; JSON has none; YAML and TOML lose '
+      'them through most parsers), whitespace (normalised to the '
+      'target conventions), attribute order (emission may pick a '
+      'canonical order), anchor names (canonical form renumbers '
+      'them). These all show up as identical hashes via '
+      [code 'cx hash'] ' because the hash operates on strict-canonical '
+      'bytes, where presentation is stripped.']]
+
+  [child id=cmp-when-cx n=13.15 title='When CX wins'
+    [body
+      [b 'CX is the right pick'] ' for typed configuration, mixed '
+      'content alongside structured data, lossless conversion across '
+      'formats, cases where you need a stable canonical form for '
+      'hashing or signing, and any pipeline where the query/transform '
+      'layer (' [code 'CXPath'] ' + ' [code '[?match]'] ' + '
+      [code '[?modify]'] ') should live in the same syntax as the data.']]]

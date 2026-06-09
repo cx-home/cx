@@ -1,0 +1,419 @@
+# ╔════════════════════════════════════════════════════════════════════════╗
+# ║  PARSER RULES FOR CX MEANING — CX ⇄ XML (description / RULE / WITNESS)    ║
+# ╚════════════════════════════════════════════════════════════════════════╝
+# This file is the MEANING anchor: XML is CX's unambiguous reference image. Each rule:
+#   [ID] one-line description
+#     RULE     the generative xml()/cx() equation over the node kind (all instances)
+#     WITNESS  CX → XML   (≥1; reject rules witness CX → <cx:err…>)
+# Algorithmic helpers (render, infer, coerce, base64) are named procedures, §HELPERS.
+# Tokens: lexicon.ebnf. Structure: grammar.ebnf.
+# [P1-6 fix] WITNESS XML CONVENTION (so the witnesses are WELL-FORMED namespaced XML): every witness's
+# XML is understood to carry, on its outermost element, the bindings xmlns:cx="https://cxhome.org/ns/cx"
+# and (implicitly, always-bound) the xml namespace — elided in the rows for brevity. A conforming
+# emitter MUST declare xmlns:cx on the document root; the bijection is over the namespaced Infoset
+# WITH that binding present. (Without it, `<cx:int>` is an unbound prefix and not well-formed — the
+# binding is mandatory, not optional shorthand.)
+# BIJECTION CLAIM. xml : Tree → CanonicalXML is total + injective; cx : XMLInfoset → Tree ⊎ Err is
+# total over well-formed XML (a malformed carrier payload yields an Err VALUE, not undefined — A4);
+# cx(xml(n)) = n for CX-EXPRESSIBLE trees n; for canonical XML, xml(cx(x)) = x; other well-formed XML
+# canonicalizes (§canon, idempotent). The inverse cx is defined over a SYNTAX-PRESERVING XML model
+# (NOT the bare Infoset — see [P1-INFOSET] below; external oracle) so the two directions cannot share a
+# private wrong inverse. Carrier recognition is
+# BY RESOLVED URI https://cxhome.org/ns/cx, not the literal `cx:` prefix (grammar §namespace).
+# [P1-INFOSET fix] The anchor is a SYNTAX-PRESERVING XML model, NOT the bare XML Infoset: a plain
+# Infoset normalizes away exactly the boundaries some node kinds need — CDATA-section boundaries
+# (M-RAW), entity-reference SPELLING (M-ENTITYREF preserves `&name;` unexpanded), and the DTD internal
+# subset (M-DECL, raw-preserved). So the oracle is an XML reader that exposes those lexical events (a
+# LexicalHandler-style / syntax-preserving parse), which is well-defined and standard, just not the
+# minimal Infoset. Node kinds that DON'T need them (elements/scalars/collections/attrs) round-trip over
+# the plain Infoset too; Raw/EntityRef/Decl require the syntax-preserving level — stated, not assumed.
+
+# ════════════════ MAPPING ACCEPT RULES (one per node kind) ════════════════
+
+[M-DOC]  A document images as its single root element, or wraps a multi-root / bare-scalar root; a
+         MultiDoc ('---'-separated) wraps each document in <cx:doc>.
+  RULE     xml(Document=[n]) ⇒ xml(n) if n is one element; otherwise (multi-root, or a bare scalar/
+           string/atom/collection root) ⇒ '<cx:docs>' concat(map(ximg-wrapped, nodes)) '</cx:docs>'.
+           xml(MultiDoc=[D1..Dk]) ⇒ '<cx:docs>' concat(map(D→ '<cx:doc>'concat(map(ximg-wrapped, D.nodes))
+           '</cx:doc>', Ds)) '</cx:docs>'   (k≥2; per-doc wrapper — injective vs multi-root).
+           [P1-MULTIDOC-INV fix] INVERSE: cx(<cx:docs> X </cx:docs>) ⇒ if EVERY child of X is a <cx:doc>
+           ⇒ MultiDoc, one Document per <cx:doc> (its children via cx); else ⇒ a single multi-root
+           Document of map(cx, X). (So <cx:doc> children ⇔ '---' boundaries, bare children ⇔ multi-root.)
+           This binds the bijection's `n` to the reader's actual Document/MultiDoc output (fixes B7).
+  WITNESS  [a 1]            → <a>1</a>                               (single element root — default/lossy)
+           [a 1]            → <a><cx:int>1</cx:int></a>              (single element root — lossless)
+           42               → <cx:docs><cx:int>42</cx:int></cx:docs>  (bare scalar root — NOT a string)
+           [a 1][b 2]       → <cx:docs><a cx:type="int">1</a><b cx:type="int">2</b></cx:docs>  (multi-root)
+           [a 1]\n---\n[b 2]→ <cx:docs><cx:doc><a cx:type="int">1</a></cx:doc><cx:doc><b cx:type="int">2</b></cx:doc></cx:docs>
+
+[M-SCALAR-SOLE]  A sole non-string scalar. DEFAULT (lossy) drops the type; LOSSLESS (opt-in)
+                 preserves it as a <cx:T> child carrier. The cx:type="T" attribute form is the
+                 image of an EXPLICIT annotation [n::T v], NOT of an auto-typed body.
+                 DISPATCH: applies iff the element body is EXACTLY ONE scalar (child-count 1, not a
+                 collection literal); ≥2 scalar children → each via M-SCALAR-ITEM; a collection-literal
+                 body ([…]/{…}/(…)) → M-ARRAY/M-MAP/M-SEQ even at count 1 (a 1-item array ≠ a sole scalar).
+  RULE     default (lossy)              ⇒ '<'n'>'render(v)'</'n'>'                    (type dropped)
+           lossless, auto-typed         ⇒ '<'n'><cx:'T'>'render(v)'</cx:'T'></'n'>'
+           lossless, annotated [n::T v] ⇒ '<'n' cx:type="'T'">'render(v)'</'n'>'
+           inverse (lossless): <n><cx:T>text</cx:T></n> ⇒ Element{n,[Scalar{T,parse_T(text)}]} (auto-typed);
+                    <n cx:type="T">text</n> ⇒ annotated Element{n::T,[Scalar{T,parse_T(text)}]}.
+  WITNESS  [note 42]      → <note>42</note>                  (default / lossy)
+           [note 42]      → <note><cx:int>42</cx:int></note> (lossless)
+           [note::int 42] → <note cx:type="int">42</note>    (lossless, annotated)
+           [r 4.2]        → <r><cx:float>4.2</cx:float></r>  (lossless)
+
+[M-SCALAR-ITEM]  A non-string scalar that is one of several body items wraps as <cx:T>.
+  RULE     xml(Scalar{T,v}) as a multi-item / array / seq / map item ⇒ '<cx:'T'>'render(v)'</cx:'T'>'
+           inverse: <cx:T>s</cx:T> ⇒ Scalar{T, parse_T(s)} (parse_T fail ⇒ CXER0290).
+  WITNESS  [xs 80 443] → <xs><cx:int>80</cx:int><cx:int>443</cx:int></xs>
+
+[M-STRING]  A string (= text) is bare text in an element body; wrapped <cx:string> inside a collection.
+  RULE     xml(Scalar{string,v}) in an element body ⇒ escape(v)  (bare text; delimited by neighbor
+           tags — adjacent strings cannot occur, grammar [52] Body merges them);
+           xml(Scalar{string,v}) as an array/seq/map item or key/val ⇒ '<cx:string>'escape(v)'</cx:string>'.
+           inverse: a bare text run ⇒ one Scalar{string}; <cx:string>s</cx:string> ⇒ Scalar{string,s}.
+  WITNESS  [note 'hi']  → <note>hi</note>
+           [xs 'a', 'b'] → <xs><cx:array><cx:string>a</cx:string><cx:string>b</cx:string></cx:array></xs>
+
+[M-ATOM]  An atom is an ordinary scalar of kind=atom (T=atom), imaged by the normal scalar rules
+          (M-SCALAR-SOLE / M-SCALAR-ITEM) with T=atom — no dedicated node, no cx:type attribute form.
+  RULE     default (lossy) ⇒ '<'n'>'name'</'n'>' (bare name; <cx:atom>name</cx:atom> as a collection item)
+           lossless        ⇒ '<cx:atom>'name'</cx:atom>' in every position; inverse symmetric.
+  WITNESS  [s :ok] → <s>ok</s>                    (default / lossy)
+           [s :ok] → <s><cx:atom>ok</cx:atom></s> (lossless)
+
+[M-NULL]  A null scalar is an empty element / omitted attribute.
+  RULE     xml(Element{n,[Scalar{null}]}) ⇒ '<'n' cx:type="null"/>' ; a null ATTRIBUTE emits no value
+           but its name is ALWAYS recorded in cx:attr-types as `k=null` (MANDATORY — so the attribute
+           round-trips and is never silently dropped; fixes the undefined "must be preserved" criterion).
+  WITNESS  [x null]    → <x cx:type="null"/>          (bareword `null` ⇒ Scalar{null}; LX-NULL)
+           [u a=null]  → <u cx:attr-types="a=null"/>  (attr name preserved via the mandatory sidecar)
+
+[M-ELEMENT]  An element images as its tag with meta-attributes around its mapped children.
+  RULE     xml(Element{n,m,b}) ⇒ '<'n A(m)'>' concat(map(ximg, b)) '</'n'>'
+           where ximg routes each child through M-SCALAR-ITEM / M-STRING / M-ELEMENT / … ; and
+           A(m) emits, in canonical order: cx:anchor, cx:merge, cx:id, [P1-HT fix] cx:type="T" when the
+           HEAD carries a glued TypeAnn meta.type (a scalar T like u16, OR an array T[] — see typed-array
+           below), xmlns(:p) decls, xml:space|lang|base|id, plain k="escape(v)" attrs, and
+           cx:attr-types="k=T …" for every attr whose stored type ≠ infer(value).
+           inverse reads cx:anchor/cx:merge/cx:id/cx:type/xmlns(:p)/cx:attr-types/xml:* into meta; a sole
+           text child + cx:type=scalarT ⇒ one typed scalar; a sole <cx:T> child normalizes to the cx:type
+           form (§canon); cx:type="T[]" + wrapped item children ⇒ a TYPED ARRAY body (see [M-TYPED-ARRAY]).
+[M-TYPED-ARRAY]  A head ::T[] (explicit) or ::[] (inferred) images as cx:type="T[]"/"[]" + wrapped items.
+  RULE     ::T[] (explicit element type T): xml(Element{n, type=T[], body=[items]}) ⇒
+           '<'n' cx:type="'T'[]"'A(rest)'>' concat(map(i→ '<cx:'T'>'render(i)'</cx:'T'>', items)) '</'n'>'
+           (items wrapped as their element type T, NOT a nested <cx:array>).
+           [P2-INFERARR fix] ::[] (INFERRED element type): images cx:type="[]"; the element type is
+           inferred from the items, so each item wraps as ITS OWN type <cx:typeof(i)> (heterogeneous
+           allowed): xml(…type=[]…) ⇒ '<'n' cx:type="[]"'A(rest)'>' concat(map(i→ '<cx:'typeof(i)'>'
+           render(i)'</cx:'typeof(i)'>', items)) '</'n'>'.
+           inverse: cx:type="T[]" ⇒ a T[] typed-array body; cx:type="[]" ⇒ an inferred-type array body.
+  WITNESS  [xs::string[] a b] → <xs cx:type="string[]"><cx:string>a</cx:string><cx:string>b</cx:string></xs>
+           [xs::[] 1 2.0]     → <xs cx:type="[]"><cx:int>1</cx:int><cx:float>2.0</cx:float></xs>   (inferred)
+           [port::u16 8080]   → <port cx:type="u16">8080</port>   (scalar head type via cx:type)
+  WITNESS  [p hi [b x] yo]   → <p>hi <b>x</b> yo</p>   (WS adjacent to a child element is PRESERVED as
+                          one space on the neighbouring string run — the WS-ROUND-TRIP RULING 2026-06-05:
+                          dropping it would make `hi[b]` ≡ `hi [b]`, breaking the bijection the contract
+                          rests on. See grammar [52] Body.)
+           [u active=true]   → <u active="true"/>                  (bool auto-recovers; no sidecar)
+           [u name='42']     → <u name="42" cx:attr-types="name=string"/>  (looks like int ⇒ sidecar)
+
+[M-ARRAY]  / [M-SEQ]  / [M-MAP]  Collections wrap their items (items ALWAYS wrapped, incl. strings).
+  RULE     xml(Array its) ⇒ '<cx:array>' concat(map(ximg-wrapped, its)) '</cx:array>'  (nest-preserving)
+           xml(Seq its)   ⇒ '<cx:sequence>' concat(map(ximg-wrapped, its)) '</cx:sequence>'   (rank-preserving;
+                            flatten is a downstream eval step, not here) [P2-ELLIPSES fix]
+           xml(Map es)    ⇒ '<cx:map>' for each: '<cx:entry><cx:key>'ximg-wrapped(k)'</cx:key>'
+                            '<cx:val>'ximg-wrapped(v)'</cx:val></cx:entry>' '</cx:map>'
+           keys are wrapped too, so a non-string key keeps its type (int key ⇒ <cx:int>).
+           inverse [P2-MAPKEY fix]: a valid key is ONLY a String or a scalar of {int,float,bool,date,
+           datetime,string} (= the forward ScalarKey set). A <cx:key> holding <cx:null>, <cx:atom>,
+           <cx:map>, <cx:array>, or an element ⇒ W014 — exactly the forward MapKey reject ([56g])
+           (BOTH atom AND null keys rejected in BOTH directions; no asymmetry).
+  WITNESS  [1, [2,3]] → <cx:array><cx:int>1</cx:int><cx:array><cx:int>2</cx:int><cx:int>3</cx:int></cx:array></cx:array>
+           {1: a}     → <cx:map><cx:entry><cx:key><cx:int>1</cx:int></cx:key><cx:val><cx:string>a</cx:string></cx:val></cx:entry></cx:map>
+
+[M-ENTITYREF]  An unresolved entity ref images via the <cx:entity-ref> carrier (NOT a raw '&n;').
+  RULE     [P1-ENTITY fix] xml(EntityRef{n}) ⇒ '<cx:entity-ref cx:name="'n'"/>' ; inverse symmetric.
+           A raw '&n;' in source XML text is just escaped character data and inverts to a STRING (the
+           literal char), NOT an EntityRef — so the string "&" and a preserved EntityRef no longer
+           collide (the string images as escaped '&amp;', the EntityRef as the carrier). Injective.
+  WITNESS  [s &amp;] → <s><cx:entity-ref cx:name="amp"/></s>   (preserved entity ref: carrier)
+           [s '&']   → <s>&amp;</s>                            (literal '&' string: escaped text — distinct)
+
+[M-RAW]  Raw text images as CDATA (']]>' split per the data rule).
+  RULE     xml(Raw{b}) ⇒ '<![CDATA[' split(b) ']]>'  ;  cx(CDATA) ⇒ Raw{merge_adjacent(b)}.
+  WITNESS  [# a<b #] → <![CDATA[ a<b ]]>
+
+[M-BLOCK]  A literal block ([| … |], grammar [28]) images via the <cx:block> carrier; literal newlines
+           are preserved as content. Distinct from M-RAW (which is a CDATA span), so the two node kinds
+           do not collide.
+  RULE     xml(Block{t}) ⇒ '<cx:block>'escape(t)'</cx:block>'  ;  cx(<cx:block>s</cx:block>) ⇒ Block{s}.
+  WITNESS  [|a<b|] → <cx:block>a&lt;b</cx:block>
+
+[M-COMMENT]  A comment images as an XML comment, or <cx:comment> if it contains '--'.
+  RULE     xml(Comment{t}) ⇒ t has no '--' ? '<!--'t'-->' : '<cx:comment>'escape(t)'</cx:comment>'
+           comment text t is VERBATIM between '[-' and ']' (no WS trim — consistent with Raw, D4);
+           stored RAW; cx() does not re-unescape (the XML parser already decoded).
+  WITNESS  [- note] → <!-- note-->                  (leading space is verbatim content)
+
+[M-ALIAS]  An alias node images as <cx:alias cx:name>.
+  RULE     xml(Alias{n}) ⇒ '<cx:alias cx:name="'n'"/>'  ;  inverse symmetric.
+  WITNESS  [*base] → <cx:alias cx:name="base"/>
+
+[M-DECL]  DTD declarations image as their native XML, raw-preserved.
+  RULE     xml(Decl{'DOCTYPE',raw}) ⇒ '<!DOCTYPE'raw'>' ; ENTITY/ELEMENT/ATTLIST/NOTATION ⇒ '<!'name raw'>'.
+  WITNESS  [!ENTITY x 'y'] → <!ENTITY x 'y'>
+
+[M-PEREF]  A parameter-entity reference (% Name ; — decls only, grammar [68], stored OPAQUE, NEVER
+           expanded) images via the <cx:pe-ref> carrier. Inside a raw-preserved DTD (M-DECL) it is
+           carried verbatim as '%'n';'; standalone it uses the carrier.
+  RULE     xml(PERef{n}) ⇒ '<cx:pe-ref cx:name="'n'"/>'  ;  inverse symmetric.
+  WITNESS  %foo; → <cx:pe-ref cx:name="foo"/>
+
+[M-CONDSECT]  A DTD conditional section ([![INCLUDE[…]]] / [![IGNORE[…]]], grammar [110]-[112]) images
+           as native XML, raw-preserved (like M-DECL: keyword + interior content kept verbatim).
+  RULE     xml(CondSect{INCLUDE,raw}) ⇒ '<![INCLUDE['raw']]>'  ;  xml(CondSect{IGNORE,raw}) ⇒ '<![IGNORE['raw']]>'
+           ;  inverse symmetric.
+  WITNESS  [![INCLUDE[<!ELEMENT x EMPTY>]]] → <![INCLUDE[<!ELEMENT x EMPTY>]]>
+
+[M-PI]  A processing instruction round-trips verbatim; xml/cx targets are PIs too (at the parse layer).
+  RULE     PI ::= '[?' PITarget (WS PIData)? ']' ; PIData ::= (Char - ']')*  (interior ']' ends the PI —
+           see RESIDUAL). PITarget = any Name ∉ the EvalName set, INCLUDING 'cx' — at the PARSE layer
+           these image as ordinary PIs; XMLDecl/CXDirective SEMANTICS (version/include/schema) are an
+           eval/conversion concern, not a parse rule.
+           xml(PI{t,d}) ⇒ d = "" ? '<?'t'?>'                                # empty data: no spurious space
+                        : (t ≠ 'xml' AND d has no '?>') ? '<?'t' 'd'?>'
+                                                        : '<cx:pi cx:target="'t'">'escape(d)'</cx:pi>'
+           — the raw '<?t d?>' form is used ONLY when legal: the reserved XML-1.0 target [Xx][Mm][Ll]
+           and any data containing '?>' (which would terminate the PI early) fall back to the cx:pi
+           carrier (escape handles '?>'); inverse symmetric. So PI is FULLY round-trippable (no '?>'
+           residual — fixes [A]).
+  WITNESS  [?php echo 1;]     → <?php echo 1;?>
+           [?php a?>b]        → <cx:pi cx:target="php">a?&gt;b</cx:pi>   (data has '?>' ⇒ carrier)
+           [?xml version=1.0] → <cx:pi cx:target="xml">version=1.0</cx:pi>   ('<?xml?>' is reserved/illegal)
+
+[M-PROGRAM]  Directive / call / binding / path / slice / pattern image uniformly (eval semantics in code.md).
+  RULE     xml(Form{directive,h,m,b}) ⇒ '<cx:directive cx:head="'h'"' A(m)'>'concat(map(ximg,b))'</cx:directive>'
+           xml(Form{call,h,b})        ⇒ '<cx:call cx:head="'h'">'concat(map(ximg,b))'</cx:call>'
+           xml(Binding{n}) ⇒ '<cx:var cx:name="'n'"/>'
+           [P2-ELLIPSES fix] xml(Path{steps}) ⇒ '<cx:path>' concat(map(s→ '<cx:step axis="'s.axis'" test=
+           "'s.nodetest'">' concat(map(xml, s.preds)) '</cx:step>', steps)) '</cx:path>'
+           xml(Slice{axes}) ⇒ '<cx:slice>' concat(map(a→ '<cx:axis>'render-axis(a)'</cx:axis>', axes)) '</cx:slice>'
+           (render-axis: a single index ⇒ the expr; a `lo:hi:step` ⇒ those three sub-exprs as start/stop/
+           step attrs; a `*` ⇒ <cx:axis full="true"/>). Inverses read cx:head/cx:name/cx:step/cx:axis back.
+           Match / Modify / Eval / Iterator forms image via the SAME generic directive shape
+           ('<cx:directive cx:head="'h'">…</cx:directive>'); their specific eval semantics (pattern match,
+           [?modify], [?eval]/cx:eval-tree, lazy iterator) live in code.md and are NOT re-imaged here.
+  WITNESS  [$inc $x] → <cx:call cx:head="inc"><cx:var cx:name="x"/></cx:call>
+
+[M-INTERP]  A string interpolation ([?= expr ], grammar [58]) images via <cx:interp> wrapping the imaged
+           expression. Outside a program-eval context it has no special meaning and round-trips as
+           literal [?=…] text ([58]); eval semantics live in code.md.
+  RULE     xml(Interp{e}) ⇒ '<cx:interp>'xml(e)'</cx:interp>'  ;  inverse reads the child expr back.
+  WITNESS  [?=$x] → <cx:interp><cx:var cx:name="x"/></cx:interp>
+
+[M-XMLATTR]  xml:space|lang|base|id round-trip verbatim from the carrier field.
+  RULE     A(m) emits each xml_attr as ' xml:NAME="'v'"'; cx() reads them back into meta.xml_attrs.
+           xml:space="preserve" marks inter-child whitespace significant (§canon.5).
+  WITNESS  [p xml:space=preserve 'a  b'] → <p xml:space="preserve">a  b</p>
+
+# ════════════════ MAPPING REJECT RULE ════════════════
+
+[M-ERR]  A parse/coerce failure is itself a value, imaged as <cx:err code offset>.
+  RULE     a rejected input ⇒ the error value Err{code, offset, msg?}, imaged as
+           '<cx:err code="'code'" offset="'n'"'(' msg="'escape(msg)'"')?'/>' ; code+offset are normative,
+           msg is not. (The specific code per input is fixed by the REJECT rules in lexicon/grammar.)
+  WITNESS  [web, prod] → <cx:err code="CXER0100" offset="4"/>
+           [n::int abc] → <cx:err code="CXER0290" offset="8"/>    (the failing value `abc`)
+
+# ════════════════ §HELPERS (named procedures — the non-pair content) ════════════════
+# render(Scalar{T,v}) — canonical scalar printer; MUST re-lex (lexicon HELPERS:type) to EXACTLY T:
+#   int|iN|uN ⇒ decimal digits · float|fN ⇒ ALWAYS '.' or exponent (4.0, never 4) · decimal ⇒ digits
+#   with '.' (exact, no float rounding) · bigint ⇒ decimal digits (cx:type carries it) · bool ⇒ true|false
+#   · null ⇒ (empty; M-NULL) · date|datetime ⇒ the ISO lexeme (zone preserved verbatim) · atom ⇒ the
+#   name · bytes ⇒ base64(v) (RFC4648) · duration ⇒ the [L27] CX form (e.g. 1h30m; NOT ISO — render
+#   must re-lex via [L27]); period ⇒ the [L28] CX form (1y6mo) · instant ⇒ datetime lexeme ·
+#   secret ⇒ render of the wrapped value (redacted only by the lossy profile). A string that lexes as a
+#   non-string is QUOTED. render is injective per T ⇒ CX→CX canonicalization is idempotent.
+#   NOTE: the XML body IMAGE of a duration/period is ISO-8601 (PT1H30M / P1Y6M / P10D / P2W) — that is the
+#   CX→XML render (M-mapping), distinct from this CX-canonical render; XML→CX parses ISO back to the
+#   canonical [L27]/[L28] CX form (value-stable, e.g. 90m → PT1H30M → 1h30m).
+# infer(s) — type(s) under lexicon HELPERS:type over attr text s. Types with NO bare lexical form
+#   (decimal, bigint, every iN/uN/fN, bytes, atom, duration, period, instant, secret) NEVER infer from
+#   the XML attr text (the ISO image of a duration/period does not re-lex as a bare value), so an
+#   attribute of any such stored type ALWAYS carries a cx:attr-types entry. attr render = body render.
+#   (In the CX reading, by contrast, a bare [L27]/[L28] token like `90m`/`1y6mo` DOES infer — that is
+#   the source form; only the XML ISO image needs the carrier.)
+# parse_T(s) — inverse of render for T; failure on a foreign <cx:T> payload ⇒ CXER0290.
+# coerce(T, s) — for ::T value: string⇒s verbatim; int/bigint⇒Integer/HexInt; iN/uN⇒int+range(CXER0290);
+#   float/fN⇒Float/Integer; decimal⇒an EXACT decimal (NOT via Float — preserves render(decimal) exactness);
+#   (range = the sized iN/uN bound check; out-of-range ⇒ CXER0290, same code as a failed coercion)
+#   bool/null/date/datetime/atom⇒that lexical form; bytes⇒base64; duration⇒the [L27] CX form (1h30m);
+#   period⇒the [L28] CX form (1y6mo); instant⇒datetime lexeme; secret⇒coerce the wrapped value then
+#   wrap; any non-conforming s ⇒ CXER0290.
+# split/merge_adjacent — the CDATA ']]>' split + reassembly (mutually inverse).
+
+# ════════════════ §types — the one normative type vocabulary ════════════════
+# AnnotationTypes (the ::T set, lexicon LX-TYPEANN, 25 names) ⊆ ValueKinds.
+# ValueKinds = AnnotationTypes ∪ {any, number, scalar, node, element, array, sequence, map, iterator,
+#   document, text, comment, pi, directive, function, path} ∪ parameterized {[or T…],[sequence T],[iterator T]}.
+# RULES: `::T` annotation T ∈ AnnotationTypes else CXER0107 (it COERCES a scalar). `::K` value-kind test
+#   K ∈ ValueKinds else CXER0107 (it TESTS, no coerce; number ≡ [or int float], any = top). A ValueKind
+#   name is reserved in TYPE position only — the same name is a legal element head elsewhere.
+# CARRIER-NAME INVARIANT: a cx: carrier element name = 'cx:' + the EXACT ValueKind/scalar-kind name,
+#   NEVER abbreviated. So <cx:int>/<cx:string>/<cx:datetime>/<cx:array>/<cx:sequence> — and NOT
+#   <cx:arr>/<cx:seq>. This makes the per-type carrier set (M-SCALAR-ITEM, M-ARRAY/M-SEQ/M-MAP) a total
+#   function of the kind set above; an abbreviated carrier on IMPORT canonicalizes to the full name
+#   (§canon). (Live conversions.md/ast.md/impl still carry cx:arr/cx:seq — a known, tracked drift.)
+
+# ════════════════ §profiles — DEFAULT lossy-idiomatic; LOSSLESS opt-in (conversions.md §0.2) ════
+# LOSSLESS (= the bijection above, opt-in --lossless): cx:* carriers + cx:type/cx:attr-types; JSON via a
+#   cx:type sidecar. Sequence-vs-Array still collapses at the JSON boundary (one array kind, §0.2 line 58).
+# DEFAULT (lossy idiomatic; non-injective, "looks like normal XML/JSON"):
+#   idiom_xml(Scalar{T,v}) ⇒ escape(render(v))  (NO cx:type) · idiom_xml(Atom{n}) ⇒ escape(n) ·
+#   idiom_xml(Element{n,m,b}) ⇒ '<'n idiom_attrs(m)'>'concat(map(idiom_xml,b))'</'n'>'  (cx:* dropped) ·
+#   idiom_xml(Array|Seq) ⇒ items inlined.
+#   idiom_json(int|float) ⇒ JSON number · (bool) ⇒ true|false · (null) ⇒ null ·
+#   (string|atom|bytes|date|datetime) ⇒ JSON string · (Element) ⇒ {"n": body} · (Map) ⇒ object · (Array|Seq) ⇒ array.
+#   LOSSY by design: cx(idiom_*(n)) ≠ n in general (int/i64/decimal→number, atom→string, Seq→Array collapse).
+#   JSON→CX import number rule (independent of lexicon §8, keyed on NOTATION not value — fixes the
+#   `4.0` double-match): a JSON number whose source contains '.' or 'e'/'E' ⇒ float; else ⇒ int
+#   (>i64 ⇒ bigint). XML→CX: a text node auto-types per lexicon HELPERS:type. Both best-effort, not a round-trip.
+
+# ════════════════ §canon — the canonicalizations (xml(cx(x)) = canon(x) ≠ x, each idempotent) ════
+#   1. numeric char refs resolve at read (&#65; ⇒ "A"); the numeric spelling is not preserved.
+#   2. empty-string body nodes are dropped (no zero-length string node in a canonical tree).
+#   3. a sole <cx:T> element child (T≠string) ≡ the cx:type friendly form; canonical output is the
+#      friendly form. EXCEPTION: a sole <cx:string> child canonicalizes to BARE TEXT (M-STRING — there
+#      is no cx:type="string" form); a sole <cx:atom> stays <cx:atom> (M-ATOM, never friendly).
+#   3b. a <cx:docs> wrapping exactly ONE NON-CARRIER element (resolved name NOT in the cx URI)
+#       canonicalizes to that bare element (M-DOC single-root). A sole carrier root (<cx:int>, <cx:call>,
+#       <cx:array>, …) stays wrapped in <cx:docs> — so canon does not oscillate (re-wrap).
+#   4. an attr whose value looks like a non-string scalar gains a mandatory cx:attr-types entry.
+#   5. inter-element WS not under xml:space="preserve" is dropped; runs normalize per grammar [52] Body.
+#   6. Sequence flatten is NOT here — the bijection preserves rank (eval may flatten downstream).
+# RESIDUAL LIMIT (honest, COMPLETE list): a Comment/Raw/PI whose content contains its own close
+#   delimiter (Comment ']', Raw '#]', PI ']') is inexpressible as that node kind; the "use a string"
+#   workaround changes node kind. Comments/raw/PIs are dropped by canonical eval (non-load-bearing), so
+#   this is an ACCEPTED documented limit, not solved. This is the ONLY representational limit.
+
+# ════════════════ §status — honest convergence state ════════════════
+# Format: every rule = description / RULE / WITNESS, accept rules + dedicated reject rules, witnesses in
+# CX→XML (errors as <cx:err>). This file + lexicon.ebnf + grammar.ebnf are the complete PARSE-LAYER
+# definition (reader + CX⇄XML); EVALUATION semantics (directive/operator/stdlib behavior) live in code.md
+# and are referenced, not re-derived here.
+# Adversarial convergence: 4 rounds run (12 → 3+seam → 4 → round-4). The FORMAT REWRITE reset some
+# progress — it dropped the string-word token rule (restored: LX-WORD) and the §namespace section
+# (restored: grammar §namespace), and bolted on the Markdown rules unintegrated. Round-4 breaks FIXED:
+# LX-WORD token extent; M-DOC root-document image (bare `42` ⇒ <cx:docs>…, was undefined); bijection
+# codomain Tree⊎Err (A4); carrier recognition BY URI not prefix (§namespace); G-TYPED-ARRAY (::T[]
+# overrides string-merge); M-MAP non-scalar-key inverse ⇒ W014; offsets (CXERLEX-CODEPOINT 4,
+# M-ERR/0290 8); M-NULL witness; M-PI; render images for bytes/duration/instant/secret/decimal;
+# comment verbatim; JSON-number by notation; '*'Name-not-']' ⇒ CXER0100.
+# D-B MARKDOWN RULED (2026-06-05): CX has NO markdown syntax — gone. Markdown is just another language,
+# embedded as OPAQUE text in a '[# … #]' raw block, like any other code. No sigil shorthands, no
+# markdown-specific elements; the parser has zero markdown awareness. So '>' is unambiguously the
+# operator, '[#' unconditional raw, '[-' unconditional comment — no totality carve-out. Any CX→Markdown
+# RENDERING is a conversion over generic data (conversions.md §2.5), not a parser concern, not in these
+# files. md.cxd's markdown-syntax cases test a non-existent feature ⇒ obsolete (drop, or embed the
+# markdown in a '[# … #]' raw block).
+# ROUND 5 (2 agents): NOT clean but NO structural breaks — markdown removal eliminated the conflict
+# class; remainder small/local, ALL FIXED: LX-WORD must-not-START-with-a-Node-sigil ($,/,&,:); directive
+# vs PI split in the dispatch ('?'EvalName⇒dir, else PI); GR-BAD-BINDING ($+/$5); slice-step offset 10;
+# comma-reject precedence; M-ATOM dedicated node (not Scalar{atom}); coerce + duration/instant/secret +
+# exact decimal; canon.3 string carve-out + 3b docs-single-element; M-MAP inverse drops atom key; null
+# attribute mandatory cx:attr-types sidecar. Trend across rounds: 12 → 3+seam → 4 → ~10(rewrite) → 13
+# small/local. Converging.
+# ROUND 6 (1 agent, final-check): NOT clean but the mapping layer + offsets + round-trip + determinism
+# RESISTED (zero two-clause, zero round-trip, zero offset errors found). 6 remaining defects, all at the
+# lexer↔dispatch seam, all one-line, ALL FIXED: LX-WORD WordStart excludes only '$'/'/' (leading '&'/':'
+# fall through to word when dispatch fails); '[?xml]'/'[?cx]' image as PIs at the parse layer (M-PI, no
+# XMLDecl/CXDirective hole); BlockComment removed from LX-WS trivia (it's a Comment node); '[*]' bare
+# star ⇒ CXER0100; bare QName in body ⇒ STRING-kind; EvalName bound to code.md §4.1 in-file.
+# ROUND 7 (1 agent, honest negative testing): NOT clean — but only 2 defects, both one-line, both at
+# the lexer↔dispatch / parse↔infoset seam; the agent confirmed two-clause / round-trip / determinism
+# RESIST (tried hard, found none). FIXED: (1) G-NODE dispatch made TOTAL over leading ':'/'&' (the
+# ELSE→ScalarWord rows mirror the LX-WORD WordStart change — was a NO-CLAUSE at top level); (2) M-PI
+# images a 'xml'-target PI via the <cx:pi cx:target="xml"> carrier ('<?xml?>' is a reserved/illegal
+# XML-1.0 PI target — was a round-trip break).
+# ROUND 8 (1 agent, honest negative testing): NOT clean — 4 defects + 1 gap (determinism/two-clause/
+# most round-trip RESISTED again). All FIXED: [B] headless WS-array `[80 443]` had no production —
+# Array/Seq now take a WS-OR-comma Sep (the real totality find this round); [A] a PI whose data has
+# '?>' (or the reserved 'xml' target) now uses the <cx:pi> carrier — PI fully round-trips; [C] Seq
+# grammar filled in (was elided '…'); [D] GR-BAD-PATH ('/' with no Step ⇒ CXER0100); the cx-URI
+# CARRIER local-name set is ENUMERATED (exhaustively) in grammar §namespace (cx:pi/cx:docs/cx:err/…
+# resolve from-spec BY URI, not prefix); resolution discipline (E210/E212/E213) is there too.
+# ROUND 9: 7 defects, all FIXED (empty-item edge in ANY comma list incl. headless array/seq + trailing
+# comma; OpSym/word seam — bare '=' rejects, operators are Form-heads; PIData production + empty-data
+# spacing + PI ']' added to the residual; map-key ':' munch suppressed like G-SLICE; canon.3b
+# NON-carrier carve-out). The core RESISTED again (carrier set, all 23 offsets, WS-or-comma agreement,
+# M-PI carrier, M-DOC, §types, no dup IDs).
+# TREND (honest): 12 → 3 → 4 → ~10 → 13 → 6 → 2 → 4 → 7. NOT monotone — it oscillates in the low
+# single-digits/teens because the adversary digs into ever-finer corners and some fixes open new edges
+# (round-8's WS-or-comma opened round-9's empty-item edge). This is ASYMPTOTIC convergence: the CORE
+# (mapping / determinism / round-trip / typing) has been clean for ~5 rounds; what remains is
+# corner-TOTALITY one-liners that keep surfacing. A certified-clean PAPER round is not reached and is
+# costly to reach by more paper rounds.
+# BEST NEXT ADVERSARY (honest recommendation): the witnesses are now executable conformance tests —
+# IMPLEMENTING the one cxparse to this spec and running the witness corpus will surface any remaining
+# corners as concrete failing fixtures, a stronger and more grounded convergence than further paper
+# rounds. Properties (totality/injectivity/idempotence) still argued+witnessed, not formally proven.
+# HONEST: "format-complete, 9 adversarial rounds (~50 defects fixed), core solid, remainder = corner
+# one-liners" — NOT "proven clean." The next phase is implement-against-the-witnesses.
+#
+# SUPERIOR REVIEW (2026-06-05): found 9 grammar-level defects the agent rounds missed — all CORRECT,
+# all FIXED (these were contradictions/missing-precedence, NOT fixture nits — so my "qualified-yes
+# adequacy" claim was TOO GENEROUS and is WITHDRAWN):
+#   [P1-1] head glued ::T wasn't consumed by Head (only as a spaced Meta) → Head ::= (…) TypeAnn?.
+#   [P1-2] '#' line-comment vs '#'Name IdDecl had no precedence → IdDecl wins in element-meta position.
+#   [P1-3] top-level string run had no merge + node-image vs document-image conflict → G-DOC top-level
+#          merge + witnesses are node-images, M-DOC is the document image (stated).
+#   [P1-4] multi-doc '---' was non-injective (collapsed with multi-root) → per-doc <cx:doc> wrappers.
+#   [P1-5] namespace resolution claimed but xmlns/scoping/undeclare/unbound-prefix undefined → NsDecl
+#          [7d] NsDecl + full resolution discipline in §namespace ([dc:title] unbound ⇒ E212).
+#   [P1-6] cx: witnesses weren't well-formed (no xmlns:cx binding) → mandatory xmlns:cx convention stated.
+#   [P2-7] anchor '&Name' vs EntityRef '&Name;' overlap → anchor is '&Name' NOT followed by ';'.
+#   [P2-8] comment '--' policy self-contradicted (CHOICES vs M-COMMENT) → '--' OK via cx:comment; only
+#          the close-delimiter is the limit.
+#   [P2-9] directive/PI split depends on code.md §4.1 EvalName → STATED as a bounded external dependency
+#          (parse layer NOT fully self-contained on directive/PI classification).
+# REVISED ADEQUACY (honest, lower): the parse layer is NOT yet adequate to complete the unification
+# WITHOUT further decisions — these were real grammar-level holes. After this fix the contract is much
+# tighter, but (a) corner-totality one-liners keep surfacing per round (asymptotic), and (b) directive/PI
+# is parameterized by code.md §4.1. The honest path remains: implement against the witnesses; that loop
+# is the adversary that closes the residue. NOT "proven clean," NOT "fully self-contained."
+#
+# SUPERIOR REVIEW #2 (2026-06-05): 7 more grammar-level defects, all CORRECT, all FIXED:
+#   [P1-CB]  CommaBody accepted a single item (ambiguous with the sole-scalar body) → now REQUIRES ≥1
+#            top-level comma; `[note 42]` is a scalar, `[note 42,]` a 1-array.
+#   [P1-CXNS] user-authored cx:carrier names weren't rejected (`[cx:int 1]` broke import) → the cx:
+#            namespace is reserved ENTIRELY for authoring; any cx-URI authored name ⇒ E210.
+#   [P1-INFOSET] the "standard XML Infoset" anchor can't preserve CDATA/entity-spelling/DTD (M-RAW/
+#            M-ENTITYREF/M-DECL) → anchor restated as a SYNTAX-PRESERVING XML model (lexical events).
+#   [P1-HT]  head cx:type emission was missing from A(m) + typed-array element image undefined → A(m)
+#            emits cx:type; [M-TYPED-ARRAY] defines the cx:type="T[]" + wrapped-children shape + inverse.
+#   [P2-NS]  NsDecl vs QName maximal-munch unreconciled → NsDecl matches the `xmlns(:p)` QName token.
+#   [P2-META] element-only meta on directive/call/op heads wasn't rejected → GR-META-ON-NONELEMENT.
+#   [P2-NULLW] stale lexicon null-attr witness `<a/>` → `<a cx:attr-types="n=null"/>` (matches M-NULL).
+# SUPERIOR REVIEW #3 (2026-06-05): 11 more defects, all CORRECT, all FIXED:
+#   [P1-ENTITY] entity-ref '&n;' image collided with an escaped '&' string → EntityRef now images via
+#     <cx:entity-ref cx:name> carrier (distinct from escaped text); injective.
+#   [P1-INFOSET2] "STANDARD XML-1.0 Infoset" still in the claim line + CHOICES → both changed to
+#     SYNTAX-PRESERVING XML model.
+#   [P1-CXNS2] GR-RESERVED-PREFIX still split (non-carrier only) → now rejects ALL authored cx-URI names
+#     (+ [cx:int 1] witness); matches §namespace.
+#   [P1-MULTIDOC-INV] M-DOC had no cx(<cx:docs><cx:doc>) inverse → added (cx:doc children ⇔ '---').
+#   [P1-HT2] Head TypeAnn? applied to ALL heads → restricted to the QName (element) head only.
+#   [P1-NSATTR] default ns wrongly applied to unprefixed ATTRIBUTES → attribute resolution rule added
+#     (unprefixed attr = no namespace, XML Namespaces 1.0).
+#   [P1-XMLNS] xmlns reserved-name behavior incomplete → [xmlns…] as element head, redeclaring xml/cx,
+#     and xmlns:p="" all pinned (E213); only xmlns="" undeclare allowed.
+#   [P2-ATTVAL] 'AttValue' was undefined → use AttrValue (the single defined production).
+#   [P2-INFERARR] ::[] had no image → M-TYPED-ARRAY cx:type="[]" with per-item typeof wrapping.
+#   [P2-MAPKEY] inverse allowed null keys (contradicting forward reject) → keys limited to the ScalarKey
+#     set; null AND atom rejected both ways.
+#   [P2-ELLIPSES] Seq/path/slice images were '…' → spelled out as full equations.
+# META (honest): THREE expert passes found ~7, ~9, ~11 real grammar-level defects the 9 agent rounds
+# missed — the count is NOT decreasing across human passes. The spec is demonstrably NOT converged;
+# "adequate/proven/complete" is NOT earned. The only convergence mechanism that scales is
+# implement-against-the-witnesses (each hole becomes a concrete failing fixture), NOT paper review.

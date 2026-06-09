@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>&lt;cx-diagram&gt; demo</title>
+  <style>
+    body { font: 14px system-ui, sans-serif; margin: 2em; }
+    cx-diagram { display: block; border: 1px solid #ccc; padding: 1em; margin: 1em 0; }
+    h2 { margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>&lt;cx-diagram&gt; reference renderer</h1>
+  <p>Three input modes: <code>mermaid</code> attribute, inner text, and <code>src</code> URL.</p>
+
+  <h2>1. Mermaid attribute (inline)</h2>
+  <!-- v0.8.0: [?find] retired (code.md §5.5). Equivalent is //user or
+       [?for [user $u] [yield $u]]. Demoing the [?modify] shape here. -->
+  <cx-diagram mermaid="%%cx:Wz9tb2RpZnkgJGRvYyAvL3VzZXIvQHN0YXR1cyBbc2V0ICJ2ZXJpZmllZCJdXQ==%%
+flowchart TD
+  n1[/&quot;//user/@status&quot;/]
+  n2[&quot;[?modify]&quot;]
+  n3([&quot;[set &amp;quot;verified&amp;quot;]&quot;])
+  n2 --> n1
+  n2 --> n3"></cx-diagram>
+
+  <h2>2. Inner text content</h2>
+  <cx-diagram>
+%%cx:Wz9mb3IgW2luICR4ICgxLCAyLCAzKV0gW3lpZWxkIFsqICR4ICR4XV1d%%
+flowchart TD
+  n2["[?for]"]
+  n3["[yield [* $x $x]]"]
+  n2 --> n3
+  </cx-diagram>
+
+  <h2>3. Sequence diagram (async)</h2>
+  <cx-diagram mermaid="%%cx:Wz9hc3luYyBbb2sgdmFsdWU9NDJdXQ==%%
+sequenceDiagram
+  participant Caller
+  Note over Caller: [?async]
+  Note over Caller: [ok value=42]"></cx-diagram>
+
+  <h2>4. [?if] diamond + [?match] dispatcher</h2>
+  <!-- v0.8.0 CFG shapes: diamond for [?if], round-rect stadium
+       for [?match] dispatcher. Server-side `cx diagram` emits the
+       Mermaid shape primitives; the component just hosts them. -->
+  <cx-diagram mermaid="%%cx:Wz9pZiBbPiAkeCAwXSBbdGhlbiBbcG9zICR4XV0gW2Vsc2UgW25lZyAkeF1dXQ==%%
+flowchart TD
+  n1{&quot;[> $x 0]&quot;}
+  n2[&quot;[pos $x]&quot;]
+  n3[&quot;[neg $x]&quot;]
+  n1 -- true --> n2
+  n1 -- false --> n3"></cx-diagram>
+
+  <h2>5. [?for] loop-box + [?def] sub-graph</h2>
+  <cx-diagram mermaid="%%cx:Wz9kZWYgY2xhc3NpZnkgW3JldHVybnMgYXRvbV0gKCR1KSBbP21hdGNoICR1XV0=%%
+flowchart TD
+  subgraph def_classify [&quot;[?def classify]&quot;]
+    h1([&quot;[in $u $users]&quot;])
+    b1[&quot;[?match $u@age]&quot;]
+    e1[/&quot;exit&quot;/]
+    h1 -- &quot;binds $u&quot; --> b1
+    b1 --> h1
+    h1 --> e1
+  end"></cx-diagram>
+
+  <script type="module" src="./cx-diagram.js"></script>
+  <script>
+    // Sanity check: when the elements have finished rendering, log
+    // whether each one extracted a cxSource.
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.querySelectorAll('cx-diagram').forEach((el, i) => {
+          console.log('cx-diagram[' + i + '] cxSource:', el.cxSource);
+        });
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

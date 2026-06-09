@@ -1,14 +1,14 @@
 //! Streaming Table reader / writer + chunked-table one-shot
 //! (Phase 7.74b; spec/abi.md §2.10, capability bit 21).
 //!
-//! Convention: user-facing API exchanges UNFRAMED CXDB payload bytes.
+//! Convention: user-facing API exchanges UNFRAMED CXCol payload bytes.
 //! The C ABI takes / returns framed `[u32 LE size][payload]` buffers;
 //! this binding handles framing transparently.
 //!
 //! ```no_run
 //! use cxlib::streaming_table::{to_data_bin_chunked, TableReader, TableWriter};
 //!
-//! let payload = to_data_bin_chunked("[points :table[a:int b:int] 1 2]").unwrap();
+//! let payload = to_data_bin_chunked("[points [table[a::int b::int]] 1 2]").unwrap();
 //! let mut reader = TableReader::open(&payload).unwrap();
 //! let schema = reader.schema().unwrap();
 //! let groups: Vec<Vec<u8>> = std::iter::from_fn(|| reader.next_row_group().transpose())
@@ -67,8 +67,8 @@ unsafe fn take_err(err_ptr: *mut c_char, default: &str) -> String {
     msg
 }
 
-/// Encode a CX `:table`-bodied root element to the CXDB chunked-table
-/// form (`0x63`). Returns unframed CXDB payload bytes.
+/// Encode a CX `:table`-bodied root element to the CXCol chunked-table
+/// form (`0x63`). Returns unframed CXCol payload bytes.
 pub fn to_data_bin_chunked(input: &str) -> Result<Vec<u8>, String> {
     crate::ensure_thread();
     let c_input = CString::new(input).map_err(|e| e.to_string())?;
@@ -80,7 +80,7 @@ pub fn to_data_bin_chunked(input: &str) -> Result<Vec<u8>, String> {
     Ok(unsafe { copy_framed_and_free(raw) })
 }
 
-/// Streaming reader over the row groups of a chunked-table CXDB buffer
+/// Streaming reader over the row groups of a chunked-table CXCol buffer
 /// or file descriptor. Implements `Iterator<Item = Result<Vec<u8>, String>>`.
 pub struct TableReader {
     handle: *mut c_void,
@@ -95,7 +95,7 @@ pub struct TableReader {
 unsafe impl Send for TableReader {}
 
 impl TableReader {
-    /// Open a streaming reader over an unframed CXDB chunked-table payload.
+    /// Open a streaming reader over an unframed CXCol chunked-table payload.
     pub fn open(payload: &[u8]) -> Result<Self, String> {
         if payload.is_empty() {
             return Err("TableReader::open: empty input".to_owned());
@@ -113,7 +113,7 @@ impl TableReader {
     }
 
     /// Open a streaming reader over an open file descriptor positioned
-    /// at the CXDB magic (no framing prefix). Caller retains fd ownership.
+    /// at the CXCol magic (no framing prefix). Caller retains fd ownership.
     pub fn open_fd(fd: i32) -> Result<Self, String> {
         crate::ensure_thread();
         let mut err_ptr: *mut c_char = ptr::null_mut();
@@ -186,7 +186,7 @@ impl Iterator for TableReader {
     }
 }
 
-/// Streaming writer for the chunked-table CXDB format. In-memory writers
+/// Streaming writer for the chunked-table CXCol format. In-memory writers
 /// accumulate bytes; fd writers stream to the supplied fd.
 pub struct TableWriter {
     handle: *mut c_void,

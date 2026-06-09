@@ -1,64 +1,277 @@
 {
   "if directive": {
     "prefix": "?if",
-    "body": ["[?if ${1:cond} :then ${2:then-expr} :else ${3:else-expr}]$0"],
-    "description": "Conditional directive"
+    "body": ["[?if ${1:cond} [then ${2:then-expr}] [else ${3:else-expr}]]$0"],
+    "description": "Conditional with [then]/[else] clause-children (code.md §8.4)"
   },
-  "for FLWOR": {
+  "for comprehension": {
     "prefix": "?for",
-    "body": ["[?for ${1:x} in ${2:coll} :return ${3:body}]$0"],
-    "description": "FLWOR iteration"
+    "body": ["[?for [in $${1:x} ${2:coll}] [yield ${3:body}]]$0"],
+    "description": "For-comprehension — Sequence outer (code.md §7)"
   },
-  "for with where + return": {
+  "for with where + yield": {
     "prefix": "?for-where",
     "body": [
-      "[?for ${1:x} in ${2:coll}",
-      "  :where ${3:predicate}",
-      "  :return ${4:body}]$0"
+      "[?for [in $${1:x} ${2:coll}]",
+      "  [where ${3:predicate}]",
+      "  [yield ${4:body}]]$0"
     ],
-    "description": "FLWOR with where predicate"
+    "description": "For-comprehension with [where] filter clause (code.md §7)"
+  },
+  "for-array comprehension": {
+    "prefix": "?for-array",
+    "body": ["[?for-array [in $${1:x} ${2:coll}] [yield ${3:body}]]$0"],
+    "description": "For-comprehension — Array outer (code.md §7)"
+  },
+  "for-map comprehension": {
+    "prefix": "?for-map",
+    "body": ["[?for-map [in $${1:x} ${2:coll}] [yield-map ${3:key} ${4:value}]]$0"],
+    "description": "For-comprehension — Map outer with [yield-map K V] (code.md §7)"
   },
   "let binding": {
     "prefix": "?let",
-    "body": ["[?let :${1:name} ${2:value} :in ${3:body}]$0"],
-    "description": "Lexical binding"
+    "body": ["[?let [= $${1:name} ${2:value}] ${3:body}]$0"],
+    "description": "Lexical binding via [= $name V] clause (code.md §8.1)"
   },
   "fn first-class function": {
     "prefix": "?fn",
-    "body": ["[?fn :params [${1:x}] :body ${2:body}]$0"],
-    "description": "First-class function definition"
+    "body": ["[?fn ($${1:x}) ${2:body}]$0"],
+    "description": "First-class (closure-capturing) function expression (code.md §8.3)"
   },
-  "match pattern": {
+  "match single-arm": {
     "prefix": "?match",
     "body": [
-      "[?match ${1:value}",
-      "  :case ${2:pattern} ${3:result}",
-      "  :else ${4:default}]$0"
+      "[?match ${1:value} ${2:pattern} [yield ${3:result}]]$0"
     ],
-    "description": "Pattern matching"
+    "description": "Single-arm match — bare pattern + [yield E] (code.md §8.2; raises CXER0100 on miss)"
   },
-  "try/catch": {
-    "prefix": "?try",
+  "match multi-arm": {
+    "prefix": "?match-multi",
     "body": [
-      "[?try ${1:body}",
-      "  :catch ${2:err-name} ${3:handler}]$0"
+      "[?match ${1:value}",
+      "  [case ${2:pattern} ${3:result}]",
+      "  [case ${4:pattern} ${5:result}]",
+      "  [else ${6:default}]]$0"
     ],
-    "description": "Error handling"
+    "description": "Multi-arm dispatch with [case]/[else] clause-children (code.md §8.2)"
   },
-  "def top-level": {
+  "match predicate-arm (Searched-CASE)": {
+    "prefix": "?match-when",
+    "body": [
+      "[?match",
+      "  [when ${1:condition} ${2:result}]",
+      "  [when ${3:condition} ${4:result}]",
+      "  [else ${5:default}]]$0"
+    ],
+    "description": "Predicate-only multi-arm — [when G R] arms (code.md §8.2)"
+  },
+  "match with [where] guard": {
+    "prefix": "?match-where",
+    "body": [
+      "[?match ${1:value}",
+      "  [case ${2:pattern} [where ${3:guard}] ${4:result}]",
+      "  [else ${5:default}]]$0"
+    ],
+    "description": "Multi-arm match with pattern + [where G] guard (code.md §8.2)"
+  },
+  "match err recovery": {
+    "prefix": "?match-err",
+    "body": [
+      "[?match ${1:expr}",
+      "  [case [err $${2:e}] ${3:handler}]",
+      "  [else ${4:fallthrough}]]$0"
+    ],
+    "description": "Errors-as-values recovery — [case [err $e] H] arm (code.md §9.3; [?try] is retired)"
+  },
+  "else value-or-default": {
+    "prefix": "?else",
+    "body": ["[?else ${1:expr} ${2:default}]$0"],
+    "description": "Value-or-default coalesce on err + absence (code.md §8.13)"
+  },
+  "modify set": {
+    "prefix": "?modify",
+    "body": ["[?modify ${1:doc} ${2://path} [set ${3:value}]]$0"],
+    "description": "Pure-functional update — [set E] action (code.md §8.10)"
+  },
+  "modify delete": {
+    "prefix": "?modify-delete",
+    "body": ["[?modify ${1:doc} ${2://path} [delete]]$0"],
+    "description": "Delete matching nodes (code.md §8.10)"
+  },
+  "modify using fn": {
+    "prefix": "?modify-using",
+    "body": ["[?modify ${1:doc} ${2://path} [using [?fn ($${3:n}) ${4:transform}]]]$0"],
+    "description": "Transform matched nodes via a function (code.md §8.10)"
+  },
+  "modify append child": {
+    "prefix": "?modify-append",
+    "body": ["[?modify ${1:doc} ${2://path} [append ${3:[child]}]]$0"],
+    "description": "Append a child to matched elements (code.md §8.10)"
+  },
+  "modify rename": {
+    "prefix": "?modify-rename",
+    "body": ["[?modify ${1:doc} ${2://path} [rename ${3:new-name}]]$0"],
+    "description": "Rename matched elements (code.md §8.10)"
+  },
+  "modify replace": {
+    "prefix": "?modify-replace",
+    "body": ["[?modify ${1:doc} ${2://path} [replace ${3:[new-node]}]]$0"],
+    "description": "Replace matched nodes (code.md §8.10)"
+  },
+  "def module-level function (public, typed)": {
     "prefix": "?def",
-    "body": ["[?def ${1:name} ${2:value}]$0"],
-    "description": "Top-level definition"
+    "body": [
+      "[?def ${1:name}",
+      "  scope=public",
+      "  [returns ${2:type}]",
+      "  (${3:params})",
+      "  ${0:body}]"
+    ],
+    "description": "Module-level function with scope=public attr and [returns T] clause (code.md §12.2)"
   },
-  "include": {
+  "def module-level function (private)": {
+    "prefix": "?defp",
+    "body": [
+      "[?def ${1:name}",
+      "  (${2:params})",
+      "  ${0:body}]"
+    ],
+    "description": "Private module-level function (code.md §12.2)"
+  },
+  "def pure function": {
+    "prefix": "?def-pure",
+    "body": [
+      "[?def ${1:name}",
+      "  scope=public",
+      "  pure",
+      "  [returns ${2:type}]",
+      "  (${3:params})",
+      "  ${0:body}]"
+    ],
+    "description": "Module-level function explicitly marked pure (bareword modifier, code.md §12.2)"
+  },
+  "def impure function": {
+    "prefix": "?def-impure",
+    "body": [
+      "[?def ${1:name}",
+      "  scope=public",
+      "  impure",
+      "  [returns ${2:type}]",
+      "  (${3:params})",
+      "  ${0:body}]"
+    ],
+    "description": "Module-level function explicitly marked impure (bareword modifier, code.md §12.2)"
+  },
+  "def with rest variadic": {
+    "prefix": "?def-rest",
+    "body": [
+      "[?def ${1:name}",
+      "  scope=public",
+      "  [returns ${2:type}]",
+      "  (${3:positional} *$${4:rest-name})",
+      "  ${0:body}]"
+    ],
+    "description": "Module-level function with *$rest variadic parameter (grammar.ebnf [153e])"
+  },
+  "const eager": {
+    "prefix": "?const",
+    "body": ["[?const ${1:NAME} ${2:value}]$0"],
+    "description": "Module-level constant (eager) (code.md §12.3)"
+  },
+  "const public": {
+    "prefix": "?const-pub",
+    "body": ["[?const scope=public ${1:NAME} ${2:value}]$0"],
+    "description": "Public module-level constant (code.md §12.3)"
+  },
+  "const lazy": {
+    "prefix": "?lconst",
+    "body": ["[?const lazy ${1:NAME} ${2:value}]$0"],
+    "description": "Lazy module-level constant (first-read memoized) (code.md §12.3)"
+  },
+  "lib import": {
+    "prefix": "?lib",
+    "body": ["[?lib '${1:cx-stdlib/strings}']$0"],
+    "description": "Module import (code.md §12.1)"
+  },
+  "lib import with alias": {
+    "prefix": "?libas",
+    "body": ["[?lib '${1:cx-stdlib/strings}' as=${2:alias}]$0"],
+    "description": "Module import with local prefix rebind — as=alias (code.md §12.1.1)"
+  },
+  "lib import selective": {
+    "prefix": "?libonly",
+    "body": ["[?lib '${1:cx-stdlib/strings}' only=(${2:name1} ${3:name2})]$0"],
+    "description": "Module import — selective refer via only=(…) (code.md §12.1.2)"
+  },
+  "lib local file": {
+    "prefix": "?lib-file",
+    "body": ["[?lib './${1:helpers.cx}']$0"],
+    "description": "Local file import (code.md §12.1)"
+  },
+  "lib HTTPS URL": {
+    "prefix": "?lib-https",
+    "body": ["[?lib 'https://${1:example.com/regex-helpers}' as=${2:alias}]$0"],
+    "description": "HTTPS URL import (SRI pinned in cx.lock) (code.md §12.1)"
+  },
+  "include (data document PI)": {
     "prefix": "?include",
-    "body": ["[?include \"${1:path.cx}\"]$0"],
-    "description": "Sandboxed file inclusion"
+    "body": ["[?cx include=${1:path.cx}]$0"],
+    "description": "Document-level lexical inclusion — element-level splice (code.md §13)"
   },
-  "eval sandbox": {
-    "prefix": "?eval",
-    "body": ["[?eval ${1:source}]$0"],
-    "description": "Sandboxed nested evaluation"
+  "pipe pipeline": {
+    "prefix": "?pipe",
+    "body": ["[?pipe ${1:seed} ${2:stage} ${3:stage}]$0"],
+    "description": "Prefix pipeline — bare transform stages (code.md §8.9)"
+  },
+  "pipe with tap": {
+    "prefix": "?pipe-tap",
+    "body": ["[?pipe ${1:seed} ${2:stage} [tap ${3:observer}] ${4:stage}]$0"],
+    "description": "Pipeline with [tap] observe-and-pass clause (code.md §8.9.2)"
+  },
+  "str interpolation": {
+    "prefix": "?str",
+    "body": ["[?str \"${1:text} {$${2:binding}} ${3:text}\"]$0"],
+    "description": "Compile-time string interpolation (code.md §8.12)"
+  },
+  "atom literal": {
+    "prefix": "atom",
+    "body": [":${1:name}$0"],
+    "description": "Atom literal :NAME (code.md §3.6)"
+  },
+  "cxpath descendant": {
+    "prefix": "path",
+    "body": ["//${1:name}${2:[@${3:attr}=${4:value}]}$0"],
+    "description": "CXPath descendant selection (code.md §5.5)"
+  },
+  "cxpath child step": {
+    "prefix": "path-child",
+    "body": ["${1:$node}/${2:name}$0"],
+    "description": "CXPath single child step from a binding (grammar.ebnf [135])"
+  },
+  "cxpath axis": {
+    "prefix": "path-axis",
+    "body": ["${1:$node}/${2|ancestor,ancestor-or-self,parent,child,descendant,descendant-or-self,following-sibling,preceding-sibling,following,preceding,self,attribute|}::${3:nodetest}$0"],
+    "description": "CXPath axis step (code.md §5.5)"
+  },
+  "cxpath general predicate": {
+    "prefix": "path-pred",
+    "body": ["${1://path}[${2:predicate-expression}]$0"],
+    "description": "CXPath step with [expr] general predicate — $_ / $_position / $_last in scope (code.md §5.5.2)"
+  },
+  "cxpath step bind": {
+    "prefix": "path-bind",
+    "body": ["${1://step}(bind $${2:name})$0"],
+    "description": "(bind $name) path-step annotation (code.md §5.5.2)"
+  },
+  "type — or union": {
+    "prefix": "type-or",
+    "body": ["[or ${1:T1} ${2:T2}]$0"],
+    "description": "Type union (e.g. [or Person null]) (code.md §12.7)"
+  },
+  "type — sequence": {
+    "prefix": "type-seq",
+    "body": ["[sequence ${1:T}]$0"],
+    "description": "Sequence-of-T type (code.md §12.7)"
   },
   "element with id": {
     "prefix": "elid",
@@ -70,19 +283,19 @@
     "body": ["[${1:name} &${2:anchor} ${3:body}]$0"],
     "description": "Element with &anchor"
   },
+  "typed table": {
+    "prefix": "table",
+    "body": ["[${1:name} [table [${2:col1}::${3:int} ${4:col2}]] ${5:rows}]$0"],
+    "description": "Typed table — [table [cols]] header block + row cells in the element body, glued ::T columns (grammar.ebnf [29])"
+  },
   "code block lang": {
     "prefix": "code",
     "body": ["[``` lang=${1:python} [|", "${2:source}", "|]]$0"],
     "description": "Embedded-language code block"
   },
-  "cx:eval directive": {
-    "prefix": "cxeval",
-    "body": ["[?cx :eval \"${1:cx-source}\"]$0"],
-    "description": "Self-host cx:eval call"
-  },
   "log:info": {
     "prefix": "loginfo",
-    "body": ["[log:info \"${1:message}\" ${2:fields}]$0"],
-    "description": "Info-level structured log"
+    "body": ["[$log:info '${1:message}' fields={${2:k: v}}]$0"],
+    "description": "Info-level structured log — head-dispatch call; requires [?lib 'cx-stdlib/log'] (code.md §12.1.1)"
   }
 }

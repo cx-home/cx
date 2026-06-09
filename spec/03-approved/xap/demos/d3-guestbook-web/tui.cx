@@ -1,0 +1,39 @@
+[?lib 'cx-stdlib/http' :as http]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/env' :as env]
+[?lib 'cx-stdlib/bytes' :as bytes]
+
+# D3 TUI CLIENT — a SEPARATE PROCESS from the server (xap.md §16: clients attach
+# over the wire; the server owns the state). It holds no runtime: it connects to
+# the server via the cx http client and rides the server's live SSE feed. Run the
+# server first (serve.cx), open the browser, then run this — three processes, one
+# authoritative fold, the SAME view in every medium.
+#
+#   server  : cx --allow-net               …/serve.cx      (hosts the runtime)
+#   web     : a browser at :8443                            (htmx renderer)
+#   tui     : cx --allow-net --allow-write  …/tui.cx        (this — terminal renderer)
+#
+# It is a real TUI — for each surface the server PUSHES, clear the screen + home
+# the cursor (ANSI ESC[2J ESC[H, built from bytes since CX string literals can't
+# encode ESC), then paint the surface (the application/cx view-tree — the
+# medium-agnostic value a terminal/agent reads, §2.5/§13.2). This is the §16 feed
+# as live SSE (§24): the client does NOT poll — it opens ONE held-open stream
+# (`sse-connect`) and the server pushes a new surface frame on every state change
+# (e.g. someone signs in the browser or with sign.cx). The surface event arrives
+# within the wire latency, not a poll tick.
+
+# paint -- clear+home, banner, then the surface the server pushed.
+[?def paint impure ($out $esc $surface)
+  [?let [= $cls [$io:write-string $out $esc]]
+    [?let [= $hdr [$io:write-line $out "guestbook · cx-xap TUI client (HTTP SSE, separate process) — Ctrl-C to quit"]]
+      [$io:write-line $out $surface]]]]
+
+[?let [= $out [$env:stdout]]
+[?let [= $esc [$bytes:to-string-latin1 [$bytes:from-hex "1b5b324a1b5b48"]]]
+# open the live feed (held-open SSE GET) and paint each pushed surface. The
+# server's `data:` payload is the application/cx surface; sse-events yields it as
+# the event's `data` field. The [?for] consumes the stream until the server
+# closes it (or Ctrl-C).
+[?let [= $src [$http:sse-connect "http://127.0.0.1:8443/events" {reconnect: false}]]
+  [?for [in $ev [$http:sse-events $src]]
+    [yield [paint $out $esc $ev@data]]]]]]

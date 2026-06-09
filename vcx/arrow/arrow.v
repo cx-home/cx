@@ -6,11 +6,11 @@ import sync
 #flag -I @VMODROOT/arrow
 #include "arrow_c_abi.h"
 
-// CXDB ↔ Apache Arrow C-Data ABI bridge per ADR 0015 D9.
+// CXCol ↔ Apache Arrow C-Data ABI bridge.
 //
 // Wire reference: https://arrow.apache.org/docs/format/CDataInterface.html
 //
-// v0.6.0 supported column types (Phase 7.74c-cont-datetime-arrow):
+// Supported column types (Phase 7.74c-cont-datetime-arrow):
 //   int / i64    →  'l'      int64,    8 bytes/row
 //   float / f64  →  'g'      float64,  8 bytes/row
 //   bool         →  'b'      bool, bit-packed, ceil(N/8) bytes
@@ -22,7 +22,7 @@ import sync
 //   datetime     →  'tsn:UTC' timestamp[ns, UTC], i64 ns LE per row
 //   bytes        →  'z'      binary, i32 offsets + raw bytes
 //
-// Deferred (surface a clear `not yet supported in v0.6.0` error):
+// Deferred (surface a clear `not yet supported` error):
 //   decimal, dictionary columns.
 //
 // Memory ownership conventions:
@@ -30,9 +30,9 @@ import sync
 //     child arrays it hands to the consumer; releases them via the
 //     struct's `release` callback.
 //   - The consumer (import) drives the released-by-producer model on
-//     incoming structs, and owns the outgoing CXDB buffer it returns.
-//   - Validity bitmaps are NULL (null_count = 0). CXDB strict-spec
-//     column-major encoding has no in-band null at v0.6.0.
+//     incoming structs, and owns the outgoing CXCol buffer it returns.
+//   - Validity bitmaps are NULL (null_count = 0). CXCol strict-spec
+//     column-major encoding has no in-band null.
 
 // ── Function pointer type aliases ────────────────────────────────────
 
@@ -84,11 +84,11 @@ pub mut:
 
 // ── Type mapping ─────────────────────────────────────────────────────
 
-// arrow_format_for_cxdb_type returns the Arrow C-Data ABI format
-// string for a CXDB column type name (as produced by
+// arrow_format_for_cxcol_type returns the Arrow C-Data ABI format
+// string for a CXCol column type name (as produced by
 // cx.column_type_name_from_code).
 //
-// v0.7.0 W1 extensions: decimal128, timestamp parametric tz, fixed-
+// W1 extensions: decimal128, timestamp parametric tz, fixed-
 // size-binary, dictionary-encoded utf8. Errors for unsupported types.
 //
 // Parametric forms (case-insensitive on the prefix):
@@ -96,7 +96,7 @@ pub mut:
 //   timestamp[U, TZ]      → 'tsU:TZ' where U ∈ {s,m,u,n} → {s, ms, us, ns}
 //   fixed-size-binary[N]  → 'w:N'   (Arrow fixed-size-binary N bytes)
 //   dict-utf8             → 'u' (with dictionary field set in schema)
-fn arrow_format_for_cxdb_type(type_name string) !string {
+fn arrow_format_for_cxcol_type(type_name string) !string {
 	// Parametric prefixes first.
 	if type_name.starts_with('decimal128[') && type_name.ends_with(']') {
 		body := type_name[11..type_name.len - 1]
@@ -154,9 +154,9 @@ fn arrow_format_for_cxdb_type(type_name string) !string {
 	}
 }
 
-// cxdb_type_name_from_arrow_format is the inverse — used on import.
-// v0.7.0 W1: handle parametric forms (d:P,S, tsU:TZ, w:N).
-fn cxdb_type_name_from_arrow_format(fmt string) !string {
+// cxcol_type_name_from_arrow_format is the inverse — used on import.
+// W1: handle parametric forms (d:P,S, tsU:TZ, w:N).
+fn cxcol_type_name_from_arrow_format(fmt string) !string {
 	if fmt.starts_with('d:') {
 		return 'decimal128[${fmt[2..]}]'
 	}
@@ -170,7 +170,7 @@ fn cxdb_type_name_from_arrow_format(fmt string) !string {
 			`n` { 'ns' }
 			else { return error("Arrow timestamp unit code '${unit_code.ascii_str()}' unrecognised in '${fmt}'") }
 		}
-		// Preserve the v0.6.0 shorthand 'datetime' for ns:UTC inputs to
+		// Preserve the shorthand 'datetime' for ns:UTC inputs to
 		// keep round-trip stable for the common case.
 		if unit_code == `n` && tz == 'UTC' { return 'datetime' }
 		return 'timestamp[${unit}, ${tz}]'
@@ -201,7 +201,7 @@ fn cxdb_type_name_from_arrow_format(fmt string) !string {
 
 // ── Date conversions (Howard Hinnant proleptic Gregorian) ────────────
 //
-// CXDB date wire form (4 bytes): yLE i16 + month u8 + day u8.
+// CXCol date wire form (4 bytes): yLE i16 + month u8 + day u8.
 // Arrow date32 wire form (4 bytes): i32 LE days since 1970-01-01.
 // Range covered: roughly year [-5877641, +5879610]; both formats are
 // proleptic Gregorian (no Julian-cutoff handling).
@@ -259,7 +259,7 @@ struct LiveArrayBuffers {
 mut:
 	row_count    int
 	// Per-column primary buffers in Arrow layout (already converted
-	// from CXDB column-major). Numeric/bool: data buffer.
+	// from CXCol column-major). Numeric/bool: data buffer.
 	// String: values (UTF-8) buffer.
 	col_main_bufs [][]u8
 	// Per-column auxiliary buffers. String: i32 offsets buffer.
@@ -313,7 +313,7 @@ fn registry_unregister_live_array(tok u64) {
 	g_live_arrays.delete(tok)
 }
 
-// ── Export: CXDB chunked → ArrowArrayStream ──────────────────────────
+// ── Export: CXCol chunked → ArrowArrayStream ──────────────────────────
 
 fn export_populate_stream_bytes(stream_out voidptr, framed []u8) ! {
 	r := cx.new_table_reader_bytes(framed)!
@@ -331,8 +331,8 @@ fn export_populate_stream_with_reader(stream_out voidptr, r &cx.CxTableReader) !
 	mut names := []string{cap: cols.len}
 	mut formats := []string{cap: cols.len}
 	for c in cols {
-		f := arrow_format_for_cxdb_type(c.type_name)!
-		codes << cxdb_code_for_type_name(c.type_name)
+		f := arrow_format_for_cxcol_type(c.type_name)!
+		codes << cxcol_code_for_type_name(c.type_name)
 		names << c.name
 		formats << f
 	}
@@ -351,42 +351,42 @@ fn export_populate_stream_with_reader(stream_out voidptr, r &cx.CxTableReader) !
 	s.release        = arrow_export_release_stream
 }
 
-// CXDB column type-byte codes (mirrors vcx/cx/data_bin.v's tags).
+// CXCol column type-byte codes (mirrors vcx/cx/data_bin.v's tags).
 // Values must match data_bin.v's `tag_*` constants exactly — the
 // chunked-table column-major encoder/decoder dispatch on these.
-const cxdb_tag_int8     = u8(0x10)
-const cxdb_tag_int16    = u8(0x11)
-const cxdb_tag_int32    = u8(0x12)
-const cxdb_tag_int64    = u8(0x13)
-const cxdb_tag_float64  = u8(0x20)
-const cxdb_tag_string   = u8(0x30)
-const cxdb_tag_date     = u8(0x31)
-const cxdb_tag_datetime = u8(0x32)
-const cxdb_tag_bytes    = u8(0x33)
-// W1 v0.7.0 — new CXDB tags for parametric scalar types.
+const cxcol_tag_int8     = u8(0x10)
+const cxcol_tag_int16    = u8(0x11)
+const cxcol_tag_int32    = u8(0x12)
+const cxcol_tag_int64    = u8(0x13)
+const cxcol_tag_float64  = u8(0x20)
+const cxcol_tag_string   = u8(0x30)
+const cxcol_tag_date     = u8(0x31)
+const cxcol_tag_datetime = u8(0x32)
+const cxcol_tag_bytes    = u8(0x33)
+// W1 — new CXCol tags for parametric scalar types.
 // Wire encoding: each cell is a fixed-width byte slab whose width
 // is determined by the column's type_name parameters at decode time.
-const cxdb_tag_decimal128 = u8(0x40)  // 16 bytes/cell
-const cxdb_tag_timestamp  = u8(0x41)  // 8 bytes/cell (i64) — unit + tz in type_name
-const cxdb_tag_fsb        = u8(0x42)  // fixed-size-binary, N bytes/cell from type_name[N]
-const cxdb_tag_true     = u8(0x02)
+const cxcol_tag_decimal128 = u8(0x40)  // 16 bytes/cell
+const cxcol_tag_timestamp  = u8(0x41)  // 8 bytes/cell (i64) — unit + tz in type_name
+const cxcol_tag_fsb        = u8(0x42)  // fixed-size-binary, N bytes/cell from type_name[N]
+const cxcol_tag_true     = u8(0x02)
 
-fn cxdb_code_for_type_name(type_name string) u8 {
-	if type_name.starts_with('decimal128')       { return cxdb_tag_decimal128 }
-	if type_name.starts_with('timestamp[')       { return cxdb_tag_timestamp }
-	if type_name.starts_with('fixed-size-binary[') { return cxdb_tag_fsb }
+fn cxcol_code_for_type_name(type_name string) u8 {
+	if type_name.starts_with('decimal128')       { return cxcol_tag_decimal128 }
+	if type_name.starts_with('timestamp[')       { return cxcol_tag_timestamp }
+	if type_name.starts_with('fixed-size-binary[') { return cxcol_tag_fsb }
 	return match type_name {
-		'int', 'i64'      { cxdb_tag_int64 }
-		'i8'              { cxdb_tag_int8 }
-		'i16'             { cxdb_tag_int16 }
-		'i32'             { cxdb_tag_int32 }
-		'float', 'f64'    { cxdb_tag_float64 }
-		'bool'            { cxdb_tag_true }
-		'string', '', 's', 'dict-utf8' { cxdb_tag_string }
-		'date', 'd'       { cxdb_tag_date }
-		'datetime'        { cxdb_tag_datetime }
-		'bytes'           { cxdb_tag_bytes }
-		else              { cxdb_tag_string }
+		'int', 'i64'      { cxcol_tag_int64 }
+		'i8'              { cxcol_tag_int8 }
+		'i16'             { cxcol_tag_int16 }
+		'i32'             { cxcol_tag_int32 }
+		'float', 'f64'    { cxcol_tag_float64 }
+		'bool'            { cxcol_tag_true }
+		'string', '', 's', 'dict-utf8' { cxcol_tag_string }
+		'date', 'd'       { cxcol_tag_date }
+		'datetime'        { cxcol_tag_datetime }
+		'bytes'           { cxcol_tag_bytes }
+		else              { cxcol_tag_string }
 	}
 }
 
@@ -548,7 +548,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 		fmt := col_formats[i]
 		match fmt {
 			'l' {
-				if code != cxdb_tag_int64 {
+				if code != cxcol_tag_int64 {
 					return error('arrow: format/code mismatch for col ${i} (expected int64)')
 				}
 				bytes := br.take_pub(row_count * 8)!
@@ -556,7 +556,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'c' {
-				if code != cxdb_tag_int8 {
+				if code != cxcol_tag_int8 {
 					return error('arrow: format/code mismatch for col ${i} (expected int8)')
 				}
 				bytes := br.take_pub(row_count)!
@@ -564,7 +564,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			's' {
-				if code != cxdb_tag_int16 {
+				if code != cxcol_tag_int16 {
 					return error('arrow: format/code mismatch for col ${i} (expected int16)')
 				}
 				bytes := br.take_pub(row_count * 2)!
@@ -572,7 +572,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'i' {
-				if code != cxdb_tag_int32 {
+				if code != cxcol_tag_int32 {
 					return error('arrow: format/code mismatch for col ${i} (expected int32)')
 				}
 				bytes := br.take_pub(row_count * 4)!
@@ -580,7 +580,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'g' {
-				if code != cxdb_tag_float64 {
+				if code != cxcol_tag_float64 {
 					return error('arrow: format/code mismatch for col ${i} (expected float64)')
 				}
 				bytes := br.take_pub(row_count * 8)!
@@ -588,7 +588,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'b' {
-				if code != cxdb_tag_true {
+				if code != cxcol_tag_true {
 					return error('arrow: format/code mismatch for col ${i} (expected bool)')
 				}
 				raw := br.take_pub(row_count)!
@@ -603,7 +603,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'tdD' {
-				if code != cxdb_tag_date {
+				if code != cxcol_tag_date {
 					return error('arrow: format/code mismatch for col ${i} (expected date)')
 				}
 				cells := br.take_pub(row_count * 4)!
@@ -614,7 +614,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 					mo := cells[off + 2]
 					dd := cells[off + 3]
 					if mo == 0 || mo > 12 || dd == 0 || dd > 31 {
-						return error('arrow: invalid CXDB date at row ${r} (y=${y} m=${mo} d=${dd})')
+						return error('arrow: invalid CXCol date at row ${r} (y=${y} m=${mo} d=${dd})')
 					}
 					days := date_to_days(y, mo, dd)
 					append_i32_le(mut days_buf, days)
@@ -623,10 +623,10 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'tsn:UTC' {
-				if code != cxdb_tag_datetime {
+				if code != cxcol_tag_datetime {
 					return error('arrow: format/code mismatch for col ${i} (expected datetime)')
 				}
-				// CXDB strict-cell datetime = 12 bytes/row (i64 ns LE +
+				// CXCol strict-cell datetime = 12 bytes/row (i64 ns LE +
 				// i16 offset LE + u16 reserved). Strict canonical pins
 				// offset+reserved to zero, so the first 8 bytes already
 				// match Arrow timestamp[ns, UTC]; the trailing 4 are
@@ -641,10 +641,10 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'u', 'z' {
-				if fmt == 'u' && code != cxdb_tag_string {
+				if fmt == 'u' && code != cxcol_tag_string {
 					return error('arrow: format/code mismatch for col ${i} (expected string)')
 				}
-				if fmt == 'z' && code != cxdb_tag_bytes {
+				if fmt == 'z' && code != cxcol_tag_bytes {
 					return error('arrow: format/code mismatch for col ${i} (expected bytes)')
 				}
 				mut offsets := []u8{cap: (row_count + 1) * 4}
@@ -664,9 +664,9 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << offsets
 			}
 			else {
-				// W1 v0.7.0 parametric scalar dispatch.
+				// W1 parametric scalar dispatch.
 				if fmt.starts_with('d:') {
-					if code != cxdb_tag_decimal128 {
+					if code != cxcol_tag_decimal128 {
 						return error('arrow: format/code mismatch for col ${i} (expected decimal128)')
 					}
 					// 16 bytes/cell for decimal128 (Arrow LE encoding).
@@ -674,7 +674,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 					la.col_main_bufs << bytes.clone()
 					la.col_aux_bufs << []u8{}
 				} else if fmt.starts_with('ts') && fmt.len >= 4 && fmt[3] == `:` {
-					if code != cxdb_tag_timestamp && code != cxdb_tag_datetime {
+					if code != cxcol_tag_timestamp && code != cxcol_tag_datetime {
 						return error('arrow: format/code mismatch for col ${i} (expected timestamp)')
 					}
 					// 8 bytes/cell (i64) for parametric timestamps.
@@ -682,7 +682,7 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 					la.col_main_bufs << bytes.clone()
 					la.col_aux_bufs << []u8{}
 				} else if fmt.starts_with('w:') {
-					if code != cxdb_tag_fsb {
+					if code != cxcol_tag_fsb {
 						return error('arrow: format/code mismatch for col ${i} (expected fixed-size-binary)')
 					}
 					width := fmt[2..].int()
@@ -834,7 +834,7 @@ fn zero_out_array(out &C.ArrowArray) {
 	o.private_data  = unsafe { nil }
 }
 
-// ── Import: ArrowArrayStream → CXDB chunked-table ────────────────────
+// ── Import: ArrowArrayStream → CXCol chunked-table ────────────────────
 
 fn alloc_zero_arrow_array() &C.ArrowArray {
 	sz := int(sizeof(C.ArrowArray))
@@ -932,7 +932,7 @@ fn import_read_schema(stream_in voidptr) !([]cx.TableColumn, []string) {
 		child := unsafe { &C.ArrowSchema(child_ptr) }
 		fmt := unsafe { cstring_to_vstring(child.format) }
 		name := unsafe { cstring_to_vstring(child.name) }
-		type_name := cxdb_type_name_from_arrow_format(fmt) or {
+		type_name := cxcol_type_name_from_arrow_format(fmt) or {
 			if sch.release != unsafe { nil } { sch.release(sch) }
 			unsafe { free(voidptr(sch)) }
 			return err
@@ -1037,7 +1037,7 @@ fn write_column_from_arrow(mut body []u8, child &C.ArrowArray, fmt string, row_c
 			if data_ptr == unsafe { nil } {
 				return error('arrow: timestamp[ns, UTC] column has NULL data buffer')
 			}
-			// Arrow tsn:UTC = 8 bytes ns LE per row. CXDB strict-cell
+			// Arrow tsn:UTC = 8 bytes ns LE per row. CXCol strict-cell
 			// datetime appends 2 zero offset bytes + 2 zero reserved
 			// bytes to make 12 bytes/row.
 			n_bytes := row_count * 8
@@ -1078,7 +1078,7 @@ fn write_column_from_arrow(mut body []u8, child &C.ArrowArray, fmt string, row_c
 			}
 		}
 		else {
-			// W1 v0.7.0 parametric scalar dispatch.
+			// W1 parametric scalar dispatch.
 			if fmt.starts_with('d:') {
 				copy_fixed_width_data(mut body, child, row_count, 16, 'decimal128')!
 			} else if fmt.starts_with('ts') && fmt.len >= 4 && fmt[3] == `:` {

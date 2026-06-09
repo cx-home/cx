@@ -1,5 +1,5 @@
 [- XML-style structured document with xmlns namespace declarations.
-   Demonstrates the namespace bearer pattern (ADR 0002): xmlns: as an
+   Demonstrates the namespace bearer pattern: xmlns: as an
    inherited attribute scoped to the declaring element and descendants. ]
 
 [chapter id=getting-started lang=en xmlns=https://cxhome.org/ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/
@@ -9,8 +9,8 @@
     [dc:author Erik Paulson]
     [dc:date 2026-04-20]
     [dc:identifier urn:cx:chapter:getting-started]
-    [version :string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
-    [keywords :string[] cx format tutorial getting-started]
+    [version ::string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
+    [keywords ::string[] cx format tutorial getting-started]
   ]
 
   [abstract
@@ -27,7 +27,7 @@
     [listing lang=cx [# [server host=localhost :u16 port=8080 +tls] #]]
     [p CX infers types automatically — and v3.4 sized types pin the width:]
     [- typed table: every type column is a real CX type token ]
-    [examples :table[value:string inferred:string sized:string]
+    [examples [table[value::string inferred::string sized::string]]
       '8080'         'int'    ':u16 → 0..65535'
       '3.14'         'float'  ':f32 / :f64'
       'true'         'bool'   '+flag / -flag sigils'

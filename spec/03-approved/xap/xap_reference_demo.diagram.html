@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>cx-xap reference demo — diagrams</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+  </script>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; max-width: 60rem; margin: 2rem auto; }
+    h1 { font-size: 1.3rem; } h2 { font-size: 1.05rem; margin-top: 2rem; }
+    .mermaid { background: #fff; }
+  </style>
+</head>
+<body>
+  <h1>cx-xap reference demo — diagrams</h1>
+  <p>Source for the Tier-2 enterprise showcase (xap.md Appendix D §T2). Open in a
+     browser to render. The CX core is identical whether the shell is the veb
+     bridge or the native <code>[?http-service]</code> path (§23/§24).</p>
+
+  <h2>Architecture (flowchart)</h2>
+  <pre class="mermaid">
+flowchart TB
+  subgraph Clients["Clients — peers, attach/detach (tmux-style)"]
+    H["Human: browser · hypermedia · HTML + SSE"]
+    A["Agent / Radar: application/cx · view-tree-as-data"]
+  end
+  subgraph Shell["HTTP + SSE shell — veb bridge now → [?http-service] later"]
+    EP["/v1 endpoints"]
+  end
+  subgraph XAP["cx-xap + cx-stdlib primitives (dogfood)"]
+    BUS["bus — pub/sub + synchronous ordered dispatch"]
+    JRN["journal — append-only · hash-chained + fold→state"]
+    AZ["authz — PEP · delegations · guardian · incapacity"]
+    SES["session — (principal, tenant) sessions"]
+    XP["xap — surfaces · resolver/Radar · dial/RACI · serve"]
+  end
+  subgraph Stub["Stubbed for the demo"]
+    IDP["IdP → 2 principals · email channel (faked) · billing (faked) · controllable clock"]
+  end
+  Clients -->|intents in · surfaces out · SSE feed| Shell
+  Shell --> XAP
+  XP --- BUS & JRN & AZ & SES
+  XAP --- Stub
+  </pre>
+
+  <h2>Signature flow (sequence)</h2>
+  <pre class="mermaid">
+sequenceDiagram
+  participant Bill as Billing (faked)
+  participant Bus as bus + authz PEP
+  participant Jrn as journal
+  participant Res as xap resolver
+  participant Maya
+  participant Agent
+  participant Mgr as Manager
+  Bill->>Bus: charge-error-spike
+  Bus->>Jrn: append E1
+  Res->>Jrn: compose surface (reason) → append E2
+  Jrn-->>Maya: SSE — peripheral radar item
+  Maya->>Bus: throttle reconcile → auto (delegation d-recon)
+  Bus->>Jrn: append d-recon  (now delegated-auto)
+  Agent->>Bus: [do :refund-duplicate] (PEP checks d-recon)
+  Bus->>Jrn: append E3
+  Jrn-->>Maya: SSE OOB update
+  Note over Maya: Maya steps away (unreachable)
+  Bus->>Jrn: no-ack-within "10m" fires (incapacity, clock fast-forward)
+  Agent->>Bus: [do :pause-payment-gateway] under guardian grant g-pay
+  Bus->>Jrn: PEP checks guardian gate + incapacity → append E_g
+  Jrn-->>Mgr: page (and Maya)
+  Note over Maya: Maya returns
+  Res->>Jrn: replay causal slice → handoff brief
+  Maya->>Bus: [do :resume-gateway]
+  Bus->>Jrn: append
+  Note over Jrn: "why did this happen?" = one query over the hash-chained log
+  </pre>
+</body>
+</html>

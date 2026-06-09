@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>email — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a class="active" href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-email">
+  <h1>email</h1>
+  <p class="lede">Parse and build RFC 5322 + MIME multipart email messages.
+
+   The surface covers parsing inbound messages, inspecting headers and bodies, extracting attachments, decoding encoded-words and address lists, and building outgoing messages with text + HTML alternatives and attachments. Delivery-status (bounce) reports are lifted into structured form. Transport is out of scope — send/receive lives at the directive layer; this module is the data layer those transports produce or consume.</p>
+  
+    <section id="fn-email-parse" class="fn">
+      <h3>email:parse</h3>
+      <p class="fn-sig"><code>[$email:parse]  -> element</code>  —  Parse RFC 5322 bytes into a [message] element, decoding headers, bodies, and the multipart tree.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nTo: c@d.com\r\nSubject: Hi\r\n\r\nHello body\r\n"]]]
+  [$email:is-multipart $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-emit" class="fn">
+      <h3>email:emit</h3>
+      <p class="fn-sig"><code>[$email:emit]  -> bytes</code>  —  Re-encode a [message] element to canonical RFC 5322 bytes; same input emits byte-identical output.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?let [= $msg [$email:build {"from": "agent@example.com",
+                            "to": "customer@example.com",
+                            "subject": "Re: Invoice question",
+                            "body": "Thank you for reaching out..."}]]
+  [$email:subject [$email:parse [$email:emit $msg]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'Re: Invoice question'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-headers" class="fn">
+      <h3>email:headers</h3>
+      <p class="fn-sig"><code>[$email:headers]  -> map</code>  —  Return all headers as a map of lowercased name to a [sequence string] of values.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nSubject: Hi\r\n\r\nbody"]]]
+  [$count [$email:headers $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-header" class="fn">
+      <h3>email:header</h3>
+      <p class="fn-sig"><code>[$email:header]  -> string</code>  —  Return the first value of the named header (case-insensitive), or empty string if absent.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nSubject: Hi\r\n\r\nbody"]]]
+  [$email:header $msg "subject"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'Hi'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-header-values" class="fn">
+      <h3>email:header-values</h3>
+      <p class="fn-sig"><code>[$email:header-values]  -> [sequence string]</code>  —  Return every value of the named header (case-insensitive), for multi-instance headers like Received.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "Received: from a\r\nReceived: from b\r\nFrom: a@b.com\r\n\r\nbody"]]]
+  [$email:header-values $msg "Received"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>('from a', 'from b')</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-subject" class="fn">
+      <h3>email:subject</h3>
+      <p class="fn-sig"><code>[$email:subject]  -> string</code>  —  Return the Subject header with encoded-words decoded to UTF-8.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $crlf [$email:parse [$bytes:from-string-utf8 "Subject: Hi\r\n\r\nbody"]]]
+  [?let [= $lf [$email:parse [$bytes:from-string-utf8 "Subject: Hi\n\nbody"]]]
+    [$eq [$email:subject $crlf] [$email:subject $lf]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-from-addr" class="fn">
+      <h3>email:from-addr</h3>
+      <p class="fn-sig"><code>[$email:from-addr]  -> element</code>  —  Return the first From address as an [address] element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: John Doe <john@example.com>\r\n\r\nbody"]]]
+  [$email:format-address [$email:from-addr $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'John Doe <john@example.com>'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-to-addrs" class="fn">
+      <h3>email:to-addrs</h3>
+      <p class="fn-sig"><code>[$email:to-addrs]  -> [sequence element]</code>  —  Return all To addresses, expanding any RFC 5322 groups.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "To: a@x.com, b@x.com\r\nFrom: c@y.com\r\n\r\nbody"]]]
+  [$count [$email:to-addrs $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-cc-addrs" class="fn">
+      <h3>email:cc-addrs</h3>
+      <p class="fn-sig"><code>[$email:cc-addrs]  -> [sequence element]</code>  —  Return all Cc addresses, expanding any RFC 5322 groups.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: c@y.com\r\nCc: a@x.com\r\n\r\nbody"]]]
+  [$count [$email:cc-addrs $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-bcc-addrs" class="fn">
+      <h3>email:bcc-addrs</h3>
+      <p class="fn-sig"><code>[$email:bcc-addrs]  -> [sequence element]</code>  —  Return all Bcc addresses, expanding any RFC 5322 groups.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: c@y.com\r\nBcc: a@x.com, b@x.com\r\n\r\nbody"]]]
+  [$count [$email:bcc-addrs $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-date-header" class="fn">
+      <h3>email:date-header</h3>
+      <p class="fn-sig"><code>[$email:date-header]  -> datetime</code>  —  Return the Date header parsed from RFC 5322 form into a datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "Date: Tue, 26 May 2026 14:30:00 +0000\r\nFrom: a@b.com\r\n\r\nbody"]]]
+  [$email:date-header $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-message-id" class="fn">
+      <h3>email:message-id</h3>
+      <p class="fn-sig"><code>[$email:message-id]  -> string</code>  —  Return the Message-ID value with the surrounding angle brackets stripped.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "Message-ID: <abc123@example.com>\r\nFrom: a@b.com\r\n\r\nbody"]]]
+  [$email:message-id $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'abc123@example.com'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-in-reply-to" class="fn">
+      <h3>email:in-reply-to</h3>
+      <p class="fn-sig"><code>[$email:in-reply-to]  -> string</code>  —  Return the In-Reply-To value with the surrounding angle brackets stripped.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "In-Reply-To: <def456@example.com>\r\nFrom: a@b.com\r\n\r\nbody"]]]
+  [$email:in-reply-to $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'def456@example.com'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-references" class="fn">
+      <h3>email:references</h3>
+      <p class="fn-sig"><code>[$email:references]  -> [sequence string]</code>  —  Return the References threading chain as a sequence of message IDs.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "References: <a@x> <b@x>\r\nFrom: c@y.com\r\n\r\nbody"]]]
+  [$count [$email:references $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-list-unsubscribe" class="fn">
+      <h3>email:list-unsubscribe</h3>
+      <p class="fn-sig"><code>[$email:list-unsubscribe]  -> [sequence string]</code>  —  Return the URIs from the List-Unsubscribe header as a sequence.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "List-Unsubscribe: <https://x/u>, <mailto:u@x>\r\nFrom: a@b.com\r\n\r\nbody"]]]
+  [$count [$email:list-unsubscribe $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-parts" class="fn">
+      <h3>email:parts</h3>
+      <p class="fn-sig"><code>[$email:parts]  -> [sequence element]</code>  —  Return all body parts flattened (a single part for non-multipart messages).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nContent-Type: text/plain\r\n\r\njust text"]]]
+  [$count [$email:parts $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-attachments" class="fn">
+      <h3>email:attachments</h3>
+      <p class="fn-sig"><code>[$email:attachments]  -> [sequence element]</code>  —  Return parts marked as attachments, each carrying filename, content-type, and decoded bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nContent-Type: multipart/mixed; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nhi\r\n--B\r\nContent-Type: application/pdf\r\nContent-Disposition: attachment; filename=\"invoice.pdf\"\r\n\r\nPDF\r\n--B\r\nContent-Type: image/png\r\nContent-Disposition: attachment; filename=\"img.png\"\r\n\r\nPNG\r\n--B--\r\n"]]]
+  [$count [$email:attachments $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-text-body" class="fn">
+      <h3>email:text-body</h3>
+      <p class="fn-sig"><code>[$email:text-body]  -> string</code>  —  Return the first text/plain part decoded to UTF-8, or empty if absent.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nContent-Type: multipart/alternative; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nplain text here\r\n--B\r\nContent-Type: text/html\r\n\r\n<p>html here</p>\r\n--B--\r\n"]]]
+  [$email:text-body $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'plain text here'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-html-body" class="fn">
+      <h3>email:html-body</h3>
+      <p class="fn-sig"><code>[$email:html-body]  -> string</code>  —  Return the first text/html part decoded to UTF-8 — raw and unsanitized; sanitize before rendering.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nContent-Type: multipart/alternative; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nplain text here\r\n--B\r\nContent-Type: text/html\r\n\r\n<p>html here</p>\r\n--B--\r\n"]]]
+  [$email:html-body $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'<p>html here</p>'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-is-multipart" class="fn">
+      <h3>email:is-multipart</h3>
+      <p class="fn-sig"><code>[$email:is-multipart]  -> bool</code>  —  Report whether the message body is a multipart tree rather than a single part.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: a@b.com\r\nTo: c@d.com\r\nSubject: Hi\r\n\r\nHello body\r\n"]]]
+  [$email:is-multipart $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-decode-encoded-word" class="fn">
+      <h3>email:decode-encoded-word</h3>
+      <p class="fn-sig"><code>[$email:decode-encoded-word]  -> string</code>  —  Decode an RFC 2047 encoded-word (Q or B) from its declared charset to UTF-8.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[$email:decode-encoded-word "=?UTF-8?Q?Hello_=E4=B8=96=E7=95=8C?="]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'Hello 世界'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-encode-encoded-word" class="fn">
+      <h3>email:encode-encoded-word</h3>
+      <p class="fn-sig"><code>[$email:encode-encoded-word]  -> string</code>  —  Encode a string as an RFC 2047 encoded-word using the given charset and Q or B encoding.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[$email:encode-encoded-word "Hi" "UTF-8" "Q"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'=?UTF-8?Q?Hi?='</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-parse-address" class="fn">
+      <h3>email:parse-address</h3>
+      <p class="fn-sig"><code>[$email:parse-address]  -> element</code>  —  Parse a single address string into an [address] element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[$email:format-address [$email:parse-address "John Doe <john@example.com>"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'John Doe <john@example.com>'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-parse-address-list" class="fn">
+      <h3>email:parse-address-list</h3>
+      <p class="fn-sig"><code>[$email:parse-address-list]  -> [sequence element]</code>  —  Parse an address list into a sequence mixing [address] and [address-group] elements.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[$count [$email:parse-address-list "alice@x.com, bob@y.com"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-format-address" class="fn">
+      <h3>email:format-address</h3>
+      <p class="fn-sig"><code>[$email:format-address]  -> string</code>  —  Format an [address] element back to its RFC 5322 mailbox string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: John Doe <john@example.com>\r\n\r\nbody"]]]
+  [$email:format-address [$email:from-addr $msg]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'John Doe <john@example.com>'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-format-address-list" class="fn">
+      <h3>email:format-address-list</h3>
+      <p class="fn-sig"><code>[$email:format-address-list]  -> string</code>  —  Format a sequence of addresses and groups into an RFC 5322 address-list string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[$email:format-address-list [$email:parse-address-list "team: alice@x, bob@x;"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'team: alice@x, bob@x;'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-build" class="fn">
+      <h3>email:build</h3>
+      <p class="fn-sig"><code>[$email:build]  -> element</code>  —  Build a plaintext [message] from a parts map (from, to, subject, body, plus optional headers).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?let [= $msg [$email:build {"from": "agent@example.com",
+                            "to": "customer@example.com",
+                            "subject": "Re: Invoice question",
+                            "body": "Thank you for reaching out..."}]]
+  [$email:subject [$email:parse [$email:emit $msg]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'Re: Invoice question'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-build-multipart" class="fn">
+      <h3>email:build-multipart</h3>
+      <p class="fn-sig"><code>[$email:build-multipart]  -> element</code>  —  Build a multipart [message] from a parts map plus a sequence of alternative part elements.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?let [= $msg [$email:build-multipart {"from": "a@b.com", "to": "c@d.com", "subject": "x", "body": "plain"}
+                ([part content-type="text/html" body="<p>rich</p>"])]]
+  [$email:is-multipart $msg]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-reply" class="fn">
+      <h3>email:reply</h3>
+      <p class="fn-sig"><code>[$email:reply]  -> element</code>  —  Build a reply to a message, preserving threading and prefixing the subject with Re:.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $orig [$email:parse [$bytes:from-string-utf8 "From: sender@x.com\r\nMessage-ID: <abc123@example.com>\r\nSubject: Question\r\n\r\nbody"]]]
+  [?let [= $r [$email:reply $orig {"body": "Answer."}]]
+    [$email:in-reply-to $r]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'abc123@example.com'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-forward" class="fn">
+      <h3>email:forward</h3>
+      <p class="fn-sig"><code>[$email:forward]  -> element</code>  —  Build a forward that wraps the original as a message/rfc822 attachment, prefixing the subject with Fwd:.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $orig [$email:parse [$bytes:from-string-utf8 "From: sender@x.com\r\nSubject: Report\r\n\r\nbody"]]]
+  [?let [= $f [$email:forward $orig {"to": "dest@x.com", "body": "FYI"}]]
+    [$email:subject $f]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'Fwd: Report'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-parse-dsn" class="fn">
+      <h3>email:parse-dsn</h3>
+      <p class="fn-sig"><code>[$email:parse-dsn]  -> element</code>  —  Lift an already-parsed delivery-status report into a structured [dsn] element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: MAILER-DAEMON@mx\r\nContent-Type: multipart/report; report-type=delivery-status; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nfailed\r\n--B\r\nContent-Type: message/delivery-status\r\n\r\nReporting-MTA: dns; mail.example.com\r\n\r\nFinal-Recipient: rfc822; user@example.com\r\nAction: failed\r\nStatus: 5.1.1\r\nDiagnostic-Code: smtp; 550 no such user\r\n--B--\r\n"]]]
+  [?let [= $dsn [$email:parse-dsn $msg]]
+    [$email:is-bounce $dsn]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-parse-dsn-bytes" class="fn">
+      <h3>email:parse-dsn-bytes</h3>
+      <p class="fn-sig"><code>[$email:parse-dsn-bytes]  -> element</code>  —  Parse raw bytes and lift the delivery-status report into a structured [dsn] element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $dsn [$email:parse-dsn-bytes [$bytes:from-string-utf8 "From: MAILER-DAEMON@mx\r\nContent-Type: multipart/report; report-type=delivery-status; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nfailed\r\n--B\r\nContent-Type: message/delivery-status\r\n\r\nReporting-MTA: dns; mail.example.com\r\n\r\nFinal-Recipient: rfc822; user@example.com\r\nAction: failed\r\nStatus: 5.1.1\r\nDiagnostic-Code: smtp; 550 no such user\r\n--B--\r\n"]]]
+  [$email:is-bounce $dsn]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-is-bounce" class="fn">
+      <h3>email:is-bounce</h3>
+      <p class="fn-sig"><code>[$email:is-bounce]  -> bool</code>  —  Report whether any recipient in the DSN failed or was delayed.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: MAILER-DAEMON@mx\r\nContent-Type: multipart/report; report-type=delivery-status; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nfailed\r\n--B\r\nContent-Type: message/delivery-status\r\n\r\nReporting-MTA: dns; mail.example.com\r\n\r\nFinal-Recipient: rfc822; user@example.com\r\nAction: failed\r\nStatus: 5.1.1\r\nDiagnostic-Code: smtp; 550 no such user\r\n--B--\r\n"]]]
+  [?let [= $dsn [$email:parse-dsn $msg]]
+    [$email:is-bounce $dsn]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-email-is-hard-bounce" class="fn">
+      <h3>email:is-hard-bounce</h3>
+      <p class="fn-sig"><code>[$email:is-hard-bounce]  -> bool</code>  —  Report whether any recipient failed permanently with a 5.x.x status.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/email']
+[?lib 'cx-stdlib/bytes']
+[?let [= $msg [$email:parse [$bytes:from-string-utf8 "From: MAILER-DAEMON@mx\r\nContent-Type: multipart/report; report-type=delivery-status; boundary=\"B\"\r\n\r\n--B\r\nContent-Type: text/plain\r\n\r\nfailed\r\n--B\r\nContent-Type: message/delivery-status\r\n\r\nReporting-MTA: dns; mail.example.com\r\n\r\nFinal-Recipient: rfc822; user@example.com\r\nAction: failed\r\nStatus: 5.1.1\r\nDiagnostic-Code: smtp; 550 no such user\r\n--B--\r\n"]]]
+  [?let [= $dsn [$email:parse-dsn $msg]]
+    [$email:is-hard-bounce $dsn]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

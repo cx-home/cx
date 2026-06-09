@@ -1,7 +1,7 @@
-// CX Go binding — Public Table API per ADR 0018 D1.
+// CX Go binding — Public Table API.
 //
 // Implements the 17-member canonical Table API surface against the
-// V core's :table blocks via the C ABI. Per ADR 0018 §D2 per-binding
+// V core's :table blocks via the C ABI. Per per-binding
 // naming: Go uses PascalCase methods + lowerCamelCase struct fields
 // to match host conventions.
 
@@ -16,8 +16,8 @@ import (
 )
 
 // Table is an immutable handle over a single :table block. Per
-// ADR 0018 §D3 tables are immutable values; modification returns a
-// new Table. Cells admit any ADR 0017 §D5 Item kind: scalars +
+// tables are immutable values; modification returns a
+// new Table. Cells admit any Item kind: scalars
 // Array (Go []any) + Map (Go map[string]any).
 type Table struct {
 	cols  []string
@@ -58,7 +58,7 @@ func TablesFromCx(src string) ([]*Table, error) {
 }
 
 // NewTable constructs a Table directly with 4-invariant validation
-// per ADR 0018 §D7: len(cols)==len(types), unique col names, row
+// len(cols)==len(types), unique col names, row
 // width matches col count, (cell type compatibility is checked at
 // access time since Go interfaces are duck-typed).
 func NewTable(cols []string, types []string, rows [][]any) (*Table, error) {
@@ -212,7 +212,7 @@ func (t *Table) Tail(n int) *Table {
 }
 
 // Select returns a new Table with only the named columns in the given
-// order. Per ADR 0018 §4 canonical name; Go allows `select` since
+// order. Per canonical name; Go allows `select` since
 // it's only a keyword in channel syntax (not a function name).
 func (t *Table) Select(names []string) (*Table, error) {
 	newCols := make([]string, 0, len(names))
@@ -534,10 +534,10 @@ func formatCsvCell(v any, delim byte) string {
 	}
 }
 
-// FromDataBinValue decodes CXDB payload bytes into a Go any value.
+// FromDataBinValue decodes CXCol payload bytes into a Go any value.
 // Go's ToDataBin already strips the 4-byte LE size header before
 // returning (see extractBinPayload), so the input here is the raw
-// CXDB payload starting with the 'CXDB' magic bytes.
+// CXCol payload starting with the 'CXCol' magic bytes.
 func FromDataBinValue(payload []byte) (any, error) {
 	return decodeDataBin(payload)
 }

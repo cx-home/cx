@@ -13,7 +13,7 @@ static TEST_LOCK: Mutex<()> = Mutex::new(());
 use cxlib::data_bin::from_data_bin;
 use cxlib::streaming_table::{to_data_bin_chunked, TableReader, TableWriter};
 
-const SIX_ROW_INPUT: &str = "[points :table[name:string score:i32]
+const SIX_ROW_INPUT: &str = "[points [table[name::string score::i32]]
   alice 91
   bob 88
   carol 73
@@ -33,8 +33,8 @@ fn reframe(payload: &[u8]) -> Vec<u8> {
 fn test_to_data_bin_chunked_round_trip() {
     let _g = TEST_LOCK.lock().unwrap();
     let payload = to_data_bin_chunked(SIX_ROW_INPUT).expect("to_data_bin_chunked");
-    assert!(payload.len() > 4 && &payload[..4] == b"CXDB",
-            "expected CXDB magic; got {} bytes", payload.len());
+    assert!(payload.len() > 5 && &payload[..5] == b"CXCol",
+            "expected CXCol magic; got {} bytes", payload.len());
     let cx_text = from_data_bin(&reframe(&payload)).expect("from_data_bin");
     assert!(cx_text.contains("alice") && cx_text.contains("frank"),
             "missing alice/frank in chunked round-trip: {}", cx_text);
@@ -73,7 +73,7 @@ fn test_streaming_table_fd_round_trip() {
     drop(reader);
 
     let tmpdir = std::env::temp_dir();
-    let path = tmpdir.join(format!("cx_streaming_table_rust_{}.cxdb", std::process::id()));
+    let path = tmpdir.join(format!("cx_streaming_table_rust_{}.cxcol", std::process::id()));
 
     let f_write = std::fs::OpenOptions::new()
         .create(true).write(true).truncate(true).open(&path).expect("open write");
@@ -100,5 +100,5 @@ fn test_streaming_table_fd_round_trip() {
 fn test_open_invalid_input() {
     let _g = TEST_LOCK.lock().unwrap();
     let r = TableReader::open(b"garb");
-    assert!(r.is_err(), "expected error on invalid CXDB input");
+    assert!(r.is_err(), "expected error on invalid CXCol input");
 }

@@ -1,0 +1,329 @@
+[# Table of contents for cx-data-and-code-guide.
+   Each entry is one section file under sections/; the order here is the
+   reading order in the rendered output. Section numbers (1.1.1, etc.)
+   are derived from depth at render time, not hand-maintained — so
+   reordering or inserting sections does not require renumbering.
+
+   STATUS: scaffold only. Section files do not yet exist. Authoring
+   begins once the guide can render with full sectional structure.
+   This manifest is the working outline. #]
+
+[manifest
+  title='CX — The CX Data and Code Language'
+  subtitle='Developer guide and reference'
+  branch=v0.8.0-dev
+  target-output='docs/cx-data-and-code-guide.md (single file) + multi-file emit later'
+  status=scaffold
+
+  [# front-matter — appears before [section n=1] in render order #]
+  [section n=0 id=quickstart file='00-quickstart.cxd'
+    [child n=0.1 id=install          title='Install']
+    [child n=0.2 id=hello-cx         title='Hello, CX']
+    [child n=0.3 id=first-file       title='Your first file']
+    [child n=0.4 id=first-conversion title='Convert JSON ↔ CX']
+    [child n=0.5 id=first-selection  title='Select with CXPath']
+    [child n=0.6 id=first-validation title='Validate with a schema']
+    [child n=0.7 id=first-binding    title='Hello from your host language']
+    [child n=0.8 id=next-steps       title='Where to go next']
+    [child n=0.9 id=tutorial-walkthrough title='Twenty-chapter walkthrough']
+    [child n=0.10 id=install-detail title='Install — per-platform detail']]
+
+  [section n=1 id=intro file='01-intro.cxd'
+    [child n=1.1 id=hello       title='Hello, CX']
+    [child n=1.2 id=philosophy  title='Design philosophy']
+    [child n=1.3 id=reading     title='How to read this guide']]
+
+  [section n=2 id=data file='02-data-language.cxd'
+    [child n=2.1 id=lexical
+      [child n=2.1.1 id=identifiers title='Identifiers']
+      [child n=2.1.2 id=comments    title='Comments (line and block)']
+      [child n=2.1.3 id=whitespace  title='Whitespace']]
+    [child n=2.2 id=elements
+      [child n=2.2.1 id=names       title='Element names']
+      [child n=2.2.2 id=attributes  title='Attributes']
+      [child n=2.2.3 id=bodies      title='Body content']]
+    [child n=2.3 id=scalars         title='Scalar kinds'
+      [child n=2.3.1 id=strings     title='Strings — single, double, triple-quoted']
+      [child n=2.3.2 id=numbers     title='Numbers — int, float, sized, hex']
+      [child n=2.3.3 id=booleans    title='Booleans']
+      [child n=2.3.4 id=dates       title='Dates and datetimes']
+      [child n=2.3.5 id=null        title='Null']
+      [child n=2.3.6 id=bytes       title='Bytes — raw binary scalars']
+      [child n=2.3.7 id=sized-types title='Sized type tags (:i8 / :i32 / :u64 / :f32 / etc.)']]
+    [child n=2.4 id=collections     title='Collection literals'
+      [child n=2.4.1 id=seq         title='Sequence literals (a, b, c)']
+      [child n=2.4.2 id=arr         title='Array literals [a, b, c]']
+      [child n=2.4.3 id=map         title='Map literals {k: v}']
+      [child n=2.4.4 id=seq-flat    title='The sequence-flat principle']
+      [child n=2.4.5 id=container-atom title='Container vs atom distinction']]
+    [child n=2.5 id=sigils          title='Sigils'
+      [child n=2.5.1 id=anchor      title='The & anchor sigil']
+      [child n=2.5.2 id=merge       title='The * merge sigil']
+      [child n=2.5.3 id=id          title='The # id sigil']
+      [child n=2.5.4 id=type        title='The : type sigil']
+      [child n=2.5.5 id=bool        title='The + and - bool sigils']]
+    [child n=2.6 id=prose           title='Mixed content and prose'
+      [child n=2.6.1 id=entity-refs title='Entity references']
+      [child n=2.6.2 id=xml-space   title='Whitespace preservation (xml:space)']
+      [child n=2.6.3 id=cdata       title='CDATA sections']]
+    [child n=2.7 id=tables          title='Typed columnar tables']
+    [child n=2.8 id=schema          title='Schema language (.cxs)'
+      [child n=2.8.1 id=schema-modes title='Open / strict / closed modes']
+      [child n=2.8.2 id=schema-constraints title='Constraint vocabulary']
+      [child n=2.8.3 id=schema-defaults title='Defaults and inheritance']
+      [child n=2.8.4 id=schema-binding title='Binding a schema to a document']]
+    [child n=2.9 id=includes        title='Include resolver'
+      [child n=2.9.1 id=include-paths title='Path resolution']
+      [child n=2.9.2 id=include-cycles title='Cycle detection']
+      [child n=2.9.3 id=include-depth title='Depth limit']
+      [child n=2.9.4 id=include-capabilities title='Capability gating']]
+    [child n=2.10 id=namespaces     title='Namespaces (xmlns:)'
+      [child n=2.10.1 id=ns-prefix-decl  title='Prefix declarations']
+      [child n=2.10.2 id=ns-default       title='Default namespace']
+      [child n=2.10.3 id=ns-reserved     title='Reserved prefixes (xml, cx, xmlns)']
+      [child n=2.10.4 id=ns-equality     title='Equality and canonical form']]
+    [child n=2.11 id=locale         title='Locale and language (cx:lang)']
+    [child n=2.12 id=doctype        title='Doctype declarations']
+    [child n=2.13 id=encoding       title='Document encoding (UTF-8, BOM, alternates)']
+    [child n=2.14 id=streaming-data title='Streaming parse and emission']
+    [child n=2.15 id=limits         title='Limits and quotas']
+    [child n=2.16 id=datetime-detail title='Date / time semantics — timezones, precision, leap seconds']
+    [child n=2.17 id=reserved-tokens title='Reserved tokens and keyword list']
+    [child n=2.18 id=concepts-fold   title='Concept framing — data model, sigils, types'
+      [child n=2.18.1 id=cxdm-overview   title='One tree, six surfaces']
+      [child n=2.18.2 id=sigils-catalog  title='The five sigils + bool sugar']
+      [child n=2.18.3 id=types-fold      title='Types — auto-typing, sized, decimal, bigint']]
+    [child n=2.19 id=reference-quickref title='Reference quick-refs — schemas, includes, streaming, tables'
+      [child n=2.19.1 id=schema-quickref    title='Schemas — validate before processing']
+      [child n=2.19.2 id=include-quickref   title='Includes — parse-time vs eval-time']
+      [child n=2.19.3 id=streaming-quickref title='Streaming — event shape and throughput']
+      [child n=2.19.4 id=tables-quickref    title='Tables and binary forms']]]
+
+  [section n=3 id=surfaces file='03-surfaces.cxd'
+    [child n=3.1 id=cx-canonical title='CX — the canonical dialect'
+      [child n=3.1.1 id=canonical-lossless title='Lossless canonical (cx fmt)']
+      [child n=3.1.2 id=canonical-strict   title='Strict canonical (cx canon / cx hash)']]
+    [child n=3.2 id=json         title='JSON projection'
+      [child n=3.2.1 id=json-mixed-content title='Mixed content via _cx_prose']
+      [child n=3.2.2 id=json-namespaces    title='Namespace handling']
+      [child n=3.2.3 id=json-numbers       title='Number precision and BigInt']
+      [child n=3.2.4 id=json-null          title='null vs missing']]
+    [child n=3.3 id=yaml         title='YAML projection'
+      [child n=3.3.1 id=yaml-tags          title='YAML tags (!!str, !!int, !!binary)']
+      [child n=3.3.2 id=yaml-multiline     title='Multiline scalars (| and >)']
+      [child n=3.3.3 id=yaml-anchors       title='Anchors and aliases']]
+    [child n=3.4 id=toml         title='TOML projection'
+      [child n=3.4.1 id=toml-inline        title='Inline tables vs dotted keys']
+      [child n=3.4.2 id=toml-array-of-tables title='Array of tables']]
+    [child n=3.5 id=xml          title='XML projection'
+      [child n=3.5.1 id=xml-pi              title='Processing instructions and comments']
+      [child n=3.5.2 id=xml-space-roundtrip title='xml:space round-trip']
+      [child n=3.5.3 id=xml-doctype-dtd     title='DOCTYPE and DTD']]
+    [child n=3.6 id=md           title='Markdown projection'
+      [child n=3.6.1 id=md-tables           title='GFM tables']
+      [child n=3.6.2 id=md-fences           title='Fenced code with language']
+      [child n=3.6.3 id=md-frontmatter      title='Frontmatter']
+      [child n=3.6.4 id=md-footnotes        title='Footnotes']
+      [child n=3.6.5 id=md-math             title='Math blocks (KaTeX/MathJax)']]
+    [child n=3.7 id=delimited    title='Delimited projection (CSV / TSV / PSV)'
+      [child n=3.7.1 id=delim-header        title='Header detection']
+      [child n=3.7.2 id=delim-types         title='Type inference']
+      [child n=3.7.3 id=delim-quoting       title='Quoting and escaping']]
+    [child n=3.8 id=jsonl        title='JSONL / NDJSON projection']
+    [child n=3.9 id=bytes-wire   title='Bytes scalar across surfaces']
+    [child n=3.10 id=roundtrip   title='Round-trip guarantees and lossiness matrix']]
+
+  [section n=4 id=identity file='04-identity.cxd'
+    [child n=4.1 id=canonical    title='Canonical bytes'
+      [child n=4.1.1 id=canon-lossless-strict title='Lossless vs strict canonical (recap)']
+      [child n=4.1.2 id=canon-cross-format title='Cross-format identity (hash stable through projections)']]
+    [child n=4.2 id=hash         title='SHA-256 content hash'
+      [child n=4.2.1 id=hash-stability      title='Stability across bindings + machines']
+      [child n=4.2.2 id=hash-truncation     title='Truncation safety (short ids)']
+      [child n=4.2.3 id=hash-use-cases      title='Use cases — cache keys, dedup, content stores']]
+    [child n=4.3 id=ast-bin      title='ast-bin wire format'
+      [child n=4.3.1 id=ast-bin-envelope    title='Buffer envelope']
+      [child n=4.3.2 id=ast-bin-capabilities title='Capability bits (full table)']
+      [child n=4.3.3 id=ast-bin-versioning  title='Version negotiation + forward-compat']]
+    [child n=4.4 id=data-bin     title='data-bin format'
+      [child n=4.4.1 id=data-bin-self-describing title='Self-describing mode']
+      [child n=4.4.2 id=data-bin-schema-driven title='Schema-driven mode (cap bit 1)']
+      [child n=4.4.3 id=data-bin-chunked       title='Chunked tables (§3.11)']
+      [child n=4.4.4 id=data-bin-compression   title='Page-compression wrapper (§3.12)']]
+    [child n=4.5 id=id-anchors title='ID anchors and IDREF resolution'
+      [child n=4.5.1 id=id-scoping            title='Document-unique scoping']
+      [child n=4.5.2 id=idref-resolution      title='IDREF resolution + cycles']
+      [child n=4.5.3 id=id-cross-format       title='Identity preservation across projections']]
+    [child n=4.6 id=ffi-lifetime title='FFI lifetime and memory ownership'
+      [child n=4.6.1 id=ffi-doc-lifetime      title='Doc lifetime per binding']
+      [child n=4.6.2 id=ffi-node-borrowing    title='Node borrowing from a Doc']
+      [child n=4.6.3 id=ffi-thread-register   title='Thread registration (cx_thread_register)']]
+    [child n=4.7 id=identity-framing title='Identity framing — two layers + binary forms'
+      [child n=4.7.1 id=canonical-recap     title='Canonical form recap']
+      [child n=4.7.2 id=declared-ids        title='Declared identifiers (#id, @ref)']
+      [child n=4.7.3 id=anchors-merge       title='Anchors and merge targets']
+      [child n=4.7.4 id=ast-bin-quickref    title='ast-bin quick reference']
+      [child n=4.7.5 id=data-bin-quickref   title='data-bin quick reference (CXCol v1)']]]
+
+  [section n=5 id=analytics file='05-analytics.cxd'
+    [child n=5.1 id=overview      title='The analytics lane']
+    [child n=5.2 id=table-shape   title='The :table data shape']
+    [child n=5.3 id=cxcol         title='CXCol — column-oriented streaming format']
+    [child n=5.4 id=arrow-bridge  title='Arrow bridge — zero-copy interop']
+    [child n=5.5 id=parquet-bridge title='Parquet bridge'
+      [child n=5.5.1 id=parquet-write   title='Writing Parquet']
+      [child n=5.5.2 id=parquet-read    title='Reading Parquet']
+      [child n=5.5.3 id=parquet-types   title='CX ↔ Parquet type mapping']
+      [child n=5.5.4 id=parquet-roundtrip title='Round-trip identity']
+      [child n=5.5.5 id=parquet-metadata title='Metadata preservation']]
+    [child n=5.6 id=streaming     title='Streaming evaluator over columnar data']
+    [child n=5.7 id=integrations  title='Ecosystem integrations'
+      [child n=5.7.1 id=duckdb     title='DuckDB']
+      [child n=5.7.2 id=polars     title='Polars']
+      [child n=5.7.3 id=pandas     title='pandas']
+      [child n=5.7.4 id=datafusion title='DataFusion']
+      [child n=5.7.5 id=spark      title='Spark / cluster-compute']]
+    [child n=5.8 id=performance       title='Performance characteristics']
+    [child n=5.9 id=cxcol-vs-others   title='When to use CXCol vs Parquet vs Arrow vs JSON']]
+
+  [section n=6 id=code file='06-code.cxd'
+    [child n=6.1 id=overview     title='The CX code language']
+    [child n=6.2 id=directives   title='Directive registry']
+    [child n=6.3 id=cxpath       title='CXPath — the universal selector']
+    [child n=6.4 id=patterns     title='Patterns and matching']
+    [child n=6.5 id=bindings     title='Bindings and paths']
+    [child n=6.6 id=constructs
+      [child n=6.6.1 id=for      title='[?for] — iteration']
+      [child n=6.6.2 id=match    title='[?match] — dispatch']
+      [child n=6.6.3 id=if       title='[?if] — boolean branch']
+      [child n=6.6.4 id=let      title='[?let] — binding']
+      [child n=6.6.5 id=modify   title='[?modify] — pure-functional updates']
+      [child n=6.6.6 id=pipe     title='Pipelines and composition']]
+    [child n=6.7 id=builtins
+      [child n=6.7.1 id=sequence-builtins title='Sequence built-ins']
+      [child n=6.7.2 id=string-builtins   title='String built-ins']
+      [child n=6.7.3 id=numeric-builtins  title='Numeric built-ins']
+      [child n=6.7.4 id=logical-builtins  title='Logical built-ins']
+      [child n=6.7.5 id=accessor-builtins title='Node-accessor built-ins']]
+    [child n=6.8 id=errors       title='Errors as values']
+    [child n=6.9 id=concurrency
+      [child n=6.9.1 id=services title='Services and clients']
+      [child n=6.9.2 id=workers  title='Workers and channels']
+      [child n=6.9.3 id=async    title='Async and await']]
+    [child n=6.10 id=resilience  title='Resilience directives']
+    [child n=6.11 id=evaluation-framing title='Evaluation framing — directives, patterns, comprehensions'
+      [child n=6.11.1 id=directives-overview title='Directives turn data into a language']
+      [child n=6.11.2 id=patterns-walking    title='Pattern matching — walking the tree']
+      [child n=6.11.3 id=comprehensions      title='Comprehensions and composition']]
+    [child n=6.12 id=cxpath-quickref     title='CXPath reference — quick form'
+      [child n=6.12.1 id=cxpath-quick-table     title='Quick reference']
+      [child n=6.12.2 id=cxpath-four-forms      title='Four leading forms']
+      [child n=6.12.3 id=cxpath-axes            title='Twelve axes']
+      [child n=6.12.4 id=cxpath-predicates      title='General predicate + reserved bindings']
+      [child n=6.12.5 id=cxpath-bind            title=':bind peer-modifier']
+      [child n=6.12.6 id=cxpath-binding-surface title='In the host bindings']]
+    [child n=6.13 id=errors-catalog      title='Error code catalog (v0.8.0)'
+      [child n=6.13.1 id=errors-security    title='CXER001x — security caps']
+      [child n=6.13.2 id=errors-eval-gates  title='CXER004x — evaluator gates']
+      [child n=6.13.3 id=errors-include     title='E9xx — include resolver']
+      [child n=6.13.4 id=errors-catching    title='Recovering with [?match]']]]
+
+  [section n=7 id=bindings file='07-bindings.cxd'
+    [child n=7.1 id=c-abi             title='The C ABI surface']
+    [child n=7.2 id=layer-1           title='Layer 1 — canonical method set']
+    [child n=7.3 id=layer-2           title='Layer 2 — host idiom packs']
+    [child n=7.4 id=type-mapping      title='Type mapping per binding']
+    [child n=7.5 id=thread-safety     title='Thread-safety and concurrency model']
+    [child n=7.6 id=cap-bit-negotiation title='Capability bit negotiation']
+    [child n=7.7 id=ffi-lifetime      title='FFI lifetime and memory ownership']
+    [child n=7.8 id=schema-codegen    title='Schema-driven codegen']
+    [child n=7.9 id=install-hello     title='Install + hello world per binding']
+    [child n=7.10 id=quickstarts      title='Quickstarts (V/Python/Go/Rust)'
+      [child n=7.10.1 id=v        title='V (native reference)']
+      [child n=7.10.2 id=python   title='Python']
+      [child n=7.10.3 id=go       title='Go']
+      [child n=7.10.4 id=rust     title='Rust']]
+    [child n=7.11 id=binding-detail   title='Per-binding reference snippets'
+      [child n=7.11.1 id=c-abi-detail   title='C ABI — symbol catalog']
+      [child n=7.11.2 id=v-detail       title='V binding — install, Layer 1, atom']
+      [child n=7.11.3 id=python-detail  title='Python binding — install, Layer 1, type map']
+      [child n=7.11.4 id=go-detail      title='Go binding — install, Layer 1, cgo']
+      [child n=7.11.5 id=rust-detail    title='Rust binding — install, Layer 1, threading']]]
+
+  [section n=8 id=tooling file='08-tooling.cxd'
+    [child n=8.1 id=cli              title='The cx CLI']
+    [child n=8.2 id=editors          title='Editor integration']
+    [child n=8.3 id=lsp              title='Language server (LSP)']
+    [child n=8.4 id=tree-sitter      title='Tree-sitter grammar']
+    [child n=8.5 id=lint             title='Lint rules']
+    [child n=8.6 id=diff             title='Diff semantics']
+    [child n=8.7 id=cookbook         title='Cookbook — common recipes']
+    [child n=8.8 id=diagnostics      title='Diagnostics and debugging']
+    [child n=8.9 id=build-integration title='Build-system integration']
+    [child n=8.10 id=docgen          title='Doc-gen pipeline']
+    [child n=8.11 id=playground      title='Playground']
+    [child n=8.12 id=profiling       title='Profiling and benchmarking']
+    [child n=8.13 id=tooling-quickref title='Tooling quick references'
+      [child n=8.13.1 id=cli-quickref           title='CLI quick reference']
+      [child n=8.13.2 id=editor-installers      title='Editor installer scripts']
+      [child n=8.13.3 id=tree-sitter-workflow   title='Tree-sitter grammar workflow']
+      [child n=8.13.4 id=conformance-fuzz-bench title='Conformance, fuzzing, benchmarks']]
+    [child n=8.14 id=cookbook-extras  title='Cookbook — additional recipes']
+    [child n=8.15 id=playground-detail title='Playground — visualize, offline, highlight']]
+
+  [section n=9 id=concepts file='09-concepts.cxd'
+    [child n=9.1 id=homoiconicity      title='Homoiconicity']
+    [child n=9.2 id=errors-as-values   title='Errors as values']
+    [child n=9.3 id=pure-updates       title='Pure-functional updates and lenses']
+    [child n=9.4 id=streaming          title='Streaming']
+    [child n=9.5 id=parallelism        title='Parallelism by construction']
+    [child n=9.6 id=security           title='Security model and untrusted-input handling']
+    [child n=9.7 id=performance        title='Performance characteristics']
+    [child n=9.8 id=abi-stability      title='ABI stability and versioning']
+    [child n=9.9 id=concurrency-model  title='Concurrency model']
+    [child n=9.10 id=wasm-story        title='Wasm / browser story']
+    [child n=9.11 id=quotas-recap      title='Resource quotas (recap)']
+    [child n=9.12 id=determinism       title='Determinism and reproducibility guarantees']
+    [child n=9.13 id=sandboxing        title='Sandboxing untrusted CX code']
+    [child n=9.14 id=structural-sharing-detail title='Structural sharing — the spine-copy algorithm'
+      [child n=9.14.1 id=ss-puzzle       title='The puzzle']
+      [child n=9.14.2 id=ss-spine-copy   title='The spine-copy algorithm']
+      [child n=9.14.3 id=ss-cost         title='Cost model']
+      [child n=9.14.4 id=ss-invariant    title='The identity invariant']
+      [child n=9.14.5 id=ss-concurrent   title='Concurrent reads are free']
+      [child n=9.14.6 id=ss-not-cow      title='Why not copy-on-write?']]
+    [child n=9.15 id=wasm-three-tier   title='Wasm three-tier rendering and respin status'
+      [child n=9.15.1 id=wasm-why            title='Why WebAssembly']
+      [child n=9.15.2 id=wasm-three-tier-render title='Three-tier diagram rendering']
+      [child n=9.15.3 id=wasm-status         title='Wasm respin status (v0.8.0)']]
+    [child n=9.16 id=performance-numbers title='Performance numbers — parse, emit, eval, FFI']]
+
+  [section n=10 id=migration file='10-migration.cxd'
+    [child n=10.1 id=from-v07x        title='From v0.7.x to v0.8.0']
+    [child n=10.2 id=from-xml         title='From XML']
+    [child n=10.3 id=from-json-yaml   title='From JSON / YAML / TOML']
+    [child n=10.4 id=retired-surfaces title='Retired surfaces and replacements']
+    [child n=10.5 id=extend-contribute title='Extend and contribute'
+      [child n=10.5.1 id=file-bug             title='Filing an issue']
+      [child n=10.5.2 id=add-fixture          title='Adding a conformance fixture']
+      [child n=10.5.3 id=propose-adr          title='Proposing a design change']
+      [child n=10.5.4 id=ship-binding         title='Shipping a new binding']
+      [child n=10.5.5 id=debug-investigate    title='Debugging an implementation']
+      [child n=10.5.6 id=memory-update        title='Updating the project memory']]]
+
+  [# back-matter — appears after [section n=10] in render order #]
+  [section n=11 id=glossary       file='11-glossary.cxd']
+  [section n=12 id=faq            file='12-faq.cxd']
+  [section n=13 id=comparison     file='13-comparison.cxd']
+
+  [# appendices — designer pre-approved as new guide sections,
+     migrated from docs-src/content/tour/ during Phase B. #]
+  [section n=14 id=tour-data      file='14-tour-data.cxd']
+  [section n=15 id=tour-programs  file='15-tour-programs.cxd']
+
+  [# The "Standard library" area (libraries.html + lib-<m>.html) and the
+     "XAP" area are NOT manifest sections: guide_build.cx projects them
+     directly from the co-located [module-doc]/[fn-doc] in stdlib/*.cx and
+     from spec/03-approved/xap/demos/, so there is no section file or TOC
+     block to keep in sync here. #]
+]

@@ -47,7 +47,7 @@ static int g_failed = 0;
 
 #define PASS(name) printf("ok   %s\n", name)
 
-/* Read the [u32 LE size] header of a framed CXDB buffer. */
+/* Read the [u32 LE size] header of a framed CXCol buffer. */
 static uint32_t framed_size(const char *buf) {
     const unsigned char *p = (const unsigned char *)buf;
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
@@ -58,7 +58,7 @@ static uint32_t framed_size(const char *buf) {
  * (arrow-002-float64-roundtrip). Two columns, two rows — enough to
  * round-trip through chunked emit, table reader/writer, and Arrow. */
 static const char SAMPLE_TABLE[] =
-    "[ratios :table[name:string ratio:float]\n"
+    "[ratios [table[name::string ratio::float]]\n"
     "  alice 0.91\n"
     "  bob   0.88\n"
     "]\n";
@@ -127,7 +127,7 @@ static void test_chunked_happy_path(void) {
     }
     uint32_t sz = framed_size(buf);
     if (sz < 8) {
-        FAIL("framed CXDB size implausibly small: %u", sz);
+        FAIL("framed CXCol size implausibly small: %u", sz);
     }
     cx_free(buf);
     PASS("test_chunked_happy_path");
@@ -195,11 +195,11 @@ static void test_table_reader_bad_input(void) {
      * frame-validator on the caller side — see MIGRATION.md
      * Phase 7.74c-cont-bindings-multi-kotlin). This test instead
      * exercises the well-framed-but-bad-payload path: size header
-     * claims 4 payload bytes (all zero), which is not a valid CXDB
+     * claims 4 payload bytes (all zero), which is not a valid CXCol
      * chunked-table header. The function must reject without crashing. */
     static const char tiny_invalid[] = {
         0x04, 0x00, 0x00, 0x00,  /* size = 4 */
-        0x00, 0x00, 0x00, 0x00,  /* invalid CXDB payload */
+        0x00, 0x00, 0x00, 0x00,  /* invalid CXCol payload */
     };
     char *err = NULL;
     cx_table_reader_handle r = cx_table_reader_open(tiny_invalid, &err);
@@ -302,7 +302,7 @@ static void test_arrow_round_trip(void) {
                    err ? err : "(null)");
     if (err) FAIL("import set err on success: %s", err);
     if (framed_size(out) < 8) {
-        FAIL("imported CXDB framed size implausibly small: %u",
+        FAIL("imported CXCol framed size implausibly small: %u",
              framed_size(out));
     }
     p_arrow_free(out);
@@ -347,9 +347,9 @@ static const char SAMPLE_VALIDATE_DOC[] = "[server host='localhost' port=8080]";
 static const char SAMPLE_VALIDATE_SCHEMA[] =
     "[?cx schema-of server]\n"
     "[server\n"
-    "  [body :elem]\n"
-    "  [attr host :string :req]\n"
-    "  [attr port :i32 :req]\n"
+    "  [body elem]\n"
+    "  [attr host::string [req]]\n"
+    "  [attr port::i32 [req]]\n"
     "]\n";
 
 static const char SAMPLE_VALIDATE_BAD_DOC[] = "[server port=8080]"; /* missing host */
@@ -357,8 +357,8 @@ static const char SAMPLE_VALIDATE_BAD_DOC[] = "[server port=8080]"; /* missing h
 static const char SAMPLE_VALIDATE_RE2_SCHEMA[] =
     "[?cx schema-of x]\n"
     "[x\n"
-    "  [body :elem]\n"
-    "  [attr name :string :pat='\\w+']\n"
+    "  [body elem]\n"
+    "  [attr name::string [pattern '\\w+']]\n"
     "]\n";
 static const char SAMPLE_VALIDATE_RE2_OK[]  = "[x name='hello']";
 static const char SAMPLE_VALIDATE_RE2_BAD[] = "[x name='hello world!']";

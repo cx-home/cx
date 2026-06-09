@@ -20,16 +20,17 @@ See [cx-home/cx-v](https://github.com/cx-home/cx-v) for the full API and docs.
 
 ### `lang/v/native/` — native binding (default)
 
-Imports the V core (`lang/v/cx/`, the V-package mirror of `vcx/cx/`) directly.
-No FFI on hot paths. This is the **default** import path for V users; the
-fastest variant on the V VM.
+Imports the V core (`vcx/cx/` + `vcx/code/`) directly. No FFI on hot paths.
+This is the **default** import path for V users; the fastest variant on the
+V VM. Compile with `VFLAGS="-path @vlib|@vmodules|<repo>/vcx" v run ...` so
+the V resolver finds the `cx` + `code` modules under `vcx/`.
 
 ```v
-import cx as cx          // resolves to native binding by default
+import native as cx      // lang/v/native exposes the Layer-1 surface
 doc := cx.parse(src)!
 ```
 
-### `lang/v/cffi/` — C ABI wrapper
+### `lang/_archived/v-cffi/` — C ABI wrapper (archived)
 
 Wraps `libcx` via the V `C.cx_*` extern declarations. Identical FFI surface
 to the other 9 bindings (Python, Go, Rust, etc.). Useful for users who want a
@@ -101,7 +102,7 @@ fn main() {
     out := cffi.to_json('[user [id :i64 9007199254740993]]') or { panic(err) }
     println(out)
 
-    // Public Table API (ADR 0018) — 17-member surface
+    // Public Table API — 17-member surface
     src := '[users :table[name age:int]
       alice 30
       bob   25

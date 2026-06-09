@@ -37,14 +37,14 @@ parity (CX text, JSON, YAML, TOML, MD, XML, CXDB, AST-bin):
 | Array | `[a, b, c,]` | `arr[T]` (ordered, indexed) | `[ports [8080, 8081, 8082,]]` |
 | Map | `{k: v, ...}` | `map[K, V]` (string-keyed at v0.6.0) | `[hosts {alice: 1.1.1.1, bob: 2.2.2.2}]` |
 
-Plus three CXL readability levers ( §D23–D25): labeled
+Plus three CX code readability levers ( §D23–D25): labeled
 directive slots (`[?if cond :then a :else b]`), explicit body labels,
 and kebab-case FLWOR keywords (`order`, not `order-by`). Parameterized
 templates : `?def name :params [a b] :body ...` with
 lexical-scope `dispatch_template_call`.
 
 22 locked decisions in;
-28 CXL conformance fixtures green across runners; 4 new
+28 CX code conformance fixtures green across runners; 4 new
 collection-cell fixtures in `conformance/table.txt`.
 
 ### NEW: Public Table API ( — accepted 2026-05-11)

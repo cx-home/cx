@@ -1,0 +1,608 @@
+[# Section 12 — Frequently Asked Questions. Back-matter; appears
+   after §11 glossary. Authored 2026-05-22 against the v0.8.0-dev
+   branch.
+
+   These are the questions a first-week CX developer actually asks.
+   Each Q has a one-paragraph recovery pattern with a concrete
+   command or code snippet. Where the answer is normative, the FAQ
+   defers to the spec via a markdown link. Cross-links to other
+   sections use [[anchor]] form. File extension .cxd — data-only
+   source. #]
+
+[section id=faq n=12 title='Frequently Asked Questions'
+
+  [intro
+    """If you ran into something confusing in your first week of CX,
+       it is probably here. Each answer leads with the recovery
+       command and follows up with the why. Grouped by topic; use
+       your editor's search if you arrived from a search engine."""]
+
+  [child id=faq-setup n=12.1 title='Setup and install'
+
+    [child id=faq-not-found title='Why does `cx --version` fail with "command not found"?'
+      [body
+        """`cx` is on disk but not on your shell `PATH`. If you used
+           Homebrew, run `brew --prefix cx` to find the install
+           prefix and confirm `$(brew --prefix cx)/bin` is on
+           `PATH`. If you used the devbox build (`make install`),
+           the binary lives at `~/.local/bin/cx` — add that to
+           `PATH`. If you used Docker, you do not actually have
+           `cx` installed; use `docker run cx-lang/cx cx …`
+           instead."""]
+      [example lang=shell
+        """[# Confirm the binary exists                                #]
+           which cx || ls -l ~/.local/bin/cx
+
+           [# Add ~/.local/bin to PATH for this shell                  #]
+           export PATH="$HOME/.local/bin:$PATH"
+
+           [# Persist it (zsh)                                         #]
+           echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc"""]]
+
+    [child id=faq-v-not-found title='Build fails with "V not found"'
+      [body
+        """The reference build uses devbox to pin the V compiler
+           version. If you ran `make build` outside a devbox shell
+           and got "V not found," either install V manually
+           (https://vlang.io) or — better — wrap the build in
+           devbox so the toolchain matches CI:"""]
+      [example lang=shell
+        """devbox run -- make build"""]
+      [note
+        """Devbox is at https://www.jetify.com/devbox — `brew
+           install jetify-com/devbox/devbox` or
+           `curl -fsSL https://get.jetify.com/devbox | bash`."""]]
+
+    [child id=faq-windows title='Can I use CX on Windows?'
+      [body
+        """Today: yes, via WSL2 (Ubuntu or Debian inside Windows).
+           The Linux build runs unchanged. Native Windows — a
+           PE-format `cx.exe` and `cxlib.dll` — is on the post-v0.8.0
+           roadmap; the bottleneck is the V toolchain's Windows
+           support, not CX itself. Track issue
+           [#windows-native](https://github.com/cx-lang/cx/issues/windows-native)
+           for the current state."""]]]
+
+  [child id=faq-parsing n=12.2 title='Parsing and syntax'
+
+    [child id=faq-find-retired title='Why does my `[?find]` fail with CXER0100?'
+      [body
+        """`[?find]` was retired in v0.8.0 — it was
+           always sugar for `[?for]` over a pattern. Rewrite each
+           `[?find pattern [yield body]]` to either a direct CXPath
+           (when the pattern is just an element with optional
+           predicates) or to `[?for]` (when the pattern is
+           structurally more complex). See [[from-v07x]] for the
+           full mapping table."""]]
+
+    [child id=faq-attr-vs-slot title='Why does `[user :id 42]` parse differently from `[user id=42]`?'
+      [body
+        """They are two different syntactic forms. **`name=value`** is
+           the data-element attribute syntax (per `spec/grammar.ebnf
+           [55] Attribute`). **`:name value`** is the *directive
+           labeled-slot* syntax (per `spec/grammar.ebnf [127e]`) and
+           is only valid inside `[?directive …]`. On a data element,
+           `:id` looks like a type tag — and `[user :id 42]` parses
+           as a `user` element whose body is the value `42` carrying
+           the type tag `:id` (which is not a known type, so it errors
+           later). On a directive, `:id 42` is the labeled slot named
+           `id` bound to `42`."""]
+      [example lang=cx
+        """[# Right — data element with attribute                     #]
+           [user id=42 email='ada@example.com']
+
+           [# Right — directive with labeled slot                     #]
+           [?service :id 'users' :port 8080 [route '/users' …]]
+
+           [# Wrong — :id on a data element looks like a type tag     #]
+           [user :id 42]"""]
+      [note
+        """The two-form distinction is by design — see the body
+           discussion at [[attributes]]."""]]
+
+    [child id=faq-count-container title='Why does `count(arr)` error but `count(seq)` work?'
+      [body
+        """`count()` operates on a sequence. An array (`[…]`) is a
+           single container Item, not a sequence; counting an
+           array gives you 1 (the container). To count the
+           elements *inside* an array, unwrap it with `items()`
+           or `flatten()`:"""]
+      [example lang=cx
+        """[?let [= $arr [1, 2, 3]]
+           [$count $arr]                [# → 1 (one container)        #]
+           [$count [$items $arr]]       [# → 3 (three sequence items) #]
+           [$count (1, 2, 3)]]          [# → 3 (direct sequence)      #]"""]
+      [body
+        """The distinction is the **container vs atom** principle in
+           [`spec/cxdm.md`](../../spec/cxdm.md) §2.0. See
+           [[container-atom]] for the full rules; sequences are flat,
+           arrays are containers."""]]
+
+    [child id=faq-hash-mismatch title='Why does my hash differ on Linux vs macOS?'
+      [body
+        """It should not. The strict canonical bytes (and therefore
+           the SHA-256) are platform-independent by construction —
+           the canonicalizer normalises line endings, quotes,
+           whitespace, attribute order, and Unicode (NFC). If you
+           observe a divergent hash for the same source on two
+           platforms, that is a **gate 28.6 violation** and a release
+           blocker."""]
+      [example lang=shell
+        """[# Reproduce on both platforms and bisect                   #]
+           cx canon doc.cx | shasum -a 256
+           cx fmt doc.cx | cx canon | shasum -a 256
+           [# Both should produce identical hex output on every host. #]"""]
+      [note
+        """File a bug at https://github.com/cx-lang/cx/issues with
+           the source document and the divergent hashes from both
+           platforms. Include `cx --version` output from each."""]]
+
+    [child id=faq-attr-reorder title='Why is my JSON output attribute-reordered?'
+      [body
+        """The canonical form sorts attributes lexicographically by
+           key — that is what makes the hash stable. The JSON
+           projection inherits this sort. If you need to preserve
+           authored order for human consumption, use `cx fmt` (the
+           lossless canonical) for the source file and reserve the
+           JSON projection for machine consumers, which do not care
+           about key order."""]
+      [example lang=shell
+        """cx fmt doc.cx                   [# preserves attr order    #]
+           cx convert --to json doc.cx     [# sorts attr keys         #]"""]]
+
+    [child id=faq-double-anchor title='Can I have two `&anchor` declarations with the same name?'
+      [body
+        """No. Anchor names are document-unique; declaring `&foo`
+           twice raises `CXER0101` at parse time. If you want to
+           reuse an anchor's content in two places, declare it
+           once and merge it twice with `*foo`:"""]
+      [example lang=cx
+        """[# Wrong: duplicate anchor                                  #]
+           [a &x value=1]
+           [b &x value=2]   [# → CXER0101                              #]
+
+           [# Right: one anchor, two merges                            #]
+           [defaults &x timeout=30 retries=3]
+           [service-a *x]
+           [service-b *x]"""]]]
+
+  [child id=faq-code n=12.3 title='Code language'
+
+    [child id=faq-find-vs-for title='What is the difference between `[?for]` and the old `[?find]`?'
+      [body
+        """They are the same operation. `[?find]` was retired in
+           v0.8.0 because it was always
+           pattern-driven `[?for]` with one less keyword. Anything
+           you wrote in `[?find]` form can be expressed as `[?for]`
+           over a pattern, or — more directly — as a CXPath
+           expression. See [[from-v07x]] for the migration table."""]
+      [example lang=cx
+        """[# v0.7.x                                                   #]
+           [?find [user @active=true $u] :yield $u]
+
+           [# v0.8.0 — CXPath form (preferred)                         #]
+           //user[@active=true]
+
+           [# v0.8.0 — equivalent pattern form                         #]
+           [?for [user @active=true $u] [yield $u]]"""]]
+
+    [child id=faq-dispatch-on-type title='How do I dispatch on element type?'
+      [body
+        """Use multi-arm `[?match]` with `[case …]` clause-children
+           that name the element type. Each `[case …]` is a pattern +
+           result, the first one that matches wins, and `[else …]` is
+           the catch-all."""]
+      [example lang=cx
+        """[?for [in $n //*] [yield
+             [?match $n
+               [case [prose $p]    [p $p]]
+               [case [code $c]     [pre $c]]
+               [case [img &src=$s] [figure src=$s]]
+               [else               ()]]]]"""]]
+
+    [child id=faq-update-value title='How do I update a value?'
+      [body
+        """Use `[?modify]`. It takes a document, a CXPath
+           focus, and an action; it returns a new document. There is
+           no in-place mutation in CX — see the next question."""]
+      [example lang=cx
+        """[?modify $doc //user[@id=1]/@email [set 'ada@anthropic.com']]
+
+           [# Eleven actions: [set …] / [delete] / [using …] / [rename …] #]
+           [# [set-attr …] / [delete-attr …] / [append …] / [prepend …]   #]
+           [# [insert-before …] / [insert-after …] / [replace …]          #]"""]]
+
+    [child id=faq-pure-functional title='Why does `[?modify]` return a new Doc instead of mutating?'
+      [body
+        """Pure-functional semantics — no in-place writes in CX.
+           Concurrency is safe by construction (no reader ever
+           observes a half-modified tree), equality is trivially
+           preservable (the old hash still names the old document),
+           and structural sharing makes it cheap: unchanged branches
+           of the tree are reused between the input and the output,
+           so `[?modify]` is O(log n) in the document size for a
+           single-focus update. See [[pure-updates]]."""]]
+
+    [child id=faq-pipeline-implicit-bind title='What does `$1` mean in a pipeline?'
+      [body
+        """In a `|` pipeline, `$1` is the implicit positional binding
+           for the previous stage's output. The pipeline form
+           `expr1 | expr2 | expr3` desugars to
+           `[?pipe expr1 expr2 expr3]`, and each stage after the
+           first sees the previous stage's value as `$1`."""]
+      [example lang=cx
+        """[# These are equivalent                                     #]
+           //user[@active=true] | count($1)
+           [?pipe //user[@active=true]  count($1)]"""]]]
+
+  [child id=faq-bindings n=12.4 title='Bindings'
+
+    [child id=faq-which-binding title='Which binding should I use?'
+      [body
+        """Pick by deployment shape:
+           **V** for embedded / native — the reference implementation,
+           no FFI overhead, smallest binary footprint.
+           **Python** for scripting, data-engineering pipelines, and
+           any analytical workflow already on pandas / polars.
+           **Go** for services — high-throughput servers, especially
+           when CX is the wire format.
+           **Rust** for systems integration — FFI into Rust crates,
+           or for the lowest-overhead pure-Rust deployments.
+           Layer 1 (the 16 canonical methods) is identical across all
+           four, so you can change your mind later."""]]
+
+    [child id=faq-thread-safe title='Are CX values thread-safe?'
+      [body
+        """Yes. CX values are immutable by construction — every
+           update returns a new value via structural sharing.
+           Multiple threads can read the same `Doc` concurrently
+           without locks. Bindings handle their own GC threading
+           via `cx_thread_register` (see next)."""]]
+
+    [child id=faq-cx-thread-register title='When do I call `cx_thread_register()`?'
+      [body
+        """**Never if you use a binding.** The binding's Layer-1
+           wrappers auto-call `cx_thread_register` on the first
+           libcx call from each thread and `cx_thread_unregister`
+           when the thread exits.
+           **Manually only if** you are calling the C ABI directly
+           from a host-spawned thread, e.g. a Rust binding's
+           `tokio::task::spawn_blocking` closure that calls a raw
+           `cx_*` C symbol — that thread is opaque to libcx's
+           Boehm GC and must register itself. See
+           [[ffi-thread-register]] and
+           [`spec/abi.md`](../../spec/abi.md) §1.5.5."""]]
+
+    [child id=faq-python-memory title='Why does my Python Doc keep memory allocated after I drop it?'
+      [body
+        """Boehm GC (the collector inside libcx) is conservative and
+           runs on its own schedule — dropping the Python wrapper
+           does not immediately free the underlying CX nodes. For
+           long-running processes that hold many `Doc` handles
+           briefly, call `.close()` to release the libcx reference
+           explicitly:"""]
+      [example lang=python
+        """import cxlib
+         doc = cxlib.parse_file('huge.cx')
+         try:
+             use(doc)
+         finally:
+             doc.close()                 [# release immediately       #]"""]
+      [body
+        """`Doc` is also a context manager:"""]
+      [example lang=python
+        """with cxlib.parse_file('huge.cx') as doc:
+             use(doc)
+         [# doc.close() called automatically on exit                   #]"""]
+      [note
+        """See [[ffi-doc-lifetime]] for the full per-binding lifetime
+           contract. The TS binding had a Boehm GC interaction bug
+           on Node — see lang/_archived/typescript/README.md if you
+           need historical context."""]]]
+
+  [child id=faq-tooling n=12.5 title='Tooling'
+
+    [child id=faq-lint-tree title='How do I lint a tree of CX files?'
+      [body
+        """`cx lint` works file-by-file; chain it through `find`
+           for a tree. The standard recipe:"""]
+      [example lang=shell
+        """find . -name '*.cx' -print0 | xargs -0 cx lint"""]
+      [body
+        """`cx lint` runs the rule set in
+           [`spec/lint.md`](../../spec/lint.md); exit code is the
+           number of files with diagnostics. See [[lint]] for the
+           rule list and how to configure rule severity per
+           project (`.cx-lint.yml` at the repo root)."""]]
+
+    [child id=faq-semantic-diff title='How do I diff two CX files semantically?'
+      [body
+        """`cx diff a.cx b.cx --semantic` does a tree-structured
+           diff that ignores attribute order, quote choice, and
+           comment-only changes. Without `--semantic` you get a
+           byte-level diff on the strict canonical form, which is
+           still better than a textual diff because both inputs
+           are normalised first."""]
+      [example lang=shell
+        """cx diff before.cx after.cx --semantic
+           cx diff before.cx after.cx --format=unified"""]
+      [body
+        """See [[diff]] for the algorithm and the JSON-output mode
+           used by CI integrations."""]]
+
+    [child id=faq-make-docs title='How do I run the canonical guide locally?'
+      [body
+        """The doc-gen pipeline is wired into the top-level
+           `Makefile`. From a devbox shell:"""]
+      [example lang=shell
+        """devbox run -- make docs                [# build staging tree    #]
+           devbox run -- make docs-diff           [# diff vs live           #]
+           devbox run -- make docs-publish        [# promote staging→live  #]"""]
+      [body
+        """The generator reads `docs-src/canonical/manifest.cxd`,
+           assembles the section files, expands example
+           placeholders against `conformance/*.txt`, and writes
+           the rendered guide into `_docs_staging/`. See
+           [[docgen]]."""]]
+
+    [child id=faq-vscode-highlight title="Why doesn't VS Code highlight my CX file?"
+      [body
+        """The CX VS Code extension is not auto-installed. From the
+           command palette, run "Extensions: Install from VSIX…"
+           and point at `tooling/vscode/cx-language-*.vsix`. After
+           install, run "Developer: Reload Window" to pick up the
+           grammar. The extension contributes the `.cx`, `.cxs`,
+           and `.cxd` file associations; if a file is mis-detected,
+           click the language label in the status bar and switch
+           manually."""]
+      [note
+        """If you are on Neovim, the install script is
+           `tooling/install/install-nvim.sh` — it wires
+           tree-sitter and the LSP. See
+           [[editors]] for Helix and other editors."""]]]
+
+  [child id=faq-perf n=12.6 title='Performance'
+
+    [child id=faq-max-file-size title='How big a file can `cx parse` handle?'
+      [body
+        """The parser is bounded by `CX_MAX_BODY` (default 256 MiB).
+           For files larger than the cap, use the streaming
+           evaluator — see [[streaming-data]]. Gate 15 of the
+           v0.8.0 readiness rubric measures the streaming
+           throughput at **353 MB/s** on the reference workload."""]
+      [example lang=shell
+        """[# Raise the cap if your workflow needs it                  #]
+           CX_MAX_BODY=$((1024*1024*1024)) cx parse big.cx
+
+           [# Or stream                                                #]
+           cx stream big.cx --eval '//record/@id'"""]
+      [body
+        """The per-document `CX_MAX_*` family is documented at
+           [[limits]] — body, depth, attribute count, scalar
+           length, total nodes are independently capped."""]]
+
+    [child id=faq-single-threaded title='Is parsing single-threaded?'
+      [body
+        """The **parser** is single-threaded per document — the
+           bracket grammar is inherently sequential. The
+           **streaming evaluator** is single-threaded per stream
+           but multiple streams can run concurrently, and
+           `[?map par=true]` / `[?reduce par=true]` parallelise across
+           bounded worker pools. For analytical workloads on
+           tabular data, CXCol scans are SIMD-accelerated where
+           the host CPU supports it."""]]
+
+    [child id=faq-playground-slower title='Why is the playground slower than running cx in the terminal?'
+      [body
+        """The playground is a constrained demonstration surface
+           bundled into the browser. It carries unavoidable
+           overhead — Asyncify instrumentation (so `[?sleep]` can
+           yield through the JS event loop), pthreads runtime (so
+           `par=true` runs real OS threads), and the wasm format
+           itself. Production CX deployments use the native CLI
+           (~5 MB binary), the language bindings (~1.5 MB per
+           wrapper), or libcx as a shared library directly —
+           those paths have no Asyncify overhead, no
+           SharedArrayBuffer requirement, no bundle-size
+           pressure. The playground exists to make CX explorable
+           from any browser without an install step; native CX
+           is the performance target. See [[wasm-story]] for the
+           full framing, including the three playground delivery
+           modes (GitHub Pages, file://, `make guide-http`)."""]]
+
+    [child id=faq-playground-par-no-speedup title='I ran [?map par=true] in the playground and it did not speed up — bug?'
+      [body
+        """Not a bug — your playground is most likely running in
+           single-thread mode. Three delivery modes: GitHub Pages
+           and `file://` both serve the
+           single-threaded Asyncify build (no cross-origin
+           isolation possible without custom HTTP headers, and
+           browsers gate SharedArrayBuffer behind that). `par=true`
+           is honoured (output multiset is correct, sequential is
+           one valid ordering) but doesn't accelerate. For real
+           parallel speedup in the playground, run
+           `make guide-http` — the V veb server sends the
+           required cross-origin-isolation headers, the
+           pthreads-enabled wasm loads, and `par=true` uses real OS
+           threads. The playground's adaptive footer tells you
+           which mode you're in."""]]
+
+    [child id=faq-parquet-perf title='How fast is Parquet round-trip vs native CXCol?'
+      [body
+        """Parquet writes hit roughly **150 MB/s** on the
+           reference benchmark — the bottleneck is Snappy
+           compression and the Arrow → Parquet conversion.
+           Native **CXCol** is faster because it skips
+           compression by default and uses a wire format
+           designed for the CX value model. Rule of thumb: use
+           **Parquet** for interchange with the broader analytics
+           ecosystem, **CXCol** for CX-internal pipelines. See
+           [[cxcol-vs-others]] for the full decision matrix."""]]]
+
+  [child id=faq-security n=12.7 title='Security'
+
+    [child id=faq-include-untrusted title='Is `[?cx include]` safe with untrusted input?'
+      [body
+        """It depends on the capability profile. The default
+           profile (`default`) allows `include-local` — relative
+           paths from the source document — but disallows
+           `include-remote` and `include-absolute`. For untrusted
+           input, use `--profile untrusted`, which disables
+           includes entirely and refuses any directive that
+           touches the filesystem or network:"""]
+      [example lang=shell
+        """cx eval --profile untrusted untrusted.cx"""]
+      [body
+        """The full capability matrix lives at
+           [[include-capabilities]] and in
+           [`spec/include.md`](../../spec/include.md) §4. The
+           `cx_features()` bitfield exposes what the loaded libcx
+           supports; the profile gates what the runtime
+           permits."""]]
+
+    [child id=faq-resource-limits title='How do I limit resource use?'
+      [body
+        """Environment variables cap per-document and per-process
+           resource consumption. The full list lives at
+           [[limits]] and [[security]]; the most common are:"""]
+      [example lang=shell
+        """CX_MAX_BODY=$((64*1024*1024))      [# parse size cap   #]
+           CX_MAX_DEPTH=128                    [# nesting cap      #]
+           CX_MAX_ATTRS=4096                   [# attrs per element #]
+           CX_MAX_NODES=$((1024*1024))         [# total nodes      #]
+           CX_EVAL_TIMEOUT_MS=5000             [# eval wall clock  #]
+           cx eval input.cx"""]]]
+
+  [child id=faq-migration n=12.8 title='Migration'
+
+    [child id=faq-migrate-v07 title='How do I migrate from v0.7.x?'
+      [body
+        """v0.8.0 is the pre-release API/format-stability boundary
+           and ships with no external users, so there is no
+           standing migration tool — the changes are mechanical
+           renames plus the `[?find]` → `[?for]`/CXPath rewrite.
+           The full diff between v0.7.x and v0.8.0 is documented at
+           [[from-v07x]]; the non-mechanical cases (custom directive
+           names that collide with new core directives) are listed
+           at the bottom of that section. If you do need to migrate
+           a v0.7.x codebase, the rename tables there give
+           you everything to do it by hand or with a one-off
+           project-local script."""]]
+
+    [child id=faq-archived-bindings title='What if I am on TypeScript / Java / C# / Ruby / Kotlin / Swift binding?'
+      [body
+        """Those bindings were archived in v0.8.0 — they are still
+           available on v0.7.5 (last release before the archive)
+           and live under `lang/_archived/` for reference. The
+           v0.8.0 binding set is V, Python, Go, Rust (Tier 1)
+           only. Your options:
+           (a) **Stay on v0.7.5** — it remains tagged and
+           supported for the v0.7.x bugfix line; CX file format
+           is forward-compatible to v0.8.0.
+           (b) **Migrate to a Tier-1 binding** — Layer 1 is
+           identical across all four, so the migration is mostly
+           module-import changes plus host-idiomatic adjustments
+           at Layer 2.
+           See `lang/_archived/README.md` for the per-binding
+           archival notes and pointer to the last working
+           commit."""]
+      [note
+        """The decision to archive was about resource focus, not
+           technical limitation — those bindings worked. The
+           v0.8.0 Tier-1 set was chosen for ecosystem reach
+           (Python for analytics, Go for services, Rust for
+           systems, V as the native reference). Community-
+           maintained revivals are welcome and the C ABI stays
+           stable for them."""]]]
+
+  [# Migrated from docs-src/content/faq.cx during Phase B docs →
+     guide consolidation (2026-05-24). Unique Q&A from the
+     pre-v0.8.0 docs FAQ that complement §12.1-§12.8 above. #]
+
+  [child id=faq-first-thirty n=12.9 title='First thirty minutes — quick answers'
+    [intro
+      """Working answers to questions adopters ask in the first
+         thirty minutes. The §12.1-§12.8 children above cover
+         deeper operational topics; this section is the
+         beginner-question backstop."""]
+
+    [child id=faq-leading-zero n=12.9.1 title='Why does [zip 02134] produce a string?'
+      [body
+        """Leading-zero tokens stay strings unless the prefix is
+           `0x` (hex), `0o` (octal), or `0b` (binary). The rule
+           is deliberately predictable: leading-zero numerics are
+           typically identifiers (postal codes, area codes, BIC
+           codes, account numbers) where the leading zero is
+           data, not a numeric value. CX's design directly
+           inverts YAML's "country: NO" footgun."""]]
+
+    [child id=faq-decimal n=12.9.2 title='What is :decimal for?'
+      [body
+        """Arbitrary-precision decimal — for money, scientific
+           quantities, or any value where IEEE 754 binary floats
+           would lose precision. `0.1 + 0.2` is
+           `0.30000000000000004` in float; in `:decimal` it is
+           `0.3`. Consumer bindings map `:decimal` to their
+           language's decimal type (Python `Decimal`, Java
+           `BigDecimal`, .NET `decimal`, Ruby `BigDecimal`)."""]]
+
+    [child id=faq-brackets n=12.9.3 title='Why brackets instead of braces, indentation, or tags?'
+      [body
+        """Brackets are the lightest balanced delimiter not in
+           heavy use already. Braces are JSON; mixing braces with
+           the rest of CX would create constant visual collision.
+           Indentation breaks under programmatic generation.
+           Tags double the character count for every construct
+           and force closing-tag repetition. Brackets also pun
+           usefully: `[name]` is the thing called `name`, which
+           matches how humans write structured outlines on
+           whiteboards."""]]
+
+    [child id=faq-logfmt n=12.9.4 title='What is logfmt mode?'
+      [body
+        """A CX file made entirely of bare top-level `key=value`
+           attributes. Each line parses as a synthetic Element.
+           Log streams are valid CX. You can `cx --json logs.cx`
+           and get a JSON array of typed log records — no
+           separate logfmt parser needed."""]
+      [example lang=cx
+        """ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
+           ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true"""]]
+
+    [child id=faq-thread-safety n=12.9.5 title='Is CX thread-safe?'
+      [body
+        """The C ABI is documented per-symbol with thread-safety
+           classes. All format converters are stateless and can
+           run concurrently across threads on disjoint inputs.
+           The Boehm GC underneath libcx requires
+           `cx_thread_register` on each calling thread; Tier-1
+           bindings handle this automatically at every FFI
+           chokepoint."""]]
+
+    [child id=faq-confusion-raw n=12.9.6 title='Why does my embedded code get garbled?'
+      [body
+        """The bracket-pipe block-content form is parsed as CX, so
+           child-element brackets inside it open new elements. If
+           your code contains brackets, braces, or quotes, the
+           parser will mangle it. Use the bracket-hash raw-text
+           form instead — nothing inside is parsed, and the
+           terminator is `#]`."""]
+      [example lang=cx
+        """[code [#
+             for (let i = 0; i < arr.length; i++) {
+               console.log(arr[i]);
+             }
+           #]]"""]]
+
+    [child id=faq-license n=12.9.7 title='License and contributing'
+      [body
+        """**License:** Apache 2.0. **Contributing:** the project
+           lives at github.com/cx-home/cx — bug reports, doc
+           fixes, and pull requests welcome. For format-design
+           questions or proposed grammar changes, file an issue
+           first; a recorded design decision is a
+           prerequisite for any breaking change. **Security
+           reports:** through GitHub's private vulnerability
+           reporting at
+           github.com/cx-home/cx/security/advisories/new — do not
+           file a public issue for security-sensitive bugs."""]]]]

@@ -1,0 +1,1829 @@
+# CX Grammar Specification
+# Version: v0.8.0
+# Status: Current
+# Description: CX is a bracket-based markup language. Every single resolved CX Document
+# can be serialized to XML using the cx: namespace for CX-specific metadata. Both CX and
+# XML parse to the same canonical AST (see ast.md).
+#
+# v0.8.0 surface highlights (normative — every production below
+# reflects the v0.8.0 grammar contract):
+#
+# * Homoiconic Lisp-1: every form is `[head …]`.
+# Directives carry only clause-children (`[clause-head child …]`),
+# scalar attributes (`name=value`), bareword modifiers, and
+# positional ProgramExpr values. See [127] + per-directive
+# specialisations.
+# * Bijective CX ⇄ XML: every program AST node has a
+# normative XML image.
+# * Collection literals: SequenceLiteral [56a], ArrayLiteral
+# [56b], MapLiteral [56c]. Element-vs-Array disambiguation [50.D]
+# uses one-token lookahead on the first item.
+# * Atom literals: `:NAME` scalars [122b].
+# * Type annotations: glued `::T` form (`$x::int`).
+# * Variable reference model: every variable / function
+# reference carries the `$` sigil (`$x`, `[$fn args]`).
+# * Module system: `[?lib]` [149], `[?def]`
+# [152], `[?const]` [154]. Param shapes (positional, named-with-
+# default, rest `*$name`) per [153].
+# * CXPath as first-class value kind: PathExpr [130].
+# * Strided slices / multi-axis postfix: [162]+.
+# * Pattern surface: MatchPattern [140a],
+# PredicateExpr [159], `(bind $name)` path-step annotation [160a].
+#
+# Element-vs-Array disambiguation [50.D] — CANONICAL HOME is lexicon [L83];
+# this is the grammar-side summary and MUST agree with it. Inside `[…]`, the
+# parser examines the FIRST ITEM (O(first-token) local lookahead), in order:
+# 1. STRUCTURAL OPENERS bind first (not subject to this rule): `[?` directive,
+# `[!` decl/doctype, `[#` raw text, `[-` comment, `[|` block,
+# `[$` call (program mode), `[*` alias, `[&` ref/anchor.
+# 2. empty `[]` → ArrayLiteral (the empty array), valid in expression position.
+# 3. first char ∉ Name-start (and not a structural opener) → ArrayLiteral.
+# Catches `[1, 2, 3]`, `['a', 'b']`, `[(seq, lit)]`, `[[1,2],[3,4]]`.
+# 4. first char ∈ Name-start: scan the candidate name; the next non-name char
+# decides:
+# `,` → a BARE name head followed by `,` is a PARSE ERROR (CXER0100) —
+# write `['a','b']` or name the list `[tags a, b]`. (Bare arrays of
+# scalar/quoted items are fine; only an unquoted leading bareword is
+# reserved as an element head.)
+# `=` → Element with attribute.
+# `]` → Element with empty body (`[name]`).
+# whitespace → Element; the first interior whitespace is the name/body
+# boundary. Commas after the body starts are content, not separators.
+# any other non-name char → ArrayLiteral (not a clean Name shape).
+# The rule is strictly local. NOTE: CX has NO Markdown syntax — `>`, `~`, `^`,
+# the backtick, and `#` are ordinary content / operators, never head sigils.
+#
+# This grammar uses PascalCase for all named productions without
+# exception. Lexical terminals are quoted strings or character classes.
+# Productions marked (informative) describe parser behaviour, not syntax.
+
+# ─── Conventions ─────────────────────────────────────────────────────────────
+#
+# CX Core productions: Document, Element, Attribute, BodyText (Text), RawText,
+# Comment, PI, XMLDecl, CXDirective, Reference (EntityRef, CharRef),
+# EntityDecl, DoctypeDecl.
+# EntityDecl is Core because EntityRef is Core — entity declarations define
+# the names that appear as EntityRef nodes. Core parsers store EntityDecl
+# nodes without resolving them.
+#
+# CX Extended productions: Scalar, TypeAnnotation, Array, Anchor/Alias/Merge,
+# MultiDoc, TripleQuoted, BlockContent, ElementDecl, AttlistDecl,
+# NotationDecl, ConditionalSect.
+# (DTD schema declarations: Core parsers may skip or error on these.)
+#
+# Parsers MUST implement Core. Extended is optional and gated by feature flags.
+
+# ─── Document Structure ───────────────────────────────────────────────────────
+
+[1] MultiDoc ::= Document ('---' S* Document)*
+ /* Extended. A file may contain multiple documents separated by ---.
+ Each Document is parsed independently with its own scope.
+ Parsers return a stream or array of Document nodes. */
+
+[2] Document ::= Prolog? DoctypeDecl? (Node* | Attribute+ | BareText)
+ /* Multiple top-level Nodes allowed (multi-root).
+ A Document may consist of one or more top-level Attributes
+ instead of Nodes — this is "logfmt mode" and is intended for
+ observability use cases (log lines, structured events). The
+ document parses as a single anonymous element whose attributes
+ are the top-level attributes; no element wrapper is required.
+
+ Examples (logfmt mode):
+ time=2026-05-06T12:00:00Z level=INFO svc=web req=GET path=/foo
+
+ A Document whose first non-whitespace byte is neither a
+ node-start (`[`, `&`) nor a quoted-scalar opener (`"`, `'`) nor
+ a logfmt name='=' is BARE TEXT — the entire input (up to EOF or
+ the `---` MultiDoc separator) is one TextNode containing the
+ verbatim bytes (minus one trailing newline by editor convention).
+ No whitespace normalization. A document whose ENTIRE body is a
+ SINGLE bare token auto-types exactly like a §9 sole-scalar body
+ (`42` → int, `:ok` → atom, `true` → bool, `1.5` → float); a
+ MULTI-token run or a bare word stays one verbatim TextNode
+ (`hello world`, plain prose, multi-line text). Quoted/triple
+ strings are always Text (`"hello"`, `'''multi\nline'''`). This is
+ the data reading of "data = a self-evaluating program": the bare
+ token `42` is the int 42 at top level just as it is in a body.
+
+ Parser disambiguation order: if the first non-whitespace token
+ after Prolog/Doctype is `Name '='`, logfmt mode; else if it
+ starts with `[` or `&`, node mode; else if `"` / `'`, quoted-
+ scalar document mode; else bare-text mode. The four modes are
+ not mixed in the same document. */
+[2a] BareText ::= Char* - (Char* '---' Char*)
+ /* Verbatim character sequence; the only forbidden subsequence
+ is the depth-0 MultiDoc separator `---` at the start of a line. */
+
+[3] Node ::= Element | Scalar | AliasElement | CXDirective
+ | BodyText | Reference | RawText | BlockContent | PI | Comment | LineComment
+ | Interpolation | EvalDirective
+ | CollectionLiteral
+ | EntityDecl | ElementDecl | AttlistDecl
+ | NotationDecl | ConditionalSect
+ /* BodyText and Reference added so that loose text and entity refs are
+ valid at the document level, not only inside element bodies.
+ This aligns Node with BodyItem [53] for consistent multi-root docs.
+ LineComment [30b] is also valid at document level.
+ Interpolation [58] and EvalDirective [59] are valid
+ wherever a Node may appear; CX code evaluators interpret them, pure-
+ data parsers preserve them.
+ CollectionLiteral [56] is valid in Node position.
+ A top-level array, map, or sequence literal parses as a single
+ Node containing the collection value. */
+
+# ─── Characters and Whitespace ────────────────────────────────────────────────
+
+[4] Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
+
+[5] S ::= (#x20 | #x9 | #xD | #xA)+
+ /* Whitespace between unquoted body tokens normalizes to a single space in
+ the AST Text value. Adjacent tokens (no S) produce no space.
+ Whitespace inside QuotedText, TripleQuoted, or BlockContent is
+ preserved literally — no normalization applies. */
+
+[6]  NameStartChar  — MOVED to lexicon.ebnf §2 [L10a].
+[6a] NameChar       — MOVED to lexicon.ebnf §2 [L10b].
+[7]  Name           — MOVED to lexicon.ebnf §2 [L10] (Ident).
+[7a] QName          — MOVED to lexicon.ebnf §2 [L11].
+[7b] Prefix / [7c] LocalName — MOVED to lexicon.ebnf §2.
+ /* The name token (NameStartChar, NameChar, Name/Ident, QName, Prefix,
+ LocalName) is defined ONCE in lexicon.ebnf §2 — the sole home. Full Unicode
+ name chars are retained (XML-derived, keeps CX⇄XML bijective). The unified
+ parser lexes a lone ':' as its OWN token and folds `prefix:local` into a
+ QName ([L11]); ':' is NOT a NameChar (the one deliberate departure from the
+ pre-v0.8.0 model where ':' was a NameChar). Reserved prefixes (cannot be
+ redeclared): 'xml' (XML built-in), 'cx' (CX metadata), 'xmlns' (declaration
+ syntax only) — see cxdm.md §1, §2. */
+[7d] NsDecl ::= 'xmlns' ('=' AttValue
+ | ':' Prefix '=' AttValue)
+ /* xmlns="URI" declares the default namespace; xmlns:foo="URI"
+ binds 'foo' to URI. Both are scoped to the declaring element
+ and its descendants until redeclared. xmlns="" undeclares.
+ See cxdm.md §1, §2. */
+ /* Unprefixed-attribute namespace (XML Namespaces 1.0): the default
+ namespace NEVER applies to an attribute. An unprefixed attribute name is
+ in NO namespace; only a prefixed attribute `p:attr` is namespaced. So in
+ [svg xmlns="…/svg" width=10], `width` is no-namespace, not in the svg ns.
+ xmlns="" undeclares the default; xmlns:p="" (undeclaring a non-default
+ prefix) is forbidden → E213. Reserved 'xml'/'cx' may not be rebound → E213. */
+[8] Nmtoken ::= NameChar+
+
+# ─── Literals ────────────────────────────────────────────────────────────────
+
+[10]  QuotedText / [10a] QuotedContent  — MOVED to lexicon.ebnf §5 [L30].
+[10b] TripleQuoted / [10c] TripleContent — MOVED to lexicon.ebnf §5 [L31].
+[11]  EscapeSeq / [11a] HexDigit         — MOVED to lexicon.ebnf §5 [L32].
+[12]  BareValue / [12a] BareChar         — MOVED to lexicon.ebnf §10 [L70].
+ /* String literals, the escape set, and the bare attribute-value token are
+ defined ONCE in lexicon.ebnf §5/§10. The decoded escape set is CLOSED and
+ UNIFORM across single-, double-, and program string literals:
+ \\ \' \" \n \r \t \uXXXX \UXXXXXXXX — an unknown backslash-sequence is kept
+ LITERALLY (lenient pass-through, uniform across both lexers), so regex strings
+ like '\d+' survive verbatim. TripleQuoted is verbatim (no escapes) and is valid
+ in AttValue position [55a]. QuotedContent admits a Reference inside (entity
+ refs, grammar [16]/[122]); see lexicon.ebnf §5 [L30]. */
+
+[13] SystemLiteral ::= "'" [^']* "'"
+ /* Single-quoted SYSTEM identifier. Always quoted in CX output. */
+[14] PubidLiteral ::= "'" PubidChar* "'"
+ /* Single-quoted PUBLIC identifier. Always quoted in CX output. */
+[15] PubidChar ::= #x20 | #xD | #xA | [a-zA-Z0-9] | [-'()+,./:=?;!*#@$_%]
+
+# ─── Number Literals ─────────────────────────────────────────────────────────
+
+[20]  Number / [20a] HexInt / [20b] Float / [20c] Integer / [20d] NonZeroLeadingInteger
+                 — MOVED to lexicon.ebnf §3 [L20]-[L20d].
+[21]  BoolLiteral / [22] NullLiteral — MOVED to lexicon.ebnf §4 [L21]/[L22].
+[23]  DateLiteral / [24] DateTimeLiteral — MOVED to lexicon.ebnf §4 [L23]/[L24].
+[25]  AutoType / [25a] AutoArray — MOVED to lexicon.ebnf §9 (BODY VALUE CLASSIFICATION).
+[26]  TypeAnnotation / [26a] TypeName — MOVED to lexicon.ebnf §7 [L50]/[L51].
+ /* Number / keyword / date / datetime tokens, the scalar+array AUTO-TYPING
+ rule, and the glued `::T` type annotation are defined ONCE in lexicon.ebnf.
+ Load-bearing points retained here for cross-reference:
+ - Leading-zero tokens ('02134') auto-type as Text, not int (ZIP/SKU safety).
+ - A '-' immediately before a digit is part of a Number; otherwise a NameChar.
+ - lexicon §9 SUPERSEDES the pre-v0.8.0 [25a] (@CHOICE-1): whitespace NEVER
+   auto-arrays. A no-comma run of self-delimiting tokens (typed scalars / atoms /
+   quoted strings — no bareword) is DISCRETE auto-typed children; a bareword makes
+   the whole no-comma body one PROSE string; a comma (or `::T[]`/`::[]`) makes an
+   array of any types. See lexicon.ebnf §9 [L25a]-[L25d].
+ - TypeName is LONG-NAMES-ONLY; an unknown TypeName is cx-err:CXER0107
+   (E_UNKNOWN_TYPE_TAG). The annotation glue is the DOUBLE colon `::`; a single
+   glued `:` is the namespace qualifier, never a type. `:foo` in a data element
+   is an atom literal [122b], not a type.
+ See ../misc/type-mapping.md for host-language target types per binding. */
+
+# ─── Scalar (Extended) ───────────────────────────────────────────────────────
+
+[27] Scalar ::= TypeAnnotation S ScalarValue
+ | AutoTypedToken
+ /* TypeAnnotation form: explicit scalar in any context.
+ AutoTypedToken form: single-token element body auto-typed by rule [25]. */
+[27a] ScalarValue ::= Number | BoolLiteral | NullLiteral | DateTimeLiteral
+ | DateLiteral | QuotedText | BareValue
+ /* ::bytes annotation requires a base64-encoded BareValue or QuotedText. */
+[27b] AutoTypedToken ::= Number | BoolLiteral | NullLiteral
+ | DateTimeLiteral | DateLiteral
+ /* The set of unquoted tokens eligible for auto-typing per rule [25].
+ Tokens that are plain NameChar strings fall through to Text. */
+
+# ─── Block Content (Extended) ─────────────────────────────────────────────────
+
+[28] BlockContent ::= '[|' BlockBody '|]'
+ /* Extended. A literal block: `[|` opens and `|]` closes (the `|` before
+ `]` is the terminator — NOT plain bracket-counting). Nested `[`-opened
+ nodes inside are parsed as child nodes; every OTHER byte — including
+ newlines, interior whitespace, and `&` — is preserved VERBATIM as
+ literal text (no reference/scalar recognition, no whitespace
+ normalization). NO whitespace processing is applied: there is NO
+ leading/trailing-newline strip and NO dedent (unlike TripleQuoted, which
+ dedents — lexicon [L31]). Intended for embedding foreign content / code
+ spans alongside structural CX children.
+ In Round-trip XML: <cx:block>...</cx:block>.
+ In Semantic XML: items inlined directly into the parent element. */
+[28a] BlockBody ::= (Element | LiteralText)*
+ /* Nested `[`-opened nodes are parsed; all other bytes are verbatim
+ LiteralText. No newline-strip, no dedent. */
+
+# ─── Tabular Block (Extended) ───────────────────────────────────────────
+
+[29] TableBlock ::= '[table' S '[' TableHeader ']' S? ']' S TableRows
+ /* Extended. Tabular data with declared column types. Appears in
+ ElementMeta position [301] in place of TypeAnnotation [26].
+ Header declares column names and types once; rows are
+ positional values, parsed per the declared column type.
+ The element name ([50] Element's Name) is the table's name.
+
+ Per, the `[table [cols] rows]` form is a
+ clause-child element under the table's parent.
+
+ Example:
+ [users [table [name::string age::int active::bool]]
+ alice 30 true
+ bob 25 false
+ ]
+
+ Header form:
+ [table [c1 c2 c3...]] — untyped columns (all string)
+ [table [c1::T1 c2::T2 c3::T3...]] — explicitly typed columns
+ [table [c1 c2::T2 c3]] — mixed; untyped columns are string
+
+ (The `[table …]` opener is a reserved clause-child element in
+ ElementMeta position; column types use the `::` form.)
+
+ Each row is a whitespace-separated sequence of token values, one
+ per column, in column-declaration order. Quoted values per [10].
+
+ Round-trips losslessly to all output formats:
+ CSV: one row per column-row pair, header row first.
+ XML: <users><row><name>alice</name>...</row>...</users>
+ with cx:table-shape="rows" attribute on the parent.
+ JSON: array of objects, keys per column declaration.
+ AST: Element with cx:table = "true" + cx:cols metadata.
+
+ See ../misc/table-api.md for binding-side Table type. */
+[29a] TableHeader ::= TableColumn (S TableColumn)*
+[29b] TableColumn ::= Name ('::' TypeName)?
+ /* column types use the glued `::` form (`name::int`).
+ Untyped columns default to ::string. */
+[29c] TableRows ::= TableRow (S TableRow)*
+[29d] TableRow ::= TableCell (S TableCell)*
+[29e] TableCell ::= QuotedText | TripleQuoted | BlockContent | RawText
+ | BareValue | NullLiteral
+ /* BlockContent and RawText valid as cell values when the
+ declared column type is `::string` (or untyped, which defaults to
+ string). Numeric / bool columns still reject the bracket-shaped
+ forms — silent coercion to int / float / bool is unsafe.
+ QuotedText covers both single- and double-quoted; the parser
+ dispatches on the first character.
+
+ The value parser uses the column's declared type to interpret each
+ cell. For bare cells, type-driven parsing applies (an ::int column
+ parses cells as integers, an ::date column as dates, etc.). For
+ quoted cells, the value is always a string regardless of column type
+ (the quote is the user's escape hatch).
+ Cells must equal column count exactly; mismatch is an error.
+ Empty cells in the wire form are not allowed; null is encoded as
+ the literal 'null' (which auto-types to NullLiteral) in untyped
+ columns or per the column's null-handling rules. */
+
+# ─── Comments ─────────────────────────────────────────────────────────────────
+
+[30] Comment ::= '[-' CommentContent ']'
+ /* [-comment text] → <!-- comment text -->
+ Value stored in AST excludes the [- and ] delimiters. */
+[30a] CommentContent ::= Char* - (Char* ']' Char*)
+
+[30b] LineComment ::= '#' [^#xA]* (#xA | EOF)
+ /* Line comment from '#' to end-of-line.
+ Value stored in AST excludes the leading '#' and the terminating
+ newline. Equivalent to Comment [30] for AST purposes; round-trip
+ lossless emitters preserve the line-comment form when the source
+ used it. Strict canonical emitters [canonical.md] strip
+ comments entirely.
+
+ Position rules: '#' starts a line comment ONLY when:
+ - At input start, or preceded by whitespace or ']' or '\n'.
+ - NOT inside a quoted string ('...', '''...''', or [#...#]).
+ - NOT inside a BareValue token (per [12a] BareChar, which
+ includes '#').
+
+ The token boundary is unchanged: whitespace separates BareValue
+ from a following '#' line comment. Inside a BareValue (e.g.,
+ 'tag#anchor' as URL fragment), '#' is literal.
+
+ Cross-format mapping:
+ XML: serialized as <!-- comment text -->
+ Pretty CX: preserved as line comments where source had them. */
+
+# ─── Raw Text (CDSect) ────────────────────────────────────────────────────────
+
+[31] RawText ::= '[#' RawContent '#]'
+ /* [# raw content #] → <![CDATA[raw content]]>
+ Terminator is the two-character sequence #].
+ A bare ] is allowed inside raw text.
+ The sequence #] cannot appear in raw content; use &rsqb; if needed.
+ CDATA split rule: when emitting XML, if the raw content contains the
+ sequence ]]>, the emitter MUST split it using the technique:
+ ]]> → ]]><![CDATA[>
+ This produces adjacent CDATA sections that together reconstruct the
+ original content. XML parsers reassemble adjacent CDATA sections. */
+[31a] RawContent ::= Char* - (Char* '#]' Char*)
+
+# ─── Processing Instructions ─────────────────────────────────────────────────
+
+[32] PI ::= '[?' PITarget (S PIData)? ']'
+ /* [?target raw data string] → <?target raw data string?>
+ PIData stored as-is. Not parsed as name=value pairs.
+ [?php echo $x;] — data is the string "echo $x;" */
+[32a] PIData ::= Char* - (Char* ']' Char*)
+[32b] PITarget ::= Name - (('X'|'x')('M'|'m')('L'|'l')) - 'cx'
+ /* 'xml' and 'cx' are reserved; handled as structured directives below. */
+
+# ─── XMLDecl ──────────────────────────────────────────────────────────────────
+
+[33] XMLDecl ::= '[?xml' VersionInfo EncodingDecl? SDDecl? S? ']'
+ /* [?xml version=1.0]
+ [?xml version=1.0 encoding=UTF-8]
+ [?xml version=1.0 encoding=UTF-8 standalone=yes]
+ Stored as XMLDecl node, not as a PI. Must be first item in Prolog. */
+[33a] VersionInfo ::= S 'version' Eq VersionNum
+[33b] VersionNum ::= '1.' [0-9]+
+[33c] EncodingDecl ::= S 'encoding' Eq EncName
+[33d] SDDecl ::= S 'standalone' Eq ('yes' | 'no')
+[33e] Eq ::= S? '=' S?
+[33f] EncName ::= [A-Za-z] ([A-Za-z0-9._] | '-')*
+
+# ─── CX Directive ─────────────────────────────────────────────────────────────
+
+[34] CXDirective ::= '[?cx' (S CXAttr)* S? ']'
+ /* Structured directives using reserved target 'cx'.
+ Stored as CXDirective node in Parse AST; expanded in Resolved AST.
+ Serializes to <?cx...?> in XML output.
+ [?cx include=file.cx] — include another CX file inline
+ [?cx version=3.4] — declare CX language version
+ [?cx schema=path/to/book.cxs] — attach a `.cxs` schema to the
+ document (see schema.md §13 for the schema language).
+ Unknown attributes are accepted and round-trip verbatim — the
+ attribute set is open by design. */
+[34a] CXAttr ::= Name Eq BareValue
+
+# ─── Prolog ───────────────────────────────────────────────────────────────────
+
+[35] Prolog ::= XMLDecl? Misc*
+ /* Omitted from AST when empty. */
+[36] Misc ::= Comment | PI | CXDirective | S
+
+# ─── DOCTYPE ──────────────────────────────────────────────────────────────────
+
+[37] DoctypeDecl ::= '[!DOCTYPE' S Name (S ExternalID)? S?
+ ('[' IntSubset ']' S?)? ']'
+ /* ExternalID and IntSubset are independent and both optional.
+ [!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0//EN' 'http://...']
+ [!DOCTYPE root [ [!ELEMENT p ANY] ]] */
+[38] IntSubset ::= (MarkupDecl | DeclSep)*
+ /* The internal subset is STORED VERBATIM for lossless round-trip:
+ every MarkupDecl and every PEReference is kept as its own AST node
+ (DoctypeDecl.int_subset), none are resolved or expanded. A
+ PEReference is stored OPAQUE — it is never expanded (no PE
+ machinery) — so it round-trips to XML's `%name;` unchanged. */
+[39] DeclSep ::= PEReference | S
+[40] MarkupDecl ::= ElementDecl | AttlistDecl | EntityDecl
+ | NotationDecl | PI | Comment
+
+[41] ExternalID ::= 'SYSTEM' S SystemLiteral
+ | 'PUBLIC' S PubidLiteral S SystemLiteral
+
+# ─── Elements ─────────────────────────────────────────────────────────────────
+
+[50] Element ::= '[' Name (S ElementMeta)* S? Body? ']'
+ | '[' Name S? TableBlock ']'
+ /* The TableBlock alternative is the tabular form. The element's
+ body is the rows of the table; no other ElementMeta or Body items
+ apply. See [29] TableBlock. */
+
+[50a] BodyRef ::= '[' 'ref' S '@' IdName ']'
+ /* Body-position reference (cxdm.md §4.2). The element name `ref` is
+ RESERVED in element-body position: the ONLY admitted `[ref …]` shape
+ is exactly `[ref @Name]` — a `ref` element with no ElementMeta and a
+ single bare `@Name` body token. Any other `[ref …]` shape (attributes,
+ non-`@` body, or extra body items) is a parse error with data-parse
+ code `E207` (cxdm.md §11). `@Name` follows IdName [51b]. */
+
+[51] ElementMeta ::= AnchorDef | MergeRef | IdDecl | TypeAnnotation | Attribute
+ /* TypeAnnotation appears at most once and is the glued `name::T` form
+ [26]. IdDecl [51a] appears at most once and declares the element's
+ syntactic ID (cxdm.md §4). Ordering is NORMATIVE:
+ AnchorDef? MergeRef? IdDecl? TypeAnnotation? Attribute*
+ Parsers MUST accept any order for compatibility, but emitters MUST
+ produce this canonical order. This ensures round-trip stability and
+ consistent output across all language implementations.
+ The boolean-flag sigil form (`+name`/`-name`, formerly [55b])
+ is REMOVED. Booleans are written explicitly as `name=true` /
+ `name=false` (identical round-trip).
+ ElementMeta is ELEMENT-ONLY: AnchorDef (&Name), MergeRef (*Name),
+ IdDecl (#Name), NsDecl (xmlns), and xml:* are valid only on a QName
+ (element) head. The same items on a directive ('?'), call ('$'), or
+ operator head ⇒ CXER0100. (A plain name=value on a directive is a
+ NamedArg, not element meta — e.g. [?retry max=3] is fine.) */
+
+[51a] IdDecl ::= '#' IdName
+[51b] IdName ::= NameStartChar (NameChar)*
+ /* `#NAME` declares the element's syntactic ID. IdName follows the
+ `Name` production with the additional constraint that it does NOT
+ contain `:` (IDs are not namespace-qualified). IDs are
+ document-scoped and must be unique within the document (data-parse
+ code `E208`, cxdm.md §11, on duplicate). An attribute value of the form `@IdName`
+ at AttValue position is an IDREF (cxdm.md §4.2). See
+ cxdm.md §4 for full identity semantics. */
+
+[52] Body ::= BodyItem+
+[53] BodyItem ::= BodyText | Element | AliasElement | Scalar | BlockContent
+ | Reference | RawText | PI | CXDirective | Comment | LineComment
+ | Interpolation | EvalDirective
+ | CollectionLiteral
+ | MarkupDecl
+ /* LineComment [30b] added to the body item set for parsers
+ that support inline line comments anywhere a Comment may appear.
+ Interpolation [58] and EvalDirective [59] permitted
+ in body position for CX code; inert in pure-data documents.
+ CollectionLiteral [56] permitted in body position
+ Disambiguation from Element [50] follows the one-
+ token-lookahead rule in the grammar preamble — first separator `=` →
+ Element, first separator `,` → ArrayLiteral. */
+[54] BodyText ::= QuotedText | TripleQuoted | UnquotedText
+[54a] UnquotedText ::= (NameChar | BareChar)+
+ /* Unquoted body token. Auto-typed per rule [25] when element qualifies.
+ Otherwise stored as Text node with whitespace normalization. */
+
+[55] Attribute ::= Name Eq AttValue
+[55a] AttValue — MOVED to lexicon.ebnf §10 (scalar-only; D2).
+ /* DECISION D2: an attribute value is ALWAYS A SINGLE SCALAR. The admitted
+ forms are BareValue | QuotedText | TripleQuoted | RawTextStr — where
+ RawTextStr is `[#…#]` yielding the raw bytes AS a STRING scalar
+ (`a=[# x,y #]` → string "x,y"), the only `[`-opened attribute form.
+ NODE-VALUED attributes are REMOVED: the former
+ `| RawText | BlockContent | CollectionLiteral | Element` alternatives are
+ gone. Any other `[`/`{`/`(`-opened attribute value (Element / Array / Map /
+ Sequence / BlockContent) is a PARSE ERROR. Rich/list/nested data goes in a
+ CHILD ELEMENT (`[node [tags a, b]]`), never an attribute.
+ BareValue auto-types per lexicon §9 [L25a] scalar priority (HexInt/Integer →
+ int, Float → float, true/false → bool, null, datetime, date; else string);
+ QuotedText / TripleQuoted / `[#…#]` are always string; array auto-type and the
+ comma=list rule do NOT apply (a comma in `att=a,b` is a literal BareValue char
+ → string "a,b"). The AST `value` IS the scalar — there is no `body` field
+ (ast.md §Attribute). See lexicon.ebnf §10 [L70]. */
+
+[55c] BracketBody — REMOVED (v0.8.0). The former BracketBody
+ /* `'[' BodyItem* ']'` production and the attribute `body` field it implied
+ are retired. With D2 (scalar-only attributes, lexicon §10) a `[`-opened
+ attribute value is a PARSE ERROR except the `[#…#]` raw-string form; it is
+ NOT a node and NOT a body. */
+
+[55b] BoolSigilAttr — REMOVED
+ /* The compact boolean-flag attribute (`+name` → name=true, `-name` →
+ name=false) is removed. Booleans are written explicitly:
+ [user admin=true disabled=false] (was [user +admin -disabled])
+ Rationale: `name=true`/`name=false` already exist and round-trip
+ identically; the sigil form was sugar, and removing it frees `+`/`-`
+ at ElementMeta position and eliminates a presence-vs-boolean
+ ambiguity. CSV/delimited conversion emits `col=true`;
+ strict/lossless canonical emit was already the explicit form. */
+
+# ─── Collection literals (Extended; v0.8.0) ────────────────────
+#
+# Three new container-Item source-text forms §D1. The CXDM
+# runtime data model (cxdm.md §2.4–§2.6) defines the value semantics;
+# this section defines the source-text productions. Disambiguation from
+# Element [50] is the one-token-lookahead rule documented in the grammar preamble.
+
+[56]  CollectionLiteral / [56a] SequenceLiteral / [56b] ArrayLiteral /
+[56c] MapLiteral / [56d] ItemList / [56e] MapEntryList / [56f] MapEntry /
+[56g] MapKey  — MOVED to lexicon.ebnf §11 [L80]-[L87] (the SOLE home).
+ /* The three collection literals, the ItemList/MapEntryList/MapEntry/MapKey
+ productions, and the `[` element-vs-array DISAMBIGUATION live ONCE in
+ lexicon.ebnf §11. Load-bearing points retained here for cross-reference:
+ - `()` SequenceLiteral FLATTENS nested sequences; `[…]` ArrayLiteral is
+   NEST-PRESERVING; `{…}` MapLiteral keys must be unique (dup → W014).
+ - `[` disambiguation [L83]: empty `[]` → empty Array; first token NOT a Name
+   → ArrayLiteral (comma-separated items, nested `[`/`{`/`(` allowed); first
+   token IS a Name → Element (head + body per §9). Identical in BodyItem / Node
+   position.
+ - A Name head IMMEDIATELY followed by `,` is a PARSE ERROR (CXER0100): the
+   bare bareword array `[web, prod]` is ambiguous with an element head — write
+   `['web', 'prod']`, or name the list `[tags web, prod]`. This RATIFIES the
+   lexicon §11 rule and SUPERSEDES the pre-v0.8.0 "first separator `,` →
+   ArrayLiteral" reading that wrongly admitted `[web, prod]` as a string array.
+ - MapEntry computed-key form is `[?entry KEY-EXPR VAL]` ([127u], maps only).
+   MapKey = Name | QuotedText | Scalar; `null` is not a valid key (W014).
+ Trailing commas accepted; canonical emit omits them (canonical.md §D14). */
+
+# ─── program evaluation forms (Extended; reserved at v0.8.0; evaluator v0.8.0+) ──
+#
+# CX code (the CX Language) is the post-v0.8.0 expression family:
+# one syntax, one parser, one data model spanning data (.cx), schemas
+# (.cxs), shapes (.cxsh), and CX code (.cx) used for templating,
+# querying, and transformation. program evaluation forms extend the existing
+# `?`-prefixed directive family (XMLDecl, CXDirective, PI).
+
+[58] Interpolation ::= '[?=' S? InterpolationBody S? ']'
+ /* Extended. Value-interpolation form. The body is captured as
+ opaque text by the CX parser and parsed as a CXPath expression
+ (per code.md) by the program evaluator at evaluation time,
+ not at parse time.
+
+ Why opaque-body: CXPath expressions contain `[` and `]` (e.g.,
+ predicates `//service[@port=8080]`) which would otherwise be
+ parsed by the CX parser as nested elements. The Interpolation
+ production captures everything between `[?=` and the matching
+ `]` as a string, with internal `[` and `]` required to balance.
+
+ v0.8.0 parsers MUST recognize the production and produce an
+ Interpolation AST node carrying the captured expression text.
+ **v0.8.0 ships both the parser and the CX code 1.0 evaluator**
+ (pulled forward from v0.8.0 in the 2026-05-10 amendment to
+ when CX code became the sole output-shape mechanism).
+ The program evaluator parses the captured text as CXPath.
+
+ Outside program evaluation contexts, Interpolation nodes have no
+ special meaning and round-trip as literal `[?=...]` text.
+
+ Examples:
+ [?=@name] interpolate context's @name
+ [?=//service[@port=8080]/@host] nested brackets balance
+ [?=v/@sku] dotted path
+*/
+
+[58a] InterpolationBody ::= ('[' InterpolationBody ']' | InterpolationChar)*
+[58b] InterpolationChar ::= Char - ('[' | ']')
+ /* Any character except `[` or `]`. Bracket balance is enforced by
+ the recursive InterpolationBody production. Quoting via `'...'`
+ is permitted (single quotes inside have no special meaning to
+ the CX parser; the CXPath evaluator parses them per its own
+ rules at evaluation time). */
+
+[59] EvalDirective ::= '[?' EvalName (S BodyItem)* S? ']'
+ /* Extended. Program evaluation directive — `?`-prefixed form.
+ A directive is a head (EvalName) followed by zero or more BodyItem
+ [53] children, each either:
+ * a clause-child element `[clause-head child*]` (named structured arg)
+ * a positional BodyItem (bare value, e.g. a trailing body)
+ EvalDirective is slot-free AND attribute-free — structurally uniform
+ with an Element body (name + body items): no `:name value` slots and
+ no `name=value` attributes appear on an EvalDirective (ast.md
+ §EvalDirective; the vestigial `attrs` field is always empty). The
+ richer clause / attribute / bareword decomposition used by CX-code
+ (e.g. `[?retry max=3 …]`) is the program-AST layer's ProgramDirective
+ [127], reconstructed on demand from `name` + the body items; at the
+ data layer such attribute-bearing `[?name …]` whose name is outside
+ the closed [59a] EvalName set parse as PI [27], not EvalDirective.
+
+ EvalName is any Name that is not currently recognized as XMLDecl
+ ('xml'), CXDirective ('cx'), or a PI target. See [59a] for the
+ closed v0.8.0 set.
+
+ Disambiguation from PI [27]: the parser recognizes EvalNames as
+ EvalDirective; all other targets (`php`, `xslt-stylesheet`,
+ application-specific PIs) fall through to PI with raw data.
+ Future minor versions may add EvalNames but cannot remove or
+ repurpose them.
+
+ Outside program evaluation contexts, EvalDirective nodes round-
+ trip as ordinary data. Pure-data tools (cx fmt, cx diff, cx hash)
+ treat them as `?`-prefixed CXDirective-family nodes. */
+
+[59a] EvalName ::= BareEvalName | ModuleEvalName
+[59a.1] BareEvalName ::= 'if' | 'for' | 'with' | 'include' | 'def' | 'use'
+ | 'let' | 'fn' | 'match' | 'try'
+ | 'for-tumbling' | 'for-sliding' | 'for-group-by'
+ | 'fn-ref' | 'partial' | 'apply' | 'focus'
+ | 'str-template' | 'error' | 'range'
+ | FrozenFilterName | XQuery40FnName
+[59a.2] ModuleEvalName ::= ModulePrefix ':' Name
+[59a.3] ModulePrefix ::= 'cx' | 'log' | 'fn' | 'map' | 'array' | 'math'
+ /* 'let' / 'fn' / 'match' / 'try' / 'modify' / 'def' / 'lib' /
+ 'const' / 'with-open' / 'with-scope' and the resilience +
+ concurrency directives are members of the closed v0.8.0
+ directive name set per [127e].
+
+ The bare name `cx` is NOT an EvalName — `[?cx ...]` always parses
+ as a CXDirective [34]. Both parse-time attrs (`include`, `version`,
+ `schema`) and evaluator-config attrs (`allow-eval`, `output-target`,
+ `cx-version`) ride on the same CXDirective node; the layer that
+ consumes each attr is determined by attr name, not grammar
+ production. Module calls use the `cx:` ModuleEvalName form
+ (e.g., `[?cx:fn ...]`), distinguished from the CXDirective by the
+ colon-Name follow-up.
+
+ ModulePrefix enumerates the v0.8.0 module namespaces:
+ 'fn' / 'map' / 'array' / 'math' — XQuery 4.0 standard
+ namespaces §D2
+ 'cx' — self-host module §D (DD row)
+ 'log' — structured logging §D10 (FF row)
+ New stdlib modules (`file:`, `http:`, `hash:`, `random:`,...)
+ each land as a new ModulePrefix without an EBNF break.
+
+ FrozenFilterName (the v0.8.0 closed filter set: `upper`,
+ `lower`, `trim`, etc.) and XQuery40FnName (the v0.8.0 XQuery
+ 4.0 fn:* arrivals callable without the `fn:` prefix for
+ backward compatibility) are enumerated in code.md §4 and
+ §D2 §C respectively.
+
+ Disambiguation of `[?cx...]` CXDirective vs. `[?cx:fn...]` module
+ call: the parser scans one token past the `cx` to see whether a
+ `:` follows (module call → EvalDirective) or whitespace + an
+ attribute pair (CXDirective). */
+
+# ─── Anchors and Aliases (Extended) ──────────────────────────────────────────
+
+[60] AnchorDef ::= '&' Name
+ /* Defines a reusable named anchor on this element. No trailing semicolon —
+ distinct from EntityRef [65] which requires a semicolon.
+ [defaults &def timeout=30] — anchors this element as 'def' */
+
+[61] MergeRef ::= '*' Name
+ /* Merges the named anchor's attributes and items into this element.
+ [production *def host=prod.example.com] — inherits def, overrides host */
+
+[62] AliasElement ::= '[' '*' Name ']'
+ /* Full element replacement with the named anchor.
+ [*def] — expands to the complete anchored element in Resolved AST. */
+
+# ─── References ───────────────────────────────────────────────────────────────
+
+[65] Reference ::= EntityRef | CharRef
+[66] EntityRef ::= '&' Name ';'
+ /* Requires semicolon — distinguishes from AnchorDef [60].
+ Stored as an EntityRef node and NEVER resolved: &amp; stays
+ EntityRef("amp"). NO declaration is required — an undeclared &foo;
+ is accepted and stored verbatim (CX preserves refs; it does not
+ enforce XML's declaration rule). The asymmetry with CharRef [67] is
+ INTENTIONAL and mirrors XML: a named entity is markup that round-
+ trips, whereas a char-ref is character sugar XML itself does not
+ preserve. (Resolution of the predefined names to characters happens
+ only in the lossy semantic conversions, e.g. cx→json — conversions.md;
+ the data layer keeps the EntityRef.) */
+[67] CharRef ::= '&#' [0-9]+ ';' | '&#x' HexDigit+ ';'
+ /* Resolved to its Unicode character at parse time, stored as a single-
+ char Text node (the decimal/hex spelling is not preserved). The value
+ MUST be a valid Unicode scalar — a surrogate or > U+10FFFF is rejected
+ (cx-err:CXERLEX-CODEPOINT), per lexicon [L32]. */
+[68] PEReference ::= '%' Name ';'
+ /* Parameter-entity reference. Used inside the DTD internal subset only.
+ Stored OPAQUE — never expanded — and round-trips as %name; ([38]). */
+
+[69] EntityValue ::= "'" ([^%&'\\] | EscapeSeq | PEReference | Reference)* "'"
+
+# ─── Declarations ─────────────────────────────────────────────────────────────
+
+[70] EntityDecl ::= GEDecl | PEDecl
+[71] GEDecl ::= '[!ENTITY' S Name S EntityDef S? ']'
+[72] PEDecl ::= '[!ENTITY' S '%' S Name S PEDef S? ']'
+[73] EntityDef ::= EntityValue | (ExternalID NDataDecl?)
+[74] PEDef ::= EntityValue | ExternalID
+[75] NDataDecl ::= S 'NDATA' S Name
+
+[80] ElementDecl ::= '[!ELEMENT' S Name S ContentSpec S? ']'
+[81] ContentSpec ::= 'EMPTY' | 'ANY' | Mixed | Children
+[82] Mixed ::= '(' S? '#PCDATA' (S? '|' S? Name)* S? ')*'
+ | '(' S? '#PCDATA' S? ')'
+ /* Mixed content model: (#PCDATA|b|em)* or (#PCDATA) */
+[83] Children ::= (Choice | Seq) ('?' | '*' | '+')?
+[84] Cp ::= (Name | Choice | Seq) ('?' | '*' | '+')?
+[85] Choice ::= '(' S? Cp (S? '|' S? Cp)+ S? ')'
+[86] Seq ::= '(' S? Cp (S? ',' S? Cp)* S? ')'
+
+[90] AttlistDecl ::= '[!ATTLIST' S Name AttDef* S? ']'
+[91] AttDef ::= S Name S AttType S DefaultDecl
+[92] AttType ::= 'CDATA' | 'ID' | 'IDREF' | 'IDREFS' | 'ENTITY' | 'ENTITIES'
+ | 'NMTOKEN' | 'NMTOKENS' | EnumeratedType
+[93] DefaultDecl ::= '#REQUIRED' | '#IMPLIED'
+ | ('#FIXED' S AttValue)
+ | AttValue
+[94] EnumeratedType ::= NotationType | Enumeration
+[95] NotationType ::= 'NOTATION' S '(' S? Name (S? '|' S? Name)* S? ')'
+[96] Enumeration ::= '(' S? Nmtoken (S? '|' S? Nmtoken)* S? ')'
+
+[100] NotationDecl ::= '[!NOTATION' S Name S (ExternalID | PublicID) S? ']'
+[101] PublicID ::= 'PUBLIC' S PubidLiteral
+
+[110] ConditionalSect ::= IncludeSect | IgnoreSect
+[111] IncludeSect ::= '[![' S? 'INCLUDE' S? '[' ExtSubsetDecl ']]]'
+[112] IgnoreSect ::= '[![' S? 'IGNORE' S? '[' IgnoreContent* ']]]'
+[113] IgnoreContent ::= IgnoreChars ('[![' IgnoreContent ']]]' IgnoreChars)*
+[114] IgnoreChars ::= Char* - (Char* ('[![' | ']]]') Char*)
+[115] ExtSubsetDecl ::= (MarkupDecl | ConditionalSect | DeclSep)*
+
+# ─── CX code (Extended; +) ─────────────────────────────────
+#
+# CX code is the unified pattern / query / transform language ratified by
+# and reshaped to the homoiconic Lisp-1 surface by.
+# Normatively specified in code.md. The productions below cover
+# the v0.8.0 reference implementation (vcx/code/). They reuse host CX
+# productions for literal CX data ([50] Element, [56] CollectionLiteral,
+# etc.) — a CX code program is itself a CX value whose top-level Node
+# is a ProgramExpr.
+#
+# Gate 3 (code.md §11.4.1) enforces set-equality between the
+# ProgramDirName closed-set below and the §4.1 directive registry in
+# code.md.
+
+[120] Program ::= ProgramExpr
+ /* Start symbol for a CX source file. A CX program is a single
+ expression whose evaluation produces the program's result
+ sequence per code.md §1. */
+
+[121] ProgramExpr ::= ProgramLiteral
+ | ProgramBinding
+ | ProgramPath
+ | ProgramCall
+ | ProgramPattern
+ | ProgramDirective
+ /* CX code expression — the universal RHS production. Disambiguation
+ between alternatives is by leading token:
+ '$' → ProgramBinding (then optional path / postfix)
+ '[$' → ProgramCall (head-dispatch `[$fn args]`)
+ '[?' → ProgramDirective
+ '[' (other) → ProgramPattern
+ else → ProgramLiteral.
+ There is NO general paren-call at expression level: `name(args)` is
+ admitted ONLY as [132b] FunctionCall inside CXPath predicate bodies
+ ([132a] PredExpr), per code.md §6.3.
+ There is NO infix on the CX program surface: the homoiconic invariant
+ (every form is `[head …]`) holds without exception. Pipe `|` is
+ retired (use the prefix combinators); the former infix range
+ `lo 'to' hi 'by' step` is retired — ranges are the prefix builtin
+ `[$range lo hi step?]` ([125d] RangeCall). The set operators
+ `union`/`intersect`/`except`/`||` ([134] SequenceOp) and `name(args)`
+ calls ([132b]) are CXPath-predicate-only — the embedded query
+ sublanguage, intentionally not homoiconic. */
+
+[122] ProgramLiteral ::= StringLit | NumberLit | BoolLit | AtomLiteral | CxLiteral
+[122a] CxLiteral ::= Element | CollectionLiteral | Scalar
+ /* CxLiteral re-uses host productions [50], [56], [21] verbatim;
+ CX code literals are CX values. */
+[122b] AtomLiteral ::= ':' Name
+ /* Atom literal — tag-shaped scalar value and
+ cxdm.md §2.3. Surface ':NAME' parses to a
+ ProgramLiteral with kind=atom_lit and str_val=NAME. Reserved
+ names ':true' / ':false' / ':null' are rejected at lex time
+ in atom-literal position (CXER0100). The type-guard pattern
+ head (`:TypeName` in MatchPattern [140a]) is the only other
+ `:NAME` form, distinguished by pattern context. */
+
+[123] ProgramBinding ::= '$' Name
+ /* `$x` — bind site (in pattern) or use site (in expression).
+ Disambiguation by syntactic position; see code.md §6.1. */
+
+[124] ProgramPath ::= BindingPath
+ /* All binding-path access is the rich form defined in [135]
+ BindingPath. The legacy simple ProgramPathStep enumeration
+ (`/Name` | `@Name` | `.Name`) is removed; [135] subsumes it and
+ adds full CXPath step syntax (`/*`, `//name`, `axis::name`,
+ predicates, `.key`). */
+
+[125] ProgramCall ::= '[' '$' Name (S ProgramArg)* S? ']' ('?' | '!')?
+ /* Function call as head-dispatch element. A `$`-bound name in
+ head position applies the bound value to the positional
+ arguments (whitespace-separated, no commas). Trailing '?' marks
+ fallible-into-err; trailing '!' marks must-succeed. Per
+ code.md §6.3. Example: `[$filter $users [?fn ($u) $u@active]]`.
+ The paren-call form `name(args)` is removed per the homoiconic
+ invariant — every form is `[head …]`. */
+[125a] ProgramArg ::= Hole | NamedArg | ProgramExpr
+[125c] NamedArg ::= Name '=' ProgramExpr
+ /* Keyword argument: binds the named (keyword) parameter [153c].
+ Caller form is the `name=value` attribute shape used everywhere
+ else. Named args follow positional args; `*$rest` [153e] collects
+ the remaining positionals. Per code.md §6.3. */
+[125b] Hole ::= '_'  /* lone underscore, not followed by a NameChar */
+ /* A bare `_` argument is a partial-application hole (code.md
+ §6.3a): it defers that positional argument, so the call yields a
+ function value awaiting the held positions, filled left-to-right
+ by a later application. The Hole is a LONE underscore (whitespace-
+ or bracket-bounded); `_foo` / `_1` remain ordinary Names ([7]).
+ A lone `_` is reserved in ProgramCall argument position — it is
+ always the Hole, never a Name reference, and is distinct from the
+ reserved context binding `$_`. A `_` in a rest (`*$xs` [153e])
+ position is a static error (cx-err:CXER0102, E_PARTIAL_APP). */
+
+[125d] RangeCall   ::= '[' '$' 'range' S ProgramExpr S RangeEnd (S ProgramExpr)? ']'
+[125e] RangeEnd    ::= ProgramExpr | '*'
+ /* The arithmetic-progression builtin `[$range lo hi step?]` is an
+ ordinary [125] ProgramCall whose head Name is `range`; this rule is
+ a position-restricted refinement, not a new dispatch path. Its sole
+ purpose is to admit the open-end sentinel `*` — legal ONLY as the
+ upper-bound (`hi`) argument of `range`, marking an open-ended/lazy
+ progression `[$range lo *]` (stride still optional: `[$range lo * step]`).
+ `*` in ANY other argument position is a parse error (cx-err:CXER0100):
+ `[$range * 5]`, `[$range 1 5 *]` (stride may not be `*`), `[$f 1 *]`
+ are all illegal. This keeps `*`'s other roles (pattern wildcard [126a],
+ CXPath step [131]) untouched — the open-end `*` is a single-position
+ addition, never a general ProgramArg token ([125a] has no `*`).
+ `lo`, `hi`, `step` are number-valued ProgramExprs; the numeric domain
+ (int default, float — step required, datetime — duration step) and
+ force/budget rules are in code.md §6.3 / §6.7. The former infix
+ `lo 'to' hi ('by' step)?` is retired — no tombstone, no dual-accept. */
+
+[126] ProgramPattern ::= '[' ProgramPatternHead ProgramPatternAttrs ProgramPatternBody? ']'
+[126a] ProgramPatternHead ::= ('**' | '*' | ProgramTypeGuard | Name)
+ (S? ProgramBinding)?
+[126b] ProgramTypeGuard ::= ':' Name /* :User */
+[126c] ProgramPatternAttrs ::= (S ProgramPatternAttr)*
+[126d] ProgramPatternAttr ::= '@' Name /* existence */
+ | '@!' Name /* absence */
+ | '@' Name '=' ProgramExpr /* equality / expression-valued (rule 6) */
+ | '@' Name ProgramRelOp ProgramExpr /* comparison (rule 6) */
+ | Name '=' ProgramLiteral /* plain attr= structural-equality (rule 9) */
+ | '@' Name '=' '$' Name TypeAnnotation? /* value-CAPTURE (rule 10): @code=$c, @age=$a::int */
+ | '@' Name TypeAnnotation /* attr value-kind test (rule 14): @age::int */
+ | '@*' '$' Name /* attr REST: bind unmatched attrs as a Map */
+ /* Disambiguation: a leading '@' is a predicate/axis form; a bare `Name=`
+    (rule 9) is plain structural-equality against a literal — the dual of the
+    construction surface (code.md §5.2 rule 9). `@Name=$x` CAPTURES (rule 10),
+    `@Name=expr` (expr not a bare `$x`) is equality/comparison (rule 6). */
+[126e] ProgramRelOp ::= '=' | '!=' | '<' | '<=' | '>' | '>='
+[126f] ProgramPatternBody ::= (S 'direct=true')? (S ProgramPatternItem)*
+[126g] ProgramPatternItem ::= ProgramPattern | ProgramBinding | '**' | '*'
+ /* Pattern surface per code.md §5 +
+ `**` — matches at any depth
+ `*` — matches at the current depth only
+ `direct=true` — adjacency-strict child match modifier
+ (attribute form) */
+
+[127] ProgramDirective ::= '[?' ProgramDirName (S ProgramChild)* S? ']'
+[127a] ProgramChild ::= ProgramAttribute | ProgramClause | ProgramExpr
+[127b] ProgramClause ::= '[' ProgramClauseHead (S ProgramExpr)* S? ']'
+[127c] ProgramAttribute ::= ProgramAttrName '=' ProgramExpr
+ | ProgramAttrName /* bareword modifier */
+[127d] ProgramClauseHead ::= [a-z] [a-z0-9-]*
+[127d1] ProgramAttrName ::= [a-z] [a-z0-9-]*
+ /* Every directive child is one of:
+ * Named clause `[clause-head child …]` — structured argument
+ * Scalar attribute `name=value` — scalar modifier
+ * Bareword modifier `name` — no-arg flag (e.g.
+ 'pure', 'lazy',
+ 'in-memory', 'mock',
+ 'asc', 'desc')
+ * Positional ProgramExpr — bare value, e.g.
+ the trailing body
+ The per-directive specialisations below (ForComp [129],
+ MatchExpr [136], ModifyExpr [141], DefDirective [152],
+ LibDirective [149], ConstDirective [154], MapDirective [127m],
+ ReduceDirective [127n], SleepDirective [127o], ProgramWithOpen
+ [127f], ProgramWithScope [127q], …) fix the canonical clause
+ vocabulary, attribute set, and positional order. The generic
+ [127a] form is the fall-through for directives without a
+ dedicated specialisation production. */
+
+[127m] MapDirective ::= '[?map' S ProgramExpr S '[using' S ProgramExpr S? ']'
+ (S '[par' S? ']')? (S '[ordered' S? ']')? S? ']'
+ /* Specialisation of ProgramDirective [127] with DirName='map'.
+ First positional child is the source sequence; [using FN] is
+ the unary closure applied per item. Output order:
+ - sequential (no [par]): source order
+ - [par] alone: unspecified (completion-order)
+ - [par] [ordered]: source order, parallel evaluation
+ [ordered] without [par] is a parse error (cx-err:CXER0100) —
+ sequential evaluation is ordered by construction.
+ See code.md §8.10.5 and + */
+
+[127n] ReduceDirective ::= '[?reduce' S ProgramExpr S '[using' S ProgramExpr S? ']'
+ S '[init' S ProgramExpr S? ']' (S '[par' S? ']')? S? ']'
+ /* Specialisation of ProgramDirective [127] with DirName='reduce'.
+ First positional child is the source sequence; [using FN] is
+ the binary fold closure; [init V] is the initial accumulator
+ value. Sequential form is a strict left-fold (FN may be non-
+ associative). [par] form REQUIRES FN to be associative and
+ [init] to be the identity element. [ordered] is not accepted
+ on reduce — output is a single value, ordering is unobservable
+ when the contract holds. See code.md §8.10.6 and
+ + */
+
+[127o] SleepDirective ::= '[?sleep' S ProgramExpr (S 'mock')? S? ']'
+ /* Specialisation of ProgramDirective [127] with DirName='sleep'.
+ ProgramExpr MUST evaluate to a duration literal (e.g. '100ms',
+ '5s'); a non-duration argument raises cx-err:CXER0100. Per
+ + §3:
+ - Bare form is wall-clock — blocks the calling OS / scheduler
+ thread for at least DUR; honors cancellation within 50ms.
+ - The bareword 'mock' advances only the logical clock
+ (env.state.now_ns) and returns instantly; the form used by
+ tests, fixtures, and any caller needing deterministic time.
+ Inside [?test-concurrent] task bodies and conformance-runner
+ mode, bare '[?sleep DUR]' is auto-promoted to mock semantics
+. See code.md §10.5.3 for full semantics. */
+
+[127r] StrDirective ::= '[?str' S InterpString S? ']'
+ /* Specialisation of ProgramDirective [127] with ProgramDirName='str'.
+    Compile-time string interpolation. The single child is an
+    InterpString: an ordinary string literal whose content is scanned
+    for `{…}` interpolation holes by the program parser (the literal
+    text is opaque to the [10a] string lexer — same opaque-body pattern
+    as Interpolation [58]). Each hole body is a CXPath binding-path
+    expression (ProgramBinding / ProgramPath [124]): a `$binding`, a
+    path navigation (`$x/child`), or a filtered query (`$x//y[@pred]`).
+    Program calls inside a hole are NOT admitted at v0.8.0. Literal
+    braces are written `{{` / `}}`. An unbalanced brace, an empty hole
+    `{}`, or a non-path / call hole body raises cx-err:CXER0100 at
+    parse time. See code.md §8.12. */
+[127r1] InterpString ::= QuotedText | TripleQuoted
+
+[127e] ProgramDirName ::= 'match' | 'for' | 'for-array' | 'for-map'
+ | 'let' | 'fn' | 'def'
+ | 'if' | 'else' | 'pipe' | 'modify' | 'with-open'
+ | 'with-scope'
+ | 'map' | 'reduce'
+ | 'filter' | 'take' | 'drop' | 'zip' | 'enumerate'
+ | 'chunks' | 'concat' | 'chain' | 'cycle' | 'scan'
+ | 'flatten' | 'partition' | 'group-by'
+ | 'to-sequence' | 'to-array' | 'to-map'
+ | 'view' | 'views'
+ | 'retry' | 'timeout' | 'circuit-breaker'
+ | 'fallback' | 'rate-limit' | 'bulkhead'
+ | 'http-service' | 'service-handle' | 'http-client'
+ | 'worker' | 'worker-handle'
+ | 'channel' | 'send' | 'receive'
+ | 'try-send' | 'try-receive' | 'close' | 'select'
+ | 'stop' | 'wait-for'
+ | 'async' | 'await' | 'await-all' | 'await-any'
+ | 'await-race' | 'cancel' | 'check-cancel' | 'sleep'
+ | 'with-error-hook' | 'with-caps' | 'secret' | 'reveal'
+ | 'str'
+ | 'element' | 'attr' | 'entry' | 'name'
+ | 'quote' | 'unquote' | 'splice' | 'eval'
+ | 'meta'
+ /* Closed directive name set. v0.8.0 additions: 'modify'; 'with-open';
+    'with-scope'; 'for-array' / 'for-map'; the iterator combinator stdlib —
+    'filter' / 'take' / 'drop' / 'zip' / 'enumerate' / 'chunks' / 'concat' /
+    'chain' / 'cycle' / 'scan' / 'flatten' / 'partition' / 'group-by' — and
+    force-materialisation — 'to-sequence' / 'to-array' / 'to-map'; view opt-in
+    — 'view' / 'views'; the error-hook / capability / secret directives —
+    'with-error-hook' / 'with-caps' / 'secret' / 'reveal'; the compile-time
+    string-interpolation directive 'str' (StrDirective [127r]); the
+    homoiconic dynamic-construction family (code.md §6.4.2–§6.4.4,
+    productions [127s]–[127z]) — 'element' / 'attr' / 'entry' / 'name'
+    (computed names), 'quote' / 'unquote' / 'splice' (quasiquote), 'eval'
+    (tree-eval); the value-or-default coalesce 'else' (code.md §8.13).
+    removals: 'find'; 'try'
+    (RETIRED with [catch] — code.md §8.8 tombstone; handling unifies on
+    'match' + 'else'/'fallback' + 'with-error-hook' + '!'; a '[?try …]' head is
+    now an unknown directive → CXER0100). 'with-tasks' is RESERVE (not admitted).
+    Any '[?<name>' whose <name> is not in this set is a parse error CXER0100
+    per code.md §4.1. Adding or removing a directive requires a governance
+    amendment per `../process/governance.md`. */
+
+[127f] ProgramWithOpen ::= '[?' 'with-open' (S ProgramExpr S ProgramBinding)+ (S ProgramExpr)+ S? ']'
+ /* scoped-resource RAII directive. One or more
+ '(expr) $binding' opener pairs (opened left-to-right; closed
+ LIFO on scope exit), then a non-empty body whose last
+ expression is the result. Specialisation of ProgramDirective
+ [127] with ProgramDirName='with-open'. Each opener (expr)
+ evaluates to a closeable resource value; 'close' is guaranteed
+ on every scope exit (normal or error-unwind) per code.md
+ §8.10.7. An empty body is a parse error CXER0100. */
+
+[127q] ProgramWithScope ::= '[?' 'with-scope' S ProgramExpr (S ProgramExpr)+ S? ']'
+ /* dynamic-scoped context directive. The
+ leading ProgramExpr evaluates to a fields map; the trailing
+ ProgramExpr+ is the body whose last expression is the result.
+ The map is merged over the active context for the body's
+ dynamic extent (inner overrides outer, shallow), and the prior
+ context is
+ restored on every scope exit (normal or error-unwind) per
+ code.md §8.10.8. Specialisation of ProgramDirective [127]
+ with ProgramDirName='with-scope'. A non-map leading expr is a
+ CXER0109 type error (E_SCOPE_NOT_MAP); an empty body is a parse error CXER0100. */
+
+# ─── Homoiconic dynamic construction — code.md §6.4.2–§6.4.4 ──────────
+# Productions [127s]–[127z]. Computed names + quasiquote + tree-eval.
+
+[127s] ComputedElement
+ ::= '[?' 'element' S ProgramExpr (S (ProgramAttribute | ProgramExpr))* S? ']'
+ /* Computed-name element construction (code.md §6.4.2). The leading
+    ProgramExpr is NAME-EXPR (coerced per §6.4.2.1); the remaining children
+    are the element body — ProgramAttribute [127c] (attr=VALUE) interleaved
+    with positional ProgramExpr items, identical to the static [NAME …] body
+    (§6.4.1). Specialisation of ProgramDirective [127] with
+    ProgramDirName='element'. NAME-EXPR non-scalar → CXER0235; non-NCName
+    scalar → CXER0236; empty/() → absence (element → ()). */
+
+[127t] ComputedAttr
+ ::= '[?' 'attr' S ProgramExpr S ProgramExpr S? ']'
+ /* Computed-name attribute (code.md §6.4.2). First ProgramExpr is
+    NAME-EXPR, second is the attribute VALUE. Valid ONLY in attribute
+    position (inside an element body / [?element]); a [?attr …] in
+    body/value position is CXER0100. Empty name → attribute omitted
+    (absence). Specialisation of ProgramDirective [127],
+    ProgramDirName='attr'. */
+
+[127u] ComputedEntry
+ ::= '[?' 'entry' S ProgramExpr S ProgramExpr S? ']'
+ /* Computed-key map entry (code.md §6.4.2). First ProgramExpr is KEY-EXPR,
+    second is the entry VALUE. Valid ONLY inside a `{…}` map literal (a
+    MapEntry [56f] alternative); elsewhere CXER0100. A map key admits any
+    scalar ([56g]), so a non-NCName scalar key is valid here. Empty key →
+    entry omitted (absence). Specialisation of ProgramDirective [127],
+    ProgramDirName='entry'. */
+
+[127v] ComputedName
+ ::= '[?' 'name' S ProgramExpr S? ']'
+ /* Shared name sub-form (code.md §6.4.2): the name slot of [set-attr]
+    [147] / [rename] [146]. The ProgramExpr is NAME-EXPR coerced per
+    §6.4.2.1. Specialisation of ProgramDirective [127],
+    ProgramDirName='name'. */
+
+[127w] QuoteDir   ::= '[?' 'quote'   S ProgramExpr S? ']'
+[127x] UnquoteDir ::= '[?' 'unquote' S ProgramExpr S? ']'
+[127y] SpliceDir  ::= '[?' 'splice'  S ProgramExpr S? ']'
+ /* Quasiquotation over trees (code.md §6.4.3). [?quote FORM] builds FORM's
+    CXDM tree unevaluated, except [?unquote]/[?splice] holes nested inside.
+    [?unquote EXPR] grafts EXPR's single value ( () → slot removed; a
+    multi-item sequence → CXER0237). [?splice EXPR] grafts each item of a
+    sequence in order; valid only in multi-sibling slots (element body,
+    sequence, map-entry list), else CXER0100. Eager (§6.4.3.1). A bare $x in
+    a quoted FORM is inert <cx:var> data resolving only at [?eval] time
+    (§6.4.3.2). Specialisations of ProgramDirective [127]. */
+
+[127z] EvalDir
+ ::= '[?' 'eval' S ProgramExpr (S '[context' S ProgramExpr S? ']')?
+       (S '[opts' S ProgramExpr S? ']')? S? ']'
+ /* Tree-eval (code.md §6.4.4). Evaluates the leading ProgramExpr (TREE) as
+    code with NO parse step (CXER4100 unreachable). Optional [context MAP]
+    binds the only visible names (no ambient capture); optional [opts {…}]
+    carries max-depth. Reuses the cx:eval sandbox (modules/cx.md §3): eval
+    capability → CXER0271, pure-reaches → CXER0233, lib non-widen → CXER4113,
+    shared depth counter (default 8) → CXER4114. A non-evaluable tree node →
+    CXER0238. Specialisation of ProgramDirective [127], ProgramDirName='eval'. */
+
+[166]  WithErrorHook   ::= '[?' 'with-error-hook' (S ErrorHookClause)+ S ProgramExpr S? ']'
+[166a] ErrorHookClause ::= ObserveClause | EnrichClause | ReportClause
+[166b] ObserveClause   ::= '[observe' S '[using' S ProgramExpr S? ']' S? ']'
+[166c] EnrichClause    ::= '[enrich'  S '[using' S ProgramExpr S? ']' S? ']'
+[166d] ReportClause    ::= '[report' (S FormatClause)? (S SinkClause)+ S? ']'
+[166e] FormatClause    ::= '[format' S 'profile' Eq Name S? ']'
+[166f] SinkClause      ::= '[sink' S Sink S? ']'
+[166g] Sink            ::= 'stderr'
+                         | '[log' S 'level' Eq Name S? ']'
+                         | '[http' (S Attribute)+ S? ']'
+                         | '[using' S ProgramExpr S? ']'
+ /* Error-hook directive — code.md §9.6. Specialisation of ProgramDirective
+    [127] with ProgramDirName='with-error-hook' [127e]. >=1 ErrorHookClause +
+    one body ProgramExpr; a malformed clause or shape is a parse error
+    CXER0100. An enrich FN that returns a non-err raises CXER0110
+    (E_ENRICH_NOT_ERR). The program-wide `error-pipeline` cx-errors.cx
+    document head reuses [166a-g]; its .cx schema lands in schema.md. */
+
+[167]  WithCaps        ::= '[?' 'with-caps' (S DenyClause)+ S ProgramExpr S? ']'
+[167a] DenyClause      ::= '[deny' S Capability (S CapResource)? S? ']'
+[167b] Capability      ::= 'read' | 'write' | 'net' | 'env' | 'clock'
+                         | 'random' | 'subprocess' | 'eval' | 'secret-reveal'
+[167c] CapResource     ::= AttValue
+ /* Capability narrowing — security.md §3. deny-only: a program may narrow,
+    never widen, its set. >=1 DenyClause + one body ProgramExpr; a malformed
+    shape is CXER0100. A denied effect at runtime raises CXER0271
+    (E_CAP_DENIED). ProgramDirName='with-caps' [127e]. */
+
+[168]  SecretDir       ::= '[?' 'secret' S ProgramExpr S? ']'
+ /* cxdm.md §12 — wrap a value as secret. Exactly one ProgramExpr; any other
+    arity is CXER0100. ProgramDirName='secret' [127e]. */
+
+[169]  RevealDir       ::= '[?' 'reveal' S ProgramExpr S? ']'
+ /* cxdm.md §12 — declassify a secret; gated by the secret-reveal capability,
+    else CXER0271 (E_CAP_DENIED). Exactly one ProgramExpr; any other arity is
+    CXER0100. ProgramDirName='reveal' [127e]. */
+
+[128] ProgramPipe — REMOVED
+[128a] ProgramPipeAtom — REMOVED
+ /* The infix pipeline `a | b | c` is RETIRED (code.md §6.4/§8.9). It had no
+ CX⇄XML image; `|` is no longer a reserved operator and `a | b` is a parse
+ error. The canonical and only pipeline surface is the prefix directive
+ `[?pipe seed STAGE …]` (ProgramDirName='pipe'), with bare transform stages
+ and the `[tap …]` clause; there is no `[through]` wrapper. */
+[128b] ProgramPipeStage ::= ProgramTap | ProgramExpr
+ /* A `[?pipe]` child after the seed is a STAGE: a bare ProgramExpr transform
+    (the threaded value is appended as the final positional arg, or fills a `_`
+    hole; code.md §8.9.1) OR a `[tap …]` clause (observe-and-pass, §8.9.2). A
+    non-callable stage is cx-err:CXER0100. */
+[128c] ProgramTap ::= '[tap' S ProgramExpr S? ']'
+ /* Side-effecting observe-and-pass: the value flows through unchanged; the
+    tap's result is discarded; an [err] is discarded unless its code ∈
+    {CXER0001, CXER0260}. code.md §8.9.2. */
+
+[129] ProgramForComp ::= '[?' ProgramForHead (S ProgramForClause)+ S ProgramForYield S? ']'
+[129h] ProgramForHead ::= 'for' | 'for-array' | 'for-map'
+ /* outer-container head selector. 'for' (default)
+ yields a Sequence; 'for-array' yields an Array (preserves
+ Array outer); 'for-map' yields a Map (requires [yield-map]). */
+[129i] ProgramForYield ::= '[yield' S ProgramExpr S? ']'
+ | '[yield-array' S ProgramExpr S? ']'
+ | '[yield-map' S ProgramExpr S ProgramExpr S? ']'
+ /* per-iteration result shape. [yield E] returns
+ scalar / element / inline sequence (inner sequences flatten);
+ [yield-array E] wraps each iteration in an Array
+ (no flatten); [yield-map K V] produces a (key, value) entry
+ and requires the '[?for-map]' head. */
+[129a] ProgramForClause ::= ProgramForGenerator
+ | ProgramForPatternGen
+ | ProgramForFilter
+ | ProgramForLet
+ | ProgramForOrderBy
+ | ProgramForGroupBy
+ | ProgramForLimit
+ | ProgramForTake
+ | ProgramForDrop
+ | ProgramForTakeWhile
+ | ProgramForDropWhile
+ | ProgramForPar
+ | ProgramForStream
+ | ProgramForOrdered
+ | ProgramForFailFast
+[129b] ProgramForGenerator ::= '[in' S ProgramBinding S ProgramExpr S? ']'
+ | '[in' S ProgramExpr S? ']'
+ | '[in' S ProgramPattern S ProgramExpr S? ']'
+[129b1] ProgramForPatternGen ::= ProgramPattern
+[129c] ProgramForFilter ::= '[where' S ProgramExpr S? ']'
+[129d] ProgramForLet ::= '[=' S ProgramBinding S ProgramExpr S? ']'
+[129e] ProgramForOrderBy ::= '[order-by' S ProgramExpr (S ('asc' | 'desc'))? S? ']'
+[129f] ProgramForGroupBy ::= '[group-by' S ProgramExpr S? ']'
+[129j] ProgramForLimit ::= '[limit' S ProgramExpr S? ']'
+[129k] ProgramForTake ::= '[take' S ProgramExpr S? ']'
+[129l] ProgramForDrop ::= '[drop' S ProgramExpr S? ']'
+[129m] ProgramForTakeWhile ::= '[takewhile' S ProgramExpr S? ']'
+[129n] ProgramForDropWhile ::= '[dropwhile' S ProgramExpr S? ']'
+[129g] ProgramForOnError — REMOVED
+ /* The per-iteration '[on-error $e H]' clause is RETIRED with [?try] (code.md
+    §8.8/§9.3). Per-iteration handling folds into a yield-body [?match]/[?else]:
+    [yield [?match [$f $x] [case [err $e] H] [else $v]]]. */
+[129o] ProgramForPar ::= '[par' S? ']'
+[129p] ProgramForStream ::= '[stream' S? ']'
+[129q] ProgramForOrdered ::= '[ordered' S? ']'
+[129r] ProgramForFailFast ::= '[fail-fast' S? ']'
+ /* Pairs with [par] (code.md §7.3): reverts the default collect-all-errors
+    behaviour to short-circuit on the first [err]. Without [par] it is a
+    no-op (sequential evaluation already short-circuits). */
+ /* For-comprehension surface per code.md §7. ProgramForComp
+ is a specialisation of ProgramDirective [127] with
+ ProgramDirName ∈ {'for', 'for-array', 'for-map'}; the
+ additional productions document the clause-child vocabulary
+ 
+
+ Generator forms ([129b]):
+ [in $x SRC] explicit-bind generator
+ [in SRC] anonymous generator (item bound to $_)
+ [in [PATTERN] SRC] pattern-bind generator
+
+ Pattern-generator shortcut ([129b1]): a bare ProgramPattern at
+ the first generator position desugars to a document-wide
+ search per §7.5.
+
+ Yield forms ([129i]):
+ [yield E] flat sequence
+ [yield-array E] per-iteration Array wrap (no flatten)
+ [yield-map K V] Map entry; requires '[?for-map]' head
+
+ The grammar admits any ordering of clauses; the evaluator's
+ binding-order rules (code.md §7.2) determine the
+ observable iteration. */
+
+# ─── : CXPath as first-class value kind ──────────────────────────────
+# Productions [130]–[135]. XPath 3.1 selection core with CX adaptations.
+#and code.md.
+
+[130] PathExpr ::= '//' StepList | '/' StepList | StepList
+ /* PathExpr is a ProgramExpr alternative (alongside ProgramLiteral,
+ ProgramBinding, ProgramDirective, etc). Evaluates to a Sequence of
+ matching nodes. Parses as a first-class value — round-trips in
+ canonical emit as the terse '//' form. */
+
+[130a] StepList ::= Step ('/' Step)*
+
+[131] Step ::= (AxisSpecifier '::')? NodeTest Predicate*
+
+[131a] AxisSpecifier ::= 'child' | 'descendant' | 'descendant-or-self'
+ | 'parent' | 'ancestor' | 'ancestor-or-self'
+ | 'following-sibling' | 'preceding-sibling'
+ | 'following' | 'preceding' | 'self' | 'attribute'
+
+[131b] NodeTest ::= Name | '*' | '*:' LocalName | Prefix ':*'
+ | 'node()' | 'text()' | 'element()' | 'attribute()'
+ /* Name (which includes the QName form `prefix:local` per [7a]) matches
+ elements by source / expanded name. The two wildcard forms add:
+ '*:' LocalName — match any namespace, specific local name
+ Prefix ':*' — specific namespace prefix, any local name
+ Prefix resolution against the document's in-scope xmlns map follows
+ first-occurrence-wins per cxdm.md. Reserved prefixes
+ ('xml', 'cx') always resolve. See §D2.
+
+ ── Step-trailing `:` disambiguation ────────────────────────────
+ A `:` in Step-trailing position is always either (a) the start
+ of a QName prefix continuation (`prefix:local`), or (b) the
+ start of an atom literal `:NAME` [122b] that terminates the
+ Step. */
+
+[132] Predicate ::= '[' PredExpr ']'
+
+[132a] PredExpr ::= AttrTest | INT | FunctionCall | BooleanExpr
+ | InstanceOf | CastAs | SequenceOp
+
+[132b] FunctionCall ::= Name '(' (ProgramExpr (',' S? ProgramExpr)*)? ')'
+ /* CXPath built-in function call (XPath syntactic-parity carrier).
+ Permitted ONLY inside Predicate [132] / PredicateExpr [159]
+ bodies, where it invokes built-in XPath functions
+ (`count(*)`, `last()`, `position()`, `contains(...)`, etc.) as
+ standard XPath syntax. General CX function calls use the
+ head-dispatch element form [125] ProgramCall: `[$fn args]`. */
+
+[133] AttrTest ::= '@' Name (CompOp ProgramExpr)?
+
+[133a] CompOp ::= '=' | '!=' | '<' | '<=' | '>' | '>='
+ /* Value-comparison semantics only. No keyword synonyms (eq/ne/lt/le/gt/ge
+ are NOT in the grammar). Both sides must be single values;
+ multi-valued operand raises CXER0103. */
+
+[134] SequenceOp ::= ProgramExpr ('union' | 'intersect' | 'except') ProgramExpr
+ | ProgramExpr '||' ProgramExpr
+ /* Set/sequence combinators — reachable ONLY from [132a] PredExpr
+ (CXPath predicate bodies), not from [121] program expressions. */
+
+/* [134a] RangeExpr — RETIRED. The infix integer range
+ `lo 'to' hi ('by' step)?` was the last binary infix on the CX
+ surface; it is removed from BOTH [121] ProgramExpr and [132a]
+ PredExpr. Ranges are now the prefix builtin `[$range lo hi step?]`
+ ([125d] RangeCall), usable in every expression position. Infix
+ `to`/`by` is a parse error everywhere (cx-err:CXER0100); the
+ keywords carry no range meaning. No tombstone, no dual-accept. */
+
+[135] BindingPath ::= '$' Name (BindingStep)+
+[135a] BindingStep ::= '/' Step           /* child / wildcard / axis */
+                     | '//' Step          /* descendant */
+                     | '@' Name           /* attribute (terminal) */
+                     | '.' Name           /* map-key access */
+ /* The canonical binding-path form. Step is per [131] (axis, node
+ test, predicates). Subsumes the legacy [124a] ProgramPathStep
+ (now removed) and adds full CXPath surface: `$x/*`, `$x//name`,
+ `$x/axis::name`, `$x/name[pred]`, `$x@attr`, `$x.key`. See
+ code.md §6.2. */
+
+# ─── : [?match] multi-arm dispatch ───────────────────────────────────
+# Productions [136]–[140].
+
+[136] MatchExpr ::= '[?match' S ProgramExpr? S MatchArm+ S? ']'
+ | '[?match' S ProgramExpr S MatchPattern S? '[yield' S ProgramExpr S? ']' S? ']'
+ /* ProgramExpr is optional in the multi-arm form — absent =
+ predicate-only (SQL Searched-CASE). Recognised
+ by presence of a [case...] or [when...] arm child.
+ Single-arm form (second alternative): bare pattern followed
+ by a [yield E] clause — desugars to [case PAT E] semantics. */
+
+[137] MatchArm ::= CaseArm | WhenArm | ElseArm
+
+[138] CaseArm ::= '[case' S MatchPattern (S '[where' S ProgramExpr S? ']')? S ProgramExpr S? ']'
+ /* [where G] guard clause is optional; when present,
+ pattern + guard must both be truthy for the arm to fire. The
+ arm body is the final positional ProgramExpr (no [yield...]
+ wrapper required inside an arm,). */
+
+[139] WhenArm ::= '[when' S ProgramExpr S ProgramExpr S? ']'
+
+[140] ElseArm ::= '[else' S ProgramExpr S? ']'
+ /* At most one ElseArm; must be last. */
+
+[140a] MatchPattern ::= ProgramPattern # element pattern (§5.2 rules 1–7, 9–10)
+ | ScalarLiteralPattern # rule 8
+ | MapPattern # rule 11
+ | SeqPattern # rule 12
+ | ArrayPattern # rule 13
+ | TypedBindPattern # rule 14 (typed bind / anonymous type-test)
+ | PathExpr # //path type-test
+ | '_' # wildcard — matches any value, binds nothing
+ | '$' Name # bind-only (captures value, no shape test)
+
+[140b] ScalarLiteralPattern ::= NumberLit | StringLit | BoolLit | 'null' | AtomLit
+ /* Type-strict match: [case 200 …] does NOT match "200". No coercion.
+ Kinds: int, float, string, bool, null, atom, date, datetime, bytes. */
+[140c] MapPattern ::= '{' (S? MapPatItem (S? ',' S? MapPatItem)* (S? ',' S? RestBind)?)? S? '}'
+ /* §5.2 rule 11: open (subset) match by key; RestBind binds unmatched
+    pairs as a Map. */
+[140c1] MapPatItem ::= ScalarKey S? ':' S? MatchPattern
+[140d] SeqPattern ::= '(' S? (MatchPattern (S? ',' S? MatchPattern)* (S? ',' S? RestBind)?)? S? ')'
+ /* §5.2 rule 12: closed (exact arity) unless a RestBind tail is present;
+    RestBind binds remaining items as a Sequence. `*` only — not `**`. */
+[140e] ArrayPattern ::= '[' S? (MatchPattern (S? ',' S? MatchPattern)* (S? ',' S? RestBind)?)? S? ']'
+ /* §5.2 rule 13: closed Array match; disambiguated from ProgramPattern's
+    `[head …]` element form by the comma-separated, head-less item list.
+    RestBind binds remaining items as an Array. */
+[140f] RestBind ::= '*' '$' Name
+[140g] TypedBindPattern ::= '$' Name TypeAnnotation # typed bind: bind + value-kind test
+ | '_' TypeAnnotation # anonymous value-kind test, binds nothing
+ /* §5.2 rule 14: TypeAnnotation is `:: KindName` ([26]); tests the value's
+    CXDM kind. Double-colon — distinct from the single-colon atom (`:int`) and
+    the single-colon `:TypeName` schema-type guard [126b]. */
+
+# ─── : [?modify] pure-functional update surface ──────────────────────
+# Productions [141]–[148].
+
+[141] ModifyExpr ::= '[?modify' S ProgramExpr S PathExpr S ModifyAction+ S? ']'
+ /* First arg: document (or sub-tree). Second: CXPath focus (PathExpr [130]).
+ One or more actions follow. Multiple actions apply left-to-right to each
+ matched node. Returns a new document; original unchanged. */
+
+[142] ModifyAction ::= ModifySet | ModifyDelete | ModifyUsing | ModifyRename
+ | ModifySetAttr | ModifyDeleteAttr
+ | ModifyAppend | ModifyPrepend
+ | ModifyInsertBefore | ModifyInsertAfter | ModifyReplace
+
+[143] ModifySet ::= '[set' S ProgramExpr S? ']'
+[144] ModifyDelete ::= '[delete' S? ']'
+[145] ModifyUsing ::= '[using' S ProgramExpr S? ']'
+ /* ProgramExpr must be a function value ([?fn] lambda). Receives matched node
+ as single argument; return value replaces node. Lambda-only in v0.8.0
+. Named function refs deferred to v0.8.x. */
+[146] ModifyRename ::= '[rename' S (Name | ComputedName) S? ']'
+[147] ModifySetAttr ::= '[set-attr' S (Name | ComputedName) S ProgramExpr S? ']'
+ /* The name slot of [rename] / [set-attr] accepts either a literal Name
+    or a ComputedName sub-form [?name NAME-EXPR] [127v] (code.md §6.4.2). */
+[148] ModifyDeleteAttr ::= '[delete-attr' S Name S? ']'
+[148a] ModifyAppend ::= '[append' S ProgramExpr S? ']'
+[148b] ModifyPrepend ::= '[prepend' S ProgramExpr S? ']'
+[148c] ModifyInsertBefore ::= '[insert-before' S ProgramExpr S? ']'
+[148d] ModifyInsertAfter ::= '[insert-after' S ProgramExpr S? ']'
+[148e] ModifyReplace ::= '[replace' S ProgramExpr S? ']'
+
+# ─── Module system ────────────────────────────────────────────────────
+# Productions [149]–[159]. Normatively specified in `code.md §12`.
+#
+# Module-system directives are only legal at module top level (§12.1, §12.2,
+# §12.3). The parser rejects nested occurrences with CXER0204 (for [?def])
+# or CXER0212 (for [?lib]/[?const]) at parse time.
+
+# §12.1 — [?lib] module import
+
+[149] LibDirective ::= '[?lib' S Resolver (S LibModifier)* S? ']'
+ /* Module-top-level only. Resolver shape (file / registered / HTTPS)
+ per [150]; modifiers per [151]. Resolution per code.md §12.1.
+ Insecure `http://` resolver raises CXER0208 at parse time. */
+
+[150] Resolver ::= QuotedFilePath | QuotedRegisteredName | QuotedHttpsUrl
+ /* QuotedFilePath: string starting with './', '../', or '/'
+ QuotedHttpsUrl: string starting with 'https://'
+ QuotedRegisteredName: any other string; looked up in cx.lock
+ Anything not matching one of the three shapes raises CXER0213. */
+
+[151] LibModifier ::= AsAttr | ScopeAttr | LibOnly | InMemoryAttr | VersionAttr
+
+[151a0] AsAttr ::= 'as' '=' Name
+ /* Rebinds the imported module's namespace prefix; the bound name is the
+ prefix for qualified references, which are QNames `prefix:local`
+ (`as=regex` → `[$regex:match …]`). The `/` operator is unaffected —
+ it remains data-path navigation (`$x/child`), never a module ref.
+ Per code.md §12.1.1. */
+[151a] ScopeAttr ::= 'scope' '=' ('public' | 'private')
+[151b] LibOnly ::= '[only' (S OnlyItem)+ S? ']'
+[151b1] OnlyItem ::= Name | '[' Name S 'as' Eq Name S? ']'
+ /* Selective refer: bare names are referred into the importing module's
+    local `$` namespace, callable unqualified (`[only upper lower]` →
+    `[$upper …]`); a `[name as=alias]` item rebinds a referred name to
+    resolve a cross-module clash (`[only [floor as=mfloor]]`). `[only …]`
+    is refer-sugar over qualified access — every export remains reachable
+    via its `prefix:local` QName (§12.1.2). Names here are identifiers,
+    not a general element body. */
+[151c] InMemoryAttr ::= 'in-memory'
+[151d] VersionAttr ::= 'version' '=' QuotedString
+ /* module-import modifiers are scalar attributes
+ and clauses:
+ scope=public|private — visibility (D1.1)
+ [only (a b c)] — selective import (D1.1); attribute
+ form `only=(a b c)` is the canonical
+ scalar surface, the [only …] clause
+ form is accepted for symmetry
+ in-memory — zip-package per-import flag (D5.2);
+ implementation deferred (D5.3)
+ version='X' — hotfix override; not idiomatic (D8)
+ Bearer / Basic auth tokens — reserved (D2). The local-name
+ rebind is the QuotedString Resolver position itself per [149a]
+ (resolver carries its name). */
+
+# §12.2 — [?def] module-level function
+
+[152] DefDirective ::= '[?def' S Name (S DefModifier)* S ParamList S ProgramExpr S? ']'
+ /* Module-top-level only. Nested occurrence raises CXER0204.
+ Re-declaration of the same Name in a module raises CXER0205.
+ Body is a single ProgramExpr — the function's value when called.
+ Per, all modifiers are clause-children or attributes;
+ the function name is positional, the body is positional last. */
+
+[152a] DefModifier ::= ScopeAttr
+ | Bareword /* 'pure' | 'impure' */
+ | ReturnsClause
+ | ThrowsClause
+[152b] ReturnsClause ::= '[returns' S Type S? ']'
+[152c] ThrowsClause ::= '[throws' S Type S? ']' /* reserved at v0.8.0 (D5.2) */
+ /* def modifiers map as:
+ scope=public|private visibility attribute
+ pure | impure purity bareword
+ [returns T] return-type clause
+ [throws T] throws-type clause (reserved)
+ T is a Type expression ([155]+), not `::T` glued — the clause
+ carries the type as a positional child. */
+
+[153] ParamList ::= '(' S? (Param (S Param)*)? (S RestParam)? S? ')'
+
+[153a] Param ::= PositionalParam | NamedParam
+
+[153b] PositionalParam ::= '$' Name TypeAnnot? (S Default)?
+ /* every parameter name carries the `$` binding sigil
+ (`$x::int`, NOT `x::int`). Positional defaults are permitted
+ (a bare trailing VALUE). */
+
+[153c] NamedParam ::= '$' Name '=' Default TypeAnnot?
+ /* Named (keyword) parameter. Caller passes `name=value` (attribute
+ form); inside the param list, the param itself
+ declares its default with `$name=value`. */
+
+[153d] Default ::= ProgramExpr
+ /* a Default is a VALUE (literal / $binding / call /
+ collection). Defaulted params MUST be trailing (before any
+ RestParam). */
+
+[153e] RestParam ::= '*' '$' Name TypeAnnot?
+ /* At most one rest-param per ParamList; always last. Collects
+ trailing positional args into a sequence. The
+ leading `*` is the rest-spread marker. */
+
+[153f] TypeAnnot ::= '::' Type
+ /* per-parameter type annotation, glued `::` form:
+ `(\$x::int)`, `(\$n::string='hi')`. Long type names only. No
+ whitespace between the Name and `::`. */
+
+# §12.3 — [?const] module-level constant
+
+[154] ConstDirective ::= '[?const' (S ConstModifier)* S Name S ProgramExpr S? ']'
+
+[154a] ConstModifier ::= ScopeAttr | 'lazy'
+ /* const modifiers:
+ scope=public|private visibility attribute
+ lazy defers eval to first read (D12.2);
+ memoized thereafter. Default (no
+ `lazy`) is eager — computed at module
+ load (D12.1). Mutability is
+ intentionally absent (D12.3). */
+
+# §12.7 — Type-expression grammar (types-as-data; D7)
+
+[155] Type ::= KindName | ElementName | BracketType
+ /* Disambiguator: KindName is lowercase, ElementName is capitalized,
+ BracketType is `[ TypeHead Type+ ]`. Both KindName and ElementName
+ match the Name production [7]; the case of the first character
+ decides the alternative. */
+
+[156] BracketType ::= '[' TypeHead (S Type)+ S? ']'
+
+[156a] TypeHead ::= 'or' | 'sequence' | 'iterator'
+ /* 'or' encodes union of types (D7.3); 'sequence' encodes
+ sequence-of-T parameterisation (D7.4); 'iterator' encodes
+ iterator-of-T parameterisation (the lazy §8 Iterator kind),
+ parallel to 'sequence'. No nullable shorthand —
+ `[or T null]` is the canonical nullable form (D7.5). */
+
+[157] KindName ::= 'string' | 'int' | 'float' | 'bool' | 'null' | 'atom'
+ | 'bytes' | 'date' | 'datetime'
+ | 'element' | 'sequence' | 'map' | 'iterator'
+ | 'array'
+ | 'document' | 'text' | 'scalar-node' | 'comment' | 'pi' | 'directive'
+ | 'function' | 'path'
+ | 'any' | 'number'
+ | RefinementName
+ /* Q1(a) (SAP O1): 'array' + the node family
+    document/text/scalar-node/comment/pi/directive added so the `::T`
+    value-kind test ([140g], code.md §5.2 rule 14) covers the full CXDM Item
+    taxonomy (cxdm.md §2). */
+ /* Lowercase atomic kind names. Scalars are the nine CXDM kinds
+ (string/int/float/bool/null/atom/bytes/date/datetime). 'any' is the
+ top type; 'number' is shorthand for [or int float]. Bare 'element'
+ matches any element; bare 'sequence'/'iterator' match any
+ sequence/iterator regardless of item type (more specific via [156]
+ [sequence T] / [iterator T]). Must stay in sync with code.md §12.7. */
+[157a] RefinementName ::= 'decimal' | 'bigint'
+ | 'i8' | 'i16' | 'i32' | 'i64' | 'u8' | 'u16' | 'u32' | 'u64'
+ | 'f16' | 'f32' | 'f64' | 'duration' | 'period' | 'instant' | 'secret'
+ /* Storage-precision refinements; the same names admitted as scalar
+ annotations by [26a] TypeName. Each refines one of the nine scalar
+ kinds (cxdm.md §2.3) — not a new semantic kind. */
+
+[158] ElementName ::= [A-Z] [A-Za-z0-9_-]*
+ /* Capitalized identifier; matches elements whose head name equals
+ this identifier. Restrictions on Name [7] in element-name position
+ are otherwise identical (NameStartChar/NameChar). */
+
+# ─── : [expr] general predicate + $_ context binding ─────────────────
+# Productions [159]–[161].
+#
+# General predicates supersede the closed PredExpr enumeration in [132a].
+# The closed enumeration's alternatives (AttrTest, INT, FunctionCall,
+# BooleanExpr, InstanceOf, CastAs, SequenceOp) survive as parse-time SUGAR
+# that desugars into a PredicateExpr AST node before evaluation. The canonical renderer prefers the terse atomic form on round-trip
+# when the AST matches a recognized template; otherwise it emits the
+# general form.
+
+[159] PredicateExpr ::= '[' ProgramExpr ']'
+ /* General predicate body. ProgramExpr is per [121]. Inside the body,
+ three reserved bindings are in scope and bound by the runtime
+ before evaluation:
+ $_ — current candidate item (any item kind; D2)
+ $_position — 1-based int index of $_ within the candidate sequence
+ $_last — int size of the candidate sequence
+ Result is coerced via EBV (cxdm.md §6); candidate is kept
+ iff EBV(result) = true. Body MUST be pure — static check;
+ violation raises CXER0230.
+
+ REPLACES [132] Predicate at every site (Step [131], BindingPath
+ [135]). The legacy [132a] PredExpr enumeration is retained in
+ comments as documentation of the recognised sugar templates. */
+
+[160] Step′ ::= (AxisSpecifier '::')? NodeTest BindAnnot? PredicateExpr*
+[160a] BindAnnot ::= '(' 'bind' S '$' NCName ')'
+ /* AMENDS [131] + + — captures the current
+ step's match into a binding. The `(bind $name)` peer-annotation
+ is a parenthesised postfix on a path step. At most one bind
+ annotation per Step. The bound name is visible in every
+ predicate enclosed by this step and in every subsequent step
+ of the same PathExpr; not visible outside the enclosing
+ PathExpr.
+
+ `(bind $_)` is rejected with CXER0232 (RESERVED_BIND_NAME) —
+ the underscore identifier is reserved for the implicit $_
+ context binding. */
+
+# §12 — purity annotations augment [152a] DefModifier
+#
+# [152a] DefModifier accepts the 'pure' and 'impure' barewords.
+# Default (no modifier) is 'pure'.
+# Mismatch between annotation and inferred purity raises CXER0233 at
+# module-load.
+
+# §12 — directive name registry update
+
+[127e′] ProgramDirName += 'lib' | 'const'
+ /* Extends the closed [127e] directive name set with the module-
+ system directives 'lib' and 'const'. The full set (63 names) is
+ mirrored in code.md §4.1 registry. */
+
+# Note: lockfile (`cx.lock`) and package manifest (`cx.pkg`) are CX-data
+# documents — they parse via the existing data grammar — and their
+# shapes are normatively specified in lockfile.md and code.md
+# §12.4.3 respectively. No new grammar productions are needed for them.
+
+# ─── Slice / multi-axis postfix on $binding ──────────────────────────
+# Productions [162]–[165]. Introduces the `$binding[SliceAxes]`
+# postfix surface. The
+# `PredicateExpr ::= '[' ProgramExpr ']'` production at [159] is
+# UNCHANGED — slice and predicate are disambiguated POSITIONALLY by the
+# token preceding the `[`, not by the bracket-body lexical shape. The
+# table in [165] is normative.
+
+[162] BindingPostfix ::= '[' SliceAxes ']' # slice / multi-axis
+ | '@' NCName # attribute (existing)
+ | '/' PathStep # path-on-binding (existing)
+ /* The `[' SliceAxes ']'` alternative is the new surface;
+ '@NCName' and '/PathStep' are the existing attribute-axis and
+ path-step forms. The former `(ArgList?)` callable-binding form
+ `$f(args)` is REMOVED per the homoiconic invariant (code.md §6.3):
+ a bound function value is invoked via head-dispatch `[$f args]`
+ ([125] ProgramCall), never via paren-call. Cursor is always at a
+ position immediately after a `$NCName` (with optional intervening
+ path steps); the three alternatives are mutually exclusive based on
+ the leading sigil. */
+
+[163] SliceAxes ::= SliceAxis (',' SliceAxis)*
+ /* Multi-axis (D12). Arity must equal source rank at evaluation
+ time. Multi-axis slicing is shipped (W6-E); see code.md §6.6 D12
+ for the row/column reduction semantics and D13 column-label form.
+ A flat-sequence receiver with arity >= 2 raises CXER0100. */
+
+[164] SliceAxis ::= Expr # single index
+ | Expr? ':' Expr? (':' Expr)? # start:stop[:step]
+ # INCLUSIVE stop (D5)
+ | '*' # full axis
+ /* All three of start / stop / step are independently optional in
+ the range form. Per the stop bound is INCLUSIVE
+ (`[2:5]` produces 2,3,4,5 — closed-interval semantics). Per D21
+ a literal `step == 0` is a parse-time error; the evaluator
+ enforces this at W5c. Negative step values reverse the walk
+ (`[::-1]`). Per D20 an empty resolved range (e.g. `[10:5]` with
+ positive step) evaluates to the empty sequence, not an error. */
+
+# ─── Disambiguation of `[…]` after a $binding or fn-call ─────────────────────
+# Production [165] is the normative table "Disambiguation rule
+# for `[…]`". The parser dispatches on the token IMMEDIATELY preceding the
+# `[` (no whitespace separates the two at the token level since CX is
+# whitespace-insensitive). The decision NEVER requires looking inside the
+# bracket body once the preceding token is fixed.
+#
+# [165] DisambiguationTable
+#
+# | Left-context token | `[…]` parses as |
+# |---------------------------------------------------|--------------------------|
+# | End-of-step (after NodeTest or `]` in CXPath) | [159] PredicateExpr |
+# | $NCName (binding, with optional path) | BindingPostfix→SliceAxes |
+# | `)` of a `(SeqExpr)` paren-group | ParenSeqPostfix→SliceAxes|
+# | `)` of a fn-call `fn(args)` | BindingPostfix→SliceAxes |
+# | Otherwise (expression-head / post-directive-close)| Array literal |
+#
+# IMPLEMENTATION NOTE (v0.8.0 W5b refinement). When the preceding token
+# is a $binding, the parser additionally inspects the FIRST token inside
+# the bracket. If that token is an "element-head token" (an `ident` or
+# one of the operator heads `+ - * / = != < <= > >=`), the bracket
+# parses as a separate element-literal expression (`[name body…]`) —
+# NOT a BindingPostfix. This refinement preserves the existing
+# whitespace-insensitive surface `$x [elem …]` which must parse as two
+# adjacent expressions, not a postfix. The full slice triggers are:
+# * leading `:` or `::` (open-start range)
+# * leading `*` followed by `]` or `,` (full-axis marker)
+# * top-level `:` / `::` / `,` between expression tokens
+# Otherwise the bracket leaves the slice surface and falls back to a
+# single-Expr predicate body (no-op at v0.8.0 on bare $bindings; the
+# surface is reserved for a future predicate-on-binding extension).
+#
+# The CXPath PathPredicate [159] is unchanged — slice never appears
+# inside a path step's predicate body.
+
+# ─── §namespace — the cx: namespace (carrier recognition + resolution) ─────────
+# This is the §namespace section cited by parser-rules-for-cx-meaning.txt.
+#
+# Namespace URI: https://cxhome.org/ns/cx
+# Reserved prefix: cx — CX documents may not use ns:cx as a namespace alias.
+#
+# RECOGNITION is BY RESOLVED URI (the above), NOT the literal `cx:` prefix: an element/
+# attribute whose namespace resolves to the cx URI is a CARRIER, regardless of the prefix
+# spelling the document chose to bind to that URI.
+#
+# RESOLUTION DISCIPLINE (XML Namespaces 1.0): xmlns="URI" sets the default namespace for
+# elements (NOT attributes — an unprefixed attribute is in NO namespace, [7d]/[55]); xmlns:p
+# binds prefix p, lexically scoped to the declaring element's subtree; xmlns="" undeclares
+# the default (only the default may be undeclared). An element/attribute using an UNBOUND
+# prefix ⇒ E212. Re-binding the reserved 'xml'/'cx' prefixes, or binding any prefix to the
+# cx URI, ⇒ E213 ([157]/[168]). A user-authored element whose resolved name IS in the cx URI
+# ⇒ E210 (the cx namespace is reserved for emitter-authored carriers only).
+#
+# CARRIER LOCAL-NAME SET (exhaustive — the only cx-URI element names a conforming reader
+# produces or accepts; any other cx-URI local name ⇒ E210):
+#   document : cx:docs cx:doc cx:err
+#   nodes    : cx:pi cx:alias cx:entity-ref cx:pe-ref cx:comment cx:block
+#   collections: cx:array cx:sequence cx:map cx:entry cx:key cx:val
+#   scalars (one per kind, CARRIER-NAME INVARIANT — full kind name, never abbreviated):
+#            cx:string cx:int cx:float cx:bool cx:null cx:atom cx:bytes cx:date cx:datetime
+#            cx:decimal cx:bigint cx:i8..cx:i64 cx:u8..cx:u64 cx:f16 cx:f32 cx:f64
+#            cx:duration cx:period cx:instant cx:secret
+#   program  : cx:directive cx:call cx:var cx:path cx:step cx:slice cx:axis cx:interp cx:eval-tree
+# CARRIER ATTRIBUTES (cx-URI attributes, not elements): cx:type cx:attr-types cx:anchor
+#   cx:merge cx:id cx:name cx:head cx:key cx:target. Examples: cx:type="int" (scalar type),
+#   cx:type="string[]" (typed array), cx:anchor (anchor def), cx:merge (merge ref).
+#
+# CXDirective serializes as <?cx...?> in XML output (a standard XML PI).
+# XML consumers that do not understand cx: attributes treat them as opaque.
+
+# ─── Lexer Tokens ─────────────────────────────────────────────────────────────
+#
+# A CX lexer produces the following terminal tokens. Context-sensitive rules
+# noted below; the parser switches modes at element boundaries.
+#
+# Token Pattern / rule Notes
+# ──────────────────────────────────────────────────────────────────────────────
+# LBRACK [ Opens element/decl/PI/comment
+# RBRACK ] Closes any bracket construct
+# EQ = Attribute separator
+# TRIPLE_DASH --- MultiDoc separator (Extended)
+#
+# ANCHOR & Name (no semicolon) AnchorDef [60]; no; suffix
+# ENTITY_REF & Name; EntityRef [66]; must have;
+# CHAR_REF &# [0-9]+; | &#x HexDigit+; CharRef [67]
+# PE_REF % Name; PEReference [68]; decls only
+# MERGE * Name MergeRef [61]; inside element
+# ALIAS_OPEN [* AliasElement start [62]
+# TYPE_ANN :: TypeName ('[]')? TypeAnnotation [26]; (glued ::)
+# TYPE_ANN_ARR ::[] Inferred-type array [26];
+# TABLE_OPEN [table[ TableBlock [29]; Extended
+# (BOOL_SIGIL removed; booleans are name=true/name=false)
+# LINE_COMMENT # LineComment [30b]; Extended
+#
+# QUOTED ' QuotedContent ' QuotedText [10]
+# TRIPLE_QUOT ''' TripleContent ''' TripleQuoted [10b]; Extended
+# BARE BareChar+ BareValue [12]
+# NAME NameStartChar NameChar* Element/attr names, targets
+# NUMBER -? (HexInt | Float | Integer) Numeric literal [20]
+# underscores between
+# digits permitted; leading
+# zero in Integer rejected
+# BOOL true | false BoolLiteral [21]
+# NULL_LIT null NullLiteral [22]
+# DATE [0-9]{4}-[0-9]{2}-[0-9]{2} DateLiteral [23]
+# DATETIME DateLiteral 'T'... DateTimeLiteral [24]
+#
+# Compound openers (lexer recognizes as single token before dispatching):
+# [?xml → XMLDecl
+# [?cx → CXDirective
+# [?Name → PI
+# [- → Comment
+# [# → RawText (scan until #] terminator)
+# [| → BlockContent (Extended); body parsed as BodyItem* with
+# literal newlines; closed by ] with normal bracket counting
+# [!DOCTYPE → DoctypeDecl
+# [!ENTITY → EntityDecl
+# [!ELEMENT → ElementDecl (Extended)
+# [!ATTLIST → AttlistDecl (Extended)
+# [!NOTATION → NotationDecl (Extended)
+# [![ → ConditionalSect (Extended)
+# [*Name] → AliasElement (Extended)
+#
+# ANCHOR vs ENTITY_REF disambiguation: lookahead for ';' after the name.
+# MERGE vs unquoted body text starting with *: MERGE requires Name immediately
+# after * with no whitespace, inside ElementMeta position only.
+# TRIPLE_QUOT vs QUOTED: lexer checks for ''' before ' — three-char lookahead.
+#
+# disambiguation:
+#
+# TYPE_ANN vs NAMESPACE: at the element head and the attribute name, glued
+# single ':' (`a:b`) is the namespace qualifier [87]; the glued double
+# '::' (`a::b`) is the TYPE_ANN [26]. A spaced ` :foo` in a body
+# position is an atom literal value [122b].
+# LINE_COMMENT vs '#' in BareValue: LINE_COMMENT requires '#' to be preceded
+# by whitespace, ']', or input start. Inside a BareValue token, '#' is
+# literal (per [12a] BareChar).
+# TABLE_OPEN: lexer recognizes '[table[' as a single TABLE_OPEN token at
+# ElementMeta position (a reserved clause-child element head,
+# not a type label).
+
+# ─── Notes ────────────────────────────────────────────────────────────────────
+
+# Whitespace normalization applies to unquoted body tokens only (rule [5]).
+# Attribute values (BareValue) are subject to scalar auto-typing [55a] but
+# not to whitespace normalization — their literal content is preserved.
+
+# Raw text uses #] as its two-character terminator (rule [31]).
+# A bare ] is allowed inside raw text. The sequence #] is not.
+# XML emission: ]]> in raw content must be split — see rule [31].
+
+# TripleQuoted uses ''' (or """) as its three-character terminator (rule [10b];
+# lexicon §5 [L31]). CONTENT IS VERBATIM — there is NO escape processing inside a
+# triple-quoted string: a backslash is a literal byte (`\"` is the two bytes
+# backslash + quote, NOT an escaped quote), and single/double quotes appear
+# literally. Closing obeys the lookahead-on-close rule (canonical.md §2.10.1):
+# the literal closes at the LAST delimiter in a maximal run, so trailing quotes
+# need no escape. Because there is no escape mechanism, a triple-quoted string
+# CANNOT contain its own three-character terminator; to embed a literal `"""`,
+# wrap the content in the OTHER delimiter (`'''…"""…'''`) — the delimiter swap is
+# the only hatch. (On canonical emit a backslash is re-escaped minimally so the
+# value round-trips through the single/double-quoted form — canonical.md §2.4.)
+
+# BlockContent [|…|] uses |] as its terminator (rule [28]). The [| opener
+# signals literal-newline mode; a bare ] inside is literal content — only the
+# |] pair at the correct nesting depth closes the block.
+
+# Auto-typing is scoped (@CHOICE-1, lexicon §9):
+# Scalar: single-token element bodies (rule [25]).
+# Discrete children: a no-comma multi-token body of self-delimiting tokens (typed
+#   scalars / atoms / quoted strings, no bareword) — mixed content, NOT an array.
+# Array: a COMMA body (heterogeneous ArrayNode) or an explicit ::T[] / ::[] head.
+# Attr: scalar only on BareValue attribute values (rule [55a]).
+# Prose: a no-comma body containing any bareword → one verbatim Text run.
+
+# Type names (rule [26a]): LONG NAMES ONLY. The short aliases
+# (i/f/b/s/d/dt) are removed — they could never cover the sized numerics /
+# decimal / bigint / bytes / atom / f16, so the uniform form is the long name.
+# Type labels are the glued double-colon form `name::T` (lint CX-L002 removed).
+
+# Anchors (&name without semicolon) are CX Extended.
+# EntityRefs (&name; with semicolon) are CX Core.
+
+# MultiDoc (---) is CX Extended.
+# Scalar, TypeAnnotation, TripleQuoted, BlockContent are CX Extended.
+# DTD schema declarations (ElementDecl, AttlistDecl, NotationDecl,
+# ConditionalSect) are CX Extended. EntityDecl is CX Core.
+# See Conventions section for the rationale.
+#
+# Extended additions:
+# TableBlock ([table[) [29],
+# LineComment (# to EOL) [30b], logfmt mode (top-level Attribute+ in [2]),
+# numeric underscores in [20a]/[20b]/[20c], new TypeName values
+# (decimal, bigint, sized i8..i64, sized u8..u64, sized f16/f32/f64).

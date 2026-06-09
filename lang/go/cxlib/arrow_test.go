@@ -24,7 +24,7 @@ func dateDays(y int, m time.Month, d int) arrow.Date32 {
 //   - Round-trip per supported v0.6.0 column type: int / i8 / i16 / i32 /
 //     float / bool / string / date / bytes (9 tests).
 //   - datetime column round-trips as Arrow timestamp[ns, UTC].
-//   - Arrow-table → CXDB → Arrow-table inverse round-trip.
+//   - Arrow-table → CXCol → Arrow-table inverse round-trip.
 //   - Capability + version smoke tests.
 //
 // Run:  go test -tags arrow ./lang/go/cxlib/...
@@ -90,7 +90,7 @@ func TestArrowAvailability(t *testing.T) {
 }
 
 func TestArrowRoundTripInt(t *testing.T) {
-	src := "[stats :table[score:int]\n  100\n  -1\n  9223372036854775807\n  -9223372036854775808\n]"
+	src := "[stats [table[score::int]]\n  100\n  -1\n  9223372036854775807\n  -9223372036854775808\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -127,7 +127,7 @@ func TestArrowRoundTripInt(t *testing.T) {
 }
 
 func TestArrowRoundTripI8(t *testing.T) {
-	src := "[stats :table[v:i8]\n  -128\n  -1\n  0\n  127\n]"
+	src := "[stats [table[v::i8]]\n  -128\n  -1\n  0\n  127\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -144,7 +144,7 @@ func TestArrowRoundTripI8(t *testing.T) {
 }
 
 func TestArrowRoundTripI16(t *testing.T) {
-	src := "[stats :table[v:i16]\n  -32768\n  -1\n  0\n  32767\n]"
+	src := "[stats [table[v::i16]]\n  -32768\n  -1\n  0\n  32767\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -161,7 +161,7 @@ func TestArrowRoundTripI16(t *testing.T) {
 }
 
 func TestArrowRoundTripI32(t *testing.T) {
-	src := "[stats :table[v:i32]\n  -2147483648\n  -1\n  0\n  2147483647\n]"
+	src := "[stats [table[v::i32]]\n  -2147483648\n  -1\n  0\n  2147483647\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -178,7 +178,7 @@ func TestArrowRoundTripI32(t *testing.T) {
 }
 
 func TestArrowRoundTripFloat(t *testing.T) {
-	src := "[stats :table[v:float]\n  0.0\n  -1.5\n  3.14159\n  1e100\n]"
+	src := "[stats [table[v::float]]\n  0.0\n  -1.5\n  3.14159\n  1e100\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -201,7 +201,7 @@ func TestArrowRoundTripFloat(t *testing.T) {
 }
 
 func TestArrowRoundTripBool(t *testing.T) {
-	src := "[flags :table[v:bool]\n  true\n  false\n  true\n  false\n]"
+	src := "[flags [table[v::bool]]\n  true\n  false\n  true\n  false\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -218,7 +218,7 @@ func TestArrowRoundTripBool(t *testing.T) {
 }
 
 func TestArrowRoundTripString(t *testing.T) {
-	src := "[names :table[v:string]\n  alice\n  bob\n  carol\n  unicode-é-é-ñ\n]"
+	src := "[names [table[v::string]]\n  alice\n  bob\n  carol\n  unicode-é-é-ñ\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -235,7 +235,7 @@ func TestArrowRoundTripString(t *testing.T) {
 }
 
 func TestArrowRoundTripDate(t *testing.T) {
-	src := "[evts :table[when:date]\n  2026-05-09\n  1970-01-01\n  9999-12-31\n  1900-01-01\n]"
+	src := "[evts [table[when::date]]\n  2026-05-09\n  1970-01-01\n  9999-12-31\n  1900-01-01\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -257,7 +257,7 @@ func TestArrowRoundTripDate(t *testing.T) {
 }
 
 func TestArrowRoundTripBytes(t *testing.T) {
-	src := "[blobs :table[name:string blob:bytes]\n  alpha \"A1B2\"\n  beta \"FF00DE\"\n  empty \"\"\n]"
+	src := "[blobs [table[name::string blob::bytes]]\n  alpha \"A1B2\"\n  beta \"FF00DE\"\n  empty \"\"\n]"
 	payload, err := ToDataBinChunked(src)
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
@@ -289,7 +289,7 @@ func TestArrowRoundTripBytes(t *testing.T) {
 }
 
 func TestArrowRoundTripDatetime(t *testing.T) {
-	src := "[evts :table[when:datetime]\n" +
+	src := "[evts [table[when::datetime]]\n" +
 		"  2024-01-15T12:34:56Z\n" +
 		"  2025-06-30T23:00:00+02:00\n" +
 		"  1970-01-01T00:00:00Z\n" +
@@ -311,7 +311,7 @@ func TestArrowRoundTripDatetime(t *testing.T) {
 	}
 
 	col := recs[0].Column(0).(*array.Timestamp)
-	// CXDB strict-canonical normalizes offsets to UTC on the wire, so the
+	// CXCol strict-canonical normalizes offsets to UTC on the wire, so the
 	// +02:00 row arrives as 21:00:00 UTC.
 	want := []time.Time{
 		time.Date(2024, 1, 15, 12, 34, 56, 0, time.UTC),
@@ -326,7 +326,7 @@ func TestArrowRoundTripDatetime(t *testing.T) {
 		}
 	}
 
-	// Inverse: arrow → CXDB → arrow round-trip preserves equality.
+	// Inverse: arrow → CXCol → arrow round-trip preserves equality.
 	rdr2, err := ArrowExport(payload)
 	if err != nil {
 		t.Fatalf("ArrowExport (for inverse): %v", err)
@@ -346,8 +346,8 @@ func TestArrowRoundTripDatetime(t *testing.T) {
 }
 
 func TestArrowInverseFromGoBuiltTable(t *testing.T) {
-	// Build an Arrow record directly (no CXDB starting point) and verify
-	// the inverse direction: arrow → CXDB → arrow re-decode → equality.
+	// Build an Arrow record directly (no CXCol starting point) and verify
+	// the inverse direction: arrow → CXCol → arrow re-decode → equality.
 	pool := memory.NewGoAllocator()
 	schema := arrow.NewSchema([]arrow.Field{
 		{Name: "name", Type: arrow.BinaryTypes.String},

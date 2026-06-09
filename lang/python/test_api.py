@@ -417,9 +417,9 @@ def test_parse_error_unclosed_bracket():
     except Exception:
         pass
 
-# `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+# `[=]` is no longer a parse error: it is an Array literal
 # containing Text("="); commit 72effe38 finalized this at the top-level
-# CXL parser. No syntactic surface for the old "empty element name"
+# program parser. No syntactic surface for the old "empty element name"
 # diagnostic remains.
 
 def test_parse_error_nested_unclosed():
@@ -470,8 +470,11 @@ def test_parse_xml():
     assert child is not None
 
 def test_parse_json_to_document():
+    # JSON imports LOSSLESS (conversions.md §4.1): a JSON object becomes a cx
+    # MAP, not synthesized elements — so 'server' is a map key (find_first, an
+    # element search, returns None) and the doc round-trips to the map form.
     doc = cxlib.parse_json('{"server": {"port": 8080}}')
-    assert doc.find_first('server') is not None
+    assert doc.to_cx() == '{server: {port: 8080}}'
 
 def test_parse_yaml_to_document():
     doc = cxlib.parse_yaml('server:\n  port: 8080\n')

@@ -1,6 +1,6 @@
 //! Parquet read/write bridge for cxlib (X-row / v0.7.0).
 //!
-//! Per ADR 0015 D11, Parquet lives at the binding layer. This module
+//! Parquet lives at the binding layer. This module
 //! composes the existing `cxlib::arrow` surface with the `parquet`
 //! crate's arrow-bridge writers/readers so a Rust user can do one
 //! call CX <-> Parquet without pulling Parquet C++ into libcx.
@@ -37,7 +37,7 @@ impl Default for WriteOptions {
     }
 }
 
-/// Write framed CXDB chunked-table bytes to a Parquet file.
+/// Write framed CXCol chunked-table bytes to a Parquet file.
 ///
 /// Composes `cxlib::arrow::export` -> RecordReader -> Parquet via the
 /// `parquet` crate's `ArrowWriter`.
@@ -68,11 +68,11 @@ pub fn write_file<P: AsRef<Path>>(
     Ok(())
 }
 
-/// Read a Parquet file and return the framed CXDB chunked-table bytes.
+/// Read a Parquet file and return the framed CXCol chunked-table bytes.
 ///
 /// Composes `parquet`'s `ParquetRecordBatchReaderBuilder` with
 /// `cxlib::arrow::import_to_data_bin`. The returned bytes are framed
-/// (`[u32 LE size][CXDB payload]`) and feed directly into
+/// (`[u32 LE size][CXCol payload]`) and feed directly into
 /// `cxlib::from_data_bin` or the streaming-table reader.
 pub fn read_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, String> {
     let file = File::open(path.as_ref())

@@ -3,7 +3,7 @@
 Round-trip tests for the Python data_bin one-shot wrappers
 (Phase 7.28 V core; Phase 7.30 Python binding).
 
-Each test exercises a per-format loader (text → CXDB v1 framed bytes)
+Each test exercises a per-format loader (text → CXCol v1 framed bytes)
 and the symmetric dumper (framed bytes → text) using the new
 xml_to_data_bin / json_to_data_bin / etc. and their reverses.
 
@@ -35,10 +35,10 @@ def test_xml_to_data_bin_returns_framed_bytes():
     framed = cxlib.xml_to_data_bin('<server><host>localhost</host><port>8080</port></server>')
     assert isinstance(framed, bytes)
     assert len(framed) > 8
-    # Frame: [u32 LE size][CXDB ...]
+    # Frame: [u32 LE size][CXCol ...]
     size = int.from_bytes(framed[:4], 'little')
     assert len(framed) == 4 + size
-    assert framed[4:8] == b'CXDB'
+    assert framed[4:9] == b'CXCol'
 
 def test_xml_round_trip_through_data_bin():
     src = '<server><host>localhost</host><port>8080</port></server>'
@@ -75,15 +75,6 @@ def test_toml_round_trip_through_data_bin():
     framed = cxlib.toml_to_data_bin(src)
     out = cxlib.data_bin_to_toml(framed)
     assert 'alice' in out
-
-
-# ── Markdown one-shot ────────────────────────────────────────────────────────
-
-def test_md_round_trip_through_data_bin():
-    src = '# Title\n\nA paragraph.\n'
-    framed = cxlib.md_to_data_bin(src)
-    out = cxlib.data_bin_to_md(framed)
-    assert 'Title' in out
 
 
 # ── Cross-format compositions ────────────────────────────────────────────────

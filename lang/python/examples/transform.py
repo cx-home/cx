@@ -105,24 +105,13 @@ print(cxlib.to_json(read('vcore.cx')))
 section('vcore.cx  →  XML  (cx:type annotations; cx:block for block content)')
 print(cxlib.to_xml(read('vcore.cx')))
 
-# ── doc.cx: MD dialect document ───────────────────────────────────────────────
+# ── doc.cx: structured document ───────────────────────────────────────────────
 
 section('doc.cx  (source)')
 print(read('doc.cx'))
 
-section('doc.cx  →  Markdown')
-print(cxlib.to_md(read('doc.cx')))
-
 section('doc.cx  →  XML')
 print(cxlib.to_xml(read('doc.cx')))
-
-# ── doc.md: Markdown → CX ────────────────────────────────────────────────────
-
-section('doc.md  (source)')
-print(read('doc.md'))
-
-section('doc.md  →  CX')
-print(cxlib.md_to_cx(read('doc.md')))
 
 # ── Document API: parse, navigate, mutate ────────────────────────────────────
 
@@ -170,13 +159,10 @@ print(cxlib.to_xml(read('chapter.cx')))
 section('chapter.cx  →  JSON  (nested sections as nested objects)')
 print(cxlib.to_json(read('chapter.cx')))
 
-# ── post.cx: Markdown-style blog post ─────────────────────────────────────────
+# ── post.cx: blog post ────────────────────────────────────────────────────────
 
 section('post.cx  (source)')
 print(read('post.cx'))
-
-section('post.cx  →  Markdown  (CX markdown dialect → rendered Markdown)')
-print(cxlib.to_md(read('post.cx')))
 
 section('post.cx  →  CX  (canonical)')
 print(cxlib.to_cx(read('post.cx')))

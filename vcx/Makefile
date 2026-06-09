@@ -36,24 +36,25 @@ LIB_ARROW := $(TARGET)/$(LIB_ARROW_NAME)
 # -fwrapv: defined integer overflow semantics (matches -prod behaviour)
 PROD_CFLAGS := -Os -DNDEBUG -DNO_DEBUGGING -fwrapv
 
-CONFORMANCE_CORE := ../conformance/core.txt
-CONFORMANCE_EXT  := ../conformance/extended.txt
-CONFORMANCE_XML  := ../conformance/xml.txt
-CONFORMANCE_MD   := ../conformance/md.txt
-CONFORMANCE_DIFF := ../conformance/diff.txt
-CONFORMANCE_LINT := ../conformance/lint.txt
-CONFORMANCE_NS       := ../conformance/namespaces.txt
-CONFORMANCE_TABLE    := ../conformance/table.txt
-CONFORMANCE_IDENTITY := ../conformance/identity.txt
-CONFORMANCE_DELIMITED := ../conformance/delimited.txt
-CONFORMANCE_DATA_BIN_CHUNKED  := ../conformance/data_bin_chunked.txt
-CONFORMANCE_DATA_BIN_COMPRESS := ../conformance/data_bin_compression.txt
-CONFORMANCE_DATA_BIN_SCHEMA   := ../conformance/data_bin_schema_driven.txt
-CONFORMANCE_DATA_BIN_ARROW    := ../conformance/data_bin_arrow.txt
-CONFORMANCE_SCHEMA_VALIDATE   := ../conformance/schema_validate.txt
-CONFORMANCE_EVAL              := ../conformance/eval.txt
+CONFORMANCE_CORE := ../conformance/core.cxd
+CONFORMANCE_EXT  := ../conformance/extended.cxd
+CONFORMANCE_XML  := ../conformance/xml.cxd
+CONFORMANCE_MD   := ../conformance/md.cxd
+CONFORMANCE_DIFF := ../conformance/diff.cxd
+CONFORMANCE_LINT := ../conformance/lint.cxd
+CONFORMANCE_NS       := ../conformance/namespaces.cxd
+CONFORMANCE_TABLE    := ../conformance/table.cxd
+CONFORMANCE_IDENTITY := ../conformance/identity.cxd
+# v0.8.0: atom scalar kind.
+CONFORMANCE_ATOMS    := ../conformance/atoms.cxd
+CONFORMANCE_DELIMITED := ../conformance/delimited.cxd
+CONFORMANCE_DATA_BIN_CHUNKED  := ../conformance/data_bin_chunked.cxd
+CONFORMANCE_DATA_BIN_COMPRESS := ../conformance/data_bin_compression.cxd
+CONFORMANCE_DATA_BIN_SCHEMA   := ../conformance/data_bin_schema_driven.cxd
+CONFORMANCE_DATA_BIN_ARROW    := ../conformance/data_bin_arrow.cxd
+CONFORMANCE_SCHEMA_VALIDATE   := ../conformance/schema_validate.cxd
 
-.PHONY: all build lib lib-dev lib-arrow lib-arrow-dev re2-shim cli conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-eval clean
+.PHONY: all build build-dev lib lib-dev lib-arrow lib-arrow-dev re2-shim cli cli-dev conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate clean
 
 # ── Targets ───────────────────────────────────────────────────────────────────
 
@@ -61,11 +62,16 @@ all: build
 
 build: re2-shim lib cli
 
+# Unoptimised dev build (lib + cli without -prod/-Os). Functionally
+# identical for testing; compiles much faster. The test path uses this;
+# the shipped binary uses `build`.
+build-dev: re2-shim lib-dev cli-dev
+
 # ── RE2 shim (Phase 7.74c-schema-validator-v-core) ───────────────────────────
 # Compiles the C++ wrapper at vcx/deps/re2_shim/re2_shim.cc into a
 # static archive that libcx + cli link against. RE2 itself is a system
-# dep (Homebrew `re2` on macOS, `libre2-dev` on Debian/Ubuntu) at
-# v0.6.0; submodule-pinned RE2 source ships post-tag for full
+# dep (Homebrew `re2` on macOS, `libre2-dev` on Debian/Ubuntu);
+# submodule-pinned RE2 source ships post-tag for full
 # determinism. See spec/abi.md §3 capability bit 25 +
 # spec/schema.md §7 for the centralisation rationale.
 
@@ -96,35 +102,54 @@ $(TARGET):
 # when using a system V without the patches. Detected by checking for
 # our patched-V marker file.
 PROD_FLAGS := $(if $(wildcard $(CURDIR)/../third_party/v/v),-prod,)
+# Quiet the V compiler's informational notices (-n) and warnings (-w) from the
+# build output — they're benign (unused stub params, signed-shift notices) and
+# drown the real signal. Override with `make VQUIET= …` to see them.
+VQUIET ?= -n -w
+# Build target = vcx/code/. The code module imports cx, so every
+# cx_* export from vcx/cx/cabi.v ships in the same libcx — plus the
+# v0.8.0 cx_code_eval* family exported from vcx/code/cabi.v
+# (Phase 3.11). Building from vcx/cx/ in isolation would leave the
+# code-eval family out of the shared library.
 lib: re2-shim $(TARGET)
-	$(V) $(PROD_FLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) cx/
+	$(V) $(VQUIET) $(PROD_FLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) code/
 	$(STRIP) $(LIB)
 
 # Unoptimised build for local development (faster compile, debuggable)
 lib-dev: re2-shim $(TARGET)
-	$(V) -shared -o $(LIB) cx/
+	$(V) $(VQUIET) -shared -o $(LIB) code/
 
-# Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
-# 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
+# Optional Apache Arrow C-Data interop library (libcx_arrow per
+# spec/abi.md §2.11). Separate from libcx; bindings dlopen
 # this library independently. Capability bit 23 (0x800000) is
 # advertised via libcx_arrow's own cx_arrow_features symbol — libcx
 # itself does not set bit 23. Module-level state requires
 # -enable-globals.
 lib-arrow: $(TARGET)
-	$(V) -enable-globals -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
+	$(V) $(VQUIET) -enable-globals -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
 	$(STRIP) $(LIB_ARROW)
 
 lib-arrow-dev: $(TARGET)
-	$(V) -enable-globals -shared -o $(LIB_ARROW) arrow/
+	$(V) $(VQUIET) -enable-globals -shared -o $(LIB_ARROW) arrow/
 
-# CLI binary — production
+# CLI binary — size-optimized (-Os via PROD_CFLAGS), NOT V `-prod`. `-prod`
+# turns warnings into errors, and the cmd/ semantic-token legend carries
+# intentionally-unset constants (e.g. tt_property — a protocol index slot, not
+# dead code, so it can't be removed without shifting the legend). The heavy
+# logic ships -prod in libcx; the cli is a thin dispatch layer, so -Os is the
+# right trade. (To enable -prod cli later: reference the legend slots so V
+# doesn't flag them, then add $(PROD_FLAGS) here.)
 cli: re2-shim $(TARGET)
-	$(V) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
+	$(V) $(VQUIET) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
 	$(STRIP) $(CLI)
+
+# CLI binary — unoptimised dev build (faster compile, debuggable, unstripped)
+cli-dev: re2-shim $(TARGET)
+	$(V) $(VQUIET) -o $(CLI) cmd/
 
 # ── Conformance ───────────────────────────────────────────────────────────────
 
-conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint conform-eval
+conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint
 
 conform-core:
 	@echo "── core.txt ──────────────────────────────────────────────────────────"
@@ -147,8 +172,8 @@ conform-ns:
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_NS)
 
 conform-ns-cxpath:
-	@echo "── ns_cxpath/cxpath_test.v ───────────────────────────────────────────"
-	$(V) test tests/ns_cxpath/cxpath_test.v
+	@echo "── cxpath conformance (v08_cxpath_*_test.v) ──────────────────────────"
+	$(V) test tests/v08_cxpath_dispatcher_test.v tests/v08_cxpath_forward_test.v tests/v08_cxpath_reverse_test.v tests/v08_cxpath_misc_test.v
 
 conform-table:
 	@echo "── table.txt ─────────────────────────────────────────────────────────"
@@ -157,6 +182,11 @@ conform-table:
 conform-identity:
 	@echo "── identity.txt ──────────────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_IDENTITY)
+
+# v0.8.0: atom scalar kind suite.
+conform-atoms:
+	@echo "── atoms.txt ─────────────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_ATOMS)
 
 conform-delimited:
 	@echo "── delimited.txt ─────────────────────────────────────────────────────"
@@ -189,10 +219,6 @@ conform-diff:
 conform-lint:
 	@echo "── lint.txt ──────────────────────────────────────────────────────────"
 	$(V) run tests/runners/diff_lint/diff_lint_conform.v lint $(CONFORMANCE_LINT)
-
-conform-eval:
-	@echo "── eval.txt ──────────────────────────────────────────────────────────"
-	$(V) run tests/runners/eval/eval_conform.v $(CONFORMANCE_EVAL)
 
 conform-all:
 	@echo "── all suites ────────────────────────────────────────────────────────"

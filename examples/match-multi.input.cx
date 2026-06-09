@@ -1,0 +1,34 @@
+[# Sample document for match-multi.cx — feeds the document-driven
+   match sections (element-shape dispatch, scalar-status patterns,
+   age buckets, event handlers, request routing, CXPath patterns).
+   Run:
+     cx eval examples/match-multi.cx --data=examples/match-multi.input.cx #]
+
+[doc
+  [things
+    [thing [user id=1]]
+    [thing [group id='ops']]
+    [thing [service id='api']]
+    [thing [widget id='w1']]]
+
+  [requests
+    [request method='GET'  path='/users' status=200]
+    [request method='POST' path='/users' status=201 [body name='ada']]
+    [request method='DELETE' path='/users/1' status=204]
+    [request method='GET'  path='/missing' status=404]
+    [request method='GET'  path='/forbidden' status=403]]
+
+  [users
+    [user name='kid'  age=12]
+    [user name='ada'  age=34]
+    [user name='nan'  age=71]
+    [user name='root' age=40 admin=true]]
+
+  [events
+    [click x=10 y=20]
+    [keypress key='Enter']
+    [scroll delta=150]
+    [scroll delta=20]
+    [resize w=800]]
+
+  [clock hour=9]]

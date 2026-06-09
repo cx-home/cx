@@ -1,0 +1,536 @@
+[# scripts/gen_guide/guide_build.cx — the CX-native guide build driver.
+
+   Replaces scaffold.sh + the _*.py helpers. ONE cx program reads
+   docs-src/canonical/ and emits the multi-page site at docs/guide/ —
+   render = .cx, dogfooded end to end (codec.md §1 in-memory pipeline:
+   read → [$cx:parse] → transform → [$xml:emit] → [$io:write-file], no
+   subprocess, no Python).
+
+   Run: cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+   (the Makefile `guide` target builds the binary + passes the grants).
+
+   Pipeline per section:
+     1. read sections/NN-slug.cxd, [$cx:parse] → DocumentNode
+     2. //section → the section element; render its children into an
+        HTML-shaped CX tree (h1 + blocks + nested child sections)
+     3. [$xml:emit] → HTML fragment; post-process (strip the empty-name
+        <>/</> sequence wrappers [$xml:emit] puts around [?for] bodies,
+        rewrite <code lang="X"> → class="language-X")
+     4. wrap with chrome (sidebar nav + head + scripts) → write <slug>.html
+
+   Section metadata (number, slug, title) comes straight from each
+   section file's own [section n= id= title=] header — no separate
+   manifest parse needed; glob order is the reading order. #]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/cx']
+[?lib 'cx-stdlib/xml']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/format']
+[?lib 'cx-stdlib/json']
+[?lib 'cx-stdlib/re']
+[?lib 'cx-stdlib/fp']
+
+[# ── string helpers ──────────────────────────────────────────────────── #]
+
+[# cat: join string parts with no separator. #]
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+
+[# slug-of: '…/sections/02-data-language.cxd' → 'data-language'
+   (basename, strip NN- prefix + .cxd). #]
+[?def slug-of scope=public ($f)
+  [?let [= $b [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]]]
+        [= $i [$strings:find $b '-']]
+    [$strings:replace [$strings:slice $b [+ $i 1] [$strings:length $b]] '.cxd' '']]]
+
+[# post-body: clean an [$xml:emit] fragment.
+   - strip the empty-name <>/</> wrappers [$xml:emit] emits around a
+     [?for]/yield sequence in body position (structural noise, the
+     in-program analogue of the old cx --xml <__cx_seq__> wrapper);
+   - rewrite <code lang="X"> → <code class="language-X"> for highlight.js. #]
+[?def post-body scope=public ($h)
+  [$strings:replace
+    [$strings:replace
+      [$strings:replace $h '</>' '']
+      '<>' '']
+    '<code lang="' '<code class="language-']]
+
+[# ── per-section render (recursive) ─────────────────────────────────────
+   render-section renders a [section] element to an HTML fragment string;
+   render-block dispatches one content block, recursing into nested [child]
+   subsections (h2…h6 by depth). Prose blocks (intro/body/note) are RETAGGED
+   in place with [?modify … [rename …]] so mixed inline content survives.
+   Children emit into their container's body via [?for]/[yield] — the empty
+   <>/</> sequence wrappers are stripped by post-body. #]
+[?def heading scope=public ($depth $title)
+  [?if [<= $depth 2] [then [h2 $title]]
+    [else [?if [= $depth 3] [then [h3 $title]]
+      [else [?if [= $depth 4] [then [h4 $title]]
+        [else [?if [= $depth 5] [then [h5 $title]] [else [h6 $title]]]]]]]]]]
+[?def render-block scope=public impure ($c $depth)
+  [?match $c
+    [case [intro] [?modify $c //intro [rename p]]]
+    [case [body]  [?modify $c //body  [rename p]]]
+    [case [note]  [?modify $c //note  [set-attr class 'note'] [rename p]]]
+    [case [output $t] [pre class="sample-output" [code $t]]]
+    [case [example $code] [pre [code lang=$c@lang $code]]]
+    [case [list]
+      [ul [?for [in $i $c/*] [yield
+        [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
+    [case [table]
+      [table [?for [in $r $c/*] [yield $r]]]]
+    [case [child]
+      [section id=$c@id
+        [$heading $depth $c@title]
+        [?for [in $k $c/*] [yield [$render-block $k [+ $depth 1]]]]]]
+    [else [p class="unhandled" "[unhandled directive]"]]]]
+[?def render-section scope=public impure ($s)
+  [$post-body [$xml:emit
+    [section id=$s@id
+      [h1 $s@title]
+      [?for [in $c $s/*] [yield [$render-block $c 2]]]]]]]
+[?def render-doc scope=public impure ($doc)
+  [$render-section $doc//section]]
+
+[# ── chrome ──────────────────────────────────────────────────────────── #]
+
+[# nav-link: one <li>. The section-number span shows only for a non-empty
+   numeric n (guide sections); stdlib/xap pages pass n='' (bare title). #]
+[?def nav-link scope=public ($slug $title $n $active)
+  [$cat ('    <li><a',
+         [?if [= $slug $active] [then ' class="active"'] [else '']],
+         ' href="', $slug, '.html">',
+         [?if [= $n ''] [then '']
+           [else [$cat ('<span class="sec-n">', [$format:compact $n], '</span> ')]]],
+         $title, '</a></li>\n')]]
+[?def nav-item scope=public ($m $active) [$nav-link $m@slug $m@title $m@n $active]]
+
+[# nav-section: wrap a group's <li> html in a titled <section>, or '' if empty. #]
+[?def nav-section scope=public ($title $items)
+  [?if [= $items ''] [then '']
+    [else [$cat ('  <section><h4>', $title, '</h4><ul>\n', $items, '  </ul></section>\n')]]]]
+
+[# group item builders — each iterates ONE source exactly once (combining
+   for-results into a single sequence nests them, so we never do that). #]
+[?def guide-nav-items scope=public ($metas $active)
+  [$strings:join [?for [in $m $metas] [yield [$nav-item $m $active]]] '']]
+[?def lib-nav-items scope=public ($libfiles $active)
+  [$cat ([$nav-link 'libraries' 'Overview' '' $active],
+         [$strings:join [?for [in $f $libfiles] [yield
+           [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] ''])]]
+[?def xap-nav-items scope=public ($active)
+  [$cat ([$nav-link 'xap' 'Overview' '' $active],
+         [$strings:join [?for [in $d [$xap-demos]] [yield
+           [$nav-link $d@slug $d@title '' $active]]] ''])]]
+[# ref-nav-items: the two reference pages (directives + core syntax). #]
+[?def ref-nav-items scope=public ($active)
+  [$cat ([$nav-link 'directives' 'Directives' '' $active],
+         [$nav-link 'syntax' 'Core syntax' '' $active])]]
+
+[# nav-html: the sidebar <aside> — one group per top-level area. #]
+[?def nav-html scope=public ($metas $libfiles $active)
+  [$cat (
+    '<aside class="sidebar">\n',
+    '  <a class="brand" href="index.html" aria-label="CX — home">\n',
+    '    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />\n',
+    '  </a>\n',
+    '  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>\n',
+    '  <a class="brand-sub" href="playground.html">Playground →</a>\n',
+    '  <a class="brand-sub" href="about.html">About →</a>\n',
+    '  <div class="side-search">\n',
+    '    <input id="side-search-input" type="search"\n',
+    '           placeholder="Search the guide…"\n',
+    '           autocomplete="off" spellcheck="false" data-prefix="" />\n',
+    '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
+    '  </div>\n',
+    [$nav-section 'Guide' [$guide-nav-items $metas $active]],
+    [$nav-section 'Reference' [$ref-nav-items $active]],
+    [$nav-section 'Standard library' [$lib-nav-items $libfiles $active]],
+    [$nav-section 'XAP' [$xap-nav-items $active]],
+    '</aside>\n')]]
+
+[# wrap-page: body fragment + chrome → full HTML document string. #]
+[?def wrap-page scope=public ($title $active $metas $libfiles $body)
+  [$cat (
+    '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
+    '<title>', $title, ' — CX Guide</title>\n',
+    '<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">\n',
+    '<link rel="stylesheet" href="style.css">\n</head>\n<body>\n',
+    [$nav-html $metas $libfiles $active],
+    '<main>\n', [$strings:trim-end-chars $body '\n'], '\n</main>\n',
+    '<script src="highlight/highlight.js" defer></script>\n',
+    '<script src="search-index.js" defer></script>\n',
+    '<script src="search/search.js" defer></script>\n',
+    '</body>\n</html>\n')]]
+
+[# ── [[anchor]] cross-reference resolution ───────────────────────────────
+   The manifest carries the TOC: each [section id= file=] and its nested
+   [child id=] entries. Section ids resolve to <slug>.html; child ids to
+   <slug>.html#<child-id> (slug = owning section's file slug). A reference
+   on its own page drops to a bare #fragment. Unknown [[name]] tokens become
+   a visible <span class="xref-unresolved">. #]
+
+[# anchor-href: target href for one reference, given the current page slug. #]
+[?def anchor-href scope=public ($cur $slug $frag $name)
+  [?let [= $base [?if [= $slug $cur] [then ''] [else [$cat ($slug, '.html')]]]]
+        [= $wf [?if [= $frag ''] [then $base] [else [$cat ($base, '#', $frag)]]]]
+    [?if [= $wf ''] [then [$cat ('#', $name)]] [else $wf]]]]
+
+[# anchor-sub: replace every [[name]] of one anchor with its <a> link. #]
+[?def anchor-sub scope=public ($acc $cur $a)
+  [$strings:replace $acc [$cat ('[[', $a@name, ']]')]
+    [$cat ('<a class="xref" href="', [$anchor-href $cur $a@slug $a@frag $a@name],
+           '">', $a@name, '</a>')]]]
+
+[# resolve-anchors: fold every known anchor into $body, then wrap any
+   remaining [[…]] token in the unresolved span. #]
+[?def resolve-anchors scope=public impure ($body $cur $sec $chl)
+  [$re:replace [$re:compile '\[\[[a-z][a-z0-9-]*\]\]']
+    [$fp:fold $chl
+      [$fp:fold $sec $body [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
+      [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
+    '<span class="xref-unresolved">$0</span>']]
+
+[# index-body: the landing page (docs/guide/index.html) body — title, lede,
+   grouped table of contents (reusing nav-group), source note. #]
+[?def index-body scope=public ($metas $libfiles)
+  [$cat (
+    '<h1>CX — The Data and Code Language</h1>\n',
+    '<p class="lede">A developer guide and reference for v0.8.0-dev.\n',
+    '   Bracket form for data, the same bracket form for code, one\n',
+    '   evaluator, one identity function.</p>\n',
+    '<section class="toc-groups"><h2>Table of contents</h2>\n',
+    [$nav-section 'Guide' [$guide-nav-items $metas '']],
+    [$nav-section 'Reference' [$ref-nav-items '']],
+    [$nav-section 'Standard library' [$lib-nav-items $libfiles '']],
+    [$nav-section 'XAP' [$xap-nav-items '']],
+    '</section>\n',
+    '<p class="note">\n',
+    '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',
+    '  the co-located docs in <code>stdlib/*.cx</code>. Built by\n',
+    '  <code>make guide</code>.\n',
+    '</p>\n')]]
+
+[# copy-if: copy $from → $to only when $from exists (optional assets:
+   playground bundle, wasm artifacts, png logo — present only after their
+   own build steps). #]
+[?def copy-if scope=public impure ($from $to)
+  [?if [$io:exists $from] [then [$io:copy $from $to]] [else ()]]]
+
+[# ── search index ─────────────────────────────────────────────────────────
+   Mirrors the old inline-Python builder: per rendered page, drop
+   aside/script/style, take the <h1> as the title, strip the rest to plain
+   text (entities unescaped, whitespace collapsed, capped at 4000 chars), and
+   emit window.CXSearchIndex = [{slug,title,summary,text}, …]. #]
+[?def strip-tags scope=public impure ($s) [$re:replace [$re:compile '<[^>]+>'] $s ' ']]
+[?def collapse-ws scope=public impure ($s) [$strings:trim [$re:replace [$re:compile '\s+'] $s ' ']]]
+[?def strip-blocks scope=public impure ($h)
+  [$re:replace [$re:compile '(?s)<style[^>]*>.*?</style>']
+    [$re:replace [$re:compile '(?s)<script[^>]*>.*?</script>']
+      [$re:replace [$re:compile '(?s)<aside[^>]*>.*?</aside>'] $h ' '] ' '] ' ']]
+[?def cap4000 scope=public ($s)
+  [?if [> [$strings:length $s] 4000] [then [$strings:slice $s 0 4000]] [else $s]]]
+[?def search-entry scope=public impure ($f)
+  [?let [= $slug [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.html' '']]
+        [= $clean [$strip-blocks [$io:read-file $f]]]
+        [= $h1pat [$re:compile '(?s)<h1[^>]*>(.*?)</h1>']]
+        [= $title [?if [$empty [$re:find-all $h1pat $clean]]
+          [then $slug]
+          [else [$collapse-ws [$strings:unescape-html [$strip-tags [$re:group [$re:find $h1pat $clean] 1]]]]]]]
+        [= $text [$cap4000 [$collapse-ws [$strings:unescape-html [$strip-tags $clean]]]]]
+    {slug: $slug, title: $title, summary: '', text: $text}]]
+
+[# ── section metadata ────────────────────────────────────────────────────
+   One [m group='Guide' n= slug= srcpath= title=] per hand-authored section
+   file (glob = reading order). README.cxd carries no [section] (skipped via
+   the empty check). The old generated 16-libraries.cxd is skipped — the
+   Standard-library group is now projected fresh from stdlib/*.cx below. #]
+[?def load-metas scope=public impure ($src)
+  [?for [in $f [$io:glob [$cat ($src, '/sections/*.cxd')]]] [yield
+    [?if [>= [$strings:find $f '16-libraries'] 0] [then ()] [else
+      [?let [= $d [$cx:parse [$io:read-file $f]]]
+            [= $s $d//section]
+        [?if [$empty $s] [then ()] [else
+          [m group='Guide' n=$s@n slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
+
+[# ── Standard-library projection ──────────────────────────────────────────
+   Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
+   (single source of truth; spec/02-inprogress/stdlib_colocated_docs.md) and
+   reshapes them into guide [section] trees — one page per module + a landing
+   index. Pure projection: read → [$cx:parse] → extract → reshape. #]
+
+[# stdlib-slug: 'stdlib/path.cx' → 'path'. #]
+[?def stdlib-slug scope=public ($f)
+  [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.cx' '']]
+
+[# pull a named text child out of an element (a child path auto-coerces
+   unreliably, so iterate + [?match]). #]
+[?def sig-of scope=public ($fd)
+  [$strings:join [?for [in $c $fd/*] [yield [?match $c [case [sig $t] $t] [else ()]]]] '']]
+[?def summary-of scope=public ($fd)
+  [$strings:join [?for [in $c $fd/*] [yield [?match $c [case [summary $t] $t] [else ()]]]] '']]
+[?def ex-part scope=public ($ex $tag)
+  [$strings:join [?for [in $c $ex/*] [yield
+    [?match $c [case [code $t]   [?if [= $tag 'code']   [then $t] [else ()]]]
+               [case [expect $t] [?if [= $tag 'expect'] [then $t] [else ()]]]
+               [else ()]]]] '']]
+
+[# module-scope: the [module-doc]/[scope] prose, or a fallback. #]
+[?def module-scope scope=public ($d)
+  [?let [= $md $d//module-doc]
+    [?if [$empty $md] [then 'Bundled cx-stdlib module.']
+      [else [$strings:join [?for [in $c $md/*] [yield
+        [?match $c [case [scope $t] $t] [else ()]]]] '']]]]]
+
+[# first-sentence: the lede for the module index. #]
+[?def first-sentence scope=public ($s)
+  [?let [= $i [$strings:find $s '. ']]
+    [?if [< $i 0] [then $s] [else [$strings:slice $s 0 [+ $i 1]]]]]]
+
+[# fn-html: one [fn-doc] → its HTML block (built directly so [$xml:emit]
+   spreads the per-example [?for]; a constructed guide-[section] navigated via
+   CXPath would collapse the for-result into one node). #]
+[?def fn-html scope=public ($m $fd)
+  [section id=[$cat ('fn-', $m, '-', $fd@name)] class="fn"
+    [h3 [$cat ($m, ':', $fd@name)]]
+    [p class="fn-sig" [code [$cat ('[$', $m, ':', $fd@name, ']  ', [$sig-of $fd])]]
+       [?let [= $s [$summary-of $fd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
+    [?for [in $ex $fd/example] [yield
+      [div class="example"
+        [pre [code lang=cx [$ex-part $ex 'code']]]
+        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+
+[# render-module: stdlib/<m>.cx → the module page body (HTML fragment). #]
+[?def render-module scope=public impure ($f)
+  [?let [= $m [$stdlib-slug $f]]
+        [= $d [$cx:parse [$io:read-file $f]]]
+        [= $fns $d//fn-doc]
+    [$post-body [$xml:emit
+      [section id=[$cat ('lib-', $m)]
+        [h1 $m]
+        [p class="lede" [$module-scope $d]]
+        [?if [$empty $fns]
+          [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
+          [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
+
+[# landing-row / render-landing: the Standard-library landing (module index). #]
+[?def landing-row scope=public impure ($f)
+  [?let [= $m [$stdlib-slug $f]] [= $d [$cx:parse [$io:read-file $f]]]
+    [li [a href=[$cat ('lib-', $m, '.html')] $m]
+        [$cat ('  —  ', [$first-sentence [$module-scope $d]])]]]]
+[?def render-landing scope=public impure ($files)
+  [$post-body [$xml:emit
+    [section id=libraries
+      [h1 'Standard library']
+      [p class="lede"
+        'The CX standard library ships bundled with the binary as the '
+        [code 'cx-stdlib/*'] ' sub-packages. Load one with '
+        [code "[?lib 'cx-stdlib/<module>']"] ' and call its functions as '
+        [code '[$<module>:<fn> …]']
+        '. Every contract, prose block, and runnable example is co-located with the function definitions in the bundle source — so these pages are generated straight from the shipped code and cannot drift from it.']
+      [ul class="module-index" [?for [in $f $files] [yield [$landing-row $f]]]]]]]]
+
+[# ── Reference projection ────────────────────────────────────────────────────
+   The directive + core-syntax reference is projected from the co-located
+   doc sources docs-src/canonical/reference/{directives,syntax}.cx — the
+   same single-source-of-truth pattern as the stdlib pages, but the source
+   is the §4.1 directive registry and the lexicon/grammar surface rather
+   than the bundled module code. Read → [$cx:parse] → select → reshape into
+   the HTML-shaped CX tree, [$xml:emit], post-body. The drift gate
+   scripts/gen_guide/directive_docs_check.cx keeps it honest. #]
+
+[# directive-html: one [directive-doc] → its HTML block. Mirrors fn-html
+   (built directly so [$xml:emit] spreads the per-example [?for]). #]
+[?def directive-html scope=public ($dd)
+  [section id=[$cat ('dir-', [$strings:replace $dd@name '?' ''])] class="fn"
+    [h3 [code $dd@name]]
+    [p class="fn-sig" [code [$sig-of $dd]]
+       [?let [= $s [$summary-of $dd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
+    [p class="note" [$cat ($dd@category, '  ·  ', $dd@spec)]]
+    [?for [in $ex $dd/example] [yield
+      [div class="example"
+        [pre [code lang=cx [$ex-part $ex 'code']]]
+        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+
+[# syntax-html: one [syntax-doc] → its HTML block (same shape as
+   directive-html, `kind` in place of category/spec). #]
+[?def syntax-html scope=public ($sd)
+  [section id=[$cat ('syn-', $sd@name)] class="fn"
+    [h3 [code $sd@name]]
+    [p class="fn-sig" [code [$sig-of $sd]]
+       [?let [= $s [$summary-of $sd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
+    [p class="note" [$cat ('Kind · ', $sd@kind)]]
+    [?for [in $ex $sd/example] [yield
+      [div class="example"
+        [pre [code lang=cx [$ex-part $ex 'code']]]
+        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+
+[# render-directive: reference/directives.cx → the directive-reference page
+   body (HTML fragment). Mirrors render-module. #]
+[?def render-directive scope=public impure ($f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+        [= $dds $d//directive-doc]
+    [$post-body [$xml:emit
+      [section id=directives
+        [h1 'Directive reference']
+        [p class="lede"
+          'Every directive in the closed v0.8.0 registry ('
+          [code 'spec/core/code.md'] ' §4.1) — the bracketed '
+          [code '[?…]'] ' forms that drive pattern dispatch, comprehensions, '
+          'binding, iterators, resilience, services, concurrency, and async. '
+          'Each entry is generated from the co-located reference source and, '
+          'where the conformance corpus backs it, carries a runnable example '
+          'pinned verbatim to a green fixture.']
+        [?for [in $dd $dds] [yield [$directive-html $dd]]]]]]]]
+
+[# render-syntax: reference/syntax.cx → the core-syntax page body. #]
+[?def render-syntax scope=public impure ($f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+        [= $sds $d//syntax-doc]
+    [$post-body [$xml:emit
+      [section id=syntax
+        [h1 'Core syntax']
+        [p class="lede"
+          'The CX surface syntax — the data / document layer specified in '
+          [code 'lexicon.ebnf'] ', ' [code 'grammar.ebnf'] ', and '
+          [code 'code.md'] ' §3 / ' [code 'cxdm.md'] '. Elements, attributes, '
+          'scalars and type annotations, atoms, anchors / merges / ids, '
+          'comments, raw and block content, entity references, namespaces, '
+          'and table literals. Each example shows a source snippet and its '
+          [code 'cx fmt'] ' canonical render, pinned verbatim to the data '
+          'conformance corpora.']
+        [?for [in $sd $sds] [yield [$syntax-html $sd]]]]]]]]
+
+[# ── XAP projection ─────────────────────────────────────────────────────────
+   XAP is its own major area: a landing (just enough to get familiar) + the
+   D1→D4 demo ladder. Each demo page embeds the demo's ACTUAL source and its
+   recorded expected-output, read at build time from
+   spec/03-approved/xap/demos/ — so the guide can't drift from the demos. #]
+
+[# xap-demos: the ordered demo ladder as data (literal sequence, iterated
+   once per use). file = the page's headline source; run = the command. #]
+[?def xap-demos scope=public ()
+  ([demo slug='xap-d1' dir='d1-greeting-cli' file='greeting.cx' run='cx greeting.cx'
+     title='D1 · Greeting CLI'
+     blurb='The smallest real XAP — a parameterized view rendered by a one-shot CLI, exercising only the pure component / surface / panel / render constructors. No journal, no bus, no socket.'],
+   [demo slug='xap-d2' dir='d2-guestbook-cli-tui' file='guestbook.cx' run='cx guestbook.cx'
+     title='D2 · Guestbook (the cascade)'
+     blurb='Adds state and one control: signs the guestbook twice — each committing once to the journal — then renders the surface from the resulting fold. This is the committed cascade (run / emit / state).'],
+   [demo slug='xap-d3' dir='d3-guestbook-web' file='serve.cx' run='cx --allow-net serve.cx'
+     title='D3 · Guestbook on the web'
+     blurb='Attaches a browser and a live terminal client to the SAME runtime: the surface materializes as HTML while a TUI rides an SSE feed of the same fold. Same capability, same intents, new media. [$xap:serve] holds GET /events open and pushes a frame on every committed intent.'],
+   [demo slug='xap-d4' dir='d4-guestbook-agent' file='agent.cx' run='cx agent.cx'
+     title='D4 · Guestbook + agent'
+     blurb='Adds an agent as a fourth peer alongside the human clients. It emits the SAME [do :sign …] intents (agent-parity); the dial — an authz delegation — governs how much it does on its own.'])]
+
+[# xap-demo-page: one demo dir → its page body (blurb · run · source · output). #]
+[?def xap-demo-page scope=public impure ($d)
+  [?let [= $base [$cat ('spec/03-approved/xap/demos/', $d@dir, '/')]]
+        [= $src [$io:read-file [$cat ($base, $d@file)]]]
+        [= $out [$io:read-file [$cat ($base, 'expected-output.txt')]]]
+    [$post-body [$xml:emit
+      [section id=$d@slug
+        [h1 $d@title]
+        [p class="lede" $d@blurb]
+        [h3 'Run it']
+        [pre [code lang=sh $d@run]]
+        [h3 [$cat ('Source — ', $d@file)]]
+        [pre [code lang=cx $src]]
+        [h3 'Expected output']
+        [pre class="sample-output" [code $out]]]]]]]
+
+[# xap-ladder-item: one <li> on the landing linking to a demo. #]
+[?def xap-ladder-item scope=public ($d)
+  [li [a href=[$cat ($d@slug, '.html')] $d@title] [$cat ('  —  ', $d@blurb)]]]
+
+[# xap-landing: the XAP overview page body. #]
+[?def xap-landing scope=public ()
+  [$post-body [$xml:emit
+    [section id=xap
+      [h1 'XAP — the experience layer']
+      [p class="lede"
+        'XAP is the experience layer at the top of the CX web stack. It composes the '
+        [code 'cx-stdlib'] ' primitives — '
+        [code 'bus'] ', ' [code 'journal'] ', ' [code 'authz'] ', ' [code 'session'] ', '
+        [code 'sched'] ', over ' [code 'http'] ' — into one orchestrator, so you build a '
+        'capability once and surface it through many clients (CLI, TUI, web, agent) without rewriting it.']
+      [h3 'The cascade']
+      [p 'Every intent commits through one synchronous, server-authoritative, journal-folded path. The bus is the single enforcement point: it calls the policy decision once, appends to the hash-chained journal, and re-folds state. A rejected intent is a value on the failure channel — not a crash. Reads are a deterministic fold over the log, always live and present.']
+      [h3 'Agent-parity']
+      [p 'Agents are first-class peers. They emit the same intents as humans and are gated by the same authz dial — a delegation you can attenuate, time-bound, or revoke. Surfaces are medium-agnostic, so the same capability renders for a terminal, a browser, or an agent.']
+      [h3 'Using it']
+      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. '
+         [code 'cx xap init <dir>'] ' scaffolds a project. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
+      [h3 'The demo ladder']
+      [ul [?for [in $d [$xap-demos]] [yield [$xap-ladder-item $d]]]]]]]]
+
+[# ── main: render every section page ─────────────────────────────────── #]
+[?let
+  [= $src 'docs-src/canonical']
+  [= $gen 'scripts/gen_guide']
+  [= $out 'docs/guide']
+  [= $metas [$load-metas $src]]
+  [= $libfiles [$io:glob 'stdlib/*.cx']]
+  [= $man [$cx:parse [$io:read-file [$cat ($src, '/manifest.cxd')]]]]
+  [= $sec-ancs [?for [in $s $man//section] [yield
+    [anc name=$s@id slug=[$slug-of $s@file] frag='']]]]
+  [= $child-ancs [$fp:flat-map $man//section [?fn ($s)
+    [?for [in $c $s//child] [yield
+      [anc name=$c@id slug=[$slug-of $s@file] frag=$c@id]]]]]]
+  (
+    [$io:make-dirs [$cat ($out, '/assets')]],
+    [$io:make-dirs [$cat ($out, '/highlight')]],
+    [$io:make-dirs [$cat ($out, '/search')]],
+    [$io:make-dirs [$cat ($out, '/playground')]],
+    [$io:copy [$cat ($gen, '/style.css')]              [$cat ($out, '/style.css')]],
+    [$io:copy [$cat ($gen, '/highlight/highlight.js')] [$cat ($out, '/highlight/highlight.js')]],
+    [$io:copy [$cat ($gen, '/search/search.js')]       [$cat ($out, '/search/search.js')]],
+    [$io:copy [$cat ($src, '/../assets/cx-logo.svg')]  [$cat ($out, '/assets/cx-logo.svg')]],
+    [$copy-if [$cat ($src, '/../assets/cx-logo.png')]  [$cat ($out, '/assets/cx-logo.png')]],
+    [$copy-if [$cat ($gen, '/playground/playground.js')]          [$cat ($out, '/playground/playground.js')]],
+    [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
+    [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
+    [$copy-if [$cat ($gen, '/playground/playground.html')] [$cat ($out, '/playground.html')]],
+    [$io:make-dirs [$cat ($out, '/wasm')]],
+    [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],
+    [$copy-if 'dist/wasm/libcx-async.js'      [$cat ($out, '/wasm/libcx-async.js')]],
+    [$copy-if 'dist/wasm/libcx-async.wasm'    [$cat ($out, '/wasm/libcx-async.wasm')]],
+    [$copy-if 'dist/wasm/libcx-pthreads.js'   [$cat ($out, '/wasm/libcx-pthreads.js')]],
+    [$copy-if 'dist/wasm/libcx-pthreads.wasm' [$cat ($out, '/wasm/libcx-pthreads.wasm')]],
+    [$copy-if 'dist/wasm/libcx.js'            [$cat ($out, '/wasm/libcx.js')]],
+    [$copy-if 'dist/wasm/libcx.wasm'          [$cat ($out, '/wasm/libcx.wasm')]],
+    [$io:write-file [$cat ($out, '/index.html')]
+      [$wrap-page 'CX Guide' 'index' $metas $libfiles [$index-body $metas $libfiles]]],
+    [$io:write-file [$cat ($out, '/about.html')]
+      [$wrap-page 'About' 'about' $metas $libfiles [$io:read-file [$cat ($src, '/about.html')]]]],
+    [?for [in $m $metas] [yield
+      [?let [= $doc [$cx:parse [$io:read-file $m@srcpath]]]
+            [= $raw [$render-doc $doc]]
+            [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
+            [= $page [$wrap-page $m@title $m@slug $metas $libfiles $body]]
+        [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
+    [$io:write-file [$cat ($out, '/libraries.html')]
+      [$wrap-page 'Standard library' 'libraries' $metas $libfiles
+        [$render-landing $libfiles]]],
+    [?for [in $f $libfiles] [yield
+      [?let [= $m [$stdlib-slug $f]]
+            [= $body [$render-module $f]]
+            [= $page [$wrap-page $m [$cat ('lib-', $m)] $metas $libfiles $body]]
+        [$io:write-file [$cat ($out, '/lib-', $m, '.html')] $page]]]],
+    [$io:write-file [$cat ($out, '/directives.html')]
+      [$wrap-page 'Directive reference' 'directives' $metas $libfiles
+        [$render-directive [$cat ($src, '/reference/directives.cx')]]]],
+    [$io:write-file [$cat ($out, '/syntax.html')]
+      [$wrap-page 'Core syntax' 'syntax' $metas $libfiles
+        [$render-syntax [$cat ($src, '/reference/syntax.cx')]]]],
+    [$io:write-file [$cat ($out, '/xap.html')]
+      [$wrap-page 'XAP' 'xap' $metas $libfiles [$xap-landing]]],
+    [?for [in $d [$xap-demos]] [yield
+      [?let [= $page [$wrap-page $d@title $d@slug $metas $libfiles [$xap-demo-page $d]]]
+        [$io:write-file [$cat ($out, '/', $d@slug, '.html')] $page]]]],
+    [$io:write-file [$cat ($out, '/search-index.js')]
+      [$cat ('window.CXSearchIndex = ',
+             [$json:emit [$fp:map [$io:glob [$cat ($out, '/*.html')]] [?fn ($f) [$search-entry $f]]]],
+             ';\n')]]
+  )]

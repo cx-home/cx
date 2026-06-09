@@ -19,12 +19,12 @@ fn reframe(payload: &[u8]) -> Vec<u8> {
 // ── XML one-shot ─────────────────────────────────────────────────────────────
 
 #[test]
-fn xml_to_data_bin_returns_cxdb_payload() {
+fn xml_to_data_bin_returns_cxcol_payload() {
     let payload = xml_to_data_bin("<server><host>localhost</host><port>8080</port></server>")
         .expect("xml_to_data_bin");
-    assert!(payload.len() > 4, "expected non-empty payload, got {} bytes", payload.len());
-    // Magic check
-    assert_eq!(&payload[..4], b"CXDB", "expected CXDB magic, got {:?}", &payload[..4]);
+    assert!(payload.len() > 5, "expected non-empty payload, got {} bytes", payload.len());
+    // Magic check — 5-byte "CXCol" per spec/core/data-bin.md §3.1 (v0.8.0).
+    assert_eq!(&payload[..5], b"CXCol", "expected CXCol magic, got {:?}", &payload[..5]);
 }
 
 #[test]
@@ -63,15 +63,6 @@ fn toml_round_trip_through_data_bin() {
     let payload = toml_to_data_bin("name = \"alice\"\nid = 1\n").expect("toml_to_data_bin");
     let out = data_bin_to_toml(&reframe(&payload)).expect("data_bin_to_toml");
     assert!(out.contains("alice"));
-}
-
-// ── Markdown one-shot ────────────────────────────────────────────────────────
-
-#[test]
-fn md_round_trip_through_data_bin() {
-    let payload = md_to_data_bin("# Title\n\nA paragraph.\n").expect("md_to_data_bin");
-    let out = data_bin_to_md(&reframe(&payload)).expect("data_bin_to_md");
-    assert!(out.contains("Title"));
 }
 
 // ── Cross-format compositions ────────────────────────────────────────────────

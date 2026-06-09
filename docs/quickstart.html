@@ -3,522 +3,722 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quickstart</title>
-<style>:root {
-  --bg: #fafaf7;
-  --fg: #1a1a1a;
-  --muted: #6b7280;
-  --accent: #1f6feb;
-  --border: #e6e6e0;
-
-  /* Dark code blocks for visual prominence */
-  --code-bg: #1f2430;
-  --code-fg: #e2e8f0;
-  --code-comment: #6b7280;
-  --code-keyword: #c4b5fd;
-  --code-string: #fde68a;
-  --code-border: #2a2f3d;
-  --code-label: #9aa3b0;
-
-  --side-bg: #f3f3ec;
-  --side-fg: #1a1a1a;
-  --side-muted: #6b7280;
-  --side-active: #1f6feb;
-}
-
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--fg);
-  background: var(--bg);
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: 100vh;
-}
-
-aside.sidebar {
-  background: var(--side-bg);
-  border-right: 1px solid var(--border);
-  padding: 1rem 0.85rem 2rem;
-  font-size: 12.5px;
-  line-height: 1.4;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-aside.sidebar .brand {
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.9rem;
-  color: var(--side-fg);
-  display: block;
-  text-decoration: none;
-}
-aside.sidebar .brand:hover { text-decoration: none; }
-
-aside.sidebar .brand-sub {
-  display: block;
-  font-size: 11.5px;
-  color: var(--side-muted);
-  text-decoration: none;
-  margin: 0 0 0.8rem;
-}
-aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
-
-/* Site search — input under the CX brand, results dropdown that
-   overlays the nav groups when active. Idle state is one slim
-   input; active state expands to show ranked hits. */
-.side-search {
-  position: relative;
-  margin: 0 0 0.9rem;
-}
-#side-search-input {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.32rem 0.55rem;
-  font-size: 12.5px;
-  font-family: inherit;
-  color: var(--side-fg);
-  background: var(--side-input-bg, rgba(255,255,255,0.06));
-  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
-  border-radius: 4px;
-  outline: none;
-  transition: border-color 0.12s ease, background-color 0.12s ease;
-}
-#side-search-input::placeholder { color: var(--side-muted); }
-#side-search-input:focus {
-  border-color: var(--accent, #5b8def);
-  background: var(--side-input-bg-focus, rgba(255,255,255,0.10));
-}
-.side-search-results {
-  list-style: none;
-  margin: 0.35rem 0 0;
-  padding: 0;
-  max-height: 60vh;
-  overflow-y: auto;
-  background: var(--side-bg);
-  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
-  border-radius: 4px;
-  font-size: 12px;
-}
-.side-search-results li { margin: 0; }
-.side-search-hit a {
-  display: block;
-  padding: 0.42rem 0.55rem;
-  color: var(--side-fg);
-  text-decoration: none;
-  border-bottom: 1px solid var(--side-input-border, rgba(255,255,255,0.06));
-}
-.side-search-hit:last-child a { border-bottom: 0; }
-.side-search-hit a:hover,
-.side-search-hit.is-active a {
-  background: var(--side-input-bg-focus, rgba(255,255,255,0.08));
-  color: var(--side-fg);
-  text-decoration: none;
-}
-.side-search-title {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.15rem;
-}
-.side-search-snip {
-  display: block;
-  font-size: 11px;
-  color: var(--side-muted);
-  line-height: 1.35;
-}
-.side-search-hit mark {
-  background: rgba(125, 211, 252, 0.30);
-  color: inherit;
-  padding: 0 1px;
-  border-radius: 2px;
-}
-.side-search-empty,
-.side-search-error {
-  padding: 0.5rem 0.6rem;
-  color: var(--side-muted);
-  font-size: 11.5px;
-}
-.side-search-error { color: #f87171; }
-
-aside.sidebar section { margin-bottom: 0.9rem; }
-aside.sidebar h4 {
-  font-size: 10.5px;
-  font-weight: 700;
-  margin: 0.6rem 0 0.25rem;
-  color: var(--side-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-aside.sidebar ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-aside.sidebar li { margin: 0; }
-aside.sidebar a {
-  display: block;
-  color: var(--side-fg);
-  text-decoration: none;
-  padding: 0.12rem 0.4rem;
-  border-radius: 3px;
-  margin-left: -0.4rem;
-}
-aside.sidebar a:hover {
-  background: rgba(0,0,0,0.05);
-  text-decoration: none;
-}
-aside.sidebar a.active {
-  background: var(--side-active);
-  color: white;
-  font-weight: 500;
-}
-
-main {
-  max-width: 760px;
-  padding: 1.5rem 2rem 3rem;
-  width: 100%;
-}
-
-h1, h2, h3, h4 {
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.35rem;
-}
-
-h2 {
-  font-size: 1rem;
-  margin: 1.1rem 0 0.25rem;
-  color: var(--fg);
-}
-
-h3 {
-  font-size: 0.9rem;
-  margin: 0.7rem 0 0.2rem;
-  color: var(--fg);
-}
-
-main > p:first-of-type {
-  color: var(--muted);
-  font-size: 0.95rem;
-  margin: 0 0 0.8rem;
-}
-
-p {
-  margin: 0.3rem 0;
-}
-
-ul, ol {
-  margin: 0.3rem 0;
-  padding-left: 1.2rem;
-}
-li { margin: 0.05rem 0; }
-
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-a:hover { text-decoration: underline; }
-
-code {
-  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.85em;
-  background: rgba(31, 36, 48, 0.08);
-  padding: 0.08em 0.3em;
-  border-radius: 3px;
-  color: #2d2f36;
-}
-
-pre {
-  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
-  background: var(--code-bg);
-  color: var(--code-fg);
-  border: 1px solid var(--code-border);
-  border-radius: 5px;
-  padding: 1.6rem 0.9rem 0.7rem;
-  margin: 0.45rem 0;
-  overflow-x: auto;
-  position: relative;
-  line-height: 1.45;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
-}
-
-pre code {
-  background: none;
-  padding: 0;
-  border-radius: 0;
-  font-size: inherit;
-  color: inherit;
-  display: block;
-}
-
-.lang-label {
-  position: absolute;
-  top: 0.4rem;
-  left: 0.85rem;
-  font-size: 10.5px;
-  color: var(--code-label);
-  font-family: inherit;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  user-select: none;
-}
-
-.copy-btn {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.4rem;
-  padding: 0.15rem 0.45rem;
-  font-size: 10.5px;
-  font-family: inherit;
-  color: var(--code-label);
-  background: transparent;
-  border: 1px solid var(--code-border);
-  border-radius: 3px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-pre:hover .copy-btn,
-pre:focus-within .copy-btn { opacity: 1; }
-.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
-.copy-btn.copied { color: #34d399; border-color: #34d399; }
-.copy-btn.failed { color: #f87171; border-color: #f87171; }
-
-/* Syntax highlighting palette — colours tuned against the dark
-   code-bg slate. Subtle: comments muted, strings warm yellow,
-   numbers/literals amber/violet, element names and directives in
-   cool blue/pink so CX bracket structure reads at a glance. */
-.hl-comment   { color: #7a8294; font-style: italic; }
-.hl-string    { color: #fbbf77; }
-.hl-number    { color: #f59e0b; }
-.hl-literal   { color: #c4b5fd; }
-.hl-keyword   { color: #f87171; }
-.hl-element   { color: #7dd3fc; }
-.hl-directive { color: #f9a8d4; }
-.hl-sigil     { color: #fcd34d; }
-.hl-type      { color: #a5b4fc; }
-.hl-attr      { color: #86efac; }
-.hl-fn        { color: #93c5fd; }
-
-table {
-  border-collapse: collapse;
-  margin: 0.6rem 0;
-  font-size: 13px;
-  line-height: 1.4;
-  width: 100%;
-}
-th, td {
-  border: 1px solid var(--border);
-  padding: 0.3rem 0.55rem;
-  text-align: left;
-  vertical-align: top;
-}
-thead th {
-  background: var(--side-bg);
-  font-weight: 600;
-}
-tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.015);
-}
-td code {
-  font-size: 11.5px;
-  background: rgba(31, 36, 48, 0.06);
-}
-
-@media (max-width: 460px) {
-  body { grid-template-columns: 1fr; }
-  aside.sidebar {
-    position: static;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-  main { padding: 1rem 1.25rem 2rem; }
-}</style>
+<title>Quickstart — first 5 minutes with CX — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
-  <a class="brand" href="index.html">CX</a>
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
-    <input id="side-search-input" type="search" placeholder="Search the docs…" autocomplete="off" spellcheck="false" data-prefix="" />
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Get Started</h4><ul>
-    <li><a href="index.html">Overview</a></li>
-    <li><a href="install.html">Install</a></li>
-    <li><a class="active" href="quickstart.html">Quickstart</a></li>
-    </ul></section>
-  <section><h4>Learn</h4><ul>
-    <li><a href="tutorial.html">Tutorial</a></li>
-    <li><a href="playground.html">Playground</a></li>
-    </ul></section>
-  <section><h4>Examples</h4><ul>
-    <li><a href="tour/data.html">50 Ways to Love Your CX Data</a></li>
-    <li><a href="tour/programs.html">50 Ways to Love Your CXL Code</a></li>
-    <li><a href="cookbook.html">Cookbook</a></li>
-    <li><a href="showcase.html">Showcase</a></li>
-    </ul></section>
-  <section><h4>Concepts</h4><ul>
-    <li><a href="concepts/data-model.html">Data Model</a></li>
-    <li><a href="concepts/sigils.html">Sigils & Markup</a></li>
-    <li><a href="concepts/evaluation.html">Evaluation Model</a></li>
-    <li><a href="concepts/cxpath.html">CXPath</a></li>
-    <li><a href="concepts/identity.html">Identity & Canonical</a></li>
-    <li><a href="concepts/types.html">Types</a></li>
-    <li><a href="concepts/wasm.html">WebAssembly Target</a></li>
-    </ul></section>
+  <section><h4>Guide</h4><ul>
+    <li><a class="active" href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
   <section><h4>Reference</h4><ul>
-    <li><a href="reference/cli.html">CLI</a></li>
-    <li><a href="reference/cxl.html">CXL Language</a></li>
-    <li><a href="reference/cxpath.html">CXPath Functions</a></li>
-    <li><a href="reference/schemas.html">Schemas</a></li>
-    <li><a href="reference/tables.html">Tables</a></li>
-    <li><a href="reference/streaming.html">Streaming</a></li>
-    <li><a href="reference/includes.html">Includes</a></li>
-    <li><a href="reference/ast-bin.html">ast-bin Format</a></li>
-    <li><a href="reference/data-bin.html">data-bin / Arrow</a></li>
-    <li><a href="reference/grammar.html">Grammar (EBNF)</a></li>
-    <li><a href="reference/errors.html">Error Codes</a></li>
-    </ul></section>
-  <section><h4>Bindings</h4><ul>
-    <li><a href="bindings/index.html">Binding Catalog</a></li>
-    <li><a href="bindings/c-abi.html">C ABI</a></li>
-    <li><a href="bindings/v.html">V</a></li>
-    <li><a href="bindings/python.html">Python</a></li>
-    <li><a href="bindings/go.html">Go</a></li>
-    <li><a href="bindings/rust.html">Rust</a></li>
-    <li><a href="bindings/typescript.html">TypeScript</a></li>
-    <li><a href="bindings/java.html">Java</a></li>
-    <li><a href="bindings/csharp.html">C#</a></li>
-    <li><a href="bindings/ruby.html">Ruby</a></li>
-    <li><a href="bindings/kotlin.html">Kotlin</a></li>
-    <li><a href="bindings/swift.html">Swift</a></li>
-    </ul></section>
-  <section><h4>Tooling</h4><ul>
-    <li><a href="tooling/editors.html">Editors & LSP</a></li>
-    <li><a href="tooling/tree-sitter.html">Tree-sitter</a></li>
-    <li><a href="tooling/fuzzing.html">Fuzzing & Tests</a></li>
-    </ul></section>
-  <section><h4>Resources</h4><ul>
-    <li><a href="comparison.html">vs JSON, YAML, TOML, XML</a></li>
-    <li><a href="performance.html">Performance</a></li>
-    <li><a href="faq.html">FAQ</a></li>
-    <li><a href="release-notes.html">Release Notes</a></li>
-    </ul></section>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
 </aside>
 <main>
-<doc>
-  <h1>Quickstart</h1>
-  <p>Five minutes from cx installed to your first parse, emit, and evaluator run.</p>
-  <h2>Setup</h2>
-  <p>This page assumes cx is on your PATH already; if not, the Install page covers each platform. The rest of Quickstart is a five-minute hands-on session.</p>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx --version          # confirms the install
-mkdir cx-tour &amp;&amp; cd cx-tour</code></pre>
-  <h2>Write a Document</h2>
-  <p>Save the following as menu.cx. Read it top to bottom — name, attributes, body items, nested children, mixed content. No commas required between attrs; no closing tag to repeat.</p>
-<pre><span class="lang-label">cx</span><code class="language-cx">[shop name='New Haven Pizza' open=true
-  [hours mon-fri=11-22 sat=12-23 sun=closed]
-  [menu
-    [pizza #margherita size=large crust=thin  price=14.50]
-    [pizza #pepperoni  size=large crust=thick price=16.00]
-    [side  #salad      price=6.50]]]</code></pre>
-  <h2>Parse</h2>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx --ast menu.cx       # JSON view of the parsed tree
-cx --cx menu.cx        # canonical CX (attribute order normalised)</code></pre>
-  <p>The parse never returns a partial tree; a syntax error names the dialect, the byte offset, and the rule that failed.</p>
-  <h2>Emit to Another Format</h2>
-  <p>The same tree converts to any of the six dialects CX speaks. Try them.</p>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx --json menu.cx
-cx --xml  menu.cx
-cx --yaml menu.cx
-cx --toml menu.cx
-cx --md   menu.cx</code></pre>
-  <p>Each command writes the result to stdout. Round-trip via the binary form (cx --cxdb | cx --from=cxdb) is byte-stable; round-trip via JSON / YAML / TOML / XML / Markdown is data-equivalent, with presentation-level differences documented on the comparison page.</p>
-  <h2>Evaluate a CXL Template</h2>
-  <p>CXL is CX that does things. Save the following as receipt.cxl alongside menu.cx.</p>
-<pre><span class="lang-label">cx</span><code class="language-cx">[?for p :in //pizza :return [line [?= p/@name] - [?= p/@price] euros;]]</code></pre>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx eval receipt.cxl --data=menu.cx</code></pre>
-  <p>The result is one receipt line per pizza in the menu. The directive language uses CXPath to query the data; the Tour of 50 Programs walks through the full directive vocabulary.</p>
-  <h2>Compute the Canonical Hash</h2>
-<pre><span class="lang-label">shell</span><code class="language-shell">cx canonical menu.cx
-cx hash menu.cx
-cx eq menu.cx some-other-menu.cx</code></pre>
-  <p>The canonical form strips presentation comments attribute order anchor names whitespace and emits a data-equivalent byte-identical form. The hash is SHA-256 over those bytes. Two documents with the same data have the same hash — in any dialect, in any binding.</p>
-  <h2>Call CX From Your Language</h2>
-  <p>Every binding mirrors the CLI. Python by way of example:</p>
-<pre><span class="lang-label">python</span><code class="language-python">import cx
-tree = cx.parse(open("menu.cx").read())
-print(cx.emit(tree, to="json"))</code></pre>
-  <p>The Bindings pages cover Python, Go, Rust, V, TypeScript, Java, C-sharp, Ruby, Kotlin, and Swift — each idiomatic, all backed by the same libcx.</p>
-  <h2>Where to Next</h2>
-  <ul>
-    <li>
-      <a href="tutorial.html">Tutorial — guided walk-through, atoms to closures, with exercises</a>
-    </li>
-    <li>
-      <a href="tour/data.html">50 Ways to Love Your CX Data — short examples, simple to complex</a>
-    </li>
-    <li>
-      <a href="tour/programs.html">50 Ways to Love Your CXL Code — CXL snippets, simple to complex</a>
-    </li>
-    <li>
-      <a href="playground.html">Playground — try CX in the browser</a>
-    </li>
-    <li>
-      <a href="reference/cli.html">CLI reference</a>
-    </li>
-  </ul>
-</doc>
+<section id="quickstart">
+  <h1>Quickstart — first 5 minutes with CX</h1>
+  
+    <p>This is the shortest path from "I have never seen CX" to "I have
+       parsed, hashed, queried, and validated my first document, and
+       called CX from my host language." Eight steps, five minutes if
+       your toolchain is warm. If you only have time for one section,
+       read this one — then jump to <a class="xref" href="#next-steps">next-steps</a>.</p>
+    <section id="install">
+      <h2>Install</h2>
+      
+        <p>CX ships as a single statically-linked binary `cx` plus a
+         shared library `libcx` for host-language bindings. Pick one
+         install path:</p>
+        <p>**Homebrew (macOS, Linux).** The fastest route on a developer
+         laptop:</p>
+        <pre>
+          <code class="language-shell">brew install cx-lang/cx/cx
+         cx --version</code>
+        </pre>
+        <p>**Manual download.** Prebuilt binaries are published with each
+         tagged release on GitHub. Download the archive for your
+         platform, extract, and put `cx` on your `PATH`:</p>
+        <pre>
+          <code class="language-shell">curl -L https://github.com/cx-lang/cx/releases/download/v0.8.0/cx-darwin-arm64.tar.gz | tar xz
+         sudo mv cx /usr/local/bin/
+         cx --version</code>
+        </pre>
+        <p>**Build from source.** The reference build uses devbox to pin
+         the V toolchain and Python version. From a fresh clone of the
+         repository:</p>
+        <pre>
+          <code class="language-shell">devbox run -- make build
+         devbox run -- make install   [# installs to ~/.local/bin     #]
+         cx --version</code>
+        </pre>
+        <p>**Docker.** No host install required; useful for CI or quick
+         experimentation:</p>
+        <pre>
+          <code class="language-shell">docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx --version
+         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx eval</code>
+        </pre>
+        <p class="note">If `cx --version` prints `cx 0.8.0 (gNNNNNNN)` you are ready.
+         If you see `command not found`, your `PATH` does not include
+         the install location — see <a class="xref" href="faq.html">faq</a> for recovery steps.</p>
+      
+    </section>
+    <section id="hello-cx">
+      <h2>Hello, CX</h2>
+      
+        <p>Every interactive CX session starts the same way: pipe a CX
+         literal into `cx eval` and see what comes out.</p>
+        <pre>
+          <code class="language-shell">echo '[hello greeting="world"]' | cx eval</code>
+        </pre>
+        <p>The output is the same shape you typed:</p>
+        <pre>
+          <code class="language-cx">[hello greeting='world']</code>
+        </pre>
+        <p>Three things to notice. **First**, the value evaluated to
+         itself — data and code share one syntax, and a bare data
+         element is its own value (see <a class="xref" href="concepts.html#homoiconicity">homoiconicity</a>). **Second**,
+         the canonical form normalises double quotes to single
+         quotes; attribute order is preserved at parse time but
+         re-sorted lexicographically for hashing (see <a class="xref" href="identity.html#canonical">canonical</a>).
+         **Third**, no closing tag duplication — every CX element is a
+         single bracketed form. That is the whole syntax.</p>
+        <p>Try a tiny program too. The `[?for]` directive iterates and
+         yields:</p>
+        <pre>
+          <code class="language-shell">echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx eval</code>
+        </pre>
+        <pre>
+          <code class="language-cx">([n 1], [n 2], [n 3])</code>
+        </pre>
+      
+    </section>
+    <section id="first-file">
+      <h2>Your first file</h2>
+      
+        <p>Real CX work lives in files. Create `users.cx` with three
+         users:</p>
+        <pre>
+          <code class="language-cx">[users
+           [user id=1 email='ada@example.com'    active=true]
+           [user id=2 email='grace@example.com'  active=false]
+           [user id=3 email='linus@example.com'  active=true]]</code>
+        </pre>
+        <p>**Parse it** (round-trips through the canonicalizer; useful
+         as a syntax check):</p>
+        <pre>
+          <code class="language-shell">cx fmt users.cx              [# pretty-print, lossless       #]
+         cx canon users.cx            [# strict canonical bytes        #]</code>
+        </pre>
+        <p>**Hash it** — the SHA-256 of the strict canonical bytes is
+         the document's identity (see <a class="xref" href="identity.html#hash">hash</a>):</p>
+        <pre>
+          <code class="language-shell">cx hash users.cx
+         [# → 7f3a9b...c4e2  (64 hex chars)                            #]</code>
+        </pre>
+        <p>The hash is stable across machines, OS versions, and
+         bindings. Two documents with the same hash are
+         byte-identical in canonical form.</p>
+      
+    </section>
+    <section id="first-conversion">
+      <h2>Convert JSON ↔ CX</h2>
+      
+        <p>CX speaks JSON (and YAML, TOML, XML, Markdown) as
+         projections — every projection round-trips. Start from
+         JSON:</p>
+        <pre>
+          <code class="language-shell">cat > users.json <<'EOF'
+         {"users":[
+           {"id":1,"email":"ada@example.com","active":true},
+           {"id":2,"email":"grace@example.com","active":false}
+         ]}
+         EOF
+         cx convert --to cx users.json > users.cx</code>
+        </pre>
+        <p>`users.cx` now contains the CX projection of that JSON.
+         Convert back and verify the round-trip:</p>
+        <pre>
+          <code class="language-shell">cx convert --to json users.cx > users.roundtrip.json
+         diff <(jq -S . users.json) <(jq -S . users.roundtrip.json)
+         [# → no output: byte-identical after canonicalization        #]</code>
+        </pre>
+        <p>The hash is also stable through the round-trip — the CX form
+         of a JSON document and the round-tripped JSON form share the
+         same content hash, because hashing is computed on canonical
+         bytes (see <a class="xref" href="identity.html#canon-cross-format">canon-cross-format</a>).</p>
+      
+    </section>
+    <section id="first-selection">
+      <h2>Select with CXPath</h2>
+      
+        <p>CXPath is the universal selector — for reading, for
+         iteration, for update focus. Same vocabulary everywhere. The
+         simplest query asks: "which users are active?"</p>
+        <pre>
+          <code class="language-shell">cx eval --xpath '//user[@active=true]/@email' users.cx</code>
+        </pre>
+        <pre>
+          <code class="language-cx">('ada@example.com', 'linus@example.com')</code>
+        </pre>
+        <p>Read that as: "from anywhere in the document (`//`), find a
+         `user` element with `@active=true`, then take its `@email`
+         attribute." If you have written XPath, the alignment is
+         deliberate — see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)
+         for what carries over and what does not.</p>
+        <p>The same path drives iteration in a program:</p>
+        <pre>
+          <code class="language-cx">[?for [in $u //user[@active=true]] [yield
+           [active-user email=$u@email]]]</code>
+        </pre>
+      
+    </section>
+    <section id="first-validation">
+      <h2>Validate with a schema</h2>
+      
+        <p>A CX schema (`.cxs`) is a CX document that describes the
+         allowed shape of another CX document. Write
+         `users.cxs`:</p>
+        <pre>
+          <code class="language-cx">[schema target='users'
+         [element name='users' mode=strict
+           [child name='user' min=1 max='*'
+             [attr name='id'     type=int  required=true]
+             [attr name='email'  type=str  required=true]
+             [attr name='active' type=bool required=true]]]]</code>
+        </pre>
+        <p>Run the validator:</p>
+        <pre>
+          <code class="language-shell">cx validate --schema users.cxs users.cx
+         [# → users.cx: ok (3 user elements validated)                 #]</code>
+        </pre>
+        <p>Break it on purpose to see a diagnostic. Remove `active`
+         from one user and re-run:</p>
+        <pre>
+          <code class="language-shell">cx validate --schema users.cxs users.cx
+         [# → users.cx:2:3 CXER0301: missing required attribute 'active'  #]</code>
+        </pre>
+        <p>Schema modes are `open` / `strict` / `closed` — strict
+         rejects unknown attributes, closed also rejects unknown
+         child elements. See <a class="xref" href="data-language.html#schema">schema</a> for the full constraint
+         vocabulary.</p>
+      
+    </section>
+    <section id="first-binding">
+      <h2>Hello from your host language</h2>
+      
+        <p>CX ships four Tier-1 host-language bindings — V (the native
+         reference), Python, Go, and Rust. The Layer-1 method set is
+         identical across all four (see <a class="xref" href="bindings.html#layer-1">layer-1</a>). One install,
+         one shape:</p>
+        <p>**Python:**</p>
+        <pre>
+          <code class="language-shell">pip install cxlib</code>
+        </pre>
+        <pre>
+          <code class="language-python">import cxlib
+
+         doc = cxlib.parse_file('users.cx')
+         print(doc.hash())                       [# stable SHA-256    #]
+         actives = doc.eval('//user[@active=true]/@email')
+         for email in actives:
+             print(email)</code>
+        </pre>
+        <p>**V** (native — `cxlib` is `import cx`):</p>
+        <pre>
+          <code class="language-v">import cx
+         doc := cx.parse_file('users.cx') or { panic(err) }
+         println(doc.hash())
+         println(doc.eval('//user[@active=true]/@email'))</code>
+        </pre>
+        <p>**Go:**</p>
+        <pre>
+          <code class="language-go">import "github.com/cx-lang/cx-go"
+         doc, _ := cx.ParseFile("users.cx")
+         fmt.Println(doc.Hash())
+         res, _ := doc.Eval("//user[@active=true]/@email")
+         fmt.Println(res)</code>
+        </pre>
+        <p>**Rust:**</p>
+        <pre>
+          <code class="language-rust">use cxlib::Doc;
+         let doc = Doc::parse_file("users.cx")?;
+         println!("{}", doc.hash());
+         let res = doc.eval("//user[@active=true]/@email")?;
+         println!("{}", res);</code>
+        </pre>
+        <p class="note">All four bindings call into the same compiled `libcx`; hash
+         values, eval results, and canonical bytes are bit-identical
+         across them. That is enforced by gate 28.6 in
+         [`spec/governance.md`](../../spec/governance.md).</p>
+      
+    </section>
+    <section id="next-steps">
+      <h2>Where to go next</h2>
+      
+        <p>You now have CX installed, you can write data, hash it,
+         convert it, query it, validate it, and call it from your
+         host language. From here, follow your interest:</p>
+        <ul>
+          
+            <li>**Learn the data language end-to-end.** <a class="xref" href="intro.html">intro</a>
+              walks the design philosophy; <a class="xref" href="data-language.html">data</a> is the
+              full reference for scalars, collections, sigils, and
+              mixed content.</li>
+            <li>**Learn the code language.** <a class="xref" href="code.html">code</a> covers the 40
+              directives, CXPath in depth, patterns, builtins,
+              services / workers / async, and resilience.</li>
+            <li>**Wire a binding into a real project.** <a class="xref" href="bindings.html">bindings</a>
+              has per-language quickstarts and the Layer-1 / Layer-2
+              method set.</li>
+            <li>**Pick a tooling integration.** <a class="xref" href="tooling.html">tooling</a> covers
+              the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
+              `cx lint`, `cx diff`, and the playground.</li>
+            <li>**Migrate an existing codebase.** <a class="xref" href="migration.html">migration</a>
+              covers v0.7.x → v0.8.0 and intake from
+              JSON / YAML / TOML / XML.</li>
+            <li>**Compare against alternatives.** <a class="xref" href="comparison.html">comparison</a>
+              is the side-by-side against JSON, YAML, TOML, XML,
+              Protobuf, MessagePack, Pkl, Dhall, Parquet, and
+              Arrow — including where CX is the wrong choice.</li>
+            <li>**Look up a term.** <a class="xref" href="glossary.html">glossary</a> defines every
+              CX-specific term used in this guide; <a class="xref" href="faq.html">faq</a> covers
+              the first-week-of-CX questions.</li>
+          
+        </ul>
+        <p class="note">The community lives at https://github.com/cx-lang/cx — file
+         bugs, browse RFCs, and read the spec under `spec/*.md`. The
+         playground at https://cx-lang.org/playground lets you try
+         CX from a browser with no install.</p>
+      
+    </section>
+    <section id="install-detail">
+      <h2>Install — per-platform detail</h2>
+      
+        <p>Per-platform install instructions. Section §0.1 covers the
+         brew / docker / source paths at a glance; this section
+         carries the full per-platform breakdown including loader
+         path and editor wiring.</p>
+        <section id="install-status">
+          <h3>Release status</h3>
+          
+            <p>CX is on v0.8.0-dev — the "data + code" unification
+           release on branch `v0.8.0-dev`. There is no tagged
+           0.8.0 release yet; the install paths below either
+           build from source on that branch or fetch the most
+           recent tagged 0.7.x bottle. Production users should
+           pin to a tag once 0.8.0 ships.</p>
+          
+        </section>
+        <section id="install-macos">
+          <h3>macOS</h3>
+          
+            <pre>
+              <code class="language-shell">brew install cx-lang/tap/cx</code>
+            </pre>
+            <p>The tap drops a universal binary on Apple Silicon and
+           Intel; arm64 and x86_64 ship in the same bottle.</p>
+          
+        </section>
+        <section id="install-linux">
+          <h3>Linux</h3>
+          
+            <p>Homebrew works on Linux too. The static binary tarball
+           from the GitHub Releases page works on any glibc-based
+           distro.</p>
+            <pre>
+              <code class="language-shell">brew install cx-lang/tap/cx
+           curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
+             | tar xz -C /usr/local/bin</code>
+            </pre>
+          
+        </section>
+        <section id="install-windows">
+          <h3>Windows</h3>
+          
+            <p>A static `cx.exe` ships per release on
+           github.com/cx-home/cx/releases. Drop it on PATH; no
+           installer, no dependencies.</p>
+          
+        </section>
+        <section id="install-wasm">
+          <h3>WebAssembly bundle</h3>
+          
+            <p>The `libcx-wasm` bundle powers the live evaluator in
+           the playground; on v0.8.0 it exports the
+           `_cx_code_eval` family plus `_cx_code_diagram` and
+           `_cx_code_tree`. The bundle ships
+           alongside the `cx` binary on release tags.</p>
+          
+        </section>
+        <section id="install-source">
+          <h3>Build from source</h3>
+          
+            <pre>
+              <code class="language-shell">git clone https://github.com/cx-home/cx
+           cd cx
+           git checkout v0.8.0-dev   # while 0.8.0 is in development
+           devbox run -- make build-vcx
+           devbox run -- make test</code>
+            </pre>
+            <p>The build chain expects V on PATH or the `cx-home` V
+           fork at `third_party/v`; the Makefile auto-detects
+           either. Drop the checkout line to build the most
+           recent tagged release instead.</p>
+          
+        </section>
+        <section id="install-verify">
+          <h3>Verify the install</h3>
+          
+            <pre>
+              <code class="language-shell">cx --version
+           cx --json - <<< "[hello world]" </code>
+            </pre>
+            <p class="note">A successful run prints the version and a JSON document
+           on stdout. If either fails, the build needs `libcx` on
+           the loader path (`LD_LIBRARY_PATH` on Linux,
+           `DYLD_LIBRARY_PATH` on macOS).</p>
+          
+        </section>
+      
+    </section>
+    <section id="tutorial-walkthrough">
+      <h2>Twenty-chapter walkthrough</h2>
+      
+        <p>This walkthrough walks CX from the smallest piece to the
+         fullest expression in twenty linked chapters. Each
+         chapter introduces one shape, shows it in context, and
+         ends with two or three exercises you can run with `cx
+         --ast` or `cx --json`. Pace yourself. Assumed background:
+         familiarity with at least one of JSON, YAML, TOML, or XML
+         — CX assumes you know what an object, array, scalar, and
+         attribute are. Designer pre-approved as front-matter
+         (decision recorded in `_migration_plan.md`).</p>
+        <section id="tut-1">
+          <h3>Why CX looks the way it does</h3>
+          
+            <p>Most projects need two kinds of file: typed
+           configuration in nested structures, and documents with
+           prose plus structure. JSON, YAML, and TOML are
+           optimized for the first; Markdown, HTML, and XML for
+           the second. Projects end up with multiple file formats
+           and multiple parsers. CX is one syntax for both. Five
+           design constraints picked the shape: one construct, no
+           indentation semantics, optional quoting, types
+           first-class, lossless conversion to existing
+           formats.</p>
+          
+        </section>
+        <section id="tut-2">
+          <h3>Elements</h3>
+          
+            <p>Every CX node is a bracket pair with a name and an
+           optional body. Editors balance brackets natively; code
+           folding works without parser hooks. The opening name
+           appears once; nothing repeats at close.</p>
+            <pre>
+              <code class="language-cx">[p Hello, World]</code>
+            </pre>
+            <p class="note">**Exercises.** Save as `hello.cx` and run `cx --ast
+           hello.cx`. Add a child element and re-run. Then run `cx
+           --json` on the same file.</p>
+          
+        </section>
+        <section id="tut-3">
+          <h3>Attributes</h3>
+          
+            <p>Attributes are name=value pairs after the element name.
+           Bare values auto-type: `8080` becomes int, `3.14`
+           becomes float, `true` becomes bool, `2026-01-01`
+           becomes date. Leading-zero tokens stay strings —
+           `02134` stays the string `02134` — to avoid the YAML
+           Norway problem.</p>
+            <pre>
+              <code class="language-cx">[server host=api.example.com port=8080 ssl=true]</code>
+            </pre>
+            <p class="note">**Exercises.** Add three more attributes and check what type cx assigns each. Quote a value containing a space and inspect the AST.</p>
+          
+        </section>
+        <section id="tut-4">
+          <h3>Types</h3>
+          
+            <p>CX auto-types most values; for the rest, a colon-type
+           annotation pins the value or body type. Sized variants
+           carry range constraints that validate at parse time.</p>
+            <pre>
+              <code class="language-cx">[port :u16 8080]</code>
+            </pre>
+            <p class="note">**Exercises.** Try setting `:u16` to `70000` and observe the error. Compare `[n 12]` vs `[n :decimal 12]` in `cx --ast`.</p>
+          
+        </section>
+        <section id="tut-5">
+          <h3>Element bodies</h3>
+          
+            <p>A body holds Text, Scalar, child Element, or collection
+           literal in source order. Mixed content is first-class
+           — text and structure interleave the way they do in
+           XML.</p>
+            <pre>
+              <code class="language-cx">[para Try the [b Margherita] — our [em best seller], hand-tossed daily.]</code>
+            </pre>
+            <p class="note">Triple-quoted bodies preserve multi-line content verbatim. **Exercises.** Write an article with `h1`, `p`, `em`, `a` children; convert with `cx --md`.</p>
+          
+        </section>
+        <section id="tut-6">
+          <h3>Comments</h3>
+          
+            <p>Hash line comments live outside element bodies.
+           Bracket-dash block comments live inside elements and
+           can span lines.</p>
+            <pre>
+              <code class="language-cx">[shop port=8080 [menu [pizza name=Margherita]]]</code>
+            </pre>
+            <p class="note">**Exercises.** Check what `cx fmt` preserves and what `cx canonical` drops.</p>
+          
+        </section>
+        <section id="tut-7">
+          <h3>Sigils</h3>
+          
+            <p>Five sigils give CX structural reach beyond name and
+           attribute. `@` is an attribute prefix in path
+           expressions and a reference in body position. `&amp;`
+           declares an anchor; `*` merges from an anchor; `#`
+           declares an id; `:` pins a data type.</p>
+            <pre>
+              <code class="language-cx">[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-8">
+          <h3>Collection literals</h3>
+          
+            <p>Three first-class collection shapes. Sequence with
+           parens flattens; array with square brackets preserves
+           nesting; map with braces gives named key-to-value
+           entries.</p>
+            <pre>
+              <code class="language-cx">[pizza toppings=(cheese, basil, oil)]
+           [pizza prices={small: 9, medium: 12, large: 15}]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-9">
+          <h3>Typed tables</h3>
+          
+            <p>A colon-table block declares column names and types.
+           Each non-blank line below is a row; cells parse against
+           the declared column types. Round-trips to CSV with
+           types preserved via the header row. In the binary
+           ast-bin form, rows are stored column-major and run 5
+           to 10 times smaller than equivalent element-per-row
+           encoding.</p>
+            <pre>
+              <code class="language-cx">[orders :table[item:string qty:u32 paid:bool when:date]
+             Margherita 2 true  2026-05-09
+             Hawaiian   1 false 2026-05-09]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-10">
+          <h3>Multi-document files</h3>
+          
+            <p>A single CX file can hold multiple top-level documents
+           separated by three dashes on a line by themselves.
+           Same separator as YAML; each side parses as an
+           independent document. `cx parse` iterates them; `cx
+           --json` emits an array.</p>
+          
+        </section>
+        <section id="tut-11">
+          <h3>Six surface dialects</h3>
+          
+            <p>The same tree parses and emits as CX, XML, JSON, YAML,
+           TOML, or Markdown. Each dialect captures the subset of
+           the data model it can represent.</p>
+            <pre>
+              <code class="language-shell">cx parse pizza.cx --to=yaml</code>
+            </pre>
+          
+        </section>
+        <section id="tut-12">
+          <h3>CX code — directives inside data</h3>
+          
+            <p>CX code is CX that does things. A directive is an
+           element whose name starts with `?`. Directives parse
+           as regular CX and evaluate against the surrounding
+           tree when `cx eval` runs the document.</p>
+            <pre>
+              <code class="language-cx">[h1 //page/@title]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-13">
+          <h3>Path expressions (CXPath)</h3>
+          
+            <p>CXPath is the query language inside CX code. Paths
+           separated by `/`; predicates in `[…]`; axes for
+           navigation by relationship.</p>
+            <pre>
+              <code class="language-cx">//pizza[@price > 10]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-14">
+          <h3>Let and for</h3>
+          
+            <p>`[?let]` binds a name once and reuses it. `[?for]`
+           iterates a path expression result.</p>
+            <pre>
+              <code class="language-cx">[?let [= $tax 0.22] [* @price [+ 1 $tax]]]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-15">
+          <h3>Filters</h3>
+          
+            <p>Filter directives transform values. Compose with pipes
+           or nest them.</p>
+            <pre>
+              <code class="language-cx">[?pipe @name [$trim _] [$upper _]]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-16">
+          <h3>Multi-branch conditional</h3>
+          
+            <p>The multi-branch `[?if]` shape avoids the else-if
+           ladder. Each branch is a condition-value pair; the
+           wildcard branch is the catch-all.</p>
+          
+        </section>
+        <section id="tut-17">
+          <h3>Named templates</h3>
+          
+            <p>`[?def]` defines a reusable fragment. `[?use]` invokes
+           it; parameterised templates take positional args.</p>
+            <pre>
+              <code class="language-cx">[?def line ($item) [tr [td $item/@name] [td $item/@qty]]]</code>
+            </pre>
+          
+        </section>
+        <section id="tut-18">
+          <h3>Includes</h3>
+          
+            <p>Two include forms share one resolver. The parse-time
+           form expands files before the document reaches
+           downstream tools; the eval-time form expands files
+           while a CX program runs.</p>
+            <pre>
+              <code class="language-shell">cx --xml --include-root=./conf config.cx</code>
+            </pre>
+          
+        </section>
+        <section id="tut-19">
+          <h3>Identity</h3>
+          
+            <p>Every CX document has a canonical form: presentation
+           stripped, attribute order normalised, anchors
+           renumbered. `cx hash` returns the SHA-256 of those
+           canonical bytes. Two documents with the same data
+           have the same hash, in any dialect.</p>
+            <pre>
+              <code class="language-shell">cx hash menu.cx</code>
+            </pre>
+          
+        </section>
+        <section id="tut-20">
+          <h3>Putting it all together</h3>
+          
+            <p>Every shape composes naturally with every other. The
+           whole-shop example at §14.50 and the whole-kitchen CX
+           code example at §15.50 exercise every shape in this
+           tutorial inside a single working document.</p>
+          
+        </section>
+      
+    </section>
+  
+</section>
 </main>
-<script>
-document.querySelectorAll('pre').forEach(pre => {
-  const btn = document.createElement('button');
-  btn.className = 'copy-btn';
-  btn.textContent = 'copy';
-  btn.type = 'button';
-  btn.addEventListener('click', async () => {
-    const code = pre.querySelector('code')?.textContent ?? pre.textContent;
-    const flash = (label, cls) => {
-      btn.textContent = label;
-      btn.classList.add(cls);
-      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove(cls); }, 1500);
-    };
-    try {
-      await navigator.clipboard.writeText(code);
-      flash('copied', 'copied');
-    } catch (_) {
-      const ta = document.createElement('textarea');
-      ta.value = code;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); flash('copied', 'copied'); }
-      catch { flash('failed', 'failed'); }
-      document.body.removeChild(ta);
-    }
-  });
-  pre.appendChild(btn);
-});
-</script>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

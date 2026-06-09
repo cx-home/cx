@@ -57,12 +57,11 @@ def _setup(fn):
 _all_fns = (
     # Phase 6 / spec/abi.md §2.6 — canonical-form tooling
     "cx_fmt", "cx_canonical", "cx_hash",
-    "cx_to_cx",   "cx_to_xml",   "cx_to_ast",   "cx_to_json",   "cx_to_yaml",   "cx_to_toml",   "cx_to_md",
-    "cx_xml_to_cx",  "cx_xml_to_xml",  "cx_xml_to_ast",  "cx_xml_to_json",  "cx_xml_to_yaml",  "cx_xml_to_toml",  "cx_xml_to_md",
-    "cx_json_to_cx", "cx_json_to_xml", "cx_json_to_ast", "cx_json_to_json", "cx_json_to_yaml", "cx_json_to_toml", "cx_json_to_md",
-    "cx_yaml_to_cx", "cx_yaml_to_xml", "cx_yaml_to_ast", "cx_yaml_to_json", "cx_yaml_to_yaml", "cx_yaml_to_toml", "cx_yaml_to_md",
-    "cx_toml_to_cx", "cx_toml_to_xml", "cx_toml_to_ast", "cx_toml_to_json", "cx_toml_to_yaml", "cx_toml_to_toml", "cx_toml_to_md",
-    "cx_md_to_cx",   "cx_md_to_xml",   "cx_md_to_ast",   "cx_md_to_json",   "cx_md_to_yaml",   "cx_md_to_toml",   "cx_md_to_md",
+    "cx_to_cx",   "cx_to_xml",   "cx_to_ast",   "cx_to_json",   "cx_to_yaml",   "cx_to_toml",
+    "cx_xml_to_cx",  "cx_xml_to_xml",  "cx_xml_to_ast",  "cx_xml_to_json",  "cx_xml_to_yaml",  "cx_xml_to_toml",
+    "cx_json_to_cx", "cx_json_to_xml", "cx_json_to_ast", "cx_json_to_json", "cx_json_to_yaml", "cx_json_to_toml",
+    "cx_yaml_to_cx", "cx_yaml_to_xml", "cx_yaml_to_ast", "cx_yaml_to_json", "cx_yaml_to_yaml", "cx_yaml_to_toml",
+    "cx_toml_to_cx", "cx_toml_to_xml", "cx_toml_to_ast", "cx_toml_to_json", "cx_toml_to_yaml", "cx_toml_to_toml",
     "cx_to_events",
     "cx_ast_to_cx", "cx_to_cx_compact",
 )
@@ -74,13 +73,10 @@ _bin_fns = (
     # ABI v2 — symmetric binary AST (Phase 2c) + data_bin (Phase 2b.6)
     "cx_to_data_bin",
     "cx_xml_to_ast_bin", "cx_json_to_ast_bin", "cx_yaml_to_ast_bin",
-    "cx_toml_to_ast_bin", "cx_md_to_ast_bin",
+    "cx_toml_to_ast_bin",
     # data_bin one-shot loaders (Phase 7.28; spec/abi.md §2.4)
     "cx_xml_to_data_bin", "cx_json_to_data_bin", "cx_yaml_to_data_bin",
-    "cx_toml_to_data_bin", "cx_md_to_data_bin",
-    # CXPath C ABI (Phase 2d) returns binary AST.
-    # cx_select_all_paths returns a u32-encoded paths blob (Phase 4 / CB-5).
-    "cx_select", "cx_select_all", "cx_select_all_paths",
+    "cx_toml_to_data_bin",
 )
 for _name in _bin_fns:
     _fn = getattr(_lib, _name)
@@ -101,15 +97,10 @@ _lib.cx_to_cx_with_include_root.argtypes = [
     ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)
 ]
 
-# CXPath takes (input, expr, err_out) — second arg is a string.
-for _name in ("cx_select", "cx_select_all", "cx_select_all_paths"):
-    _fn = getattr(_lib, _name)
-    _fn.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
-
 # ast_bin -> format symbols take a binary buffer in, return text out.
 _ast_bin_to_fns = (
     "cx_ast_bin_to_cx", "cx_ast_bin_to_xml", "cx_ast_bin_to_json",
-    "cx_ast_bin_to_yaml", "cx_ast_bin_to_toml", "cx_ast_bin_to_md",
+    "cx_ast_bin_to_yaml", "cx_ast_bin_to_toml",
 )
 for _name in _ast_bin_to_fns:
     _fn = getattr(_lib, _name)
@@ -120,7 +111,7 @@ for _name in _ast_bin_to_fns:
 _data_bin_to_fns = (
     "cx_from_data_bin",
     "cx_data_bin_to_xml", "cx_data_bin_to_json", "cx_data_bin_to_yaml",
-    "cx_data_bin_to_toml", "cx_data_bin_to_md",
+    "cx_data_bin_to_toml",
 )
 for _name in _data_bin_to_fns:
     _fn = getattr(_lib, _name)
@@ -167,7 +158,7 @@ _lib.cx_table_writer_close.argtypes          = [ctypes.c_void_p]
 _schema_driven_loader_fns = (
     'cx_to_data_bin_schema_driven',     'cx_xml_to_data_bin_schema_driven',
     'cx_json_to_data_bin_schema_driven','cx_yaml_to_data_bin_schema_driven',
-    'cx_toml_to_data_bin_schema_driven','cx_md_to_data_bin_schema_driven',
+    'cx_toml_to_data_bin_schema_driven',
     'cx_csv_to_data_bin_schema_driven', 'cx_tsv_to_data_bin_schema_driven',
     'cx_psv_to_data_bin_schema_driven',
 )
@@ -219,8 +210,8 @@ _lib.cx_events_writer_open.restype          = ctypes.c_void_p
 _lib.cx_events_writer_open.argtypes         = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
 _lib.cx_events_writer_open_fd.restype       = ctypes.c_void_p
 _lib.cx_events_writer_open_fd.argtypes      = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
-# cx_events_writer_open_shaped removed 2026-05-10: ADR 0010 superseded by
-# ADR 0016. CXL is the only output-shape mechanism (see cx_eval* below).
+# cx_events_writer_open_shaped removed 2026-05-10: superseded by
+# CX code is the only output-shape mechanism (see cx_eval* below).
 _lib.cx_events_writer_close_get_bytes.restype  = ctypes.c_void_p
 _lib.cx_events_writer_close_get_bytes.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p)]
 _lib.cx_events_writer_close.restype         = None
@@ -273,22 +264,71 @@ def _call(fn, text: str) -> str:
         raise RuntimeError(msg)
     return out.decode()
 
-# CXL evaluator: signature is (input, program, output_target, err_out).
-# Wired separately because _call only handles single-string functions.
-_lib.cx_eval.restype  = ctypes.c_char_p
-_lib.cx_eval.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
+# ── CX code evaluator (v0.7.6, Phase 3.11) ────────────────────────────
+#
+# Per spec/audits/code_abi_v1.md. Three C ABI exports route through the
+# v0.7.6 evaluator (vcx/code/) — the v0.7.0 cx_eval* family was retired
+# alongside the cxl POC in Phase 7. Error wire format is `CXERnnnn:msg`
+# (D3 of the design poll). The `cx-err:` namespace prefix is reserved for
+# value-form errors inside programs; the binding raises RuntimeError on the
+# wire shape as-is.
 
-def eval_cxl(input_cx: str, program_cxl: str, output_target: str = "") -> str:
-    """Evaluate a CXL program against a CX context document.
+_lib.cx_code_eval.restype  = ctypes.c_char_p
+_lib.cx_code_eval.argtypes = [
+    ctypes.c_char_p,                  # input  (nullable when empty)
+    ctypes.c_char_p,                  # program
+    ctypes.c_char_p,                  # output_target (nullable; '' → 'text')
+    ctypes.POINTER(ctypes.c_char_p),  # err_out
+]
 
-    output_target: '' (honour the program's `[?cx output-target=…]` directive,
-    default 'text'), or one of 'text' / 'cx' / 'html' at CXL 1.0 (v0.6.0).
+_lib.cx_code_eval_with_len.restype  = ctypes.c_char_p
+_lib.cx_code_eval_with_len.argtypes = [
+    ctypes.c_char_p, ctypes.c_size_t, # input,   input_len
+    ctypes.c_char_p, ctypes.c_size_t, # program, program_len
+    ctypes.c_char_p,                  # output_target
+    ctypes.POINTER(ctypes.c_char_p),  # err_out
+]
+
+# cx_code_write_cb (include/cx.h): int (*)(const char*, size_t, void*).
+_CX_PROGRAM_WRITE_CB = ctypes.CFUNCTYPE(
+    ctypes.c_int,                     # return: 0 ok, non-zero aborts
+    ctypes.c_char_p,                  # bytes
+    ctypes.c_size_t,                  # n
+    ctypes.c_void_p,                  # user
+)
+
+_lib.cx_code_eval_streaming.restype  = ctypes.c_char_p
+_lib.cx_code_eval_streaming.argtypes = [
+    ctypes.c_char_p, ctypes.c_size_t, # input,   input_len
+    ctypes.c_char_p, ctypes.c_size_t, # program, program_len
+    ctypes.c_char_p,                  # output_target
+    _CX_PROGRAM_WRITE_CB,             # write_cb
+    ctypes.c_void_p,                  # user
+    ctypes.POINTER(ctypes.c_char_p),  # err_out
+]
+
+
+def eval_code(input_cx: str, program: str, output_target: str = "") -> str:
+    """Evaluate a CX program against an optional CX input document.
+
+    `input_cx` may be empty when the program does not consume an
+    implicit `$doc` binding (e.g. `[?for $i :in (1,2,3) :yield $i]`).
+    `output_target` selects the renderer: ''/'text' (default), 'cx',
+    'json', 'yaml', 'xml', 'csv', 'tsv' (always available); 'html',
+    'svg', 'mermaid' return CXER0001 until the Phase 4
+    reference renderer lands.
+
+    See spec/code.md for the CX code language reference and
+    spec/audits/code_abi_v1.md for the ABI contract.
     """
+    in_b = input_cx.encode() if input_cx else b""
+    prog_b = program.encode()
+    target_b = output_target.encode() if output_target else b""
     err = ctypes.c_char_p(None)
-    out = _lib.cx_eval(
-        input_cx.encode(),
-        program_cxl.encode(),
-        output_target.encode(),
+    out = _lib.cx_code_eval_with_len(
+        in_b, len(in_b),
+        prog_b, len(prog_b),
+        target_b,
         ctypes.byref(err),
     )
     if out is None:
@@ -296,39 +336,17 @@ def eval_cxl(input_cx: str, program_cxl: str, output_target: str = "") -> str:
         raise RuntimeError(msg)
     return out.decode()
 
-# Streaming evaluator (v0.7.0 Y-row). The C ABI exposes cx_eval_streaming
-# with a write-callback that fires per-chunk; the binding wraps the
-# callback in a ctypes CFUNCTYPE and forwards each chunk to the
-# user-supplied Python callable.
-_CX_EVAL_WRITE_CB = ctypes.CFUNCTYPE(
-    ctypes.c_int,                # return: 0 ok, non-zero aborts
-    ctypes.c_char_p,              # bytes
-    ctypes.c_size_t,              # n
-    ctypes.c_void_p,              # user
-)
 
-_lib.cx_eval_streaming.restype  = ctypes.c_char_p
-_lib.cx_eval_streaming.argtypes = [
-    ctypes.c_char_p,             # cx_input
-    ctypes.c_char_p,             # cxl_program
-    ctypes.c_char_p,             # output_target
-    _CX_EVAL_WRITE_CB,           # write_cb
-    ctypes.c_void_p,             # user
-    ctypes.POINTER(ctypes.c_char_p),  # err_out
-]
+def eval_code_streaming(input_cx: str, program: str,
+                            on_chunk, output_target: str = "") -> None:
+    """Evaluate a CX program with pull-based incremental output.
 
-def eval_cxl_streaming(input_cx: str, program_cxl: str,
-                       on_chunk, output_target: str = "") -> None:
-    """Evaluate a CXL program with pull-based incremental output.
+    `on_chunk(data: bytes) -> None | int`: invoked with each output
+    chunk. Return None or 0 to continue; any other int (or raising)
+    aborts evaluation cleanly.
 
-    on_chunk: callable(bytes) -> None | int. Invoked with each output
-    chunk as bytes. Return None or 0 to continue; any other int (or
-    raising) aborts evaluation cleanly.
-
-    output_target: same semantics as eval_cxl().
-
-    Raises RuntimeError on parse / evaluation failure, or wraps the
-    callback's exception in RuntimeError.
+    Concatenating every chunk yields the same bytes that `eval_code`
+    would return — per the §3.3 byte-equivalence contract.
     """
     pending_exc = []
 
@@ -339,20 +357,23 @@ def eval_cxl_streaming(input_cx: str, program_cxl: str,
             return 0 if rc in (None, 0) else int(rc)
         except BaseException as exc:        # pylint: disable=broad-except
             pending_exc.append(exc)
-            return 1                          # any non-zero aborts
+            return 1
 
-    cb = _CX_EVAL_WRITE_CB(_trampoline)
+    cb = _CX_PROGRAM_WRITE_CB(_trampoline)
+    in_b = input_cx.encode() if input_cx else b""
+    prog_b = program.encode()
+    target_b = output_target.encode() if output_target else b""
     err = ctypes.c_char_p(None)
-    _lib.cx_eval_streaming(
-        input_cx.encode(),
-        program_cxl.encode(),
-        output_target.encode(),
+    _lib.cx_code_eval_streaming(
+        in_b, len(in_b),
+        prog_b, len(prog_b),
+        target_b,
         cb,
         None,
         ctypes.byref(err),
     )
     if pending_exc:
-        raise RuntimeError(f"cx_eval_streaming callback raised") from pending_exc[0]
+        raise RuntimeError("cx_code_eval_streaming callback raised") from pending_exc[0]
     if err.value is not None:
         raise RuntimeError(err.value.decode())
 
@@ -401,11 +422,11 @@ def _call_bin_to_text(fn, framed: bytes) -> str:
 # ── data_bin entry points (Phase 2b.6) ───────────────────────────────────────
 
 def to_data_bin(src: str) -> bytes:
-    """Encode CX text to CXDB v1 framed bytes."""
+    """Encode CX text to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_to_data_bin, src)
 
 def from_data_bin(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes to canonical CX text."""
+    """Decode CXCol v1 framed bytes to canonical CX text."""
     return _call_bin_to_text(_lib.cx_from_data_bin, framed)
 
 
@@ -416,44 +437,36 @@ def from_data_bin(framed: bytes) -> str:
 # string-roundtrip cost.
 
 def xml_to_data_bin(src: str) -> bytes:
-    """Encode XML text directly to CXDB v1 framed bytes."""
+    """Encode XML text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_xml_to_data_bin, src)
 
 def json_to_data_bin(src: str) -> bytes:
-    """Encode JSON text directly to CXDB v1 framed bytes."""
+    """Encode JSON text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_json_to_data_bin, src)
 
 def yaml_to_data_bin(src: str) -> bytes:
-    """Encode YAML text directly to CXDB v1 framed bytes."""
+    """Encode YAML text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_yaml_to_data_bin, src)
 
 def toml_to_data_bin(src: str) -> bytes:
-    """Encode TOML text directly to CXDB v1 framed bytes."""
+    """Encode TOML text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_toml_to_data_bin, src)
 
-def md_to_data_bin(src: str) -> bytes:
-    """Encode Markdown text directly to CXDB v1 framed bytes."""
-    return _call_bin(_lib.cx_md_to_data_bin, src)
-
 def data_bin_to_xml(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to XML text."""
+    """Decode CXCol v1 framed bytes directly to XML text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_xml, framed)
 
 def data_bin_to_json(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to JSON text."""
+    """Decode CXCol v1 framed bytes directly to JSON text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_json, framed)
 
 def data_bin_to_yaml(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to YAML text."""
+    """Decode CXCol v1 framed bytes directly to YAML text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_yaml, framed)
 
 def data_bin_to_toml(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to TOML text."""
+    """Decode CXCol v1 framed bytes directly to TOML text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_toml, framed)
-
-def data_bin_to_md(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to Markdown text."""
-    return _call_bin_to_text(_lib.cx_data_bin_to_md, framed)
 
 def to_events(cx_str: str) -> str:
     """Return all streaming events as a JSON array string."""
@@ -463,14 +476,14 @@ def to_events(cx_str: str) -> str:
 # ── Chunked-table one-shot (Phase 7.72; spec/abi.md §2.10) ───────────────────
 
 def to_data_bin_chunked(src: str) -> bytes:
-    """Encode a CX :table-bodied root element to CXDB chunked-table form
-    (`0x63`, spec/data_bin.md §3.11). Default chunk policy: 2^20 rows per
+    """Encode a CX :table-bodied root element to CXCol chunked-table form
+    (`0x63`, spec/core/data-bin.md §3.11). Default chunk policy: 2^20 rows per
     group with auto-zstd above 64 KiB body. Capability bit 21."""
     return _call_bin(_lib.cx_to_data_bin_chunked, src)
 
 
 # ── Schema-driven encoding (Phase 7.73; spec/abi.md §2.12) ───────────────────
-# ref_form: 0=hash-only, 1=inline, 2=hash+name. See spec/data_bin.md §3.13.1.
+# ref_form: 0=hash-only, 1=inline, 2=hash+name. See spec/core/data-bin.md §3.13.1.
 
 def _call_schema_driven_loader(fn, src: str, schema: str,
                                ref_form: int = 0, name_hint: str = '') -> bytes:
@@ -504,10 +517,6 @@ def toml_to_data_bin_schema_driven(src: str, schema: str,
                                    ref_form: int = 0, name_hint: str = '') -> bytes:
     return _call_schema_driven_loader(
         _lib.cx_toml_to_data_bin_schema_driven, src, schema, ref_form, name_hint)
-def md_to_data_bin_schema_driven(src: str, schema: str,
-                                 ref_form: int = 0, name_hint: str = '') -> bytes:
-    return _call_schema_driven_loader(
-        _lib.cx_md_to_data_bin_schema_driven, src, schema, ref_form, name_hint)
 def csv_to_data_bin_schema_driven(src: str, schema: str,
                                   ref_form: int = 0, name_hint: str = '') -> bytes:
     return _call_schema_driven_loader(
@@ -560,7 +569,7 @@ def eq(a: str, b: str) -> bool:
         raise RuntimeError(msg)
     return out.decode() == '1'
 
-# cx_diff: 3-input signature (a, b, format). Per ADR 0012.
+# cx_diff: 3-input signature (a, b, format).
 _lib.cx_diff.restype  = ctypes.c_char_p
 _lib.cx_diff.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
 
@@ -568,8 +577,7 @@ def diff(a: str, b: str, format: str = 'unified') -> str:
     """Semantic diff between two CX inputs, walking the strict-canonical
     forms. format is 'unified', 'json', or 'summary'. Empty string
     means data-equivalent inputs.
-
-    Per spec/decisions/0012-cx-diff.md."""
+    """
     err = ctypes.c_char_p(None)
     out = _lib.cx_diff(a.encode(), b.encode(), format.encode(), ctypes.byref(err))
     if out is None:
@@ -577,7 +585,7 @@ def diff(a: str, b: str, format: str = 'unified') -> str:
         raise RuntimeError(msg)
     return out.decode()
 
-# cx_lint: 4-input signature (input, format, disabled, err). Per ADR 0013.
+# cx_lint: 4-input signature (input, format, disabled, err).
 _lib.cx_lint.restype  = ctypes.c_char_p
 _lib.cx_lint.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
 
@@ -585,8 +593,7 @@ def lint(input: str, format: str = 'text', disabled: str = '') -> str:
     """Style + correctness warnings. format is 'text', 'json', or
     'summary'. disabled is a comma-separated list of check IDs to
     suppress (empty string = run all). Empty result means no findings.
-
-    Per spec/decisions/0013-cx-lint.md."""
+    """
     err = ctypes.c_char_p(None)
     out = _lib.cx_lint(input.encode(), format.encode(), disabled.encode(), ctypes.byref(err))
     if out is None:
@@ -595,14 +602,15 @@ def lint(input: str, format: str = 'text', disabled: str = '') -> str:
     return out.decode()
 
 
-# ── ID/IDREF C ABI (ADR 0003 / Phase 7.65) ───────────────────────────────────
+# ── ID/IDREF C ABI (Phase 7.65) ───────────────────────────────────
 
 _lib.cx_id_lookup.restype   = ctypes.c_char_p
 _lib.cx_id_lookup.argtypes  = [ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
 _lib.cx_resolve_ref.restype = ctypes.c_char_p
 _lib.cx_resolve_ref.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
-_lib.cx_node_id.restype     = ctypes.c_char_p
-_lib.cx_node_id.argtypes    = [ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)]
+# cx_node_id was retired alongside cxpath.v at v0.7.6 (Phase 7). Equivalent
+# behaviour: run a `//pattern` CXPath value (or `[?for [pattern $m] :yield $m]`)
+# to locate the element, then read $m/@id from the result.
 
 
 def id_lookup(input: str, id: str) -> str | None:
@@ -633,20 +641,8 @@ def resolve_ref(input: str, ref: str) -> str | None:
     return s if s else None
 
 
-def node_id(input: str, cxpath: str) -> str | None:
-    """Return the syntactic ID of the element selected by `cxpath`,
-    or None when the matched element has no ID (or no element matched)."""
-    err = ctypes.c_char_p(None)
-    out = _lib.cx_node_id(input.encode(), cxpath.encode(), ctypes.byref(err))
-    if out is None:
-        msg = err.value.decode() if err.value else 'unknown error'
-        raise RuntimeError(msg)
-    s = out.decode()
-    return s if s else None
-
-
-# ── Delimited (CSV/TSV/PSV/arbitrary) C ABI (ADR 0001 / Phase 7.68) ──────────
-# Per spec/decisions/0001-delimited-conversion.md and spec/conversions.md §8.
+# ── Delimited (CSV/TSV/PSV/arbitrary) C ABI (Phase 7.68) ──────────
+# Per spec/conversions.md §8.
 # cx_to_delimited / cx_from_delimited take a single-byte delimiter; the
 # cx_to_csv / cx_to_tsv / cx_to_psv aliases hard-code `,` / `\t` / `|`.
 # data_bin one-shots cover the three named-delimiter variants.
@@ -675,7 +671,7 @@ for _name in ('cx_data_bin_to_csv', 'cx_data_bin_to_tsv', 'cx_data_bin_to_psv'):
 
 def to_delimited(src: str, delim: str) -> str:
     """Encode CX text to delimited text using `delim` as the field
-    separator (a single-character str). Per ADR 0001 D6, valid
+    separator (a single-character str). Valid
     delimiters are any byte except `\\r \\n " ' \\\\`."""
     if len(delim) != 1:
         raise ValueError('delim must be a single character')
@@ -689,7 +685,7 @@ def to_delimited(src: str, delim: str) -> str:
 
 def from_delimited(src: str, delim: str) -> str:
     """Decode delimited text to canonical CX. Single-character `delim`
-    selects the field separator. Auto-typing applies per ADR 0001 D5."""
+    selects the field separator. Auto-typing applies."""
     if len(delim) != 1:
         raise ValueError('delim must be a single character')
     err = ctypes.c_char_p(None)
@@ -709,61 +705,37 @@ def from_psv(src: str) -> str: return _call(_lib.cx_from_psv, src)
 
 
 def csv_to_data_bin(src: str) -> bytes:
-    """Encode CSV text directly to CXDB v1 framed bytes."""
+    """Encode CSV text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_csv_to_data_bin, src)
 
 def tsv_to_data_bin(src: str) -> bytes:
-    """Encode TSV text directly to CXDB v1 framed bytes."""
+    """Encode TSV text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_tsv_to_data_bin, src)
 
 def psv_to_data_bin(src: str) -> bytes:
-    """Encode PSV (pipe-separated) text directly to CXDB v1 framed bytes."""
+    """Encode PSV (pipe-separated) text directly to CXCol v1 framed bytes."""
     return _call_bin(_lib.cx_psv_to_data_bin, src)
 
 def data_bin_to_csv(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to CSV text."""
+    """Decode CXCol v1 framed bytes directly to CSV text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_csv, framed)
 
 def data_bin_to_tsv(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to TSV text."""
+    """Decode CXCol v1 framed bytes directly to TSV text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_tsv, framed)
 
 def data_bin_to_psv(framed: bytes) -> str:
-    """Decode CXDB v1 framed bytes directly to PSV text."""
+    """Decode CXCol v1 framed bytes directly to PSV text."""
     return _call_bin_to_text(_lib.cx_data_bin_to_psv, framed)
 
 
-# ── CXPath path-tracking C ABI (Phase 4 / CB-5) ──────────────────────────────
-
-def select_all_paths(cx_text: str, expr: str) -> list[tuple[int, ...]]:
-    """Call cx_select_all_paths and decode the framed [u32 size][payload]
-    output into a list of structural paths. Each path is a tuple of
-    0-based indices: first index into Document.elements, subsequent
-    indices into Element.items. Match order is preorder (same as
-    cx_select_all). See spec/abi.md §2.7.
-    """
-    err = ctypes.c_char_p(None)
-    raw = _lib.cx_select_all_paths(cx_text.encode(), expr.encode(), ctypes.byref(err))
-    framed = _bytes_from_ptr(raw)
-    if framed is None:
-        msg = err.value.decode() if err.value else "unknown error"
-        raise RuntimeError(msg)
-    _lib.cx_free(ctypes.c_char_p(raw))
-    # framed = [u32 LE size][payload]
-    payload = framed[4:]
-    n_paths = int.from_bytes(payload[0:4], 'little')
-    out: list[tuple[int, ...]] = []
-    off = 4
-    for _ in range(n_paths):
-        depth = int.from_bytes(payload[off:off + 4], 'little')
-        off += 4
-        idxs = tuple(
-            int.from_bytes(payload[off + 4 * k:off + 4 * (k + 1)], 'little')
-            for k in range(depth)
-        )
-        off += 4 * depth
-        out.append(idxs)
-    return out
+# ── CXPath path-tracking C ABI (RETIRED at v0.7.6, Phase 7) ───────────────
+#
+# select_all_paths thunked to the v0.7.0 cx_select_all_paths C symbol,
+# which was removed alongside cxpath.v. Bindings that need element
+# selection use `eval_code` with a CXPath `//path` value
+# or a `[?for [pattern $m] :yield $m]` comprehension — see
+# spec/code.md §5 + spec/audits/code_abi_v1.md.
 
 # CX input
 def to_cx        (src: str) -> str: return _call(_lib.cx_to_cx,          src)
@@ -774,7 +746,6 @@ def ast_to_cx    (src: str) -> str: return _call(_lib.cx_ast_to_cx,      src)
 def to_json(src: str) -> str: return _call(_lib.cx_to_json, src)
 def to_yaml(src: str) -> str: return _call(_lib.cx_to_yaml, src)
 def to_toml(src: str) -> str: return _call(_lib.cx_to_toml, src)
-def to_md  (src: str) -> str: return _call(_lib.cx_to_md,   src)
 
 # XML input
 def xml_to_cx  (src: str) -> str: return _call(_lib.cx_xml_to_cx,   src)
@@ -783,7 +754,6 @@ def xml_to_ast (src: str) -> str: return _call(_lib.cx_xml_to_ast,  src)
 def xml_to_json(src: str) -> str: return _call(_lib.cx_xml_to_json, src)
 def xml_to_yaml(src: str) -> str: return _call(_lib.cx_xml_to_yaml, src)
 def xml_to_toml(src: str) -> str: return _call(_lib.cx_xml_to_toml, src)
-def xml_to_md  (src: str) -> str: return _call(_lib.cx_xml_to_md,   src)
 
 # JSON input
 def json_to_cx  (src: str) -> str: return _call(_lib.cx_json_to_cx,   src)
@@ -792,7 +762,6 @@ def json_to_ast (src: str) -> str: return _call(_lib.cx_json_to_ast,  src)
 def json_to_json(src: str) -> str: return _call(_lib.cx_json_to_json, src)
 def json_to_yaml(src: str) -> str: return _call(_lib.cx_json_to_yaml, src)
 def json_to_toml(src: str) -> str: return _call(_lib.cx_json_to_toml, src)
-def json_to_md  (src: str) -> str: return _call(_lib.cx_json_to_md,   src)
 
 # YAML input
 def yaml_to_cx  (src: str) -> str: return _call(_lib.cx_yaml_to_cx,   src)
@@ -801,7 +770,6 @@ def yaml_to_ast (src: str) -> str: return _call(_lib.cx_yaml_to_ast,  src)
 def yaml_to_json(src: str) -> str: return _call(_lib.cx_yaml_to_json, src)
 def yaml_to_yaml(src: str) -> str: return _call(_lib.cx_yaml_to_yaml, src)
 def yaml_to_toml(src: str) -> str: return _call(_lib.cx_yaml_to_toml, src)
-def yaml_to_md  (src: str) -> str: return _call(_lib.cx_yaml_to_md,   src)
 
 # TOML input
 def toml_to_cx  (src: str) -> str: return _call(_lib.cx_toml_to_cx,   src)
@@ -810,13 +778,3 @@ def toml_to_ast (src: str) -> str: return _call(_lib.cx_toml_to_ast,  src)
 def toml_to_json(src: str) -> str: return _call(_lib.cx_toml_to_json, src)
 def toml_to_yaml(src: str) -> str: return _call(_lib.cx_toml_to_yaml, src)
 def toml_to_toml(src: str) -> str: return _call(_lib.cx_toml_to_toml, src)
-def toml_to_md  (src: str) -> str: return _call(_lib.cx_toml_to_md,   src)
-
-# MD input
-def md_to_cx  (src: str) -> str: return _call(_lib.cx_md_to_cx,   src)
-def md_to_xml (src: str) -> str: return _call(_lib.cx_md_to_xml,  src)
-def md_to_ast (src: str) -> str: return _call(_lib.cx_md_to_ast,  src)
-def md_to_json(src: str) -> str: return _call(_lib.cx_md_to_json, src)
-def md_to_yaml(src: str) -> str: return _call(_lib.cx_md_to_yaml, src)
-def md_to_toml(src: str) -> str: return _call(_lib.cx_md_to_toml, src)
-def md_to_md  (src: str) -> str: return _call(_lib.cx_md_to_md,   src)

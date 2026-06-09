@@ -1,0 +1,69 @@
+; Design-intent capture — XAP → mesh / long-term human-agent platform.
+; Captured AS DATA (not prose) so an LLM resolves it near-deterministically:
+; enumerable values are atoms drawn from design-capture.vocab.cx; relations are
+; explicit; each fact appears once and is referenced by id. The only open
+; interpretive surface is the quoted string leaves.
+[design-capture
+  topic="XAP -> mesh; long-term human-agent platform architecture"
+  author="eptx" date=2026-06-09 status=:open-question
+  vocab="design-capture.vocab.cx"
+  source="spec/03-approved/xap/xap.md"
+
+  ; 1 — the anchor: what XAP is for (per xap.md)
+  [premise id="p-purpose"
+    [claim "server-side component serving one-or-many client TYPES"]
+    [client-types [t :web] [t :tui] [t :boat-tactile-dashboard]]
+    [separates-out [the :intent] [the :event] [from :client-impl-code]]
+    [virtue :separation-of-concerns]]
+
+  ; 2 — prior art the user is pattern-matching to
+  [analogy id="a-ants" name="ANTS — Advanced N-Tier System"
+    era="late-1990s" lang=:java author=:self
+    [had
+      [feature :service-registry]
+      [feature :composable-service-mesh scope=:per-instance]
+      [feature :pluggable-members
+        [kind :service] [kind :resource] [kind :tool]
+        [example :database] [example :filestore] [example :web-api]]
+      [feature :pluggable-transport [carries :object] [carries :rpc]]]
+    [resembles :xap-current-direction confidence=:loose]]
+
+  ; 3 — the observation driving the whole memo
+  [observation id="o-composition-pull"
+    [claim "what a client sees need NOT come from one XAP"]
+    [instead :composition-of-apps]
+    [evidence-in-spec "xap.md §22.6.1 federation; §19 capability field"]]
+
+  ; 4 — the vision (where the pull leads)
+  [vision id="v-xap-mesh" name="XAP mesh"
+    [adds
+      [aspect :protocols]
+      [aspect :comm-orchestration-semantics]
+      [aspect :messaging]
+      [aspect :auth]
+      [aspect :did probability=:likely]]
+    [effect "takes XAP to another level"]]
+
+  ; 5 — the emerging landscape it must coexist with
+  [landscape id="l-agentic-standards" kind=:emerging
+    [standard :mcp] [standard :a2a] [standard :anp]
+    [trait :agentic]]
+
+  ; 6 — the stated architectural boundary (and its tension)
+  [boundary id="b-orchestration"
+    [planned-home :component-other-than-xap for=:agent-orchestration]
+    [tension "but it shares much of the same plumbing as XAP"]
+    [implies :possible-consolidation-or-shared-substrate]]
+
+  ; 7 — the actual question
+  [question id="q-strategy" priority=:high
+    [ask "best long-term ARCHITECTURE so cx + xap lead human-agent experiences"]
+    [scope :cx] [scope :xap] [scope :agent-orchestration] [scope :mesh]]
+
+  ; 8 — the hard constraint any answer must satisfy
+  [constraint id="c-pipeline"
+    [harmonize :rule-based-determinism]
+    [harmonize :statistical-probability-models]
+    [harmonize :inference-llm-models]
+    [into "the best pipeline"]
+    [selected-per :intent] [selected-per :context]]]

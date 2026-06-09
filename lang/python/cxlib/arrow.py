@@ -1,7 +1,7 @@
 """Apache Arrow C-Data interop for cxlib.
 
-Bridges CXDB chunked-tables to Arrow ArrowArrayStream via libcx_arrow
-(spec/abi.md §2.11, ADR 0015 D9, capability bit 0x800000). The bridge
+Bridges CXCol chunked-tables to Arrow ArrowArrayStream via libcx_arrow
+(spec/abi.md §2.11, capability bit 0x800000). The bridge
 handles all 9 v0.6.0 column types (int, i8, i16, i32, float, bool,
 string, date, bytes); datetime / decimal / dictionary columns are
 deferred and surface the V core's deferred-type error.
@@ -103,7 +103,7 @@ if _lib is not None:
         ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p)
     ]
 
-    # Returns framed [u32 LE size][CXDB] heap buffer; caller frees via cx_arrow_free.
+    # Returns framed [u32 LE size][CXCol] heap buffer; caller frees via cx_arrow_free.
     _lib.cx_arrow_import_to_data_bin.restype     = ctypes.c_void_p
     _lib.cx_arrow_import_to_data_bin.argtypes    = [
         ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p)
@@ -168,9 +168,9 @@ def _require_pyarrow():
 
 
 def export(data_bin: bytes):
-    """Export framed CXDB chunked-table bytes as a pyarrow.RecordBatchReader.
+    """Export framed CXCol chunked-table bytes as a pyarrow.RecordBatchReader.
 
-    `data_bin` is the framed `[u32 LE size][CXDB payload]` shape produced by
+    `data_bin` is the framed `[u32 LE size][CXCol payload]` shape produced by
     `cxlib.to_data_bin_chunked()` or `TableWriter.close_get_bytes()`. The
     payload root MUST be a chunked-table (tag 0x63), optionally wrapped in a
     single-pair map per the chunked emit convention.
@@ -199,11 +199,11 @@ def export(data_bin: bytes):
 
 
 def import_to_data_bin(source) -> bytes:
-    """Drain a pyarrow source into framed CXDB chunked-table bytes.
+    """Drain a pyarrow source into framed CXCol chunked-table bytes.
 
     Accepts pyarrow.RecordBatchReader (preferred — single-pass), or
     pyarrow.Table (converted via `Table.to_reader()`). Returns the framed
-    `[u32 LE size][CXDB payload]` buffer.
+    `[u32 LE size][CXCol payload]` buffer.
     """
     _require_lib()
     pa, _pa_cffi = _require_pyarrow()
@@ -248,7 +248,7 @@ def import_to_data_bin(source) -> bytes:
 # Arrow library, not in CX.
 
 def to_ipc(data_bin: bytes) -> bytes:
-    """Convert framed CXDB chunked-table bytes to Arrow IPC stream bytes.
+    """Convert framed CXCol chunked-table bytes to Arrow IPC stream bytes.
 
     Returns a `bytes` object suitable for writing to a `.arrow` file
     or piping into another Arrow IPC consumer.
@@ -268,10 +268,10 @@ def to_ipc(data_bin: bytes) -> bytes:
 
 
 def from_ipc(ipc_bytes: bytes) -> bytes:
-    """Convert Arrow IPC stream bytes to framed CXDB chunked-table bytes.
+    """Convert Arrow IPC stream bytes to framed CXCol chunked-table bytes.
 
     Accepts the byte stream a `.arrow` file would contain. Returns
-    framed CXDB bytes (`[u32 LE size][CXDB payload]`) that round-trip
+    framed CXCol bytes (`[u32 LE size][CXCol payload]`) that round-trip
     through `cxlib.from_data_bin_chunked()`.
     """
     _require_lib()
@@ -286,13 +286,13 @@ def from_ipc(ipc_bytes: bytes) -> bytes:
 
 
 def write_ipc_file(data_bin: bytes, path: str) -> None:
-    """Write framed CXDB bytes to a `.arrow` IPC file at `path`."""
+    """Write framed CXCol bytes to a `.arrow` IPC file at `path`."""
     with open(path, "wb") as f:
         f.write(to_ipc(data_bin))
 
 
 def read_ipc_file(path: str) -> bytes:
-    """Read a `.arrow` IPC file and return framed CXDB bytes."""
+    """Read a `.arrow` IPC file and return framed CXCol bytes."""
     with open(path, "rb") as f:
         return from_ipc(f.read())
 
@@ -305,8 +305,8 @@ def _main() -> int:
     if len(sys.argv) < 4 or sys.argv[1] not in ("dump", "load"):
         sys.stderr.write(
             "Usage:\n"
-            "  python -m cxlib.arrow dump <input.cxdb> <output.arrow>\n"
-            "  python -m cxlib.arrow load <input.arrow> <output.cxdb>\n"
+            "  python -m cxlib.arrow dump <input.cxcol> <output.arrow>\n"
+            "  python -m cxlib.arrow load <input.arrow> <output.cxcol>\n"
         )
         return 2
     verb, src_path, dst_path = sys.argv[1], sys.argv[2], sys.argv[3]

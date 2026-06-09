@@ -1,0 +1,576 @@
+[# Section 0 — Quickstart. Front-matter; appears before the §1 intro.
+   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Goal: a developer who has never seen CX is running CX in under five
+   minutes. Cross-links use [[anchor]] form; spec references use
+   ordinary markdown links. File extension .cxd — data-only source. #]
+
+[section id=quickstart n=0 title='Quickstart — first 5 minutes with CX'
+
+  [intro
+    """This is the shortest path from "I have never seen CX" to "I have
+       parsed, hashed, queried, and validated my first document, and
+       called CX from my host language." Eight steps, five minutes if
+       your toolchain is warm. If you only have time for one section,
+       read this one — then jump to [[next-steps]]."""]
+
+  [child id=install n=0.1 title='Install'
+    [intro
+      """CX ships as a single statically-linked binary `cx` plus a
+         shared library `libcx` for host-language bindings. Pick one
+         install path:"""]
+
+    [body
+      """**Homebrew (macOS, Linux).** The fastest route on a developer
+         laptop:"""]
+
+    [example lang=shell
+      """brew install cx-lang/cx/cx
+         cx --version"""]
+
+    [body
+      """**Manual download.** Prebuilt binaries are published with each
+         tagged release on GitHub. Download the archive for your
+         platform, extract, and put `cx` on your `PATH`:"""]
+
+    [example lang=shell
+      """curl -L https://github.com/cx-lang/cx/releases/download/v0.8.0/cx-darwin-arm64.tar.gz | tar xz
+         sudo mv cx /usr/local/bin/
+         cx --version"""]
+
+    [body
+      """**Build from source.** The reference build uses devbox to pin
+         the V toolchain and Python version. From a fresh clone of the
+         repository:"""]
+
+    [example lang=shell
+      """devbox run -- make build
+         devbox run -- make install   [# installs to ~/.local/bin     #]
+         cx --version"""]
+
+    [body
+      """**Docker.** No host install required; useful for CI or quick
+         experimentation:"""]
+
+    [example lang=shell
+      """docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx --version
+         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx eval"""]
+
+    [note
+      """If `cx --version` prints `cx 0.8.0 (gNNNNNNN)` you are ready.
+         If you see `command not found`, your `PATH` does not include
+         the install location — see [[faq]] for recovery steps."""]]
+
+  [child id=hello-cx n=0.2 title='Hello, CX'
+    [intro
+      """Every interactive CX session starts the same way: pipe a CX
+         literal into `cx eval` and see what comes out."""]
+
+    [example lang=shell
+      """echo '[hello greeting="world"]' | cx eval"""]
+
+    [body
+      """The output is the same shape you typed:"""]
+
+    [example lang=cx
+      """[hello greeting='world']"""]
+
+    [body
+      """Three things to notice. **First**, the value evaluated to
+         itself — data and code share one syntax, and a bare data
+         element is its own value (see [[homoiconicity]]). **Second**,
+         the canonical form normalises double quotes to single
+         quotes; attribute order is preserved at parse time but
+         re-sorted lexicographically for hashing (see [[canonical]]).
+         **Third**, no closing tag duplication — every CX element is a
+         single bracketed form. That is the whole syntax."""]
+
+    [body
+      """Try a tiny program too. The `[?for]` directive iterates and
+         yields:"""]
+
+    [example lang=shell
+      """echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx eval"""]
+
+    [example lang=cx
+      """([n 1], [n 2], [n 3])"""]]
+
+  [child id=first-file n=0.3 title='Your first file'
+    [intro
+      """Real CX work lives in files. Create `users.cx` with three
+         users:"""]
+
+    [example lang=cx
+      """[users
+           [user id=1 email='ada@example.com'    active=true]
+           [user id=2 email='grace@example.com'  active=false]
+           [user id=3 email='linus@example.com'  active=true]]"""]
+
+    [body
+      """**Parse it** (round-trips through the canonicalizer; useful
+         as a syntax check):"""]
+
+    [example lang=shell
+      """cx fmt users.cx              [# pretty-print, lossless       #]
+         cx canon users.cx            [# strict canonical bytes        #]"""]
+
+    [body
+      """**Hash it** — the SHA-256 of the strict canonical bytes is
+         the document's identity (see [[hash]]):"""]
+
+    [example lang=shell
+      """cx hash users.cx
+         [# → 7f3a9b...c4e2  (64 hex chars)                            #]"""]
+
+    [body
+      """The hash is stable across machines, OS versions, and
+         bindings. Two documents with the same hash are
+         byte-identical in canonical form."""]]
+
+  [child id=first-conversion n=0.4 title='Convert JSON ↔ CX'
+    [intro
+      """CX speaks JSON (and YAML, TOML, XML, Markdown) as
+         projections — every projection round-trips. Start from
+         JSON:"""]
+
+    [example lang=shell
+      """cat > users.json <<'EOF'
+         {"users":[
+           {"id":1,"email":"ada@example.com","active":true},
+           {"id":2,"email":"grace@example.com","active":false}
+         ]}
+         EOF
+         cx convert --to cx users.json > users.cx"""]
+
+    [body
+      """`users.cx` now contains the CX projection of that JSON.
+         Convert back and verify the round-trip:"""]
+
+    [example lang=shell
+      """cx convert --to json users.cx > users.roundtrip.json
+         diff <(jq -S . users.json) <(jq -S . users.roundtrip.json)
+         [# → no output: byte-identical after canonicalization        #]"""]
+
+    [body
+      """The hash is also stable through the round-trip — the CX form
+         of a JSON document and the round-tripped JSON form share the
+         same content hash, because hashing is computed on canonical
+         bytes (see [[canon-cross-format]])."""]]
+
+  [child id=first-selection n=0.5 title='Select with CXPath'
+    [intro
+      """CXPath is the universal selector — for reading, for
+         iteration, for update focus. Same vocabulary everywhere. The
+         simplest query asks: "which users are active?""""]
+
+    [example lang=shell
+      """cx eval --xpath '//user[@active=true]/@email' users.cx"""]
+
+    [example lang=cx
+      """('ada@example.com', 'linus@example.com')"""]
+
+    [body
+      """Read that as: "from anywhere in the document (`//`), find a
+         `user` element with `@active=true`, then take its `@email`
+         attribute." If you have written XPath, the alignment is
+         deliberate — see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)
+         for what carries over and what does not."""]
+
+    [body
+      """The same path drives iteration in a program:"""]
+
+    [example lang=cx
+      """[?for [in $u //user[@active=true]] [yield
+           [active-user email=$u@email]]]"""]]
+
+  [child id=first-validation n=0.6 title='Validate with a schema'
+    [intro
+      """A CX schema (`.cxs`) is a CX document that describes the
+         allowed shape of another CX document. Write
+         `users.cxs`:"""]
+
+    [example lang=cx
+      """[schema target='users'
+         [element name='users' mode=strict
+           [child name='user' min=1 max='*'
+             [attr name='id'     type=int  required=true]
+             [attr name='email'  type=str  required=true]
+             [attr name='active' type=bool required=true]]]]"""]
+
+    [body
+      """Run the validator:"""]
+
+    [example lang=shell
+      """cx validate --schema users.cxs users.cx
+         [# → users.cx: ok (3 user elements validated)                 #]"""]
+
+    [body
+      """Break it on purpose to see a diagnostic. Remove `active`
+         from one user and re-run:"""]
+
+    [example lang=shell
+      """cx validate --schema users.cxs users.cx
+         [# → users.cx:2:3 CXER0301: missing required attribute 'active'  #]"""]
+
+    [body
+      """Schema modes are `open` / `strict` / `closed` — strict
+         rejects unknown attributes, closed also rejects unknown
+         child elements. See [[schema]] for the full constraint
+         vocabulary."""]]
+
+  [child id=first-binding n=0.7 title='Hello from your host language'
+    [intro
+      """CX ships four Tier-1 host-language bindings — V (the native
+         reference), Python, Go, and Rust. The Layer-1 method set is
+         identical across all four (see [[layer-1]]). One install,
+         one shape:"""]
+
+    [body
+      """**Python:**"""]
+
+    [example lang=shell
+      """pip install cxlib"""]
+
+    [example lang=python
+      """import cxlib
+
+         doc = cxlib.parse_file('users.cx')
+         print(doc.hash())                       [# stable SHA-256    #]
+         actives = doc.eval('//user[@active=true]/@email')
+         for email in actives:
+             print(email)"""]
+
+    [body
+      """**V** (native — `cxlib` is `import cx`):"""]
+
+    [example lang=v
+      """import cx
+         doc := cx.parse_file('users.cx') or { panic(err) }
+         println(doc.hash())
+         println(doc.eval('//user[@active=true]/@email'))"""]
+
+    [body
+      """**Go:**"""]
+
+    [example lang=go
+      """import "github.com/cx-lang/cx-go"
+         doc, _ := cx.ParseFile("users.cx")
+         fmt.Println(doc.Hash())
+         res, _ := doc.Eval("//user[@active=true]/@email")
+         fmt.Println(res)"""]
+
+    [body
+      """**Rust:**"""]
+
+    [example lang=rust
+      """use cxlib::Doc;
+         let doc = Doc::parse_file("users.cx")?;
+         println!("{}", doc.hash());
+         let res = doc.eval("//user[@active=true]/@email")?;
+         println!("{}", res);"""]
+
+    [note
+      """All four bindings call into the same compiled `libcx`; hash
+         values, eval results, and canonical bytes are bit-identical
+         across them. That is enforced by gate 28.6 in
+         [`spec/governance.md`](../../spec/governance.md)."""]]
+
+  [child id=next-steps n=0.8 title='Where to go next'
+    [intro
+      """You now have CX installed, you can write data, hash it,
+         convert it, query it, validate it, and call it from your
+         host language. From here, follow your interest:"""]
+
+    [list
+      [item """**Learn the data language end-to-end.** [[intro]]
+              walks the design philosophy; [[data]] is the
+              full reference for scalars, collections, sigils, and
+              mixed content."""]
+      [item """**Learn the code language.** [[code]] covers the 40
+              directives, CXPath in depth, patterns, builtins,
+              services / workers / async, and resilience."""]
+      [item """**Wire a binding into a real project.** [[bindings]]
+              has per-language quickstarts and the Layer-1 / Layer-2
+              method set."""]
+      [item """**Pick a tooling integration.** [[tooling]] covers
+              the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
+              `cx lint`, `cx diff`, and the playground."""]
+      [item """**Migrate an existing codebase.** [[migration]]
+              covers v0.7.x → v0.8.0 and intake from
+              JSON / YAML / TOML / XML."""]
+      [item """**Compare against alternatives.** [[comparison]]
+              is the side-by-side against JSON, YAML, TOML, XML,
+              Protobuf, MessagePack, Pkl, Dhall, Parquet, and
+              Arrow — including where CX is the wrong choice."""]
+      [item """**Look up a term.** [[glossary]] defines every
+              CX-specific term used in this guide; [[faq]] covers
+              the first-week-of-CX questions."""]]
+
+    [note
+      """The community lives at https://github.com/cx-lang/cx — file
+         bugs, browse RFCs, and read the spec under `spec/*.md`. The
+         playground at https://cx-lang.org/playground lets you try
+         CX from a browser with no install."""]]
+
+  [# Migrated from docs-src/content/{quickstart,install,tutorial}.cx
+     during Phase B docs → guide consolidation (2026-05-24).
+     Designer pre-approved §0.9 "Twenty-chapter walkthrough" as a
+     new front-matter sub-section. Install detail is folded as
+     §0.10. Quickstart angles fold into the existing §0.1-§0.8
+     subsections; this batch only adds the unique tutorial track
+     and the per-platform install detail. #]
+
+  [child id=install-detail n=0.10 title='Install — per-platform detail'
+    [intro
+      """Per-platform install instructions. Section §0.1 covers the
+         brew / docker / source paths at a glance; this section
+         carries the full per-platform breakdown including loader
+         path and editor wiring."""]
+
+    [child id=install-status n=0.10.1 title='Release status'
+      [body
+        """CX is on v0.8.0-dev — the "data + code" unification
+           release on branch `v0.8.0-dev`. There is no tagged
+           0.8.0 release yet; the install paths below either
+           build from source on that branch or fetch the most
+           recent tagged 0.7.x bottle. Production users should
+           pin to a tag once 0.8.0 ships."""]]
+
+    [child id=install-macos n=0.10.2 title='macOS'
+      [example lang=shell """brew install cx-lang/tap/cx"""]
+      [body
+        """The tap drops a universal binary on Apple Silicon and
+           Intel; arm64 and x86_64 ship in the same bottle."""]]
+
+    [child id=install-linux n=0.10.3 title='Linux'
+      [body
+        """Homebrew works on Linux too. The static binary tarball
+           from the GitHub Releases page works on any glibc-based
+           distro."""]
+      [example lang=shell
+        """brew install cx-lang/tap/cx
+           curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
+             | tar xz -C /usr/local/bin"""]]
+
+    [child id=install-windows n=0.10.4 title='Windows'
+      [body
+        """A static `cx.exe` ships per release on
+           github.com/cx-home/cx/releases. Drop it on PATH; no
+           installer, no dependencies."""]]
+
+    [child id=install-wasm n=0.10.5 title='WebAssembly bundle'
+      [body
+        """The `libcx-wasm` bundle powers the live evaluator in
+           the playground; on v0.8.0 it exports the
+           `_cx_code_eval` family plus `_cx_code_diagram` and
+           `_cx_code_tree`. The bundle ships
+           alongside the `cx` binary on release tags."""]]
+
+    [child id=install-source n=0.10.6 title='Build from source'
+      [example lang=shell
+        """git clone https://github.com/cx-home/cx
+           cd cx
+           git checkout v0.8.0-dev   # while 0.8.0 is in development
+           devbox run -- make build-vcx
+           devbox run -- make test"""]
+      [body
+        """The build chain expects V on PATH or the `cx-home` V
+           fork at `third_party/v`; the Makefile auto-detects
+           either. Drop the checkout line to build the most
+           recent tagged release instead."""]]
+
+    [child id=install-verify n=0.10.7 title='Verify the install'
+      [example lang=shell
+        """cx --version
+           cx --json - <<< "[hello world]" """]
+      [note
+        """A successful run prints the version and a JSON document
+           on stdout. If either fails, the build needs `libcx` on
+           the loader path (`LD_LIBRARY_PATH` on Linux,
+           `DYLD_LIBRARY_PATH` on macOS)."""]]]
+
+  [child id=tutorial-walkthrough n=0.9 title='Twenty-chapter walkthrough'
+    [intro
+      """This walkthrough walks CX from the smallest piece to the
+         fullest expression in twenty linked chapters. Each
+         chapter introduces one shape, shows it in context, and
+         ends with two or three exercises you can run with `cx
+         --ast` or `cx --json`. Pace yourself. Assumed background:
+         familiarity with at least one of JSON, YAML, TOML, or XML
+         — CX assumes you know what an object, array, scalar, and
+         attribute are. Designer pre-approved as front-matter
+         (decision recorded in `_migration_plan.md`)."""]
+
+    [child id=tut-1 n=0.9.1 title='Why CX looks the way it does'
+      [body
+        """Most projects need two kinds of file: typed
+           configuration in nested structures, and documents with
+           prose plus structure. JSON, YAML, and TOML are
+           optimized for the first; Markdown, HTML, and XML for
+           the second. Projects end up with multiple file formats
+           and multiple parsers. CX is one syntax for both. Five
+           design constraints picked the shape: one construct, no
+           indentation semantics, optional quoting, types
+           first-class, lossless conversion to existing
+           formats."""]]
+
+    [child id=tut-2 n=0.9.2 title='Elements'
+      [body
+        """Every CX node is a bracket pair with a name and an
+           optional body. Editors balance brackets natively; code
+           folding works without parser hooks. The opening name
+           appears once; nothing repeats at close."""]
+      [example lang=cx """[p Hello, World]"""]
+      [note
+        """**Exercises.** Save as `hello.cx` and run `cx --ast
+           hello.cx`. Add a child element and re-run. Then run `cx
+           --json` on the same file."""]]
+
+    [child id=tut-3 n=0.9.3 title='Attributes'
+      [body
+        """Attributes are name=value pairs after the element name.
+           Bare values auto-type: `8080` becomes int, `3.14`
+           becomes float, `true` becomes bool, `2026-01-01`
+           becomes date. Leading-zero tokens stay strings —
+           `02134` stays the string `02134` — to avoid the YAML
+           Norway problem."""]
+      [example lang=cx """[server host=api.example.com port=8080 ssl=true]"""]
+      [note """**Exercises.** Add three more attributes and check what type cx assigns each. Quote a value containing a space and inspect the AST."""]]
+
+    [child id=tut-4 n=0.9.4 title='Types'
+      [body
+        """CX auto-types most values; for the rest, a colon-type
+           annotation pins the value or body type. Sized variants
+           carry range constraints that validate at parse time."""]
+      [example lang=cx """[port :u16 8080]"""]
+      [note """**Exercises.** Try setting `:u16` to `70000` and observe the error. Compare `[n 12]` vs `[n :decimal 12]` in `cx --ast`."""]]
+
+    [child id=tut-5 n=0.9.5 title='Element bodies'
+      [body
+        """A body holds Text, Scalar, child Element, or collection
+           literal in source order. Mixed content is first-class
+           — text and structure interleave the way they do in
+           XML."""]
+      [example lang=cx """[para Try the [b Margherita] — our [em best seller], hand-tossed daily.]"""]
+      [note """Triple-quoted bodies preserve multi-line content verbatim. **Exercises.** Write an article with `h1`, `p`, `em`, `a` children; convert with `cx --md`."""]]
+
+    [child id=tut-6 n=0.9.6 title='Comments'
+      [body
+        """Hash line comments live outside element bodies.
+           Bracket-dash block comments live inside elements and
+           can span lines."""]
+      [example lang=cx """[shop port=8080 [menu [pizza name=Margherita]]]"""]
+      [note """**Exercises.** Check what `cx fmt` preserves and what `cx canonical` drops."""]]
+
+    [child id=tut-7 n=0.9.7 title='Sigils'
+      [body
+        """Five sigils give CX structural reach beyond name and
+           attribute. `@` is an attribute prefix in path
+           expressions and a reference in body position. `&`
+           declares an anchor; `*` merges from an anchor; `#`
+           declares an id; `:` pins a data type."""]
+      [example lang=cx
+        """[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]"""]]
+
+    [child id=tut-8 n=0.9.8 title='Collection literals'
+      [body
+        """Three first-class collection shapes. Sequence with
+           parens flattens; array with square brackets preserves
+           nesting; map with braces gives named key-to-value
+           entries."""]
+      [example lang=cx
+        """[pizza toppings=(cheese, basil, oil)]
+           [pizza prices={small: 9, medium: 12, large: 15}]"""]]
+
+    [child id=tut-9 n=0.9.9 title='Typed tables'
+      [body
+        """A colon-table block declares column names and types.
+           Each non-blank line below is a row; cells parse against
+           the declared column types. Round-trips to CSV with
+           types preserved via the header row. In the binary
+           ast-bin form, rows are stored column-major and run 5
+           to 10 times smaller than equivalent element-per-row
+           encoding."""]
+      [example lang=cx
+        """[orders :table[item:string qty:u32 paid:bool when:date]
+             Margherita 2 true  2026-05-09
+             Hawaiian   1 false 2026-05-09]"""]]
+
+    [child id=tut-10 n=0.9.10 title='Multi-document files'
+      [body
+        """A single CX file can hold multiple top-level documents
+           separated by three dashes on a line by themselves.
+           Same separator as YAML; each side parses as an
+           independent document. `cx parse` iterates them; `cx
+           --json` emits an array."""]]
+
+    [child id=tut-11 n=0.9.11 title='Six surface dialects'
+      [body
+        """The same tree parses and emits as CX, XML, JSON, YAML,
+           TOML, or Markdown. Each dialect captures the subset of
+           the data model it can represent."""]
+      [example lang=shell """cx parse pizza.cx --to=yaml"""]]
+
+    [child id=tut-12 n=0.9.12 title='CX code — directives inside data'
+      [body
+        """CX code is CX that does things. A directive is an
+           element whose name starts with `?`. Directives parse
+           as regular CX and evaluate against the surrounding
+           tree when `cx eval` runs the document."""]
+      [example lang=cx """[h1 //page/@title]"""]]
+
+    [child id=tut-13 n=0.9.13 title='Path expressions (CXPath)'
+      [body
+        """CXPath is the query language inside CX code. Paths
+           separated by `/`; predicates in `[…]`; axes for
+           navigation by relationship."""]
+      [example lang=cx """//pizza[@price > 10]"""]]
+
+    [child id=tut-14 n=0.9.14 title='Let and for'
+      [body
+        """`[?let]` binds a name once and reuses it. `[?for]`
+           iterates a path expression result."""]
+      [example lang=cx """[?let [= $tax 0.22] [* @price [+ 1 $tax]]]"""]]
+
+    [child id=tut-15 n=0.9.15 title='Filters'
+      [body
+        """Filter directives transform values. Compose with pipes
+           or nest them."""]
+      [example lang=cx """[?pipe @name [$trim _] [$upper _]]"""]]
+
+    [child id=tut-16 n=0.9.16 title='Multi-branch conditional'
+      [body
+        """The multi-branch `[?if]` shape avoids the else-if
+           ladder. Each branch is a condition-value pair; the
+           wildcard branch is the catch-all."""]]
+
+    [child id=tut-17 n=0.9.17 title='Named templates'
+      [body
+        """`[?def]` defines a reusable fragment. `[?use]` invokes
+           it; parameterised templates take positional args."""]
+      [example lang=cx """[?def line ($item) [tr [td $item/@name] [td $item/@qty]]]"""]]
+
+    [child id=tut-18 n=0.9.18 title='Includes'
+      [body
+        """Two include forms share one resolver. The parse-time
+           form expands files before the document reaches
+           downstream tools; the eval-time form expands files
+           while a CX program runs."""]
+      [example lang=shell """cx --xml --include-root=./conf config.cx"""]]
+
+    [child id=tut-19 n=0.9.19 title='Identity'
+      [body
+        """Every CX document has a canonical form: presentation
+           stripped, attribute order normalised, anchors
+           renumbered. `cx hash` returns the SHA-256 of those
+           canonical bytes. Two documents with the same data
+           have the same hash, in any dialect."""]
+      [example lang=shell """cx hash menu.cx"""]]
+
+    [child id=tut-20 n=0.9.20 title='Putting it all together'
+      [body
+        """Every shape composes naturally with every other. The
+           whole-shop example at §14.50 and the whole-kitchen CX
+           code example at §15.50 exercise every shape in this
+           tutorial inside a single working document."""]]]]

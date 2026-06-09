@@ -2,7 +2,7 @@
 
 // Parquet read/write bridge for cxlib (X-row / v0.7.0).
 //
-// Per ADR 0015 D11, Parquet lives at the binding layer (not inside
+// Per, Parquet lives at the binding layer (not inside
 // libcx). This file composes the existing cxlib.Arrow* path with
 // arrow-go/v18's parquet/pqarrow package to provide one-call CX <->
 // Parquet round-trips without adding a Parquet C++ dependency to
@@ -35,7 +35,7 @@ type ParquetWriteOptions struct {
 	RowGroupSize int64
 }
 
-// ParquetWriteFile writes a framed CXDB chunked-table to a Parquet file.
+// ParquetWriteFile writes a framed CXCol chunked-table to a Parquet file.
 // Composes ArrowExport (cx -> Arrow) with pqarrow.NewFileWriter.
 func ParquetWriteFile(cxDataBin []byte, path string, opts ParquetWriteOptions) error {
 	reader, err := ArrowExport(cxDataBin)
@@ -76,7 +76,7 @@ func ParquetWriteFile(cxDataBin []byte, path string, opts ParquetWriteOptions) e
 	return nil
 }
 
-// ParquetReadFile reads a Parquet file and returns UNFRAMED CXDB
+// ParquetReadFile reads a Parquet file and returns UNFRAMED CXCol
 // chunked-table payload bytes (matches ArrowImportToDataBin's
 // convention; see lang/go/cxlib/arrow.go). Callers passing the
 // result to FromDataBin must wrap it with a 4-byte LE size prefix

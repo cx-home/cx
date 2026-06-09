@@ -2,14 +2,17 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "CX",
   "scopeName": "source.cx",
-  "fileTypes": ["cx", "cxl"],
-  "comment": "Q6 v0.7.0: TextMate grammar for CX. Covers v0.7.0 surface — directive forms, FLWOR clauses, fn / partial / match / try, lookup operator, operator-token forms, body-position refs, anchors / IDs / merges.",
+  "fileTypes": ["cx", "cxs"],
+  "comment": "TextMate grammar for CX v0.8.0. Covers the program surface (the code.md §4.1 directive registry — modify / match / for / for-array / for-map / let / fn / def / lib / const / if / pipe / map / reduce / iterator stdlib / resilience / services / concurrency / async / with-* family) plus CXPath value expressions (grammar.ebnf [130]-[135]: '//'-prefix paths, axis specifiers, attribute tests, general predicates), reserved bindings `$_` / `$_position` / `$_last` (code.md §5.5.2), the `(bind $name)` path-step annotation (grammar.ebnf [160a]), bare `pure` / `impure` def modifiers (code.md §12.2), and the universal CX data surface (anchors / IDs / merges / `[table …]` typed tables / glued `::T` annotations / mixed content / [- comments -] in data context, [# comments #] in program context). Directive arms and actions are bracket clause-children per code.md §§7-8 ([case …] / [when …] / [else …] / [set …] / [yield …] …) — the v0.7 colon-slot surface (`:case`, `:set`, `:scope`, …) is retired and intentionally unrecognized, as are the `+name`/`-name` bool sigils and `[?try]`.",
   "patterns": [
     { "include": "#comment" },
     { "include": "#xml-decl" },
     { "include": "#cx-directive" },
+    { "include": "#modify-directive" },
+    { "include": "#match-directive" },
     { "include": "#eval-directive" },
     { "include": "#interpolation" },
+    { "include": "#path-expr" },
     { "include": "#element" },
     { "include": "#scalar" },
     { "include": "#quoted-string" }
@@ -18,6 +21,7 @@
     "comment": {
       "patterns": [
         { "name": "comment.line.number-sign.cx", "match": "#.*$" },
+        { "name": "comment.block.program.cx", "begin": "\\[#", "end": "#\\]" },
         { "name": "comment.block.cx", "begin": "\\[-", "end": "\\]" }
       ]
     },
@@ -26,16 +30,112 @@
       "name": "meta.xml-decl.cx"
     },
     "cx-directive": {
+      "comment": "[?cx …] document processing instruction. Option vocabulary per code.md §13 (include), schema.md (schema / schema-* / frag), ast.md evaluator options (output-target / output-strict / cx-version / allow-eval), formatting.md (format), canonical.md (version).",
       "begin": "\\[\\?cx\\b",
       "end": "\\]",
       "name": "meta.cx-directive.cx",
       "patterns": [
-        { "name": "entity.name.tag.cx-directive.cx", "match": "\\b(allow-eval|pure-only|log-level|log-format|log-output|test-mode|max-eval-depth|output-target|output-strict|cx-eval-version|cxl-version|use-module|schema|include|version)\\b" },
+        { "name": "entity.name.tag.cx-directive.cx", "match": "\\b(allow-eval|cx-version|output-target|output-strict|include|schema-inline|schema-mode|schema-name|schema-of|schema-version|schema|format|frag|version)\\b" },
         { "include": "#scalar" },
         { "include": "#quoted-string" }
       ]
     },
+    "modify-directive": {
+      "comment": "[?modify doc //focus ACTION+] — code.md §8.10 pure-functional update. The 11 actions are bracket clause-children (grammar.ebnf [142]-[148e]); each action head colors as keyword.control.modify via #modify-action-clause.",
+      "begin": "\\[\\?modify\\b",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.eval-directive.begin.cx" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.eval-directive.end.cx" }
+      },
+      "name": "meta.modify-directive.cx",
+      "patterns": [
+        { "include": "#modify-action-clause" },
+        { "include": "#path-expr" },
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "name": "keyword.operator.token.cx", "match": "=>|\\|\\||!=|<=|>=|->" },
+        { "include": "#type-annotation" },
+        { "include": "#interpolation" },
+        { "include": "#scalar" },
+        { "include": "#quoted-string" },
+        { "include": "#element" }
+      ]
+    },
+    "modify-action-clause": {
+      "comment": "One [ACTION …] clause-child inside [?modify] (grammar.ebnf [142]). Longest names first so `set-attr` / `delete-attr` are not tokenised as `set` / `delete`.",
+      "begin": "\\[(set-attr|delete-attr|insert-before|insert-after|using|rename|append|prepend|replace|delete|set)(?=[\\s\\]])",
+      "end": "\\]",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.modify.cx" }
+      },
+      "name": "meta.modify-action.cx",
+      "patterns": [
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "include": "#path-expr" },
+        { "include": "#type-annotation" },
+        { "include": "#interpolation" },
+        { "include": "#scalar" },
+        { "include": "#quoted-string" },
+        { "include": "#element" }
+      ]
+    },
+    "match-directive": {
+      "comment": "[?match] — code.md §8.2 pattern dispatch. Arms are bracket clause-children (grammar.ebnf [137]-[140]): [case PATTERN [where GUARD]? BODY] / [when GUARD BODY] / [else BODY]; the single-arm form uses a trailing [yield E] clause (grammar.ebnf [136]).",
+      "begin": "\\[\\?match\\b",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.eval-directive.begin.cx" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.eval-directive.end.cx" }
+      },
+      "name": "meta.match-directive.cx",
+      "patterns": [
+        { "include": "#match-arm-clause" },
+        { "name": "constant.language.placeholder.cx", "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])" },
+        { "include": "#path-expr" },
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "name": "keyword.operator.token.cx", "match": "=>|\\|\\||!=|<=|>=|->" },
+        { "include": "#type-annotation" },
+        { "include": "#interpolation" },
+        { "include": "#scalar" },
+        { "include": "#quoted-string" },
+        { "include": "#element" }
+      ]
+    },
+    "match-arm-clause": {
+      "comment": "One arm / guard / yield clause-child inside [?match] (grammar.ebnf [136]-[140]). `[where G]` appears nested inside [case …]; `[yield E]` closes the single-arm form.",
+      "begin": "\\[(case|when|where|else|yield)(?=[\\s\\]])",
+      "end": "\\]",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.match.cx" }
+      },
+      "name": "meta.match-arm.cx",
+      "patterns": [
+        { "include": "#match-arm-clause" },
+        { "name": "constant.language.placeholder.cx", "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])" },
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "include": "#path-expr" },
+        { "name": "keyword.operator.token.cx", "match": "=>|\\|\\||!=|<=|>=|->" },
+        { "include": "#type-annotation" },
+        { "include": "#interpolation" },
+        { "include": "#scalar" },
+        { "include": "#quoted-string" },
+        { "include": "#element" }
+      ]
+    },
     "eval-directive": {
+      "comment": "Directive registry per code.md §4.1 / grammar.ebnf [127e]. [?match] + [?modify] are picked off above by their own repository entries so arm/action clause coloring wins. [?try] is retired (code.md §9.3) and intentionally absent. Longest names first so `for-array` / `await-all` are not tokenised as `for` / `await`.",
       "begin": "\\[\\?",
       "end": "\\]",
       "beginCaptures": {
@@ -46,17 +146,104 @@
       },
       "name": "meta.eval-directive.cx",
       "patterns": [
-        { "name": "keyword.control.eval-directive.cx", "match": "\\b(if|for|with|include|def|use|let|fn|match|try|for-tumbling|for-sliding|for-group-by|fn-ref|partial|apply|focus|str-template|error|range)\\b" },
-        { "name": "entity.name.function.module.cx", "match": "\\b(cx|log|fn|map|array|math):[A-Za-z][A-Za-z0-9_-]*" },
-        { "name": "keyword.operator.flwor.cx", "match": ":(let|where|count|order-by|group-by|tumbling|sliding|in|return|while|be|then|else|body|params)\\b" },
-        { "name": "constant.language.placeholder.cx", "match": "\\b_\\b" },
-        { "name": "keyword.operator.token.cx", "match": "\\|>|=>|\\|\\||!=|<=|>=|->" },
+        { "name": "keyword.control.eval-directive.cx", "match": "\\b(with-open|with-scope|with-error-hook|with-caps|modify|match|for-array|for-map|for|let|fn|def|lib|const|if|else|pipe|map|reduce|filter|take|drop|zip|enumerate|chunks|concat|chain|cycle|scan|flatten|partition|group-by|to-sequence|to-array|to-map|views|view|str|retry|timeout|circuit-breaker|fallback|rate-limit|bulkhead|http-service|service-handle|http-client|worker-handle|worker|channel|send|receive|try-send|try-receive|close|select|stop|wait-for|async|await-all|await-any|await-race|await|cancel|check-cancel|sleep|secret|reveal)(?=[\\s\\]])" },
+        { "include": "#clause-child" },
+        { "include": "#let-clause" },
+        { "name": "keyword.other.modifier.cx", "comment": "Bare modifier barewords: pure / impure on [?def] (code.md §12.2), lazy on [?const] (§12.3), in-memory on [?lib] (§12.1), asc / desc on [order-by] (§7).", "match": "\\b(pure|impure|lazy|in-memory|asc|desc)(?=[\\s\\]])" },
+        { "name": "constant.language.scope.cx", "comment": "`scope=public|private` visibility attribute on [?def] / [?const] / [?lib] (code.md §12).", "match": "\\b(public|private)\\b" },
+        { "name": "constant.language.placeholder.cx", "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])" },
+        { "include": "#path-expr" },
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "name": "keyword.operator.token.cx", "match": "=>|\\|\\||!=|<=|>=|->" },
+        { "include": "#type-annotation" },
         { "include": "#interpolation" },
         { "include": "#scalar" },
         { "include": "#quoted-string" }
       ]
     },
+    "clause-child": {
+      "comment": "Generic [head …] clause-child inside a directive body. Heads per the per-directive registries in code.md §4.1: [?for] clauses (§7 — in / where / yield / yield-array / yield-map / order-by / group-by / limit / take / drop / takewhile / dropwhile / par / stream / ordered / fail-fast), [?if] branches (§8.4 — then / else), [?def] type clauses (§12.2 — returns / throws), [?lib] selective refer (§12.1 — only), [?pipe] taps (§8.9 — tap), [?with-error-hook] clauses (§9.6 — observe / enrich / report / format / sink), [?with-caps] denies (security.md §3 — deny). Longest names first so e.g. `yield-map` is not tokenised as `yield`.",
+      "begin": "\\[(yield-array|yield-map|takewhile|dropwhile|order-by|group-by|fail-fast|in|where|yield|limit|take|drop|par|stream|ordered|then|else|returns|throws|only|tap|observe|enrich|report|format|sink|deny)(?=[\\s\\]])",
+      "end": "\\]",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.clause.cx" }
+      },
+      "name": "meta.clause-child.cx",
+      "patterns": [
+        { "include": "#clause-child" },
+        { "include": "#let-clause" },
+        { "name": "constant.language.placeholder.cx", "match": "(?<![A-Za-z0-9_])_(?![A-Za-z0-9_])" },
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "include": "#path-expr" },
+        { "name": "keyword.other.modifier.cx", "match": "\\b(asc|desc)(?=[\\s\\]])" },
+        { "name": "keyword.operator.token.cx", "match": "=>|\\|\\||!=|<=|>=|->" },
+        { "include": "#type-annotation" },
+        { "include": "#interpolation" },
+        { "include": "#scalar" },
+        { "include": "#quoted-string" },
+        { "include": "#element" }
+      ]
+    },
+    "let-clause": {
+      "comment": "[= $name VALUE] let-binding clause (code.md §8.1 [?let], §7 [?for]).",
+      "begin": "\\[(=)(?=[\\s\\]])",
+      "end": "\\]",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.let-binding.cx" }
+      },
+      "name": "meta.let-clause.cx",
+      "patterns": [
+        { "include": "#clause-child" },
+        { "include": "#let-clause" },
+        { "include": "#reserved-sigils" },
+        { "include": "#module-call" },
+        { "name": "variable.other.program-binding.cx", "match": "\\$[A-Za-z_][A-Za-z0-9_-]*" },
+        { "include": "#path-expr" },
+        { "name": "keyword.operator.token.cx", "match": "=>|\\|\\||!=|<=|>=|->" },
+        { "include": "#type-annotation" },
+        { "include": "#interpolation" },
+        { "include": "#scalar" },
+        { "include": "#quoted-string" },
+        { "include": "#element" }
+      ]
+    },
+    "module-call": {
+      "comment": "Qualified module reference `$prefix:local` (code.md §12.1.1 — `[$math:abs -3]`). Matched before the generic `$name` binding so the qualified form colors as a function reference.",
+      "match": "\\$[A-Za-z_][A-Za-z0-9_-]*:[A-Za-z_][A-Za-z0-9_-]*",
+      "name": "entity.name.function.module.cx"
+    },
+    "type-annotation": {
+      "comment": "Glued `::T` type annotation (grammar.ebnf [26]) — element heads (`[port::u16 8080]`), attributes (`port::u16=8080`), table columns (`name::int`), def params (`$x::int`), typed-bind patterns (`$x::int`, code.md §5.2 rule 14); `::T[]` typed array; `::[]` inferred array. A single-colon `:name` is an atom literal (#scalar), never a type.",
+      "match": "::(?:[A-Za-z][A-Za-z0-9_-]*(?:\\[\\])?|\\[\\])",
+      "name": "support.type.cx"
+    },
+    "path-expr": {
+      "comment": "CXPath expression (grammar.ebnf [130]-[135], [159]-[160a]). Matches '//' and '/'-prefix paths plus axis specifiers, attribute tests, the path-step wildcard `*`, and the `(bind $name)` step annotation. Token-level patterns; the full path grammar lives in libcx — these patterns provide coloring inside directive expression slots. The single '/' step separator is matched ONLY when preceded by ']', a name char, or a sigil-closing char to avoid catching '/' inside string literals (strings are handled by #quoted-string which is included BEFORE #path-expr in directive bodies).",
+      "patterns": [
+        { "name": "keyword.operator.path.descendant.cx", "match": "//" },
+        { "name": "keyword.operator.path.step.cx", "comment": "Single '/' step separator. Bound between an identifier/closer ']' on the left and an identifier or '@' or '*' or axis-prefix on the right — biases away from arithmetic and from '/' inside text. Strings are tokenized first by the parent rule, so '/' inside a string literal is never seen here.", "match": "(?<=[A-Za-z0-9_\\]\\*])/(?=[A-Za-z_@\\*])" },
+        { "name": "keyword.other.bind.cx", "comment": "(bind $name) parenthesised peer-annotation on a path Step (grammar.ebnf [160a], code.md §5.5.2). Captured as a single unit so editors can hover-highlight the binding declaration.", "match": "\\(bind\\s+\\$[A-Za-z_][A-Za-z0-9_-]*\\)" },
+        { "name": "keyword.coroutine.axis.cx", "match": "\\b(child|descendant-or-self|descendant|parent|ancestor-or-self|ancestor|following-sibling|preceding-sibling|following|preceding|self|attribute)::" },
+        { "name": "support.function.builtin.path.cx", "match": "\\b(node|text|element|attribute)\\(\\)" },
+        { "name": "keyword.operator.sequence.cx", "match": "\\b(union|intersect|except|to|by|instance|of|cast|as|some|every|in|satisfies)\\b" },
+        { "name": "keyword.operator.path.wildcard.cx", "comment": "Path-step wildcard '*' — matches any element name. Distinct from arithmetic '*' (which appears between two numeric values, not in step position).", "match": "(?<=/|^|\\s)\\*(?=/|\\[|\\s|$|\\])" },
+        { "name": "entity.other.attribute-name.cxpath.cx", "match": "@[A-Za-z_][A-Za-z0-9_-]*" }
+      ]
+    },
+    "reserved-sigils": {
+      "comment": "Reserved bindings in PredicateExpr scope (grammar.ebnf [159], code.md §5.5.2). $_ is the context item; $_position and $_last are 1-based int implicit bindings. These take precedence over the generic `\\$[A-Za-z_]...` variable-binding pattern by appearing earlier in directive-body patterns. Outside a predicate body `$_` is also legal as an ordinary binding (e.g. `[?for [in $_ seq] …]`); the highlighter doesn't gate on predicate-scope, but the distinct color makes the sigil-family visible regardless.",
+      "patterns": [
+        { "name": "variable.language.context-position.cx", "comment": "$_position — 1-based int position binding (code.md §5.5.2).", "match": "\\$_position\\b" },
+        { "name": "variable.language.context-last.cx", "comment": "$_last — cardinality binding (code.md §5.5.2).", "match": "\\$_last\\b" },
+        { "name": "variable.language.context-item.cx", "comment": "$_ — context-item binding inside PredicateExpr (code.md §5.5.2). Must not match $_position / $_last (handled above), $_foo (user binding starting with _).", "match": "\\$_(?![A-Za-z0-9_-])" }
+      ]
+    },
     "interpolation": {
+      "comment": "[?= …] value interpolation (grammar.ebnf [58]) — body is an opaque CXPath expression parsed by the program evaluator.",
       "begin": "\\[\\?=",
       "end": "\\]",
       "beginCaptures": {
@@ -69,7 +256,7 @@
       "patterns": [
         { "name": "variable.other.cxpath.cx", "match": "@[A-Za-z_][A-Za-z0-9_-]*" },
         { "name": "constant.cxpath.id.cx", "match": "#[A-Za-z_][A-Za-z0-9_-]*" },
-        { "name": "keyword.operator.token.cx", "match": "\\|>|=>|\\?[A-Za-z_]|<=|>=|->" }
+        { "name": "keyword.operator.token.cx", "match": "=>|<=|>=|->" }
       ]
     },
     "element": {
@@ -81,11 +268,14 @@
         { "name": "constant.cxpath.id.cx", "match": "#[A-Za-z_][A-Za-z0-9_-]*" },
         { "name": "constant.cxpath.anchor.cx", "match": "&[A-Za-z_][A-Za-z0-9_-]*" },
         { "name": "constant.cxpath.merge.cx", "match": "\\*[A-Za-z_][A-Za-z0-9_-]*" },
-        { "name": "support.type.cx", "match": ":[a-z][a-z0-9_-]*" },
-        { "name": "entity.other.attribute-name.cx", "match": "\\b([A-Za-z_][A-Za-z0-9_-]*)=" },
+        { "include": "#type-annotation" },
+        { "match": "\\b([A-Za-z_][A-Za-z0-9_-]*)(=)", "captures": { "1": { "name": "entity.other.attribute-name.cx" }, "2": { "name": "keyword.operator.assignment.cx" } } },
         { "name": "variable.other.bodyref.cx", "match": "@[A-Za-z_][A-Za-z0-9_-]*" },
+        { "include": "#comment" },
+        { "include": "#element" },
         { "include": "#scalar" },
-        { "include": "#quoted-string" }
+        { "include": "#quoted-string" },
+        { "comment": "Unquoted attribute value (bareword/URL/path/dotted): scoped distinctly from the attribute name. Lookbehind `=` keeps it to value position; placed AFTER #scalar so numbers/booleans/dates/atoms keep their own colors.", "name": "string.unquoted.cx", "match": "(?<==)[^\\s\\[\\]\"'`]+" }
       ]
     },
     "scalar": {
@@ -95,7 +285,8 @@
         { "name": "constant.language.boolean.cx", "match": "\\b(true|false)\\b" },
         { "name": "constant.language.null.cx", "match": "\\bnull\\b" },
         { "name": "constant.other.date.cx", "match": "\\b[0-9]{4}-[0-9]{2}-[0-9]{2}\\b" },
-        { "name": "constant.other.datetime.cx", "match": "\\b[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([Zz]|[+-][0-9]{2}:?[0-9]{2})\\b" }
+        { "name": "constant.other.datetime.cx", "match": "\\b[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([Zz]|[+-][0-9]{2}:?[0-9]{2})\\b" },
+        { "name": "constant.other.atom.cx", "comment": "Atom literal `:NAME` (code.md §3.6) — tag-shaped scalar. Single colon; the glued double-colon `::T` is a type annotation (#type-annotation). Reserved names :true/:false/:null are rejected at lex time.", "match": "(?<!:):[A-Za-z_][A-Za-z0-9_-]*" }
       ]
     },
     "quoted-string": {

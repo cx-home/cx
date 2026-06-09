@@ -1,23 +1,23 @@
 """
-CXDB v1 codec — strict canonical binary data format.
+CXCol v1 codec — strict canonical binary data format.
 
-Spec: spec/data_bin.md. Decoder consumes the framed [u32 LE size][payload]
+Spec: spec/core/data-bin.md. Decoder consumes the framed [u32 LE size][payload]
 buffer returned by libcx.cx_to_data_bin; encoder produces the same shape
 for input to libcx.cx_from_data_bin.
 
 This module replaces the JSON-string detour previously used by ast.loads
 and ast.dumps (audit finding CB-3). Python types are produced/consumed
 directly:
-    int   <-> CXDB int8/int16/int32/int64
-    float <-> CXDB float64
-    bool  <-> CXDB false/true
-    None  <-> CXDB null
-    str   <-> CXDB string
-    bytes <-> CXDB bytes
-    dict  <-> CXDB map (insertion order preserved)
-    list  <-> CXDB array
-    datetime.date     <-> CXDB date
-    datetime.datetime <-> CXDB datetime (placeholder source string in v1)
+    int   <-> CXCol int8/int16/int32/int64
+    float <-> CXCol float64
+    bool  <-> CXCol false/true
+    None  <-> CXCol null
+    str   <-> CXCol string
+    bytes <-> CXCol bytes
+    dict  <-> CXCol map (insertion order preserved)
+    list  <-> CXCol array
+    datetime.date     <-> CXCol date
+    datetime.datetime <-> CXCol datetime (placeholder source string in v1)
 
 Tables are returned as a Table object (cxlib.Table); see cxlib/table.py
 once that lands. For now table tags decode as a list of dicts (one
@@ -29,7 +29,7 @@ import struct
 from typing import Any
 
 
-# Tag bytes — see spec/data_bin.md §3.2.
+# Tag bytes — see spec/core/data-bin.md §3.2.
 _TAG_NULL          = 0x00
 _TAG_FALSE         = 0x01
 _TAG_TRUE          = 0x02
@@ -57,7 +57,7 @@ _TAG_MAP_EMPTY     = 0x51
 _TAG_TABLE         = 0x60
 _TAG_TABLE_EMPTY   = 0x61
 
-_MAGIC = b"CXDB"
+_MAGIC = b"CXCol"
 _VERSION = 0x01
 _FLAGS_LE = 0x01
 _DEFAULT_MAX_DEPTH = 64
@@ -84,14 +84,14 @@ class _Reader:
 
     def _take(self, n: int) -> bytes:
         if self._p + n > len(self._d):
-            raise RuntimeError(f"cxdb: {n} bytes requested, {len(self._d) - self._p} remaining")
+            raise RuntimeError(f"cxcol: {n} bytes requested, {len(self._d) - self._p} remaining")
         out = self._d[self._p:self._p + n]
         self._p += n
         return out
 
     def _u8(self) -> int:
         if self._p >= len(self._d):
-            raise RuntimeError("cxdb: unexpected end of input")
+            raise RuntimeError("cxcol: unexpected end of input")
         v = self._d[self._p]
         self._p += 1
         return v
@@ -109,13 +109,13 @@ class _Reader:
             b = self._u8()
             if b < 0x80:
                 if i == 4 and b > 0x0F:
-                    raise RuntimeError("cxdb: varint overflow (>2^32-1)")
+                    raise RuntimeError("cxcol: varint overflow (>2^32-1)")
                 if i > 0 and b == 0:
-                    raise RuntimeError("cxdb: non-canonical varint (extra zero byte)")
+                    raise RuntimeError("cxcol: non-canonical varint (extra zero byte)")
                 return x | (b << shift)
             x |= (b & 0x7F) << shift
             shift += 7
-        raise RuntimeError("cxdb: varint exceeds 5 bytes")
+        raise RuntimeError("cxcol: varint exceeds 5 bytes")
 
     def _string(self) -> str:
         n = self._uvarint()
@@ -124,7 +124,7 @@ class _Reader:
     def _value(self) -> Any:
         self._depth += 1
         if self._depth > self._max_depth:
-            raise RuntimeError(f"cxdb: recursion depth exceeds limit ({self._max_depth})")
+            raise RuntimeError(f"cxcol: recursion depth exceeds limit ({self._max_depth})")
         try:
             tag = self._u8()
             if tag == _TAG_NULL: return None
@@ -160,19 +160,19 @@ class _Reader:
             if tag == _TAG_ARRAY:
                 count = self._uvarint()
                 if count == 0:
-                    raise RuntimeError("cxdb: array tag 0x40 with count=0; use 0x41 for empty")
+                    raise RuntimeError("cxcol: array tag 0x40 with count=0; use 0x41 for empty")
                 return [self._value() for _ in range(count)]
             if tag == _TAG_ARRAY_EMPTY:
                 return []
             if tag == _TAG_MAP:
                 count = self._uvarint()
                 if count == 0:
-                    raise RuntimeError("cxdb: map tag 0x50 with count=0; use 0x51 for empty")
+                    raise RuntimeError("cxcol: map tag 0x50 with count=0; use 0x51 for empty")
                 out = {}
                 for _ in range(count):
                     key_tag = self._u8()
                     if key_tag != _TAG_STRING:
-                        raise RuntimeError(f"cxdb: map key must be string; got 0x{key_tag:02x}")
+                        raise RuntimeError(f"cxcol: map key must be string; got 0x{key_tag:02x}")
                     # Bind key first — Python evaluates the RHS of subscript
                     # assignment before the key, so read order would reverse.
                     key = self._string()
@@ -182,7 +182,7 @@ class _Reader:
                 return {}
             if tag == _TAG_TABLE or tag == _TAG_TABLE_EMPTY:
                 return self._table_payload(tag)
-            raise RuntimeError(f"cxdb: unknown tag 0x{tag:02x} at offset {self._p - 1}")
+            raise RuntimeError(f"cxcol: unknown tag 0x{tag:02x} at offset {self._p - 1}")
         finally:
             self._depth -= 1
 
@@ -194,7 +194,7 @@ class _Reader:
         for _ in range(col_count):
             key_tag = self._u8()
             if key_tag != _TAG_STRING:
-                raise RuntimeError(f"cxdb: table column name must be string; got 0x{key_tag:02x}")
+                raise RuntimeError(f"cxcol: table column name must be string; got 0x{key_tag:02x}")
             name = self._string()
             self._u8()  # column type code (informational; we use per-cell tags)
             cols.append(name)
@@ -207,27 +207,29 @@ class _Reader:
 
 
 def decode(framed: bytes, max_depth: int = _DEFAULT_MAX_DEPTH) -> Any:
-    """Decode a framed CXDB v1 buffer into Python types."""
+    """Decode a framed CXCol v1 buffer into Python types."""
     if len(framed) < 4:
-        raise RuntimeError("cxdb: input too short for size header")
+        raise RuntimeError("cxcol: input too short for size header")
     payload_size = _UNP_U32.unpack_from(framed, 0)[0]
     if 4 + payload_size > len(framed):
-        raise RuntimeError(f"cxdb: declared payload ({payload_size}) exceeds remaining input")
+        raise RuntimeError(f"cxcol: declared payload ({payload_size}) exceeds remaining input")
     payload = framed[4:4 + payload_size]
     if len(payload) < 12:
-        raise RuntimeError("cxdb: payload too short for 12-byte header")
-    if payload[0:4] != _MAGIC:
-        raise RuntimeError("cxdb: bad magic (expected 'CXDB')")
-    if payload[4] != _VERSION:
-        raise RuntimeError(f"cxdb: unsupported version {payload[4]}")
-    flags = payload[5]
+        raise RuntimeError("cxcol: payload too short for 12-byte header")
+    # Wire magic — 5-byte "CXCol"; header is 12 bytes total.
+    # See spec/core/data-bin.md §3.1.
+    if payload[0:5] != _MAGIC:
+        raise RuntimeError("cxcol: bad magic (expected 'CXCol')")
+    if payload[5] != _VERSION:
+        raise RuntimeError(f"cxcol: unsupported version {payload[5]}")
+    flags = payload[6]
     if flags & 0xFE != 0:
-        raise RuntimeError("cxdb: reserved flag bits set in header")
+        raise RuntimeError("cxcol: reserved flag bits set in header")
     if flags & 0x01 == 0:
-        raise RuntimeError("cxdb: only little-endian payloads supported in v1")
-    # bytes 6-9 max_depth; 10-11 reserved (must be zero)
-    if payload[10] != 0 or payload[11] != 0:
-        raise RuntimeError("cxdb: reserved header bytes must be zero")
+        raise RuntimeError("cxcol: only little-endian payloads supported in v1")
+    # bytes 7-10 max_depth (u32 LE); byte 11 reserved (must be zero)
+    if payload[11] != 0:
+        raise RuntimeError("cxcol: reserved header byte must be zero")
     r = _Reader(payload[12:], max_depth)
     return r._value()
 
@@ -295,7 +297,7 @@ class _Writer:
             self._uvarint(len(v))
             for k, vv in v.items():
                 if not isinstance(k, str):
-                    raise RuntimeError(f"cxdb: map keys must be str; got {type(k).__name__}")
+                    raise RuntimeError(f"cxcol: map keys must be str; got {type(k).__name__}")
                 self._string(k)
                 self._value(vv)
             return
@@ -307,7 +309,7 @@ class _Writer:
             for x in v:
                 self._value(x)
             return
-        raise RuntimeError(f"cxdb: unsupported type {type(v).__name__}")
+        raise RuntimeError(f"cxcol: unsupported type {type(v).__name__}")
 
     def _int_canonical(self, v: int):
         if -128 <= v <= 127:
@@ -318,18 +320,19 @@ class _Writer:
             self._u8(_TAG_INT32); self._buf += _UNP_I32.pack(v); return
         if -(2**63) <= v <= (2**63) - 1:
             self._u8(_TAG_INT64); self._buf += _UNP_I64.pack(v); return
-        raise RuntimeError(f"cxdb: integer {v} exceeds i64 range; bigint not yet supported in Python encoder")
+        raise RuntimeError(f"cxcol: integer {v} exceeds i64 range; bigint not yet supported in Python encoder")
 
 
 def encode(value: Any) -> bytes:
-    """Encode Python value to a framed CXDB v1 buffer."""
+    """Encode Python value to a framed CXCol v1 buffer."""
     w = _Writer()
-    # Header
+    # Header — 5-byte magic + 1 ver + 1 flags + 4 max_depth + 1 reserved
+    # = 12 bytes. (v0.8.0 layout; pre-v0.8.0 was 4-byte magic + 2 reserved.)
     w._buf += _MAGIC
     w._u8(_VERSION)
     w._u8(_FLAGS_LE)
     w._u32(_DEFAULT_MAX_DEPTH)
-    w._u8(0); w._u8(0)
+    w._u8(0)  # reserved (1 byte)
     # Root value
     w._value(value)
     payload = bytes(w._buf)

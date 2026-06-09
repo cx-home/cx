@@ -6,14 +6,27 @@ for `.cx` files. Since v0.7.0 the language server is built into the
 
 **Requirements:** Neovim ≥ 0.11, `cx` on `$PATH` (or `CX_BIN` env var).
 
-**Highlighting architecture (ADR 0025).** `cx lsp` semanticTokens are
-the source of truth for v0.7.0+ directive interiors (`?if`/`?for`/
-`?fn`/`?match`/`?let`/FLWOR slots/operator tokens). Tree-sitter is
-structural-only: it tokenises element names, attributes, scalars,
-prose markup, code blocks, and provides embedded-language injection
-for `[``` lang=X [\| … \|] ]` blocks. **You want both** — LSP for
-directive content, tree-sitter for embedded JSON/Python/SQL/etc.
-inside code blocks.
+**Highlighting architecture.** `cx lsp` semanticTokens are
+the source of truth for v0.8.0 directive interiors — the full
+40-directive registry per spec/code.md §4.1, including the structured
+v0.8.0 additions `[?def]` / `[?lib]` / `[?const]` (code.md §12.2 / code.md §12.1/§12.3),
+multi-arm `[?match]` with `[case]` / `[when]` / `[where]` / `[else]`
+clause-children (code.md §8.2), `[?modify]` with the eleven action
+clauses (`[set]` / `[delete]` / `[using]` / `[rename]` / `[set-attr]` /
+`[delete-attr]` / `[append]` / `[prepend]` / `[insert-before]` /
+`[insert-after]` / `[replace]`, code.md §8.10), CXPath value
+expressions with 12 axes + reserved sigils `$_` / `$_position` /
+`$_last` + `(bind $name)` step annotation (code.md §5.5 + code.md §5.5.2), and
+`pure` / `impure` def modifiers (code.md §12.2).
+Tree-sitter is structural plus the new v0.8.0 structured directives
+(`match_directive` / `modify_directive` / `def_directive` /
+`lib_directive` / `const_directive`); legacy directives fall through
+to opaque `unknown_directive` regions. Embedded-language injection — into a
+block wrapped by a language-named element (`[python [\| … \|] ]`,
+`[json [# … #]]`) or an explicit `[code lang=X [\| … \|] ]` — works for both.
+**You want both** — LSP for full directive content, tree-sitter for embedded
+JSON / Python / SQL / etc. inside those blocks and structural fallback when
+LSP is off.
 
 ---
 
@@ -49,7 +62,7 @@ dofile('/path/to/cx-repo/tooling/neovim/cx.lua')
 
 ```sh
 which cx          # → /usr/local/bin/cx (or wherever)
-cx --version      # → cx 0.7.0
+cx --version      # → cx 0.8.0
 ```
 
 If `cx` lives somewhere non-standard, set `CX_BIN=/abs/path/to/cx` in
@@ -62,7 +75,7 @@ your shell init.
 | Feature | Source |
 | --- | --- |
 | Syntax highlighting | Tree-sitter when installed; LSP semanticTokens otherwise |
-| Embedded languages | JSON / YAML / Python / Bash / JS / TS / Rust / Go / SQL / CSS / HTML / XML inside `[``` lang=X [\| … \|] ]` blocks (tree-sitter only) |
+| Embedded languages | JSON / YAML / Python / Bash / JS / TS / Rust / Go / SQL / CSS / HTML / XML / … inside a block wrapped by a language-named element — `[python [\| … \|] ]`, `[json [# … #]]` — or an explicit `[code lang=X [\| … \|] ]` (tree-sitter only; the injected parser must be installed) |
 | Diagnostics | Live, on every change (`publishDiagnostics` from libcx parse) |
 | Hover | Directive docs + module-function docstrings |
 | Completion | Snippet-flavoured directive skeletons + module surface |
@@ -72,7 +85,7 @@ your shell init.
 | Outline view | Document symbols (`gO`) |
 | Code folding | LSP `foldingRange` (every multi-line `[...]`) |
 | Smart selection | Expand to enclosing directive / element / doc (`<leader>v`) |
-| Signature help | Param hints inside `[?fn ...]` bodies (`<C-k>`) |
+| Signature help | Param hints inside `[?fn ...]` / `[?def ...]` bodies (`<C-k>`) |
 | Code action | Quick fixes from diagnostics (`<leader>a`) |
 | Format | Buffer-format wraps `cx fmt` (`<leader>f`) |
 

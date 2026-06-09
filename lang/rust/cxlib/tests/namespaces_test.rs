@@ -1,9 +1,9 @@
-//! Namespace resolution tests for the Rust binding (ADR 0002).
+//! Namespace resolution tests for the Rust binding.
 //!
 //! Mirrors lang/python/test_namespaces.py.
 
 use cxlib::ast::{
-    parse, resolve_namespaces, Element, Node, XML_NAMESPACE_URI, CX_NAMESPACE_URI,
+    parse, resolve_namespaces, Element, Node, XML_NAMESPACE_URI,
 };
 
 fn root(d: &cxlib::ast::Document) -> &Element {
@@ -61,10 +61,10 @@ fn reserved_xml_prefix_resolves_without_declaration() {
 }
 
 #[test]
-fn reserved_cx_prefix_resolves_without_declaration() {
-    let doc = parse("[doc [cx:meta key=value]]").unwrap();
-    let meta = root(&doc).get("cx:meta").expect("cx:meta");
-    assert_eq!(meta.namespace_uri(), Some(CX_NAMESPACE_URI));
+fn reserved_cx_prefix_rejected_when_authored() {
+    // The `cx:` prefix is reserved for the serializer's canonical image and
+    // may not be authored in source (E210). Parsing must reject it.
+    assert!(parse("[doc [cx:meta key=value]]").is_err());
 }
 
 #[test]

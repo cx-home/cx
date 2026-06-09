@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>uuid — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a class="active" href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-uuid">
+  <h1>uuid</h1>
+  <p class="lede">Generate, parse, format, and validate Universally Unique Identifiers.
+   Four variants are supported: v4 (fully random), v7 (timestamp-ordered with an
+   intra-millisecond monotonic counter), and the name-based deterministic v5
+   (SHA-1) and v3 (MD5). Identifiers are 128-bit values carried as a canonical
+   lowercase 8-4-4-4-12 string or as 16 raw bytes, with helpers for variant /
+   version inspection, the nil UUID, and the four RFC 4122 namespace constants.
+   parse is strict-canonical by default; pass a trailing true to also accept the
+   lenient hyphen-less, urn:uuid:, and brace-wrapped forms.</p>
+  
+    <section id="fn-uuid-v4" class="fn">
+      <h3>uuid:v4</h3>
+      <p class="fn-sig"><code>[$uuid:v4]  -> string</code>  —  Generate a random (RFC 4122 v4) UUID as a canonical string, using CSPRNG entropy.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:validate [$uuid:v4]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v7" class="fn">
+      <h3>uuid:v7</h3>
+      <p class="fn-sig"><code>[$uuid:v7]  -> string</code>  —  Generate a timestamp-ordered (RFC 9562 v7) UUID string, monotonic within a millisecond.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:validate [$uuid:v7]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v4-bytes" class="fn">
+      <h3>uuid:v4-bytes</h3>
+      <p class="fn-sig"><code>[$uuid:v4-bytes]  -> bytes</code>  —  Generate a random (v4) UUID as the raw 16-byte value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:version [$uuid:v4-bytes]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v7-bytes" class="fn">
+      <h3>uuid:v7-bytes</h3>
+      <p class="fn-sig"><code>[$uuid:v7-bytes]  -> bytes</code>  —  Generate a timestamp-ordered (v7) UUID as the raw 16-byte value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:variant [$uuid:v7-bytes]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v5" class="fn">
+      <h3>uuid:v5</h3>
+      <p class="fn-sig"><code>[$uuid:v5]  -> string</code>  —  Derive a deterministic name-based (SHA-1) UUID string from a namespace and name.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:v5 [$uuid:ns-url] "https://example.com"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'4fd35a71-71ef-5a55-a9d9-aa75c889a6d0'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v3" class="fn">
+      <h3>uuid:v3</h3>
+      <p class="fn-sig"><code>[$uuid:v3]  -> string</code>  —  Derive a deterministic name-based (MD5) UUID string from a namespace and name.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:v3 [$uuid:ns-dns] "www.example.com"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'5df41881-3aed-3515-88a7-2f4a814cf09e'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v5-bytes" class="fn">
+      <h3>uuid:v5-bytes</h3>
+      <p class="fn-sig"><code>[$uuid:v5-bytes]  -> bytes</code>  —  Derive a name-based (SHA-1) UUID as the raw 16-byte value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:format [$uuid:v5-bytes [$uuid:ns-dns] "www.example.com"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2ed6657d-e927-568b-95e1-2665a8aea6a2'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-v3-bytes" class="fn">
+      <h3>uuid:v3-bytes</h3>
+      <p class="fn-sig"><code>[$uuid:v3-bytes]  -> bytes</code>  —  Derive a name-based (MD5) UUID as the raw 16-byte value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:version [$uuid:v3-bytes [$uuid:ns-dns] "x"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-parse" class="fn">
+      <h3>uuid:parse</h3>
+      <p class="fn-sig"><code>[$uuid:parse]  -> bytes</code>  —  Parse a UUID string into 16 bytes — strict-canonical by default, lenient on opt-in.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:version [$uuid:parse [$uuid:v4]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-format" class="fn">
+      <h3>uuid:format</h3>
+      <p class="fn-sig"><code>[$uuid:format]  -> string</code>  —  Format 16 bytes as the canonical lowercase 8-4-4-4-12 hex string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:format [$uuid:parse "550e8400-e29b-41d4-a716-446655440000"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'550e8400-e29b-41d4-a716-446655440000'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-validate" class="fn">
+      <h3>uuid:validate</h3>
+      <p class="fn-sig"><code>[$uuid:validate]  -> bool</code>  —  Report whether a string is a well-formed canonical UUID.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:validate [$uuid:v4]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-variant" class="fn">
+      <h3>uuid:variant</h3>
+      <p class="fn-sig"><code>[$uuid:variant]  -> int</code>  —  Report the RFC 4122 variant bits of a 16-byte UUID.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:variant [$uuid:parse [$uuid:v4]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-version" class="fn">
+      <h3>uuid:version</h3>
+      <p class="fn-sig"><code>[$uuid:version]  -> int</code>  —  Report the version number (1-8) of a 16-byte UUID.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:version [$uuid:parse [$uuid:v4]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-nil-uuid" class="fn">
+      <h3>uuid:nil-uuid</h3>
+      <p class="fn-sig"><code>[$uuid:nil-uuid]  -> string</code>  —  Return the all-zero nil UUID string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:validate [$uuid:nil-uuid]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-ns-dns" class="fn">
+      <h3>uuid:ns-dns</h3>
+      <p class="fn-sig"><code>[$uuid:ns-dns]  -> bytes</code>  —  Return the RFC 4122 DNS namespace UUID as 16 bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:format [$uuid:ns-dns]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'6ba7b810-9dad-11d1-80b4-00c04fd430c8'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-ns-url" class="fn">
+      <h3>uuid:ns-url</h3>
+      <p class="fn-sig"><code>[$uuid:ns-url]  -> bytes</code>  —  Return the RFC 4122 URL namespace UUID as 16 bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:format [$uuid:ns-url]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'6ba7b811-9dad-11d1-80b4-00c04fd430c8'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-ns-oid" class="fn">
+      <h3>uuid:ns-oid</h3>
+      <p class="fn-sig"><code>[$uuid:ns-oid]  -> bytes</code>  —  Return the RFC 4122 ISO OID namespace UUID as 16 bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:format [$uuid:ns-oid]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'6ba7b812-9dad-11d1-80b4-00c04fd430c8'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-uuid-ns-x500" class="fn">
+      <h3>uuid:ns-x500</h3>
+      <p class="fn-sig"><code>[$uuid:ns-x500]  -> bytes</code>  —  Return the RFC 4122 X.500 DN namespace UUID as 16 bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/uuid']
+[$uuid:format [$uuid:ns-x500]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'6ba7b814-9dad-11d1-80b4-00c04fd430c8'</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+/* D3 styling — the .class hooks ride on the view-tree (the html module keeps
+   class/id/style on its allowlist). The stylesheet is a static asset served
+   beside the cascade, never by xap. */
+body { font: 16px/1.5 system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; }
+h1 { font-size: 1.25rem; }
+.guestbook { list-style: none; padding: 0; }
+.guestbook li { padding: .25rem 0; border-bottom: 1px solid #eee; }
+form { display: flex; gap: .5rem; margin-top: 1rem; }
+input { flex: 1; padding: .4rem; }
+button { padding: .4rem .8rem; }

@@ -1,0 +1,505 @@
+[- docs-src/canonical/reference/directives.cx — co-located source for the
+   guide's directive reference (docs/guide/directives.html).
+
+   ONE [directive-doc] per directive in the §4.1 registry of
+   spec/03-approved/core/code.md (the canonical, closed set; the retired
+   [?try] is excluded). Each block carries a name, the §4.1 category and
+   spec cross-reference, a one-line sig + summary, and — where the
+   conformance corpus backs it — a runnable [example] whose [code] and
+   [expect] appear verbatim in conformance/code.cxd (so the drift gate
+   scripts/gen_guide/directive_docs_check.cx can pin every example to a
+   green fixture, exactly as the stdlib reference pins [fn-doc] examples to
+   conformance/stdlib/*.cxd).
+
+   Single source of truth: edit here; the guide projects it. -]
+
+[directive-doc name='?match' category="Core — pattern dispatch (single-arm + multi-arm)" spec="§5.2, §8.2"
+  [sig """[?match VALUE [case PAT BODY]… [else …]] -> result"""]
+  [summary """Structural pattern dispatch: test a value against ordered [case] arms (literal, wildcard `_`, type guard, binding pattern, [when] guard) and evaluate the first match; single-arm and multi-arm forms."""]
+  [example [code """[?match 200 [case 200 :match] [else :miss]]"""] [expect """:match"""]]
+]
+
+[directive-doc name='?modify' category="Core — pure-functional update" spec="§8.10"
+  [sig """[?modify TREE PATH ACTION…] -> tree"""]
+  [summary """Pure-functional update: walk a CXPath selection in a tree and apply actions ([set]/[delete]/[rename]/[set-attr]/[append]/[insert-before]…), returning a new tree; a path that matches nothing returns the tree unchanged."""]
+  [example [code """[?modify $doc //missing [delete]]"""] [expect """[users [user [name 'Alice']]]"""]]
+]
+
+[directive-doc name='?with-open' category="Core — scoped-resource RAII" spec="§8.10.7"
+  [sig """[?with-open RESOURCE $name BODY] -> result"""]
+  [summary """Scoped-resource RAII: bind a closeable resource, evaluate BODY, and close the resource deterministically when the block exits (success or error)."""]
+  [example [code """[?with-open [?async [+ 21 21]] $f [?await $f]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?with-scope' category="Core — dynamic-scoped context" spec="§8.10.8"
+  [sig """[?with-scope {BINDINGS} EXPR…] -> last"""]
+  [summary """Dynamic-scoped context: install a map of dynamic bindings for the duration of the block; the value is the last expression."""]
+  [example [code """[?with-scope {a: 1} 100 200]"""] [expect """200"""]]
+]
+
+[directive-doc name='?str' category="Core — compile-time string interpolation" spec="§8.12"
+  [sig """[?str "TEMPLATE"] -> string"""]
+  [summary """Compile-time string interpolation: expand `{expr}` holes in a template; `{{` / `}}` are literal braces."""]
+  [example [code """[?str "100{{pct}}"]"""] [expect """'100{pct}'"""]]
+]
+
+[directive-doc name='?element' category="Core — computed-name element construction" spec="§6.4.2"
+  [sig """[?element NAME-EXPR CHILD…] -> element | ()"""]
+  [summary """Computed-name element construction: build an element whose name is computed at runtime; an empty `()` name yields absence."""]
+  [example [code """[?element () "x"]"""] [expect """()"""]]
+]
+
+[directive-doc name='?attr' category="Core — computed-name attribute (attr position only)" spec="§6.4.2"
+  [sig """[?attr NAME-EXPR VALUE-EXPR] (attr position) -> attribute | omitted"""]
+  [summary """Computed-name attribute, valid only in attribute position; an empty `()` name omits the attribute."""]
+  [example [code """[?element "box" [?attr () "red"]]"""] [expect """[box]"""]]
+]
+
+[directive-doc name='?entry' category="Core — computed-key map entry (inside `{…}` only)" spec="§6.4.2"
+  [sig """{[?entry KEY-EXPR VALUE-EXPR]} -> map entry"""]
+  [summary """Computed-key map entry, valid only inside a `{…}` map literal."""]
+  [example [code """{[?entry "k" 1]}"""] [expect """{k: 1}"""]]
+]
+
+[directive-doc name='?name' category="Core — shared name sub-form (`set-attr`/`rename`)" spec="§6.4.2"
+  [sig """[rename [?name NAME-EXPR]] / [set-attr [?name …] …]"""]
+  [summary """Shared computed-name sub-form used inside [rename] and [set-attr] actions to supply a runtime-computed name."""]
+  [example [code """[?modify $doc //user [rename [?name "person"]]]"""] [expect """[users [person name=old]]"""]]
+]
+
+[directive-doc name='?quote' category="Core — quasiquote (eager; two-color hygiene)" spec="§6.4.3"
+  [sig """[?quote FORM] -> inert tree"""]
+  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` becomes `[cx:var 'x']` rather than dereferencing."""]
+  [example [code """[?quote [a $x]]"""] [expect """[a [cx:var 'x']]"""]]
+]
+
+[directive-doc name='?unquote' category="Core — quasiquote hole (single value)" spec="§6.4.3"
+  [sig """[?quote […[?unquote EXPR]…]] -> spliced value"""]
+  [summary """Quasiquote hole: evaluate EXPR and graft its single value into the surrounding quoted tree; `()` removes the hole."""]
+  [example [code """[?quote [box [?unquote ()]]]"""] [expect """[box]"""]]
+]
+
+[directive-doc name='?splice' category="Core — quasiquote hole (sequence graft)" spec="§6.4.3"
+  [sig """[?quote […[?splice EXPR]…]] -> grafted sequence"""]
+  [summary """Quasiquote hole: evaluate EXPR and graft its sequence elements in place; `()` grafts nothing."""]
+  [example [code """[?quote [box [?splice ()]]]"""] [expect """[box]"""]]
+]
+
+[directive-doc name='?eval' category="Core — tree-eval (reuses `cx:eval` sandbox)" spec="§6.4.4"
+  [sig """[?eval TREE [context {…}] [opts {…}]] -> value"""]
+  [summary """Tree-eval: evaluate a CX tree as a program in the `cx:eval` sandbox; requires the `eval` capability."""]
+  [example [code """[?eval 42]"""] [expect """42"""]]
+]
+
+[directive-doc name='?for' category="Core — for-comprehension (Sequence outer; D15)" spec="§7"
+  [sig """[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence"""]
+  [summary """For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence."""]
+  [example [code """[?for [in $x [$range 1 5]] [yield $x]]"""] [expect """1
+2
+3
+4
+5"""]]
+]
+
+[directive-doc name='?for-array' category="Core — for-comprehension (Array outer; D15)" spec="§7"
+  [sig """[?for-array [in $x SRC]… [yield-array EXPR]] -> array"""]
+  [summary """For-comprehension with an Array outer (D15): like [?for] but materialises an Array via [yield-array]."""]
+  [example [code """[?for-array [in $x [$range 1 3]] [in $y [$range 1 2]] [yield-array [$x, $y]]]"""] [expect """[[1, 1], [1, 2], [2, 1], [2, 2], [3, 1], [3, 2]]"""]]
+]
+
+[directive-doc name='?for-map' category="Core — for-comprehension (Map outer; D15)" spec="§7"
+  [sig """[?for-map [in $x SRC]… [yield-map K V]] -> map"""]
+  [summary """For-comprehension with a Map outer (D15): emit key/value pairs via [yield-map] into a Map."""]
+  [example [code """[?for-map [in $x [$range 1 3]] [yield-map $x [* $x $x]]]"""] [expect """{1: 1, 2: 4, 3: 9}"""]]
+]
+
+[directive-doc name='?let' category="Core — local binding" spec="§8"
+  [sig """[?let [= $x EXPR]… BODY] -> result"""]
+  [summary """Local binding: bind one or more names in a lexical scope and evaluate the body; bindings may nest."""]
+  [example [code """[?let [= $a 10] [?let [= $b 32] [+ $a $b]]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?fn' category="Core — function literal" spec="§8"
+  [sig """[?fn ($a $b…) BODY] / [?fn $x BODY] -> function"""]
+  [summary """Function literal (closure): a first-class anonymous function; single-parameter form omits the parens."""]
+  [example [code """[?let [= $double [?fn ($x) [* $x 2]]] [$double 21]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?def' category="Module — module-level function" spec="§12.2"
+  [sig """[?def NAME [scope=…] [pure|impure]? (PARAMS) BODY]"""]
+  [summary """Module-level function definition; `scope=public` exports it, purity is declared, and the name is called as `[$NAME …]`."""]
+  [example [code """[?def add ($a $b) [+ $a $b]]
+[$add 2 3]"""] [expect """5"""]]
+]
+
+[directive-doc name='?lib' category="Module — module import" spec="§12.1"
+  [sig """[?lib 'cx-stdlib/MODULE' [as=ALIAS]?]"""]
+  [summary """Module import: bind a module (bundled or local) so its public functions are callable as `[$module:fn …]`."""]
+  [example [code """[?lib 'cx-stdlib/math']
+[$math:abs -3]"""] [expect """3"""]]
+]
+
+[directive-doc name='?const' category="Module — module-level constant" spec="§12.3"
+  [sig """[?const NAME EXPR]"""]
+  [summary """Module-level constant; resolution is load-order-independent (constants may forward-reference each other)."""]
+  [example [code """[?const B [* A 10]]
+[?const A 5]
+B"""] [expect """50"""]]
+]
+
+[directive-doc name='?if' category="Core — conditional" spec="§8"
+  [sig """[?if COND [then …] [else …]] -> branch"""]
+  [summary """Conditional: evaluate COND for its effective boolean value and take the [then] or [else] branch."""]
+  [example [code """[?if [= :ok :ok] [then :match] [else :no-match]]"""] [expect """:match"""]]
+]
+
+[directive-doc name='?else' category="Core — value-or-default coalesce (`getOrElse`; on err + absence)" spec="§8.13"
+  [sig """[?else EXPR DEFAULT] -> value-or-default"""]
+  [summary """Value-or-default coalesce (getOrElse): yield EXPR unless it is an error or absence `()`, in which case yield DEFAULT."""]
+  [example [code """[?else () 'd']"""] [expect """'d'"""]]
+]
+
+[directive-doc name='?pipe' category="Core — pipeline (prefix-only; bare stages; `[tap]`)" spec="§6.4, §8.9"
+  [sig """[?pipe VALUE STAGE…] -> result"""]
+  [summary """Pipeline (prefix-only): thread a value through bare stages left to right; absence short-circuits, `[tap]` observes without altering flow."""]
+  [example [code """[?pipe () [$count]]"""] [expect """0"""]]
+]
+
+[directive-doc name='?map' category="Core — map (sequential or `[par]`)" spec="§8"
+  [sig """[?map SRC [using FN] [par]? [ordered]?] -> sequence"""]
+  [summary """Map: apply a function over a source, lazily by default; `[par]` runs in parallel and `[ordered]` preserves source order."""]
+  [example [code """[?map (1, 2, 3, 4) [using [?fn $x [* $x 10]]]]"""] [expect """(10, 20, 30, 40)"""]]
+]
+
+[directive-doc name='?reduce' category="Core — reduce / fold (sequential or `[par]`)" spec="§8"
+  [sig """[?reduce SRC [using FN] [init V]] -> value"""]
+  [summary """Reduce / left fold: combine the elements of a source with an accumulator function and an initial value."""]
+  [example [code """[?reduce (1, 2, 3, 4) [using [?fn ($a $b) [- $a $b]]] [init 10]]"""] [expect """0"""]]
+]
+
+[directive-doc name='?filter' category="Iterator stdlib — filter by predicate" spec="§8"
+  [sig """[?filter SRC [using PRED]] -> iterator"""]
+  [summary """Iterator combinator: keep only the elements for which the predicate holds."""]
+  [example [code """[?filter (1, 2, 3, 4, 5, 6) [using [?fn $x [$odd $x]]]]"""] [expect """(1, 3, 5)"""]]
+]
+
+[directive-doc name='?take' category="Iterator stdlib — prefix of `count` items" spec="§8"
+  [sig """[?take N SRC] -> iterator"""]
+  [summary """Iterator combinator: the first N elements of a source."""]
+  [example [code """[?take 3 [?map (1, 2, 3, 4, 5) [using [?fn $x [* $x 2]]]]]"""] [expect """(2, 4, 6)"""]]
+]
+
+[directive-doc name='?drop' category="Iterator stdlib — suffix after `count` items" spec="§8"
+  [sig """[?drop N SRC] -> iterator"""]
+  [summary """Iterator combinator: the source with its first N elements skipped."""]
+  [example [code """[?drop 2 (10, 20, 30, 40, 50)]"""] [expect """(30, 40, 50)"""]]
+]
+
+[directive-doc name='?zip' category="Iterator stdlib — per-position tuples" spec="§8"
+  [sig """[?zip SRC-A SRC-B…] -> iterator of tuples"""]
+  [summary """Iterator combinator: per-position tuples across two or more sources, stopping at the shortest."""]
+  [example [code """[?zip (1, 2, 3) ("a", "b", "c")]"""] [expect """((1, 'a'), (2, 'b'), (3, 'c'))"""]]
+]
+
+[directive-doc name='?enumerate' category="Iterator stdlib — emit `(i, item)` pairs" spec="§8"
+  [sig """[?enumerate SRC] -> iterator of (i, item)"""]
+  [summary """Iterator combinator: pair each element with its zero-based index."""]
+  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((0, 'a'), (1, 'b'), (2, 'c'))"""]]
+]
+
+[directive-doc name='?chunks' category="Iterator stdlib — group by `count`" spec="§8"
+  [sig """[?chunks N SRC] -> iterator of groups"""]
+  [summary """Iterator combinator: group consecutive elements into runs of N (the final group may be short)."""]
+  [example [code """[?chunks 2 (1, 2, 3, 4, 5)]"""] [expect """((1, 2), (3, 4), (5))"""]]
+]
+
+[directive-doc name='?concat' category="Iterator stdlib — flatten one level across sources" spec="§8"
+  [sig """[?concat SRC…] -> iterator"""]
+  [summary """Iterator combinator: flatten one level across the given sources, concatenating them in order."""]
+  [example [code """[?concat (1, 2) (3, 4)]"""] [expect """(1, 2, 3, 4)"""]]
+]
+
+[directive-doc name='?chain' category="Iterator stdlib — alias of `[?concat]`" spec="§8"
+  [sig """[?chain SRC…] -> iterator"""]
+  [summary """Iterator combinator: alias of [?concat] — concatenate sources end to end."""]
+  [example [code """[?chain (1, 2) (3, 4) (5, 6)]"""] [expect """(1, 2, 3, 4, 5, 6)"""]]
+]
+
+[directive-doc name='?cycle' category="Iterator stdlib — bounded repeat" spec="§8"
+  [sig """[?cycle SRC max=N] -> iterator"""]
+  [summary """Iterator combinator: repeat a source cyclically, bounded by `max`."""]
+  [example [code """[?cycle (1, 2, 3) max=7]"""] [expect """(1, 2, 3, 1, 2, 3, 1)"""]]
+]
+
+[directive-doc name='?scan' category="Iterator stdlib — running-fold prefixes" spec="§8"
+  [sig """[?scan SRC [using FN] [init V]] -> iterator"""]
+  [summary """Iterator combinator: emit the running-fold prefixes (every intermediate accumulator), starting from the initial value."""]
+  [example [code """[?scan (1, 2, 3, 4) [using [?fn ($a $b) [+ $a $b]]] [init 0]]"""] [expect """(0, 1, 3, 6, 10)"""]]
+]
+
+[directive-doc name='?flatten' category="Iterator stdlib — flatten one level of nesting" spec="§8"
+  [sig """[?flatten SRC] -> iterator"""]
+  [summary """Iterator combinator: flatten one level of nesting in a source of sequences."""]
+  [example [code """[?flatten ((1, 2), (3, 4), (5))]"""] [expect """(1, 2, 3, 4, 5)"""]]
+]
+
+[directive-doc name='?partition' category="Iterator stdlib — split by predicate" spec="§8"
+  [sig """[?partition SRC [using PRED]] -> (matches, non-matches)"""]
+  [summary """Iterator combinator: split a source into the elements that satisfy the predicate and those that do not."""]
+  [example [code """[?partition (1, 2, 3, 4, 5, 6) [using [?fn $x [$odd $x]]]]"""] [expect """((1, 3, 5), (2, 4, 6))"""]]
+]
+
+[directive-doc name='?group-by' category="Iterator stdlib — group by key" spec="§8"
+  [sig """[?group-by SRC [using KEY-FN]] -> grouped pairs"""]
+  [summary """Iterator combinator: group elements by a computed key, preserving first-seen key order."""]
+  [example [code """[?group-by (1, 2, 3, 4, 5, 6) [using [?fn $x [$mod $x 2]]]]"""] [expect """(('1', (1, 3, 5)), ('0', (2, 4, 6)))"""]]
+]
+
+[directive-doc name='?to-sequence' category="Force-materialise — Iterator → Sequence" spec="§8"
+  [sig """[?to-sequence ITER] -> sequence"""]
+  [summary """Force-materialise an iterator into a Sequence."""]
+  [example [code """[?to-sequence [?map (1, 2, 3, 4) [using [?fn $x [* $x $x]]]]]"""] [expect """(1, 4, 9, 16)"""]]
+]
+
+[directive-doc name='?to-array' category="Force-materialise — Iterator → Array" spec="§8"
+  [sig """[?to-array ITER] -> array"""]
+  [summary """Force-materialise an iterator into an Array."""]
+  [example [code """[?to-array [?map (1, 2, 3) [using [?fn $i [* $i $i]]]]]"""] [expect """[1, 4, 9]"""]]
+]
+
+[directive-doc name='?to-map' category="Force-materialise — Iterator-of-pairs → Map" spec="§8"
+  [sig """[?to-map ITER-OF-PAIRS] -> map"""]
+  [summary """Force-materialise an iterator of (key, value) pairs into a Map."""]
+  [example [code """[?to-map (("a", 1), ("b", 2), ("c", 3))]"""] [expect """{a: 1, b: 2, c: 3}"""]]
+]
+
+[directive-doc name='?view' category="View opt-in — zero-copy slice intent on one expr" spec="§8"
+  [sig """[?view EXPR] -> view"""]
+  [summary """View opt-in: request a zero-copy slice view over a single expression (e.g. `$xs[a:b]`)."""]
+  [example [code """[?let [= $xs (10, 20, 30, 40, 50)] [?view $xs[2:4]]]"""] [expect """(20, 30, 40)"""]]
+]
+
+[directive-doc name='?views' category="View opt-in — scoped view flip over a block" spec="§8"
+  [sig """[?views EXPR…] -> result"""]
+  [summary """View opt-in: flip on view semantics for a scoped block of expressions."""]
+  [example [code """[?let [= $xs (10, 20, 30, 40, 50)] [?views $xs[1:2]]]"""] [expect """(10, 20)"""]]
+]
+
+[directive-doc name='?retry' category="Resilience" spec="§10.2"
+  [sig """[?retry max=N [delay=…] [backoff=…] BODY] -> result"""]
+  [summary """Resilience: re-run BODY up to `max` attempts on failure, with optional delay/backoff/jitter."""]
+  [example [code """[?retry max=3 42]"""] [expect """42"""]]
+]
+
+[directive-doc name='?timeout' category="Resilience" spec="§10.2"
+  [sig """[?timeout DURATION BODY] -> result"""]
+  [summary """Resilience: bound BODY by a wall-clock duration; exceeding it yields a timeout error."""]
+  [example [code """[?timeout 1s fast]"""] [expect """fast"""]]
+]
+
+[directive-doc name='?circuit-breaker' category="Resilience" spec="§10.2"
+  [sig """[?circuit-breaker threshold=… window=… reset=… min-samples=… BODY]"""]
+  [summary """Resilience: trip open when the failure rate over a window exceeds the threshold, short-circuiting until the reset interval elapses."""]
+  [example [code """[?circuit-breaker threshold=0.5 window=60s reset=30s min-samples=10 7]"""] [expect """7"""]]
+]
+
+[directive-doc name='?fallback' category="Resilience" spec="§10.2"
+  [sig """[?fallback PRIMARY [recover-with ALT]] -> result"""]
+  [summary """Resilience: evaluate PRIMARY and, on failure, recover with the [recover-with] branch (which can bind `$err`)."""]
+  [example [code """[?fallback [body primary] [recover-with secondary]]"""] [expect """primary"""]]
+]
+
+[directive-doc name='?rate-limit' category="Resilience" spec="§10.2"
+  [sig """[?rate-limit max=N per=DURATION [name=…] BODY] -> result"""]
+  [summary """Resilience: admit at most `max` evaluations per window; over-limit calls yield a rate-limit error."""]
+  [example [code """[?for [in $i (1, 2, 3)]
+      [yield [?rate-limit max=5 per=1s name="rl-001" $i]]]"""] [expect """1
+2
+3"""]]
+]
+
+[directive-doc name='?bulkhead' category="Resilience" spec="§10.2"
+  [sig """[?bulkhead max-concurrent=N queue=Q BODY] -> result"""]
+  [summary """Resilience: cap concurrent executions at `max-concurrent` with a bounded queue; saturation yields a bulkhead error."""]
+  [example [code """[?bulkhead max-concurrent=4 queue=0 ran]"""] [expect """ran"""]]
+]
+
+[directive-doc name='?http-service' category="Services" spec="§10.3"
+  [sig """[?http-service on=… port=… name=… [resource …]…] -> service-handle"""]
+  [summary """Services: stand up an HTTP service from declarative [resource] routes; evaluates to a service handle."""]
+  [example [code """[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
+                [resource [get "/quick"]
+                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]"""] [expect """[terminated name=svc-020 reason=graceful]"""]]
+]
+
+[directive-doc name='?service-handle' category="Services" spec="§10.3"
+  [sig """[?service-handle name=NAME] -> handle"""]
+  [summary """Services: look up a running service by name to obtain its handle."""]
+  [example [code """[?let [= $_ [?http-service on=http port=0 name="svc-021"
+              [resource [get "/"] [response status=200 body="ok"]]]] [?let [= $h [?service-handle name="svc-021"]] [?let [= $_ [?stop $h]] [terminated name="svc-021" reason="graceful"]]]]"""] [expect """[terminated name=svc-021 reason=graceful]"""]]
+]
+
+[directive-doc name='?http-client' category="Clients" spec="§10.3"
+  [sig """[?http-client target=URL] -> client"""]
+  [summary """Clients: construct an HTTP client bound to a target; pipe request verbs through it."""]
+  [example [code """[?let [= $c [?http-client target="http://localhost:1"]] [?pipe $c [$get _ "/"]]]"""] [expect """[err code=cx-err:CXER0180 message='connection refused']"""]]
+]
+
+[directive-doc name='?worker' category="Concurrency" spec="§10.4"
+  [sig """[?worker name=NAME [body …]] -> worker-handle"""]
+  [summary """Concurrency: spawn a named worker evaluating a body; evaluates to a worker handle."""]
+  [example [code """[?let [= $w [?worker name="w1" [body 42]]] [?wait-for worker=$w]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?worker-handle' category="Concurrency" spec="§10.4"
+  [sig """[?worker-handle name=NAME] -> handle"""]
+  [summary """Concurrency: look up a running worker by name to obtain its handle."""]
+  [example [code """[?let [= $_ [?worker name="w4" [body lookupable]]] [?let [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]]"""] [expect """lookupable"""]]
+]
+
+[directive-doc name='?channel' category="Concurrency" spec="§10.4"
+  [sig """[?channel name=NAME buffer=N] -> channel"""]
+  [summary """Concurrency: create a named channel with a bounded buffer."""]
+  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]"""] [expect """'hello'"""]]
+]
+
+[directive-doc name='?send' category="Concurrency" spec="§10.4"
+  [sig """[?send VALUE to=CHANNEL] -> ()"""]
+  [summary """Concurrency: send a value into a channel, blocking when the buffer is full."""]
+  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]"""] [expect """'hello'"""]]
+]
+
+[directive-doc name='?receive' category="Concurrency" spec="§10.4"
+  [sig """[?receive from=CHANNEL] -> value"""]
+  [summary """Concurrency: receive the next value from a channel, blocking when empty."""]
+  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]"""] [expect """'hello'"""]]
+]
+
+[directive-doc name='?try-send' category="Concurrency" spec="§10.4"
+  [sig """[?try-send VALUE to=CHANNEL timeout=…] -> () | err"""]
+  [summary """Concurrency: send with a timeout; yields a send-timeout error instead of blocking indefinitely."""]
+  [example [code """[?let [= $ch [?channel name="c5" buffer=1]] [?let [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]]"""] [expect """[err code=cx-err:CXER0201 message='send timed out']"""]]
+]
+
+[directive-doc name='?try-receive' category="Concurrency" spec="§10.4"
+  [sig """[?try-receive from=CHANNEL timeout=…] -> value | err"""]
+  [summary """Concurrency: receive with a timeout; yields a receive-timeout error instead of blocking indefinitely."""]
+  [example [code """[?let [= $ch [?channel name="c6" buffer=1]] [?try-receive from=$ch timeout=50ms]]"""] [expect """[err code=cx-err:CXER0202 message='receive timed out']"""]]
+]
+
+[directive-doc name='?close' category="Concurrency" spec="§10.4"
+  [sig """[?close CHANNEL] -> ()"""]
+  [summary """Concurrency: close a channel; drained receives on a closed channel yield a channel-closed error."""]
+  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [?let [= $_ [?send "a" to=$ch]] [?let [= $_ [?close $ch]] [?let [= $first [?receive from=$ch]] [?let [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]]]]]"""] [expect """([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])"""]]
+]
+
+[directive-doc name='?select' category="Concurrency" spec="§10.4"
+  [sig """[?select [case [from CH $m] …]… [case [timeout D] …]?] -> arm"""]
+  [summary """Concurrency: wait on multiple channel operations and run the arm of the first that is ready; an optional [timeout] arm bounds the wait."""]
+  [example [code """[?let [= $a [?channel name="sa" buffer=1]] [?let [= $b [?channel name="sb" buffer=1]] [?let [= $_ [?send "from-a" to=$a]] [?select
+                 [case [from $a $msg] [picked ch="a" value=$msg]]
+                 [case [from $b $msg] [picked ch="b" value=$msg]]]]]]"""] [expect """[picked ch=a value=from-a]"""]]
+]
+
+[directive-doc name='?stop' category="Lifecycle" spec="§10.3, §10.4"
+  [sig """[?stop HANDLE] -> ()"""]
+  [summary """Lifecycle: request graceful shutdown of a service or worker."""]
+  [example [code """[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
+                [resource [get "/quick"]
+                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]"""] [expect """[terminated name=svc-020 reason=graceful]"""]]
+]
+
+[directive-doc name='?wait-for' category="Lifecycle" spec="§10.3, §10.4"
+  [sig """[?wait-for worker=H | service=H] -> result"""]
+  [summary """Lifecycle: block until a worker or service completes/terminates and yield its result."""]
+  [example [code """[?let [= $w [?worker name="w1" [body 42]]] [?wait-for worker=$w]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?async' category="Async" spec="§10.5"
+  [sig """[?async EXPR] -> future"""]
+  [summary """Async: evaluate EXPR concurrently, returning a future."""]
+  [example [code """[?let [= $f [?async 42]] [?await $f]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?await' category="Async" spec="§10.5"
+  [sig """[?await FUTURE] -> value"""]
+  [summary """Async: block until a future is done and yield its value (or its error)."""]
+  [example [code """[?let [= $f [?async 42]] [?await $f]]"""] [expect """42"""]]
+]
+
+[directive-doc name='?await-all' category="Async" spec="§10.5"
+  [sig """[?await-all (F…)] -> sequence"""]
+  [summary """Async: await every future and yield their values as a sequence; any non-done future surfaces an error."""]
+  [example [code """[?let [= $a [?async 1]] [?let [= $b [?async 2]] [?let [= $c [?async 3]] [?await-all ($a, $b, $c)]]]]"""] [expect """(1, 2, 3)"""]]
+]
+
+[directive-doc name='?await-any' category="Async" spec="§10.5"
+  [sig """[?await-any (F…)] -> value"""]
+  [summary """Async: yield the first future to succeed, skipping failed ones."""]
+  [example [code """[?let [= $bad [?async [err code='bad' message='bad']]] [?let [= $good [?async good]] [?await-any ($bad, $good)]]]"""] [expect """good"""]]
+]
+
+[directive-doc name='?await-race' category="Async" spec="§10.5"
+  [sig """[?await-race (F…)] -> value"""]
+  [summary """Async: yield the first future to settle and cancel the losers."""]
+  [example [code """[?let [= $fast [?async fast]] [?let [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [?let [= $winner [?await-race ($fast, $slow)]] [?let [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]]]]"""] [expect """[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]"""]]
+]
+
+[directive-doc name='?cancel' category="Async" spec="§10.5"
+  [sig """[?cancel FUTURE] -> ()"""]
+  [summary """Async: request cancellation of a future; a cancelled await yields a cancellation error."""]
+  [example [code """[?let [= $f [?async [?sleep 10s mock]]] [?let [= $_ [?cancel $f]] [?await $f]]]"""] [expect """[err code=cx-err:CXER0260 message='operation cancelled']"""]]
+]
+
+[directive-doc name='?check-cancel' category="Async" spec="§10.5"
+  [sig """[?check-cancel] -> ()"""]
+  [summary """Async: cooperative cancellation point — surfaces a cancellation error if the surrounding future was cancelled."""]
+  [example [code """[?let [= $f [?async [?check-cancel]]]
+  [?let [= $_ [?cancel $f]]
+    [?match [?await $f]
+      [case [err @code='cx-err:CXER0260'] [cancelled]]
+      [else [other]]]]]"""] [expect """[cancelled]"""]]
+]
+
+[directive-doc name='?sleep' category="Async" spec="§10.5"
+  [sig """[?sleep DURATION [mock]?] -> [ok]"""]
+  [summary """Async: pause for a duration; the `mock` flag uses the deterministic mock clock."""]
+  [example [code """[?sleep 1ms mock]"""] [expect """[ok]"""]]
+]
+
+[directive-doc name='?with-error-hook' category="Core — error observe / enrich / report hook" spec="§9.6"
+  [sig """[?with-error-hook [observe [using FN]] BODY] -> result"""]
+  [summary """Core: install an observe/enrich/report hook over errors raised in BODY; passes the value through unchanged when there is no error."""]
+  [example [code """[?with-error-hook [observe [using [?fn ($e) $e]]] 42]"""] [expect """42"""]]
+]
+
+[directive-doc name='?with-caps' category="Core — capability narrowing (deny-only)" spec="`security.md` §3"
+  [sig """[?with-caps [deny CAP]… BODY] -> result"""]
+  [summary """Core: narrow capabilities for the dynamic extent of BODY (deny-only); BODY runs with the reduced authority."""]
+  [example [code """[?def build-and-run scope=public impure [returns any]
+      ($tag::string $attr-name::string $factor::int $payload::int)
+  [?let
+    [= $code [?quote [* [?unquote $payload] [?unquote $factor]]]]
+    [= $result [?with-caps [deny net] [deny subprocess]
+                  [?eval $code [context {}] [opts {max-depth: 4}]]]]
+    [?element $tag [?attr $attr-name "scaled"] [result $result]]]]
+[$build-and-run "report" "kind" 3 14]"""] [expect """[report kind=scaled [result 42]]"""]]
+]
+
+[directive-doc name='?secret' category="Core — mark a value secret (redacted at boundaries)" spec="`cxdm.md` §12"
+  [sig """[?secret VALUE] -> secret"""]
+  [summary """Core: mark a value as secret so it renders redacted (`‹redacted›`) at boundaries."""]
+  [example [code """[?secret sk-abc]"""] [expect """'‹redacted›'"""]]
+]
+
+[directive-doc name='?reveal' category="Core — declassify a secret (gated by `secret-reveal`)" spec="`cxdm.md` §12"
+  [sig """[?reveal SECRET] -> cleartext"""]
+  [summary """Core: declassify a secret to its cleartext; gated by the `secret-reveal` capability."""]
+  [example [code """[?reveal [?secret sk-abc]]"""] [expect """sk-abc"""]]
+]
+
+[directive-doc name='?meta' category="Core — inert metadata annotation on a value" spec="§4.2"
+  [sig """[?meta {KEY: VALUE…} FORM] -> FORM"""]
+  [summary """Core: attach an inert metadata map to the value of FORM; the value is unchanged and only `meta-of` and the XML serializer observe the map."""]
+]
+

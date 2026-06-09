@@ -1,12 +1,12 @@
-"""Streaming Table reader / writer for the chunked-table CXDB format.
+"""Streaming Table reader / writer for the chunked-table CXCol format.
 
-Per spec/abi.md §2.10 (capability bit 21) and ADR 0015 D8. Pull / push
+Per spec/abi.md §2.10 (capability bit 21). Pull / push
 one row group at a time; memory bounded by the largest single row
 group plus a constant.
 
 Wire conventions (mirroring the C ABI):
-  - In-memory variants consume / produce framed `[u32 LE size][CXDB payload]`.
-  - fd variants operate on bare CXDB bytes (no size prefix).
+  - In-memory variants consume / produce framed `[u32 LE size][CXCol payload]`.
+  - fd variants operate on bare CXCol bytes (no size prefix).
 
 Col-spec exchange: framed ast_bin with one root Element 'table' and
 one Attribute per column (name = column name, value = type-name).
@@ -34,7 +34,7 @@ def _read_framed(addr: int) -> bytes:
 
 
 class TableReader:
-    """Streaming reader over a chunked-table CXDB buffer or fd.
+    """Streaming reader over a chunked-table CXCol buffer or fd.
 
     Iterating yields each row group as framed `[u32 LE size][plain body]`
     bytes (compressed groups are decompressed by the V core before return).
@@ -101,7 +101,7 @@ class TableReader:
 
 
 class TableWriter:
-    """Streaming writer for the chunked-table CXDB format.
+    """Streaming writer for the chunked-table CXCol format.
 
     `col_spec_payload` is the framed ast_bin shape returned by
     TableReader.schema(). Provide `fd` for fd-streaming output;

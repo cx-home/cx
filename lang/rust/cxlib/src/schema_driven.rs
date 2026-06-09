@@ -1,11 +1,11 @@
-//! Schema-driven CXDB encoding (Phase 7.73 / 7.74b; spec/abi.md §2.12,
+//! Schema-driven CXCol encoding (Phase 7.73 / 7.74b; spec/abi.md §2.12,
 //! capability bit 24).
 //!
 //! Loaders take `(input, schema, ref_form, name_hint)` and return
-//! unframed CXDB payload bytes. The dumper takes a framed CXDB buffer
+//! unframed CXCol payload bytes. The dumper takes a framed CXCol buffer
 //! plus an optional schema hint and returns canonical CX text.
 //!
-//! `ref_form`: 0 = content-hash only (default; spec/data_bin.md
+//! `ref_form`: 0 = content-hash only (default; spec/core/data-bin.md
 //! §3.13.1 tag 0x10), 1 = inline schema bytes (tag 0x11), 2 =
 //! content-hash + name hint (tag 0x12).
 
@@ -25,8 +25,6 @@ extern "C" {
     fn cx_yaml_to_data_bin_schema_driven(input: *const c_char, schema: *const c_char,
         ref_form: c_int, name_hint: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_toml_to_data_bin_schema_driven(input: *const c_char, schema: *const c_char,
-        ref_form: c_int, name_hint: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
-    fn cx_md_to_data_bin_schema_driven(input: *const c_char, schema: *const c_char,
         ref_form: c_int, name_hint: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
     fn cx_csv_to_data_bin_schema_driven(input: *const c_char, schema: *const c_char,
         ref_form: c_int, name_hint: *const c_char, err_out: *mut *mut c_char) -> *mut c_char;
@@ -91,9 +89,6 @@ pub fn yaml_to_data_bin_schema_driven(input: &str, schema: &str, ref_form: i32, 
 pub fn toml_to_data_bin_schema_driven(input: &str, schema: &str, ref_form: i32, name_hint: &str) -> Result<Vec<u8>, String> {
     call_loader(cx_toml_to_data_bin_schema_driven, input, schema, ref_form, name_hint)
 }
-pub fn md_to_data_bin_schema_driven(input: &str, schema: &str, ref_form: i32, name_hint: &str) -> Result<Vec<u8>, String> {
-    call_loader(cx_md_to_data_bin_schema_driven, input, schema, ref_form, name_hint)
-}
 pub fn csv_to_data_bin_schema_driven(input: &str, schema: &str, ref_form: i32, name_hint: &str) -> Result<Vec<u8>, String> {
     call_loader(cx_csv_to_data_bin_schema_driven, input, schema, ref_form, name_hint)
 }
@@ -104,7 +99,7 @@ pub fn psv_to_data_bin_schema_driven(input: &str, schema: &str, ref_form: i32, n
     call_loader(cx_psv_to_data_bin_schema_driven, input, schema, ref_form, name_hint)
 }
 
-/// Decode a framed CXDB schema-driven buffer to canonical CX text.
+/// Decode a framed CXCol schema-driven buffer to canonical CX text.
 /// `schema_hint` (CX text) is consulted only when the embedded schema
 /// reference is content-hash-only and not resolvable from the
 /// consumer's content-addressable store; pass "" to use embedded

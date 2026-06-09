@@ -1,6 +1,6 @@
 //go:build arrow
 
-// Cross-binding Arrow conformance runner (W3 / v0.7.0).
+// Cross-binding Arrow conformance runner (W3).
 //
 // Reads conformance/data_bin_arrow.txt — the canonical Arrow C-Data
 // round-trip fixture corpus — and runs each test through the Go
@@ -11,19 +11,11 @@
 package cxlib
 
 import (
-	"bufio"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"testing"
-)
-
-var (
-	conformanceTestRe   = regexp.MustCompile(`^===\s+test:\s+(\S+)\s*$`)
-	conformanceSecRe    = regexp.MustCompile(`^---\s+([\w-]+)\s*$`)
-	conformanceHeaderRe = regexp.MustCompile(`^(\w+):\s*(.+?)\s*$`)
 )
 
 type arrowConfFixture struct {
@@ -35,12 +27,12 @@ type arrowConfFixture struct {
 func loadArrowConformance(t *testing.T) []arrowConfFixture {
 	t.Helper()
 	// Walk up from this test file to find the repo root by looking for
-	// conformance/data_bin_arrow.txt.
+	// conformance/data_bin_arrow.cxd.
 	_, thisFile, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(thisFile)
 	var path string
 	for i := 0; i < 8; i++ {
-		candidate := filepath.Join(dir, "conformance", "data_bin_arrow.txt")
+		candidate := filepath.Join(dir, "conformance", "data_bin_arrow.cxd")
 		if _, err := os.Stat(candidate); err == nil {
 			path = candidate
 			break
@@ -48,67 +40,23 @@ func loadArrowConformance(t *testing.T) []arrowConfFixture {
 		dir = filepath.Dir(dir)
 	}
 	if path == "" {
-		t.Skipf("conformance fixture data_bin_arrow.txt not found from %s", filepath.Dir(thisFile))
+		t.Skipf("conformance fixture data_bin_arrow.cxd not found from %s", filepath.Dir(thisFile))
 	}
 
-	f, err := os.Open(path)
+	// CX-native: read data_bin_arrow.cxd via LoadFixtures (replacing the
+	// bespoke === test: / --- section scanner). The consumer keys into
+	// fx.Sections[...] (legacy snake names) and fx.Name exactly as before.
+	cases, err := LoadFixtures(path)
 	if err != nil {
-		t.Fatalf("open conformance fixture: %v", err)
+		t.Fatalf("load conformance fixtures: %v", err)
 	}
-	defer f.Close()
-
-	var (
-		fixtures   []arrowConfFixture
-		cur        *arrowConfFixture
-		section    string
-		secLines   []string
-		flushSec   = func() {
-			if cur != nil && section != "" {
-				cur.Sections[section] = strings.Join(secLines, "\n")
-			}
-		}
-	)
-
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 0, 1<<20), 1<<20)
-	for sc.Scan() {
-		line := sc.Text()
-		if strings.HasPrefix(line, "# ") {
-			continue
-		}
-		if m := conformanceTestRe.FindStringSubmatch(line); m != nil {
-			flushSec()
-			if cur != nil {
-				fixtures = append(fixtures, *cur)
-			}
-			cur = &arrowConfFixture{
-				Name:     m[1],
-				Headers:  map[string]string{},
-				Sections: map[string]string{},
-			}
-			section = ""
-			secLines = nil
-			continue
-		}
-		if m := conformanceSecRe.FindStringSubmatch(line); m != nil {
-			flushSec()
-			section = m[1]
-			secLines = nil
-			continue
-		}
-		if section != "" {
-			secLines = append(secLines, line)
-			continue
-		}
-		if cur != nil {
-			if m := conformanceHeaderRe.FindStringSubmatch(line); m != nil {
-				cur.Headers[m[1]] = m[2]
-			}
-		}
-	}
-	flushSec()
-	if cur != nil {
-		fixtures = append(fixtures, *cur)
+	fixtures := make([]arrowConfFixture, 0, len(cases))
+	for _, c := range cases {
+		fixtures = append(fixtures, arrowConfFixture{
+			Name:     c.Name,
+			Headers:  c.Meta,
+			Sections: c.Sections,
+		})
 	}
 	return fixtures
 }
@@ -133,7 +81,7 @@ func TestArrowConformance(t *testing.T) {
 			//  because FromDataBin's framed/unframed contract here
 			//  is the Python binding's natural shape, not Go's.
 
-			// Encode CX → CXDB chunked.
+			// Encode CX → CXCol chunked.
 			framed, err := ToDataBinChunked(inCx)
 			if err != nil {
 				if expectErr != "" && strings.Contains(err.Error(), expectErr) {

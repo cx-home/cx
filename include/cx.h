@@ -8,8 +8,15 @@ extern "C" {
 /*
  * CX C API — implemented in V (vcx/)
  *
- * Grammar v3.4 / AST v2.4. All 6×7 input/output format combinations
- * (6 input formats × 7 outputs including AST) plus cx_free and cx_version.
+ * Grammar v3.4 / AST v2.4 (ast_bin v8 at v0.8.0).
+ * All 6×7 input/output format combinations (6 input formats × 7 outputs
+ * including AST) plus cx_free and cx_version. Plus the CX code
+ * evaluator (cx_code_eval family, cap bit 28), program diagram /
+ * tree (cap bits 31 / 32), atoms (cap bit 33),
+ * [?def] module-level functions (cap bit 34), [?lib]
+ * module loading (cap bit 35), and PathNode wire format
+ * (cap bit 36). See spec/abi.md §3 for the full
+ * capability bitmask and spec/abi.md §2 for the symbol catalog.
  *
  * v3.4 grammar additions: numeric underscores (1_000_000), leading-zero
  * tightening (BREAKING — '02134' is now Text), sized numeric type names
@@ -30,7 +37,7 @@ extern "C" {
  * Thread safety: all conversion functions are stateless — safe to call from
  * multiple threads concurrently without synchronisation.
  *
- * Formats: cx  xml  json (semantic)  yaml  toml  md
+ * Formats: cx  xml  json (semantic)  yaml  toml
  * AST output: cx_to_ast / cx_*_to_ast — full parse tree as JSON
  */
 
@@ -43,7 +50,6 @@ char* cx_to_ast (const char* input, char** err_out);
 char* cx_to_json(const char* input, char** err_out);
 char* cx_to_yaml(const char* input, char** err_out);
 char* cx_to_toml(const char* input, char** err_out);
-char* cx_to_md  (const char* input, char** err_out);
 
 /* ── XML input ─────────────────────────────────────────────────────────────── */
 
@@ -53,7 +59,6 @@ char* cx_xml_to_ast (const char* input, char** err_out);
 char* cx_xml_to_json(const char* input, char** err_out);
 char* cx_xml_to_yaml(const char* input, char** err_out);
 char* cx_xml_to_toml(const char* input, char** err_out);
-char* cx_xml_to_md  (const char* input, char** err_out);
 
 /* ── JSON input ────────────────────────────────────────────────────────────── */
 
@@ -63,7 +68,6 @@ char* cx_json_to_ast (const char* input, char** err_out);
 char* cx_json_to_json(const char* input, char** err_out);
 char* cx_json_to_yaml(const char* input, char** err_out);
 char* cx_json_to_toml(const char* input, char** err_out);
-char* cx_json_to_md  (const char* input, char** err_out);
 
 /* ── YAML input ────────────────────────────────────────────────────────────── */
 
@@ -73,7 +77,6 @@ char* cx_yaml_to_ast (const char* input, char** err_out);
 char* cx_yaml_to_json(const char* input, char** err_out);
 char* cx_yaml_to_yaml(const char* input, char** err_out);
 char* cx_yaml_to_toml(const char* input, char** err_out);
-char* cx_yaml_to_md  (const char* input, char** err_out);
 
 /* ── TOML input ────────────────────────────────────────────────────────────── */
 
@@ -83,17 +86,6 @@ char* cx_toml_to_ast (const char* input, char** err_out);
 char* cx_toml_to_json(const char* input, char** err_out);
 char* cx_toml_to_yaml(const char* input, char** err_out);
 char* cx_toml_to_toml(const char* input, char** err_out);
-char* cx_toml_to_md  (const char* input, char** err_out);
-
-/* ── MD input ─────────────────────────────────────────────────────────────── */
-
-char* cx_md_to_cx  (const char* input, char** err_out);
-char* cx_md_to_xml (const char* input, char** err_out);
-char* cx_md_to_ast (const char* input, char** err_out);
-char* cx_md_to_json(const char* input, char** err_out);
-char* cx_md_to_yaml(const char* input, char** err_out);
-char* cx_md_to_toml(const char* input, char** err_out);
-char* cx_md_to_md  (const char* input, char** err_out);
 
 /* ── AST input ─────────────────────────────────────────────────────────────── */
 
@@ -189,6 +181,16 @@ char* cx_to_events(const char* input, char** err_out);
  *   Element: str:name optstr:anchor optstr:data_type optstr:merge
  *            u16:attr_count attrs[] u16:child_count nodes[]
  *
+ * ast_bin v7 (capability bit 33 / 0x200000000): the Scalar
+ * (0x03) node and Attr's `optstr:data_type` slot gain a new discriminator
+ * value "atom" — surface syntax `:NAME` — whose value field is the
+ * atom's UTF-8 name. Atoms are name-equality, type-strict (no coercion
+ * with string). Wire byte 0x12 is reserved for a future compact
+ * flattened atom encoding; v0.8.0 producers MUST NOT emit it and v7
+ * decoders MUST reject buffers containing it. v6 readers MUST reject
+ * v7 files. Reserved names `:true` / `:false` / `:null` are forbidden
+ * at lex time (CXER0100). See spec/core/ast-bin.md §7 + spec/abi.md §3.
+ *
  * Binary format spec: see the cx_to_events_bin/cx_to_ast_bin comments above.
  */
 char* cx_to_events_bin(const char* input, char** err_out);
@@ -211,23 +213,21 @@ char* cx_xml_to_ast_bin (const char* input, char** err_out);
 char* cx_json_to_ast_bin(const char* input, char** err_out);
 char* cx_yaml_to_ast_bin(const char* input, char** err_out);
 char* cx_toml_to_ast_bin(const char* input, char** err_out);
-char* cx_md_to_ast_bin  (const char* input, char** err_out);
 
 char* cx_ast_bin_to_cx  (const char* ast_bin, char** err_out);
 char* cx_ast_bin_to_xml (const char* ast_bin, char** err_out);
 char* cx_ast_bin_to_json(const char* ast_bin, char** err_out);
 char* cx_ast_bin_to_yaml(const char* ast_bin, char** err_out);
 char* cx_ast_bin_to_toml(const char* ast_bin, char** err_out);
-char* cx_ast_bin_to_md  (const char* ast_bin, char** err_out);
 
-/* ── CXDB v1 strict-canonical binary data format (v3.4) ──────────────────────
+/* ── CXCol v1 strict-canonical binary data format (v3.4) ──────────────────────
  *
  * cx_to_data_bin / cx_from_data_bin: type-fidelity-preserving binary
  * format for data binding. Input/output framed as [u32 LE size][payload];
- * caller frees with cx_free(). See spec/data_bin.md and spec/abi.md §2.4.
+ * caller frees with cx_free(). See spec/core/data-bin.md and spec/abi.md §2.4.
  *
- * cx_to_data_bin parses CX text input and returns CXDB v1 bytes.
- * cx_from_data_bin reads CXDB v1 bytes and returns canonical CX text.
+ * cx_to_data_bin parses CX text input and returns CXCol v1 bytes.
+ * cx_from_data_bin reads CXCol v1 bytes and returns canonical CX text.
  *
  * The format preserves int vs float distinction, large integers, dates,
  * datetimes, empty-container variants (array vs map), and :table blocks
@@ -239,8 +239,8 @@ char* cx_from_data_bin(const char* input, char** err_out);
 
 /* ── data_bin one-shot loaders/dumpers (Phase 7.28; spec/abi.md §2.4–§2.5) ───
  *
- * Loaders take per-format text input and return CXDB v1 framed bytes.
- * Dumpers take CXDB v1 framed bytes and return per-format text. Each is
+ * Loaders take per-format text input and return CXCol v1 framed bytes.
+ * Dumpers take CXCol v1 framed bytes and return per-format text. Each is
  * a thin composition of an existing per-format parser/emitter with the
  * existing emit_data_bin / parse_data_bin core. CSV / TSV / PSV one-
  * shots ship at capability bit 6 (Phase 7.67); see the delimited
@@ -250,18 +250,16 @@ char* cx_xml_to_data_bin (const char* input, char** err_out);
 char* cx_json_to_data_bin(const char* input, char** err_out);
 char* cx_yaml_to_data_bin(const char* input, char** err_out);
 char* cx_toml_to_data_bin(const char* input, char** err_out);
-char* cx_md_to_data_bin  (const char* input, char** err_out);
 
 char* cx_data_bin_to_xml (const char* input, char** err_out);
 char* cx_data_bin_to_json(const char* input, char** err_out);
 char* cx_data_bin_to_yaml(const char* input, char** err_out);
 char* cx_data_bin_to_toml(const char* input, char** err_out);
-char* cx_data_bin_to_md  (const char* input, char** err_out);
 
 /* ── Delimited (CSV/TSV/PSV/arbitrary) C ABI (capability bit 6) ──────────────
  *
- * Per spec/decisions/0001-delimited-conversion.md and spec/conversions.md §8.
- * `delim` is a single byte; any byte except `\r \n " ' \\` is accepted (D6).
+ * Per spec/conversions.md §8.
+ * `delim` is a single byte; any byte except `\r \n " ' \\` is accepted.
  *
  * Emit shape (CX → delimited): `:table` block uses declared columns; an
  * element with 2+ same-named child siblings flattens via repeated-row mode;
@@ -300,40 +298,20 @@ char* cx_data_bin_to_csv (const char* input, char** err_out);
 char* cx_data_bin_to_tsv (const char* input, char** err_out);
 char* cx_data_bin_to_psv (const char* input, char** err_out);
 
-/* ── CXPath C ABI (v3.4, ABI v2) ─────────────────────────────────────────────
+/* ── CXPath C ABI (RETIRED at v0.7.6, Phase 7) ───────────────────────────────
  *
- * Closes audit finding CB-5. Bindings should thunk to libcx for CXPath
- * rather than maintain ~500 LOC per language of duplicate matcher code.
- * See spec/abi.md §2.7 and spec/cxpath.md.
+ * cx_select / cx_select_all / cx_select_all_paths were the v0.7.0 POC
+ * cxpath surface. They are removed at v0.7.6 (CX code
+ * replaces both cxpath and cxquery as the unified pattern / query /
+ * transform language). Bindings migrate to cx_code_eval* below
+ * with a `[?for pattern :yield expr]` program — see
+ * spec/code.md §5 and spec/v0_7_6_status.md Phase 5 (binding
+ * parity) for the migration plan. (`[?find]` was the v0.7.6
+ * spelling — retired at v0.8.0.)
  *
- * cx_select: returns the FIRST matching element as a framed binary AST,
- * or NULL with no error when nothing matches.
- *
- * cx_select_all: returns ALL matches wrapped in a synthetic root element
- * named "cx:results". Empty result set returns the wrapper with no
- * children.
+ * The capability bit 8 (CXPath C ABI) is reclaimed at v0.7.6 per
+ * spec/abi.md §3.
  */
-char* cx_select    (const char* input, const char* expr, char** err_out);
-char* cx_select_all(const char* input, const char* expr, char** err_out);
-
-/*
- * cx_select_all_paths: returns the STRUCTURAL PATHS of every match
- * (preorder, same as cx_select_all). Bindings use this for
- * transform_all — navigate to each path in their own AST, apply f to
- * detached copies, substitute back. Lets bindings drop their CXPath
- * parser/evaluator and reuse only their existing tree-mutation code.
- *
- * Output is a framed [u32 LE size][payload] buffer; payload is:
- *   [u32 n_paths]
- *   for each path:
- *     [u32 depth][u32 idx_0][u32 idx_1]...[u32 idx_{depth-1}]
- *
- * All integers little-endian. Indices are 0-based positions in
- * Document.elements (depth 0) then Element.items (deeper).
- *
- * Caller frees with cx_free.
- */
-char* cx_select_all_paths(const char* input, const char* expr, char** err_out);
 
 /* ── Streaming C ABI (v3.4, ABI v2) ──────────────────────────────────────────
  *
@@ -384,7 +362,7 @@ char* cx_hash     (const char* input, char** err_out);
 char* cx_eq       (const char* a, const char* b, char** err_out);
 
 /*
- * cx_diff — semantic diff between two CX inputs (ADR 0012, capability
+ * cx_diff — semantic diff between two CX inputs (capability
  * bit 18). Walks the strict-canonical forms of both inputs; reformats,
  * comment moves, attribute reorder, and anchor expansion produce empty
  * output. `format` is "unified" (default human-readable), "json"
@@ -396,7 +374,7 @@ char* cx_diff     (const char* a, const char* b, const char* format,
                    char** err_out);
 
 /*
- * cx_lint — style + correctness warnings (ADR 0013, capability bit 19).
+ * cx_lint — style + correctness warnings (capability bit 19).
  * Runs five built-in check IDs (CX-L001..L005) on the input. `format`
  * is "text" (gcc-style), "json" (structured), or "summary" (counts).
  * `disabled` is a comma-separated list of check IDs to skip (e.g.
@@ -409,7 +387,7 @@ char* cx_lint     (const char* input, const char* format,
 
 /*
  * cx_id_lookup, cx_resolve_ref, cx_node_id — ID/IDREF resolution
- * (ADR 0003, capability bit 20). All three are stateless: each call
+ * (capability bit 20). All three are stateless: each call
  * parses `input` from text CX and walks the resulting document.
  *
  *   cx_id_lookup(input, id, err)     — find element declaring `#id`;
@@ -435,14 +413,17 @@ char* cx_lint     (const char* input, const char* format,
  */
 char* cx_id_lookup  (const char* input, const char* id, char** err_out);
 char* cx_resolve_ref(const char* input, const char* ref, char** err_out);
-char* cx_node_id    (const char* input, const char* cxpath,
-                     char** err_out);
 
-/* ── Chunked-table one-shot (Phase 7.72; spec/abi.md §2.10, ADR 0015 D8) ─────
+/* cx_node_id was a cxpath-driven ID lookup retired alongside cxpath.v
+ * at v0.7.6 (Phase 7). Equivalent behaviour: parse the document, run
+ * `[?for PATTERN :yield $m]` to locate the element, then read its
+ * `@id` attribute. */
+
+/* ── Chunked-table one-shot (Phase 7.72; spec/abi.md §2.10) ─────
  *
  * cx_to_data_bin_chunked: parse CX text whose root is a single
- * :table-bodied element and emit the CXDB chunked-table form (`0x63`)
- * per spec/data_bin.md §3.11. Default chunk policy: 2^20 rows per
+ * :table-bodied element and emit the CXCol chunked-table form (`0x63`)
+ * per spec/core/data-bin.md §3.11. Default chunk policy: 2^20 rows per
  * group with auto-zstd above 64 KiB body size. Output is framed
  * `[u32 LE size][payload]`. Capability bit 21 (`0x200000`) signals
  * support; bindings query cx_features and refuse to call this
@@ -453,7 +434,7 @@ char* cx_node_id    (const char* input, const char* cxpath,
 char* cx_to_data_bin_chunked(const char* input, char** err_out);
 
 /* ── Streaming Table reader / writer (Phase 7.74a; spec/abi.md §2.10,
- *                                       ADR 0015 D8) ───────────────────────
+ * ) ───────────────────────
  *
  * Handle-based pull / push API over the chunked-table wire format
  * (`0x63`). Memory use is bounded by the largest single row group
@@ -463,10 +444,10 @@ char* cx_to_data_bin_chunked(const char* input, char** err_out);
  * Wire-format conventions:
  *   - In-memory variants (cx_table_reader_open / cx_table_writer_open /
  *     cx_table_writer_close_get_bytes / row-group payloads) consume
- *     and produce the framed `[u32 LE size][CXDB payload]` form used
+ *     and produce the framed `[u32 LE size][CXCol payload]` form used
  *     elsewhere in this ABI.
  *   - fd variants (cx_table_reader_open_fd / cx_table_writer_open_fd)
- *     operate on bare CXDB bytes — the file's length is implicit
+ *     operate on bare CXCol bytes — the file's length is implicit
  *     from the fd, and streaming writers cannot prefix their output
  *     with a size unknown until end-of-table.
  *
@@ -533,12 +514,12 @@ char*                  cx_table_writer_close_get_bytes(cx_table_writer_handle ha
                                                        char** err_out);
 void                   cx_table_writer_close          (cx_table_writer_handle handle);
 
-/* ── Schema-driven CXDB encoding (Phase 7.73; spec/abi.md §2.12,
- *                                  ADR 0015 D3) ─────────────────────────────
+/* ── Schema-driven CXCol encoding (Phase 7.73; spec/abi.md §2.12,
+ * ) ─────────────────────────────
  *
  * Schema-driven encoding is opt-in via these variants of the data_bin
  * loaders / dumpers. The writer parses the supplied schema text,
- * computes its content-hash per spec/data_bin.md §3.13.1, embeds the
+ * computes its content-hash per spec/core/data-bin.md §3.13.1, embeds the
  * schema reference in the header, and emits the root value with
  * per-field tag-omission per §3.13.2. Capability bit 24 (`0x1000000`)
  * signals support; a libcx that implements bit 24 also implements
@@ -555,7 +536,7 @@ void                   cx_table_writer_close          (cx_table_writer_handle ha
  *                pass NULL or "" otherwise.
  *
  * Dumper arguments:
- *   data_bin    - framed [u32 LE size][CXDB payload] schema-driven buffer.
+ *   data_bin    - framed [u32 LE size][CXCol payload] schema-driven buffer.
  *   schema_hint - optional schema as CX text used when the embedded
  *                 reference is content-hash-only and not resolvable
  *                 from the consumer's content-addressable store. Pass
@@ -588,11 +569,6 @@ char* cx_toml_to_data_bin_schema_driven(const char* input,
                                         int ref_form,
                                         const char* name_hint,
                                         char** err_out);
-char* cx_md_to_data_bin_schema_driven (const char* input,
-                                       const char* schema,
-                                       int ref_form,
-                                       const char* name_hint,
-                                       char** err_out);
 char* cx_csv_to_data_bin_schema_driven(const char* input,
                                        const char* schema,
                                        int ref_form,
@@ -614,7 +590,7 @@ char* cx_from_data_bin_schema_driven  (const char* data_bin,
                                        char** err_out);
 
 /* ── Schema validator (NEW in v0.6.0) ───────────────────────────── */
-/* ADR 0009 + spec/schema.md §10 / §10.2 / §10.3.
+/* spec/schema.md §10 / §10.2 / §10.3.
  *
  * cx_validate parses doc_input + schema_input (both NUL-terminated CX
  * text), runs the validator, and returns a framed
@@ -687,7 +663,7 @@ char* cx_validate_apply_defaults_with_len
  * writer "fails closed": after the first W-code, subsequent emits
  * return the same diagnostic without effect.
  *
- * close_get_bytes returns the accumulated output as a CXDB-style
+ * close_get_bytes returns the accumulated output as a CXCol-style
  * [u32 LE size][payload] frame (size=0 for fd writers); release the
  * pointer with cx_free. close releases the handle without returning
  * bytes (idempotent; safe on NULL).
@@ -704,7 +680,7 @@ cx_events_writer_handle cx_events_writer_open_fd
     (const char* output_format, int fd, char** err_out);
 /*
  * The cx_events_writer_open_shaped* family (4 variants) was removed
- * 2026-05-10 when ADR 0010 was superseded by ADR 0016. CXL is the
+ * 2026-05-10 when was superseded. CXL is the
  * only output-shape mechanism; see cx_eval_cxl* in §2.16.
  */
 
@@ -759,46 +735,146 @@ char* cx_events_writer_row_group_with_len
 char* cx_events_writer_end_table
     (cx_events_writer_handle w, char** err_out);
 
-/* ── §2.16 CXL evaluator (capability bit 28) ─────────────────────────────
+/* ── §2.16 CXL evaluator (RETIRED at v0.7.6, Phase 7) ────────────────────
  *
- * Per ADR 0016 / spec/eval.md / spec/abi.md §2.16. CXL is a CX-native
- * expression language for rendering, querying, and transformation. The
- * v0.6.0 evaluator implements CXL 1.0 (Interpolation, [?if], [?for],
- * [?with], [?cond], [?def], [?use], and the frozen filter set). All
- * three symbols below are class P (pure / thread-safe). Capability
- * bit 28 (0x10000000) signals the evaluator is implemented.
+ * cx_eval / cx_eval_with_len / cx_eval_streaming were the v0.7.0 POC
+ * evaluator surface (spec/cxpath.md + the cx:/log:/inspect: self-host
+ * modules). They are removed at v0.7.6 (CX code is the
+ * unified pattern/query/transform language). The replacement is the
+ * cx_code_eval* family below — see spec/code.md +
+ * spec/audits/code_abi_v1.md. Capability bit 28 is re-widened at
+ * v0.7.6 to mean "CX code evaluator present" per spec/abi.md §3. */
+
+/* ── v0.7.6 CX code evaluator (Phase 3.11) ─────────────────────────────
  *
- * `cx_input`   : NUL-terminated CX document.
- * `cxl_program`: NUL-terminated CXL program (a CX document parsed
- *                under grammar v3.5 with Interpolation and EvalDirective
- *                productions).
- * `output_target`: NULL or empty to honour the program's
- *                `[?cx output-target=…]` directive; otherwise one of
- *                `text`, `cx`, `html` (additional targets at v0.7.0+).
- * Returns: NUL-terminated heap-allocated output (caller frees with
- *          cx_free); or NULL with *err_out set on error. */
-typedef int (*cx_eval_write_cb)(const char* bytes, size_t n, void* user);
+ * The cx_code_eval* family is the v0.7.6 surface for evaluating
+ * CX code (spec/code.md). It coexists with cx_eval* above
+ * until Phase 7 deletes the v0.7.0 POC; bindings should call
+ * cx_code_eval* and stop calling cx_eval* during Phase 5 binding
+ * parity. ABI design ratified at spec/audits/code_abi_v1.md.
+ *
+ * Memory ownership and error channel follow spec/abi.md §1.3 / §1.4.
+ * Error wire format is `CXERnnnn:msg` (e.g. `CXER0100:parse: ...`).
+ *
+ * input  may be NULL or empty when the program does not consume an
+ *        implicit `$doc` binding (e.g. `[?for $i :in (1,2,3) :yield $i]`).
+ * output_target is one of: text (default), cx, json, yaml, xml, csv,
+ *        tsv (always available); html, markdown, svg, mermaid (Phase
+ *        4-gated -- return a clear CXER0001 until the reference
+ *        renderer lands). */
 
-/* Cx evaluator (renamed from cx_eval_cxl* at v0.7.0 per ADR 0022 §D5).
- * The cxl-prefixed names are NOT exported by v0.7.0 libcx — this is
- * the documented ABI epoch break. Pre-v0.7.0 binding code must be
- * updated. */
-
-char* cx_eval
-    (const char* cx_input, const char* cxl_program,
-     const char* output_target, char** err_out);
-
-char* cx_eval_with_len
-    (const char* cx_input, size_t cx_len,
-     const char* cxl_program, size_t prog_len,
-     const char* output_target, char** err_out);
-
-/* Streaming variant: v0.7.0 stub returns W012. Lands once the
- * v0.9.0+ concurrency ADR resolves the streaming-evaluator skeleton. */
-char* cx_eval_streaming
-    (const char* cx_input, const char* cxl_program,
+char* cx_code_eval
+    (const char* input,
+     const char* program,
      const char* output_target,
-     cx_eval_write_cb write_cb, void* user, char** err_out);
+     char** err_out);
+
+char* cx_code_eval_with_len
+    (const char* input,   size_t input_len,
+     const char* program, size_t program_len,
+     const char* output_target,
+     char** err_out);
+
+/* cx_code_eval_caps — capability-aware member of the cx_code_eval* family
+ * (capability bit 38; spec/core/security.md, spec/core/abi.md §2.16.1).
+ * ADDITIVE: cx_code_eval / cx_code_eval_with_len are unchanged and run
+ * under the empty (pure-only) default, so existing bindings need no change.
+ *
+ * `caps` is the host grant spec (deny-by-default):
+ *   NULL or ""     -> empty set (pure-only) — the spec default
+ *   "all" / "*"    -> full grant (the --allow-all opt-out)
+ *   "read,write,…" -> exactly the listed capabilities (least-privilege)
+ * A denied effect at its effect point raises cx-err:CXER0271. The grant
+ * applies only to this call (the process capability set is reset after). */
+char* cx_code_eval_caps
+    (const char* input,
+     const char* program,
+     const char* output_target,
+     const char* caps,
+     char** err_out);
+
+typedef int (*cx_code_write_cb)(const char* bytes,
+                                    size_t n,
+                                    void* user);
+
+char* cx_code_eval_streaming
+    (const char* input,   size_t input_len,
+     const char* program, size_t program_len,
+     const char* output_target,
+     cx_code_write_cb write_cb,
+     void* user,
+     char** err_out);
+
+/* ── §2.16.2 v0.7.6 cx_code_diagram (Phase 9.1, gate 17) ────────────────
+ *
+ * Render a CX program to a diagram representation. Stateless function
+ * of (source_text, format); identical bytes returned for identical
+ * inputs. The wasm-callable surface behind the playground Source-pane
+ * Visualize affordance and the reference renderer's Mermaid output.
+ * SVG / PNG go through the CLI tier (graphviz shell-out); not exposed
+ * at this ABI (the wasm build does not link graphviz).
+ *
+ * Error wire format: in-band `CXERnnnn:msg` (e.g. `CXER0100:parse: ...`).
+ * Caller frees with cx_free(). format MUST be "mermaid" at v0.7.6;
+ * other formats yield CXER0001 with a clear "unsupported format" body. */
+char* cx_code_diagram
+    (const char* source, size_t source_len,
+     const char* format, size_t format_len);
+
+/* ── §2.16.3 v0.8.0 cx_code_tree (capability bit 32) ────────
+ *
+ * Return a JSON projection of the parsed source: every node carries
+ * `{kind, name?, value?, loc:{start,end}, children?}` with byte offsets
+ * into the original source. The `loc` field enables the bidirectional
+ * selection bridge between the playground tree pane and the source pane
+ * without further ABI plumbing. Independent of bit 31 — a binding MAY
+ * advertise `cx_code_tree` without `cx_code_diagram`, or vice versa.
+ *
+ * Memory ownership and error wire format match cx_code_diagram:
+ *   - returned bytes are caller-owned; release with cx_free().
+ *   - errors come back in-band as `CXERnnnn:msg` (e.g. `CXER0100:...`).
+ *   - out_len, if non-NULL, receives the payload byte length on success.
+ *
+ * Capability bit 32 (`0x100000000`). See spec/abi.md §3. */
+char* cx_code_tree
+    (const char* source, size_t source_len, size_t* out_len);
+
+/* ── §2.16.4 v0.8.0 cx_code_ast_json (playground Source-tree view) ───────
+ *
+ * Return a JSON encoding of the parsed program AST suitable for the
+ * playground's Source Tree pane. Stateless; identical bytes for
+ * identical inputs. Error wire format: in-band `CXERnnnn:msg` per
+ * cx_code_diagram. Caller frees with cx_free(). */
+char* cx_code_ast_json
+    (const char* source, size_t source_len);
+
+/* ── Include-resolution variants (spec/include.md, gate GG1) ─────────────
+ *
+ * Equivalent to cx_to_cx / cx_to_ast_bin / cx_to_data_bin but with the
+ * filesystem root used to resolve [?cx include] directives supplied
+ * explicitly. include_root MUST be a NUL-terminated absolute path; pass
+ * "" to disable include resolution (parse [?cx include] as opaque). */
+char* cx_to_cx_with_include_root      (const char* input,
+                                       const char* include_root,
+                                       char** err_out);
+char* cx_to_ast_bin_with_include_root (const char* input,
+                                       const char* include_root,
+                                       char** err_out);
+char* cx_to_data_bin_with_include_root(const char* input,
+                                       const char* include_root,
+                                       char** err_out);
+
+/* ── Wasm-only arena tuning ──────────────────────────────────────────────
+ *
+ * These two symbols exist only in the wasm build of libcx — the
+ * native-platform build is unaffected. The wasm runtime uses a bumped
+ * arena allocator backing every cx_* call; cx_wasm_set_arena_size
+ * grows the arena to at least `bytes`, and cx_wasm_reset returns it to
+ * its initial size between user actions in the playground. Both return
+ * 0 on success, -1 on failure. Hosts that do not run the wasm build
+ * MUST NOT link against these symbols. */
+int cx_wasm_set_arena_size(unsigned int bytes);
+int cx_wasm_reset(void);
 
 #ifdef __cplusplus
 }

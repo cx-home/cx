@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The data language — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a class="active" href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="data">
+  <h1>The data language</h1>
+  
+    <p>CX's data language is what you write in a `.cx` or `.cxd` file when
+       you mean "this is data." It is also what every CX code expression
+       evaluates to — programs and values share one shape. This section is
+       the working reference for the data surface; the normative grammar
+       is in [`spec/grammar.ebnf`](../../spec/grammar.ebnf) and the value
+       model is in [`spec/cxdm.md`](../../spec/cxdm.md).</p>
+    <section id="lexical">
+      <h2>Lexical structure</h2>
+      
+        <p>Every CX source file is UTF-8 text. The lexer is small: identifiers,
+         scalar literals, brackets (`[`, `]`), parentheses (used for sequences
+         and argument lists), curly braces (used for map literals), sigils,
+         strings, and comments. The full lexical rules are in
+         [`spec/grammar.ebnf`](../../spec/grammar.ebnf).</p>
+        <section id="identifiers">
+          <h3>Identifiers</h3>
+          
+            <p>An identifier starts with an ASCII letter or underscore and
+           continues with letters, digits, underscores, and hyphens. Hyphens
+           are valid identifier characters (CX leans on the kebab-case
+           convention used by Lisp, Clojure, and Scheme). The reserved tokens
+           `true`, `false`, `null`, and the directive names (starting with
+           `?`) are excluded. See <a class="xref" href="#reserved-tokens">reserved-tokens</a> for the complete
+           reserved-name list.</p>
+            <pre>
+              <code class="language-cx">[user-profile first-name='Ada' last-name='Lovelace']</code>
+            </pre>
+            <p>Names of CX elements are stored as Unicode code-point sequences;
+           a single canonical byte form is used at the wire level (see
+           <a class="xref" href="identity.html#canonical">canonical</a>). Unicode normalization is NFC — composed form is
+           the canonical shape.</p>
+          
+        </section>
+        <section id="comments">
+          <h3>Comments (line and block)</h3>
+          
+            <p>CX has one comment form: `[# … #]`. It nests, it spans any number
+           of lines, and it is allowed anywhere whitespace is allowed. The
+           comment is a real lexical element, not a hack on top of a string
+           — the parser drops it before AST construction. Comments are
+           preserved by the lossless canonicalizer (`cx fmt`) and stripped
+           by the strict canonicalizer (`cx canon`); see <a class="xref" href="identity.html#canonical">canonical</a>.</p>
+            <pre>
+              <code class="language-cx">[# A single-line note. #]
+           [config
+             [# This sub-comment is fine, even
+                [# nested #] inside another. #]
+             [host 'localhost']]</code>
+            </pre>
+            <p class="note">Older CX dialects used `[-` `-]` for block comments. v0.8.0 keeps
+           the `[# #]` form only. See <a class="xref" href="migration.html">migration</a> for the rename.</p>
+          
+        </section>
+        <section id="whitespace">
+          <h3>Whitespace</h3>
+          
+            <p>Whitespace separates tokens; otherwise it is not significant.
+           Indentation does not change meaning. CX is bracket-structured, so
+           you can compact a document to one line, or pretty-print it across
+           many — the canonical form (see <a class="xref" href="surfaces.html#cx-canonical">cx-canonical</a>) is unique and
+           hash-stable either way.</p>
+            <p>Inside element bodies, runs of whitespace are collapsed to single
+           spaces by default. Inside triple-quoted strings whitespace is
+           preserved verbatim. The `xml:space=preserve` attribute (see
+           <a class="xref" href="#xml-space">xml-space</a>) overrides the default within its scope.</p>
+          
+        </section>
+      
+    </section>
+    <section id="elements">
+      <h2>Elements</h2>
+      
+        <p>An **element** is the basic CX data structure: a name, zero or more
+         attributes, and a body. Every bracketed form is an element. The
+         normative production is [`spec/grammar.ebnf`](../../spec/grammar.ebnf)
+         `[51] Element`.</p>
+        <section id="names">
+          <h3>Element names</h3>
+          
+            <p>The first token inside `[` is the element name. It is an
+           identifier (or a string literal, if you need spaces, but that is
+           unusual in idiomatic CX). Names starting with `?` denote
+           directives (CX code, not data) — see <a class="xref" href="code.html">code</a>.</p>
+            <pre>
+              <code class="language-cx">[server]                       [# empty element                 #]
+           [server host='a.com']          [# attributes only               #]
+           [server [host 'a.com']]        [# nested elements as body       #]</code>
+            </pre>
+          
+        </section>
+        <section id="attributes">
+          <h3>Attributes</h3>
+          
+            <p>Attributes are key-value pairs in the form `name=value`. The key
+           is an identifier; the value is a bare scalar, a quoted string,
+           a numeric literal, a boolean literal, a date, or `null`. Multiple
+           attributes are space-separated within the element header.</p>
+            <pre>
+              <code class="language-cx">[user id=42 email='ada@example.com' active=true]</code>
+            </pre>
+            <p class="note">The `:name value` form is NOT element-attribute syntax. It is
+           directive labeled-slot syntax (per `spec/grammar.ebnf [127e]`)
+           used inside `[?directive ...]`. On a plain data element you write
+           `name=value`. The two forms are not interchangeable.</p>
+            <p>Attribute order is preserved by the parser but is **not** part
+           of the canonical identity — re-ordering attributes does not
+           change the SHA-256 of the canonical bytes. See <a class="xref" href="identity.html#canonical">canonical</a>
+           for the normalization rules. Three sigil-prefixed attribute
+           shortcuts exist: `+name` (= `name=true`), `-name` (= `name=false`),
+           `#name` (the id sigil, see <a class="xref" href="#id">id</a>). The anchor sigil `&amp;name` and
+           the merge sigil `*name` are also attribute-level — see <a class="xref" href="#anchor">anchor</a>
+           and <a class="xref" href="#merge">merge</a>.</p>
+          
+        </section>
+        <section id="bodies">
+          <h3>Body content</h3>
+          
+            <p>The body of an element is everything between the attribute list
+           and the closing `]`. A body may be empty, a single scalar, a
+           sequence of scalars and elements (mixed content / prose — see
+           <a class="xref" href="#prose">prose</a>), or a sequence of just elements.</p>
+            <pre>
+              <code class="language-cx">[empty]
+           [scalar 42]
+           [prose 'Some ' [em 'mixed'] ' content.']
+           [list [item 1] [item 2] [item 3]]</code>
+            </pre>
+            <p>A bare scalar body is auto-typed per the rules in
+           [`spec/ast.md`](../../spec/ast.md) §Scalar — `42` becomes `:int`,
+           `3.14` becomes `:float`, `2026-05-22` becomes `:date`, etc. To
+           force a type, prefix it: `[port :u16 8080]`.</p>
+          
+        </section>
+      
+    </section>
+    <section id="scalars">
+      <h2>Scalar kinds</h2>
+      
+        <p>CX has **eight** scalar kinds per [`spec/cxdm.md`](../../spec/cxdm.md)
+         §2.2: string, int, float, bool, date, datetime, bytes, null. The
+         wire encoding for each kind is in
+         [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3. Each kind can be
+         introduced literally (e.g. `42` for int) or with an explicit type
+         tag (e.g. `:int 42` or `:u32 42`).</p>
+        <section id="strings">
+          <h3>Strings — single, double, triple-quoted</h3>
+          
+            <p>Strings come in three forms. Single-quoted (`'…'`) and
+           double-quoted (`"…"`) work the same way and support escapes.
+           Triple-quoted (`'''…'''` or `\"\"\"…\"\"\"`) strings span lines,
+           preserve internal whitespace, and need no escaping for the other
+           quote characters.</p>
+            <pre>
+              <code class="language-cx">[greeting 'Hello, world']
+           [path "C:\\Users\\Ada"]
+           [readme \"\"\"
+             This is a
+             multi-line string
+             with 'embedded' quotes.
+           \"\"\"]</code>
+            </pre>
+            <p>Triple-quoted strings are the default for any body text longer
+           than one line. They are the building block for the prose form
+           (see <a class="xref" href="#prose">prose</a>) and for the `[?modify]` action `:set` values
+           when those values are documents in their own right.</p>
+            <p>The canonical form (`cx canon`) emits single-quoted strings for
+           single-line content and triple-double-quoted strings for
+           multi-line content. Escapes are minimised to what the parser
+           strictly requires.</p>
+          
+        </section>
+        <section id="numbers">
+          <h3>Numbers — int, float, sized, hex</h3>
+          
+            <p>Integer literals are plain digits, optionally signed:
+           `42`, `-17`, `0`. Float literals contain a decimal point or
+           exponent: `3.14`, `1e9`, `-2.5e-3`. Hex literals are written
+           `0x…`. The default `:int` is a 64-bit signed integer; `:float`
+           is IEEE-754 double. Sized variants are available as type-tagged
+           scalars when binding to host languages where the size matters;
+           see <a class="xref" href="#sized-types">sized-types</a>.</p>
+            <pre>
+              <code class="language-cx">[answer 42]
+           [pi 3.14159]
+           [big 1e18]
+           [color 0xff8800]
+           [port :u16 8080]
+           [pixel-density :f32 1.5]</code>
+            </pre>
+            <p>Special float values: `nan`, `inf`, `-inf` are recognised. NaN
+           does not equal NaN under `=` (per IEEE-754); the `is-nan`
+           builtin tests for it explicitly. `-0.0` and `+0.0` compare
+           equal under `=` but produce different canonical bytes.</p>
+            <p>Integers do not auto-promote to a larger type on overflow.
+           Adding `1` to `9223372036854775807` (max i64) raises CXER0103
+           (numeric overflow). For arbitrary-precision arithmetic use the
+           `:bigint` type tag with a string-form literal; the v0.8.0 builtin
+           library does not include BigInt arithmetic — that is a
+           post-v0.8.0 follow-up.</p>
+          
+        </section>
+        <section id="booleans">
+          <h3>Booleans</h3>
+          
+            <p>`true` and `false`. They are reserved tokens; the identifier
+           `true` always parses as the boolean true value. Use sigil
+           forms (see <a class="xref" href="#bool">bool</a>) for compact attribute syntax.</p>
+          
+        </section>
+        <section id="dates">
+          <h3>Dates and datetimes</h3>
+          
+            <p>Dates are ISO-8601 calendar dates: `2026-05-22`. Datetimes are
+           ISO-8601 with time and optional zone offset:
+           `2026-05-22T14:30:00Z` or `2026-05-22T14:30:00-04:00`. Both are
+           first-class scalars — they round-trip across every projection
+           and have stable canonical byte encodings. See
+           <a class="xref" href="#datetime-detail">datetime-detail</a> for timezone, precision, and leap-second
+           semantics.</p>
+          
+        </section>
+        <section id="null" cx:attr-types="id=string">
+          <h3>Null</h3>
+          
+            <p>`null` is the absent-value scalar. Distinct from the empty
+           sequence `()`. `null` is a value; `()` is the absence of any
+           value. CXPath predicates and `[?if]` treat them differently —
+           `null` is a single-item sequence containing the null scalar;
+           `()` is an empty sequence. The effective-boolean-value rule
+           (cxdm §4.6) treats `null` as truthy iff its containing element
+           exists; treats `()` as always falsy.</p>
+          
+        </section>
+        <section id="bytes">
+          <h3>Bytes — raw binary scalars</h3>
+          
+            <p>`:bytes` is the eighth scalar kind: a length-prefixed byte
+           sequence with no character semantics. Use it for image data,
+           hashes, encrypted payloads, or any opaque binary value.</p>
+            <pre>
+              <code class="language-cx">[hash :bytes 0x3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b]
+           [logo :bytes base64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB...')]</code>
+            </pre>
+            <p>Bytes literals accept three syntaxes: a hex string prefixed `0x`,
+           or the `base64('…')` / `hex('…')` builtin constructors. The
+           canonical form emits the hex string with the `0x` prefix; the
+           data-bin wire format uses raw length-prefixed bytes (no
+           encoding overhead). Each projection has its own bytes form:
+           JSON emits a `{"_cx_bytes": "base64..."}` envelope (no native
+           bytes in JSON); YAML uses `!!binary base64...`; XML uses CDATA
+           with base64 content; Markdown uses a data URI in a code fence.
+           See <a class="xref" href="surfaces.html">surfaces</a> §3.10 (bytes wire forms) for the full table.</p>
+          
+        </section>
+        <section id="sized-types">
+          <h3>Sized type tags</h3>
+          
+            <p>When binding CX to host languages where integer size matters
+           (Rust `i32` vs `i64`, Go `uint8` vs `int`, C `int16_t`),
+           a sized type tag is attached to the scalar. The full set:</p>
+            <ul>
+              
+                <li>**Signed integers:** `:i8`, `:i16`, `:i32`, `:i64`.</li>
+                <li>**Unsigned integers:** `:u8`, `:u16`, `:u32`, `:u64`.</li>
+                <li>**Floats:** `:f32`, `:f64`.</li>
+                <li>**Default-int:** `:int` — alias for `:i64`.</li>
+                <li>**Default-float:** `:float` — alias for `:f64`.</li>
+              
+            </ul>
+            <p>A literal without a type tag is auto-typed as `:int` (for whole
+           numbers) or `:float` (for numbers with `.` or `e`). To force a
+           sized variant: `[port :u16 8080]`, `[pixel-density :f32 1.5]`.
+           Sized variants flow through ast-bin and data-bin with their
+           type identifier preserved; bindings translate to the host's
+           native numeric type.</p>
+            <p>Overflow on a sized scalar (writing `300` into `:u8`, or
+           `2147483648` into `:i32`) raises CXER0103 at validation time.
+           Bindings raise the host's equivalent error (e.g. Python
+           `OverflowError`, Rust `TryFromIntError`).</p>
+          
+        </section>
+      
+    </section>
+    <section id="collections">
+      <h2>Collection literals</h2>
+      
+        <p>CX has three collection literal forms: **sequence**, **array**,
+         and **map**. The distinction is load-bearing for function
+         signatures — see [`spec/cxdm.md`](../../spec/cxdm.md) §2 D18 and
+         <a class="xref" href="#container-atom">container-atom</a> below.</p>
+        <section id="seq">
+          <h3>Sequence literals (a, b, c)</h3>
+          
+            <p>A comma-separated parenthesized list is a sequence: `(1, 2, 3)`.
+           Sequences are flat — concatenating sequences never produces a
+           sequence-of-sequences (the XQuery sequence-flat rule, see
+           <a class="xref" href="#seq-flat">seq-flat</a>).</p>
+            <pre>
+              <code class="language-cx">[ports (80, 443, 8080)]</code>
+            </pre>
+            <p>A sequence with one element is equivalent to that single
+           element: `(42)` ≡ `42`. The empty sequence is `()` — distinct
+           from `null` (see <span class="xref-unresolved">[[null]]</span>).</p>
+          
+        </section>
+        <section id="arr">
+          <h3>Array literals [a, b, c]</h3>
+          
+            <p>A bracketed comma-separated list (distinguished from an element
+           by the absence of a name and the presence of commas) is an
+           array. Arrays preserve nesting — an array of arrays stays
+           shaped that way.</p>
+            <pre>
+              <code class="language-cx">[matrix [[1, 2, 3], [4, 5, 6], [7, 8, 9]]]</code>
+            </pre>
+            <p>Arrays index from zero in CXPath and the host-language
+           bindings (`$arr[0]`). Negative indexing is supported in Python
+           and Rust Layer-2 idioms; the Layer-1 surface uses
+           `arr.at(n)` (0-based, errors on out-of-bounds).</p>
+          
+        </section>
+        <section id="map">
+          <h3>Map literals {k: v}</h3>
+          
+            <p>Curly braces wrap a map literal: keys are atomic scalars, values
+           are any item. Keys must be unique; duplicate keys at parse time
+           raise CXER0102. Insertion order is preserved for round-trip
+           but not for canonical identity — two maps with the same
+           key-value pairs hash to the same canonical bytes regardless of
+           insertion order.</p>
+            <pre>
+              <code class="language-cx">[env {host: 'a.com', port: 8080, tls: true}]</code>
+            </pre>
+            <p>The map key type is `ScalarKey` per cxdm §2: bool, int, float,
+           string, date, datetime, or bytes. `null` is not a valid key
+           (`null = null` would not satisfy the uniqueness invariant
+           under value-comparison semantics). Mixed-type keys are
+           permitted; comparison is by canonical bytes of each key.</p>
+          
+        </section>
+        <section id="seq-flat">
+          <h3>The sequence-flat principle</h3>
+          
+            <p>**Every value in CX is a sequence; sequences do not nest at the
+           sequence boundary.** This is XQuery's sequence-flat rule
+           (cxdm §1) — the property that makes the expression family
+           compose.</p>
+            <ul>
+              
+                <li>`//user` returns a sequence whether the document has 0,
+                1, or N users — consumers iterate uniformly.</li>
+                <li>Concatenation is total and associative:
+                `concat(a, b, c)` never raises "can't concatenate
+                scalar to list".</li>
+                <li>A directive's return value is "what it evaluates to";
+                multiple emits naturally concatenate.</li>
+              
+            </ul>
+            <p>What sequence-flat is NOT: a list-of-lists model. Concatenating
+           two sequences yields one flat sequence, never a
+           sequence-containing-two-sub-sequences. To preserve nesting use
+           **arrays** (<a class="xref" href="#arr">arr</a>) — arrays are container Items, not
+           sequence boundaries.</p>
+          
+        </section>
+        <section id="container-atom">
+          <h3>Container vs atom distinction</h3>
+          
+            <p>cxdm v1.1 introduces a load-bearing distinction between **atom**
+           Items (Node, Scalar) and **container** Items (Array, Map,
+           Sequence-as-Item) per cxdm §2.0:</p>
+            <ul>
+              
+                <li>**Atoms** are leaf values from the value-model perspective.
+                A Scalar `42` is a single Item; a Node is a single Item even
+                though its tree contents are richly structured.</li>
+                <li>**Containers** hold further Items by composition at the
+                value level. `[1, 2, 3]` is one Array Item that holds three
+                Scalar Items. `{name: 'a'}` is one Map Item that holds one
+                (key, value) pair.</li>
+              
+            </ul>
+            <p>This governs which operations apply where. Sequence operations
+           (`count`, `head`, `tail`, `concat`, `distinct`, `union`,
+           `intersect`, `except`) take **Sequence** and do not implicitly
+           descend into a container — `count(arr)` raises a type error;
+           the explicit form is `count(items(arr))` or
+           `count(flatten(arr))`. Array operations (`array:size`,
+           indexing) take **Array** and treat it as a single value. Map
+           operations (`map:keys`, `map:get`) take **Map**.</p>
+            <p>The practical impact: function signatures type-check at the
+           value-model layer. A function that expects a sequence will not
+           silently accept an array (or vice versa); the caller writes the
+           conversion explicitly, making intent visible to readers and
+           tools.</p>
+          
+        </section>
+      
+    </section>
+    <section id="sigils">
+      <h2>Sigils</h2>
+      
+        <p>Sigils are one-character prefixes that change how a token is
+         interpreted. CX has five element-level sigils: `&amp;` (anchor),
+         `*` (merge), `#` (id), `+`/`-` (compact booleans). The `:` is
+         overloaded for type tags (scalar position) and for directive
+         labeled slots (inside `[?...]`).</p>
+        <section id="anchor">
+          <h3>The & anchor sigil</h3>
+          
+            <p>`&amp;name` declares a reusable shape anchor on an element. Other
+           elements can refer to it later in the same document via the
+           merge sigil `*name`. Anchors are document-scoped — they
+           resolve within the same document and do not cross include
+           boundaries (per <a class="xref" href="#include-capabilities">include-capabilities</a>).</p>
+            <pre>
+              <code class="language-cx">[defaults &server-base host='localhost' tls=true]
+           [service-a *server-base port=8001]
+           [service-b *server-base port=8002]</code>
+            </pre>
+            <p>An anchor declaration with `&amp;name` MAY appear at most once per
+           document; duplicate `&amp;name` declarations raise CXER0101. The
+           lossless canonicalizer preserves anchors and aliases; the strict
+           canonicalizer expands them and the canonical bytes are the
+           expanded form.</p>
+          
+        </section>
+        <section id="merge">
+          <h3>The * merge sigil</h3>
+          
+            <p>`*name` expands the anchor's attributes and body into the
+           current element. Local attributes override merged ones, so you
+           can specialize. Merge resolution is depth-first and stops at
+           cycles; cyclic `*` references raise CXER0101.</p>
+          
+        </section>
+        <section id="id">
+          <h3>The # id sigil</h3>
+          
+            <p>`#name` declares an identity on the element. Identities are
+           document-unique and can be referenced via CXPath `id('name')`.
+           Identities differ from anchors: anchors are for shape reuse
+           (data-level), identities are for cross-references (semantic
+           link). Full semantics in
+           [`spec/identity.md`](../../spec/identity.md).</p>
+            <pre>
+              <code class="language-cx">[user #ada email='ada@example.com']
+           [post author-id=#ada \"\"\"First post\"\"\"]</code>
+            </pre>
+            <p>A `#name` reference (as in `author-id=#ada` above) resolves to
+           the element bearing `#ada`. The reference does not embed; it
+           remains a pointer. CXPath `id('ada')` selects the target
+           element. Cross-format identity rules: IDs survive round-trip
+           through every projection — JSON/YAML/TOML/XML/MD all have or
+           can construct an `id` key. See <a class="xref" href="identity.html">identity</a>.</p>
+          
+        </section>
+        <section id="type">
+          <h3>The : type sigil</h3>
+          
+            <p>`:` is reserved for two surface roles. In **value position**
+           (`[port :u16 8080]`) it introduces a type tag (the long-name
+           ascription form `::T` is the canonical spelling — `:u16` here
+           is the short-name shorthand). In **atom position** (`:ok`,
+           `:not-found`) it introduces a symbolic atom literal. The
+           parser disambiguates by context. The `:` sigil is no
+           longer used to introduce labeled directive slots — every
+           clause is now an explicit child element (`[then …]`,
+           `[else …]`, `[yield …]`, `[where …]`).</p>
+            <p>Type tags are explicit; the eight scalar kinds (see <a class="xref" href="#scalars">scalars</a>)
+           plus sized variants (see <a class="xref" href="#sized-types">sized-types</a>) all use the `:` sigil
+           when written explicitly. The CXPath `instance of` operator uses
+           the same vocabulary: `$x instance of :int`.</p>
+          
+        </section>
+        <section id="bool">
+          <h3>The + and - bool sigils</h3>
+          
+            <p>`+name` is shorthand for `name=true`; `-name` for
+           `name=false`. They keep terse attribute lists readable.</p>
+            <pre>
+              <code class="language-cx">[user email='ada@example.com' +active -banned]
+           [# equivalent to:
+              [user email='ada@example.com' active=true banned=false] #]</code>
+            </pre>
+          
+        </section>
+      
+    </section>
+    <section id="prose">
+      <h2>Mixed content and prose</h2>
+      
+        <p>Mixed content — text interleaved with elements — is first-class
+         CX, not a separate "string mode". The body of any element may
+         alternate freely between scalars and child elements. This makes
+         Markdown projection lossless: a paragraph with inline code is
+         stored as a `[p]` element containing a text run, a `[code]`
+         element, and more text.</p>
+        <pre>
+          <code class="language-cx">[para
+         \"\"\"The function \"\"\"
+         [code 'parse']
+         \"\"\" returns a \"\"\"
+         [link to='spec/cxdm.md' 'Document']
+         \"\"\" value.\"\"\"]</code>
+        </pre>
+        <section id="entity-refs">
+          <h3>Entity references</h3>
+          
+            <p>CX text accepts the five XML/HTML entity references for
+           characters that would otherwise terminate a token: `&amp;amp;`,
+           `&amp;lt;`, `&amp;gt;`, `&amp;quot;`, `&amp;apos;`. They are decoded at parse
+           time; the canonical form re-encodes only what the parser
+           strictly requires (e.g. `&amp;` becomes `&amp;amp;` only when it sits
+           inside an unquoted attribute value or near a `[` that would
+           start an element).</p>
+            <p>Numeric character references (`&amp;#65;` for `A`, `&amp;#x41;` for the
+           same) are accepted on input and re-encoded as the literal
+           character on canonical emit. External entity references (the
+           `&lt;!ENTITY foo SYSTEM "..."&gt; &amp;foo;` pattern from XML) are
+           accepted on parse but resolution is gated by the include
+           capability bit — see <a class="xref" href="#include-capabilities">include-capabilities</a>.</p>
+          
+        </section>
+        <section id="xml-space">
+          <h3>Whitespace preservation (xml:space)</h3>
+          
+            <p>By default CX collapses runs of whitespace in element bodies
+           to single spaces. The `xml:space=preserve` attribute on an
+           element overrides this within its scope: whitespace inside the
+           element (and its descendants until a redeclaration) is
+           preserved verbatim.</p>
+            <pre>
+              <code class="language-cx">[poem xml:space=preserve
+           \"\"\"  Roses are red,
+             Violets are blue,
+              Whitespace preserved,
+               just for you.\"\"\"]</code>
+            </pre>
+            <p>`xml:space=default` re-enables the default collapse behavior in
+           a nested scope. The attribute survives XML round-trip
+           identically; in JSON/YAML/TOML it round-trips as a regular
+           attribute.</p>
+          
+        </section>
+        <section id="cdata">
+          <h3>CDATA sections</h3>
+          
+            <p>XML CDATA blocks (`&lt;![CDATA[...]]&gt;`) project to triple-quoted
+           strings on CX import; the round-trip back to XML re-emits a
+           CDATA block when the content contains characters that would
+           otherwise require escaping. CX itself has no separate CDATA
+           syntax — triple-quoted is the universal verbatim form for any
+           body content.</p>
+          
+        </section>
+      
+    </section>
+    <section id="tables">
+      <h2>Typed columnar tables</h2>
+      
+        <p>For analytical workloads CX has a typed columnar table form. The
+         logical shape is `[name :table :columns (col-spec, ...) row-tuples...]`;
+         the physical wire format is CXCol (see <a class="xref" href="analytics.html#cxcol">cxcol</a>) and the
+         normative table API is in
+         [`spec/misc/table-api.md`](../../spec/misc/table-api.md).</p>
+        <pre>
+          <code class="language-cx">[orders :table
+         :columns (id :int, customer :string, amount :float, ts :datetime)
+         (1, 'Ada',   42.50, 2026-05-22T10:00:00Z)
+         (2, 'Grace', 17.25, 2026-05-22T10:15:00Z)
+         (3, 'Linus', 99.00, 2026-05-22T11:30:00Z)]</code>
+        </pre>
+        <p>**Column spec:** each column has a name and a type tag. Type tags
+         use the full scalar vocabulary (`:int`, `:string`, `:float`,
+         `:bool`, `:date`, `:datetime`, `:bytes`, plus sized variants
+         `:i32`/`:u64`/`:f32` etc.). A trailing `?` marks the column
+         nullable: `(id :int, email :string?, ...)`.</p>
+        <p>**Row tuples:** each row is a comma-separated parenthesized list
+         matching the column count. Values must satisfy the column type;
+         a mismatch raises CXER0103 at parse time.</p>
+        <p>**Dictionary encoding:** string columns with low cardinality
+         (default threshold: &lt; 50% unique values) are automatically
+         dictionary-encoded in the wire form, producing 5–10× smaller
+         binary output. The threshold is configurable per-column via the
+         `:dict` attribute on the column spec.</p>
+        <p>**Streaming:** tables larger than the configured row-group size
+         (default 64 K rows) are emitted in chunks. Each chunk carries
+         per-column statistics (min/max/null-count) in its manifest,
+         enabling predicate-pushdown on read. See <a class="xref" href="analytics.html#parquet-bridge">parquet-bridge</a> for
+         the Parquet round-trip and <a class="xref" href="analytics.html#cxcol">cxcol</a> for the native streaming
+         format.</p>
+        <p>**Arrow / Parquet bridges:** tables convert to Apache Arrow record
+         batches (zero-copy via the C Data Interface) and to Parquet
+         files. The bridges live on the analytics-bridge surface — see
+         <a class="xref" href="analytics.html#arrow-bridge">arrow-bridge</a> and <a class="xref" href="analytics.html#parquet-bridge">parquet-bridge</a>.</p>
+      
+    </section>
+    <section id="schema">
+      <h2>Schema language (.cxs)</h2>
+      
+        <p>A `.cxs` file is a CX schema: an element-shape declaration that
+         the validator can enforce. Schemas are CX documents themselves —
+         no separate grammar to learn. Full spec in
+         [`spec/schema.md`](../../spec/schema.md).</p>
+        <pre>
+          <code class="language-cx">[# users.cxs #]
+         [schema
+           [element name=user
+             [attribute name=id    type=int    required=true]
+             [attribute name=email type=string required=true]
+             [attribute name=active type=bool  default=true]]]</code>
+        </pre>
+        <section id="schema-modes">
+          <h3>Open / strict / closed modes</h3>
+          
+            <p>Schemas declare one of three validation modes:</p>
+            <ul>
+              
+                <li>**open** — the schema's declarations are required; extra
+                attributes / extra child elements not declared are
+                permitted silently. Use this for forward-compatible
+                evolution.</li>
+                <li>**strict** — declarations are required; extras are
+                reported as warnings (CXLW001). Use for review pipelines
+                where extras likely indicate a typo or a forgotten
+                schema update.</li>
+                <li>**closed** — declarations are required; extras are
+                errors (CXER0103). Use for security-critical surfaces
+                where the schema is the authoritative contract.</li>
+              
+            </ul>
+            <p>The default mode is open. Override per-schema with
+           `[schema mode=strict ...]` or per-element. See
+           [`spec/schema.md`](../../spec/schema.md) §9 for the full
+           normative behavior.</p>
+          
+        </section>
+        <section id="schema-constraints">
+          <h3>Constraint vocabulary</h3>
+          
+            <p>Beyond type-tag matching, schemas support a constraint
+           vocabulary on attributes and element bodies:</p>
+            <ul>
+              
+                <li>`pattern='regex'` — attribute value matches the regex</li>
+                <li>`min=N` / `max=N` — numeric bounds</li>
+                <li>`min-length=N` / `max-length=N` — string length</li>
+                <li>`enum=(a, b, c)` — value is one of the listed atoms</li>
+                <li>`one-of=(...)` — value matches one of N sub-schemas</li>
+                <li>`required=true|false` — attribute presence</li>
+                <li>`occurs='0..*'` — child element cardinality (XSD form)</li>
+              
+            </ul>
+            <p>Constraint violations produce CXER01xx errors with the failing
+           constraint identified in the error context. Full vocabulary +
+           error-code map: [`spec/schema.md`](../../spec/schema.md) §7
+           + §12.</p>
+          
+        </section>
+        <section id="schema-defaults">
+          <h3>Defaults and inheritance</h3>
+          
+            <p>An attribute with a `default=` slot is materialized at
+           validation time if the input does not provide it. Defaults
+           round-trip explicitly through canonical bytes — the
+           materialized attribute IS part of the document after
+           validation. To omit defaults from canonical form, validate
+           with `--no-default-materialize` (lossless form only).
+           Schemas can compose via `[?cx include]` (see <a class="xref" href="#includes">includes</a>);
+           imported schemas' declarations layer over the importing
+           schema's.</p>
+          
+        </section>
+        <section id="schema-binding">
+          <h3>Binding a schema to a document</h3>
+          
+            <p>Three ways to associate a `.cxs` schema with a document:</p>
+            <ul>
+              
+                <li>**In-document directive:** prepend
+                `[?cx schema='users.cxs']` to the document. The validator
+                resolves the path relative to the document.</li>
+                <li>**CLI flag:** `cx validate doc.cx --schema users.cxs`.</li>
+                <li>**Convention:** if `doc.cx` has a sibling `doc.cxs`,
+                tools default to using it (override with `--no-implicit-schema`).</li>
+              
+            </ul>
+            <p>Schema-driven binary encoding (see <a class="xref" href="identity.html#data-bin">data-bin</a>) uses the
+           schema's field order and types to omit tag bytes and field
+           names from the wire form — producing wire sizes comparable to
+           Protobuf or Avro.</p>
+          
+        </section>
+      
+    </section>
+    <section id="includes">
+      <h2>Include resolver</h2>
+      
+        <p>`[?cx include]` resolves a path to another CX document and
+         splices its contents in place. Full resolver model in
+         [`spec/include.md`](../../spec/include.md).</p>
+        <pre>
+          <code class="language-cx">[config
+           [?cx include path='base.cx']
+           [override port=9090]]</code>
+        </pre>
+        <section id="include-paths">
+          <h3>Path resolution</h3>
+          
+            <p>Include paths are resolved relative to the **including
+           document's directory**, not the working directory. Absolute
+           paths are accepted but flagged by `cx lint` (recommendation:
+           prefer relative). HTTPS URLs are accepted when the network
+           capability bit is enabled — see <a class="xref" href="#include-capabilities">include-capabilities</a>.</p>
+            <p>The resolver honors a `CX_INCLUDE_PATH` environment variable
+           (a colon-separated list of search roots), mirroring `gcc -I`.
+           Paths inside the document's own subtree resolve first; the
+           search path is consulted only if the local lookup fails.</p>
+          
+        </section>
+        <section id="include-cycles">
+          <h3>Cycle detection</h3>
+          
+            <p>A include cycle (A includes B which includes A) raises CXER0140
+           at the second visit to A. The resolver tracks include
+           ancestors per document; sibling includes that happen to
+           reference the same file are fine, only cyclic ancestry
+           errors.</p>
+          
+        </section>
+        <section id="include-depth">
+          <h3>Depth limit</h3>
+          
+            <p>Default maximum include nesting depth is 16. Exceeding it
+           raises CXER0141. The limit prevents pathological documents
+           from exhausting the parser's stack. Override with
+           `CX_INCLUDE_MAX_DEPTH=N` (rarely needed in practice).</p>
+          
+        </section>
+        <section id="include-capabilities">
+          <h3>Capability gating</h3>
+          
+            <p>Includes are gated by capability bits per
+           <a class="xref" href="concepts.html">concepts</a>: `include-local` (file-system reads under the
+           document's directory tree), `include-absolute` (file-system
+           reads outside that tree), `include-network` (HTTPS URLs),
+           `external-entity` (XML external entity refs). The default
+           profile enables `include-local` only. Untrusted-input
+           processing should disable all four. See <a class="xref" href="concepts.html#security">security</a> in
+           <a class="xref" href="concepts.html">concepts</a> for the threat model.</p>
+          
+        </section>
+      
+    </section>
+    <section id="namespaces">
+      <h2>Namespaces (xmlns:)</h2>
+      
+        <p>CX supports XML-namespace-style scoping via `xmlns:` attribute
+         declarations. The normative spec is
+         [`spec/namespaces.md`](../../spec/namespaces.md).</p>
+        <section id="ns-prefix-decl">
+          <h3>Prefix declarations</h3>
+          
+            <p>`xmlns:prefix=URI` declares a namespace binding scoped to the
+           declaring element and all of its descendants until a
+           redeclaration ends the scope. A prefix is then a `prefix:local`
+           qualified name on any element or attribute in scope.</p>
+            <pre>
+              <code class="language-cx">[doc xmlns:dc=http://purl.org/dc/elements/1.1/
+           [dc:title 'CX Spec']
+           [dc:author 'Ada Lovelace']]</code>
+            </pre>
+          
+        </section>
+        <section id="ns-default">
+          <h3>Default namespace</h3>
+          
+            <p>`xmlns=URI` declares a default namespace. Applies to the
+           declaring element and all unprefixed descendant **elements**
+           until redeclared. Per XML Namespaces 1.0 §6.2 it does **not**
+           apply to attribute names.</p>
+            <pre>
+              <code class="language-cx">[doc xmlns=urn:doc
+           [section 'Unprefixed elements live in urn:doc']]</code>
+            </pre>
+          
+        </section>
+        <section id="ns-reserved">
+          <h3>Reserved prefixes</h3>
+          
+            <p>Three prefixes are reserved by CX and cannot be redeclared:</p>
+            <table>
+              
+                <row prefix="xml" uri="http://www.w3.org/XML/1998/namespace" notes="XML built-in; always resolves; xml:lang accepted as alias for cx:lang"/>
+                <row prefix="cx" uri="https://cx-home.org/ns/cx" notes="CX metadata; cannot be redeclared; carries cx:lang etc."/>
+                <row prefix="xmlns" uri="declaration syntax only" notes="Never resolves as a name prefix"/>
+              
+            </table>
+          
+        </section>
+        <section id="ns-equality">
+          <h3>Equality and canonical form</h3>
+          
+            <p>Two namespace bindings are equal iff their URIs are equal as
+           byte sequences (no normalization beyond percent-decoding).
+           Canonical form rewrites prefixes to a deterministic sequence
+           (`ns0`, `ns1`, …) so two documents with the same data but
+           different prefix choices hash to the same canonical bytes.
+           Round-trip preserves the original prefix names via the
+           lossless canonicalizer.</p>
+          
+        </section>
+      
+    </section>
+    <section id="locale">
+      <h2>Locale and language (cx:lang)</h2>
+      
+        <p>`cx:lang` declares the language of an element's text content
+         using a BCP 47 language tag. Inherited-scope: the declaration
+         applies to the element and all descendants until a redeclaration.
+         Normative spec: [`spec/i18n.md`](../../spec/i18n.md).</p>
+        <pre>
+          <code class="language-cx">[doc cx:lang=en-US
+         [title 'Welcome']
+         [section cx:lang=fr-FR
+           [title 'Bienvenue']]
+         [section cx:lang=ja-JP
+           [title 'ようこそ']]]</code>
+        </pre>
+        <p>The `xml:lang` attribute is accepted on input as an alias for
+         `cx:lang` (per XML interop). On canonical emit, `cx:lang` is the
+         normalized form. Every binding exposes a `.lang()` accessor on
+         Nodes that resolves to the inherited language tag at that
+         position.</p>
+        <p>Bidirectional text direction (LTR/RTL) is inferred from the
+         language tag unless explicitly overridden with
+         `cx:dir=rtl`/`cx:dir=ltr` (Unicode bidi algorithm).</p>
+      
+    </section>
+    <section id="doctype">
+      <h2>Doctype declarations</h2>
+      
+        <p>A `[?cx doctype=…]` directive at the top of a document declares
+         the document type. In v0.8.0 doctype is informational metadata;
+         the validator MAY use it as a default schema-binding hint.</p>
+        <pre>
+          <code class="language-cx">[?cx doctype='users-v1' encoding=utf-8]
+         [users
+           [user id=1 email='ada@example.com']]</code>
+        </pre>
+        <p>The doctype name is a free-form identifier; convention is
+         `&lt;name&gt;-v&lt;major&gt;`. A future v0.9.x extension promotes doctype to
+         an *active* declaration (auto-load the schema by name, validate
+         on parse) — for v0.8.0 it is reserved for that direction.</p>
+      
+    </section>
+    <section id="encoding">
+      <h2>Document encoding (UTF-8, BOM, alternates)</h2>
+      
+        <p>CX source is UTF-8 by default. The parser accepts a UTF-8 BOM at
+         the start of file (and strips it) but does not emit a BOM in
+         canonical form. Alternative encodings are accepted when the
+         document opens with `[?cx encoding=…]`.</p>
+        <p>Supported encodings: utf-8 (default), utf-16, utf-16le,
+         utf-16be, utf-32, iso-8859-1, windows-1252, shift_jis,
+         euc-jp, gb18030, big5. Decoding errors raise CXER0001 (parse
+         failure) with a byte offset; the parser does not silently
+         replace invalid bytes.</p>
+        <p>Canonical-form output is always UTF-8 without BOM regardless of
+         input encoding. Round-trip through a non-UTF-8 encoding requires
+         re-encoding the output explicitly (`cx convert doc.cx --encoding shift_jis`).</p>
+        <p>The CLI and bindings accept stdin/file/socket input streams; on
+         stdin the encoding is inferred from BOM if present, otherwise
+         assumed UTF-8. Non-UTF-8 stdin without a leading `[?cx
+         encoding=…]` directive raises CXER0001 on the first invalid
+         byte.</p>
+      
+    </section>
+    <section id="streaming-data">
+      <h2>Streaming parse and emission</h2>
+      
+        <p>For documents larger than working memory, CX provides a
+         pull-based streaming parser and emitter (callback-driven, no
+         full-AST materialization). Normative spec:
+         [`spec/streaming.md`](../../spec/streaming.md).</p>
+        <p>The streaming parser yields top-level children one at a time via
+         a write callback; the application processes each child and
+         discards it before the next is read. Resident memory is bounded
+         to one chunk plus a small parser scratch buffer (~32 KiB).</p>
+        <pre>
+          <code class="language-cx">[# Stream a 100 GB log file, count error records — never
+            materializes the full file in memory. #]
+         [?for [in $rec [?cx-read-stream 'logs.cx']]
+           [where [= [$name $rec] 'error']]
+           [yield $rec/@code]]</code>
+        </pre>
+        <p>Measured throughput: 353 MB/s sustained on JSON-shape workloads
+         (gate 15 in [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)).
+         The streaming threshold is configurable via the
+         `CX_STREAMING_THRESHOLD` environment variable (default 8 MiB —
+         files larger than this auto-select the streaming path).</p>
+        <p>For columnar tables specifically, the streaming format is CXCol
+         (chunked column-oriented binary, see <a class="xref" href="analytics.html#cxcol">cxcol</a>); the per-chunk
+         manifest carries statistics enabling predicate pushdown.</p>
+      
+    </section>
+    <section id="limits">
+      <h2>Limits and quotas</h2>
+      
+        <p>CX has finite resource budgets to prevent adversarial inputs
+         from exhausting host memory or stack. All limits are
+         configurable via environment variables.</p>
+        <table>
+          
+            <row limit="Max document depth (nested brackets)" default="512" var="CX_MAX_DEPTH" error="CXER0142"/>
+            <row limit="Max attributes per element" default="1024" var="CX_MAX_ATTRS" error="CXER0143"/>
+            <row limit="Max body byte length per element" default="256 MiB" var="CX_MAX_BODY" error="CXER0144"/>
+            <row limit="Max include depth" default="16" var="CX_INCLUDE_MAX_DEPTH" error="CXER0141"/>
+            <row limit="Max entity-reference expansion" default="10000 chars" var="CX_MAX_ENTITY_EXPAND" error="CXER0145"/>
+            <row limit="Max recursion depth in [?for]/[?def]" default="1024" var="CX_MAX_RECURSE" error="CXER0146"/>
+            <row limit="Max parse time per document" default="30 s" var="CX_MAX_PARSE_TIME" error="CXER0147"/>
+            <row limit="Max canonical-form size" default="1 GiB" var="CX_MAX_CANON" error="CXER0148"/>
+          
+        </table>
+        <p>For untrusted-input processing (parsing CX received over a
+         network), tighten these via the `--profile untrusted` flag on
+         the CLI or `cx.config(profile='untrusted')` in the bindings —
+         which preset-clamps every limit to ~10% of the default. See
+         <a class="xref" href="concepts.html">concepts</a> §security for the threat model.</p>
+      
+    </section>
+    <section id="datetime-detail">
+      <h2>Date / time semantics — timezones, precision, leap seconds</h2>
+      
+        <p>Dates and datetimes are first-class scalars (see <a class="xref" href="#dates">dates</a>).
+         This section is the developer-facing detail.</p>
+        <p>**Calendar:** proleptic Gregorian only. Dates before 1582-10-15
+         are accepted but represent calendar-extension (the calendar in
+         use today extended backward), not historical Julian dates.</p>
+        <p>**Datetime form:** `YYYY-MM-DDTHH:MM:SS[.fff[fff[fff]]][offset]`.
+         Optional fractional seconds at millisecond / microsecond /
+         nanosecond precision. Offset is `Z` (UTC) or `±HH:MM`. CX accepts
+         both ISO 8601 and RFC 3339 forms on input; canonical output is
+         RFC 3339 with offset `Z` for UTC or `±HH:MM` otherwise.</p>
+        <p>**Timezone preservation:** the canonical form preserves the
+         offset as authored (`2026-05-22T10:00:00-04:00` stays that way;
+         it is NOT normalized to UTC). Identity comparison `=` compares
+         the absolute instant: `2026-05-22T10:00:00-04:00` equals
+         `2026-05-22T14:00:00Z`. Sort order is by absolute instant.</p>
+        <p>**Leap seconds:** CX datetimes do not represent leap seconds
+         (no `23:59:60`). Input containing `23:59:60` is normalized to
+         the following `00:00:00`. Bindings that need leap-second
+         awareness use an external library.</p>
+        <p>**Host language mapping:** Python `datetime` (aware, with
+         tzinfo); Go `time.Time`; Rust `chrono::DateTime&lt;FixedOffset&gt;`;
+         V `time.Time`. Each binding's Layer-1 surface preserves the
+         offset; conversion to UTC is opt-in via `.to_utc()`.</p>
+      
+    </section>
+    <section id="reserved-tokens">
+      <h2>Reserved tokens and keyword list</h2>
+      
+        <p>A complete enumeration of identifiers that have special meaning
+         and cannot be used as bare element names or attribute keys
+         without quoting.</p>
+        <p>**Reserved literal tokens** (always have their literal meaning):</p>
+        <ul>
+          
+            <li>`true`, `false` — boolean literals</li>
+            <li>`null` — null scalar</li>
+            <li>`nan`, `inf`, `-inf` — special float values</li>
+          
+        </ul>
+        <p>**Type tag keywords** (after a `:` sigil in value position):</p>
+        <ul>
+          
+            <li>`int`, `i8`, `i16`, `i32`, `i64`</li>
+            <li>`uint`, `u8`, `u16`, `u32`, `u64`</li>
+            <li>`float`, `f32`, `f64`</li>
+            <li>`bool`, `string`, `date`, `datetime`, `bytes`</li>
+            <li>`table`, `seq`, `arr`, `map` — collection type tags</li>
+          
+        </ul>
+        <p>**Directive name keywords** (the first token after `[?`):</p>
+        <p>All 40 directives in the v0.8.0 registry — see
+         <a class="xref" href="code.html#directives">directives</a> in the code section. Notable: `for`, `match`,
+         `if`, `let`, `fn`, `def`, `try`, `modify`, `cx`, `pipe`.</p>
+        <p>**CXPath axis keywords** (before `::` inside path expressions):</p>
+        <ul>
+          
+            <li>`child`, `descendant`, `descendant-or-self`</li>
+            <li>`parent`, `ancestor`, `ancestor-or-self`</li>
+            <li>`self`, `attribute`</li>
+            <li>`following`, `preceding`, `following-sibling`, `preceding-sibling`</li>
+          
+        </ul>
+        <p>**XPath/CXPath builtin function names** — see <a class="xref" href="code.html#builtins">builtins</a> for
+         the full catalog (~80 names). Notable: `count`, `name`,
+         `local-name`, `position`, `last`, `string`, `number`,
+         `boolean`, `not`, `exists`, `empty`, `concat`,
+         `string-length`, `contains`.</p>
+        <p>**Reserved namespace prefixes:** `xml`, `cx`, `xmlns` (see
+         <a class="xref" href="#ns-reserved">ns-reserved</a>).</p>
+        <p>If you need an element or attribute named after a reserved
+         token, quote it: `['true' value=1]`, `[user 'true'=yes]`. The
+         single-quoted form is the canonical escape; double-quoted also
+         works on input.</p>
+      
+    </section>
+    <section id="concepts-fold">
+      <h2>Concept framing — data model, sigils, types</h2>
+      
+        <p>The reference above describes each feature in isolation;
+         the concept framing below shows how they fit together —
+         the one tree shape behind six surfaces, the five sigils as
+         structural reach, the auto-typing rules that pick a type
+         from a lexical shape.</p>
+        <section id="cxdm-overview">
+          <h3>One tree, six surfaces</h3>
+          
+            <p>CXDM is the shape every CX parse produces and every emit
+           walks. Whether the source is CX, XML, JSON, YAML, TOML,
+           or Markdown, the parser yields a tree in this single
+           shape; whether the target is any of those six dialects,
+           the emitter walks the same tree back out. Downstream
+           code never branches on input format because the data
+           model has already absorbed the difference.</p>
+            <p>A CXDM node is an Element with a name, an ordered list
+           of attributes, an ordered list of body items, and a few
+           optional structural slots — anchor, merge target,
+           declared id, data type. Body items are Text nodes,
+           Scalar nodes, child Elements, or the collection literals
+           — Sequences, Arrays, Maps.</p>
+            <pre>
+              <code class="language-cx">[pizza #margherita :large size=14 crust=thin
+             [topping cheese]
+             [topping basil]
+             Stone-baked since 1987.]</code>
+            </pre>
+            <p>Reading this element from the outside in: name `pizza`,
+           declared id `margherita`, data-type annotation `:large`,
+           attributes `size=14` and `crust=thin`, then a body of
+           three items — two child elements and a text node.</p>
+            <p class="note">Whitespace inside a body is significant when it sits
+           between text characters and collapses to a single space
+           when it separates body items. The canonical form
+           normalises this so byte-identical content carries the
+           same hash regardless of source author choice.</p>
+          
+        </section>
+        <section id="sigils-catalog">
+          <h3>The five sigils + bool sugar</h3>
+          
+            <p>CX uses five sigils. Each is a single character in a
+           fixed lexical position that gives a value structural
+           meaning beyond what bare text can carry.</p>
+            <p>- **`@`** — attribute prefix in body position; reference
+             to a declared id or anchor.
+           - **`&amp;`** — anchor declaration; names an element so
+             others can refer to or merge from it.
+           - **`*`** — merge target; folds the named anchor's attrs
+             and children into this element.
+           - **`#`** — declared id; stable handle within the
+             document's scope; target of references.
+           - **`:`** — data type annotation; pins the value type,
+             overriding auto-typing.</p>
+            <pre>
+              <code class="language-cx">[order #o1234 customer=alice
+             [line item=@margherita count=2]    # @-sigil reference to declared id
+             [line item=@pepperoni  count=1]]
+           [?for [in $line //order/line] [yield
+             [row sku=$line/@item]]]            # @-sigil attribute access in CXPath</code>
+            </pre>
+            <pre>
+              <code class="language-cx">[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]
+           [server *shared name=worker]</code>
+            </pre>
+            <p class="note">The canonical form renumbers anchors so two documents
+           that bind the same data with different anchor names hash
+           to the same identity.</p>
+            <p>Two additional sigils — `+` and `-` — are syntactic sugar
+           for boolean attributes. `+name` parses as `name=true`;
+           `-name` parses as `name=false`. Compact form for many
+           booleans.</p>
+            <pre>
+              <code class="language-cx">[pizza +vegan -nuts -gluten +organic]</code>
+            </pre>
+          
+        </section>
+        <section id="types-fold">
+          <h3>Types — auto-typing, sized, decimal, bigint</h3>
+          
+            <p>CX values fall into a small set of atomic types — `int`,
+           `float`, `bool`, `string`, `null`, `date`, `datetime`,
+           `bytes`, `decimal`, `bigint`, `atom` — and
+           arrays of any of these. Most values are auto-typed from
+           their lexical shape; explicit annotations cover the
+           rest.</p>
+            <pre>
+              <code class="language-cx">[demo
+             count=42                      # int
+             pi=3.14                       # float
+             enabled=true                  # bool
+             name=Alice                    # string
+             missing=null                  # null
+             date=2026-05-09               # date
+             start=2026-05-09T10:00:00Z]   # datetime</code>
+            </pre>
+            <p class="note">**Leading-zero strings.** Tokens with a leading zero
+           stay strings unless prefixed `0x` (hex), `0o` (octal),
+           or `0b` (binary). Postal codes, area codes, account
+           numbers, BIC codes — anywhere the leading zero is data,
+           not a numeric value.</p>
+            <pre>
+              <code class="language-cx">[zip 02134]               # string "02134", not int 2134
+           [mask 0xFF00FF]           # int 16711935 (hex)
+           [perms 0o755]             # int 493 (octal)
+           [bits 0b1101]             # int 13 (binary)</code>
+            </pre>
+            <p>**Sized integer and float.** A colon-type pins the
+           runtime representation and (for sized variants) the
+           legal range. Out-of-range values fail at parse time,
+           not at runtime in some downstream consumer.</p>
+            <pre>
+              <code class="language-cx">[port :u16 8080]              # rejects values over 65535
+           [balance :i64 -1234567890]    # signed 64-bit
+           [ratio :f32 3.14]             # 32-bit float
+           [count :u8 200]               # rejects 256 and up</code>
+            </pre>
+            <p>**Decimal and bigint.** IEEE 754 floats lose precision
+           for money and high-precision quantities; signed 64-bit
+           overflows for some IDs. CX has `:decimal` and `:bigint`
+           for both cases, with binding mappings to each language's
+           native big-number type.</p>
+            <pre>
+              <code class="language-cx">[total :decimal 19.99]
+           [user-id :bigint 18446744073709551616]</code>
+            </pre>
+            <p>**Typed bodies and arrays.** A colon-type annotation
+           pins not just attribute values but body content as
+           well.</p>
+            <pre>
+              <code class="language-cx">[count :int 42]
+           [ratio :decimal 3.14159]
+           [oven-temps :int[] 220 240 260 480]
+           [tags :[] cheap fast tasty]</code>
+            </pre>
+          
+        </section>
+      
+    </section>
+    <section id="reference-quickref">
+      <h2>Reference quick-refs — schemas, includes, streaming, tables</h2>
+      
+        <p>At-a-glance references for the four big data-language
+         subsystems that get their own normative spec docs.
+         Schemas validate shape; includes compose documents;
+         streaming bounds RSS; tables carry columnar data. The
+         primary children (§2.7, §2.8, §2.9, §2.14) carry the
+         per-feature depth; this section is the cookbook-style
+         summary.</p>
+        <section id="schema-quickref">
+          <h3>Schemas — validate before processing</h3>
+          
+            <p>A schema in CX is itself a CX document. It declares
+           which elements may appear where, what attributes they
+           carry, and what types those attributes hold. The `cx
+           validate` subcommand walks the schema against an input
+           document and reports diagnostics. Three modes
+           determine what counts as a diagnostic: **open** admits
+           undeclared content as warnings; **strict** rejects it
+           as errors; **closed** treats undeclared content as a
+           hard error. The schema may set its own default mode;
+           the `--mode` flag overrides it.</p>
+            <pre>
+              <code class="language-cx">[schema
+             [element name='pizza'
+               [attribute name='size' type='enum' values='small medium large']
+               [attribute name='crust' type='string']]]</code>
+            </pre>
+            <pre>
+              <code class="language-shell">cx validate order.cx --schema=order.cxs
+           cx validate order.cx --schema=order.cxs --mode=strict
+           cx validate order.cx --schema=order.cxs --fail-on=warn</code>
+            </pre>
+            <p class="note">**Type catalog.** `string`; `int` with sized variants
+           (`i8`, `u16`, `i64`, …); `float`; `decimal`; `bigint`;
+           `bool`; `date`; `datetime`; `bytes`; `enum` with
+           explicit values; `regex` with a pattern. The validator
+           coerces and bounds-checks each value against the
+           declared type.</p>
+          
+        </section>
+        <section id="include-quickref">
+          <h3>Includes — parse-time vs eval-time</h3>
+          
+            <p>CX has two include directives that share one resolver.
+           The **parse-time** form `[?cx include=path]` expands
+           files before the document reaches downstream tools —
+           use for static composition (config files, schema
+           fragments, page templates with known paths). The
+           **eval-time** form `[?include path]` expands files
+           while a CX program runs; the path is any CX expression
+           — literal, bound variable, or computed via filters.</p>
+            <pre>
+              <code class="language-shell">cx --cx --include-root=./conf main.cx</code>
+            </pre>
+            <pre>
+              <code class="language-cx">[users
+             [?cx include=lib/admins.cx]
+             [user name=carol]]
+
+           [?include 'layouts/page.cx']
+           [?include [?concat ['layouts/', meta/@layout, '.cx']]]</code>
+            </pre>
+            <p class="note">**Security and cycle detection.** Both forms reject
+           absolute paths (`E901`), paths that escape the root
+           after lexical normalisation (`E902`), and URL-shaped
+           paths (`E903`). Cycle detection (`E904`) and depth
+           limits (`E905`, default 8) protect against runaway
+           recursion. Full error catalog in
+           [`spec/include.md`](../../spec/include.md).</p>
+          
+        </section>
+        <section id="streaming-quickref">
+          <h3>Streaming — event shape and throughput</h3>
+          
+            <p>Streaming parse and emit move bytes through the runtime
+           without ever holding the whole tree in memory. A
+           streaming parse fires four event kinds: `element_start`
+           (name + attributes), `attribute` (after `element_start`,
+           before any body), `body chunk` (text or scalar value),
+           and `element_end`. The same event shape works on every
+           input format — XML and JSON sources produce the same
+           events. Use streaming when the input is large enough
+           that resident memory matters.</p>
+            <pre>
+              <code class="language-python">import cx
+           with open('events.cx', 'rb') as f:
+               for event in cx.stream(f):
+                   if event.kind == 'element_start' and event.name == 'error':
+                       print(event.attrs)
+
+           with cx.stream_writer(open('out.cx', 'wb')) as w:
+               for record in fetch_records():
+                   w.write(record)</code>
+            </pre>
+            <p class="note">**Backpressure.** The streaming sink uses a
+           `flush_after_bytes` threshold to bound buffer
+           residency. Default 64 KiB; lower for memory-constrained
+           environments, higher to amortise callback overhead on
+           small-emit workloads. **Throughput:** ~340 MB/s on the
+           comparable bench corpus (M2 Pro, libcx `-prod`).</p>
+          
+        </section>
+        <section id="tables-quickref">
+          <h3>Tables and binary forms</h3>
+          
+            <p>A CX table is a structural form for columnar data.
+           Columns declare a name and a type; rows are records.
+           The Table API exposes count, schema introspection,
+           dump, and load — symmetric inverses with declared
+           types preserved across formats. The on-disk forms are
+           **ast-bin** (binary AST, cap bit 36 advertises v8) and
+           **data-bin** (CXCol v1 — columnar, used by
+           Arrow/Parquet bridges).</p>
+            <pre>
+              <code class="language-cx">[:table
+             [:col name='size'  type='string']
+             [:col name='count' type='int']
+             [:row [size 'large'] [count 12]]
+             [:row [size 'small'] [count 8]]]</code>
+            </pre>
+            <pre>
+              <code class="language-shell">cx table info orders.cx      # column / row counts, types, byte size
+           cx table dump orders.cx --to=cx
+           cx table load orders.csv --to=cx
+           cx table dump orders.cx --to=parquet > orders.parquet
+           cx table load orders.parquet --to=cx</code>
+            </pre>
+          
+        </section>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

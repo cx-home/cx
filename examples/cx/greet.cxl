@@ -1,1 +1,0 @@
-[?if @active :then Welcome [?= @name]! Role: [?= @role]. :else Account disabled.]

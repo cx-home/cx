@@ -1,0 +1,18 @@
+[# Sample document for cxpath-tour.cx — feeds every section (axes,
+   predicates, attribute steps, combinators). Every attribute a tour
+   section touches is present on every user (missing-attribute reads
+   hard-error per §6.2). Run:
+     cx eval examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx #]
+
+[root
+  [users
+    [user name='Alice' email='alice@alpha.io' age=34 active=true  admin=true  banned=false]
+    [user name='Bob'   email='bob@beta.io'   age=19 active=true  admin=false banned=false]
+    [user name='Carol' email='carol@gamma.dev' age=27 active=false admin=false banned=true]
+    [user name='Dave'  email='dave@delta.net'  age=66 active=false admin=false banned=false]]
+  [section title='intro'
+    [para "first"]
+    [para "second"]
+    [aside [para "nested"]]]
+  [section title='outro'
+    [para "last"]]]

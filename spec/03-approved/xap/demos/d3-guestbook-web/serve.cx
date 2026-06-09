@@ -1,0 +1,31 @@
+[?lib 'cx-xap' :as xap]
+
+# D3: reuse the D2 `guestbook` capability UNCHANGED. Only the client changes: a
+# browser now attaches alongside the D2 CLI/TUI (medium-agnostic surface, §13.2).
+[$xap:component guestbook
+  {bind: "/guestbook"
+   emits: ([do :sign [name :string]])
+   view: [?fn ($gs)
+           [panel
+             [list [?for [in $g $gs] [yield [item $g/name]]]]
+             [control :sign [label "Sign"] [input :name]]]]
+   working-panel: :none}]
+
+# serve bootstraps the surface onto the core [?http-service] / [$http:serve]
+# engine (xap.md §9) -- XAP opens no socket of its own. The web client is
+# content-negotiated to text/html (htmx; controls bound inline via the `html`
+# module); its §16 feed is SSE (bridge-supplied until the http streaming
+# amendment, §24). The D2 CLI/TUI clients keep their in-process bus feed -- same
+# runtime, same surface, three media. The document shell (shell/) is the
+# swappable bridge layer, served as static [resource]s -- NOT part of the surface
+# (§13.2) and NOT produced by xap. The cascade auto-appends [do :sign] events;
+# "/guestbook" is their fold (§2.1/§14).
+# One runtime, seeded with the D2 signatures, then SERVED -- the browser
+# attaches to the same fold the D2 CLI/TUI clients ride (§16 shared state).
+[?let [= $rt [$xap:run {tenant: "demo" components: (guestbook)}]]
+[?let [= $a [$xap:emit $rt [do :sign [name "Ada"]]]]
+[?let [= $b [$xap:emit $rt [do :sign [name "Lin"]]]]
+  [$xap:serve "http://127.0.0.1:8443"
+    {runtime: $rt
+     surfaces: ([$xap:surface "guestbook" [$xap:panel guestbook {}]])
+     shell: "spec/03-approved/xap/demos/d3-guestbook-web/shell"}]]]]

@@ -1,0 +1,1 @@
+[surface name=guestbook [panel [list ([item 'Ada'], [item 'Lin'])] [control :sign [label 'Sign'] [input :name]]]]

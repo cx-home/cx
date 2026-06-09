@@ -1,0 +1,73 @@
+# D3 expected HTTP behavior — the web client over the bridge shell.
+# serve is long-running; "output" is the request/response behavior, not a
+# printed value. Run it (from the repo root) and curl it:
+#
+#   cx --allow-net spec/xap/demos/d3-guestbook-web/serve.cx &
+#
+# The runtime is seeded with the D2 signatures (Ada, Lin), then served.
+
+# 1. Initial GET — the document shell (shell/layout.html) with the guestbook
+#    surface spliced into its #guestbook-panel mount, materialized as
+#    text/html (controls bound inline as htmx attributes).
+$ curl -s http://127.0.0.1:8443/
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Guestbook — cx-xap demo (D3)</title>
+  <!-- the ONLY place CSS is referenced; loaded once, reapplied to every swapped
+       fragment. Served as a static [resource] by the http layer, not by xap. -->
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+  <h1>Guestbook</h1>
+  <!-- the cx-xap `guestbook` surface materializes here as a text/html fragment;
+       htmx swaps #guestbook-panel out-of-band on each committed [do :sign].
+       The <main> below is the bridge's server-side mount point — the bridge
+       splices xap:render(text/html) output into it. -->
+  <main id="guestbook-panel">
+    <ul class="guestbook"><li>Ada</li><li>Lin</li></ul>
+    <form hx-post="/intent/sign" hx-target="#guestbook-panel" hx-swap="outerHTML">
+      <input name="name"><button type="submit">Sign</button>
+    </form>
+  </main>
+</body>
+</html>
+
+# 2. The stylesheet is served as a static asset beside the cascade (not by xap).
+$ curl -s http://127.0.0.1:8443/static/app.css
+/* D3 styling — the .class hooks ride on the view-tree (the html module keeps
+   class/id/style on its allowlist). The stylesheet is a static asset served
+   beside the cascade, never by xap. */
+body { font: 16px/1.5 system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; }
+h1 { font-size: 1.25rem; }
+.guestbook { list-style: none; padding: 0; }
+.guestbook li { padding: .25rem 0; border-bottom: 1px solid #eee; }
+form { display: flex; gap: .5rem; margin-top: 1rem; }
+input { flex: 1; padding: .4rem; }
+button { padding: .4rem .8rem; }
+
+# 3. Sign via the web control (htmx POST) — the cascade commits [do :sign],
+#    and the response is the RE-RENDERED #guestbook-panel FRAGMENT ONLY
+#    (htmx swaps it; no doctype/<head>/CSS — those loaded once).
+$ curl -s -X POST http://127.0.0.1:8443/intent/sign -d 'name=Sam'
+<main id="guestbook-panel">
+    <ul class="guestbook"><li>Ada</li><li>Lin</li><li>Sam</li></ul>
+    <form hx-post="/intent/sign" hx-target="#guestbook-panel" hx-swap="outerHTML">
+      <input name="name"><button type="submit">Sign</button>
+    </form>
+  </main>
+# The signature persists in the shared fold: a CLI/TUI client (D2) attached
+# to the same runtime sees "Sam" appear too — one journal, three media.
+
+# 4. The live SSE feed (§24) — GET /events holds the connection open and PUSHES
+#    a surface frame (the application/cx view-tree as `data:`) on connect and on
+#    every committed intent. A remote TUI/agent rides it with [$http:sse-events]
+#    instead of polling. (Hold it open with curl -N and sign in another terminal:
+#    a new frame arrives the moment the server commits it.)
+$ curl -sN http://127.0.0.1:8443/events     # then, elsewhere: POST /intent/sign name=Sam
+data: [surface name=guestbook [panel [list ([item 'Ada'], [item 'Lin'])] [control :sign [label 'Sign'] [input :name]]]]
+
+data: [surface name=guestbook [panel [list ([item 'Ada'], [item 'Lin'], [item 'Sam'])] [control :sign [label 'Sign'] [input :name]]]]
+

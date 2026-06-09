@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CX bracket de-emphasis — highlighting comparison</title>
+<style>
+  body { background:#16181d; color:#d4d4d4; font-family:-apple-system,sans-serif; margin:2rem; }
+  h1 { font-size:1.2rem; } h2 { font-size:1rem; color:#9ca3af; margin:1.6rem 0 .4rem; }
+  pre { background:#1e1e1e; border:1px solid #2c2f36; border-radius:8px; padding:1rem 1.2rem;
+        font:14px/1.55 "SF Mono",Menlo,monospace; }
+  /* normal palette */
+  .dir  { color:#c586c0; }            /* ?directive heads */
+  .head { color:#4fc1ff; }            /* element/clause head names */
+  .bind { color:#dcdcaa; }            /* $bindings */
+  .atom { color:#4ec9b0; }            /* :atoms */
+  .str  { color:#ce9178; }            /* strings */
+  .num  { color:#b5cea8; }            /* numbers */
+  .attr { color:#9cdcfe; }            /* attr names */
+  .br   { color:#ffd700; }            /* brackets, NORMAL (bracket-pair gold) */
+  .dim .br { color:#ab9434; }         /* brackets, one shade dim — SAME gold hue */
+  .dim2 .br { color:#7a6c28; }        /* two shades dim (same hue), for comparison */
+  .cap { font-size:.8rem; color:#6b7280; margin-top:-.4rem; }
+</style>
+</head>
+<body>
+<h1>CX bracket de-emphasis — three renderings of the same program</h1>
+
+<h2>1 · No highlighting</h2>
+<pre>[?def greet ($name::string)
+  [?match [$env:var 'USER']
+    [case [err $e] [greeting anonymous=true]]
+    [else [greeting hello=$name count=3 :ok]]]]</pre>
+<p class="cap">Everything competes equally; structure must be parsed glyph by glyph.</p>
+
+<h2>2 · Normal highlighting (brackets at full body contrast)</h2>
+<pre><span class="br">[</span><span class="dir">?def</span> <span class="head">greet</span> <span class="br">(</span><span class="bind">$name</span>::<span class="atom">string</span><span class="br">)</span>
+  <span class="br">[</span><span class="dir">?match</span> <span class="br">[</span><span class="bind">$env:var</span> <span class="str">'USER'</span><span class="br">]</span>
+    <span class="br">[</span><span class="head">case</span> <span class="br">[</span><span class="head">err</span> <span class="bind">$e</span><span class="br">]</span> <span class="br">[</span><span class="head">greeting</span> <span class="attr">anonymous</span>=<span class="num">true</span><span class="br">]]</span>
+    <span class="br">[</span><span class="head">else</span> <span class="br">[</span><span class="head">greeting</span> <span class="attr">hello</span>=<span class="bind">$name</span> <span class="attr">count</span>=<span class="num">3</span> <span class="atom">:ok</span><span class="br">]]]]</span></pre>
+<p class="cap">Tokens are colored, but the bright brackets still shout — ~⅓ of the glyphs pull the eye.</p>
+
+<h2>3 · Bracket de-emphasis (punctuation dimmed, tokens lead)</h2>
+<div class="dim">
+<pre><span class="br">[</span><span class="dir">?def</span> <span class="head">greet</span> <span class="br">(</span><span class="bind">$name</span><span class="br">::</span><span class="atom">string</span><span class="br">)</span>
+  <span class="br">[</span><span class="dir">?match</span> <span class="br">[</span><span class="bind">$env:var</span> <span class="str">'USER'</span><span class="br">]</span>
+    <span class="br">[</span><span class="head">case</span> <span class="br">[</span><span class="head">err</span> <span class="bind">$e</span><span class="br">]</span> <span class="br">[</span><span class="head">greeting</span> <span class="attr">anonymous</span><span class="br">=</span><span class="num">true</span><span class="br">]]</span>
+    <span class="br">[</span><span class="head">else</span> <span class="br">[</span><span class="head">greeting</span> <span class="attr">hello</span><span class="br">=</span><span class="bind">$name</span> <span class="attr">count</span><span class="br">=</span><span class="num">3</span> <span class="atom">:ok</span><span class="br">]]]]</span></pre>
+</div>
+<p class="cap">Same gold hue as normal, one shade dimmer (~55% luminance) — recognizably brackets,
+but heads, bindings, atoms, and values lead. This is the CX design intent (tooling/HIGHLIGHTING.md).</p>
+
+<h2>3b · Dimmer variant (for comparison)</h2>
+<div class="dim2">
+<pre><span class="br">[</span><span class="dir">?match</span> <span class="br">[</span><span class="bind">$env:var</span> <span class="str">'USER'</span><span class="br">]</span> <span class="br">[</span><span class="head">case</span> <span class="br">[</span><span class="head">err</span> <span class="bind">$e</span><span class="br">]</span> <span class="atom">:anon</span><span class="br">]</span> <span class="br">[</span><span class="head">else</span> <span class="bind">$name</span><span class="br">]]</span></pre>
+</div>
+<p class="cap">Two shades dim, same hue — kept for side-by-side judgement.</p>
+</body>
+</html>

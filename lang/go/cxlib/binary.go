@@ -16,7 +16,7 @@ type StreamEvent struct {
 	Value    any
 	Target   string
 	Data     *string
-	// Chunked-table fields (StartTable / RowGroup / EndTable per ADR 0015 D10).
+	// Chunked-table fields (StartTable / RowGroup / EndTable).
 	// ColSpec is the §1.1 events-layer encoding:
 	// [u32 LE: count]([u32 LE: name_len]name [u8: col_type_code])*.
 	// Payload is the §3.11.2 plain-body bytes uvarint(row_count) <col-payload>(col_count) —
@@ -114,6 +114,12 @@ func coerceAttrValue(typeStr, valueStr string) any {
 		return valueStr == "true"
 	case "null":
 		return nil
+	case "atom":
+		// atoms decode into the typed AtomValue wrapper so
+		// Go-side equality is type-strict (AtomValue{"ok"} != "ok"). The
+		// wire format already validated the name via V's parser, so we
+		// trust the bytes — no re-validation against the §D1 production.
+		return AtomValue{Name: valueStr}
 	default:
 		return valueStr
 	}
@@ -144,7 +150,7 @@ func readAttr(b *binBuf, version uint8) (Attr, error) {
 		DataType: dt,
 	}
 	if version >= 2 {
-		// v3.4 (ADR 0003): is_ref flag.
+		// v3.4: is_ref flag.
 		flag, err := b.u8()
 		if err != nil {
 			return Attr{}, err
@@ -152,7 +158,7 @@ func readAttr(b *binBuf, version uint8) (Attr, error) {
 		a.IsRef = flag == 1
 	}
 	if version >= 5 {
-		// v3.5 (ADR 0016): BracketBody attribute body tail.
+		// v3.5: BracketBody attribute body tail.
 		bodyFlag, err := b.u8()
 		if err != nil {
 			return Attr{}, err
@@ -210,7 +216,7 @@ func readNode(b *binBuf, version uint8) (Node, error) {
 		}
 		var bodyRef *string
 		if version >= 3 {
-			// v3.4 (ADR 0003 D1): body-position reference.
+			// v3.4: body-position reference.
 			bodyRef, err = b.optstr()
 			if err != nil {
 				return nil, err
@@ -395,14 +401,14 @@ func readNode(b *binBuf, version uint8) (Node, error) {
 		}
 		return &BlockContentNode{Items: items}, nil
 
-	case 0x0D: // Interpolation — v3.5 (ADR 0016) [58]
+	case 0x0D: // Interpolation — v3.5 [58]
 		expr, err := b.str()
 		if err != nil {
 			return nil, err
 		}
 		return &InterpolationNode{Expr: expr}, nil
 
-	case 0x0E: // EvalDirective — v3.5 (ADR 0016) [59]
+	case 0x0E: // EvalDirective — v3.5 [59]
 		name, err := b.str()
 		if err != nil {
 			return nil, err
@@ -432,6 +438,89 @@ func readNode(b *binBuf, version uint8) (Node, error) {
 			items = append(items, child)
 		}
 		return &EvalDirectiveNode{Name: name, Attrs: attrs, Items: items}, nil
+
+	case 0x0F, 0x10: // SequenceNode (0x0F) / ArrayNode (0x10) — v0.8.0 [56a/56b]
+		// Layout: u16:item_count nodes[].
+		count, err := b.u16()
+		if err != nil {
+			return nil, err
+		}
+		items := make([]Node, 0, count)
+		for i := uint16(0); i < count; i++ {
+			child, err := readNode(b, version)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, child)
+		}
+		if tid == 0x0F {
+			return &SequenceNode{Items: items}, nil
+		}
+		return &ArrayNode{Items: items}, nil
+
+	case 0x11: // MapNode — v0.8.0 [56c]
+		// Layout: u16:entry_count entries[]; entry = str:key_type
+		// str:key_value node:value (ast_bin §4.3).
+		count, err := b.u16()
+		if err != nil {
+			return nil, err
+		}
+		entries := make([]MapEntry, 0, count)
+		for i := uint16(0); i < count; i++ {
+			kt, err := b.str()
+			if err != nil {
+				return nil, err
+			}
+			kv, err := b.str()
+			if err != nil {
+				return nil, err
+			}
+			val, err := readNode(b, version)
+			if err != nil {
+				return nil, err
+			}
+			entries = append(entries, MapEntry{KeyType: kt, KeyValue: coerceAttrValue(kt, kv), Value: val})
+		}
+		return &MapNode{Entries: entries}, nil
+
+	case 0x16: // IteratorNode — v0.8.0, cap bit 37
+		// Layout: u8:source_kind u8:single_use u16:source_args_count nodes[]
+		// Runtime-derived `memo` / `exhausted` are NOT on the wire;
+		// decoded iterator starts fresh (Memo=nil, Exhausted=false) and
+		// re-evaluates from source on first walk.
+		// Decoders without cap-bit-37 support MUST reject; this binding
+		// rejects unknown source_kind ordinals per D7.
+		kindByte, err := b.u8()
+		if err != nil {
+			return nil, err
+		}
+		if IteratorSourceKind(kindByte) > IterReduce {
+			return nil, fmt.Errorf(
+				"ast_bin: unknown IteratorSourceKind ordinal %d",
+				kindByte,
+			)
+		}
+		singleByte, err := b.u8()
+		if err != nil {
+			return nil, err
+		}
+		argsCount, err := b.u16()
+		if err != nil {
+			return nil, err
+		}
+		args := make([]Node, 0, argsCount)
+		for i := uint16(0); i < argsCount; i++ {
+			a, err := readNode(b, version)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, a)
+		}
+		return &IteratorNode{
+			SourceKind: IteratorSourceKind(kindByte),
+			SourceArgs: args,
+			SingleUse:  singleByte != 0,
+		}, nil
 
 	case 0xFF: // skip — no payload
 		return &TextNode{Value: ""}, nil
@@ -553,13 +642,13 @@ func decodeOneEvent(b *binBuf) (StreamEvent, error) {
 			if typStr == "string" {
 				dt = ""
 			}
-			// v3.4 (ADR 0003): is_ref byte (events buffer follows
+			// v3.4: is_ref byte (events buffer follows
 			// ast_bin v2 attr layout).
 			refFlag, err := b.u8()
 			if err != nil {
 				return evt, err
 			}
-			// v3.5 (ADR 0016): BracketBody attr body tail (events
+			// v3.5: BracketBody attr body tail (events
 			// buffer follows ast_bin v5 attr layout). Body items
 			// are read but discarded — events are a flattened view.
 			bodyFlag, err := b.u8()
@@ -675,7 +764,7 @@ func decodeOneEvent(b *binBuf) (StreamEvent, error) {
 		}
 		evt.Name = name
 
-	// 0x01 StartDoc, 0x02 EndDoc: no payload
+		// 0x01 StartDoc, 0x02 EndDoc: no payload
 	}
 	return evt, nil
 }
@@ -706,7 +795,7 @@ func decodeEvents(data []byte) ([]StreamEvent, error) {
 
 type binWriter struct{ buf []byte }
 
-func (w *binWriter) u8(v byte)  { w.buf = append(w.buf, v) }
+func (w *binWriter) u8(v byte) { w.buf = append(w.buf, v) }
 func (w *binWriter) u16(v uint16) {
 	var b [2]byte
 	binary.LittleEndian.PutUint16(b[:], v)
@@ -743,6 +832,13 @@ func scalarValueStr(dt string, v any) string {
 		}
 		return "false"
 	}
+	// atom encodes as just the name on the wire (no `:` prefix);
+	// the data_type field tags it as "atom" so the decoder reconstructs the
+	// typed wrapper. Handle the type-strict AtomValue first so a caller who
+	// constructed dt="atom" but passed a plain string still emits correctly.
+	if a, ok := v.(AtomValue); ok {
+		return a.Name
+	}
 	switch x := v.(type) {
 	case string:
 		return x
@@ -768,13 +864,13 @@ func (w *binWriter) attr(a Attr) {
 	}
 	w.str(scalarValueStr(dt, a.Value))
 	w.str(dt)
-	// v3.4 (ADR 0003): is_ref flag — format version 2.
+	// v3.4: is_ref flag — format version 2.
 	if a.IsRef {
 		w.u8(1)
 	} else {
 		w.u8(0)
 	}
-	// v3.5 (ADR 0016): BracketBody attribute body tail — format version 5.
+	// v3.5: BracketBody attribute body tail — format version 5.
 	if a.Body == nil {
 		w.u8(0)
 	} else {
@@ -794,9 +890,9 @@ func (w *binWriter) node(n Node) {
 		w.optstr(x.Anchor)
 		w.optstr(x.DataType)
 		w.optstr(x.Merge)
-		// v3.4 (ADR 0003): syntactic ID declaration — format version 2.
+		// v3.4: syntactic ID declaration — format version 2.
 		w.optstr(x.Id)
-		// v3.4 (ADR 0003 D1): body-position reference — format version 3.
+		// v3.4: body-position reference — format version 3.
 		w.optstr(x.BodyRef)
 		w.u16(uint16(len(x.Attrs)))
 		for _, a := range x.Attrs {
@@ -807,19 +903,24 @@ func (w *binWriter) node(n Node) {
 			w.node(c)
 		}
 	case *TextNode:
-		w.u8(0x02); w.str(x.Value)
+		w.u8(0x02)
+		w.str(x.Value)
 	case *ScalarNode:
 		w.u8(0x03)
 		w.str(x.DataType)
 		w.str(scalarValueStr(x.DataType, x.Value))
 	case *CommentNode:
-		w.u8(0x04); w.str(x.Value)
+		w.u8(0x04)
+		w.str(x.Value)
 	case *RawTextNode:
-		w.u8(0x05); w.str(x.Value)
+		w.u8(0x05)
+		w.str(x.Value)
 	case *EntityRefNode:
-		w.u8(0x06); w.str(x.Name)
+		w.u8(0x06)
+		w.str(x.Name)
 	case *AliasNode:
-		w.u8(0x07); w.str(x.Name)
+		w.u8(0x07)
+		w.str(x.Name)
 	case *PINode:
 		w.u8(0x08)
 		w.str(x.Target)
@@ -848,11 +949,11 @@ func (w *binWriter) node(n Node) {
 			w.node(it)
 		}
 	case *InterpolationNode:
-		// v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+		// v3.5 [58] — `[?=EXPR]`.
 		w.u8(0x0D)
 		w.str(x.Expr)
 	case *EvalDirectiveNode:
-		// v3.5 (ADR 0016) [59] — `[?Name attrs body]`.
+		// v3.5 [59] — `[?Name attrs body]`.
 		w.u8(0x0E)
 		w.str(x.Name)
 		w.u16(uint16(len(x.Attrs)))
@@ -862,6 +963,23 @@ func (w *binWriter) node(n Node) {
 		w.u16(uint16(len(x.Items)))
 		for _, it := range x.Items {
 			w.node(it)
+		}
+	case *IteratorNode:
+		// v0.8.0 — Iterator wire format (tag 0x16, cap bit 37).
+		// Layout: u8:source_kind u8:single_use u16:source_args_count nodes[]
+		// Runtime-derived Memo / Exhausted are NEVER serialised
+		// decoders restore a fresh iterator that
+		// re-evaluates from source on first pull.
+		w.u8(0x16)
+		w.u8(uint8(x.SourceKind))
+		if x.SingleUse {
+			w.u8(1)
+		} else {
+			w.u8(0)
+		}
+		w.u16(uint16(len(x.SourceArgs)))
+		for _, arg := range x.SourceArgs {
+			w.node(arg)
 		}
 	default:
 		// DTD / unknown — emit 0xFF skip marker.
@@ -874,8 +992,8 @@ func (w *binWriter) node(n Node) {
 func encodeAST(doc *Document) []byte {
 	w := &binWriter{}
 	w.u8(0x05) // version — bumped 4 → 5 for v0.6.0 grammar v3.5
-	           //           (Interpolation/EvalDirective tags +
-	           //            BracketBody attr body tail)
+	//           (Interpolation/EvalDirective tags +
+	//            BracketBody attr body tail)
 	w.u16(uint16(len(doc.Prolog)))
 	for _, n := range doc.Prolog {
 		w.node(n)

@@ -1,4 +1,4 @@
-//! ID/IDREF tests for the Rust binding (ADR 0003).
+//! ID/IDREF tests for the Rust binding.
 //!
 //! Mirrors lang/python/test_identity.py and V conformance/identity.txt.
 

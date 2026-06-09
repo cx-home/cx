@@ -1,13 +1,13 @@
 """Parquet read/write bridge for cxlib (X-row / v0.7.0).
 
-Per ADR 0015 D11, Parquet lives at the binding layer (not inside
+Parquet lives at the binding layer (not inside
 libcx). This module composes the existing cx → Arrow path with
 pyarrow.parquet to provide one-call CX ↔ Parquet round-trips
 without adding any C++ Parquet dependency to libcx.
 
 API:
     cxlib.parquet.write_table(cx_data_bin, path, ...)
-    cxlib.parquet.read_table(path) -> bytes  # CXDB chunked-table
+    cxlib.parquet.read_table(path) -> bytes  # CXCol chunked-table
 
 CLI parity (when wired into the `cx` command):
     cx table dump --parquet OUT.parquet --input table.cx
@@ -41,12 +41,12 @@ def write_table(
     compression: Optional[str] = "snappy",
     row_group_size: Optional[int] = None,
 ) -> None:
-    """Write framed CXDB chunked-table bytes to a Parquet file.
+    """Write framed CXCol chunked-table bytes to a Parquet file.
 
     Composes cxlib.arrow.export → pyarrow.Table → pq.write_table.
 
     Arguments:
-        cx_data_bin     framed `[u32 LE size][CXDB payload]` (the shape
+        cx_data_bin     framed `[u32 LE size][CXCol payload]` (the shape
                         cxlib.to_data_bin_chunked() returns)
         path            output filesystem path
         compression     pyarrow.parquet compression codec ('snappy',
@@ -70,17 +70,17 @@ def write_table(
 
 
 def read_table(path: str) -> bytes:
-    """Read a Parquet file and return framed CXDB chunked-table bytes.
+    """Read a Parquet file and return framed CXCol chunked-table bytes.
 
     Composes pq.read_table → pyarrow.Table → cxlib.arrow.import_to_data_bin.
-    The returned bytes are framed (`[u32 LE size][CXDB payload]`) and
+    The returned bytes are framed (`[u32 LE size][CXCol payload]`) and
     feed directly into cxlib.from_data_bin() or cxlib.TableReader.
 
     Arguments:
         path    input Parquet file path
 
     Returns:
-        bytes — framed CXDB chunked-table payload
+        bytes — framed CXCol chunked-table payload
 
     Raises:
         RuntimeError if pyarrow is missing or import_to_data_bin
@@ -100,8 +100,8 @@ def _main() -> int:
     if len(sys.argv) < 4 or sys.argv[1] not in ("dump", "load"):
         sys.stderr.write(
             "Usage:\n"
-            "  python -m cxlib.parquet dump <input.cxdb> <output.parquet>\n"
-            "  python -m cxlib.parquet load <input.parquet> <output.cxdb>\n"
+            "  python -m cxlib.parquet dump <input.cxcol> <output.parquet>\n"
+            "  python -m cxlib.parquet load <input.parquet> <output.cxcol>\n"
         )
         return 2
     verb, src_path, dst_path = sys.argv[1], sys.argv[2], sys.argv[3]

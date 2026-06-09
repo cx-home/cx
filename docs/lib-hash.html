@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hash — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a class="active" href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-hash">
+  <h1>hash</h1>
+  <p class="lede">Content-addressable hashing — fixed-length digests of arbitrary byte payloads. Four algorithms at v0.8.0: SHA-256 (the content-addressing default), SHA-384, SHA-512, and BLAKE3 (with arbitrary-length XOF output). Covers integrity and content addressing, not password hashing or keyed operations — those belong to `cx-stdlib/crypto`. Digests convert to lowercase hex, URL-safe base64, or base32, and carry SRI helpers for module-lockfile integrity.</p>
+  
+    <section id="fn-hash-sha256" class="fn">
+      <h3>hash:sha256</h3>
+      <p class="fn-sig"><code>[$hash:sha256]  -> bytes</code>  —  Compute the SHA-256 digest (32 bytes) of the input — the CX content-addressing default.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:sha256 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sha384" class="fn">
+      <h3>hash:sha384</h3>
+      <p class="fn-sig"><code>[$hash:sha384]  -> bytes</code>  —  Compute the SHA-384 digest (48 bytes) of the input.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:sri-format [$hash:sha384 "hi"] "sha384"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'sha384-B5EAbfgShHckT1PQ/c4hDbgfVXV1EOJqzuNcGKa86qKNzbv9bcBBubTcextU439S'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sha512" class="fn">
+      <h3>hash:sha512</h3>
+      <p class="fn-sig"><code>[$hash:sha512]  -> bytes</code>  —  Compute the SHA-512 digest (64 bytes) of the input.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:sha512 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-blake3" class="fn">
+      <h3>hash:blake3</h3>
+      <p class="fn-sig"><code>[$hash:blake3]  -> bytes</code>  —  Compute the BLAKE3 digest (32-byte default) of the input.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:equals [$hash:blake3-string "abc"] [$hash:blake3 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-blake3-xof" class="fn">
+      <h3>hash:blake3-xof</h3>
+      <p class="fn-sig"><code>[$hash:blake3-xof]  -> bytes</code>  —  Compute a BLAKE3 digest of arbitrary length (XOF mode), producing `out-length` bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:blake3-xof "abc" 1]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'64'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sha256-hex" class="fn">
+      <h3>hash:sha256-hex</h3>
+      <p class="fn-sig"><code>[$hash:sha256-hex]  -> string</code>  —  Compute the SHA-256 digest and return it directly as a lowercase hex string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:sha256-hex ""]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sha384-hex" class="fn">
+      <h3>hash:sha384-hex</h3>
+      <p class="fn-sig"><code>[$hash:sha384-hex]  -> string</code>  —  Compute the SHA-384 digest and return it directly as a lowercase hex string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:sha384-hex ""]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sha512-hex" class="fn">
+      <h3>hash:sha512-hex</h3>
+      <p class="fn-sig"><code>[$hash:sha512-hex]  -> string</code>  —  Compute the SHA-512 digest and return it directly as a lowercase hex string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:sha512-hex ""]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-blake3-hex" class="fn">
+      <h3>hash:blake3-hex</h3>
+      <p class="fn-sig"><code>[$hash:blake3-hex]  -> string</code>  —  Compute the BLAKE3 digest and return it directly as a lowercase hex string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:blake3-hex ""]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sha256-string" class="fn">
+      <h3>hash:sha256-string</h3>
+      <p class="fn-sig"><code>[$hash:sha256-string]  -> bytes</code>  —  Compute the SHA-256 digest of UTF-8 string input.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:equals [$hash:sha256-string "abc"] [$hash:sha256 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-blake3-string" class="fn">
+      <h3>hash:blake3-string</h3>
+      <p class="fn-sig"><code>[$hash:blake3-string]  -> bytes</code>  —  Compute the BLAKE3 digest of UTF-8 string input.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:equals [$hash:blake3-string "abc"] [$hash:blake3 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-hasher-new" class="fn">
+      <h3>hash:hasher-new</h3>
+      <p class="fn-sig"><code>[$hash:hasher-new]  -> element</code>  —  Create a streaming hasher for the named algorithm (sha256/sha384/sha512/blake3).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:hasher-finalize [$hash:hasher-update [$hash:hasher-update [$hash:hasher-new "sha256"] "ab"] "c"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-hasher-update" class="fn">
+      <h3>hash:hasher-update</h3>
+      <p class="fn-sig"><code>[$hash:hasher-update]  -> element</code>  —  Feed a chunk into a streaming hasher, returning a new hasher with the chunk absorbed.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:hasher-finalize [$hash:hasher-update [$hash:hasher-update [$hash:hasher-new "sha256"] "ab"] "c"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-hasher-finalize" class="fn">
+      <h3>hash:hasher-finalize</h3>
+      <p class="fn-sig"><code>[$hash:hasher-finalize]  -> bytes</code>  —  Finish a streaming hasher and return the digest of all absorbed chunks.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:hasher-finalize [$hash:hasher-update [$hash:hasher-update [$hash:hasher-new "sha256"] "ab"] "c"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-format-hex" class="fn">
+      <h3>hash:format-hex</h3>
+      <p class="fn-sig"><code>[$hash:format-hex]  -> string</code>  —  Encode a digest as a lowercase hex string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-hex [$hash:sha256 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-format-base64-url" class="fn">
+      <h3>hash:format-base64-url</h3>
+      <p class="fn-sig"><code>[$hash:format-base64-url]  -> string</code>  —  Encode a digest as URL-safe base64 with no padding.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-base64-url [$hash:parse-hex "deadbeef"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'3q2-7w'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-format-base32" class="fn">
+      <h3>hash:format-base32</h3>
+      <p class="fn-sig"><code>[$hash:format-base32]  -> string</code>  —  Encode a digest as RFC 4648 uppercase base32.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:format-base32 [$hash:parse-hex "deadbeef"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'32W353Y='</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-parse-hex" class="fn">
+      <h3>hash:parse-hex</h3>
+      <p class="fn-sig"><code>[$hash:parse-hex]  -> bytes</code>  —  Decode a hex string to bytes, accepting either case.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:equals [$hash:blake3-xof "abc" 1] [$hash:parse-hex "64"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-parse-base64-url" class="fn">
+      <h3>hash:parse-base64-url</h3>
+      <p class="fn-sig"><code>[$hash:parse-base64-url]  -> bytes</code>  —  Decode a URL-safe base64 string to bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[?let [= $d [$hash:sha256 "payload"]] [$hash:equals [$hash:parse-base64-url [$hash:format-base64-url $d]] $d]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-equals" class="fn">
+      <h3>hash:equals</h3>
+      <p class="fn-sig"><code>[$hash:equals]  -> bool</code>  —  Compare two byte sequences for equality in constant time, resisting timing attacks.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:equals [$hash:sha256-string "abc"] [$hash:sha256 "abc"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sri-format" class="fn">
+      <h3>hash:sri-format</h3>
+      <p class="fn-sig"><code>[$hash:sri-format]  -> string</code>  —  Format a digest as a W3C Subresource Integrity string (`<algo>-<base64>`).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[$hash:sri-format [$hash:sha384 "hi"] "sha384"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'sha384-B5EAbfgShHckT1PQ/c4hDbgfVXV1EOJqzuNcGKa86qKNzbv9bcBBubTcextU439S'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-hash-sri-parse" class="fn">
+      <h3>hash:sri-parse</h3>
+      <p class="fn-sig"><code>[$hash:sri-parse]  -> element</code>  —  Parse a W3C SRI string into an `[sri algo=… digest=…]` element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/hash']
+[?let [= $p [$hash:sri-parse [$hash:sri-format [$hash:sha384 "hi"] "sha384"]]] $p@algo]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'sha384'</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

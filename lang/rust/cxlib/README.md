@@ -1,14 +1,10 @@
 # CX — Rust
 
 Rust binding for [CX](https://github.com/cx-org/cx), a concise markup format
-with first-class support for XML, JSON, YAML, TOML, and Markdown conversion.
+with first-class support for XML, JSON, YAML, and TOML conversion.
 The crate wraps `libcx` via `extern "C"` and exposes a typed Document AST,
 a streaming event API, and direct format-conversion functions.
 
-> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
-> the repo root. v3.4 has two breaking changes: leading-zero integer
-> literals (`02134` is now string, not int) and `loads()` / `dumps()` type
-> fidelity (integers stay `Number(i64)` instead of coercing to `Number(f64)`).
 
 ## Canonical-form tooling (v3.4)
 
@@ -206,21 +202,21 @@ EndDoc
 
 ---
 
-### CXL: query / transform / template
+### CX code: query / transform / template
 
-CXL is CX's templating + query language — a CXL program is itself a `.cx` file (same parser, same data model). `cxlib::eval_cxl(context, program, output_target)` runs the program against the context document. `output_target` is `""` (default), `"text"`, `"cx"`, or `"html"`.
+CX code is CX's templating + query language — a CX program is itself a `.cx` file (same parser, same data model). `cxlib::eval_code(context, program, output_target)` runs the program against the context document. `output_target` is `""` (default), `"text"`, `"cx"`, or `"html"`.
 
 ```rust
 let ctx  = "[fleet [svc name=auth +up] [svc name=web +up] [svc name=db]]";
 // Each service: name + status
 let prog = "[?for s :in //svc :return [?= s/@name]: [?if [s/@up, ok, down]]; ]";
 
-let out = cxlib::eval_cxl(ctx, prog, "")?;
+let out = cxlib::eval_code(ctx, prog, "")?;
 println!("{}", out);
 // auth: ok;web: ok;db: down;
 ```
 
-See [docs/CXL.md](../../../docs/CXL.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
+See [docs/CX code.md](../../../docs/CX code.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
 
 ---
 
@@ -345,12 +341,10 @@ let flagged = doc.transform_all("//server", |mut el| {
 | `to_json(s)` | CX string | `Result<String, String>` |
 | `to_yaml(s)` | CX string | `Result<String, String>` |
 | `to_toml(s)` | CX string | `Result<String, String>` |
-| `to_md(s)` | CX string | `Result<String, String>` |
 | `xml_to_cx(s)` | XML string | `Result<String, String>` |
 | `json_to_cx(s)` | JSON string | `Result<String, String>` |
 | `yaml_to_cx(s)` | YAML string | `Result<String, String>` |
 | `toml_to_cx(s)` | TOML string | `Result<String, String>` |
-| `md_to_cx(s)` | Markdown string | `Result<String, String>` |
 | `version()` | — | `String` — libcx version |
 
 Cross-format conversions follow the same pattern: `xml_to_json`, `json_to_xml`,
@@ -365,7 +359,6 @@ Cross-format conversions follow the same pattern: `xml_to_json`, `json_to_xml`,
 | `ast::parse_json(s)` | Parse JSON string into `Document` |
 | `ast::parse_yaml(s)` | Parse YAML string into `Document` |
 | `ast::parse_toml(s)` | Parse TOML string into `Document` |
-| `ast::parse_md(s)` | Parse Markdown string into `Document` |
 | `ast::loads(s)` | Deserialize CX into `serde_json::Value` |
 | `ast::dumps(v)` | Serialize `serde_json::Value` to CX string |
 | `Document::root()` | First top-level `Element` |
@@ -383,7 +376,6 @@ Cross-format conversions follow the same pattern: `xml_to_json`, `json_to_xml`,
 | `Document::to_json()` | Emit JSON via libcx |
 | `Document::to_yaml()` | Emit YAML via libcx |
 | `Document::to_toml()` | Emit TOML via libcx |
-| `Document::to_md()` | Emit Markdown via libcx |
 
 ### Element
 
@@ -459,26 +451,24 @@ parse/emit roundtrip.
 
 | Function | Description |
 |---|---|
-| `cxlib::data_bin::xml_to_data_bin(s)`  | XML text → CXDB v1 framed bytes |
-| `cxlib::data_bin::json_to_data_bin(s)` | JSON text → CXDB v1 framed bytes |
-| `cxlib::data_bin::yaml_to_data_bin(s)` | YAML text → CXDB v1 framed bytes |
-| `cxlib::data_bin::toml_to_data_bin(s)` | TOML text → CXDB v1 framed bytes |
-| `cxlib::data_bin::md_to_data_bin(s)`   | Markdown text → CXDB v1 framed bytes |
-| `cxlib::data_bin::data_bin_to_xml(b)`  | CXDB v1 framed bytes → XML text |
-| `cxlib::data_bin::data_bin_to_json(b)` | CXDB v1 framed bytes → JSON text |
-| `cxlib::data_bin::data_bin_to_yaml(b)` | CXDB v1 framed bytes → YAML text |
-| `cxlib::data_bin::data_bin_to_toml(b)` | CXDB v1 framed bytes → TOML text |
-| `cxlib::data_bin::data_bin_to_md(b)`   | CXDB v1 framed bytes → Markdown text |
+| `cxlib::data_bin::xml_to_data_bin(s)`  | XML text → CXCol v1 framed bytes |
+| `cxlib::data_bin::json_to_data_bin(s)` | JSON text → CXCol v1 framed bytes |
+| `cxlib::data_bin::yaml_to_data_bin(s)` | YAML text → CXCol v1 framed bytes |
+| `cxlib::data_bin::toml_to_data_bin(s)` | TOML text → CXCol v1 framed bytes |
+| `cxlib::data_bin::data_bin_to_xml(b)`  | CXCol v1 framed bytes → XML text |
+| `cxlib::data_bin::data_bin_to_json(b)` | CXCol v1 framed bytes → JSON text |
+| `cxlib::data_bin::data_bin_to_yaml(b)` | CXCol v1 framed bytes → YAML text |
+| `cxlib::data_bin::data_bin_to_toml(b)` | CXCol v1 framed bytes → TOML text |
 
 Each returns `Result<Vec<u8>, String>` on the to-binary path and
 `Result<String, String>` on the from-binary path. The framed bytes are
-CX Data Binary v1 — see `spec/data_bin.md` for the wire format.
+CX Data Binary v1 — see `spec/core/data-bin.md` for the wire format.
 Round-trip: `data_bin_to_X(X_to_data_bin(s)?)? == s` (after
 canonicalization).
 
 ## Apache Arrow C-Data interop (v0.6.0+, optional)
 
-Bridges CXDB chunked-tables to Apache Arrow `ArrowArrayStream` via
+Bridges CXCol chunked-tables to Apache Arrow `ArrowArrayStream` via
 `libcx_arrow` (`spec/abi.md §2.11`, capability bit `0x800000`). The
 bridge handles all 9 v0.6.0 column types (`int`, `i8`, `i16`, `i32`,
 `float`, `bool`, `string`, `date`, `bytes`); `datetime` / `decimal` /
@@ -503,7 +493,7 @@ use cxlib::arrow as cxa;
 assert!(cxa::available());
 assert_eq!(cxa::features(), 0x800000);
 
-// Forward — CXDB chunked-table → Arrow.
+// Forward — CXCol chunked-table → Arrow.
 let payload = to_data_bin_chunked(
     "[points :table[name:string score:int] alice 91 bob 88]")?;
 let mut reader = cxa::export(&payload)?;        // ArrowArrayStreamReader
@@ -512,7 +502,7 @@ while let Some(rec) = reader.next() {
     // rec.column(0).as_any().downcast_ref::<arrow::array::StringArray>(), …
 }
 
-// Inverse — build a record directly, drain into CXDB bytes.
+// Inverse — build a record directly, drain into CXCol bytes.
 use std::sync::Arc;
 use arrow::array::{Int64Array, RecordBatch, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
@@ -527,7 +517,7 @@ let rec = RecordBatch::try_new(schema.clone(), vec![
     Arc::new(Int64Array::from(vec![91_i64, 88])),
 ])?;
 let it = RecordBatchIterator::new(vec![Ok(rec)].into_iter(), schema);
-let cxdb = cxa::import_to_data_bin(it)?;        // unframed CXDB bytes
+let cxcol = cxa::import_to_data_bin(it)?;        // unframed CXCol bytes
 ```
 
 Functions: `cxa::available()`, `cxa::features()`, `cxa::version()`,
@@ -535,10 +525,10 @@ Functions: `cxa::available()`, `cxa::features()`, `cxa::version()`,
 `cxa::export(payload: &[u8]) -> Result<ArrowArrayStreamReader, String>`,
 `cxa::import_to_data_bin<R: RecordBatchReader + Send + 'static>(reader: R) -> Result<Vec<u8>, String>`.
 
-`export` accepts UNFRAMED CXDB bytes — the shape
+`export` accepts UNFRAMED CXCol bytes — the shape
 `streaming_table::to_data_bin_chunked` returns. `import_to_data_bin`
 returns UNFRAMED bytes. Bytes can be re-decoded with `export` or any
-other CXDB consumer.
+other CXCol consumer.
 
 Linkage: `build.rs` conditionally emits
 `cargo:rustc-link-lib=cx_arrow` only when `CARGO_FEATURE_ARROW` is
@@ -559,7 +549,7 @@ fn main() -> anyhow::Result<()> {
     // Round-trip to JSON, lossless
     println!("{}", to_json("[user [id :i64 9007199254740993]]")?);
 
-    // Public Table API (ADR 0018) — 17-member surface
+    // Public Table API — 17-member surface
     let src = r#"[users :table[name age:int]
   alice 30
   bob   25

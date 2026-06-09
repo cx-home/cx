@@ -1,15 +1,9 @@
 # CX — Python
 
 Python binding for the CX format library. Parses, streams, queries, and
-transforms CX documents; converts between CX, XML, JSON, YAML, TOML, and
-Markdown via `libcx`.
+transforms CX documents; converts between CX, XML, JSON, YAML, and TOML
+via `libcx`.
 
-> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
-> the repo root. v3.4 has two breaking changes: leading-zero integer
-> literals (`02134` is now string, not int) and `loads()`/`dumps()`
-> type fidelity (integers no longer coerce to floats through the
-> JSON detour). Most user code is unaffected; type-strict assertions
-> and ZIP-code-shaped data may need a one-line update.
 
 ## Requirements
 
@@ -173,23 +167,25 @@ config  version=1.0
 server  host=localhost  port=8080
 ```
 
-### CXL: query / transform / template
+### CX code: query / transform / template
 
-CXL is CX's templating + query language — a CXL program is itself a `.cx` file (same parser, same data model). `eval_cxl(context, program, output_target)` runs the program against the context document. `output_target` is `""` (default), `"text"`, `"cx"`, or `"html"`.
+CX code is CX's unified pattern / query / transform language — a CX program is itself a `.cx` file (same parser, same data model). `eval_code(input, program, output_target)` runs the program against an optional input document. `output_target` is `""` (default `"text"`), `"cx"`, `"json"`, `"yaml"`, `"xml"`, `"csv"`, or `"tsv"`.
 
 ```python
-import cx
+import cxlib
 
-ctx = "[fleet [svc name=auth +up] [svc name=web +up] [svc name=db]]"
+ctx = "[fleet [svc name=auth :status up] [svc name=web :status up] [svc name=db :status down]]"
 
-# Each service: name + status
-prog = "[?for s :in //svc :return [?= s/@name]: [?if [s/@up, ok, down]]; ]"
+# Find every service via a CXPath path value
+prog = "//svc"
 
-print(cx.eval_cxl(ctx, prog))
-# auth: ok;web: ok;db: down;
+print(cxlib.eval_code(ctx, prog))
+# [svc name=auth :status up]
+# [svc name=web :status up]
+# [svc name=db :status down]
 ```
 
-See [docs/CXL.md](../../../docs/CXL.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
+See [`spec/code.md`](../../../spec/code.md) for the full language reference. `eval_code` is the eval entry point.
 
 ## Run the Examples
 
@@ -208,7 +204,6 @@ python lang/python/examples/transform.py
 | `parse_json(s)` | Parse JSON into a `Document` |
 | `parse_yaml(s)` | Parse YAML into a `Document` |
 | `parse_toml(s)` | Parse TOML into a `Document` |
-| `parse_md(s)` | Parse Markdown into a `Document` |
 
 ### Document
 
@@ -230,7 +225,6 @@ python lang/python/examples/transform.py
 | `doc.to_json()` | Emit JSON |
 | `doc.to_yaml()` | Emit YAML |
 | `doc.to_toml()` | Emit TOML |
-| `doc.to_md()` | Emit Markdown |
 
 ### Element
 
@@ -299,7 +293,6 @@ decimals → `float`, everything else → `str`. An invalid expression raises
 | `to_json(s)` | CX → JSON |
 | `to_yaml(s)` | CX → YAML |
 | `to_toml(s)` | CX → TOML |
-| `to_md(s)` | CX → Markdown |
 | `xml_to_cx(s)`, `json_to_cx(s)`, … | Any format → CX |
 | `loads(s)` | Parse CX into native Python types (`dict`/`list`/scalar) |
 | `dumps(data)` | Serialize Python types back to CX |
@@ -333,29 +326,27 @@ parse/emit roundtrip.
 
 | Function | Description |
 |---|---|
-| `cxlib.xml_to_data_bin(s)` | XML text → CXDB v1 framed bytes |
-| `cxlib.json_to_data_bin(s)` | JSON text → CXDB v1 framed bytes |
-| `cxlib.yaml_to_data_bin(s)` | YAML text → CXDB v1 framed bytes |
-| `cxlib.toml_to_data_bin(s)` | TOML text → CXDB v1 framed bytes |
-| `cxlib.md_to_data_bin(s)` | Markdown text → CXDB v1 framed bytes |
-| `cxlib.data_bin_to_xml(b)` | CXDB v1 framed bytes → XML text |
-| `cxlib.data_bin_to_json(b)` | CXDB v1 framed bytes → JSON text |
-| `cxlib.data_bin_to_yaml(b)` | CXDB v1 framed bytes → YAML text |
-| `cxlib.data_bin_to_toml(b)` | CXDB v1 framed bytes → TOML text |
-| `cxlib.data_bin_to_md(b)` | CXDB v1 framed bytes → Markdown text |
+| `cxlib.xml_to_data_bin(s)` | XML text → CXCol v1 framed bytes |
+| `cxlib.json_to_data_bin(s)` | JSON text → CXCol v1 framed bytes |
+| `cxlib.yaml_to_data_bin(s)` | YAML text → CXCol v1 framed bytes |
+| `cxlib.toml_to_data_bin(s)` | TOML text → CXCol v1 framed bytes |
+| `cxlib.data_bin_to_xml(b)` | CXCol v1 framed bytes → XML text |
+| `cxlib.data_bin_to_json(b)` | CXCol v1 framed bytes → JSON text |
+| `cxlib.data_bin_to_yaml(b)` | CXCol v1 framed bytes → YAML text |
+| `cxlib.data_bin_to_toml(b)` | CXCol v1 framed bytes → TOML text |
 
-The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+The framed bytes are CX Data Binary v1 — see `spec/core/data-bin.md` for
 the wire format. Round-trip: `data_bin_to_X(X_to_data_bin(s)) == s`
 (after canonicalization).
 
 ### Apache Arrow C-Data interop (v0.6.0; optional)
 
-Bridges CXDB chunked-tables to Apache Arrow's
+Bridges CXCol chunked-tables to Apache Arrow's
 [C-Data ABI](https://arrow.apache.org/docs/format/CDataInterface.html)
 via the separate `libcx_arrow` shared library
 (`make lib-arrow` → `vcx/target/libcx_arrow.dylib` / `.so`). Arrow is an
 optional dependency; install with `pip install cxlib[arrow]` to pull in
-PyArrow ≥ 14. With the bridge wired up CXDB becomes a canonical
+PyArrow ≥ 14. With the bridge wired up CXCol becomes a canonical
 hashable origin that flows zero-copy into Polars / DuckDB / Pandas via
 PyArrow, and the Parquet bridge chains for free
 (`pyarrow.parquet.write_table(reader.read_all(), 'file.parquet')`).
@@ -368,13 +359,13 @@ import cxlib.arrow as cxa
 assert cxa.available()
 assert cxa.merged_features() & 0x800000
 
-# CXDB chunked-table → pyarrow.RecordBatchReader (one ArrayChunk per row group)
+# CXCol chunked-table → pyarrow.RecordBatchReader (one ArrayChunk per row group)
 src = '[points :table[name:string score:int] alice 91 bob 88 carol 73]'
 framed = cxlib.to_data_bin_chunked(src)
 reader = cxa.export(framed)
 table  = reader.read_all()        # pyarrow.Table
 
-# Inverse: pyarrow.Table or pyarrow.RecordBatchReader → framed CXDB
+# Inverse: pyarrow.Table or pyarrow.RecordBatchReader → framed CXCol
 import pyarrow as pa
 table_in = pa.table({'name': pa.array(['alice'], type=pa.string()),
                      'score': pa.array([91], type=pa.int64())})
@@ -383,7 +374,7 @@ framed_again = cxa.import_to_data_bin(table_in)
 
 Supported v0.6.0 column types (`spec/abi.md §2.11.1`):
 
-| CXDB type        | Arrow format | PyArrow type   |
+| CXCol type        | Arrow format | PyArrow type   |
 |------------------|--------------|----------------|
 | `int` / `i64`    | `l`          | `int64`        |
 | `i8`             | `c`          | `int8`         |
@@ -425,7 +416,7 @@ print(doc.at('server/port').int_value())   # 8080
 # Round-trip to JSON, lossless
 print(cxlib.to_json('[user [id :i64 9007199254740993]]'))
 
-# Public Table API (ADR 0018) — 17-member surface
+# Public Table API — 17-member surface
 src = """[users :table[name age:int]
   alice 30
   bob   25

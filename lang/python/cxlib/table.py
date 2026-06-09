@@ -1,4 +1,4 @@
-"""CX Python binding — Public Table API per ADR 0018 D1.
+"""CX Python binding — Public Table API.
 
 Implements the 17-member canonical Table API surface against the V
 core's `:table` blocks via the C ABI. Adopters import `cxlib.Table`
@@ -6,7 +6,7 @@ and call `Table.from_cx(src)` (or `Table.from_cx_all(src)` for
 multi-table sources) to get a Table instance; the 17 methods provide
 the public surface.
 
-Per ADR 0018 §D2 per-binding naming: Python uses snake_case matching
+Per per-binding naming, Python uses snake_case matching
 the canonical surface exactly. `select` is renamed to `select_cols`
 to avoid shadowing the standard-library `select` module.
 """
@@ -23,8 +23,8 @@ from . import cx as _cx
 class Table:
     """Immutable handle over a single `:table` block from a CX source.
 
-    Per ADR 0018 §D3 tables are immutable values; modification returns
-    a new Table. Cells admit any of the ADR 0017 §D5 Item kinds
+    Tables are immutable values; modification returns
+    a new Table. Cells admit any of the Item kinds
     (scalars + Array / Map / Sequence). Arrays/maps materialize as
     Python `list` / `dict` respectively at the data-binding layer.
     """
@@ -34,7 +34,7 @@ class Table:
     def __init__(self, cols: list[str], types: list[str],
                  rows: list[list[Any]]):
         """Construct directly from cols / types / rows. Validates the
-        4 invariants per ADR 0018 §D7. Adopters typically use
+        4 invariants. Adopters typically use
         `Table.from_cx(src)` instead.
         """
         if len(cols) != len(types):
@@ -212,7 +212,7 @@ class Table:
     # ── Conversion (5) ───────────────────────────────────────────────────────
 
     def to_cx(self) -> str:
-        """Canonical CX text — the `:table` block form per ADR 0018 §D6
+        """Canonical CX text — the `:table` block form
         + spec/canonical.md §2.11.
         """
         header_parts = []
@@ -231,8 +231,8 @@ class Table:
 
     def to_csv(self, delim: str = ",") -> str:
         """CSV (comma-separated) by default; pass `delim` for other
-        single-char delimiters per ADR 0001 §D6. Collection cells emit
-        as JSON-encoded strings per ADR 0001 §D7 / ADR 0018 §D6.
+        single-char delimiters. Collection cells emit
+        as JSON-encoded strings.
         """
         if len(delim) != 1:
             raise ValueError(
@@ -247,12 +247,12 @@ class Table:
     def to_json(self) -> str:
         """Semantic JSON: list of row objects with cells as host-native
         JSON (Array → JSON array, Map → JSON object, scalars → JSON
-        scalars). Per ADR 0018 §D6.
+        scalars).
         """
         return json.dumps(self.to_dict_list(), separators=(",", ":"))
 
     def to_data_bin(self) -> bytes:
-        """CXDB binary form via cx_to_data_bin. Plain `0x60` form for
+        """CXCol binary form via cx_to_data_bin. Plain `0x60` form for
         collection-cell tables (per Phase 2.2 wire-format rule);
         chunked `0x63` form is scalar-only and routed automatically.
         """
@@ -325,7 +325,7 @@ def _looks_like_table(value: list) -> bool:
 # ── Internal: cell formatters ─────────────────────────────────────────────────
 
 def _format_cx_cell(v: Any) -> str:
-    """Canonical CX cell rendering per ADR 0017 §D14."""
+    """Canonical CX cell rendering."""
     if v is None:
         return "null"
     if isinstance(v, bool):
@@ -336,7 +336,7 @@ def _format_cx_cell(v: Any) -> str:
         # Array literal
         return "[" + ", ".join(_format_cx_cell(item) for item in v) + "]"
     if isinstance(v, dict):
-        # Map literal — keys lex-sorted per ADR 0017 §D14 canonical
+        # Map literal — keys lex-sorted canonical
         items = sorted(v.items())
         return "{" + ", ".join(
             f"{_format_cx_key(k)}: {_format_cx_cell(val)}"
@@ -360,7 +360,6 @@ def _format_cx_key(k: Any) -> str:
 
 def _format_csv_cell(v: Any, delim: str) -> str:
     """CSV cell — collection cells emit as JSON-encoded strings per
-    ADR 0001 §D7.
     """
     if v is None:
         return ""

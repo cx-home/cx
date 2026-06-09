@@ -1,4 +1,4 @@
-"""Tests for ID/IDREF resolution per ADR 0003 / spec/identity.md.
+"""Tests for ID/IDREF resolution per spec/identity.md.
 
 Mirrors the V core conformance/identity.txt cases for the Python binding
 accessor surface (`Element.id`, `Attr.is_ref`, `Document.resolve_id()`,

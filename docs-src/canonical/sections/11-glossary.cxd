@@ -1,0 +1,733 @@
+[# Section 11 — Glossary. Back-matter; appears after §10 migration.
+   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Every term in this glossary is used elsewhere in the guide; each
+   entry cross-links to the section where the term is first
+   introduced. Entries are alphabetical (case-insensitive). File
+   extension .cxd — data-only source. #]
+
+[section id=glossary n=11 title='Glossary'
+
+  [intro
+    """This is the working glossary for the CX data and code guide.
+       Every domain-specific term used in §0–§10 is defined here, with
+       a cross-link to the section where it is first introduced. If
+       you encounter a term in this guide that is not defined here,
+       file an issue — coverage is a release gate."""]
+
+  [child id=g-anchor-sigil title='anchor sigil (&)'
+    [body
+      """The `&name` form on an element declares a named anchor. The
+         anchor can be referenced later via the merge sigil `*name` to
+         splice the anchored content. Declaring two anchors with the
+         same name in one document raises `CXER0101`. See [[anchor]]."""]]
+
+  [child id=g-array title='array'
+    [body
+      """A homogeneously-typed indexed container. Distinct from a
+         sequence: arrays are atomic containers (one value), sequences
+         are flat (no nesting). See [[arr]] and [[container-atom]]."""]]
+
+  [child id=g-array-literal title='array literal'
+    [body
+      """Written `[a, b, c]` with commas inside square brackets — note
+         that a CX element shares the bracket but has no leading comma
+         after the element name. See [[arr]]."""]]
+
+  [child id=g-ast-bin title='ast-bin'
+    [body
+      """The CX AST wire format — a compact binary serialisation of a
+         parsed CX document including comments, whitespace, attribute
+         order, and any author-annotated provenance. Used by tooling
+         (LSP, diff, hash service). Distinct from data-bin, which is
+         value-only. See [[ast-bin]]."""]]
+
+  [child id=g-attribute title='attribute'
+    [body
+      """A `name=value` pair in an element header. The key is an
+         identifier; the value is a bare scalar, quoted string,
+         numeric literal, boolean, date, or `null`. Multiple
+         attributes are space-separated. See [[attributes]]."""]]
+
+  [child id=g-bcp47 title='BCP 47 tag'
+    [body
+      """A language identifier per IETF BCP 47 (e.g. `en-US`,
+         `zh-Hant-TW`). Used as the value of the reserved
+         `cx:lang` attribute. See [[locale]]."""]]
+
+  [child id=g-binding title='binding (Layer 1, Layer 2)'
+    [body
+      """A host-language wrapper around the compiled `libcx`. Layer 1
+         is the 16 canonical methods every binding must implement
+         identically; Layer 2 is host-idiomatic syntactic sugar that
+         varies per language. v0.8.0 ships V, Python, Go, and Rust.
+         See [[bindings]]."""]]
+
+  [child id=g-body title='body'
+    [body
+      """Everything between the attribute list and the closing `]` of
+         an element. Can be empty, a single scalar, mixed content, or
+         a sequence of nested elements. See [[bodies]]."""]]
+
+  [child id=g-bool title='boolean'
+    [body
+      """The `true` / `false` scalar kind. Bare `true` and `false`
+         are reserved tokens. The bool sigils `+name` and `-name` are
+         attribute shortcuts (`name=true` and `name=false`). See
+         [[booleans]] and [[bool]]."""]]
+
+  [child id=g-bool-sigil title='bool sigil (+ / -)'
+    [body
+      """Attribute shortcuts: `[el +active]` is `[el active=true]`,
+         `[el -active]` is `[el active=false]`. See [[bool]]."""]]
+
+  [child id=g-bytes title='bytes'
+    [body
+      """A scalar kind holding raw binary data. Written as a
+         length-prefixed base64 literal: `:bytes 'SGVsbG8='`. See
+         [[bytes]] and [[bytes-wire]]."""]]
+
+  [child id=g-canonical-bytes title='canonical bytes'
+    [body
+      """The unique byte sequence that represents a CX document after
+         the canonicalization rules in
+         [`spec/canonical.md`](../../spec/canonical.md) are applied.
+         The SHA-256 of the canonical bytes is the document's
+         identity. See [[canonical]]."""]]
+
+  [child id=g-capability-bit title='capability bit'
+    [body
+      """A bit in the value returned by `cx_features()` that signals
+         whether the loaded `libcx` supports a particular optional
+         feature (Parquet bridge, diagram render, etc.). Bindings
+         check before calling new entry points. See
+         [[ast-bin-capabilities]]."""]]
+
+  [child id=g-cdata title='CDATA'
+    [body
+      """An XML-only literal section that preserves arbitrary text
+         verbatim. CX carries CDATA through the XML projection but
+         re-encodes the content as a triple-quoted string in the
+         canonical form. See [[cdata]]."""]]
+
+  [child id=g-code-language title='code language'
+    [body
+      """The directive-based subset of CX. A code element is one whose
+         name starts with `?` (e.g. `[?for]`). The evaluator
+         dispatches on the directive name. Every other shape is data.
+         See [[code]]."""]]
+
+  [child id=g-comment title='comment'
+    [body
+      """`[# … #]` — nests, spans lines, allowed anywhere whitespace
+         is allowed. Preserved by lossless canonical, stripped by
+         strict canonical. See [[comments]]."""]]
+
+  [child id=g-container-item title='container Item'
+    [body
+      """In the CXDM model (`spec/cxdm.md` §2), an Item is either an
+         atom (one scalar) or a container (an element, array, or
+         map). Sequences are flat — they are not containers. See
+         [[container-atom]]."""]]
+
+  [child id=g-content-addressable title='content-addressable'
+    [body
+      """Storage or lookup keyed by the hash of the content rather
+         than an external name. CX is content-addressable by
+         construction — the hash of the canonical bytes is the
+         document's identity. See [[hash-use-cases]]."""]]
+
+  [child id=g-cx-init title='cx_init'
+    [body
+      """The C ABI entry point bindings call once at module load to
+         initialise the Boehm GC and runtime state. Idempotent. See
+         [[c-abi]]."""]]
+
+  [child id=g-cx-thread-register title='cx_thread_register'
+    [body
+      """The C ABI entry point a host-spawned thread calls before any
+         other libcx call, to register itself with the GC. Paired
+         with `cx_thread_unregister` at thread exit. Bindings
+         auto-call from their Layer-1 wrappers. See
+         [[ffi-thread-register]]."""]]
+
+  [child id=g-cxcol title='CXCol'
+    [body
+      """CX's column-oriented streaming format. Pronounced "see-ex-col."
+         Optimised for analytic scans; the same value model as native
+         CX, projected column-wise. The canonical export target for
+         the `:table` data shape. See [[cxcol]]."""]]
+
+  [child id=g-cxdm title='CXDM'
+    [body
+      """CX Data Model — the abstract value model formalised in
+         [`spec/cxdm.md`](../../spec/cxdm.md). Defines the eight
+         scalar kinds, container kinds, sequence-flatness, equality,
+         and the effective boolean value. The basis for every
+         binding's value mapping."""]]
+
+  [child id=g-cxpath title='CXPath'
+    [body
+      """The universal selector vocabulary. Same syntax for reading
+         (`select_all`), iteration (`[?for]`), pattern matching
+         (`[?match]`), and update focus (`[?modify]`). XPath 3.1
+         aligned with deliberate divergences (see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
+         and a value-kind in v0.8.0. See [[cxpath]]."""]]
+
+  [child id=g-data-bin title='data-bin'
+    [body
+      """The CX value wire format. Value-only (no comments, no
+         original whitespace), schema-aware optional dictionary
+         compression, page-compression wrapper. See [[data-bin]]."""]]
+
+  [child id=g-data-language title='data language'
+    [body
+      """The non-directive subset of CX. Any element whose name does
+         not start with `?`. Round-trips through every projection
+         (JSON / YAML / TOML / XML / Markdown). See [[data]]."""]]
+
+  [child id=g-date title='date'
+    [body
+      """The `:date` scalar kind. ISO 8601 calendar date with no time
+         component: `2026-05-22`. See [[dates]]."""]]
+
+  [child id=g-datetime title='datetime'
+    [body
+      """The `:datetime` scalar kind. ISO 8601 timestamp with
+         timezone offset: `2026-05-22T14:30:00Z`. Resolution is
+         nanoseconds; leap seconds are not represented. See
+         [[datetime-detail]]."""]]
+
+  [child id=g-default-ns title='default namespace'
+    [body
+      """A namespace declared with `xmlns='…'` (no prefix). Applies
+         to unprefixed element names within its scope. See
+         [[ns-default]]."""]]
+
+  [child id=g-dict-encoding title='dictionary encoding'
+    [body
+      """A data-bin optional compression scheme that replaces
+         repeated string values with a small integer index into a
+         document-level table. Used by CXCol and Parquet bridge for
+         categorical columns. See [[data-bin-schema-driven]]."""]]
+
+  [child id=g-directive title='directive'
+    [body
+      """An element whose name starts with `?` (e.g. `[?for]`,
+         `[?match]`, `[?modify]`). Interpreted by the evaluator
+         rather than carried as data. v0.8.0 has 40 normative
+         directives. See [[directives]]."""]]
+
+  [child id=g-doctype title='doctype'
+    [body
+      """A document-level declaration of the document's root element
+         shape, optionally with public/system identifiers (XML
+         legacy). CX carries doctype through the XML projection. See
+         [[doctype]]."""]]
+
+  [child id=g-document title='document'
+    [body
+      """The top-level CX value — either a single root element with
+         any nested content, or a sequence of top-level elements
+         (the multi-document form). Identity is the SHA-256 of its
+         canonical bytes. See [[hash]]."""]]
+
+  [child id=g-ebv title='effective boolean value (EBV)'
+    [body
+      """The truthiness coercion rule applied by `[?if]` and `[where …]`
+         guards. Defined in [`spec/cxdm.md`](../../spec/cxdm.md)
+         §4.6. Empty sequence / `false` / `0` / `''` / `null` are
+         false; everything else is true. See [[if]]."""]]
+
+  [child id=g-element title='element'
+    [body
+      """The basic CX data structure: a name, zero or more
+         attributes, and a body. Written `[name attrs… body…]`.
+         Every bracketed form is an element. See [[elements]]."""]]
+
+  [child id=g-element-name title='element name'
+    [body
+      """The first token inside `[`. An identifier (or, rarely, a
+         quoted string). Names beginning with `?` are directives.
+         See [[names]]."""]]
+
+  [child id=g-entity-reference title='entity reference'
+    [body
+      """An `&name;` token in prose / XML projection that expands to
+         a registered character or string entity. CX recognises the
+         XML five (`&lt;`, `&gt;`, `&amp;`, `&apos;`, `&quot;`) plus
+         `&#NNNN;` numeric character references. See [[entity-refs]]."""]]
+
+  [child id=g-equality title='equality (structural)'
+    [body
+      """Two CX values are equal iff their canonical bytes are
+         identical. Equivalent to: tree-shape-equal after sorting
+         attributes and applying the canonicalization rules. See
+         [[canonical]]."""]]
+
+  [child id=g-eval title='eval'
+    [body
+      """The C ABI entry point `cx_code_eval(doc, code, target_format)`.
+         Evaluates a CX code expression against a document, returning
+         a value in the requested format. See [[overview]] and
+         [[c-abi]]."""]]
+
+  [child id=g-expression-family title='expression family'
+    [body
+      """The five families of CX code expressions: select, iterate,
+         dispatch, bind, update. Every directive lifts one family
+         into a specific domain. See [[overview]]."""]]
+
+  [child id=g-file-extension title='file extension'
+    [body
+      """`.cx` for general CX documents; `.cxs` for schemas; `.cxd`
+         for data-only source (no directive bodies); `.cxcol` for
+         CXCol columnar exports. The parser is the same for all
+         four; the extension drives tooling defaults. See
+         [[encoding]]."""]]
+
+  [child id=g-float title='float'
+    [body
+      """The `:float` scalar kind. IEEE-754 double-precision by
+         default; `:f32` and `:f64` are sized variants. See
+         [[numbers]] and [[sized-types]]."""]]
+
+  [child id=g-fn title='fn'
+    [body
+      """`[?fn]` — an anonymous function literal. A list of
+         positional/labeled bindings followed by an expression
+         body. See [[bindings]] in §6 and [[directives]]."""]]
+
+  [child id=g-focus title='focus'
+    [body
+      """In `[?modify]`, the set of nodes selected by a CXPath
+         expression at which an action is applied. Each focus node
+         is updated independently; the result is a new document. See
+         [[modify]]."""]]
+
+  [child id=g-for title='for'
+    [body
+      """`[?for]` — iteration / comprehension. Binds a variable to
+         each item in a CXPath, pattern, or sequence, and yields a
+         value per iteration. See [[for]]."""]]
+
+  [child id=g-hash title='hash (SHA-256)'
+    [body
+      """The 256-bit SHA-256 of a document's strict canonical bytes.
+         Stable across machines, OS versions, and bindings.
+         Short-form display uses the first 12 hex chars (96 bits) —
+         see [[hash-truncation]] for the safety bound."""]]
+
+  [child id=g-homoiconic title='homoiconic'
+    [body
+      """A language is homoiconic when its programs and its data use
+         the same syntactic shape. CX is homoiconic by design — a
+         directive `[?for]` parses and prints with the same rules as
+         a data element `[user]`. See [[homoiconicity]]."""]]
+
+  [child id=g-id-sigil title='id sigil (#)'
+    [body
+      """The `#name` attribute shortcut for `id='name'`. Declares a
+         document-unique anchor for IDREF resolution. See [[id]]
+         and [[id-anchors]]."""]]
+
+  [child id=g-idref title='IDREF'
+    [body
+      """An attribute value that references another element's `id`
+         attribute. Resolved on demand via `cx_idref_resolve`;
+         cycles are detected and surfaced as `CXER0501`. See
+         [[idref-resolution]]."""]]
+
+  [child id=g-include title='include'
+    [body
+      """The `[?cx include path='…']` directive resolves and inlines
+         another CX document. Capability-gated by default —
+         `--profile untrusted` disables filesystem includes. See
+         [[includes]]."""]]
+
+  [child id=g-instance title='instance'
+    [body
+      """A concrete document that conforms to a schema. The schema
+         describes the shape; the instance has the values. See
+         [[schema-binding]]."""]]
+
+  [child id=g-int title='int'
+    [body
+      """The `:int` scalar kind. 64-bit signed integer by default;
+         `:i8`/`:i16`/`:i32`/`:i64` and unsigned variants are sized
+         tags. See [[numbers]] and [[sized-types]]."""]]
+
+  [child id=g-jsonl title='JSONL / NDJSON'
+    [body
+      """A streaming JSON format with one value per line. CX
+         projects to JSONL when the root is a sequence; the
+         projection guarantees one CX top-level item per output
+         line. See [[jsonl]]."""]]
+
+  [child id=g-lossless-canonical title='lossless canonical'
+    [body
+      """The form produced by `cx fmt`: pretty-printed, preserves
+         comments and attribute order, but normalises quote choice
+         and whitespace. Distinct from strict canonical, which
+         strips comments and re-sorts attributes. See
+         [[canon-lossless-strict]]."""]]
+
+  [child id=g-lossy-projection title='lossy projection'
+    [body
+      """A projection that drops information the target format
+         cannot represent. CX → JSON loses comments and CDATA; CX →
+         CSV loses nested structure. Always reversible via the
+         retained canonical CX form. See [[roundtrip]]."""]]
+
+  [child id=g-manifest title='manifest'
+    [body
+      """The table of contents for the canonical guide, at
+         `docs-src/canonical/manifest.cxd`. Lists every section
+         file and its child anchors; renumbering is automatic from
+         depth. See [[reading]]."""]]
+
+  [child id=g-map title='map'
+    [body
+      """An unordered key-value container with unique string keys.
+         Written `{k: v, k2: v2}`. Distinct from an element with
+         attributes (an element is positional, named, and
+         attributed; a map is just key-value). See [[map]]."""]]
+
+  [child id=g-map-literal title='map literal'
+    [body
+      """The `{k: v, k2: v2}` form. Keys are strings or identifiers;
+         values are any CX value. Map equality ignores entry order.
+         See [[map]]."""]]
+
+  [child id=g-match title='match'
+    [body
+      """`[?match]` — pattern dispatch. Single-arm form is an
+         assertion that raises `CXER0100` on miss; multi-arm form
+         selects the first matching `[case …]` clause.
+         See [[match]]."""]]
+
+  [child id=g-merge-sigil title='merge sigil (*)'
+    [body
+      """The `*name` form on an attribute or element body splices
+         the content of the named anchor. The complement of the
+         anchor sigil `&name`. See [[merge]]."""]]
+
+  [child id=g-modify title='modify'
+    [body
+      """`[?modify]` — pure-functional update. Takes a document, a
+         CXPath focus, and an action clause (`[set …]` / `[delete]`
+         / …); returns a new document. See [[modify]]."""]]
+
+  [child id=g-multi-arm-match title='multi-arm match'
+    [body
+      """The N-arm form of `[?match]` with `[case …]` / `[when …]` /
+         `[else …]` arms and optional `[where …]` guards.
+         See [[match]]."""]]
+
+  [child id=g-namespace title='namespace'
+    [body
+      """An XML-aligned grouping mechanism that scopes element and
+         attribute names with a URI. Declared by `xmlns:prefix='uri'`
+         (or `xmlns='uri'` for a default). See [[namespaces]]."""]]
+
+  [child id=g-ns-prefix title='namespace prefix'
+    [body
+      """The short string used to refer to a namespace in element /
+         attribute names (e.g. `svg:rect`, where `svg` is the prefix
+         and `rect` is the local name). See [[ns-prefix-decl]]."""]]
+
+  [child id=g-node title='node'
+    [body
+      """An addressable position in a CX tree. Every element,
+         attribute, scalar, comment, and processing instruction is
+         a node. CXPath returns sequences of nodes. See
+         [[cxpath]]."""]]
+
+  [child id=g-null title='null'
+    [body
+      """The reserved literal denoting the absence of a value.
+         Distinct from missing (an attribute that is not present at
+         all). Its EBV is false. See [[null]]."""]]
+
+  [child id=g-nfc title='NFC normalization'
+    [body
+      """Unicode Normalization Form C (canonical composition). All
+         CX identifiers and string scalars are NFC-normalized at
+         parse time. See [[identifiers]]."""]]
+
+  [child id=g-parallel title='parallel'
+    [body
+      """The CX concurrency posture — `[?map par=true]` and
+         `[?reduce par=true]` (and `[?for ... par=true]`) distribute
+         work across bounded worker pools; immutability makes the
+         result deterministic. See [[parallelism]]."""]]
+
+  [child id=g-parquet title='parquet'
+    [body
+      """Apache Parquet — the columnar storage format CX exports
+         to and imports from via the Parquet bridge. CXCol is the
+         in-memory analogue; Parquet is the on-disk
+         interchange. See [[parquet-bridge]]."""]]
+
+  [child id=g-parquet-bridge title='parquet bridge'
+    [body
+      """The libcx subsystem that reads and writes Apache Parquet
+         files via Arrow. Capability bit 12. See
+         [[parquet-bridge]]."""]]
+
+  [child id=g-pattern title='pattern'
+    [body
+      """A CX value with embedded binding variables (e.g.
+         `[user id=$i]`) that matches a target value structurally
+         and binds the variables on success. Used by `[?match]`,
+         `[?for]`, and `[?modify]`. See [[patterns]]."""]]
+
+  [child id=g-pattern-generator title='pattern generator'
+    [body
+      """A pattern used at the source of a `[?for]` to enumerate
+         matching positions in a document. Equivalent to a CXPath
+         that yields the same node set. See [[patterns]]."""]]
+
+  [child id=g-pipe title='pipe (|)'
+    [body
+      """The `|` operator threads the value on its left into the
+         expression on its right, bound to `$1`. Canonical form
+         desugars to `[?pipe …]`. See [[pipe]]."""]]
+
+  [child id=g-pi title='processing instruction (PI)'
+    [body
+      """An XML-only directive carried as a node (e.g.
+         `<?xml-stylesheet …?>`). CX preserves PIs through the XML
+         projection. See [[xml-pi]]."""]]
+
+  [child id=g-projection title='projection'
+    [body
+      """A surface other than canonical CX (JSON, YAML, TOML, XML,
+         Markdown, CSV, JSONL). Every projection round-trips —
+         CX → projection → CX produces byte-identical canonical
+         bytes. See [[surfaces]]."""]]
+
+  [child id=g-prose title='prose'
+    [body
+      """Mixed-content body — text interleaved with elements. The
+         shape that powers Markdown and prose-heavy XML. See
+         [[prose]]."""]]
+
+  [child id=g-pure-update title='pure-functional update'
+    [body
+      """An update that returns a new value without mutating the
+         input. CX's `[?modify]` is pure-functional; unchanged
+         branches are shared with the input via the standard
+         persistent-tree technique. See [[pure-updates]]."""]]
+
+  [child id=g-quotes title='quotes (single / double / triple)'
+    [body
+      """Three string forms: single-quoted `'…'` (escapes
+         supported), double-quoted `"…"` (same), and triple-quoted
+         `'''…'''` or `"""…"""` (multiline, whitespace-preserving,
+         no escape needed for the other quote characters). See
+         [[strings]]."""]]
+
+  [child id=g-regex title='regex'
+    [body
+      """The regular-expression dialect used by CX builtins. CX
+         ships an RE2-equivalent engine; the dialect is documented
+         in [`spec/regex.md`](../../spec/regex.md). See
+         [[string-builtins]]."""]]
+
+  [child id=g-reserved-token title='reserved token'
+    [body
+      """An identifier the parser refuses to accept as an element
+         or attribute name: `true`, `false`, `null`, and the
+         directive head tokens. See [[reserved-tokens]]."""]]
+
+  [child id=g-resilience-directive title='resilience directive'
+    [body
+      """One of the six failure-handling wrappers (`[?retry]`,
+         `[?timeout]`, `[?circuit-breaker]`, `[?fallback]`,
+         `[?rate-limit]`, `[?bulkhead]`). See [[resilience]]."""]]
+
+  [child id=g-schema title='schema'
+    [body
+      """A CX document (`.cxs`) describing the allowed shape of
+         another CX document. The schema language is documented
+         in [`spec/schema.md`](../../spec/schema.md). See
+         [[schema]]."""]]
+
+  [child id=g-scope title='scope'
+    [body
+      """The lexical region in which a binding is visible.
+         `[?let]` introduces a scope; namespace prefix
+         declarations have a scope; anchors are document-scoped.
+         See [[let]] and [[namespaces]]."""]]
+
+  [child id=g-sequence title='sequence'
+    [body
+      """A flat, ordered collection of values. Written `(a, b, c)`.
+         Distinct from an array — a sequence is not a container;
+         nesting a sequence inside a sequence flattens. See
+         [[seq]] and [[seq-flat]]."""]]
+
+  [child id=g-sequence-flat title='sequence-flat principle'
+    [body
+      """CX sequences never nest. `(1, (2, 3), 4)` is identical to
+         `(1, 2, 3, 4)`. Arrays and maps preserve nesting; sequences
+         do not. See [[seq-flat]]."""]]
+
+  [child id=g-sequence-literal title='sequence literal'
+    [body
+      """The `(a, b, c)` form. Identical to an evaluator-returned
+         sequence. See [[seq]]."""]]
+
+  [child id=g-sigil title='sigil'
+    [body
+      """A leading punctuation character that prefixes an
+         identifier and changes its interpretation: `&` (anchor),
+         `*` (merge), `#` (id), `:` (type tag), `+`/`-` (bool),
+         `$` (binding variable), `?` (directive). See [[sigils]]."""]]
+
+  [child id=g-signed-canonical title='signed canonical'
+    [body
+      """A canonical CX document accompanied by an external
+         signature over its strict canonical bytes. Not part of
+         the core spec; built atop the hash. See [[hash-use-cases]]."""]]
+
+  [child id=g-sized-type-tag title='sized type tag'
+    [body
+      """An explicit numeric type prefix: `:i8`, `:i16`, `:i32`,
+         `:i64`, `:u8`, `:u16`, `:u32`, `:u64`, `:f32`, `:f64`.
+         Required when the host binding needs a specific width.
+         See [[sized-types]]."""]]
+
+  [child id=g-slot title='slot (positional, labeled)'
+    [body
+      """A position inside a directive's argument list. Positional
+         slots come first; labeled slots use the `:label value`
+         form (per `spec/grammar.ebnf [127e]`). Slot syntax is
+         exclusive to directives — on data elements use
+         `name=value` attributes. See [[directives]]."""]]
+
+  [child id=g-strict-canonical title='strict canonical'
+    [body
+      """The form produced by `cx canon` — strips comments,
+         re-sorts attributes lexicographically, normalises quote
+         choice, normalises whitespace, NFC-normalises identifiers
+         and strings. Hash input. See [[canon-lossless-strict]]."""]]
+
+  [child id=g-streaming title='streaming'
+    [body
+      """Processing a document without loading it entirely into
+         memory. CX's streaming evaluator handles documents up to
+         the host's filesystem size; gate 15 in the v0.8.0
+         readiness rubric measures the throughput floor. See
+         [[streaming]]."""]]
+
+  [child id=g-structural-sharing title='structural sharing'
+    [body
+      """The persistent-tree technique that lets `[?modify]`
+         return a new document in O(log n) by reusing the
+         unchanged branches of the input. See [[pure-updates]]."""]]
+
+  [child id=g-table-shape title='table data shape (:table)'
+    [body
+      """A type tag that marks an element as a typed columnar
+         table — homogeneous rows with a declared header. The
+         in-memory bridge to CXCol and Parquet. See [[table-shape]]."""]]
+
+  [child id=g-template title='template'
+    [body
+      """A CX value with embedded code expressions that produces
+         a derived value when evaluated. In CX there is no
+         "template language" — code and data share one shape, so
+         every CX value is potentially a template. See [[code]]."""]]
+
+  [child id=g-threading-register title='threading register'
+    [body
+      """The combined operation of `cx_thread_register` (on
+         thread start) and `cx_thread_unregister` (on thread
+         exit), required for host-spawned threads that call libcx
+         directly. Bindings auto-wrap. See [[ffi-thread-register]]."""]]
+
+  [child id=g-time title='time'
+    [body
+      """The wall-clock-time-of-day scalar kind. Not a separate
+         scalar in CXDM — represented as a datetime with the
+         epoch-1970 date placeholder when carried at the wire
+         level. See [[datetime-detail]]."""]]
+
+  [child id=g-timezone title='time zone'
+    [body
+      """The offset-from-UTC component of a datetime scalar.
+         Required on the wire; absence is parsed as UTC. See
+         [[datetime-detail]]."""]]
+
+  [child id=g-type-tag title='type tag'
+    [body
+      """An explicit `:name` prefix on a scalar that forces a
+         specific kind: `:int`, `:str`, `:date`, `:bytes`, `:u32`,
+         etc. See [[bodies]] and [[sized-types]]."""]]
+
+  [child id=g-utf8 title='UTF-8'
+    [body
+      """The required source encoding for every CX file. The
+         parser rejects non-UTF-8 input; the BOM is consumed
+         silently if present. See [[encoding]]."""]]
+
+  [child id=g-value title='value'
+    [body
+      """Any CX shape — a scalar, an element, a sequence, an
+         array, or a map. The eval pipeline produces values; the
+         data model is a value model. See [[overview]]."""]]
+
+  [child id=g-value-comparison title='value comparison'
+    [body
+      """The CXPath comparison operators (`=`, `<`, `<=`, etc.)
+         applied to scalar values. Numerically aware
+         (`@n=42` matches both int and float 42); string
+         comparison is codepoint-wise. See [[cxpath]]."""]]
+
+  [child id=g-wasm title='wasm'
+    [body
+      """The WebAssembly build of libcx used by the playground
+         and any browser-hosted CX tooling. Exposes a subset of
+         the C ABI plus `_cx_code_diagram` and friends. Two
+         artifacts at v0.8.0: `libcx-async.js` (Asyncify, no
+         pthreads — works under file:// and any HTTP host),
+         `libcx-pthreads.{js,wasm}` (real OS threads via
+         SharedArrayBuffer — requires HTTP with COOP/COEP
+         headers). The playground auto-selects based on
+         `crossOriginIsolated`. See [[g-playground]] and
+         [[wasm-story]]."""]]
+
+  [child id=g-playground title='playground'
+    [body
+      """A constrained demonstration surface for CX inside the
+         browser, not the performance target. Three delivery
+         modes: GitHub Pages static (HTTPS), local clone file://
+         (double-click `playground.html`), and `make guide-http`
+         (V veb server with cross-origin isolation enabled). Only
+         the third mode runs `par=true` examples on real OS threads;
+         the first two run sequentially under the same surface.
+         Production CX (CLI, language bindings, libcx as shared
+         library) has no browser-environment overhead. See
+         [[wasm-story]] for the full framing."""]]
+
+  [child id=g-whitespace-preservation title='whitespace preservation'
+    [body
+      """The `xml:space='preserve'` attribute scopes the
+         preservation of internal runs of whitespace inside an
+         element body. The default is collapse. See
+         [[xml-space]]."""]]
+
+  [child id=g-xml-space title='xml:space'
+    [body
+      """The reserved attribute that controls whitespace
+         collapsing in an element body. Values `default` and
+         `preserve`. See [[xml-space]]."""]]
+
+  [child id=g-xmlns title='xmlns'
+    [body
+      """The reserved attribute family that declares namespace
+         prefix bindings: `xmlns:svg='http://www.w3.org/2000/svg'`
+         binds `svg` for the element's scope. See
+         [[namespaces]]."""]]]

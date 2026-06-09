@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Directive reference — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a class="active" href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="directives">
+  <h1>Directive reference</h1>
+  <p class="lede">Every directive in the closed v0.8.0 registry (<code>spec/core/code.md</code> §4.1) — the bracketed <code>[?…]</code> forms that drive pattern dispatch, comprehensions, binding, iterators, resilience, services, concurrency, and async. Each entry is generated from the co-located reference source and, where the conformance corpus backs it, carries a runnable example pinned verbatim to a green fixture.</p>
+  
+    <section id="dir-match" class="fn">
+      <h3>
+        <code>?match</code>
+      </h3>
+      <p class="fn-sig"><code>[?match VALUE [case PAT BODY]… [else …]] -> result</code>  —  Structural pattern dispatch: test a value against ordered [case] arms (literal, wildcard `_`, type guard, binding pattern, [when] guard) and evaluate the first match; single-arm and multi-arm forms.</p>
+      <p class="note">Core — pattern dispatch (single-arm + multi-arm)  ·  §5.2, §8.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?match 200 [case 200 :match] [else :miss]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>:match</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-modify" class="fn">
+      <h3>
+        <code>?modify</code>
+      </h3>
+      <p class="fn-sig"><code>[?modify TREE PATH ACTION…] -> tree</code>  —  Pure-functional update: walk a CXPath selection in a tree and apply actions ([set]/[delete]/[rename]/[set-attr]/[append]/[insert-before]…), returning a new tree; a path that matches nothing returns the tree unchanged.</p>
+      <p class="note">Core — pure-functional update  ·  §8.10</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?modify $doc //missing [delete]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[users [user [name 'Alice']]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-with-open" class="fn">
+      <h3>
+        <code>?with-open</code>
+      </h3>
+      <p class="fn-sig"><code>[?with-open RESOURCE $name BODY] -> result</code>  —  Scoped-resource RAII: bind a closeable resource, evaluate BODY, and close the resource deterministically when the block exits (success or error).</p>
+      <p class="note">Core — scoped-resource RAII  ·  §8.10.7</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?with-open [?async [+ 21 21]] $f [?await $f]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-with-scope" class="fn">
+      <h3>
+        <code>?with-scope</code>
+      </h3>
+      <p class="fn-sig"><code>[?with-scope {BINDINGS} EXPR…] -> last</code>  —  Dynamic-scoped context: install a map of dynamic bindings for the duration of the block; the value is the last expression.</p>
+      <p class="note">Core — dynamic-scoped context  ·  §8.10.8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?with-scope {a: 1} 100 200]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>200</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-str" class="fn">
+      <h3>
+        <code>?str</code>
+      </h3>
+      <p class="fn-sig"><code>[?str "TEMPLATE"] -> string</code>  —  Compile-time string interpolation: expand `{expr}` holes in a template; `{{` / `}}` are literal braces.</p>
+      <p class="note">Core — compile-time string interpolation  ·  §8.12</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?str "100{{pct}}"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'100{pct}'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-element" class="fn">
+      <h3>
+        <code>?element</code>
+      </h3>
+      <p class="fn-sig"><code>[?element NAME-EXPR CHILD…] -> element | ()</code>  —  Computed-name element construction: build an element whose name is computed at runtime; an empty `()` name yields absence.</p>
+      <p class="note">Core — computed-name element construction  ·  §6.4.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?element () "x"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>()</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-attr" class="fn">
+      <h3>
+        <code>?attr</code>
+      </h3>
+      <p class="fn-sig"><code>[?attr NAME-EXPR VALUE-EXPR] (attr position) -> attribute | omitted</code>  —  Computed-name attribute, valid only in attribute position; an empty `()` name omits the attribute.</p>
+      <p class="note">Core — computed-name attribute (attr position only)  ·  §6.4.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?element "box" [?attr () "red"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[box]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-entry" class="fn">
+      <h3>
+        <code>?entry</code>
+      </h3>
+      <p class="fn-sig"><code>{[?entry KEY-EXPR VALUE-EXPR]} -> map entry</code>  —  Computed-key map entry, valid only inside a `{…}` map literal.</p>
+      <p class="note">Core — computed-key map entry (inside `{…}` only)  ·  §6.4.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">{[?entry "k" 1]}</code>
+          </pre>
+          <pre class="sample-output">
+            <code>{k: 1}</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-name" class="fn">
+      <h3>
+        <code>?name</code>
+      </h3>
+      <p class="fn-sig"><code>[rename [?name NAME-EXPR]] / [set-attr [?name …] …]</code>  —  Shared computed-name sub-form used inside [rename] and [set-attr] actions to supply a runtime-computed name.</p>
+      <p class="note">Core — shared name sub-form (`set-attr`/`rename`)  ·  §6.4.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?modify $doc //user [rename [?name "person"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[users [person name=old]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-quote" class="fn">
+      <h3>
+        <code>?quote</code>
+      </h3>
+      <p class="fn-sig"><code>[?quote FORM] -> inert tree</code>  —  Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` becomes `[cx:var 'x']` rather than dereferencing.</p>
+      <p class="note">Core — quasiquote (eager; two-color hygiene)  ·  §6.4.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?quote [a $x]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[a [cx:var 'x']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-unquote" class="fn">
+      <h3>
+        <code>?unquote</code>
+      </h3>
+      <p class="fn-sig"><code>[?quote […[?unquote EXPR]…]] -> spliced value</code>  —  Quasiquote hole: evaluate EXPR and graft its single value into the surrounding quoted tree; `()` removes the hole.</p>
+      <p class="note">Core — quasiquote hole (single value)  ·  §6.4.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?quote [box [?unquote ()]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[box]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-splice" class="fn">
+      <h3>
+        <code>?splice</code>
+      </h3>
+      <p class="fn-sig"><code>[?quote […[?splice EXPR]…]] -> grafted sequence</code>  —  Quasiquote hole: evaluate EXPR and graft its sequence elements in place; `()` grafts nothing.</p>
+      <p class="note">Core — quasiquote hole (sequence graft)  ·  §6.4.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?quote [box [?splice ()]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[box]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-eval" class="fn">
+      <h3>
+        <code>?eval</code>
+      </h3>
+      <p class="fn-sig"><code>[?eval TREE [context {…}] [opts {…}]] -> value</code>  —  Tree-eval: evaluate a CX tree as a program in the `cx:eval` sandbox; requires the `eval` capability.</p>
+      <p class="note">Core — tree-eval (reuses `cx:eval` sandbox)  ·  §6.4.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?eval 42]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-for" class="fn">
+      <h3>
+        <code>?for</code>
+      </h3>
+      <p class="fn-sig"><code>[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence</code>  —  For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence.</p>
+      <p class="note">Core — for-comprehension (Sequence outer; D15)  ·  §7</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?for [in $x [$range 1 5]] [yield $x]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1
+2
+3
+4
+5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-for-array" class="fn">
+      <h3>
+        <code>?for-array</code>
+      </h3>
+      <p class="fn-sig"><code>[?for-array [in $x SRC]… [yield-array EXPR]] -> array</code>  —  For-comprehension with an Array outer (D15): like [?for] but materialises an Array via [yield-array].</p>
+      <p class="note">Core — for-comprehension (Array outer; D15)  ·  §7</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?for-array [in $x [$range 1 3]] [in $y [$range 1 2]] [yield-array [$x, $y]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[[1, 1], [1, 2], [2, 1], [2, 2], [3, 1], [3, 2]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-for-map" class="fn">
+      <h3>
+        <code>?for-map</code>
+      </h3>
+      <p class="fn-sig"><code>[?for-map [in $x SRC]… [yield-map K V]] -> map</code>  —  For-comprehension with a Map outer (D15): emit key/value pairs via [yield-map] into a Map.</p>
+      <p class="note">Core — for-comprehension (Map outer; D15)  ·  §7</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?for-map [in $x [$range 1 3]] [yield-map $x [* $x $x]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>{1: 1, 2: 4, 3: 9}</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-let" class="fn">
+      <h3>
+        <code>?let</code>
+      </h3>
+      <p class="fn-sig"><code>[?let [= $x EXPR]… BODY] -> result</code>  —  Local binding: bind one or more names in a lexical scope and evaluate the body; bindings may nest.</p>
+      <p class="note">Core — local binding  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $a 10] [?let [= $b 32] [+ $a $b]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-fn" class="fn">
+      <h3>
+        <code>?fn</code>
+      </h3>
+      <p class="fn-sig"><code>[?fn ($a $b…) BODY] / [?fn $x BODY] -> function</code>  —  Function literal (closure): a first-class anonymous function; single-parameter form omits the parens.</p>
+      <p class="note">Core — function literal  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $double [?fn ($x) [* $x 2]]] [$double 21]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-def" class="fn">
+      <h3>
+        <code>?def</code>
+      </h3>
+      <p class="fn-sig"><code>[?def NAME [scope=…] [pure|impure]? (PARAMS) BODY]</code>  —  Module-level function definition; `scope=public` exports it, purity is declared, and the name is called as `[$NAME …]`.</p>
+      <p class="note">Module — module-level function  ·  §12.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?def add ($a $b) [+ $a $b]]
+[$add 2 3]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-lib" class="fn">
+      <h3>
+        <code>?lib</code>
+      </h3>
+      <p class="fn-sig"><code>[?lib 'cx-stdlib/MODULE' [as=ALIAS]?]</code>  —  Module import: bind a module (bundled or local) so its public functions are callable as `[$module:fn …]`.</p>
+      <p class="note">Module — module import  ·  §12.1</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/math']
+[$math:abs -3]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-const" class="fn">
+      <h3>
+        <code>?const</code>
+      </h3>
+      <p class="fn-sig"><code>[?const NAME EXPR]</code>  —  Module-level constant; resolution is load-order-independent (constants may forward-reference each other).</p>
+      <p class="note">Module — module-level constant  ·  §12.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?const B [* A 10]]
+[?const A 5]
+B</code>
+          </pre>
+          <pre class="sample-output">
+            <code>50</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-if" class="fn">
+      <h3>
+        <code>?if</code>
+      </h3>
+      <p class="fn-sig"><code>[?if COND [then …] [else …]] -> branch</code>  —  Conditional: evaluate COND for its effective boolean value and take the [then] or [else] branch.</p>
+      <p class="note">Core — conditional  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?if [= :ok :ok] [then :match] [else :no-match]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>:match</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-else" class="fn">
+      <h3>
+        <code>?else</code>
+      </h3>
+      <p class="fn-sig"><code>[?else EXPR DEFAULT] -> value-or-default</code>  —  Value-or-default coalesce (getOrElse): yield EXPR unless it is an error or absence `()`, in which case yield DEFAULT.</p>
+      <p class="note">Core — value-or-default coalesce (`getOrElse`; on err + absence)  ·  §8.13</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?else () 'd']</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'d'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-pipe" class="fn">
+      <h3>
+        <code>?pipe</code>
+      </h3>
+      <p class="fn-sig"><code>[?pipe VALUE STAGE…] -> result</code>  —  Pipeline (prefix-only): thread a value through bare stages left to right; absence short-circuits, `[tap]` observes without altering flow.</p>
+      <p class="note">Core — pipeline (prefix-only; bare stages; `[tap]`)  ·  §6.4, §8.9</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?pipe () [$count]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-map" class="fn">
+      <h3>
+        <code>?map</code>
+      </h3>
+      <p class="fn-sig"><code>[?map SRC [using FN] [par]? [ordered]?] -> sequence</code>  —  Map: apply a function over a source, lazily by default; `[par]` runs in parallel and `[ordered]` preserves source order.</p>
+      <p class="note">Core — map (sequential or `[par]`)  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?map (1, 2, 3, 4) [using [?fn $x [* $x 10]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(10, 20, 30, 40)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-reduce" class="fn">
+      <h3>
+        <code>?reduce</code>
+      </h3>
+      <p class="fn-sig"><code>[?reduce SRC [using FN] [init V]] -> value</code>  —  Reduce / left fold: combine the elements of a source with an accumulator function and an initial value.</p>
+      <p class="note">Core — reduce / fold (sequential or `[par]`)  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?reduce (1, 2, 3, 4) [using [?fn ($a $b) [- $a $b]]] [init 10]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-filter" class="fn">
+      <h3>
+        <code>?filter</code>
+      </h3>
+      <p class="fn-sig"><code>[?filter SRC [using PRED]] -> iterator</code>  —  Iterator combinator: keep only the elements for which the predicate holds.</p>
+      <p class="note">Iterator stdlib — filter by predicate  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?filter (1, 2, 3, 4, 5, 6) [using [?fn $x [$odd $x]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 3, 5)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-take" class="fn">
+      <h3>
+        <code>?take</code>
+      </h3>
+      <p class="fn-sig"><code>[?take N SRC] -> iterator</code>  —  Iterator combinator: the first N elements of a source.</p>
+      <p class="note">Iterator stdlib — prefix of `count` items  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?take 3 [?map (1, 2, 3, 4, 5) [using [?fn $x [* $x 2]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(2, 4, 6)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-drop" class="fn">
+      <h3>
+        <code>?drop</code>
+      </h3>
+      <p class="fn-sig"><code>[?drop N SRC] -> iterator</code>  —  Iterator combinator: the source with its first N elements skipped.</p>
+      <p class="note">Iterator stdlib — suffix after `count` items  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?drop 2 (10, 20, 30, 40, 50)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(30, 40, 50)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-zip" class="fn">
+      <h3>
+        <code>?zip</code>
+      </h3>
+      <p class="fn-sig"><code>[?zip SRC-A SRC-B…] -> iterator of tuples</code>  —  Iterator combinator: per-position tuples across two or more sources, stopping at the shortest.</p>
+      <p class="note">Iterator stdlib — per-position tuples  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?zip (1, 2, 3) ("a", "b", "c")]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>((1, 'a'), (2, 'b'), (3, 'c'))</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-enumerate" class="fn">
+      <h3>
+        <code>?enumerate</code>
+      </h3>
+      <p class="fn-sig"><code>[?enumerate SRC] -> iterator of (i, item)</code>  —  Iterator combinator: pair each element with its zero-based index.</p>
+      <p class="note">Iterator stdlib — emit `(i, item)` pairs  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?enumerate ("a", "b", "c")]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>((0, 'a'), (1, 'b'), (2, 'c'))</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-chunks" class="fn">
+      <h3>
+        <code>?chunks</code>
+      </h3>
+      <p class="fn-sig"><code>[?chunks N SRC] -> iterator of groups</code>  —  Iterator combinator: group consecutive elements into runs of N (the final group may be short).</p>
+      <p class="note">Iterator stdlib — group by `count`  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?chunks 2 (1, 2, 3, 4, 5)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>((1, 2), (3, 4), (5))</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-concat" class="fn">
+      <h3>
+        <code>?concat</code>
+      </h3>
+      <p class="fn-sig"><code>[?concat SRC…] -> iterator</code>  —  Iterator combinator: flatten one level across the given sources, concatenating them in order.</p>
+      <p class="note">Iterator stdlib — flatten one level across sources  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?concat (1, 2) (3, 4)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 2, 3, 4)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-chain" class="fn">
+      <h3>
+        <code>?chain</code>
+      </h3>
+      <p class="fn-sig"><code>[?chain SRC…] -> iterator</code>  —  Iterator combinator: alias of [?concat] — concatenate sources end to end.</p>
+      <p class="note">Iterator stdlib — alias of `[?concat]`  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?chain (1, 2) (3, 4) (5, 6)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 2, 3, 4, 5, 6)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-cycle" class="fn">
+      <h3>
+        <code>?cycle</code>
+      </h3>
+      <p class="fn-sig"><code>[?cycle SRC max=N] -> iterator</code>  —  Iterator combinator: repeat a source cyclically, bounded by `max`.</p>
+      <p class="note">Iterator stdlib — bounded repeat  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?cycle (1, 2, 3) max=7]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 2, 3, 1, 2, 3, 1)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-scan" class="fn">
+      <h3>
+        <code>?scan</code>
+      </h3>
+      <p class="fn-sig"><code>[?scan SRC [using FN] [init V]] -> iterator</code>  —  Iterator combinator: emit the running-fold prefixes (every intermediate accumulator), starting from the initial value.</p>
+      <p class="note">Iterator stdlib — running-fold prefixes  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?scan (1, 2, 3, 4) [using [?fn ($a $b) [+ $a $b]]] [init 0]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(0, 1, 3, 6, 10)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-flatten" class="fn">
+      <h3>
+        <code>?flatten</code>
+      </h3>
+      <p class="fn-sig"><code>[?flatten SRC] -> iterator</code>  —  Iterator combinator: flatten one level of nesting in a source of sequences.</p>
+      <p class="note">Iterator stdlib — flatten one level of nesting  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?flatten ((1, 2), (3, 4), (5))]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 2, 3, 4, 5)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-partition" class="fn">
+      <h3>
+        <code>?partition</code>
+      </h3>
+      <p class="fn-sig"><code>[?partition SRC [using PRED]] -> (matches, non-matches)</code>  —  Iterator combinator: split a source into the elements that satisfy the predicate and those that do not.</p>
+      <p class="note">Iterator stdlib — split by predicate  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?partition (1, 2, 3, 4, 5, 6) [using [?fn $x [$odd $x]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>((1, 3, 5), (2, 4, 6))</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-group-by" class="fn">
+      <h3>
+        <code>?group-by</code>
+      </h3>
+      <p class="fn-sig"><code>[?group-by SRC [using KEY-FN]] -> grouped pairs</code>  —  Iterator combinator: group elements by a computed key, preserving first-seen key order.</p>
+      <p class="note">Iterator stdlib — group by key  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?group-by (1, 2, 3, 4, 5, 6) [using [?fn $x [$mod $x 2]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(('1', (1, 3, 5)), ('0', (2, 4, 6)))</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-to-sequence" class="fn">
+      <h3>
+        <code>?to-sequence</code>
+      </h3>
+      <p class="fn-sig"><code>[?to-sequence ITER] -> sequence</code>  —  Force-materialise an iterator into a Sequence.</p>
+      <p class="note">Force-materialise — Iterator → Sequence  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?to-sequence [?map (1, 2, 3, 4) [using [?fn $x [* $x $x]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 4, 9, 16)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-to-array" class="fn">
+      <h3>
+        <code>?to-array</code>
+      </h3>
+      <p class="fn-sig"><code>[?to-array ITER] -> array</code>  —  Force-materialise an iterator into an Array.</p>
+      <p class="note">Force-materialise — Iterator → Array  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?to-array [?map (1, 2, 3) [using [?fn $i [* $i $i]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[1, 4, 9]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-to-map" class="fn">
+      <h3>
+        <code>?to-map</code>
+      </h3>
+      <p class="fn-sig"><code>[?to-map ITER-OF-PAIRS] -> map</code>  —  Force-materialise an iterator of (key, value) pairs into a Map.</p>
+      <p class="note">Force-materialise — Iterator-of-pairs → Map  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?to-map (("a", 1), ("b", 2), ("c", 3))]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>{a: 1, b: 2, c: 3}</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-view" class="fn">
+      <h3>
+        <code>?view</code>
+      </h3>
+      <p class="fn-sig"><code>[?view EXPR] -> view</code>  —  View opt-in: request a zero-copy slice view over a single expression (e.g. `$xs[a:b]`).</p>
+      <p class="note">View opt-in — zero-copy slice intent on one expr  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $xs (10, 20, 30, 40, 50)] [?view $xs[2:4]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(20, 30, 40)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-views" class="fn">
+      <h3>
+        <code>?views</code>
+      </h3>
+      <p class="fn-sig"><code>[?views EXPR…] -> result</code>  —  View opt-in: flip on view semantics for a scoped block of expressions.</p>
+      <p class="note">View opt-in — scoped view flip over a block  ·  §8</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $xs (10, 20, 30, 40, 50)] [?views $xs[1:2]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(10, 20)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-retry" class="fn">
+      <h3>
+        <code>?retry</code>
+      </h3>
+      <p class="fn-sig"><code>[?retry max=N [delay=…] [backoff=…] BODY] -> result</code>  —  Resilience: re-run BODY up to `max` attempts on failure, with optional delay/backoff/jitter.</p>
+      <p class="note">Resilience  ·  §10.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?retry max=3 42]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-timeout" class="fn">
+      <h3>
+        <code>?timeout</code>
+      </h3>
+      <p class="fn-sig"><code>[?timeout DURATION BODY] -> result</code>  —  Resilience: bound BODY by a wall-clock duration; exceeding it yields a timeout error.</p>
+      <p class="note">Resilience  ·  §10.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?timeout 1s fast]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>fast</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-circuit-breaker" class="fn">
+      <h3>
+        <code>?circuit-breaker</code>
+      </h3>
+      <p class="fn-sig"><code>[?circuit-breaker threshold=… window=… reset=… min-samples=… BODY]</code>  —  Resilience: trip open when the failure rate over a window exceeds the threshold, short-circuiting until the reset interval elapses.</p>
+      <p class="note">Resilience  ·  §10.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?circuit-breaker threshold=0.5 window=60s reset=30s min-samples=10 7]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-fallback" class="fn">
+      <h3>
+        <code>?fallback</code>
+      </h3>
+      <p class="fn-sig"><code>[?fallback PRIMARY [recover-with ALT]] -> result</code>  —  Resilience: evaluate PRIMARY and, on failure, recover with the [recover-with] branch (which can bind `$err`).</p>
+      <p class="note">Resilience  ·  §10.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?fallback [body primary] [recover-with secondary]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>primary</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-rate-limit" class="fn">
+      <h3>
+        <code>?rate-limit</code>
+      </h3>
+      <p class="fn-sig"><code>[?rate-limit max=N per=DURATION [name=…] BODY] -> result</code>  —  Resilience: admit at most `max` evaluations per window; over-limit calls yield a rate-limit error.</p>
+      <p class="note">Resilience  ·  §10.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?for [in $i (1, 2, 3)]
+      [yield [?rate-limit max=5 per=1s name="rl-001" $i]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1
+2
+3</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-bulkhead" class="fn">
+      <h3>
+        <code>?bulkhead</code>
+      </h3>
+      <p class="fn-sig"><code>[?bulkhead max-concurrent=N queue=Q BODY] -> result</code>  —  Resilience: cap concurrent executions at `max-concurrent` with a bounded queue; saturation yields a bulkhead error.</p>
+      <p class="note">Resilience  ·  §10.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?bulkhead max-concurrent=4 queue=0 ran]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>ran</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-http-service" class="fn">
+      <h3>
+        <code>?http-service</code>
+      </h3>
+      <p class="fn-sig"><code>[?http-service on=… port=… name=… [resource …]…] -> service-handle</code>  —  Services: stand up an HTTP service from declarative [resource] routes; evaluates to a service handle.</p>
+      <p class="note">Services  ·  §10.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
+                [resource [get "/quick"]
+                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[terminated name=svc-020 reason=graceful]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-service-handle" class="fn">
+      <h3>
+        <code>?service-handle</code>
+      </h3>
+      <p class="fn-sig"><code>[?service-handle name=NAME] -> handle</code>  —  Services: look up a running service by name to obtain its handle.</p>
+      <p class="note">Services  ·  §10.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $_ [?http-service on=http port=0 name="svc-021"
+              [resource [get "/"] [response status=200 body="ok"]]]] [?let [= $h [?service-handle name="svc-021"]] [?let [= $_ [?stop $h]] [terminated name="svc-021" reason="graceful"]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[terminated name=svc-021 reason=graceful]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-http-client" class="fn">
+      <h3>
+        <code>?http-client</code>
+      </h3>
+      <p class="fn-sig"><code>[?http-client target=URL] -> client</code>  —  Clients: construct an HTTP client bound to a target; pipe request verbs through it.</p>
+      <p class="note">Clients  ·  §10.3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $c [?http-client target="http://localhost:1"]] [?pipe $c [$get _ "/"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[err code=cx-err:CXER0180 message='connection refused']</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-worker" class="fn">
+      <h3>
+        <code>?worker</code>
+      </h3>
+      <p class="fn-sig"><code>[?worker name=NAME [body …]] -> worker-handle</code>  —  Concurrency: spawn a named worker evaluating a body; evaluates to a worker handle.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $w [?worker name="w1" [body 42]]] [?wait-for worker=$w]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-worker-handle" class="fn">
+      <h3>
+        <code>?worker-handle</code>
+      </h3>
+      <p class="fn-sig"><code>[?worker-handle name=NAME] -> handle</code>  —  Concurrency: look up a running worker by name to obtain its handle.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $_ [?worker name="w4" [body lookupable]]] [?let [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>lookupable</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-channel" class="fn">
+      <h3>
+        <code>?channel</code>
+      </h3>
+      <p class="fn-sig"><code>[?channel name=NAME buffer=N] -> channel</code>  —  Concurrency: create a named channel with a bounded buffer.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'hello'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-send" class="fn">
+      <h3>
+        <code>?send</code>
+      </h3>
+      <p class="fn-sig"><code>[?send VALUE to=CHANNEL] -> ()</code>  —  Concurrency: send a value into a channel, blocking when the buffer is full.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'hello'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-receive" class="fn">
+      <h3>
+        <code>?receive</code>
+      </h3>
+      <p class="fn-sig"><code>[?receive from=CHANNEL] -> value</code>  —  Concurrency: receive the next value from a channel, blocking when empty.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'hello'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-try-send" class="fn">
+      <h3>
+        <code>?try-send</code>
+      </h3>
+      <p class="fn-sig"><code>[?try-send VALUE to=CHANNEL timeout=…] -> () | err</code>  —  Concurrency: send with a timeout; yields a send-timeout error instead of blocking indefinitely.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $ch [?channel name="c5" buffer=1]] [?let [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[err code=cx-err:CXER0201 message='send timed out']</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-try-receive" class="fn">
+      <h3>
+        <code>?try-receive</code>
+      </h3>
+      <p class="fn-sig"><code>[?try-receive from=CHANNEL timeout=…] -> value | err</code>  —  Concurrency: receive with a timeout; yields a receive-timeout error instead of blocking indefinitely.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $ch [?channel name="c6" buffer=1]] [?try-receive from=$ch timeout=50ms]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[err code=cx-err:CXER0202 message='receive timed out']</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-close" class="fn">
+      <h3>
+        <code>?close</code>
+      </h3>
+      <p class="fn-sig"><code>[?close CHANNEL] -> ()</code>  —  Concurrency: close a channel; drained receives on a closed channel yield a channel-closed error.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $ch [?channel name="c4" buffer=2]] [?let [= $_ [?send "a" to=$ch]] [?let [= $_ [?close $ch]] [?let [= $first [?receive from=$ch]] [?let [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-select" class="fn">
+      <h3>
+        <code>?select</code>
+      </h3>
+      <p class="fn-sig"><code>[?select [case [from CH $m] …]… [case [timeout D] …]?] -> arm</code>  —  Concurrency: wait on multiple channel operations and run the arm of the first that is ready; an optional [timeout] arm bounds the wait.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $a [?channel name="sa" buffer=1]] [?let [= $b [?channel name="sb" buffer=1]] [?let [= $_ [?send "from-a" to=$a]] [?select
+                 [case [from $a $msg] [picked ch="a" value=$msg]]
+                 [case [from $b $msg] [picked ch="b" value=$msg]]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[picked ch=a value=from-a]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-stop" class="fn">
+      <h3>
+        <code>?stop</code>
+      </h3>
+      <p class="fn-sig"><code>[?stop HANDLE] -> ()</code>  —  Lifecycle: request graceful shutdown of a service or worker.</p>
+      <p class="note">Lifecycle  ·  §10.3, §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
+                [resource [get "/quick"]
+                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[terminated name=svc-020 reason=graceful]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-wait-for" class="fn">
+      <h3>
+        <code>?wait-for</code>
+      </h3>
+      <p class="fn-sig"><code>[?wait-for worker=H | service=H] -> result</code>  —  Lifecycle: block until a worker or service completes/terminates and yield its result.</p>
+      <p class="note">Lifecycle  ·  §10.3, §10.4</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $w [?worker name="w1" [body 42]]] [?wait-for worker=$w]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-async" class="fn">
+      <h3>
+        <code>?async</code>
+      </h3>
+      <p class="fn-sig"><code>[?async EXPR] -> future</code>  —  Async: evaluate EXPR concurrently, returning a future.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $f [?async 42]] [?await $f]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-await" class="fn">
+      <h3>
+        <code>?await</code>
+      </h3>
+      <p class="fn-sig"><code>[?await FUTURE] -> value</code>  —  Async: block until a future is done and yield its value (or its error).</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $f [?async 42]] [?await $f]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-await-all" class="fn">
+      <h3>
+        <code>?await-all</code>
+      </h3>
+      <p class="fn-sig"><code>[?await-all (F…)] -> sequence</code>  —  Async: await every future and yield their values as a sequence; any non-done future surfaces an error.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $a [?async 1]] [?let [= $b [?async 2]] [?let [= $c [?async 3]] [?await-all ($a, $b, $c)]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(1, 2, 3)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-await-any" class="fn">
+      <h3>
+        <code>?await-any</code>
+      </h3>
+      <p class="fn-sig"><code>[?await-any (F…)] -> value</code>  —  Async: yield the first future to succeed, skipping failed ones.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $bad [?async [err code='bad' message='bad']]] [?let [= $good [?async good]] [?await-any ($bad, $good)]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>good</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-await-race" class="fn">
+      <h3>
+        <code>?await-race</code>
+      </h3>
+      <p class="fn-sig"><code>[?await-race (F…)] -> value</code>  —  Async: yield the first future to settle and cancel the losers.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $fast [?async fast]] [?let [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [?let [= $winner [?await-race ($fast, $slow)]] [?let [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-cancel" class="fn">
+      <h3>
+        <code>?cancel</code>
+      </h3>
+      <p class="fn-sig"><code>[?cancel FUTURE] -> ()</code>  —  Async: request cancellation of a future; a cancelled await yields a cancellation error.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $f [?async [?sleep 10s mock]]] [?let [= $_ [?cancel $f]] [?await $f]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[err code=cx-err:CXER0260 message='operation cancelled']</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-check-cancel" class="fn">
+      <h3>
+        <code>?check-cancel</code>
+      </h3>
+      <p class="fn-sig"><code>[?check-cancel] -> ()</code>  —  Async: cooperative cancellation point — surfaces a cancellation error if the surrounding future was cancelled.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $f [?async [?check-cancel]]]
+  [?let [= $_ [?cancel $f]]
+    [?match [?await $f]
+      [case [err @code='cx-err:CXER0260'] [cancelled]]
+      [else [other]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[cancelled]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-sleep" class="fn">
+      <h3>
+        <code>?sleep</code>
+      </h3>
+      <p class="fn-sig"><code>[?sleep DURATION [mock]?] -> [ok]</code>  —  Async: pause for a duration; the `mock` flag uses the deterministic mock clock.</p>
+      <p class="note">Async  ·  §10.5</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?sleep 1ms mock]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[ok]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-with-error-hook" class="fn">
+      <h3>
+        <code>?with-error-hook</code>
+      </h3>
+      <p class="fn-sig"><code>[?with-error-hook [observe [using FN]] BODY] -> result</code>  —  Core: install an observe/enrich/report hook over errors raised in BODY; passes the value through unchanged when there is no error.</p>
+      <p class="note">Core — error observe / enrich / report hook  ·  §9.6</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?with-error-hook [observe [using [?fn ($e) $e]]] 42]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-with-caps" class="fn">
+      <h3>
+        <code>?with-caps</code>
+      </h3>
+      <p class="fn-sig"><code>[?with-caps [deny CAP]… BODY] -> result</code>  —  Core: narrow capabilities for the dynamic extent of BODY (deny-only); BODY runs with the reduced authority.</p>
+      <p class="note">Core — capability narrowing (deny-only)  ·  `security.md` §3</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?def build-and-run scope=public impure [returns any]
+      ($tag::string $attr-name::string $factor::int $payload::int)
+  [?let
+    [= $code [?quote [* [?unquote $payload] [?unquote $factor]]]]
+    [= $result [?with-caps [deny net] [deny subprocess]
+                  [?eval $code [context {}] [opts {max-depth: 4}]]]]
+    [?element $tag [?attr $attr-name "scaled"] [result $result]]]]
+[$build-and-run "report" "kind" 3 14]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[report kind=scaled [result 42]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-secret" class="fn">
+      <h3>
+        <code>?secret</code>
+      </h3>
+      <p class="fn-sig"><code>[?secret VALUE] -> secret</code>  —  Core: mark a value as secret so it renders redacted (`‹redacted›`) at boundaries.</p>
+      <p class="note">Core — mark a value secret (redacted at boundaries)  ·  `cxdm.md` §12</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?secret sk-abc]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'‹redacted›'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-reveal" class="fn">
+      <h3>
+        <code>?reveal</code>
+      </h3>
+      <p class="fn-sig"><code>[?reveal SECRET] -> cleartext</code>  —  Core: declassify a secret to its cleartext; gated by the `secret-reveal` capability.</p>
+      <p class="note">Core — declassify a secret (gated by `secret-reveal`)  ·  `cxdm.md` §12</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?reveal [?secret sk-abc]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>sk-abc</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-meta" class="fn">
+      <h3>
+        <code>?meta</code>
+      </h3>
+      <p class="fn-sig"><code>[?meta {KEY: VALUE…} FORM] -> FORM</code>  —  Core: attach an inert metadata map to the value of FORM; the value is unchanged and only `meta-of` and the XML serializer observe the map.</p>
+      <p class="note">Core — inert metadata annotation on a value  ·  §4.2</p>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

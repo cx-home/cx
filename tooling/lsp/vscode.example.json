@@ -1,5 +1,5 @@
 {
-  "_comment": "VS Code: drop into .vscode/settings.json (or User Settings) and reload window. Requires a generic LSP-client extension such as 'mattn.lsp' or 'fwcd.kotlin' style wrapper, OR the official cx-vscode extension when published (v0.7.x). `cx` must be on PATH.",
+  "_comment": "VS Code: drop into .vscode/settings.json (or User Settings) and reload window. Requires a generic LSP-client extension such as 'mattn.lsp' or 'fwcd.kotlin' style wrapper, OR the official cx-vscode extension when published. `cx` must be on PATH.",
   "languageServerExample": {
     "cx": {
       "command": "cx",
@@ -10,7 +10,6 @@
   },
   "files.associations": {
     "*.cx": "cx",
-    "*.cxs": "cx",
-    "*.cxl": "cx"
+    "*.cxs": "cx"
   }
 }

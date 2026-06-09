@@ -1,0 +1,1510 @@
+[# Section 7 — bindings: C ABI, two-layer model, type mapping,
+   thread safety, lifetime, codegen, quickstarts.
+   Anchored in spec/bindings.md + spec/abi.md + spec/misc/parity-matrix.md.
+   v0.8.0 ships
+   V (native reference), Python, Go, Rust as Tier-1 bindings.
+   File extension .cxd — data-only source. #]
+
+[section id=bindings n=7 title='Bindings'
+
+  [intro
+    """libcx is a V library. Every other supported language is a
+       binding that wraps the compiled C ABI. There are two layers
+       per binding: **Layer 1** (the conformance contract — 16
+       canonical methods, byte-identical semantics across hosts) and
+       **Layer 2** (opt-in host-idiomatic sugar that desugars to
+       Layer 1). v0.8.0 ships V, Python, Go, and Rust at Tier 1; six
+       other bindings (TypeScript, Java, C#, Ruby, Kotlin, Swift) are
+       archived under `lang/_archived/` pending restoration — see
+       [[migration]]. Normative spec:
+       [`spec/bindings.md`](../../spec/bindings.md). C ABI surface:
+       [`spec/abi.md`](../../spec/abi.md). Per-binding gate status:
+       [`spec/misc/parity-matrix.md`](../../spec/misc/parity-matrix.md)."""]
+
+  [child id=c-abi n=7.1 title='The C ABI surface'
+    [intro
+      """libcx exposes a narrow, stable C ABI. Every binding sees the
+         same function set; capability bits (`cx_features()`) tell a
+         binding what optional features the loaded libcx supports.
+         The full ABI surface — including signatures, error channels,
+         and lifetime rules — is documented in
+         [`spec/abi.md`](../../spec/abi.md); this section is the
+         working summary for binding authors."""]
+
+    [body
+      """The ABI surface partitions into four families: **lifecycle**
+         (init / thread registration / feature query), **canonical-form
+         transcoding** (parse / serialize / hash / equals),
+         **evaluation** (the `cx_code_eval*` family — see
+         [[evaluation]]), and **structural accessors** (root,
+         children, attributes, body, kind). Every Layer-1 method
+         on a binding maps to one of these families."""]
+
+    [child id=lifecycle n=7.1.1 title='Lifecycle — init, threads, features'
+      [body
+        """Three functions form the binding-to-libcx handshake. They
+           are mandatory for every Tier-1 binding (gate 28.1) and
+           cheap-and-harmless for every other binding. Per
+           [`spec/abi.md`](../../spec/abi.md) §1.5.5."""]
+      [list
+        [item """**`cx_init()`** — idempotent. Every binding calls
+                it once at module load. Enables host-thread
+                registration in libcx's GC. Returns 0."""]
+        [item """**`cx_thread_register()`** — first call from any
+                host-spawned worker thread, before any other `cx_*`
+                call on that thread. Idempotent (duplicate registration
+                returns 0). Returns 0 on success or duplicate; -1 on
+                real failure."""]
+        [item """**`cx_thread_unregister()`** — when a worker thread
+                exits, the binding unregisters to release the GC's
+                stack-bottom record for that thread. Optional but
+                recommended for long-lived processes with churn in
+                their thread pool."""]
+        [item """**`cx_features()`** — returns a NUL-terminated
+                lowercase hex string encoding the capability bitmask.
+                Bindings call this once at load and again any time a
+                new-since-binding-built code path is taken. See
+                [[cap-bit-negotiation]] for the negotiation
+                protocol."""]
+        [item """**`cx_version()`** / **`cx_abi_version()`** —
+                return the libcx semver and the ABI semver
+                respectively. Bindings include both in their
+                version-report output."""]]
+      [note
+        """The handshake check `cx_features() & (1 << 26)` confirms
+           the loaded libcx advertises the thread-init handshake.
+           Bindings that need the handshake must refuse to load
+           against a libcx that does not set this bit. Bindings
+           that don't need it (V, single-threaded callers) may
+           ignore the bit."""]]
+
+    [child id=transcoding n=7.1.2 title='Canonical-form transcoding'
+      [body
+        """Parse, serialize, hash, and equality form the **identity
+           surface**. Every binding's Layer-1 `Doc.bytes()` / `.hash()`
+           / `.equals()` maps directly to these symbols."""]
+      [list
+        [item """**`cx_parse(bytes, len)`** — parse canonical CX
+                bytes into a Doc handle. Returns NULL on parse
+                failure with the error written to the `err_out`
+                channel."""]
+        [item """**`cx_doc_bytes(doc)`** — serialize a Doc to
+                canonical CX bytes. The returned buffer is
+                length-prefixed; the binding copies it into a host
+                buffer and calls `cx_buffer_release()` on the
+                original."""]
+        [item """**`cx_doc_hash(doc)`** — return the SHA-256 hash
+                of the document's canonical bytes as a 32-byte raw
+                digest. Bindings hex-encode for display."""]
+        [item """**`cx_doc_equals(a, b)`** — return 1 iff the two
+                Docs produce byte-identical canonical bytes,
+                else 0. Implemented internally by hash compare;
+                the host need not re-serialize."""]]
+      [body
+        """All four are **stateless** (§S in the abi.md concurrency
+           classification): concurrent calls on disjoint inputs are
+           safe without external synchronization, and concurrent
+           calls on the *same* input buffer are also safe because
+           the input is never mutated."""]]
+
+    [child id=evaluation n=7.1.3 title='Evaluation — cx_code_eval family'
+      [body
+        """The `cx_code_eval*` family is the single evaluator
+           entry point for code, patterns, paths, and transforms.
+           Callers write the equivalent of selection as a
+           `[?for PATTERN]` program (or a path expression) and
+           pass it through `cx_code_eval`."""]
+      [list
+        [item """**`cx_code_eval(doc, code, target_format)`** —
+                evaluate the code expression against the doc and
+                return the result encoded in the target format
+                (text CX, JSON, ast-bin, etc.). Cap bit 28."""]
+        [item """**`cx_code_eval_with_len(doc, code, code_len, target)`**
+                — explicit length variant for embedded NUL bytes in
+                the code payload (rare; required by some hosts'
+                bytes containers)."""]
+        [item """**`cx_code_eval_streaming(doc, code, target, cb)`**
+                — push results to a callback as they are produced.
+                For large result sets that should not be fully
+                materialized at the ABI boundary."""]]
+      [body
+        """Bindings expose `Doc.eval(code)` as their Layer-1 surface;
+           `Doc.select_all(cxpath)` and `Doc.select(cxpath)` desugar
+           to `Doc.eval('[?for CXPATH-AS-PATTERN]')` in the binding
+           — the binding pays a small parse cost,
+           the C ABI stays narrow. See [[cxpath]] for the path
+           vocabulary."""]]
+
+    [child id=structural n=7.1.4 title='Structural accessors'
+      [body
+        """Node-level access does not require evaluating any code.
+           These six symbols read directly off the parsed AST and
+           are the cheapest path from a Doc handle to host
+           values."""]
+      [list
+        [item """**`cx_doc_root(doc)`** — return a Node handle for
+                the document root."""]
+        [item """**`cx_node_name(node)`** — return the element name
+                as a NUL-terminated UTF-8 string."""]
+        [item """**`cx_node_attr(node, name)`** — return the value
+                of the named attribute (NULL if absent)."""]
+        [item """**`cx_node_attrs(node)`** — return an iterator
+                handle over `(name, value)` pairs."""]
+        [item """**`cx_node_children(node)`** — return an iterator
+                handle over direct-child Nodes."""]
+        [item """**`cx_node_body(node)`** — return the body value
+                (scalar, sequence, or NULL for empty)."""]
+        [item """**`cx_node_kind(node)`** — return the item-kind
+                tag (`element`, `scalar:int`, `scalar:string`, …)
+                as a NUL-terminated string."""]]
+      [body
+        """Iterator handles are reference-counted; the binding
+           releases each via `cx_iter_release()` after exhausting it.
+           Forgetting to release leaks GC roots; the conformance
+           harness catches this via valgrind-equivalent on every
+           Tier-1 binding."""]]
+
+    [child id=modify-abi n=7.1.5 title='Modify — pure-functional updates'
+      [body
+        """**`cx_modify(doc, focus_cxpath, action_program)`** returns
+           a new Doc handle. The input Doc is unchanged.
+           This is the single update entry point — every mutation
+           pattern at the Layer-1 surface routes through it."""]
+      [body
+        """Bindings expose `Doc.modify(focus, action)` directly.
+           Common actions (`Set`, `Delete`, `Append`, `Update`) are
+           constructed by the binding as small CX programs and
+           passed through unchanged."""]]
+
+    [child id=abi-error-channel n=7.1.6 title='Error channel'
+      [body
+        """Every fallible ABI symbol takes an `err_out` parameter — a
+           `char**` that on failure points to a NUL-terminated UTF-8
+           error message of the form
+           `CXERnnnn: human-readable description (file:line)`. The
+           binding extracts the code, classifies into a host
+           exception/Result, and calls `cx_error_release(err)` to
+           free the message buffer."""]
+      [table columns=(code-range, family, host-mapping)
+        [row code-range='CXER0001-CXER0099' family='Parse / lexical' host-mapping='Python ParseError; Rust cxlib::Error::Parse; Go cxlib.ParseError; V error string']
+        [row code-range='CXER0100-CXER0199' family='Validation / type / canonical' host-mapping='Python ValidationError; Rust cxlib::Error::Validation; Go cxlib.ValidationError']
+        [row code-range='CXER0140-CXER0149' family='Resource limits (depth / time / size)' host-mapping='Python ResourceError; Rust cxlib::Error::Limit; Go cxlib.LimitError']
+        [row code-range='CXER0200-CXER0299' family='Evaluation (code / CXPath)' host-mapping='Python EvalError; Rust cxlib::Error::Eval; Go cxlib.EvalError']
+        [row code-range='CXER0300-CXER0399' family='I/O / include / network' host-mapping='Python IOError subclass; Rust cxlib::Error::Io; Go cxlib.IOError']
+        [row code-range='CXLW0001-CXLW0099' family='Lint / warning (not error)' host-mapping='Python warnings.warn; Rust log::warn!; Go cxlib.Warning']]
+      [body
+        """Full error-code registry is in
+           [`spec/errors.md`](../../spec/errors.md). The code is
+           stable across libcx versions within a major version;
+           additions are additive (new codes get fresh numbers)."""]]]
+
+  [child id=layer-1 n=7.2 title='Layer 1 — canonical method set'
+    [intro
+      """Layer 1 is the **conformance contract**. Every binding
+         implements identical method names (case-adjusted to host
+         conventions) with identical semantics. Drift between
+         bindings on any Layer-1 method is a release-blocker (gate
+         28.6, Layer-1 parity). Normative spec:
+         [`spec/bindings.md`](../../spec/bindings.md) §2."""]
+
+    [body
+      """**16 canonical methods.** No more, no less, at this layer.
+         The result of every Layer-1 method is byte-identical across
+         V / Python / Go / Rust on the same input — a property the
+         conformance harness validates by hashing each result and
+         comparing per-binding."""]
+
+    [table columns=(method, returns, description, c-abi)
+      [row method='parse(bytes)' returns='Doc' description='Parse canonical CX bytes' c-abi='cx_parse']
+      [row method='Doc.bytes()' returns='bytes' description='Serialize Doc to canonical CX' c-abi='cx_doc_bytes']
+      [row method='Doc.hash()' returns='string' description='SHA-256 of canonical bytes (hex)' c-abi='cx_doc_hash']
+      [row method='Doc.equals(other)' returns='bool' description='Canonical-bytes equality' c-abi='cx_doc_equals']
+      [row method='Doc.eval(code)' returns='Value' description='Evaluate CX code against doc' c-abi='cx_code_eval']
+      [row method='Doc.select_all(cxpath)' returns='[Node]' description='CXPath path-value (all matches)' c-abi='cx_code_eval (find pattern)']
+      [row method='Doc.select(cxpath)' returns='Node?' description='First match of select_all' c-abi='cx_code_eval (find pattern)']
+      [row method='Doc.modify(focus, action)' returns='Doc' description='Pure-functional update' c-abi='cx_modify']
+      [row method='Doc.find_all(name)' returns='[Node]' description='Name-only convenience' c-abi='cx_code_eval (find pattern)']
+      [row method='Doc.root()' returns='Node' description='Root element' c-abi='cx_doc_root']
+      [row method='Node.name()' returns='string' description='Element name' c-abi='cx_node_name']
+      [row method='Node.attr(name)' returns='Value?' description='Attribute value' c-abi='cx_node_attr']
+      [row method='Node.attrs()' returns='Map' description='All attributes (preserves order)' c-abi='cx_node_attrs']
+      [row method='Node.children()' returns='[Node]' description='Direct children' c-abi='cx_node_children']
+      [row method='Node.body()' returns='Value' description='Element body value' c-abi='cx_node_body']
+      [row method='Node.kind()' returns='string' description='Item-kind tag (element / scalar:int / …)' c-abi='cx_node_kind']]
+
+    [body
+      """**CXPath is the selector vocabulary** across every Layer-1
+         selection method. The path string is parsed and evaluated by
+         libcx, not by the binding — that keeps semantics identical
+         across hosts and lets the evaluator's program cache work
+         cross-binding. A CXPath is a first-class value kind; bindings expose it as
+         a typed value where ergonomic (Rust `Cxpath` newtype; Python
+         `CxPath` class) and as a plain string where not (Go
+         `string`; V `string`)."""]
+
+    [body
+      """**Per-method semantics — selected highlights:**"""]
+    [list
+      [item """**`parse(bytes)`** — accepts any CX surface (text,
+              data-bin, ast-bin) and produces a Doc. Surface
+              detection is by magic-byte sniff; no caller-side
+              dispatch needed."""]
+      [item """**`Doc.hash()`** — always returns the strict-canonical
+              SHA-256 (per [[canonical-strict]]). The lossless
+              canonical hash is exposed as a separate
+              `Doc.hash_lossless()` Layer-2 method (not part of
+              Layer 1)."""]
+      [item """**`Doc.eval(code)`** — accepts any code value:
+              a string literal containing CX source, an
+              already-parsed CXPath value, a built-up
+              `[?for ...]` element, etc. The binding internally
+              serializes non-string code to canonical bytes before
+              passing to `cx_code_eval`."""]
+      [item """**`Doc.select_all(cxpath)`** — returns a host-native
+              sequence of Nodes. Empty result is the host's empty
+              sequence (Python `[]`, Rust `Vec::new()`, Go `nil`
+              slice, V `[]Node{}`)."""]
+      [item """**`Doc.select(cxpath)`** — returns the first Node or
+              the host's "no value" form (Python `None`, Rust
+              `Option::None`, Go `(Node{}, false)`, V
+              `?Node`)."""]
+      [item """**`Doc.modify(focus, action)`** — always returns a
+              new Doc; the receiver is unchanged. Idempotent under
+              the no-op action. If `focus` matches nothing, returns
+              an unchanged copy (not an error)."""]
+      [item """**`Doc.find_all(name)`** — convenience equivalent to
+              `Doc.select_all('//' + name)`. Idiomatic in
+              host-language style; same wire cost."""]
+      [item """**`Node.attr(name)`** — returns the host's "absent"
+              form when the attribute is missing (NOT an error).
+              Use `Node.attrs().contains(name)` to distinguish
+              "absent" from "present-with-null-value"."""]
+      [item """**`Node.body()`** — for scalar bodies, returns the
+              typed scalar (int, string, etc.). For mixed-content
+              bodies, returns a host sequence of scalars +
+              Nodes."""]
+      [item """**`Node.kind()`** — returns one of: `element`,
+              `scalar:int`, `scalar:float`, `scalar:string`,
+              `scalar:bool`, `scalar:date`, `scalar:datetime`,
+              `scalar:bytes`, `scalar:null`, `sequence`, `array`,
+              `map`, `table`. Bindings often expose this as a typed
+              enum at Layer 2."""]]
+
+    [example lang=python
+      """# Python — Layer 1
+         doc = cx.parse(open("users.cx", "rb").read())
+         emails = doc.select_all("//user[@active=true]/@email")
+         new_doc = doc.modify("//user[@id=1]/@name", cx.Set("Alice"))
+         assert new_doc.hash() != doc.hash()  # different content
+         assert doc.parse(doc.bytes()).hash() == doc.hash()  # round-trip"""]
+
+    [example lang=go
+      """// Go — Layer 1 (PascalCase per Go style; semantics identical)
+         doc, _ := cxlib.Parse(data)
+         emails, _ := doc.SelectAll("//user[@active=true]/@email")
+         newDoc, _ := doc.Modify("//user[@id=1]/@name", cxlib.Set("Alice"))
+         if newDoc.Hash() == doc.Hash() { panic("modify was no-op") }"""]
+
+    [example lang=rust
+      """// Rust — Layer 1
+         let doc = Doc::parse(&data)?;
+         let emails = doc.select_all("//user[@active=true]/@email")?;
+         let new_doc = doc.modify("//user[@id=1]/@name", cxlib::Set("Alice"))?;
+         assert_ne!(new_doc.hash()?, doc.hash()?);"""]
+
+    [example lang=v
+      """// V — Layer 1 (native — no FFI wrapper)
+         doc := cx.parse(data)!
+         emails := doc.select_all('//user[@active=true]/@email')!
+         new_doc := doc.modify('//user[@id=1]/@name', cx.Set('Alice'))!
+         assert new_doc.hash() != doc.hash()"""]
+
+    [note
+      """**Byte-identical across bindings (gate 28.6).** For any
+         input bytes B and code C, the conformance suite asserts
+         `V.Doc.parse(B).eval(C).bytes() == Python.… == Go.… == Rust.…`.
+         A binding that drifts on a single byte of output blocks the
+         release. The matrix lives in
+         [`spec/misc/parity-matrix.md`](../../spec/misc/parity-matrix.md)."""]]
+
+  [child id=layer-2 n=7.3 title='Layer 2 — host idiom packs'
+    [intro
+      """Layer 2 is **opt-in sugar**. Importing it pulls in
+         host-idiomatic wrappers that compile to Layer-1 calls at the
+         boundary. The compilation is deterministic — every Layer-2
+         expression has a single, documented Layer-1 desugaring. Spec:
+         [`spec/bindings.md`](../../spec/bindings.md) §3."""]
+
+    [body
+      """**Why two layers? Two audiences.** **CX-native developers**
+         want CX vocabulary in every host language — they get Layer 1
+         and never touch Layer 2. **Host-native developers** want
+         list comprehensions, filter chains, iterator combinators,
+         derive macros — they get Layer 2 and the Layer-1 surface
+         stays available underneath. Either audience can mix the two
+         in the same module."""]
+
+    [child id=layer-2-python n=7.3.1 title='Python — cxlib.idioms'
+      [body
+        """`cxlib.idioms` adds: `__getitem__` on Doc with CXPath
+           strings, list comprehensions over Nodes, `__setitem__`
+           that desugars to `modify`, generator division (`doc /
+           "//path"`), and `cx.explain(expr)` returning the Layer-1
+           equivalent of any Layer-2 expression."""]
+      [example lang=python
+        """from cxlib import Doc
+           from cxlib.idioms import *      # opt-in
+
+           doc = Doc.parse(open("users.cx", "rb").read())
+
+           # List comprehension — iteration over Doc yields Nodes
+           active = [u for u in doc if u.tag == "user" and u.attr("active")]
+           # ≡ doc.select_all("//user[@active=true]")
+
+           # Subscript with CXPath string
+           new_doc = doc.copy()
+           new_doc["//user[@id=1]/@name"] = "Alice"
+           # ≡ doc.modify("//user[@id=1]/@name", cx.Set("Alice"))
+
+           # Generator over a path
+           for email in doc / "//user/@email":
+               print(email)
+           # ≡ for email in doc.select_all("//user/@email"):
+
+           # Explain — surface the Layer-1 desugaring
+           import cx
+           print(cx.explain(doc / "//user"))
+           # -> Doc.select_all('//user')"""]
+      [body
+        """Python Layer-2 type hints follow the schema (see
+           [[schema-codegen]]). With a `.cxs` schema in scope, the
+           generated `User(NamedTuple)` flows through `doc /
+           "//user"` to produce a typed iterator."""]]
+
+    [child id=layer-2-go n=7.3.2 title='Go — cxlib/idioms'
+      [body
+        """`cxlib/idioms` adds: builder filter chains that compose
+           into a CXPath string, typed projections via struct tags,
+           and `Project[T any]` generics that yield host structs from
+           a path."""]
+      [example lang=go
+        """import "cx/cxlib"
+           import . "cx/cxlib/idioms"
+
+           doc, _ := cxlib.Parse(data)
+
+           // Builder chain → CXPath string under the hood
+           emails := doc.Filter("user").Where("@active=true").Get("/@email")
+           // ≡ doc.SelectAll("//user[@active=true]/@email")
+
+           // Typed projection via struct tags
+           type User struct {
+             ID    int    \`cx:"@id"\`
+             Email string \`cx:"@email"\`
+             Active bool  \`cx:"@active"\`
+           }
+           users := Project[User](doc.Filter("user").Where("@active=true"))
+
+           // Explain
+           fmt.Println(cxlib.Explain(doc.Filter("user").Where("@active=true")))
+           // -> doc.SelectAll("//user[@active=true]")"""]
+      [body
+        """The `Project[T]` generic compiles to a single
+           `cx_code_eval` call that materializes the result directly
+           into the T struct layout; no intermediate Node iteration
+           in user code."""]]
+
+    [child id=layer-2-rust n=7.3.3 title='Rust — cxlib::idioms'
+      [body
+        """`cxlib::idioms` adds: typed `Iterator` wrappers on
+           selection results, `#[derive(CxData)]` for typed
+           projections, and the `cx!` macro for compile-time path
+           validation."""]
+      [example lang=rust
+        """use cxlib::Doc;
+           use cxlib::idioms::*;
+
+           let doc = Doc::parse(&data)?;
+
+           // Typed iterator combinators
+           let emails: Vec<_> = doc.iter_users()
+               .filter(|u| u.active())
+               .map(|u| u.email())
+               .collect();
+
+           // Derive
+           #[derive(CxData)]
+           struct User {
+             id: u32,
+             email: String,
+             #[cx(attr)] active: bool,
+           }
+           let users: Vec<User> = doc.collect::<User>("//user[@active=true]")?;
+
+           // Compile-time path validation
+           let path = cx!("//user[@active=true]/@email");"""]
+      [body
+        """`#[derive(CxData)]` requires `cxlib-derive` (the proc-macro
+           crate) and emits a single trait impl per struct. The
+           generated code calls Layer-1 `select_all` and walks Nodes
+           with `attr()` / `body()`."""]]
+
+    [child id=layer-2-v n=7.3.4 title='V — Layer 1 is already idiomatic'
+      [body
+        """V is the native reference. There is no separate Layer 2
+           wrapper because the Layer-1 surface IS V's idiomatic API —
+           V naming conventions, V error semantics (`!`/`?`), V
+           collection types. Adding a sugar layer would only
+           duplicate what's already there."""]
+      [body
+        """If you find yourself wanting "Layer 2" in V, you are
+           describing a feature the V binding should expose at
+           Layer 1 in the first place. File an issue against
+           `lang/v/native/cxlib/`."""]]
+
+    [note
+      """**Layer-2 idiom packs are not API-conformance-tested.**
+         Different bindings have different idioms by design — Python
+         subscripts vs Go builder chains vs Rust iterators. The
+         conformance harness does test the Layer-1 desugaring of
+         every documented Layer-2 expression — `cx.explain(expr)`
+         returns the Layer-1 equivalent and is used both in fixtures
+         and in LSP hovers. A Layer-2 method that does not desugar
+         deterministically to Layer 1 is rejected on review."""]]
+
+  [child id=type-mapping n=7.4 title='Type mapping per binding'
+    [intro
+      """Every CX scalar kind maps to a specific host type in each
+         binding. The mapping is mandatory at Layer 1 (gate 28.4,
+         type-mapping conformance); a binding that deviates blocks
+         release. Per [`spec/bindings.md`](../../spec/bindings.md) §4."""]
+
+    [body
+      """**Scalar kinds.** The eight CX scalar kinds (per
+         [[scalars]]) plus sized variants flow to host types as
+         follows. The leftmost column lists the CX type tag; each
+         subsequent column gives the host's primary representation."""]
+
+    [table columns=(cx-type, v, python, go, rust)
+      [row cx-type=':int' v='i64' python='int' go='int64' rust='i64']
+      [row cx-type=':i8' v='i8' python='int' go='int8' rust='i8']
+      [row cx-type=':i16' v='i16' python='int' go='int16' rust='i16']
+      [row cx-type=':i32' v='i32' python='int' go='int32' rust='i32']
+      [row cx-type=':i64' v='i64' python='int' go='int64' rust='i64']
+      [row cx-type=':u8' v='u8' python='int' go='uint8' rust='u8']
+      [row cx-type=':u16' v='u16' python='int' go='uint16' rust='u16']
+      [row cx-type=':u32' v='u32' python='int' go='uint32' rust='u32']
+      [row cx-type=':u64' v='u64' python='int' go='uint64' rust='u64']
+      [row cx-type=':float' v='f64' python='float' go='float64' rust='f64']
+      [row cx-type=':f32' v='f32' python='float' go='float32' rust='f32']
+      [row cx-type=':f64' v='f64' python='float' go='float64' rust='f64']
+      [row cx-type=':string' v='string' python='str' go='string' rust='String / &str']
+      [row cx-type=':bool' v='bool' python='bool' go='bool' rust='bool']
+      [row cx-type=':date' v='time.Date' python='datetime.date' go='time.Time' rust='chrono::NaiveDate']
+      [row cx-type=':datetime' v='time.Time' python='datetime.datetime (aware)' go='time.Time' rust='chrono::DateTime<FixedOffset>']
+      [row cx-type=':bytes' v='[]u8' python='bytes' go='[]byte' rust='Vec<u8>']
+      [row cx-type=':null' v='?T (none)' python='None' go='nil' rust='Option::None']]
+
+    [body
+      """**Container kinds.** Sequences, arrays, and maps (see
+         [[collections]]) map to host containers preserving the
+         container-vs-atom distinction (cxdm §2.0)."""]
+
+    [table columns=(cx-container, v, python, go, rust)
+      [row cx-container='sequence' v='[]Value' python='list[Value]' go='[]Value' rust='Vec<Value>']
+      [row cx-container='array' v='Array' python='list (nested)' go='[]interface{}' rust='Array (Vec<Value> newtype)']
+      [row cx-container='map' v='map[ScalarKey]Value' python='dict[ScalarKey, Value]' go='map[interface{}]Value' rust='HashMap<ScalarKey, Value>']
+      [row cx-container='table' v='Table' python='cxlib.Table' go='cxlib.Table' rust='cxlib::Table']
+      [row cx-container='element' v='Element' python='Element' go='Element' rust='Element']]
+
+    [body
+      """**Overflow and edge cases.** Host languages have different
+         numeric ranges than CX. The conformance rule: **on
+         overflow, raise CXER0103** (numeric overflow) — never
+         silently truncate, never silently widen."""]
+    [list
+      [item """**Python int is arbitrary-precision** but CX `:int`
+              is i64. A Python int outside `[-2^63, 2^63-1]` flowing
+              to a CX `:int` raises CXER0103. The binding catches
+              `OverflowError` from the FFI conversion and re-raises
+              as a CX error."""]
+      [item """**Python float is f64**; flowing to CX `:f32` is a
+              narrowing conversion that may round. The binding
+              raises CXER0103 only if the narrowed value is
+              `±inf` (otherwise silent rounding is accepted, per
+              IEEE-754)."""]
+      [item """**Go and Rust have explicit sized types** so the
+              host-to-CX direction is unambiguous. CX-to-host
+              widening (e.g. CX `:i32` to host `int64`) is silent
+              and lossless; narrowing requires an explicit Layer-2
+              `as_i32()?` that raises on overflow."""]
+      [item """**Date / datetime precision.** CX preserves nanosecond
+              precision. Python `datetime` is microsecond — flowing
+              to Python loses nanosecond digits with warning
+              CXLW0003. Round-tripping Python `datetime` → CX → host
+              preserves microseconds exactly; CX `:datetime` → Python
+              → CX may lose precision."""]
+      [item """**Bytes and strings.** CX `:string` is always
+              valid UTF-8; CX `:bytes` is opaque. Host strings that
+              are invalid UTF-8 (Python `bytes` decoded with
+              `errors='surrogateescape'`, Rust `&[u8]` containing
+              non-UTF-8) cannot become a CX `:string` — the binding
+              raises CXER0103. Use `:bytes` instead."""]
+      [item """**Null vs absent.** CX `:null` is a scalar value (a
+              present-but-null attribute). Host `None` / `nil` /
+              `Option::None` is the absent-value representation. The
+              binding distinguishes via the Layer-1 surface: an
+              attribute set to `:null` returns the host's null-value;
+              an absent attribute returns the host's absence-form
+              ONLY when called via `Node.attr(name)` — which
+              conflates them. To distinguish, use
+              `Node.attrs().contains(name)`."""]]
+
+    [body
+      """**Type tag preservation.** Sized variants
+         (`:i32`, `:u16`, `:f32`, etc.) round-trip through ast-bin
+         and data-bin with their type identifier preserved.
+         Bindings translate to the host's native numeric type on
+         read and preserve the tag on write. A Python int that
+         enters libcx as `:int` will not silently become `:i32` even
+         if it fits; the type tag is sticky."""]]
+
+  [child id=thread-safety n=7.5 title='Thread-safety and concurrency model'
+    [intro
+      """CX documents are **immutable values**. Sharing a parsed Doc
+         across threads is safe by construction — there is no shared
+         mutable state to protect. The thread-safety story for each
+         binding is mostly about: (a) registering host-spawned
+         threads with libcx's GC and (b) wrapping the binding's
+         own handle types to match the host's concurrency model."""]
+
+    [child id=ts-doc-immutability n=7.5.1 title='Document immutability'
+      [body
+        """A parsed `Doc` is logically immutable. `Doc.modify()`
+           returns a new Doc; there is no in-place mutation API at any layer. This
+           means a single Doc handle can be shared across N threads
+           with no synchronization — every thread sees the same
+           bytes, every thread's `hash()` returns the same digest,
+           every thread's `select_all` returns the same Nodes."""]
+      [body
+        """Bindings expose this in their type system where they can.
+           Rust: `Doc: Send + Sync` is automatic from the underlying
+           types. Go: Doc is a value type wrapping a libcx handle —
+           safe to pass between goroutines. Python: the GIL
+           serializes access in-process; multi-process workers
+           pickle the Doc's canonical bytes and reparse. V: Docs
+           are shareable across `go` blocks without `shared` /
+           `lock` keywords."""]]
+
+    [child id=ts-reentrancy n=7.5.2 title='Layer-1 method reentrancy'
+      [body
+        """All 16 Layer-1 methods are **reentrant**. Calling
+           `doc.select_all(p1)` on thread A while `doc.eval(c1)`
+           runs on thread B is safe; neither call mutates anything
+           the other reads. The C ABI symbols backing them are
+           classified `(S) stateless` in
+           [`spec/abi.md`](../../spec/abi.md) §1.4 — concurrent
+           calls on disjoint inputs are safe without external
+           synchronization, and concurrent calls on the same input
+           buffer are also safe because the buffer is read-only."""]
+      [body
+        """**Modify** is also reentrant. `doc.modify(...)` does not
+           lock the receiver. Two threads modifying the same Doc
+           with different focuses each produce their own
+           independent new Doc; the original is unchanged. If both
+           new Docs need to be combined, do so explicitly with a
+           second modify."""]]
+
+    [child id=ts-thread-register n=7.5.3 title='Thread registration (cap bit 26)'
+      [body
+        """Host-spawned OS threads — Python workers via
+           `threading.Thread`, Rust `std::thread::spawn`, Go via
+           cgo's per-goroutine OS thread, V via `go fn{}` outside
+           the V scheduler — must call `cx_thread_register()`
+           before any other `cx_*` call. This registers the
+           thread's stack-bottom with libcx's GC."""]
+      [body
+        """**Bindings auto-call this at every FFI chokepoint** so
+           users do not need to think about it. Rust: every Doc
+           method calls `ensure_thread()` (a `once_cell`-protected
+           wrapper) before the FFI call. Python: the `_native`
+           shim registers in `__enter__` of its per-thread
+           context. Go: the cgo wrapper registers in its
+           `init_thread()` called from every public method. V:
+           internal threads spawned by the V scheduler are already
+           known to the GC; user-spawned `go` blocks running V
+           code share the same GC root."""]
+      [body
+        """Skipping registration is the single most common
+           crash-on-thread-spawn bug in user code that bypasses
+           the Layer-1 surface and calls the C ABI directly. The
+           crash signature is a segfault inside `GC_mark_from`
+           during the GC's next collection. If you see that
+           backtrace, the first thing to check is whether your
+           thread called `cx_thread_register()`."""]]
+
+    [child id=ts-gc-interactions n=7.5.4 title='GC interactions per binding'
+      [body
+        """Bindings have to bridge libcx's Boehm GC with the host's
+           memory model. The bridges differ per host."""]
+      [list
+        [item """**V — Boehm GC throughout.** V's runtime is also
+                Boehm-GC. A Doc handle is a normal V reference; no
+                bridging needed. V is the simplest case."""]
+        [item """**Python — refcount + finalizer.** A Doc handle
+                is a Python object with a `__del__` that calls
+                `cx_doc_release()`. The Boehm GC sees Python's
+                reference as a root because the binding pins the
+                handle's underlying memory region. Python's GC
+                runs independently of libcx's; the two never
+                deadlock because libcx's GC never blocks the
+                Python interpreter."""]
+        [item """**Go — runtime.SetFinalizer.** A Doc is a Go
+                struct holding the libcx handle plus a finalizer
+                set via `runtime.SetFinalizer`. The finalizer
+                fires from Go's GC pass; libcx releases when it
+                next collects. Pinning ensures the handle stays
+                live until Go is done with it."""]
+        [item """**Rust — Drop.** A Doc is a newtype around the
+                libcx handle with an explicit `impl Drop` that
+                calls `cx_doc_release()`. Rust's ownership model
+                gives compile-time guarantees about handle
+                lifetime; the Boehm GC sees the handle as a root
+                while the Rust value exists."""]]
+      [note
+        """**`GC_DONT_GC` workaround.** The TypeScript binding
+           (Node.js + V8) hit a libgc `GC_mark_from` crash that
+           necessitated setting `GC_DONT_GC=1`, effectively
+           disabling libgc's collector for the process lifetime
+           (libcx allocations leak; the process is short-lived
+           so it does not matter). This is a per-host workaround,
+           not a model — Tier-1 bindings (V/Python/Go/Rust) do
+           NOT need it. The TypeScript binding is archived under
+           `lang/_archived/typescript/` per
+           [[migration]]; restoration depends on root-cause fix
+           upstream."""]]]
+
+  [child id=cap-bit-negotiation n=7.6 title='Capability bit negotiation'
+    [intro
+      """Bindings ship at a specific libcx ABI version but may be
+         loaded against an older or newer libcx. The capability
+         bitmask returned by `cx_features()` is the runtime contract:
+         the binding declares what it needs, libcx declares what it
+         supports, and the binding either degrades, errors, or
+         proceeds. Per [`spec/abi.md`](../../spec/abi.md) §3."""]
+
+    [body
+      """**The bitmask is a NUL-terminated lowercase hex string.**
+         Each bit covers one optional feature. New features get new
+         bits; bits are never repurposed. A libcx v2.0.0 returns
+         `"3ffff"` (bits 0-17 set); a libcx that has added bit 18
+         returns `"7ffff"`; and so on."""]
+
+    [body
+      """**Negotiation protocol:**"""]
+    [list
+      [item """**Binding load.** Binding calls `cx_features()` once,
+              caches the result in a process-global variable, and
+              compares against its required-bits mask. If a required
+              bit is missing, the binding raises a load-time error
+              identifying which feature is unavailable."""]
+      [item """**Per-call check.** For features that may be
+              version-gated (e.g. `:bytes` scalar requires bit 5),
+              the binding's Layer-1 method checks the cached bitmask
+              before sending the payload to the C ABI. If the bit
+              is missing in lenient mode, the call returns a host
+              error early; in strict mode, the binding refuses
+              to load entirely."""]
+      [item """**Forward-compat.** A newer libcx with bits set
+              that the binding doesn't know about is fine — the
+              binding ignores unknown bits. A newer feature is
+              accessible only when the binding is itself updated to
+              call its entry point."""]
+      [item """**Backward-compat.** An older libcx missing bits the
+              binding requires is NOT fine — the binding refuses
+              to load. There is no fallback path; users must
+              upgrade libcx."""]]
+
+    [body
+      """**Lenient vs strict mode.** Default is **lenient**: a
+         missing optional bit raises a host error only when its
+         feature is actually called. **Strict mode** is opt-in
+         (`cx.config(strict=True)` in Python; environment variable
+         `CX_STRICT_FEATURES=1`); a missing bit refuses load
+         regardless of whether the feature is later called. Strict
+         mode is the recommended choice for production deployments
+         where capability surprises during run-time would be
+         worse than capability surprises during deploy."""]
+
+    [body
+      """**Selected capability bits** (full registry in
+         [`spec/abi.md`](../../spec/abi.md) §3):"""]
+    [table columns=(bit, mask, feature)
+      [row bit=0 mask='0x1' feature='ast-bin v3 (always set)']
+      [row bit=1 mask='0x2' feature='Schema-driven data-bin encoding']
+      [row bit=5 mask='0x20' feature=':bytes scalar wire support']
+      [row bit=15 mask='0x8000' feature='Arrow C Data Interface bridge']
+      [row bit=16 mask='0x10000' feature='Parquet read/write bridge']
+      [row bit=17 mask='0x20000' feature='CXCol chunked columnar streaming']
+      [row bit=26 mask='0x4000000' feature='Thread-init handshake (cx_init / cx_thread_register)']
+      [row bit=28 mask='0x10000000' feature='cx_code_eval family — unified evaluator entry']
+      [row bit=29 mask='0x20000000' feature='Code-to-diagram (cx_code_diagram)']
+      [row bit=30 mask='0x40000000' feature='Code-eval with interactive-tree result (cx_code_eval_tree)']]
+
+    [example lang=python
+      """import cxlib as cx
+
+         # Default lenient mode
+         if not cx.features().has('bytes'):
+             # Fall back: avoid emitting :bytes
+             encode = lambda data: cx.base64(data)
+         else:
+             encode = lambda data: data
+
+         # Strict mode (raise on load if any required feature missing)
+         cx.config(strict=True)  # raises ImportError if libcx is too old"""]]
+
+  [child id=ffi-lifetime n=7.7 title='FFI lifetime and memory ownership'
+    [intro
+      """libcx allocates on its own GC heap; bindings hold opaque
+         handles that point into it. The lifetime question is: when
+         does a Doc become collectable? The answer depends on the
+         host's memory model. This section gives the per-binding
+         rules; [[ffi-doc-lifetime]] gives the general
+         theory."""]
+
+    [child id=lifetime-v n=7.7.1 title='V — Boehm GC end-to-end'
+      [body
+        """V uses Boehm GC at the language level; libcx uses Boehm
+           GC for its heap. A Doc handle is a normal V reference; it
+           becomes collectable when no V variable references it. No
+           explicit close is needed and there is no `Drop` /
+           `__del__` equivalent — V code that loses its last
+           reference is done."""]]
+
+    [child id=lifetime-python n=7.7.2 title='Python — refcount + finalizer'
+      [body
+        """A Python `Doc` object holds a libcx handle plus a
+           `__del__` that calls `cx_doc_release()`. Python's
+           refcount model means the finalizer fires deterministically
+           when the last reference goes out of scope — no GC pass
+           needed. For long-running processes, this is the most
+           predictable lifetime model among the four bindings."""]
+      [body
+        """`Doc.close()` is available for explicit early release
+           when a Doc is no longer needed and the user wants
+           libcx memory back immediately. Calling `close()` and
+           then any method raises `cxlib.ClosedDocError`."""]]
+
+    [child id=lifetime-go n=7.7.3 title='Go — SetFinalizer (with caveats)'
+      [body
+        """Go's `runtime.SetFinalizer` registers a callback that
+           fires when the GC determines the Doc value is
+           unreachable. The callback calls `cx_doc_release()`.
+           Finalizers fire on a dedicated goroutine; they do not
+           block the program. There is a documented Go caveat: if
+           you embed the Doc in a circular structure that GC cannot
+           prove unreachable, the finalizer never fires. The Go
+           binding avoids this by storing handles by value, not by
+           pointer; circular Docs are not possible at the binding
+           surface."""]
+      [body
+        """`Doc.Close()` is the explicit-release escape hatch.
+           After `Close()`, any method returns
+           `cxlib.ErrClosedDoc`. The finalizer is unregistered
+           on `Close()` so it does not run a second time."""]]
+
+    [child id=lifetime-rust n=7.7.4 title='Rust — Drop (RAII)'
+      [body
+        """Rust gives the strongest compile-time guarantees. The
+           `Doc` newtype's `impl Drop` calls `cx_doc_release()` when
+           the value goes out of scope. The borrow checker prevents
+           use-after-free at compile time. A Doc can be `Send` /
+           `Sync` (held across threads, shared between threads)
+           because the C ABI is reentrant; Rust's type system
+           enforces correct usage without runtime overhead."""]
+      [body
+        """No explicit `close()` is needed — `drop(doc)` is the
+           idiomatic explicit release. Pre-`Drop` early release is
+           rarely needed because RAII handles it."""]]
+
+    [child id=lifetime-node-borrowing n=7.7.5 title='Node borrowing from a Doc'
+      [body
+        """Nodes returned from a Doc's selection methods borrow
+           from the parent Doc. A Node is valid as long as the Doc
+           is. When the Doc is released, every Node derived from it
+           becomes invalid; using one raises a host error
+           (CXER0301 — handle-after-free)."""]
+      [body
+        """**Important — Nodes are NOT mutable shared state.** Two
+           Nodes that point into the same Doc do not interfere with
+           each other. The Doc is logically immutable (Section
+           [[modify]] produces a NEW Doc; the original is
+           unchanged). A Node is a read-only window onto a portion
+           of the Doc."""]
+      [body
+        """**Lifetime expression in each binding:**"""]
+      [list
+        [item """**V** — Nodes are tracked by V's GC; they hold a
+                reference to their parent Doc transitively. Safe by
+                construction."""]
+        [item """**Python** — a Node holds a reference to its Doc
+                in `__init__`, keeping the Doc alive while the Node
+                is reachable."""]
+        [item """**Go** — a Node embeds the parent Doc as a field
+                (zero-cost; the Doc is a value type). Safe by
+                construction."""]
+        [item """**Rust** — a Node is a `Node<'a>` lifetime-bound
+                to the Doc's lifetime `'a`. Compile-time
+                enforcement; `node.outlives_doc()` will not
+                compile."""]]]
+
+    [child id=lifetime-explicit-release n=7.7.6 title='Explicit release patterns'
+      [body
+        """For long-running processes processing large documents in
+           sequence, explicit release becomes important: relying on
+           GC to reclaim 100 MB+ Docs is wasteful. Each binding
+           offers an explicit-release method as a performance
+           optimization, NOT a correctness requirement:"""]
+      [list
+        [item """Python — `doc.close()`."""]
+        [item """Go — `doc.Close()`."""]
+        [item """Rust — `drop(doc)` (or implicit at scope-end)."""]
+        [item """V — no explicit release; rely on GC."""]]
+      [body
+        """For document-streaming workloads, prefer the streaming
+           parser (see [[streaming-data]]) instead of
+           explicit-release-per-doc; streaming bounds resident
+           memory to one chunk regardless of total input
+           size."""]]]
+
+  [child id=schema-codegen n=7.8 title='Schema-driven codegen'
+    [intro
+      """When a CX schema (`.cxs`, see [[schema]]) is available,
+         every binding can generate typed Layer-2 projections from
+         it. This is **post-v0.8.0 follow-up work**; the spec slot
+         is reserved in [`spec/bindings.md`](../../spec/bindings.md)
+         §7 and the CLI command (`cx schema codegen`) is stubbed
+         but not active in v0.8.0."""]
+
+    [example lang=cx
+      """[# users.cxs — the schema source #]
+         [schema
+           [element name=user
+             [attribute name=id    type=int    required=true]
+             [attribute name=email type=string required=true]
+             [attribute name=active type=bool  default=true]]]"""]
+
+    [body
+      """**Planned per-target output (post-v0.8.0):**"""]
+    [list
+      [item """**Python** —
+              `cx schema codegen --target python --in users.cxs --out users.py`
+              emits a Python module with a `User` dataclass (or
+              `NamedTuple` with `--immutable`), type-checked
+              Layer-2 accessors, and a round-trip
+              `users_from_doc(doc) -> list[User]` /
+              `doc_from_users(users) -> Doc` pair."""]
+      [item """**Go** —
+              `cx schema codegen --target go --in users.cxs --out users.go`
+              emits tagged structs and methods. The output is `go
+              fmt`-clean and uses the same struct-tag vocabulary as
+              hand-authored Layer-2 (`cx:\"@id\"`)."""]
+      [item """**Rust** —
+              `cx schema codegen --target rust --in users.cxs --out users.rs`
+              emits `#[derive(CxData)]` structs. The output is
+              `rustfmt`-clean; downstream code uses
+              `doc.collect::<User>(...)` to materialize."""]
+      [item """**V** — no codegen target; V binding's Layer-1
+              surface already gives typed access to schema fields
+              when the schema is loaded at runtime."""]]
+
+    [body
+      """**Status — v0.8.0 ships the schema validator but not the
+         codegen.** The `cx schema codegen` CLI prints
+         `"codegen targets are post-v0.8.0; see spec/bindings.md §7"`
+         and exits with status 2. The intermediate path —
+         hand-authored Layer-2 using `#[derive(CxData)]` (Rust) or
+         struct tags (Go) — is available today on v0.8.0. Per
+         [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
+         §schema-codegen — deferred."""]]
+
+  [child id=install-hello n=7.9 title='Install + hello world per binding'
+    [intro
+      """The minimum-viable per-binding workflow: install, parse a
+         tiny document, compute a hash, evaluate one expression. Every
+         binding's hello-world produces byte-identical hash output;
+         that is the simplest cross-binding parity check."""]
+
+    [child id=install-v n=7.9.1 title='V (native reference)'
+      [body
+        """V is the native language of libcx. The binding lives in
+           `lang/v/native/cxlib/`. Importing it is a normal V
+           module import; no FFI involved."""]
+      [example lang=v
+        """// Install: clone cx-private; vcx is built by the
+           //          repo's Makefile.
+           import cx
+
+           fn main() {
+             doc := cx.parse('[hello world=true]')!
+             println(doc.hash())
+             // -> 8f3d... (32-hex-byte SHA-256)
+             v := doc.eval('//hello/@world')!
+             println(v) // -> true
+           }"""]]
+
+    [child id=install-python n=7.9.2 title='Python'
+      [body
+        """`pip install cxlib` installs the Python binding (when
+           published — pre-publish use `pip install -e
+           lang/python/cxlib/`). Requires Python 3.10+."""]
+      [example lang=python
+        """# pip install cxlib
+           import cxlib as cx
+
+           doc = cx.parse(b"[hello world=true]")
+           print(doc.hash())
+           # -> 8f3d... (matches V output exactly)
+           print(doc.eval("//hello/@world"))
+           # -> True"""]]
+
+    [child id=install-go n=7.9.3 title='Go'
+      [body
+        """`go get cx.land/cxlib` installs the Go binding (when
+           published — pre-publish use a local replace directive
+           pointing at `lang/go/cxlib/`). Requires Go 1.22+."""]
+      [example lang=go
+        """// go get cx.land/cxlib
+           package main
+
+           import (
+             "fmt"
+             "cx.land/cxlib"
+           )
+
+           func main() {
+             doc, _ := cxlib.Parse([]byte("[hello world=true]"))
+             fmt.Println(doc.Hash())
+             // -> 8f3d... (matches V + Python)
+             v, _ := doc.Eval("//hello/@world")
+             fmt.Println(v) // -> true
+           }"""]]
+
+    [child id=install-rust n=7.9.4 title='Rust'
+      [body
+        """`cargo add cxlib` adds the Rust binding (when published
+           — pre-publish use a path dependency to
+           `lang/rust/cxlib/`). Requires Rust 1.75+."""]
+      [example lang=rust
+        """// Cargo.toml: cxlib = "0.8.0"
+           use cxlib::Doc;
+
+           fn main() -> cxlib::Result<()> {
+             let doc = Doc::parse(b"[hello world=true]")?;
+             println!("{}", doc.hash()?);
+             // -> 8f3d... (matches V + Python + Go)
+             let v = doc.eval("//hello/@world")?;
+             println!("{}", v); // -> true
+             Ok(())
+           }"""]]
+
+    [child id=install-verify n=7.9.5 title='Verify cross-binding parity'
+      [body
+        """The fastest cross-binding sanity check is to hash the
+           same input from the CLI and from each binding and confirm
+           all five outputs match:"""]
+      [example lang=text
+        """$ echo '[hello world=true]' | cx hash
+           8f3d2a1b...
+           $ v run hello_v.v        # -> 8f3d2a1b...
+           $ python hello.py        # -> 8f3d2a1b...
+           $ go run hello.go        # -> 8f3d2a1b...
+           $ cargo run --bin hello  # -> 8f3d2a1b..."""]
+      [body
+        """If any binding produces a different hash, that binding
+           has drifted from the canonical-bytes contract — file
+           against [`spec/misc/parity-matrix.md`](../../spec/misc/parity-matrix.md)
+           and the conformance harness will catch it on next
+           CI run."""]]]
+
+  [child id=quickstarts n=7.10 title='Quickstarts (V / Python / Go / Rust)'
+    [intro
+      """Beyond hello-world, each Tier-1 binding has an idiomatic
+         pattern for the most common CX workloads: parse, select,
+         iterate, modify, serialize. These quickstarts show the
+         Layer-2 idiomatic path; the Layer-1 fallback is always
+         available."""]
+
+    [child id=v n=7.10.1 title='V (native reference)'
+      [body
+        """V is the native language of libcx. The Layer-1 surface IS
+           V's idiomatic API; errors bubble via `!` / `?`
+           propagation. Concurrency uses `go fn(){}` with channels;
+           Docs are safely shareable between goroutines without
+           `shared` / `lock` keywords because they are immutable
+           values."""]
+      [example lang=v
+        """import cx
+           import os
+
+           fn main() {
+             data := os.read_file('users.cx')!
+             doc := cx.parse(data)!
+             for user in doc.select_all('//user[@active=true]')! {
+               println(user.attr('email') or { '<no email>' })
+             }
+             new_doc := doc.modify('//user[@id=1]/@name',
+                                   cx.Set('Alice'))!
+             os.write_file('users-updated.cx', new_doc.bytes())!
+             println(new_doc.hash())
+           }"""]]
+
+    [child id=python n=7.10.2 title='Python'
+      [body
+        """Python uses the `cxlib` package; the FFI bridge is in
+           `lang/python/cxlib/_native.py`. Layer 2 sugar lives in
+           `cxlib.idioms`. Requires Python 3.10+ for the
+           pattern-match support used by the optional pattern
+           DSL. With a `.cxs` schema in scope, `cx.coerce(node,
+           User)` validates a Node against a Python dataclass at
+           runtime; full typed iterators land with schema codegen
+           post-v0.8.0."""]
+      [example lang=python
+        """import cxlib as cx
+           from cxlib.idioms import *      # opt-in sugar
+
+           with open('users.cx', 'rb') as f:
+               doc = cx.parse(f.read())
+
+           # Idiomatic iteration via list comprehension
+           emails = [u.attr('email') for u in doc / '//user'
+                     if u.attr('active')]
+
+           # Subscript-modify
+           new_doc = doc.copy()
+           new_doc['//user[@id=1]/@name'] = 'Alice'
+
+           with open('users-updated.cx', 'wb') as f:
+               f.write(new_doc.bytes())
+           print(new_doc.hash())"""]]
+
+    [child id=go n=7.10.3 title='Go'
+      [body
+        """Go uses cgo to call the C ABI. The module lives at
+           `cx.land/cxlib`; Layer 2 sugar at `cx.land/cxlib/idioms`.
+           Requires Go 1.22+ for generics (used by `Project[T]`).
+           The cgo bridge statically links libcx by default; for
+           shared-library linkage set `CX_LINK=dynamic` at build
+           time. Docs are safe to share across goroutines (the
+           binding registers each goroutine's OS thread on first
+           use); coordinate `Close()` via `sync.WaitGroup`."""]
+      [example lang=go
+        """package main
+
+           import (
+             "fmt"; "os"
+             "cx.land/cxlib"
+             . "cx.land/cxlib/idioms"
+           )
+
+           type User struct {
+             ID     int    \`cx:"@id"\`
+             Email  string \`cx:"@email"\`
+             Active bool   \`cx:"@active"\`
+           }
+
+           func main() {
+             data, _ := os.ReadFile("users.cx")
+             doc, _ := cxlib.Parse(data); defer doc.Close()
+             users := Project[User](doc.Filter("user").Where("@active=true"))
+             for _, u := range users { fmt.Println(u.Email) }
+             newDoc, _ := doc.Modify("//user[@id=1]/@name", cxlib.Set("Alice"))
+             defer newDoc.Close()
+             fmt.Println(newDoc.Hash())
+           }"""]]
+
+    [child id=rust n=7.10.4 title='Rust'
+      [body
+        """Rust uses `bindgen` over the C ABI; the crate lives at
+           `lang/rust/cxlib/`. Layer 2 in `cxlib::idioms`. Requires
+           Rust 1.75+. `Doc` is `Send + Sync`; Nodes are
+           lifetime-bound to their parent Doc via `Node<'a>` — the
+           borrow checker prevents use-after-drop at compile time.
+           For across-thread sharing wrap in `Arc<Doc>`; the Doc
+           itself has no interior mutability. The `cx!` macro
+           validates a CXPath literal at compile time."""]
+      [example lang=rust
+        """use cxlib::{Doc, idioms::*};
+           use std::fs;
+
+           #[derive(CxData, Debug)]
+           struct User {
+             id: u32,
+             email: String,
+             #[cx(attr)] active: bool,
+           }
+
+           fn main() -> cxlib::Result<()> {
+             let data = fs::read("users.cx")?;
+             let doc = Doc::parse(&data)?;
+             let active: Vec<User> = doc.collect::<User>(cx!("//user[@active=true]"))?;
+             for u in &active { println!("{}", u.email); }
+             let new_doc = doc.modify("//user[@id=1]/@name", cxlib::Set("Alice"))?;
+             println!("{}", new_doc.hash()?);
+
+             // Concurrent: Doc: Send + Sync
+             use std::{thread, sync::Arc};
+             let shared = Arc::new(doc);
+             let handles: Vec<_> = (0..4).map(|_| {
+               let d = Arc::clone(&shared);
+               thread::spawn(move || d.select_all("//user").unwrap().len())
+             }).collect();
+             for h in handles { println!("{}", h.join().unwrap()); }
+             Ok(())
+           }"""]]]
+
+  [# Migrated from docs-src/content/bindings/*.cx during the
+     Phase B docs → guide consolidation (2026-05-24). Per-binding
+     reference detail: install command, Layer-1 method list,
+     atom example, type-mapping, threading note. Kept as a
+     consolidated child so the section's primary structure
+     (§7.1–§7.10) stays the reading spine. #]
+
+  [child id=binding-detail n=7.11 title='Per-binding reference snippets'
+    [intro
+      """Compact reference for each Tier-1 binding: install command,
+         the 16-method Layer-1 surface in idiomatic form, the atom
+         scalar kind, schema validation, and the
+         type-mapping table. The full normative contract is
+         [`spec/bindings.md §2.1`](../../spec/bindings.md); the C ABI
+         is [`spec/abi.md`](../../spec/abi.md)."""]
+
+    [child id=c-abi-detail n=7.11.1 title='C ABI — symbol catalog'
+      [body
+        """The libcx C ABI partitions into nine families:
+           format conversion, canonical+identity, binary forms
+           (ast_bin / data_bin), evaluation (`cx_code_eval*`),
+           diagram+tree, schema validation, identity
+           and resolution (id / IDREF), streaming events + tables,
+           and threading + memory. Capability bits gate each
+           family; bindings query `cx_features()` at load time and
+           degrade or refuse to load when a required bit is clear.
+           Every `char *` returned by libcx must be released with
+           `cx_free` — never `free()`."""]
+      [example lang=c
+        """/* Format conversion. */
+           char *cx_to_cx        (const char *in, char **err);
+           char *cx_to_xml       (const char *in, char **err);
+           char *cx_to_json      (const char *in, char **err);
+           char *cx_to_yaml      (const char *in, char **err);
+           char *cx_to_toml      (const char *in, char **err);
+           char *cx_to_md        (const char *in, char **err);
+           char *cx_to_csv       (const char *in, char **err);
+           char *cx_from_xml     (const char *in, char **err);
+           /* …yaml / toml / md / csv variants… */
+
+           /* Canonical + identity (cap bit 7). */
+           char *cx_canonical(const char *in, char **err);
+           char *cx_hash     (const char *in, char **err);
+           int   cx_eq       (const char *a, const char *b, char **err);
+           char *cx_diff     (const char *a, const char *b, const char *fmt, char **err);
+           char *cx_lint     (const char *in, const char *fmt, const char *disabled, char **err);
+
+           /* Binary forms. */
+           char *cx_to_ast_bin    (const char *in, char **err);
+           char *cx_ast_bin_to_cx (const char *ast_bin, char **err);
+           char *cx_to_data_bin   (const char *in, char **err);
+           char *cx_from_data_bin (const char *data_bin, char **err);
+
+           /* Evaluation (cap bit 28; renamed from cx_program_eval). */
+           char *cx_code_eval         (const char *input, const char *program,
+                                       const char *output_target, char **err);
+           char *cx_code_eval_with_len(const char *input,   size_t input_len,
+                                       const char *program, size_t program_len,
+                                       const char *output_target, char **err);
+           char *cx_code_eval_streaming(const char *input,   size_t input_len,
+                                        const char *program, size_t program_len,
+                                        const char *output_target,
+                                        cx_code_write_cb write_cb, void *user,
+                                        char **err);
+
+           /* Diagram + tree (v0.8.0, cap bits 31 / 32). */
+           char *cx_code_diagram (const char *source, size_t source_len,
+                                  const char *format, size_t format_len);
+           char *cx_code_tree    (const char *source, size_t source_len,
+                                  size_t *out_len);
+           char *cx_code_ast_json(const char *source, size_t source_len);
+
+           /* Schema validation (cap bit 25). */
+           char *cx_validate                (const char *doc, const char *schema, char **err);
+           char *cx_validate_apply_defaults (const char *doc, const char *schema,
+                                             char **modified_doc_out, char **err);
+
+           /* Threading + memory (cap bit 26). */
+           int  cx_init(void);
+           int  cx_thread_register(void);
+           int  cx_thread_unregister(void);
+           void cx_free(char *p);
+
+           /* Capability + version queries. */
+           char *cx_features(void);     /* lowercase hex of 64-bit bitmask */
+           char *cx_abi_version(void);  /* "2.0" */
+           char *cx_version(void);      /* "0.8.0" */
+
+           /* Include-root variants (Phase 3.6). */
+           char *cx_to_cx_with_include_root      (const char *in, const char *root, char **err);
+           char *cx_to_ast_bin_with_include_root (const char *in, const char *root, char **err);
+           char *cx_to_data_bin_with_include_root(const char *in, const char *root, char **err);
+
+           /* Wasm arena tuning (wasm build only). */
+           int cx_wasm_set_arena_size(unsigned int bytes);
+           int cx_wasm_reset(void);"""]
+      [note
+        """v0.8.0 adds bits 31 (`cx_code_diagram`), 32
+           (`cx_code_tree`), 33 (atoms), 34 (`[?def]`),
+           35 (`[?lib]`), and 36
+           (PathNode wire format / ast_bin v8). Bit 28
+           (CX code evaluator) is unchanged from v0.7.6."""]]
+
+    [child id=v-detail n=7.11.2 title='V binding — install, Layer 1, atom'
+      [body
+        """V is the native reference implementation. libcx is
+           written in V; the V binding under `lang/v/native/`
+           imports the `cx` package directly with zero FFI overhead.
+           Every other Tier-1 binding wraps the same C ABI that the
+           V core exports. The `lang/v/cffi/` variant was archived
+           to `lang/_archived/v-cffi/`; preserved as a potential FFI-overhead
+           benchmark."""]
+      [example lang=shell """vpm install cx-lang"""]
+      [example lang=v
+        """import cx
+
+           // Doc construction + identity (Layer 1 — 16 methods).
+           doc := cx.parse(bytes) or { panic(err) }
+           out := doc.bytes()
+           h   := doc.hash()
+           eq  := doc.equals(other)
+
+           // Evaluation (wraps cx_code_eval).
+           val := doc.eval(code) or { panic(err) }
+
+           // CXPath selection.
+           nodes := doc.select_all('//user[@active=true]/@email')!
+           first := doc.select('//user[@id=1]')!
+
+           // Pure-functional update.
+           new_doc := doc.modify('//user[@id=1]/@name', cx.set('Alice'))!
+
+           // Convenience + root.
+           users := doc.find_all('user')
+           root  := doc.root()
+
+           // Node accessors.
+           name     := node.name()
+           val_opt  := node.attr('email')
+           attrs    := node.attrs()
+           children := node.children()
+           body     := node.body()
+           kind     := node.kind()  // 'element' / 'scalar' / 'sequence' / 'array' / 'map' / 'path'
+
+           // Includes.
+           doc2 := cx.parse_with_include_root(input, '/proj') or { panic(err) }
+           val2 := doc2.eval_with_include_root(program, '/proj')!
+
+           // Atom scalar — type-strict, no string coercion.
+           doc3 := cx.parse('[order :status :paid]') or { panic(err) }
+           status := doc3.select('//order')!.attr('status')
+           assert status.kind() == 'atom'
+           assert status.equals(cx.atom('paid'))
+           assert !status.equals(cx.string('paid'))   // type-strict"""]
+      [note
+        """The V core exports `cx_code_diagram` (auto-detected
+           `erDiagram` or `flowchart` Mermaid output) and
+           `cx_code_tree` (JSON projection with source `loc` ranges
+           for the playground tree pane). These exports power the
+           wasm playground and are not wrapped by the FFI bindings;
+           cap bit 31 (diagram) and bit 32 (tree) advertise
+           availability."""]]
+
+    [child id=python-detail n=7.11.3 title='Python binding — install, Layer 1, type map'
+      [body
+        """The Python binding wraps the libcx C ABI through ctypes.
+           Layer 1 method names are snake_case per Python
+           convention; semantics are identical to V / Go / Rust.
+           Layer 2 idiomatic sugar — comprehensions over Nodes,
+           subscript-with-CXPath, generator division — lives in the
+           opt-in `cxlib.idioms` module and desugars deterministically
+           to Layer 1 calls. The binding asserts on `cx_version_str`
+           at import time to surface ABI drift early."""]
+      [example lang=shell
+        """pip install cx-lang
+           # Or from source:
+           git clone https://github.com/cx-home/cx
+           cd cx/lang/python
+           pip install -e ."""]
+      [example lang=python
+        """import cx
+
+           # Doc construction + identity.
+           doc = cx.parse(open('users.cx', 'rb').read())
+           out = doc.bytes()
+           h   = doc.hash()
+           eq  = doc.equals(other)
+
+           # Evaluation (cx_code_eval).
+           val = doc.eval(code)
+
+           # CXPath.
+           emails = doc.select_all('//user[@active=true]/@email')
+           first  = doc.select('//user[@id=1]')
+
+           # Pure-functional update.
+           new_doc = doc.modify('//user[@id=1]/@name', cx.Set('Alice'))
+           new_doc = doc.modify('//user[@banned=true]', cx.Delete())
+           new_doc = doc.modify('//price', cx.Using(lambda p: float(p) * 1.1))
+
+           # Tree access — Pythonic: attrs look like dict; children look like a list.
+           tree = cx.parse('[shop name=Pepe [pizza name=Margherita price=12]]')
+           shop = tree[0]
+           print(shop['name'])              # 'Pepe'
+           print(shop[0]['name'])           # 'Margherita'
+           print(shop[0]['price'])          # 12 (an int, not a string)
+
+           # Atom.
+           doc2 = cx.parse('[order :status :paid]')
+           status = doc2.select('//order').attr('status')
+           assert status.kind() == 'atom'
+           assert status == cx.atom('paid')
+           assert status != 'paid'             # type-strict
+
+           # Streaming.
+           with open('events.cx', 'rb') as f:
+               for event in cx.stream(f):
+                   if event.kind == 'element_start' and event.name == 'error':
+                       print(event.attrs)
+
+           # Schema validation.
+           diagnostics = cx.validate(
+               open('order.cx').read(),
+               schema=open('order.cxs').read(),
+               mode='strict',
+           )"""]
+      [note
+        """Type mapping (CX → Python): `int → int`, `bigint → int`,
+           `decimal → decimal.Decimal`, `float / f32 / f64 → float`,
+           `bool → bool`, `string → str`, `atom → cx.Atom` (new at
+           v0.8.0), `date → datetime.date`, `datetime →
+           datetime.datetime`, `bytes → bytes`, `null → None`."""]]
+
+    [child id=go-detail n=7.11.4 title='Go binding — install, Layer 1, cgo'
+      [body
+        """The Go binding wraps the libcx C ABI through cgo. Layer 1
+           method names use Go PascalCase per host convention;
+           semantics are identical to V / Python / Rust. Each
+           goroutine that calls into libcx gets a thread
+           registration on first use; the binding manages the Boehm
+           GC handshake at every FFI chokepoint, so calling code
+           does not need to think about it. Stateless format
+           conversions are safe to call concurrently on disjoint
+           inputs."""]
+      [example lang=shell """go get github.com/cx-home/cx/lang/go"""]
+      [example lang=go
+        """import "github.com/cx-home/cx/lang/go/cx"
+
+           // Doc construction + identity.
+           doc, err := cx.Parse(input)
+           out      := doc.Bytes()
+           h        := doc.Hash()
+           eq       := doc.Equals(other)
+
+           // Evaluation (cx_code_eval).
+           val, err := doc.Eval(code)
+
+           // CXPath.
+           emails, _ := doc.SelectAll("//user[@active=true]/@email")
+           first, _  := doc.Select("//user[@id=1]")
+
+           // Pure-functional update.
+           newDoc, _ := doc.Modify("//user[@id=1]/@name", cx.Set("Alice"))
+
+           // Tree access.
+           tree, _ := cx.Parse("[shop [pizza name=Margherita price=12]]")
+           shop  := tree.FindAll("shop")[0]
+           pizza := shop.FindAll("pizza")[0]
+           name  := pizza.Attr("name").String()
+           price := pizza.Attr("price").Int()
+
+           // Atom.
+           doc2, _ := cx.Parse(`[order :status :paid]`)
+           status := doc2.Select("//order").Attr("status")
+           fmt.Println(status.Kind())                     // "atom"
+           fmt.Println(status.Equals(cx.Atom("paid")))    // true
+           fmt.Println(status.Equals(cx.String("paid")))  // false
+
+           // Schema validation.
+           diags, _ := cx.Validate(doc, schema,
+               cx.WithMode(cx.ModeStrict),
+               cx.WithFailOn(cx.SeverityWarn))
+
+           // Streaming.
+           it, _ := cx.Stream(reader)
+           for it.Next() {
+               if e := it.Event(); e.Kind == cx.ElementStart && e.Name == "error" {
+                   fmt.Println(e.Attrs)
+               }
+           }"""]]
+
+    [child id=rust-detail n=7.11.5 title='Rust binding — install, Layer 1, threading'
+      [body
+        """The Rust binding wraps the libcx C ABI through `extern
+           "C"` declarations. Layer 1 method names are snake_case
+           per Rust convention. The binding registers each calling
+           thread with libcx via `ensure_thread` at every FFI
+           chokepoint; `cx_thread_register` and `cx_thread_unregister`
+           fire automatically, so manual setup is unnecessary.
+           Stateless conversions can be called from any thread
+           without coordination. Schema validate is 📋 for Rust at
+           v0.8.0-dev (the one Tier-1 row not yet ✓ in
+           `spec/misc/parity-matrix.md §2`)."""]
+      [example lang=shell """cargo add cx-lang"""]
+      [example lang=rust
+        """use cx_lang::{parse, Doc, Node, Set, Delete, Using, Atom, ValueKind};
+
+           // Doc construction + identity.
+           let doc: Doc = parse(&input)?;
+           let out: Vec<u8> = doc.bytes();
+           let h: String    = doc.hash();
+           let eq: bool     = doc.equals(&other);
+
+           // Evaluation (cx_code_eval).
+           let val = doc.eval(code)?;
+
+           // CXPath.
+           let emails: Vec<Node> = doc.select_all("//user[@active=true]/@email")?;
+           let first: Option<Node> = doc.select("//user[@id=1]")?;
+
+           // Pure-functional update.
+           let new_doc = doc.modify("//user[@id=1]/@name", Set("Alice"))?;
+
+           // Atom.
+           let doc2 = parse(r#"[order :status :paid]"#)?;
+           let status = doc2.select("//order")?.unwrap().attr("status").unwrap();
+           assert_eq!(status.kind(), ValueKind::Atom);
+           assert!(status.equals(&Atom::new("paid").into()));
+           assert!(!status.equals(&"paid".into()));   // type-strict
+
+           // Schema validation (📋 mid-flight at v0.8.0-dev).
+           use cx_lang::{validate, Mode, Severity};
+           let diags = validate(doc, schema)
+               .mode(Mode::Strict)
+               .fail_on(Severity::Warn)
+               .run()?;"""]
+      [note
+        """Type mapping (CX → Rust): `int → i64` (or sized variant
+           if `:iN`/`:uN`), `bigint → num_bigint::BigInt`, `decimal
+           → rust_decimal::Decimal`, `float → f64` (or `f32` if
+           sized), `bool → bool`, `string → String`, `atom →
+           cx_lang::Atom` (new at v0.8.0), `date →
+           chrono::NaiveDate`, `datetime → chrono::DateTime`,
+           `bytes → Vec<u8>`."""]]]]

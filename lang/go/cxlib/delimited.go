@@ -12,12 +12,12 @@ import (
 )
 
 // Delimited (CSV/TSV/PSV/arbitrary) C ABI bindings per
-// spec/decisions/0001-delimited-conversion.md and spec/conversions.md §8.
+// spec/conversions.md §8.
 // Phase 7.68 — wraps the V core delimited engine that landed in Phase 7.67.
 
 // ToDelimited encodes CX text to delimited text using delim as the
-// field separator. Per ADR 0001 D6, delim must be any single byte
-// except '\r' '\n' '"' '\'' '\\'.
+// field separator. Per, delim must be any single byte
+// except '\r' '\n' '"' '\” '\\'.
 func ToDelimited(input string, delim byte) (string, error) {
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
@@ -35,7 +35,7 @@ func ToDelimited(input string, delim byte) (string, error) {
 }
 
 // FromDelimited decodes delimited text to canonical CX. Auto-typing
-// applies per ADR 0001 D5; quoted cells stay :string.
+// applies; quoted cells stay :string.
 func FromDelimited(input string, delim byte) (string, error) {
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
@@ -82,7 +82,7 @@ func FromPsv(input string) (string, error) {
 	return callC(func(s *C.char, e **C.char) *C.char { return C.cx_from_psv(s, e) }, input)
 }
 
-// CsvToDataBin parses CSV text and returns CXDB v1 payload bytes
+// CsvToDataBin parses CSV text and returns CXCol v1 payload bytes
 // (unframed, matching ToDataBin's convention).
 func CsvToDataBin(input string) ([]byte, error) {
 	cs := C.CString(input)
@@ -92,7 +92,7 @@ func CsvToDataBin(input string) ([]byte, error) {
 	return extractBinPayload(raw, errPtr)
 }
 
-// TsvToDataBin parses TSV text and returns CXDB v1 payload bytes.
+// TsvToDataBin parses TSV text and returns CXCol v1 payload bytes.
 func TsvToDataBin(input string) ([]byte, error) {
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
@@ -101,7 +101,7 @@ func TsvToDataBin(input string) ([]byte, error) {
 	return extractBinPayload(raw, errPtr)
 }
 
-// PsvToDataBin parses PSV text and returns CXDB v1 payload bytes.
+// PsvToDataBin parses PSV text and returns CXCol v1 payload bytes.
 func PsvToDataBin(input string) ([]byte, error) {
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
@@ -110,7 +110,7 @@ func PsvToDataBin(input string) ([]byte, error) {
 	return extractBinPayload(raw, errPtr)
 }
 
-// DataBinToCsv decodes CXDB v1 framed bytes and emits CSV text.
+// DataBinToCsv decodes CXCol v1 framed bytes and emits CSV text.
 func DataBinToCsv(framed []byte) (string, error) {
 	if len(framed) == 0 {
 		return "", errors.New("cx_data_bin_to_csv: empty input")
@@ -129,7 +129,7 @@ func DataBinToCsv(framed []byte) (string, error) {
 	return goStr(out), nil
 }
 
-// DataBinToTsv decodes CXDB v1 framed bytes and emits TSV text.
+// DataBinToTsv decodes CXCol v1 framed bytes and emits TSV text.
 func DataBinToTsv(framed []byte) (string, error) {
 	if len(framed) == 0 {
 		return "", errors.New("cx_data_bin_to_tsv: empty input")
@@ -148,7 +148,7 @@ func DataBinToTsv(framed []byte) (string, error) {
 	return goStr(out), nil
 }
 
-// DataBinToPsv decodes CXDB v1 framed bytes and emits PSV text.
+// DataBinToPsv decodes CXCol v1 framed bytes and emits PSV text.
 func DataBinToPsv(framed []byte) (string, error) {
 	if len(framed) == 0 {
 		return "", errors.New("cx_data_bin_to_psv: empty input")

@@ -1,0 +1,20 @@
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/strings']
+
+# D1: the `greeting` capability -- a pure, parameterized view. No state, no
+# control, no journal, no socket; only the pure constructors (xap.md §3.2
+# component/surface/panel, §3.5 render). A capability IS a component: the typed
+# triple (props in / view out / intents out). Here the intent arm is empty
+# (view-only); working-panel :none is a plain view (the thin 95%).
+[$xap:component greeting
+  {props: {name: :string}
+   view: [?fn ($p) [panel [text [$strings:format "Hello, {}." ($p/name)]]]]
+   working-panel: :none}]
+
+# one-shot CLI client: construct a surface (one placed panel), render it to the
+# view-tree value (application/cx). The last expression is the program output
+# (cx prints it). A client is just a renderer over a medium-agnostic surface
+# (§13.2/§16): the SAME surface renders as HTML in D3 -- only the client changes.
+[$xap:render
+  [$xap:surface "hello" [$xap:panel greeting {name: "Ada"}]]
+  {accept: "application/cx"}]

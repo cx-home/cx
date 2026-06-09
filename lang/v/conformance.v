@@ -1,7 +1,8 @@
 module main
 
 import os
-import cffi as cxlib
+import native as cxlib
+import cx
 
 const repo_root = os.join_path(os.dir(@FILE), '..', '..')
 
@@ -13,56 +14,31 @@ mut:
 	sections map[string]string
 }
 
-fn flush_section(cur_section string, cur_lines []string, mut cur_sections map[string]string) {
-	if cur_section == '' {
-		return
-	}
-	mut lines := cur_lines.clone()
+// strip_blank_edges reproduces the former flush_section normalization: drop
+// leading/trailing BLANK lines from a section body, applied to the loader's
+// byte-exact body so the runner sees byte-identical sections vs the old .txt.
+fn strip_blank_edges(s string) string {
+	mut lines := s.split('\n')
 	for lines.len > 0 && lines[0].trim_space() == '' {
 		lines.delete(0)
 	}
 	for lines.len > 0 && lines[lines.len - 1].trim_space() == '' {
 		lines.delete(lines.len - 1)
 	}
-	cur_sections[cur_section] = lines.join('\n')
+	return lines.join('\n')
 }
 
+// parse_suite loads a .cxd conformance suite via cx.load_fixtures (the shared
+// CX-native loader), replacing the bespoke `=== test:` / `--- key` scanner.
+// The runner keys into t.sections[name] by presence exactly as before.
 fn parse_suite(path string) []Test {
-	src := os.read_file(path) or {
-		eprintln('cannot read ${path}: ${err}')
-		return []
-	}
 	mut tests := []Test{}
-	mut cur_name := ''
-	mut cur_sections := map[string]string{}
-	mut cur_section := ''
-	mut cur_lines := []string{}
-	mut in_test := false
-
-	for raw in src.split_into_lines() {
-		if raw.starts_with('=== test:') {
-			flush_section(cur_section, cur_lines, mut cur_sections)
-			if in_test {
-				tests << Test{ name: cur_name, sections: cur_sections.clone() }
-			}
-			cur_name = raw[9..].trim_space()
-			cur_sections = map[string]string{}
-			cur_section = ''
-			cur_lines = []
-			in_test = true
-		} else if raw.starts_with('level:') || raw.starts_with('tags:') {
-			// skip metadata
-		} else if raw.starts_with('--- ') && in_test {
-			flush_section(cur_section, cur_lines, mut cur_sections)
-			cur_section = raw[4..].trim_space()
-			cur_lines = []
-		} else if in_test && cur_section != '' {
-			cur_lines << raw
+	for c in cx.load_fixtures(path) {
+		mut secs := map[string]string{}
+		for k, v in c.sections {
+			secs[k] = strip_blank_edges(v)
 		}
-	}
-	flush_section(cur_section, cur_lines, mut cur_sections)
-	if in_test {
-		tests << Test{ name: cur_name, sections: cur_sections.clone() }
+		tests << Test{ name: c.name, sections: secs }
 	}
 	return tests
 }
@@ -72,19 +48,22 @@ fn parse_suite(path string) []Test {
 fn run_test(t Test) []string {
 	mut failures := []string{}
 
-	has_cx  := 'in_cx'  in t.sections
-	has_xml := 'in_xml' in t.sections
-	has_md  := 'in_md'  in t.sections
-	has_cxl := 'in_cxl' in t.sections
-
-	if !has_cx && !has_xml && !has_md && !has_cxl {
+	if 'in_cxl' in t.sections {
+		failures << 'legacy `--- in_cxl` header rejected; use `--- in_code`'
 		return failures
 	}
 
-	in_cx  := t.sections['in_cx']  or { '' }
-	in_xml := t.sections['in_xml'] or { '' }
-	in_md  := t.sections['in_md']  or { '' }
-	in_cxl := t.sections['in_cxl'] or { '' }
+	has_cx   := 'in_cx'   in t.sections
+	has_xml  := 'in_xml'  in t.sections
+	has_code := 'in_code' in t.sections
+
+	if !has_cx && !has_xml && !has_code {
+		return failures
+	}
+
+	in_cx   := t.sections['in_cx']   or { '' }
+	in_xml  := t.sections['in_xml']  or { '' }
+	in_code := t.sections['in_code'] or { '' }
 
 	// ── ?include resolution support (GG5) ──────────────────────────
 	// `include_root` section signals the parse-time include resolver
@@ -113,38 +92,38 @@ fn run_test(t Test) []string {
 		defer { for p in cleanup_paths { os.rmdir_all(p) or {} } }
 	}
 
-	// ── out_text (CXL evaluation) ────────────────────────────────────────────
-	// Driven by an `in_cxl` + `in_cx` pair: the CXL program is evaluated
+	// ── out_text (program evaluation) ────────────────────────────────────────────
+	// Driven by an `in_code` + `in_cx` pair: the CX program is evaluated
 	// against the CX input and the byte-exact output is compared against
 	// `out_text`. The program's own `[?cx output-target=…]` directive
 	// selects the target; the runner does not override it.
 	if exp := t.sections['out_text'] {
-		if has_cxl && has_cx {
-			got := cxlib.eval_cxl(in_cx, in_cxl, '') or {
-				failures << 'eval_cxl error: ${err}'
+		if has_code && has_cx {
+			got := cxlib.cx_code_eval(in_cx, in_code, '') or {
+				failures << 'cx_code_eval error: ${err}'
 				return failures
 			}
 			if exp != got {
 				failures << 'out_text mismatch\n  expected:\n${exp}\n  got:\n${got}'
 			}
 		} else {
-			failures << 'out_text requires in_cxl + in_cx sections'
+			failures << 'out_text requires in_code + in_cx sections'
 		}
 	}
 
-	// ── out_log (CXL log: emit capture) ──────────────────────────────────────
+	// ── out_log (CX code log: emit capture) ──────────────────────────────────────
 	// The runner injects a per-fixture `[?cx log-output=file:<tmp>]` +
 	// `[?cx test-mode=true]` prelude so log:* emissions land at a known
-	// path with stubbed timestamps. After `eval_cxl` returns, the runner
-	// reads the temp file and compares it byte-identically against the
+	// path with stubbed timestamps. After `cx_code_eval` returns, the
+	// runner reads the temp file and compares it byte-identically against the
 	// `out_log` section. Used for FF10 `log:` byte-identity fixtures.
 	if exp := t.sections['out_log'] {
-		if has_cxl && has_cx {
+		if has_code && has_cx {
 			tmp := os.join_path(os.temp_dir(), 'cx_conform_log_${os.getpid()}_${t.name.replace('/', '_')}.log')
 			os.rm(tmp) or {}
-			full := '[?cx log-output=file:${tmp}]\n[?cx test-mode=true]\n${in_cxl}'
-			_ := cxlib.eval_cxl(in_cx, full, '') or {
-				failures << 'eval_cxl error (out_log): ${err}'
+			full := '[?cx log-output=file:${tmp}]\n[?cx test-mode=true]\n${in_code}'
+			_ := cxlib.cx_code_eval(in_cx, full, '') or {
+				failures << 'cx_code_eval error (out_log): ${err}'
 				os.rm(tmp) or {}
 				return failures
 			}
@@ -159,17 +138,17 @@ fn run_test(t Test) []string {
 				failures << 'out_log mismatch\n  expected:\n${exp}\n  got:\n${got_norm}'
 			}
 		} else {
-			failures << 'out_log requires in_cxl + in_cx sections'
+			failures << 'out_log requires in_code + in_cx sections'
 		}
 	}
 
-	// ── out_err (CXL evaluation error path OR CX parse error path) ───────
-	// Either `eval_cxl` (when in_cxl + in_cx) must fail, or `to_cx`
+	// ── out_err (program evaluation error path OR CX parse error path) ───────
+	// Either `cx_code_eval` (when in_code + in_cx) must fail, or `to_cx`
 	// (when only in_cx is present) must fail; the substring in `out_err`
 	// must appear in the returned error message.
 	if exp := t.sections['out_err'] {
-		if has_cxl && has_cx {
-			_ := cxlib.eval_cxl(in_cx, in_cxl, '') or {
+		if has_code && has_cx {
+			_ := cxlib.cx_code_eval(in_cx, in_code, '') or {
 				if !err.msg().contains(exp.trim_space()) {
 					failures << 'out_err mismatch\n  expected substring: ${exp.trim_space()}\n  got: ${err.msg()}'
 				}
@@ -178,8 +157,8 @@ fn run_test(t Test) []string {
 			failures << 'out_err: expected failure containing ${exp.trim_space()}, got success'
 		} else if has_cx {
 			// Pure-parse error path: to_cx (or to_cx_with_include_root
-			// when include_root section present) must fail. v0.7.0 GG12
-			// + GG5 surface error codes this way.
+			// when include_root section present) must fail. GG12 + GG5
+			// surface error codes this way.
 			if use_include_resolver {
 				_ := cxlib.to_cx_with_include_root(in_cx, include_root_dir) or {
 					if !err.msg().contains(exp.trim_space()) {
@@ -198,7 +177,7 @@ fn run_test(t Test) []string {
 				failures << 'out_err: expected to_cx failure containing ${exp.trim_space()}, got success'
 			}
 		} else {
-			failures << 'out_err requires in_cxl + in_cx sections OR an in_cx section'
+			failures << 'out_err requires in_code + in_cx sections OR an in_cx section'
 		}
 	}
 
@@ -220,8 +199,6 @@ fn run_test(t Test) []string {
 		mut got := ''
 		if has_xml {
 			got = cxlib.xml_to_cx(in_xml) or { failures << 'xml_to_cx error: ${err}'; return failures }
-		} else if has_md {
-			got = cxlib.md_to_cx(in_md) or { failures << 'md_to_cx error: ${err}'; return failures }
 		} else if use_include_resolver {
 			got = cxlib.to_cx_with_include_root(in_cx, include_root_dir) or {
 				failures << 'to_cx_with_include_root error: ${err}'; return failures
@@ -260,19 +237,6 @@ fn run_test(t Test) []string {
 		}
 	}
 
-	// ── out_md ────────────────────────────────────────────────────────────────
-	if exp := t.sections['out_md'] {
-		mut got := ''
-		if has_md {
-			got = cxlib.md_to_md(in_md) or { failures << 'md_to_md error: ${err}'; return failures }
-		} else {
-			got = cxlib.to_md(in_cx) or { failures << 'to_md error: ${err}'; return failures }
-		}
-		if exp.trim_space() != got.trim_space() {
-			failures << 'out_md mismatch\n  expected:\n${exp}\n  got:\n${got}'
-		}
-	}
-
 	return failures
 }
 
@@ -302,15 +266,11 @@ fn main() {
 		args
 	} else {
 		[
-			os.join_path(repo_root, 'conformance', 'core.txt'),
-			os.join_path(repo_root, 'conformance', 'extended.txt'),
-			os.join_path(repo_root, 'conformance', 'xml.txt'),
-			os.join_path(repo_root, 'conformance', 'md.txt'),
-			os.join_path(repo_root, 'conformance', 'eval.txt'),
-			os.join_path(repo_root, 'conformance', 'cx_module.txt'),
-			os.join_path(repo_root, 'conformance', 'log_module.txt'),
-			os.join_path(repo_root, 'conformance', 'cx_lang.txt'),
-			os.join_path(repo_root, 'conformance', 'include.txt'),
+			os.join_path(repo_root, 'conformance', 'core.cxd'),
+			os.join_path(repo_root, 'conformance', 'extended.cxd'),
+			os.join_path(repo_root, 'conformance', 'xml.cxd'),
+			os.join_path(repo_root, 'conformance', 'namespaces.cxd'),
+			os.join_path(repo_root, 'conformance', 'include.cxd'),
 		]
 	}
 	mut all_pass := true

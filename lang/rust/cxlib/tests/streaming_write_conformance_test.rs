@@ -17,39 +17,31 @@ struct TestCase {
     sections: HashMap<String, String>,
 }
 
+// strip_blank_edges reproduces the former flush() normalization: drop
+// leading/trailing BLANK lines from a section body, applied to the loader's
+// byte-exact body so the runner sees byte-identical sections vs the old .txt.
+fn strip_blank_edges(s: &str) -> String {
+    let mut lines: Vec<&str> = s.split('\n').collect();
+    while lines.first().map(|l| l.trim().is_empty()).unwrap_or(false) { lines.remove(0); }
+    while lines.last().map(|l| l.trim().is_empty()).unwrap_or(false) { lines.pop(); }
+    lines.join("\n")
+}
+
+// Load conformance/streaming_write.cxd via the CX-native loader
+// (cxlib::fixtures::load_fixtures), replacing the bespoke === test: / --- key
+// scanner. The runner keys into tc.sections[...] by presence as before.
 fn parse_suite(path: &PathBuf) -> Vec<TestCase> {
-    let text = std::fs::read_to_string(path).expect("read suite");
-    let mut tests: Vec<TestCase> = Vec::new();
-    let mut cur: Option<TestCase> = None;
-    let mut section: Option<String> = None;
-    let mut buf: Vec<String> = Vec::new();
-
-    fn flush(cur: &mut Option<TestCase>, section: &Option<String>, buf: &mut Vec<String>) {
-        if let (Some(tc), Some(sec)) = (cur.as_mut(), section.as_ref()) {
-            let mut lines = buf.clone();
-            while lines.first().map(|s| s.trim().is_empty()).unwrap_or(false) { lines.remove(0); }
-            while lines.last().map(|s| s.trim().is_empty()).unwrap_or(false) { lines.pop(); }
-            tc.sections.insert(sec.clone(), lines.join("\n"));
-        }
-        buf.clear();
-    }
-
-    for raw in text.lines() {
-        if let Some(name) = raw.strip_prefix("=== test:") {
-            flush(&mut cur, &section, &mut buf);
-            if let Some(prev) = cur.take() { tests.push(prev); }
-            cur = Some(TestCase { name: name.trim().to_owned(), sections: HashMap::new() });
-            section = None;
-        } else if let Some(sec) = raw.strip_prefix("--- ") {
-            flush(&mut cur, &section, &mut buf);
-            section = Some(sec.trim().to_owned());
-        } else if cur.is_some() && section.is_some() {
-            buf.push(raw.to_owned());
-        }
-    }
-    flush(&mut cur, &section, &mut buf);
-    if let Some(prev) = cur { tests.push(prev); }
-    tests
+    cxlib::fixtures::load_fixtures(path.to_str().expect("utf-8 suite path"))
+        .expect("load suite")
+        .into_iter()
+        .map(|c| {
+            let sections = c.sections
+                .into_iter()
+                .map(|(k, v)| (k, strip_blank_edges(&v)))
+                .collect();
+            TestCase { name: c.name, sections }
+        })
+        .collect()
 }
 
 // ── event-line decoder ───────────────────────────────────────────────────────
@@ -230,7 +222,7 @@ fn run_case(tc: &TestCase) -> Vec<String> {
 fn conformance_path() -> PathBuf {
     // tests run from lang/rust/cxlib; conformance/ is at ../../../conformance/
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.push("../../../conformance/streaming_write.txt");
+    p.push("../../../conformance/streaming_write.cxd");
     p
 }
 

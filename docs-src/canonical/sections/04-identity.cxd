@@ -1,0 +1,636 @@
+[# Section 4 — identity, hashing, binary wire formats.
+   Authored 2026-05-22, expanded with cap-bits + ID/IDREF + FFI lifetime.
+   Anchored in spec/canonical.md, spec/identity.md, spec/core/ast-bin.md,
+   spec/core/data-bin.md, spec/abi.md. #]
+
+[section id=identity n=4 title='Identity'
+
+  [intro
+    """CX's identity story rests on three layers: **canonical bytes**
+       (the unique serialization rule that makes two documents
+       comparable), **SHA-256 hashing** (the fingerprint computed over
+       those bytes), and the **binary wire formats** (ast-bin for AST
+       transfer, data-bin for value transfer). This section is the
+       working reference; normative depth in
+       [`spec/canonical.md`](../../spec/canonical.md),
+       [`spec/identity.md`](../../spec/identity.md),
+       [`spec/core/ast-bin.md`](../../spec/core/ast-bin.md), and
+       [`spec/core/data-bin.md`](../../spec/core/data-bin.md)."""]
+
+  [child id=canonical n=4.1 title='Canonical bytes'
+    [intro
+      """Two CX documents are equal iff their **strict canonical bytes**
+         are equal. Canonical bytes are the unique serialization
+         produced by `cx canon` — the rules are summarized in
+         [[canonical-strict]] and stated normatively in
+         [`spec/canonical.md`](../../spec/canonical.md)."""]
+
+    [body
+      """Why this matters: every distributed-systems primitive in CX —
+         caching, deduplication, content-addressing, cross-binding
+         equality — depends on byte-stable canonicalization. Without
+         it, two "equal" documents might disagree on hash, on equality,
+         or on what bytes get shipped over the wire. CX takes the same
+         position as JCS for JSON, XCANON for XML, and the Nix store
+         for files: there is one true serialization, and the rules to
+         produce it are minimal and total."""]
+
+    [child id=canon-lossless-strict n=4.1.1 title='Lossless vs strict canonical (recap)'
+      [body
+        """Two canonical forms (see [[canonical-strict]] + [[canonical-lossless]]
+           in [[surfaces]] for the surface-level treatment):"""]
+      [list
+        [item """**Lossless canonical (`cx fmt`)** — preserves comments,
+                anchors, aliases, presentation. Idempotent. Used for
+                source-file formatting and diff stability."""]
+        [item """**Strict canonical (`cx canon` / `cx hash`)** — strips
+                comments, expands anchors and aliases, normalizes date
+                offsets, sorts attributes lexicographically. Two docs
+                with the same data hash identically. Used for content
+                addressing."""]]
+      [body
+        """**The hash is taken over strict canonical bytes**, not over
+           lossless. This means `[user email='a' #ada]` and `[user
+           #ada email='a']` (different attribute order, same data) hash
+           to the same SHA-256."""]
+      [example lang=cx
+        """[# Source: #]
+           [user email='ada@example.com' id=42 +active]
+
+           [# cx canon output (strict canonical bytes): #]
+           [user active=true email='ada@example.com' id=42]"""]
+      [body
+        """**Canonicalization rules (strict):**"""]
+      [list
+        [item """**Attribute key order:** lexicographic by attribute name.
+                Ties broken by Unicode code point. Comments stripped."""]
+        [item """**String quoting:** single quotes for single-line; triple
+                double-quotes for multi-line. Escapes minimal — only
+                what the parser requires."""]
+        [item """**Whitespace:** no insignificant whitespace; bodies joined
+                with single spaces; structural newlines only where the
+                grammar requires them."""]
+        [item """**Numeric form:** integers as plain digits; floats in the
+                shortest representation that round-trips to the same
+                value (IEEE-754 shortest-form)."""]
+        [item """**Boolean form:** `true` / `false`. Sigil shortcuts
+                `+name` / `-name` expand."""]
+        [item """**Date/datetime:** offset preserved (NOT normalized to
+                UTC); fractional seconds dropped if all zero;
+                identity-comparison is by absolute instant."""]
+        [item """**Anchors expanded:** `&base` / `*base` shapes resolve
+                into their expanded form in the canonical output."""]]]
+
+    [child id=canon-cross-format n=4.1.2 title='Cross-format identity (hash stable through projections)'
+      [body
+        """The hash is over CX strict canonical bytes — NOT over the
+           projection (JSON / YAML / TOML / etc.). This produces a key
+           property: **a document's hash is stable through round-trip
+           projections**."""]
+      [example lang=sh
+        """# Original CX
+           cx hash users.cx
+           # → sha256:3a7bd3e2360a...
+
+           # Convert to JSON then back
+           cx convert users.cx --to json > users.json
+           cx convert users.json --to cx | cx hash
+           # → sha256:3a7bd3e2360a...  (same hash)"""]
+      [body
+        """The property holds for **lossless** projections (JSON, YAML,
+           TOML, XML — within their expressive range; see [[roundtrip]]).
+           For **lossy** projections (Markdown, CSV/TSV, JSONL with
+           non-trivial nesting) the round-trip drops information; the
+           re-imported document will have a different hash. CX makes
+           the lossy-ness explicit; see [[roundtrip]] for the full
+           matrix."""]
+      [body
+        """Practical use: in a content-addressable store, you can
+           accept incoming data in any supported format, convert to
+           CX, hash, dedupe — knowing that two clients sending the
+           same data in different formats will produce the same key."""]]]
+
+  [child id=hash n=4.2 title='SHA-256 content hash'
+    [intro
+      """The identity of a CX document is the SHA-256 of its strict
+         canonical bytes. The hash is computed over the UTF-8 byte
+         sequence of the canonical form, not over the AST or the
+         in-memory value representation."""]
+
+    [example lang=v
+      """// V binding — Layer 1
+         doc := cx.parse(source)!
+         println(doc.hash())   // 'sha256:3a7bd3e2360a...'"""]
+
+    [example lang=python
+      """# Python binding — Layer 1
+         doc = cx.parse(source)
+         print(doc.hash())     # 'sha256:3a7bd3e2360a...'"""]
+
+    [example lang=go
+      """// Go binding — Layer 1
+         doc, _ := cx.Parse(source)
+         fmt.Println(doc.Hash())  // "sha256:3a7bd3e2360a..."""]
+
+    [example lang=rust
+      """// Rust binding — Layer 1
+         let doc = cx::parse(&source)?;
+         println!("{}", doc.hash());  // "sha256:3a7bd3e2360a..."""]
+
+    [child id=hash-stability n=4.2.1 title='Stability across bindings + machines'
+      [body
+        """The hash function is **stable across bindings, OSes, and
+           architectures**. V, Python, Go, and Rust all produce
+           byte-identical hash strings for byte-identical input. The
+           guarantee extends to architecture (x86-64, ARM64,
+           little-endian, big-endian) and OS (macOS, Linux, Windows,
+           BSD). Verified by [`conformance/binding_api.txt`](../../conformance/binding_api.txt)
+           gate 28.6."""]
+      [body
+        """**Determinism details:**"""]
+      [list
+        [item """**Float formatting:** the canonical shortest-form
+                produces byte-identical output regardless of host C
+                library (`printf("%g")` is NOT used; CX implements its
+                own dragon-grisu-style formatter)."""]
+        [item """**Endianness:** the canonical bytes are UTF-8 text, no
+                multi-byte numeric encoding in the canonical form
+                itself."""]
+        [item """**Unicode normalization:** identifiers and string
+                content are normalized to NFC before canonicalization."""]
+        [item """**Locale-independence:** sort order for attribute
+                names is by Unicode code point, not by locale collation
+                (no LC_COLLATE influence)."""]]]
+
+    [child id=hash-truncation n=4.2.2 title='Truncation safety (short ids)'
+      [body
+        """SHA-256 is 256 bits (64 hex chars). For human-facing
+           identifiers, you can truncate. Birthday-collision math:
+           with N items and a hash of B bits, the probability of any
+           collision crosses 50% at roughly N ≈ √(π/2 · 2^B). Useful
+           safe-truncation lengths:"""]
+      [table columns=('truncated to' 'bits' 'safe collection size (1% collision risk)' 'safe (one-in-billion)')
+        [row truncated='4 hex (16 bits)' bits=16 safe1='~16' safe1b='very small']
+        [row truncated='8 hex (32 bits)' bits=32 safe1='~6,500' safe1b='~200']
+        [row truncated='12 hex (48 bits)' bits=48 safe1='~1.7 M' safe1b='~50,000']
+        [row truncated='16 hex (64 bits)' bits=64 safe1='~400 M' safe1b='~13 M']
+        [row truncated='20 hex (80 bits)' bits=80 safe1='~26 B' safe1b='~860 M']
+        [row truncated='24 hex (96 bits)' bits=96 safe1='~1.7 T' safe1b='~55 B']
+        [row truncated='full (256 bits)' bits=256 safe1='astronomical' safe1b='astronomical']]
+      [body
+        """**Recommended:** 16 hex (64 bits) for short IDs in
+           UI / URL / log contexts. 24 hex (96 bits) for cross-tenant
+           content stores. Full 64 hex for security-sensitive
+           identifiers."""]]
+
+    [child id=hash-use-cases n=4.2.3 title='Use cases — cache keys, dedup, content stores'
+      [body
+        """**Cache key:** `cx hash request.cx` is a stable cache key for
+           an expensive computation parameterized on the document.
+           Same input → same key → memoization works."""]
+      [body
+        """**Deduplication:** in a document store, hash on ingestion;
+           store the canonical bytes once, point all duplicates at the
+           same blob."""]
+      [body
+        """**Content-addressable storage:** the hash IS the address.
+           Git, IPFS, Nix all use the same model. CX hashes interop
+           directly:"""]
+      [list
+        [item """**Git LFS:** point `cx hash`-derived blob ids at the
+                CX file's strict-canonical bytes."""]
+        [item """**IPFS:** wrap the canonical bytes in a CIDv1 dag-pb
+                envelope or use raw codec; the SHA-256 maps to the
+                CID's multihash."""]
+        [item """**Nix:** identical store-path-shape (SHA-256-named blob
+                with metadata sidecar)."""]
+        [item """**S3 / object storage:** content-MD5 header is too
+                weak; use `x-amz-meta-cx-sha256` for stronger
+                integrity."""]]
+      [body
+        """**Signing:** sign the strict canonical bytes; verify by
+           re-canonicalizing on receipt. The signature is robust
+           against benign reformatting (whitespace, attribute order,
+           comments) because those don't affect strict canonical
+           form."""]]]
+
+  [child id=ast-bin n=4.3 title='ast-bin wire format'
+    [intro
+      """`ast-bin` is the binary serialization of a CX AST. It exists
+         for in-process and cross-process transfer of parsed documents
+         without re-parsing — bindings ship the AST over the C ABI
+         rather than re-tokenizing text. Full spec in
+         [`spec/core/ast-bin.md`](../../spec/core/ast-bin.md)."""]
+
+    [body
+      """ast-bin is **not** the canonical form. Canonical bytes are CX
+         text. ast-bin is the **wire** form between processes that have
+         agreed to skip parsing. Two ast-bin payloads can differ
+         (different version, different option bits) and still represent
+         the same canonical document. The hash is always taken over
+         canonical text bytes, never over ast-bin."""]
+
+    [child id=ast-bin-envelope n=4.3.1 title='Buffer envelope'
+      [body
+        """An ast-bin payload is a self-contained byte buffer with a
+           versioned header followed by tree topology and length-prefixed
+           atoms. Layout:"""]
+      [list
+        [item """**Magic + version (8 bytes):** ASCII `'CXAB'` then a
+                u32 format version. Reader validates magic + version
+                before parsing further."""]
+        [item """**Capability bits (8 bytes):** u64 bitmask declaring
+                what features the payload uses. A reader that does not
+                advertise a required capability refuses the payload."""]
+        [item """**Payload length (8 bytes):** u64 byte count of the
+                tree-topology section; enables stream chunking."""]
+        [item """**Tree topology:** preorder-encoded node tags +
+                length-prefixed strings + zig-zag varints for child
+                offsets."""]
+        [item """**Optional trailer:** SHA-256 of the equivalent
+                canonical bytes (skip if the producer doesn't compute
+                it) — readers can use it to verify cross-format
+                identity without re-canonicalizing."""]]
+      [body
+        """Length-prefixed strings: all element names, attribute names,
+           and string scalars carry their byte length as a varint
+           before the bytes. No null terminators."""]]
+
+    [child id=ast-bin-capabilities n=4.3.2 title='Capability bits (full table)'
+      [body
+        """Capability bits are the forward-compat mechanism. When a
+           newer libcx adds a feature, it claims a new cap bit. Readers
+           that don't know that bit refuse the payload (rather than
+           silently mis-interpret it). The full table as of v0.8.0:"""]
+      [table columns=('bit' 'name' 'meaning' 'introduced')
+        [row bit=1  name='schema-driven' meaning='data-bin omits tag bytes; schema is the dictionary' v='v0.5.0']
+        [row bit=2  name='external-entity' meaning='resolver may load external XML entities' v='v0.5.0']
+        [row bit=3  name='xml-space-preserve' meaning='xml:space attribute is parser-honored' v='v0.5.0']
+        [row bit=4  name='include-local' meaning='[?cx include] resolves file-system paths under doc tree' v='v0.5.0']
+        [row bit=5  name='include-absolute' meaning='[?cx include] resolves absolute paths' v='v0.5.0']
+        [row bit=6  name='include-network' meaning='[?cx include] resolves HTTPS URLs' v='v0.5.0']
+        [row bit=7  name='multi-encoding' meaning='document may declare alternate encoding' v='v0.5.0']
+        [row bit=8  name='doctype-active' meaning='doctype declaration triggers auto-schema-binding' v='reserved for v0.9.x']
+        [row bit=9  name='namespaces' meaning='xmlns: declarations resolved' v='v0.5.0']
+        [row bit=10 name='cx-lang' meaning='cx:lang scoping honored' v='v0.5.0']
+        [row bit=11 name='collection-literals' meaning='() [] {} literal forms' v='v0.6.0']
+        [row bit=12 name='ast-bin-v4' meaning='ast-bin format version 4' v='v0.6.0']
+        [row bit=13 name='delimited-csv' meaning='CSV / TSV / PSV projections' v='v0.6.0']
+        [row bit=14 name='diff-tree' meaning='cx diff produces tree-structured diff' v='v0.6.0']
+        [row bit=15 name='lint-rules' meaning='cx lint rule registry' v='v0.6.0']
+        [row bit=16 name='streaming-parse' meaning='pull-based streaming parser' v='v0.7.0']
+        [row bit=17 name='streaming-write' meaning='callback-driven streaming emit' v='v0.7.0']
+        [row bit=18 name='services' meaning='[?service] / [?http-client] directives' v='v0.7.6']
+        [row bit=19 name='workers' meaning='[?worker] / [?channel] / [?select] directives' v='v0.7.6']
+        [row bit=20 name='async' meaning='[?async] / [?await] / [?await-all/-any/-race]' v='v0.7.6']
+        [row bit=21 name='resilience' meaning='[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]' v='v0.7.6']
+        [row bit=22 name='cxcol-format' meaning='CXCol column-oriented binary format' v='v0.7.0']
+        [row bit=23 name='arrow-bridge' meaning='Arrow C Data Interface zero-copy bridge' v='v0.7.0']
+        [row bit=24 name='parquet-bridge' meaning='Parquet read/write via cxlib_arrow' v='v0.7.0']
+        [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6']
+        [row bit=26 name='thread-register' meaning='cx_thread_register required for cross-thread FFI' v='v0.6.0']
+        [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind' v='v0.8.0']
+        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children' v='v0.8.0']
+        [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary' v='v0.8.0']
+        [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing' v='v0.8.x']
+        [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0']
+        [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.8.0']]
+      [body
+        """Bits 33-63 reserved for v0.9.x and beyond. The cap-bit
+           layout is fixed; bits are never re-assigned."""]]
+
+    [child id=ast-bin-versioning n=4.3.3 title='Version negotiation + forward-compat'
+      [body
+        """When a newer libcx talks to an older binding, the version
+           negotiation runs at FFI handshake: `cx_features()` returns
+           a u64 bitmask of supported caps. The caller compares with
+           the bits required by the payload it's about to send:"""]
+      [list
+        [item """**All required bits supported:** payload accepted."""]
+        [item """**Required bit NOT supported:** payload refused with
+                CXER0200 (capability mismatch). Caller MAY downgrade
+                — re-emit the payload without the unsupported feature
+                if a downgrade path exists — or surface an error to
+                the user."""]
+        [item """**Unknown bits set:** strict mode refuses; lenient
+                mode accepts (the unknown bits are forward-feature
+                hints; the payload's required-bits are explicit)."""]]
+      [body
+        """The lenient mode is the default for v0.8.0; strict mode is
+           opt-in via `cx_set_strict(true)`. The choice trades
+           forward-compat against accidental-misinterpretation risk."""]]]
+
+  [child id=data-bin n=4.4 title='data-bin format'
+    [intro
+      """`data-bin` is the binary value format for **data** — not parse
+         structure. Where ast-bin carries AST nodes (with name / kind /
+         child pointers), data-bin carries values (scalars, arrays,
+         maps, tables) with optional schema-driven tag omission. Spec:
+         [`spec/core/data-bin.md`](../../spec/core/data-bin.md)."""]
+
+    [child id=data-bin-self-describing n=4.4.1 title='Self-describing mode'
+      [body
+        """Every value is tagged with its kind. Comparable to JSON or
+           BSON in flexibility. Used when the schema is not known to
+           both sides — e.g., wire-formatted between two CX bindings
+           that don't share schemas, or for ad-hoc tooling."""]
+      [body
+        """Tag bytes: a one-byte type tag (`0x01` = bool, `0x02` = int,
+           `0x03` = float, `0x10` = string, `0x20` = array, `0x21` =
+           map, etc.) followed by the value bytes. Length prefix where
+           applicable. Full tag table in
+           [`spec/core/data-bin.md §3`](../../spec/core/data-bin.md)."""]]
+
+    [child id=data-bin-schema-driven n=4.4.2 title='Schema-driven mode (cap bit 1)'
+      [body
+        """Tag bytes and field names are omitted; the schema is the
+           dictionary. Wire size comparable to Protobuf or Avro. Used
+           for high-throughput bindings (e.g. the analytics-bridge
+           Arrow / Parquet path)."""]
+      [body
+        """**Negotiation:** the schema-driven mode is gated on
+           capability bit 1 (see [[ast-bin-capabilities]]). A reader
+           that does not advertise the schema-driven cap bit gets
+           self-describing payload, never silently corrupted bytes.
+           The schema is exchanged out-of-band (e.g., the `.cxs` file
+           is shipped alongside or referenced by hash); the data-bin
+           payload carries a SHA-256 of the schema in its trailer so
+           readers can verify."""]]
+
+    [child id=data-bin-chunked n=4.4.3 title='Chunked tables (§3.11)'
+      [body
+        """Tables (`:table` data shape) get a dedicated wire form in
+           data-bin §3.11. Layout:"""]
+      [list
+        [item """**Per-table preamble:** column count, column-spec
+                table (name + type + nullability)."""]
+        [item """**Per-chunk header:** row count, dictionary references
+                if dictionary-encoded."""]
+        [item """**Per-column buffers:** contiguous, dictionary-encoded
+                where applicable, nullable via a separate validity
+                bitmap."""]
+        [item """**Per-chunk manifest:** min/max/null-count per column,
+                used for predicate pushdown on read."""]
+        [item """**Trailer:** cumulative chunk count, file-level
+                statistics, optional content-hash of the canonical
+                form."""]]
+      [body
+        """This is the wire format under the CXCol streaming surface
+           (see [[cxcol]] in [[analytics]]). Reading is chunk-by-chunk;
+           the manifest enables skip-on-predicate without loading the
+           full payload."""]]
+
+    [child id=data-bin-compression n=4.4.4 title='Page-compression wrapper (§3.12)'
+      [body
+        """An optional page-compression wrapper (`0x90` envelope, per
+           [`spec/core/data-bin.md §3.12`](../../spec/core/data-bin.md)) wraps
+           ranges of bytes inside the payload with a compression
+           codec. Supported codecs: Snappy (default), Zstd, LZ4, Gzip.
+           The wrapper is gated by cap bit 1 alongside schema-driven
+           mode."""]
+      [body
+        """Compression operates on column buffers, not on the structural
+           header — so readers can navigate the page index without
+           decompressing the value bodies. The hash is taken over the
+           canonical (uncompressed) bytes."""]]]
+
+  [child id=id-anchors n=4.5 title='ID anchors and IDREF resolution'
+    [intro
+      """The `#name` sigil (see [[id]]) declares a semantic identity on
+         an element. Identities are document-scoped and resolvable via
+         CXPath `id('name')`. Normative spec:
+         [`spec/identity.md`](../../spec/identity.md)."""]
+
+    [child id=id-scoping n=4.5.1 title='Document-unique scoping'
+      [body
+        """An identity `#name` is unique within a single CX document.
+           Duplicate `#name` declarations raise CXER0102 at parse
+           time. The uniqueness check spans the entire document
+           **after include resolution** — an `[?cx include]`-imported
+           sub-document contributes its `#name`s to the same
+           namespace."""]
+      [body
+        """Identities do NOT cross document boundaries except via
+           includes. Two separate CX files can each declare `#ada`
+           without conflict; they refer to different elements in
+           their respective documents."""]]
+
+    [child id=idref-resolution n=4.5.2 title='IDREF resolution + cycles'
+      [body
+        """A reference to an identity uses the `#name` sigil in
+           **value position**: `[post author-id=#ada ...]`. The
+           reference resolves to the element bearing `#ada` via
+           CXPath's `id('name')` function."""]
+      [example lang=cx
+        """[users
+           [user #ada email='ada@example.com']
+           [user #grace email='grace@example.com']]
+         [posts
+           [post author-id=#ada \"\"\"First post\"\"\"]
+           [post author-id=#grace \"\"\"Second\"\"\"]]"""]
+      [body
+        """**Reference cycles** (A references B references A) are not
+           an error — the references are values, not container
+           relationships; no infinite recursion. However, cyclic
+           **merge** references (via the `*` sigil — see [[merge]])
+           ARE errors and raise CXER0101."""]
+      [body
+        """The ID/IDREF model is XML-compatible: round-trip through
+           XML preserves the references; round-trip through JSON
+           encodes them as `{"$ref": "name"}` envelopes per
+           [`spec/conversions.md §4`](../../spec/conversions.md)."""]]
+
+    [child id=id-cross-format n=4.5.3 title='Identity preservation across projections'
+      [body
+        """IDs survive round-trip through every supported projection:"""]
+      [table columns=('format' 'ID encoding' 'IDREF encoding')
+        [row format='CX (canonical)' id="#name (on element)" idref='#name (in value position)']
+        [row format='XML'           id='id="name"'           idref='attribute value or xlink:href']
+        [row format='JSON'          id='"_cx_id": "name"'    idref='{"$ref": "name"} envelope']
+        [row format='YAML'          id='&name (anchor)'      idref='*name (alias) — note YAML semantics differ slightly (anchors are syntactic; IDs are semantic)']
+        [row format='TOML'          id='id = "name"'         idref='ref = "#name"']
+        [row format='ast-bin'       id='attribute on Element' idref='bytes containing #name']]
+      [body
+        """The data layer preserves the identity; the lossy
+           projections (CSV / JSONL with flattening) lose it. For
+           those, use CX as the intermediate format."""]]]
+
+  [child id=ffi-lifetime n=4.6 title='FFI lifetime and memory ownership'
+    [intro
+      """Every binding wraps the libcx C ABI. A Python `Doc` (or Go,
+         Rust, V Doc) is a host-language object that points at libcx
+         memory. **Who owns the memory? When does it get freed?**
+         This section is the developer-facing answer; the normative
+         contract is [`spec/abi.md §1.5`](../../spec/abi.md)."""]
+
+    [child id=ffi-doc-lifetime n=4.6.1 title='Doc lifetime per binding'
+      [body
+        """Every binding's `Doc` value owns a `cx_doc_ref`
+           (an opaque libcx handle). The lifetime is:"""]
+      [list
+        [item """**V:** Boehm-GC-tracked. Dropped when no live reference
+                exists; libcx releases the underlying memory at GC
+                time. No explicit free."""]
+        [item """**Python:** PyObject wrapping a C pointer. Dropped on
+                garbage collection (reference count → 0); a
+                `__del__`-equivalent finaliser calls
+                `cx_doc_release(handle)`."""]
+        [item """**Go:** wrapping struct with a
+                `runtime.SetFinalizer`-registered cleanup. Dropped
+                when the wrapper becomes unreachable; the finaliser
+                calls `cx_doc_release(handle)` on the next GC cycle."""]
+        [item """**Rust:** wrapping struct with a `Drop` impl. Dropped
+                deterministically when the binding goes out of scope;
+                the `Drop::drop` calls `cx_doc_release(handle)`."""]]
+      [body
+        """**Practical implications:**"""]
+      [list
+        [item """**Long-lived Docs:** keep a reference for the duration
+                of use. Bindings do not silently free under pressure."""]
+        [item """**Cyclic references:** between two CX Docs are not
+                possible (CX values are immutable trees), so no cycle
+                detection needed in the host GC."""]
+        [item """**Multi-process sharing:** ast-bin is the wire format
+                — serialize on one side, deserialize on the other.
+                There is no shared-memory Doc passing (yet)."""]]]
+
+    [child id=ffi-node-borrowing n=4.6.2 title='Node borrowing from a Doc'
+      [body
+        """A `Node` selected from a `Doc` (via `select_all`, `select`,
+           `children`, etc.) is a **borrowed reference** into the
+           Doc's memory — it does NOT take an independent lifetime.
+           When the parent Doc is freed, all Nodes selected from it
+           become invalid."""]
+      [list
+        [item """**Python/Go:** the Node wrapper holds a strong
+                reference to the Doc wrapper, preventing the Doc from
+                being GC'd while Nodes exist. Safe by construction."""]
+        [item """**Rust:** Node carries a lifetime parameter tied to
+                the Doc's borrow. The borrow checker prevents use of
+                a Node beyond the Doc's lifetime."""]
+        [item """**V:** Boehm-GC tracking; the Doc stays live while
+                Nodes referencing it are reachable."""]]
+      [body
+        """**Doc.bytes() output is owned:** the canonical bytes
+           returned from `doc.bytes()` are a freshly-allocated copy
+           owned by the caller. Modifying or freeing it does not
+           affect the Doc."""]
+      [body
+        """**[?modify] returns a NEW Doc:** the input Doc is unchanged.
+           The new Doc has its own lifetime; the input
+           Doc continues to exist independently. Structural sharing
+           means the two Docs share most of their
+           underlying memory but libcx tracks the references so both
+           Docs are valid until both are released."""]]
+
+    [child id=ffi-thread-register n=4.6.3 title='Thread registration (cx_thread_register)'
+      [body
+        """libcx uses Boehm GC, which requires that every thread that
+           calls libcx APIs is **registered** with the GC. The C ABI
+           exports `cx_init()` (call once per process at start) and
+           `cx_thread_register()` (call per thread before first
+           libcx call from that thread). Per
+           [`spec/abi.md §1.5.5`](../../spec/abi.md)."""]
+      [body
+        """**Bindings handle this automatically** at the FFI chokepoint
+           — every Layer-1 method has a per-thread guard that
+           registers the calling thread on first use. Host application
+           code doesn't call `cx_thread_register` directly unless
+           dropping below the binding layer to raw FFI."""]
+      [body
+        """**Cap bit 26 (thread-register):** advertised by libcx ≥
+           v0.6.0. Older libcx (pre-v0.6.0) ran single-threaded only;
+           the cap bit's introduction signaled thread-safe FFI."""]
+      [body
+        """**Practical implication:** spawning a thread from host code
+           and calling a CX binding method from it is safe — the
+           binding registers the thread transparently. The only
+           caveat: if you're calling libcx via raw FFI (not through a
+           binding), you must call `cx_thread_register()` yourself
+           before any other libcx call from that thread."""]]]
+
+  [# Migrated from docs-src/content/concepts/identity.cx,
+     docs-src/content/reference/ast-bin.cx, and
+     docs-src/content/reference/data-bin.cx during Phase B docs →
+     guide consolidation (2026-05-24). Higher-level framing on
+     two-layer identity (content-addressed + declarational) and
+     compact quick-references for ast-bin / data-bin. #]
+
+  [child id=identity-framing n=4.7 title='Identity framing — two layers + binary forms'
+    [intro
+      """Identity in CX has two layers. The first is
+         content-addressed — every tree has a SHA-256 over its
+         canonical bytes; two trees with the same data have the
+         same hash. The second is declarational — an element can
+         carry an id via `#`, and other places in the document can
+         reference it via `@`."""]
+
+    [child id=canonical-recap n=4.7.1 title='Canonical form recap'
+      [body
+        """Canonical mode strips presentation — comments, anchors,
+           whitespace, attribute order normalisation — and emits a
+           data-equivalent byte-identical form. Two documents with
+           the same data emit to the same bytes; the difference
+           between them is something a human added, not something
+           the data carries."""]
+      [example lang=shell
+        """cx canonical menu.cx     # canonical bytes
+           cx hash menu.cx          # SHA-256 hex over canonical bytes
+           cx eq a.cx b.cx          # exit 0 iff canonical(a) == canonical(b)"""]
+      [note
+        """Canonical form is the basis for content-addressed
+           identity (`cx hash`), for byte-identical conformance
+           tests across bindings, and for diff that ignores
+           presentation."""]]
+
+    [child id=declared-ids n=4.7.2 title='Declared identifiers (#id, @ref)'
+      [body
+        """Declared identity is what you write when you want one
+           element to point at another by name. Declare with `#`;
+           reference with `@`. IDs are unique within their scope;
+           the scope is the document root by default."""]
+      [example lang=cx
+        """[order #main
+             [item #latte]
+             [item #scone]]
+           [receipt order=@main]"""]]
+
+    [child id=anchors-merge n=4.7.3 title='Anchors and merge targets'
+      [body
+        """An anchor (`&` sigil) names a value once and lets later
+           places refer to it without repeating it. A merge target
+           (`*` sigil) folds the anchor referent into the current
+           element. Anchors are anonymous handles; the canonical
+           form renumbers them so two documents that bind the same
+           data with different anchor names hash to the same
+           identity."""]
+      [example lang=cx
+        """[defaults &shared timeout=30 retries=3]
+           [server *shared name=api]
+           [server *shared name=worker]"""]]
+
+    [child id=ast-bin-quickref n=4.7.4 title='ast-bin quick reference'
+      [body
+        """ast-bin is the binary serialization of the canonical
+           form. The buffer envelope is `[u32 LE size][payload
+           bytes]`; payload is the AST in a column-major encoding
+           keyed by capability bits. Release the buffer with
+           `cx_free`; never call system `free()`. Capability bit
+           36 advertises the PathNode wire format (ast_bin v8);
+           cap bit 3 advertises symmetric AST
+           round-trip. The full bit table is in [`spec/abi.md`
+           §3](../../spec/abi.md)."""]]
+
+    [child id=data-bin-quickref n=4.7.5 title='data-bin quick reference (CXCol v1)'
+      [body
+        """data-bin is the strict-canonical binary data format,
+           branded `CXCol` (retitled in commit
+           `cbed7754`). Magic bytes are `0x43 0x58 0x44 0x42`
+           (historical, preserved for forward-compat); modes are
+           self-describing (default), schema-driven (cap bit 1 —
+           caller supplies a `.cxs`, payload omits the schema
+           preamble), chunked tables (`spec/core/data-bin.md` §3.11),
+           and page-compressed (`spec/core/data-bin.md` §3.12). All
+           four modes round-trip byte-stable through `cx
+           --to=data-bin | cx --from=data-bin`."""]]]
+]

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Guestbook — cx-xap demo (D3)</title>
+  <!-- the ONLY place CSS is referenced; loaded once, reapplied to every swapped
+       fragment. Served as a static [resource] by the http layer, not by xap. -->
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+  <h1>Guestbook</h1>
+  <!-- the cx-xap `guestbook` surface materializes here as a text/html fragment;
+       htmx swaps #guestbook-panel out-of-band on each committed [do :sign].
+       The <main> below is the bridge's server-side mount point — the bridge
+       splices xap:render(text/html) output into it. -->
+  <main id="guestbook-panel">{{surface:guestbook}}</main>
+</body>
+</html>

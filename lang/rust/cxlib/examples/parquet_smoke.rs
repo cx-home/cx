@@ -2,8 +2,6 @@
 //
 //   DYLD_LIBRARY_PATH=../../../vcx/target \
 //     cargo run --features parquet --example parquet_smoke
-//
-// Per spec/v0_7_0_status.md X-row.
 
 use std::fs;
 

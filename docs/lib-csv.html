@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>csv — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a class="active" href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-csv">
+  <h1>csv</h1>
+  <p class="lede">Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. Rows round-trip between strings and CXDM records: a header dialect yields maps keyed by header strings, while a headerless dialect yields positional arrays. Dialect handling covers delimiter, quote, escape, and line-terminator, and cell values are strings unless coerced via a schema. Distinct from the cross-format CLI conversion path — this is the in-program library form.</p>
+  
+    <section id="fn-csv-parse" class="fn">
+      <h3>csv:parse</h3>
+      <p class="fn-sig"><code>[$csv:parse]  -> [sequence any]</code>  —  Parse CSV with the default headered dialect into a sequence of maps keyed by header strings.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/csv']
+[$count [$csv:parse "email,first_name,score\nalice@example.com,Alice,87"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-csv-parse-with-dialect" class="fn">
+      <h3>csv:parse-with-dialect</h3>
+      <p class="fn-sig"><code>[$csv:parse-with-dialect]  -> [sequence any]</code>  —  Parse a string with a named or fully-specified dialect; the row shape follows the dialect header setting.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/csv']
+[?let [= $rows [$csv:parse-with-dialect "a\tb\n1\t2" [dialect [name "tsv"]]]]
+      [= $row [$nth $rows 1]]
+  $row/a]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'1'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-csv-parse-with-schema" class="fn">
+      <h3>csv:parse-with-schema</h3>
+      <p class="fn-sig"><code>[$csv:parse-with-schema]  -> [sequence any]</code>  —  Parse CSV and coerce schema-named columns to typed values; absent columns stay strings.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/csv']
+[?let [= $rows [$csv:parse-with-schema "score\n87" {score: :int}]]
+      [= $row [$nth $rows 1]]
+  $row/score]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>87</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-csv-emit" class="fn">
+      <h3>csv:emit</h3>
+      <p class="fn-sig"><code>[$csv:emit]  -> string</code>  —  Emit a sequence of record rows as CSV using the default dialect, quoting and escaping per RFC 4180.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/csv']
+[$csv:emit ({a: "1", b: "2"})]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a,b
+1,2
+'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-csv-emit-with-dialect" class="fn">
+      <h3>csv:emit-with-dialect</h3>
+      <p class="fn-sig"><code>[$csv:emit-with-dialect]  -> string</code>  —  Emit record rows as CSV/TSV using a named or fully-specified dialect.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/csv']
+[$csv:emit-with-dialect ({a: "1", b: "2"}) [dialect [name "tsv"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'a	b
+1	2
+'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-csv-dialects-builtin" class="fn">
+      <h3>csv:dialects-builtin</h3>
+      <p class="fn-sig"><code>[$csv:dialects-builtin]  -> map</code>  —  Return the seven built-in dialects (csv, tsv, psv, excel, excel-tab, unix, headless) keyed by name.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/csv']
+[$count [$keys [$csv:dialects-builtin]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

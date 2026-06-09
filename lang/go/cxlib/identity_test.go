@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// Tests for ID/IDREF resolution per ADR 0003 / spec/identity.md.
+// Tests for ID/IDREF resolution / spec/identity.md.
 // Mirrors V's conformance/identity.txt cases.
 
 func TestIdentityDeclarationOnlyRoundTrips(t *testing.T) {
@@ -145,7 +145,6 @@ func TestIdentityMultipleRefsToSameID(t *testing.T) {
 		t.Fatalf("expected 2 IsRef attrs, got %d", count)
 	}
 }
-
 
 // TestBodyRefSurvivesAstBinRoundTrip — Phase 7.70: ast_bin v3 carries
 // body_ref through the V↔binding boundary. The field is populated

@@ -13,7 +13,7 @@ import (
 // ── Emit ─────────────────────────────────────────────────────────────────────
 
 func TestToCsvTableDirect(t *testing.T) {
-	src := "[users :table[name:string age:int active:bool]\n  alice 30 true\n  bob 25 false\n]"
+	src := "[users [table[name::string age::int active::bool]]\n  alice 30 true\n  bob 25 false\n]"
 	out, err := ToCsv(src)
 	if err != nil {
 		t.Fatalf("ToCsv: %v", err)
@@ -25,7 +25,7 @@ func TestToCsvTableDirect(t *testing.T) {
 }
 
 func TestToCsvRepeatedRow(t *testing.T) {
-	src := "[users\n  [user id=1 name=alice +admin]\n  [user id=2 name=bob]\n  [user id=3 name=carol +admin]\n]"
+	src := "[users\n  [user id=1 name=alice admin=true]\n  [user id=2 name=bob]\n  [user id=3 name=carol admin=true]\n]"
 	out, err := ToCsv(src)
 	if err != nil {
 		t.Fatalf("ToCsv: %v", err)
@@ -37,7 +37,7 @@ func TestToCsvRepeatedRow(t *testing.T) {
 }
 
 func TestToCsvDottedPath(t *testing.T) {
-	src := "[config\n  [server host=localhost port=8080 +tls]\n  [logging level=info format=json]\n]"
+	src := "[config\n  [server host=localhost port=8080 tls=true]\n  [logging level=info format=json]\n]"
 	out, err := ToCsv(src)
 	if err != nil {
 		t.Fatalf("ToCsv: %v", err)
@@ -49,7 +49,7 @@ func TestToCsvDottedPath(t *testing.T) {
 }
 
 func TestToTsv(t *testing.T) {
-	src := "[t :table[a b c]\n  x y z\n]"
+	src := "[t [table[a b c]]\n  x y z\n]"
 	out, err := ToTsv(src)
 	if err != nil {
 		t.Fatalf("ToTsv: %v", err)
@@ -60,7 +60,7 @@ func TestToTsv(t *testing.T) {
 }
 
 func TestToPsv(t *testing.T) {
-	src := "[t :table[a b]\n  x y\n]"
+	src := "[t [table[a b]]\n  x y\n]"
 	out, err := ToPsv(src)
 	if err != nil {
 		t.Fatalf("ToPsv: %v", err)
@@ -78,7 +78,7 @@ func TestFromCsvAutoTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromCsv: %v", err)
 	}
-	want := "[table :table[name age:int active:bool]\n  alice 30 true\n  bob 25 false\n]"
+	want := "[table [table[name age::int active::bool]]\n  alice 30 true\n  bob 25 false\n]"
 	if out != want {
 		t.Fatalf("got %q\nwant %q", out, want)
 	}
@@ -90,7 +90,7 @@ func TestFromCsvQuotedStaysString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromCsv: %v", err)
 	}
-	want := "[table :table[name age]\n  alice 30\n  bob 25\n]"
+	want := "[table [table[name age]]\n  alice 30\n  bob 25\n]"
 	if out != want {
 		t.Fatalf("got %q\nwant %q", out, want)
 	}
@@ -102,7 +102,7 @@ func TestFromCsvEmptyCellIsNull(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromCsv: %v", err)
 	}
-	want := "[table :table[name age:int]\n  alice 30\n  bob null\n]"
+	want := "[table [table[name age::int]]\n  alice 30\n  bob null\n]"
 	if out != want {
 		t.Fatalf("got %q\nwant %q", out, want)
 	}
@@ -111,7 +111,7 @@ func TestFromCsvEmptyCellIsNull(t *testing.T) {
 // ── Arbitrary delimiter + data_bin one-shots ─────────────────────────────────
 
 func TestToDelimitedSemicolon(t *testing.T) {
-	src := "[t :table[a b]\n  x y\n]"
+	src := "[t [table[a b]]\n  x y\n]"
 	out, err := ToDelimited(src, ';')
 	if err != nil {
 		t.Fatalf("ToDelimited: %v", err)
@@ -126,8 +126,8 @@ func TestCsvToDataBinRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CsvToDataBin: %v", err)
 	}
-	if !bytes.HasPrefix(payload, []byte("CXDB")) {
-		t.Fatalf("expected CXDB magic, got %q", payload[:min(4, len(payload))])
+	if !bytes.HasPrefix(payload, []byte("CXCol")) {
+		t.Fatalf("expected CXCol magic, got %q", payload[:min(5, len(payload))])
 	}
 	out, err := DataBinToCsv(reframe(payload))
 	if err != nil {

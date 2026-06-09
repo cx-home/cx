@@ -1,58 +1,54 @@
-[doc title="CX Language Guide" author="Erik" version="3.4"
+[doc title="CX Language Guide" author="Erik" version="0.8.0"
 
-  [# CX Language Guide]
+  [h1 CX Language Guide]
 
-  [p CX is a [** structured] markup language with [* clean] bracket syntax.
-  It exports to XML, JSON, YAML, TOML, and [** Markdown].]
+  [p CX is a [strong structured] markup language with [em clean] bracket
+  syntax. It exports to XML, JSON, YAML, and TOML.]
 
-  [## Quick Start]
+  [h2 Quick Start]
 
   [p Install and build:]
 
-  [``` lang:bash [|
+  [pre [code lang=bash [#
 git clone https://github.com/cx-home/cx
 make build              # builds libcx + every binding
 make promote-cli        # install the cx CLI
-|]]
+#]]]
 
-  [p Then try [` cx --help] to see all options.]
+  [p Then try [code cx --help] to see all options.]
 
-  [## Core Concepts]
+  [h2 Core Concepts]
 
-  [### Inline Formatting]
+  [h3 Inline Formatting]
 
-  [p Supports [** bold], [* italic], [** [* bold italic]], [~~ strikethrough],
-  [~ subscript], [^ superscript], [__ underline], and [` inline code].]
+  [p Supports [strong bold], [em italic], [strong [em bold italic]],
+  [del strikethrough], [sub subscript], [sup superscript], [u underline],
+  and [code inline code].]
 
-  [### Lists]
+  [h3 Lists]
 
   [ul
     [li Clean bracket syntax]
-    [li Typed attributes on any element &mdash; sized types in v3.4]
+    [li Typed attributes on any element — sized types like ::u16 / ::f64]
     [li Multiple output formats]
-    [li Boolean sigils: [` +flag] / [` -flag]]
+    [li Boolean attributes: tls=true / debug=false]
   ]
 
-  [### Links]
+  [h3 Links]
 
   [p See the [a href="https://cxhome.org/docs" full documentation] for details.]
 
-  [### Tables]
+  [h3 Tables]
 
-  [table [|
-| Format | Input | Output |
-|--------|-------|--------|
-| CX     | yes   | yes    |
-| XML    | yes   | yes    |
-| JSON   | yes   | yes    |
-| YAML   | yes   | yes    |
-| TOML   | yes   | yes    |
-| MD     | yes   | yes    |
-|]]
+  [formats [table[format::string input::bool output::bool]]
+    CX   true true
+    XML  true true
+    JSON true true
+    YAML true true
+    TOML true true
+  ]
 
-  [---]
-
-  [## Images]
+  [h2 Images]
 
   [img src="diagram.png" alt="CX structure diagram"]
 ]

@@ -67,7 +67,7 @@ def test_stream_text():
     assert text_event.value == 'Hello world'
 
 def test_stream_scalar():
-    s = cxlib.stream('[count :int 42]')
+    s = cxlib.stream('[count::int 42]')
     events = list(s)
     scalar = next(e for e in events if e.type == 'Scalar')
     assert scalar.data_type == 'int'

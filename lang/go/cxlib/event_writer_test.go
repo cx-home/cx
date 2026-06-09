@@ -124,7 +124,9 @@ func TestEventWriterAttrs(t *testing.T) {
 
 func TestEventWriterW001(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	assertWcode(t, "W001", w.StartDoc())
@@ -132,14 +134,18 @@ func TestEventWriterW001(t *testing.T) {
 
 func TestEventWriterW002(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	assertWcode(t, "W002", w.Text("premature"))
 }
 
 func TestEventWriterW003(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	_ = w.EndDoc()
@@ -148,7 +154,9 @@ func TestEventWriterW003(t *testing.T) {
 
 func TestEventWriterW004(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	_ = w.StartElement("open", nil)
@@ -157,7 +165,9 @@ func TestEventWriterW004(t *testing.T) {
 
 func TestEventWriterW005(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	_ = w.StartElement("greet", nil)
@@ -166,7 +176,9 @@ func TestEventWriterW005(t *testing.T) {
 
 func TestEventWriterW006(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	assertWcode(t, "W006", w.EndElement("orphan"))
@@ -174,7 +186,9 @@ func TestEventWriterW006(t *testing.T) {
 
 func TestEventWriterW008(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	assertWcode(t, "W008", w.Scalar("42", "not_a_type"))
@@ -182,7 +196,9 @@ func TestEventWriterW008(t *testing.T) {
 
 func TestEventWriterW009AliasOnXml(t *testing.T) {
 	w, err := NewEventWriter("xml")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	assertWcode(t, "W009", w.Alias("ref"))
@@ -190,7 +206,9 @@ func TestEventWriterW009AliasOnXml(t *testing.T) {
 
 func TestEventWriterW012(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	assertWcode(t, "W012", w.RowGroup([]byte{1}))
@@ -198,7 +216,9 @@ func TestEventWriterW012(t *testing.T) {
 
 func TestEventWriterW013(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	assertWcode(t, "W013", w.EndTable())
@@ -206,7 +226,9 @@ func TestEventWriterW013(t *testing.T) {
 
 func TestEventWriterFailClosed(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	_ = w.StartElement("a", nil)
@@ -220,7 +242,9 @@ func TestEventWriterFailClosed(t *testing.T) {
 
 func TestEventWriterChunkedTableCx(t *testing.T) {
 	w, err := NewEventWriter("cx")
-	if err != nil { t.Fatalf("open: %v", err) }
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
 	defer w.Close()
 	_ = w.StartDoc()
 	_ = w.StartElement("points", nil)
@@ -230,18 +254,28 @@ func TestEventWriterChunkedTableCx(t *testing.T) {
 	var u32 [4]byte
 	binary.LittleEndian.PutUint32(u32[:], 2)
 	colSpec = append(colSpec, u32[:]...)
-	binary.LittleEndian.PutUint32(u32[:], 4); colSpec = append(colSpec, u32[:]...); colSpec = append(colSpec, "name"...); colSpec = append(colSpec, 0x30)
-	binary.LittleEndian.PutUint32(u32[:], 5); colSpec = append(colSpec, u32[:]...); colSpec = append(colSpec, "score"...); colSpec = append(colSpec, 0x12)
+	binary.LittleEndian.PutUint32(u32[:], 4)
+	colSpec = append(colSpec, u32[:]...)
+	colSpec = append(colSpec, "name"...)
+	colSpec = append(colSpec, 0x30)
+	binary.LittleEndian.PutUint32(u32[:], 5)
+	colSpec = append(colSpec, u32[:]...)
+	colSpec = append(colSpec, "score"...)
+	colSpec = append(colSpec, 0x12)
 
 	if err := w.StartTable(colSpec); err != nil {
 		t.Fatalf("start_table: %v", err)
 	}
 	// Row group: uvarint(2) + col1 strings + col2 i32 LE
 	rg := []byte{2}
-	rg = append(rg, byte(5)); rg = append(rg, "alice"...)
-	rg = append(rg, byte(3)); rg = append(rg, "bob"...)
-	binary.LittleEndian.PutUint32(u32[:], 91); rg = append(rg, u32[:]...)
-	binary.LittleEndian.PutUint32(u32[:], 88); rg = append(rg, u32[:]...)
+	rg = append(rg, byte(5))
+	rg = append(rg, "alice"...)
+	rg = append(rg, byte(3))
+	rg = append(rg, "bob"...)
+	binary.LittleEndian.PutUint32(u32[:], 91)
+	rg = append(rg, u32[:]...)
+	binary.LittleEndian.PutUint32(u32[:], 88)
+	rg = append(rg, u32[:]...)
 	if err := w.RowGroup(rg); err != nil {
 		t.Fatalf("row_group: %v", err)
 	}
@@ -264,23 +298,31 @@ func TestEventWriterChunkedTableCx(t *testing.T) {
 
 func TestEventWriterFD(t *testing.T) {
 	f, err := os.CreateTemp("", "cx-event-writer-fd-*")
-	if err != nil { t.Fatalf("temp: %v", err) }
+	if err != nil {
+		t.Fatalf("temp: %v", err)
+	}
 	defer os.Remove(f.Name())
 	defer f.Close()
 	w, err := NewEventWriterFD("cx", int(f.Fd()))
-	if err != nil { t.Fatalf("openfd: %v", err) }
+	if err != nil {
+		t.Fatalf("openfd: %v", err)
+	}
 	_ = w.StartDoc()
 	_ = w.StartElement("hi", nil)
 	_ = w.Text("there")
 	_ = w.EndElement("hi")
 	_ = w.EndDoc()
 	out, err := w.CloseGetBytes()
-	if err != nil { t.Fatalf("close: %v", err) }
+	if err != nil {
+		t.Fatalf("close: %v", err)
+	}
 	if len(out) != 0 {
 		t.Fatalf("fd writer should return empty bytes; got %q", out)
 	}
 	// Re-read the file contents.
-	if _, err := f.Seek(0, 0); err != nil { t.Fatalf("seek: %v", err) }
+	if _, err := f.Seek(0, 0); err != nil {
+		t.Fatalf("seek: %v", err)
+	}
 	buf := make([]byte, 4096)
 	n, _ := f.Read(buf)
 	s := string(buf[:n])

@@ -63,10 +63,9 @@ def run_group(label, cx_str):
     json_str = _cx.to_json(cx_str)
     bench('dumps   (dict → CX)',         lambda: cxlib.dumps(json.loads(json_str)))
 
-    # CXPath + transform
-    doc = cxlib.parse(cx_str)
-    bench('select_all //service',       lambda: doc.select_all('//service'))
-    bench('transform  services/service', lambda: doc.transform('services/service', lambda el: el))
+    # CX code (selection via CXPath //path, comprehension via [?for])
+    bench('eval_code //service (find services)',
+          lambda: cxlib.eval_code(cx_str, '//service', 'text'))
 
     # Reverse conversion
     xml_str = _cx.to_xml(cx_str)

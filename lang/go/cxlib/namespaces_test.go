@@ -3,7 +3,7 @@ package cxlib
 import "testing"
 
 // Mirrors V core's conformance/namespaces.txt for the Go binding's
-// LocalName() / NamespaceURI() accessor surface (ADR 0002).
+// LocalName() / NamespaceURI() accessor surface.
 
 func TestNamespacesDefaultInheritsToDescendants(t *testing.T) {
 	doc, err := Parse("[html xmlns=http://www.w3.org/1999/xhtml [body [p Hi]]]")
@@ -68,11 +68,11 @@ func TestNamespacesReservedXMLPrefix(t *testing.T) {
 	t.Errorf("xml:base not found")
 }
 
-func TestNamespacesReservedCXPrefix(t *testing.T) {
-	doc, _ := Parse("[doc [cx:meta key=value]]")
-	meta := doc.Root().Get("cx:meta")
-	if meta.NamespaceURI() != CXNamespaceURI {
-		t.Errorf("cx:meta wrong ns: %q", meta.NamespaceURI())
+func TestNamespacesReservedCXPrefixRejected(t *testing.T) {
+	// The `cx:` prefix is reserved for the serializer's canonical image and
+	// may not be authored in source (E210). Parsing must reject it.
+	if _, err := Parse("[doc [cx:meta key=value]]"); err == nil {
+		t.Errorf("expected authored cx: prefix to be rejected (E210), got nil error")
 	}
 }
 

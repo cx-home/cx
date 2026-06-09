@@ -2,8 +2,8 @@
 
 // Apache Arrow C-Data interop for cxlib (Phase 7.74c-cont-bindings-multi-go).
 //
-// Bridges CXDB chunked-tables to Arrow ArrowArrayStream via libcx_arrow
-// (spec/abi.md §2.11, ADR 0015 D9, capability bit 0x800000). The bridge
+// Bridges CXCol chunked-tables to Arrow ArrowArrayStream via libcx_arrow
+// (spec/abi.md §2.11, capability bit 0x800000). The bridge
 // handles all 9 v0.6.0 column types (int, i8, i16, i32, float, bool,
 // string, date, bytes); datetime / decimal / dictionary columns are
 // deferred and surface the V core's deferred-type error.
@@ -95,7 +95,7 @@ func ArrowMergedFeatures() uint64 {
 	return base | ArrowFeatures()
 }
 
-// ArrowExport decodes UNFRAMED CXDB chunked-table bytes as an Arrow
+// ArrowExport decodes UNFRAMED CXCol chunked-table bytes as an Arrow
 // RecordReader. libcx populates the caller-allocated ArrowArrayStream;
 // ownership of the stream callbacks moves into the returned reader,
 // which releases them on Release / drop.
@@ -136,7 +136,7 @@ func ArrowExport(payload []byte) (array.RecordReader, error) {
 	return out, nil
 }
 
-// ArrowImportToDataBin drains an Arrow RecordReader into UNFRAMED CXDB
+// ArrowImportToDataBin drains an Arrow RecordReader into UNFRAMED CXCol
 // chunked-table bytes. The reader is consumed; on success its callbacks
 // are released by libcx via the moved ArrowArrayStream.
 func ArrowImportToDataBin(reader array.RecordReader) ([]byte, error) {
@@ -173,7 +173,7 @@ func ArrowImportToDataBin(reader array.RecordReader) ([]byte, error) {
 // IPC codec lives in each language's Arrow library by Apache Arrow
 // convention.
 
-// ArrowToIPC converts framed CXDB chunked-table bytes to Arrow IPC
+// ArrowToIPC converts framed CXCol chunked-table bytes to Arrow IPC
 // stream bytes suitable for writing to a `.arrow` file or piping
 // into another Arrow IPC consumer.
 func ArrowToIPC(payload []byte) ([]byte, error) {
@@ -197,7 +197,7 @@ func ArrowToIPC(payload []byte) ([]byte, error) {
 }
 
 // ArrowFromIPC converts Arrow IPC stream bytes (the byte stream a
-// `.arrow` file would contain) to framed CXDB chunked-table bytes.
+// `.arrow` file would contain) to framed CXCol chunked-table bytes.
 func ArrowFromIPC(ipcBytes []byte) ([]byte, error) {
 	source := bytes.NewReader(ipcBytes)
 	reader, err := ipc.NewReader(source)

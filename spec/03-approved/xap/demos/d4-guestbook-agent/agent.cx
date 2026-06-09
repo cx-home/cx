@@ -1,0 +1,24 @@
+[?lib 'cx-xap' :as xap]
+
+# D4: reuse the `guestbook` capability UNCHANGED.
+[$xap:component guestbook
+  {bind: "/guestbook"
+   emits: ([do :sign [name :string]])
+   view: [?fn ($gs)
+           [panel
+             [list [?for [in $g $gs] [yield [item $g/name]]]]
+             [control :sign [label "Sign"] [input :name]]]]
+   working-panel: :none}]
+
+# Add an agent as a 4th peer, governed by the dial. `run`, then raise the dial off
+# the floor: the dial IS an authz delegation (xap.md §21.3) -- scoped, attenuating,
+# revocable -- letting the agent act within bounds. The agent emits the SAME
+# [do :sign] a human emits (agent-parity, §15), committed through the same PEP +
+# cascade; per R1 it runs under its own sub-delegated session, so the journal's
+# :actor names the agent and authority still traces to the principal (N-CONTROL-2).
+# why-allowed audits the agent's sign and resolves the accountable party.
+[?let [= $rt [$xap:run {tenant: "demo" components: (guestbook)}]]
+[?let [= $d [$xap:dial $rt [scope :guestbook] [setting :semi-auto]]]   # = [$authz:delegate …]
+[?let [= $h [$xap:emit $rt [do :sign [name "Ada"]] {actor: "principal:dana"}]]    # human peer
+[?let [= $b [$xap:emit $rt [do :sign [name "Lin"]] {actor: "agent:greeter-1"}]]   # agent peer
+  [$xap:why-allowed $rt [do :sign [name "Lin"]] {actor: "agent:greeter-1"}]]]]]

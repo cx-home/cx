@@ -1,6 +1,6 @@
-"""Cross-binding Arrow conformance runner (W3 / v0.7.0).
+"""Cross-binding Arrow conformance runner (W3).
 
-Reads conformance/data_bin_arrow.txt — the canonical Arrow C-Data
+Reads conformance/data_bin_arrow.cxd — the canonical Arrow C-Data
 round-trip fixture corpus — and runs each test through the Python
 binding's cxlib.arrow path. Asserts on:
 
@@ -21,7 +21,6 @@ parity gate (W9).
 from __future__ import annotations
 
 import os
-import re
 import sys
 import unittest
 
@@ -32,7 +31,7 @@ except ImportError:
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(THIS_DIR, '..', '..'))
-FIXTURE_PATH = os.path.join(REPO_ROOT, 'conformance', 'data_bin_arrow.txt')
+FIXTURE_PATH = os.path.join(REPO_ROOT, 'conformance', 'data_bin_arrow.cxd')
 
 sys.path.insert(0, os.path.join(REPO_ROOT, 'lang', 'python'))
 
@@ -46,56 +45,25 @@ except Exception as e:  # pragma: no cover — surface load failures
     _import_err = e
 
 
-# ── Fixture parser ─────────────────────────────────────────────────────
-
-_SECTION_RE = re.compile(r'^---\s+([\w-]+)\s*$')
-_TEST_RE = re.compile(r'^===\s+test:\s+(\S+)\s*$')
-_HEADER_KV_RE = re.compile(r'^(\w+):\s*(.+?)\s*$')
+# ── Fixture loader (CX-native) ─────────────────────────────────────────
+#
+# Reads conformance/data_bin_arrow.cxd via cxlib.load_fixtures (the Python
+# mirror of vcx/cx/fixture_loader.v), replacing the bespoke `=== test:` /
+# `--- section` scanner. The consumer reads `fixture['name']` (the case id)
+# and `fixture['sections'][...]` (legacy snake keys: in_cx, expect_values,
+# arrow_children_formats, expected_export_error) exactly as before.
 
 
 def _parse_fixtures(path: str) -> list[dict]:
-    """Parse the conformance file into a list of test dicts."""
-    tests: list[dict] = []
-    cur: dict | None = None
-    section: str | None = None
-    section_lines: list[str] = []
-
-    def flush_section():
-        if cur is None or section is None:
-            return
-        cur.setdefault('sections', {})[section] = '\n'.join(section_lines)
-
-    with open(path, 'r', encoding='utf-8') as f:
-        for raw in f:
-            line = raw.rstrip('\n')
-            if line.startswith('# '):
-                continue
-            m = _TEST_RE.match(line)
-            if m:
-                flush_section()
-                if cur is not None:
-                    tests.append(cur)
-                cur = {'name': m.group(1), 'headers': {}, 'sections': {}}
-                section = None
-                section_lines = []
-                continue
-            m = _SECTION_RE.match(line)
-            if m:
-                flush_section()
-                section = m.group(1)
-                section_lines = []
-                continue
-            if section is not None:
-                section_lines.append(line)
-                continue
-            m = _HEADER_KV_RE.match(line)
-            if m and cur is not None:
-                cur['headers'][m.group(1)] = m.group(2)
-
-    flush_section()
-    if cur is not None:
-        tests.append(cur)
-    return tests
+    """Load the conformance suite into a list of test dicts via the
+    CX-native loader. Returns [] if cxlib is unavailable (the tests then
+    skip), matching the prior best-effort behavior."""
+    if cxlib is None:
+        return []
+    return [
+        {'name': c.name, 'sections': dict(c.sections)}
+        for c in cxlib.load_fixtures(path)
+    ]
 
 
 # ── Test execution ─────────────────────────────────────────────────────
@@ -116,7 +84,7 @@ def _build_test_method(fixture: dict):
         formats = fixture['sections'].get('arrow_children_formats', '').strip()
         expect_values = fixture['sections'].get('expect_values', '').strip()
 
-        # Encode CX → CXDB chunked-table.
+        # Encode CX → CXCol chunked-table.
         try:
             framed = cxlib.to_data_bin_chunked(in_cx)
         except Exception as e:

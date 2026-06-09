@@ -1,7 +1,7 @@
 //! Apache Arrow C-Data interop for cxlib (Phase 7.74c-cont-bindings-multi-rust).
 //!
-//! Bridges CXDB chunked-tables to the Arrow C-Data ABI via libcx_arrow
-//! (spec/abi.md §2.11, ADR 0015 D9, capability bit 0x800000). The bridge
+//! Bridges CXCol chunked-tables to the Arrow C-Data ABI via libcx_arrow
+//! (spec/abi.md §2.11, capability bit 0x800000). The bridge
 //! handles all 9 v0.6.0 column types (int, i8, i16, i32, float, bool,
 //! string, date, bytes); datetime / decimal / dictionary columns are
 //! deferred and surface the V core's deferred-type error.
@@ -15,7 +15,7 @@
 //! ```
 //!
 //! Mirrors Python's `pip install cxlib[arrow]` and Go's `-tags arrow`
-//! opt-in patterns. The user-facing API exchanges UNFRAMED CXDB payload
+//! opt-in patterns. The user-facing API exchanges UNFRAMED CXCol payload
 //! bytes, matching the existing Rust binding convention; the C ABI's
 //! `[u32 LE size][payload]` framing is added/stripped internally.
 //!
@@ -26,7 +26,7 @@
 //! use cxlib::arrow as cxa;
 //!
 //! let payload = to_data_bin_chunked(
-//!     "[points :table[name:string score:int] alice 91 bob 88]").unwrap();
+//!     "[points [table[name::string score::int]] alice 91 bob 88]").unwrap();
 //! let mut reader = cxa::export(&payload).unwrap();
 //! // reader: ArrowArrayStreamReader implements RecordBatchReader.
 //! let out = cxa::import_to_data_bin(reader).unwrap();
@@ -128,7 +128,7 @@ pub fn merged_features() -> u64 {
     base | features()
 }
 
-/// Decode an UNFRAMED CXDB chunked-table payload as an Arrow stream
+/// Decode an UNFRAMED CXCol chunked-table payload as an Arrow stream
 /// reader. Ownership of the underlying `FFI_ArrowArrayStream` callbacks
 /// moves into the returned reader, which releases them on drop.
 ///
@@ -169,7 +169,7 @@ pub fn export(payload: &[u8]) -> Result<ArrowArrayStreamReader, String> {
         .map_err(|e| format!("cxlib::arrow::export: try_new: {e}"))
 }
 
-/// Drain a `RecordBatchReader` into UNFRAMED CXDB chunked-table bytes.
+/// Drain a `RecordBatchReader` into UNFRAMED CXCol chunked-table bytes.
 /// The reader is consumed; its callbacks are released by libcx via the
 /// moved `FFI_ArrowArrayStream`.
 pub fn import_to_data_bin<R>(reader: R) -> Result<Vec<u8>, String>
@@ -212,7 +212,7 @@ where
 // bytes directly — IPC codec lives in each language's Arrow library
 // by Apache Arrow convention.
 
-/// Convert framed CXDB chunked-table bytes to Arrow IPC stream bytes
+/// Convert framed CXCol chunked-table bytes to Arrow IPC stream bytes
 /// suitable for writing to a `.arrow` file or piping into another
 /// Arrow IPC consumer.
 pub fn to_ipc(payload: &[u8]) -> Result<Vec<u8>, String> {
@@ -233,7 +233,7 @@ pub fn to_ipc(payload: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 /// Convert Arrow IPC stream bytes (the byte stream a `.arrow` file
-/// would contain) to framed CXDB chunked-table bytes.
+/// would contain) to framed CXCol chunked-table bytes.
 pub fn from_ipc(ipc_bytes: &[u8]) -> Result<Vec<u8>, String> {
     use arrow::ipc::reader::StreamReader;
     let cursor = std::io::Cursor::new(ipc_bytes);

@@ -14,22 +14,22 @@ import (
 )
 
 // EventWriter is a streaming CX event writer (spec/streaming.md §6 /
-// ADR 0011 / spec/abi.md §2.15). It accepts the 14 stream events and
+// spec/abi.md §2.15). It accepts the 14 stream events and
 // emits format-targeted output (cx / xml / json / yaml / toml / md).
 // In v0.6.0 CX and XML output are implemented end-to-end; the other
 // formats return a W009 error until their follow-up phases land.
 //
 // Usage (in-memory):
 //
-//   w, err := cxlib.NewEventWriter("cx")
-//   if err != nil { panic(err) }
-//   defer w.Close()
-//   w.StartDoc()
-//   w.StartElement("greet", nil)
-//   w.Text("hello")
-//   w.EndElement("greet")
-//   w.EndDoc()
-//   out, err := w.CloseGetBytes()  // bytes; consumes the handle
+//	w, err := cxlib.NewEventWriter("cx")
+//	if err != nil { panic(err) }
+//	defer w.Close()
+//	w.StartDoc()
+//	w.StartElement("greet", nil)
+//	w.Text("hello")
+//	w.EndElement("greet")
+//	w.EndDoc()
+//	out, err := w.CloseGetBytes()  // bytes; consumes the handle
 //
 // Errors carry the W001-W013 prefix verbatim. The writer fails closed:
 // after the first W-code, subsequent emits return the same diagnostic
@@ -65,6 +65,16 @@ func FeaturesU64() (uint64, error) {
 		return 0, fmt.Errorf("cx_features: bad hex %q: %v", s, err)
 	}
 	return feat, nil
+}
+
+// Features returns the libcx capability bitmask as a uint64. Matches
+// the Python `cxlib.features()` and Rust `cxlib::features()` surface;
+// returns 0 if cx_features() is unavailable or malformed (the error
+// case is rare and a zero bitmask cleanly disables all capability gates).
+// For explicit error handling use FeaturesU64.
+func Features() uint64 {
+	feat, _ := FeaturesU64()
+	return feat
 }
 
 // NewEventWriter opens an in-memory event writer for the given output
@@ -201,7 +211,9 @@ func (w *EventWriter) liveHandle() (C.cx_events_writer_handle, error) {
 
 func (w *EventWriter) StartDoc() error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
+	if e != nil {
+		return e
+	}
 	var errPtr *C.char
 	ret := C.cx_events_writer_start_doc(h, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -209,7 +221,9 @@ func (w *EventWriter) StartDoc() error {
 
 func (w *EventWriter) EndDoc() error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
+	if e != nil {
+		return e
+	}
 	var errPtr *C.char
 	ret := C.cx_events_writer_end_doc(h, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -241,7 +255,9 @@ func encodeAttrsPayload(attrs []EventAttr) []byte {
 	}
 	for _, a := range attrs {
 		typ := a.DataType
-		if typ == "" { typ = "string" }
+		if typ == "" {
+			typ = "string"
+		}
 		encLP(a.Name)
 		encLP(a.Value)
 		encLP(typ)
@@ -258,11 +274,17 @@ func (w *EventWriter) StartElement(name string, attrs []EventAttr) error {
 
 func (w *EventWriter) StartElementOpts(name string, anchor, dataType, merge *string, attrs []EventAttr) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cn := C.CString(name);     defer C.free(unsafe.Pointer(cn))
-	ca, freeA := optCString(anchor);   defer freeA()
-	cd, freeD := optCString(dataType); defer freeD()
-	cm, freeM := optCString(merge);    defer freeM()
+	if e != nil {
+		return e
+	}
+	cn := C.CString(name)
+	defer C.free(unsafe.Pointer(cn))
+	ca, freeA := optCString(anchor)
+	defer freeA()
+	cd, freeD := optCString(dataType)
+	defer freeD()
+	cm, freeM := optCString(merge)
+	defer freeM()
 
 	raw := encodeAttrsPayload(attrs)
 	var attrsPtr *C.char
@@ -281,8 +303,11 @@ func (w *EventWriter) StartElementOpts(name string, anchor, dataType, merge *str
 
 func (w *EventWriter) EndElement(name string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cn := C.CString(name); defer C.free(unsafe.Pointer(cn))
+	if e != nil {
+		return e
+	}
+	cn := C.CString(name)
+	defer C.free(unsafe.Pointer(cn))
 	var errPtr *C.char
 	ret := C.cx_events_writer_end_element(h, cn, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -290,8 +315,11 @@ func (w *EventWriter) EndElement(name string) error {
 
 func (w *EventWriter) Text(value string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cv := C.CString(value); defer C.free(unsafe.Pointer(cv))
+	if e != nil {
+		return e
+	}
+	cv := C.CString(value)
+	defer C.free(unsafe.Pointer(cv))
 	var errPtr *C.char
 	ret := C.cx_events_writer_text(h, cv, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -300,8 +328,11 @@ func (w *EventWriter) Text(value string) error {
 // Scalar emits a typed scalar. Pass dataType="" for an inferred string.
 func (w *EventWriter) Scalar(value, dataType string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cv := C.CString(value); defer C.free(unsafe.Pointer(cv))
+	if e != nil {
+		return e
+	}
+	cv := C.CString(value)
+	defer C.free(unsafe.Pointer(cv))
 	var cdt *C.char
 	if dataType != "" {
 		cdt = C.CString(dataType)
@@ -314,8 +345,11 @@ func (w *EventWriter) Scalar(value, dataType string) error {
 
 func (w *EventWriter) Comment(value string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cv := C.CString(value); defer C.free(unsafe.Pointer(cv))
+	if e != nil {
+		return e
+	}
+	cv := C.CString(value)
+	defer C.free(unsafe.Pointer(cv))
 	var errPtr *C.char
 	ret := C.cx_events_writer_comment(h, cv, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -323,8 +357,11 @@ func (w *EventWriter) Comment(value string) error {
 
 func (w *EventWriter) PI(target, data string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	ct := C.CString(target); defer C.free(unsafe.Pointer(ct))
+	if e != nil {
+		return e
+	}
+	ct := C.CString(target)
+	defer C.free(unsafe.Pointer(ct))
 	var cd *C.char
 	if data != "" {
 		cd = C.CString(data)
@@ -337,8 +374,11 @@ func (w *EventWriter) PI(target, data string) error {
 
 func (w *EventWriter) EntityRef(name string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cn := C.CString(name); defer C.free(unsafe.Pointer(cn))
+	if e != nil {
+		return e
+	}
+	cn := C.CString(name)
+	defer C.free(unsafe.Pointer(cn))
 	var errPtr *C.char
 	ret := C.cx_events_writer_entity_ref(h, cn, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -346,8 +386,11 @@ func (w *EventWriter) EntityRef(name string) error {
 
 func (w *EventWriter) RawText(value string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cv := C.CString(value); defer C.free(unsafe.Pointer(cv))
+	if e != nil {
+		return e
+	}
+	cv := C.CString(value)
+	defer C.free(unsafe.Pointer(cv))
 	var errPtr *C.char
 	ret := C.cx_events_writer_raw_text(h, cv, &errPtr)
 	return diagFromRet(ret, errPtr)
@@ -355,19 +398,25 @@ func (w *EventWriter) RawText(value string) error {
 
 func (w *EventWriter) Alias(name string) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
-	cn := C.CString(name); defer C.free(unsafe.Pointer(cn))
+	if e != nil {
+		return e
+	}
+	cn := C.CString(name)
+	defer C.free(unsafe.Pointer(cn))
 	var errPtr *C.char
 	ret := C.cx_events_writer_alias(h, cn, &errPtr)
 	return diagFromRet(ret, errPtr)
 }
 
 // StartTable opens a chunked table. `colSpecPayload` is the unframed
-// column-spec wire form per spec/data_bin.md §3.10.1:
-//   [u32 LE count] ([u32 LE name_len] name [u8 type_code])*
+// column-spec wire form per spec/core/data-bin.md §3.10.1:
+//
+//	[u32 LE count] ([u32 LE name_len] name [u8 type_code])*
 func (w *EventWriter) StartTable(colSpecPayload []byte) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
+	if e != nil {
+		return e
+	}
 	framed := frameForC(colSpecPayload)
 	var errPtr *C.char
 	ret := C.cx_events_writer_start_table_with_len(h,
@@ -379,7 +428,9 @@ func (w *EventWriter) StartTable(colSpecPayload []byte) error {
 // body: `uvarint(row_count) + col-payload[col_count]`.
 func (w *EventWriter) RowGroup(payload []byte) error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
+	if e != nil {
+		return e
+	}
 	framed := frameForC(payload)
 	var errPtr *C.char
 	ret := C.cx_events_writer_row_group_with_len(h,
@@ -389,7 +440,9 @@ func (w *EventWriter) RowGroup(payload []byte) error {
 
 func (w *EventWriter) EndTable() error {
 	h, e := w.liveHandle()
-	if e != nil { return e }
+	if e != nil {
+		return e
+	}
 	var errPtr *C.char
 	ret := C.cx_events_writer_end_table(h, &errPtr)
 	return diagFromRet(ret, errPtr)

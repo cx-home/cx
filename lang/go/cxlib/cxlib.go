@@ -22,8 +22,35 @@ import "C"
 import (
 	"encoding/binary"
 	"fmt"
+	"runtime"
 	"unsafe"
 )
+
+// init performs the process-level GC thread-init handshake (spec/abi.md §1.6).
+// libcx is built against Boehm GC; cx_init enables registration of host (non-V)
+// threads so a collection triggered inside a libcx call on a foreign thread
+// does not abort with libgc's "Collecting from unknown thread". Idempotent.
+func init() {
+	C.cx_init()
+}
+
+// cxThread pins the calling goroutine to its current OS thread and registers
+// that thread with libcx's Boehm GC for the duration of a libcx call, then
+// returns a release func — use `defer cxThread()()`.
+//
+// Go's cgo executes each call on an arbitrary OS thread, and consecutive calls
+// (even from one goroutine) may run on DIFFERENT threads. When libcx triggers
+// a GC collection on a thread libgc has never seen, the process aborts with a
+// flaky SIGSEGV ("signal arrived during cgo execution") — the exact symptom
+// observed in TestProgramsConformanceCorpus. Locking + registering (idempotent;
+// DUPLICATE is a no-op) guarantees the cgo call and any collection inside it
+// run on a registered, non-migrating thread. (Python avoids this via the GIL +
+// a single calling thread; that assumption does not hold for Go.)
+func cxThread() func() {
+	runtime.LockOSThread()
+	C.cx_thread_register()
+	return runtime.UnlockOSThread
+}
 
 func cStr(s string) *C.char {
 	return C.CString(s)
@@ -36,6 +63,7 @@ func goStr(p *C.char) string {
 }
 
 func callC(fn func(*C.char, **C.char) *C.char, input string) (string, error) {
+	defer cxThread()()
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
 	var errPtr *C.char
@@ -77,6 +105,7 @@ func extractBinPayload(raw unsafe.Pointer, errPtr *C.char) ([]byte, error) {
 
 // ToAstBin returns the raw binary AST for a CX input string.
 func ToAstBin(input string) ([]byte, error) {
+	defer cxThread()()
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
 	var errPtr *C.char
@@ -88,6 +117,7 @@ func ToAstBin(input string) ([]byte, error) {
 // per spec/include.md §1-§8 (v0.7.0 GG3 / GG4). Empty includeRoot
 // disables resolution.
 func ToAstBinWithIncludeRoot(input string, includeRoot string) ([]byte, error) {
+	defer cxThread()()
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
 	cr := C.CString(includeRoot)
@@ -129,8 +159,10 @@ func Hash(input string) (string, error) {
 
 // Eq reports whether strict-canonical(a) == strict-canonical(b).
 func Eq(a, b string) (bool, error) {
-	cs := C.CString(a); defer C.free(unsafe.Pointer(cs))
-	cs2 := C.CString(b); defer C.free(unsafe.Pointer(cs2))
+	cs := C.CString(a)
+	defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(b)
+	defer C.free(unsafe.Pointer(cs2))
 	var errPtr *C.char
 	out := C.cx_eq(cs, cs2, &errPtr)
 	if out == nil {
@@ -146,11 +178,13 @@ func Eq(a, b string) (bool, error) {
 
 // Diff returns the semantic diff between two CX inputs. format is
 // "unified", "json", or "summary". Empty result means data-equivalent.
-// Per spec/decisions/0012-cx-diff.md.
 func Diff(a, b, format string) (string, error) {
-	cs := C.CString(a); defer C.free(unsafe.Pointer(cs))
-	cs2 := C.CString(b); defer C.free(unsafe.Pointer(cs2))
-	cs3 := C.CString(format); defer C.free(unsafe.Pointer(cs3))
+	cs := C.CString(a)
+	defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(b)
+	defer C.free(unsafe.Pointer(cs2))
+	cs3 := C.CString(format)
+	defer C.free(unsafe.Pointer(cs3))
 	var errPtr *C.char
 	out := C.cx_diff(cs, cs2, cs3, &errPtr)
 	if out == nil {
@@ -167,11 +201,14 @@ func Diff(a, b, format string) (string, error) {
 // Lint runs style + correctness checks on the input. format is
 // "text", "json", or "summary". disabled is a comma-separated list
 // of check IDs to suppress ("" runs all). Empty result means no
-// findings. Per spec/decisions/0013-cx-lint.md.
+// findings.
 func Lint(input, format, disabled string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
-	cs2 := C.CString(format); defer C.free(unsafe.Pointer(cs2))
-	cs3 := C.CString(disabled); defer C.free(unsafe.Pointer(cs3))
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(format)
+	defer C.free(unsafe.Pointer(cs2))
+	cs3 := C.CString(disabled)
+	defer C.free(unsafe.Pointer(cs3))
 	var errPtr *C.char
 	out := C.cx_lint(cs, cs2, cs3, &errPtr)
 	if out == nil {
@@ -189,10 +226,11 @@ func Lint(input, format, disabled string) (string, error) {
 // its AST-JSON encoding. Empty result means no such ID. Stateless
 // wrapper around cx_id_lookup; for repeated lookups against the same
 // document, prefer Document.ResolveID() / ElementsByID().
-// Per spec/decisions/0003-id-idref.md.
 func IDLookup(input, id string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
-	cs2 := C.CString(id); defer C.free(unsafe.Pointer(cs2))
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(id)
+	defer C.free(unsafe.Pointer(cs2))
 	var errPtr *C.char
 	out := C.cx_id_lookup(cs, cs2, &errPtr)
 	if out == nil {
@@ -210,8 +248,10 @@ func IDLookup(input, id string) (string, error) {
 // and returns its AST-JSON encoding. Refs and IDs share a namespace,
 // so this is observationally equivalent to IDLookup.
 func ResolveRef(input, ref string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
-	cs2 := C.CString(ref); defer C.free(unsafe.Pointer(cs2))
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	cs2 := C.CString(ref)
+	defer C.free(unsafe.Pointer(cs2))
 	var errPtr *C.char
 	out := C.cx_resolve_ref(cs, cs2, &errPtr)
 	if out == nil {
@@ -225,24 +265,12 @@ func ResolveRef(input, ref string) (string, error) {
 	return goStr(out), nil
 }
 
-// NodeID returns the syntactic ID of the element selected by cxpath,
-// or an empty string when the matched element has no ID (or the cxpath
-// matched nothing).
-func NodeID(input, cxpath string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs))
-	cs2 := C.CString(cxpath); defer C.free(unsafe.Pointer(cs2))
-	var errPtr *C.char
-	out := C.cx_node_id(cs, cs2, &errPtr)
-	if out == nil {
-		if errPtr != nil {
-			msg := C.GoString(errPtr)
-			C.cx_free(errPtr)
-			return "", fmt.Errorf("%s", msg)
-		}
-		return "", fmt.Errorf("unknown error")
-	}
-	return goStr(out), nil
-}
+// NodeID was a cxpath-driven ID lookup retired at v0.7.6 (Phase 7)
+// alongside the rest of the cxpath C ABI. Equivalent behaviour: run
+// a `//pattern` CXPath value (or `[?for [pattern $m] :yield $m]`)
+// via EvalCode to locate the element, then read its @id attribute.
+// See spec/code.md §5 + §10.4.7 and the migration table in
+// lang/go/cxlib/README.md.
 
 // ── Phase 5 / CB-1 / CB-2 helpers ────────────────────────────────────────────
 
@@ -252,6 +280,7 @@ func callBinTextOut(astBin []byte, fn func(*C.char, **C.char) *C.char) (string, 
 	if len(astBin) == 0 {
 		return "", fmt.Errorf("ast_bin_to_*: empty input")
 	}
+	defer cxThread()()
 	var errPtr *C.char
 	out := fn((*C.char)(unsafe.Pointer(&astBin[0])), &errPtr)
 	if out == nil {
@@ -280,9 +309,6 @@ func astBinToYaml(astBin []byte) (string, error) {
 func astBinToToml(astBin []byte) (string, error) {
 	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_toml(s, e) })
 }
-func astBinToMd(astBin []byte) (string, error) {
-	return callBinTextOut(astBin, func(s *C.char, e **C.char) *C.char { return C.cx_ast_bin_to_md(s, e) })
-}
 
 // callTextToAstBin invokes a cx_<fmt>_to_ast_bin function and returns
 // the raw AST bin payload (frame stripped).
@@ -305,9 +331,6 @@ func yamlToAstBin(input string) ([]byte, error) {
 }
 func tomlToAstBin(input string) ([]byte, error) {
 	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_toml_to_ast_bin(s, e) })
-}
-func mdToAstBin(input string) ([]byte, error) {
-	return callTextToAstBin(input, func(s *C.char, e **C.char) *C.char { return C.cx_md_to_ast_bin(s, e) })
 }
 
 // ── Phase 5 / CB-4 — events handle API ──────────────────────────────────────
@@ -399,96 +422,212 @@ func ToCx(input string) (string, error) {
 	var ep *C.char
 	out := C.cx_to_cx(cs, &ep)
 	if out == nil {
-		if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
 		return "", fmt.Errorf("unknown error")
 	}
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func ToCxCompact(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_cx_compact(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_to_cx_compact(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func AstToCx(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_ast_to_cx(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_ast_to_cx(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func ToXml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_xml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_to_xml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func ToAst(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_ast(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_to_ast(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func ToJson(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_json(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_to_json(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func ToYaml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_yaml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_to_yaml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func ToToml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_toml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func ToMd(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_to_md(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-
-// EvalCXL evaluates a CXL program against a CX context document and
-// returns the rendered output. outputTarget may be "" (honour the
-// program's `[?cx output-target=…]` directive, default "text"), or
-// one of "text" / "cx" / "html" at CXL 1.0 (v0.6.0).
-func EvalCXL(input, program, outputTarget string) (string, error) {
-	cin := C.CString(input); defer C.free(unsafe.Pointer(cin))
-	cprog := C.CString(program); defer C.free(unsafe.Pointer(cprog))
-	ctgt := C.CString(outputTarget); defer C.free(unsafe.Pointer(ctgt))
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
 	var ep *C.char
-	out := C.cx_eval(cin, cprog, ctgt, &ep)
+	out := C.cx_to_toml(cs, &ep)
 	if out == nil {
-		if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }
-		return "", fmt.Errorf("cx_eval: unknown error")
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
 	}
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 
-// EvalCXLStreaming evaluates a CXL program with pull-based
-// incremental output (v0.7.0 Y-row). onChunk is invoked with each
-// output chunk; returning a non-nil error aborts evaluation cleanly.
+// EvalCode evaluates a CX program against an optional input document
+// per spec/code.md and returns the rendered output. `input` may be
+// empty when the program doesn't consume the implicit `$doc` binding
+// (e.g. `[?for $i :in (1,2,3) :yield $i]`). `outputTarget` is one of
+// "text" (default when ""), "cx", "json", "yaml", "xml", "csv", "tsv"
+// (always available); "html" / "svg" / "mermaid" return
+// CXER0001 until the Phase 4 reference renderer lands.
+//
+// Routes through cx_code_eval_with_len so non-NUL-terminated input
+// flows through unchanged (spec/abi.md §2.14). Error wire format is
+// `CXERnnnn:msg` per spec/audits/code_abi_v1.md D3.
+func EvalCode(input, program, outputTarget string) (string, error) {
+	defer cxThread()()
+	cin := C.CString(input)
+	defer C.free(unsafe.Pointer(cin))
+	cprog := C.CString(program)
+	defer C.free(unsafe.Pointer(cprog))
+	ctgt := C.CString(outputTarget)
+	defer C.free(unsafe.Pointer(ctgt))
+	var ep *C.char
+	out := C.cx_code_eval_with_len(
+		cin, C.size_t(len(input)),
+		cprog, C.size_t(len(program)),
+		ctgt,
+		&ep,
+	)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("cx_code_eval: unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
+}
+
+// EvalCodeStreaming evaluates a CX program with pull-based
+// incremental output. `onChunk` is invoked with each output chunk;
+// returning a non-nil error aborts evaluation cleanly. Concatenating
+// every chunk yields the same bytes EvalCode would return — per
+// the spec/audits/code_abi_v1.md §3.3 byte-equivalence contract.
 //
 // cgo callback note: C function pointers can't be Go closures
 // directly, so the caller's onChunk is registered in a process-wide
 // dispatch table keyed by a uint64 token. The token is passed
-// through cx_eval_streaming's user pointer, and the exported
-// cxGoStreamTrampoline (in cxlib_stream.go) looks up the closure
-// per invocation. The token slot is freed when EvalCXLStreaming
+// through cx_code_eval_streaming's user pointer, and the exported
+// cxGoStreamTrampoline (in cxlib_stream.go) looks up the closure per
+// invocation. The token slot is freed when EvalCodeStreaming
 // returns regardless of outcome.
-func EvalCXLStreaming(input, program, outputTarget string,
+func EvalCodeStreaming(input, program, outputTarget string,
 	onChunk func(chunk []byte) error) error {
+	defer cxThread()()
 	token, cleanup := registerStreamCallback(onChunk)
 	defer cleanup()
-	cin := C.CString(input); defer C.free(unsafe.Pointer(cin))
-	cprog := C.CString(program); defer C.free(unsafe.Pointer(cprog))
-	ctgt := C.CString(outputTarget); defer C.free(unsafe.Pointer(ctgt))
+	cin := C.CString(input)
+	defer C.free(unsafe.Pointer(cin))
+	cprog := C.CString(program)
+	defer C.free(unsafe.Pointer(cprog))
+	ctgt := C.CString(outputTarget)
+	defer C.free(unsafe.Pointer(ctgt))
 	var ep *C.char
-	C.cx_eval_streaming(
-		cin, cprog, ctgt,
-		C.cx_eval_write_cb(C.cxGoStreamTrampoline),
+	C.cx_code_eval_streaming(
+		cin, C.size_t(len(input)),
+		cprog, C.size_t(len(program)),
+		ctgt,
+		C.cx_code_write_cb(C.cxGoStreamTrampoline),
 		unsafe.Pointer(uintptr(token)),
 		&ep,
 	)
 	if ep != nil {
-		m := C.GoString(ep); C.cx_free(ep)
+		m := C.GoString(ep)
+		C.cx_free(ep)
 		return fmt.Errorf("%s", m)
 	}
 	return streamCallbackError(token)
@@ -496,185 +635,416 @@ func EvalCXLStreaming(input, program, outputTarget string,
 
 // XML input
 func XmlToCx(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_cx(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_xml_to_cx(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func XmlToXml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_xml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_xml_to_xml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func XmlToAst(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_ast(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_xml_to_ast(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func XmlToJson(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_json(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_xml_to_json(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func XmlToYaml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_yaml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_xml_to_yaml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func XmlToToml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_toml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func XmlToMd(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_xml_to_md(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_xml_to_toml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 
 // JSON input
 func JsonToCx(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_cx(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_json_to_cx(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func JsonToXml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_xml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_json_to_xml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func JsonToAst(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_ast(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_json_to_ast(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func JsonToJson(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_json(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_json_to_json(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func JsonToYaml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_yaml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_json_to_yaml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func JsonToToml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_toml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func JsonToMd(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_json_to_md(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_json_to_toml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 
 // YAML input
 func YamlToCx(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_cx(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_yaml_to_cx(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func YamlToXml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_xml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_yaml_to_xml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func YamlToAst(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_ast(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_yaml_to_ast(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func YamlToJson(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_json(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_yaml_to_json(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func YamlToYaml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_yaml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_yaml_to_yaml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func YamlToToml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_toml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func YamlToMd(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_yaml_to_md(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_yaml_to_toml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 
 // TOML input
 func TomlToCx(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_cx(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_toml_to_cx(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func TomlToXml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_xml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_toml_to_xml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func TomlToAst(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_ast(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_toml_to_ast(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func TomlToJson(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_json(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_toml_to_json(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func TomlToYaml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_yaml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_toml_to_yaml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }
 func TomlToToml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_toml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func TomlToMd(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_toml_to_md(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-
-// MD input
-func MdToCx(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_cx(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func MdToXml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_xml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func MdToAst(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_ast(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func MdToJson(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_json(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func MdToYaml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_yaml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func MdToToml(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_toml(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
-}
-func MdToMd(input string) (string, error) {
-	cs := C.CString(input); defer C.free(unsafe.Pointer(cs)); var ep *C.char
-	out := C.cx_md_to_md(cs, &ep); if out == nil { if ep != nil { m := C.GoString(ep); C.cx_free(ep); return "", fmt.Errorf("%s", m) }; return "", fmt.Errorf("unknown error") }
-	s := C.GoString(out); C.cx_free(out); return s, nil
+	cs := C.CString(input)
+	defer C.free(unsafe.Pointer(cs))
+	var ep *C.char
+	out := C.cx_toml_to_toml(cs, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
 }

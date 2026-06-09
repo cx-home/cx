@@ -647,8 +647,8 @@ func TestLoadsReturnsMap(t *testing.T) {
 	if server["host"] != "localhost" {
 		t.Fatalf("expected localhost, got %v", server["host"])
 	}
-	// v3.4: CXDB v1 preserves int type (not coerced to float64 like
-	// the prior JSON detour). spec/type_mapping.md §2.
+	// v3.4: CXCol v1 preserves int type (not coerced to float64 like
+	// the prior JSON detour). spec/misc/type-mapping.md §2.
 	port, ok := server["port"].(int64)
 	if !ok || port != 8080 {
 		t.Fatalf("expected port 8080 (int64), got %v (%T)", server["port"], server["port"])
@@ -677,7 +677,7 @@ func TestLoadsScalars(t *testing.T) {
 	m := data.(map[string]any)
 	values := m["values"].(map[string]any)
 
-	// v3.4: CXDB v1 preserves int type. spec/type_mapping.md §2.
+	// v3.4: CXCol v1 preserves int type. spec/misc/type-mapping.md §2.
 	count, ok := values["count"].(int64)
 	if !ok || count != 42 {
 		t.Fatalf("expected count=42 (int64), got %v (%T)", values["count"], values["count"])
@@ -735,7 +735,7 @@ func TestLoadsDumpsDataPreserved(t *testing.T) {
 	m := restored.(map[string]any)
 	server := m["server"].(map[string]any)
 
-	// v3.4: CXDB v1 preserves int type through round-trip (Go literal
+	// v3.4: CXCol v1 preserves int type through round-trip (Go literal
 	// 8080 in the original map is `int`, encoded as int8/int16/int32
 	// via narrowest-fit, decoded back as int64 per type_mapping spec).
 	port, ok := server["port"].(int64)
@@ -760,9 +760,9 @@ func TestParseErrorUnclosedBracket(t *testing.T) {
 	}
 }
 
-// `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+// `[=]` is no longer a parse error: it is an Array literal
 // containing Text("="). Commit 72effe38 cemented this at the top-level
-// CXL parser. No syntactic surface for the old "empty element name"
+// CX parser. No syntactic surface for the old "empty element name"
 // diagnostic remains.
 
 func TestParseErrorNestedUnclosed(t *testing.T) {
@@ -844,8 +844,14 @@ func TestParseJsonToDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if doc.FindFirst("server") == nil {
-		t.Fatal("expected server element")
+	// JSON imports LOSSLESS (conversions.md §4.1): a JSON object becomes a cx
+	// MAP, not synthesized elements — so "server" is a map key, and the doc
+	// round-trips to the lossless map form. (The retired element-synthesising
+	// parser used to make FindFirst("server") work; it no longer applies.)
+	got := doc.ToCx()
+	want := "{server: {port: 8080}}"
+	if got != want {
+		t.Fatalf("expected lossless map import %q, got %q", want, got)
 	}
 }
 
@@ -866,16 +872,6 @@ func TestParseToml(t *testing.T) {
 	}
 	if doc.Root() == nil || doc.Root().Name != "server" {
 		t.Fatalf("expected root name 'server', got %v", doc.Root())
-	}
-}
-
-func TestParseMd(t *testing.T) {
-	doc, err := ParseMd("# hello\n\nworld\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if doc == nil || len(doc.Elements) == 0 {
-		t.Fatal("expected doc with elements")
 	}
 }
 
@@ -935,16 +931,6 @@ func TestLoadsToml(t *testing.T) {
 	}
 }
 
-func TestLoadsMd(t *testing.T) {
-	result, err := LoadsMd("# hello\n\nworld\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result == nil {
-		t.Fatal("expected non-nil result")
-	}
-}
-
 // ── RemoveChild / RemoveAt ────────────────────────────────────────────────────
 
 func TestRemoveChildRemovesAllMatchingChildren(t *testing.T) {
@@ -999,308 +985,5 @@ func TestRemoveAtOutOfBoundsIsNoop(t *testing.T) {
 	parent.RemoveAt(999) // should not panic
 	if len(parent.Items) != before {
 		t.Fatalf("expected length unchanged after out-of-bounds RemoveAt")
-	}
-}
-
-// ── SelectAll / Select (CXPath) ───────────────────────────────────────────────
-
-func TestSelectAllDescendantAxis(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	results, err := doc.SelectAll("//service")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 3 {
-		t.Fatalf("expected 3 services, got %d", len(results))
-	}
-}
-
-func TestSelectAllAttributePredicate(t *testing.T) {
-	// Build inline doc with active attr
-	doc, err := Parse("[services\n  [service name=auth port=8080 active=true]\n  [service name=api port=9000 active=false]\n  [service name=web port=80 active=true]\n]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	results, err := doc.SelectAll("//service[@active=true]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 active services, got %d", len(results))
-	}
-}
-
-func TestSelectFirstFromSelectAll(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	first, err := doc.Select("//service")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first == nil {
-		t.Fatal("expected non-nil first service")
-	}
-	if first.Attr("name") != "auth" {
-		t.Fatalf("expected first service name 'auth', got %v", first.Attr("name"))
-	}
-}
-
-func TestSelectAllChildPath(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	results, err := doc.SelectAll("config/server")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 1 || results[0].Name != "server" {
-		t.Fatalf("expected 1 server, got %d", len(results))
-	}
-}
-
-func TestSelectAllWildcard(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	// //  * matches all descendants
-	results, err := doc.SelectAll("//*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// config has server, database, logging = 4 total (config + 3 children)
-	if len(results) < 4 {
-		t.Fatalf("expected at least 4 results for //* in config doc, got %d", len(results))
-	}
-}
-
-func TestSelectAllAttrCmpNumeric(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	// ports: auth=8001, api=8080, worker=9000 — all >= 8000
-	results, err := doc.SelectAll("//service[@port>=8000]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 3 {
-		t.Fatalf("expected 3 services with port>=8000, got %d", len(results))
-	}
-}
-
-func TestSelectAllPosition(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	results, err := doc.SelectAll("//service[2]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result for service[2], got %d", len(results))
-	}
-	if results[0].Attr("name") != "api" {
-		t.Fatalf("expected 2nd service 'api', got %v", results[0].Attr("name"))
-	}
-}
-
-func TestSelectAllLastPosition(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	results, err := doc.SelectAll("//service[last()]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result for service[last()], got %d", len(results))
-	}
-	if results[0].Attr("name") != "worker" {
-		t.Fatalf("expected last service 'worker', got %v", results[0].Attr("name"))
-	}
-}
-
-func TestSelectAllContains(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	// 'auth' and 'api' both contain 'a', 'worker' does not
-	results, err := doc.SelectAll("//service[contains(@name, 'a')]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 services containing 'a' in name, got %d", len(results))
-	}
-}
-
-func TestSelectAllStartsWith(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_multi.cx"))
-	// 'auth' and 'api' start with 'a'
-	results, err := doc.SelectAll("//service[starts-with(@name, 'a')]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 services starting with 'a', got %d", len(results))
-	}
-}
-
-func TestSelectAllBoolAnd(t *testing.T) {
-	doc, err := Parse("[services\n  [service name=auth port=8080 active=true]\n  [service name=api port=9000 active=false]\n  [service name=web port=8080 active=true]\n]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	results, err := doc.SelectAll("//service[@active=true and @port=8080]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 services with active=true and port=8080, got %d", len(results))
-	}
-}
-
-func TestSelectOnElement(t *testing.T) {
-	doc, err := Parse("[services\n  [service name=auth port=8080 active=true]\n  [service name=api port=9000 active=false]\n  [service name=web port=80 active=true]\n]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	servicesEl := doc.Root()
-	results, err := servicesEl.SelectAll("service[@active=true]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 active services from element SelectAll, got %d", len(results))
-	}
-}
-
-func TestSelectInvalidExprReturnsError(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	_, err := doc.SelectAll("[@]")
-	if err == nil {
-		t.Fatal("expected error for invalid expression")
-	}
-}
-
-// ── Transform ─────────────────────────────────────────────────────────────────
-
-func TestTransformReturnsNewDocument(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	updated := doc.Transform("config/server", func(el *Element) *Element {
-		return el
-	})
-	if updated == doc {
-		t.Fatal("expected Transform to return a new *Document pointer")
-	}
-}
-
-func TestTransformAppliesFunctionToElementAtPath(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	updated := doc.Transform("config/server", func(el *Element) *Element {
-		el.SetAttr("host", "prod.example.com", "")
-		return el
-	})
-	host := updated.At("config/server").Attr("host")
-	if host != "prod.example.com" {
-		t.Fatalf("expected 'prod.example.com', got %v", host)
-	}
-}
-
-func TestTransformOriginalDocumentUnchanged(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	doc.Transform("config/server", func(el *Element) *Element {
-		el.SetAttr("host", "prod.example.com", "")
-		return el
-	})
-	host := doc.At("config/server").Attr("host")
-	if host != "localhost" {
-		t.Fatalf("expected original 'localhost', got %v", host)
-	}
-}
-
-func TestTransformMissingPathReturnsOriginal(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	updated := doc.Transform("config/nonexistent", func(el *Element) *Element {
-		return el
-	})
-	// Should return original doc unchanged (same elements)
-	if updated.At("config/server") == nil {
-		t.Fatal("expected config/server to still exist in result")
-	}
-}
-
-func TestTransformChained(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	result := doc.
-		Transform("config/server", func(el *Element) *Element {
-			el.SetAttr("host", "web.example.com", "")
-			return el
-		}).
-		Transform("config/database", func(el *Element) *Element {
-			el.SetAttr("host", "db.example.com", "")
-			return el
-		})
-	if result.At("config/server").Attr("host") != "web.example.com" {
-		t.Fatal("expected server host 'web.example.com'")
-	}
-	if result.At("config/database").Attr("host") != "db.example.com" {
-		t.Fatal("expected database host 'db.example.com'")
-	}
-}
-
-// ── TransformAll ──────────────────────────────────────────────────────────────
-
-func TestTransformAllAppliesToAllMatchingElements(t *testing.T) {
-	doc, err := Parse("[services\n  [service name=auth port=8080]\n  [service name=api port=9000]\n]")
-	if err != nil {
-		t.Fatal(err)
-	}
-	updated, err := doc.TransformAll("//service", func(el *Element) *Element {
-		el.SetAttr("active", true, "bool")
-		return el
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	svcs := updated.FindAll("service")
-	for _, svc := range svcs {
-		if svc.Attr("active") != true {
-			t.Fatalf("expected active=true on %s, got %v", svc.Attr("name"), svc.Attr("active"))
-		}
-	}
-}
-
-func TestTransformAllReturnsNewDocument(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	updated, err := doc.TransformAll("//server", func(el *Element) *Element {
-		return el
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if updated == doc {
-		t.Fatal("expected TransformAll to return a new *Document pointer")
-	}
-}
-
-func TestTransformAllNoMatchesReturnsEquivalentDoc(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_config.cx"))
-	updated, err := doc.TransformAll("//nonexistent", func(el *Element) *Element {
-		el.SetAttr("touched", true, "bool")
-		return el
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	// No matches — server should still have original host
-	if updated.At("config/server").Attr("host") != "localhost" {
-		t.Fatal("expected server host 'localhost' when no matches")
-	}
-}
-
-func TestTransformAllDeeplyNested(t *testing.T) {
-	doc, _ := Parse(fx(t, "api_article.cx"))
-	updated, err := doc.TransformAll("//p", func(el *Element) *Element {
-		el.SetAttr("processed", true, "bool")
-		return el
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	ps := updated.FindAll("p")
-	if len(ps) != 3 {
-		t.Fatalf("expected 3 p elements, got %d", len(ps))
-	}
-	for _, p := range ps {
-		if p.Attr("processed") != true {
-			t.Fatalf("expected processed=true on p, got %v", p.Attr("processed"))
-		}
 	}
 }

@@ -14,9 +14,10 @@ import struct
 import ctypes
 from typing import Any, Optional
 from . import cx as _cx
-from .ast import (Attr, Document, Element, Text, Scalar, Comment, RawText,
+from .ast import (Atom, Attr, Document, Element, Text, Scalar, Comment, RawText,
                   EntityRef, Alias, PI, XMLDecl, CXDirective, BlockContent,
-                  Interpolation, EvalDirective)
+                  Interpolation, EvalDirective, IteratorNode, ITER_REDUCE,
+                  SequenceNode, ArrayNode, MapNode, MapEntry)
 from .stream import StreamEvent, Attr as SAttr
 
 
@@ -31,6 +32,10 @@ def _coerce(type_str: str, value_str: str) -> Any:
         return value_str == 'true'
     if type_str == 'null':
         return None
+    if type_str == 'atom':
+        # atoms decode into the typed `Atom` wrapper so that
+        # Python-side equality is type-strict (`Atom('ok') != 'ok'`).
+        return Atom(value_str)
     return value_str  # string / date / datetime / bytes
 
 
@@ -93,7 +98,7 @@ def _read_attr(b: _Buf, version: int):
     a = Attr(name, _coerce(t, value_str), dt)
     a.is_ref = is_ref
     if version >= 5:
-        # v3.5 (ADR 0016): BracketBody attribute body tail.
+        # v3.5: BracketBody attribute body tail.
         body_flag = b.u8()
         if body_flag == 1:
             count = b.u16()
@@ -147,14 +152,47 @@ def _read_node(b: _Buf, version: int):
     if tid == 0x0C:
         return BlockContent([_read_node(b, version) for _ in range(b.u16())])
     if tid == 0x0D:
-        # v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+        # v3.5 [58] — `[?=EXPR]`.
         return Interpolation(b.str_())
     if tid == 0x0E:
-        # v3.5 (ADR 0016) [59] — `[?Name attrs body]`.
+        # v3.5 [59] — `[?Name attrs body]`.
         name = b.str_()
         attrs = [_read_attr(b, version) for _ in range(b.u16())]
         items = [_read_node(b, version) for _ in range(b.u16())]
         return EvalDirective(name, attrs, items)
+    if tid == 0x0F:
+        # v0.8.0 [56a] — SequenceNode `(a, b, c)`: u16:item_count nodes[].
+        return SequenceNode([_read_node(b, version) for _ in range(b.u16())])
+    if tid == 0x10:
+        # v0.8.0 [56b] — ArrayNode `[a, b, c]`: u16:item_count nodes[].
+        return ArrayNode([_read_node(b, version) for _ in range(b.u16())])
+    if tid == 0x11:
+        # v0.8.0 [56c] — MapNode `{k: v, …}`: u16:entry_count entries[];
+        # entry = str:key_type str:key_value node:value (ast_bin §4.3).
+        entries = []
+        for _ in range(b.u16()):
+            kt = b.str_()
+            kv = _coerce(kt, b.str_())
+            entries.append(MapEntry(kt, kv, _read_node(b, version)))
+        return MapNode(entries)
+    if tid == 0x16:
+        # v0.8.0 — IteratorNode wire format.
+        # Layout: u8:source_kind u8:single_use u16:source_args_count nodes[]
+        # Runtime-derived `memo` / `exhausted` are NOT on the wire;
+        # decoded iterator starts fresh (memo=[], exhausted=false) and
+        # re-evaluates from source on first walk.
+        # Decoders without cap-bit-37 support MUST reject; this binding
+        # raises CXER0100 on an unknown source_kind ordinal per D7.
+        kind = b.u8()
+        if kind > ITER_REDUCE:
+            raise ValueError(
+                f'ast_bin: unknown IteratorSourceKind ordinal {kind} '
+                f'(cap bit 37)'
+            )
+        single_use = bool(b.u8())
+        args_count = b.u16()
+        args = [_read_node(b, version) for _ in range(args_count)]
+        return IteratorNode(kind, args, single_use=single_use)
     # 0xFF = unknown/DTD skip — no payload
     return Text('')
 
@@ -195,10 +233,10 @@ def _decode_one_event(b: _Buf) -> StreamEvent:
             name = b.str_()
             val_str = b.str_()
             typ = b.str_()
-            _is_ref = b.u8()  # v3.4 (ADR 0003): is_ref flag
-            # v3.5 (ADR 0016): BracketBody attr body tail. Event-stream
+            _is_ref = b.u8() # v3.4: is_ref flag
+            # v3.5: BracketBody attr body tail. Event-stream
             # attrs share the ast_bin attr layout; skip body items at the
-            # event layer (CXL semantics live above streaming).
+            # event layer (program semantics live above streaming).
             body_flag = b.u8()
             if body_flag == 1:
                 body_count = b.u16()
@@ -321,6 +359,13 @@ def _scalar_value_str(dt: str, v: Any) -> str:
         return 'null'
     if dt == 'bool' or isinstance(v, bool):
         return 'true' if v else 'false'
+    if dt == 'atom':
+        # atom encodes as just the name (no `:` prefix); the
+        # wire form for the `atom` data_type tags the value as symbolic.
+        return v.name if isinstance(v, Atom) else str(v)
+    if isinstance(v, Atom):
+        # Defensive: caller may have passed Atom with a non-atom dt.
+        return v.name
     if dt == 'string':
         return v if isinstance(v, str) else str(v)
     return str(v)
@@ -345,9 +390,9 @@ def _enc_attr(out: bytearray, a: Attr) -> None:
     inferred = a.data_type if a.data_type else 'string'
     _enc_str(out, _scalar_value_str(inferred, a.value))
     _enc_str(out, inferred)
-    # v3.4 (ADR 0003): is_ref flag — format version 2.
+    # v3.4: is_ref flag — format version 2.
     out.append(1 if getattr(a, 'is_ref', False) else 0)
-    # v3.5 (ADR 0016): BracketBody attribute body tail — format version 5.
+    # v3.5: BracketBody attribute body tail — format version 5.
     body = getattr(a, 'body', None)
     if body is None:
         out.append(0)
@@ -365,9 +410,9 @@ def _enc_node(out: bytearray, n: Any) -> None:
         _enc_optstr(out, n.anchor)
         _enc_optstr(out, n.data_type)
         _enc_optstr(out, n.merge)
-        # v3.4 (ADR 0003): syntactic ID declaration — format version 2.
+        # v3.4: syntactic ID declaration — format version 2.
         _enc_optstr(out, getattr(n, 'id', None))
-        # v3.4 (ADR 0003 D1): body-position reference — format version 3.
+        # v3.4: body-position reference — format version 3.
         _enc_optstr(out, getattr(n, 'body_ref', None))
         out += _PCK_H.pack(len(n.attrs))
         for a in n.attrs:
@@ -414,11 +459,11 @@ def _enc_node(out: bytearray, n: Any) -> None:
         for it in n.items:
             _enc_node(out, it)
     elif isinstance(n, Interpolation):
-        # v3.5 (ADR 0016) [58] — `[?=EXPR]`.
+        # v3.5 [58] — `[?=EXPR]`.
         out.append(0x0D)
         _enc_str(out, n.expr)
     elif isinstance(n, EvalDirective):
-        # v3.5 (ADR 0016) [59] — `[?Name attrs body]`.
+        # v3.5 [59] — `[?Name attrs body]`.
         out.append(0x0E)
         _enc_str(out, n.name)
         out += _PCK_H.pack(len(n.attrs))
@@ -427,6 +472,18 @@ def _enc_node(out: bytearray, n: Any) -> None:
         out += _PCK_H.pack(len(n.items))
         for it in n.items:
             _enc_node(out, it)
+    elif isinstance(n, IteratorNode):
+        # v0.8.0 — Iterator wire format (tag 0x16, cap bit 37).
+        # Layout: u8:source_kind u8:single_use u16:source_args_count nodes[]
+        # Runtime-derived `memo` / `exhausted` are NEVER serialised
+        # decoders restore a fresh iterator that
+        # re-evaluates from source on first pull.
+        out.append(0x16)
+        out.append(int(n.source_kind) & 0xFF)
+        out.append(1 if n.single_use else 0)
+        out += _PCK_H.pack(len(n.source_args))
+        for arg in n.source_args:
+            _enc_node(out, arg)
     else:
         # DTD / unknown node — emit 0xFF skip marker. Bindings don't
         # round-trip these; the C ABI's ast_bin_to_<format> ignores them.

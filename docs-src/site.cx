@@ -1,20 +1,23 @@
-[- Site-wide configuration for the v0.7.0 documentation system.
-   Consumed by scripts/gen_docs/scaffold.sh + build.cxl. -]
+[- Site-wide configuration for the v0.7.6 documentation system.
+   Consumed by scripts/gen_docs/scaffold.sh + build.cx. -]
 [site
   [meta
     name='CX'
-    tagline='One bracket for every data format.'
-    version='0.7.0'
+    tagline='The CX Data Language'
+    version='0.7.6'
     base-url='/'
     repo='https://github.com/cx-home/cx'
   ]
 
   [theme
-    primary='#1f6feb'
+    primary='#0039BA'
+    primary-dark='#002A8C'
+    primary-light='#3B66D3'
     mono-font='JetBrains Mono'
     body-font='Inter'
-    logo='/assets/logo.svg'
-    favicon='/assets/favicon.ico'
+    logo='/assets/cx-logo.svg'
+    logo-png='/assets/cx-logo.png'
+    favicon='/assets/cx-logo.svg'
   ]
 
   [nav
@@ -29,7 +32,7 @@
     ]
     [group label='Examples'
       [item path='tour/data'              label='50 Ways to Love Your CX Data']
-      [item path='tour/programs'          label='50 Ways to Love Your CXL Code']
+      [item path='tour/programs'          label='50 Ways to Love Your CX Programs']
       [item path='cookbook'               label='Cookbook']
       [item path='showcase'               label='Showcase']
     ]
@@ -37,15 +40,13 @@
       [item path='concepts/data-model'    label='Data Model']
       [item path='concepts/sigils'        label='Sigils & Markup']
       [item path='concepts/evaluation'    label='Evaluation Model']
-      [item path='concepts/cxpath'        label='CXPath']
       [item path='concepts/identity'      label='Identity & Canonical']
       [item path='concepts/types'         label='Types']
       [item path='concepts/wasm'          label='WebAssembly Target']
     ]
     [group label='Reference'
       [item path='reference/cli'          label='CLI']
-      [item path='reference/cxl'          label='CXL Language']
-      [item path='reference/cxpath'       label='CXPath Functions']
+      [item path='reference/code'              label='CX Code']
       [item path='reference/schemas'      label='Schemas']
       [item path='reference/tables'       label='Tables']
       [item path='reference/streaming'    label='Streaming']

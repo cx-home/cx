@@ -1,0 +1,109 @@
+[# modify-crud.cx — pure-functional CRUD via [?modify], every action (v0.8.0).
+   Focus path + bare action clause (§8.10), structural sharing: each
+   [?modify] returns a *new* document; $doc itself is never changed.
+   With --data, $doc (and $input) is bound to the input document.
+
+   A CX module's value is its last expression, so the steps live in
+   one [crud-tour …] element.
+
+   Run:
+     cx eval examples/modify-crud.cx --data=examples/modify-crud.input.cx #]
+
+[crud-tour version='0.8.0'
+
+  [# ─── §1. [set] — replace a single scalar attribute ─── #]
+
+  [step n=1 action='[set]'
+    [?let [= $d [?modify $doc //user[@id=1]/@name [set "Alice (Renamed)"]]]
+      [result $d]]]
+
+  [# ─── §2. [delete] — remove matching nodes ─── #]
+
+  [step n=2 action='[delete]'
+    [?let [= $d [?modify $doc //user[@banned=true] [delete]]]
+      [remaining [$count $d//user]]]]
+
+  [# ─── §3. [using] — apply a lambda to each focused node ─── #]
+
+  [step n=3 action='[using]'
+    [?let [= $d [?modify $doc //user
+                  [using [?fn ($u) [user id=$u/@id name=[$upper $u/@name] email=$u/@email]]]]]
+      [result $d]]]
+
+  [# ─── §4. [rename] — change an element name (preserves attrs + body) ─── #]
+
+  [step n=4 action='[rename]'
+    [?let [= $d [?modify $doc //widget [rename component]]]
+      [renamed [$count $d//component]]]]
+
+  [# ─── §5. [set-attr] — add/update an attribute (element focus) ─── #]
+
+  [step n=5 action='[set-attr]'
+    [?let [= $d [?modify $doc //user[@id=1] [set-attr verified true]]]
+      [result $d]]]
+
+  [# ─── §6. [delete-attr] — remove an attribute ─── #]
+
+  [step n=6 action='[delete-attr]'
+    [?let [= $d [?modify $doc //user [delete-attr temp]]]
+      [result $d]]]
+
+  [# ─── §7. [append] — add a child to the end of body ─── #]
+
+  [step n=7 action='[append]'
+    [?let [= $d [?modify $doc //section[@id="intro"] [append [para "Added paragraph."]]]]
+      [result $d]]]
+
+  [# ─── §8. [prepend] — add a child to the start of body ─── #]
+
+  [step n=8 action='[prepend]'
+    [?let [= $d [?modify $doc //section[@id="intro"] [prepend [para "Leading paragraph."]]]]
+      [result $d]]]
+
+  [# ─── §9. [insert-before] — add a sibling before the matched node ─── #]
+
+  [step n=9 action='[insert-before]'
+    [?let [= $d [?modify $doc //user[@id=3] [insert-before [user id='placeholder']]]]
+      [result $d]]]
+
+  [# ─── §10. [insert-after] — add a sibling after the matched node ─── #]
+
+  [step n=10 action='[insert-after]'
+    [?let [= $d [?modify $doc //user[@id=3] [insert-after [user id='follower']]]]
+      [result $d]]]
+
+  [# ─── §11. [replace] — swap the matched node out entirely ─── #]
+
+  [step n=11 action='[replace]'
+    [?let [= $d [?modify $doc //user[@id=1]
+                  [replace [user id=1 name='Alpha' email='a@example.org']]]]
+      [result $d]]]
+
+  [# ─── §12. Pipeline — chain modifies via [?pipe] + _ hole-form ─── #]
+
+  [step n=12 action='pipeline'
+    [?pipe $doc
+      [?modify _ //user/@status [set "verified"]]
+      [?modify _ //user[@banned=true] [delete]]
+      [?modify _ //user [using [?fn ($u) [user id=$u/@id name=[$upper $u/@name]]]]]]]
+
+  [# ─── §13. Zero-match — modify is a no-op ─── #]
+
+  [step n=13 note='zero-match'
+    [?let [= $d [?modify $doc //nonexistent [set "won't happen"]]]
+      [example users-before=[$count $doc//user] users-after=[$count $d//user]]]]
+
+  [# ─── §14. Multi-match — the action applies to every matched node ─── #]
+
+  [step n=14 note='multi-match'
+    [?let [= $d [?modify $doc //user[@active=false] [set-attr archived true]]]
+      [archived [$count $d//user[@archived=true]]]]]
+
+  [# ─── §15. Identity — $doc is unchanged through all of the above ─── #]
+
+  [step n=15 note='identity'
+    [unchanged users=[$count $doc//user]
+               widgets=[$count $doc//widget]
+               components=[$count $doc//component]]]
+
+]

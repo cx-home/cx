@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>store — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a class="active" href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-store">
+  <h1>store</h1>
+  <p class="lede">A content-addressed object store with URL-dispatched backends. A single API surface operates against multiple storage backends (local filesystem, in-memory, HTTP, S3-compatible, WebDAV, FTP/FTPS/SFTP, and a CSRP service tier), selected at open time by the URL scheme. Doc IDs are the SHA-256 of a document's strict canonical bytes, so identity is identical across bindings, backends, compression states, and wire encodings — enabling lossless migration and free dedup. A mutable alias layer maps names to hashes on top of the immutable content.</p>
+  
+    <section id="fn-store-open" class="fn">
+      <h3>store:open</h3>
+      <p class="fn-sig"><code>[$store:open]  -> element</code>  —  Open a Store against a backend chosen by the URL scheme, with default options.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [item 'hello']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-open-opts" class="fn">
+      <h3>store:open-opts</h3>
+      <p class="fn-sig"><code>[$store:open-opts]  -> element</code>  —  Open a Store with explicit options for compression, encoding, sharding, auth, caching, and read-only.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open-opts "mem://" [map read-only="true"]]] [$store:put-doc $s [doc [item "x"]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1110</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-put-doc" class="fn">
+      <h3>store:put-doc</h3>
+      <p class="fn-sig"><code>[$store:put-doc]  -> string</code>  —  Store a document and return its SHA-256 content hash; identical content stores once.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [item 'hello']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-put-doc-stream" class="fn">
+      <h3>store:put-doc-stream</h3>
+      <p class="fn-sig"><code>[$store:put-doc-stream]  -> string</code>  —  Store a document from a readable byte-source in bounded chunks, never holding it fully resident.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $a [$store:put-doc $s [user name=al]]] [?let [= $b [$store:put-doc-stream $s [user name=al]]] [= $a $b]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-get-doc" class="fn">
+      <h3>store:get-doc</h3>
+      <p class="fn-sig"><code>[$store:get-doc]  -> any</code>  —  Retrieve the document for a hash, re-validating integrity after decode.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [item 'hello']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-list-docs" class="fn">
+      <h3>store:list-docs</h3>
+      <p class="fn-sig"><code>[$store:list-docs]  -> [sequence string]</code>  —  Return the hashes of every document stored in the Store.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h1 [$store:put-doc $s [doc [item "hello"]]]] [?let [= $h2 [$store:put-doc $s [doc [item "hello"]]]] [$store:list-docs $s]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>('01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9')</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-iter-docs" class="fn">
+      <h3>store:iter-docs</h3>
+      <p class="fn-sig"><code>[$store:iter-docs]  -> [sequence element]</code>  —  Lazily yield hash-and-document pairs, keeping memory bounded regardless of corpus size.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:iter-docs $s]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>([entry hash='01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9' [doc [item 'hello']]])</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-query" class="fn">
+      <h3>store:query</h3>
+      <p class="fn-sig"><code>[$store:query]  -> [sequence element]</code>  —  Evaluate a CXPath against every document, returning the matches per doc.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [root [user name=al]]]] [$count [$store:query $s "//user"]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-modify-doc" class="fn">
+      <h3>store:modify-doc</h3>
+      <p class="fn-sig"><code>[$store:modify-doc]  -> string</code>  —  Apply an action to the doc at a hash and store the result as a new doc, returning its hash.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $h2 [$store:modify-doc $s $h [set-attr name=v value="x"]]] [= $h $h2]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-delete-doc" class="fn">
+      <h3>store:delete-doc</h3>
+      <p class="fn-sig"><code>[$store:delete-doc]  -> bool</code>  —  Delete the doc at a hash, returning whether it was present.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open-opts "mem://" [map read-only="true"]]] [$store:delete-doc $s "deadbeef"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1110</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-exists" class="fn">
+      <h3>store:exists</h3>
+      <p class="fn-sig"><code>[$store:exists]  -> bool</code>  —  Report whether a doc with the given hash is present — a cheap existence check.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:exists $s $h]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-capabilities" class="fn">
+      <h3>store:capabilities</h3>
+      <p class="fn-sig"><code>[$store:capabilities]  -> map</code>  —  Report the Store's read/write/list traits plus its backend, URL, compression, and encoding.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [$store:capabilities $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[map read=true write=true list=true backend=mem url='mem://' compression=none encoding=cxbin]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-close" class="fn">
+      <h3>store:close</h3>
+      <p class="fn-sig"><code>[$store:close]  -> null</code>  —  Close the Store; subsequent operations on it raise CXER1130.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $c [$store:close $s]] [$store:list-docs $s]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1130</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-set-alias" class="fn">
+      <h3>store:set-alias</h3>
+      <p class="fn-sig"><code>[$store:set-alias]  -> null</code>  —  Bind a name to an existing doc hash in the mutable alias layer (last-write-wins).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-get-alias" class="fn">
+      <h3>store:get-alias</h3>
+      <p class="fn-sig"><code>[$store:get-alias]  -> [or string [sequence string]]</code>  —  Resolve an alias name to its hash, or absence (empty) if it does not resolve.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-list-aliases" class="fn">
+      <h3>store:list-aliases</h3>
+      <p class="fn-sig"><code>[$store:list-aliases]  -> [sequence element]</code>  —  Return every name-to-hash alias binding in the Store.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:list-aliases $s]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>([alias name=latest hash='01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9'])</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-delete-alias" class="fn">
+      <h3>store:delete-alias</h3>
+      <p class="fn-sig"><code>[$store:delete-alias]  -> bool</code>  —  Remove an alias, returning whether it existed; the underlying doc is untouched.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:delete-alias $s "latest"]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-migrate" class="fn">
+      <h3>store:migrate</h3>
+      <p class="fn-sig"><code>[$store:migrate]  -> element</code>  —  Copy every doc and alias from one Store to another, losslessly across backends and encodings.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $a [$store:open "mem://"]] [?let [= $h [$store:put-doc $a [doc [item "hello"]]]] [?let [= $b [$store:open "mem://"]] [$store:migrate $a $b]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[migration-report doc-count=1 hashes-verified=1 bytes-written=20]</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

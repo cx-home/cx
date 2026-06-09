@@ -1,15 +1,15 @@
-//! CX Rust binding — Public Table API per ADR 0018 D1.
+//! CX Rust binding — Public Table API.
 //!
 //! Implements the 17-member canonical Table API surface against the
-//! V core's `:table` blocks via the C ABI. Per ADR 0018 §D2 per-
-//! binding naming: Rust uses snake_case methods matching the
+//! V core's `:table` blocks via the C ABI. Per per-binding
+//! naming, Rust uses snake_case methods matching the
 //! canonical surface exactly.
 //!
-//! Cells admit any ADR 0017 §D5 Item kind — represented as
+//! Cells admit any Item kind — represented as
 //! `serde_json::Value` (which natively handles scalars, arrays, and
 //! object/maps via its existing variants).
 //!
-//! Per ADR 0018 §D3: tables are immutable values. All methods that
+//! Per: tables are immutable values. All methods that
 //! produce a new table (`slice`, `head`, `tail`, `select_cols`)
 //! return a fresh `Table` rather than mutating in place.
 
@@ -49,7 +49,7 @@ impl Table {
         Ok(out)
     }
 
-    /// Construct directly with 4-invariant validation per ADR 0018 §D7.
+    /// Construct directly with 4-invariant validation.
     pub fn new(
         cols: Vec<String>,
         types: Vec<String>,
@@ -190,7 +190,7 @@ impl Table {
         self.slice(start, self.rows.len()).unwrap()
     }
 
-    /// `select_cols` mirrors the canonical `select` from ADR 0018 §3.2.
+    /// `select_cols` mirrors the canonical `select`.
     /// Renamed because `select` is a Rust reserved-ish word in async
     /// contexts (tokio's `select!` macro shadows it heavily).
     pub fn select_cols(&self, names: &[&str]) -> Result<Self, String> {
@@ -250,11 +250,14 @@ impl Table {
                 if ty.is_empty() {
                     name.clone()
                 } else {
-                    format!("{}:{}", name, ty)
+                    // v0.8.0 table columns use the glued double-colon type
+                    // annotation (`name::int`); single `:` is the namespace
+                    // qualifier (grammar [26]/[29]).
+                    format!("{}::{}", name, ty)
                 }
             })
             .collect();
-        let mut out = format!("[_ :table[{}]\n", header.join(" "));
+        let mut out = format!("[_ [table[{}]]\n", header.join(" "));
         for row in &self.rows {
             let cells: Vec<String> = row.iter().map(format_cx_cell).collect();
             out.push_str("  ");
@@ -454,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_table_from_cx_simple() {
-        let src = "[users :table[name age:int]\n  alice 30\n  bob 25\n]";
+        let src = "[users [table[name age::int]]\n  alice 30\n  bob 25\n]";
         let t = Table::from_cx(src).expect("parse");
         assert_eq!(t.row_count(), 2);
         assert_eq!(t.col_count(), 2);
@@ -549,7 +552,7 @@ mod tests {
         )
         .unwrap();
         let out = t.to_cx();
-        assert!(out.contains(":table[a:int]"));
+        assert!(out.contains("[table[a::int]]"));
         assert!(out.contains("  1"));
     }
 
@@ -592,7 +595,7 @@ mod tests {
 
     #[test]
     fn test_table_from_cx_collection_cells() {
-        let src = "[u :table[name tags]\n  alice [admin, user,]\n]";
+        let src = "[u [table[name tags]]\n  alice [admin, user,]\n]";
         let t = Table::from_cx(src).expect("parse");
         let row = t.row(0).unwrap();
         let tags = row["tags"].as_array().expect("array");

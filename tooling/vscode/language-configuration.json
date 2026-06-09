@@ -1,26 +1,31 @@
 {
   "comments": {
-    "lineComment": "#"
+    "lineComment": "#",
+    "blockComment": ["[-", "-]"]
   },
   "brackets": [
     ["[", "]"],
-    ["[|", "|]"]
+    ["[|", "|]"],
+    ["(", ")"]
   ],
   "autoClosingPairs": [
     {"open": "[", "close": "]"},
     {"open": "[|", "close": "|]"},
+    {"open": "(", "close": ")"},
+    {"open": "\"\"\"", "close": "\"\"\""},
     {"open": "\"", "close": "\"", "notIn": ["string"]},
     {"open": "'", "close": "'", "notIn": ["string"]},
     {"open": "[```", "close": "]"}
   ],
   "surroundingPairs": [
     ["[", "]"],
+    ["(", ")"],
     ["\"", "\""],
     ["'", "'"]
   ],
   "folding": {
     "markers": {
-      "start": "\\[\\s*$",
+      "start": "\\[(\\?[A-Za-z_][A-Za-z0-9_-]*|[A-Za-z_][A-Za-z0-9_:-]*)\\b[^\\]]*$",
       "end": "^\\s*\\]"
     }
   },
@@ -28,6 +33,10 @@
   "onEnterRules": [
     {
       "beforeText": "\\[[A-Za-z_][^\\]]*$",
+      "action": {"indent": "indent"}
+    },
+    {
+      "beforeText": "\\[\\?[A-Za-z_][^\\]]*$",
       "action": {"indent": "indent"}
     }
   ]

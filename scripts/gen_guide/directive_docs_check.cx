@@ -1,0 +1,122 @@
+# scripts/gen_guide/directive_docs_check.cx -- co-located directive/syntax
+# reference freshness gate.
+#
+# Eat-our-own-dog-food: written entirely in CX, run under `cx eval`. It
+# guards the co-located reference docs
+# (docs-src/canonical/reference/{directives,syntax}.cx) against drift from
+# the spec and the conformance corpus. It is the directive/syntax analogue
+# of stdlib_docs_check.cx, and enforces:
+#
+#   (1) PRESENCE PARITY (directives) -- every directive in the canonical
+#       §4.1 registry of spec/03-approved/core/code.md has exactly one
+#       [directive-doc name='?NAME' ...], and every [directive-doc] names a
+#       registry directive (no orphans, no missing). The retired [?try]
+#       (code.md §8.8) is NOT in the registry and so must NOT be documented.
+#       This makes a "77 != N directives" drift impossible to ship silently.
+#   (2) EXAMPLE BACKING (directives) -- every [directive-doc]/[example]'s
+#       [code] block AND its [expect] output appear verbatim in
+#       conformance/code.cxd. Because that corpus is executed green by
+#       `make test-vcx-v08` (the code-eval fixture suite), a documented
+#       example backed by it is, transitively, an example that runs green.
+#       A directive with no backing example (e.g. [?meta], which has no
+#       fixture in code.cxd) carries sig+summary only and is allowed.
+#   (3) EXAMPLE BACKING (syntax) -- every [syntax-doc]/[example]'s [code]
+#       (a source snippet) AND its [expect] (`cx fmt` canonical render)
+#       appear verbatim in the data conformance corpora
+#       (conformance/{core,atoms,table,namespaces,extended,identity}.cxd).
+#
+# Capabilities: glob / read-file need `read`; the env standard streams +
+# exit are ambient (env.md §7). Run:
+#   vcx/target/cx eval scripts/gen_guide/directive_docs_check.cx --allow-read
+#   (or: make guide-check, once wired)
+
+[?lib 'cx-stdlib/cx']
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# example child-text extractors (mirror guide_build's ex-part).
+[?def ex-code ($ex)
+  [$strings:join [?for [in $c $ex/*] [yield [?match $c [case [code $t] $t] [else ()]]]] '']]
+[?def ex-expect ($ex)
+  [$strings:join [?for [in $c $ex/*] [yield [?match $c [case [expect $t] $t] [else ()]]]] '']]
+
+# reg-rx: every §4.1 registry row `| `[?NAME]` | ... |` -> the directive
+# NAME (without the `?`). We slice the registry table block out of code.md
+# first (the same `| `[?x]` |` shape also appears in the §5-10
+# cross-reference tables), so the match set is exactly the closed registry.
+[?def reg-rx () [$re:compile "\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`\\s*\\|"]]
+
+[?let [= $codemd [$io:read-file "spec/03-approved/core/code.md"]]
+      [= $reg-from [$strings:slice $codemd
+                     [$strings:find $codemd "### §4.1 Directive registry"]
+                     [$strings:length $codemd]]]
+      [= $reg-tbl [$strings:slice $reg-from 0 [$strings:find $reg-from "### §4.2"]]]
+      [= $regrx [$reg-rx]]
+      [= $uniq
+        [?for [in $rm [$re:find-all $regrx $reg-tbl]] [yield [$re:group $rm 1]]]]
+
+      [?let [= $ddoc [$cx:parse [$io:read-file "docs-src/canonical/reference/directives.cx"]]]
+            [= $sdoc [$cx:parse [$io:read-file "docs-src/canonical/reference/syntax.cx"]]]
+            [= $codecxd [$io:read-file "conformance/code.cxd"]]
+            [= $datacxd
+              [$concat
+                [$io:read-file "conformance/core.cxd"]
+                [$io:read-file "conformance/atoms.cxd"]
+                [$io:read-file "conformance/table.cxd"]
+                [$io:read-file "conformance/namespaces.cxd"]
+                [$io:read-file "conformance/extended.cxd"]
+                [$io:read-file "conformance/identity.cxd"]]]
+
+        # --- (1) presence parity: every registry directive is documented ---
+        [?let [= $missing
+                [?for [in $nm $uniq]
+                  [= $found [> [$count [?for [in $dd $ddoc//directive-doc]
+                                          [where [= $dd@name [$concat "?" $nm]]]
+                                          [yield 1]]] 0]]
+                  [where [not $found]]
+                  [yield [$concat "  missing [directive-doc] for §4.1 directive: ?" $nm]]]]
+              # --- orphan docs: every [directive-doc] names a registry directive ---
+              [= $orphans
+                [?for [in $dd $ddoc//directive-doc]
+                  [= $bare [$strings:replace $dd@name "?" ""]]
+                  [= $in-reg [> [$count [?for [in $nm $uniq] [where [= $nm $bare]] [yield 1]]] 0]]
+                  [where [not $in-reg]]
+                  [yield [$concat "  orphan [directive-doc] not in §4.1 registry: " $dd@name]]]]
+              # --- (2) directive example backing vs code.cxd ---
+              [= $dir-ex-viol
+                [?for [in $ex $ddoc//example]
+                  [= $code [$strings:trim [$ex-code $ex]]]
+                  [= $expect [$strings:trim [$ex-expect $ex]]]
+                  [where [not [and [$strings:contains $codecxd $code]
+                                   [$strings:contains $codecxd $expect]]]]
+                  [yield [$concat "  directive example not backed by code.cxd:\n      " $code "\n      => " $expect]]]]
+              # --- (3) syntax example backing vs the data corpora ---
+              [= $syn-ex-viol
+                [?for [in $ex $sdoc//example]
+                  [= $code [$strings:trim [$ex-code $ex]]]
+                  [= $expect [$strings:trim [$ex-expect $ex]]]
+                  [where [not [and [$strings:contains $datacxd $code]
+                                   [$strings:contains $datacxd $expect]]]]
+                  [yield [$concat "  syntax example not backed by the data corpora:\n      " $code "\n      => " $expect]]]]
+
+          [?let [= $blobs
+                  [?for [in $b ([$strings:join $missing "\n"],
+                                [$strings:join $orphans "\n"],
+                                [$strings:join $dir-ex-viol "\n"],
+                                [$strings:join $syn-ex-viol "\n"])]
+                    [where [not [= $b ""]]] [yield $b]]]
+            [?if [= 0 [$count $blobs]]
+              [then
+                [?let [= $_ok [$io:write-line [$env:stdout]
+                    [$concat "directive-docs OK -- " [$count $uniq]
+                             " §4.1 directives all documented; "
+                             [$count $ddoc//example] " directive examples backed by code.cxd; "
+                             [$count $sdoc//example] " syntax examples backed by the data corpora."]]]
+                  [$env:exit 0]]]
+              [else
+                [?let [= $_fail [$io:write-line [$env:stderr]
+                    [$concat "directive-docs FAILED -- reference docs drifted:\n"
+                             [$strings:join $blobs "\n"]]]]
+                  [$env:exit 1]]]]]]]]

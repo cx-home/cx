@@ -1,6 +1,6 @@
 // CX VS Code extension.
 //
-// Activation: any `.cx` / `.cxs` / `.cxl` file open. The extension spawns
+// Activation: any `.cx` / `.cxs` file open. The extension spawns
 // `<cx.serverPath> <cx.serverArgs>` (default `cx lsp`) and wires it as the
 // language server via vscode-languageclient. The server speaks JSON-RPC
 // 2.0 over stdio with LSP Content-Length framing.

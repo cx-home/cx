@@ -3,527 +3,581 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Comparison: CX vs JSON, YAML, TOML, XML</title>
-<style>:root {
-  --bg: #fafaf7;
-  --fg: #1a1a1a;
-  --muted: #6b7280;
-  --accent: #1f6feb;
-  --border: #e6e6e0;
-
-  /* Dark code blocks for visual prominence */
-  --code-bg: #1f2430;
-  --code-fg: #e2e8f0;
-  --code-comment: #6b7280;
-  --code-keyword: #c4b5fd;
-  --code-string: #fde68a;
-  --code-border: #2a2f3d;
-  --code-label: #9aa3b0;
-
-  --side-bg: #f3f3ec;
-  --side-fg: #1a1a1a;
-  --side-muted: #6b7280;
-  --side-active: #1f6feb;
-}
-
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--fg);
-  background: var(--bg);
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: 100vh;
-}
-
-aside.sidebar {
-  background: var(--side-bg);
-  border-right: 1px solid var(--border);
-  padding: 1rem 0.85rem 2rem;
-  font-size: 12.5px;
-  line-height: 1.4;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-aside.sidebar .brand {
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.9rem;
-  color: var(--side-fg);
-  display: block;
-  text-decoration: none;
-}
-aside.sidebar .brand:hover { text-decoration: none; }
-
-aside.sidebar .brand-sub {
-  display: block;
-  font-size: 11.5px;
-  color: var(--side-muted);
-  text-decoration: none;
-  margin: 0 0 0.8rem;
-}
-aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
-
-/* Site search — input under the CX brand, results dropdown that
-   overlays the nav groups when active. Idle state is one slim
-   input; active state expands to show ranked hits. */
-.side-search {
-  position: relative;
-  margin: 0 0 0.9rem;
-}
-#side-search-input {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.32rem 0.55rem;
-  font-size: 12.5px;
-  font-family: inherit;
-  color: var(--side-fg);
-  background: var(--side-input-bg, rgba(255,255,255,0.06));
-  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
-  border-radius: 4px;
-  outline: none;
-  transition: border-color 0.12s ease, background-color 0.12s ease;
-}
-#side-search-input::placeholder { color: var(--side-muted); }
-#side-search-input:focus {
-  border-color: var(--accent, #5b8def);
-  background: var(--side-input-bg-focus, rgba(255,255,255,0.10));
-}
-.side-search-results {
-  list-style: none;
-  margin: 0.35rem 0 0;
-  padding: 0;
-  max-height: 60vh;
-  overflow-y: auto;
-  background: var(--side-bg);
-  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
-  border-radius: 4px;
-  font-size: 12px;
-}
-.side-search-results li { margin: 0; }
-.side-search-hit a {
-  display: block;
-  padding: 0.42rem 0.55rem;
-  color: var(--side-fg);
-  text-decoration: none;
-  border-bottom: 1px solid var(--side-input-border, rgba(255,255,255,0.06));
-}
-.side-search-hit:last-child a { border-bottom: 0; }
-.side-search-hit a:hover,
-.side-search-hit.is-active a {
-  background: var(--side-input-bg-focus, rgba(255,255,255,0.08));
-  color: var(--side-fg);
-  text-decoration: none;
-}
-.side-search-title {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.15rem;
-}
-.side-search-snip {
-  display: block;
-  font-size: 11px;
-  color: var(--side-muted);
-  line-height: 1.35;
-}
-.side-search-hit mark {
-  background: rgba(125, 211, 252, 0.30);
-  color: inherit;
-  padding: 0 1px;
-  border-radius: 2px;
-}
-.side-search-empty,
-.side-search-error {
-  padding: 0.5rem 0.6rem;
-  color: var(--side-muted);
-  font-size: 11.5px;
-}
-.side-search-error { color: #f87171; }
-
-aside.sidebar section { margin-bottom: 0.9rem; }
-aside.sidebar h4 {
-  font-size: 10.5px;
-  font-weight: 700;
-  margin: 0.6rem 0 0.25rem;
-  color: var(--side-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-aside.sidebar ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-aside.sidebar li { margin: 0; }
-aside.sidebar a {
-  display: block;
-  color: var(--side-fg);
-  text-decoration: none;
-  padding: 0.12rem 0.4rem;
-  border-radius: 3px;
-  margin-left: -0.4rem;
-}
-aside.sidebar a:hover {
-  background: rgba(0,0,0,0.05);
-  text-decoration: none;
-}
-aside.sidebar a.active {
-  background: var(--side-active);
-  color: white;
-  font-weight: 500;
-}
-
-main {
-  max-width: 760px;
-  padding: 1.5rem 2rem 3rem;
-  width: 100%;
-}
-
-h1, h2, h3, h4 {
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-h1 {
-  font-size: 1.5rem;
-  margin: 0 0 0.35rem;
-}
-
-h2 {
-  font-size: 1rem;
-  margin: 1.1rem 0 0.25rem;
-  color: var(--fg);
-}
-
-h3 {
-  font-size: 0.9rem;
-  margin: 0.7rem 0 0.2rem;
-  color: var(--fg);
-}
-
-main > p:first-of-type {
-  color: var(--muted);
-  font-size: 0.95rem;
-  margin: 0 0 0.8rem;
-}
-
-p {
-  margin: 0.3rem 0;
-}
-
-ul, ol {
-  margin: 0.3rem 0;
-  padding-left: 1.2rem;
-}
-li { margin: 0.05rem 0; }
-
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-a:hover { text-decoration: underline; }
-
-code {
-  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.85em;
-  background: rgba(31, 36, 48, 0.08);
-  padding: 0.08em 0.3em;
-  border-radius: 3px;
-  color: #2d2f36;
-}
-
-pre {
-  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
-  background: var(--code-bg);
-  color: var(--code-fg);
-  border: 1px solid var(--code-border);
-  border-radius: 5px;
-  padding: 1.6rem 0.9rem 0.7rem;
-  margin: 0.45rem 0;
-  overflow-x: auto;
-  position: relative;
-  line-height: 1.45;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
-}
-
-pre code {
-  background: none;
-  padding: 0;
-  border-radius: 0;
-  font-size: inherit;
-  color: inherit;
-  display: block;
-}
-
-.lang-label {
-  position: absolute;
-  top: 0.4rem;
-  left: 0.85rem;
-  font-size: 10.5px;
-  color: var(--code-label);
-  font-family: inherit;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  user-select: none;
-}
-
-.copy-btn {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.4rem;
-  padding: 0.15rem 0.45rem;
-  font-size: 10.5px;
-  font-family: inherit;
-  color: var(--code-label);
-  background: transparent;
-  border: 1px solid var(--code-border);
-  border-radius: 3px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-pre:hover .copy-btn,
-pre:focus-within .copy-btn { opacity: 1; }
-.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
-.copy-btn.copied { color: #34d399; border-color: #34d399; }
-.copy-btn.failed { color: #f87171; border-color: #f87171; }
-
-/* Syntax highlighting palette — colours tuned against the dark
-   code-bg slate. Subtle: comments muted, strings warm yellow,
-   numbers/literals amber/violet, element names and directives in
-   cool blue/pink so CX bracket structure reads at a glance. */
-.hl-comment   { color: #7a8294; font-style: italic; }
-.hl-string    { color: #fbbf77; }
-.hl-number    { color: #f59e0b; }
-.hl-literal   { color: #c4b5fd; }
-.hl-keyword   { color: #f87171; }
-.hl-element   { color: #7dd3fc; }
-.hl-directive { color: #f9a8d4; }
-.hl-sigil     { color: #fcd34d; }
-.hl-type      { color: #a5b4fc; }
-.hl-attr      { color: #86efac; }
-.hl-fn        { color: #93c5fd; }
-
-table {
-  border-collapse: collapse;
-  margin: 0.6rem 0;
-  font-size: 13px;
-  line-height: 1.4;
-  width: 100%;
-}
-th, td {
-  border: 1px solid var(--border);
-  padding: 0.3rem 0.55rem;
-  text-align: left;
-  vertical-align: top;
-}
-thead th {
-  background: var(--side-bg);
-  font-weight: 600;
-}
-tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.015);
-}
-td code {
-  font-size: 11.5px;
-  background: rgba(31, 36, 48, 0.06);
-}
-
-@media (max-width: 460px) {
-  body { grid-template-columns: 1fr; }
-  aside.sidebar {
-    position: static;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-  main { padding: 1rem 1.25rem 2rem; }
-}</style>
+<title>Comparison to alternatives — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
-  <a class="brand" href="index.html">CX</a>
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
-    <input id="side-search-input" type="search" placeholder="Search the docs…" autocomplete="off" spellcheck="false" data-prefix="" />
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Get Started</h4><ul>
-    <li><a href="index.html">Overview</a></li>
-    <li><a href="install.html">Install</a></li>
-    <li><a href="quickstart.html">Quickstart</a></li>
-    </ul></section>
-  <section><h4>Learn</h4><ul>
-    <li><a href="tutorial.html">Tutorial</a></li>
-    <li><a href="playground.html">Playground</a></li>
-    </ul></section>
-  <section><h4>Examples</h4><ul>
-    <li><a href="tour/data.html">50 Ways to Love Your CX Data</a></li>
-    <li><a href="tour/programs.html">50 Ways to Love Your CXL Code</a></li>
-    <li><a href="cookbook.html">Cookbook</a></li>
-    <li><a href="showcase.html">Showcase</a></li>
-    </ul></section>
-  <section><h4>Concepts</h4><ul>
-    <li><a href="concepts/data-model.html">Data Model</a></li>
-    <li><a href="concepts/sigils.html">Sigils & Markup</a></li>
-    <li><a href="concepts/evaluation.html">Evaluation Model</a></li>
-    <li><a href="concepts/cxpath.html">CXPath</a></li>
-    <li><a href="concepts/identity.html">Identity & Canonical</a></li>
-    <li><a href="concepts/types.html">Types</a></li>
-    <li><a href="concepts/wasm.html">WebAssembly Target</a></li>
-    </ul></section>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a class="active" href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
   <section><h4>Reference</h4><ul>
-    <li><a href="reference/cli.html">CLI</a></li>
-    <li><a href="reference/cxl.html">CXL Language</a></li>
-    <li><a href="reference/cxpath.html">CXPath Functions</a></li>
-    <li><a href="reference/schemas.html">Schemas</a></li>
-    <li><a href="reference/tables.html">Tables</a></li>
-    <li><a href="reference/streaming.html">Streaming</a></li>
-    <li><a href="reference/includes.html">Includes</a></li>
-    <li><a href="reference/ast-bin.html">ast-bin Format</a></li>
-    <li><a href="reference/data-bin.html">data-bin / Arrow</a></li>
-    <li><a href="reference/grammar.html">Grammar (EBNF)</a></li>
-    <li><a href="reference/errors.html">Error Codes</a></li>
-    </ul></section>
-  <section><h4>Bindings</h4><ul>
-    <li><a href="bindings/index.html">Binding Catalog</a></li>
-    <li><a href="bindings/c-abi.html">C ABI</a></li>
-    <li><a href="bindings/v.html">V</a></li>
-    <li><a href="bindings/python.html">Python</a></li>
-    <li><a href="bindings/go.html">Go</a></li>
-    <li><a href="bindings/rust.html">Rust</a></li>
-    <li><a href="bindings/typescript.html">TypeScript</a></li>
-    <li><a href="bindings/java.html">Java</a></li>
-    <li><a href="bindings/csharp.html">C#</a></li>
-    <li><a href="bindings/ruby.html">Ruby</a></li>
-    <li><a href="bindings/kotlin.html">Kotlin</a></li>
-    <li><a href="bindings/swift.html">Swift</a></li>
-    </ul></section>
-  <section><h4>Tooling</h4><ul>
-    <li><a href="tooling/editors.html">Editors & LSP</a></li>
-    <li><a href="tooling/tree-sitter.html">Tree-sitter</a></li>
-    <li><a href="tooling/fuzzing.html">Fuzzing & Tests</a></li>
-    </ul></section>
-  <section><h4>Resources</h4><ul>
-    <li><a class="active" href="comparison.html">vs JSON, YAML, TOML, XML</a></li>
-    <li><a href="performance.html">Performance</a></li>
-    <li><a href="faq.html">FAQ</a></li>
-    <li><a href="release-notes.html">Release Notes</a></li>
-    </ul></section>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
 </aside>
 <main>
-<doc>
-  <h1>Comparison: CX vs JSON, YAML, TOML, XML</h1>
-  <p>Honest assessment of where CX wins and where another format is the right pick.</p>
-  <h2>Who This Is For</h2>
-  <p>This document is for people deciding whether to adopt CX. It compares CX to the four formats it converts to and from, with honest assessments of when CX is the right pick and when one of the others is a better fit. There is no need to choose CX for everything; CX is designed to live alongside these formats and convert losslessly between them.</p>
-  <h2>At a Glance</h2>
-<table>
-  <thead><tr><th></th><th>CX</th><th>JSON</th><th>YAML</th><th>TOML</th><th>XML</th></tr></thead>
-  <tbody>
-  <tr><td>Syntax weight</td><td>brackets, no closing tags</td><td>curly braces + brackets</td><td>indent-significant</td><td>tables + key=val</td><td>open + close tags</td></tr>
-  <tr><td>Strong types</td><td>✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes</td><td>❌ number only</td><td>partial (auto-detect)</td><td>✅ int / float / bool / datetime</td><td>partial (xs:type)</td></tr>
-  <tr><td>Comments</td><td>✅ block and line</td><td>❌</td><td>✅ # ...</td><td>✅ # ...</td><td>✅</td></tr>
-  <tr><td>Mixed content</td><td>✅ first-class</td><td>❌</td><td>❌</td><td>❌</td><td>✅ first-class</td></tr>
-  <tr><td>Multiple top-level docs</td><td>✅ no wrapper required</td><td>❌ requires array</td><td>✅ via --- separator</td><td>❌ single document</td><td>partial</td></tr>
-  <tr><td>Attribute / element distinction</td><td>✅ explicit</td><td>❌ flat keys</td><td>❌ flat keys</td><td>❌ flat keys</td><td>✅ explicit</td></tr>
-  <tr><td>Type fidelity through round-trip</td><td>✅ via CXDB</td><td>❌ int↔float coerced</td><td>partial</td><td>✅ preserved</td><td>partial</td></tr>
-  <tr><td>Tabular data efficiency</td><td>✅ :table block, columnar binary</td><td>❌ verbose array-of-objects</td><td>❌ verbose</td><td>partial (array of tables)</td><td>❌ verbose</td></tr>
-  <tr><td>Streaming parser</td><td>✅ pull-based handle API</td><td>partial</td><td>❌ usually whole-file</td><td>❌</td><td>✅ SAX</td></tr>
-  </tbody>
-</table>
-  <p>The advantages buy you something concrete: type fidelity for typed config, mixed content and structured data in one file, lossless six-way conversion, and a stable canonical form for hashing and signing.</p>
-  <h2>Conversion-Loss Matrix</h2>
-  <p>Lossless conversion means the data round-trips without semantic loss; presentation details such as comments, whitespace, and attribute order may be normalized. The table below is the honest accounting of what survives, what gets normalized, and what is genuinely lossy.</p>
-<table>
-  <thead><tr><th>CX → format → CX</th><th>Lossless?</th><th>What Is Preserved</th><th>What Is Normalized or Lost</th></tr></thead>
-  <tbody>
-  <tr><td>CX → JSON → CX</td><td>data ✅ / presentation 📋</td><td>Element shape, attributes, types via CXDB, values, nesting</td><td>Comments dropped; element vs attribute distinction collapses to keys</td></tr>
-  <tr><td>CX → YAML → CX</td><td>data ✅ / presentation 📋</td><td>Element shape, types via !!tags, multiline strings</td><td>Comments dropped by most parsers; flow-vs-block style normalized</td></tr>
-  <tr><td>CX → TOML → CX</td><td>data ✅ / presentation 📋</td><td>Element shape via table headers, strong types</td><td>Comments dropped; section ordering normalized; deep nesting flattened</td></tr>
-  <tr><td>CX → XML → CX</td><td>data ✅ / presentation 📋</td><td>Element shape, attributes, mixed content, namespaces, PIs</td><td>Whitespace normalized per xml:space; entity references resolved</td></tr>
-  <tr><td>CX → Markdown → CX</td><td>data 📋 / presentation 📋</td><td>Headings, paragraphs, lists, emphasis, code, links</td><td>Data-shaped elements flatten to inline text</td></tr>
-  <tr><td>CX → CXDB → CX</td><td>bytes ✅</td><td>Everything byte-for-byte</td><td>Nothing — CXDB is the strict-canonical form</td></tr>
-  <tr><td>CX → CSV → CX</td><td>data partial</td><td>:table block columns and rows</td><td>Non-table data not encodable; cell subtyping collapses</td></tr>
-  </tbody>
-</table>
-  <h2>What Presentation Means</h2>
-  <p>Presentation-layer differences that conversions normalize away.</p>
-  <ul>
-    <li>
-      <a href="concepts/identity.html">Comments — only XML and CX preserve them; JSON has none; YAML and TOML lose them through most parsers</a>
-    </li>
-    <li>
-      <a href="concepts/identity.html">Whitespace — indentation, blank lines, line endings normalized to the target conventions</a>
-    </li>
-    <li>
-      <a href="concepts/identity.html">Attribute order — emission may pick a canonical order</a>
-    </li>
-    <li>
-      <a href="concepts/identity.html">Anchor names — canonical form renumbers them</a>
-    </li>
-  </ul>
-  <p>These all show up as identical hashes via cx hash because the hash operates on strict-canonical bytes, where presentation is stripped.</p>
-  <h2>When CX Wins</h2>
-  <p>CX is the right pick for typed configuration, mixed content alongside structured data, lossless conversion across formats, and cases where you need a stable canonical form for hashing or signing. The other formats remain better picks for narrower use cases — JSON for browser-native parsing, YAML for human-curated config where indentation matters, TOML for flat single-file config, XML for document-shaped data with namespaces and processing instructions.</p>
-  <h2>Related Reading</h2>
-  <ul>
-    <li>
-      <a href="comparison.html">Format Conversion — parse, emit, convert</a>
-    </li>
-    <li>
-      <a href="concepts/identity.html">Identity &amp; Canonical Form</a>
-    </li>
-    <li>
-      <a href="faq.html">FAQ</a>
-    </li>
-  </ul>
-</doc>
+<section id="comparison">
+  <h1>Comparison to alternatives</h1>
+  
+    <p>CX is one of many serialization / config / wire formats. This
+       section is the honest side-by-side: what CX brings, where the
+       incumbents are better, and which workloads should pick which
+       tool. Each comparison covers feature parity, performance,
+       ecosystem, learning curve, schema, identity / hash, and
+       round-trip lossiness, with a closing "when to pick X"
+       sentence.</p>
+    <section id="when-to-use">
+      <h2>When to use CX</h2>
+      
+        <p>The decision tree. Top-to-bottom, first match wins:</p>
+        <ul>
+          
+            <li>**You need one syntax for data and code** (config that
+              is also a program, templates that are also data, a
+              schema that is also a value). CX is the only format
+              in this comparison that is homoiconic; pick CX.</li>
+            <li>**You need content-addressable identity** across
+              languages and platforms (cache keys, dedup, signed
+              documents, distributed ledgers). The CX SHA-256 of
+              canonical bytes is the most boring possible
+              implementation; pick CX.</li>
+            <li>**You round-trip between JSON / YAML / TOML / XML /
+              Markdown** and lose information each time. CX is the
+              superset that preserves all of them losslessly; pick
+              CX.</li>
+            <li>**Your workload is bulk analytical scan on tabular
+              data** at terabyte scale, exchanged with the broader
+              ecosystem (DuckDB / Spark / pandas). Use **Parquet**
+              for storage, **Arrow** for in-memory, optionally
+              with CX as the metadata / config layer.</li>
+            <li>**Your workload is wire-format throughput between
+              microservices** with a fixed schema, and you control
+              both ends. Use **Protocol Buffers** or **MessagePack**
+              — they will be smaller and faster on the wire than
+              any text format.</li>
+            <li>**You need a single-file human-edited config** with
+              no programmability and no cross-system identity
+              requirements. **TOML** (Cargo, pyproject) or **YAML**
+              (Kubernetes, CI) are everywhere; the ecosystem
+              advantage is real.</li>
+            <li>**You need a typed, programmable config language**
+              with a strong type system. **Dhall** or **Pkl** are
+              good fits if the type-system rigor matters more than
+              the homoiconic data-and-code unification.</li>
+            <li>**Otherwise** (general data / config / interchange
+              with mixed workloads, mid-size documents, multiple
+              consumers in different languages): CX is the
+              all-purpose default.</li>
+          
+        </ul>
+      
+    </section>
+    <section id="cx-vs-json">
+      <h2>CX vs JSON</h2>
+      
+        <p>JSON is the universal interchange baseline. CX is a
+         superset projection — anything that round-trips through
+         JSON also round-trips through CX. The interesting
+         comparisons are where CX has features JSON does not, and
+         where JSON has ecosystem JSON does not.</p>
+        <table>
+          
+            <row dimension="Schema" json="JSON Schema (separate spec)" cx=".cxs — same syntax as data (see <a class="xref" href="data-language.html#schema">schema</a>)"/>
+            <row dimension="Identity / hash" json="No canonical form; hash drifts on key reorder" cx="SHA-256 of canonical bytes; stable across platforms (see <a class="xref" href="identity.html#hash">hash</a>)"/>
+            <row dimension="Comments" json="None (in the standard); JSON5 / JSONC are extensions" cx="[# … #] preserved by cx fmt, stripped by cx canon"/>
+            <row dimension="Trailing commas" json="Forbidden" cx="Not applicable — bracket form, no commas in attribute list"/>
+            <row dimension="Number precision" json="Underspecified; JS doubles by default" cx="Sized type tags (:i64, :u32, :f32) (see <a class="xref" href="data-language.html#sized-types">sized-types</a>)"/>
+            <row dimension="Multi-line strings" json="Escaped only" cx="Triple-quoted, whitespace-preserving (see <a class="xref" href="data-language.html#strings">strings</a>)"/>
+            <row dimension="Date / datetime" json="String only" cx="First-class :date / :datetime scalar (see <a class="xref" href="data-language.html#dates">dates</a>)"/>
+            <row dimension="Bytes" json="Base64 in a string" cx="First-class :bytes scalar (see <a class="xref" href="data-language.html#bytes">bytes</a>)"/>
+            <row dimension="Tooling ecosystem" json="Vast — every language, every editor, every CDN" cx="Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing"/>
+            <row dimension="Wire size" json="Baseline" cx="Comparable text form; data-bin / CXCol smaller"/>
+            <row dimension="Parse speed" json="Highly optimized parsers everywhere" cx="Reference parser ~600 MB/s on the gate-15 workload"/>
+            <row dimension="Learning curve" json="Trivial" cx="Bracket-and-sigil form; ~one hour for the data subset"/>
+          
+        </table>
+        <p>**When to pick JSON instead of CX.** Your consumers are
+         browser JavaScript, a CDN-served config endpoint, or any
+         interface where you cannot install a CX parser. JSON
+         remains the right wire-format choice for ubiquity
+         alone.</p>
+        <p>**When to pick CX instead of JSON.** You want identity,
+         schema, comments, mixed content, dates, or bytes without
+         layering JSON Schema + JSON5 + base64 + custom date
+         string conventions on top of JSON. CX gives you the
+         whole stack in one syntax.</p>
+      
+    </section>
+    <section id="cx-vs-yaml">
+      <h2>CX vs YAML</h2>
+      
+        <p>YAML optimises for human readability of multi-line
+         strings and config-as-code. The cost is the famously
+         large surface area (indentation sensitivity, tag system,
+         anchor / alias / merge keys, the Norway problem).</p>
+        <table>
+          
+            <row dimension="Indentation" yaml="Semantic (whitespace-sensitive)" cx="Insignificant — bracket-structured"/>
+            <row dimension="Anchors and aliases" yaml="&amp;anchor / *alias / &lt;&lt; merge keys" cx="&amp;anchor / *merge sigils — same idea, no separate merge keyword (see <a class="xref" href="data-language.html#anchor">anchor</a> / <a class="xref" href="data-language.html#merge">merge</a>)"/>
+            <row dimension="Multiline strings" yaml="| (literal) and > (folded)" cx="Triple-quoted (always literal)"/>
+            <row dimension="Norway problem" yaml="no parses as false in YAML 1.1" cx="Only true/false are bools; no /yes is a string"/>
+            <row dimension="Schema" yaml="JSON Schema (separate)" cx=".cxs (same syntax)"/>
+            <row dimension="Identity / hash" yaml="No canonical form" cx="SHA-256 of canonical bytes (see <a class="xref" href="identity.html#hash">hash</a>)"/>
+            <row dimension="Comments" yaml="# line comments only" cx="[# … #] nest, span lines, preserved by cx fmt"/>
+            <row dimension="Tooling" yaml="Kubernetes, GitLab CI, Ansible" cx="Growing — LSP + tree-sitter + VS Code; analytical pipelines"/>
+            <row dimension="Round-trip" yaml="Lossy in many YAML 1.1 → 1.2 cases" cx="Lossless by spec (see <a class="xref" href="surfaces.html#roundtrip">roundtrip</a>)"/>
+          
+        </table>
+        <p>**When to pick YAML.** Your config consumers are
+         Kubernetes manifests, Ansible playbooks, GitHub Actions
+         workflows, or any tool whose schema is in YAML. The
+         ecosystem advantage is decisive.</p>
+        <p>**When to pick CX.** Anywhere you would have wanted YAML
+         minus the indentation footguns, the Norway problem, and
+         the lossy round-trip. The triple-quoted multiline string
+         is as readable as YAML literal blocks without the
+         indentation rules.</p>
+      
+    </section>
+    <section id="cx-vs-toml">
+      <h2>CX vs TOML</h2>
+      
+        <p>TOML's pitch is "obviously correct config for
+         configuration files." It excels at flat key-value
+         configs (Cargo.toml, pyproject.toml) and struggles with
+         deep nesting.</p>
+        <table>
+          
+            <row dimension="Nesting" toml="Dotted keys / [[arrays of tables]] — awkward past 2-3 levels" cx="Native — every element nests"/>
+            <row dimension="Schema" toml="No standard schema language" cx=".cxs (see <a class="xref" href="data-language.html#schema">schema</a>)"/>
+            <row dimension="Identity / hash" toml="No canonical form" cx="SHA-256 of canonical bytes"/>
+            <row dimension="Tooling" toml="Cargo, pip, Poetry — narrow but deep" cx="LSP + tree-sitter; broader workloads than configs alone"/>
+            <row dimension="Round-trip" toml="Lossy — comment placement and key order" cx="Lossless"/>
+            <row dimension="Mixed content" toml="Not supported" cx="Native (prose form, see <a class="xref" href="data-language.html#prose">prose</a>)"/>
+            <row dimension="Date / datetime" toml="Native :datetime" cx="Native :date / :datetime / :time"/>
+          
+        </table>
+        <p>**When to pick TOML.** Your config is flat — language
+         toolchain manifests, Cargo dependencies, app
+         configuration with two levels of nesting. TOML reads
+         beautifully at that scale.</p>
+        <p>**When to pick CX.** Your config is genuinely
+         hierarchical, you need cross-config identity, or the
+         same documents will also be processed as data (e.g.
+         shipped as configuration *and* hashed for a release
+         manifest). CX scales up where TOML hits its ceiling.</p>
+      
+    </section>
+    <section id="cx-vs-xml">
+      <h2>CX vs XML</h2>
+      
+        <p>XML is CX's closest structural cousin — both are
+         tree-shaped, both support attributes and mixed content,
+         both have namespaces. The differences are syntactic
+         density and the surrounding ecosystem (XSLT, XPath,
+         XSD).</p>
+        <table>
+          
+            <row dimension="Syntax verbosity" xml="Open + close tag pair" cx="Single bracket pair"/>
+            <row dimension="Attribute syntax" xml="name=&quot;value&quot; inside open tag" cx="name=value inside bracket (see <a class="xref" href="data-language.html#attributes">attributes</a>)"/>
+            <row dimension="Mixed content" xml="Native" cx="Native (see <a class="xref" href="data-language.html#prose">prose</a>)"/>
+            <row dimension="Namespaces" xml="xmlns:prefix=URI" cx="xmlns:prefix=URI (XML-aligned, see <a class="xref" href="data-language.html#namespaces">namespaces</a>)"/>
+            <row dimension="Selector" xml="XPath 3.1" cx="CXPath — XPath 3.1 aligned (see <a class="xref" href="code.html#cxpath">cxpath</a>)"/>
+            <row dimension="Schema" xml="XSD (large, complex) or RELAX NG" cx=".cxs (CX syntax, small)"/>
+            <row dimension="Identity / hash" xml="C14N (XML Canonicalization)" cx="cx canon + SHA-256"/>
+            <row dimension="Templating" xml="XSLT (separate language)" cx="[?for] / [?modify] — same language as data"/>
+            <row dimension="Tooling" xml="Vast in enterprise / publishing; less in modern web" cx="Growing; same ecosystem reach is the long-term goal"/>
+            <row dimension="Learning curve" xml="Familiar to a generation of developers" cx="Lower if XML is new; comparable if XML is known"/>
+          
+        </table>
+        <p>**When to pick XML.** You are working in publishing /
+         document workflows (DITA, DocBook, SVG), or your
+         consumers are XML-native (SOAP, XHTML, RDF/XML). The
+         tooling depth is unmatched in those niches.</p>
+        <p>**When to pick CX.** You want the XML data model
+         (attributes, mixed content, namespaces, XPath) without
+         the syntactic verbosity, without XSD, and with code-as-
+         data unification. CX is what XML would look like if
+         designed today.</p>
+      
+    </section>
+    <section id="cx-vs-protobuf">
+      <h2>CX vs Protocol Buffers</h2>
+      
+        <p>Protobuf is the schema-first binary wire format for
+         service-to-service traffic. It is the right tool when
+         you control both ends, the schema rarely changes, and
+         every byte on the wire matters.</p>
+        <table>
+          
+            <row dimension="Wire format" protobuf="Binary — varint + length-prefix" cx="Text (CX), or data-bin / CXCol (binary)"/>
+            <row dimension="Schema requirement" protobuf="Required — wire is unparseable without .proto" cx="Optional — value is self-describing"/>
+            <row dimension="Wire size" protobuf="Typically smallest of any format here" cx="Comparable text size; data-bin closer to protobuf"/>
+            <row dimension="Throughput" protobuf="Very high — compiled (de)serializers" cx="High but text-shaped; data-bin closes the gap"/>
+            <row dimension="Schema evolution" protobuf="Tag-numbered fields — strong forward/backward compat" cx="Schema modes (open/strict/closed); attribute order is data-only"/>
+            <row dimension="Tooling" protobuf="protoc + every major language" cx="Tier-1 V/Python/Go/Rust; growing"/>
+            <row dimension="Human readability" protobuf="None — binary opaque" cx="Text-first; binary is an optimization"/>
+            <row dimension="Identity / hash" protobuf="Wire bytes — stable iff schema is fixed" cx="Canonical bytes — stable regardless of schema"/>
+          
+        </table>
+        <p>**When to pick Protobuf.** You have a controlled RPC
+         system, the schema is well-understood, and the bandwidth
+         / CPU savings are real (mobile, embedded, hot-path
+         services). Honest concession: Protobuf wins on wire
+         throughput in the steady state.</p>
+        <p>**When to pick CX.** Your data is also config, also
+         logs, also human-edited at the boundary, also stored on
+         disk for later inspection. Protobuf loses to text
+         formats outside the wire-only path.</p>
+      
+    </section>
+    <section id="cx-vs-msgpack">
+      <h2>CX vs MessagePack</h2>
+      
+        <p>MessagePack is "binary JSON" — schemaless, more compact
+         than text JSON, slightly slower than protobuf because
+         it carries kind tags.</p>
+        <table>
+          
+            <row dimension="Wire format" msgpack="Binary, schemaless" cx="Text (CX) or binary (data-bin)"/>
+            <row dimension="Schema" msgpack="None" cx=".cxs (optional)"/>
+            <row dimension="Wire size" msgpack="Smaller than JSON; comparable to data-bin" cx="data-bin similar; CXCol smaller for tabular"/>
+            <row dimension="Type richness" msgpack="Scalars + map + array; ext-type extension" cx="Eight scalar kinds, elements with attributes, mixed content, namespaces"/>
+            <row dimension="Identity / hash" msgpack="Wire bytes — stable iff serializer is deterministic" cx="Canonical bytes — stable by construction"/>
+            <row dimension="Tooling" msgpack="Wide language coverage" cx="Tier-1 V/Python/Go/Rust"/>
+          
+        </table>
+        <p>**When to pick MessagePack.** You want JSON semantics
+         on the wire without JSON wire size, and your data is
+         flat / tabular / homogeneous. MessagePack is excellent
+         at being "JSON minus the text.".</p>
+        <p>**When to pick CX.** Your data has shape — attributes,
+         mixed content, namespaces, hierarchical structure that
+         MessagePack would force into nested maps. data-bin
+         covers the wire-size argument without giving up the
+         shape.</p>
+      
+    </section>
+    <section id="cx-vs-pkl">
+      <h2>CX vs Apache Pkl</h2>
+      
+        <p>Pkl is Apple's configuration language — declarative,
+         strongly typed, programmable. The closest "config that
+         is also code" peer to CX, with a different design
+         centre.</p>
+        <table>
+          
+            <row dimension="Surface" pkl="Custom syntax — class-oriented" cx="Bracket form — homoiconic"/>
+            <row dimension="Typing" pkl="Strong, static, gradual" cx="Schema-validated (.cxs); type tags on scalars"/>
+            <row dimension="Computation" pkl="Lambdas, comprehensions, methods" cx="Directives — [?for], [?match], [?modify], [?let]"/>
+            <row dimension="Output formats" pkl="JSON / YAML / Plist / Properties + custom renderers" cx="CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL"/>
+            <row dimension="Identity / hash" pkl="Not built-in" cx="SHA-256 of canonical bytes"/>
+            <row dimension="Module system" pkl="Imports, packages, semantic versioning" cx="[?cx include] — capability-gated path resolution"/>
+            <row dimension="Tooling" pkl="LSP, IntelliJ plugin, CLI — solid" cx="LSP + tree-sitter + VS Code — comparable"/>
+            <row dimension="Ecosystem" pkl="Apple-backed; growing community" cx="Open-source; growing community"/>
+          
+        </table>
+        <p>**When to pick Pkl.** You want a strongly typed config
+         language with class-oriented composition and your
+         consumers are JSON / YAML output. Pkl's type system is
+         richer than the CX schema language.</p>
+        <p>**When to pick CX.** The same documents are also data
+         to be hashed, queried, transformed, or shipped as
+         payloads. Pkl is config-first; CX is data-and-code by
+         design.</p>
+      
+    </section>
+    <section id="cx-vs-dhall">
+      <h2>CX vs Dhall</h2>
+      
+        <p>Dhall is the typed-config purist's pick — total,
+         non-Turing-complete, with a sound type system and
+         normalised import semantics.</p>
+        <table>
+          
+            <row dimension="Type system" dhall="Total, sound, dependent-ish (System Fω)" cx="Schema validation; type tags on scalars"/>
+            <row dimension="Computation" dhall="λ-calculus — total, no recursion without bound" cx="Directives — [?for] / [?match] / [?modify]; bounded by resilience directives"/>
+            <row dimension="Surface" dhall="Haskell-flavoured ML syntax" cx="Bracket form"/>
+            <row dimension="Output formats" dhall="JSON / YAML / Text" cx="CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL"/>
+            <row dimension="Imports" dhall="Content-addressed by hash — same idea as CX" cx="[?cx include] with capability gating"/>
+            <row dimension="Identity / hash" dhall="Standard form hash for imports" cx="Canonical bytes + SHA-256 for any value"/>
+            <row dimension="Learning curve" dhall="Steep — ML / Haskell familiarity helps" cx="Moderate — bracket form is unfamiliar but small"/>
+            <row dimension="Tooling" dhall="LSP, type-aware; narrow" cx="LSP + tree-sitter + VS Code"/>
+          
+        </table>
+        <p>**When to pick Dhall.** You want totality, soundness,
+         and a small surface area as design goals; you are
+         willing to pay for the steeper learning curve. Dhall is
+         the right tool for safety-critical config.</p>
+        <p>**When to pick CX.** You want the content-addressed
+         identity, the schema-validated config, and the
+         programmable updates of Dhall — plus the ability to
+         carry rich data (mixed content, columnar tables,
+         dates, bytes) in the same syntax. Dhall is config; CX
+         is config + data + code.</p>
+      
+    </section>
+    <section id="cx-vs-parquet">
+      <h2>CX vs Parquet</h2>
+      
+        <p>Parquet is the columnar storage standard for analytical
+         workloads — terabyte-scale scans, predicate pushdown,
+         compression. CX is not Parquet's competitor; CXCol is,
+         and Parquet is CX's export target.</p>
+        <table>
+          
+            <row dimension="Layout" parquet="Column-oriented, on-disk" cx-cxcol="Column-oriented (CXCol), in-memory; on-disk possible"/>
+            <row dimension="Compression" parquet="Snappy / Gzip / Zstd / LZ4 page-level" cx-cxcol="Dictionary encoding on; compression optional"/>
+            <row dimension="Schema" parquet="Embedded — required for read" cx-cxcol=".cxs schema or embedded type tags"/>
+            <row dimension="Ecosystem" parquet="Spark, DuckDB, Polars, pandas, Athena, BigQuery" cx-cxcol="Native CX pipelines; Arrow bridge for everything else"/>
+            <row dimension="Bridge" parquet="—" cx-cxcol="CX ↔ Parquet bridge via Arrow (see <a class="xref" href="analytics.html#parquet-bridge">parquet-bridge</a>)"/>
+            <row dimension="Identity / hash" parquet="File hash — sensitive to write order" cx-cxcol="Canonical bytes of the logical value"/>
+            <row dimension="Streaming" parquet="Row-group oriented" cx-cxcol="Native streaming evaluator (see <a class="xref" href="analytics.html#streaming">streaming</a>)"/>
+            <row dimension="Write speed" parquet="~150 MB/s on the reference benchmark" cx-cxcol="Faster — no compression overhead by default"/>
+          
+        </table>
+        <p>**When to pick Parquet.** Your data is large, tabular,
+         queried by external tools (Spark / Athena / BigQuery /
+         DuckDB), and stored on object storage. Parquet is the
+         lingua franca.</p>
+        <p>**When to pick CXCol.** Your data is tabular but the
+         producers and consumers are CX-native (pipelines, in-
+         memory analytical jobs, services that ship columnar
+         payloads). When you need to interchange with the
+         broader ecosystem, export to Parquet.</p>
+      
+    </section>
+    <section id="cx-vs-arrow">
+      <h2>CX vs Arrow</h2>
+      
+        <p>Arrow is the in-memory columnar standard. Like
+         MessagePack, it is not a CX competitor — it is a layer
+         CX integrates with.</p>
+        <table>
+          
+            <row dimension="Layout" arrow="Column-oriented, in-memory" cx-cxcol="Column-oriented, in-memory (compatible)"/>
+            <row dimension="Wire format" arrow="Flight (gRPC streaming) / IPC" cx-cxcol="data-bin chunked tables"/>
+            <row dimension="Interop" arrow="pandas, Polars, DuckDB, Datafusion — zero-copy" cx-cxcol="CX ↔ Arrow bridge (zero-copy, see <a class="xref" href="analytics.html#arrow-bridge">arrow-bridge</a>)"/>
+            <row dimension="Schema" arrow="Embedded" cx-cxcol=".cxs or embedded"/>
+            <row dimension="Identity / hash" arrow="None standard" cx-cxcol="Canonical bytes + SHA-256"/>
+            <row dimension="Use case" arrow="Cross-process / cross-language analytics" cx-cxcol="Same plus document semantics"/>
+          
+        </table>
+        <p>**When to pick Arrow.** You are doing pure analytics —
+         no document semantics, no identity requirements, no
+         schema as a value. Arrow is the right cross-engine
+         in-memory layout.</p>
+        <p>**When to pick CXCol over Arrow.** You want Arrow's
+         column-orientation plus CX's document semantics (mixed
+         content rows, hierarchical headers, namespaced columns,
+         hash-stable identity). Use the bridge — they share
+         memory zero-copy.</p>
+      
+    </section>
+    <section id="cmp-summary">
+      <h2>Summary table</h2>
+      
+        <p>At a glance, the headline trade-offs for each
+         alternative. **Pick CX** is the column that matters
+         most for an evaluator question.</p>
+        <table>
+          
+            <row format="JSON" strength="Universal ecosystem" weakness="No schema, no comments, no identity" pick-cx-when="You need any of: schema / comments / identity / mixed content / dates / bytes"/>
+            <row format="YAML" strength="Human-readable config" weakness="Indentation footguns, lossy round-trip, Norway problem" pick-cx-when="You want YAML readability without the footguns"/>
+            <row format="TOML" strength="Flat config readability" weakness="Awkward at depth, no schema" pick-cx-when="Your config is hierarchical or grows beyond config"/>
+            <row format="XML" strength="Tree-shaped, mixed content, XPath ecosystem" weakness="Verbose, XSD complexity, no homoiconic code-as-data" pick-cx-when="You want the XML data model in a denser syntax with code-as-data unified"/>
+            <row format="Protobuf" strength="Wire size and throughput" weakness="Schema-required, opaque without .proto, no document semantics" pick-cx-when="Your data is also config / docs / hashed payloads, not just RPC wire"/>
+            <row format="MessagePack" strength="Compact binary JSON" weakness="Flat / no document semantics" pick-cx-when="Your data has shape (attributes / mixed content / namespaces)"/>
+            <row format="Pkl" strength="Strongly typed config language" weakness="Config-only; no data identity, narrower output formats" pick-cx-when="The same documents are data and code, not just config"/>
+            <row format="Dhall" strength="Total, sound, content-addressed imports" weakness="Steep learning curve, config-only" pick-cx-when="You want Dhall semantics plus rich data shape and broad outputs"/>
+            <row format="Parquet" strength="Analytical scan, ecosystem" weakness="File-format only, no document semantics" pick-cx-when="Producer and consumer are CX-native; export to Parquet for interchange"/>
+            <row format="Arrow" strength="Zero-copy in-memory columnar" weakness="No document semantics, no identity" pick-cx-when="You want Arrow plus CX semantics (use the bridge — they coexist)"/>
+          
+        </table>
+        <p>**The honest summary.** CX wins on **unification**:
+         data + code + schema + identity in one syntax. It
+         loses on **ecosystem maturity** — JSON, YAML, and
+         Protobuf all have decades of library / editor / CDN
+         depth. The question for an evaluator is whether the
+         unification value exceeds the ecosystem-depth gap for
+         your specific workload. For workloads in §13.1's
+         "otherwise" bucket, the answer in 2026 is increasingly
+         yes; for the niches above the "otherwise" line, pick
+         the specialist.</p>
+        <p class="note">If you have a workload that does not match any row of
+         this table or §13.1's decision tree, file an issue at
+         https://github.com/cx-lang/cx — the comparison is
+         maintained as a living document; new alternatives and
+         new use-case scenarios are added as the ecosystem
+         evolves.</p>
+      
+    </section>
+    <section id="cmp-at-a-glance">
+      <h2>At-a-glance feature matrix</h2>
+      
+        <p>One-screen feature matrix across CX, JSON, YAML, TOML,
+         and XML. The per-format children (§13.2-§13.11) carry
+         the depth; this matrix is the spreadsheet view.</p>
+        <p>| Feature | CX | JSON | YAML | TOML | XML |
+         |---|---|---|---|---|---|
+         | Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
+         | Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom | ❌ number only | partial (auto-detect) | ✅ int / float / bool / datetime | partial (xs:type) |
+         | Comments | ✅ block and line | ❌ | ✅ # … | ✅ # … | ✅ |
+         | Mixed content | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
+         | Multiple top-level docs | ✅ no wrapper required | ❌ requires array | ✅ via --- separator | ❌ single document | partial |
+         | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
+         | Type fidelity through round-trip | ✅ via CXCol | ❌ int↔float coerced | partial | ✅ preserved | partial |
+         | Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
+         | Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
+         | Built-in query language | ✅ CXPath value kind, all 12 XPath 3.1 axes | ❌ third-party (jq) | ❌ third-party (yq) | ❌ | ✅ XPath 1.0 / XQuery |
+         | Pure-functional transform | ✅ `[?modify]` focus + 11 actions, structural sharing | ❌ | ❌ | ❌ | partial (XSLT) |
+         | Pattern-match dispatch | ✅ `[?match]` heterogeneous arms | ❌ | ❌ | ❌ | ❌ |
+         | Module system | ✅ `[?def]` / `[?lib]` / cx.lock SRI | ❌ | ❌ | ❌ | partial (XInclude) |</p>
+      
+    </section>
+    <section id="cmp-loss-matrix">
+      <h2>Conversion-loss matrix</h2>
+      
+        <p>Lossless conversion means the data round-trips without
+         semantic loss; presentation details (comments,
+         whitespace, attribute order) may be normalized. The
+         table below is the honest accounting of what survives,
+         what gets normalized, and what is genuinely lossy.</p>
+        <table>
+          
+            <tr>
+              <th>CX → format → CX</th>
+              <th>Lossless?</th>
+              <th>What is preserved</th>
+              <th>What is normalised or lost</th>
+            </tr>
+            <tr>
+              <td>CX → JSON → CX</td>
+              <td>data ✅ / presentation 📋</td>
+              <td>Element shape, attributes, types via CXCol, values, nesting</td>
+              <td>Comments dropped; element vs attribute distinction collapses to keys</td>
+            </tr>
+            <tr>
+              <td>CX → YAML → CX</td>
+              <td>data ✅ / presentation 📋</td>
+              <td>Element shape, types via <code>!!tags</code>, multiline strings</td>
+              <td>Comments dropped by most parsers; flow-vs-block style normalised</td>
+            </tr>
+            <tr>
+              <td>CX → TOML → CX</td>
+              <td>data ✅ / presentation 📋</td>
+              <td>Element shape via table headers, strong types</td>
+              <td>Comments dropped; section ordering normalised; deep nesting flattened</td>
+            </tr>
+            <tr>
+              <td>CX → XML → CX</td>
+              <td>data ✅ / presentation 📋</td>
+              <td>Element shape, attributes, mixed content, namespaces, PIs</td>
+              <td>Whitespace normalised per <code>xml:space</code>; entity references resolved</td>
+            </tr>
+            <tr>
+              <td>CX → CXCol → CX</td>
+              <td>bytes ✅</td>
+              <td>Everything byte-for-byte</td>
+              <td>Nothing — CXCol is the strict-canonical form</td>
+            </tr>
+            <tr>
+              <td>CX → CSV → CX</td>
+              <td>data partial</td>
+              <td><code>:table</code> block columns and rows</td>
+              <td>Non-table data not encodable; cell subtyping collapses</td>
+            </tr>
+          
+        </table>
+        <p class="note"><b>Presentation-layer differences</b> — comments (only XML and CX preserve them; JSON has none; YAML and TOML lose them through most parsers), whitespace (normalised to the target conventions), attribute order (emission may pick a canonical order), anchor names (canonical form renumbers them). These all show up as identical hashes via <code>cx hash</code> because the hash operates on strict-canonical bytes, where presentation is stripped.</p>
+      
+    </section>
+    <section id="cmp-when-cx">
+      <h2>When CX wins</h2>
+      
+        <p><b>CX is the right pick</b> for typed configuration, mixed content alongside structured data, lossless conversion across formats, cases where you need a stable canonical form for hashing or signing, and any pipeline where the query/transform layer (<code>CXPath</code> + <code>[?match]</code> + <code>[?modify]</code>) should live in the same syntax as the data.</p>
+      
+    </section>
+  
+</section>
 </main>
-<script>
-document.querySelectorAll('pre').forEach(pre => {
-  const btn = document.createElement('button');
-  btn.className = 'copy-btn';
-  btn.textContent = 'copy';
-  btn.type = 'button';
-  btn.addEventListener('click', async () => {
-    const code = pre.querySelector('code')?.textContent ?? pre.textContent;
-    const flash = (label, cls) => {
-      btn.textContent = label;
-      btn.classList.add(cls);
-      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove(cls); }, 1500);
-    };
-    try {
-      await navigator.clipboard.writeText(code);
-      flash('copied', 'copied');
-    } catch (_) {
-      const ta = document.createElement('textarea');
-      ta.value = code;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); flash('copied', 'copied'); }
-      catch { flash('failed', 'failed'); }
-      document.body.removeChild(ta);
-    }
-  });
-  pre.appendChild(btn);
-});
-</script>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

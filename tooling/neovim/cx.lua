@@ -15,7 +15,7 @@
 --
 -- Requires: Neovim 0.11+.
 
-vim.filetype.add({ extension = { cx = 'cx', cxs = 'cx', cxl = 'cx' } })
+vim.filetype.add({ extension = { cx = 'cx', cxs = 'cx' } })
 vim.treesitter.language.register('cx', 'cx')
 
 local function find_cx_bin()
@@ -29,8 +29,12 @@ local function find_cx_bin()
   return nil
 end
 
--- on_attach wires the full v0.7.0 LSP capability surface to keybindings.
--- Lifted out of the lazy spec so user configs can reuse it directly.
+-- on_attach wires the full v0.8.0 LSP capability surface to keybindings.
+-- v0.8.0 surface covered: structured directives ([?match] / [?modify] /
+-- [?def] / [?lib] / [?const]); CXPath value expressions with 12 axes +
+-- reserved sigils ($_ / $_position / $_last) + (bind $name) step
+-- annotation; bare pure / impure def modifiers. Lifted out of the
+-- lazy spec so user configs can reuse it directly.
 local function cx_on_attach(client, bufnr)
   local kmap = function(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
@@ -57,7 +61,7 @@ local function cx_on_attach(client, bufnr)
   kmap('n', '[d',       vim.diagnostic.goto_prev,  'CX: prev diagnostic')
   kmap('n', '<leader>d', vim.diagnostic.open_float, 'CX: show diagnostic')
 
-  -- Inlay hints (placeholder at v0.7.0; populated at v0.7.x)
+  -- Inlay hints (placeholder at v0.8.0; populated at v0.8.x)
   if client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
     vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
   end

@@ -27,7 +27,7 @@ class StreamEvent:
     # PI fields
     target: Optional[str] = None
     data: Optional[str] = None
-    # Chunked-table fields (StartTable / RowGroup / EndTable, ADR 0015 D10).
+    # Chunked-table fields (StartTable / RowGroup / EndTable).
     # col_spec is the §1.1 events-layer encoding: [u32 LE: count]
     # ([u32 LE: name_len]name [u8: col_type_code])*. payload is the §3.11.2
     # plain-body bytes uvarint(row_count) <col-payload>(col_count) — already

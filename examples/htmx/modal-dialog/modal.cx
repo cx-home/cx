@@ -1,9 +1,0 @@
-[ui
-  [modal mid=user-info title='User Details' subtitle='Account 4521'
-    [body
-      [field label=Username value=alice]
-      [field label=Email value=alice@example.com]
-      [field label=Role value=admin]
-    ]
-  ]
-]

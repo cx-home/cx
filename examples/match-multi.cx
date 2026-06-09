@@ -1,0 +1,121 @@
+[# Multi-arm [?match] tour — heterogeneous dispatch (v0.8.0).
+   Showcases the §8.2 match surface: [case PATTERN RESULT] arms,
+   [when GUARD RESULT] predicate arms, [else RESULT], scalar-literal
+   patterns, pattern bindings, CXPath patterns, the _ wildcard, and
+   predicate-only (scrutinee-less) match.
+
+   Run (document-driven sections light up with the sample doc):
+     cx eval examples/match-multi.cx --data=examples/match-multi.input.cx #]
+
+[matches
+
+  [# ─── 1. Element-shape dispatch — classify a thing by element name ─── #]
+
+  [section title='element-shape dispatch'
+    [?for [in $item //thing/*]
+      [yield [?match $item
+        [case [user $_]    [labeled kind='user'    item=$item]]
+        [case [group $_]   [labeled kind='group'   item=$item]]
+        [case [service $_] [labeled kind='service' item=$item]]
+        [else              [labeled kind='unknown' item=$item]]]]]]
+
+  [# ─── 2. Scalar literal patterns (type-strict, §5.2 rule 8) ───
+       Scrutinees are literal ints so the type-strict scalar match fires
+       directly (a `200` pattern matches an `int` value, never a string). #]
+
+  [section title='scalar literal patterns'
+    [?for [in $status (200, 201, 204, 400, 401, 403, 404, 500, 302)]
+      [yield [?match $status
+        [case 200 [classify level='ok']]
+        [case 201 [classify level='created']]
+        [case 204 [classify level='no-content']]
+        [case 400 [classify level='bad-request']]
+        [case 401 [classify level='unauthorized']]
+        [case 403 [classify level='forbidden']]
+        [case 404 [classify level='not-found']]
+        [case 500 [classify level='server-error']]
+        [else     [classify level='unknown' status=$status]]]]]]
+
+  [# ─── 3. [when] guard predicates ─── #]
+
+  [section title='[when] guards'
+    [?for [in $u //users/user]
+      [yield [?match $u
+        [when [< $u/@age 18]                       [bucket name='minor'  user=$u]]
+        [when [and [>= $u/@age 18] [< $u/@age 65]]  [bucket name='adult'  user=$u]]
+        [when [>= $u/@age 65]                       [bucket name='senior' user=$u]]
+        [else                                       [bucket name='unknown-age' user=$u]]]]]]
+
+  [# ─── 4. Mixed [case] / [when] / [else] (SQL-CASE discipline) ───
+       Shape-first dispatch ([case [scroll $_]]) keeps the @delta guard
+       inside the arm where the attribute is guaranteed to exist; a top-
+       level [when] guard touching $event/@delta would hard-error on the
+       sibling events that carry no `delta` attribute. #]
+
+  [section title='mixed case + when'
+    [?for [in $event //events/*]
+      [yield [?match $event
+        [case [click $_]    [handler kind='mouse-click']]
+        [case [keypress $_] [handler kind='keypress']]
+        [case [scroll $_]
+          [?if [> $event/@delta 100]
+            [then [handler kind='fast-scroll']]
+            [else [handler kind='slow-scroll']]]]
+        [else               [handler kind='other' name=[$name $event]]]]]]]
+
+  [# ─── 5. Pattern bindings — capture sub-shape ─── #]
+
+  [section title='pattern bindings'
+    [?for [in $req //request]
+      [yield [?match $req
+        [case [request method='GET' path=$p]
+          [route verb='GET' path=$p]]
+        [case [request method='POST' path=$p body=$b]
+          [route verb='POST' path=$p body-size=[$count $b]]]
+        [case [request method=$m path=$p]
+          [route verb=$m path=$p]]
+        [else
+          [route verb='unknown']]]]]]
+
+  [# ─── 6. Element-shape patterns with attribute match ───
+       Per §8.2 a `[case //path …]` arm is a single-valued *type-test*
+       on the operand, so it is unsuitable for a per-node membership
+       walk over a multi-node set. Element-shape patterns express the
+       same role classification directly: `[case [user admin=true] …]`
+       matches by name + attribute equality (§5.2 rule 9). #]
+
+  [section title='element-shape role patterns'
+    [?for [in $node //users/user]
+      [yield [?match $node
+        [case [user admin=true] [annot role='admin']]
+        [case [user $_]         [annot role='plain-user']]
+        [else                   [annot role='other']]]]]]
+
+  [# ─── 7. Wildcard _ pattern — explicit catch-all without value bind ─── #]
+
+  [section title='wildcard _'
+    [?for [in $x //thing/*]
+      [yield [?match $x
+        [case [user $_]  'user']
+        [case [group $_] 'group']
+        [case _          'something-else']]]]]
+
+  [# ─── 8. Predicate-only mode (no scrutinee) — guards over local scope ─── #]
+
+  [section title='predicate-only match'
+    [?for [in $clock //clock]
+      [yield [?match
+        [when [< $clock@hour 6]  'night']
+        [when [< $clock@hour 12] 'morning']
+        [when [< $clock@hour 18] 'afternoon']
+        [else                    'evening']]]]]
+
+  [# ─── 9. No-match — without [else], yields ()-empty ─── #]
+
+  [section title='no-match yields empty'
+    [?let [= $maybe [?match 42
+                      [case 1 'one']
+                      [case 2 'two']]]
+      [debug result=$maybe empty=[$empty $maybe]]]]
+
+]

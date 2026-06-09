@@ -16,15 +16,15 @@ import (
 // Streaming Table reader / writer + chunked-table one-shot
 // (Phase 7.74b; spec/abi.md §2.10, capability bit 21).
 //
-// Convention: user-facing API exchanges UNFRAMED CXDB payload bytes
+// Convention: user-facing API exchanges UNFRAMED CXCol payload bytes
 // (matching ToDataBin / extractBinPayload). The C ABI takes / returns
 // framed `[u32 LE size][payload]` buffers; this binding handles the
 // framing transparently.
 
-// ToDataBinChunked encodes a CX :table-bodied root element to the CXDB
-// chunked-table form (`0x63`, spec/data_bin.md §3.11). Default chunk
+// ToDataBinChunked encodes a CX :table-bodied root element to the CXCol
+// chunked-table form (`0x63`, spec/core/data-bin.md §3.11). Default chunk
 // policy: 2^20 rows per group with auto-zstd above 64 KiB body size.
-// Returns unframed CXDB payload bytes.
+// Returns unframed CXCol payload bytes.
 func ToDataBinChunked(input string) ([]byte, error) {
 	cs := C.CString(input)
 	defer C.free(unsafe.Pointer(cs))
@@ -44,7 +44,7 @@ func frameForC(payload []byte) []byte {
 // ── TableReader ──────────────────────────────────────────────────────────────
 
 // TableReader is a pull-based iterator over the row groups of a
-// chunked-table CXDB buffer or file descriptor. Exactly one of
+// chunked-table CXCol buffer or file descriptor. Exactly one of
 // (payload, fd) must be supplied; see OpenTableReader / OpenTableReaderFD.
 type TableReader struct {
 	handle unsafe.Pointer
@@ -54,7 +54,7 @@ type TableReader struct {
 	framed []byte
 }
 
-// OpenTableReader opens a streaming reader over an unframed CXDB
+// OpenTableReader opens a streaming reader over an unframed CXCol
 // chunked-table payload. Caller must Close().
 func OpenTableReader(payload []byte) (*TableReader, error) {
 	if len(payload) == 0 {
@@ -76,7 +76,7 @@ func OpenTableReader(payload []byte) (*TableReader, error) {
 }
 
 // OpenTableReaderFD opens a streaming reader over a file descriptor
-// positioned at the CXDB magic (no framing prefix). The caller retains
+// positioned at the CXCol magic (no framing prefix). The caller retains
 // ownership of fd and must close it after the reader is closed.
 func OpenTableReaderFD(fd int) (*TableReader, error) {
 	var errPtr *C.char
@@ -103,7 +103,7 @@ func (r *TableReader) Schema() ([]byte, error) {
 }
 
 // Next returns the next row group as unframed `[uvarint(row_count)
-// + col-payload[col_count]]` plain-body bytes (per spec/data_bin.md
+// + col-payload[col_count]]` plain-body bytes (per spec/core/data-bin.md
 // §3.11.2). Returns (nil, false, nil) on end-of-table.
 func (r *TableReader) Next() ([]byte, bool, error) {
 	if r.closed || r.handle == nil {
@@ -147,7 +147,7 @@ func (r *TableReader) Close() {
 
 // ── TableWriter ──────────────────────────────────────────────────────────────
 
-// TableWriter pushes row groups into a chunked-table CXDB buffer
+// TableWriter pushes row groups into a chunked-table CXCol buffer
 // (in-memory) or file descriptor. One of OpenTableWriter /
 // OpenTableWriterFD opens the writer.
 type TableWriter struct {
@@ -219,7 +219,7 @@ func (w *TableWriter) Emit(rowGroupPayload []byte) error {
 }
 
 // CloseGetBytes (in-memory writers only) emits the end-of-table marker
-// and returns the unframed CXDB chunked-table payload bytes.
+// and returns the unframed CXCol chunked-table payload bytes.
 func (w *TableWriter) CloseGetBytes() ([]byte, error) {
 	if w.fd {
 		return nil, errors.New("CloseGetBytes is for in-memory writers; use Close() for fd writers")

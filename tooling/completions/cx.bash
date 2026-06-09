@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# Q7 v0.7.0: cx CLI bash completion.
+# v0.8.0: cx CLI bash completion.
 #
 # Install: source this file from ~/.bashrc or symlink to
 #   /etc/bash_completion.d/cx (system-wide) or
 #   ~/.local/share/bash-completion/completions/cx (user).
 
 _cx_subcmds() {
-  echo "fmt canonical hash eq diff lint validate table demo scaffold eval select upgrade-config lsp"
+  # v0.8.0 surface — `select` retired (CXPath now first-class value
+  # kind per code.md §5.5; use `cx eval` with a //path expression).
+  # `diagram` renders a data-shaped diagram; `code-diagram`/`code-tree`
+  # render the program AST; `lock` manages the dependency lockfile.
+  echo "fmt canonical hash eq diff lint validate table demo scaffold eval diagram code-diagram code-tree lock lsp"
 }
 
 _cx_table_verbs() {
@@ -48,18 +52,44 @@ _cx_complete() {
           ;;
       esac
       ;;
-    upgrade-config)
+    eval)
       case "$cur" in
         --*)
-          COMPREPLY=( $(compgen -W "--dry-run --lint-ref-elements --help" -- "$cur") )
+          COMPREPLY=( $(compgen -W "--data= --target=" -- "$cur") )
           return 0
           ;;
       esac
       ;;
-    eval)
+    diagram)
       case "$cur" in
         --*)
-          COMPREPLY=( $(compgen -W "--input= --target=" -- "$cur") )
+          COMPREPLY=( $(compgen -W "--format= --output= --depth=" -- "$cur") )
+          return 0
+          ;;
+        --format=*)
+          COMPREPLY=( $(compgen -W "mermaid graphviz" -- "${cur#--format=}") )
+          COMPREPLY=( "${COMPREPLY[@]/#/--format=}" )
+          return 0
+          ;;
+      esac
+      ;;
+    code-diagram)
+      case "$cur" in
+        --level=*)
+          COMPREPLY=( $(compgen -W "min compact full" -- "${cur#--level=}") )
+          COMPREPLY=( "${COMPREPLY[@]/#/--level=}" )
+          return 0
+          ;;
+        --*)
+          COMPREPLY=( $(compgen -W "--level=" -- "$cur") )
+          return 0
+          ;;
+      esac
+      ;;
+    lock)
+      case "$cur" in
+        --*)
+          COMPREPLY=( $(compgen -W "--check --update --output= --help" -- "$cur") )
           return 0
           ;;
       esac
@@ -75,8 +105,8 @@ _cx_complete() {
       ;;
   esac
 
-  # Default: file completion for .cx / .cxl / .xml / .json
-  COMPREPLY=( $(compgen -f -X '!*.@(cx|cxl|xml|json|md|yaml|toml|arrow|parquet)' -- "$cur") )
+  # Default: file completion for CX-family inputs
+  COMPREPLY=( $(compgen -f -X '!*.@(cx|xml|json|yaml|toml|arrow|parquet)' -- "$cur") )
 }
 
 complete -F _cx_complete cx

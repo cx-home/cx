@@ -1,8 +1,8 @@
 {
   "name": "cx-language",
   "displayName": "CX Language",
-  "description": "Syntax highlighting, LSP, snippets, and formatting for CX (.cx / .cxs / .cxl) — the structured-data language with full XPath 4.0 / XQuery 4.0 query layer.",
-  "version": "0.7.0",
+  "description": "Syntax highlighting, LSP, snippets, and formatting for CX (.cx / .cxs) — the structured data + code language. Surface covers CXPath as a first-class value kind, multi-arm [?match], pure-functional [?modify], atom literals (:NAME), [?def] module functions, [?const] constants, and [?lib] module loading.",
+  "version": "0.8.0",
   "publisher": "cx-home",
   "license": "MIT",
   "repository": {
@@ -20,7 +20,6 @@
   ],
   "keywords": [
     "cx",
-    "cxl",
     "structured-data",
     "xpath",
     "xquery",
@@ -35,7 +34,7 @@
       {
         "id": "cx",
         "aliases": ["CX", "cx"],
-        "extensions": [".cx", ".cxs", ".cxl"],
+        "extensions": [".cx", ".cxs"],
         "configuration": "./language-configuration.json"
       }
     ],

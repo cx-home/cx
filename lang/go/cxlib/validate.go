@@ -14,7 +14,7 @@ import (
 
 // CX schema validator binding — `cx_validate` + `cx_validate_apply_defaults`.
 //
-// Per ADR 0009 + spec/schema.md §10 + spec/abi.md §2.13. The C ABI
+// Per spec/schema.md §10 + spec/abi.md §2.13. The C ABI
 // returns a framed binary diagnostics payload:
 //
 //   [u32 LE total_size]
@@ -28,7 +28,7 @@ import (
 //   }
 //
 // The prefix byte is the ASCII rule-code namespace tag — `S` for the
-// schema validator, `W` for streaming-write (ADR 0011), `D` for the
+// schema validator, `W` for streaming-write, `D` for the
 // future data validator. Bindings render the public Code string as
 // `<prefix><numeric:03d>` (e.g. `"S006"`, `"W001"`); a `0x00` prefix
 // renders the numeric without a letter. See spec/abi.md §2.13 /

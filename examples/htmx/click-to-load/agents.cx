@@ -1,7 +1,0 @@
-[agents page=2
-  [agent name=Agent_Smith email=void17@null.org status=Active]
-  [agent name=Agent_Jones email=jone55@null.org status=Active]
-  [agent name=Agent_Brown email=br0wn@null.org  status=Inactive]
-  [agent name=Agent_White email=wh1te@null.org  status=Active]
-  [agent name=Agent_Black email=bl4ck@null.org  status=Inactive]
-]

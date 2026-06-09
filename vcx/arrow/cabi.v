@@ -1,27 +1,27 @@
 module arrow
 
-// libcx_arrow — separate optional library that bridges CXDB chunked
-// tables ([`spec/data_bin.md §3.11`](../../spec/data_bin.md)) to the
-// Apache Arrow C-Data ABI per ADR 0015 D9 / [`spec/abi.md §2.11`](../../spec/abi.md).
+// libcx_arrow — separate optional library that bridges CXCol chunked
+// tables ([`spec/core/data-bin.md §3.11`](../../spec/core/data-bin.md)) to the
+// Apache Arrow C-Data ABI / [`spec/abi.md §2.11`](../../spec/abi.md).
 //
 // Build target: `target/libcx_arrow.dylib` (macOS) / `.so` (Linux),
 // produced by `make lib-arrow` in `vcx/Makefile`. The library
 // statically pulls in the V `cx` module's chunked-table primitives;
-// core libcx remains Arrow-free per the linkage plan in ADR 0015 D9.
+// core libcx remains Arrow-free per the linkage plan.
 //
 // Capability bit 23 (`0x800000`) signals Arrow availability.
 // Bindings dlopen `libcx_arrow` separately from `libcx`; on
 // successful load, the binding sets bit 23 in its merged
 // capability bitmask.
 //
-// v0.6.0 type set (Phase 7.74c-cont type-expansion): `int` / `i64`
+// Supported type set (Phase 7.74c-cont type-expansion): `int` / `i64`
 // (Arrow `'l'`), `i8` (`'c'`), `i16` (`'s'`), `i32` (`'i'`), `float` /
 // `f64` (`'g'`), `bool` (`'b'`, bit-packed), `string` (`'u'`, utf8
 // with i32 offsets), `date` / `d` (`'tdD'`, days since 1970-01-01),
 // `bytes` (`'z'`, binary with i32 offsets).
 //
-// Deferred — surface as `arrow: column type 'X' not yet supported in
-// v0.6.0`: `datetime` (chunked-table strict-cell wire form pending),
+// Deferred — surface as `arrow: column type 'X' not yet supported`:
+// `datetime` (chunked-table strict-cell wire form pending),
 // `decimal`, dictionary columns. Coverage tracked under
 // Phase 7.74c-cont follow-ups.
 
@@ -69,7 +69,7 @@ pub fn cx_arrow_version() &char {
 	return c_string(cx_arrow_version_str)
 }
 
-// ── 4 ADR-0015 D9 exports ────────────────────────────────────────────
+// ── 4 exports ────────────────────────────────────────────
 //
 // ABI shapes per spec/abi.md §2.11. `arrow_array_stream_*` parameters
 // point at a caller-allocated `struct ArrowArrayStream` (Arrow C-Data
@@ -77,13 +77,13 @@ pub fn cx_arrow_version() &char {
 // pointers + private_data; the consumer drains via get_next() and
 // invokes release() when done. On import, the function consumes the
 // stream (calling get_schema then get_next until exhaustion) and
-// returns / writes the corresponding CXDB chunked-table.
+// returns / writes the corresponding CXCol chunked-table.
 
-// cx_arrow_export_open: framed-CXDB-bytes input → populated
+// cx_arrow_export_open: framed-CXCol-bytes input → populated
 // ArrowArrayStream.
 //
 // `data_bin` is a NUL-terminated C string carrying the framed
-// `[u32 LE size][CXDB payload]` form. The CXDB payload MUST be a
+// `[u32 LE size][CXCol payload]` form. The CXCol payload MUST be a
 // chunked-table (tag `0x63`, optionally wrapped in a single-pair
 // map per emit_data_bin_chunked); other root tags surface an error.
 //
@@ -93,7 +93,7 @@ pub fn cx_arrow_version() &char {
 //
 // Returns NULL on success (with arrow_array_stream_out populated)
 // or NULL with err_out set on failure. The `success` indicator is
-// the absence of err_out content; v0.6.0 follows libcx's
+// the absence of err_out content; this follows libcx's
 // "NULL = success or failure-distinguished-by-err_out" convention.
 @[export: 'cx_arrow_export_open']
 pub fn cx_arrow_export_open(data_bin &char, arrow_array_stream_out voidptr,
@@ -115,7 +115,7 @@ pub fn cx_arrow_export_open(data_bin &char, arrow_array_stream_out voidptr,
 
 // cx_arrow_export_open_fd: open fd input → populated ArrowArrayStream.
 //
-// The fd MUST be positioned at the CXDB magic (no framing prefix —
+// The fd MUST be positioned at the CXCol magic (no framing prefix —
 // fd I/O does not use the [u32 LE size] envelope). Stream callbacks
 // pull lazily; the caller MUST keep the fd open until release().
 @[export: 'cx_arrow_export_open_fd']
@@ -134,10 +134,10 @@ pub fn cx_arrow_export_open_fd(fd int, arrow_array_stream_out voidptr,
 }
 
 // cx_arrow_import_to_data_bin: drain ArrowArrayStream → in-memory
-// framed CXDB chunked-table bytes.
+// framed CXCol chunked-table bytes.
 //
 // Returns a heap-allocated NUL-terminated C string carrying the
-// framed CXDB bytes. The caller MUST release with cx_arrow_free
+// framed CXCol bytes. The caller MUST release with cx_arrow_free
 // (or cx_free; both call libc free). Returns NULL on failure with
 // err_out set.
 @[export: 'cx_arrow_import_to_data_bin']
@@ -151,7 +151,7 @@ pub fn cx_arrow_import_to_data_bin(arrow_array_stream_in voidptr, err_out &&char
 	return bytes_to_c_string(bytes)
 }
 
-// cx_arrow_import_to_data_bin_fd: drain ArrowArrayStream → CXDB
+// cx_arrow_import_to_data_bin_fd: drain ArrowArrayStream → CXCol
 // chunked-table written to fd_out.
 //
 // Output on the fd does not carry the [u32 LE size] framing prefix
@@ -178,7 +178,7 @@ pub fn cx_arrow_import_to_data_bin_fd(arrow_array_stream_in voidptr, fd_out int,
 // ── helpers shared with arrow.v ──────────────────────────────────────
 
 // framed_cstring_to_bytes copies a C string treated as the framed
-// `[u32 LE size][payload]` form into a V byte slice. The CXDB payload
+// `[u32 LE size][payload]` form into a V byte slice. The CXCol payload
 // may contain NUL bytes; we read the u32 LE size first and use that
 // length, ignoring strlen semantics.
 fn framed_cstring_to_bytes(cstr &char) ![]u8 {
@@ -195,7 +195,7 @@ fn framed_cstring_to_bytes(cstr &char) ![]u8 {
 }
 
 // bytes_to_c_string copies a V byte slice into a heap-allocated
-// NUL-terminated C buffer. The framed CXDB bytes already contain
+// NUL-terminated C buffer. The framed CXCol bytes already contain
 // their own length header; the trailing NUL is for C-string
 // compatibility (consumers may strlen, which would stop at the
 // first interior NUL — bindings unpack the [u32 LE size] header

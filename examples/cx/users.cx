@@ -1,5 +1,5 @@
 [team
-  [member name=Alice role=admin +active]
-  [member name=Bob   role=user  +active]
-  [member name=Carol role=user  -active]
+  [member name=Alice role=admin active=true]
+  [member name=Bob   role=user  active=true]
+  [member name=Carol role=user  active=false]
 ]

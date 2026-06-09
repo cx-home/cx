@@ -9,7 +9,7 @@ import (
 // Streaming Table API tests (Phase 7.74b). Mirrors the Python
 // test_streaming_table.py and the V core v34_streaming_table_test.v.
 
-const sixRowInput = `[points :table[name:string score:i32]
+const sixRowInput = `[points [table[name::string score::i32]]
   alice 91
   bob 88
   carol 73
@@ -23,8 +23,8 @@ func TestToDataBinChunkedRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ToDataBinChunked: %v", err)
 	}
-	if len(payload) < 4 || string(payload[:4]) != "CXDB" {
-		t.Fatalf("expected CXDB magic, got %d bytes", len(payload))
+	if len(payload) < 5 || string(payload[:5]) != "CXCol" {
+		t.Fatalf("expected CXCol magic, got %d bytes", len(payload))
 	}
 	out, err := FromDataBin(reframe(payload))
 	if err != nil {
@@ -117,7 +117,7 @@ func TestStreamingTableFDRoundTrip(t *testing.T) {
 		groups = append(groups, g)
 	}
 
-	tmp, err := os.CreateTemp("", "cx_streaming_table_go_*.cxdb")
+	tmp, err := os.CreateTemp("", "cx_streaming_table_go_*.cxcol")
 	if err != nil {
 		t.Fatalf("temp file: %v", err)
 	}
@@ -175,6 +175,6 @@ func TestStreamingTableFDRoundTrip(t *testing.T) {
 func TestOpenTableReaderInvalidInput(t *testing.T) {
 	_, err := OpenTableReader([]byte("garb"))
 	if err == nil {
-		t.Fatalf("expected error on invalid CXDB input")
+		t.Fatalf("expected error on invalid CXCol input")
 	}
 }

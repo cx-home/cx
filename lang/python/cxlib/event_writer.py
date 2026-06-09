@@ -1,6 +1,6 @@
 """Streaming-write API binding — `cxlib.EventWriter`.
 
-Per spec/streaming.md §6 + ADR 0011 + spec/abi.md §2.15. Thin wrapper
+Per spec/streaming.md §6 + spec/abi.md §2.15. Thin wrapper
 around the 25 cx_events_writer_* C ABI symbols. The writer accepts
 the 14 stream events defined in §1 and emits format-targeted output
 (cx / xml / json / yaml / toml / md, selected at open time). The CX
@@ -297,7 +297,7 @@ class EventWriter:
 
     def start_table(self, col_spec_payload: bytes) -> None:
         """Open a chunked table. `col_spec_payload` is the unframed
-        column-spec wire form per spec/data_bin.md §3.10.1:
+        column-spec wire form per spec/core/data-bin.md §3.10.1:
             [u32 LE count] ([u32 LE name_len] name [u8 type_code])*
         """
         err = ctypes.c_char_p(None)

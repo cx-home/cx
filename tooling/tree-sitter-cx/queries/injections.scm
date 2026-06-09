@@ -1,87 +1,57 @@
-; Inject embedded language parsers into [``` lang=X [| … |] ] blocks.
-; The lang_name node carries the language identifier.
-; The block_content inside the code_block carries the actual code.
+; Embedded-language injection for CX v0.8.0.
+;
+; v0.8.0 has NO fenced code-block surface ([``` lang=X …] was the removed
+; Markdown feature). The language signal is instead the WRAPPING ELEMENT:
+;
+;   [python [| def f(): return 1 |]]      ← element name names the language
+;   [json   [# {"a": 1} #]]               ← also works for [#…#] raw text
+;   [sql    [| select * from users |]]
+;   [code lang=javascript [| let x = 1 |]]  ← explicit lang= override
+;
+; The element name (or a `lang=` attribute) is matched against a known language
+; set and used as `@injection.language`; the block body / raw-text content is
+; `@injection.content`. An unknown language (no parser installed) injects
+; nothing — silently, no error. Block content captures `block_body` (delimiters
+; `[|` / `|]` excluded); raw text trims its `[#` / `#]` via #offset!.
 
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(json|JSON)$")
- (#set! injection.language "json"))
+; ── Element-name-as-language: block content  [lang [| … |]] ───────────────────
+((element
+   name: (tag_name) @injection.language
+   (block_content (block_body) @injection.content))
+ (#any-of? @injection.language
+   "json" "javascript" "js" "typescript" "ts" "tsx" "jsx" "python" "py"
+   "xml" "html" "css" "scss" "sass" "less" "sql" "yaml" "yml" "toml"
+   "bash" "sh" "shell" "zsh" "fish" "rust" "rs" "go" "c" "cpp" "java"
+   "ruby" "rb" "lua" "graphql" "dockerfile" "markdown" "md" "ini" "make"
+   "cmake" "php" "kotlin" "swift" "scala" "haskell" "elixir" "erlang"
+   "clojure" "regex" "jsonc" "proto" "diff" "csv"))
 
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(xml|XML)$")
- (#set! injection.language "xml"))
+; ── Element-name-as-language: raw text  [lang [# … #]] ────────────────────────
+; Captures the inner `raw_content` node — delimiters `[#` / `#]` are excluded.
+((element
+   name: (tag_name) @injection.language
+   (raw_text (raw_content) @injection.content))
+ (#any-of? @injection.language
+   "json" "javascript" "js" "typescript" "ts" "tsx" "jsx" "python" "py"
+   "xml" "html" "css" "scss" "sass" "less" "sql" "yaml" "yml" "toml"
+   "bash" "sh" "shell" "zsh" "fish" "rust" "rs" "go" "c" "cpp" "java"
+   "ruby" "rb" "lua" "graphql" "dockerfile" "markdown" "md" "ini" "make"
+   "cmake" "php" "kotlin" "swift" "scala" "haskell" "elixir" "erlang"
+   "clojure" "regex" "jsonc" "proto" "diff" "csv"))
 
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(html|HTML)$")
- (#set! injection.language "html"))
+; ── Explicit `lang=` override: [code lang=python [| … |]] ─────────────────────
+; Wins when present (a `[code]`/`[pre]`/etc. wrapper whose name is NOT itself a
+; language). The value is the unquoted attribute text.
+((element
+   (attribute
+     name: (attr_name) @_k
+     value: (attr_value (unquoted_value) @injection.language))
+   (block_content (block_body) @injection.content))
+ (#eq? @_k "lang"))
 
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(css|CSS)$")
- (#set! injection.language "css"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(js|javascript|JavaScript|JS)$")
- (#set! injection.language "javascript"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(ts|typescript|TypeScript|TS)$")
- (#set! injection.language "typescript"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(py|python|Python)$")
- (#set! injection.language "python"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(sh|bash|shell|Bash|Shell)$")
- (#set! injection.language "bash"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(sql|SQL)$")
- (#set! injection.language "sql"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(yaml|yml|YAML)$")
- (#set! injection.language "yaml"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(toml|TOML)$")
- (#set! injection.language "toml"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(rust|Rust|rs)$")
- (#set! injection.language "rust"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(go|Go)$")
- (#set! injection.language "go"))
-
-((code_block
-   (lang_attr lang: (lang_name) @_lang)
-   (block_content) @injection.content)
- (#match? @_lang "^(cx|CX)$")
- (#set! injection.language "cx"))
+((element
+   (attribute
+     name: (attr_name) @_k
+     value: (attr_value (unquoted_value) @injection.language))
+   (raw_text (raw_content) @injection.content))
+ (#eq? @_k "lang"))

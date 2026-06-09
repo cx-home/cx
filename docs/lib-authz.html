@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>authz — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a class="active" href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-authz">
+  <h1>authz</h1>
+  <p class="lede">The XAP authority model as data plus a single decision function. It represents principals, capabilities, attenuating/time-bounded/revocable delegations, and guardian grants gated behind incapacity-typed predicates, then decides authority at one point of enforcement: check/authorize answers whether an actor holds a capability over a slice in a tenant at the required assurance tier, returning a [permit] or [deny] value. Authority originates only from principals and can only attenuate down a delegation chain, so privilege escalation is structurally impossible. This is delegated authority — who authorized whom to do what — distinct from and AND-composed with the effect-permission capability system.</p>
+  
+    <section id="fn-authz-store" class="fn">
+      <h3>authz:store</h3>
+      <p class="fn-sig"><code>[$authz:store]  -> element</code>  —  Open an authority store — the trust-state handle for one tenant, taken by the persisting and live-read verbs.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
+  [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-close" class="fn">
+      <h3>authz:close</h3>
+      <p class="fn-sig"><code>[$authz:close]  -> null</code>  —  Close an authority store — idempotent, never raises.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $c [$authz:close $az]]
+  [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER4712</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-delegate" class="fn">
+      <h3>authz:delegate</h3>
+      <p class="fn-sig"><code>[$authz:delegate]  -> element</code>  —  Issue an ordinary delegation, enforcing attenuation — conveying more than the issuer holds raises CXER4703.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
+  [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-revoke" class="fn">
+      <h3>authz:revoke</h3>
+      <p class="fn-sig"><code>[$authz:revoke]  -> element</code>  —  Revoke a delegation by id — idempotent; opts.cascade also revokes everything it sourced.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]]]
+  [= $r [$authz:revoke $az 'd-1']]
+  [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund'] [slice '/orders/9'] [tenant id=acme]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-grant-guardian" class="fn">
+      <h3>authz:grant-guardian</h3>
+      <p class="fn-sig"><code>[$authz:grant-guardian]  -> element</code>  —  Issue a guardian grant after the full two-validator check, storing it dormant until its incapacity gate fires.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $g [$authz:grant-guardian $az
+    [delegation g-1 [tenant acme] [mode :guardian] [from [principal admin]] [to [agent ops-1]]
+      [capabilities [pause-gw]] [action [do :pause-gw]]
+      [gate [all [incapacity [no-ack-within [of :escalation]]] [state [gt '/charge-error-rate' 0.15]]]]
+      [assurance :t1] [signature sig-admin]]]]
+  [$authz:check $az [authz-request [actor [agent ops-1]] [capability pause-gw] [tenant acme]]
+    {with-context: [context [no-ack-within true] [charge-error-rate 0.2]]}]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[permit rooted-principal=admin [delegation 'g-1'] [via 'g-1'] [tier :t1] [capability 'pause-gw']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-check" class="fn">
+      <h3>authz:check</h3>
+      <p class="fn-sig"><code>[$authz:check]  -> element</code>  —  Decide an authorization request at the single PEP, returning a [permit] or [deny] value — always total.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
+  [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-authorize" class="fn">
+      <h3>authz:authorize</h3>
+      <p class="fn-sig"><code>[$authz:authorize]  -> element</code>  —  The strict alias of check — with raise-on-deny=true a [deny] becomes a raised CXER4700.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [$authz:authorize $az [authz-request [actor [agent x]] [capability y] [tenant acme]] {raise-on-deny: true}]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER4700</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-find" class="fn">
+      <h3>authz:find</h3>
+      <p class="fn-sig"><code>[$authz:find]  -> element</code>  —  Look up a delegation by id — never-issued, revoked, or expired yields the absence channel.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund]] [assurance :t1] [signature s]]]]
+  [$authz:find $az 'd-1']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[delegation id=d-1 mode=delegated state=active [tenant id=acme] [to [agent id=ops-1]] [from [principal id=dana]] [capabilities [refund]] [assurance :t1]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-grants-of" class="fn">
+      <h3>authz:grants-of</h3>
+      <p class="fn-sig"><code>[$authz:grants-of]  -> [sequence element]</code>  —  List all currently-active delegations granted to an actor, in receive order.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund]] [assurance :t1] [signature s]]]]
+  [$authz:grants-of $az [agent ops-1]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>([delegation id=d-1 mode=delegated state=active [tenant id=acme] [to [agent id=ops-1]] [from [principal id=dana]] [capabilities [refund]] [assurance :t1]])</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-predicate" class="fn">
+      <h3>authz:predicate</h3>
+      <p class="fn-sig"><code>[$authz:predicate]  -> element</code>  —  Look up a signed-library incapacity predicate by name@version — unknown yields the absence channel.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [$authz:predicate $az 'no-ack-within@v1']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[predicate name=no-ack-within version=v1 [params [duration] [of]] [rationale 'a request was issued and no acknowledgement arrived within the window — truth depends on the elapsed clock + the absence of an ack event, never on the principal willing it; an ack the instant it arrives makes it false'] [signature 'bundled-library:no-ack-within@v1']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-predicates" class="fn">
+      <h3>authz:predicates</h3>
+      <p class="fn-sig"><code>[$authz:predicates]  -> [sequence element]</code>  —  List the whole signed incapacity-predicate library.</p>
+      
+    </section>
+    <section id="fn-authz-gate-wellformed" class="fn">
+      <h3>authz:gate-wellformed</h3>
+      <p class="fn-sig"><code>[$authz:gate-wellformed]  -> element</code>  —  Run the structural and semantic validators over a [gate …] without issuing, returning a [valid] or [invalid …] value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[$authz:gate-wellformed [gate [all [incapacity [no-ack-within]] [state [gt '/x' 1]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[valid]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-verify-tier" class="fn">
+      <h3>authz:verify-tier</h3>
+      <p class="fn-sig"><code>[$authz:verify-tier]  -> element</code>  —  Verify a grant's assurance tier via crypto — returns [verified …] or raises CXER4704.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [$authz:verify-tier $az
+    [delegation d [tenant acme] [from [principal dana]] [to [agent o]]
+      [capabilities [x]] [assurance :t1] [signature sig-ok]] 't1']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[verified [tier :t1]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-effective" class="fn">
+      <h3>authz:effective</h3>
+      <p class="fn-sig"><code>[$authz:effective]  -> element</code>  —  Compute an actor's effective envelope — the most-restrictive intersection of individual and superior/managing/collective gates.</p>
+      
+    </section>
+    <section id="fn-authz-dry-run" class="fn">
+      <h3>authz:dry-run</h3>
+      <p class="fn-sig"><code>[$authz:dry-run]  -> element</code>  —  Run check over an explicit scenario with no journal write, returning the same [permit] or [deny] value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d [tenant acme] [from [principal dana]] [to [agent o]]
+      [capabilities [x]] [over '/s'] [assurance :t1] [signature s]]]]
+  [$authz:dry-run $az [authz-request [actor [agent o]] [capability x] [slice '/s/1'] [tenant acme]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[permit rooted-principal=dana [delegation 'd'] [via 'd'] [tier :t1] [capability 'x']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-explain" class="fn">
+      <h3>authz:explain</h3>
+      <p class="fn-sig"><code>[$authz:explain]  -> element</code>  —  Turn a permit or deny into a readable [explanation …] — the authority chain or the first failing link.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/authz']
+[?let [= $az [$authz:store {tenant: 'acme'}]]
+  [= $d [$authz:delegate $az
+    [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
+      [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]]]
+  [= $dec [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme]]]]
+  [$authz:explain $dec]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-authz-trace" class="fn">
+      <h3>authz:trace</h3>
+      <p class="fn-sig"><code>[$authz:trace]  -> [sequence element]</code>  —  Return the ordered policy-stack evaluation behind a decision — the deep-debug view behind explain.</p>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 //! Mirrors the Python test_api.py fixture suite.
 
 use cxlib::ast::{parse, parse_xml, parse_json, parse_yaml, loads, loads_xml, loads_json,
-                 loads_yaml, loads_toml, loads_md, dumps, Element, Node, Attr};
+                 loads_yaml, loads_toml, dumps, Element, Node, Attr};
 use cxlib::stream::StreamEventType;
 use serde_json::{Value, json};
 
@@ -532,12 +532,6 @@ fn test_loads_toml() {
 }
 
 #[test]
-fn test_loads_md() {
-    let result = loads_md("# hello\n\nworld\n").expect("loads_md failed");
-    assert!(!result.is_null());
-}
-
-#[test]
 fn test_dumps_produces_parseable_cx() {
     let data = json!({"app": {"name": "myapp", "version": "1.0", "port": 8080}});
     let cx_str = dumps(&data).unwrap();
@@ -562,9 +556,9 @@ fn test_parse_error_unclosed_bracket() {
     assert!(parse(&fx("errors/unclosed.cx")).is_err());
 }
 
-// `[=]` is no longer a parse error: per ADR 0017 it is an Array literal
+// `[=]` is no longer a parse error: it is an Array literal
 // containing Text("="). Commit 72effe38 cemented this at the top-level
-// CXL parser. No syntactic surface for the old "empty element name"
+// CX parser. No syntactic surface for the old "empty element name"
 // diagnostic remains.
 
 #[test]
@@ -630,8 +624,11 @@ fn test_parse_xml_valid() {
 
 #[test]
 fn test_parse_json_to_document() {
+    // JSON imports LOSSLESS (conversions.md §4.1): a JSON object becomes a cx
+    // MAP, not synthesized elements — so "server" is a map key (find_first, an
+    // element search, returns None) and the doc round-trips to the map form.
     let doc = parse_json("{\"server\": {\"port\": 8080}}").unwrap();
-    assert!(doc.find_first("server").is_some());
+    assert_eq!(doc.to_cx(), "{server: {port: 8080}}");
 }
 
 #[test]
@@ -740,250 +737,3 @@ fn test_remove_at_out_of_bounds_is_noop() {
     }
 }
 
-// ── select_all / select ───────────────────────────────────────────────────────
-
-#[test]
-fn test_select_all_descendant() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("//service").unwrap();
-    assert_eq!(results.len(), 3);
-}
-
-#[test]
-fn test_select_all_attr_predicate() {
-    // api_multi.cx has services with port: 8001, 8080, 9000
-    // select services with port >= 8080
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("//service[@port>=8080]").unwrap();
-    assert_eq!(results.len(), 2);
-}
-
-#[test]
-fn test_select_first() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let first = doc.select("//service").unwrap();
-    assert!(first.is_some());
-    assert_eq!(first.unwrap().attr("name").unwrap(), "auth");
-}
-
-#[test]
-fn test_select_child_path() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let results = doc.select_all("config/server").unwrap();
-    assert_eq!(results.len(), 1);
-    assert_eq!(results[0].attr("host").unwrap(), "localhost");
-}
-
-#[test]
-fn test_select_wildcard() {
-    // Wildcard matches all direct children of config
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let results = doc.select_all("config/*").unwrap();
-    assert_eq!(results.len(), 3);
-}
-
-#[test]
-fn test_select_numeric_comparison() {
-    // api_multi.cx: auth=8001, api=8080, worker=9000 — port >= 8000 → all 3
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("//service[@port>=8000]").unwrap();
-    assert_eq!(results.len(), 3);
-}
-
-#[test]
-fn test_select_position() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    // Position 2 among top-level service elements: "api" (port=8080)
-    let results = doc.select_all("service[2]").unwrap();
-    assert_eq!(results.len(), 1);
-    assert_eq!(results[0].attr("name").unwrap(), "api");
-}
-
-#[test]
-fn test_select_last_position() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("service[last()]").unwrap();
-    assert_eq!(results.len(), 1);
-    assert_eq!(results[0].attr("name").unwrap(), "worker");
-}
-
-#[test]
-fn test_select_contains() {
-    // api_multi.cx: service names = auth, api, worker
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("//service[contains(@name, 'a')]").unwrap();
-    // "auth" and "api" contain 'a'
-    assert_eq!(results.len(), 2);
-}
-
-#[test]
-fn test_select_starts_with() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("//service[starts-with(@name, 'a')]").unwrap();
-    // "auth" and "api" start with 'a'
-    assert_eq!(results.len(), 2);
-}
-
-#[test]
-fn test_select_bool_and() {
-    // Select services where port >= 8000 AND port <= 9000 (all 3: 8001, 8080, 9000)
-    // Then narrow: port >= 8080 AND port <= 9000 (2: 8080, 9000)
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let results = doc.select_all("//service[@port>=8080 and @port<=9000]").unwrap();
-    assert_eq!(results.len(), 2);
-}
-
-#[test]
-fn test_select_on_element_subtree() {
-    let doc = parse(&fx("api_article.cx")).unwrap();
-    let body = doc.at("article/body").unwrap();
-    let results = body.select_all("//p").unwrap();
-    assert_eq!(results.len(), 3);
-}
-
-#[test]
-fn test_select_invalid_expr_returns_err() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let result = doc.select_all("[@@@invalid");
-    assert!(result.is_err());
-}
-
-// ── transform ─────────────────────────────────────────────────────────────────
-
-#[test]
-fn test_transform_applies_function() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let updated = doc.transform("config/server", |mut el| {
-        el.set_attr("host", json!("prod.example.com"), None);
-        el
-    });
-    assert_eq!(
-        updated.at("config/server").unwrap().attr("host").unwrap(),
-        "prod.example.com"
-    );
-}
-
-#[test]
-fn test_transform_original_unchanged() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let _updated = doc.transform("config/server", |mut el| {
-        el.set_attr("host", json!("other.example.com"), None);
-        el
-    });
-    // Original doc is unchanged
-    assert_eq!(
-        doc.at("config/server").unwrap().attr("host").unwrap(),
-        "localhost"
-    );
-}
-
-#[test]
-fn test_transform_returns_new_document() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let updated = doc.transform("config/server", |mut el| {
-        el.set_attr("port", json!(9999), Some("int".to_string()));
-        el
-    });
-    // Verify it's actually a different document (different content)
-    assert_eq!(
-        updated.at("config/server").unwrap().attr("port").unwrap().as_i64().unwrap(),
-        9999
-    );
-    assert_eq!(
-        doc.at("config/server").unwrap().attr("port").unwrap().as_i64().unwrap(),
-        8080
-    );
-}
-
-#[test]
-fn test_transform_missing_path() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    // Transform on a nonexistent path returns a clone of the original
-    let result = doc.transform("config/nonexistent", |el| el);
-    assert_eq!(
-        result.at("config/server").unwrap().attr("host").unwrap(),
-        "localhost"
-    );
-}
-
-#[test]
-fn test_transform_chained() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let result = doc
-        .transform("config/server", |mut el| {
-            el.set_attr("host", json!("web.example.com"), None);
-            el
-        })
-        .transform("config/database", |mut el| {
-            el.set_attr("host", json!("db.example.com"), None);
-            el
-        });
-    assert_eq!(
-        result.at("config/server").unwrap().attr("host").unwrap(),
-        "web.example.com"
-    );
-    assert_eq!(
-        result.at("config/database").unwrap().attr("host").unwrap(),
-        "db.example.com"
-    );
-    // Original still unchanged
-    assert_eq!(
-        doc.at("config/server").unwrap().attr("host").unwrap(),
-        "localhost"
-    );
-}
-
-// ── transform_all ─────────────────────────────────────────────────────────────
-
-#[test]
-fn test_transform_all_applies_to_all() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let updated = doc.transform_all("//service", |mut el| {
-        el.set_attr("active", json!(true), Some("bool".to_string()));
-        el
-    }).unwrap();
-    let services = updated.find_all("service");
-    assert_eq!(services.len(), 3);
-    for svc in services {
-        assert_eq!(svc.attr("active").unwrap(), &Value::Bool(true));
-    }
-}
-
-#[test]
-fn test_transform_all_returns_new() {
-    let doc = parse(&fx("api_multi.cx")).unwrap();
-    let updated = doc.transform_all("//service", |mut el| {
-        el.set_attr("visited", json!(true), Some("bool".to_string()));
-        el
-    }).unwrap();
-    // Original has no "visited" attr
-    assert!(doc.find_first("service").unwrap().attr("visited").is_none());
-    assert!(updated.find_first("service").unwrap().attr("visited").is_some());
-}
-
-#[test]
-fn test_transform_all_no_matches() {
-    let doc = parse(&fx("api_config.cx")).unwrap();
-    let updated = doc.transform_all("//nonexistent", |el| el).unwrap();
-    // Document structure preserved
-    assert_eq!(
-        updated.at("config/server").unwrap().attr("host").unwrap(),
-        "localhost"
-    );
-}
-
-#[test]
-fn test_transform_all_deeply_nested() {
-    let doc = parse(&fx("api_article.cx")).unwrap();
-    let updated = doc.transform_all("//p", |mut el| {
-        el.set_attr("styled", json!(true), Some("bool".to_string()));
-        el
-    }).unwrap();
-    let ps = updated.find_all("p");
-    assert_eq!(ps.len(), 3);
-    for p in ps {
-        assert_eq!(p.attr("styled").unwrap(), &Value::Bool(true));
-    }
-    // Original unchanged
-    assert!(doc.find_first("p").unwrap().attr("styled").is_none());
-}

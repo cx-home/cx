@@ -1,13 +1,8 @@
 # CX — Go
 
 Go binding for the CX format library via CGo. Parses, streams, queries, and
-transforms CX documents; converts between CX, XML, JSON, YAML, TOML, and
-Markdown via `libcx`.
-
-> **Upgrading from v3.3?** See [`MIGRATION.md`](../../../MIGRATION.md) at
-> the repo root. v3.4 has two breaking changes: leading-zero integer
-> literals (`02134` is now string, not int) and `Loads()` / `Dumps()` type
-> fidelity (integers no longer coerce to `float64` through the JSON detour).
+transforms CX documents; converts between CX, XML, JSON, YAML, and TOML
+via `libcx`.
 
 ## Canonical-form tooling (v3.4)
 
@@ -124,147 +119,52 @@ updated host = prod.example.com
 ]
 ```
 
-### Transform (immutable update)
+### Select and transform via CX code
 
-`Transform` and `TransformAll` return a **new document** — the original is
-unchanged.
+Selection and transformation use the unified **CX code** language
+([`spec/code.md`](../../../spec/code.md)) — CXPath `//path`
+value-literals for selection, `[?for]` comprehensions for
+pattern-generators and projection. Common shapes:
 
-```go
-package main
-
-import (
-	"fmt"
-	"runtime"
-
-	cx "github.com/cx-home/cx/lang/go"
-)
-
-const cxStr = `[config
-  [server host=localhost port=8080]
-  [database host=db.local port=5432]
-]`
-
-func main() {
-	runtime.LockOSThread()
-
-	doc, _ := cx.Parse(cxStr)
-
-	// Replace config/server — returns a new document
-	updated := doc.Transform("config/server", func(el *cx.Element) *cx.Element {
-		el.SetAttr("host", "prod.example.com", "")
-		return el
-	})
-
-	fmt.Println(updated.At("config/server").Attr("host")) // prod.example.com
-	fmt.Println(doc.At("config/server").Attr("host"))     // localhost  (original unchanged)
-
-	// Chain multiple transforms
-	result := doc.
-		Transform("config/server", func(el *cx.Element) *cx.Element {
-			el.SetAttr("host", "web.example.com", "")
-			return el
-		}).
-		Transform("config/database", func(el *cx.Element) *cx.Element {
-			el.SetAttr("host", "db.example.com", "")
-			return el
-		})
-
-	fmt.Println(result.ToCx())
-}
-```
-
-### CXPath: SelectAll / Select
-
-`Select` and `SelectAll` evaluate CXPath expressions against a document or
-element. Expressions support descendant axes (`//`), child paths (`a/b/c`),
-wildcards (`*`), attribute predicates, boolean operators, position, and
-string functions.
+| CXPath shape                         | Notes |
+|--------------------------------------|------------------------|
+| `//user`                             | All `user` elements |
+| `//user[@active=true]`               | Attribute filter |
+| `//service[@port>=8000]`             | Numeric predicate |
+| `//user[2]`                          | Position predicate |
+| transform `//service` → modify       | `[?for $s :in //service :yield (update-attr $s "active" true)]` |
 
 ```go
 package main
 
 import (
 	"fmt"
-	"runtime"
 
-	cx "github.com/cx-home/cx/lang/go"
+	cxlib "github.com/cx-home/cx/lang/go"
 )
 
-const cxStr = `[services
-  [service name=auth  port=8080 active=true]
-  [service name=api   port=9000 active=false]
-  [service name=web   port=80   active=true]
+const fleet = `[fleet
+  [svc name=auth :status up]
+  [svc name=web  :status up]
+  [svc name=db   :status down]
 ]`
 
 func main() {
-	runtime.LockOSThread()
-
-	doc, _ := cx.Parse(cxStr)
-
-	// First match
-	first, _ := doc.Select("//service")
-	fmt.Println(first.Attr("name")) // auth
-
-	// All active services
-	actives, _ := doc.SelectAll("//service[@active=true]")
-	for _, svc := range actives {
-		fmt.Println(svc.Attr("name"))
+	// Find every service via a CXPath path value.
+	out, err := cxlib.EvalCode(fleet, `//svc`, "text")
+	if err != nil {
+		panic(err)
 	}
-	// auth
-	// web
-
-	// Attribute predicate with numeric comparison
-	high, _ := doc.SelectAll("//service[@port>=8000]")
-	fmt.Println(len(high)) // 2
-
-	// Position
-	second, _ := doc.Select("//service[2]")
-	fmt.Println(second.Attr("name")) // api
-
-	// Select on an Element searches only its subtree (excludes the element itself)
-	servicesEl := doc.Root()
-	results, _ := servicesEl.SelectAll("service[@active=true]")
-	for _, svc := range results {
-		fmt.Println(svc.Attr("name"))
-	}
+	fmt.Println(out)
+	// [svc name=auth :status up]
+	// [svc name=web :status up]
+	// [svc name=db :status down]
 }
 ```
 
-### TransformAll
-
-`TransformAll` applies a function to every element matching a CXPath expression
-and returns a new document.
-
-```go
-package main
-
-import (
-	"fmt"
-	"runtime"
-
-	cx "github.com/cx-home/cx/lang/go"
-)
-
-const cxStr = `[services
-  [service name=auth port=8080]
-  [service name=api  port=9000]
-]`
-
-func main() {
-	runtime.LockOSThread()
-
-	doc, _ := cx.Parse(cxStr)
-
-	updated, _ := doc.TransformAll("//service", func(el *cx.Element) *cx.Element {
-		el.SetAttr("active", true, "bool")
-		return el
-	})
-
-	for _, svc := range updated.FindAll("service") {
-		fmt.Println(svc.Attr("active")) // true
-	}
-}
-```
+See [`spec/code.md`](../../../spec/code.md) for the language
+reference, and `code_eval_test.go` / `conformance_code_test.go`
+in this package for the test surface.
 
 ### Streaming
 
@@ -321,9 +221,9 @@ type=EndElement
 type=EndDoc
 ```
 
-### CXL: query / transform / template
+### CX code: query / transform / template
 
-CXL is CX's templating + query language — a CXL program is itself a `.cx` file (same parser, same data model). `cxlib.EvalCXL(context, program, outputTarget)` runs the program against the context document. `outputTarget` is `""` (default), `"text"`, `"cx"`, or `"html"`.
+CX code is CX's templating + query language — a CX program is itself a `.cx` file (same parser, same data model). `cxlib.EvalCXL(context, program, outputTarget)` runs the program against the context document. `outputTarget` is `""` (default), `"text"`, `"cx"`, or `"html"`.
 
 ```go
 ctx  := "[fleet [svc name=auth +up] [svc name=web +up] [svc name=db]]"
@@ -336,7 +236,7 @@ fmt.Println(out)
 // auth: ok;web: ok;db: down;
 ```
 
-See [docs/CXL.md](../../../docs/CXL.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
+See [docs/CX code.md](../../../docs/CX code.md) for the full language reference (XQuery-equivalent feature set: `?for`, `?if`, `?let`, predicates, filters, output shaping).
 
 ## Run the Demo
 
@@ -379,12 +279,10 @@ go run ./examples/transform/
 | `ToJson(s)` | CX | JSON |
 | `ToYaml(s)` | CX | YAML |
 | `ToToml(s)` | CX | TOML |
-| `ToMd(s)` | CX | Markdown |
 | `XmlToCx(s)` | XML | CX |
 | `JsonToCx(s)` | JSON | CX |
 | `YamlToCx(s)` | YAML | CX |
 | `TomlToCx(s)` | TOML | CX |
-| `MdToCx(s)` | Markdown | CX |
 
 All conversion functions return `(string, error)`. Additional cross-format
 functions (`XmlToJson`, `YamlToXml`, etc.) follow the same pattern.
@@ -398,7 +296,6 @@ functions (`XmlToJson`, `YamlToXml`, etc.) follow the same pattern.
 | `ParseJson(s)` | Parse a JSON string into a `*Document` |
 | `ParseYaml(s)` | Parse a YAML string into a `*Document` |
 | `ParseToml(s)` | Parse a TOML string into a `*Document` |
-| `ParseMd(s)` | Parse a Markdown string into a `*Document` |
 
 ### Document
 
@@ -420,7 +317,6 @@ functions (`XmlToJson`, `YamlToXml`, etc.) follow the same pattern.
 | `doc.ToJson()` | Serialize to JSON via the C library |
 | `doc.ToYaml()` | Serialize to YAML via the C library |
 | `doc.ToToml()` | Serialize to TOML via the C library |
-| `doc.ToMd()` | Serialize to Markdown via the C library |
 
 ### Element
 
@@ -496,24 +392,22 @@ parse/emit roundtrip.
 
 | Function | Description |
 |---|---|
-| `cxlib.XmlToDataBin(s)`  | XML text → CXDB v1 framed bytes |
-| `cxlib.JsonToDataBin(s)` | JSON text → CXDB v1 framed bytes |
-| `cxlib.YamlToDataBin(s)` | YAML text → CXDB v1 framed bytes |
-| `cxlib.TomlToDataBin(s)` | TOML text → CXDB v1 framed bytes |
-| `cxlib.MdToDataBin(s)`   | Markdown text → CXDB v1 framed bytes |
-| `cxlib.DataBinToXml(b)`  | CXDB v1 framed bytes → XML text |
-| `cxlib.DataBinToJson(b)` | CXDB v1 framed bytes → JSON text |
-| `cxlib.DataBinToYaml(b)` | CXDB v1 framed bytes → YAML text |
-| `cxlib.DataBinToToml(b)` | CXDB v1 framed bytes → TOML text |
-| `cxlib.DataBinToMd(b)`   | CXDB v1 framed bytes → Markdown text |
+| `cxlib.XmlToDataBin(s)`  | XML text → CXCol v1 framed bytes |
+| `cxlib.JsonToDataBin(s)` | JSON text → CXCol v1 framed bytes |
+| `cxlib.YamlToDataBin(s)` | YAML text → CXCol v1 framed bytes |
+| `cxlib.TomlToDataBin(s)` | TOML text → CXCol v1 framed bytes |
+| `cxlib.DataBinToXml(b)`  | CXCol v1 framed bytes → XML text |
+| `cxlib.DataBinToJson(b)` | CXCol v1 framed bytes → JSON text |
+| `cxlib.DataBinToYaml(b)` | CXCol v1 framed bytes → YAML text |
+| `cxlib.DataBinToToml(b)` | CXCol v1 framed bytes → TOML text |
 
-The framed bytes are CX Data Binary v1 — see `spec/data_bin.md` for
+The framed bytes are CX Data Binary v1 — see `spec/core/data-bin.md` for
 the wire format. Round-trip: `DataBinToX(XToDataBin(s)) == s` (after
 canonicalization).
 
 ## Apache Arrow C-Data interop (v0.6.0+, optional)
 
-Bridges CXDB chunked-tables to Apache Arrow `ArrowArrayStream` via
+Bridges CXCol chunked-tables to Apache Arrow `ArrowArrayStream` via
 `libcx_arrow` (`spec/abi.md §2.11`, capability bit `0x800000`). The
 bridge handles all 9 v0.6.0 column types (`int`, `i8`, `i16`, `i32`,
 `float`, `bool`, `string`, `date`, `bytes`); `datetime` / `decimal` /
@@ -542,7 +436,7 @@ if cxlib.ArrowAvailable() {                       // always true under -tags arr
     fmt.Printf("0x%x\n", cxlib.ArrowFeatures())   // 0x800000
 }
 
-// Forward — CXDB chunked-table → Arrow.
+// Forward — CXCol chunked-table → Arrow.
 payload, _ := cxlib.ToDataBinChunked(`[points :table[name:string score:int]
   alice 91
   bob 88]`)
@@ -553,7 +447,7 @@ for reader.Next() {
     // rec.Column(0).(*array.String), rec.Column(1).(*array.Int64), ...
 }
 
-// Inverse — build an Arrow record directly, drain into CXDB bytes.
+// Inverse — build an Arrow record directly, drain into CXCol bytes.
 schema := arrow.NewSchema([]arrow.Field{
     {Name: "name",  Type: arrow.BinaryTypes.String},
     {Name: "score", Type: arrow.PrimitiveTypes.Int64},
@@ -564,7 +458,7 @@ bld.Field(0).(*array.StringBuilder).AppendValues([]string{"alice", "bob"}, nil)
 bld.Field(1).(*array.Int64Builder).AppendValues([]int64{91, 88}, nil)
 rec := bld.NewRecord(); defer rec.Release()
 rdr, _ := array.NewRecordReader(schema, []arrow.Record{rec}); defer rdr.Release()
-out, _ := cxlib.ArrowImportToDataBin(rdr)          // unframed CXDB bytes
+out, _ := cxlib.ArrowImportToDataBin(rdr)          // unframed CXCol bytes
 ```
 
 Functions: `ArrowAvailable()`, `ArrowFeatures()`, `ArrowVersion()`,
@@ -574,10 +468,10 @@ Naming uses an `Arrow*` prefix on `package cxlib` because a Go
 package literally named `arrow` would shadow the apache/arrow
 import path.
 
-`ArrowExport` accepts UNFRAMED CXDB bytes — the shape
+`ArrowExport` accepts UNFRAMED CXCol bytes — the shape
 `ToDataBinChunked` returns. `ArrowImportToDataBin` returns
 UNFRAMED bytes. Bytes can be re-decoded with `ArrowExport` or any
-other CXDB consumer.
+other CXCol consumer.
 
 ## Tests
 
@@ -606,7 +500,7 @@ func main() {
     out, _ := cxlib.ToJson(`[user [id :i64 9007199254740993]]`)
     fmt.Println(out)
 
-    // Public Table API (ADR 0018) — 17-member surface
+    // Public Table API — 17-member surface
     src := `[users :table[name age:int]
   alice 30
   bob   25

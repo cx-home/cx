@@ -1,0 +1,59 @@
+; Vocabulary sidecar for the design-capture format.
+; This is the determinism contract: every atom (:name) a capture may use is
+; defined here with a single meaning, so an LLM resolves leaves against a CLOSED
+; set instead of paraphrasing. Add an atom here before using it in a capture.
+[design-capture-vocab version=1 for="mesh-strategy.capture.cx"
+
+  ; --- node types (the heads a capture is built from) ---
+  [node-types
+    [node :premise   means="an anchoring fact taken as given"]
+    [node :analogy   means="a likeness the author is reasoning from (not an assertion of identity)"]
+    [node :observation means="something the author notices is happening / true now"]
+    [node :vision     means="a desired or anticipated future direction"]
+    [node :landscape  means="external context the design must coexist with"]
+    [node :boundary   means="a stated scope line and any tension it creates"]
+    [node :question   means="an open decision the capture exists to resolve"]
+    [node :constraint means="a requirement any answer MUST satisfy"]]
+
+  ; --- qualifier atoms ---
+  [qualifiers
+    [atom :open-question   means="status: not yet decided"]
+    [atom :loose           means="confidence: suggestive, not established"]
+    [atom :likely          means="probability: more likely than not, unconfirmed"]
+    [atom :high            means="priority: address before lower-priority items"]
+    [atom :emerging        means="kind: a still-forming external standard space"]
+    [atom :per-instance    means="scope: chosen freshly per running instance"]]
+
+  ; --- domain atoms (the controlled value set) ---
+  [domain
+    ; client / medium types
+    [atom :web]  [atom :tui]  [atom :boat-tactile-dashboard]
+    ; XAP separation-of-concerns vocabulary
+    [atom :intent] [atom :event] [atom :client-impl-code]
+    [atom :separation-of-concerns]
+    ; ANTS feature vocabulary
+    [atom :service-registry]
+    [atom :composable-service-mesh]
+    [atom :pluggable-members] [atom :pluggable-transport]
+    [atom :service] [atom :resource] [atom :tool]
+    [atom :database] [atom :filestore] [atom :web-api]
+    [atom :object] [atom :rpc]
+    [atom :xap-current-direction]
+    ; composition / federation vocabulary
+    [atom :composition-of-apps]
+    [atom :possible-consolidation-or-shared-substrate]
+    [atom :component-other-than-xap] [atom :agent-orchestration]
+    ; mesh aspects
+    [atom :protocols] [atom :comm-orchestration-semantics]
+    [atom :messaging] [atom :auth] [atom :did]
+    ; emerging agentic standards (external)
+    [atom :mcp  expands="Model Context Protocol"]
+    [atom :a2a  expands="Agent-to-Agent"]
+    [atom :anp  expands="Agent Network Protocol"]
+    [atom :agentic]
+    ; the harmonization triad (constraint c-pipeline)
+    [atom :rule-based-determinism]
+    [atom :statistical-probability-models]
+    [atom :inference-llm-models]
+    ; selection axes
+    [atom :cx] [atom :xap] [atom :mesh] [atom :context]]]

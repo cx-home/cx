@@ -1,0 +1,423 @@
+:root {
+  --bg: #fafaf7;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  /* Brand palette — derived from cx-logo.svg cobalt #0039BA. */
+  --accent: #0039BA;
+  --accent-dark: #002A8C;
+  --accent-light: #3B66D3;
+  --border: #e6e6e0;
+
+  /* Dark code blocks for visual prominence */
+  --code-bg: #1f2430;
+  --code-fg: #e2e8f0;
+  --code-comment: #6b7280;
+  --code-keyword: #c4b5fd;
+  --code-string: #fde68a;
+  --code-border: #2a2f3d;
+  --code-label: #9aa3b0;
+
+  --side-bg: #f3f3ec;
+  --side-fg: #1a1a1a;
+  --side-muted: #6b7280;
+  --side-active: #0039BA;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+aside.sidebar {
+  background: var(--side-bg);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0.85rem 2rem;
+  font-size: 12.5px;
+  line-height: 1.4;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+aside.sidebar .brand {
+  margin: 0 0 1rem;
+  display: block;
+  text-decoration: none;
+  line-height: 0;
+}
+aside.sidebar .brand:hover { text-decoration: none; }
+aside.sidebar .brand-mark {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+aside.sidebar .brand-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--side-muted);
+  text-decoration: none;
+  margin: 0 0 0.8rem;
+}
+aside.sidebar .brand-sub:hover { color: var(--side-fg); text-decoration: none; }
+
+/* Site search — input under the CX brand, results dropdown that
+   overlays the nav groups when active. Idle state is one slim
+   input; active state expands to show ranked hits. */
+.side-search {
+  position: relative;
+  margin: 0 0 0.9rem;
+}
+#side-search-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.32rem 0.55rem;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: var(--side-fg);
+  background: var(--side-input-bg, rgba(255,255,255,0.06));
+  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+#side-search-input::placeholder { color: var(--side-muted); }
+#side-search-input:focus {
+  border-color: var(--accent, #5b8def);
+  background: var(--side-input-bg-focus, rgba(255,255,255,0.10));
+}
+.side-search-results {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--side-bg);
+  border: 1px solid var(--side-input-border, rgba(255,255,255,0.10));
+  border-radius: 4px;
+  font-size: 12px;
+}
+.side-search-results li { margin: 0; }
+.side-search-hit a {
+  display: block;
+  padding: 0.42rem 0.55rem;
+  color: var(--side-fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--side-input-border, rgba(255,255,255,0.06));
+}
+.side-search-hit:last-child a { border-bottom: 0; }
+.side-search-hit a:hover,
+.side-search-hit.is-active a {
+  background: var(--side-input-bg-focus, rgba(255,255,255,0.08));
+  color: var(--side-fg);
+  text-decoration: none;
+}
+.side-search-title {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.15rem;
+}
+.side-search-snip {
+  display: block;
+  font-size: 11px;
+  color: var(--side-muted);
+  line-height: 1.35;
+}
+.side-search-hit mark {
+  background: rgba(125, 211, 252, 0.30);
+  color: inherit;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+.side-search-empty,
+.side-search-error {
+  padding: 0.5rem 0.6rem;
+  color: var(--side-muted);
+  font-size: 11.5px;
+}
+.side-search-error { color: #f87171; }
+
+aside.sidebar section { margin-bottom: 0.9rem; }
+aside.sidebar h4 {
+  font-size: 10.5px;
+  font-weight: 700;
+  margin: 0.6rem 0 0.25rem;
+  color: var(--side-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+aside.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+aside.sidebar li { margin: 0; }
+aside.sidebar a {
+  display: block;
+  color: var(--side-fg);
+  text-decoration: none;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  margin-left: -0.4rem;
+}
+aside.sidebar a:hover {
+  background: rgba(0,0,0,0.05);
+  text-decoration: none;
+}
+aside.sidebar a.active {
+  background: var(--side-active);
+  color: white;
+  font-weight: 500;
+}
+
+main {
+  max-width: 760px;
+  padding: 1.5rem 2rem 3rem;
+  width: 100%;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.35rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 1.1rem 0 0.25rem;
+  color: var(--fg);
+}
+
+h3 {
+  font-size: 0.9rem;
+  margin: 0.7rem 0 0.2rem;
+  color: var(--fg);
+}
+
+main > p:first-of-type {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 0.8rem;
+}
+
+p {
+  margin: 0.3rem 0;
+}
+
+ul, ol {
+  margin: 0.3rem 0;
+  padding-left: 1.2rem;
+}
+li { margin: 0.05rem 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(31, 36, 48, 0.08);
+  padding: 0.08em 0.3em;
+  border-radius: 3px;
+  color: #2d2f36;
+}
+
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--code-border);
+  border-radius: 5px;
+  padding: 1.6rem 0.9rem 0.7rem;
+  margin: 0.45rem 0;
+  overflow-x: auto;
+  position: relative;
+  line-height: 1.45;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+}
+
+.lang-label {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: var(--code-label);
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+pre:hover .copy-btn,
+pre:focus-within .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--code-fg); border-color: var(--code-label); }
+.copy-btn.copied { color: #34d399; border-color: #34d399; }
+.copy-btn.failed { color: #f87171; border-color: #f87171; }
+
+/* Syntax highlighting palette — colours tuned against the dark
+   code-bg slate. Subtle: comments muted, strings warm yellow,
+   numbers/literals amber/violet, element names and directives in
+   cool blue/pink so CX bracket structure reads at a glance. */
+.hl-comment   { color: #7a8294; font-style: italic; }
+.hl-string    { color: #fbbf77; }
+.hl-number    { color: #f59e0b; }
+.hl-literal   { color: #c4b5fd; }
+.hl-keyword   { color: #f87171; }
+.hl-element   { color: #7dd3fc; }
+.hl-directive { color: #f9a8d4; }
+.hl-sigil     { color: #fcd34d; }
+.hl-type      { color: #a5b4fc; }
+.hl-attr      { color: #86efac; }
+.hl-fn        { color: #93c5fd; }
+
+table {
+  border-collapse: collapse;
+  margin: 0.6rem 0;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 100%;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: var(--side-bg);
+  font-weight: 600;
+}
+tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+td code {
+  font-size: 11.5px;
+  background: rgba(31, 36, 48, 0.06);
+}
+
+@media (max-width: 460px) {
+  body { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  main { padding: 1rem 1.25rem 2rem; }
+}
+
+/* ── Standard-library pages (generated from co-located [fn-doc]) ─────────── */
+
+/* module index on the Standard-library landing */
+.module-index {
+  list-style: none;
+  margin: 0.6rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 0.15rem 1.4rem;
+}
+.module-index li { margin: 0; line-height: 1.5; }
+.module-index a {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.module-index { color: var(--muted); font-size: 0.9rem; }
+
+/* one function entry on a module page */
+section.fn {
+  border-top: 1px solid var(--border);
+  padding-top: 0.55rem;
+  margin-top: 0.9rem;
+}
+section.fn > h3 {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  color: var(--accent-dark);
+  margin: 0 0 0.15rem;
+}
+p.fn-sig { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.9rem; }
+p.fn-sig code { font-size: 0.85em; color: #2d2f36; background: rgba(31,36,48,0.07); }
+
+.example { margin: 0.4rem 0 0.2rem; }
+
+/* the verified expected-output block — a light "result" panel, distinct from
+   the dark input-code block, with a → label */
+pre.sample-output {
+  background: #f1f5f1;
+  color: #1d3a24;
+  border: 1px solid #d3e3d6;
+  border-left: 3px solid #4a9d5b;
+  box-shadow: none;
+  padding: 1.5rem 0.9rem 0.6rem;
+}
+pre.sample-output code { color: inherit; }
+pre.sample-output::before {
+  content: "→ output";
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: #4a9d5b;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+/* grouped table of contents on the index page */
+.toc-groups section { margin-bottom: 0.8rem; }
+.toc-groups h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0.8rem 0 0.2rem;
+}
+.toc-groups ul { list-style: none; padding-left: 0; }

@@ -1,0 +1,28 @@
+[?lib 'cx-xap' :as xap]
+
+# D2: the `guestbook` capability -- state + one control. The slice "/guestbook"
+# is a journal fold; [do :sign] is the control the panel offers; the view lists
+# the signed names and renders the control. (working-panel :none -- a thin view.)
+[$xap:component guestbook
+  {bind: "/guestbook"
+   emits: ([do :sign [name :string]])
+   view: [?fn ($gs)
+           [panel
+             [list [?for [in $g $gs] [yield [item $g/name]]]]
+             [control :sign [label "Sign"] [input :name]]]]
+   working-panel: :none}]
+
+# One runtime; two clients (CLI + TUI) attach as peers. `run` wires a single-
+# tenant runtime (its journal + bus + authz + sessions). The cascade (xap.md
+# §2.1) auto-appends each committed [do :sign] to the journal, and "/guestbook"
+# is the live fold of those events (§14). Both clients ride the §16 event-feed
+# over the in-process bus -- no SSE, no socket -- so acting through a control on
+# EITHER re-materializes BOTH; shown here as two emits (one "from" each client).
+[?let [= $rt [$xap:run {tenant: "demo" components: (guestbook)}]]
+[?let [= $a [$xap:emit $rt [do :sign [name "Ada"]]]]   # signed from the CLI client
+[?let [= $b [$xap:emit $rt [do :sign [name "Lin"]]]]   # signed from the TUI client
+  # the surface both clients now display (Ada + Lin), as the view-tree value;
+  # context: $rt lets render read the live /guestbook fold (§16 shared state).
+  [$xap:render
+    [$xap:surface "guestbook" [$xap:panel guestbook {}]]
+    {accept: "application/cx" context: $rt}]]]]

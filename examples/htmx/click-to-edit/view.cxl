@@ -1,8 +1,0 @@
-[?for c :in //contact :return [div hx-target=this hx-swap=outerHTML
-  [div [label First Name] : [?=c/@first]]
-  [div [label Last Name]  : [?=c/@last]]
-  [div [label Email]      : [?=c/@email]]
-  [button hx-get=/contact/[?=c/@cid]/edit class=btn-primary
-    Click To Edit
-  ]
-]]

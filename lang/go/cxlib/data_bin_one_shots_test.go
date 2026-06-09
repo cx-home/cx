@@ -24,17 +24,17 @@ func reframe(payload []byte) []byte {
 
 // ── XML one-shot ─────────────────────────────────────────────────────────────
 
-func TestXmlToDataBinReturnsCXDBPayload(t *testing.T) {
+func TestXmlToDataBinReturnsCXColPayload(t *testing.T) {
 	payload, err := XmlToDataBin("<server><host>localhost</host><port>8080</port></server>")
 	if err != nil {
 		t.Fatalf("XmlToDataBin: %v", err)
 	}
-	if len(payload) < 4 {
+	if len(payload) < 5 {
 		t.Fatalf("expected non-empty payload, got %d bytes", len(payload))
 	}
-	// Magic check: payload starts with "CXDB"
-	if string(payload[:4]) != "CXDB" {
-		t.Fatalf("expected CXDB magic, got %q", string(payload[:4]))
+	// Magic check: payload starts with 5-byte "CXCol" magic.
+	if string(payload[:5]) != "CXCol" {
+		t.Fatalf("expected CXCol magic, got %q", string(payload[:5]))
 	}
 }
 
@@ -99,22 +99,6 @@ id = 1
 	}
 	if !strings.Contains(out, "alice") {
 		t.Fatalf("expected alice in toml output, got: %s", out)
-	}
-}
-
-// ── Markdown one-shot ────────────────────────────────────────────────────────
-
-func TestMdRoundTripThroughDataBin(t *testing.T) {
-	payload, err := MdToDataBin("# Title\n\nA paragraph.\n")
-	if err != nil {
-		t.Fatalf("MdToDataBin: %v", err)
-	}
-	out, err := DataBinToMd(reframe(payload))
-	if err != nil {
-		t.Fatalf("DataBinToMd: %v", err)
-	}
-	if !strings.Contains(out, "Title") {
-		t.Fatalf("expected Title in md output, got: %s", out)
 	}
 }
 

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>env — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a class="active" href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-env">
+  <h1>env</h1>
+  <p class="lede">Expose process-level metadata to CX code: environment variables, command-line arguments, and process identity.
+
+   Read, list, and typed-default environment variables; parse argv into declarative flags and positionals; query process metadata such as PID, executable path, cwd, hostname, and OS/arch; reach the standard stream handles; and terminate the process. The environment is read-only from CX code — there are no setters. This is a Tier B runtime surface and is necessarily impure.</p>
+  
+    <section id="fn-env-var" class="fn">
+      <h3>env:var</h3>
+      <p class="fn-sig"><code>[$env:var]  -> [or string [sequence string]]</code>  —  Read an environment variable, signaling absence (the empty sequence) when it is unset.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:var "CX_DEFINITELY_UNSET_VAR_XYZ_001"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-vars" class="fn">
+      <h3>env:vars</h3>
+      <p class="fn-sig"><code>[$env:vars]  -> map</code>  —  Return all environment variables as a name-to-value map.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[= [$env:vars] [$env:vars]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-has-var" class="fn">
+      <h3>env:has-var</h3>
+      <p class="fn-sig"><code>[$env:has-var]  -> bool</code>  —  Report whether a variable is set, distinguishing set-to-empty from unset.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:has-var "CX_DEFINITELY_UNSET_VAR_XYZ_002"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-var-or-default" class="fn">
+      <h3>env:var-or-default</h3>
+      <p class="fn-sig"><code>[$env:var-or-default]  -> string</code>  —  Read a variable, returning the supplied default when it is unset.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:var-or-default "CX_DEFINITELY_UNSET_VAR_XYZ_003" "fallback"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-var-int" class="fn">
+      <h3>env:var-int</h3>
+      <p class="fn-sig"><code>[$env:var-int]  -> int</code>  —  Read a variable as an int, returning the default if unset or raising if set-but-unparseable.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:var-int "CX_DEFINITELY_UNSET_VAR_XYZ_004" 8080]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-var-float" class="fn">
+      <h3>env:var-float</h3>
+      <p class="fn-sig"><code>[$env:var-float]  -> float</code>  —  Read a variable as a float, returning the default if unset or raising if set-but-unparseable.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:var-float "CX_DEFINITELY_UNSET_VAR_XYZ_005" 2.5]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-var-bool" class="fn">
+      <h3>env:var-bool</h3>
+      <p class="fn-sig"><code>[$env:var-bool]  -> bool</code>  —  Read a variable as a bool (true/false/1/0/yes/no/on/off), returning the default if unset.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:var-bool "CX_DEFINITELY_UNSET_VAR_XYZ_006" true]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-var-required" class="fn">
+      <h3>env:var-required</h3>
+      <p class="fn-sig"><code>[$env:var-required]  -> string</code>  —  Read a variable, raising a fault if it is unset.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:var-required "CX_DEFINITELY_UNSET_VAR_XYZ_007"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-argv" class="fn">
+      <h3>env:argv</h3>
+      <p class="fn-sig"><code>[$env:argv]  -> [sequence string]</code>  —  Return the raw command-line argument vector, with argv[0] as the executable path.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[= [$env:argv] [$env:argv]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-parse-args" class="fn">
+      <h3>env:parse-args</h3>
+      <p class="fn-sig"><code>[$env:parse-args]  -> element</code>  —  Parse argv against a spec into an [args] element of flags, positionals, and unparsed extras.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?let [= $spec [argspec [flag name=verbose short=v type=bool]]]
+  [$env-parse-args $spec ("prog", "--nope")]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER2501</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-flag" class="fn">
+      <h3>env:flag</h3>
+      <p class="fn-sig"><code>[$env:flag]  -> any</code>  —  Look up a parsed flag value by name from a parse-args result.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?let [= $spec [argspec [flag name=verbose short=v type=bool] [flag name=limit short=n type=int default=100]]]
+  [?let [= $parsed [$env-parse-args $spec ("prog", "--verbose", "--limit", "10")]]
+    [$env:flag $parsed "verbose"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-positional" class="fn">
+      <h3>env:positional</h3>
+      <p class="fn-sig"><code>[$env:positional]  -> string</code>  —  Look up a parsed positional argument by name from a parse-args result.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?let [= $spec [argspec [positional name=input-file type=string required=true]]]
+  [?let [= $parsed [$env-parse-args $spec ("prog", "data.cx")]]
+    [$env:positional $parsed "input-file"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'data.cx'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-remaining" class="fn">
+      <h3>env:remaining</h3>
+      <p class="fn-sig"><code>[$env:remaining]  -> [sequence string]</code>  —  Return the leftover arguments not consumed by declared flags or positionals.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?let [= $spec [argspec [positional name=first type=string]]]
+  [?let [= $parsed [$env-parse-args $spec ("prog", "a", "b", "c")]]
+    [$env:remaining $parsed]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>('b', 'c')</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-usage" class="fn">
+      <h3>env:usage</h3>
+      <p class="fn-sig"><code>[$env:usage]  -> string</code>  —  Render a human-readable usage string from an argument spec, for --help or parse failures.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[?let [= $spec [argspec [flag name=verbose short=v type=bool] [positional name=input-file type=string required=true]]]
+  [$strings:is-empty [$env:usage $spec]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-pid" class="fn">
+      <h3>env:pid</h3>
+      <p class="fn-sig"><code>[$env:pid]  -> int</code>  —  Return the current process ID.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[> [$env:pid] 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-ppid" class="fn">
+      <h3>env:ppid</h3>
+      <p class="fn-sig"><code>[$env:ppid]  -> int</code>  —  Return the parent process ID.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[>= [$env:ppid] 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-executable-path" class="fn">
+      <h3>env:executable-path</h3>
+      <p class="fn-sig"><code>[$env:executable-path]  -> string</code>  —  Return the filesystem path of the running executable.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[$strings:is-empty [$env:executable-path]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-cwd" class="fn">
+      <h3>env:cwd</h3>
+      <p class="fn-sig"><code>[$env:cwd]  -> string</code>  —  Return the current working directory.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[$strings:is-empty [$env:cwd]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-hostname" class="fn">
+      <h3>env:hostname</h3>
+      <p class="fn-sig"><code>[$env:hostname]  -> string</code>  —  Return the host machine name.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[$strings:is-empty [$env:hostname]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-username" class="fn">
+      <h3>env:username</h3>
+      <p class="fn-sig"><code>[$env:username]  -> string</code>  —  Return the name of the current user.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[$strings:is-empty [$env:username]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-os-name" class="fn">
+      <h3>env:os-name</h3>
+      <p class="fn-sig"><code>[$env:os-name]  -> string</code>  —  Return the operating-system name, such as linux or darwin.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[$strings:is-empty [$env:os-name]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-os-arch" class="fn">
+      <h3>env:os-arch</h3>
+      <p class="fn-sig"><code>[$env:os-arch]  -> string</code>  —  Return the CPU architecture, such as amd64 or arm64.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/strings']
+[$strings:is-empty [$env:os-arch]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-cpu-count" class="fn">
+      <h3>env:cpu-count</h3>
+      <p class="fn-sig"><code>[$env:cpu-count]  -> int</code>  —  Return the logical CPU count, including hyperthreads.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[> [$env:cpu-count] 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-stdin" class="fn">
+      <h3>env:stdin</h3>
+      <p class="fn-sig"><code>[$env:stdin]  -> element</code>  —  Return the standard-input stream handle, to pass to cx-stdlib/io for I/O.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:stdin]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[std-stream name=stdin fd=0]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-stdout" class="fn">
+      <h3>env:stdout</h3>
+      <p class="fn-sig"><code>[$env:stdout]  -> element</code>  —  Return the standard-output stream handle, to pass to cx-stdlib/io for I/O.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:stdout]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[std-stream name=stdout fd=1]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-stderr" class="fn">
+      <h3>env:stderr</h3>
+      <p class="fn-sig"><code>[$env:stderr]  -> element</code>  —  Return the standard-error stream handle, to pass to cx-stdlib/io for I/O.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:stderr]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[std-stream name=stderr fd=2]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-exit" class="fn">
+      <h3>env:exit</h3>
+      <p class="fn-sig"><code>[$env:exit]  -> null</code>  —  Flush pending I/O, run finalizers, and terminate the process with the given exit code.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:exit 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[subprocess-harness: child exits with status 0]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-env-abort" class="fn">
+      <h3>env:abort</h3>
+      <p class="fn-sig"><code>[$env:abort]  -> null</code>  —  Terminate the process immediately without flushing; use only for unrecoverable corruption.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/env']
+[$env:abort]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[subprocess-harness: child terminates via abort signal]</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

@@ -6,7 +6,7 @@ import (
 )
 
 func TestTableFromCxSimple(t *testing.T) {
-	src := `[users :table[name age:int]
+	src := `[users [table[name age::int]]
   alice 30
   bob 25
 ]`
@@ -191,7 +191,7 @@ func TestTableEqual(t *testing.T) {
 }
 
 func TestTableFromCxCollectionCells(t *testing.T) {
-	src := `[u :table[name tags]
+	src := `[u [table[name tags]]
   alice [admin, user,]
 ]`
 	tbl, err := TableFromCx(src)

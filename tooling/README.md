@@ -1,6 +1,6 @@
 # CX editor tooling
 
-Editor integration for `.cx` / `.cxs` / `.cxl` files. Since v0.7.0 the
+Editor integration for `.cx` / `.cxs` / `.cx` files. Since v0.7.0 the
 language server is built into the `cx` binary — `cx lsp` speaks
 JSON-RPC 2.0 over stdio. No npm toolchain, no separate server process.
 
@@ -11,9 +11,12 @@ tooling/
   syntax/          TextMate grammar (cx.tmLanguage.json) for VS Code
   neovim/          Standalone Vim-regex highlighter + lspconfig glue
   tree-sitter-cx/  tree-sitter grammar (structural highlighting +
-                   embedded-language injection; not tracked against
-                   the v0.7.0 directive surface — see ADR 0025)
-  binding_native_status.json   v0.7.0 parity dashboard
+                   embedded-language injection; tracks structured
+                   v0.8.0 directives (match / modify / def / lib /
+                   const) + opaque-fallback for the remaining 35
+                   directives per spec/code.md §4.1;
+                   `find` retired in v0.8.0 per code.md §5.5)
+  binding_native_status.json   per-binding parity dashboard
 ```
 
 ## Quick start
@@ -26,7 +29,7 @@ package manager, or build from source:
 ```sh
 make build-vcx                     # produces vcx/target/cx
 export PATH="$PWD/vcx/target:$PATH"
-cx --version                       # → cx 0.7.0
+cx --version                       # → cx 0.8.0
 ```
 
 ### Editor wiring
@@ -51,8 +54,8 @@ instructions.
 
 Cover the full subcommand list (`fmt`, `canonical`, `hash`, `eq`,
 `diff`, `lint`, `validate`, `table`, `demo`, `scaffold`, `eval`,
-`select`, `upgrade-config`, `lsp`), per-subcommand flags, and file
-extension completion for `.cx` / `.cxs` / `.cxl` / `.xml` / `.json` /
+`diagram`, `lock`, `lsp`), per-subcommand flags, and file
+extension completion for `.cx` / `.cxs` / `.cx` / `.xml` / `.json` /
 `.md` / `.yaml` / `.toml` / `.arrow` / `.parquet`.
 
 ## Capabilities (`cx lsp`)
@@ -73,21 +76,30 @@ extension completion for `.cx` / `.cxs` / `.cxl` / `.xml` / `.json` /
 | `textDocument/prepareRename` + `rename` (cross-document `#id`) | ✅ |
 | `textDocument/signatureHelp` (directive param hints) | ✅ |
 | `textDocument/codeAction` (well-formed empty list — Phase 2 wires recipes) | 🚧 |
-| `textDocument/inlayHint` (well-formed empty list — wired with cx-eval inference at v0.7.x) | 🚧 |
+| `textDocument/inlayHint` (well-formed empty list — wired with eval-program inference at v0.7.x) | 🚧 |
+| `textDocument/codeLens` ("▸ View diagram" above each §4.1 directive; invokes `cx.diagram` workspace command — gate 12 / Phase 4.5) | ✅ |
 
 Incremental sync, populated codeActions, populated inlayHints → v0.7.x.
 
-## Highlighting architecture (ADR 0025)
+## Highlighting architecture
 
 The canonical highlighters are **`cx lsp`** (LSP semanticTokens, for
 editors that speak LSP) and **TextMate** (for VS Code without LSP,
-GitHub web view, Shiki, docs sites). Both track the v0.7.0 directive
+GitHub web view, Shiki, docs sites). Both track the v0.8.0 directive
 surface directly — `cx lsp` via libcx parse, TextMate via the curated
-keyword set in [`syntax/cx.tmLanguage.json`](syntax/cx.tmLanguage.json).
+keyword set in [`syntax/cx.tmLanguage.json`](syntax/cx.tmLanguage.json)
+(40-directive registry per spec/code.md §4.1; `find` retired per
+code.md §5.5; multi-arm `[?match]` per code.md §8.2; `[?modify]` action
+vocabulary per code.md §8.10; `[?def]` / `[?lib]` / `[?const]` per
+code.md §12.2 / code.md §12.1/§12.3; reserved sigils `$_` / `$_position` / `$_last`
++ `(bind $name)` step annotation per code.md §5.5.2).
 
 The tree-sitter grammar at [`tree-sitter-cx/`](tree-sitter-cx/) is
-**structural-only**: it tokenises element names, attributes, scalars,
-code blocks, prose markup, and provides embedded-language injection
-for `[``` lang=X [\| … \|] ]` blocks. Eval-directive interiors render
-as opaque `(pi)` regions on purpose — see ADR 0025 for why we don't
-maintain a parallel CFG-shaped parser against libcx.
+**structural-only**: it tokenises element names, the `[$…]` call surface,
+reserved operator heads, attributes (incl. expression-valued), scalars,
+raw text / block content, and provides embedded-language injection into a
+block wrapped by a language-named element — `[python [\| … \|] ]`,
+`[json [# … #]]` — or an explicit `[code lang=X [\| … \|] ]`. (CX has no
+Markdown surface — lexicon [L83].) Eval-directive interiors render as
+opaque `(pi)` regions on purpose: one parser (libcx) is the single source
+of truth, so we don't maintain a parallel CFG-shaped parser.

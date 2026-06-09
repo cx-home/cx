@@ -266,11 +266,20 @@ fn map_to_element(name string, m map[string]json2.Any) !cx.Element {
 				}
 			}
 		} else {
-			attrs << cx.Attribute{
-				name:      k
-				value:     any_to_scalar_value(v)
-				data_type: scalar_value_type(v)
+			// v0.8.0 diet: Attribute.data_type lives on AttributeMeta;
+			// set via set_data_type() (lazy-allocates meta on first
+			// non-none set).
+			mut a := cx.Attribute{
+				name:  k
+				value: any_to_scalar_value(v)
 			}
+			// D3: the attribute data_type carrier is the type-NAME string
+			// (?string), not the ScalarType enum — bridge via opt_scalar_type_name
+			// (string_type → none, the unannotated default).
+			if tag_name := cx.opt_scalar_type_name(scalar_value_type(v)) {
+				a.set_data_type(tag_name)
+			}
+			attrs << a
 		}
 	}
 	return cx.Element{

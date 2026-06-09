@@ -4,48 +4,41 @@ import sys, os, json
 sys.path.insert(0, os.path.dirname(__file__))
 
 from cxlib.cx import (
-    to_cx, to_xml, to_ast, to_json, to_md,
-    xml_to_cx, xml_to_xml, xml_to_ast, xml_to_json, xml_to_md,
-    md_to_cx, md_to_xml, md_to_ast, md_to_json, md_to_md,
+    to_cx, to_xml, to_ast, to_json,
+    xml_to_cx, xml_to_xml, xml_to_ast, xml_to_json,
 )
 from cxlib.validate import validate, validate_with_defaults, Severity
 from cxlib.event_writer import EventWriter
+from cxlib import load_fixtures
 
 MULTIDOC_SEP = '\n---\n'
 
-# ── suite parser ─────────────────────────────────────────────────────────────
+# ── suite loader (CX-native) ──────────────────────────────────────────────────
+#
+# Reads conformance/*.cxd via cxlib.load_fixtures (the Python mirror of
+# vcx/cx/fixture_loader.v), replacing the bespoke `=== test:` / `--- key`
+# scanner. The runner keys into `t['sections'][name]` by presence exactly as
+# before. The loader returns byte-exact section bodies (one leading/trailing
+# newline stripped); _strip_blank_edges reproduces the former flush()
+# normalization (strip leading/trailing BLANK lines) so the bodies fed to the
+# runner are byte-identical to the old .txt path.
+
+def _strip_blank_edges(body):
+    lines = body.split('\n')
+    while lines and not lines[0].strip():  lines.pop(0)
+    while lines and not lines[-1].strip(): lines.pop()
+    return '\n'.join(lines)
+
 
 def parse_suite(path):
-    tests, cur, section, buf = [], None, None, []
-
-    def flush():
-        if cur is not None and section is not None:
-            lines = buf[:]
-            while lines and not lines[0].strip():  lines.pop(0)
-            while lines and not lines[-1].strip(): lines.pop()
-            cur['sections'][section] = '\n'.join(lines)
-        buf.clear()
-
-    with open(path) as f:
-        for raw in f:
-            raw = raw.rstrip('\n')
-            if raw.startswith('=== test:'):
-                flush()
-                if cur: tests.append(cur)
-                cur = {'name': raw[9:].strip(), 'sections': {}}
-                section = None
-            elif raw.startswith('level:') and cur:
-                cur['level'] = raw[6:].strip()
-            elif raw.startswith('tags:') and cur:
-                cur['tags'] = raw[5:].strip().split()
-            elif raw.startswith('--- ') and cur:
-                flush()
-                section = raw[4:].strip()
-            elif section and cur:
-                buf.append(raw)
-
-    flush()
-    if cur: tests.append(cur)
+    tests = []
+    for c in load_fixtures(path):
+        tests.append({
+            'name': c.name,
+            'level': c.level,
+            'tags': c.tags,
+            'sections': {k: _strip_blank_edges(v) for k, v in c.sections.items()},
+        })
     return tests
 
 # ── test runner ───────────────────────────────────────────────────────────────
@@ -241,15 +234,12 @@ def run_test(t):
 
     if   'in_cx'  in s: src, fmt = s['in_cx'],  'cx'
     elif 'in_xml' in s: src, fmt = s['in_xml'], 'xml'
-    elif 'in_md'  in s: src, fmt = s['in_md'],  'md'
     else: return failures  # no input — skip
 
     if fmt == 'xml':
-        emit_cx, emit_xml, emit_ast, emit_json, emit_md = xml_to_cx, xml_to_xml, xml_to_ast, xml_to_json, xml_to_md
-    elif fmt == 'md':
-        emit_cx, emit_xml, emit_ast, emit_json, emit_md = md_to_cx, md_to_xml, md_to_ast, md_to_json, md_to_md
+        emit_cx, emit_xml, emit_ast, emit_json = xml_to_cx, xml_to_xml, xml_to_ast, xml_to_json
     else:
-        emit_cx, emit_xml, emit_ast, emit_json, emit_md = to_cx, to_xml, to_ast, to_json, to_md
+        emit_cx, emit_xml, emit_ast, emit_json = to_cx, to_xml, to_ast, to_json
 
     def call(fn, text):
         try:
@@ -299,14 +289,6 @@ def run_test(t):
                     f'out_json mismatch\n  expected: {json.dumps(expected, indent=2)}\n  got:      {json.dumps(got, indent=2)}'
                 )
 
-    # ── out_md ────────────────────────────────────────────────────────────────
-    if 'out_md' in s:
-        out, err = call(emit_md, src)
-        if err:
-            failures.append(f'out_md parse error: {err}')
-        elif s['out_md'].strip() != out.strip():
-            failures.append(f'out_md mismatch\n  expected:\n{s["out_md"]}\n  got:\n{out}')
-
     return failures
 
 # ── suite runner ──────────────────────────────────────────────────────────────
@@ -335,12 +317,11 @@ def run_suite(path):
 if __name__ == '__main__':
     base = os.path.join(os.path.dirname(__file__), '..', '..', 'conformance')
     suites = sys.argv[1:] or [
-        os.path.join(base, 'core.txt'),
-        os.path.join(base, 'extended.txt'),
-        os.path.join(base, 'xml.txt'),
-        os.path.join(base, 'md.txt'),
-        os.path.join(base, 'schema_validate.txt'),
-        os.path.join(base, 'streaming_write.txt'),
+        os.path.join(base, 'core.cxd'),
+        os.path.join(base, 'extended.cxd'),
+        os.path.join(base, 'xml.cxd'),
+        os.path.join(base, 'schema_validate.cxd'),
+        os.path.join(base, 'streaming_write.cxd'),
     ]
     total_failed = sum(run_suite(s) for s in suites)
     sys.exit(1 if total_failed else 0)

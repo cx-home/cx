@@ -76,8 +76,7 @@ fn apply_defaults_writes_modified_doc() {
 [?cx schema-of server]
 
 [server
-  [body :elem]
-  [attr host :string :def='localhost']
+  [attr host::string [default 'localhost']]
 ]
 "#;
     let doc = "[server]";

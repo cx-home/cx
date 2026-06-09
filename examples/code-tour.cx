@@ -1,0 +1,310 @@
+[# code-tour.cx — comprehensive tour of the CX code language (v0.8.0).
+
+   Covers every core directive + every v0.8.0 surface:
+      1. [?fn]                 — lambdas (§8.6)
+      2. [?def]                — named module-scope functions (§12.2)
+      3. [?let]                — lexical binding (§8.5)
+      4. [?if]                 — boolean branch (§8.4)
+      5. [?for]                — comprehension + pattern-generator (§7)
+      6. [?match]              — multi-arm dispatch (§8.2)
+      7. [?match] on [err]     — error recovery (§9.3)
+      8. [?pipe]               — left-to-right composition (§8.9)
+      9. [?modify]             — pure-functional updates (§8.10)
+     10. CXPath                — first-class path-value, every axis (§5.5)
+     11. [expr] + $_           — general predicate (§5.5.2)
+     12. [?lib] + [?const]     — module loading + constants (§12)
+     13. Errors                — postfix ? and ! (§9.2)
+     14. Resilience            — [?retry], [?timeout], [?fallback] (§10.2)
+     15. Services              — [?http-service], [?http-client] (§10.3)
+     16. Concurrency           — [?channel], [?worker], [?select] (§10.4)
+     17. Async                 — [?async], [?await-all] (§10.5)
+
+   A CX module's value is its last expression, so the sections live in
+   one [tour …] element at the end; [?lib] / [?def] / [?const] are
+   module-top-level directives (§12) and are declared up here.
+
+   Run:
+     cx eval examples/code-tour.cx
+   Or against the sample document (document-driven sections light up):
+     cx eval examples/code-tour.cx --data=examples/code-tour.input.cx #]
+
+[# ─── Module imports — [?lib] (§12.1) ───
+   Three resolver shapes: bundled stdlib name ('cx-stdlib/strings'),
+   relative file ('./local-helpers.cx'), HTTPS pinned via cx.lock
+   ('github.com/example/regex-helpers'). as= rebinds the namespace
+   prefix; members are QNames called as [$prefix:local …]. #]
+
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/re' as=regex]
+
+[# ─── Module-scope functions — [?def] (§12.2, toured in §2/§8/§13) ───
+   Module-private by default; scope=public exports across modules.
+   `pure` (the default) opts into the §6.5.1 purity algebra; `impure`
+   marks I/O / non-deterministic bodies. [returns T] and glued ::T
+   parameter annotations are advisory (checked under --strict). #]
+
+[?def shout
+  scope=public
+  pure
+  [returns string]
+  ($msg::string)
+  [$upper [$concat $msg "!"]]]
+
+[?def _internal-helper ($n) [+ $n 1]]
+
+[?def add1 ($n) [+ $n 1]]
+
+[?def checked-div ($a $b) [/ $a $b]]
+
+[# ─── Module-level constants — [?const] (§12.3, toured in §12) ───
+   Immutable, eager by default; the `lazy` modifier defers to first read
+   (memoized). #]
+
+[?const GREETING "hello"]
+[?const PATTERN [$regex:compile "^[a-z]+"]]
+[?const lazy BIG-TABLE [?for [in $i [$range 1 1000]] [yield [row $i]]]]
+
+[tour version='0.8.0'
+
+  [# ─── §1. Lambdas via [?fn] ─── #]
+
+  [section title='lambdas'
+    [?let [= $double [?fn ($x) [* $x 2]]]
+      [example
+        [input (1, 2, 3)]
+        [output [?map (1, 2, 3) [using $double]]]]]]
+
+  [# ─── §2. Module-scope functions via [?def] (§12.2) ─── #]
+
+  [section title='module-scope functions ([?def])'
+    [example
+      [input "hello"]
+      [output [$shout "hello"]]]]
+
+  [# ─── §3. Lexical binding via [?let] ─── #]
+
+  [section title='lexical binding'
+    [?let [= $x 10] [= $y [* $x 3]]
+      [example
+        [bindings x=$x y=$y]
+        [result $y]]]]
+
+  [# ─── §4. Boolean branch via [?if] ─── #]
+
+  [section title='boolean branch'
+    [?for [in $n [$range 1 5]]
+      [yield [?if [> $n 2]
+               [then [classify $n 'big']]
+               [else [classify $n 'small']]]]]]
+
+  [# ─── §5. Comprehension via [?for] ─── #]
+
+  [section title='iteration (basic)'
+    [?for [in $n [$range 1 3]]
+      [yield [item index=$n]]]]
+
+  [section title='iteration (pattern-generator — §7.5, document-wide search)'
+    [# Document-wide search needs an input document; the [?match]
+       boundary (§9.3) turns the no-document err into a hint. #]
+    [?match [?for [user $u]
+              [yield [profile name=$u/@name email=$u/@email]]]
+      [case [err $e] [needs-input-doc run-with='--data=examples/code-tour.input.cx']]
+      [case $v $v]]]
+
+  [section title='iteration with [where] + [= …] + [order-by]'
+    [?for [in $u //user]
+      [where $u@active]
+      [= $parts [$strings:split $u/@email "@"]]
+      [= $domain $parts[2]]
+      [order-by $domain]
+      [yield [active-user name=$u/@name domain=$domain]]]]
+
+  [# ─── §6. Multi-arm match (§8.2) ─── #]
+
+  [section title='multi-arm match'
+    [?for [in $thing //inventory/*]
+      [yield [?match $thing
+        [case [user $_]    [labeled kind='user']]
+        [case [group $_]   [labeled kind='group']]
+        [case [service $_] [labeled kind='service']]
+        [when [= [$name $thing] 'mystery'] [labeled kind='mystery']]
+        [else [labeled kind='other' name=[$name $thing]]]]]]]
+
+  [section title='scalar literal match (§5.2 rule 8 — type-strict)'
+    [?for [in $code (200, 404, 500, 302)]
+      [yield [?match $code
+        [case 200 'ok']
+        [case 404 'not-found']
+        [case 500 'server-error']
+        [else     'unknown']]]]]
+
+  [# ─── §7. Error recovery via [?match] on the [err] channel (§9.3) ─── #]
+
+  [# The scrutinee slot is a §9.2-exempt boundary: an [err] from the
+     inline expression is captured as the match value, not propagated. #]
+  [section title='recover via [?match]'
+    [?match [/ 100 0]
+      [case [err @code=$c] [recovered from-err=$c]]
+      [case $v $v]]]
+
+  [section title='per-iteration recovery folds into the yield body'
+    [?for [in $n (1, 0, 2)]
+      [yield [?match [/ 100 $n]
+        [case [err $e] [skipped n=$n reason=$e/@code]]
+        [case $v $v]]]]]
+
+  [# ─── §8. Pipe composition (§8.9 — prefix-only, no infix |) ─── #]
+
+  [section title='pipe — bare-name stages; value appended as final arg'
+    [?pipe 5 add1 add1]]
+
+  [section title='pipe — lambda stages, [tap] for side effects, _ hole-form'
+    [?pipe //user
+      [?fn ($us) [?for [in $u $us] [where $u@active] [yield $u]]]
+      [?fn ($us) [?for [in $u $us] [yield $u/@name]]]
+      [tap [?fn ($names) [seen $names]]]  # value passes through unchanged
+      [$count _]]]
+
+  [# ─── §9. Pure-functional updates via [?modify] (§8.10) ─── #]
+
+  [section title='modify — [set] on a single attribute'
+    [?let [= $doc [db [user id=1 name='ada'] [user id=2 name='bob']]]
+      [?modify $doc //user[@id=1]/@name [set "Alice"]]]]
+
+  [section title='modify — [delete] with a predicate'
+    [?let [= $doc [db [user id=1] [user id=2 banned=true]]]
+      [?modify $doc //user[@banned=true] [delete]]]]
+
+  [section title='modify — [using] a [?fn] lambda'
+    [?let [= $doc [db [user id=1 name='ada'] [user id=2 name='bob']]]
+      [?modify $doc //user
+        [using [?fn ($u) [user id=$u/@id [$upper $u/@name]]]]]]]
+
+  [section title='modify — pipeline of updates'
+    [?let [= $doc [db [user id=1 status='new']
+                      [user id=2 status='new' banned=true]
+                      [section id='intro' [para "Hello."]]]]
+      [?pipe $doc
+        [?modify _ //user/@status [set "verified"]]
+        [?modify _ //user[@banned=true] [delete]]
+        [?modify _ //section[@id="intro"] [append [para "Added."]]]]]]
+
+  [# ─── §10. CXPath value kind (§5.5) ─── #]
+
+  [section title='cxpath — every axis worked'
+    [examples
+      [self      //user[1]/self::user]
+      [child     //section/child::p]
+      [descendant //db/descendant::user]
+      [parent    //user[1]/parent::*]
+      [ancestor  //member[1]/ancestor::team]
+      [ancestor-or-self //user[1]/ancestor-or-self::*]
+      [following-sibling //user[1]/following-sibling::user]
+      [preceding-sibling //user[2]/preceding-sibling::user]
+      [following //user[1]/following::team]
+      [preceding //team/preceding::user]
+      [attribute //user[1]/attribute::*]]]
+
+  [# ─── §11. [expr] general predicate + $_ context (§5.5.2) ─── #]
+
+  [section title='[expr] — atomic-predicate sugar (terse form)'
+    [# Terse  [@active=true]  desugars to the general PredicateExpr
+       ($_@active = true). Both forms are equivalent at parse time. #]
+    //user[@active=true]]
+
+  [section title='[expr] — general predicate with $_ context binding'
+    [# Inside any predicate, $_ is the candidate node.
+       Use the general form when sugar can't express the test. #]
+    //user[$_@active and $_@verified]]
+
+  [section title='[expr] — nested predicate, $_ shadows innermost'
+    [# Outer $_ is each team; inner $_ rebinds to each member. #]
+    //team[count($_/member[$_/role = "lead"]) >= 1]]
+
+  [section title='[expr] — $_position / $_last (1-based)'
+    [examples
+      [first-p   //section/p[$_position = 1]]
+      [last-p    //section/p[$_position = $_last]]
+      [rows-2-to-10 //row[$_position >= 2 and $_position <= 10]]]]
+
+  [section title='[expr] — outer-scope reference across steps'
+    [# $t carries the team into the member test after $_ has moved on.
+       The step-annotation spelling of the same query is
+       //team (bind $t) / member[$_/role = "lead" and count($t/member) >= 3]
+       (§5.5.2); the two-generator [?for] below is the grounded form. #]
+    [?for [in $t //team]
+      [in $m $t/member]
+      [where [and [= $m/role "lead"] [>= [$count $t/member] 3]]]
+      [yield $m]]]
+
+  [# ─── §12. Modules via [?lib] + [?const] (§12) ─── #]
+
+  [# The [?lib] imports and [?const] declarations are module-top-level
+     directives, declared at the top of this file. #]
+  [section title='[?const] — eager (default) and lazy'
+    [example
+      [eager [$concat GREETING ", world"]]
+      [pattern-matches [$count [$regex:find-all PATTERN "ab cd"]]]
+      [lazy-not-yet-touched :ok]]]
+
+  [# ─── §13. Errors as values (§9.2) ─── #]
+
+  [section title='postfix ? — unwrap or propagate the original err'
+    [?match [$checked-div 100 0]?
+      [case [err @code=$c] [err-handled code=$c]]
+      [case $v $v]]]
+
+  [section title='postfix ! — escalate to CX_PANIC (catchable value-form)'
+    [?match [$checked-div 100 0]!
+      [case [err @code=$c] [escalated-and-caught code=$c]]
+      [case $v $v]]]
+
+  [# ─── §14. Resilience directives (§10.2) ─── #]
+
+  [section title='retry with exponential backoff'
+    [?retry max=3 backoff=exponential delay=1ms
+      [$checked-div 100 0]]]
+
+  [section title='timeout + fallback composition ($err bound in recover-with)'
+    [?fallback
+      [?timeout 50ms [$checked-div 100 0]]
+      [recover-with [cached-response stale=true reason=$err/@code]]]]
+
+  [# ─── §15. Services (§10.3) ─── #]
+
+  [section title='http service + client round-trip'
+    [?let [= $svc [?http-service on=http port=18099 name="ping"
+                    [resource [get "/ping"]
+                      [response status=200 [body "pong"]]]]]
+          [= $client [?http-client target="cx-test://ping"]]
+      [?let [= $reply [$get $client "/ping"]]
+        ([?stop $svc], $reply)]]]
+
+  [# ─── §16. Concurrency (§10.4) ─── #]
+
+  [section title='channel + worker pattern'
+    [?let [= $work [?channel name=work buffer=16]]
+      [?let [= $producer [?worker name="producer"
+                           [?for [in $i [$range 1 10]] [yield [?send $i to=$work]]]]]
+            [= $consumer [?worker name="consumer"
+                           [?for [in $i [$range 1 10]]
+                             [yield [processed [?receive from=$work]]]]]]
+        [joined produced=[$count [?wait-for worker=$producer]]
+                consumed=[$count [?wait-for worker=$consumer]]]]]]
+
+  [section title='select — first ready case wins'
+    [?let [= $inbox [?channel name=inbox buffer=4]]
+      [?let [= $sent [?send "hi" to=$inbox]]
+        [?select
+          [case [from $inbox $msg] [got $msg]]
+          [case [timeout 50ms] [no-message]]]]]]
+
+  [# ─── §17. Async + await (§10.5) ─── #]
+
+  [section title='async + await-all'
+    [?let [= $f1 [?async [fetched src='a']]]
+      [?let [= $f2 [?async [fetched src='b']]]
+        [?let [= $f3 [?async [fetched src='c']]]
+          [gathered [?await-all ($f1, $f2, $f3)]]]]]]
+
+]

@@ -1,0 +1,1 @@
+[?modify $doc //user/@name [set-attr status "active"]]

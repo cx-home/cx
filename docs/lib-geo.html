@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>geo — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a class="active" href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-geo">
+  <h1>geo</h1>
+  <p class="lede">Coordinate primitives without a new scalar kind — geometries are ordinary CXDM elements. Covers construction of points, bounding boxes, and polygons; distance and bearing (Haversine by default, high-precision Vincenty on demand); bounding-box and polygon operations including area, centroid, and point-in-polygon; WKT and GeoJSON format I/O; and longitude/latitude normalization. All coordinates are WGS84 (EPSG:4326) latitude and longitude in decimal degrees, with no reprojection or alternate coordinate systems.</p>
+  
+    <section id="fn-geo-point" class="fn">
+      <h3>geo:point</h3>
+      <p class="fn-sig"><code>[$geo:point]  -> element</code>  —  Construct a point from latitude and longitude; wraps out-of-range longitude and rejects bad latitude.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $p [$geo:point 37.7749 -122.4194]] $p/lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7749</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox" class="fn">
+      <h3>geo:bbox</h3>
+      <p class="fn-sig"><code>[$geo:bbox]  -> element</code>  —  Construct the minimum bounding box enclosing a sequence of points.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $bb [$geo:bbox ([$geo:point 37.7 -122.5], [$geo:point 37.85 -122.35])]] $bb/min-lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon" class="fn">
+      <h3>geo:polygon</h3>
+      <p class="fn-sig"><code>[$geo:polygon]  -> element</code>  —  Construct a polygon from an outer ring of points, auto-closing the ring if open.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:polygon-is-closed [$geo:polygon ([$geo:point 37.7 -122.5], [$geo:point 37.7 -122.4], [$geo:point 37.8 -122.4], [$geo:point 37.8 -122.5])]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon-with-holes" class="fn">
+      <h3>geo:polygon-with-holes</h3>
+      <p class="fn-sig"><code>[$geo:polygon-with-holes]  -> element</code>  —  Construct a polygon from an outer ring plus interior hole rings.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:polygon-is-closed [$geo:polygon-with-holes ([$geo:point 0.0 0.0], [$geo:point 0.0 10.0], [$geo:point 10.0 10.0], [$geo:point 10.0 0.0], [$geo:point 0.0 0.0]) (([$geo:point 2.0 2.0], [$geo:point 2.0 4.0], [$geo:point 4.0 4.0], [$geo:point 4.0 2.0], [$geo:point 2.0 2.0]))]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-distance" class="fn">
+      <h3>geo:distance</h3>
+      <p class="fn-sig"><code>[$geo:distance]  -> float</code>  —  Great-circle distance between two points by the Haversine formula, in the given unit.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:distance [$geo:point 40.7128 -74.0060] [$geo:point 33.9416 -118.4085] "km"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3944.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-distance-vincenty" class="fn">
+      <h3>geo:distance-vincenty</h3>
+      <p class="fn-sig"><code>[$geo:distance-vincenty]  -> float</code>  —  High-precision ellipsoidal distance by Vincenty; may fail to converge for near-antipodal points.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:distance-vincenty [$geo:point 40.7128 -74.0060] [$geo:point 33.9416 -118.4085] "km"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3960.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bearing" class="fn">
+      <h3>geo:bearing</h3>
+      <p class="fn-sig"><code>[$geo:bearing]  -> float</code>  —  Initial bearing from one point to another in degrees, where 0 is north.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:bearing [$geo:point 0.0 0.0] [$geo:point 0.0 1.0]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>90.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-destination" class="fn">
+      <h3>geo:destination</h3>
+      <p class="fn-sig"><code>[$geo:destination]  -> element</code>  —  Compute the endpoint reached from an origin along a bearing for a given distance.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $d [$geo:destination [$geo:point 0.0 0.0] 0.0 100.0 "km"]] $d/lon]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox-of" class="fn">
+      <h3>geo:bbox-of</h3>
+      <p class="fn-sig"><code>[$geo:bbox-of]  -> element</code>  —  Compute the minimum bounding box covering a sequence of points.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $bb [$geo:bbox-of ([$geo:point 37.7 -122.5], [$geo:point 37.85 -122.35], [$geo:point 37.8 -122.4])]] $bb/min-lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox-of-polygon" class="fn">
+      <h3>geo:bbox-of-polygon</h3>
+      <p class="fn-sig"><code>[$geo:bbox-of-polygon]  -> element</code>  —  Compute the bounding box enclosing a polygon.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $bb [$geo:bbox-of-polygon [$geo:polygon ([$geo:point 37.7 -122.5], [$geo:point 37.7 -122.4], [$geo:point 37.8 -122.4], [$geo:point 37.8 -122.5])]]] $bb/min-lon]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>-122.5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-within-bbox" class="fn">
+      <h3>geo:within-bbox</h3>
+      <p class="fn-sig"><code>[$geo:within-bbox]  -> bool</code>  —  Report whether a point lies inside a bounding box, handling antimeridian crossing.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:within-bbox [$geo:point 37.75 -122.45] [$geo:bbox ([$geo:point 37.7 -122.5], [$geo:point 37.85 -122.35])]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox-intersects" class="fn">
+      <h3>geo:bbox-intersects</h3>
+      <p class="fn-sig"><code>[$geo:bbox-intersects]  -> bool</code>  —  Report whether two bounding boxes overlap.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:bbox-intersects [$geo:bbox ([$geo:point 0.0 0.0], [$geo:point 10.0 10.0])] [$geo:bbox ([$geo:point 5.0 5.0], [$geo:point 15.0 15.0])]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox-area" class="fn">
+      <h3>geo:bbox-area</h3>
+      <p class="fn-sig"><code>[$geo:bbox-area]  -> float</code>  —  Compute the area of a bounding box in the given unit.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:bbox-area [$geo:bbox ([$geo:point 5.0 5.0], [$geo:point 5.0 5.0])] "km2"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox-expand" class="fn">
+      <h3>geo:bbox-expand</h3>
+      <p class="fn-sig"><code>[$geo:bbox-expand]  -> element</code>  —  Grow a bounding box outward by a distance in meters on every side.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $bb [$geo:bbox-expand [$geo:bbox ([$geo:point 37.7 -122.5], [$geo:point 37.85 -122.35])] 0.0]] $bb/min-lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-bbox-center" class="fn">
+      <h3>geo:bbox-center</h3>
+      <p class="fn-sig"><code>[$geo:bbox-center]  -> element</code>  —  Compute the center point of a bounding box.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $c [$geo:bbox-center [$geo:bbox ([$geo:point 0.0 0.0], [$geo:point 10.0 20.0])]]] $c/lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon-area" class="fn">
+      <h3>geo:polygon-area</h3>
+      <p class="fn-sig"><code>[$geo:polygon-area]  -> float</code>  —  Compute geodesic polygon area on the WGS84 ellipsoid in the given unit; requires a valid polygon.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:polygon-area [$geo:polygon ([$geo:point 0.0 0.0], [$geo:point 0.0 1.0], [$geo:point 0.0 2.0], [$geo:point 0.0 0.0])] "km2"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER3602</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon-perimeter" class="fn">
+      <h3>geo:polygon-perimeter</h3>
+      <p class="fn-sig"><code>[$geo:polygon-perimeter]  -> float</code>  —  Compute the perimeter length of a polygon's outer ring in the given unit.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:polygon-perimeter [$geo:polygon ([$geo:point 5.0 5.0], [$geo:point 5.0 5.0], [$geo:point 5.0 5.0], [$geo:point 5.0 5.0])] "km"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon-centroid" class="fn">
+      <h3>geo:polygon-centroid</h3>
+      <p class="fn-sig"><code>[$geo:polygon-centroid]  -> element</code>  —  Compute the centroid point of a polygon.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $c [$geo:polygon-centroid [$geo:polygon ([$geo:point 0.0 0.0], [$geo:point 0.0 10.0], [$geo:point 10.0 10.0], [$geo:point 10.0 0.0], [$geo:point 0.0 0.0])]]] $c/lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-point-in-polygon" class="fn">
+      <h3>geo:point-in-polygon</h3>
+      <p class="fn-sig"><code>[$geo:point-in-polygon]  -> bool</code>  —  Report whether a point lies inside a polygon by ray-casting, accounting for holes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:point-in-polygon [$geo:point 5.0 5.0] [$geo:polygon ([$geo:point 0.0 0.0], [$geo:point 0.0 10.0], [$geo:point 10.0 10.0], [$geo:point 10.0 0.0], [$geo:point 0.0 0.0])]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon-is-valid" class="fn">
+      <h3>geo:polygon-is-valid</h3>
+      <p class="fn-sig"><code>[$geo:polygon-is-valid]  -> bool</code>  —  Report whether a polygon passes the full OGC Simple Features validity check.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:polygon-is-valid [$geo:polygon ([$geo:point 0.0 0.0], [$geo:point 0.0 10.0], [$geo:point 10.0 10.0], [$geo:point 10.0 0.0], [$geo:point 0.0 0.0])]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-polygon-is-closed" class="fn">
+      <h3>geo:polygon-is-closed</h3>
+      <p class="fn-sig"><code>[$geo:polygon-is-closed]  -> bool</code>  —  Report whether a polygon's rings are closed (each ring's first point equals its last).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:polygon-is-closed [$geo:polygon ([$geo:point 37.7 -122.5], [$geo:point 37.7 -122.4], [$geo:point 37.8 -122.4], [$geo:point 37.8 -122.5])]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-normalize-lat" class="fn">
+      <h3>geo:normalize-lat</h3>
+      <p class="fn-sig"><code>[$geo:normalize-lat]  -> float</code>  —  Clamp a latitude into [-90, 90] — an explicit, opt-in lossy clamp for raw numeric pipelines.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:normalize-lat 95.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>90.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-normalize-lon" class="fn">
+      <h3>geo:normalize-lon</h3>
+      <p class="fn-sig"><code>[$geo:normalize-lon]  -> float</code>  —  Wrap a longitude losslessly into [-180, 180], since longitude is cyclic.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:normalize-lon 190.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>-170.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-normalize-point" class="fn">
+      <h3>geo:normalize-point</h3>
+      <p class="fn-sig"><code>[$geo:normalize-point]  -> element</code>  —  Normalize a point's coordinates — wrap longitude and clamp latitude into range.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $p [$geo:normalize-point [$geo:point 45.0 190.0]]] $p/lon]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>-170.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-normalize-bbox" class="fn">
+      <h3>geo:normalize-bbox</h3>
+      <p class="fn-sig"><code>[$geo:normalize-bbox]  -> element</code>  —  Normalize a bounding box's coordinates into valid longitude and latitude ranges.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $bb [$geo:normalize-bbox [$geo:bbox ([$geo:point 0.0 170.0], [$geo:point 10.0 190.0])]]] $bb/max-lon]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>-170.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-is-valid-lat" class="fn">
+      <h3>geo:is-valid-lat</h3>
+      <p class="fn-sig"><code>[$geo:is-valid-lat]  -> bool</code>  —  Report whether a latitude lies within [-90, 90].</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:is-valid-lat 45.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-is-valid-lon" class="fn">
+      <h3>geo:is-valid-lon</h3>
+      <p class="fn-sig"><code>[$geo:is-valid-lon]  -> bool</code>  —  Report whether a longitude lies within [-180, 180].</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:is-valid-lon 180.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-parse-wkt" class="fn">
+      <h3>geo:parse-wkt</h3>
+      <p class="fn-sig"><code>[$geo:parse-wkt]  -> element</code>  —  Parse an OGC Well-Known Text string into a geometry element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $p [$geo:parse-wkt "POINT(-122.4194 37.7749)"]] $p/lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7749</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-format-wkt" class="fn">
+      <h3>geo:format-wkt</h3>
+      <p class="fn-sig"><code>[$geo:format-wkt]  -> string</code>  —  Render a geometry element as an OGC Well-Known Text string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[$geo:format-wkt [$geo:point 37.7749 -122.4194]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'POINT(-122.4194 37.7749)'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-parse-geojson" class="fn">
+      <h3>geo:parse-geojson</h3>
+      <p class="fn-sig"><code>[$geo:parse-geojson]  -> element</code>  —  Parse an RFC 7946 GeoJSON string into a geometry or feature element.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $p [$geo:parse-geojson "{\"type\":\"Point\",\"coordinates\":[-122.4194,37.7749]}"]] $p/lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7749</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-geo-format-geojson" class="fn">
+      <h3>geo:format-geojson</h3>
+      <p class="fn-sig"><code>[$geo:format-geojson]  -> string</code>  —  Render a geometry or feature element as an RFC 7946 GeoJSON string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/geo']
+[?let [= $p [$geo:parse-geojson [$geo:format-geojson [$geo:point 37.7749 -122.4194]]]] $p/lat]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>37.7749</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

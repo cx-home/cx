@@ -1,4 +1,4 @@
-"""Tests for namespace resolution per ADR 0002 / spec/namespaces.md.
+"""Tests for namespace resolution per spec/namespaces.md.
 
 Mirrors the V core conformance/namespaces.txt cases for the Python binding
 accessor surface (`Element.local_name()` / `Element.namespace_uri()` /
@@ -9,7 +9,7 @@ points (`parse`, `parse_xml`, `parse_json`, etc.) call automatically.
 from cxlib import parse
 from cxlib.ast import (
     Element, Attr, resolve_namespaces,
-    XML_NAMESPACE_URI, CX_NAMESPACE_URI,
+    XML_NAMESPACE_URI,
 )
 
 
@@ -61,11 +61,15 @@ def test_reserved_xml_prefix_resolves_without_declaration():
     assert base.local_name() == "base"
 
 
-def test_reserved_cx_prefix_resolves_without_declaration():
-    doc = parse("[doc [cx:meta key=value]]")
-    meta = _root(doc).get("cx:meta")
-    assert meta.namespace_uri() == CX_NAMESPACE_URI
-    assert meta.local_name() == "meta"
+def test_reserved_cx_prefix_rejected_when_authored():
+    # The `cx:` prefix is reserved for the serializer's canonical image and
+    # may not be authored in source (E210). Parsing must reject it.
+    raised = False
+    try:
+        parse("[doc [cx:meta key=value]]")
+    except Exception:
+        raised = True
+    assert raised, "expected authored cx: prefix to be rejected (E210)"
 
 
 def test_undeclared_prefix_passes_through_unbound():
@@ -129,7 +133,7 @@ if __name__ == "__main__":
         test_prefixed_element_resolves,
         test_prefixed_attribute_resolves,
         test_reserved_xml_prefix_resolves_without_declaration,
-        test_reserved_cx_prefix_resolves_without_declaration,
+        test_reserved_cx_prefix_rejected_when_authored,
         test_undeclared_prefix_passes_through_unbound,
         test_redeclaration_in_subtree_overrides_default,
         test_xmlns_undeclaration_with_empty_uri,

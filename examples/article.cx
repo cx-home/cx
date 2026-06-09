@@ -7,7 +7,7 @@
     [title CX Language Tour]
     [author J. Smith]
     [published 2026-04-19]
-    [tags :string[] cx markup tutorial beginner]
+    [tags ::string[] cx markup tutorial beginner]
   ]
 
   [body
@@ -25,7 +25,7 @@
     [p
       Note that [code 8080] auto-types as an [em integer]; [code :u16]
       pins it to the 0..65535 range &mdash; out-of-range values fail at
-      parse time. [code +tls] is shorthand for [code tls=true].
+      parse time. [code '+tls'] is shorthand for [code tls=true].
     ]
 
     [- entity refs and character references ]

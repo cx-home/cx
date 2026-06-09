@@ -2,18 +2,48 @@
 
 Syntax highlighting + LSP (diagnostics, hover, completion, goto,
 references, rename, formatting, outline, folding, smart selection,
-signature help) + snippets for `.cx` / `.cxs` / `.cxl` files.
+signature help) + snippets for `.cx` / `.cxs` / `.cx` files.
+
+## v0.8.0 highlights
+
+- **CXPath as a value kind** (code.md §5.5) — `//user[@active=true]`
+  highlights as a path; `name`, `count`, `matches`, etc. read as
+  XPath 3.1 functions; the 13 standard axes (`ancestor::`,
+  `descendant-or-self::`, etc.) are first-class.
+- **Multi-arm `[?match]`** (code.md §8.2) — `[case PATTERN [where G]?
+  BODY]`, `[when G BODY]`, `[else BODY]` clause-children tokenise as
+  control keywords; the single-arm form's `[yield E]` clause too.
+- **`[?modify]` pure-functional updates** (code.md §8.10) — the 11
+  action clause-children (`[set]`, `[delete]`, `[using]`, `[rename]`,
+  `[set-attr]`, `[delete-attr]`, `[append]`, `[prepend]`,
+  `[insert-before]`, `[insert-after]`, `[replace]`) all colour as
+  control keywords.
+- **Atom literals** (code.md §3.6) — `:ok` / `:not-found` /
+  `:running` highlight as `constant.other.atom`. Reserved names
+  `:true` / `:false` / `:null` highlight as
+  `constant.language.reserved` so the lex-time rejection is
+  visually obvious.
+- **`[?def]` module functions** (code.md §12.2) — `scope=public`,
+  `[returns T]`, bare `pure` / `impure` modifiers, and per-parameter
+  glued `$x::T` annotations all read as modifiers + type
+  expressions. Type kinds (`string`, `int`, `atom`, `sequence`, …)
+  and capitalized element-type names (`Person`, `Token`) are
+  distinguished.
+- **`[?const]` + `[?lib]` module loading** (code.md §12.1/§12.3) —
+  bare `lazy` / `in-memory`, `scope=public|private`, `as=alias`,
+  `only=(…)`, `version='…'` modifiers highlight throughout. Snippets
+  cover file-path, registered-name, and HTTPS resolver forms.
 
 ## Requirements
 
 - VS Code ≥ 1.75
-- `cx` binary v0.7.0+ on `$PATH` (or configure `cx.serverPath`)
+- `cx` binary v0.8.0+ on `$PATH` (or configure `cx.serverPath`)
 
 Install `cx`:
 
 ```sh
-brew install cx-home/tap/cx                 # macOS / Linuxbrew
-cargo install --git https://github.com/cx-home/cx cx-cli   # from source
+brew install cx-home/tap/cx                              # macOS / Linuxbrew
+cargo install --git https://github.com/cx-home/cx cx-cli # from source
 ```
 
 ## What you get
@@ -29,11 +59,31 @@ cargo install --git https://github.com/cx-home/cx cx-cli   # from source
 | Rename symbol (`F2`) | LSP `textDocument/rename` (cross-document `#id`) |
 | Outline view | LSP `textDocument/documentSymbol` |
 | Code folding | LSP `textDocument/foldingRange` |
-| Smart selection | LSP `textDocument/selectionRange` (alt-shift-→) |
+| Smart selection | LSP `textDocument/selectionRange` (alt-shift-Right) |
 | Signature help | LSP `textDocument/signatureHelp` (directive params) |
 | Formatting | LSP `textDocument/formatting` (wraps `cx fmt`) |
 | Semantic colouring | LSP `textDocument/semanticTokens/full` |
-| Snippets | `snippets/cx.json` (`?if`, `?for`, `?fn`, `?match`, `?try`, …) |
+| Snippets | `snippets/cx.json` (`?if`, `?for`, `?def`, `?const`, `?lib`, `?match-multi`, `?modify`, `atom`, `path`, …) |
+
+## Snippet cheat sheet
+
+| Prefix | Expansion |
+| --- | --- |
+| `?if` / `?for` / `?for-array` / `?for-map` / `?let` / `?fn` | conditional / comprehensions / binding |
+| `?match` | single-arm form — bare pattern + `[yield E]` (raises on miss) |
+| `?match-multi` / `?match-when` / `?match-where` | multi-arm `[case]` / `[when]` / guard arms (code.md §8.2) |
+| `?match-err` / `?else` | errors-as-values recovery + coalesce (code.md §9.3/§8.13) |
+| `?modify` / `?modify-delete` / `?modify-using` / `?modify-append` | pure-functional updates (code.md §8.10) |
+| `?def` / `?defp` / `?def-pure` / `?def-impure` / `?def-rest` | module functions (code.md §12.2) |
+| `?const` / `?const-pub` / `?lconst` | module constants (code.md §12.3) |
+| `?lib` / `?libas` / `?libonly` / `?lib-file` / `?lib-https` | module imports (code.md §12.1) |
+| `?pipe` / `?pipe-tap` | prefix pipeline + `[tap]` (code.md §8.9) |
+| `?str` | compile-time string interpolation (code.md §8.12) |
+| `atom` | `:NAME` atom literal |
+| `path` / `path-child` / `path-axis` / `path-pred` / `path-bind` | CXPath surfaces |
+| `type-or` / `type-seq` | `[or T1 T2]` and `[sequence T]` |
+| `elid` / `elanchor` / `table` | elements with `#id` / `&anchor` / typed table |
+| `code` | embedded-language code block |
 
 ## Settings
 
@@ -57,8 +107,8 @@ cargo install --git https://github.com/cx-home/cx cx-cli   # from source
 cd tooling/vscode
 npm install
 npm run build
-npm run package      # produces cx-language-0.7.0.vsix
-code --install-extension cx-language-0.7.0.vsix
+npm run package      # produces cx-language-0.8.0.vsix
+code --install-extension cx-language-0.8.0.vsix
 ```
 
 The build is intentionally vendored-free — the only dependency that
@@ -68,4 +118,4 @@ The language server itself is the `cx` binary, installed separately.
 ## Marketplace publication
 
 This package is set up for publication under the `cx-home` publisher
-ID. Per-tag publication runs from the v0.7.x release workflow.
+ID. Per-tag publication runs from the v0.8.x release workflow.

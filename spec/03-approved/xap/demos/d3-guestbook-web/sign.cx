@@ -1,0 +1,12 @@
+# D3 terminal client — invoke the `sign` control over HTTP (the SAME control the
+# web client fires, xap.md §2.5/§4.4 agent-parity). A SEPARATE PROCESS from the
+# server: it POSTs the intent to /intent/sign via the cx http client; the server
+# runs the cascade and the signed name persists in the shared fold, so the TUI
+# viewer and the browser both show it. This is the terminal client's "write" half
+# (tui.cx is its "read" half) — same capabilities as the web client, over the wire.
+#
+#   cx --allow-net …/sign.cx        # signs "Sam" (edit the name below)
+[?lib 'cx-stdlib/http' :as http]
+
+[$http:post "http://127.0.0.1:8443/intent/sign" "name=Sam"
+  {content-type: "application/x-www-form-urlencoded"}]

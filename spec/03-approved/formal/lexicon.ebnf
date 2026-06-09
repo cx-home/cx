@@ -1,0 +1,450 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  CX LEXICON — the single token grammar for `cxparse` (the unified parser) ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# PURPOSE. One scannable, unambiguous definition of every token the CX parser
+# produces, plus the post-lexical scalar/array auto-typing rule. This file
+# defines what the language *IS* going forward — the contract `cxparse` (the
+# one parser that subsumes the current cx.parse + code.parse) is held to. It
+# does NOT document what any current parser happens to do today.
+#
+# AUTHORITY. Each production cites the normative source it is extracted from:
+#   [N]      → spec/03-approved/formal/grammar.ebnf production N (sibling file)
+#   §3.x     → spec/03-approved/core/code.md §3 (lexical structure)
+#   cxdm §y  → spec/03-approved/core/cxdm.md
+# For the TRANSCRIBED productions (tokens, §1-§8, §11) the cited source wins and
+# THIS file is the bug if they disagree — the goal is zero drift; this is the
+# consolidation. TWO sections DELIBERATELY DECIDE NEW behavior that SUPERSEDES
+# the pre-v0.8.0 core spec (graduated 2026-06-03; core reconciled TO them):
+#   • §9  BODY VALUE (@CHOICE-1): a no-comma body of self-delimiting tokens
+#         (typed scalars / atoms / quoted strings — NO bareword) is a list of
+#         DISCRETE auto-typed children (mixed content), NOT an array; a bareword
+#         makes the whole no-comma body one prose string; a comma (or a `::T[]`/
+#         `::[]` head) makes an array. REVISES the pre-v0.8.0 [25a] whitespace
+#         auto-array — whitespace NEVER auto-arrays; the comma is the array signal.
+#   • §10 ATTRIBUTES: scalar-only — DELIBERATELY REMOVES node-valued attributes
+#         (formerly supported by grammar [55a] / ast.md / conversions.md).
+# Those two are decisions of record here; core was reconciled TO them at
+# graduation, not the reverse.
+#
+# SCOPE. Surface tokens + scalar/array auto-typing + collection literals and
+# the `[` element-vs-array disambiguation (§11). This file is the SOLE home
+# for all of that. The directive / clause-head / reserved-name vocabulary is
+# large and stays in code.md §4.1 — referenced, not inlined. Higher
+# composition (how elements/directives/programs nest) stays in grammar.ebnf.
+#
+# ANTI-DRIFT (one rule, one home). At G3 graduation (DONE 2026-06-03) these
+# duplicated sources WERE gutted to pointers into this file — the rules MOVED
+# here, not copied:
+#   • grammar.ebnf [6]-[24] (lexical), [25]/[25a] (auto-type), [56]-[56g]
+#     (collections) -> now "see lexicon.ebnf" pointers.
+#   • code.md §3.1-§3.6 -> collapsed to a normative deferral.
+# code.md itself does NOT go away: §4-§13 (evaluation, directives, errors)
+# remain its sole domain.
+#
+# NOTATION.  ::= definition   |  alternation   ()  group   ?  0-or-1
+#            *  0-or-more      +  1-or-more     [..] char class   '..' literal
+#            #xNN unicode codepoint             /* … */  comment
+
+# ─── 0. Source ────────────────────────────────────────────────────────────────
+# §3.1  Source MUST be valid UTF-8. A leading BOM (EF BB BF) is consumed
+#       silently; a BOM anywhere else → CXER0100.
+
+# ─── 1. Whitespace & comments (skipped; never reach the parser) ────────────────
+[L1]  S            ::= (#x20 | #x09 | #x0D | #x0A)+     /* §3.2 space tab CR LF */
+[L2]  LineComment  ::= '#' [^#x0A]* (#x0A | EOF)        /* §3.3, [30b] */
+[L3]  BlockComment ::= '[-' (Char* - (Char* ']' Char*)) ']'  /* §3.3, [30] */
+#  NOTE  `[# … #]` is NOT a comment — it is RawText / CDATA [31]. Do not
+#        confuse the two; this exact slip lived in the old lexer's header.
+
+# ─── 2. Identifiers & names ─────────────────────────────────────────────────────
+[L10]  Ident         ::= NameStartChar NameChar*       /* [6]/[6a] full Unicode */
+[L10a] NameStartChar ::= [A-Z] | '_' | [a-z] | [#xC0-#xD6] | [#xD8-#xF6]
+                       | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF]
+                       | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF]
+                       | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD]
+                       | [#x10000-#xEFFFF]             /* [6] MINUS ':' — see note */
+[L10b] NameChar      ::= NameStartChar | '-' | '.' | [0-9] | #xB7
+                       | [#x0300-#x036F] | [#x203F-#x2040]      /* [6a] */
+#  FULL UNICODE name chars per grammar [6]/[6a] (XML-derived) — keeps CX⇄XML
+#  bijective for non-ASCII element names. ASCII kebab-case `[a-z][a-z0-9-]*` is
+#  the PREFERRED STYLE for new identifiers (§3.4), NOT a lexical restriction.
+#  `_`-leading is VALID: `_private` is a legal Ident. `:` is NOT a NameChar —
+#  `prefix:local` is FOLDED into a QName from its Ident `:` Ident parts ([L11]).
+#  This is the ONE deliberate departure from grammar [7] (where `:` is a
+#  NameChar). The two parser MODES realize the fold equivalently, NOT via one
+#  physical tokenizer (the single-tokenizer flip was ruled architecturally
+#  unsound — PLAN §4.3): PROGRAM mode lexes `:` as its own token; DATA mode is
+#  scannerless and accepts `:` while scanning the name run (`cx.is_name_char`).
+#  Same QName either way — equivalence pinned by `cxparse_namechar_fork_test`.
+#  `.` is likewise mode-forked (the second and last name-char mode rule): in DATA
+#  mode `.` IS a NameChar, so `a.b` reads as ONE dotted element name; in PROGRAM
+#  mode `.` is NOT a name char — it is the path-step separator (`$u/..`) and the
+#  decimal point (`0.5`, `[+ .5 .5]`). Both `.` and `:` are deliberate, pinned
+#  data/program mode differences, not duplicated logic.
+#  `--`/leading-`-`/trailing-`-` are not special; the number rule [L20] decides
+#  whether a leading `-` is a sign.
+[L11] QName      ::= Ident (':' Ident)?                /* [7a] prefix:local — parser-folded */
+#  The SINGLE colon `:` folds into a QName (PROGRAM mode lexes it as its own
+#  token; DATA mode scans it in-name, §4.3); QName/atom/type-guard/
+#  map-entry are distinguished by the parser via context (§3.5, §3.6). `:` never
+#  glues into an Ident. The FOUR (and only four) roles of a lone `:`:
+#     prefix ':' local   namespace qualifier   `svg:rect`   ([7a])
+#     ':' Ident          atom literal           `:ok`        ([122b], §3.6)
+#     ':' TypeName        type-guard head        `:int`       (§5.4, pattern pos)
+#     MapKey ':' value   map-entry separator    `{k: v}`     (§11 [L86])
+
+# ─── 3. Number literals ─────────────────────────────────────────────────────────
+[L20] Number    ::= [+-]? (HexInt | Float | Integer)   /* [20] */
+#  SIGN: a leading `+` or `-` immediately followed by a digit is part of the
+#  Number token; a sign followed by a non-digit is a name char. The `+` is
+#  ACCEPTED but redundant — canonical output drops it (`+8080` → `8080`). A `-`
+#  *inside* a token (e.g. a date `2024-01-15`) is NOT a subtraction — see [L23].
+#  The old program lexer shattered `2024-01-15` into `2024 -1 -15`; that is the
+#  bug this rule forbids.
+[L20a] HexInt   ::= '0x' HexDigit ('_'? HexDigit)*     /* [20a] checked before Integer */
+[L20b] Float    ::= Mantissa ([eE] [+-]? Integer)?
+                  | Integer [eE] [+-]? Integer         /* [20b] needs '.' or exponent */
+[L20b1] Mantissa ::= Integer '.' Frac?                 /* 1.5, 1.  (trailing dot ok) */
+                   | '.' Frac                          /* .5       (leading dot ok)  */
+[L20b2] Frac     ::= [0-9] ('_'? [0-9])*
+[L20c] Integer  ::= '0' | [1-9] ('_'? [0-9])*          /* [20c]/[20d] NO leading zero */
+[L20d] HexDigit ::= [0-9a-fA-F]                         /* [11a] */
+#  A leading `.` (`.5`) or trailing `.` (`1.`) IS a valid Float; canonical output
+#  NORMALIZES to an explicit leading/trailing zero (`.5` → `0.5`, `1.` → `1.0`),
+#  so each value has ONE spelling. Leading-zero INTEGER tokens like `02134` are
+#  NOT Integer → they fall through to Text (preserves ZIP codes / SKUs); this rule
+#  does NOT apply to the `0` in `0.5`. An integer literal that overflows i64
+#  AUTO-PROMOTES to `bigint` (it stays numeric — magnitude never flips a number to
+#  Text); explicit `[x::int <overflow>]` is a hard error. `_` between digits
+#  is a readability aid, stripped before eval; it may not lead, trail, or double.
+
+# ─── 4. Keyword / date / time scalar literals ────────────────────────────────────
+[L21] BoolLiteral     ::= 'true' | 'false'             /* [21] */
+[L22] NullLiteral     ::= 'null'                       /* [22] */
+[L23] DateLiteral     ::= [0-9]{4} '-' [0-9]{2} '-' [0-9]{2}   /* [23] ONE token */
+[L24] DateTimeLiteral ::= DateLiteral 'T' [0-9]{2} ':' [0-9]{2} ':' [0-9]{2}
+                          ('.' [0-9]+)?
+                          ('Z' | [+-] [0-9]{2} ':' [0-9]{2})?  /* [24] incl. Z / ±tz */
+#  `2024-01-15`            → ONE date token       (NOT `2024 - 1 - 15`)
+#  `2024-01-15T10:30:00Z`  → ONE datetime token   (the `Z`/offset is part of it)
+#  CALENDAR VALIDITY: the shape rules above are necessary but NOT sufficient — a
+#  Date/DateTime token must also be a real calendar value (month 1–12; day
+#  1–days-in-month with Gregorian leap years; hour 0–23; minute/second 0–59;
+#  zone offset in range). A shape-valid but calendar-invalid run (`2024-13-45`,
+#  `2024-01-01T25:99:99`) is NOT a date/datetime token — it falls through to Text
+#  (helper `cx.calendar_ok`). The extent recognizer is unchanged, so the token
+#  stays ONE run (no fragmentation); only its classification differs.
+[L27] DurationLiteral ::= [+-]? DurTerm+               /* exact span → ::duration */
+[L27a] DurTerm        ::= Integer DurUnit
+[L27b] DurUnit        ::= 'ns' | 'us' | 'ms' | 's' | 'm' | 'h' | 'd' | 'w'
+[L28] PeriodLiteral   ::= [+-]? PerTerm+               /* calendar span → ::period */
+[L28a] PerTerm        ::= Integer PerUnit
+[L28b] PerUnit        ::= 'mo' | 'y'
+#  DURATION is an EXACT span (fixed nanoseconds): ns, us, ms, s, m(inute), h,
+#  d(=24h), w(=7d) — one or more terms, largest→smallest by convention (`500ms`,
+#  `90m`, `1h30m`). It converts losslessly to i64 ns. PERIOD is a CALENDAR span —
+#  mo(nth), y(ear) — whose length is NOT fixed (it needs an anchor date to
+#  resolve), so it is a DISTINCT type, never an exact Duration. `m` is ALWAYS
+#  minutes; months use `mo` (no collision). LEXING: recognized only when the
+#  WHOLE token is integer+unit term(s) (else Text — `5mph` is Text); units match
+#  LONGEST-first (`ms`/`mo` before `m`). A token mixing exact and calendar units
+#  (`1y2h`) is NOT one literal (write a Duration and a Period separately). XML
+#  image is ISO 8601 — Duration → `PT1H30M` / `P10D` / `P2W`; Period → `P1Y2M`.
+
+# ─── 5. String literals (always Text; never auto-typed) ──────────────────────────
+[L30] QuotedText   ::= "'" ( [^'\\] | EscapeSeq )* "'"            /* [10] single-quoted */
+                     | '"' ( [^"\\] | EscapeSeq )* '"'            /* [10] double-quoted */
+#  Single- and double-quoted strings are EQUIVALENT data string forms; the parser
+#  dispatches on the opening quote and the same EscapeSeq set [L32] applies to
+#  both. Canonical output prefers `'…'`, switching to `"…"` only when the content
+#  contains a `'` (so it need not be escaped); a string containing both falls back
+#  to a triple-quote or escaped form — see the renderer.
+[L31] TripleQuoted ::= "'''" (Char* - (Char* "'''" Char*)) "'''"  /* [10b] raw, multiline */
+#  TripleQuoted CONTENT is VERBATIM — NO escape processing (`\'` is two literal
+#  bytes, not an escape) — but the common LEADING INDENT is STRIPPED (dedent).
+#  DEDENT ALGORITHM (normative): the MINIMUM leading-whitespace run over all
+#  NON-blank lines is removed from every line; a tab and a space EACH count as ONE
+#  column (no tab expansion); blank / whitespace-only lines do NOT contribute to
+#  the minimum but are re-emitted as-is; a line shorter than the minimum is fully
+#  left-trimmed. The closing delimiter is found by MAXIMAL MUNCH: a run of 4+ `'`
+#  ends the literal at the LAST three, so `''''…` embeds one literal `'`.
+[L32] EscapeSeq    ::= '\\' ( "'" | '"' | '\\' | 'n' | 'r' | 't'
+                            | 'u' HexDigit{4}
+                            | 'U' HexDigit{8} )                  /* [11]/§3.7 */
+#  The DECODED escape set is CLOSED and UNIFORM across single-, double-, and
+#  (program) string literals: \\ \' \" \n \r \t \uXXXX \UXXXXXXXX. An UNKNOWN
+#  backslash-sequence (`\` + any other char) is kept LITERALLY — both the
+#  backslash and the char are preserved — so regex patterns like `'\d+'`, `'\w'`,
+#  `'\s'` survive verbatim. This lenient pass-through is UNIFORM across the data
+#  parser and the program lexer (no hard error). (TripleQuoted [L31] is verbatim:
+#  no escape processing at all.) QuotedText / TripleQuoted are ALWAYS string Text
+#  regardless of content: `'42'` is the string "42", never the int 42.
+#  CODEPOINT VALIDITY: a `\u`/`\U` escape (and an XML `&#…;` char-ref) whose
+#  decoded value is a UTF-16 SURROGATE (U+D800–U+DFFF) or is > U+10FFFF is
+#  REJECTED — `cx-err:CXERLEX-CODEPOINT` — because the result must be a valid
+#  Unicode scalar (the §0 valid-UTF-8 mandate + the CX⇄XML bijection forbid it).
+
+# ─── 6. Atom literal ─────────────────────────────────────────────────────────────
+[L40] Atom ::= ':' Ident                               /* [122b], §3.6 */
+#  `:true` `:false` `:null` are FORBIDDEN in atom position → CXER0100
+#  (they would lure readers into reading them as the bool/null). No other
+#  names are reserved as atoms. Atoms render as `:NAME`, never `:"NAME"`.
+#  An atom is an interned symbolic constant (≈ Clojure keyword / Erlang atom),
+#  type-strict (`:ok ≠ "ok"`), NOT ordered (no `<`; cxdm §5.5), NOT a map key.
+#  USE for match/case discriminants + small CLOSED tag sets (`:ok` `:prod`);
+#  NOT for ordered enums (use int), unbounded/user values (use string), or
+#  values needing a payload (use an element). See cxdm.md §2.3 (D4).
+
+# ─── 7. Type annotation (glued; binds to the token on its LEFT) ───────────────────
+[L50] TypeAnnotation ::= '::' ( TypeName ('[]')? | '[]' )         /* [26] */
+[L51] TypeName       ::= 'int' | 'float' | 'bool' | 'string' | 'null'
+                       | 'decimal' | 'bigint' | 'bytes' | 'atom'
+                       | 'date' | 'datetime' | 'duration' | 'period' | 'instant'
+                       | 'secret'
+                       | 'i8' | 'i16' | 'i32' | 'i64'
+                       | 'u8' | 'u16' | 'u32' | 'u64'
+                       | 'f16' | 'f32' | 'f64'                    /* [26a]/[157a] */
+#  Glued `::T` is valid in EVERY type position — element head (`port::u16`),
+#  attribute (`port::u16=8080`), param, return, table column. The DOUBLE colon
+#  is unambiguous; a single `:` is NEVER a type annotation — glued single `:`
+#  is the NAMESPACE qualifier (`items:string` = element `string` in namespace
+#  `items`, a QName [L11] — NOT a type). A parser that rejects `[port::u16 8080]`
+#  is wrong.
+#     ::T    explicit scalar type  (overrides §9 auto-typing)
+#     ::T[]  explicit typed array  (overrides §9; items are T)
+#     ::[]   inferred-type array   (element type inferred from items)
+
+# ─── 8. Structural tokens & sigils ───────────────────────────────────────────────
+[L60] Bracket ::= '[' | ']' | '{' | '}'                /* element/array | map */
+[L61] Paren   ::= '(' | ')'                            /* SequenceLiteral [56a] */
+[L64] Comma   ::= ','                                  /* item separator in [..] (..) {..} */
+[L62] Sigil   ::= '$'      /* binding             */
+                | '@'      /* attribute access    */
+                | '='      /* attr pair / let-bind */
+                | '/'      /* child path step      */
+                | '.'      /* map-key path step    */
+                | '*'      /* element wildcard     */
+                | '**'     /* any-depth wildcard   */
+                | '?'      /* error-propagate postfix (§9.2) */
+                | '!'      /* panic postfix          (§9.2) */
+[L63] DirectiveOpen ::= '[?' Ident                     /* `[?match` `[?def` … §4.1 */
+#  The directive / clause-head / reserved-attr / reserved-bareword vocabulary
+#  is the closed registry in code.md §4.1 — NOT duplicated here. The lexer
+#  emits a directive-name token for any Ident after `[?`; the PARSER checks
+#  membership and raises CXER0100 on a miss.
+#  NOTE the `[?meta {…} FORM]` inert annotation directive (code.md §4.2) and
+#  its reflection builtin `meta-of` (a reserved bareword head, no sigil) are
+#  part of that registry — the annotation map rides with the value as an
+#  inert side-band; only `meta-of` + the `<cx:meta>` serializer observe it.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  9. BODY VALUE CLASSIFICATION  (NORMATIVE — the "cx flavor" rule)
+# ═══════════════════════════════════════════════════════════════════════════════
+#  THE decisive rule for "what does `[items …]` mean" (@CHOICE-1). One list
+#  signal, by design:
+#    • A COMMA (or a `::[]`/`::T[]` head, [L25d]) is the ARRAY signal — it makes a
+#      single Array value. Whitespace NEVER auto-arrays.
+#    • A no-comma body of SELF-DELIMITING tokens (typed scalars / atoms / quoted
+#      strings — NO bareword) is a list of DISCRETE auto-typed children (mixed
+#      content), NOT an array.
+#    • A BAREWORD (an unquoted word / QName) in a no-comma body makes the whole
+#      body ONE prose Text string (data-by-default conciseness).
+#  This supersedes the old `[25a]` whitespace auto-array. The rule lives ONLY
+#  here; both readers implement this one spec (so the historical AUTOARRAY/CONTENT
+#  cross-parser drift cannot recur — it came from two copies, not from the rule).
+#
+#  Applies to an element body with NO explicit head TypeAnnotation ([L25d]
+#  overrides). A child ELEMENT (or any non-leaf node) is ALWAYS a discrete child;
+#  the rule below governs each contiguous run of LEAF tokens. Auto-type a token
+#  via the SCALAR priority [L25a].
+#
+#  [L25a] ── ONE bare token, no comma → SCALAR, auto-typed (first match wins):
+#       1. HexInt   2. Integer  → int        5. 'null'           → null
+#       3. Float            → float           6. DateTimeLiteral  → datetime
+#       4. 'true'|'false'   → bool            7. DateLiteral      → date
+#       8. otherwise → Text (string)
+#       `[port 8080]`→int   `[name Alice]`→string   `[d 2024-01-15]`→date
+#
+#  [L25b] ── TWO+ tokens, NO comma → DISCRETE ITEMS or PROSE (never an array).
+#       A BAREWORD = an unquoted token that is NOT a typed-scalar literal, an
+#       atom (`:name`), or a quoted string (a plain word or QName, e.g. `Alice`,
+#       `a:b`). It is the prose signal:
+#       • NO bareword (every token self-delimits — typed scalar / atom / quoted
+#         string) → each token is its OWN child, auto-typed via [L25a]. The body
+#         is MIXED CONTENT (discrete children), NOT an array and with NO element
+#         data_type. NO promotion (int + float stay int, float).
+#             `[ports 80 443]`              → int children 80, 443   (NOT int[])
+#             `[xs 1 2.0 3]`                → children 1, 2.0, 3
+#             `[flags true false]`          → bool children
+#             `[ds 2024-01-15 2024-02-20]`  → date children
+#             `[ks :on :off]`               → atom children :on, :off
+#             `[mixed 1 "two" :three true]` → children 1, "two", :three, true
+#             `[xs "a" "b"]`                → string children "a", "b"
+#       • ANY bareword present → the WHOLE body is ONE verbatim PROSE Text string
+#         (the run is not split; numbers / quoted tokens in it fold into the text).
+#             `[title Getting Started]`     → text "Getting Started"
+#             `[p the quick brown fox]`     → text "the quick brown fox"
+#             `[p 404 not found]`           → text "404 not found"
+#             `[x 1 a]`                     → text "1 a"
+#       NOTES:
+#       • `[p 1 2 3]` → THREE int children (no bareword), NOT the text "1 2 3"
+#         and NOT int[]. Quote for text (`[p '1 2 3']`); comma for an array.
+#       • Adjacent DISCRETE string children (`[xs "a" "b"]`) keep their boundary
+#         only in LOSSLESS XML (`<cx:string>` carriers, conversions.md §0.2); the
+#         idiomatic form collapses them (`<xs>ab</xs>`) and CX re-emits `[xs a b]`
+#         which re-reads as the single prose string "a b". Prefer a comma array or
+#         a single quoted run for a multi-string body that must round-trip.
+#
+#  [L25c] ── COMMA-SEPARATED items → a single ARRAY value (an ArrayNode; the
+#       element holds one array). Each item auto-typed via [L25a]. The array is
+#       HETEROGENEOUS — items keep their own types, with NO element `cx:type` and
+#       NO numeric promotion. (A uniformly-typed `T[]` / inferred `[]` comes ONLY
+#       from an explicit `::T[]` / `::[]` head, [L25d].)
+#             `[tags web, prod, us-east]`  → Array ["web","prod","us-east"]  (no `::`)
+#             `[ports 80, 443]`            → Array [80, 443]  (comma REQUIRED; without
+#                                            it `[ports 80 443]` is discrete children, [L25b])
+#             `[xs 1, 2.0]`                → Array [1, 2.0]   (no int→float promotion)
+#             `[row 1, two, true]`         → Array [1, "two", true]  (mixed)
+#
+#  ── LITERAL COMMA IN PROSE → quote the run (single-quote canonical; the
+#     renderer switches to double quotes only when the text contains a `'`):
+#       `[p 'Hello, world']`          → text "Hello, world"   (one scalar)
+#       `[p Hello, world]`            → Array ["Hello","world"] ← NOT prose! (comma)
+#
+#  ── EDGE CASES:
+#       `[xs a,]`     → 1-item array ["a"]   (trailing comma forces a 1-array;
+#                                             this is HOW you write a string singleton)
+#       `[xs a]`      → scalar "a"            (no comma → scalar, not 1-array)
+#       `[xs 5]`      → scalar int 5          (single token, no array)
+#       `[xs]`        → empty element (no body value)
+#       `[xs ,]` `[xs a,,b]` `[xs ,a]` → parse error (empty item; only a single
+#                                        trailing comma is allowed, per [L84])
+#       `[xs 'a, b', c]` → Array ["a, b", "c"]  (comma inside quotes literal)
+#  ── To force a type the items don't auto-infer (e.g. sized) or to force a
+#     STRING array from whitespace words, annotate the head:
+#       `[xs::u16[] 1, 2, 3]`     `[xs::string[] alpha beta]` → string[]
+#
+#  [L25d] ── PRECEDENCE: an explicit head `::` TypeAnnotation ([L50]) OVERRIDES
+#       this whole §9 classification (§9 runs ONLY when there is no annotation):
+#       • `::T` (SCALAR type) → the body is ONE scalar of T; the entire body
+#         text is coerced to T, with comma/whitespace becoming literal. `string`
+#         always coerces (it is text); a non-string T that the body can't form
+#         is a type error (cx-err:CXER0290 E_CAST_FAILED — the same code as a failed
+#         `[cast …]`; covers a malformed value AND a sized iN/uN out-of-range).
+#             `[items::string 1 2 3]`   → string "1 2 3"     (overrides int[])
+#             `[items::string 1, 2, 3]` → string "1, 2, 3"   (commas literal)
+#             `[n::int 1 2 3]`          → CXER0290 (body is not one int)
+#       • `::T[]` (ARRAY type) → the body is an ARRAY of T; items split on
+#         commas, or on whitespace when there are none; each coerced to T.
+#             `[list::string[] a b c]`   → string[] ["a","b","c"]
+#             `[list::string[] 'a b', c]`→ string[] ["a b","c"]
+#       • `::[]` (inferred array) → array; element type inferred from items.
+#       Reminder: the annotation glue is DOUBLE colon. `[items:string …]` is a
+#       QName (element `string` in namespace `items`), NOT a type — §9 applies.
+
+# ─── 10. Attribute values — ALWAYS A SINGLE SCALAR (no arrays, no nodes) ─────────
+#  DECISION (D2): an attribute value is ALWAYS a single scalar.
+#       AttValue ::= BareValue | QuotedText | TripleQuoted | RawTextStr  (scalar forms)
+#       RawTextStr ::= '[#' RawContent '#]'   (the raw bytes AS A STRING scalar)
+#  A bare attribute value is auto-typed by the [L25a] SCALAR priority
+#  (`active=true`→bool, `nil=null`→null, `d=2024-01-15`→date; default string).
+#  A `[# … #]` attribute value yields the raw content as a STRING scalar
+#  (`a=[# x,y #]` → string "x,y") — it is NOT a RawText node; it is the
+#  string-literal escape hatch for values that would otherwise need quoting.
+#  Attributes NEVER hold a list or a node:
+#    • the comma=list rule ([L25c]) does NOT apply to attributes — a comma is
+#      an ordinary BareValue char, so `att=a,b` is the single string "a,b".
+#    • a `[`/`{`/`(`-opened attribute value (Element / Array / Map / Sequence /
+#      BlockContent) is a PARSE ERROR — only the `[#…#]` string form above is
+#      admitted. Rich/list/nested data goes in a CHILD ELEMENT:
+#      `[node [tags a, b]]` / `[a [meta [b …]]]`, not in an attribute.
+#  THIS IS A DELIBERATE REMOVAL, not a contradiction-fix. The current core
+#  spec SUPPORTS node-valued attributes — grammar.ebnf [55a] admits
+#  `| RawText | BlockContent | CollectionLiteral | Element`; ast.md §Attribute
+#  and conversions.md §2.1 (`<cx:attr cx:name=…>` child) specify their data
+#  model + XML round-trip. D2 drops that feature: node-valued attributes only
+#  round-trip to XML as non-idiomatic `<cx:attr>` CHILD elements (not real XML
+#  attributes) and duplicate what child elements already express, while adding
+#  undefined CXPath-into-attribute semantics. Scalar-only keeps attributes as
+#  real XML attributes and CXPath `@name` as a plain scalar.
+#  Graduation (DONE 2026-06-03) removed the node alternatives from grammar.ebnf
+#  [55a]+[55c], the ast.md node-valued branch, the ast-bin.md node_flag wire
+#  encoding, and the conversions.md `<cx:attr>` row; reconciled code.md §940
+#  (non-scalar construction → CXER0100, not stringify).
+[L70] BareValue ::= ( Char - (S | '[' | ']' | '=' | "'" | '"') )+   /* [12] */
+#  BareValue stops at whitespace and  [ ] = ' "  — but allows / : # ? @ ! ~ +
+#  (and ',') for URLs and paths. The comma is literal here (attributes only).
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  11. COLLECTION LITERALS & THE `[` DISAMBIGUATION  (sole home; from [56]-[56g])
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Three primitive collection forms, by bracket. Trailing comma always
+#  allowed; canonical emit drops it (canonical.md §D14).
+#
+[L80] SequenceLiteral ::= '(' S? ItemList? S? ')'      /* [56a] */
+#   FLATTENS nested sequences (CXDM §1 sequence-flat):
+#       (1, (2, 3))  →  (1, 2, 3)        4-item example: ((a,b), c) → (a,b,c)
+#       ()           →  empty Sequence
+#   Parens have no other structural role, so there is no ambiguity.
+#   SCOPE: flattening is a DATA-LAYER document convention. The PROGRAM layer
+#   (cx code) treats a sequence as a FIRST-CLASS structured value and PRESERVES
+#   nesting — `((a, b), c)` keeps rank, as multi-axis slices, `[?to-map]`
+#   2-tuples, and nested-ring geometry require. (§9 [L25b] body classification
+#   binds both layers; [L80] flattening does not — it is data-shape only.)
+#
+[L81] ArrayLiteral ::= '[' S? ItemList? S? ']'         /* [56b] */
+#   NEST-PRESERVING (unlike Sequence):  [1, [2, 3]]  →  [1, [2, 3]]
+#   Shares the `[` with Element [50] — disambiguated by [L83] below.
+#
+[L82] MapLiteral ::= '{' S? MapEntryList? S? '}'       /* [56c] */
+#   {}  → empty Map.  Keys MUST be unique (dup key → W014 parse error).
+#   Braces have no other structural role.
+#
+#  ── [L83] THE `[` DISAMBIGUATION (element vs array literal). This is the SOLE
+#     canonical home; grammar [50.D] is a summary that MUST agree. Decided by the
+#     FIRST token after `[`. Identical in BodyItem / Node position.
+#       0. STRUCTURAL OPENERS bind FIRST (not subject to this rule): `[?`
+#          directive, `[!` decl/doctype, `[#` raw text, `[-` comment, `[|` block,
+#          `[$` call (program mode), `[*` alias, `[&` ref/anchor. CX has NO Markdown sigils —
+#          `>`, `~`, `^`, the backtick, and `#` are ordinary content/operators,
+#          never element-head openers.
+#       1. `[]`  → empty Array.   (`[]` is never an element — an element needs
+#                                  a Name head.)
+#       2. first token is NOT a Name  → ARRAY LITERAL; items comma-separated
+#          [L84]. (A scalar literal, a quoted/triple string, or a nested
+#          `[`/`{`/`(`.)
+#               [1, 2, 3]       → int array  [1, 2, 3]
+#               ['a', 'b']      → string array ["a", "b"]
+#               [[1,2], [3,4]]  → nested array (preserved, NOT flattened)
+#               ['x y']         → 1-item array ["x y"]
+#       3. first token IS a Name  → ELEMENT; that Name is the head, and the
+#          body follows the BODY VALUE rule §9 (no comma → scalar/prose; comma
+#          → typed array body):
+#               [user x=1]          → element `user`, attribute x=1     (`=`)
+#               [x y]               → element `x`, body scalar/prose `y`
+#               [p the quick fox]   → element `p`, prose body
+#               [ports 80, 443]     → element `ports`, comma body → int[]  ([L25c])
+#               [tags web, prod]    → element `tags`, comma body → string[]
+#               [xs a,]             → element `xs`, 1-item array ["a"]  (trailing,)
+#
+#     ⚠ A Name head IMMEDIATELY followed by `,` is a BARE BAREWORD ARRAY — it
+#       is ambiguous with an element name and is a PARSE ERROR (CXER0100). To
+#       get a bareword list, QUOTE the items or NAME the list:
+#               [web, prod]   → ERROR — write ['web', 'prod']  or  [tags web, prod]
+#               [web]         → element `web` (empty body), NOT the array ["web"]
+#               [web,]        → ERROR (head `web`, empty body item)
+#       Bare arrays of scalar literals / quoted strings are fine ([1,2], ['a','b']);
+#       only an UNQUOTED leading bareword is reserved as an element head.
+#
+[L84] ItemList     ::= BodyItem (S? ',' S? BodyItem)* (S? ',')?   /* [56d] */
+[L85] MapEntryList ::= MapEntry (S? ',' S? MapEntry)* (S? ',')?   /* [56e] */
+[L86] MapEntry     ::= MapKey S? ':' S? BodyItem | ComputedEntry  /* [56f] */
+[L87] MapKey       ::= Name | QuotedText | Scalar                 /* [56g] */
+#   Bare-Name key == quoted-string key. `null` is NOT a valid key (→ W014).
+#   ComputedEntry = `[?entry KEY-EXPR VAL]` (code.md §6.4.2), maps only.
+#
+#  ⚠ COLON ROLE #4.  The MapEntry `key : value` separator is the FOURTH use of a
+#  lone `:` (atom prefix, type-guard head, namespace qualifier are the other
+#  three per §2). It is unambiguous because it can only appear at that position
+#  inside `{…}`. code.md §3.5 enumerates all four roles in agreement.

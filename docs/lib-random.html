@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>random — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a class="active" href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-random">
+  <h1>random</h1>
+  <p class="lede">Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. The PRNG path is seeded and reproducible — for simulation, sampling, and shuffling — and comes in a process-global form plus pure explicit-state mirrors. The crypto-random path is kernel-backed cryptographic randomness for tokens, keys, and salts, and is never seedable. This module owns generation of random values; keyed transforms belong to cx-stdlib/crypto.</p>
+  
+    <section id="fn-random-seed" class="fn">
+      <h3>random:seed</h3>
+      <p class="fn-sig"><code>[$random:seed]  -> null</code>  —  Re-seed the process-global PRNG so its sequence becomes reproducible.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $a [$random:seed 42]] [$random:next-int]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7510639304993616975</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-int" class="fn">
+      <h3>random:next-int</h3>
+      <p class="fn-sig"><code>[$random:next-int]  -> int</code>  —  Draw a uniform 63-bit non-negative integer from the process-global PRNG.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $a [$random:seed 42]] [$random:next-int]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7510639304993616975</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-float" class="fn">
+      <h3>random:next-float</h3>
+      <p class="fn-sig"><code>[$random:next-float]  -> float</code>  —  Draw a uniform float in the half-open range 0.0 to 1.0 from the process-global PRNG.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $a [$random:seed 42]] [?let [= $f [$random:next-float]] [and [>= $f 0.0] [< $f 1.0]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-bool" class="fn">
+      <h3>random:next-bool</h3>
+      <p class="fn-sig"><code>[$random:next-bool]  -> bool</code>  —  Draw a uniform random boolean from the process-global PRNG.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $a [$random:seed 42]] [?let [= $b [$random:next-bool]] [or [= $b true] [= $b false]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-int-range" class="fn">
+      <h3>random:int-range</h3>
+      <p class="fn-sig"><code>[$random:int-range]  -> int</code>  —  Draw a uniform integer in the inclusive range lo to hi, with no modulo bias.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:int-range 5 5]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-float-range" class="fn">
+      <h3>random:float-range</h3>
+      <p class="fn-sig"><code>[$random:float-range]  -> float</code>  —  Draw a uniform float in the half-open range lo to hi.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:float-range 2.5 2.5]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2.5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-shuffle" class="fn">
+      <h3>random:shuffle</h3>
+      <p class="fn-sig"><code>[$random:shuffle]  -> [sequence any]</code>  —  Return a new Fisher-Yates shuffle of the sequence.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:shuffle (42)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(42)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-choose" class="fn">
+      <h3>random:choose</h3>
+      <p class="fn-sig"><code>[$random:choose]  -> any</code>  —  Pick one element uniformly at random from the sequence.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:choose ("only")]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'only'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-sample" class="fn">
+      <h3>random:sample</h3>
+      <p class="fn-sig"><code>[$random:sample]  -> [sequence any]</code>  —  Draw a uniform sample of size n without replacement from the sequence.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:sample (1, 2, 3) 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>()</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-from-seed" class="fn">
+      <h3>random:from-seed</h3>
+      <p class="fn-sig"><code>[$random:from-seed]  -> element</code>  —  Build an explicit-state generator carrying its own reproducible state from a seed.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:next-int-with [$random:from-seed 42]]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7510639304993616975</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-int-with" class="fn">
+      <h3>random:next-int-with</h3>
+      <p class="fn-sig"><code>[$random:next-int-with]  -> element</code>  —  Draw a 63-bit integer from an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:next-int-with [$random:from-seed 42]]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7510639304993616975</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-float-with" class="fn">
+      <h3>random:next-float-with</h3>
+      <p class="fn-sig"><code>[$random:next-float-with]  -> element</code>  —  Draw a float in 0.0 to 1.0 from an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:next-float-with [$random:from-seed 42]]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0.8143051451229099</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-bool-with" class="fn">
+      <h3>random:next-bool-with</h3>
+      <p class="fn-sig"><code>[$random:next-bool-with]  -> element</code>  —  Draw a boolean from an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:next-bool-with [$random:from-seed 42]]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-int-range-with" class="fn">
+      <h3>random:int-range-with</h3>
+      <p class="fn-sig"><code>[$random:int-range-with]  -> element</code>  —  Draw an unbiased integer in lo to hi from an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:int-range-with [$random:from-seed 7] 9 9]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>9</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-float-range-with" class="fn">
+      <h3>random:float-range-with</h3>
+      <p class="fn-sig"><code>[$random:float-range-with]  -> element</code>  —  Draw a float in lo to hi from an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:float-range-with [$random:from-seed 7] 2.5 2.5]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2.5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-shuffle-with" class="fn">
+      <h3>random:shuffle-with</h3>
+      <p class="fn-sig"><code>[$random:shuffle-with]  -> element</code>  —  Shuffle a sequence with an explicit generator, returning the result and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:shuffle-with [$random:from-seed 42] (1, 2, 3, 4, 5)]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(4, 3, 1, 5, 2)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-choose-with" class="fn">
+      <h3>random:choose-with</h3>
+      <p class="fn-sig"><code>[$random:choose-with]  -> element</code>  —  Pick one element with an explicit generator, returning the choice and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:choose-with [$random:from-seed 3] ("solo")]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'solo'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-sample-with" class="fn">
+      <h3>random:sample-with</h3>
+      <p class="fn-sig"><code>[$random:sample-with]  -> element</code>  —  Sample n elements without replacement with an explicit generator, returning the sample and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:sample-with [$random:from-seed 42] (10, 20, 30, 40, 50) 3]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(40, 30, 10)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-crypto-bytes" class="fn">
+      <h3>random:crypto-bytes</h3>
+      <p class="fn-sig"><code>[$random:crypto-bytes]  -> bytes</code>  —  Return n cryptographically random bytes from the system CSPRNG.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:crypto-bytes -1]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-crypto-int" class="fn">
+      <h3>random:crypto-int</h3>
+      <p class="fn-sig"><code>[$random:crypto-int]  -> int</code>  —  Return a cryptographically random integer in the inclusive range lo to hi, unbiased.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:crypto-int 7 7]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-crypto-hex" class="fn">
+      <h3>random:crypto-hex</h3>
+      <p class="fn-sig"><code>[$random:crypto-hex]  -> string</code>  —  Return n cryptographically random bytes as a lowercase hex string of length 2n.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$string-length [$random:crypto-hex 8]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-crypto-base64-url" class="fn">
+      <h3>random:crypto-base64-url</h3>
+      <p class="fn-sig"><code>[$random:crypto-base64-url]  -> string</code>  —  Return n cryptographically random bytes as an unpadded base64-url string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$contains [$random:crypto-base64-url 32] "="]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-crypto-token-urlsafe" class="fn">
+      <h3>random:crypto-token-urlsafe</h3>
+      <p class="fn-sig"><code>[$random:crypto-token-urlsafe]  -> string</code>  —  Return a URL-safe random session token, base64-url with a default of 32 bytes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$contains [$random:crypto-token-urlsafe 32] "="]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gaussian" class="fn">
+      <h3>random:gaussian</h3>
+      <p class="fn-sig"><code>[$random:gaussian]  -> float</code>  —  Draw a normally-distributed float with the given mean and standard deviation.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gaussian 5.0 0.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-exponential" class="fn">
+      <h3>random:exponential</h3>
+      <p class="fn-sig"><code>[$random:exponential]  -> float</code>  —  Draw an exponentially-distributed float with rate lambda.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:exponential 0.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1905</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-poisson" class="fn">
+      <h3>random:poisson</h3>
+      <p class="fn-sig"><code>[$random:poisson]  -> int</code>  —  Draw a Poisson-distributed integer with mean lambda.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:poisson -2.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1905</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gaussian-with" class="fn">
+      <h3>random:gaussian-with</h3>
+      <p class="fn-sig"><code>[$random:gaussian-with]  -> element</code>  —  Draw a normal value with an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:gaussian-with [$random:from-seed 11] 3.0 0.0]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-exponential-with" class="fn">
+      <h3>random:exponential-with</h3>
+      <p class="fn-sig"><code>[$random:exponential-with]  -> element</code>  —  Draw an exponential value with an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:exponential-with [$random:from-seed 42] 1.0]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1.683650517646569</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-poisson-with" class="fn">
+      <h3>random:poisson-with</h3>
+      <p class="fn-sig"><code>[$random:poisson-with]  -> element</code>  —  Draw a Poisson value with an explicit generator, returning the value and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:poisson-with [$random:from-seed 42] 4.0]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>6</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-choose-weighted" class="fn">
+      <h3>random:choose-weighted</h3>
+      <p class="fn-sig"><code>[$random:choose-weighted]  -> any</code>  —  Pick one element with probability proportional to its weight.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:choose-weighted ("a", "b") (1.0)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1904</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-sample-weighted" class="fn">
+      <h3>random:sample-weighted</h3>
+      <p class="fn-sig"><code>[$random:sample-weighted]  -> [sequence any]</code>  —  Sample n elements without replacement, proportional to remaining weights.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:sample-weighted ("a", "b") (1.0, 0.0) 2]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1903</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-choose-weighted-with" class="fn">
+      <h3>random:choose-weighted-with</h3>
+      <p class="fn-sig"><code>[$random:choose-weighted-with]  -> element</code>  —  Weighted pick with an explicit generator, returning the choice and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:choose-weighted-with [$random:from-seed 5] ("a", "b") (0.0, 1.0)]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'b'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-sample-weighted-with" class="fn">
+      <h3>random:sample-weighted-with</h3>
+      <p class="fn-sig"><code>[$random:sample-weighted-with]  -> element</code>  —  Weighted sample of n without replacement using an explicit generator, returning the sample and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:sample-weighted-with [$random:from-seed 42] ("a", "b", "c") (1.0, 1.0, 1.0) 2]] [$count $r/value]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-floats" class="fn">
+      <h3>random:next-floats</h3>
+      <p class="fn-sig"><code>[$random:next-floats]  -> [sequence float]</code>  —  Return a sequence of n uniform floats in 0.0 to 1.0.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$count [$random:next-floats 5]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-ints" class="fn">
+      <h3>random:next-ints</h3>
+      <p class="fn-sig"><code>[$random:next-ints]  -> [sequence int]</code>  —  Return a sequence of n uniform 63-bit non-negative integers.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$count [$random:next-ints 7]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-floats-with" class="fn">
+      <h3>random:next-floats-with</h3>
+      <p class="fn-sig"><code>[$random:next-floats-with]  -> element</code>  —  Generate n floats with an explicit generator, returning the sequence and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:next-floats-with [$random:from-seed 42] 3]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(0.8143051451229099, 0.3188210400616611, 0.9838941681774888)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-next-ints-with" class="fn">
+      <h3>random:next-ints-with</h3>
+      <p class="fn-sig"><code>[$random:next-ints-with]  -> element</code>  —  Generate n integers with an explicit generator, returning the sequence and next generator.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $r [$random:next-ints-with [$random:from-seed 42] 3]] $r/value]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(7510639304993616975, 2940605065665682376, 9074821957992740550)</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

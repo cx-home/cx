@@ -6,7 +6,7 @@ Mirrors the V core test (vcx/arrow/arrow_test.v):
   - Round-trip per supported v0.6.0 column type: int / i8 / i16 / i32 /
     float / bool / string / date / bytes (9 tests).
   - datetime column round-trips as Arrow timestamp[ns, UTC].
-  - pyarrow.Table → CXDB → pyarrow.Table inverse round-trip.
+  - pyarrow.Table → CXCol → pyarrow.Table inverse round-trip.
   - Capability + version smoke tests.
 
 Requires `pyarrow >= 14`; the entire suite is skipped if pyarrow is
@@ -60,7 +60,7 @@ def test_availability_reports_truthy_when_lib_loaded():
 
 
 def test_round_trip_int():
-    src = ('[stats :table[score:int]\n'
+    src = ('[stats [table[score::int]]\n'
            '  100\n  -1\n  9223372036854775807\n  -9223372036854775808\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
@@ -73,7 +73,7 @@ def test_round_trip_int():
 
 
 def test_round_trip_i8():
-    src = ('[stats :table[v:i8]\n  -128\n  -1\n  0\n  127\n]')
+    src = ('[stats [table[v::i8]]\n  -128\n  -1\n  0\n  127\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
     assert str(table.schema.field('v').type) == 'int8'
@@ -83,7 +83,7 @@ def test_round_trip_i8():
 
 
 def test_round_trip_i16():
-    src = ('[stats :table[v:i16]\n  -32768\n  -1\n  0\n  32767\n]')
+    src = ('[stats [table[v::i16]]\n  -32768\n  -1\n  0\n  32767\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
     assert str(table.schema.field('v').type) == 'int16'
@@ -93,7 +93,7 @@ def test_round_trip_i16():
 
 
 def test_round_trip_i32():
-    src = ('[stats :table[v:i32]\n'
+    src = ('[stats [table[v::i32]]\n'
            '  -2147483648\n  -1\n  0\n  2147483647\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
@@ -105,7 +105,7 @@ def test_round_trip_i32():
 
 
 def test_round_trip_float():
-    src = ('[stats :table[v:float]\n  0.0\n  -1.5\n  3.14159\n  1e100\n]')
+    src = ('[stats [table[v::float]]\n  0.0\n  -1.5\n  3.14159\n  1e100\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
     assert str(table.schema.field('v').type) == 'double'
@@ -119,7 +119,7 @@ def test_round_trip_float():
 
 
 def test_round_trip_bool():
-    src = ('[flags :table[v:bool]\n  true\n  false\n  true\n  false\n]')
+    src = ('[flags [table[v::bool]]\n  true\n  false\n  true\n  false\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
     assert str(table.schema.field('v').type) == 'bool'
@@ -131,7 +131,7 @@ def test_round_trip_bool():
 def test_round_trip_string():
     # CX tokenizes table cells by whitespace; use single-token cells to keep
     # the parsed shape predictable. Round-trip equality is the primary assertion.
-    src = ('[names :table[v:string]\n'
+    src = ('[names [table[v::string]]\n'
            '  alice\n  bob\n  carol\n  unicode-é-é-ñ\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
@@ -144,7 +144,7 @@ def test_round_trip_string():
 
 def test_round_trip_date():
     import datetime as dt
-    src = ('[evts :table[when:date]\n'
+    src = ('[evts [table[when::date]]\n'
            '  2026-05-09\n  1970-01-01\n  9999-12-31\n  1900-01-01\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
@@ -158,12 +158,12 @@ def test_round_trip_date():
 
 
 def test_round_trip_bytes():
-    src = ('[blobs :table[name:string blob:bytes]\n'
+    src = ('[blobs [table[name::string blob::bytes]]\n'
            '  alpha "A1B2"\n  beta "FF00DE"\n  empty ""\n]')
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
     assert str(table.schema.field('blob').type) == 'binary'
-    # CXDB carries raw bytes including the surrounding double quotes from
+    # CXCol carries raw bytes including the surrounding double quotes from
     # the parser's textual cell. Round-trip preservation is what matters.
     blobs = table.column('blob').to_pylist()
     assert all(isinstance(b, (bytes, bytearray)) for b in blobs)
@@ -173,7 +173,7 @@ def test_round_trip_bytes():
 
 def test_round_trip_datetime():
     import datetime as dt
-    src = ('[evts :table[when:datetime]\n'
+    src = ('[evts [table[when::datetime]]\n'
            '  2024-01-15T12:34:56Z\n'
            '  2025-06-30T23:00:00+02:00\n'
            '  1970-01-01T00:00:00Z\n'
@@ -181,7 +181,7 @@ def test_round_trip_datetime():
     framed = cxlib.to_data_bin_chunked(src)
     table = cxa.export(framed).read_all()
     assert str(table.schema.field('when').type) == 'timestamp[ns, tz=UTC]'
-    # CXDB strict-canonical normalizes offsets to UTC on the wire, so the
+    # CXCol strict-canonical normalizes offsets to UTC on the wire, so the
     # +02:00 row arrives as 21:00:00 UTC.
     utc = dt.timezone.utc
     assert table.column('when').to_pylist() == [
@@ -194,9 +194,9 @@ def test_round_trip_datetime():
     assert cxa.export(out).read_all().equals(table)
 
 
-def test_pyarrow_table_to_cxdb_round_trip():
-    # Build a pyarrow.Table directly (no CXDB starting point) and verify the
-    # inverse direction: pyarrow → CXDB → pyarrow re-decode → equality.
+def test_pyarrow_table_to_cxcol_round_trip():
+    # Build a pyarrow.Table directly (no CXCol starting point) and verify the
+    # inverse direction: pyarrow → CXCol → pyarrow re-decode → equality.
     import pyarrow as pa
     table_in = pa.table({
         'name':  pa.array(['alice', 'bob', 'carol'], type=pa.string()),
@@ -264,7 +264,7 @@ if __name__ == '__main__':
         test_round_trip_date,
         test_round_trip_bytes,
         test_round_trip_datetime,
-        test_pyarrow_table_to_cxdb_round_trip,
+        test_pyarrow_table_to_cxcol_round_trip,
         test_export_rejects_invalid_input,
         test_import_to_data_bin_type_check,
     ):

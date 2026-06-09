@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>time — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a class="active" href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-time">
+  <h1>time</h1>
+  <p class="lede">Dates, datetimes, durations, and instants, with wall-clock and monotonic time sources. Covers construction and decomposition, exact-time and calendar arithmetic, ISO 8601 / RFC 3339 / RFC 2822 / ICU-LDML parsing and formatting, timezone handling, RFC 5545 RRULE and cron recurrence rules, and mockable clocks for deterministic-time testing. Durations are signed nanosecond counts; date and datetime values come from the parse and construction functions.</p>
+  
+    <section id="fn-time-now" class="fn">
+      <h3>time:now</h3>
+      <p class="fn-sig"><code>[$time:now]  -> datetime</code>  —  Return the current wall-clock datetime from the host.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:now]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-today" class="fn">
+      <h3>time:today</h3>
+      <p class="fn-sig"><code>[$time:today]  -> date</code>  —  Return the current wall-clock date from the host.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:today]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-instant-now" class="fn">
+      <h3>time:instant-now</h3>
+      <p class="fn-sig"><code>[$time:instant-now]  -> instant</code>  —  Return the current wall-clock instant (UTC-anchored timestamp).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:instant-now]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-monotonic-now" class="fn">
+      <h3>time:monotonic-now</h3>
+      <p class="fn-sig"><code>[$time:monotonic-now]  -> int</code>  —  Return a monotonic clock reading in nanoseconds, for measuring elapsed time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[?let [= $a [$time:monotonic-now]] [?let [= $b [$time:monotonic-now]] [>= $b $a]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-now-mock" class="fn">
+      <h3>time:now-mock</h3>
+      <p class="fn-sig"><code>[$time:now-mock]  -> datetime</code>  —  Pin the mock clock to a fixed datetime for deterministic-time testing.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-iso8601 [$time:now-mock [$time:datetime 2026 5 26 14 30 0]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-today-mock" class="fn">
+      <h3>time:today-mock</h3>
+      <p class="fn-sig"><code>[$time:today-mock]  -> date</code>  —  Pin the mock clock to a fixed date for deterministic-time testing.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:year [$time:today-mock [$time:date 2026 5 26]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2026</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-instant-now-mock" class="fn">
+      <h3>time:instant-now-mock</h3>
+      <p class="fn-sig"><code>[$time:instant-now-mock]  -> instant</code>  —  Pin the mock clock to a fixed instant for deterministic-time testing.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:instant-now-mock 1000000000]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-mock-advance" class="fn">
+      <h3>time:mock-advance</h3>
+      <p class="fn-sig"><code>[$time:mock-advance]  -> null</code>  —  Step the frozen mock clock forward by a duration.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:mock-advance [$time:duration-h 1]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>null</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-mock-set" class="fn">
+      <h3>time:mock-set</h3>
+      <p class="fn-sig"><code>[$time:mock-set]  -> null</code>  —  Re-pin the mock clock to an absolute instant.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:mock-set [$time:from-unix 1000]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>null</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-date" class="fn">
+      <h3>time:date</h3>
+      <p class="fn-sig"><code>[$time:date]  -> date</code>  —  Construct a date from year, month, and day components.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:date 2026 5 26]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-datetime" class="fn">
+      <h3>time:datetime</h3>
+      <p class="fn-sig"><code>[$time:datetime]  -> datetime</code>  —  Construct a UTC datetime from year, month, day, hour, minute, and second.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:datetime 2026 5 26 14 30 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-datetime-with-tz" class="fn">
+      <h3>time:datetime-with-tz</h3>
+      <p class="fn-sig"><code>[$time:datetime-with-tz]  -> datetime</code>  —  Construct a datetime from components interpreted in the named timezone.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:datetime-with-tz 2026 1 15 12 0 0 "America/New_York"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-01-15T12:00:00-05:00'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-from-unix" class="fn">
+      <h3>time:from-unix</h3>
+      <p class="fn-sig"><code>[$time:from-unix]  -> instant</code>  —  Construct an instant from a Unix timestamp in seconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:from-unix 1000]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1000000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-from-unix-ms" class="fn">
+      <h3>time:from-unix-ms</h3>
+      <p class="fn-sig"><code>[$time:from-unix-ms]  -> instant</code>  —  Construct an instant from a Unix timestamp in milliseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:from-unix-ms 1500]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1500000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-from-unix-ns" class="fn">
+      <h3>time:from-unix-ns</h3>
+      <p class="fn-sig"><code>[$time:from-unix-ns]  -> instant</code>  —  Construct an instant from a Unix timestamp in nanoseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:from-unix-ns 42]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-epoch" class="fn">
+      <h3>time:epoch</h3>
+      <p class="fn-sig"><code>[$time:epoch]  -> instant</code>  —  Return the Unix epoch instant (1970-01-01T00:00:00Z).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:epoch]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-year" class="fn">
+      <h3>time:year</h3>
+      <p class="fn-sig"><code>[$time:year]  -> int</code>  —  Extract the year component of a date or datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:year [$time:parse-date "2026-05-26"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2026</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-month" class="fn">
+      <h3>time:month</h3>
+      <p class="fn-sig"><code>[$time:month]  -> int</code>  —  Extract the month component (1-12) of a date or datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:month [$time:parse-date "2026-05-26"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-day" class="fn">
+      <h3>time:day</h3>
+      <p class="fn-sig"><code>[$time:day]  -> int</code>  —  Extract the day-of-month component of a date or datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:day [$time:parse-date "2026-05-26"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>26</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-hour" class="fn">
+      <h3>time:hour</h3>
+      <p class="fn-sig"><code>[$time:hour]  -> int</code>  —  Extract the hour component (0-23) of a datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:hour [$time:parse-datetime "2026-05-26T14:30:45Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>14</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-minute" class="fn">
+      <h3>time:minute</h3>
+      <p class="fn-sig"><code>[$time:minute]  -> int</code>  —  Extract the minute component (0-59) of a datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:minute [$time:parse-datetime "2026-05-26T14:30:45Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>30</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-second" class="fn">
+      <h3>time:second</h3>
+      <p class="fn-sig"><code>[$time:second]  -> int</code>  —  Extract the second component (0-59) of a datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:second [$time:parse-datetime "2026-05-26T14:30:45Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>45</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-nanosecond" class="fn">
+      <h3>time:nanosecond</h3>
+      <p class="fn-sig"><code>[$time:nanosecond]  -> int</code>  —  Extract the sub-second nanosecond component of a datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:nanosecond [$time:parse-datetime "2026-05-26T14:30:45.250Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>250000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-weekday" class="fn">
+      <h3>time:weekday</h3>
+      <p class="fn-sig"><code>[$time:weekday]  -> atom</code>  —  Return the day of the week as an atom, from :monday to :sunday.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:weekday [$time:parse-date "2026-05-26"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>:tuesday</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-day-of-year" class="fn">
+      <h3>time:day-of-year</h3>
+      <p class="fn-sig"><code>[$time:day-of-year]  -> int</code>  —  Return the 1-based day of the year (1-366).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:day-of-year [$time:parse-date "2026-01-01"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-week-of-year" class="fn">
+      <h3>time:week-of-year</h3>
+      <p class="fn-sig"><code>[$time:week-of-year]  -> int</code>  —  Return the week number of the year.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:week-of-year [$time:parse-date "2026-01-05"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-timezone-offset" class="fn">
+      <h3>time:timezone-offset</h3>
+      <p class="fn-sig"><code>[$time:timezone-offset]  -> int</code>  —  Return the offset from UTC in seconds for a datetime.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:timezone-offset [$time:parse-datetime "2026-01-15T12:00:00-05:00"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>-18000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-to-unix" class="fn">
+      <h3>time:to-unix</h3>
+      <p class="fn-sig"><code>[$time:to-unix]  -> int</code>  —  Convert a datetime to a Unix timestamp in seconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:to-unix [$time:parse-datetime "1970-01-01T00:16:40Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-to-unix-ms" class="fn">
+      <h3>time:to-unix-ms</h3>
+      <p class="fn-sig"><code>[$time:to-unix-ms]  -> int</code>  —  Convert a datetime to a Unix timestamp in milliseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:to-unix-ms [$time:parse-datetime "1970-01-01T00:00:01Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-to-unix-ns" class="fn">
+      <h3>time:to-unix-ns</h3>
+      <p class="fn-sig"><code>[$time:to-unix-ns]  -> int</code>  —  Convert a datetime to a Unix timestamp in nanoseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:to-unix-ns [$time:parse-datetime "1970-01-01T00:00:01Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add" class="fn">
+      <h3>time:add</h3>
+      <p class="fn-sig"><code>[$time:add]  -> any</code>  —  Add a duration to a date, datetime, or instant, advancing real elapsed time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add [$time:parse-datetime "2026-05-26T14:00:00Z"] [$time:duration-h 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T16:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-subtract" class="fn">
+      <h3>time:subtract</h3>
+      <p class="fn-sig"><code>[$time:subtract]  -> any</code>  —  Subtract a duration from a date, datetime, or instant, rewinding real elapsed time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:subtract [$time:parse-datetime "2026-05-26T14:00:00Z"] [$time:duration-h 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T12:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-diff" class="fn">
+      <h3>time:diff</h3>
+      <p class="fn-sig"><code>[$time:diff]  -> duration</code>  —  Return the duration from the second time to the first.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:diff [$time:parse-datetime "2026-05-26T14:00:00Z"] [$time:parse-datetime "2026-05-26T13:00:00Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3600000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-days" class="fn">
+      <h3>time:add-days</h3>
+      <p class="fn-sig"><code>[$time:add-days]  -> date</code>  —  Advance a date by a number of calendar days.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-days [$time:parse-date "2026-05-26"] 10]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-06-05'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-months" class="fn">
+      <h3>time:add-months</h3>
+      <p class="fn-sig"><code>[$time:add-months]  -> date</code>  —  Advance a date by a number of calendar months, clamping to end-of-month.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-months [$time:parse-date "2026-01-31"] 1]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-02-28'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-months-strict" class="fn">
+      <h3>time:add-months-strict</h3>
+      <p class="fn-sig"><code>[$time:add-months-strict]  -> date</code>  —  Advance a date by calendar months, raising rather than clamping a non-existent day.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-months-strict [$time:parse-date "2026-01-31"] 1]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER3300</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-years" class="fn">
+      <h3>time:add-years</h3>
+      <p class="fn-sig"><code>[$time:add-years]  -> date</code>  —  Advance a date by a number of calendar years, clamping to end-of-month.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-years [$time:parse-date "2024-02-29"] 1]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2025-02-28'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-hours" class="fn">
+      <h3>time:add-hours</h3>
+      <p class="fn-sig"><code>[$time:add-hours]  -> datetime</code>  —  Advance a datetime by a number of hours of real elapsed time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-hours [$time:parse-datetime "2026-05-26T22:00:00Z"] 5]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-27T03:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-minutes" class="fn">
+      <h3>time:add-minutes</h3>
+      <p class="fn-sig"><code>[$time:add-minutes]  -> datetime</code>  —  Advance a datetime by a number of minutes of real elapsed time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-minutes [$time:parse-datetime "2026-05-26T14:00:00Z"] 90]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T15:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-add-seconds" class="fn">
+      <h3>time:add-seconds</h3>
+      <p class="fn-sig"><code>[$time:add-seconds]  -> datetime</code>  —  Advance a datetime by a number of seconds of real elapsed time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add-seconds [$time:parse-datetime "2026-05-26T14:00:00Z"] 75]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:01:15Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-ms" class="fn">
+      <h3>time:duration-ms</h3>
+      <p class="fn-sig"><code>[$time:duration-ms]  -> duration</code>  —  Build a duration from a count of milliseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-ms 100]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>100000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-s" class="fn">
+      <h3>time:duration-s</h3>
+      <p class="fn-sig"><code>[$time:duration-s]  -> duration</code>  —  Build a duration from a count of seconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-s 5]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-m" class="fn">
+      <h3>time:duration-m</h3>
+      <p class="fn-sig"><code>[$time:duration-m]  -> duration</code>  —  Build a duration from a count of minutes.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-m 2]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>120000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-h" class="fn">
+      <h3>time:duration-h</h3>
+      <p class="fn-sig"><code>[$time:duration-h]  -> duration</code>  —  Build a duration from a count of hours.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:add [$time:parse-datetime "2026-05-26T14:00:00Z"] [$time:duration-h 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T16:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-d" class="fn">
+      <h3>time:duration-d</h3>
+      <p class="fn-sig"><code>[$time:duration-d]  -> duration</code>  —  Build a duration from a count of days.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-d 1]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>86400000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-parts" class="fn">
+      <h3>time:duration-parts</h3>
+      <p class="fn-sig"><code>[$time:duration-parts]  -> element</code>  —  Decompose a duration into days, hours, minutes, seconds, and nanoseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-parts [$time:parse-duration "1d2h30m45s"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[duration-parts days=1 hours=2 minutes=30 seconds=45 nanoseconds=0]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-total-ms" class="fn">
+      <h3>time:duration-total-ms</h3>
+      <p class="fn-sig"><code>[$time:duration-total-ms]  -> int</code>  —  Return the duration as a total count of milliseconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-total-ms [$time:duration-s 3]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-total-s" class="fn">
+      <h3>time:duration-total-s</h3>
+      <p class="fn-sig"><code>[$time:duration-total-s]  -> int</code>  —  Return the duration as a total count of seconds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-total-s [$time:duration-h 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7200</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-total-h" class="fn">
+      <h3>time:duration-total-h</h3>
+      <p class="fn-sig"><code>[$time:duration-total-h]  -> float</code>  —  Return the duration as a fractional count of hours.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-total-h [$time:duration-h 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-add" class="fn">
+      <h3>time:duration-add</h3>
+      <p class="fn-sig"><code>[$time:duration-add]  -> duration</code>  —  Add two durations.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-add [$time:duration-s 1] [$time:duration-s 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-sub" class="fn">
+      <h3>time:duration-sub</h3>
+      <p class="fn-sig"><code>[$time:duration-sub]  -> duration</code>  —  Subtract the second duration from the first.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-sub [$time:duration-s 5] [$time:duration-s 2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-mul" class="fn">
+      <h3>time:duration-mul</h3>
+      <p class="fn-sig"><code>[$time:duration-mul]  -> duration</code>  —  Multiply a duration by an integer factor.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-mul [$time:duration-s 2] 3]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>6000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-duration-div" class="fn">
+      <h3>time:duration-div</h3>
+      <p class="fn-sig"><code>[$time:duration-div]  -> duration</code>  —  Divide a duration by an integer divisor; raises on division by zero.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-div [$time:duration-s 6] 3]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-date" class="fn">
+      <h3>time:parse-date</h3>
+      <p class="fn-sig"><code>[$time:parse-date]  -> date</code>  —  Parse an ISO 8601 date string into a date value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:year [$time:parse-date "2026-05-26"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2026</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-datetime" class="fn">
+      <h3>time:parse-datetime</h3>
+      <p class="fn-sig"><code>[$time:parse-datetime]  -> datetime</code>  —  Parse an ISO 8601 datetime string into a datetime value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:hour [$time:parse-datetime "2026-05-26T14:30:45Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>14</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-instant" class="fn">
+      <h3>time:parse-instant</h3>
+      <p class="fn-sig"><code>[$time:parse-instant]  -> instant</code>  —  Parse an ISO 8601 string into an instant normalized to UTC.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:parse-instant "1970-01-01T00:00:01Z"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1000000000</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-duration" class="fn">
+      <h3>time:parse-duration</h3>
+      <p class="fn-sig"><code>[$time:parse-duration]  -> duration</code>  —  Parse an ISO 8601 duration or shorthand string into a duration value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:duration-parts [$time:parse-duration "1d2h30m45s"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[duration-parts days=1 hours=2 minutes=30 seconds=45 nanoseconds=0]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-rfc3339" class="fn">
+      <h3>time:parse-rfc3339</h3>
+      <p class="fn-sig"><code>[$time:parse-rfc3339]  -> datetime</code>  —  Parse an RFC 3339 timestamp string into a datetime value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:parse-rfc3339 "2026-05-26T14:30:00Z"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-rfc2822" class="fn">
+      <h3>time:parse-rfc2822</h3>
+      <p class="fn-sig"><code>[$time:parse-rfc2822]  -> datetime</code>  —  Parse an RFC 2822 email-style date string into a datetime value.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:parse-rfc2822 "Tue, 26 May 2026 14:30:00 +0000"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-with-format" class="fn">
+      <h3>time:parse-with-format</h3>
+      <p class="fn-sig"><code>[$time:parse-with-format]  -> datetime</code>  —  Parse a string into a datetime using an ICU/LDML pattern.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:parse-with-format "2026-05-26 14:30:00" "yyyy-MM-dd HH:mm:ss"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-strftime" class="fn">
+      <h3>time:parse-strftime</h3>
+      <p class="fn-sig"><code>[$time:parse-strftime]  -> datetime</code>  —  Parse a string into a datetime using strftime tokens, for ingesting external output.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:parse-strftime "2026-05-26 14:30:00" "%Y-%m-%d %H:%M:%S"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-iso8601" class="fn">
+      <h3>time:format-iso8601</h3>
+      <p class="fn-sig"><code>[$time:format-iso8601]  -> string</code>  —  Format a date or datetime as a canonical ISO 8601 string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-iso8601 [$time:parse-datetime "2026-05-26T14:30:00Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-rfc3339" class="fn">
+      <h3>time:format-rfc3339</h3>
+      <p class="fn-sig"><code>[$time:format-rfc3339]  -> string</code>  —  Format a datetime as an RFC 3339 timestamp string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-rfc3339 [$time:parse-datetime "2026-05-26T14:30:00Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26T14:30:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-rfc2822" class="fn">
+      <h3>time:format-rfc2822</h3>
+      <p class="fn-sig"><code>[$time:format-rfc2822]  -> string</code>  —  Format a datetime as an RFC 2822 email-style date string.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-rfc2822 [$time:parse-datetime "2026-05-26T14:30:00Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'Tue, 26 May 2026 14:30:00 +0000'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-with-format" class="fn">
+      <h3>time:format-with-format</h3>
+      <p class="fn-sig"><code>[$time:format-with-format]  -> string</code>  —  Format a date or datetime using an ICU/LDML pattern at the root locale.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-with-format [$time:parse-datetime "2026-05-26T14:30:00Z"] "yyyy-MM-dd HH:mm:ss"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-05-26 14:30:00'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-duration" class="fn">
+      <h3>time:format-duration</h3>
+      <p class="fn-sig"><code>[$time:format-duration]  -> string</code>  —  Format a duration as a shorthand string such as 1d2h30m45s.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-duration [$time:parse-duration "1d2h30m45s"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'1d2h30m45s'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-relative" class="fn">
+      <h3>time:format-relative</h3>
+      <p class="fn-sig"><code>[$time:format-relative]  -> string</code>  —  Format a datetime relative to a reference time, such as 2 hours ago.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-relative [$time:parse-datetime "2026-05-26T12:00:00Z"] [$time:parse-datetime "2026-05-26T14:00:00Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2 hours ago'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-timezone" class="fn">
+      <h3>time:timezone</h3>
+      <p class="fn-sig"><code>[$time:timezone]  -> element</code>  —  Look up an IANA timezone by name, returning its offset and DST status.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:timezone "America/New_York"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[timezone name='America/New_York' offset=-18000 dst=true]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-to-timezone" class="fn">
+      <h3>time:to-timezone</h3>
+      <p class="fn-sig"><code>[$time:to-timezone]  -> datetime</code>  —  Convert a datetime to the wall-clock time in the named timezone.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:to-timezone [$time:parse-datetime "2026-01-15T17:00:00Z"] "America/New_York"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-01-15T12:00:00-05:00'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-to-utc" class="fn">
+      <h3>time:to-utc</h3>
+      <p class="fn-sig"><code>[$time:to-utc]  -> datetime</code>  —  Convert a datetime to its equivalent in UTC.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:to-utc [$time:parse-datetime "2026-01-15T12:00:00-05:00"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-01-15T17:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-utc-now" class="fn">
+      <h3>time:utc-now</h3>
+      <p class="fn-sig"><code>[$time:utc-now]  -> datetime</code>  —  Return the current wall-clock datetime in UTC.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:timezone-offset [$time:utc-now]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-system-timezone" class="fn">
+      <h3>time:system-timezone</h3>
+      <p class="fn-sig"><code>[$time:system-timezone]  -> string</code>  —  Return the host's configured timezone identifier.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[>= [$time:timezone-offset [$time:datetime-with-tz 2026 1 15 12 0 0 [$time:system-timezone]]] -86400]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-list-timezones" class="fn">
+      <h3>time:list-timezones</h3>
+      <p class="fn-sig"><code>[$time:list-timezones]  -> [sequence string]</code>  —  List the available IANA timezone identifiers.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:list-timezones]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>('UTC', 'Etc/UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Kolkata', 'Australia/Sydney')</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-is-leap-year" class="fn">
+      <h3>time:is-leap-year</h3>
+      <p class="fn-sig"><code>[$time:is-leap-year]  -> bool</code>  —  Report whether the given year is a leap year.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:is-leap-year 2024]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-is-before" class="fn">
+      <h3>time:is-before</h3>
+      <p class="fn-sig"><code>[$time:is-before]  -> bool</code>  —  Report whether the first time is chronologically before the second.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:is-before [$time:parse-date "2026-01-01"] [$time:parse-date "2026-12-31"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-is-after" class="fn">
+      <h3>time:is-after</h3>
+      <p class="fn-sig"><code>[$time:is-after]  -> bool</code>  —  Report whether the first time is chronologically after the second.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:is-after [$time:parse-date "2026-12-31"] [$time:parse-date "2026-01-01"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-is-same" class="fn">
+      <h3>time:is-same</h3>
+      <p class="fn-sig"><code>[$time:is-same]  -> bool</code>  —  Report whether two times denote the same instant, regardless of offset.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:is-same [$time:parse-datetime "2026-05-26T14:00:00Z"] [$time:parse-datetime "2026-05-26T16:00:00+02:00"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-is-same-day" class="fn">
+      <h3>time:is-same-day</h3>
+      <p class="fn-sig"><code>[$time:is-same-day]  -> bool</code>  —  Report whether two datetimes fall on the same calendar day.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:is-same-day [$time:parse-datetime "2026-05-26T01:00:00Z"] [$time:parse-datetime "2026-05-26T23:00:00Z"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-days-in-month" class="fn">
+      <h3>time:days-in-month</h3>
+      <p class="fn-sig"><code>[$time:days-in-month]  -> int</code>  —  Return the number of days in the given month of the given year.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:days-in-month 2024 2]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>29</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-recurrence" class="fn">
+      <h3>time:recurrence</h3>
+      <p class="fn-sig"><code>[$time:recurrence]  -> element</code>  —  Build and eagerly validate a recurrence rule from a frequency, anchor, timezone, and options.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:recurrence :yearly '2026-01-01T09:00:00' 'UTC' {by-month: 2 by-month-day: 30}]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER3323</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-validate-rule" class="fn">
+      <h3>time:validate-rule</h3>
+      <p class="fn-sig"><code>[$time:validate-rule]  -> element</code>  —  Run the full validation check on a recurrence rule, raising on a fault.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:validate-rule [recurrence freq=:weekly anchor='2026-06-01T09:00:00' tz='UTC' count=2 until='2026-12-01T00:00:00']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER3323</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-is-valid-rule" class="fn">
+      <h3>time:is-valid-rule</h3>
+      <p class="fn-sig"><code>[$time:is-valid-rule]  -> bool</code>  —  Report whether a recurrence rule is valid, never raising.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:is-valid-rule [recurrence freq=:monthly anchor='2026-01-01T09:00:00' tz='UTC' [by-day [nth 3 :thursday]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-rrule" class="fn">
+      <h3>time:parse-rrule</h3>
+      <p class="fn-sig"><code>[$time:parse-rrule]  -> element</code>  —  Parse an RFC 5545 RRULE string into a recurrence rule, given an anchor and timezone.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-rrule [$time:parse-rrule 'FREQ=MONTHLY;BYDAY=3TH' '2026-01-01T09:00:00' 'UTC']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'FREQ=MONTHLY;BYDAY=3TH'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-rrule" class="fn">
+      <h3>time:format-rrule</h3>
+      <p class="fn-sig"><code>[$time:format-rrule]  -> string</code>  —  Serialize a recurrence rule to its RFC 5545 RRULE string form.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-rrule [$time:parse-rrule 'FREQ=MONTHLY;BYDAY=3TH' '2026-01-01T09:00:00' 'UTC']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'FREQ=MONTHLY;BYDAY=3TH'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-parse-cron" class="fn">
+      <h3>time:parse-cron</h3>
+      <p class="fn-sig"><code>[$time:parse-cron]  -> element</code>  —  Parse a 5- or 6-field cron expression or @macro into a recurrence rule.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-cron [$time:parse-cron '30 9 * * 1' 'UTC']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'30 9 * * 1'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-format-cron" class="fn">
+      <h3>time:format-cron</h3>
+      <p class="fn-sig"><code>[$time:format-cron]  -> element</code>  —  Serialize a recurrence rule to a cron string, raising if cron cannot express it.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:format-cron [$time:parse-cron '30 9 * * 1' 'UTC']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'30 9 * * 1'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-next-occurrence" class="fn">
+      <h3>time:next-occurrence</h3>
+      <p class="fn-sig"><code>[$time:next-occurrence]  -> datetime</code>  —  Return the first occurrence of a rule strictly after the given time.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:next-occurrence [recurrence freq=:daily anchor='2026-06-01T09:00:00' tz='UTC' count=5] '2026-06-02T09:00:00']</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-06-03T09:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-occurrences-in" class="fn">
+      <h3>time:occurrences-in</h3>
+      <p class="fn-sig"><code>[$time:occurrences-in]  -> [sequence datetime]</code>  —  Return a rule's occurrences within a half-open window, in ascending order.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:occurrences-in [recurrence freq=:daily anchor='2026-06-01T09:00:00' tz='UTC' count=3] '2026-06-01T00:00:00' '2026-06-10T00:00:00']</code>
+          </pre>
+          <pre class="sample-output">
+            <code>('2026-06-01T09:00:00Z', '2026-06-02T09:00:00Z', '2026-06-03T09:00:00Z')</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-nth-occurrence" class="fn">
+      <h3>time:nth-occurrence</h3>
+      <p class="fn-sig"><code>[$time:nth-occurrence]  -> datetime</code>  —  Return the nth occurrence of a rule, counting 1-based from the anchor.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:nth-occurrence [recurrence freq=:weekly interval=2 anchor='2026-06-01T00:00:00' tz='UTC' [by-day :monday :wednesday :friday]] 4]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'2026-06-15T00:00:00Z'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-rule-freq" class="fn">
+      <h3>time:rule-freq</h3>
+      <p class="fn-sig"><code>[$time:rule-freq]  -> atom</code>  —  Return the base frequency atom of a recurrence rule.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:rule-freq [$time:parse-rrule 'FREQ=MONTHLY;BYDAY=3TH' '2026-01-01T09:00:00' 'UTC']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>:monthly</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-rule-bound" class="fn">
+      <h3>time:rule-bound</h3>
+      <p class="fn-sig"><code>[$time:rule-bound]  -> element</code>  —  Return a rule's bound — a count, an until datetime, or absence if infinite.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:rule-bound [recurrence freq=:daily anchor='2026-06-01T09:00:00' tz='UTC' count=3]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[count 3]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-time-rule-is-finite" class="fn">
+      <h3>time:rule-is-finite</h3>
+      <p class="fn-sig"><code>[$time:rule-is-finite]  -> bool</code>  —  Report whether a recurrence rule produces a finite number of occurrences.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:rule-is-finite [recurrence freq=:daily anchor='2026-06-01T09:00:00' tz='UTC' count=3]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

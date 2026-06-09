@@ -1,6 +1,6 @@
 //! CX schema validator binding — `cx_validate` + `cx_validate_apply_defaults`.
 //!
-//! Per ADR 0009 + spec/schema.md §10 + spec/abi.md §2.13. The C ABI
+//! Per spec/schema.md §10 + spec/abi.md §2.13. The C ABI
 //! returns a framed binary diagnostics payload:
 //!
 //! ```text

@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,54 +21,38 @@ type test struct {
 	sections map[string]string
 }
 
+// stripBlankEdges reproduces the former flush() normalization: strip
+// leading/trailing BLANK lines from a section body. Applied to the loader's
+// byte-exact body so the sections fed to the runner are byte-identical to the
+// old .txt path.
+func stripBlankEdges(s string) string {
+	lines := strings.Split(s, "\n")
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
+}
+
+// parseSuite loads a .cxd conformance suite via the CX-native loader
+// (cxlib.LoadFixtures), replacing the bespoke === test: / --- key scanner.
+// The runner keys into t.sections[name] by presence exactly as before.
 func parseSuite(path string) ([]test, error) {
-	f, err := os.Open(path)
+	cases, err := cxlib.LoadFixtures(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-
-	var tests []test
-	var cur *test
-	var section string
-	var buf []string
-
-	flush := func() {
-		if cur != nil && section != "" {
-			lines := buf
-			for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
-				lines = lines[1:]
-			}
-			for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
-				lines = lines[:len(lines)-1]
-			}
-			cur.sections[section] = strings.Join(lines, "\n")
+	tests := make([]test, 0, len(cases))
+	for _, c := range cases {
+		secs := make(map[string]string, len(c.Sections))
+		for k, v := range c.Sections {
+			secs[k] = stripBlankEdges(v)
 		}
-		buf = buf[:0]
+		tests = append(tests, test{name: c.Name, sections: secs})
 	}
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "=== test:") {
-			flush()
-			if cur != nil {
-				tests = append(tests, *cur)
-			}
-			cur = &test{name: strings.TrimSpace(line[9:]), sections: make(map[string]string)}
-			section = ""
-		} else if strings.HasPrefix(line, "--- ") && cur != nil {
-			flush()
-			section = strings.TrimSpace(line[4:])
-		} else if section != "" && cur != nil {
-			buf = append(buf, line)
-		}
-	}
-	flush()
-	if cur != nil {
-		tests = append(tests, *cur)
-	}
-	return tests, scanner.Err()
+	return tests, nil
 }
 
 // ── dispatch ──────────────────────────────────────────────────────────────────
@@ -85,42 +68,30 @@ func dispatch(fmt, out string) convFn {
 		{"cx", "json"}:   cxlib.ToJson,
 		{"cx", "yaml"}:   cxlib.ToYaml,
 		{"cx", "toml"}:   cxlib.ToToml,
-		{"cx", "md"}:     cxlib.ToMd,
 		{"xml", "cx"}:    cxlib.XmlToCx,
 		{"xml", "xml"}:   cxlib.XmlToXml,
 		{"xml", "ast"}:   cxlib.XmlToAst,
 		{"xml", "json"}:  cxlib.XmlToJson,
 		{"xml", "yaml"}:  cxlib.XmlToYaml,
 		{"xml", "toml"}:  cxlib.XmlToToml,
-		{"xml", "md"}:    cxlib.XmlToMd,
 		{"json", "cx"}:   cxlib.JsonToCx,
 		{"json", "xml"}:  cxlib.JsonToXml,
 		{"json", "ast"}:  cxlib.JsonToAst,
 		{"json", "json"}: cxlib.JsonToJson,
 		{"json", "yaml"}: cxlib.JsonToYaml,
 		{"json", "toml"}: cxlib.JsonToToml,
-		{"json", "md"}:   cxlib.JsonToMd,
 		{"yaml", "cx"}:   cxlib.YamlToCx,
 		{"yaml", "xml"}:  cxlib.YamlToXml,
 		{"yaml", "ast"}:  cxlib.YamlToAst,
 		{"yaml", "json"}: cxlib.YamlToJson,
 		{"yaml", "yaml"}: cxlib.YamlToYaml,
 		{"yaml", "toml"}: cxlib.YamlToToml,
-		{"yaml", "md"}:   cxlib.YamlToMd,
 		{"toml", "cx"}:   cxlib.TomlToCx,
 		{"toml", "xml"}:  cxlib.TomlToXml,
 		{"toml", "ast"}:  cxlib.TomlToAst,
 		{"toml", "json"}: cxlib.TomlToJson,
 		{"toml", "yaml"}: cxlib.TomlToYaml,
 		{"toml", "toml"}: cxlib.TomlToToml,
-		{"toml", "md"}:   cxlib.TomlToMd,
-		{"md", "cx"}:     cxlib.MdToCx,
-		{"md", "xml"}:    cxlib.MdToXml,
-		{"md", "ast"}:    cxlib.MdToAst,
-		{"md", "json"}:   cxlib.MdToJson,
-		{"md", "yaml"}:   cxlib.MdToYaml,
-		{"md", "toml"}:   cxlib.MdToToml,
-		{"md", "md"}:     cxlib.MdToMd,
 	}
 	return table[key{fmt, out}]
 }
@@ -396,7 +367,7 @@ func runTest(t test) []string {
 	var src, inFmt string
 	for _, pair := range [][2]string{
 		{"in_cx", "cx"}, {"in_xml", "xml"}, {"in_json", "json"},
-		{"in_yaml", "yaml"}, {"in_toml", "toml"}, {"in_md", "md"},
+		{"in_yaml", "yaml"}, {"in_toml", "toml"},
 	} {
 		if v, ok := s[pair[0]]; ok {
 			src, inFmt = v, pair[1]
@@ -477,16 +448,6 @@ func runTest(t test) []string {
 		}
 	}
 
-	// out_md
-	if exp, ok := s["out_md"]; ok {
-		out, err := call("md")
-		if err != nil {
-			failures = append(failures, fmt.Sprintf("out_md parse error: %v", err))
-		} else if strings.TrimSpace(exp) != strings.TrimSpace(out) {
-			failures = append(failures, fmt.Sprintf("out_md mismatch\n  expected:\n%s\n  got:\n%s", exp, out))
-		}
-	}
-
 	return failures
 }
 
@@ -527,12 +488,11 @@ func main() {
 	suites := os.Args[1:]
 	if len(suites) == 0 {
 		suites = []string{
-			filepath.Join(base, "core.txt"),
-			filepath.Join(base, "extended.txt"),
-			filepath.Join(base, "xml.txt"),
-			filepath.Join(base, "md.txt"),
-			filepath.Join(base, "schema_validate.txt"),
-			filepath.Join(base, "streaming_write.txt"),
+			filepath.Join(base, "core.cxd"),
+			filepath.Join(base, "extended.cxd"),
+			filepath.Join(base, "xml.cxd"),
+			filepath.Join(base, "schema_validate.cxd"),
+			filepath.Join(base, "streaming_write.cxd"),
 		}
 	}
 

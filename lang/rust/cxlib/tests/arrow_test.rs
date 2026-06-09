@@ -7,7 +7,7 @@
 //!   - Round-trip per supported v0.6.0 column type: int / i8 / i16 / i32 /
 //!     float / bool / string / date / bytes (9 tests).
 //!   - datetime column round-trips as Arrow timestamp[ns, UTC].
-//!   - Arrow record → CXDB → Arrow record inverse round-trip.
+//!   - Arrow record → CXCol → Arrow record inverse round-trip.
 //!   - Capability + version + invalid-input smoke tests.
 //!
 //! Run:  cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml
@@ -63,7 +63,7 @@ fn availability_reports_truthy_when_lib_loaded() {
 
 #[test]
 fn round_trip_int() {
-    let src = "[stats :table[score:int]\n  100\n  -1\n  9223372036854775807\n  -9223372036854775808\n]";
+    let src = "[stats [table[score::int]]\n  100\n  -1\n  9223372036854775807\n  -9223372036854775808\n]";
     let payload = to_data_bin_chunked(src).expect("to_data_bin_chunked");
     let recs = read_all(&payload);
     assert_eq!(recs.len(), 1);
@@ -84,7 +84,7 @@ fn round_trip_int() {
 
 #[test]
 fn round_trip_i8() {
-    let src = "[stats :table[v:i8]\n  -128\n  -1\n  0\n  127\n]";
+    let src = "[stats [table[v::i8]]\n  -128\n  -1\n  0\n  127\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<Int8Array>().unwrap();
@@ -96,7 +96,7 @@ fn round_trip_i8() {
 
 #[test]
 fn round_trip_i16() {
-    let src = "[stats :table[v:i16]\n  -32768\n  -1\n  0\n  32767\n]";
+    let src = "[stats [table[v::i16]]\n  -32768\n  -1\n  0\n  32767\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<Int16Array>().unwrap();
@@ -108,7 +108,7 @@ fn round_trip_i16() {
 
 #[test]
 fn round_trip_i32() {
-    let src = "[stats :table[v:i32]\n  -2147483648\n  -1\n  0\n  2147483647\n]";
+    let src = "[stats [table[v::i32]]\n  -2147483648\n  -1\n  0\n  2147483647\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<Int32Array>().unwrap();
@@ -120,7 +120,7 @@ fn round_trip_i32() {
 
 #[test]
 fn round_trip_float() {
-    let src = "[stats :table[v:float]\n  0.0\n  -1.5\n  3.14159\n  1e100\n]";
+    let src = "[stats [table[v::float]]\n  0.0\n  -1.5\n  3.14159\n  1e100\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<Float64Array>().unwrap();
@@ -132,7 +132,7 @@ fn round_trip_float() {
 
 #[test]
 fn round_trip_bool() {
-    let src = "[flags :table[v:bool]\n  true\n  false\n  true\n  false\n]";
+    let src = "[flags [table[v::bool]]\n  true\n  false\n  true\n  false\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<BooleanArray>().unwrap();
@@ -144,7 +144,7 @@ fn round_trip_bool() {
 
 #[test]
 fn round_trip_string() {
-    let src = "[names :table[v:string]\n  alice\n  bob\n  carol\n  unicode-é-é-ñ\n]";
+    let src = "[names [table[v::string]]\n  alice\n  bob\n  carol\n  unicode-é-é-ñ\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<StringArray>().unwrap();
@@ -156,7 +156,7 @@ fn round_trip_string() {
 
 #[test]
 fn round_trip_date() {
-    let src = "[evts :table[when:date]\n  2026-05-09\n  1970-01-01\n  9999-12-31\n  1900-01-01\n]";
+    let src = "[evts [table[when::date]]\n  2026-05-09\n  1970-01-01\n  9999-12-31\n  1900-01-01\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(0).as_any().downcast_ref::<Date32Array>().unwrap();
@@ -173,7 +173,7 @@ fn round_trip_date() {
 
 #[test]
 fn round_trip_bytes() {
-    let src = "[blobs :table[name:string blob:bytes]\n  alpha \"A1B2\"\n  beta \"FF00DE\"\n  empty \"\"\n]";
+    let src = "[blobs [table[name::string blob::bytes]]\n  alpha \"A1B2\"\n  beta \"FF00DE\"\n  empty \"\"\n]";
     let payload = to_data_bin_chunked(src).unwrap();
     let recs = read_all(&payload);
     let col = recs[0].column(1).as_any().downcast_ref::<BinaryArray>().unwrap();
@@ -198,7 +198,7 @@ fn ts_ns(y: i32, mo: u32, d: u32, h: u32, mi: u32, s: u32) -> i64 {
 #[test]
 fn round_trip_datetime() {
     let src = concat!(
-        "[evts :table[when:datetime]\n",
+        "[evts [table[when::datetime]]\n",
         "  2024-01-15T12:34:56Z\n",
         "  2025-06-30T23:00:00+02:00\n",
         "  1970-01-01T00:00:00Z\n",
@@ -215,7 +215,7 @@ fn round_trip_datetime() {
     }
 
     let col = recs[0].column(0).as_any().downcast_ref::<TimestampNanosecondArray>().unwrap();
-    // CXDB strict-canonical normalizes offsets to UTC on the wire — the
+    // CXCol strict-canonical normalizes offsets to UTC on the wire — the
     // +02:00 row arrives as 21:00:00 UTC.
     let want = [
         ts_ns(2024, 1, 15, 12, 34, 56),
@@ -227,7 +227,7 @@ fn round_trip_datetime() {
         assert_eq!(col.value(i), v, "row {i}");
     }
 
-    // Inverse: arrow → CXDB → arrow round-trip preserves equality.
+    // Inverse: arrow → CXCol → arrow round-trip preserves equality.
     let reader2 = cxa::export(&payload).unwrap();
     let out = cxa::import_to_data_bin(reader2).unwrap();
     let recs2 = read_all(&out);
@@ -243,8 +243,8 @@ fn round_trip_datetime() {
 
 #[test]
 fn inverse_from_rust_built_table() {
-    // Build a record directly (no CXDB starting point) and verify the
-    // inverse direction: arrow → CXDB → arrow re-decode → equality.
+    // Build a record directly (no CXCol starting point) and verify the
+    // inverse direction: arrow → CXCol → arrow re-decode → equality.
     let schema = Arc::new(Schema::new(vec![
         Field::new("name",  DataType::Utf8,    false),
         Field::new("score", DataType::Int64,   false),
@@ -279,7 +279,7 @@ fn inverse_from_rust_built_table() {
 #[test]
 fn export_rejects_invalid_input() {
     assert!(cxa::export(&[]).is_err(), "empty input must error");
-    // Garbage bytes shorter than a CXDB header — libcx_arrow surfaces a
+    // Garbage bytes shorter than a CXCol header — libcx_arrow surfaces a
     // parse error.
     assert!(cxa::export(b"garb").is_err(), "garbage input must error");
 }

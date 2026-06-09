@@ -1,0 +1,313 @@
+[# Section 10 — migration: v0.7.x → v0.8.0, cross-format intake,
+   retired surfaces. #]
+
+[section id=migration n=10 title='Migration'
+
+  [child id=from-v07x n=10.1 title='From v0.7.x to v0.8.0'
+    [intro
+      """v0.8.0 is the first stable tag after v0.7.5 (v0.7.6 was skipped
+         intentionally — see backlog decision `d-2026-05-22-04`). v0.8.0
+         is the pre-release API/format-stability boundary; there are no
+         external users yet, so the renames below were applied directly
+         across the codebase rather than shipped as user-facing tooling.
+         This section is the reference for the shape of the changes."""]
+
+    [body
+      """**Rename: programs → code.** Every internal `programs`
+         reference becomes `code`. The brand
+         layer ("CX is data and code") was renamed immediately on
+         d-2026-05-22-01; the internal rename cascades through:"""]
+
+    [table columns=(was, is)
+      [row was='cx_program_eval' is='cx_code_eval']
+      [row was='vcx/programs/' is='vcx/code/']
+      [row was='spec/programs.md' is='spec/code.md']
+      [row was='conformance/programs.txt' is='conformance/code.txt']
+      [row was='_cx_program_diagram (wasm)' is='_cx_code_diagram (wasm)']
+      [row was='--- in_cxl (fixture marker)' is='--- in_code (fixture marker)']]
+
+    [body
+      """**`[?find]` is retired.** `[?find]` was always sugar for
+         `[?for]` over a pattern. The migration is one of two
+         forms:"""]
+
+    [table columns=(was, is)
+      [row was='[?find [user $u] :yield $u]' is='//user  or  [?for [user $u] [yield $u]]']
+      [row was='[?find [user @active=true $u] :yield $u]' is='//user[@active=true]']
+      [row was='[?find [user [email $e]] :yield $e]' is='//user/email']
+      [row was='count([?find [user @active=true $u] :yield $u])' is='[$count //user[@active=true]]']]
+
+    [body
+      """**CXPath is now a value kind.** A path expression like `//user`
+         parses to a `cx.PathNode` value, evaluates to a sequence, and
+         round-trips canonically as the terse form. The retired v0.7.0
+         CXPath subset is replaced by XPath 3.1 alignment — see
+         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]
+
+    [body
+      """**Multi-arm `[?match]`.** `[?match]` now supports N arms
+         with `[case …]` / `[when …]` /
+         `[else …]` clause children, scalar literal patterns, `_`
+         wildcard, and `[where …]` guards. The 2-arg form (single arm,
+         raises `CXER0100` on miss) is preserved unchanged."""]
+
+    [example lang=cx
+      """[# v0.7.x — nested if chain (legacy slot form)                 #]
+         [?if (name($n) = 'prose') :then [p $n]
+              :else [?if (name($n) = 'code') :then [pre $n]
+                          :else ()]]
+
+         [# v0.8.0 — multi-arm match (clause-child form)                #]
+         [?match $n
+           [case [prose $p] [p $p]]
+           [case [code $c]  [pre $c]]
+           [else            ()]]"""]
+
+    [body
+      """**`[?modify]` is new.** There was no idiomatic update
+         directive in v0.7.x — code had
+         to rebuild via `[?for]`. v0.8.0 ships the eleven-action
+         vocabulary (`[set V]` / `[delete]` / `[using F]` /
+         `[rename N]` / `[set-attr N V]` / `[delete-attr N]` /
+         `[append V]` / `[prepend V]` / `[insert-before V]` /
+         `[insert-after V]` / `[replace V]`). See [[modify]]."""]
+
+    [body
+      """**Two-layer bindings.** See
+         [`spec/bindings.md`](../../spec/bindings.md). Layer 1 is the
+         canonical 16-method surface, identical across V/Python/Go/Rust.
+         Layer 2 is opt-in host idiom packs (`cxlib.idioms` in Python,
+         `cxlib/idioms` in Go, `cxlib::idioms` in Rust). v0.7.x had a
+         single flat surface per binding; v0.8.0 codifies the
+         separation. See [[bindings]]."""]
+
+    [body
+      """**Binding scope reduced to four.** v0.8.0 ships only V
+         (native), Python, Go, Rust. The
+         TypeScript, Java, C#, Ruby, Kotlin, and Swift bindings are
+         moved to `lang/_archived/` (preserved, not deleted).
+         Restoration is opt-in once Layer-1 is stable; community
+         contributions accepted but not blocked on. The make tests for
+         archived bindings are no longer in the default `make test`
+         target."""]
+
+    [note
+      """The renames above are **mechanical** — they do not attempt to
+         convert hand-rolled nested `[?if]` chains to multi-arm
+         `[?match]` (that requires semantic understanding of what each
+         branch tests). The conversion is straightforward by hand once
+         you know the multi-arm form (see [[match]])."""]]
+
+  [child id=from-xml n=10.2 title='From XML'
+    [intro
+      """XML is the closest projection to CX — same element / attribute /
+         body shape. Migration is one-shot: `cx convert input.xml --to
+         cx --out input.cx`."""]
+
+    [list
+      [item """**DOCTYPE / DTD** — drop. Use a CX schema (`.cxs`)
+              instead. See [[schema]]."""]
+      [item """**Namespaces** — `xmlns:*` declarations become CX
+              attributes on the root element; namespace-qualified
+              element names use the same `prefix:name` form. See
+              [`spec/namespaces.md`](../../spec/namespaces.md)."""]
+      [item """**CDATA** — projects to triple-quoted strings."""]
+      [item """**Processing instructions** — preserved as `[?pi …]`
+              elements; their bodies are opaque text."""]
+      [item """**XPath queries** — port to CXPath. The selection core
+              is identical (see
+              [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md));
+              you drop XPath's `for`/`let`/`if`/`function` constructs
+              in favor of the CX directives."""]
+      [item """**XSLT / XQuery transforms** — port to CX code. There
+              is no automated converter; the structural mapping is
+              direct because the data model is the same."""]]]
+
+  [child id=from-json-yaml n=10.3 title='From JSON / YAML / TOML'
+    [intro
+      """These are projection formats. Migration is again one-shot:
+         `cx convert input.json --to cx --out input.cx`."""]
+
+    [body
+      """The projection rules are deterministic and reversible (see
+         [[json]], [[yaml]], [[toml]]). What you gain on the CX side:"""]
+
+    [list
+      [item """**Comments.** JSON has none; YAML and TOML have ad-hoc
+              comments. CX has structured `[# … #]` comments that
+              survive `cx fmt` and round-trip across projections."""]
+      [item """**Schemas.** JSON Schema / YAML schemas are external
+              artifacts. CX schemas are first-class CX, in the same
+              parser, with the same toolchain."""]
+      [item """**Queries.** JSONPath / `jq` / YAML query systems are
+              format-specific. CXPath works on any projected document
+              regardless of source format."""]
+      [item """**Updates.** No idiomatic pure-functional update for
+              JSON / YAML / TOML at the format level. `[?modify]`
+              gives you one."""]
+      [item """**Identity.** Canonical JSON, JCS, and `jq -S` exist
+              but are not universally adopted. CX has one canonical
+              form built into every tool."""]]]
+
+  [child id=retired-surfaces n=10.4 title='Retired surfaces and replacements'
+    [intro
+      """Surfaces removed or renamed across v0.7.x → v0.8.0, with their
+         replacement."""]
+
+    [table columns=(retired, replacement, source)
+      [row retired='[?find]' replacement='[?for] over pattern, or CXPath //name'
+        source='CXPath value-kind alignment']
+      [row retired='[- comment -]' replacement='[# comment #]'
+        source='lexer consolidation']
+      [row retired=':contains predicate hack' replacement='ancestor:: axis'
+        source='CXPath value-kind alignment']
+      [row retired=':direct modifier hack' replacement='following-sibling:: axis'
+        source='CXPath value-kind alignment']
+      [row retired='XPath general-comparison =' replacement='value-comparison only'
+        source='CXPath value-kind alignment']
+      [row retired='cx_program_eval (C ABI)' replacement='cx_code_eval'
+        source='programs → code rename']
+      [row retired='in_cxl (fixture marker)' replacement='in_code'
+        source='programs → code rename']
+      [row retired='cxl-* playground starter ids' replacement='code-* starter ids'
+        source='Phase 7.3']
+      [row retired='TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'
+        replacement='archived under lang/_archived/'
+        source='d-2026-05-22-03']
+      [row retired='Layer-1-only flat binding surface' replacement='Layer 1 + Layer 2'
+        source='d-2026-05-22-07']]
+
+    [note
+      """**Archived bindings are not deleted.** Files move to
+         `lang/_archived/<lang>/` and remain in git history. The
+         restoration path: each archived binding can return on opt-in
+         once Layer 1 is stable. Community contributions are welcome
+         on the archived path; they are not blocked on by the core
+         team."""]
+
+    [body
+      """**Doc-gen pipeline consolidated.** v0.8.0 ships a single
+         pre-publish documentation generator at
+         `scripts/gen_guide/` rendering `docs-src/canonical/` into
+         the multi-page guide at `docs/guide/` — eat-our-own-dog-food
+         via `cx eval` on every section. See [[docgen]] for the
+         pipeline and [`make guide`] for the
+         entry point."""]]
+
+  [child id=extend-contribute n=10.5 title='Extend and contribute'
+    [intro
+      """CX is open to contribution at every layer. This subsection is
+         the developer-facing how-to: filing issues, adding fixtures,
+         proposing changes, shipping a binding, debugging a failure."""]
+
+    [child id=file-bug n=10.5.1 title='Filing an issue'
+      [body
+        """Issues live in the project tracker. Every report should
+           include: minimal CX reproducer (one file), `cx --version`
+           output, error code (e.g. CXER0103) + message, expected vs
+           observed behaviour, and the workaround you used if any.
+           For parse / canon / hash bugs, a 5-line CX snippet is
+           usually enough; for evaluator bugs include the directive
+           shape and the input doc."""]]
+
+    [child id=add-fixture n=10.5.2 title='Adding a conformance fixture'
+      [body
+        """The conformance suite is `conformance/*.txt` files in
+           per-feature buckets (code.txt for directives, data_bin.txt
+           for binary wire, etc.). Each fixture has a `=== test: id`
+           header + `--- in_cx` / `--- call` / `--- out_text` (or
+           `out_err`) blocks. To add one:"""]
+      [list
+        [item """Identify the right file (`code.txt` for code-language
+                features; `binding_api.txt` for Layer-1 parity)."""]
+        [item """Add the fixture block following existing format."""]
+        [item """Run the runner (`devbox run -- make test-vcx` for V
+                conformance; `make test-binding-api-parity` for Layer-1
+                cross-binding)."""]
+        [item """If the runner errors on your fixture, the implementation
+                doesn't handle it — that's the bug; file it. If runner
+                green, your fixture is now a regression gate."""]]]
+
+    [child id=propose-adr n=10.5.3 title='Proposing a design change'
+      [body
+        """CX changes that affect the spec / ABI / surface are made by
+           editing the spec — the spec is the single source of truth.
+           The workflow:"""]
+      [list
+        [item """**Draft** the change as an edit to the relevant spec
+                file under `spec/`, with was-vs-is tables, context,
+                the specific decisions, alternatives considered, and
+                conformance gates."""]
+        [item """**Register** any new backlog item in
+                `docs-src/canonical/backlog.cxd` with `:status
+                draft`."""]
+        [item """**Review window** — submit for owner + community
+                review. Iterate the tables until reviewers can scan
+                the design in 2-3 minutes."""]
+        [item """**Ratify** — flip status to `accepted` in
+                `backlog.cxd`."""]
+        [item """**Implement** — landing PRs cite the ratified spec
+                change. Its conformance gates block the next
+                release."""]]
+      [body
+        """Keep spec edits scannable: lead with was-vs-is tables and
+           keep the prose tight so reviewers can grasp the design
+           quickly."""]]
+
+    [child id=ship-binding n=10.5.4 title='Shipping a new binding'
+      [body
+        """Contributing a binding for a language not currently in the
+           Tier-1 set (V / Python / Go / Rust):"""]
+      [list
+        [item """Implement the 16-method Layer-1 surface
+                (spec/bindings.md §2.1) — case-adjusted for host
+                conventions but otherwise identical."""]
+        [item """FFI extern declarations against the C ABI symbols in
+                `include/cx.h`. Match the version's cap bits."""]
+        [item """Call `cx_init()` once per process; call
+                `cx_thread_register()` at every FFI chokepoint (or
+                use a per-thread guard pattern)."""]
+        [item """Add a quickstart in `docs-src/canonical/sections/07-bindings.cxd`."""]
+        [item """Wire conformance — your binding must pass
+                `conformance/binding_api.txt` byte-identically (gate
+                28.6). The runner pattern lives at
+                `lang/python/conformance_code.py` /
+                `lang/go/cxlib/conformance_code_test.go` —
+                mirror in your language."""]
+        [item """PR to `lang/<your-name>/cxlib/` with the binding code
+                plus the conformance harness."""]]
+      [body
+        """For restoring an archived binding (TypeScript / Java / C# /
+           Ruby / Kotlin / Swift): see
+           `lang/_archived/README.md` for the recipe."""]]
+
+    [child id=debug-investigate n=10.5.5 title='Debugging an implementation'
+      [body
+        """Reproducing and triaging a CX bug:"""]
+      [list
+        [item """**Reduce the repro.** Get to the smallest input that
+                triggers the failure (one CX file, ideally < 20
+                lines)."""]
+        [item """**Capture diagnostic output.** `cx eval --trace`
+                shows per-directive timing + span emission;
+                `cx eval --explain` shows the AST + dispatch path."""]
+        [item """**Bisect** if the bug appeared between versions —
+                `git bisect run sh -c 'cx eval repro.cx; test $? = 0'`."""]
+        [item """**Check the conformance suite** — does a similar
+                fixture exist? If yes, what's different about yours?"""]
+        [item """**File a fixture** alongside the bug report (see
+                §[[add-fixture]]) so the fix lands a regression gate."""]]
+      [body
+        """For V-side debugging: the impl lives at `vcx/code/*.v`
+           (post-rename, was `vcx/programs/`). Build with `devbox run
+           -- make -C vcx build`; run unit tests with `make test-vcx`."""]]
+
+    [child id=memory-update n=10.5.6 title='Updating the project memory'
+      [body
+        """The project memory (`memory/` directory in this repo's
+           CLAUDE.md context) tracks long-running state across
+           sessions: design decisions, deferred work, known issues,
+           perf state. When you land a decision or surface a new
+           issue, update the relevant memory file. The convention is
+           in CLAUDE.md and the `memory/MEMORY.md` index."""]]]
+]
