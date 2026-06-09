@@ -1,56 +1,58 @@
-[- Markdown-style blog post: headings, inline markup, code blocks,
-   lists, blockquote, link. v0.6 idioms appear in embedded code samples. ]
+[- Blog post in plain element markup: headings, inline markup, code blocks,
+   lists, blockquote, link. All v0.8.0 — no markdown surface. ]
 
-[# CX in Practice: A Field Guide]
+[article
+  [h1 CX in Practice: A Field Guide]
 
-[p By [a href=https://github.com/ardec Erik Paulson] · [date 2026-04-20]]
+  [p By [a href=https://github.com/ardec Erik Paulson] · [date 2026-04-20]]
 
-[p CX is a [** structured] format that looks like brackets and reads like
-  natural text. This post walks through a typical working session.]
+  [p CX is a [strong structured] format that looks like brackets and reads
+    like natural text. This post walks through a typical working session.]
 
-[## Setting Up]
+  [h2 Setting Up]
 
-[p Build from source — the whole toolchain compiles with a single command:]
+  [p Build from source — the whole toolchain compiles with a single command:]
 
-[``` lang=bash [|
+  [pre [code lang=bash [#
 git clone https://github.com/cx-home/cx
 make build   # builds libcx and the cx CLI
-make test    # runs all 9 language binding test suites
-|]]
+make test    # runs all language binding test suites
+#]]]
 
-[## Your First Document]
+  [h2 Your First Document]
 
-[p Start with a simple config. Sized types pin numeric ranges, boolean
-   sigils replace explicit [` flag=true] and [` flag=false], and line
-   comments document intent inline:]
+  [p Start with a simple config. Sized type annotations pin numeric ranges,
+     boolean attributes are explicit, and line comments document intent
+     inline:]
 
-[``` lang=cx [#
-[server host=localhost +tls -debug    # +tls -> tls=true; -debug -> debug=false
-  [port :u16 8080]                    # u16 covers 0..65535
-  [max_request_bytes :u32 1_048_576]  # 1 MiB - underscores improve readability
-  [tags :string[] web api internal]
+  [pre [code lang=cx [#
+[server host=localhost tls=true debug=false
+  port::u16=8080                    # u16 covers 0..65535
+  max_request_bytes::u32=1_048_576  # 1 MiB - underscores improve readability
+  [tags ::string[] web api internal]
 ]
-#]]
+#]]]
 
-[## Converting Formats]
+  [h2 Converting Formats]
 
-[p Pipe any CX file through the [` cx] CLI or call the library directly:]
+  [p Pipe any CX file through the [code cx] CLI or call the library directly:]
 
-[ul
-  [li [` cx --json config.cx] — compact JSON for APIs]
-  [li [` cx --xml  config.cx] — XML for legacy systems]
-  [li [` cx --toml config.cx] — TOML for human editors]
-  [li [` cx --md   doc.cx]    — Markdown for documentation]
+  [ul
+    [li [code cx --json config.cx] — compact JSON for APIs]
+    [li [code cx --xml  config.cx] — XML for legacy systems]
+    [li [code cx --toml config.cx] — TOML for human editors]
+    [li [code cx --yaml config.cx] — YAML for human editors]
+  ]
+
+  [h2 Mixed Content]
+
+  [p CX handles documents and data in the same syntax. Inline markup works
+    anywhere: [strong bold], [em italic], [code code], [del strikethrough].]
+
+  [blockquote [p The goal was one format you never have to escape from.]]
+
+  [h2 What's Next]
+
+  [p See the [a href=https://cxhome.org/docs full documentation] for
+    language binding guides, the conformance suite, and the grammar spec.]
 ]
-
-[## Mixed Content]
-
-[p CX handles documents and data in the same syntax. Inline markup works
-  anywhere: [** bold], [* italic], [` code], [~~ strikethrough].]
-
-[> [p The goal was one format you never have to escape from.]]
-
-[## What's Next]
-
-[p See the [a href=https://cxhome.org/docs full documentation] for
-  language binding guides, the conformance suite, and the grammar spec.]

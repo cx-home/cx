@@ -7,18 +7,18 @@
   env=production
 
   [server
-    [- listen on all interfaces in prod, localhost otherwise ]
+    # listen on all interfaces in prod, localhost otherwise
     host=0.0.0.0
-    port:u16=8443
+    port::u16=8443
 
     # TLS is mandatory in production by org policy CSP-2024-07.
-    +tls
-    -debug
+    tls=true
+    debug=false
   ]
 
   [database
     # Connection-pool sized for p99 load + 50% headroom.
-    pool_size:u8=24
-    connect_timeout_ms:u32=5000
+    pool_size::u8=24
+    connect_timeout_ms::u32=5000
   ]
 ]

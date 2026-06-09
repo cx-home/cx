@@ -57,11 +57,12 @@
 [?def checked-div ($a $b) [/ $a $b]]
 
 [# ─── Module-level constants — [?const] (§12.3, toured in §12) ───
-   Immutable, eager by default; :lazy defers to first read (memoized). #]
+   Immutable, eager by default; the `lazy` modifier defers to first read
+   (memoized). #]
 
 [?const GREETING "hello"]
 [?const PATTERN [$regex:compile "^[a-z]+"]]
-[?const :lazy BIG-TABLE [?for [in $i [$range 1 1000]] [yield [row $i]]]]
+[?const lazy BIG-TABLE [?for [in $i [$range 1 1000]] [yield [row $i]]]]
 
 [tour version='0.8.0'
 
@@ -161,7 +162,7 @@
     [?pipe //user
       [?fn ($us) [?for [in $u $us] [where $u@active] [yield $u]]]
       [?fn ($us) [?for [in $u $us] [yield $u/@name]]]
-      [tap [?fn ($names) [seen $names]]]  [# value passes through unchanged #]
+      [tap [?fn ($names) [seen $names]]]  # value passes through unchanged
       [$count _]]]
 
   [# ─── §9. Pure-functional updates via [?modify] (§8.10) ─── #]
@@ -240,7 +241,7 @@
 
   [# The [?lib] imports and [?const] declarations are module-top-level
      directives, declared at the top of this file. #]
-  [section title='[?const] — eager (default) and :lazy'
+  [section title='[?const] — eager (default) and lazy'
     [example
       [eager [$concat GREETING ", world"]]
       [pattern-matches [$count [$regex:find-all PATTERN "ab cd"]]]
