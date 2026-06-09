@@ -19,6 +19,7 @@ GUIDE_OUT := docs/guide
 GUIDE_GEN := scripts/gen_guide
 
 .PHONY: guide \
+        guide-wasm \
         guide-diff \
         guide-clean \
         guide-check
@@ -30,9 +31,20 @@ GUIDE_GEN := scripts/gen_guide
 ##                                   guide_build.cx — there is no checked-in
 ##                                   section artifact to refresh. Run
 ##                                   `make guide-check` to gate those docs.
-guide: build-playground-wasm-for-guide build-vcx
+##
+## The guide render does NOT rebuild the playground wasm: guide_build.cx
+## copies the existing dist/wasm/ artifacts via copy-if. This keeps `make guide`
+## fast (the guide content changes constantly; the wasm rarely does and an emcc
+## relink is minutes). Refresh the wasm with `make guide-wasm` (or
+## `make build-playground-wasm-for-guide`) when the engine itself changed.
+guide: build-vcx
 	@$(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
+
+## guide-wasm    Rebuild the playground wasm, then render the guide. Use when
+##                                   the cx engine changed and the in-browser
+##                                   playground must reflect it.
+guide-wasm: build-playground-wasm-for-guide guide
 
 ## guide-check  Gate the co-located stdlib docs against drift
 ##                                   (presence parity, purity agreement,
