@@ -1,8 +1,7 @@
 # CX v0.8.0 — Release Notes
 
-**Date:** TBD (target: v0.8.0-dev → main merge + tag)
-**Branch:** v0.8.0-dev (skips the unreleased v0.7.6 design pass per
-[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cxd))
+**Date:** 2026-06-09
+**Tag:** `v0.8.0` (v0.7.6 was an internal design pass, never released)
 
 The release that locks CX's read + write surface on a unified
 selector vocabulary. CXPath is restored as a first-class value kind;

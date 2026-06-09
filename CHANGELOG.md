@@ -13,13 +13,13 @@ version, library version).
 
 ## [Unreleased]
 
-## [0.8.0] — Unreleased (in development on `v0.8.0-dev`)
+## [0.8.0] — 2026-06-09
 
 The "data + code" unification release. CXPath becomes a first-class
 value kind; `[?match]` learns multi-arm dispatch; `[?modify]` introduces
 pure-functional updates with structural sharing; a module system with
-bundled stdlib lands; atom joins the scalar kinds. v0.7.6 skipped per
-backlog `d-2026-05-22-04` — its design pass merged into v0.8.0 scope.
+bundled stdlib lands; atom joins the scalar kinds. v0.7.6 was an
+internal design pass (never released); its scope merged into v0.8.0.
 Tier-1 bindings narrow to V / Python / Go / Rust under a two-layer
 contract ([`spec/bindings.md`](spec/bindings.md)). Authoritative
 release-surface document: [`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md).
