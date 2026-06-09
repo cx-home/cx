@@ -351,3 +351,73 @@ td code {
   }
   main { padding: 1rem 1.25rem 2rem; }
 }
+
+/* ── Standard-library pages (generated from co-located [fn-doc]) ─────────── */
+
+/* module index on the Standard-library landing */
+.module-index {
+  list-style: none;
+  margin: 0.6rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 0.15rem 1.4rem;
+}
+.module-index li { margin: 0; line-height: 1.5; }
+.module-index a {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.module-index { color: var(--muted); font-size: 0.9rem; }
+
+/* one function entry on a module page */
+section.fn {
+  border-top: 1px solid var(--border);
+  padding-top: 0.55rem;
+  margin-top: 0.9rem;
+}
+section.fn > h3 {
+  font-family: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  color: var(--accent-dark);
+  margin: 0 0 0.15rem;
+}
+p.fn-sig { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.9rem; }
+p.fn-sig code { font-size: 0.85em; color: #2d2f36; background: rgba(31,36,48,0.07); }
+
+.example { margin: 0.4rem 0 0.2rem; }
+
+/* the verified expected-output block — a light "result" panel, distinct from
+   the dark input-code block, with a → label */
+pre.sample-output {
+  background: #f1f5f1;
+  color: #1d3a24;
+  border: 1px solid #d3e3d6;
+  border-left: 3px solid #4a9d5b;
+  box-shadow: none;
+  padding: 1.5rem 0.9rem 0.6rem;
+}
+pre.sample-output code { color: inherit; }
+pre.sample-output::before {
+  content: "→ output";
+  position: absolute;
+  top: 0.4rem;
+  left: 0.85rem;
+  font-size: 10.5px;
+  color: #4a9d5b;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+/* grouped table of contents on the index page */
+.toc-groups section { margin-bottom: 0.8rem; }
+.toc-groups h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0.8rem 0 0.2rem;
+}
+.toc-groups ul { list-style: none; padding-left: 0; }

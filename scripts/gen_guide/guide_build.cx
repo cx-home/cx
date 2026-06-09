@@ -118,6 +118,10 @@
   [$cat ([$nav-link 'libraries' 'Overview' '' $active],
          [$strings:join [?for [in $f $libfiles] [yield
            [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] ''])]]
+[?def xap-nav-items scope=public ($active)
+  [$cat ([$nav-link 'xap' 'Overview' '' $active],
+         [$strings:join [?for [in $d [$xap-demos]] [yield
+           [$nav-link $d@slug $d@title '' $active]]] ''])]]
 
 [# nav-html: the sidebar <aside> — one group per top-level area. #]
 [?def nav-html scope=public ($metas $libfiles $active)
@@ -137,6 +141,7 @@
     '  </div>\n',
     [$nav-section 'Guide' [$guide-nav-items $metas $active]],
     [$nav-section 'Standard library' [$lib-nav-items $libfiles $active]],
+    [$nav-section 'XAP' [$xap-nav-items $active]],
     '</aside>\n')]]
 
 [# wrap-page: body fragment + chrome → full HTML document string. #]
@@ -193,6 +198,7 @@
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
     [$nav-section 'Guide' [$guide-nav-items $metas '']],
     [$nav-section 'Standard library' [$lib-nav-items $libfiles '']],
+    [$nav-section 'XAP' [$xap-nav-items '']],
     '</section>\n',
     '<p class="note">\n',
     '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',
@@ -319,6 +325,69 @@
         '. Every contract, prose block, and runnable example is co-located with the function definitions in the bundle source — so these pages are generated straight from the shipped code and cannot drift from it.']
       [ul class="module-index" [?for [in $f $files] [yield [$landing-row $f]]]]]]]]
 
+[# ── XAP projection ─────────────────────────────────────────────────────────
+   XAP is its own major area: a landing (just enough to get familiar) + the
+   D1→D4 demo ladder. Each demo page embeds the demo's ACTUAL source and its
+   recorded expected-output, read at build time from
+   spec/03-approved/xap/demos/ — so the guide can't drift from the demos. #]
+
+[# xap-demos: the ordered demo ladder as data (literal sequence, iterated
+   once per use). file = the page's headline source; run = the command. #]
+[?def xap-demos scope=public ()
+  ([demo slug='xap-d1' dir='d1-greeting-cli' file='greeting.cx' run='cx greeting.cx'
+     title='D1 · Greeting CLI'
+     blurb='The smallest real XAP — a parameterized view rendered by a one-shot CLI, exercising only the pure component / surface / panel / render constructors. No journal, no bus, no socket.'],
+   [demo slug='xap-d2' dir='d2-guestbook-cli-tui' file='guestbook.cx' run='cx guestbook.cx'
+     title='D2 · Guestbook (the cascade)'
+     blurb='Adds state and one control: signs the guestbook twice — each committing once to the journal — then renders the surface from the resulting fold. This is the committed cascade (run / emit / state).'],
+   [demo slug='xap-d3' dir='d3-guestbook-web' file='serve.cx' run='cx --allow-net serve.cx'
+     title='D3 · Guestbook on the web'
+     blurb='Attaches a browser and a live terminal client to the SAME runtime: the surface materializes as HTML while a TUI rides an SSE feed of the same fold. Same capability, same intents, new media. [$xap:serve] holds GET /events open and pushes a frame on every committed intent.'],
+   [demo slug='xap-d4' dir='d4-guestbook-agent' file='agent.cx' run='cx agent.cx'
+     title='D4 · Guestbook + agent'
+     blurb='Adds an agent as a fourth peer alongside the human clients. It emits the SAME [do :sign …] intents (agent-parity); the dial — an authz delegation — governs how much it does on its own.'])]
+
+[# xap-demo-page: one demo dir → its page body (blurb · run · source · output). #]
+[?def xap-demo-page scope=public impure ($d)
+  [?let [= $base [$cat ('spec/03-approved/xap/demos/', $d@dir, '/')]]
+        [= $src [$io:read-file [$cat ($base, $d@file)]]]
+        [= $out [$io:read-file [$cat ($base, 'expected-output.txt')]]]
+    [$post-body [$xml:emit
+      [section id=$d@slug
+        [h1 $d@title]
+        [p class="lede" $d@blurb]
+        [h3 'Run it']
+        [pre [code lang=sh $d@run]]
+        [h3 [$cat ('Source — ', $d@file)]]
+        [pre [code lang=cx $src]]
+        [h3 'Expected output']
+        [pre class="sample-output" [code $out]]]]]]]
+
+[# xap-ladder-item: one <li> on the landing linking to a demo. #]
+[?def xap-ladder-item scope=public ($d)
+  [li [a href=[$cat ($d@slug, '.html')] $d@title] [$cat ('  —  ', $d@blurb)]]]
+
+[# xap-landing: the XAP overview page body. #]
+[?def xap-landing scope=public ()
+  [$post-body [$xml:emit
+    [section id=xap
+      [h1 'XAP — the experience layer']
+      [p class="lede"
+        'XAP is the experience layer at the top of the CX web stack. It composes the '
+        [code 'cx-stdlib'] ' primitives — '
+        [code 'bus'] ', ' [code 'journal'] ', ' [code 'authz'] ', ' [code 'session'] ', '
+        [code 'sched'] ', over ' [code 'http'] ' — into one orchestrator, so you build a '
+        'capability once and surface it through many clients (CLI, TUI, web, agent) without rewriting it.']
+      [h3 'The cascade']
+      [p 'Every intent commits through one synchronous, server-authoritative, journal-folded path. The bus is the single enforcement point: it calls the policy decision once, appends to the hash-chained journal, and re-folds state. A rejected intent is a value on the failure channel — not a crash. Reads are a deterministic fold over the log, always live and present.']
+      [h3 'Agent-parity']
+      [p 'Agents are first-class peers. They emit the same intents as humans and are gated by the same authz dial — a delegation you can attenuate, time-bound, or revoke. Surfaces are medium-agnostic, so the same capability renders for a terminal, a browser, or an agent.']
+      [h3 'Using it']
+      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. '
+         [code 'cx xap init <dir>'] ' scaffolds a project. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
+      [h3 'The demo ladder']
+      [ul [?for [in $d [$xap-demos]] [yield [$xap-ladder-item $d]]]]]]]]
+
 [# ── main: render every section page ─────────────────────────────────── #]
 [?let
   [= $src 'docs-src/canonical']
@@ -372,6 +441,11 @@
             [= $body [$render-module $f]]
             [= $page [$wrap-page $m [$cat ('lib-', $m)] $metas $libfiles $body]]
         [$io:write-file [$cat ($out, '/lib-', $m, '.html')] $page]]]],
+    [$io:write-file [$cat ($out, '/xap.html')]
+      [$wrap-page 'XAP' 'xap' $metas $libfiles [$xap-landing]]],
+    [?for [in $d [$xap-demos]] [yield
+      [?let [= $page [$wrap-page $d@title $d@slug $metas $libfiles [$xap-demo-page $d]]]
+        [$io:write-file [$cat ($out, '/', $d@slug, '.html')] $page]]]],
     [$io:write-file [$cat ($out, '/search-index.js')]
       [$cat ('window.CXSearchIndex = ',
              [$json:emit [$fp:map [$io:glob [$cat ($out, '/*.html')]] [?fn ($f) [$search-entry $f]]]],
