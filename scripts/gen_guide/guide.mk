@@ -18,27 +18,43 @@ GUIDE_SRC := docs-src/canonical
 GUIDE_OUT := docs/guide
 GUIDE_GEN := scripts/gen_guide
 
+# The cx binary the guide render runs, rebuilt (dev, fast) ONLY when a vcx/*.v
+# source is newer than it — real up-front, only-when-needed dependency tracking.
+# A clean tree renders instantly: no per-run -prod recompile ("hang"), no V
+# compile notices. Opt OUT of the rebuild check with
+# `make guide GUIDE_SKIP_CX_BUILD=1` (reuse the binary as-is); to force a fresh
+# optimized binary, run `make build-vcx` first.
+GUIDE_CX_BIN  := $(CURDIR)/vcx/target/cx
+GUIDE_CX_SRCS := $(shell find $(CURDIR)/vcx/cx $(CURDIR)/vcx/code $(CURDIR)/vcx/cmd -name '*.v' 2>/dev/null)
+
+$(GUIDE_CX_BIN): $(GUIDE_CX_SRCS)
+	@$(MAKE) --no-print-directory build-vcx-dev
+
+ifeq ($(GUIDE_SKIP_CX_BUILD),)
+  GUIDE_CX_DEP := $(GUIDE_CX_BIN)
+else
+  GUIDE_CX_DEP :=
+endif
+
 .PHONY: guide \
         guide-wasm \
         guide-diff \
         guide-clean \
         guide-check
 
-## guide        Build docs/guide/ from docs-src/canonical/. The
-##                                   "Standard library" pages are projected
-##                                   straight from the co-located
-##                                   [module-doc]/[fn-doc] in stdlib/*.cx by
-##                                   guide_build.cx — there is no checked-in
-##                                   section artifact to refresh. Run
-##                                   `make guide-check` to gate those docs.
+## guide        Build docs/guide/ from docs-src/canonical/. The "Standard
+##                                   library" / "Reference" pages are projected
+##                                   from co-located [module-doc]/[fn-doc] +
+##                                   [directive-doc]/[syntax-doc]; gate them with
+##                                   `make guide-check` + `make directive-docs-check`.
 ##
-## The guide render does NOT rebuild the playground wasm: guide_build.cx
-## copies the existing dist/wasm/ artifacts via copy-if. This keeps `make guide`
-## fast (the guide content changes constantly; the wasm rarely does and an emcc
-## relink is minutes). Refresh the wasm with `make guide-wasm` (or
-## `make build-playground-wasm-for-guide`) when the engine itself changed.
-guide: build-vcx
-	@$(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write
+## The cx binary is rebuilt (dev) only when a vcx/*.v source changed — never a
+## per-run -prod recompile. The playground wasm is NOT rebuilt (guide_build.cx
+## copies the existing dist/wasm/ via copy-if); use `make guide-wasm` when the
+## engine changed and the playground must reflect it. The render's own stdout
+## (write-file results) is discarded; real errors still surface.
+guide: $(GUIDE_CX_DEP)
+	@$(GUIDE_CX_BIN) $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
 ## guide-wasm    Rebuild the playground wasm, then render the guide. Use when
