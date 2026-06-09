@@ -122,6 +122,10 @@
   [$cat ([$nav-link 'xap' 'Overview' '' $active],
          [$strings:join [?for [in $d [$xap-demos]] [yield
            [$nav-link $d@slug $d@title '' $active]]] ''])]]
+[# ref-nav-items: the two reference pages (directives + core syntax). #]
+[?def ref-nav-items scope=public ($active)
+  [$cat ([$nav-link 'directives' 'Directives' '' $active],
+         [$nav-link 'syntax' 'Core syntax' '' $active])]]
 
 [# nav-html: the sidebar <aside> — one group per top-level area. #]
 [?def nav-html scope=public ($metas $libfiles $active)
@@ -140,6 +144,7 @@
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
     [$nav-section 'Guide' [$guide-nav-items $metas $active]],
+    [$nav-section 'Reference' [$ref-nav-items $active]],
     [$nav-section 'Standard library' [$lib-nav-items $libfiles $active]],
     [$nav-section 'XAP' [$xap-nav-items $active]],
     '</aside>\n')]]
@@ -197,6 +202,7 @@
     '   evaluator, one identity function.</p>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
     [$nav-section 'Guide' [$guide-nav-items $metas '']],
+    [$nav-section 'Reference' [$ref-nav-items '']],
     [$nav-section 'Standard library' [$lib-nav-items $libfiles '']],
     [$nav-section 'XAP' [$xap-nav-items '']],
     '</section>\n',
@@ -325,6 +331,77 @@
         '. Every contract, prose block, and runnable example is co-located with the function definitions in the bundle source — so these pages are generated straight from the shipped code and cannot drift from it.']
       [ul class="module-index" [?for [in $f $files] [yield [$landing-row $f]]]]]]]]
 
+[# ── Reference projection ────────────────────────────────────────────────────
+   The directive + core-syntax reference is projected from the co-located
+   doc sources docs-src/canonical/reference/{directives,syntax}.cx — the
+   same single-source-of-truth pattern as the stdlib pages, but the source
+   is the §4.1 directive registry and the lexicon/grammar surface rather
+   than the bundled module code. Read → [$cx:parse] → select → reshape into
+   the HTML-shaped CX tree, [$xml:emit], post-body. The drift gate
+   scripts/gen_guide/directive_docs_check.cx keeps it honest. #]
+
+[# directive-html: one [directive-doc] → its HTML block. Mirrors fn-html
+   (built directly so [$xml:emit] spreads the per-example [?for]). #]
+[?def directive-html scope=public ($dd)
+  [section id=[$cat ('dir-', [$strings:replace $dd@name '?' ''])] class="fn"
+    [h3 [code $dd@name]]
+    [p class="fn-sig" [code [$sig-of $dd]]
+       [?let [= $s [$summary-of $dd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
+    [p class="note" [$cat ($dd@category, '  ·  ', $dd@spec)]]
+    [?for [in $ex $dd/example] [yield
+      [div class="example"
+        [pre [code lang=cx [$ex-part $ex 'code']]]
+        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+
+[# syntax-html: one [syntax-doc] → its HTML block (same shape as
+   directive-html, `kind` in place of category/spec). #]
+[?def syntax-html scope=public ($sd)
+  [section id=[$cat ('syn-', $sd@name)] class="fn"
+    [h3 [code $sd@name]]
+    [p class="fn-sig" [code [$sig-of $sd]]
+       [?let [= $s [$summary-of $sd]] [?if [= $s ''] [then ''] [else [$cat ('  —  ', $s)]]]]]
+    [p class="note" [$cat ('Kind · ', $sd@kind)]]
+    [?for [in $ex $sd/example] [yield
+      [div class="example"
+        [pre [code lang=cx [$ex-part $ex 'code']]]
+        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+
+[# render-directive: reference/directives.cx → the directive-reference page
+   body (HTML fragment). Mirrors render-module. #]
+[?def render-directive scope=public impure ($f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+        [= $dds $d//directive-doc]
+    [$post-body [$xml:emit
+      [section id=directives
+        [h1 'Directive reference']
+        [p class="lede"
+          'Every directive in the closed v0.8.0 registry ('
+          [code 'spec/core/code.md'] ' §4.1) — the bracketed '
+          [code '[?…]'] ' forms that drive pattern dispatch, comprehensions, '
+          'binding, iterators, resilience, services, concurrency, and async. '
+          'Each entry is generated from the co-located reference source and, '
+          'where the conformance corpus backs it, carries a runnable example '
+          'pinned verbatim to a green fixture.']
+        [?for [in $dd $dds] [yield [$directive-html $dd]]]]]]]]
+
+[# render-syntax: reference/syntax.cx → the core-syntax page body. #]
+[?def render-syntax scope=public impure ($f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+        [= $sds $d//syntax-doc]
+    [$post-body [$xml:emit
+      [section id=syntax
+        [h1 'Core syntax']
+        [p class="lede"
+          'The CX surface syntax — the data / document layer specified in '
+          [code 'lexicon.ebnf'] ', ' [code 'grammar.ebnf'] ', and '
+          [code 'code.md'] ' §3 / ' [code 'cxdm.md'] '. Elements, attributes, '
+          'scalars and type annotations, atoms, anchors / merges / ids, '
+          'comments, raw and block content, entity references, namespaces, '
+          'and table literals. Each example shows a source snippet and its '
+          [code 'cx fmt'] ' canonical render, pinned verbatim to the data '
+          'conformance corpora.']
+        [?for [in $sd $sds] [yield [$syntax-html $sd]]]]]]]]
+
 [# ── XAP projection ─────────────────────────────────────────────────────────
    XAP is its own major area: a landing (just enough to get familiar) + the
    D1→D4 demo ladder. Each demo page embeds the demo's ACTUAL source and its
@@ -441,6 +518,12 @@
             [= $body [$render-module $f]]
             [= $page [$wrap-page $m [$cat ('lib-', $m)] $metas $libfiles $body]]
         [$io:write-file [$cat ($out, '/lib-', $m, '.html')] $page]]]],
+    [$io:write-file [$cat ($out, '/directives.html')]
+      [$wrap-page 'Directive reference' 'directives' $metas $libfiles
+        [$render-directive [$cat ($src, '/reference/directives.cx')]]]],
+    [$io:write-file [$cat ($out, '/syntax.html')]
+      [$wrap-page 'Core syntax' 'syntax' $metas $libfiles
+        [$render-syntax [$cat ($src, '/reference/syntax.cx')]]]],
     [$io:write-file [$cat ($out, '/xap.html')]
       [$wrap-page 'XAP' 'xap' $metas $libfiles [$xap-landing]]],
     [?for [in $d [$xap-demos]] [yield

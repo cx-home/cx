@@ -1,0 +1,160 @@
+[- docs-src/canonical/reference/syntax.cx — co-located source for the
+   guide's core-syntax reference (docs/guide/syntax.html).
+
+   ONE [syntax-doc] per element of the CX surface syntax (the data /
+   document layer specified in spec/03-approved/formal/lexicon.ebnf +
+   grammar.ebnf and spec/03-approved/core/{code.md §3, cxdm.md}). Each block
+   carries a name, a `kind` group, a one-line sig + summary, and — where the
+   conformance corpus backs it — an [example] whose [code] (a source
+   snippet) and [expect] (its `cx fmt` canonical render) appear verbatim in
+   the data corpora (conformance/{core,atoms,table,namespaces,extended,
+   identity}.cxd). The drift gate pins each example to those fixtures, the
+   same way the stdlib reference pins [fn-doc] examples to their corpus.
+
+   Single source of truth: edit here; the guide projects it. -]
+
+[syntax-doc name='element' kind='structure'
+  [sig """[name attr=val CHILD…]"""]
+  [summary """An element: a bracketed head name followed by optional attributes and a body of text, scalars, or nested elements."""]
+  [example [code """[input type=text name=q]"""] [expect """[input type=text name=q]"""]]
+]
+
+[syntax-doc name='nested-elements' kind='structure'
+  [sig """[parent [child …] …]"""]
+  [summary """Elements nest as body children; whitespace between children is non-semantic and is normalised on render."""]
+  [example [code """[config
+  [db host=localhost port=5432]
+  [server port=8080]
+]"""] [expect """[config
+  [db host=localhost port=5432]
+  [server port=8080]
+]"""]]
+]
+
+[syntax-doc name='mixed-content' kind='structure'
+  [sig """[name TEXT [child] TEXT]"""]
+  [summary """Mixed content interleaves bare text and child elements in one body; bare text runs render quoted."""]
+  [example [code """[p text [b bold] more]"""] [expect """[p 'text ' [b bold] ' more']"""]]
+]
+
+[syntax-doc name='attribute' kind='attribute'
+  [sig """name=value"""]
+  [summary """A scalar attribute on an element; the value auto-types (int, bool, atom, string) unless quoted."""]
+  [example [code """[socket port=8080 protocol=:tcp]"""] [expect """[socket port=8080 protocol=:tcp]"""]]
+]
+
+[syntax-doc name='boolean-scalar' kind='scalar'
+  [sig """[name true] / [name false]"""]
+  [summary """Bare `true`/`false` in body position auto-type to booleans; quote them to keep a string."""]
+  [example [code """[active true]"""] [expect """[active true]"""]]
+]
+
+[syntax-doc name='null-scalar' kind='scalar'
+  [sig """[name null]"""]
+  [summary """Bare `null` in body position auto-types to the null value."""]
+  [example [code """[value null]"""] [expect """[value null]"""]]
+]
+
+[syntax-doc name='quoted-string' kind='scalar'
+  [sig """[name 'value']"""]
+  [summary """A quoted body value is kept verbatim as a string — auto-typing is suppressed."""]
+  [example [code """[status 'true']"""] [expect """[status 'true']"""]]
+]
+
+[syntax-doc name='type-annotation' kind='annotation'
+  [sig """name::Type"""]
+  [summary """A glued `::T` type annotation pins a scalar to an explicit type, overriding auto-typing."""]
+  [example [code """[age::int 30]"""] [expect """[age::int 30]"""]]
+]
+
+[syntax-doc name='atom' kind='scalar'
+  [sig """:NAME"""]
+  [summary """An atom literal: an interned, type-strict symbolic scalar that never equals a same-spelled string."""]
+  [example [code """[status :active]"""] [expect """[status :active]"""]]
+]
+
+[syntax-doc name='atom-collection' kind='scalar'
+  [sig """[:a, :b] / (:a, :b) / {k: :v}"""]
+  [summary """Atoms are first-class scalars usable inside arrays, sequences, and map values."""]
+  [example [code """[transitions [:idle, :running, :complete]]"""] [expect """[transitions [:idle, :running, :complete]]"""]]
+]
+
+[syntax-doc name='anchor' kind='identity'
+  [sig """&name"""]
+  [summary """An anchor labels an element so it can be aliased or merged elsewhere in the document."""]
+  [example [code """[defaults &def timeout=30 retries=3]"""] [expect """[defaults &def timeout=30 retries=3]"""]]
+]
+
+[syntax-doc name='merge' kind='identity'
+  [sig """*name"""]
+  [summary """A merge pulls an anchored element's attributes into the current element (later attributes win)."""]
+  [example [code """[defaults &def timeout=30 retries=3]
+[production *def host=prod.example.com retries=5]"""] [expect """[defaults &def timeout=30 retries=3]
+[production *def host=prod.example.com retries=5]"""]]
+]
+
+[syntax-doc name='id' kind='identity'
+  [sig """#id"""]
+  [summary """An ID declaration names an element for reference; `@id` refers back to it."""]
+  [example [code """[user #u-1 name=alice]"""] [expect """[user #u-1 name=alice]"""]]
+]
+
+[syntax-doc name='id-reference' kind='identity'
+  [sig """@id"""]
+  [summary """An IDREF refers to a declared `#id`; forward references resolve."""]
+  [example [code """[users
+  [user #u-1 name=alice]
+  [reviewer assigned-to=@u-1]
+]"""] [expect """[users
+  [user #u-1 name=alice]
+  [reviewer assigned-to=@u-1]
+]"""]]
+]
+
+[syntax-doc name='block-content' kind='structure'
+  [sig """[| … |]"""]
+  [summary """Block content: a verbatim text block delimited by `[|` and `|]`."""]
+  [example [code """[p [|hello world|]]"""] [expect """[p [|hello world|]]"""]]
+]
+
+[syntax-doc name='comment' kind='comment'
+  [sig """[- … ]"""]
+  [summary """A block comment `[- … ]` is preserved by the lossless formatter and dropped by the strict canonical form."""]
+  [example [code """[-a comment]
+[p text]"""] [expect """[-a comment]
+[p text]"""]]
+]
+
+[syntax-doc name='raw-text' kind='structure'
+  [sig """[# … #]"""]
+  [summary """Raw text / CDATA: content between `[#` and `#]` is taken literally (no parsing) — distinct from a comment."""]
+]
+
+[syntax-doc name='entity-reference' kind='scalar'
+  [sig """&name; / &#nnn;"""]
+  [summary """Entity and character references in text: named XML entities and numeric character references are recognised."""]
+  [example [code """[p &amp; &lt; &gt;]"""] [expect """[p &amp; &lt; &gt;]"""]]
+]
+
+[syntax-doc name='namespace' kind='namespace'
+  [sig """xmlns:prefix=URI / prefix:name"""]
+  [summary """XML namespaces: declare with `xmlns` / `xmlns:prefix` and qualify names as `prefix:local`."""]
+  [example [code """[doc xmlns:dc=http://purl.org/dc/elements/1.1/
+  [dc:title Hello]
+]"""] [expect """[doc xmlns:dc=http://purl.org/dc/elements/1.1/
+  [dc:title Hello]
+]"""]]
+]
+
+[syntax-doc name='table' kind='table'
+  [sig """[table[col::T …]] ROW…"""]
+  [summary """A typed table literal: a column header (`[table[…]]`) followed by whitespace-separated cell rows."""]
+  [example [code """[users [table[name::string age::int active::bool]]
+  alice 30 true
+  bob 25 false
+]"""] [expect """[users [table[name::string age::int active::bool]]
+  alice 30 true
+  bob 25 false
+]"""]]
+]
+

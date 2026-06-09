@@ -1,54 +1,49 @@
 # CX
 
-[![Version](https://img.shields.io/badge/version-v0.8.0--dev-blue.svg)](spec/README.md)
+[![Version](https://img.shields.io/badge/version-v0.8.0-blue.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-stable_grammar-brightgreen.svg)](spec/core/grammar.ebnf)
-[![ABI](https://img.shields.io/badge/C_ABI-versioned-brightgreen.svg)](spec/core/abi.md)
-[![Bindings](https://img.shields.io/badge/Tier--1_bindings-V_·_Python_·_Go_·_Rust-blueviolet.svg)](spec/misc/bindings.md)
+[![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
+[![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
 
-> **The CX Data Language** — one syntax for configs, queries, transforms,
-> and full code. Every config, document, query, transform, and
-> program is the same tree of `[...]` forms, so the JSON you write today
-> can grow into the queries, transforms, and services you write tomorrow
-> without changing syntax or learning a second tool.
+> **One concise syntax for data *and* code.** Configs, structured documents,
+> tabular data, queries, transforms, and the programs that tie them together —
+> one tree of `[...]` forms that round-trips losslessly through XML, JSON,
+> YAML, TOML, and CSV.
 >
-> **Agentic Ready.** Programs are CX values; data is CX values. Humans
-> and AI agents read, write, and run the same artifacts through the
-> same parser, same AST, same tree shape.
+> **Agentic-ready.** Programs are CX values; data is CX values. Humans and AI
+> agents read, write, and run the same artifacts through the same parser, the
+> same AST, the same tree shape.
 
-CX is a homoiconic data language. Read it like XML, type it like TOML,
-query it like XPath, program it like Lisp. As a format, CX round-trips
-losslessly through JSON, YAML, TOML, XML, Markdown, and CSV, so you can
-adopt it incrementally without rewriting existing pipelines.
+CX is a homoiconic data language. Read it like XML, type it like TOML, query
+it like XPath, program it like Lisp. As a format, CX round-trips losslessly
+through JSON, YAML, TOML, XML, and CSV, so you can adopt it incrementally
+without rewriting existing pipelines.
 
 ```cx
-[service name=auth version:u8=2
-  [server host=0.0.0.0 port:u16=8443 +tls]
-  [limits :table[tier rps:u32 burst:u32]
-    free       10    50
-    pro        100   500
-    enterprise 1000  5000
-  ]
-  [?on-request                              ; the program lives in the same tree
-    [?rate-limit :tier @user.tier
-      [?retry :max=3 :backoff=exponential
-        [?forward-to /server]]]]
-]
+[service name=auth port=8443 tls=true
+  [route path=/login  method=:post]
+  [route path=/health method=:get]
+  [active [?for [in $r //route] [yield $r@path]]]]
 ```
 
-Same brackets, same parser. The `?` sigil is the only visible cue that
-some subtrees are executable; they're still CX data, queryable and
-transformable like every other node. That's the homoiconic property —
-and it's why CX is positioned as one product, not "a format plus a
-separate language."
+Same brackets, same parser. The `?` sigil is the only visible cue that a
+subtree is executable — it's still CX data, queryable and transformable like
+every other node. That's the homoiconic property, and it's why CX is one
+product, not "a format plus a separate language."
+
+> ⚠️ **Not production-ready — experimental, pre-1.0.** CX is already
+> full-featured, but it's still hardening. Expect rough edges: single-core
+> performance is strong (~135k HTTP requests/second) while multi-core scaling
+> is still in progress, and a couple of build dependencies are on the way out.
+> Pin a version, kick the tires, and file issues — but don't put it in front
+> of customers yet.
 
 ## Compared to
 
-**Data formats** — CX subsumes JSON, YAML, TOML, and XML round-trip,
-and adds typed scalars, native tables, and a labeled-slot directive
-form. The lossless conversion contract is real: every CX document can
-be emitted in any of the six target formats and parsed back without
-information loss.
+**Data formats** — CX subsumes JSON, YAML, TOML, and XML round-trip, and adds
+typed scalars, native tables, and a bracketed directive form. The lossless
+conversion contract is real: every CX document can be emitted in any of the
+five target formats and parsed back without information loss.
 
 | | JSON | YAML | TOML | XML | CX |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -59,23 +54,21 @@ information loss.
 | Schema language | external | external | external | XSD | built-in |
 | Homoiconic with own language | — | — | — | — | ✓ |
 
-**Homoiconic languages** — CX is closer in spirit to Common Lisp,
-Clojure, Scheme, and Racket than to "yet another config format."
-Programs are data; data is programs; one syntax substrate, one
-universal container.
+**Homoiconic languages** — CX is closer in spirit to Common Lisp, Clojure,
+Scheme, and Racket than to "yet another config format." Programs are data;
+data is programs; one syntax substrate, one universal container.
 
 | | Common Lisp | Clojure | Scheme / Racket | CX |
 |---|:---:|:---:|:---:|:---:|
 | Homoiconic substrate | S-expressions | EDN | S-expressions | CX trees |
 | Data is code | ✓ | ✓ | ✓ | ✓ |
-| Format-interop with non-Lisp world | weak | partial (EDN ↔ JSON) | weak | lossless to JSON/YAML/TOML/XML/MD/CSV |
+| Format-interop with non-Lisp world | weak | partial (EDN ↔ JSON) | weak | lossless to JSON/YAML/TOML/XML/CSV |
 | Schema language | external | spec / malli | contracts | built-in |
 | Named element / attribute model | — | — | — | ✓ |
 
-CX's bet: lead with the homoiconic property, keep the data-format
-on-ramp as a first-class capability. Start by replacing your JSON.
-Grow into queries, then transforms, then services. Same syntax all
-the way.
+CX's bet: lead with the homoiconic property, keep the data-format on-ramp as a
+first-class capability. Start by replacing your JSON. Grow into queries, then
+transforms, then services. Same syntax all the way.
 
 ## Install
 
@@ -83,72 +76,72 @@ the way.
 # macOS / Linux — single statically-linked binary, no runtime deps
 curl -sSL https://cx-home.io/install | sh
 
-# Or from source (requires V 0.5.1+)
-git clone https://github.com/cx-home/cx && cd cx && make build
+# Or build from source
+git clone https://github.com/cx-home/cx && cd cx && make build && make test
 ```
 
 V users — the native V binding lives in its own
-[`cx-home/cx-v`](https://github.com/cx-home/cx-v) repo so V's package
-manager can install it directly:
+[`cx-home/cx-v`](https://github.com/cx-home/cx-v) repo so V's package manager
+can install it directly:
 
 ```sh
 v install --git https://github.com/cx-home/cx-v
 ```
 
-```sh
-$ cx demo
-```
+Try the in-binary demo (runs in under a second, no file I/O, no network):
 
-The in-binary demo runs in < 1 second and shows the full feature set.
+```sh
+cx demo
+```
 
 ## Documentation
 
-The full documentation — overview, install, quickstart, tutorial,
-50-way data and programs tours, cookbook, every reference page, every
-binding, the interactive playground — lives at:
+The full documentation — overview, install, quickstart, tutorial, the data and
+code tours, the standard-library reference, cookbook, every binding, and the
+interactive playground — lives at:
 
 **→ [cx-home.github.io/cx](https://cx-home.github.io/cx/)**
 
-It is the canonical user-facing surface. README is the one-screen
-intro; everything else is over there.
-
-Reading offline? Clone the repo and open
-[`docs/guide/index.html`](docs/guide/index.html) in a browser — the
-site is a static bundle and works under `file://` with no server.
+It is the canonical user-facing surface; this README is the one-screen intro.
+Reading offline? Open [`docs/guide/index.html`](docs/guide/index.html) in a
+browser — the guide is a static bundle and works under `file://` with no
+server.
 
 ## Status
 
-CX is pre-1.0. **v0.8.0-dev** is the current development line, off the
-`v0.7.5` tag — v0.7.6 was skipped per
-[backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cxd). The
-grammar is stable and the C ABI is versioned and forward-compatible.
+CX is **pre-1.0** and under active development; **v0.8.0** is the current line.
+The grammar is stable and the C ABI is versioned and forward-compatible.
 
-**v0.8.0 — the CXPath + module-system release.** Building on the
-v0.7.5 unified pattern/query/transform surface, v0.8.0 promotes
-**CXPath** to a first-class value kind — XPath 3.1-aligned, 12 axes,
-`//` and `/` step prefixes. `[?match]` gains **heterogeneous multi-arm
-dispatch** with `[case …]` / `[else …]` clause arms; a new
-**`[?modify]`** directive lands pure-functional updates with
-structural sharing. **`[?def]`** module-level functions, **`[?lib]`**
-module loading, and the `cx.lock` lockfile add a real module system.
-General `[expr]` predicates with `$_` / `$_position` / `$_last` context
-bindings close the XPath alignment gap. The internal `programs` →
-`code` rename runs throughout; a new `atom` scalar kind (`:NAME`) joins
-the value kinds. The playground gains Tree View and Graph View
-(ERD + CFG). Normative detail lives in
-[`spec/core/`](spec/core/) — the code language in
-[`spec/core/code.md`](spec/core/code.md), the grammar in
-[`spec/core/grammar.ebnf`](spec/core/grammar.ebnf).
+**v0.8.0 — the CXPath + module-system release.** CXPath is now a first-class
+value kind (XPath-style, 12 axes, `//` and `/` step prefixes). `[?match]` gains
+heterogeneous multi-arm dispatch (`[case …]` / `[when …]` / `[else …]`); a new
+`[?modify]` directive does pure-functional updates with structural sharing.
+`[?def]` module functions, `[?lib]` module loading, and a `cx.lock` lockfile
+add a real module system, with a bundled standard library (`cx-stdlib/*`) and
+an HTTP client/server stack. An `atom` scalar kind (`:NAME`) joins the value
+kinds, and the playground gains tree and graph (ERD / CFG) views. Tier-1
+bindings ship for V, Python, Go, and Rust. Full reference is on the docs site.
 
-v0.8.0 ships a Tier-1 binding matrix of V, Python, Go, and Rust;
-TypeScript, Java, C#, Ruby, Kotlin, and Swift are archived under
-`lang/_archived/` for this release. Per-binding state is tracked in
-the bindings catalog on the docs site.
+Formal security review, fuzz-testing, and the multi-core performance work are
+still ahead — so pin a tested version and apply normal pre-1.0 caution, as the
+disclaimer above says.
 
-A suite of release gates blocks the tag. Formal security
-review and fuzz-testing infrastructure are still ahead, so pin a
-tested version and apply normal pre-1.0 caution before customer-facing
-use.
+## Contributing
+
+CX is built in the open, and feedback shapes it. The most useful things you can
+do right now:
+
+- **Try it and report what breaks** — open an issue with a minimal `.cx` repro.
+  Conversion edge cases, surprising parses, and crashes are all valuable.
+- **Review** — corrections to the guide, unclear docs, rough ergonomics, or a
+  plain "this surprised me" are exactly the signal that's wanted.
+- **Suggest** — language and standard-library ideas, missing conversions,
+  workflow gaps.
+
+Pull requests are welcome too, but at this stage issue reports, reviews, and
+suggestions are the highest-leverage help. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) and
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## License
 
