@@ -94,15 +94,33 @@
 
 [# ── chrome ──────────────────────────────────────────────────────────── #]
 
-[# nav-item: one <li> for the sidebar contents list. #]
-[?def nav-item scope=public ($m $active)
+[# nav-link: one <li>. The section-number span shows only for a non-empty
+   numeric n (guide sections); stdlib/xap pages pass n='' (bare title). #]
+[?def nav-link scope=public ($slug $title $n $active)
   [$cat ('    <li><a',
-         [?if [= $m@slug $active] [then ' class="active"'] [else '']],
-         ' href="', $m@slug, '.html"><span class="sec-n">', [$format:compact $m@n],
-         '</span> ', $m@title, '</a></li>\n')]]
+         [?if [= $slug $active] [then ' class="active"'] [else '']],
+         ' href="', $slug, '.html">',
+         [?if [= $n ''] [then '']
+           [else [$cat ('<span class="sec-n">', [$format:compact $n], '</span> ')]]],
+         $title, '</a></li>\n')]]
+[?def nav-item scope=public ($m $active) [$nav-link $m@slug $m@title $m@n $active]]
 
-[# nav-html: the full sidebar <aside> for a page. #]
-[?def nav-html scope=public ($metas $active)
+[# nav-section: wrap a group's <li> html in a titled <section>, or '' if empty. #]
+[?def nav-section scope=public ($title $items)
+  [?if [= $items ''] [then '']
+    [else [$cat ('  <section><h4>', $title, '</h4><ul>\n', $items, '  </ul></section>\n')]]]]
+
+[# group item builders — each iterates ONE source exactly once (combining
+   for-results into a single sequence nests them, so we never do that). #]
+[?def guide-nav-items scope=public ($metas $active)
+  [$strings:join [?for [in $m $metas] [yield [$nav-item $m $active]]] '']]
+[?def lib-nav-items scope=public ($libfiles $active)
+  [$cat ([$nav-link 'libraries' 'Overview' '' $active],
+         [$strings:join [?for [in $f $libfiles] [yield
+           [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] ''])]]
+
+[# nav-html: the sidebar <aside> — one group per top-level area. #]
+[?def nav-html scope=public ($metas $libfiles $active)
   [$cat (
     '<aside class="sidebar">\n',
     '  <a class="brand" href="index.html" aria-label="CX — home">\n',
@@ -117,20 +135,19 @@
     '           autocomplete="off" spellcheck="false" data-prefix="" />\n',
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
-    '  <section><h4>Contents</h4><ul>\n',
-    [$strings:join [?for [in $m $metas] [yield [$nav-item $m $active]]] ''],
-    '  </ul></section>\n',
+    [$nav-section 'Guide' [$guide-nav-items $metas $active]],
+    [$nav-section 'Standard library' [$lib-nav-items $libfiles $active]],
     '</aside>\n')]]
 
 [# wrap-page: body fragment + chrome → full HTML document string. #]
-[?def wrap-page scope=public ($title $active $metas $body)
+[?def wrap-page scope=public ($title $active $metas $libfiles $body)
   [$cat (
     '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n',
     '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
     '<title>', $title, ' — CX Guide</title>\n',
     '<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">\n',
     '<link rel="stylesheet" href="style.css">\n</head>\n<body>\n',
-    [$nav-html $metas $active],
+    [$nav-html $metas $libfiles $active],
     '<main>\n', [$strings:trim-end-chars $body '\n'], '\n</main>\n',
     '<script src="highlight/highlight.js" defer></script>\n',
     '<script src="search-index.js" defer></script>\n',
@@ -166,21 +183,20 @@
     '<span class="xref-unresolved">$0</span>']]
 
 [# index-body: the landing page (docs/guide/index.html) body — title, lede,
-   table of contents (reusing nav-item with no active page), source note. #]
-[?def index-body scope=public ($metas)
+   grouped table of contents (reusing nav-group), source note. #]
+[?def index-body scope=public ($metas $libfiles)
   [$cat (
     '<h1>CX — The Data and Code Language</h1>\n',
     '<p class="lede">A developer guide and reference for v0.8.0-dev.\n',
     '   Bracket form for data, the same bracket form for code, one\n',
     '   evaluator, one identity function.</p>\n',
-    '<section><h2>Table of contents</h2>\n',
-    '  <ul class="toc">\n',
-    [$strings:join [?for [in $m $metas] [yield [$nav-item $m '']]] ''],
-    '  </ul>\n',
+    '<section class="toc-groups"><h2>Table of contents</h2>\n',
+    [$nav-section 'Guide' [$guide-nav-items $metas '']],
+    [$nav-section 'Standard library' [$lib-nav-items $libfiles '']],
     '</section>\n',
     '<p class="note">\n',
-    '  Source: <code>docs-src/canonical/manifest.cxd</code> +\n',
-    '  <code>docs-src/canonical/sections/*.cxd</code>. Built by\n',
+    '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',
+    '  the co-located docs in <code>stdlib/*.cx</code>. Built by\n',
     '  <code>make guide</code>.\n',
     '</p>\n')]]
 
@@ -214,15 +230,94 @@
     {slug: $slug, title: $title, summary: '', text: $text}]]
 
 [# ── section metadata ────────────────────────────────────────────────────
-   One [m n= slug= file= title=] per section file (glob = reading order).
-   README.cxd carries no [section], so the inner [?for] yields nothing and
-   it is skipped. #]
+   One [m group='Guide' n= slug= srcpath= title=] per hand-authored section
+   file (glob = reading order). README.cxd carries no [section] (skipped via
+   the empty check). The old generated 16-libraries.cxd is skipped — the
+   Standard-library group is now projected fresh from stdlib/*.cx below. #]
 [?def load-metas scope=public impure ($src)
   [?for [in $f [$io:glob [$cat ($src, '/sections/*.cxd')]]] [yield
-    [?let [= $d [$cx:parse [$io:read-file $f]]]
-          [= $s $d//section]
-      [?if [$empty $s] [then ()] [else
-        [m n=$s@n slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]
+    [?if [>= [$strings:find $f '16-libraries'] 0] [then ()] [else
+      [?let [= $d [$cx:parse [$io:read-file $f]]]
+            [= $s $d//section]
+        [?if [$empty $s] [then ()] [else
+          [m group='Guide' n=$s@n slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
+
+[# ── Standard-library projection ──────────────────────────────────────────
+   Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
+   (single source of truth; spec/02-inprogress/stdlib_colocated_docs.md) and
+   reshapes them into guide [section] trees — one page per module + a landing
+   index. Pure projection: read → [$cx:parse] → extract → reshape. #]
+
+[# stdlib-slug: 'stdlib/path.cx' → 'path'. #]
+[?def stdlib-slug scope=public ($f)
+  [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.cx' '']]
+
+[# pull a named text child out of an element (a child path auto-coerces
+   unreliably, so iterate + [?match]). #]
+[?def sig-of scope=public ($fd)
+  [$strings:join [?for [in $c $fd/*] [yield [?match $c [case [sig $t] $t] [else ()]]]] '']]
+[?def summary-of scope=public ($fd)
+  [$strings:join [?for [in $c $fd/*] [yield [?match $c [case [summary $t] $t] [else ()]]]] '']]
+[?def ex-part scope=public ($ex $tag)
+  [$strings:join [?for [in $c $ex/*] [yield
+    [?match $c [case [code $t]   [?if [= $tag 'code']   [then $t] [else ()]]]
+               [case [expect $t] [?if [= $tag 'expect'] [then $t] [else ()]]]
+               [else ()]]]] '']]
+
+[# module-scope: the [module-doc]/[scope] prose, or a fallback. #]
+[?def module-scope scope=public ($d)
+  [?let [= $md $d//module-doc]
+    [?if [$empty $md] [then 'Bundled cx-stdlib module.']
+      [else [$strings:join [?for [in $c $md/*] [yield
+        [?match $c [case [scope $t] $t] [else ()]]]] '']]]]]
+
+[# first-sentence: the lede for the module index. #]
+[?def first-sentence scope=public ($s)
+  [?let [= $i [$strings:find $s '. ']]
+    [?if [< $i 0] [then $s] [else [$strings:slice $s 0 [+ $i 1]]]]]]
+
+[# fn-html: one [fn-doc] → its HTML block (built directly so [$xml:emit]
+   spreads the per-example [?for]; a constructed guide-[section] navigated via
+   CXPath would collapse the for-result into one node). #]
+[?def fn-html scope=public ($m $fd)
+  [section id=[$cat ('fn-', $m, '-', $fd@name)] class="fn"
+    [h3 [$cat ($m, ':', $fd@name)]]
+    [p class="fn-sig" [code [$cat ('[$', $m, ':', $fd@name, ']  ', [$sig-of $fd])]]
+       [$cat ('  —  ', [$summary-of $fd])]]
+    [?for [in $ex $fd/example] [yield
+      [div class="example"
+        [pre [code lang=cx [$ex-part $ex 'code']]]
+        [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
+
+[# render-module: stdlib/<m>.cx → the module page body (HTML fragment). #]
+[?def render-module scope=public impure ($f)
+  [?let [= $m [$stdlib-slug $f]]
+        [= $d [$cx:parse [$io:read-file $f]]]
+        [= $fns $d//fn-doc]
+    [$post-body [$xml:emit
+      [section id=[$cat ('lib-', $m)]
+        [h1 $m]
+        [p class="lede" [$module-scope $d]]
+        [?if [$empty $fns]
+          [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
+          [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
+
+[# landing-row / render-landing: the Standard-library landing (module index). #]
+[?def landing-row scope=public impure ($f)
+  [?let [= $m [$stdlib-slug $f]] [= $d [$cx:parse [$io:read-file $f]]]
+    [li [a href=[$cat ('lib-', $m, '.html')] $m]
+        [$cat ('  —  ', [$first-sentence [$module-scope $d]])]]]]
+[?def render-landing scope=public impure ($files)
+  [$post-body [$xml:emit
+    [section id=libraries
+      [h1 'Standard library']
+      [p class="lede"
+        'The CX standard library ships bundled with the binary as the '
+        [code 'cx-stdlib/*'] ' sub-packages. Load one with '
+        [code "[?lib 'cx-stdlib/<module>']"] ' and call its functions as '
+        [code '[$<module>:<fn> …]']
+        '. Every contract, prose block, and runnable example is co-located with the function definitions in the bundle source — so these pages are generated straight from the shipped code and cannot drift from it.']
+      [ul class="module-index" [?for [in $f $files] [yield [$landing-row $f]]]]]]]]
 
 [# ── main: render every section page ─────────────────────────────────── #]
 [?let
@@ -230,6 +325,7 @@
   [= $gen 'scripts/gen_guide']
   [= $out 'docs/guide']
   [= $metas [$load-metas $src]]
+  [= $libfiles [$io:glob 'stdlib/*.cx']]
   [= $man [$cx:parse [$io:read-file [$cat ($src, '/manifest.cxd')]]]]
   [= $sec-ancs [?for [in $s $man//section] [yield
     [anc name=$s@id slug=[$slug-of $s@file] frag='']]]]
@@ -259,15 +355,23 @@
     [$copy-if 'dist/wasm/libcx.js'            [$cat ($out, '/wasm/libcx.js')]],
     [$copy-if 'dist/wasm/libcx.wasm'          [$cat ($out, '/wasm/libcx.wasm')]],
     [$io:write-file [$cat ($out, '/index.html')]
-      [$wrap-page 'CX Guide' 'index' $metas [$index-body $metas]]],
+      [$wrap-page 'CX Guide' 'index' $metas $libfiles [$index-body $metas $libfiles]]],
     [$io:write-file [$cat ($out, '/about.html')]
-      [$wrap-page 'About' 'about' $metas [$io:read-file [$cat ($src, '/about.html')]]]],
+      [$wrap-page 'About' 'about' $metas $libfiles [$io:read-file [$cat ($src, '/about.html')]]]],
     [?for [in $m $metas] [yield
       [?let [= $doc [$cx:parse [$io:read-file $m@srcpath]]]
             [= $raw [$render-doc $doc]]
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
-            [= $page [$wrap-page $m@title $m@slug $metas $body]]
+            [= $page [$wrap-page $m@title $m@slug $metas $libfiles $body]]
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
+    [$io:write-file [$cat ($out, '/libraries.html')]
+      [$wrap-page 'Standard library' 'libraries' $metas $libfiles
+        [$render-landing $libfiles]]],
+    [?for [in $f $libfiles] [yield
+      [?let [= $m [$stdlib-slug $f]]
+            [= $body [$render-module $f]]
+            [= $page [$wrap-page $m [$cat ('lib-', $m)] $metas $libfiles $body]]
+        [$io:write-file [$cat ($out, '/lib-', $m, '.html')] $page]]]],
     [$io:write-file [$cat ($out, '/search-index.js')]
       [$cat ('window.CXSearchIndex = ',
              [$json:emit [$fp:map [$io:glob [$cat ($out, '/*.html')]] [?fn ($f) [$search-entry $f]]]],
