@@ -40,6 +40,15 @@ local function cx_on_attach(client, bufnr)
     vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
   end
 
+  -- Format-on-save is ENABLED for CX buffers. `cx fmt` is the lossless
+  -- canonical formatter: it round-trips comments and is idempotent
+  -- (`fmt(fmt(x)) == fmt(x)`), so running it unattended on every save is
+  -- safe — it normalises layout without losing data or oscillating.
+  -- (It was previously disabled while `cx fmt` dropped comments and was
+  -- non-idempotent on comma-arrays; both defects are fixed.) Manual
+  -- `<leader>f` is also wired below.
+  vim.b[bufnr].autoformat = true
+
   -- Navigation
   kmap('n', 'gd', vim.lsp.buf.definition,      'CX: go to definition')
   kmap('n', 'gr', vim.lsp.buf.references,      'CX: find references')

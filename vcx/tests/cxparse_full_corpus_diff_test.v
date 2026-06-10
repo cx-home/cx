@@ -191,13 +191,24 @@ fn test_full_corpus_data_differential() {
 	// cx_only 94→69 (−25); code_only/multi/both_reject/total unchanged. The
 	// remaining 10 divergences are the known mixed-content / comment / single-
 	// colon-attr forks (no tables).
+	// LOSSLESS-COMMENT PRESERVATION (2026-06-09): `cx fmt` is now lossless for
+	// comments — the data parser retains a top-level line comment as a
+	// CommentNode sibling (prolog for a leading comment, the elements list for a
+	// between/trailing one) instead of discarding it, so `cx_text_fmt` round-
+	// trips it (canonical.md §2.1). One corpus row — lint.cxd
+	// 040-l001-mixed-comment-styles, whose `# …`-bearing input previously parsed
+	// to a single element — now yields a trailing top-level CommentNode, so
+	// `doc.elements.len != 1` and it lands in `multi` rather than `agree`.
+	// agree 441→440 (−1), multi 25→26 (+1); diverge/cx_only/code_only/
+	// both_reject/total unchanged. (Strict `cx canonical` still STRIPS comments,
+	// so the canonical-hash corpus is unaffected.)
 	baseline := {
 		'total':       548
-		'agree':       441
+		'agree':       440
 		'diverge':     10
 		'cx_only':     69
 		'code_only':   1
-		'multi':       25
+		'multi':       26
 		'both_reject': 2
 	}
 	got := {

@@ -82,6 +82,10 @@ function M.setup(opts)
           end, 'CX: expand selection')
 
           -- ── Format on save (off by default; enable per project) ───
+          -- Safe to enable: `cx fmt` is the lossless canonical formatter —
+          -- it round-trips comments and is idempotent (`fmt(fmt(x)) ==
+          -- fmt(x)`), so format-on-save normalises layout without losing
+          -- data or oscillating between forms.
           if opts.format_on_save then
             vim.api.nvim_create_autocmd('BufWritePre', {
               buffer = bufnr,
