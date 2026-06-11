@@ -1,5 +1,18 @@
 # DRAFT — `-gc vgc` deadlocks / OOMs with multiple allocating threads
 
+> **CONFIRMED LIVE on upstream `vlang/v` master `a83aabb` (2026-06-11).** The
+> STW handshake is unchanged: `vgc_gc_d_vgc.c.v:28` still
+> `gc_target_stops = ncaches - 1`, lines 37–38 still `if wait_iters > 1000000 {
+> break }` ("proceed with what we have"), and `vgc_register_thread`
+> (`vgc_d_vgc.c.v`) still has **no deregistration**. The naive single-pattern
+> repro (`vgc_repro.v`) can *pass* because the timeout-break silently proceeds
+> instead of hanging. The adversarial battery `g_churn.v` (long-lived
+> checksummed anchor + churn + waves of short-lived threads that grow `ncaches`
+> with dead caches + a blocked thread) reproduces hard: **`-gc boehm` and
+> `-gc none` oracles PASS with 0 corruptions; `-gc vgc` SEGFAULTs (signal 11 in
+> a churn thread)** at `g_churn 20000 6 40`. Build all three with `-prod` on the
+> upstream-built `./v`.
+
 For the V team (post after the Discord check). A focused repro + root-cause read
 of vgc's source. This is arguably the higher-leverage report than the Boehm
 alloc-lock one: vgc is the *strategic* path (a pure-V, Go-style, per-thread-cache,
