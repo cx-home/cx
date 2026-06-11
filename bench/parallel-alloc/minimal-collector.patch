@@ -126,7 +126,7 @@ index 12b69a1..7724694 100644
 +
  #endif // VGC_PLATFORM_H
 diff --git a/vlib/builtin/vgc_d_vgc.c.v b/vlib/builtin/vgc_d_vgc.c.v
-index d60140c..9539e46 100644
+index d60140c..c9be2b4 100644
 --- a/vlib/builtin/vgc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_d_vgc.c.v
 @@ -39,6 +39,13 @@ fn C.vgc_init_size_tables()
@@ -213,7 +213,7 @@ index d60140c..9539e46 100644
  	sp := usize(C.vgc_get_sp())
  	mut stack_lo := usize(0)
  	mut stack_hi := usize(0)
-@@ -248,8 +286,57 @@ fn vgc_register_thread() {
+@@ -248,8 +286,58 @@ fn vgc_register_thread() {
  	unsafe {
  		vgc_heap.caches[idx].registered = true
  		vgc_heap.caches[idx].stack_base = stack_base
@@ -221,13 +221,14 @@ index d60140c..9539e46 100644
  	}
  	vgc_refresh_stack_range_for_sp(idx, sp)
 +
-+	// If a stop-the-world is in progress, park here BEFORE doing any
-+	// allocation. Otherwise this brand-new thread could allocate a white
-+	// object after the collector already scanned roots, and that object would
-+	// be swept while live. Parking now (it holds no heap objects yet) is safe
-+	// and lets the collector account for this thread.
-+	if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
-+		vgc_safepoint()
++	// Registration barrier (OS-suspend STW). A thread that registers DURING a
++	// collection was not frozen by the suspend-all (it didn't exist yet); if it
++	// allocated now it would create white objects the collector won't scan ->
++	// swept while live. So wait until the current cycle finishes before doing
++	// any allocation. It holds no heap objects yet, so waiting is safe. (Mark is
++	// single-threaded, so no GC worker thread reaches here -> no deadlock.)
++	for C.vgc_atomic_load_u32(&vgc_heap.gc_phase) != vgc_phase_off {
++		C.vgc_atomic_fence()
 +	}
 +}
 +
@@ -271,7 +272,7 @@ index d60140c..9539e46 100644
  }
  
  fn vgc_ensure_registered() {
-@@ -689,7 +776,19 @@ fn vgc_maybe_gc() {
+@@ -689,7 +777,19 @@ fn vgc_maybe_gc() {
  		heap_live := C.vgc_atomic_load_u64(&vgc_heap.heap_live)
  		next_gc := C.vgc_atomic_load_u64(&vgc_heap.next_gc)
  		if heap_live >= next_gc {
@@ -292,7 +293,7 @@ index d60140c..9539e46 100644
  		}
  		if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
  			vgc_safepoint()
-@@ -975,22 +1074,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
+@@ -975,22 +1075,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
  	return addr >= a.base && addr < a.base + a.used
  }
  
@@ -324,7 +325,7 @@ index d60140c..9539e46 100644
 -	C.vgc_atomic_store_u32(&vgc_heap.caches[cache_idx].stopped, 0)
  }
 diff --git a/vlib/builtin/vgc_gc_d_vgc.c.v b/vlib/builtin/vgc_gc_d_vgc.c.v
-index d2369d7..7a936e9 100644
+index d2369d7..d670b93 100644
 --- a/vlib/builtin/vgc_gc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_gc_d_vgc.c.v
 @@ -11,7 +11,11 @@ module builtin
@@ -340,62 +341,65 @@ index d2369d7..7a936e9 100644
  fn vgc_gc_start() {
  	// Only one GC at a time
  	mut expected := vgc_phase_off
-@@ -23,22 +27,47 @@ fn vgc_gc_start() {
+@@ -23,40 +27,70 @@ fn vgc_gc_start() {
  	// Ensure any previous sweep is complete
  	vgc_sweep_finish()
  
 -	// Stop the world for root scanning
 -	// Set stop flag - threads will stop at next safepoint (allocation)
 -	vgc_heap.gc_target_stops = u32(vgc_heap.ncaches - 1) // all threads except GC thread
-+	// Stop the world for root scanning.
-+	// Target only threads that are CURRENTLY registered and live (minus this
-+	// collector thread). Counting `ncaches - 1` would include threads that
-+	// have exited (no deregistration) and would never stop -> the collector
-+	// would time out and sweep with incomplete roots.
- 	C.vgc_atomic_store_u32(&vgc_heap.gc_stopped_count, 0)
- 	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 1)
+-	C.vgc_atomic_store_u32(&vgc_heap.gc_stopped_count, 0)
+-	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 1)
++	// === Stop the world via OS-level mach suspend ===
++	// Suspend every live registered mutator (except this collector). Unlike the
++	// cooperative alloc-path safepoint (which cannot stop a thread blocked in a
++	// syscall or spinning in a tight non-allocating loop), mach thread_suspend
++	// stops a thread in ANY state. Mechanism validated standalone in
++	// bench/parallel-alloc/suspend_world.c.
++	self_idx := C.vgc_get_cache_idx()
++	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 0) // OS-suspend, not cooperative
++
++	// Serialize thread registration/deregistration with STW: hold cache_lock
++	// across the whole cycle. Acquired BEFORE any suspend (so no holder is
++	// frozen), it blocks new vgc_register_thread/vgc_thread_exit_cb until the
++	// cycle ends — closing the thread-create-vs-STW race where a thread that
++	// registers just as STW starts would run unsuspended and allocate white.
++	C.vgc_mutex_lock(&vgc_heap.cache_lock)
  
 -	// Wait for threads to stop (with timeout to avoid deadlock)
-+	// Wait for all live mutators (other than this collector thread) to reach a
-+	// safepoint. Recompute the target from live_threads EACH iteration so that
-+	// threads which exit during the stop correctly drop out of the target, and
-+	// threads which register during the stop are waited for.
- 	mut wait_iters := 0
+-	mut wait_iters := 0
 -	for C.vgc_atomic_load_u32(&vgc_heap.gc_stopped_count) < vgc_heap.gc_target_stops {
-+	mut stopped_all := true
-+	for {
-+		live := C.vgc_atomic_load_u32(&vgc_heap.live_threads)
-+		target := if live > 0 { live - 1 } else { u32(0) }
-+		vgc_heap.gc_target_stops = target
-+		if C.vgc_atomic_load_u32(&vgc_heap.gc_stopped_count) >= target {
-+			break
-+		}
- 		C.vgc_atomic_fence()
- 		wait_iters++
+-		C.vgc_atomic_fence()
+-		wait_iters++
 -		if wait_iters > 1000000 {
 -			break // Don't wait forever - proceed with what we have
-+		if wait_iters > 20000000 {
-+			stopped_all = false
-+			break
++	for i in 0 .. vgc_heap.ncaches {
++		c := unsafe { &vgc_heap.caches[i] }
++		if c.registered && i != self_idx && c.mach_port != 0 {
++			C.vgc_suspend_thread(c.mach_port)
  		}
  	}
- 
-+	if !stopped_all {
-+		// A live thread is blocked off-safepoint (e.g. in a syscall) and we
-+		// cannot stop it cooperatively. NEVER proceed with incomplete roots
-+		// (that frees live data). Abort this cycle: release the threads that
-+		// stopped, leave the heap intact, let a later allocation retry.
-+		// Worst case is a skipped collection, never corruption.
-+		C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 0)
-+		C.vgc_atomic_fence()
-+		C.vgc_atomic_store_u32(&vgc_heap.gc_phase, vgc_phase_off)
-+		return
++	// All mutators are now frozen. A thread may have been suspended mid-allocation
++	// while holding an ALLOCATOR spinlock; since the collector is now the sole
++	// runner until resume, steal those locks so the collector cannot deadlock on
++	// a frozen owner. (On resume the frozen owner's unlock is a harmless store.)
++	// cache_lock is NOT stolen — we hold it intentionally (registration gate).
++	C.vgc_atomic_store_u32(&vgc_heap.lock, 0)
++	C.vgc_atomic_store_u32(&vgc_heap.free_spans_lock, 0)
++	C.vgc_atomic_store_u32(&vgc_heap.work_lock, 0)
++	for i in 0 .. 136 {
++		C.vgc_atomic_store_u32(&vgc_heap.central[i].lock, 0)
 +	}
-+
+ 
  	// Clear mark bits on all spans (prepare for new cycle)
  	vgc_clear_mark_bits()
  
-@@ -46,17 +75,24 @@ fn vgc_gc_start() {
++	// Scan each suspended thread's roots: refresh its stack range from the
++	// actual suspended SP and shade its register-resident roots (the exact roots
++	// a stack-only scan misses; validated in bench/parallel-alloc/stw_root_scan.c).
++	vgc_scan_suspended_roots(self_idx)
++
+ 	// === Phase 2: Mark (parallel) ===
  	// Enable write barrier (for concurrent correctness)
  	C.vgc_atomic_store_u32(&vgc_heap.wb_enabled, 1)
  
@@ -426,15 +430,69 @@ index d2369d7..7a936e9 100644
  	vgc_parallel_mark()
  
  	// === Phase 3: Mark Termination (brief STW) ===
-@@ -83,6 +119,11 @@ fn vgc_gc_start() {
+@@ -83,6 +117,16 @@ fn vgc_gc_start() {
  	// Sweep synchronously - it's fast and avoids race conditions
  	vgc_do_sweep()
  
-+	// Resume the world: mark + sweep are complete, so every live object is
-+	// marked and survives. Mutators waiting in vgc_safepoint can now proceed.
-+	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 0)
++	// Resume the world: mark + sweep are complete, every live object survived.
 +	C.vgc_atomic_fence()
++	for i in 0 .. vgc_heap.ncaches {
++		c := unsafe { &vgc_heap.caches[i] }
++		if c.registered && i != self_idx && c.mach_port != 0 {
++			C.vgc_resume_thread(c.mach_port)
++		}
++	}
++	C.vgc_mutex_unlock(&vgc_heap.cache_lock) // release the registration gate
 +
  	// Update GC trigger for next cycle (translated from Go's gcController.endCycle)
  	vgc_update_trigger()
+ 
+@@ -90,6 +134,28 @@ fn vgc_gc_start() {
+ 	C.vgc_atomic_store_u32(&vgc_heap.gc_phase, vgc_phase_off)
+ }
+ 
++// Scan the roots of every suspended mutator: refresh its stack range from its
++// real (suspended) SP and shade its register-resident roots. Mach
++// thread_get_state yields both, so register roots come for free — closing the
++// stack-only-scan gap that dropped live values. (stw_root_scan.c prototype.)
++fn vgc_scan_suspended_roots(self_idx int) {
++	for i in 0 .. vgc_heap.ncaches {
++		c := unsafe { &vgc_heap.caches[i] }
++		if !c.registered || i == self_idx || c.mach_port == 0 {
++			continue
++		}
++		mut sp := usize(0)
++		mut regs := [31]usize{}
++		n := C.vgc_thread_regs(c.mach_port, &sp, &regs[0], 31)
++		if n > 0 && sp != 0 {
++			vgc_refresh_stack_range_for_sp(i, sp) // [sp, stack_base]
++			for k in 0 .. n {
++				vgc_shade(regs[k]) // register-resident roots
++			}
++		}
++	}
++}
++
+ // ============================================================
+ // Mark phase (translated from Go's mgcmark.go)
+ // ============================================================
+@@ -177,12 +243,13 @@ fn vgc_shade(addr usize) {
+ // Parallel mark using OS threads.
+ // Translated from Go's gcDrain() with multiple workers.
+ fn vgc_parallel_mark() {
+-	mut nworkers := C.vgc_num_cpus()
+-	if nworkers < 1 {
+-		nworkers = 1
+-	} else if nworkers > 4 {
+-		nworkers = 4
+-	}
++	// Single-threaded mark for the minimal STW collector: spawning mark-worker
++	// threads during a collection would have them hit the registration barrier
++	// (gc_phase != off) and deadlock, and the work-queue lock-stealing under STW
++	// assumes a single marker. Collection is rare (Perceus front line front-loads
++	// frees), so single-threaded mark is acceptable; parallel mark is a later
++	// optimization that must reintroduce a GC-worker exemption from the barrier.
++	mut nworkers := 1
+ 	vgc_heap.gc_nworkers = nworkers
+ 	C.vgc_atomic_store_u32(&vgc_heap.gc_workers_done, 0)
  
