@@ -1,5 +1,10 @@
 [
   {
+    "type": "alias_name",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "attr_name",
     "named": true,
     "fields": {}
@@ -618,7 +623,15 @@
           "named": true
         },
         {
+          "type": "quoted_string",
+          "named": true
+        },
+        {
           "type": "reserved_binding",
+          "named": true
+        },
+        {
+          "type": "triple_quoted",
           "named": true
         },
         {
@@ -994,6 +1007,32 @@
     }
   },
   {
+    "type": "lib_alias",
+    "named": true,
+    "fields": {
+      "alias": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "alias_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "modifier_keyword",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "lib_directive",
     "named": true,
     "fields": {
@@ -1029,6 +1068,10 @@
       "types": [
         {
           "type": "attribute",
+          "named": true
+        },
+        {
+          "type": "lib_alias",
           "named": true
         },
         {
@@ -1648,6 +1691,10 @@
   },
   {
     "type": "::",
+    "named": false
+  },
+  {
+    "type": ":as",
     "named": false
   },
   {

@@ -7,6 +7,7 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#xml-decl" },
+    { "include": "#embedded" },
     { "include": "#cx-directive" },
     { "include": "#modify-directive" },
     { "include": "#match-directive" },
@@ -18,6 +19,5171 @@
     { "include": "#quoted-string" }
   ],
   "repository": {
+    "embedded": {
+      "comment": "Embedded-language injection — VS Code parity with the tree-sitter queries/injections.scm. The language signal is the wrapping element name ([python [| … |]]) or an explicit lang= attribute ([code lang=bash [# … #]]); the content regions are the [| … |] block body and [# … #] raw text. Each begin consumes the wrapper-open through the content-open delimiter and each end consumes the content-close PLUS the wrapper's closing ], so bracket balance is preserved and the cx structural grammar keeps parsing the surrounding document. lang= patterns precede element-name patterns so an explicit lang= wins, mirroring injections.scm. A language with no installed grammar injects nothing (VS Code drops the rule) and the wrapper falls back to plain cx structure — silently, matching injections.scm.",
+      "patterns": [
+        {
+          "name": "meta.embedded.lang.block.json.cx",
+          "contentName": "meta.embedded.block.json.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:json)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.json.cx",
+          "contentName": "meta.embedded.block.json.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:json)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.json.cx",
+          "contentName": "meta.embedded.block.json.cx",
+          "begin": "(\\[)(json)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.json.cx",
+          "contentName": "meta.embedded.block.json.cx",
+          "begin": "(\\[)(json)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.jsonc.cx",
+          "contentName": "meta.embedded.block.jsonc.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:jsonc)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json.comments"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.jsonc.cx",
+          "contentName": "meta.embedded.block.jsonc.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:jsonc)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json.comments"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.jsonc.cx",
+          "contentName": "meta.embedded.block.jsonc.cx",
+          "begin": "(\\[)(jsonc)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json.comments"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.jsonc.cx",
+          "contentName": "meta.embedded.block.jsonc.cx",
+          "begin": "(\\[)(jsonc)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.json.comments"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.javascript.cx",
+          "contentName": "meta.embedded.block.javascript.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:javascript|js)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.javascript.cx",
+          "contentName": "meta.embedded.block.javascript.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:javascript|js)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.javascript.cx",
+          "contentName": "meta.embedded.block.javascript.cx",
+          "begin": "(\\[)(javascript|js)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.javascript.cx",
+          "contentName": "meta.embedded.block.javascript.cx",
+          "begin": "(\\[)(javascript|js)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.javascriptreact.cx",
+          "contentName": "meta.embedded.block.javascriptreact.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:jsx)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js.jsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.javascriptreact.cx",
+          "contentName": "meta.embedded.block.javascriptreact.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:jsx)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js.jsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.javascriptreact.cx",
+          "contentName": "meta.embedded.block.javascriptreact.cx",
+          "begin": "(\\[)(jsx)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js.jsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.javascriptreact.cx",
+          "contentName": "meta.embedded.block.javascriptreact.cx",
+          "begin": "(\\[)(jsx)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.js.jsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.typescript.cx",
+          "contentName": "meta.embedded.block.typescript.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:typescript|ts)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ts"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.typescript.cx",
+          "contentName": "meta.embedded.block.typescript.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:typescript|ts)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ts"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.typescript.cx",
+          "contentName": "meta.embedded.block.typescript.cx",
+          "begin": "(\\[)(typescript|ts)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ts"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.typescript.cx",
+          "contentName": "meta.embedded.block.typescript.cx",
+          "begin": "(\\[)(typescript|ts)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ts"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.typescriptreact.cx",
+          "contentName": "meta.embedded.block.typescriptreact.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:tsx)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.tsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.typescriptreact.cx",
+          "contentName": "meta.embedded.block.typescriptreact.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:tsx)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.tsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.typescriptreact.cx",
+          "contentName": "meta.embedded.block.typescriptreact.cx",
+          "begin": "(\\[)(tsx)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.tsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.typescriptreact.cx",
+          "contentName": "meta.embedded.block.typescriptreact.cx",
+          "begin": "(\\[)(tsx)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.tsx"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.python.cx",
+          "contentName": "meta.embedded.block.python.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:python|py)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.python.cx",
+          "contentName": "meta.embedded.block.python.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:python|py)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.python.cx",
+          "contentName": "meta.embedded.block.python.cx",
+          "begin": "(\\[)(python|py)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.python.cx",
+          "contentName": "meta.embedded.block.python.cx",
+          "begin": "(\\[)(python|py)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.python"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.xml.cx",
+          "contentName": "meta.embedded.block.xml.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:xml)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.xml.cx",
+          "contentName": "meta.embedded.block.xml.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:xml)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.xml.cx",
+          "contentName": "meta.embedded.block.xml.cx",
+          "begin": "(\\[)(xml)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.xml.cx",
+          "contentName": "meta.embedded.block.xml.cx",
+          "begin": "(\\[)(xml)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.html.cx",
+          "contentName": "meta.embedded.block.html.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:html)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.html.cx",
+          "contentName": "meta.embedded.block.html.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:html)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.html.cx",
+          "contentName": "meta.embedded.block.html.cx",
+          "begin": "(\\[)(html)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.html.cx",
+          "contentName": "meta.embedded.block.html.cx",
+          "begin": "(\\[)(html)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.basic"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.css.cx",
+          "contentName": "meta.embedded.block.css.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:css)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.css.cx",
+          "contentName": "meta.embedded.block.css.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:css)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.css.cx",
+          "contentName": "meta.embedded.block.css.cx",
+          "begin": "(\\[)(css)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.css.cx",
+          "contentName": "meta.embedded.block.css.cx",
+          "begin": "(\\[)(css)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.scss.cx",
+          "contentName": "meta.embedded.block.scss.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:scss)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.scss"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.scss.cx",
+          "contentName": "meta.embedded.block.scss.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:scss)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.scss"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.scss.cx",
+          "contentName": "meta.embedded.block.scss.cx",
+          "begin": "(\\[)(scss)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.scss"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.scss.cx",
+          "contentName": "meta.embedded.block.scss.cx",
+          "begin": "(\\[)(scss)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.scss"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.sass.cx",
+          "contentName": "meta.embedded.block.sass.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:sass)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sass"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.sass.cx",
+          "contentName": "meta.embedded.block.sass.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:sass)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sass"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.sass.cx",
+          "contentName": "meta.embedded.block.sass.cx",
+          "begin": "(\\[)(sass)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sass"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.sass.cx",
+          "contentName": "meta.embedded.block.sass.cx",
+          "begin": "(\\[)(sass)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sass"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.less.cx",
+          "contentName": "meta.embedded.block.less.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:less)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.less"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.less.cx",
+          "contentName": "meta.embedded.block.less.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:less)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.less"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.less.cx",
+          "contentName": "meta.embedded.block.less.cx",
+          "begin": "(\\[)(less)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.less"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.less.cx",
+          "contentName": "meta.embedded.block.less.cx",
+          "begin": "(\\[)(less)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.css.less"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.sql.cx",
+          "contentName": "meta.embedded.block.sql.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:sql)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.sql.cx",
+          "contentName": "meta.embedded.block.sql.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:sql)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.sql.cx",
+          "contentName": "meta.embedded.block.sql.cx",
+          "begin": "(\\[)(sql)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.sql.cx",
+          "contentName": "meta.embedded.block.sql.cx",
+          "begin": "(\\[)(sql)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.sql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.yaml.cx",
+          "contentName": "meta.embedded.block.yaml.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:yaml|yml)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.yaml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.yaml.cx",
+          "contentName": "meta.embedded.block.yaml.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:yaml|yml)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.yaml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.yaml.cx",
+          "contentName": "meta.embedded.block.yaml.cx",
+          "begin": "(\\[)(yaml|yml)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.yaml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.yaml.cx",
+          "contentName": "meta.embedded.block.yaml.cx",
+          "begin": "(\\[)(yaml|yml)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.yaml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.toml.cx",
+          "contentName": "meta.embedded.block.toml.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:toml)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.toml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.toml.cx",
+          "contentName": "meta.embedded.block.toml.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:toml)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.toml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.toml.cx",
+          "contentName": "meta.embedded.block.toml.cx",
+          "begin": "(\\[)(toml)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.toml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.toml.cx",
+          "contentName": "meta.embedded.block.toml.cx",
+          "begin": "(\\[)(toml)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.toml"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.shellscript.cx",
+          "contentName": "meta.embedded.block.shellscript.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:bash|sh|shell|zsh)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.shell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.shellscript.cx",
+          "contentName": "meta.embedded.block.shellscript.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:bash|sh|shell|zsh)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.shell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.shellscript.cx",
+          "contentName": "meta.embedded.block.shellscript.cx",
+          "begin": "(\\[)(bash|sh|shell|zsh)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.shell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.shellscript.cx",
+          "contentName": "meta.embedded.block.shellscript.cx",
+          "begin": "(\\[)(bash|sh|shell|zsh)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.shell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.fish.cx",
+          "contentName": "meta.embedded.block.fish.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:fish)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.fish"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.fish.cx",
+          "contentName": "meta.embedded.block.fish.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:fish)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.fish"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.fish.cx",
+          "contentName": "meta.embedded.block.fish.cx",
+          "begin": "(\\[)(fish)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.fish"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.fish.cx",
+          "contentName": "meta.embedded.block.fish.cx",
+          "begin": "(\\[)(fish)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.fish"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.rust.cx",
+          "contentName": "meta.embedded.block.rust.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:rust|rs)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.rust"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.rust.cx",
+          "contentName": "meta.embedded.block.rust.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:rust|rs)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.rust"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.rust.cx",
+          "contentName": "meta.embedded.block.rust.cx",
+          "begin": "(\\[)(rust|rs)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.rust"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.rust.cx",
+          "contentName": "meta.embedded.block.rust.cx",
+          "begin": "(\\[)(rust|rs)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.rust"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.go.cx",
+          "contentName": "meta.embedded.block.go.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:go)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.go"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.go.cx",
+          "contentName": "meta.embedded.block.go.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:go)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.go"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.go.cx",
+          "contentName": "meta.embedded.block.go.cx",
+          "begin": "(\\[)(go)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.go"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.go.cx",
+          "contentName": "meta.embedded.block.go.cx",
+          "begin": "(\\[)(go)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.go"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.c.cx",
+          "contentName": "meta.embedded.block.c.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:c)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.c"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.c.cx",
+          "contentName": "meta.embedded.block.c.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:c)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.c"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.c.cx",
+          "contentName": "meta.embedded.block.c.cx",
+          "begin": "(\\[)(c)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.c"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.c.cx",
+          "contentName": "meta.embedded.block.c.cx",
+          "begin": "(\\[)(c)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.c"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.cpp.cx",
+          "contentName": "meta.embedded.block.cpp.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:cpp)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cpp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.cpp.cx",
+          "contentName": "meta.embedded.block.cpp.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:cpp)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cpp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.cpp.cx",
+          "contentName": "meta.embedded.block.cpp.cx",
+          "begin": "(\\[)(cpp)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cpp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.cpp.cx",
+          "contentName": "meta.embedded.block.cpp.cx",
+          "begin": "(\\[)(cpp)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cpp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.java.cx",
+          "contentName": "meta.embedded.block.java.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:java)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.java"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.java.cx",
+          "contentName": "meta.embedded.block.java.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:java)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.java"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.java.cx",
+          "contentName": "meta.embedded.block.java.cx",
+          "begin": "(\\[)(java)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.java"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.java.cx",
+          "contentName": "meta.embedded.block.java.cx",
+          "begin": "(\\[)(java)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.java"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.ruby.cx",
+          "contentName": "meta.embedded.block.ruby.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:ruby|rb)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ruby"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.ruby.cx",
+          "contentName": "meta.embedded.block.ruby.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:ruby|rb)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ruby"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.ruby.cx",
+          "contentName": "meta.embedded.block.ruby.cx",
+          "begin": "(\\[)(ruby|rb)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ruby"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.ruby.cx",
+          "contentName": "meta.embedded.block.ruby.cx",
+          "begin": "(\\[)(ruby|rb)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ruby"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.lua.cx",
+          "contentName": "meta.embedded.block.lua.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:lua)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.lua"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.lua.cx",
+          "contentName": "meta.embedded.block.lua.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:lua)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.lua"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.lua.cx",
+          "contentName": "meta.embedded.block.lua.cx",
+          "begin": "(\\[)(lua)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.lua"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.lua.cx",
+          "contentName": "meta.embedded.block.lua.cx",
+          "begin": "(\\[)(lua)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.lua"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.graphql.cx",
+          "contentName": "meta.embedded.block.graphql.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:graphql)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.graphql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.graphql.cx",
+          "contentName": "meta.embedded.block.graphql.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:graphql)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.graphql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.graphql.cx",
+          "contentName": "meta.embedded.block.graphql.cx",
+          "begin": "(\\[)(graphql)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.graphql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.graphql.cx",
+          "contentName": "meta.embedded.block.graphql.cx",
+          "begin": "(\\[)(graphql)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.graphql"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.dockerfile.cx",
+          "contentName": "meta.embedded.block.dockerfile.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:dockerfile)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.dockerfile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.dockerfile.cx",
+          "contentName": "meta.embedded.block.dockerfile.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:dockerfile)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.dockerfile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.dockerfile.cx",
+          "contentName": "meta.embedded.block.dockerfile.cx",
+          "begin": "(\\[)(dockerfile)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.dockerfile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.dockerfile.cx",
+          "contentName": "meta.embedded.block.dockerfile.cx",
+          "begin": "(\\[)(dockerfile)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.dockerfile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.markdown.cx",
+          "contentName": "meta.embedded.block.markdown.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:markdown|md)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.markdown"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.markdown.cx",
+          "contentName": "meta.embedded.block.markdown.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:markdown|md)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.markdown"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.markdown.cx",
+          "contentName": "meta.embedded.block.markdown.cx",
+          "begin": "(\\[)(markdown|md)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.markdown"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.markdown.cx",
+          "contentName": "meta.embedded.block.markdown.cx",
+          "begin": "(\\[)(markdown|md)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "text.html.markdown"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.ini.cx",
+          "contentName": "meta.embedded.block.ini.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:ini)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ini"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.ini.cx",
+          "contentName": "meta.embedded.block.ini.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:ini)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ini"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.ini.cx",
+          "contentName": "meta.embedded.block.ini.cx",
+          "begin": "(\\[)(ini)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ini"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.ini.cx",
+          "contentName": "meta.embedded.block.ini.cx",
+          "begin": "(\\[)(ini)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.ini"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.makefile.cx",
+          "contentName": "meta.embedded.block.makefile.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:make)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.makefile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.makefile.cx",
+          "contentName": "meta.embedded.block.makefile.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:make)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.makefile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.makefile.cx",
+          "contentName": "meta.embedded.block.makefile.cx",
+          "begin": "(\\[)(make)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.makefile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.makefile.cx",
+          "contentName": "meta.embedded.block.makefile.cx",
+          "begin": "(\\[)(make)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.makefile"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.cmake.cx",
+          "contentName": "meta.embedded.block.cmake.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:cmake)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cmake"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.cmake.cx",
+          "contentName": "meta.embedded.block.cmake.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:cmake)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cmake"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.cmake.cx",
+          "contentName": "meta.embedded.block.cmake.cx",
+          "begin": "(\\[)(cmake)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cmake"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.cmake.cx",
+          "contentName": "meta.embedded.block.cmake.cx",
+          "begin": "(\\[)(cmake)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.cmake"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.php.cx",
+          "contentName": "meta.embedded.block.php.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:php)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.php"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.php.cx",
+          "contentName": "meta.embedded.block.php.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:php)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.php"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.php.cx",
+          "contentName": "meta.embedded.block.php.cx",
+          "begin": "(\\[)(php)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.php"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.php.cx",
+          "contentName": "meta.embedded.block.php.cx",
+          "begin": "(\\[)(php)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.php"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.kotlin.cx",
+          "contentName": "meta.embedded.block.kotlin.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:kotlin)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.kotlin"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.kotlin.cx",
+          "contentName": "meta.embedded.block.kotlin.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:kotlin)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.kotlin"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.kotlin.cx",
+          "contentName": "meta.embedded.block.kotlin.cx",
+          "begin": "(\\[)(kotlin)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.kotlin"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.kotlin.cx",
+          "contentName": "meta.embedded.block.kotlin.cx",
+          "begin": "(\\[)(kotlin)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.kotlin"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.swift.cx",
+          "contentName": "meta.embedded.block.swift.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:swift)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.swift"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.swift.cx",
+          "contentName": "meta.embedded.block.swift.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:swift)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.swift"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.swift.cx",
+          "contentName": "meta.embedded.block.swift.cx",
+          "begin": "(\\[)(swift)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.swift"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.swift.cx",
+          "contentName": "meta.embedded.block.swift.cx",
+          "begin": "(\\[)(swift)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.swift"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.scala.cx",
+          "contentName": "meta.embedded.block.scala.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:scala)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.scala"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.scala.cx",
+          "contentName": "meta.embedded.block.scala.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:scala)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.scala"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.scala.cx",
+          "contentName": "meta.embedded.block.scala.cx",
+          "begin": "(\\[)(scala)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.scala"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.scala.cx",
+          "contentName": "meta.embedded.block.scala.cx",
+          "begin": "(\\[)(scala)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.scala"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.haskell.cx",
+          "contentName": "meta.embedded.block.haskell.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:haskell)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.haskell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.haskell.cx",
+          "contentName": "meta.embedded.block.haskell.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:haskell)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.haskell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.haskell.cx",
+          "contentName": "meta.embedded.block.haskell.cx",
+          "begin": "(\\[)(haskell)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.haskell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.haskell.cx",
+          "contentName": "meta.embedded.block.haskell.cx",
+          "begin": "(\\[)(haskell)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.haskell"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.elixir.cx",
+          "contentName": "meta.embedded.block.elixir.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:elixir)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.elixir"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.elixir.cx",
+          "contentName": "meta.embedded.block.elixir.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:elixir)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.elixir"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.elixir.cx",
+          "contentName": "meta.embedded.block.elixir.cx",
+          "begin": "(\\[)(elixir)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.elixir"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.elixir.cx",
+          "contentName": "meta.embedded.block.elixir.cx",
+          "begin": "(\\[)(elixir)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.elixir"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.erlang.cx",
+          "contentName": "meta.embedded.block.erlang.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:erlang)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.erlang"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.erlang.cx",
+          "contentName": "meta.embedded.block.erlang.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:erlang)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.erlang"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.erlang.cx",
+          "contentName": "meta.embedded.block.erlang.cx",
+          "begin": "(\\[)(erlang)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.erlang"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.erlang.cx",
+          "contentName": "meta.embedded.block.erlang.cx",
+          "begin": "(\\[)(erlang)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.erlang"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.clojure.cx",
+          "contentName": "meta.embedded.block.clojure.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:clojure)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.clojure"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.clojure.cx",
+          "contentName": "meta.embedded.block.clojure.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:clojure)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.clojure"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.clojure.cx",
+          "contentName": "meta.embedded.block.clojure.cx",
+          "begin": "(\\[)(clojure)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.clojure"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.clojure.cx",
+          "contentName": "meta.embedded.block.clojure.cx",
+          "begin": "(\\[)(clojure)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.clojure"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.regexp.cx",
+          "contentName": "meta.embedded.block.regexp.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:regex)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.regexp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.regexp.cx",
+          "contentName": "meta.embedded.block.regexp.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:regex)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.regexp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.regexp.cx",
+          "contentName": "meta.embedded.block.regexp.cx",
+          "begin": "(\\[)(regex)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.regexp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.regexp.cx",
+          "contentName": "meta.embedded.block.regexp.cx",
+          "begin": "(\\[)(regex)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.regexp"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.proto.cx",
+          "contentName": "meta.embedded.block.proto.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:proto)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.proto"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.proto.cx",
+          "contentName": "meta.embedded.block.proto.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:proto)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.proto"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.proto.cx",
+          "contentName": "meta.embedded.block.proto.cx",
+          "begin": "(\\[)(proto)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.proto"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.proto.cx",
+          "contentName": "meta.embedded.block.proto.cx",
+          "begin": "(\\[)(proto)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.proto"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.diff.cx",
+          "contentName": "meta.embedded.block.diff.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:diff)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.diff"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.diff.cx",
+          "contentName": "meta.embedded.block.diff.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:diff)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.diff"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.diff.cx",
+          "contentName": "meta.embedded.block.diff.cx",
+          "begin": "(\\[)(diff)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.diff"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.diff.cx",
+          "contentName": "meta.embedded.block.diff.cx",
+          "begin": "(\\[)(diff)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.diff"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.block.csv.cx",
+          "contentName": "meta.embedded.block.csv.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:csv)\\b['\\\"]?[^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.csv"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.lang.raw.csv.cx",
+          "contentName": "meta.embedded.block.csv.cx",
+          "begin": "(\\[)([A-Za-z][A-Za-z0-9_:-]*)\\b([^\\[\\]]*?\\blang\\s*=\\s*['\\\"]?(?:csv)\\b['\\\"]?[^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.csv"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.block.csv.cx",
+          "contentName": "meta.embedded.block.csv.cx",
+          "begin": "(\\[)(csv)\\b([^\\[\\]]*?)(\\[\\|)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(\\|\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.csv"
+            }
+          ]
+        },
+        {
+          "name": "meta.embedded.name.raw.csv.cx",
+          "contentName": "meta.embedded.block.csv.cx",
+          "begin": "(\\[)(csv)\\b([^\\[\\]]*?)(\\[#)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.begin.cx"
+            },
+            "2": {
+              "name": "entity.name.tag.cx"
+            },
+            "4": {
+              "name": "punctuation.section.embedded.begin.cx"
+            }
+          },
+          "end": "(#\\])\\s*(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.section.embedded.end.cx"
+            },
+            "2": {
+              "name": "punctuation.definition.tag.end.cx"
+            }
+          },
+          "patterns": [
+            {
+              "include": "source.csv"
+            }
+          ]
+        }
+      ]
+    },
     "comment": {
       "patterns": [
         { "name": "comment.line.number-sign.cx", "match": "#.*$" },
@@ -272,6 +5438,7 @@
         { "match": "\\b([A-Za-z_][A-Za-z0-9_-]*)(=)", "captures": { "1": { "name": "entity.other.attribute-name.cx" }, "2": { "name": "keyword.operator.assignment.cx" } } },
         { "name": "variable.other.bodyref.cx", "match": "@[A-Za-z_][A-Za-z0-9_-]*" },
         { "include": "#comment" },
+        { "include": "#embedded" },
         { "include": "#element" },
         { "include": "#scalar" },
         { "include": "#quoted-string" },

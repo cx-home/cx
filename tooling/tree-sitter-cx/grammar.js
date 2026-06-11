@@ -345,9 +345,22 @@ module.exports = grammar({
     lib_modifier: ($) =>
       choice(
         $.attribute, // as=Name, scope=…, version='x' (attribute surface)
+        $.lib_alias, // ':as' Name — the keyword import-alias surface
         alias($._kw_in_memory, $.modifier_keyword),
         $.only_clause
       ),
+
+    // `:as Name` import alias (e.g. `[?lib 'cx-stdlib/http' :as http]`) — the
+    // keyword form alongside the `as=Name` attribute form. `:as` is lexed as a
+    // dedicated higher-precedence keyword token so it is NOT absorbed into the
+    // resolver `directive_body` as a generic `:atom` (which left the following
+    // name with nowhere to attach and errored).
+    lib_alias: ($) =>
+      seq(
+        alias($._kw_colon_as, $.modifier_keyword),
+        field("alias", alias($.word, $.alias_name))
+      ),
+    _kw_colon_as: (_) => token(prec(6, ":as")),
 
     // '[only' OnlyItem+ ']'  (grammar.ebnf [151b]/[151b1]).
     only_clause: ($) =>
@@ -409,6 +422,14 @@ module.exports = grammar({
     // bindings, predicate brackets, nested directives).
     directive_body: ($) =>
       prec.right(repeat1(choice(
+        // A quoted string is ONE atomic unit — its content (incl. `/`, which is
+        // otherwise the path-step separator) must never be re-lexed. Without
+        // this, a `'…/…'` resolver path or a `"…13.5px/1.3…"` CSS const body got
+        // split at `/` and the tail mis-parsed as a path step — erroring on a
+        // following digit (`/1`) and silently mis-nesting on a letter (`/h`).
+        // Listed first so it wins over _directive_chunk / path_expr.
+        $.quoted_string,
+        $.triple_quoted,
         // `name=value` attribute inside a directive (e.g. `[?retry max=3
         // backoff=exponential]`, `[?lib … as=x]`). MUST precede path_expr so a
         // bareword followed by `=` is an attribute, not a path step (GLR forks

@@ -18,6 +18,19 @@
 vim.filetype.add({ extension = { cx = 'cx', cxs = 'cx' } })
 vim.treesitter.language.register('cx', 'cx')
 
+-- START tree-sitter highlighting for cx buffers. `language.register` above only
+-- maps filetype→parser; it does NOT turn highlighting on. Without this, cx
+-- buffers get only the (sparse) LSP semantic tokens and most structural tokens
+-- (element names, attribute names, clause heads, …) render uncolored. This runs
+-- the installed parser + queries/cx/highlights.scm; LSP semantic tokens then
+-- layer on top (higher priority) for scope-aware refinements.
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'cx',
+  callback = function(ev)
+    pcall(vim.treesitter.start, ev.buf, 'cx')
+  end,
+})
+
 local function find_cx_bin()
   local override = vim.env.CX_BIN
   if override and override ~= '' and vim.fn.executable(override) == 1 then
@@ -39,6 +52,7 @@ local function cx_on_attach(client, bufnr)
   local kmap = function(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
   end
+
 
   -- Format-on-save is ENABLED for CX buffers. `cx fmt` is the lossless
   -- canonical formatter: it round-trips comments and is idempotent

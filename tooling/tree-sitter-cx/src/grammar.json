@@ -1140,6 +1140,10 @@
           "name": "attribute"
         },
         {
+          "type": "SYMBOL",
+          "name": "lib_alias"
+        },
+        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -1153,6 +1157,44 @@
           "name": "only_clause"
         }
       ]
+    },
+    "lib_alias": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_kw_colon_as"
+          },
+          "named": true,
+          "value": "modifier_keyword"
+        },
+        {
+          "type": "FIELD",
+          "name": "alias",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "word"
+            },
+            "named": true,
+            "value": "alias_name"
+          }
+        }
+      ]
+    },
+    "_kw_colon_as": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 6,
+        "content": {
+          "type": "STRING",
+          "value": ":as"
+        }
+      }
     },
     "only_clause": {
       "type": "SEQ",
@@ -1385,6 +1427,14 @@
         "content": {
           "type": "CHOICE",
           "members": [
+            {
+              "type": "SYMBOL",
+              "name": "quoted_string"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "triple_quoted"
+            },
             {
               "type": "SYMBOL",
               "name": "directive_attribute"

@@ -9,6 +9,12 @@
 if exists('b:did_ftplugin_cx') | finish | endif
 let b:did_ftplugin_cx = 1
 
+" Start tree-sitter highlighting for this buffer. The ftplugin runs for EVERY
+" cx buffer regardless of plugin-load timing, so this is the reliable place to
+" turn highlighting on (the plugin spec only registers the language). Silent so
+" a missing parser degrades to no-highlight rather than erroring.
+silent! lua vim.treesitter.start(0, 'cx')
+
 " Twin-highlight + `%`-jump for all three CX bracket kinds.
 setlocal matchpairs=(:),{:},[:]
 
