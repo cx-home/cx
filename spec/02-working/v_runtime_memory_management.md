@@ -323,7 +323,7 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   signal is the traffic law + tls's uniform dominance, not a clean curve — the P3
   G-R2s gate must pin CPUs and use a variance band (§7.2).
 
-### §5.2 Cycle policy
+### §5.2 Cycle policy — **RESOLVED → (a), via the backstop**
 
 - **Options:** (a) opt-in cycle collector (Koka) — handles occasional cyclic data
   (parent-pointer ASTs, doubly-linked lists) without forcing arena-index
@@ -332,6 +332,19 @@ the result is written back into §3/§4 before the dependent phase proceeds.
 - **Decision criterion:** V user-base code shape (upstream call). Default lean:
   (a), because application code has occasional cycles and the GC backstop already
   exists as the collector for them.
+- **DECISION (2026-06-11) → (a), and cleaner than Koka's separate cycle collector:
+  cycles are reclaimed by the §5.3 tracing backstop itself.** A tracing mark-sweep
+  reclaims unreachable cycles *by construction* regardless of refcounts (validated
+  — `bench/parallel-alloc/mark_sweep_toy.c` collects an unreachable cycle), so V
+  needs **no separate opt-in cycle collector**: the backstop that already must
+  exist for the shared/escaped residual *is* the cycle collector. The pure-RC
+  front line leaks cycles **only between backstop runs** — bounded and quantified
+  by G-LEAK (§7.1), never unbounded. (b) structural prohibition is rejected: it
+  would force V programmers to rewrite parent-pointer ASTs / doubly-linked lists as
+  arena indices, fighting V's ergonomics for no runtime saving once the backstop
+  exists. *Open (upstream nicety, non-blocking):* whether to also ship a lint that
+  flags likely-cyclic shapes so users can opt into uniqueness where they prefer
+  determinism — a developer-experience add, not a correctness requirement.
 
 ### §5.3 Backstop collector strategy
 
@@ -398,6 +411,37 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   option is therefore de-risked end-to-end at prototype level — its remaining
   work is integration into V (object model wiring, full per-type maps, linux STW
   port) + the G-CHURN gate, not unproven mechanics.
+
+#### §5.3 scorecard — the trade study (criterion of §5.3), 2026-06-11
+
+(a) harden-vgc stays **rejected** (UAF persisted through 5 correct fixes; needs
+Go-class concurrent-STW engineering). The live choice is **(b) MMTk vs (c)
+minimal STW mark-region**. Detail: `bench/parallel-alloc/MMTK-BACKSTOP-FEASIBILITY.md`,
+`MINIMAL-COLLECTOR-DESIGN.md`.
+
+| Criterion | (b) MMTk binding | (c) minimal STW mark-region (V/C) |
+|---|---|---|
+| **Effort to correctness** | **Low** — collector already correct/tested (`mmtk-core`); the binding is plumbing (ObjectModel side-metadata, precise per-type scan, conservative roots, OS-suspend). 5+ reference bindings + porting guide + staged NoGC→MarkSweep→Immix. | **Medium** — recomposition of vgc's *sound* parts (mcache allocator / `ptrmap` precise scan / bitmap sweep) **minus** the broken concurrency, **plus** the validated STW + root capture. V owns collector correctness, but all 3 mechanics are prototyped and concurrency (the thing that broke vgc) is *deleted*, not debugged. |
+| **Precision** | Yes (side metadata + precise scanning hooks). | Yes (vgc `ptrmap`, widened to full per-type maps from V's compile-time types). |
+| **Collector MP-scaling** | **Strong** — parallel + generational (Immix/GenImmix) out of the box. | **N/A by design** — non-concurrent STW, single-thread mark. *Adequate here:* §4.3 bar is "correct + infrequent", and the Perceus front line makes collection rare, so MMTk's parallelism is **largely wasted behind the front line**. Parallel mark is an optional later add. |
+| **Upstream maintainability** | Burden moves to maintained `mmtk-core`; **but adds a Rust build dependency** to a project whose identity is fast, C-only, dependency-light builds. | **Pure V/C, zero new build deps** — fits V's ethos; but V owns ~all collector code forever (small, since simple). |
+| **Build / governance** | Rust toolchain to build-from-source-with-mmtk (mitigated for *end users* by a prebuilt `staticlib .a` behind `-gc mmtk`, as V already ships prebuilt tcc/libgc). **The adoption risk.** | None. |
+| **Shared hard part** | OS-suspend STW + root scan — **already validated** (`suspend_world.c`/`stw_root_scan.c`); identical for both, so it does not differentiate. | same (validated). |
+
+- **The decision hinges on one governance question — does upstream V accept a
+  (prebuilt-staticlib) Rust build dependency?** If yes, (b) is the soundest
+  technically (binding = plumbing, collector pre-tested). If no, (c) is fully
+  tractable with the hard mechanics already proven.
+- **Recommendation: lean (c) minimal STW mark-region.** Rationale: MMTk's
+  headline advantage is a *parallel/generational collector*, but §4.3 + the
+  Perceus front line make collection **rare and small-live-set** — so that
+  advantage is largely unrealized here, while the Rust dependency is a permanent
+  cost against V's core identity (and a likely-uphill upstream sell). (c) keeps
+  zero new build deps, its simplicity *is* its correctness (no concurrency window),
+  and its three mechanics are validated. **Choose (b) only if** the V core team
+  actively welcomes Rust *and* wants the backstop to double as a strong standalone
+  collector for non-Perceus / `-gc`-only builds. **(b)/(c) selection is the next
+  user/upstream governance call; the build does not start until it is made.**
 
 ---
 
