@@ -1,0 +1,440 @@
+diff --git a/thirdparty/vgc/vgc_platform.h b/thirdparty/vgc/vgc_platform.h
+index 12b69a1..7724694 100644
+--- a/thirdparty/vgc/vgc_platform.h
++++ b/thirdparty/vgc/vgc_platform.h
+@@ -382,4 +382,122 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
+ }
+ #endif
+ 
++// ============================================================
++// Thread-exit deregistration.
++// A pthread-key destructor runs in normal thread context when a
++// thread exits and calls back into the V GC, which marks the cache
++// slot unregistered and reclaims it. This is what lets stop-the-world
++// count only LIVE mutators (not every thread that ever registered)
++// and keeps the fixed cache array from being exhausted by churn.
++// ============================================================
++#include <setjmp.h>
++// Run a GC cycle with the COLLECTOR thread's callee-saved registers spilled
++// onto this frame and its stack range recorded to include them. The triggering
++// thread is typically mid-mutator-loop (e.g. holding `last` in a register), and
++// its own root scan would otherwise miss those registers -> swept live data.
++// `buf` stays alive across the whole collection (mark+sweep) since the body
++// runs nested here. vgc_gc_start must NOT re-record the collector's own range.
++extern void vgc_gc_start(void);
++static inline void vgc_run_gc_spilled(uintptr_t* lo, uintptr_t* hi, uintptr_t base) {
++    jmp_buf buf;
++    setjmp(buf);
++    uintptr_t sp = (uintptr_t)__builtin_frame_address(0);
++    if (base >= sp) { *lo = sp; *hi = base; } else { *lo = base; *hi = sp; }
++    vgc_gc_start();
++    __asm__ __volatile__("" : : "r"(&buf) : "memory");
++}
++
++// Park at a safepoint with callee-saved registers spilled onto THIS frame, so
++// the GC's conservative stack scan sees roots that live only in registers (a
++// hot loop variable like `last` is often kept in a callee-saved register and
++// never written to the stack). `buf` is kept alive across the spin so the
++// recorded [lo,hi] range, which covers this frame, includes the spilled regs.
++static inline void vgc_park_spill(uint32_t* stop_flag, uint32_t* stopped_count,
++                                  uint32_t* my_stopped, uintptr_t* range_lo,
++                                  uintptr_t* range_hi, uintptr_t stack_base) {
++    jmp_buf buf;
++    setjmp(buf);
++    uintptr_t sp = (uintptr_t)__builtin_frame_address(0);
++    if (stack_base >= sp) { *range_lo = sp; *range_hi = stack_base; }
++    else { *range_lo = stack_base; *range_hi = sp; }
++    vgc_atomic_store_u32(my_stopped, 1);
++    vgc_atomic_add_u32(stopped_count, 1);
++    while (vgc_atomic_load_u32(stop_flag) != 0) { vgc_cpu_pause(); }
++    vgc_atomic_store_u32(my_stopped, 0);
++    __asm__ __volatile__("" : : "r"(&buf) : "memory");
++}
++
++#ifndef _WIN32
++extern void vgc_thread_exit_cb(int idx);
++static pthread_key_t _vgc_exit_key;
++static pthread_once_t _vgc_exit_once = PTHREAD_ONCE_INIT;
++static void _vgc_exit_destructor(void* val) {
++    int idx = (int)(intptr_t)val - 1;
++    if (idx >= 0) vgc_thread_exit_cb(idx);
++}
++static void _vgc_exit_key_init(void) {
++    pthread_key_create(&_vgc_exit_key, _vgc_exit_destructor);
++}
++static inline void vgc_install_thread_exit(int idx) {
++    pthread_once(&_vgc_exit_once, _vgc_exit_key_init);
++    pthread_setspecific(_vgc_exit_key, (void*)(intptr_t)(idx + 1));
++}
++#else
++static inline void vgc_install_thread_exit(int idx) { (void)idx; }
++#endif
++
++// ============================================================
++// OS-level stop-the-world (darwin/mach) — the CORRECT STW for the minimal
++// backstop collector. Unlike cooperative alloc-path safepoints, mach
++// thread_suspend stops a thread in ANY state (incl. blocked in a syscall or a
++// tight non-allocating loop), and thread_get_state yields its SP + full
++// register file for root scanning. Validated standalone in cx-private
++// bench/parallel-alloc/{suspend_world,stw_root_scan}.c.
++// ============================================================
++#if defined(__APPLE__)
++  #include <mach/mach.h>
++  #include <mach/thread_act.h>
++  static inline uint32_t vgc_thread_self_port(void) {
++      return (uint32_t)pthread_mach_thread_np(pthread_self());
++  }
++  static inline void vgc_suspend_thread(uint32_t t) { thread_suspend((thread_act_t)t); }
++  static inline void vgc_resume_thread(uint32_t t) { thread_resume((thread_act_t)t); }
++  // Fill *sp_out + up to `max` callee/general register values; return count.
++  static inline int vgc_thread_regs(uint32_t t, uintptr_t* sp_out, uintptr_t* regs, int max) {
++    #if defined(__arm64__) || defined(__aarch64__)
++      arm_thread_state64_t st;
++      mach_msg_type_number_t n = ARM_THREAD_STATE64_COUNT;
++      if (thread_get_state((thread_act_t)t, ARM_THREAD_STATE64, (thread_state_t)&st, &n) != KERN_SUCCESS) return 0;
++      *sp_out = (uintptr_t)arm_thread_state64_get_sp(st);
++      int c = 0;
++      for (int i = 0; i < 29 && c < max; i++) regs[c++] = (uintptr_t)st.__x[i];
++      if (c < max) regs[c++] = (uintptr_t)arm_thread_state64_get_fp(st);
++      if (c < max) regs[c++] = (uintptr_t)arm_thread_state64_get_lr(st);
++      return c;
++    #elif defined(__x86_64__)
++      x86_thread_state64_t st;
++      mach_msg_type_number_t n = x86_THREAD_STATE64_COUNT;
++      if (thread_get_state((thread_act_t)t, x86_THREAD_STATE64, (thread_state_t)&st, &n) != KERN_SUCCESS) return 0;
++      *sp_out = (uintptr_t)st.__rsp;
++      uintptr_t r[15] = { st.__rax, st.__rbx, st.__rcx, st.__rdx, st.__rsi, st.__rdi,
++                          st.__rbp, st.__r8, st.__r9, st.__r10, st.__r11, st.__r12,
++                          st.__r13, st.__r14, st.__r15 };
++      int c = 0;
++      for (int i = 0; i < 15 && c < max; i++) regs[c++] = r[i];
++      return c;
++    #else
++      (void)t; (void)sp_out; (void)regs; (void)max; return 0;
++    #endif
++  }
++#else
++  // non-darwin: signal-based STW not yet ported (sketched). Return 0 so the
++  // collector can detect "no OS-suspend available" and fall back safely.
++  static inline uint32_t vgc_thread_self_port(void) { return 0; }
++  static inline void vgc_suspend_thread(uint32_t t) { (void)t; }
++  static inline void vgc_resume_thread(uint32_t t) { (void)t; }
++  static inline int vgc_thread_regs(uint32_t t, uintptr_t* sp_out, uintptr_t* regs, int max) {
++      (void)t; (void)sp_out; (void)regs; (void)max; return 0;
++  }
++#endif
++
+ #endif // VGC_PLATFORM_H
+diff --git a/vlib/builtin/vgc_d_vgc.c.v b/vlib/builtin/vgc_d_vgc.c.v
+index d60140c..9539e46 100644
+--- a/vlib/builtin/vgc_d_vgc.c.v
++++ b/vlib/builtin/vgc_d_vgc.c.v
+@@ -39,6 +39,13 @@ fn C.vgc_init_size_tables()
+ fn C.vgc_mutex_lock(lk &u32)
+ fn C.vgc_mutex_unlock(lk &u32)
+ fn C.vgc_start_thread(f voidptr)
++fn C.vgc_install_thread_exit(idx int)
++fn C.vgc_park_spill(stop_flag &u32, stopped_count &u32, my_stopped &u32, range_lo &usize, range_hi &usize, stack_base usize)
++fn C.vgc_thread_self_port() u32
++fn C.vgc_suspend_thread(t u32)
++fn C.vgc_resume_thread(t u32)
++fn C.vgc_thread_regs(t u32, sp_out &usize, regs &usize, max int) int
++fn C.vgc_run_gc_spilled(range_lo &usize, range_hi &usize, stack_base usize)
+ fn C.vgc_num_cpus() int
+ fn C.vgc_addr_map_register(base usize, size usize, arena_idx int)
+ fn C.vgc_addr_to_arena(addr usize) int
+@@ -115,6 +122,7 @@ mut:
+ 	stack_hi   usize // highest stack address
+ 	thread_id  u64
+ 	stopped    u32 // 1 if stopped for GC
++	mach_port  u32 // OS thread handle for OS-level suspend-the-world (darwin)
+ }
+ 
+ // VGC_Central is a central free list for one span class.
+@@ -165,9 +173,12 @@ mut:
+ 	free_spans_lock u32
+ 	free_spans      [32]&VGC_Span // free spans indexed by npages (1..31, 0=unused)
+ 	// Per-thread caches
+-	caches     [64]VGC_Cache
+-	ncaches    int
+-	cache_lock u32
++	caches       [64]VGC_Cache
++	ncaches      int // high-water mark of slots ever used
++	live_threads u32 // atomic-ish (guarded by cache_lock): currently-registered mutators
++	free_slots   [64]int // reclaimed cache indices, reused before growing ncaches
++	nfree_slots  int
++	cache_lock   u32
+ 	// GC state
+ 	gc_phase   u32 // atomic: current GC phase
+ 	gc_enabled u32 // atomic: 1 = GC enabled
+@@ -223,15 +234,42 @@ pub fn vgc_init() {
+ 
+ fn vgc_register_thread() {
+ 	C.vgc_mutex_lock(&vgc_heap.cache_lock)
+-	idx := vgc_heap.ncaches
+-	if idx >= vgc_max_threads {
++	// Reuse a reclaimed slot before growing the high-water mark, so that
++	// churn (many short-lived threads) cannot exhaust the fixed cache array.
++	mut idx := -1
++	if vgc_heap.nfree_slots > 0 {
++		vgc_heap.nfree_slots--
++		idx = vgc_heap.free_slots[vgc_heap.nfree_slots]
++	} else if vgc_heap.ncaches < vgc_max_threads {
++		idx = vgc_heap.ncaches
++		vgc_heap.ncaches = idx + 1
++	}
++	if idx < 0 {
++		// Genuinely out of slots (>64 concurrent live threads). Leave this
++		// thread unregistered rather than scribbling on caches[-1]; its
++		// allocations fall through to vgc_ensure_registered retries.
+ 		C.vgc_mutex_unlock(&vgc_heap.cache_lock)
+ 		return
+ 	}
+-	vgc_heap.ncaches = idx + 1
++	vgc_heap.live_threads++
+ 	C.vgc_mutex_unlock(&vgc_heap.cache_lock)
+ 
++	// A reused slot still holds the previous owner's span pointers; those
++	// spans may have been swept/recycled. Clear the slot so the new thread
++	// refills from central fresh.
++	unsafe {
++		for c in 0 .. 136 {
++			vgc_heap.caches[idx].alloc[c] = nil
++		}
++		vgc_heap.caches[idx].tiny = 0
++		vgc_heap.caches[idx].tiny_offset = 0
++		vgc_heap.caches[idx].tiny_allocs = 0
++		vgc_heap.caches[idx].stopped = 0
++	}
++
+ 	C.vgc_set_cache_idx(idx)
++	// Arrange for vgc_thread_exit_cb(idx) to fire when this thread exits.
++	C.vgc_install_thread_exit(idx)
+ 	sp := usize(C.vgc_get_sp())
+ 	mut stack_lo := usize(0)
+ 	mut stack_hi := usize(0)
+@@ -248,8 +286,57 @@ fn vgc_register_thread() {
+ 	unsafe {
+ 		vgc_heap.caches[idx].registered = true
+ 		vgc_heap.caches[idx].stack_base = stack_base
++		vgc_heap.caches[idx].mach_port = C.vgc_thread_self_port() // for OS-level STW
+ 	}
+ 	vgc_refresh_stack_range_for_sp(idx, sp)
++
++	// If a stop-the-world is in progress, park here BEFORE doing any
++	// allocation. Otherwise this brand-new thread could allocate a white
++	// object after the collector already scanned roots, and that object would
++	// be swept while live. Parking now (it holds no heap objects yet) is safe
++	// and lets the collector account for this thread.
++	if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
++		vgc_safepoint()
++	}
++}
++
++// vgc_thread_exit_cb is invoked (via a pthread-key destructor, see
++// vgc_platform.h) when a registered thread exits. It marks the cache slot
++// unregistered so stop-the-world no longer waits on a dead thread, and
++// reclaims the slot for reuse. If a collection is mid-stop, the exiting
++// thread counts as already-stopped (it has no more roots).
++@[export: 'vgc_thread_exit_cb']
++fn vgc_thread_exit_cb(idx int) {
++	if idx < 0 || idx >= vgc_max_threads {
++		return
++	}
++	C.vgc_mutex_lock(&vgc_heap.cache_lock)
++	if !vgc_heap.caches[idx].registered {
++		C.vgc_mutex_unlock(&vgc_heap.cache_lock)
++		return
++	}
++	unsafe {
++		vgc_heap.caches[idx].registered = false
++		vgc_heap.caches[idx].stack_lo = 0
++		vgc_heap.caches[idx].stack_hi = 0
++	}
++	if vgc_heap.live_threads > 0 {
++		vgc_heap.live_threads--
++	}
++	if vgc_heap.nfree_slots < vgc_max_threads {
++		vgc_heap.free_slots[vgc_heap.nfree_slots] = idx
++		vgc_heap.nfree_slots++
++	}
++	C.vgc_mutex_unlock(&vgc_heap.cache_lock)
++
++	// NOTE: do NOT touch gc_stopped_count here. An exiting thread simply
++	// stops being a live mutator (live_threads-- above); the collector's
++	// wait loop recomputes its target from live_threads each iteration, so a
++	// thread that exits during stop-the-world correctly drops out of the
++	// target instead of being miscounted as "stopped" (which previously let
++	// the collector proceed while a different live mutator was unscanned ->
++	// use-after-free).
++	C.vgc_set_cache_idx(-1)
+ }
+ 
+ fn vgc_ensure_registered() {
+@@ -689,7 +776,19 @@ fn vgc_maybe_gc() {
+ 		heap_live := C.vgc_atomic_load_u64(&vgc_heap.heap_live)
+ 		next_gc := C.vgc_atomic_load_u64(&vgc_heap.next_gc)
+ 		if heap_live >= next_gc {
+-			vgc_gc_start()
++			// Run the collection through a trampoline that spills THIS
++			// (collector) thread's callee-saved registers into the scanned
++			// range, so a mutator root held only in a register (e.g. `last`
++			// in the loop that triggered the GC) is not missed.
++			ci := C.vgc_get_cache_idx()
++			if ci >= 0 {
++				unsafe {
++					C.vgc_run_gc_spilled(&vgc_heap.caches[ci].stack_lo,
++						&vgc_heap.caches[ci].stack_hi, vgc_heap.caches[ci].stack_base)
++				}
++			} else {
++				vgc_gc_start()
++			}
+ 		}
+ 		if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
+ 			vgc_safepoint()
+@@ -975,22 +1074,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
+ 	return addr >= a.base && addr < a.base + a.used
+ }
+ 
+-// Safepoint: called when GC needs threads to stop
++// Safepoint: called when GC needs threads to stop. Spills callee-saved
++// registers (vgc_park_spill) before recording the stack range, so roots that
++// live only in registers are scanned. Marks stopped, then spins until the
++// collector finishes the (full) stop-the-world mark+sweep.
+ fn vgc_safepoint() {
+ 	cache_idx := C.vgc_get_cache_idx()
+ 	if cache_idx < 0 {
+ 		return
+ 	}
+-	// Update the live stack range for root scanning.
+-	vgc_refresh_stack_range_for_sp(cache_idx, usize(C.vgc_get_sp()))
+-	// Mark ourselves as stopped
+-	C.vgc_atomic_store_u32(&vgc_heap.caches[cache_idx].stopped, 1)
+-	C.vgc_atomic_add_u32(&vgc_heap.gc_stopped_count, 1)
+-
+-	// Wait until GC is done with stop-the-world phase
+-	for C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
+-		C.vgc_atomic_fence()
++	unsafe {
++		C.vgc_park_spill(&vgc_heap.gc_stop_flag, &vgc_heap.gc_stopped_count,
++			&vgc_heap.caches[cache_idx].stopped, &vgc_heap.caches[cache_idx].stack_lo,
++			&vgc_heap.caches[cache_idx].stack_hi, vgc_heap.caches[cache_idx].stack_base)
+ 	}
+-
+-	C.vgc_atomic_store_u32(&vgc_heap.caches[cache_idx].stopped, 0)
+ }
+diff --git a/vlib/builtin/vgc_gc_d_vgc.c.v b/vlib/builtin/vgc_gc_d_vgc.c.v
+index d2369d7..7a936e9 100644
+--- a/vlib/builtin/vgc_gc_d_vgc.c.v
++++ b/vlib/builtin/vgc_gc_d_vgc.c.v
+@@ -11,7 +11,11 @@ module builtin
+ 
+ // vgc_gc_start triggers a garbage collection cycle.
+ // Translated from Go's gcStart() in mgc.go.
+-// Flow: sweep termination (STW) -> mark (parallel) -> mark termination (STW) -> sweep (concurrent)
++// Flow: sweep termination (STW) -> full STW mark -> sweep -> resume.
++// Invoked via the vgc_run_gc_spilled trampoline (vgc_platform.h), which has
++// already recorded THIS thread's stack range with callee-saved registers
++// spilled — so vgc_gc_start must NOT re-record the collector's own range.
++@[export: 'vgc_gc_start']
+ fn vgc_gc_start() {
+ 	// Only one GC at a time
+ 	mut expected := vgc_phase_off
+@@ -23,22 +27,47 @@ fn vgc_gc_start() {
+ 	// Ensure any previous sweep is complete
+ 	vgc_sweep_finish()
+ 
+-	// Stop the world for root scanning
+-	// Set stop flag - threads will stop at next safepoint (allocation)
+-	vgc_heap.gc_target_stops = u32(vgc_heap.ncaches - 1) // all threads except GC thread
++	// Stop the world for root scanning.
++	// Target only threads that are CURRENTLY registered and live (minus this
++	// collector thread). Counting `ncaches - 1` would include threads that
++	// have exited (no deregistration) and would never stop -> the collector
++	// would time out and sweep with incomplete roots.
+ 	C.vgc_atomic_store_u32(&vgc_heap.gc_stopped_count, 0)
+ 	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 1)
+ 
+-	// Wait for threads to stop (with timeout to avoid deadlock)
++	// Wait for all live mutators (other than this collector thread) to reach a
++	// safepoint. Recompute the target from live_threads EACH iteration so that
++	// threads which exit during the stop correctly drop out of the target, and
++	// threads which register during the stop are waited for.
+ 	mut wait_iters := 0
+-	for C.vgc_atomic_load_u32(&vgc_heap.gc_stopped_count) < vgc_heap.gc_target_stops {
++	mut stopped_all := true
++	for {
++		live := C.vgc_atomic_load_u32(&vgc_heap.live_threads)
++		target := if live > 0 { live - 1 } else { u32(0) }
++		vgc_heap.gc_target_stops = target
++		if C.vgc_atomic_load_u32(&vgc_heap.gc_stopped_count) >= target {
++			break
++		}
+ 		C.vgc_atomic_fence()
+ 		wait_iters++
+-		if wait_iters > 1000000 {
+-			break // Don't wait forever - proceed with what we have
++		if wait_iters > 20000000 {
++			stopped_all = false
++			break
+ 		}
+ 	}
+ 
++	if !stopped_all {
++		// A live thread is blocked off-safepoint (e.g. in a syscall) and we
++		// cannot stop it cooperatively. NEVER proceed with incomplete roots
++		// (that frees live data). Abort this cycle: release the threads that
++		// stopped, leave the heap intact, let a later allocation retry.
++		// Worst case is a skipped collection, never corruption.
++		C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 0)
++		C.vgc_atomic_fence()
++		C.vgc_atomic_store_u32(&vgc_heap.gc_phase, vgc_phase_off)
++		return
++	}
++
+ 	// Clear mark bits on all spans (prepare for new cycle)
+ 	vgc_clear_mark_bits()
+ 
+@@ -46,17 +75,24 @@ fn vgc_gc_start() {
+ 	// Enable write barrier (for concurrent correctness)
+ 	C.vgc_atomic_store_u32(&vgc_heap.wb_enabled, 1)
+ 
+-	// The thread starting GC does not pass through a safepoint.
+-	vgc_refresh_stack_range()
++	// NOTE: the collector's own stack range was already recorded (with
++	// registers spilled) by the vgc_run_gc_spilled trampoline before this
++	// function was entered. Do NOT call vgc_refresh_stack_range() here — that
++	// would overwrite the range with a higher SP and drop the spilled regs.
+ 
+ 	// Scan roots: stacks + globals (conservative scanning)
+ 	vgc_mark_roots()
+ 
+-	// Resume threads - they can allocate but write barrier is on
+-	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 0)
+-	C.vgc_atomic_fence()
++	// FULL stop-the-world mark+sweep: the world stays stopped from here through
++	// the end of sweep. The previous design resumed mutators here and marked
++	// concurrently, but objects allocated DURING the concurrent mark were not
++	// alloc-blacked and stack-local pointer writes carry no write barrier, so a
++	// freshly-allocated-but-live object (e.g. `last` in a tight alloc loop) was
++	// swept -> use-after-free. Keeping the world stopped through sweep removes
++	// that entire unsound-concurrency window. (Concurrency is a later perf
++	// optimization that must come with alloc-black + a correct barrier.)
+ 
+-	// Parallel mark: drain the work queue
++	// Parallel mark: drain the work queue (workers only; mutators are stopped)
+ 	vgc_parallel_mark()
+ 
+ 	// === Phase 3: Mark Termination (brief STW) ===
+@@ -83,6 +119,11 @@ fn vgc_gc_start() {
+ 	// Sweep synchronously - it's fast and avoids race conditions
+ 	vgc_do_sweep()
+ 
++	// Resume the world: mark + sweep are complete, so every live object is
++	// marked and survives. Mutators waiting in vgc_safepoint can now proceed.
++	C.vgc_atomic_store_u32(&vgc_heap.gc_stop_flag, 0)
++	C.vgc_atomic_fence()
++
+ 	// Update GC trigger for next cycle (translated from Go's gcController.endCycle)
+ 	vgc_update_trigger()
+ 
