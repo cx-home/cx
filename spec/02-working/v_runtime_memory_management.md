@@ -360,6 +360,17 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   registers + conservatively scan `[sp, stack_base)` (heap interior stays precise
   via V's per-type maps). The two hard pieces of either backstop (stop + root
   capture) are now both demonstrated working.
+- **Precise mark+sweep PROTOTYPE-VALIDATED (2026-06-11;
+  `bench/parallel-alloc/mark_sweep_toy.c`).** Precise per-type-`ptrmap`-driven
+  interior scan, cycle-safe marking (reachable cycle survives, no infinite loop),
+  sweep reclaiming all unmarked **including an unreachable cycle** (the edge a
+  pure-RC front line cannot reclaim — hence the backstop's job). PASS.
+- **All three minimal-collector mechanics are now demonstrated in code:**
+  (1) STW stop `suspend_world.c`, (2) full root capture `stw_root_scan.c`,
+  (3) precise mark+sweep+cycle-collection `mark_sweep_toy.c`. The §5.3 (c)
+  option is therefore de-risked end-to-end at prototype level — its remaining
+  work is integration into V (object model wiring, full per-type maps, linux STW
+  port) + the G-CHURN gate, not unproven mechanics.
 
 ---
 

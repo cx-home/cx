@@ -5,3 +5,4 @@ malloc_ctl
 vgc_repro
 suspend_world
 stw_root_scan
+mark_sweep_toy
