@@ -16,3 +16,22 @@ index 6799cb1..7ef3155 100644
  	g.trace_autofree('// scopeobjects.len == ${scope.objects.len}')
  	for _, obj in scope.objects {
  		match obj {
+diff --git a/vlib/v/gen/c/fn.v b/vlib/v/gen/c/fn.v
+index 3a3f2a7..fc19665 100644
+--- a/vlib/v/gen/c/fn.v
++++ b/vlib/v/gen/c/fn.v
+@@ -922,6 +922,14 @@ fn (mut g Gen) fn_decl(node ast.FnDecl) {
+ 	$if trace_cgen_fn_decl ? {
+ 		eprintln('>   g.tid: ${g.tid} | g.fid: ${g.fid:3} | g.file.path: ${g.file.path} | fn_decl: ${node.name}')
+ 	}
++	// Perceus analysis verification hook (`-d perceus`): compute the drop map
++	// for this fn and log it. Analysis-only; does not yet drive emission.
++	if g.pref.compile_defines.contains('perceus') {
++		dm := compute_drop_map(node)
++		if dm.len > 0 {
++			eprintln('perceus: fn ${node.name} drop-map ${dm}')
++		}
++	}
+ 	if node.should_be_skipped {
+ 		return
+ 	}
