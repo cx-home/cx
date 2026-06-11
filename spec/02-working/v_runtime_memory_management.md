@@ -324,6 +324,22 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   **Recommend (b) MMTk or (c) minimal mark-region** unless the V core team itself
   commits to finishing vgc's STW. (b) additionally gives precise + parallel
   collection out of the box, matching §4.3.
+- **MMTk feasibility (2026-06-11; `bench/parallel-alloc/MMTK-BACKSTOP-FEASIBILITY.md`).**
+  MMTk *inverts* the vgc problem: the **collector is already correct/tested**
+  (Rust `mmtk-core`: MarkSweep/Immix/GenImmix), and the V binding is **plumbing**
+  (ObjectModel via side-metadata → header-free; precise per-type ref scanning
+  using V's compile-time types; conservative stack roots; OS-level thread
+  suspend). Incremental **NoGC → MarkSweep → Immix** bring-up, each gated by
+  G-CHURN. Main cost = a **Rust build dependency** (mitigated by shipping a
+  prebuilt staticlib behind `-gc mmtk`; a governance call for the V team, not a
+  technical blocker). **Refined recommendation:** (b) MMTk if the Rust dep is
+  acceptable; else (c) a *non-concurrent* STW mark-region collector in V/C
+  (tractable precisely because it drops the concurrency that made vgc unsound).
+- **Shared hard part, independent of (b)/(c):** both need the *same* correct STW
+  glue — **OS-level suspend-the-world (mach/signals) + conservative-stack /
+  precise-heap root scan**. That glue (a clean `suspend_world()`) is the real
+  engineering and is worth prototyping standalone; it is also what
+  `vgc-stw-partial-fixes.patch` was reaching for.
 
 ---
 
