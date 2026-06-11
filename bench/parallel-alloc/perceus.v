@@ -40,6 +40,24 @@ mut:
 	returned    []string
 	heap_vars   []string // locally-defined, heap-owning (array/map/string/has free()) -> the only drop candidates
 	table       &ast.Table = unsafe { nil }
+	// Interprocedural escape state. When `interproc` is true the call rule consults
+	// `escapes` (whole-program `fkey() -> per-param escape` summaries); when false
+	// it falls back to the conservative "every call argument escapes" rule. A
+	// callee absent from `escapes` is treated as fully escaping in both modes.
+	interproc bool
+	escapes   map[string][]bool
+}
+
+// PcsEscapeEnv drives the whole-program parameter-escape fixpoint. `fns` maps a
+// function's `fkey()` to a per-parameter escape vector; for methods `vec[0]` is
+// the receiver and the explicit parameters follow. A parameter "escapes" when the
+// callee may retain its heap buffer beyond the call (it is returned, aliased into
+// something returned, address-taken, appended, stored in an aggregate, captured,
+// sent to a thread/channel, or passed on to another escaping slot).
+struct PcsEscapeEnv {
+mut:
+	fns   map[string][]bool
+	table &ast.Table = unsafe { nil }
 }
 
 // heap-owning predicate, mirroring autofree_variable's dispatch: only these
@@ -414,6 +432,36 @@ fn (mut c PcsCfg) pcs_share_idents(e ast.Expr) {
 	}
 }
 
+// pcs_call_escape decides, for a single call, whether the receiver and each
+// positional argument escape into the callee (i.e. the callee may retain the
+// value's heap buffer beyond the call). It consults the whole-program escape
+// summaries keyed by `fkey()`. Conservative defaults — returning escape=true —
+// apply whenever the callee cannot be resolved to a summary: no escape env at
+// all, an indirect/fn-variable/field call, or a callee with no recorded summary
+// (external C/JS, generic, no-body). This makes the worst case observationally
+// identical to the pre-interprocedural "pin every call argument" rule, so the
+// change can only ever REMOVE pins, never license an unsound early drop.
+fn (c &PcsCfg) pcs_call_escape(e ast.CallExpr) (bool, []bool) {
+	if !c.interproc || e.is_fn_var || e.is_field {
+		// receiver escapes (true) is irrelevant for free fns; harmless for methods.
+		return true, []bool{len: e.args.len, init: true}
+	}
+	summary := c.escapes[e.fkey()] or {
+		return true, []bool{len: e.args.len, init: true}
+	}
+	// summary[0] is the receiver for methods; explicit parameters follow.
+	off := if e.is_method { 1 } else { 0 }
+	recv_esc := if e.is_method { if summary.len > 0 { summary[0] } else { true } } else { false }
+	mut arg_esc := []bool{len: e.args.len}
+	for i in 0 .. e.args.len {
+		si := i + off
+		// Beyond the declared parameters (variadic spread, or any arity mismatch)
+		// fall back to escaping — sound, and the spill is rare on hot paths.
+		arg_esc[i] = if si < summary.len { summary[si] } else { true }
+	}
+	return recv_esc, arg_esc
+}
+
 // pcs_scan_share is the uniqueness classifier (Perceus layer 3, conservative).
 // It is EXHAUSTIVE BY CONSTRUCTION (every ast.Expr arm, no `else`). A heap value
 // is treated as SHARED (ineligible for deterministic drop) whenever its buffer
@@ -446,10 +494,22 @@ fn (mut c PcsCfg) pcs_scan_share(e ast.Expr) {
 			c.pcs_scan_share(e.right)
 		}
 		ast.CallExpr {
-			c.pcs_share_idents(e.left)
-			for a in e.args {
-				c.pcs_share_idents(a.expr)
+			// Interprocedural escape: pin ONLY the receiver/arguments whose value
+			// the callee may retain. With no summary (external/generic/indirect)
+			// pcs_call_escape returns all-true, reproducing the conservative
+			// pre-interprocedural behaviour exactly.
+			recv_esc, arg_esc := c.pcs_call_escape(e)
+			if recv_esc {
+				c.pcs_share_idents(e.left)
 			}
+			for i, a in e.args {
+				if i < arg_esc.len && arg_esc[i] {
+					c.pcs_share_idents(a.expr)
+				}
+			}
+			// Always recurse: nested calls inside the receiver/args have their own
+			// (independent) escape decisions; a non-escaping outer arg can still
+			// contain an inner call that escapes some inner variable.
 			c.pcs_scan_share(e.left)
 			for a in e.args {
 				c.pcs_scan_share(a.expr)
@@ -1019,9 +1079,11 @@ pub fn compute_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
 // path-dependent leak (the failure mode of suppressing an unconditional
 // scope-exit free while only dropping on some branches). Branch/loop coverage is
 // future work, each widening separately re-gated (G-DIFF + G-LEAK).
-pub fn compute_emittable_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
+pub fn compute_emittable_drop_map(fnd ast.FnDecl, mut table ast.Table, escapes map[string][]bool) map[int][]string {
 	mut c := PcsCfg{
-		table: table
+		table:     table
+		interproc: true
+		escapes:   escapes
 	}
 	entry := c.pcs_nb()
 	c.exit_id = c.pcs_nb()
@@ -1075,4 +1137,123 @@ fn (c &PcsCfg) pcs_entry_drop_map(entry int) map[int][]string {
 		live = nl.clone()
 	}
 	return dm
+}
+
+fn pcs_bool_eq(a []bool, b []bool) bool {
+	if a.len != b.len {
+		return false
+	}
+	for i in 0 .. a.len {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// pcs_collect_fn_decls gathers every top-level FnDecl across all files. Methods
+// are top-level FnDecls (so they are included); anonymous fns are expression-level
+// and are handled by the local classifier's AnonFn arm (their captures are pinned),
+// so they are not separately summarised here.
+fn pcs_collect_fn_decls(files []&ast.File) []ast.FnDecl {
+	mut out := []ast.FnDecl{}
+	for f in files {
+		for st in f.stmts {
+			if st is ast.FnDecl {
+				out << st
+			}
+		}
+	}
+	return out
+}
+
+// pcs_fn_param_escape computes one function's parameter-escape vector under the
+// CURRENT round's summaries (read through `env`). A parameter escapes iff, after
+// the local sharing classifier has run over the whole body, its name is marked
+// shared (its buffer may be aliased/retained) OR it appears in a return
+// expression. Heap-owning parameters are seeded into `heap_vars` so the
+// assignment-aliasing rule fires on them too — this is what closes the
+// `y := param; return y` alias-return hole (the assignment pins `param` the moment
+// it is copied into a heap local that may later escape).
+fn (env &PcsEscapeEnv) pcs_fn_param_escape(fnd ast.FnDecl) []bool {
+	mut c := PcsCfg{
+		table:     env.table
+		interproc: true
+		escapes:   env.fns
+	}
+	for p in fnd.params {
+		if c.pcs_is_heap_owning(p.typ) {
+			pcs_uniq_push(mut c.heap_vars, p.name)
+		}
+	}
+	entry := c.pcs_nb()
+	c.exit_id = c.pcs_nb()
+	last := c.pcs_lower_stmts(fnd.stmts, entry)
+	c.pcs_edge(last, c.exit_id)
+	for st in fnd.stmts {
+		c.pcs_scan_share_stmt(st)
+	}
+	mut esc := []bool{len: fnd.params.len}
+	for i, p in fnd.params {
+		esc[i] = p.name in c.shared_vars || p.name in c.returned
+	}
+	return esc
+}
+
+// build_escape_summaries runs the interprocedural escape fixpoint over the whole
+// program and returns the final `fkey() -> per-parameter escape` map consumed by
+// the call rule (pcs_call_escape) during per-function drop analysis.
+//
+// The iteration is ASCENDING from "nothing escapes": a parameter flips false->true
+// only when evidence appears (a local escaping use, or being passed to a callee
+// slot that is itself escaping under the current summaries), and never flips back.
+// That makes it monotone over a finite domain, so it is the LEAST — i.e. most
+// precise — sound fixpoint, and it terminates. (Mutual recursion such as
+// `a(x){b(x)}` / `b(y){a(y)}` correctly settles with both params non-escaping,
+// which a descending/greatest-fixpoint formulation would miss.)
+//
+// Functions we cannot soundly summarise — non-V (C/JS), no-body, or generic — are
+// simply omitted, so their callers see "no summary" and conservatively pin every
+// argument. The round cap is a pure safety backstop: real programs converge in a
+// few rounds; if it is ever exhausted we fall back to all-escaping (sound).
+pub fn build_escape_summaries(files []&ast.File, mut table ast.Table) map[string][]bool {
+	decls := pcs_collect_fn_decls(files)
+	mut summarizable := []ast.FnDecl{}
+	for fnd in decls {
+		if fnd.language != .v || fnd.no_body || fnd.generic_names.len > 0 {
+			continue
+		}
+		summarizable << fnd
+	}
+	mut env := PcsEscapeEnv{
+		table: table
+	}
+	// Seed every summarizable function with all-parameters-non-escaping (false).
+	for fnd in summarizable {
+		env.fns[fnd.fkey()] = []bool{len: fnd.params.len}
+	}
+	max_rounds := 200
+	for round in 0 .. max_rounds {
+		mut changed := false
+		mut next := env.fns.clone()
+		for fnd in summarizable {
+			key := fnd.fkey()
+			esc := env.pcs_fn_param_escape(fnd)
+			if !pcs_bool_eq(esc, next[key]) {
+				next[key] = esc
+				changed = true
+			}
+		}
+		env.fns = next.clone()
+		if !changed {
+			break
+		}
+		if round == max_rounds - 1 {
+			// Pathological non-convergence: drop to the conservative top.
+			for fnd in summarizable {
+				env.fns[fnd.fkey()] = []bool{len: fnd.params.len, init: true}
+			}
+		}
+	}
+	return env.fns
 }

@@ -131,3 +131,74 @@ Plan: per-`FnDecl` parameter-escape summary (a param escapes iff the body's
 graph, external/generic callees conservatively escaping; then at a call site,
 only pin args bound to escaping params. This is its own careful, separately-gated
 pass (G-DIFF + G-LEAK), not bolted onto this increment.
+
+## Classifier sharpening — increment 2: interprocedural escape inference (2026-06-11)
+
+The dominant residual pin. Before this, **every** value passed to **any** function
+(receiver or argument) was marked shared, because without knowing what the callee
+does we had to assume it might retain the buffer. That single rule pinned most
+heap locals on any real (call-bearing) code path. This increment replaces it with
+a whole-program parameter-escape analysis.
+
+**Summaries.** `build_escape_summaries` (run ONCE in `cgen.gen()`, before the
+parallel/serial per-file split, gated on `-autofree -d perceus`) computes a map
+`fkey() -> []bool` (per-parameter "does this parameter's heap buffer escape the
+callee"). For methods, `vec[0]` is the receiver and the explicit params follow.
+The result is read-only during emission, so the parallel cgen workers (clones of
+`global_g`) share it safely; it is copied onto each worker `Gen` alongside
+`is_autofree`.
+
+**A parameter escapes** iff, after the existing local sharing classifier
+(`pcs_scan_share`) runs over the body, its name is marked shared (address-taken,
+`<<`-appended, captured, spawned, channel-sent, stored in an aggregate, or passed
+on to another *escaping* slot) OR it appears in a return expression. To close the
+`y := param; return y` **alias-return hole**, heap-owning parameters are seeded
+into `heap_vars` for the summary computation, so the assignment-aliasing rule
+fires on them too — copying a heap param into a heap local pins the param.
+
+**Fixpoint.** The call rule is mutually recursive (param P of f escapes iff f
+passes P to an escaping slot of g, which depends on g's summary), so the analysis
+is an **ascending fixpoint from "nothing escapes"**: a param flips false→true only
+when evidence appears, never back. Monotone over a finite domain ⇒ it is the LEAST
+(most precise) sound fixpoint and it terminates. Mutual recursion
+(`a(x){b(x)}`/`b(y){a(y)}`) correctly settles non-escaping — a descending/greatest
+fixpoint would miss it. A round cap (200) is a pure backstop; if ever exhausted it
+falls back to all-escaping (sound). Real programs (incl. full vlib) converge in a
+few rounds.
+
+**Conservative defaults (unchanged worst case).** `pcs_call_escape` returns
+all-escape — i.e. the exact pre-interprocedural behavior — whenever the callee
+cannot be soundly summarized: non-V (`C`/`JS`) callees, no-body, **generic**
+functions (skipped: behaviour varies per instantiation), and indirect calls
+(`is_fn_var`/`is_field`) or any callee with no recorded summary. Arguments beyond
+the declared params (variadic spread / arity mismatch) also fall back to escape.
+So the change can only ever REMOVE pins, never license an unsound early drop.
+
+**Proof it works (generated C).** For `r := classify(a)` where `classify(xs []int)`
+only reads `xs.len` in a condition (xs neither returned nor stored): the
+interprocedural summary marks `classify`'s param non-escaping, so the call no
+longer pins `a`, and `Array_int_free(&a)` now fires **immediately after the call**
+(a's true last use) instead of at scope exit several statements later. The
+matching escaping case `passthru(ys) { return ys }` keeps its arg pinned.
+
+**Re-gated green (each independently):**
+| Gate | Result |
+|---|---|
+| Flag-off (`-d perceus` off) byte-identical, old (pre-interproc) vs new compiler | ✅ 7/7 real example programs identical |
+| G-DIFF corpus: `none` == `boehm` == `autofree` == `autofree -d perceus` | ✅ `21\|[10,20,30]\|6\|8\|2\|28` |
+| G-SAN/G-LEAK: ASan on `-autofree -d perceus` corpus + 6 heavier vlib tests | ✅ clean (no UAF/double-free) |
+| V autofree test corpus (6 files), `v test` rc parity | ✅ 6/6 |
+| Broad differential (45 vlib tests, many modules), `autofree` rc == `perceus` rc | ✅ 45/45, 0 regressions |
+
+(`array_test`/`arrays_test` return rc=1 under `-autofree` with AND without perceus —
+a pre-existing upstream autofree limitation, identical either way; default GC
+passes. Not a perceus regression.)
+
+**Still narrow, still monotone.** Emission remains entry-block only; the summary's
+"escape" is over-approximate in the aliasing direction (any heap param copied into
+a heap local is pinned; generic/indirect callees fully escape). Precision is the
+documented follow-on (slice/borrow tracking, generic-instantiation summaries,
+return-of-scalar-projection refinement). **Next:** widen emission past the entry
+block (branch/loop join rule), then `dup` + thread-correct RC (§5.1) before
+G-CHURN, then attempt to drop autofree's `-experimental` pointer-free gate (the
+spec's P1 success signal).
