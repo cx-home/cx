@@ -207,8 +207,11 @@ V's long-term memory management is a **three-layer hybrid**:
   the prize.
 - **R2 (MP scaling):** E attacks *how much hits shared runtime state* from both
   sides — Perceus removes most allocations entirely; the per-thread mcache makes
-  the remainder lock-free. The tracing backstop runs rarely, so its STW/lock
-  costs amortize toward irrelevance.
+  the remainder lock-free; and the shared residual uses **thread-local-handoff RC**
+  (§5.1, measured), whose shared-line traffic is bounded by the ownership-transfer
+  rate, not the RC-op rate — so refcount bouncing, the classic RC MP-killer, is
+  capped. The tracing backstop runs rarely, so its STW/lock costs amortize toward
+  irrelevance.
 - **Engineering is de-risked.** Pure-B must solve Go-grade *concurrent* collection
   (sub-ms pauses, async preemption, lock-free marking). In E the collector need
   only be **correct and infrequent** — a far lower bar — because it is off the
@@ -236,7 +239,12 @@ pole and the worse fit for V's identity.
   value is allocated on the same path, reuse the allocation in place. This is the
   R1-beating optimization and the hardest pass.
 - **RC ops on the residual** (values whose uniqueness cannot be statically proven)
-  are emitted as `dup`/`drop`; their atomicity is the §5.1 crux.
+  are emitted as `dup`/`drop`. **Scheme = thread-local with explicit handoff**
+  (§5.1, resolved by measurement 2026-06-11): within-thread `dup`/`drop` touch a
+  private per-thread counter; only genuine cross-thread ownership transfer touches
+  a shared atomic. Atomic RC was measured to anti-scale on share-heavy workloads;
+  thread-local handoff bounds shared-line traffic by the (rare) handoff rate, not
+  the RC-op rate.
 
 ### §4.2 Allocator — per-thread mcache
 
@@ -284,7 +292,7 @@ allocation request
 Each crux is a **gated trade study**: a benchmark/prototype produces the decision;
 the result is written back into §3/§4 before the dependent phase proceeds.
 
-### §5.1 RC atomicity for the shared residual *(the R2 determinant)*
+### §5.1 RC atomicity for the shared residual *(the R2 determinant)* — **RESOLVED → (a)**
 
 - **Options:** (a) thread-local RC with explicit handoff (Koka) — avoids
   cache-line bouncing, more compiler machinery; (b) atomic RC (Lean 4) — simpler,
@@ -295,6 +303,25 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   on that workload, (a) is required.
 - **Why it's the crux:** "Perceus scales MP" is true only to the degree
   uniqueness dominates; this study bounds the residual's cost.
+- **DECISION (2026-06-11, measured) → (a) thread-local handoff.** G-R2s prototype
+  (`bench/parallel-alloc/rc_scaling.c`; full data + method in
+  `G-R2s-RC-FINDINGS.md`) runs an identical share-heavy workload (a small pool of
+  cache-line-isolated shared refcounts that every thread rotates through) under
+  both schemes, parameterized by `W` = within-thread uses per ownership handoff.
+  **Atomic RC anti-scales** in the hot-contention regime — aggregate throughput
+  *degrades* as threads grow at every `W≥1` (e.g. W=4: 447→306→280→257 M-ops/s
+  over 1→8 threads), meeting the literal failure condition. **Thread-local handoff
+  strictly dominates** in all measured points, the gap widening with within-thread
+  use: **1.16× (W=1) → 2.65× (W=4) → 7.9× (W=16)** at 8 threads. The mechanism is a
+  **constant-vs-linear shared-traffic law**: atomic touches the shared line `2+2W`
+  times/cycle (grows with RC-op frequency), thread-local only `2` (the
+  ownership-transfer rate, constant in `W`). The R2 guarantee for the residual is
+  therefore won by *three compounding levers*: (a) thread-local handoff **plus**
+  Perceus minimizing residual size (front line) **plus** borrowing minimizing the
+  handoff rate. *Honest caveat:* in the heaviest micro-regime neither pure scheme
+  is textbook monotonic-up (the coherence fabric saturates for both); the robust
+  signal is the traffic law + tls's uniform dominance, not a clean curve — the P3
+  G-R2s gate must pin CPUs and use a variance band (§7.2).
 
 ### §5.2 Cycle policy
 
@@ -500,9 +527,11 @@ Existing: `bench/parallel-alloc/` (`cbench.c`, `vgc_repro.v`, `run.sh`) and
 `vcx/tests/runners/` (`region_corruption_bench.v` + scaling benches). **Net-new:**
 (1) generalize the corruption battery into **G-CHURN** with the dead/blocked-thread
 cases; (2) wire the **cross-mode differential oracle** as a standing gate; (3) add
-**sanitizer** build targets; (4) add the **share-heavy G-R2s** workload; (5) the
-**G-REUSE** alloc-count instrumentation; (6) the **liveness-fails-not-proceeds**
-wrapper.
+**sanitizer** build targets; (4) add the **share-heavy G-R2s** workload — *prototype landed*
+(`bench/parallel-alloc/rc_scaling.c`, resolved §5.1 2026-06-11; the production
+gate still needs CPU pinning + variance band + wiring into the real RC residual);
+(5) the **G-REUSE** alloc-count instrumentation; (6) the
+**liveness-fails-not-proceeds** wrapper.
 
 ---
 
