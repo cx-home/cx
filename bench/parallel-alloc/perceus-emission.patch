@@ -1,3 +1,49 @@
+diff --git a/vlib/v/gen/c/array.v b/vlib/v/gen/c/array.v
+index c51a5a1..8f5bf01 100644
+--- a/vlib/v/gen/c/array.v
++++ b/vlib/v/gen/c/array.v
+@@ -942,9 +942,40 @@ fn (mut g Gen) gen_array_map(node ast.CallExpr) {
+ 		}
+ 	}
+ 	noscan := g.check_noscan(ret_elem_type)
++	// Perceus reuse (P2): if the receiver is a heap-array local that the analysis
++	// proved UNIQUE and DEAD at this very statement (it is in perceus_drops for the
++	// current stmt), and the result element type is identical to the input's (same
++	// size), reuse the receiver's own buffer for the result instead of allocating a
++	// fresh one — the classic Perceus functional-but-in-place map. The receiver's
++	// free is then ELIDED (perceus_reused) since its storage is now the result's;
++	// the result is freed exactly once. Reads (`_orig.data[i]`) and writes (push at
++	// index i) alias the same buffer, but the write of slot i happens only after
++	// slot i was read this iteration, and i increases monotonically, so no live
++	// element is clobbered before it is read.
++	mut perceus_map_reuse := false
++	if g.is_perceus && left_is_array && inp_elem_styp == ret_elem_styp
++		&& node.left is ast.Ident {
++		recv_name := (node.left as ast.Ident).name
++		if recv_name in g.perceus_drops[g.perceus_cur_stmt_pos] {
++			scope := g.file.scope.innermost(node.pos.pos)
++			if obj := scope.find(recv_name) {
++				if obj is ast.Var {
++					perceus_map_reuse = true
++					g.perceus_reused[obj.pos.pos] = true
++				}
++			}
++		}
++	}
+ 	has_infix_left_var_name := g.write_prepared_tmp_value(past.tmp_var, node, ret_styp, '{0}')
+ 	if left_is_array {
+-		g.writeln('${past.tmp_var} = builtin____new_array${noscan}(0, ${past.tmp_var}_len, sizeof(${ret_elem_styp}));\n')
++		if perceus_map_reuse {
++			// reuse the receiver's buffer (same data ptr + cap); reset len so the
++			// push loop refills it in place (cap == orig.len, so no realloc).
++			g.writeln('${past.tmp_var} = ${past.tmp_var}_orig; // perceus: in-place map reuse')
++			g.writeln('${past.tmp_var}.len = 0;\n')
++		} else {
++			g.writeln('${past.tmp_var} = builtin____new_array${noscan}(0, ${past.tmp_var}_len, sizeof(${ret_elem_styp}));\n')
++		}
+ 	}
+ 
+ 	mut closure_var := ''
 diff --git a/vlib/v/gen/c/autofree.v b/vlib/v/gen/c/autofree.v
 index 6799cb1..a6b50b4 100644
 --- a/vlib/v/gen/c/autofree.v
@@ -73,10 +119,10 @@ index 6799cb1..a6b50b4 100644
  		}
  		af.write_string('\t')
 diff --git a/vlib/v/gen/c/cgen.v b/vlib/v/gen/c/cgen.v
-index 084bacf..40e19a1 100644
+index 084bacf..63ac43a 100644
 --- a/vlib/v/gen/c/cgen.v
 +++ b/vlib/v/gen/c/cgen.v
-@@ -272,6 +272,11 @@ mut:
+@@ -272,6 +272,13 @@ mut:
  	arg_no_auto_deref   bool            // smartcast must not be dereferenced
  	branch_parent_pos   int             // used in BranchStmt (continue/break) for autofree stop position
  	returned_var_names  map[string]bool // to detect that vars doesn't need to be freed since it's being returned
@@ -85,10 +131,12 @@ index 084bacf..40e19a1 100644
 +	perceus_suppress    map[int]bool     // ast.Var.pos.pos of vars dropped by Perceus -> skip their scope-exit free (no double-free)
 +	perceus_escapes     map[string][]bool // whole-program interproc param-escape summaries (fkey -> per-param escape); built once in gen()
 +	perceus_dropping    bool              // true only while perceus_drop() emits: authorizes freeing a proven-unique user-ref (`&Foo`) without -experimental
++	perceus_cur_stmt_pos int             // ast.Stmt.pos.pos of the statement currently being emitted (drop-map key); lets in-place ops test "is this value dropped HERE"
++	perceus_reused      map[int]bool      // ast.Var.pos.pos of locals whose buffer was consumed by an in-place reuse (P2) -> their Perceus drop is skipped (buffer now owned by the result)
  	infix_left_var_name string          // a && if expr
  	curr_var_name       []string        // curr var name on assignment
  	called_fn_name      string
-@@ -456,6 +461,14 @@ pub fn gen(files []&ast.File, mut table ast.Table, pref_ &pref.Preferences) GenO
+@@ -456,6 +463,14 @@ pub fn gen(files []&ast.File, mut table ast.Table, pref_ &pref.Preferences) GenO
  	util.timing_measure('cgen init')
  	global_g.tests_inited = false
  	global_g.file = files.last()
@@ -103,7 +151,7 @@ index 084bacf..40e19a1 100644
  	if !pref_.no_parallel {
  		util.timing_start('cgen parallel processing')
  		mut pp := pool.new_pool_processor(callback: cgen_process_one_file_cb)
-@@ -1064,6 +1077,7 @@ fn cgen_process_one_file_cb(mut p pool.PoolProcessor, idx int, wid int) voidptr
+@@ -1064,6 +1079,7 @@ fn cgen_process_one_file_cb(mut p pool.PoolProcessor, idx int, wid int) voidptr
  		done_results:                       global_g.done_results
  		late_chan_types:                    global_g.late_chan_types
  		is_autofree:                        global_g.pref.autofree
@@ -111,7 +159,22 @@ index 084bacf..40e19a1 100644
  		obf_table:                          global_g.obf_table
  		referenced_fns:                     global_g.referenced_fns
  		is_cc_msvc:                         global_g.is_cc_msvc
-@@ -4142,6 +4156,22 @@ fn (mut g Gen) stmt(node ast.Stmt) {
+@@ -3859,8 +3875,14 @@ fn (mut g Gen) stmt(node ast.Stmt) {
+ 	}
+ 	old_inside_call := g.inside_call
+ 	g.inside_call = false
++	// Track the current statement's drop-map key so in-place ops (P2 reuse) can ask
++	// "is this value Perceus-dropped at THIS statement" (= proven unique + dead here).
++	// Restored on exit so nested statements don't clobber the enclosing one.
++	old_perceus_pos := g.perceus_cur_stmt_pos
++	g.perceus_cur_stmt_pos = node.pos.pos
+ 	defer {
+ 		g.inside_call = old_inside_call
++		g.perceus_cur_stmt_pos = old_perceus_pos
+ 	}
+ 	if !g.skip_stmt_pos {
+ 		g.set_current_pos_as_last_stmt_pos()
+@@ -4142,6 +4164,27 @@ fn (mut g Gen) stmt(node ast.Stmt) {
  	if !g.skip_stmt_pos { // && g.stmt_path_pos.len > 0 {
  		g.stmt_path_pos.delete_last()
  	}
@@ -126,6 +189,11 @@ index 084bacf..40e19a1 100644
 +		for n in names {
 +			if obj := sc.find(n) {
 +				if obj is ast.Var {
++					// Buffer already consumed by an in-place reuse (P2): its storage is
++					// now owned by the reuse result and must NOT be freed here.
++					if obj.pos.pos in g.perceus_reused {
++						continue
++					}
 +					g.perceus_drop(obj)
 +				}
 +			}
@@ -135,10 +203,10 @@ index 084bacf..40e19a1 100644
  	// `foo('a' + 'b')` => `tmp := 'a' + 'b'; foo(tmp); string_free(&tmp);`
  }
 diff --git a/vlib/v/gen/c/fn.v b/vlib/v/gen/c/fn.v
-index 3a3f2a7..a86c906 100644
+index 3a3f2a7..c9c2424 100644
 --- a/vlib/v/gen/c/fn.v
 +++ b/vlib/v/gen/c/fn.v
-@@ -1179,6 +1179,31 @@ fn (mut g Gen) gen_fn_decl(node &ast.FnDecl, skip bool) {
+@@ -1179,6 +1179,32 @@ fn (mut g Gen) gen_fn_decl(node &ast.FnDecl, skip bool) {
  	defer {
  		g.is_autofree = old_g_autofree
  	}
@@ -151,6 +219,7 @@ index 3a3f2a7..a86c906 100644
 +	g.is_perceus = false
 +	g.perceus_drops = map[int][]string{}
 +	g.perceus_suppress = map[int]bool{}
++	g.perceus_reused = map[int]bool{}
 +	if g.is_autofree && g.pref.compile_defines.contains('perceus') {
 +		g.perceus_drops = compute_emittable_drop_map(*node, mut g.table, g.perceus_escapes)
 +		if g.perceus_drops.len > 0 {

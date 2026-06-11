@@ -364,11 +364,50 @@ array/map/datatypes/strings-heavy vlib tests, 0 UAF/double-free); autofree corpu
 6/6; broad differential 45/45 rc-equal, 0 regressions. Corpus banked:
 `bench/parallel-alloc/p2_reuse_corpus.v`.
 
-**Next — P2.2 (the actual R1 win):** at `gen_array_map`, when the receiver is a
-bare heap-array local present in `g.perceus_drops` for this statement (i.e. P2.1
-proved it unique+dead) AND `inp_elem_styp == ret_elem_styp`, reuse the receiver's
-buffer for `_t1` (`_t1 = _t1_orig; _t1.len = 0;` then refill in place) instead of
-`__new_array`, and ELIDE the receiver's free (remove it from `perceus_drops` and
-add to `perceus_suppress`) so the shared buffer is freed exactly once via `b`.
-Gate: G-DIFF + ASan on an aliasing-hazard corpus + a G-R1 micro-bench
-(allocations eliminated, ≥ Boehm single-thread).
+## P2.2 — in-place map buffer reuse codegen — DONE (mechanism), R1 BLOCKED on loop emission (2026-06-11)
+
+`gen_array_map` now reuses the receiver's buffer for the result when the receiver
+is a bare heap-array local that the analysis proved **unique + dead at this very
+statement** (`recv_name in g.perceus_drops[g.perceus_cur_stmt_pos]`) AND
+`inp_elem_styp == ret_elem_styp` (same element size). It emits
+`_t1 = _t1_orig; _t1.len = 0;` (reuse the receiver's data ptr + cap; refill in
+place — cap == orig.len, so the push loop never reallocs) instead of
+`__new_array`, and ELIDES the receiver's free via `perceus_reused` (keyed by the
+var's `pos.pos`; the drop hook skips it). The shared buffer is freed exactly once,
+via the result `b`. New `Gen.perceus_cur_stmt_pos` (set in `stmt()`, save/restored)
+gives `gen_array_map` the drop-map key for "is this dropped HERE".
+
+**Soundness:** the read `_orig.data[i]` and the in-place write (push at index i)
+alias the same buffer, but slot i is written only after it was read this iteration
+and i increases monotonically, so no element is clobbered before use (valid for
+equal element size). Eligibility = membership in this statement's drop set, which
+already means unique + dead + non-shared + non-returned — so no other reference to
+the buffer survives. Verified on the hazard corpus: `aliased_map` (`c := a`),
+`used_after_map` (`a` live after), `size_change` (`[]int`→`[]string`) all correctly
+**suppress** reuse; only the unique+dead+same-size `safe_reuse` reuses.
+
+**Gated green:** flag-off byte-identical 7/7 (incl. the `stmt()` change); G-DIFF
+corpus + uref_corpus + hazard corpus `none == perceus`; ASan clean (corpus +
+hazard corpus + 34 array/map/datatypes/encoding/strings-heavy vlib tests, 0
+UAF/double-free); autofree corpus 6/6; broad differential 45/45 rc-equal. Corpora
+banked: `p2_hazard_corpus.v`, `p2_reuse_bench.v`.
+
+**HONEST R1 status — NOT met yet, and exactly why.** The reuse mechanism is
+correct, but on the micro-bench (`p2_reuse_bench.v`: 8M × `a := […]; b := a.map(…)`)
+it fires **0 times** and perceus ties autofree (−prod: boehm 0.38s, autofree 0.43s,
+perceus 0.43s). Cause: the map sits **inside a loop**, and drop emission is
+restricted to the function's top-level **spine** (increment #3) — loop bodies are
+not spine, so the receiver is never in `perceus_drops` there, so reuse never fires.
+**Any** measurable bench drives the map in a loop, so G-R1 cannot be met until drop
+emission widens into loop bodies. Reuse DOES fire and is measured-correct for
+spine-level (top-level) maps; it's the hot-loop case that's gated.
+
+**Next — the unlocking increment: per-iteration loop-body emission.** Extend the
+spine to the straight-line prefix of each loop body (statements that run exactly
+once per iteration, before any nested branch/early-exit). A heap local defined and
+last-used within one iteration (dead across the back-edge) becomes droppable each
+iteration — which both lands P2's R1 reuse on hot loops AND is the largest
+remaining drop-coverage lever generally. Its own careful, separately-gated pass
+(cross-iteration liveness, break/continue/return within the body). Then re-run the
+G-R1 micro-bench (expect the map allocation eliminated per iteration). After that:
+the deferred §5.1 thread-correct RC for the shared residual (Phase 3).
