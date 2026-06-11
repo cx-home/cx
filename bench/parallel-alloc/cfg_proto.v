@@ -77,9 +77,59 @@ fn (mut c Cfg) def_in(b int, name string) {
 
 struct Cfg {
 mut:
-	blocks     []BB
-	exit_id    int
-	loop_stack [][2]int // [header_id, exit_id] for break/continue
+	blocks      []BB
+	exit_id     int
+	loop_stack  [][2]int // [header_id, exit_id] for break/continue
+	shared_vars []string // possibly-shared (NOT uniquely owned) -> drop falls to GC residual
+}
+
+fn (mut c Cfg) mark_shared(name string) {
+	uniq_push(mut c.shared_vars, name)
+}
+
+// scan_escapes marks variables that stop being uniquely owned: address taken
+// (&x), captured by a closure ([x] inherited), or passed into a spawned thread.
+// Conservative: when unsure, mark shared (sound — only costs precision).
+fn (mut c Cfg) scan_escapes(ex ast.Expr) {
+	match ex {
+		ast.PrefixExpr {
+			if ex.op == .amp && ex.right is ast.Ident {
+				c.mark_shared((ex.right as ast.Ident).name) // &x -> x escapes
+			}
+			c.scan_escapes(ex.right)
+		}
+		ast.AnonFn {
+			for v in ex.inherited_vars {
+				c.mark_shared(v.name) // closure capture [x]
+			}
+		}
+		ast.SpawnExpr {
+			for a in ex.call_expr.args {
+				mut ids := []string{}
+				collect_idents(a.expr, mut ids)
+				for id in ids {
+					c.mark_shared(id) // value handed to another thread
+				}
+			}
+		}
+		ast.InfixExpr {
+			c.scan_escapes(ex.left)
+			c.scan_escapes(ex.right)
+		}
+		ast.CallExpr {
+			for a in ex.args {
+				c.scan_escapes(a.expr)
+			}
+		}
+		ast.ParExpr {
+			c.scan_escapes(ex.expr)
+		}
+		ast.IndexExpr {
+			c.scan_escapes(ex.left)
+			c.scan_escapes(ex.index)
+		}
+		else {}
+	}
 }
 
 fn (mut c Cfg) new_block(label string) int {
@@ -212,6 +262,7 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 			mut uses := []string{}
 			for e in st.exprs {
 				collect_idents(e, mut uses)
+				c.scan_escapes(e)
 			}
 			c.use_in(cur, uses)
 			c.step(cur, 'return')
@@ -228,6 +279,7 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 // lower control-flow-bearing expressions; straight-line exprs just annotate.
 fn (mut c Cfg) lower_expr(ex ast.Expr, entry int) int {
 	mut cur := entry
+	c.scan_escapes(ex) // detect &x / closure-capture / spawn escapes
 	match ex {
 		ast.IfExpr {
 			mut cu := []string{}
@@ -349,9 +401,35 @@ fn (c &Cfg) report_last_use() {
 			}
 		}
 		if sites.len > 0 {
-			println('  ${v:-3}: last read (drop after) at ${sites.join(", ")}')
+			println('  ${v:-4}: last read (drop after) at ${sites.join(", ")}')
 		} else {
-			println('  ${v:-3}: loop-carried / live across back-edge -> drop after loop exit')
+			// No cross-block last-use site. Either loop-carried (live across a
+			// back-edge) or defined+last-used within one block (block-granularity
+			// liveness can't pinpoint intra-block last-use -> needs a per-stmt
+			// pass, the next refinement).
+			println('  ${v:-4}: no cross-block last-use (loop-carried OR intra-block; per-stmt pass to pinpoint)')
+		}
+	}
+}
+
+// report_uniqueness: a value is drop-eligible only if it is provably uniquely
+// owned. Anything escaped/captured/shared falls to the GC residual (sound).
+fn (c &Cfg) report_uniqueness() {
+	mut vars := []string{}
+	for b in c.blocks {
+		for v in b.def {
+			uniq_push(mut vars, v)
+		}
+		for v in b.use {
+			uniq_push(mut vars, v)
+		}
+	}
+	println('uniqueness (drop-eligibility):')
+	for v in vars {
+		if v in c.shared_vars {
+			println('  ${v:-4}: SHARED -> GC residual (no deterministic drop)')
+		} else {
+			println('  ${v:-4}: unique -> drop-eligible')
 		}
 	}
 }
@@ -369,30 +447,50 @@ fn sample(n int) int {
 	return s
 }'
 
-fn main() {
+// second sample: exercises every escape kind so the classifier is visible.
+const esc_src = 'module m
+fn esc(n int) int {
+	mut uniq := 0
+	uniq = uniq + 1
+	mut a := 0
+	pa := &a
+	mut cap := 5
+	f := fn [cap] () int { return cap }
+	spawn sink(n)
+	return uniq
+}'
+
+fn analyze(src string, fnsubstr string) bool {
 	mut p := &pref.Preferences{}
 	mut tbl := ast.new_table()
-	file := parser.parse_text(sample_src, 'sample.v', mut tbl, .skip_comments, p)
+	file := parser.parse_text(src, 'sample.v', mut tbl, .skip_comments, p)
 	mut found := false
 	for stmt in file.stmts {
 		if stmt is ast.FnDecl {
-			fnd := stmt as ast.FnDecl
-			if fnd.name.contains('sample') {
+			if stmt.name.contains(fnsubstr) {
 				found = true
 				mut c := Cfg{}
 				entry := c.new_block('entry')
 				c.exit_id = c.new_block('EXIT')
-				last := c.lower_stmts(fnd.stmts, entry)
-				c.add_edge(last, c.exit_id) // fall-through to exit
+				last := c.lower_stmts(stmt.stmts, entry)
+				c.add_edge(last, c.exit_id)
 				c.compute_liveness()
-				println('built CFG for fn ${fnd.name}:')
+				println('=== fn ${stmt.name} ===')
 				c.dump()
 				c.report_last_use()
+				c.report_uniqueness()
+				println('')
 			}
 		}
 	}
-	if !found {
-		eprintln('FAIL: sample fn not found in parsed AST')
+	return found
+}
+
+fn main() {
+	ok1 := analyze(sample_src, 'sample')
+	ok2 := analyze(esc_src, 'esc')
+	if !ok1 || !ok2 {
+		eprintln('FAIL: a sample fn was not found in the parsed AST')
 		exit(1)
 	}
 }
