@@ -350,6 +350,16 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   is *unilateral OS suspend* (Boehm's model), not vgc's cooperative polling. The
   linux/bsd path (dedicated signal + `pthread_kill` + handler-parks) is sketched
   in-file, not yet built.
+- **Full root capture PROTOTYPE-VALIDATED (2026-06-11;
+  `bench/parallel-alloc/stw_root_scan.c`).** Under STW, scanning each thread via
+  `thread_get_state` recovered a heap pointer planted **only in a register**
+  (x19) AND one planted **only on the stack** — both found exactly, 3/3 runs.
+  Register roots come **for free** from the suspended register file; this closes
+  vgc's bug #3 (stack-only scan dropping register-resident roots) by
+  construction. Conclusion: the backstop's root scanning = OS-suspend + scan
+  registers + conservatively scan `[sp, stack_base)` (heap interior stays precise
+  via V's per-type maps). The two hard pieces of either backstop (stop + root
+  capture) are now both demonstrated working.
 
 ---
 
