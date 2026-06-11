@@ -397,6 +397,22 @@ is Boehm-tuned, NOT vgc.**
   (`vgc-stw-partial-fixes.patch`) + the G-CHURN repro are filed **upstream as a
   bug report**, not shipped as a fix. vgc correctness, if pursued, is a large P3
   item — and §5.3 now recommends MMTk / minimal mark-region over it.
+- **STATUS — P0 DELIVERED 2026-06-11** (full report: `bench/parallel-alloc/P0-ACCEPTANCE.md`).
+  On-disk state at the fork pin was *better than this section's premise*: **both
+  levers were already active in the shipped macOS `cx` binary.** (1) The marker-pin
+  lives in `vlib/v/gen/c/cmain.v::gen_boehm_gc_init()` — emitted, macOS-gated,
+  before `GC_INIT()` for every Boehm binary the patched V compiles (so `cx`
+  itself, verified in generated C), not only the HTTP leg. (2) The macOS build
+  links the prebuilt `thirdparty/tcc/lib/libgc.a`, which `thirdparty-macos-arm64_bdwgc.sh`
+  builds with TLA **on** by default (`nm` resolves `_GC_init_thread_local`) — *not*
+  the `gc.c` amalgamation. P0 flipped the amalgamation's
+  `THREAD_LOCAL_ALLOC` to on as well, for parity on the Linux / `-prod`-bundled
+  `gc.o` path. **Measured (12-core M-series):** marker-pin gives **2.4–5×** on the
+  MARK-bound `boehm_mp_bench` (1T 38.5 vs 16.1 M/s; 8T 15.4 vs 3.1 M/s) — but
+  alloc-heavy `[?map [par]]` (8× reduce-over-400k-range) stays **~1.3× slower than
+  serial** (~13 s vs ~10 s), confirming the partial-relief acceptance: the
+  `GC_allocate_ml` alloc-lock is untouched. Near-term answer for alloc-heavy
+  `[par]` remains serial or (bounded bodies only) `-d cx_regions`.
 
 **Phase 1 — Perceus insertion (soundness).** Port the insertion algorithm onto
 V's IR as the formal spec of autofree's frees + residual RC. Behaviour on
