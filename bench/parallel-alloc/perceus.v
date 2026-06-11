@@ -56,6 +56,29 @@ fn (c &PcsCfg) pcs_is_heap_owning(typ ast.Type) bool {
 	return sym.has_method('free')
 }
 
+// pcs_rhs_is_fresh_string reports whether `rhs` (bound to a `string`-typed
+// target) provably yields a NEWLY allocated string buffer that shares storage
+// with none of the variables it reads. In V, string concatenation (`+`) and
+// string interpolation always allocate fresh; substrings/slices (IndexExpr with
+// a RangeExpr) may share and are deliberately NOT included.
+fn (c &PcsCfg) pcs_rhs_is_fresh_string(rhs ast.Expr, result_typ ast.Type) bool {
+	if c.table == unsafe { nil } || result_typ == 0 {
+		return false
+	}
+	if c.table.sym(result_typ).kind != .string {
+		return false
+	}
+	mut e := rhs
+	for e is ast.ParExpr {
+		e = (e as ast.ParExpr).expr
+	}
+	return match e {
+		ast.StringInterLiteral { true }
+		ast.InfixExpr { e.op == .plus }
+		else { false }
+	}
+}
+
 fn pcs_uniq_push(mut list []string, name string) {
 	if name != '' && name !in list {
 		list << name
@@ -631,7 +654,16 @@ fn (mut c PcsCfg) pcs_scan_share_stmt(st ast.Stmt) {
 					pcs_uniq_push(mut lhs_heap, l.name)
 				}
 			}
-			if lhs_heap.len > 0 && rhs_heap.len > 0 {
+			// Exempt provably buffer-FRESH single assignments: a string built by
+			// concatenation (`a + b`) or interpolation (`'${a}${b}'`) always
+			// allocates a new buffer in V — the result aliases neither operand, so
+			// no aliasing pin is warranted (the operands stay droppable iff their
+			// OTHER uses are non-retaining; the result is uniquely owned). This is
+			// unconditionally sound: it does not touch slices/substrings (IndexExpr)
+			// or array/map concat, which DO share buffers and remain pinned.
+			fresh := st.left.len == 1 && st.right.len == 1 && st.left_types.len >= 1
+				&& c.pcs_rhs_is_fresh_string(st.right[0], st.left_types[0])
+			if !fresh && lhs_heap.len > 0 && rhs_heap.len > 0 {
 				for n in lhs_heap {
 					c.pcs_mark_shared(n)
 				}

@@ -115,10 +115,10 @@ index 3a3f2a7..4c42abc 100644
  		return
 diff --git a/vlib/v/gen/c/perceus.v b/vlib/v/gen/c/perceus.v
 new file mode 100644
-index 0000000..d8b20fe
+index 0000000..0be48d0
 --- /dev/null
 +++ b/vlib/v/gen/c/perceus.v
-@@ -0,0 +1,1046 @@
+@@ -0,0 +1,1078 @@
 +// perceus.v — compiler-resident Perceus drop-placement analysis (P1).
 +// Ported from the validated prototype (cx-private bench/parallel-alloc/cfg_proto.v):
 +// builds a per-function CFG over V's AST, runs backward liveness to a fixpoint,
@@ -175,6 +175,29 @@ index 0000000..d8b20fe
 +		return true
 +	}
 +	return sym.has_method('free')
++}
++
++// pcs_rhs_is_fresh_string reports whether `rhs` (bound to a `string`-typed
++// target) provably yields a NEWLY allocated string buffer that shares storage
++// with none of the variables it reads. In V, string concatenation (`+`) and
++// string interpolation always allocate fresh; substrings/slices (IndexExpr with
++// a RangeExpr) may share and are deliberately NOT included.
++fn (c &PcsCfg) pcs_rhs_is_fresh_string(rhs ast.Expr, result_typ ast.Type) bool {
++	if c.table == unsafe { nil } || result_typ == 0 {
++		return false
++	}
++	if c.table.sym(result_typ).kind != .string {
++		return false
++	}
++	mut e := rhs
++	for e is ast.ParExpr {
++		e = (e as ast.ParExpr).expr
++	}
++	return match e {
++		ast.StringInterLiteral { true }
++		ast.InfixExpr { e.op == .plus }
++		else { false }
++	}
 +}
 +
 +fn pcs_uniq_push(mut list []string, name string) {
@@ -752,7 +775,16 @@ index 0000000..d8b20fe
 +					pcs_uniq_push(mut lhs_heap, l.name)
 +				}
 +			}
-+			if lhs_heap.len > 0 && rhs_heap.len > 0 {
++			// Exempt provably buffer-FRESH single assignments: a string built by
++			// concatenation (`a + b`) or interpolation (`'${a}${b}'`) always
++			// allocates a new buffer in V — the result aliases neither operand, so
++			// no aliasing pin is warranted (the operands stay droppable iff their
++			// OTHER uses are non-retaining; the result is uniquely owned). This is
++			// unconditionally sound: it does not touch slices/substrings (IndexExpr)
++			// or array/map concat, which DO share buffers and remain pinned.
++			fresh := st.left.len == 1 && st.right.len == 1 && st.left_types.len >= 1
++				&& c.pcs_rhs_is_fresh_string(st.right[0], st.left_types[0])
++			if !fresh && lhs_heap.len > 0 && rhs_heap.len > 0 {
 +				for n in lhs_heap {
 +					c.pcs_mark_shared(n)
 +				}

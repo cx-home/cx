@@ -105,3 +105,29 @@ trusted; both fixes are sound-by-construction, not test-chasing.
      spec's concrete P1 success signal.
 - Full P1 is still weeks; this delivers the *mechanism* (proven sound end-to-end)
   and the *conservative floor*, which is the correct, monotonic foundation.
+
+## Classifier sharpening — increment 1: buffer-fresh string ops (2026-06-11)
+
+First step of "sharpen the classifier" (the chosen next direction). In V, string
+concatenation (`a + b`) and interpolation (`'${a}${b}'`) **always allocate a new
+buffer** — the result aliases neither operand. The assign-aliasing rule was
+over-pinning them (`path := dir + '/' + name` pinned `dir`, `name`, *and* `path`).
+`pcs_rhs_is_fresh_string` now exempts a single assignment whose target is
+`string`-typed and whose RHS (modulo `ParExpr`) is `InfixExpr(.plus)` or
+`StringInterLiteral`; those operands + result become droppable (iff their *other*
+uses are non-retaining). Deliberately excludes substrings/slices (`IndexExpr` +
+`RangeExpr`) and array/map concat, which DO share buffers and stay pinned.
+
+Effect: string-building locals now reclaim at last use. Verified
+(`build(dir,name)` in the corpus): `a := dir+'/'` drops right after `b := a+name`;
+`b`, `c` drop at their last reads. Re-gated green: corpus G-DIFF
+(`…|28` added) + ASan clean (confirms freeing `a` after `b:=a+name` is no UAF),
+autofree corpus 6/6, broad 40/40, default-off byte-identical.
+
+**Next sharpening step (the dominant pin): interprocedural borrow/escape
+inference.** The call-arg/receiver rule pins everything passed to any function.
+Plan: per-`FnDecl` parameter-escape summary (a param escapes iff the body's
+`pcs_scan_share` marks it shared, or it is returned), fixpoint over the call
+graph, external/generic callees conservatively escaping; then at a call site,
+only pin args bound to escaping params. This is its own careful, separately-gated
+pass (G-DIFF + G-LEAK), not bolted onto this increment.

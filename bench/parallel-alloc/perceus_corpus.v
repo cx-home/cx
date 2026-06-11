@@ -56,10 +56,24 @@ fn keepalive() int {
 	return n
 }
 
+// fresh-string exemption: concat/interpolation allocate new buffers, so the
+// operands and result are NOT aliased and may be dropped at last use (the
+// assign-aliasing rule must not pin them).
+fn build(dir string, name string) int {
+	a := dir + '/'
+	b := a + name
+	c := '${dir}::${name}!'
+	mut n := 0
+	n += b.len
+	n += c.len
+	return n
+}
+
 fn main() {
 	println(straight())
 	println(make_arr())
 	println(escapes())
 	println(mixed())
 	println(keepalive())
+	println(build('usr/local', 'bin'))
 }
