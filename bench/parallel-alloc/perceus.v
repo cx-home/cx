@@ -40,6 +40,7 @@ mut:
 	returned    []string
 	heap_vars   []string // locally-defined, heap-owning (array/map/string/has free()) -> the only drop candidates
 	spine       []int    // block ids on the always-executed-exactly-once "spine" (top-level, before any early exit) — the only blocks drops may be EMITTED in
+	spine_loop_pending bool // set by the spine walker just before lowering a spine-position loop whose body is all-simple — the loop arm then records its body block as per-iteration spine
 	table       &ast.Table = unsafe { nil }
 	// Interprocedural escape state. When `interproc` is true the call rule consults
 	// `escapes` (whole-program `fkey() -> per-param escape` summaries); when false
@@ -949,6 +950,10 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 			header := c.pcs_nb()
 			c.pcs_edge(cur, header)
 			body := c.pcs_nb()
+			if c.spine_loop_pending {
+				c.spine << body
+				c.spine_loop_pending = false
+			}
 			exit := c.pcs_nb()
 			c.pcs_edge(header, body)
 			c.pcs_edge(header, exit)
@@ -970,6 +975,10 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 			c.pcs_edge(cur, header)
 			c.pcs_emit(header, st.pos.pos, [], iu)
 			body := c.pcs_nb()
+			if c.spine_loop_pending {
+				c.spine << body
+				c.spine_loop_pending = false
+			}
 			exit := c.pcs_nb()
 			c.pcs_edge(header, body)
 			c.pcs_edge(header, exit)
@@ -997,6 +1006,10 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 				c.pcs_emit(header, st.pos.pos, [], cu)
 			}
 			body := c.pcs_nb()
+			if c.spine_loop_pending {
+				c.spine << body
+				c.spine_loop_pending = false
+			}
 			exit := c.pcs_nb()
 			c.pcs_edge(header, body)
 			c.pcs_edge(header, exit)
@@ -1429,6 +1442,75 @@ fn pcs_stmt_has_early_exit(st ast.Stmt) bool {
 	}
 }
 
+// pcs_is_simple_spine_stmt reports whether `st` is a straight-line statement that
+// always runs to completion in place — a plain assignment or expression/assert with
+// NO `?`/`!` propagation and no control transfer. Such statements neither split the
+// basic block nor divert the enclosing loop body's per-iteration flow, so a run of
+// them keeps the body's entry block always-executed-exactly-once.
+// pcs_stmt_top_is_branch_expr: a top-level `if`/`match` expression as a statement's
+// value splits the basic block (pcs_lower_expr creates arm/join blocks), so it is
+// NOT single-block straight-line even when it cannot exit the function.
+fn pcs_stmt_top_is_branch_expr(e ast.Expr) bool {
+	mut x := e
+	for x is ast.ParExpr {
+		x = (x as ast.ParExpr).expr
+	}
+	return x is ast.IfExpr || x is ast.MatchExpr
+}
+
+fn pcs_is_simple_spine_stmt(st ast.Stmt) bool {
+	match st {
+		ast.AssignStmt {
+			for r in st.right {
+				if pcs_expr_has_exit(r) || pcs_stmt_top_is_branch_expr(r) {
+					return false
+				}
+			}
+			for l in st.left {
+				if pcs_expr_has_exit(l) {
+					return false
+				}
+			}
+			return true
+		}
+		ast.ExprStmt {
+			return !pcs_expr_has_exit(st.expr) && !pcs_stmt_top_is_branch_expr(st.expr)
+		}
+		ast.AssertStmt {
+			return !pcs_expr_has_exit(st.expr) && !pcs_expr_has_exit(st.extra)
+		}
+		else {
+			return false
+		}
+	}
+}
+
+// pcs_is_simple_body_loop reports whether `st` is a loop whose body is ENTIRELY
+// divert-free simple statements (pcs_is_simple_spine_stmt). For such a loop the
+// whole body lands in one basic block that executes exactly once per iteration with
+// no early exit, so a heap local defined and last-used within an iteration (dead
+// across the back-edge, per the liveness fixpoint) may be dropped each iteration —
+// its per-iteration scope-exit free is suppressed 1:1. This is the minimal sound
+// loop-body coverage; bodies containing branches/inner loops/breaks are left out
+// (the body block would then carry conditional or post-divert steps).
+fn pcs_is_simple_body_loop(st ast.Stmt) bool {
+	body := match st {
+		ast.ForStmt { st.stmts }
+		ast.ForInStmt { st.stmts }
+		ast.ForCStmt { st.stmts }
+		else { return false }
+	}
+	if body.len == 0 {
+		return false
+	}
+	for s in body {
+		if !pcs_is_simple_spine_stmt(s) {
+			return false
+		}
+	}
+	return true
+}
+
 // pcs_lower_body_spine lowers the function-body statements like pcs_lower_stmts but
 // also records the "spine": the chain of top-level blocks that always execute
 // exactly once. Recording stops at the first top-level statement that may exit the
@@ -1444,7 +1526,14 @@ fn (mut c PcsCfg) pcs_lower_body_spine(stmts []ast.Stmt, entry int) int {
 		if open && cur !in c.spine {
 			c.spine << cur
 		}
+		// A loop reached on the spine whose body is all-simple runs its body block
+		// exactly once per iteration: flag it so the loop arm records that block as
+		// per-iteration spine (where the in-loop reuse / drops fire).
+		if open && pcs_is_simple_body_loop(st) {
+			c.spine_loop_pending = true
+		}
 		cur = c.pcs_lower_stmt(st, cur)
+		c.spine_loop_pending = false
 	}
 	return cur
 }

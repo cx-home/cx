@@ -402,12 +402,53 @@ not spine, so the receiver is never in `perceus_drops` there, so reuse never fir
 emission widens into loop bodies. Reuse DOES fire and is measured-correct for
 spine-level (top-level) maps; it's the hot-loop case that's gated.
 
-**Next — the unlocking increment: per-iteration loop-body emission.** Extend the
-spine to the straight-line prefix of each loop body (statements that run exactly
-once per iteration, before any nested branch/early-exit). A heap local defined and
-last-used within one iteration (dead across the back-edge) becomes droppable each
-iteration — which both lands P2's R1 reuse on hot loops AND is the largest
-remaining drop-coverage lever generally. Its own careful, separately-gated pass
-(cross-iteration liveness, break/continue/return within the body). Then re-run the
-G-R1 micro-bench (expect the map allocation eliminated per iteration). After that:
-the deferred §5.1 thread-correct RC for the shared residual (Phase 3).
+## Per-iteration loop-body emission — DONE 2026-06-11; **G-R1 MET (beats Boehm)**
+
+Extends the always-executed spine into loop bodies, so drops (and the P2 reuse)
+fire each iteration — the increment that converts the dormant P2.2 mechanism into
+the measured R1 win.
+
+**Minimal sound coverage.** A loop whose body is **entirely divert-free, single-
+block straight-line** (`pcs_is_simple_body_loop`: every body statement is an
+assignment / expr / assert with no `?`/`!`, no top-level `if`/`match`, no
+break/continue/return) has its whole body land in one basic block that executes
+exactly once per iteration with no early exit. `pcs_lower_body_spine` flags such a
+loop (when itself reached on the spine) via `spine_loop_pending`; the loop arm then
+records the body block as spine. A heap local defined and last-used within one
+iteration is dead across the back-edge (the liveness fixpoint already sees the
+header as a successor), so it is droppable each iteration, its per-iteration
+scope-exit free suppressed 1:1. Outer/carried values (used across iterations) stay
+live across the back-edge ⇒ never dropped; aliased/escaping values stay pinned.
+Bodies with branches, inner loops, or diverts are excluded for now (the body block
+would then carry conditional or post-divert steps) — a documented precision
+follow-on, not a soundness gap.
+
+**G-R1 RESULT (the payoff).** Micro-bench `p2_reuse_bench.v` (8M × `a := […]; b :=
+a.map(it*2)`), −prod: **perceus 0.23 s vs Boehm 0.37 s vs autofree 0.43 s** — the
+in-place map reuse now fires inside the loop (verified in C: `_t2 = _t2_orig;
+_t2.len = 0;`, `a` consumed, only `b` freed), eliminating the per-iteration
+allocation. **Perceus is 1.6× faster than Boehm single-thread and 1.87× faster than
+autofree → R1 is met (and exceeded).**
+
+**Re-gated green:** flag-off byte-identical 7/7; perceus == autofree on
+perceus_corpus + uref + p2 + hazard + **p2_loop_hazard_corpus** (carried /
+local-reuse / escape-to-outer / loop-filter-strings); ASan clean on the hazard
+corpus + **38 array/map/datatypes/strings-heavy vlib tests** (the in-loop-drop
+safety check, 0 UAF/double-free); autofree corpus 6/6; broad differential 45/45
+rc-equal. Corpus banked: `p2_loop_hazard_corpus.v`.
+
+**Gate methodology note (important).** `carried()` (`mut acc := []int{}; for … {
+acc << i }; return acc.len`) prints 50 under `-gc none` but **0 under plain
+`-autofree`** — a PRE-EXISTING autofree bug (it frees `acc` before `return
+acc.len`), independent of Perceus. So the correct Perceus correctness baseline is
+**perceus == autofree** (the behavior Perceus modifies), NOT perceus == `-gc none`;
+autofree's own divergences from `-gc none` are upstream's. perceus == autofree holds
+on every corpus and the 45-test broad sample. (The earlier corpora also satisfied
+the stronger none == perceus only because they were written to avoid the autofree
+bug.)
+
+**Next:** the deferred §5.1 thread-correct RC for the shared residual (Phase 3;
+per-thread mcache allocator + RC header; gated G-R2s/G-CHURN). Precision follow-ons
+(banked): loop-body spine across inner branches/loops; reuse for filter / same-size-
+different-type / other fresh ops; classifier slice/borrow tracking; generic-
+instantiation escape summaries; deep-free of nested heap fields in dropped `&Foo`.
