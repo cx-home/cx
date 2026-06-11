@@ -255,6 +255,11 @@ pole and the worse fit for V's identity.
 
 ### §4.3 Backstop — precise tracing collector
 
+- **Chosen collector (§5.3, resolved 2026-06-11): a minimal non-concurrent STW
+  precise-heap / conservative-roots mark-region collector in V/C** —
+  vgc's sound allocator/`ptrmap`-scan/sweep, minus the concurrency that made vgc
+  unsound, plus the validated OS-suspend STW + register/stack root capture. Build
+  plan: `bench/parallel-alloc/MINIMAL-COLLECTOR-DESIGN.md`.
 - **Precise** is mandatory (not conservative): (a) RC interop needs to know which
   words are pointers to `dup`/`drop` correctly; (b) conservative scanning caps
   throughput and causes retention/false-pin. vgc's `ptrmap` path is the right
@@ -432,16 +437,18 @@ minimal STW mark-region**. Detail: `bench/parallel-alloc/MMTK-BACKSTOP-FEASIBILI
   (prebuilt-staticlib) Rust build dependency?** If yes, (b) is the soundest
   technically (binding = plumbing, collector pre-tested). If no, (c) is fully
   tractable with the hard mechanics already proven.
-- **Recommendation: lean (c) minimal STW mark-region.** Rationale: MMTk's
-  headline advantage is a *parallel/generational collector*, but §4.3 + the
-  Perceus front line make collection **rare and small-live-set** — so that
-  advantage is largely unrealized here, while the Rust dependency is a permanent
-  cost against V's core identity (and a likely-uphill upstream sell). (c) keeps
-  zero new build deps, its simplicity *is* its correctness (no concurrency window),
-  and its three mechanics are validated. **Choose (b) only if** the V core team
-  actively welcomes Rust *and* wants the backstop to double as a strong standalone
-  collector for non-Perceus / `-gc`-only builds. **(b)/(c) selection is the next
-  user/upstream governance call; the build does not start until it is made.**
+- **DECISION (2026-06-11, user call) → (c) minimal STW mark-region collector in
+  V/C.** Rationale: MMTk's headline advantage is a *parallel/generational
+  collector*, but §4.3 + the Perceus front line make collection **rare and
+  small-live-set** — so that advantage is largely unrealized here, while the Rust
+  dependency is a permanent cost against V's C-only identity (and a likely-uphill
+  upstream sell). (c) keeps zero new build deps, its simplicity *is* its
+  correctness (no concurrency window), and its three mechanics are validated
+  (`suspend_world.c`/`stw_root_scan.c`/`mark_sweep_toy.c`). (b) MMTk would have
+  been the pick only if the V core team actively welcomed Rust *and* wanted the
+  backstop to double as a strong standalone collector for non-Perceus / `-gc`-only
+  builds. **All three §5 cruxes are now resolved (§5.1→thread-local handoff,
+  §5.2→cycles-via-backstop, §5.3→(c) minimal); the collector build begins.**
 
 ---
 
