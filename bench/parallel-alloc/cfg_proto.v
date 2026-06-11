@@ -12,12 +12,19 @@ struct BB {
 mut:
 	id       int
 	label    string
-	steps    []string // human-readable stmt/expr descriptions
-	succ     []int    // successor block ids
+	steps    []Step // ordered stmt/expr steps with per-step def/use
+	succ     []int  // successor block ids
 	use      []string // variables read before any def in this block (upward-exposed)
 	def      []string // variables assigned in this block
 	live_in  []string // liveness fixpoint result
 	live_out []string
+}
+
+struct Step {
+mut:
+	desc string
+	def  []string
+	use  []string
 }
 
 fn uniq_push(mut list []string, name string) {
@@ -81,6 +88,7 @@ mut:
 	exit_id     int
 	loop_stack  [][2]int // [header_id, exit_id] for break/continue
 	shared_vars []string // possibly-shared (NOT uniquely owned) -> drop falls to GC residual
+	returned    []string // values returned from the fn -> ownership transfers to caller, never drop
 }
 
 fn (mut c Cfg) mark_shared(name string) {
@@ -148,9 +156,22 @@ fn (mut c Cfg) add_edge(from int, to int) {
 	c.blocks[from].succ << to
 }
 
-fn (mut c Cfg) step(b int, s string) {
-	if b >= 0 && b < c.blocks.len {
-		c.blocks[b].steps << s
+// emit records one ordered step (with its def/use) AND folds it into the
+// block-level use/def sets used by the liveness fixpoint. use_in is called
+// before def_in so a compound `s += i` counts s as upward-exposed unless an
+// earlier step in the block already defined it.
+fn (mut c Cfg) emit(b int, desc string, def []string, use []string) {
+	if b < 0 || b >= c.blocks.len {
+		return
+	}
+	c.use_in(b, use)
+	for d in def {
+		c.def_in(b, d)
+	}
+	c.blocks[b].steps << Step{
+		desc: desc
+		def:  def.clone()
+		use:  use.clone()
 	}
 }
 
@@ -172,7 +193,7 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 		}
 		ast.BranchStmt {
 			kw := st.kind.str()
-			c.step(cur, kw)
+			c.emit(cur, kw, [], [])
 			if c.loop_stack.len > 0 {
 				top := c.loop_stack[c.loop_stack.len - 1]
 				// break -> loop exit ; continue -> loop header
@@ -215,7 +236,7 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 			if st.has_cond {
 				mut cu := []string{}
 				collect_idents(st.cond, mut cu) // `i < n` (use i, n)
-				c.use_in(header, cu)
+				c.emit(header, 'cond', [], cu)
 			}
 			body := c.new_block('forc.body')
 			exit := c.new_block('forc.exit')
@@ -233,11 +254,10 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 		ast.ExprStmt {
 			mut uses := []string{}
 			collect_idents(st.expr, mut uses) // e.g. `i++`
-			c.use_in(cur, uses)
+			c.emit(cur, st.expr.type_name(), [], uses)
 			cur = c.lower_expr(st.expr, cur)
 		}
 		ast.AssignStmt {
-			c.step(cur, 'assign')
 			mut uses := []string{}
 			for r in st.right {
 				collect_idents(r, mut uses)
@@ -248,12 +268,13 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 					collect_idents(l, mut uses)
 				}
 			}
-			c.use_in(cur, uses)
+			mut defs := []string{}
 			for l in st.left {
 				if l is ast.Ident {
-					c.def_in(cur, l.name)
+					defs << l.name
 				}
 			}
+			c.emit(cur, 'assign', defs, uses)
 			for r in st.right {
 				cur = c.lower_expr(r, cur)
 			}
@@ -264,13 +285,15 @@ fn (mut c Cfg) lower_stmt(st ast.Stmt, entry int) int {
 				collect_idents(e, mut uses)
 				c.scan_escapes(e)
 			}
-			c.use_in(cur, uses)
-			c.step(cur, 'return')
+			for u in uses {
+				uniq_push(mut c.returned, u) // returned -> ownership transfers, never drop
+			}
+			c.emit(cur, 'return', [], uses)
 			c.add_edge(cur, c.exit_id)
 			cur = c.new_block('after-return(dead)')
 		}
 		else {
-			c.step(cur, st.type_name())
+			c.emit(cur, st.type_name(), [], [])
 		}
 	}
 	return cur
@@ -286,7 +309,7 @@ fn (mut c Cfg) lower_expr(ex ast.Expr, entry int) int {
 			for br in ex.branches {
 				collect_idents(br.cond, mut cu) // `i % 2 == 0` (use i)
 			}
-			c.use_in(cur, cu)
+			c.emit(cur, 'if (${ex.branches.len} arms)', [], cu)
 			join := c.new_block('if.join')
 			for i, br in ex.branches {
 				arm := c.new_block('if.arm${i}')
@@ -297,13 +320,12 @@ fn (mut c Cfg) lower_expr(ex ast.Expr, entry int) int {
 			if !ex.has_else {
 				c.add_edge(cur, join) // implicit fall-through when no else
 			}
-			c.step(cur, 'if (${ex.branches.len} arms)')
 			cur = join
 		}
 		ast.MatchExpr {
 			mut cu := []string{}
 			collect_idents(ex.cond, mut cu)
-			c.use_in(cur, cu)
+			c.emit(cur, 'match (${ex.branches.len} arms)', [], cu)
 			join := c.new_block('match.join')
 			for i, br in ex.branches {
 				arm := c.new_block('match.arm${i}')
@@ -311,11 +333,10 @@ fn (mut c Cfg) lower_expr(ex ast.Expr, entry int) int {
 				arm_end := c.lower_stmts(br.stmts, arm)
 				c.add_edge(arm_end, join)
 			}
-			c.step(cur, 'match (${ex.branches.len} arms)')
 			cur = join
 		}
 		else {
-			c.step(cur, ex.type_name())
+			// straight-line expr: already recorded at the statement level
 		}
 	}
 	return cur
@@ -328,7 +349,11 @@ fn (c &Cfg) dump() {
 		for s in b.succ {
 			succ << 'B${s}'
 		}
-		steps := if b.steps.len > 0 { b.steps.join('; ') } else { '(empty)' }
+		mut descs := []string{}
+		for s in b.steps {
+			descs << s.desc
+		}
+		steps := if descs.len > 0 { descs.join('; ') } else { '(empty)' }
 		println('  B${b.id} ${b.label:-18} [${steps}] -> ${succ.join(", ")}')
 	}
 }
@@ -428,9 +453,57 @@ fn (c &Cfg) report_uniqueness() {
 	for v in vars {
 		if v in c.shared_vars {
 			println('  ${v:-4}: SHARED -> GC residual (no deterministic drop)')
+		} else if v in c.returned {
+			println('  ${v:-4}: returned -> ownership transfers to caller (no drop)')
 		} else {
 			println('  ${v:-4}: unique -> drop-eligible')
 		}
+	}
+}
+
+// report_drop_placement: per-statement backward walk pinpointing the EXACT step
+// after which a `drop` goes (a use that is dead afterward), for values that are
+// uniquely owned and not returned. dup would go before a non-last consuming use.
+fn (c &Cfg) report_drop_placement() {
+	println('dup/drop placement (per-statement; unique & non-returned only):')
+	mut any := false
+	for b in c.blocks {
+		mut live := b.live_out.clone()
+		for i := b.steps.len - 1; i >= 0; i-- {
+			st := b.steps[i]
+			for u in st.use {
+				if u !in live {
+					// dead after this step => this is u's last read
+					if u in c.shared_vars || u in c.returned {
+						// no deterministic drop (GC residual / transferred out)
+					} else {
+						println('  drop ${u} after B${b.id}.step${i} "${st.desc}" (last read)')
+						any = true
+					}
+				}
+			}
+			// a value defined then never read (and dead after) drops right after def
+			for d in st.def {
+				if d !in st.use && d !in live && d !in c.shared_vars && d !in c.returned {
+					println('  drop ${d} after B${b.id}.step${i} "${st.desc}" (dead store)')
+					any = true
+				}
+			}
+			// backward transfer: live_before = (live - def) + use
+			mut nl := []string{}
+			for v in live {
+				if v !in st.def {
+					nl << v
+				}
+			}
+			for u in st.use {
+				uniq_push(mut nl, u)
+			}
+			live = nl.clone()
+		}
+	}
+	if !any {
+		println('  (no deterministic drops on these samples — all unique values are returned/value-typed)')
 	}
 }
 
@@ -479,6 +552,7 @@ fn analyze(src string, fnsubstr string) bool {
 				c.dump()
 				c.report_last_use()
 				c.report_uniqueness()
+				c.report_drop_placement()
 				println('')
 			}
 		}
@@ -486,10 +560,19 @@ fn analyze(src string, fnsubstr string) bool {
 	return found
 }
 
+// third sample: a unique heap value used then dropped (not returned).
+const drop_src = 'module m
+fn use_then_drop(n int) int {
+	buf := [1, 2, 3]
+	x := buf[0] + buf[1]
+	return x + n
+}'
+
 fn main() {
 	ok1 := analyze(sample_src, 'sample')
 	ok2 := analyze(esc_src, 'esc')
-	if !ok1 || !ok2 {
+	ok3 := analyze(drop_src, 'use_then_drop')
+	if !ok1 || !ok2 || !ok3 {
 		eprintln('FAIL: a sample fn was not found in the parsed AST')
 		exit(1)
 	}
