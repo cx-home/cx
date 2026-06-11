@@ -74,6 +74,14 @@ fn pcs_set_eq(a []string, b []string) bool {
 	return true
 }
 
+// pcs_collect gathers every identifier read inside an expression. It is
+// EXHAUSTIVE BY CONSTRUCTION: every `ast.Expr` variant has an explicit arm and
+// there is NO `else`, so V's match-exhaustiveness check fails the build if a
+// future compiler adds an expr kind — forcing us to decide how to traverse it
+// rather than silently treating it as a leaf. A use this function fails to
+// record would make a live variable look dead and license an unsound early
+// drop, so totality here is the correctness foundation; the CFG's control-flow
+// precision (elsewhere) is only a performance dial.
 fn pcs_collect(e ast.Expr, mut out []string) {
 	match e {
 		ast.Ident { pcs_uniq_push(mut out, e.name) }
@@ -84,18 +92,255 @@ fn pcs_collect(e ast.Expr, mut out []string) {
 		ast.PrefixExpr { pcs_collect(e.right, mut out) }
 		ast.PostfixExpr { pcs_collect(e.expr, mut out) }
 		ast.ParExpr { pcs_collect(e.expr, mut out) }
+		ast.SelectorExpr { pcs_collect(e.expr, mut out) }
+		ast.ArrayDecompose { pcs_collect(e.expr, mut out) }
+		ast.IfGuardExpr { pcs_collect(e.expr, mut out) }
+		ast.IsRefType { pcs_collect(e.expr, mut out) }
+		ast.Likely { pcs_collect(e.expr, mut out) }
+		ast.SizeOf { pcs_collect(e.expr, mut out) }
+		ast.TypeOf { pcs_collect(e.expr, mut out) }
+		ast.DumpExpr { pcs_collect(e.expr, mut out) }
+		ast.UnsafeExpr { pcs_collect(e.expr, mut out) }
+		ast.LambdaExpr { pcs_collect(e.expr, mut out) }
+		ast.AsCast { pcs_collect(e.expr, mut out) }
+		ast.CTempVar { pcs_collect(e.orig, mut out) }
+		ast.ChanInit { pcs_collect(e.cap_expr, mut out) }
+		ast.SpawnExpr { pcs_collect(e.call_expr, mut out) }
+		ast.GoExpr { pcs_collect(e.call_expr, mut out) }
+		ast.TypeNode { pcs_collect_stmt(e.stmt, mut out) }
 		ast.IndexExpr {
 			pcs_collect(e.left, mut out)
 			pcs_collect(e.index, mut out)
+			for ix in e.indices {
+				pcs_collect(ix, mut out)
+			}
+			for s in e.or_expr.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
 		}
-		ast.SelectorExpr { pcs_collect(e.expr, mut out) }
 		ast.CallExpr {
 			pcs_collect(e.left, mut out)
 			for a in e.args {
 				pcs_collect(a.expr, mut out)
 			}
+			for s in e.or_block.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
 		}
-		else {}
+		ast.ComptimeCall {
+			pcs_collect(e.left, mut out)
+			for a in e.args {
+				pcs_collect(a.expr, mut out)
+			}
+			for s in e.or_block.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.ComptimeSelector {
+			pcs_collect(e.left, mut out)
+			pcs_collect(e.field_expr, mut out)
+		}
+		ast.CastExpr {
+			pcs_collect(e.expr, mut out)
+			pcs_collect(e.arg, mut out)
+		}
+		ast.RangeExpr {
+			pcs_collect(e.low, mut out)
+			pcs_collect(e.high, mut out)
+		}
+		ast.ConcatExpr {
+			for v in e.vals {
+				pcs_collect(v, mut out)
+			}
+		}
+		ast.Assoc {
+			for v in e.exprs {
+				pcs_collect(v, mut out)
+			}
+		}
+		ast.ArrayInit {
+			for v in e.exprs {
+				pcs_collect(v, mut out)
+			}
+			pcs_collect(e.len_expr, mut out)
+			pcs_collect(e.cap_expr, mut out)
+			pcs_collect(e.init_expr, mut out)
+			pcs_collect(e.elem_type_expr, mut out)
+			pcs_collect(e.update_expr, mut out)
+		}
+		ast.MapInit {
+			for k in e.keys {
+				pcs_collect(k, mut out)
+			}
+			for v in e.vals {
+				pcs_collect(v, mut out)
+			}
+			pcs_collect(e.update_expr, mut out)
+		}
+		ast.StructInit {
+			pcs_collect(e.typ_expr, mut out)
+			pcs_collect(e.update_expr, mut out)
+			for f in e.init_fields {
+				pcs_collect(f.expr, mut out)
+			}
+		}
+		ast.StringInterLiteral {
+			for v in e.exprs {
+				pcs_collect(v, mut out)
+			}
+			for v in e.fwidth_exprs {
+				pcs_collect(v, mut out)
+			}
+			for v in e.precision_exprs {
+				pcs_collect(v, mut out)
+			}
+		}
+		ast.IfExpr {
+			pcs_collect(e.left, mut out)
+			for br in e.branches {
+				pcs_collect(br.cond, mut out)
+				for s in br.stmts {
+					pcs_collect_stmt(s, mut out)
+				}
+			}
+		}
+		ast.MatchExpr {
+			pcs_collect(e.cond, mut out)
+			for br in e.branches {
+				for ex in br.exprs {
+					pcs_collect(ex, mut out)
+				}
+				for s in br.stmts {
+					pcs_collect_stmt(s, mut out)
+				}
+			}
+		}
+		ast.SelectExpr {
+			for br in e.branches {
+				pcs_collect_stmt(br.stmt, mut out)
+				for s in br.stmts {
+					pcs_collect_stmt(s, mut out)
+				}
+			}
+		}
+		ast.LockExpr {
+			for l in e.lockeds {
+				pcs_collect(l, mut out)
+			}
+			for s in e.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.OrExpr {
+			for s in e.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.AnonFn {
+			for s in e.decl.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.SqlExpr {
+			pcs_collect(e.db_expr, mut out)
+			pcs_collect(e.where_expr, mut out)
+			pcs_collect(e.order_expr, mut out)
+			pcs_collect(e.limit_expr, mut out)
+			pcs_collect(e.offset_expr, mut out)
+		}
+		// Pure leaves — carry no enclosing-scope variable references.
+		ast.NodeError, ast.AtExpr, ast.BoolLiteral, ast.CharLiteral, ast.Comment,
+		ast.ComptimeType, ast.EmptyExpr, ast.EnumVal, ast.FloatLiteral,
+		ast.IntegerLiteral, ast.Nil, ast.None, ast.OffsetOf, ast.SqlQueryDataExpr,
+		ast.StringLiteral {}
+	}
+}
+
+// pcs_collect_stmt gathers every identifier read inside a statement. Like
+// pcs_collect it is EXHAUSTIVE BY CONSTRUCTION (every `ast.Stmt` variant, no
+// `else`). Used for nested stmts in if/match/lock/or arms and for the
+// conservative pin sweep over statement kinds the CFG does not model precisely.
+fn pcs_collect_stmt(st ast.Stmt, mut out []string) {
+	match st {
+		ast.ExprStmt { pcs_collect(st.expr, mut out) }
+		ast.AssignStmt {
+			for r in st.right {
+				pcs_collect(r, mut out)
+			}
+			for l in st.left {
+				pcs_collect(l, mut out)
+			}
+		}
+		ast.Return {
+			for e in st.exprs {
+				pcs_collect(e, mut out)
+			}
+		}
+		ast.AssertStmt {
+			pcs_collect(st.expr, mut out)
+			pcs_collect(st.extra, mut out)
+		}
+		ast.Block {
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.ForStmt {
+			pcs_collect(st.cond, mut out)
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.ForInStmt {
+			pcs_collect(st.cond, mut out)
+			pcs_collect(st.high, mut out)
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.ForCStmt {
+			pcs_collect_stmt(st.init, mut out)
+			pcs_collect(st.cond, mut out)
+			pcs_collect_stmt(st.inc, mut out)
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.DeferStmt {
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.ComptimeFor {
+			pcs_collect(st.expr, mut out)
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.FnDecl {
+			for s in st.stmts {
+				pcs_collect_stmt(s, mut out)
+			}
+		}
+		ast.AsmStmt {
+			for io in st.output {
+				pcs_collect(io.expr, mut out)
+			}
+			for io in st.input {
+				pcs_collect(io.expr, mut out)
+			}
+		}
+		ast.HashStmt {
+			for c in st.ct_conds {
+				pcs_collect(c, mut out)
+			}
+		}
+		ast.SqlStmt { pcs_collect(st.db_expr, mut out) }
+		// Pure leaves / declaration statements with no local-variable uses.
+		ast.BranchStmt, ast.ConstDecl, ast.DebuggerStmt, ast.EmptyStmt,
+		ast.EnumDecl, ast.GlobalDecl, ast.GotoLabel, ast.GotoStmt, ast.Import,
+		ast.InterfaceDecl, ast.Module, ast.NodeError, ast.SemicolonStmt,
+		ast.StructDecl, ast.TypeDecl {}
 	}
 }
 
@@ -134,43 +379,340 @@ fn (mut c PcsCfg) pcs_mark_shared(name string) {
 	pcs_uniq_push(mut c.shared_vars, name)
 }
 
-fn (mut c PcsCfg) pcs_escapes(e ast.Expr) {
+// pcs_share_idents marks EVERY identifier in `e` as shared (conservatively
+// not-uniquely-owned -> never deterministically dropped). Used at "retaining"
+// positions where a value's heap buffer may be captured by something that
+// outlives the current binding.
+fn (mut c PcsCfg) pcs_share_idents(e ast.Expr) {
+	mut ids := []string{}
+	pcs_collect(e, mut ids)
+	for id in ids {
+		c.pcs_mark_shared(id)
+	}
+}
+
+// pcs_scan_share is the uniqueness classifier (Perceus layer 3, conservative).
+// It is EXHAUSTIVE BY CONSTRUCTION (every ast.Expr arm, no `else`). A heap value
+// is treated as SHARED (ineligible for deterministic drop) whenever its buffer
+// may be aliased or retained:
+//   - address taken (`&x`),
+//   - captured by a closure / passed to spawn / sent on a channel,
+//   - appended into another collection (`a << x`),
+//   - passed as a call argument or call receiver — the callee may store it, and
+//     without interprocedural escape analysis we must assume it might (V strings
+//     /arrays share their heap buffer across the call; this is exactly the
+//     `files.filter()`-aliases-`files` class of bug).
+// Assignment-level aliasing (`y := f(x)` where both are heap) is handled in
+// pcs_scan_share_stmt. Imprecision here only ever KEEPS a value alive (smaller
+// optimization, never a use-after-free) — the spec's "GC residual" principle.
+fn (mut c PcsCfg) pcs_scan_share(e ast.Expr) {
 	match e {
 		ast.PrefixExpr {
-			if e.op == .amp && e.right is ast.Ident {
-				c.pcs_mark_shared((e.right as ast.Ident).name)
+			if e.op == .amp {
+				c.pcs_share_idents(e.right)
 			}
-			c.pcs_escapes(e.right)
+			c.pcs_scan_share(e.right)
+		}
+		ast.InfixExpr {
+			if e.op == .left_shift {
+				// `a << x` — x's buffer may be retained by a; a is mutated.
+				c.pcs_share_idents(e.left)
+				c.pcs_share_idents(e.right)
+			}
+			c.pcs_scan_share(e.left)
+			c.pcs_scan_share(e.right)
+		}
+		ast.CallExpr {
+			c.pcs_share_idents(e.left)
+			for a in e.args {
+				c.pcs_share_idents(a.expr)
+			}
+			c.pcs_scan_share(e.left)
+			for a in e.args {
+				c.pcs_scan_share(a.expr)
+			}
+			for s in e.or_block.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.ComptimeCall {
+			c.pcs_share_idents(e.left)
+			for a in e.args {
+				c.pcs_share_idents(a.expr)
+			}
+			for s in e.or_block.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.SpawnExpr {
+			c.pcs_share_idents(e.call_expr.left)
+			for a in e.call_expr.args {
+				c.pcs_share_idents(a.expr)
+			}
+		}
+		ast.GoExpr {
+			c.pcs_share_idents(e.call_expr.left)
+			for a in e.call_expr.args {
+				c.pcs_share_idents(a.expr)
+			}
 		}
 		ast.AnonFn {
 			for v in e.inherited_vars {
 				c.pcs_mark_shared(v.name)
 			}
 		}
-		ast.SpawnExpr {
-			for a in e.call_expr.args {
-				mut ids := []string{}
-				pcs_collect(a.expr, mut ids)
-				for id in ids {
-					c.pcs_mark_shared(id)
+		ast.ParExpr { c.pcs_scan_share(e.expr) }
+		ast.PostfixExpr { c.pcs_scan_share(e.expr) }
+		ast.SelectorExpr { c.pcs_scan_share(e.expr) }
+		ast.ArrayDecompose { c.pcs_scan_share(e.expr) }
+		ast.IfGuardExpr { c.pcs_scan_share(e.expr) }
+		ast.IsRefType { c.pcs_scan_share(e.expr) }
+		ast.Likely { c.pcs_scan_share(e.expr) }
+		ast.SizeOf { c.pcs_scan_share(e.expr) }
+		ast.TypeOf { c.pcs_scan_share(e.expr) }
+		ast.DumpExpr { c.pcs_scan_share(e.expr) }
+		ast.UnsafeExpr { c.pcs_scan_share(e.expr) }
+		ast.LambdaExpr { c.pcs_scan_share(e.expr) }
+		ast.AsCast { c.pcs_scan_share(e.expr) }
+		ast.CTempVar { c.pcs_scan_share(e.orig) }
+		ast.ChanInit { c.pcs_scan_share(e.cap_expr) }
+		ast.ComptimeSelector {
+			c.pcs_scan_share(e.left)
+			c.pcs_scan_share(e.field_expr)
+		}
+		ast.CastExpr {
+			c.pcs_scan_share(e.expr)
+			c.pcs_scan_share(e.arg)
+		}
+		ast.RangeExpr {
+			c.pcs_scan_share(e.low)
+			c.pcs_scan_share(e.high)
+		}
+		ast.IndexExpr {
+			c.pcs_scan_share(e.left)
+			c.pcs_scan_share(e.index)
+			for ix in e.indices {
+				c.pcs_scan_share(ix)
+			}
+		}
+		ast.ConcatExpr {
+			for v in e.vals {
+				c.pcs_scan_share(v)
+			}
+		}
+		ast.Assoc {
+			for v in e.exprs {
+				c.pcs_scan_share(v)
+			}
+		}
+		ast.ArrayInit {
+			// elements placed into a new aggregate -> their buffers are retained.
+			for v in e.exprs {
+				c.pcs_share_idents(v)
+			}
+			c.pcs_scan_share(e.len_expr)
+			c.pcs_scan_share(e.cap_expr)
+			c.pcs_scan_share(e.init_expr)
+			c.pcs_scan_share(e.elem_type_expr)
+			c.pcs_scan_share(e.update_expr)
+		}
+		ast.MapInit {
+			for k in e.keys {
+				c.pcs_share_idents(k)
+			}
+			for v in e.vals {
+				c.pcs_share_idents(v)
+			}
+			c.pcs_scan_share(e.update_expr)
+		}
+		ast.StructInit {
+			c.pcs_scan_share(e.typ_expr)
+			c.pcs_scan_share(e.update_expr)
+			for f in e.init_fields {
+				// field value stored into the struct -> retained.
+				c.pcs_share_idents(f.expr)
+			}
+		}
+		ast.StringInterLiteral {
+			for v in e.exprs {
+				c.pcs_scan_share(v)
+			}
+			for v in e.fwidth_exprs {
+				c.pcs_scan_share(v)
+			}
+			for v in e.precision_exprs {
+				c.pcs_scan_share(v)
+			}
+		}
+		ast.IfExpr {
+			c.pcs_scan_share(e.left)
+			for br in e.branches {
+				c.pcs_scan_share(br.cond)
+				for s in br.stmts {
+					c.pcs_scan_share_stmt(s)
 				}
 			}
 		}
-		ast.InfixExpr {
-			c.pcs_escapes(e.left)
-			c.pcs_escapes(e.right)
-		}
-		ast.CallExpr {
-			for a in e.args {
-				c.pcs_escapes(a.expr)
+		ast.MatchExpr {
+			c.pcs_scan_share(e.cond)
+			for br in e.branches {
+				for ex in br.exprs {
+					c.pcs_scan_share(ex)
+				}
+				for s in br.stmts {
+					c.pcs_scan_share_stmt(s)
+				}
 			}
 		}
-		ast.ParExpr { c.pcs_escapes(e.expr) }
-		ast.IndexExpr {
-			c.pcs_escapes(e.left)
-			c.pcs_escapes(e.index)
+		ast.SelectExpr {
+			for br in e.branches {
+				c.pcs_scan_share_stmt(br.stmt)
+				for s in br.stmts {
+					c.pcs_scan_share_stmt(s)
+				}
+			}
 		}
-		else {}
+		ast.LockExpr {
+			for l in e.lockeds {
+				c.pcs_scan_share(l)
+			}
+			for s in e.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.OrExpr {
+			for s in e.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.SqlExpr {
+			c.pcs_scan_share(e.db_expr)
+			c.pcs_scan_share(e.where_expr)
+			c.pcs_scan_share(e.order_expr)
+			c.pcs_scan_share(e.limit_expr)
+			c.pcs_scan_share(e.offset_expr)
+		}
+		ast.TypeNode { c.pcs_scan_share_stmt(e.stmt) }
+		// Pure leaves — no sub-expressions that can carry a heap reference.
+		ast.Ident, ast.NodeError, ast.AtExpr, ast.BoolLiteral, ast.CharLiteral,
+		ast.Comment, ast.ComptimeType, ast.EmptyExpr, ast.EnumVal,
+		ast.FloatLiteral, ast.IntegerLiteral, ast.Nil, ast.None, ast.OffsetOf,
+		ast.SqlQueryDataExpr, ast.StringLiteral {}
+	}
+}
+
+// pcs_scan_share_stmt walks statements applying the sharing classifier to every
+// contained expression, plus the assignment-aliasing rule: in `lhs := rhs`, if a
+// heap-owning variable is defined AND the rhs reads any heap-owning variable, the
+// result may alias the read value (V filter/slice/map share buffers), so BOTH the
+// defined and the read heap vars are pinned shared. Exhaustive, no `else`.
+fn (mut c PcsCfg) pcs_scan_share_stmt(st ast.Stmt) {
+	match st {
+		ast.AssignStmt {
+			for r in st.right {
+				c.pcs_scan_share(r)
+			}
+			for l in st.left {
+				c.pcs_scan_share(l)
+			}
+			mut rhs_heap := []string{}
+			for r in st.right {
+				mut ids := []string{}
+				pcs_collect(r, mut ids)
+				for id in ids {
+					if id in c.heap_vars {
+						pcs_uniq_push(mut rhs_heap, id)
+					}
+				}
+			}
+			mut lhs_heap := []string{}
+			for i, l in st.left {
+				if l is ast.Ident && i < st.left_types.len && c.pcs_is_heap_owning(st.left_types[i]) {
+					pcs_uniq_push(mut lhs_heap, l.name)
+				}
+			}
+			if lhs_heap.len > 0 && rhs_heap.len > 0 {
+				for n in lhs_heap {
+					c.pcs_mark_shared(n)
+				}
+				for n in rhs_heap {
+					c.pcs_mark_shared(n)
+				}
+			}
+		}
+		ast.ExprStmt { c.pcs_scan_share(st.expr) }
+		ast.Return {
+			for e in st.exprs {
+				c.pcs_scan_share(e)
+			}
+		}
+		ast.AssertStmt {
+			c.pcs_scan_share(st.expr)
+			c.pcs_scan_share(st.extra)
+		}
+		ast.Block {
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.ForStmt {
+			c.pcs_scan_share(st.cond)
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.ForInStmt {
+			// the iterated collection is borrowed across the loop and may bind
+			// loop vars that alias its elements -> conservatively shared.
+			c.pcs_share_idents(st.cond)
+			c.pcs_scan_share(st.high)
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.ForCStmt {
+			c.pcs_scan_share_stmt(st.init)
+			c.pcs_scan_share(st.cond)
+			c.pcs_scan_share_stmt(st.inc)
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.DeferStmt {
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.ComptimeFor {
+			c.pcs_scan_share(st.expr)
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.FnDecl {
+			for s in st.stmts {
+				c.pcs_scan_share_stmt(s)
+			}
+		}
+		ast.AsmStmt {
+			for io in st.output {
+				c.pcs_scan_share(io.expr)
+			}
+			for io in st.input {
+				c.pcs_scan_share(io.expr)
+			}
+		}
+		ast.HashStmt {
+			for cc in st.ct_conds {
+				c.pcs_scan_share(cc)
+			}
+		}
+		ast.SqlStmt { c.pcs_scan_share(st.db_expr) }
+		// Declaration / leaf statements with no local-variable uses.
+		ast.BranchStmt, ast.ConstDecl, ast.DebuggerStmt, ast.EmptyStmt,
+		ast.EnumDecl, ast.GlobalDecl, ast.GotoLabel, ast.GotoStmt, ast.Import,
+		ast.InterfaceDecl, ast.Module, ast.NodeError, ast.SemicolonStmt,
+		ast.StructDecl, ast.TypeDecl {}
 	}
 }
 
@@ -209,8 +751,16 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 			cur = exit
 		}
 		ast.ForInStmt {
+			// Record the iterable read at the loop header so the iterated value
+			// stays live across the loop region (a missing use here would let a
+			// straight-line predecessor drop it early — the original soundness
+			// hole). `key_var`/`val_var` are loop-local refs, not heap owners.
+			mut iu := []string{}
+			pcs_collect(st.cond, mut iu)
+			pcs_collect(st.high, mut iu)
 			header := c.pcs_nb()
 			c.pcs_edge(cur, header)
+			c.pcs_emit(header, st.pos.pos, [], iu)
 			body := c.pcs_nb()
 			exit := c.pcs_nb()
 			c.pcs_edge(header, body)
@@ -220,6 +770,12 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 			c.pcs_edge(be, header)
 			c.loop_stack.pop()
 			cur = exit
+		}
+		ast.AssertStmt {
+			mut uses := []string{}
+			pcs_collect(st.expr, mut uses)
+			pcs_collect(st.extra, mut uses)
+			c.pcs_emit(cur, st.pos.pos, [], uses)
 		}
 		ast.ForCStmt {
 			if st.has_init {
@@ -280,7 +836,6 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 			mut uses := []string{}
 			for e in st.exprs {
 				pcs_collect(e, mut uses)
-				c.pcs_escapes(e)
 			}
 			for u in uses {
 				pcs_uniq_push(mut c.returned, u)
@@ -289,14 +844,23 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 			c.pcs_edge(cur, c.exit_id)
 			cur = c.pcs_nb()
 		}
-		else {}
+		else {
+			// Any statement kind the CFG does not model precisely: pin every
+			// variable it mentions (treat as shared) so it can never be dropped
+			// early. Sound by construction — unmodeled code only ever REMOVES
+			// drop candidates, never licenses an unsound one.
+			mut ids := []string{}
+			pcs_collect_stmt(st, mut ids)
+			for id in ids {
+				c.pcs_mark_shared(id)
+			}
+		}
 	}
 	return cur
 }
 
 fn (mut c PcsCfg) pcs_lower_expr(ex ast.Expr, entry int) int {
 	mut cur := entry
-	c.pcs_escapes(ex)
 	match ex {
 		ast.IfExpr {
 			mut cu := []string{}
@@ -400,7 +964,8 @@ fn (c &PcsCfg) pcs_drop_map() map[int][]string {
 	return dm
 }
 
-// compute_drop_map is the public entry used by cgen under `-d perceus`.
+// compute_drop_map is the full-coverage analysis (all basic blocks). Kept for
+// analysis/verification; emission uses the entry-block-restricted variant below.
 pub fn compute_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
 	mut c := PcsCfg{
 		table: table
@@ -411,4 +976,71 @@ pub fn compute_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
 	c.pcs_edge(last, c.exit_id)
 	c.pcs_liveness()
 	return c.pcs_drop_map()
+}
+
+// compute_emittable_drop_map returns the SAFE subset of drops to actually emit
+// under `-d perceus -autofree`: only drops in the entry basic block (block 0),
+// i.e. the function's straight-line prefix before any branch/loop/return. Every
+// step in block 0 executes unconditionally and exactly once, so emitting the
+// free at the drop site (and suppressing the matching scope-exit free) is
+// observationally identical to scope-exit free — no double free, and no
+// path-dependent leak (the failure mode of suppressing an unconditional
+// scope-exit free while only dropping on some branches). Branch/loop coverage is
+// future work, each widening separately re-gated (G-DIFF + G-LEAK).
+pub fn compute_emittable_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
+	mut c := PcsCfg{
+		table: table
+	}
+	entry := c.pcs_nb()
+	c.exit_id = c.pcs_nb()
+	last := c.pcs_lower_stmts(fnd.stmts, entry)
+	c.pcs_edge(last, c.exit_id)
+	// Uniqueness/aliasing classifier over the whole body. Runs AFTER lowering so
+	// `heap_vars` is populated (the assign-aliasing rule needs it). Marks shared
+	// every heap value whose buffer may be aliased/retained; only the residual
+	// (provably uniquely owned) heap locals remain drop candidates.
+	for st in fnd.stmts {
+		c.pcs_scan_share_stmt(st)
+	}
+	c.pcs_liveness()
+	return c.pcs_entry_drop_map(entry)
+}
+
+// pcs_entry_drop_map: pcs_drop_map restricted to the entry basic block.
+fn (c &PcsCfg) pcs_entry_drop_map(entry int) map[int][]string {
+	mut dm := map[int][]string{}
+	if entry < 0 || entry >= c.blocks.len {
+		return dm
+	}
+	b := c.blocks[entry]
+	mut live := b.live_out.clone()
+	for i := b.steps.len - 1; i >= 0; i-- {
+		st := b.steps[i]
+		for u in st.use {
+			if u in c.heap_vars && u !in live && u !in c.shared_vars && u !in c.returned {
+				if u !in dm[st.pos] {
+					dm[st.pos] << u
+				}
+			}
+		}
+		for d in st.def {
+			if d in c.heap_vars && d !in st.use && d !in live && d !in c.shared_vars
+				&& d !in c.returned {
+				if d !in dm[st.pos] {
+					dm[st.pos] << d
+				}
+			}
+		}
+		mut nl := []string{}
+		for v in live {
+			if v !in st.def {
+				nl << v
+			}
+		}
+		for u in st.use {
+			pcs_uniq_push(mut nl, u)
+		}
+		live = nl.clone()
+	}
+	return dm
 }
