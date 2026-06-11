@@ -77,34 +77,61 @@ for threads racing the STW snapshot** during create/exit churn. (Same canonical
 line-104 tell as the original unsound vgc — the minimal collector fixed *steady*
 but not *churn*.)
 
-### Race-window hypotheses to discriminate next (in priority order)
+### ROOT CAUSE — instrumented, found 2026-06-11 (the wall was TWO stacked bugs)
 
-1. **Suspend-set TOCTOU vs the registration barrier.** The collector snapshots the
-   registered set under `cache_lock`, then suspends. A wave thread that flips
-   `registered=true` *after* the snapshot but whose alloc proceeds (barrier sees
-   `gc_phase` transitioning) runs concurrently with mark/sweep → its mcache spans
-   get swept under it → a later `&Node{}` returns null/garbage → `last=null`.
-   *Check:* is the registration barrier ordered strictly before `gc_phase` is set,
-   and is the suspend-set re-derived after the barrier closes?
-2. **Exit-during-stop slot reuse.** `vgc_thread_exit_cb` frees the slot mid-cycle;
-   if the collector already holds that slot's `mach_port`/stack range and a *new*
-   wave thread reuses the slot concurrently, the collector may suspend/scan the
-   wrong thread or a stale range.
-3. **Collector-as-mutator self-scan gap.** The triggering churn thread runs the
-   cycle via `vgc_run_gc_spilled`; if its *own* `last` lives past the spilled
-   frame (inlining/-prod), the spill range may miss it. (Less likely — crash is in
-   a *different* thread #5, and reproduces in `-g` too.)
+A ring-buffered, async-signal-safe collector event log (REG/BAR/EXIT/GC_BEG/
+SUSP?/SUSP!/SCAN/SWEEP/RESUME/GC_END + a `vgc_maybe_gc` pacer probe + a SIGSEGV/
+SIGBUS dump handler, installed from the test's `main()` so it wins over V's own
+runtime handler) was added to the clone working tree and the crash reproduced.
+**Surprise: the trace contained ZERO GC cycles** (GC_BEG=0 across every run, debug
+and -prod), and max RSS at crash = **6.6 GB**. So the crash is **not** the
+collector sweeping live data — it is an out-of-memory: the heap grows unbounded
+and an allocation returns NULL (`last`/spawn-arg = null → the EXC_BAD_ACCESS).
 
-### Next diagnostic step (instrument, don't guess)
+**Bug A (root cause, PROVEN) — GC is disabled for the entire program by a startup
+ordering bug.** The pacer probe showed `vgc_maybe_gc` is called (34k+×) but
+`gc_enabled` reads **0**. `gc_enabled` is only ever *set to 1*, in `vgc_init`
+(`vgc_d_vgc.c.v:228`) — never to 0. The generated `main()` is:
+```c
+builtin__vgc_init();    // sets vgc_heap.gc_enabled=1, next_gc=256MB, registers main thread
+_vinit(___argc, ...);   // runs global init: vgc_heap = (VGC_Heap){...}  ← re-ZEROES the struct
+main__main();
+```
+`cmain.v:210` emits `builtin__vgc_init()` *before* `_vinit()`, but `_vinit`
+executes the V global initializer `vgc_heap = (VGC_Heap){.lock=0, .arenas={…}, …}`
+(generated-C line ~13940) which resets `gc_enabled→0` and `next_gc→0`. ⇒ the
+collector's `if gc_enabled != 0` gate is always false ⇒ GC never runs ⇒ heap grows
+to OOM. **The "steady G-CHURN pass" (Stage-2 milestone) was VACUOUS** — it passed
+only because it stays under the OOM ceiling; the OS-suspend STW collector was never
+actually exercised. (vgc was likely *always* run with GC effectively off.)
 
-Add cheap, ring-buffered event logging to the collector (compile-time gated, no
-perf cost when off): timestamp + thread-slot + event for {register, barrier-enter,
-barrier-exit, suspend-begin/end, scan-thread, mark-begin, sweep-begin/end, resume,
-exit-cb}. Reproduce the line-104 crash, dump the ring buffer at the fault, and
-read off whether the faulting thread (#5) was suspended+scanned for the cycle that
-ran during its loop, or slipped the snapshot. That converts hypothesis 1/2 into a
-fact and points at the exact ordering fix. This is deliberate GC/codegen work, not
-race-whacking — the multi-week part the spec and prior sessions flagged.
+*Verification:* re-arming the pacer lazily (`if next_gc==0 { next_gc=256MB;
+gc_enabled=1 }`) made GC fire and dropped RSS **6.6GB → 2.06GB** — confirming bug A
+is the OOM cause.
+
+**Bug B (was MASKED by A, now isolated).** With GC actually firing, the failure
+*changed* from a null-alloc SIGSEGV to `V panic: Negative number of jobs in
+waitgroup` in `main__churn+408` — a thread-churn waitgroup-counter corruption.
+This is the genuine thread-lifecycle×GC issue (or a V `sync.WaitGroup` race under
+heavy spawn/done churn); it only surfaces once bug A is fixed and GC runs.
+
+### Next steps (in order)
+
+1. **Fix bug A properly** (not the lazy self-heal). Options: (a) move
+   `builtin__vgc_init()` to *after* `_vinit()` in `cmain.v` — but verify `_vinit`
+   does not allocate through vgc before init; (b) stop emitting a clobbering global
+   initializer for `vgc_heap` (mark it no-init), so `vgc_init`'s settings survive;
+   (c) make `vgc_init` run as the last step of `_vinit`/first allocation, idempotent.
+   Then re-run the FULL G-CHURN matrix — steady must pass *with GC observably
+   firing* (GC_BEG>0), proving Stage 2 non-vacuously.
+2. **Then attack bug B** with the same trace (now GC cycles appear): correlate the
+   waitgroup panic with suspend/scan of the faulting thread's slot — the original
+   suspend-set-TOCTOU / slot-reuse hypotheses become testable against real cycles.
+
+The diagnostic instrumentation lives uncommitted in the clone working tree
+(`thirdparty/vgc/vgc_platform.h` trace ring + handler; `vgc_d_vgc.c.v` /
+`vgc_gc_d_vgc.c.v` trace calls + pacer self-heal; `g_churn.v` `vgc_trace_init()`
+in main). Reproduce: `./v -gc vgc -prod -o g_churn_trace g_churn.v && ./g_churn_trace 100 1 30`.
 
 ## Reproduce
 
