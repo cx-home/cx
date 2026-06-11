@@ -1,0 +1,18 @@
+diff --git a/vlib/v/gen/c/autofree.v b/vlib/v/gen/c/autofree.v
+index 6799cb1..7ef3155 100644
+--- a/vlib/v/gen/c/autofree.v
++++ b/vlib/v/gen/c/autofree.v
+@@ -61,6 +61,13 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
+ 	if scope == unsafe { nil } {
+ 		return
+ 	}
++	// Perceus integration seam (`-d perceus`): this is where scope-exit frees
++	// are decided. With the flag set we currently fall back to the normal
++	// scope-walk (drop-map path pending, see P1-INTEGRATION-PLAN.md); the hook
++	// fires here so the wiring is verifiable. Default build is unaffected.
++	if g.pref.compile_defines.contains('perceus') {
++		eprintln('perceus: autofree scope hook — ${scope.objects.len} scope objs (drop-map path pending)')
++	}
+ 	g.trace_autofree('// scopeobjects.len == ${scope.objects.len}')
+ 	for _, obj in scope.objects {
+ 		match obj {
