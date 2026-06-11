@@ -1,5 +1,5 @@
 diff --git a/vlib/v/gen/c/autofree.v b/vlib/v/gen/c/autofree.v
-index 6799cb1..a8ae0d5 100644
+index 6799cb1..a6b50b4 100644
 --- a/vlib/v/gen/c/autofree.v
 +++ b/vlib/v/gen/c/autofree.v
 @@ -66,6 +66,12 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
@@ -15,7 +15,7 @@ index 6799cb1..a8ae0d5 100644
  				if obj.name in g.returned_var_names {
  					g.print_autofree_var(obj, 'returned from function')
  					g.trace_autofree('// skipping returned var')
-@@ -141,6 +147,24 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
+@@ -141,6 +147,29 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
  	}
  }
  
@@ -27,7 +27,12 @@ index 6799cb1..a8ae0d5 100644
 +// var's sole free — same body, earlier position.
 +fn (mut g Gen) perceus_drop(v ast.Var) {
 +	before := g.autofree_scope_stmts.len
++	// Authorize freeing a proven-unique user-reference (`&Foo`) here even without
++	// `-experimental`; Perceus uniqueness is the soundness proof that gate lacks.
++	old_dropping := g.perceus_dropping
++	g.perceus_dropping = true
 +	g.autofree_variable(v)
++	g.perceus_dropping = old_dropping
 +	if g.autofree_scope_stmts.len > before {
 +		pending := g.autofree_scope_stmts[before..].clone()
 +		g.autofree_scope_stmts.trim(before)
@@ -40,11 +45,38 @@ index 6799cb1..a8ae0d5 100644
  fn (mut g Gen) autofree_variable(v ast.Var) {
  	// filter out invalid variables
  	if v.typ == 0 {
+@@ -201,7 +230,12 @@ fn (mut g Gen) autofree_variable(v ast.Var) {
+ 	is_user_ref := v.typ.is_ptr() && sym.name.after('.')[0].is_capital()
+ 	// if g.pref.experimental && v.typ.is_ptr() && sym.name.after('.')[0].is_capital() {
+ 	if is_user_ref {
+-		if g.pref.experimental {
++		// Perceus (`g.perceus_dropping`) authorizes freeing this user-reference
++		// because its uniqueness analysis PROVED this `&Foo` uniquely owned and dead
++		// here — which is exactly what the blanket `-experimental` flag cannot
++		// establish. So we free it whether or not `-experimental` is set; without a
++		// proof (no Perceus, no -experimental) we still leave it to leak.
++		if g.pref.experimental || g.perceus_dropping {
+ 			g.autofree_var_call('free', v)
+ 		} else {
+ 			g.print_autofree_var(v, 'user reference type, use -experimental to autofree those')
+@@ -236,7 +270,11 @@ fn (mut g Gen) autofree_var_call(free_fn_name string, v ast.Var) {
+ 	}
+ 	mut af := strings.new_builder(128)
+ 	if v.typ.is_ptr() && v.typ.idx() != ast.u8_type_idx {
+-		if !v.is_auto_heap && !g.table.sym(v.typ).has_method('free') {
++		// `g.perceus_dropping`: Perceus proved this pointer both UNIQUE and the OWNER
++		// of fresh memory (`p := &Foo{...}`), so freeing it is sound even though it is
++		// not `is_auto_heap` — that gate exists precisely because plain autofree
++		// cannot establish ownership; Perceus can.
++		if !v.is_auto_heap && !g.table.sym(v.typ).has_method('free') && !g.perceus_dropping {
+ 			return
+ 		}
+ 		af.write_string('\t')
 diff --git a/vlib/v/gen/c/cgen.v b/vlib/v/gen/c/cgen.v
-index 084bacf..4ebd9ff 100644
+index 084bacf..40e19a1 100644
 --- a/vlib/v/gen/c/cgen.v
 +++ b/vlib/v/gen/c/cgen.v
-@@ -272,6 +272,10 @@ mut:
+@@ -272,6 +272,11 @@ mut:
  	arg_no_auto_deref   bool            // smartcast must not be dereferenced
  	branch_parent_pos   int             // used in BranchStmt (continue/break) for autofree stop position
  	returned_var_names  map[string]bool // to detect that vars doesn't need to be freed since it's being returned
@@ -52,10 +84,11 @@ index 084bacf..4ebd9ff 100644
 +	perceus_drops       map[int][]string // stmt.pos.pos -> heap-owning local names to drop right after that stmt
 +	perceus_suppress    map[int]bool     // ast.Var.pos.pos of vars dropped by Perceus -> skip their scope-exit free (no double-free)
 +	perceus_escapes     map[string][]bool // whole-program interproc param-escape summaries (fkey -> per-param escape); built once in gen()
++	perceus_dropping    bool              // true only while perceus_drop() emits: authorizes freeing a proven-unique user-ref (`&Foo`) without -experimental
  	infix_left_var_name string          // a && if expr
  	curr_var_name       []string        // curr var name on assignment
  	called_fn_name      string
-@@ -456,6 +460,14 @@ pub fn gen(files []&ast.File, mut table ast.Table, pref_ &pref.Preferences) GenO
+@@ -456,6 +461,14 @@ pub fn gen(files []&ast.File, mut table ast.Table, pref_ &pref.Preferences) GenO
  	util.timing_measure('cgen init')
  	global_g.tests_inited = false
  	global_g.file = files.last()
@@ -70,7 +103,7 @@ index 084bacf..4ebd9ff 100644
  	if !pref_.no_parallel {
  		util.timing_start('cgen parallel processing')
  		mut pp := pool.new_pool_processor(callback: cgen_process_one_file_cb)
-@@ -1064,6 +1076,7 @@ fn cgen_process_one_file_cb(mut p pool.PoolProcessor, idx int, wid int) voidptr
+@@ -1064,6 +1077,7 @@ fn cgen_process_one_file_cb(mut p pool.PoolProcessor, idx int, wid int) voidptr
  		done_results:                       global_g.done_results
  		late_chan_types:                    global_g.late_chan_types
  		is_autofree:                        global_g.pref.autofree
@@ -78,7 +111,7 @@ index 084bacf..4ebd9ff 100644
  		obf_table:                          global_g.obf_table
  		referenced_fns:                     global_g.referenced_fns
  		is_cc_msvc:                         global_g.is_cc_msvc
-@@ -4142,6 +4155,22 @@ fn (mut g Gen) stmt(node ast.Stmt) {
+@@ -4142,6 +4156,22 @@ fn (mut g Gen) stmt(node ast.Stmt) {
  	if !g.skip_stmt_pos { // && g.stmt_path_pos.len > 0 {
  		g.stmt_path_pos.delete_last()
  	}
@@ -139,10 +172,10 @@ index 3a3f2a7..a86c906 100644
  		return
 diff --git a/vlib/v/gen/c/perceus.v b/vlib/v/gen/c/perceus.v
 new file mode 100644
-index 0000000..e95cf8c
+index 0000000..7f94709
 --- /dev/null
 +++ b/vlib/v/gen/c/perceus.v
-@@ -0,0 +1,1534 @@
+@@ -0,0 +1,1619 @@
 +// perceus.v — compiler-resident Perceus drop-placement analysis (P1).
 +// Ported from the validated prototype (cx-private bench/parallel-alloc/cfg_proto.v):
 +// builds a per-function CFG over V's AST, runs backward liveness to a fixpoint,
@@ -217,7 +250,22 @@ index 0000000..e95cf8c
 +	if sym.kind in [ast.Kind.array, .map, .string] {
 +		return true
 +	}
-+	return sym.has_method('free')
++	if sym.has_method('free') {
++		return true
++	}
++	// User-reference pointer types (`&Foo`): a heap-allocated reference to a
++	// user/struct type — exactly autofree's `-experimental`-gated case (see
++	// autofree_variable's `is_user_ref`). They leak today because autofree cannot
++	// tell unique from shared; Perceus uniqueness is precisely what makes freeing
++	// the unique ones sound, so they become drop candidates here. (Pointers to
++	// array/map/string are already handled by the kind check above.)
++	if typ.is_ptr() {
++		n := sym.name.after('.')
++		if n.len > 0 && n[0].is_capital() {
++			return true
++		}
++	}
++	return false
 +}
 +
 +// pcs_rhs_is_fresh_string reports whether `rhs` (bound to a `string`-typed
@@ -241,6 +289,38 @@ index 0000000..e95cf8c
 +		ast.InfixExpr { e.op == .plus }
 +		else { false }
 +	}
++}
++
++// pcs_is_store_target reports whether an assignment LHS writes THROUGH an existing
++// object (a struct field, a collection element, or a pointer dereference) rather
++// than (re)binding a plain local. Storing into such a target retains the stored
++// value: for arrays/strings/maps V clones on the store (no alias), but a stored
++// POINTER (`&Foo`) genuinely aliases, so it escapes the current binding.
++fn pcs_is_store_target(l ast.Expr) bool {
++	return match l {
++		ast.SelectorExpr { true }
++		ast.IndexExpr { true }
++		ast.PrefixExpr { l.op == .mul } // `*p = ...` dereference store
++		else { false }
++	}
++}
++
++// pcs_rhs_is_fresh_ref reports whether `rhs` is a FRESH heap allocation that this
++// binding uniquely OWNS — i.e. `&Foo{...}` (parsed as `PrefixExpr(.amp, StructInit)`,
++// the `is_amp` merge). Only an owning pointer may be freed; a borrowed pointer
++// (`p := other`, `p := obj.field`, `p := f()`) points to memory it does not own, so
++// freeing it would corrupt the real owner. This is the ownership half of the proof
++// that lets Perceus retire autofree's `is_auto_heap`/`-experimental` pointer gate
++// (the uniqueness half is the share classifier).
++fn pcs_rhs_is_fresh_ref(rhs ast.Expr) bool {
++	mut e := rhs
++	for e is ast.ParExpr {
++		e = (e as ast.ParExpr).expr
++	}
++	if e is ast.PrefixExpr {
++		return e.op == .amp && e.right is ast.StructInit
++	}
++	return false
 +}
 +
 +fn pcs_uniq_push(mut list []string, name string) {
@@ -700,9 +780,20 @@ index 0000000..e95cf8c
 +		ast.SizeOf { c.pcs_scan_share(e.expr) }
 +		ast.TypeOf { c.pcs_scan_share(e.expr) }
 +		ast.DumpExpr { c.pcs_scan_share(e.expr) }
-+		ast.UnsafeExpr { c.pcs_scan_share(e.expr) }
++		ast.UnsafeExpr {
++			// `unsafe { … }` can launder a pointer past the structured rules
++			// (pointer arithmetic, raw deref stores). Conservatively pin everything
++			// it mentions so no value used inside unsafe is ever dropped early.
++			c.pcs_share_idents(e.expr)
++			c.pcs_scan_share(e.expr)
++		}
 +		ast.LambdaExpr { c.pcs_scan_share(e.expr) }
-+		ast.AsCast { c.pcs_scan_share(e.expr) }
++		ast.AsCast {
++			// A cast can move a pointer into an opaque/other-typed binding the
++			// classifier no longer tracks (e.g. `&Foo` -> voidptr). Pin the operand.
++			c.pcs_share_idents(e.expr)
++			c.pcs_scan_share(e.expr)
++		}
 +		ast.CTempVar { c.pcs_scan_share(e.orig) }
 +		ast.ChanInit { c.pcs_scan_share(e.cap_expr) }
 +		ast.ComptimeSelector {
@@ -710,6 +801,8 @@ index 0000000..e95cf8c
 +			c.pcs_scan_share(e.field_expr)
 +		}
 +		ast.CastExpr {
++			// See AsCast — a cast can launder a pointer into an opaque binding.
++			c.pcs_share_idents(e.expr)
 +			c.pcs_scan_share(e.expr)
 +			c.pcs_scan_share(e.arg)
 +		}
@@ -875,6 +968,20 @@ index 0000000..e95cf8c
 +				}
 +				for n in rhs_heap {
 +					c.pcs_mark_shared(n)
++				}
++			}
++			// Field/element/pointee stores retain the RHS (a stored pointer aliases;
++			// see pcs_is_store_target). Pin every heap ident on the RHS of such a
++			// store — paired positionally when arities match, else all of them.
++			for i, l in st.left {
++				if pcs_is_store_target(l) {
++					if st.left.len == st.right.len {
++						c.pcs_share_idents(st.right[i])
++					} else {
++						for r in st.right {
++							c.pcs_share_idents(r)
++						}
++					}
 +				}
 +			}
 +		}
@@ -1061,7 +1168,18 @@ index 0000000..e95cf8c
 +					defs << l.name
 +					// record heap-owning locals (the only drop candidates)
 +					if i < st.left_types.len && c.pcs_is_heap_owning(st.left_types[i]) {
-+						pcs_uniq_push(mut c.heap_vars, l.name)
++						// Pointer-typed candidates (`&Foo`) are admitted ONLY when this
++						// binding owns fresh memory (`p := &Foo{...}`); a borrowed pointer
++						// must never be freed. By-value heap types (array/map/string/struct
++						// with a free method) carry their own ownership and are admitted
++						// unconditionally — V's clone-on-store semantics keep them unaliased.
++						if st.left_types[i].is_ptr() {
++							if st.left.len == st.right.len && pcs_rhs_is_fresh_ref(st.right[i]) {
++								pcs_uniq_push(mut c.heap_vars, l.name)
++							}
++						} else {
++							pcs_uniq_push(mut c.heap_vars, l.name)
++						}
 +					}
 +				}
 +			}

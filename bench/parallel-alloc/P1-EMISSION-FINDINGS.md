@@ -256,3 +256,63 @@ keeping the spine open would cause).
 then attempt to drop autofree's `-experimental` pointer-free gate (the spec's P1
 success signal). Further coverage (drops inside provably-balanced branches/loops)
 remains future work but now sits behind a clean, sound floor.
+
+## The P1 SUCCESS SIGNAL — increment 4: sound user-reference (`&Foo`) drops (2026-06-11)
+
+The spec's named P1 success signal: retire autofree's `-experimental` pointer-free
+gate by making `&Foo` frees **sound** instead of blanket. Today autofree refuses to
+free user-reference pointers without `-experimental` (autofree.v `is_user_ref`),
+because it cannot tell unique from shared — so heap `&Foo` allocations leak. Perceus
+can tell, so unique ones can be reclaimed.
+
+**Two independent proofs are required to free a `&Foo`, and the gate needs BOTH:**
+1. **Uniqueness** — the share classifier proves the pointer is not aliased/retained.
+2. **Ownership** — the binding OWNS fresh memory: its defining RHS is `&Foo{...}`
+   (`pcs_rhs_is_fresh_ref`; parsed as `PrefixExpr(.amp, StructInit)`). A *borrowed*
+   pointer (`p := other`, `p := obj.f`, `p := f()`) points to memory it does not
+   own; freeing it would corrupt the real owner. This is the ownership half that
+   autofree's separate `is_auto_heap` gate (autofree.v:273) encodes — and which
+   uniqueness ALONE does not replace. The earlier increments' `has_method('free')`
+   path admitted `&FooWithFree` pointers as drop candidates unconditionally; this
+   increment tightens **all** pointer-typed candidates to owned-fresh (strictly
+   safer — fewer drops, closes that latent borrowed-pointer aliasing risk).
+
+**Classifier hardening for pointer aliasing (pointers don't clone; arrays do).**
+`obj.field = p` / `a[i] = p` / `*q = p` stores aliase a pointer (V clones
+arrays/strings/maps on such stores, so they were safe before, but NOT pointers):
+`pcs_is_store_target` now pins every heap ident on the RHS of a field/index/deref
+store. Casts and `unsafe { … }` (which can launder a pointer into an opaque
+binding) pin their operands. Combined with the pre-existing `&`/append/aggregate/
+call-escape(interproc)/return/copy-alias rules, every pointer-escape route is pinned.
+
+**Emission.** `Gen.perceus_dropping` is set only inside `perceus_drop`; under it
+both autofree gates relax — `is_user_ref` frees without `-experimental`, and the
+`is_auto_heap` early-return is skipped — because Perceus has supplied the
+ownership+uniqueness proof those gates lacked. Reuses the exact `free(p)` dispatch.
+
+**Proof (generated C + leaks).** Hostile corpus `uref_corpus.v` (`@[heap] Node`):
+`unique_ref` now emits `free(p); // autofreed ptr var` at p's last use; the four
+escape cases — `aliased_ref` (`q := p`), `returned_ref`, `field_store_ref`
+(`b.p = p`), `call_escape_ref` (`keep(p)` returns it) — all stay pinned (no free).
+`leaks --atExit` on the corpus: **autofree 5 leaks / 80 B → perceus 4 leaks / 64 B**
+— Perceus reclaims the one owned-fresh unique `&Node` autofree leaks, introduces no
+new leak (the 4 residual are the genuinely-escaping pointers).
+
+**Re-gated green (each independently):**
+| Gate | Result |
+|---|---|
+| Flag-off byte-identical, pre-uref vs new compiler | ✅ 7/7 |
+| G-DIFF: corpus + uref_corpus `none == perceus` | ✅ (`…\|28`; `14 22 13 34 38`) |
+| **G-SAN: ASan on uref_corpus + 30 pointer/struct-heavy vlib tests** (linked_list/heap/bst/…) | ✅ **30/30 + corpus clean, 0 UAF/double-free** |
+| G-LEAK: `leaks --atExit` delta | ✅ perceus 4 < autofree 5 (reclaims unique `&Foo`, no new leak) |
+| V autofree test corpus (6 files) rc parity | ✅ 6/6 |
+| Broad differential (45 vlib tests) rc parity | ✅ 45/45, 0 regressions |
+
+**P1 status.** Spec §6 Phase-1 gate ("autofree corpus byte-identical; soundness
+argument documented") was already met by increments 1–3; this increment delivers
+the explicit **P1 success signal** — sound, gated reclamation of user-reference
+pointers that the `-experimental` flag could only do unsafely. Residual precision
+(borrowed-but-provably-owned pointers via richer ownership analysis; deep free of
+nested heap fields) and the §5.1 thread-correct RC for the shared residual are
+**Phase 3** (gated by G-R2s/G-CHURN, needs the per-thread mcache allocator). P2
+(reuse analysis, the R1 win) is the next spec phase in order.

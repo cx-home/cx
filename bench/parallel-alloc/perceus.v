@@ -72,7 +72,22 @@ fn (c &PcsCfg) pcs_is_heap_owning(typ ast.Type) bool {
 	if sym.kind in [ast.Kind.array, .map, .string] {
 		return true
 	}
-	return sym.has_method('free')
+	if sym.has_method('free') {
+		return true
+	}
+	// User-reference pointer types (`&Foo`): a heap-allocated reference to a
+	// user/struct type — exactly autofree's `-experimental`-gated case (see
+	// autofree_variable's `is_user_ref`). They leak today because autofree cannot
+	// tell unique from shared; Perceus uniqueness is precisely what makes freeing
+	// the unique ones sound, so they become drop candidates here. (Pointers to
+	// array/map/string are already handled by the kind check above.)
+	if typ.is_ptr() {
+		n := sym.name.after('.')
+		if n.len > 0 && n[0].is_capital() {
+			return true
+		}
+	}
+	return false
 }
 
 // pcs_rhs_is_fresh_string reports whether `rhs` (bound to a `string`-typed
@@ -96,6 +111,38 @@ fn (c &PcsCfg) pcs_rhs_is_fresh_string(rhs ast.Expr, result_typ ast.Type) bool {
 		ast.InfixExpr { e.op == .plus }
 		else { false }
 	}
+}
+
+// pcs_is_store_target reports whether an assignment LHS writes THROUGH an existing
+// object (a struct field, a collection element, or a pointer dereference) rather
+// than (re)binding a plain local. Storing into such a target retains the stored
+// value: for arrays/strings/maps V clones on the store (no alias), but a stored
+// POINTER (`&Foo`) genuinely aliases, so it escapes the current binding.
+fn pcs_is_store_target(l ast.Expr) bool {
+	return match l {
+		ast.SelectorExpr { true }
+		ast.IndexExpr { true }
+		ast.PrefixExpr { l.op == .mul } // `*p = ...` dereference store
+		else { false }
+	}
+}
+
+// pcs_rhs_is_fresh_ref reports whether `rhs` is a FRESH heap allocation that this
+// binding uniquely OWNS — i.e. `&Foo{...}` (parsed as `PrefixExpr(.amp, StructInit)`,
+// the `is_amp` merge). Only an owning pointer may be freed; a borrowed pointer
+// (`p := other`, `p := obj.field`, `p := f()`) points to memory it does not own, so
+// freeing it would corrupt the real owner. This is the ownership half of the proof
+// that lets Perceus retire autofree's `is_auto_heap`/`-experimental` pointer gate
+// (the uniqueness half is the share classifier).
+fn pcs_rhs_is_fresh_ref(rhs ast.Expr) bool {
+	mut e := rhs
+	for e is ast.ParExpr {
+		e = (e as ast.ParExpr).expr
+	}
+	if e is ast.PrefixExpr {
+		return e.op == .amp && e.right is ast.StructInit
+	}
+	return false
 }
 
 fn pcs_uniq_push(mut list []string, name string) {
@@ -555,9 +602,20 @@ fn (mut c PcsCfg) pcs_scan_share(e ast.Expr) {
 		ast.SizeOf { c.pcs_scan_share(e.expr) }
 		ast.TypeOf { c.pcs_scan_share(e.expr) }
 		ast.DumpExpr { c.pcs_scan_share(e.expr) }
-		ast.UnsafeExpr { c.pcs_scan_share(e.expr) }
+		ast.UnsafeExpr {
+			// `unsafe { … }` can launder a pointer past the structured rules
+			// (pointer arithmetic, raw deref stores). Conservatively pin everything
+			// it mentions so no value used inside unsafe is ever dropped early.
+			c.pcs_share_idents(e.expr)
+			c.pcs_scan_share(e.expr)
+		}
 		ast.LambdaExpr { c.pcs_scan_share(e.expr) }
-		ast.AsCast { c.pcs_scan_share(e.expr) }
+		ast.AsCast {
+			// A cast can move a pointer into an opaque/other-typed binding the
+			// classifier no longer tracks (e.g. `&Foo` -> voidptr). Pin the operand.
+			c.pcs_share_idents(e.expr)
+			c.pcs_scan_share(e.expr)
+		}
 		ast.CTempVar { c.pcs_scan_share(e.orig) }
 		ast.ChanInit { c.pcs_scan_share(e.cap_expr) }
 		ast.ComptimeSelector {
@@ -565,6 +623,8 @@ fn (mut c PcsCfg) pcs_scan_share(e ast.Expr) {
 			c.pcs_scan_share(e.field_expr)
 		}
 		ast.CastExpr {
+			// See AsCast — a cast can launder a pointer into an opaque binding.
+			c.pcs_share_idents(e.expr)
 			c.pcs_scan_share(e.expr)
 			c.pcs_scan_share(e.arg)
 		}
@@ -730,6 +790,20 @@ fn (mut c PcsCfg) pcs_scan_share_stmt(st ast.Stmt) {
 				}
 				for n in rhs_heap {
 					c.pcs_mark_shared(n)
+				}
+			}
+			// Field/element/pointee stores retain the RHS (a stored pointer aliases;
+			// see pcs_is_store_target). Pin every heap ident on the RHS of such a
+			// store — paired positionally when arities match, else all of them.
+			for i, l in st.left {
+				if pcs_is_store_target(l) {
+					if st.left.len == st.right.len {
+						c.pcs_share_idents(st.right[i])
+					} else {
+						for r in st.right {
+							c.pcs_share_idents(r)
+						}
+					}
 				}
 			}
 		}
@@ -916,7 +990,18 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 					defs << l.name
 					// record heap-owning locals (the only drop candidates)
 					if i < st.left_types.len && c.pcs_is_heap_owning(st.left_types[i]) {
-						pcs_uniq_push(mut c.heap_vars, l.name)
+						// Pointer-typed candidates (`&Foo`) are admitted ONLY when this
+						// binding owns fresh memory (`p := &Foo{...}`); a borrowed pointer
+						// must never be freed. By-value heap types (array/map/string/struct
+						// with a free method) carry their own ownership and are admitted
+						// unconditionally — V's clone-on-store semantics keep them unaliased.
+						if st.left_types[i].is_ptr() {
+							if st.left.len == st.right.len && pcs_rhs_is_fresh_ref(st.right[i]) {
+								pcs_uniq_push(mut c.heap_vars, l.name)
+							}
+						} else {
+							pcs_uniq_push(mut c.heap_vars, l.name)
+						}
 					}
 				}
 			}
