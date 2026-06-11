@@ -194,11 +194,65 @@ matching escaping case `passthru(ys) { return ys }` keeps its arg pinned.
 a pre-existing upstream autofree limitation, identical either way; default GC
 passes. Not a perceus regression.)
 
-**Still narrow, still monotone.** Emission remains entry-block only; the summary's
-"escape" is over-approximate in the aliasing direction (any heap param copied into
-a heap local is pinned; generic/indirect callees fully escape). Precision is the
-documented follow-on (slice/borrow tracking, generic-instantiation summaries,
-return-of-scalar-projection refinement). **Next:** widen emission past the entry
-block (branch/loop join rule), then `dup` + thread-correct RC (§5.1) before
-G-CHURN, then attempt to drop autofree's `-experimental` pointer-free gate (the
-spec's P1 success signal).
+**Still monotone.** The summary's "escape" is over-approximate in the aliasing
+direction (any heap param copied into a heap local is pinned; generic/indirect
+callees fully escape). Precision is the documented follow-on (slice/borrow
+tracking, generic-instantiation summaries, return-of-scalar-projection
+refinement).
+
+## Emission widening — increment 3: the always-executed "spine" (2026-06-11)
+
+Removes the entry-basic-block-only restriction on WHERE drops may be emitted.
+Before, a heap local was droppable only if its last use preceded the function's
+first branch/loop/return; the common "compute, branch in the middle, keep using
+the value, return at the end" shape reclaimed nothing.
+
+**The spine.** Emission now drops a variable if its last use lands in any block on
+the **spine**: the chain of top-level body statements that always execute exactly
+once. The spine is recorded during a top-level lowering pass
+(`pcs_lower_body_spine`) and **stops at the first top-level statement that may exit
+the function early** — `return`, `goto`, or a `?`/`!` error propagation
+(`pcs_stmt_has_early_exit` / `pcs_expr_has_exit`, which recurse through control
+flow but not into closures; `break`/`continue` are loop-local at function scope and
+are NOT exits). Every step in a spine block runs exactly once on every execution,
+so an inline drop there replaces the scope-exit free 1:1 — no double free, no
+path-dependent leak.
+
+**Why this needs no branch-balancing / no cgen surgery (the STOP-and-FORK condition
+is avoided).** A variable whose last use is *inside* a branch or loop, or *after*
+an early exit, simply lands in a NON-spine block and is left to scope-exit autofree
+— never dropped early, never suppressed. So we never have to insert balancing drops
+on sibling branches, and the emission hook (keyed by `stmt.pos`) is unchanged. The
+only soundness obligation is "the drop site is always-executed," which the spine
+guarantees by construction.
+
+**Memory safety is unconditional; only leak-tightness depends on exit detection.**
+We only ever SUPPRESS a scope-exit free, never add one, and only drop a variable
+proven dead (unique, non-returned, non-shared, past its last use) at an
+always-executed point — so a UAF or double-free is impossible regardless of the
+exit detector. A *missed* early exit could at worst leak on that exit path; the
+detector therefore errs toward reporting an exit, and the claim is gated directly
+(below).
+
+**Proof (generated C).** `widen(c)`: `a`'s last use `n += a.len` sits AFTER a
+non-exiting `if c { n += 1 }`; the free now fires right there (across the if),
+two statements before scope exit. `used_in_branch(c)`: `a`'s last use is inside
+`if c { n += a.len }` → non-spine → free stays at scope exit. `early_return(c)`:
+the `if c { return 0 }` ends the spine, so `a` (used afterwards) is freed by normal
+autofree at BOTH returns — never suppressed (exactly what prevents the leak that
+keeping the spine open would cause).
+
+**Re-gated green (each independently):**
+| Gate | Result |
+|---|---|
+| Flag-off (`-d perceus` off) byte-identical, pre-spine vs new compiler | ✅ 7/7 example programs identical |
+| G-DIFF corpus: `none` == `boehm` == `autofree` == `autofree -d perceus` | ✅ `21\|[10,20,30]\|6\|8\|2\|28` |
+| G-SAN: ASan on corpus + 6 heavier vlib tests under `-d perceus` | ✅ clean |
+| **G-LEAK: macOS `leaks --atExit` delta, propagation+loop+spine workload** | ✅ **0 leaks**, autofree == perceus (no leak introduced across `!`/`?`) |
+| V autofree test corpus (6 files), `v test` rc parity | ✅ 6/6 |
+| Broad differential (45 vlib tests), `autofree` rc == `perceus` rc | ✅ 45/45, 0 regressions |
+
+**Next:** `dup` for the shared residual + thread-correct RC (§5.1) before G-CHURN;
+then attempt to drop autofree's `-experimental` pointer-free gate (the spec's P1
+success signal). Further coverage (drops inside provably-balanced branches/loops)
+remains future work but now sits behind a clean, sound floor.

@@ -139,10 +139,10 @@ index 3a3f2a7..a86c906 100644
  		return
 diff --git a/vlib/v/gen/c/perceus.v b/vlib/v/gen/c/perceus.v
 new file mode 100644
-index 0000000..6d76879
+index 0000000..e95cf8c
 --- /dev/null
 +++ b/vlib/v/gen/c/perceus.v
-@@ -0,0 +1,1259 @@
+@@ -0,0 +1,1534 @@
 +// perceus.v — compiler-resident Perceus drop-placement analysis (P1).
 +// Ported from the validated prototype (cx-private bench/parallel-alloc/cfg_proto.v):
 +// builds a per-function CFG over V's AST, runs backward liveness to a fixpoint,
@@ -184,6 +184,7 @@ index 0000000..6d76879
 +	shared_vars []string
 +	returned    []string
 +	heap_vars   []string // locally-defined, heap-owning (array/map/string/has free()) -> the only drop candidates
++	spine       []int    // block ids on the always-executed-exactly-once "spine" (top-level, before any early exit) — the only blocks drops may be EMITTED in
 +	table       &ast.Table = unsafe { nil }
 +	// Interprocedural escape state. When `interproc` is true the call rule consults
 +	// `escapes` (whole-program `fkey() -> per-param escape` summaries); when false
@@ -1201,8 +1202,274 @@ index 0000000..6d76879
 +	return dm
 +}
 +
++fn pcs_or_is_propagate(o ast.OrExpr) bool {
++	return o.kind == .propagate_option || o.kind == .propagate_result
++}
++
++// pcs_expr_has_exit reports whether evaluating `e` may transfer control OUT of the
++// enclosing function before the next top-level statement runs: a `?`/`!` error
++// propagation, or a `return`/`goto` inside an if/match used as an expression.
++// Closures (AnonFn/LambdaExpr) are deliberately NOT descended — a `return` inside
++// one leaves the closure, not us. This is used only to bound the always-executed
++// "spine"; a conservative miss can at worst leak on the exit path (we only ever
++// SUPPRESS a scope-exit free, never add one), it can never cause a UAF/double-free.
++fn pcs_expr_has_exit(e ast.Expr) bool {
++	match e {
++		ast.CallExpr {
++			if pcs_or_is_propagate(e.or_block) {
++				return true
++			}
++			if pcs_expr_has_exit(e.left) {
++				return true
++			}
++			for a in e.args {
++				if pcs_expr_has_exit(a.expr) {
++					return true
++				}
++			}
++			for s in e.or_block.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.SelectorExpr {
++			return pcs_or_is_propagate(e.or_block) || pcs_expr_has_exit(e.expr)
++		}
++		ast.Ident {
++			return pcs_or_is_propagate(e.or_expr)
++		}
++		ast.IndexExpr {
++			if pcs_or_is_propagate(e.or_expr) {
++				return true
++			}
++			if pcs_expr_has_exit(e.left) || pcs_expr_has_exit(e.index) {
++				return true
++			}
++			for s in e.or_expr.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.InfixExpr {
++			return pcs_or_is_propagate(e.or_block) || pcs_expr_has_exit(e.left)
++				|| pcs_expr_has_exit(e.right)
++		}
++		ast.PrefixExpr {
++			return pcs_or_is_propagate(e.or_block) || pcs_expr_has_exit(e.right)
++		}
++		ast.ComptimeCall {
++			return pcs_or_is_propagate(e.or_block)
++		}
++		ast.ComptimeSelector {
++			return pcs_or_is_propagate(e.or_block)
++		}
++		ast.ParExpr { return pcs_expr_has_exit(e.expr) }
++		ast.PostfixExpr { return pcs_expr_has_exit(e.expr) }
++		ast.UnsafeExpr { return pcs_expr_has_exit(e.expr) }
++		ast.AsCast { return pcs_expr_has_exit(e.expr) }
++		ast.CastExpr { return pcs_expr_has_exit(e.expr) || pcs_expr_has_exit(e.arg) }
++		ast.RangeExpr { return pcs_expr_has_exit(e.low) || pcs_expr_has_exit(e.high) }
++		ast.ArrayDecompose { return pcs_expr_has_exit(e.expr) }
++		ast.ConcatExpr {
++			for v in e.vals {
++				if pcs_expr_has_exit(v) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.ArrayInit {
++			for v in e.exprs {
++				if pcs_expr_has_exit(v) {
++					return true
++				}
++			}
++			return pcs_expr_has_exit(e.len_expr) || pcs_expr_has_exit(e.cap_expr)
++				|| pcs_expr_has_exit(e.init_expr)
++		}
++		ast.MapInit {
++			for v in e.vals {
++				if pcs_expr_has_exit(v) {
++					return true
++				}
++			}
++			for k in e.keys {
++				if pcs_expr_has_exit(k) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.StructInit {
++			for f in e.init_fields {
++				if pcs_expr_has_exit(f.expr) {
++					return true
++				}
++			}
++			return pcs_expr_has_exit(e.update_expr)
++		}
++		ast.StringInterLiteral {
++			for v in e.exprs {
++				if pcs_expr_has_exit(v) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.IfExpr {
++			if pcs_expr_has_exit(e.left) {
++				return true
++			}
++			for br in e.branches {
++				if pcs_expr_has_exit(br.cond) {
++					return true
++				}
++				for s in br.stmts {
++					if pcs_stmt_has_early_exit(s) {
++						return true
++					}
++				}
++			}
++			return false
++		}
++		ast.MatchExpr {
++			if pcs_expr_has_exit(e.cond) {
++				return true
++			}
++			for br in e.branches {
++				for ex in br.exprs {
++					if pcs_expr_has_exit(ex) {
++						return true
++					}
++				}
++				for s in br.stmts {
++					if pcs_stmt_has_early_exit(s) {
++						return true
++					}
++				}
++			}
++			return false
++		}
++		ast.IfGuardExpr { return pcs_expr_has_exit(e.expr) }
++		// Leaves and constructs that cannot carry a function-exit (closures excluded
++		// by design): treat as exit-free. A miss here can only leak, never corrupt.
++		else { return false }
++	}
++}
++
++// pcs_stmt_has_early_exit reports whether `st` may exit the enclosing function
++// before the following top-level statement runs (`return`/`goto`/`?`/`!`). It
++// recurses through control flow (loops, blocks, defers' triggers are ignored) but
++// not into closures. `break`/`continue` are NOT exits: at function scope they are
++// always loop-local (a bare one is a compile error), so they cannot skip a sibling
++// top-level statement. See pcs_expr_has_exit for the soundness/leak note.
++fn pcs_stmt_has_early_exit(st ast.Stmt) bool {
++	match st {
++		ast.Return { return true }
++		ast.GotoStmt { return true }
++		ast.BranchStmt { return false }
++		ast.ExprStmt { return pcs_expr_has_exit(st.expr) }
++		ast.AssignStmt {
++			for r in st.right {
++				if pcs_expr_has_exit(r) {
++					return true
++				}
++			}
++			for l in st.left {
++				if pcs_expr_has_exit(l) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.AssertStmt {
++			return pcs_expr_has_exit(st.expr) || pcs_expr_has_exit(st.extra)
++		}
++		ast.Block {
++			for s in st.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.ForStmt {
++			if pcs_expr_has_exit(st.cond) {
++				return true
++			}
++			for s in st.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.ForInStmt {
++			if pcs_expr_has_exit(st.cond) || pcs_expr_has_exit(st.high) {
++				return true
++			}
++			for s in st.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.ForCStmt {
++			if pcs_stmt_has_early_exit(st.init) || pcs_expr_has_exit(st.cond)
++				|| pcs_stmt_has_early_exit(st.inc) {
++				return true
++			}
++			for s in st.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		ast.ComptimeFor {
++			if pcs_expr_has_exit(st.expr) {
++				return true
++			}
++			for s in st.stmts {
++				if pcs_stmt_has_early_exit(s) {
++					return true
++				}
++			}
++			return false
++		}
++		// DeferStmt runs at scope exit (not an early exit of subsequent statements);
++		// declaration/leaf statements cannot exit. Else => exit-free (leak-safe).
++		else { return false }
++	}
++}
++
++// pcs_lower_body_spine lowers the function-body statements like pcs_lower_stmts but
++// also records the "spine": the chain of top-level blocks that always execute
++// exactly once. Recording stops at the first top-level statement that may exit the
++// function early — after that, no later top-level block is unconditional, so no
++// drop emitted there could be matched 1:1 against a suppressed scope-exit free.
++fn (mut c PcsCfg) pcs_lower_body_spine(stmts []ast.Stmt, entry int) int {
++	mut cur := entry
++	mut open := true
++	for st in stmts {
++		if open && pcs_stmt_has_early_exit(st) {
++			open = false
++		}
++		if open && cur !in c.spine {
++			c.spine << cur
++		}
++		cur = c.pcs_lower_stmt(st, cur)
++	}
++	return cur
++}
++
 +// compute_drop_map is the full-coverage analysis (all basic blocks). Kept for
-+// analysis/verification; emission uses the entry-block-restricted variant below.
++// analysis/verification; emission uses the spine-restricted variant below.
 +pub fn compute_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
 +	mut c := PcsCfg{
 +		table: table
@@ -1232,7 +1499,7 @@ index 0000000..6d76879
 +	}
 +	entry := c.pcs_nb()
 +	c.exit_id = c.pcs_nb()
-+	last := c.pcs_lower_stmts(fnd.stmts, entry)
++	last := c.pcs_lower_body_spine(fnd.stmts, entry)
 +	c.pcs_edge(last, c.exit_id)
 +	// Uniqueness/aliasing classifier over the whole body. Runs AFTER lowering so
 +	// `heap_vars` is populated (the assign-aliasing rule needs it). Marks shared
@@ -1242,44 +1509,52 @@ index 0000000..6d76879
 +		c.pcs_scan_share_stmt(st)
 +	}
 +	c.pcs_liveness()
-+	return c.pcs_entry_drop_map(entry)
++	return c.pcs_spine_drop_map()
 +}
 +
-+// pcs_entry_drop_map: pcs_drop_map restricted to the entry basic block.
-+fn (c &PcsCfg) pcs_entry_drop_map(entry int) map[int][]string {
++// pcs_spine_drop_map: pcs_drop_map restricted to the always-executed spine blocks
++// (entry + the top-level blocks before any early exit). Every step in a spine block
++// runs exactly once on every execution, so a drop emitted there (and its matching
++// scope-exit free suppressed) is observationally identical to the scope-exit free —
++// no double free, and no path-dependent leak (the failure mode of suppressing an
++// unconditional scope-exit free while only dropping on some branches). A variable
++// whose last use lands in a non-spine block (inside a branch/loop, or after an early
++// exit) is simply left to scope-exit autofree — sound, never dropped early.
++fn (c &PcsCfg) pcs_spine_drop_map() map[int][]string {
 +	mut dm := map[int][]string{}
-+	if entry < 0 || entry >= c.blocks.len {
-+		return dm
-+	}
-+	b := c.blocks[entry]
-+	mut live := b.live_out.clone()
-+	for i := b.steps.len - 1; i >= 0; i-- {
-+		st := b.steps[i]
-+		for u in st.use {
-+			if u in c.heap_vars && u !in live && u !in c.shared_vars && u !in c.returned {
-+				if u !in dm[st.pos] {
-+					dm[st.pos] << u
++	for bi, b in c.blocks {
++		if bi !in c.spine {
++			continue
++		}
++		mut live := b.live_out.clone()
++		for i := b.steps.len - 1; i >= 0; i-- {
++			st := b.steps[i]
++			for u in st.use {
++				if u in c.heap_vars && u !in live && u !in c.shared_vars && u !in c.returned {
++					if u !in dm[st.pos] {
++						dm[st.pos] << u
++					}
 +				}
 +			}
-+		}
-+		for d in st.def {
-+			if d in c.heap_vars && d !in st.use && d !in live && d !in c.shared_vars
-+				&& d !in c.returned {
-+				if d !in dm[st.pos] {
-+					dm[st.pos] << d
++			for d in st.def {
++				if d in c.heap_vars && d !in st.use && d !in live && d !in c.shared_vars
++					&& d !in c.returned {
++					if d !in dm[st.pos] {
++						dm[st.pos] << d
++					}
 +				}
 +			}
-+		}
-+		mut nl := []string{}
-+		for v in live {
-+			if v !in st.def {
-+				nl << v
++			mut nl := []string{}
++			for v in live {
++				if v !in st.def {
++					nl << v
++				}
 +			}
++			for u in st.use {
++				pcs_uniq_push(mut nl, u)
++			}
++			live = nl.clone()
 +		}
-+		for u in st.use {
-+			pcs_uniq_push(mut nl, u)
-+		}
-+		live = nl.clone()
 +	}
 +	return dm
 +}
