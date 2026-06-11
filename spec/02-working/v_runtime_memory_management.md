@@ -111,6 +111,20 @@ thread lifecycle, buffered write barriers, lock-free/work-stealing marking,
 concurrent sweep). It is the correct *allocator* skeleton with an incomplete
 *collector*.
 
+**Empirical confirmation (2026-06-11, upstream master `a83aabb`).** We built
+upstream `./v` and ran the G-CHURN battery (`bench/parallel-alloc/g_churn.v`):
+`-gc boehm` and `-gc none` PASS; **`-gc vgc` use-after-frees** under thread
+create/exit churn (deterministic lldb crash: a live mutator local `last` points
+to a swept object). We then implemented **five** correct fixes — thread
+deregistration + cache-slot reuse, live-mutator STW targeting, abort-not-corrupt
+on incomplete stop, full stop-the-world mark+sweep, and register spilling at all
+root scans (mutator + collector) + a register-in-barrier
+(`bench/parallel-alloc/vgc-stw-partial-fixes.patch`). **The UAF persists**,
+including in a debug build where `last` provably lives on the stack — so vgc's
+root scanning drops live objects under concurrent thread lifecycle beyond those
+five issues. Fully fixing it needs OS-level suspend-the-world (mach/signals, à la
+Boehm). This is the decisive evidence for §5.3: **do not hand-harden vgc.**
+
 ### §1.3 Arenas/regions are workload-shaped, not general
 
 CX's own `-d cx_regions` experiment (`bench/parallel-alloc/INTEGRATION-FINDINGS.md`)
@@ -282,6 +296,14 @@ the result is written back into §3/§4 before the dependent phase proceeds.
 - **Decision criterion:** a focused trade study scoring (effort to correctness,
   precision support, MP-scaling of the *collector* itself, upstream
   maintainability). **Do not default to "fix vgc" by inertia.**
+- **Evidence (2026-06-11) — option (a) is down-weighted.** A direct attempt to
+  harden vgc (§1.2 empirical block; `vgc-stw-partial-fixes.patch`) applied five
+  correct fixes and the use-after-free under thread churn *persisted*. Correcting
+  vgc requires OS-level suspend-the-world + a thread-registration barrier + a
+  correct/removed concurrent-mark path — multi-year Go-class STW engineering.
+  **Recommend (b) MMTk or (c) minimal mark-region** unless the V core team itself
+  commits to finishing vgc's STW. (b) additionally gives precise + parallel
+  collection out of the box, matching §4.3.
 
 ---
 
@@ -290,16 +312,20 @@ the result is written back into §3/§4 before the dependent phase proceeds.
 Each phase ships standalone value and is independently gated. Phase 0 is the
 B-minimal work that lands MP relief immediately and is absorbed by E, not wasted.
 
-**Phase 0 — immediate relief (days, in our control).**
+**Phase 0 — immediate relief for #14 (days, in our control). The reliable path
+is Boehm-tuned, NOT vgc.**
 - Flip libgc amalgamation to `--enable-thread-local-alloc=yes`; pin markers
   (`GC_set_markers_count(1)` before `GC_INIT`, or `--enable-parallel-mark` review)
   on macOS, on the **eval / `[par]` path** (port the HTTP-reactor fix that already
   gave 2.6×). Re-run the guide `[par]` experiment: must drop to ≤ serial
-  wall-clock and ~core-count CPU (cx-private #14 acceptance).
-- Land the **vgc correctness fixes** as a contained sub-project: thread
-  deregistration + `gc_target_stops` from live mutators; remove the
-  timeout-break corruption path; this gives a *usable* `-gc vgc` and the §5.3(a)
-  baseline. File the vgc bug upstream with the repro (`vgc_repro.v`).
+  wall-clock and ~core-count CPU (cx-private #14 acceptance). **This is the actual
+  #14 fix.**
+- **vgc is NOT on the P0 critical path** (revised 2026-06-11). The attempt to
+  make `-gc vgc` correct uncovered ≥5 compounding soundness bugs and the UAF
+  persists (§1.2 empirical / §5.3 evidence). The five partial fixes
+  (`vgc-stw-partial-fixes.patch`) + the G-CHURN repro are filed **upstream as a
+  bug report**, not shipped as a fix. vgc correctness, if pursued, is a large P3
+  item — and §5.3 now recommends MMTk / minimal mark-region over it.
 
 **Phase 1 — Perceus insertion (soundness).** Port the insertion algorithm onto
 V's IR as the formal spec of autofree's frees + residual RC. Behaviour on

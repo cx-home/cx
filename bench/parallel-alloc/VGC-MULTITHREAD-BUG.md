@@ -100,3 +100,61 @@ scan/noscan → no conservative-scan tax). Getting STW correct under real thread
 lifecycles is the gate between "experimental, single-thread-only" and "usable
 default." Happy to help test — we have a parallel-interpreter workload that
 hammers exactly this path.
+
+---
+
+## Investigation update (2026-06-11, upstream master a83aabb)
+
+We built the upstream `./v` and ran the `g_churn.v` battery (long-lived
+checksummed anchor + churn + waves of short-lived threads + a blocked thread).
+**Oracles `-gc boehm` and `-gc none` PASS; `-gc vgc` fails — a use-after-free**,
+not (only) a hang. Under lldb the crash is deterministic:
+
+```
+EXC_BAD_ACCESS (address=0x8)  main__churn(...) at g_churn.v:104
+  -> if last.id == 0xdeadbeef {     // `last` points to a SWEPT live Node
+```
+
+i.e. the collector frees an object that is still referenced by a live mutator
+local. It reproduces under **thread create/exit churn** (the `waves`), not under
+steady allocation (config `N N 0` passes). Bisected trigger = many short-lived
+allocating threads concurrent with GC, **independent of the blocked thread**.
+
+### We implemented and tested five fixes (patch: `vgc-stw-partial-fixes.patch`)
+
+1. **Thread deregistration** via a pthread-key destructor + **cache-slot reuse**
+   (fixes `caches[]` exhaustion / `caches[-1]` OOB once >64 threads have ever
+   registered, and stops counting dead threads in STW).
+2. **STW targets live mutators** (`live_threads`), recomputed each wait
+   iteration, instead of `ncaches - 1`.
+3. **Abort-not-corrupt**: on incomplete stop, abort the cycle (no sweep) instead
+   of "proceed with what we have" — removes the silent-corruption-on-timeout.
+4. **Full stop-the-world mark+sweep** (resume only after sweep) — removes the
+   unsound concurrent-mark window (white objects allocated during mark with no
+   alloc-black + no stack-write barrier).
+5. **Register spilling at every root scan** (mutator safepoint AND the collector
+   itself, via `setjmp` into a frame kept alive across the scan) — so a root
+   that lives only in a callee-saved register (a hot `last`) is not missed; plus
+   a **park-in-register barrier** so a thread cannot allocate white during STW.
+
+**Result: the use-after-free persists** (same line-104 crash) under thread
+churn, in both `-prod` and debug builds — including the debug build where `last`
+provably lives on the stack. So beyond the five issues above, vgc's root
+scanning still drops a live object under concurrent thread lifecycle. Remaining
+suspects we did not chase to ground: parallel-mark helper threads registering
+*during* the collection; span/cache-slot reuse races; conservative-scan span
+lookup under concurrent arena growth.
+
+### Takeaway
+
+Making vgc sound under real multi-threaded lifecycles is **not a small fix** — it
+needs OS-level suspend-the-world (mach/signals, à la Boehm) so blocked and
+non-cooperating threads are stopped and their full register+stack state scanned,
+plus a thread-registration barrier and a correct (or absent) concurrent-mark
+path. That is effectively the multi-year STW engineering Go already did. The
+five fixes here are necessary-but-insufficient groundwork. We're filing this so
+the team can decide whether to invest in finishing vgc's STW or steer multi-core
+scaling another way; happy to share the battery and patch.
+
+Repro: `g_churn.v` (oracle + subject), build all three with `-prod` on the
+upstream `./v`; `./g_churn_vgc 100 1 40` segfaults within seconds.
