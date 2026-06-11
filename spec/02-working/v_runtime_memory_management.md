@@ -77,6 +77,26 @@ Boehm `GC_MALLOC` goes **77.5 → 34.8 → 12.2 → 15.8 M/s** at 1/2/4/8 thread
 ceiling. **This config is a free near-term win to correct (§6 Phase 0), but it
 does not change the architectural ceiling.**
 
+**Marker-pin is a *partial* mitigation (measured 2026-06-11, upstream `a83aabb`,
+`bench/parallel-alloc/boehm_mp_bench.v`, scanned-object alloc+collect loop).**
+
+| threads | default markers (M/s agg, per-thr) | `GC_MARKERS=1` (M/s agg, per-thr) |
+|--:|--:|--:|
+| 1 | 21.7 (21.7) | 29.4 (29.4) |
+| 2 | 24.1 (12.0) | 23.5 (11.8) |
+| 4 | 22.8 (5.7)  | 25.2 (6.3)  |
+| 8 | 19.1 (2.4)  | 18.5 (2.3)  |
+
+Pinning markers to 1 **helps single-thread (+35%) but does NOT fix MP
+anti-scaling** — per-thread throughput still collapses ~10× by 8 threads either
+way. Marker-pinning removes the parallel-*mark* stomp (which dominated the
+compute-bound HTTP reactor: measured 2.6× there), but an **alloc-heavy** loop is
+bottlenecked on the **global alloc lock**, which markers do not touch. Therefore
+marker-pin alone cannot make alloc-heavy `[par]` (cx-private #14, e.g. the guide
+render) scale. The alloc-lock ceiling falls only to the demand-side (Perceus
+reuse / regions → fewer allocations) + a per-thread-cache allocator — i.e. the
+full architecture E, not a Boehm tweak.
+
 ### §1.2 vgc is a pre-alpha Go-runtime port (source read)
 
 `vgc_gc_d_vgc.c.v` is explicitly "Translated from Go's runtime GC (mgc.go,
@@ -314,12 +334,16 @@ B-minimal work that lands MP relief immediately and is absorbed by E, not wasted
 
 **Phase 0 — immediate relief for #14 (days, in our control). The reliable path
 is Boehm-tuned, NOT vgc.**
-- Flip libgc amalgamation to `--enable-thread-local-alloc=yes`; pin markers
-  (`GC_set_markers_count(1)` before `GC_INIT`, or `--enable-parallel-mark` review)
-  on macOS, on the **eval / `[par]` path** (port the HTTP-reactor fix that already
-  gave 2.6×). Re-run the guide `[par]` experiment: must drop to ≤ serial
-  wall-clock and ~core-count CPU (cx-private #14 acceptance). **This is the actual
-  #14 fix.**
+- Pin markers (`GC_set_markers_count(1)` before `GC_INIT`) on the **eval / `[par]`
+  path** (port the HTTP-reactor fix that gave 2.6×) and flip libgc to
+  `--enable-thread-local-alloc=yes`. **Caveat (measured, §1.1): this is a PARTIAL
+  #14 fix.** Marker-pin removes the parallel-mark stomp (helps compute/mark-bound
+  `[par]`, e.g. HTTP) and TLA helps single-thread, but neither fixes the global
+  alloc-lock anti-scaling that bottlenecks **alloc-heavy** `[par]` (the guide
+  render). For alloc-heavy `[par]`, the honest near-term answer is **serial or
+  `-d cx_regions`** (bounded units, proven 2–6×); true scaling waits on the
+  demand-side (P1/P2 Perceus reuse + per-thread mcache). Update #14 to reflect
+  this split rather than claiming a single Boehm tweak fixes it.
 - **vgc is NOT on the P0 critical path** (revised 2026-06-11). The attempt to
   make `-gc vgc` correct uncovered ≥5 compounding soundness bugs and the UAF
   persists (§1.2 empirical / §5.3 evidence). The five partial fixes
