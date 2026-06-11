@@ -38,6 +38,22 @@ mut:
 	loop_stack  [][2]int
 	shared_vars []string
 	returned    []string
+	heap_vars   []string // locally-defined, heap-owning (array/map/string/has free()) -> the only drop candidates
+	table       &ast.Table = unsafe { nil }
+}
+
+// heap-owning predicate, mirroring autofree_variable's dispatch: only these
+// kinds carry a heap allocation worth a deterministic drop. Params (never
+// assigned) and value types (int/bool/struct-without-free) are excluded.
+fn (c &PcsCfg) pcs_is_heap_owning(typ ast.Type) bool {
+	if c.table == unsafe { nil } || typ == 0 {
+		return false
+	}
+	sym := c.table.sym(typ)
+	if sym.kind in [ast.Kind.array, .map, .string] {
+		return true
+	}
+	return sym.has_method('free')
 }
 
 fn pcs_uniq_push(mut list []string, name string) {
@@ -246,9 +262,13 @@ fn (mut c PcsCfg) pcs_lower_stmt(st ast.Stmt, entry int) int {
 				}
 			}
 			mut defs := []string{}
-			for l in st.left {
+			for i, l in st.left {
 				if l is ast.Ident {
 					defs << l.name
+					// record heap-owning locals (the only drop candidates)
+					if i < st.left_types.len && c.pcs_is_heap_owning(st.left_types[i]) {
+						pcs_uniq_push(mut c.heap_vars, l.name)
+					}
 				}
 			}
 			c.pcs_emit(cur, st.pos.pos, defs, uses)
@@ -355,12 +375,13 @@ fn (c &PcsCfg) pcs_drop_map() map[int][]string {
 		for i := b.steps.len - 1; i >= 0; i-- {
 			st := b.steps[i]
 			for u in st.use {
-				if u !in live && u !in c.shared_vars && u !in c.returned {
+				if u in c.heap_vars && u !in live && u !in c.shared_vars && u !in c.returned {
 					dm[st.pos] << u
 				}
 			}
 			for d in st.def {
-				if d !in st.use && d !in live && d !in c.shared_vars && d !in c.returned {
+				if d in c.heap_vars && d !in st.use && d !in live && d !in c.shared_vars
+					&& d !in c.returned {
 					dm[st.pos] << d
 				}
 			}
@@ -380,8 +401,10 @@ fn (c &PcsCfg) pcs_drop_map() map[int][]string {
 }
 
 // compute_drop_map is the public entry used by cgen under `-d perceus`.
-pub fn compute_drop_map(fnd ast.FnDecl) map[int][]string {
-	mut c := PcsCfg{}
+pub fn compute_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
+	mut c := PcsCfg{
+		table: table
+	}
 	entry := c.pcs_nb()
 	c.exit_id = c.pcs_nb()
 	last := c.pcs_lower_stmts(fnd.stmts, entry)
