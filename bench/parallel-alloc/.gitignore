@@ -3,3 +3,4 @@ arena
 malloc_ctl
 *.dSYM/
 vgc_repro
+suspend_world

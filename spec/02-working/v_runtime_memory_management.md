@@ -340,6 +340,16 @@ the result is written back into §3/§4 before the dependent phase proceeds.
   precise-heap root scan**. That glue (a clean `suspend_world()`) is the real
   engineering and is worth prototyping standalone; it is also what
   `vgc-stw-partial-fixes.patch` was reaching for.
+- **`suspend_world()` PROTOTYPE-VALIDATED on darwin (2026-06-11;
+  `bench/parallel-alloc/suspend_world.c`).** A coordinator using mach
+  `thread_suspend`/`thread_resume` + `thread_get_state` froze **all** worker
+  threads — including one **blocked in a syscall** and several in **tight
+  non-allocating loops** (the exact cases vgc's cooperative alloc-path safepoint
+  could not stop) — read each thread's SP, and resumed cleanly; 3/3 deterministic
+  PASS. This de-risks the backstop's hardest piece and confirms the correct STW
+  is *unilateral OS suspend* (Boehm's model), not vgc's cooperative polling. The
+  linux/bsd path (dedicated signal + `pthread_kill` + handler-parks) is sketched
+  in-file, not yet built.
 
 ---
 
