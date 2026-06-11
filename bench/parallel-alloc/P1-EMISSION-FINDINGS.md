@@ -316,3 +316,59 @@ pointers that the `-experimental` flag could only do unsafely. Residual precisio
 nested heap fields) and the §5.1 thread-correct RC for the shared residual are
 **Phase 3** (gated by G-R2s/G-CHURN, needs the per-thread mcache allocator). P2
 (reuse analysis, the R1 win) is the next spec phase in order.
+
+---
+
+# P2 — reuse analysis (the R1 win)
+
+Spec §6 Phase 2 gate: R1 met (≥ Boehm single-thread) + `arr.map`/`arr << x`
+confirmed in-place on unique data.
+
+## Landscape (measured on generated C, 2026-06-11)
+
+- **`arr << x` is ALREADY in-place** on unique arrays: V emits `array_push(&a, …)`,
+  which grows `a`'s own buffer (realloc only when cap is exceeded) — no clone. So
+  the "confirm `<<` in-place" half of the gate is satisfied as-is; nothing to do.
+- **`arr.map(f)` allocates a fresh buffer**: `_t1 = __new_array(0, a.len, sizeof T)`
+  then a push loop reading `_t1_orig = a`. THIS is the reuse target — when `a` is
+  unique + dead after the map + same element size, the result can reuse `a`'s
+  buffer instead of allocating. (`gen_array_map`, array.v:866/947.)
+
+The reuse requires two coupled pieces: **(P2.1)** prove `a` stays uniquely owned
+*through* the map (today the conservative call-receiver + assign-aliasing rules pin
+it), then **(P2.2)** the buffer-reuse codegen, which makes `b.data == a.data` and
+must therefore ELIDE `a`'s free (double-free risk). P2.2 is its own focused turn.
+
+## P2.1 — fresh-array classifier refinement (the reuse precondition) — DONE 2026-06-11
+
+`b := a.map(f)` / `a.filter(f)` produces a brand-new buffer; for **primitive
+element types** that buffer shares no heap with the receiver, so the receiver
+neither escapes into the call nor is aliased by the result — `a` stays uniquely
+owned and is droppable at the map. `pcs_is_fresh_array_call` (keyed on
+`CallExpr.kind == .map/.filter`, NOT `name` — the builtins dispatch by kind)
+guards on `!pcs_is_heap_owning(elem_type)`: `[]int.map(it*2)` qualifies, but
+`[]string.filter(…)` does NOT — its result copies string *headers* that share the
+receiver's element buffers, so freeing `a` would corrupt `b` (a real UAF). The
+refinement exempts such calls from BOTH the call-receiver escape pin and the
+assign-aliasing pin (mirroring the increment-#1 buffer-fresh-string exemption).
+
+Effect (generated C): `map_prim()` now frees `a` right after the map (its last use)
+instead of at scope exit; `filter_strings()` correctly keeps `a` to scope-exit
+(string elements alias). This is a real drop-coverage win for the very common
+`b := a.map(…)` primitive pattern AND the precondition the P2.2 reuse will consume
+(`a` in the drop map at the map statement = "safe to reuse its buffer").
+
+**Gated green:** flag-off byte-identical 6/6; G-DIFF `p2_reuse_corpus` + corpus
+`none == perceus`; ASan clean (`p2_reuse_corpus` incl. the `[]string` hazard + 29
+array/map/datatypes/strings-heavy vlib tests, 0 UAF/double-free); autofree corpus
+6/6; broad differential 45/45 rc-equal, 0 regressions. Corpus banked:
+`bench/parallel-alloc/p2_reuse_corpus.v`.
+
+**Next — P2.2 (the actual R1 win):** at `gen_array_map`, when the receiver is a
+bare heap-array local present in `g.perceus_drops` for this statement (i.e. P2.1
+proved it unique+dead) AND `inp_elem_styp == ret_elem_styp`, reuse the receiver's
+buffer for `_t1` (`_t1 = _t1_orig; _t1.len = 0;` then refill in place) instead of
+`__new_array`, and ELIDE the receiver's free (remove it from `perceus_drops` and
+add to `perceus_suppress`) so the shared buffer is freed exactly once via `b`.
+Gate: G-DIFF + ASan on an aliasing-hazard corpus + a G-R1 micro-bench
+(allocations eliminated, ≥ Boehm single-thread).

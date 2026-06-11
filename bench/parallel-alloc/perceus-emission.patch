@@ -172,10 +172,10 @@ index 3a3f2a7..a86c906 100644
  		return
 diff --git a/vlib/v/gen/c/perceus.v b/vlib/v/gen/c/perceus.v
 new file mode 100644
-index 0000000..7f94709
+index 0000000..cd45400
 --- /dev/null
 +++ b/vlib/v/gen/c/perceus.v
-@@ -0,0 +1,1619 @@
+@@ -0,0 +1,1660 @@
 +// perceus.v — compiler-resident Perceus drop-placement analysis (P1).
 +// Ported from the validated prototype (cx-private bench/parallel-alloc/cfg_proto.v):
 +// builds a per-function CFG over V's AST, runs backward liveness to a fixpoint,
@@ -319,6 +319,31 @@ index 0000000..7f94709
 +	}
 +	if e is ast.PrefixExpr {
 +		return e.op == .amp && e.right is ast.StructInit
++	}
++	return false
++}
++
++// pcs_is_fresh_array_call reports whether a call is a fresh-array-producing builtin
++// (`map`/`filter`) whose result shares NO heap storage with its receiver — so the
++// receiver neither escapes into the callee nor is aliased by the result, and stays
++// uniquely owned (droppable at the call). This holds ONLY for PRIMITIVE element
++// types: `[]int.map(it*2)` yields a brand-new buffer of scalar copies, but
++// `[]string.filter(...)` copies string *headers* that share the receiver's element
++// buffers, so freeing the receiver would corrupt the result. The element-non-heap
++// guard is exactly that distinction. (P2 reuse precondition.)
++fn (c &PcsCfg) pcs_is_fresh_array_call(e ast.CallExpr) bool {
++	if e.kind != .map && e.kind != .filter {
++		return false
++	}
++	if c.table == unsafe { nil } || e.left_type == 0 {
++		return false
++	}
++	sym := c.table.final_sym(e.left_type)
++	if sym.kind != .array {
++		return false
++	}
++	if sym.info is ast.Array {
++		return !c.pcs_is_heap_owning(sym.info.elem_type)
 +	}
 +	return false
 +}
@@ -725,7 +750,10 @@ index 0000000..7f94709
 +			// pcs_call_escape returns all-true, reproducing the conservative
 +			// pre-interprocedural behaviour exactly.
 +			recv_esc, arg_esc := c.pcs_call_escape(e)
-+			if recv_esc {
++			// Fresh-producing array builtins (`map`/`filter`) over primitive elements
++			// neither retain nor alias their receiver — the result is a brand-new
++			// buffer of scalar copies — so the receiver does not escape the call.
++			if recv_esc && !c.pcs_is_fresh_array_call(e) {
 +				c.pcs_share_idents(e.left)
 +			}
 +			for i, a in e.args {
@@ -960,8 +988,21 @@ index 0000000..7f94709
 +			// OTHER uses are non-retaining; the result is uniquely owned). This is
 +			// unconditionally sound: it does not touch slices/substrings (IndexExpr)
 +			// or array/map concat, which DO share buffers and remain pinned.
-+			fresh := st.left.len == 1 && st.right.len == 1 && st.left_types.len >= 1
++			mut fresh := st.left.len == 1 && st.right.len == 1 && st.left_types.len >= 1
 +				&& c.pcs_rhs_is_fresh_string(st.right[0], st.left_types[0])
++			// `b := a.map(...)` / `a.filter(...)` over primitive elements yields a
++			// fresh buffer that does not alias `a`, so the assign-aliasing pin must
++			// not fire (`a` stays droppable; `b` is uniquely owned). See
++			// pcs_is_fresh_array_call.
++			if !fresh && st.right.len == 1 {
++				mut e := st.right[0]
++				for e is ast.ParExpr {
++					e = (e as ast.ParExpr).expr
++				}
++				if e is ast.CallExpr && c.pcs_is_fresh_array_call(e) {
++					fresh = true
++				}
++			}
 +			if !fresh && lhs_heap.len > 0 && rhs_heap.len > 0 {
 +				for n in lhs_heap {
 +					c.pcs_mark_shared(n)
