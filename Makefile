@@ -603,7 +603,7 @@ test-vcx-summary:
 # Wired into TEST_TARGETS via the `test-vcx` umbrella above.
 .PHONY: test-vcx-v08
 test-vcx-v08: build-vcx-dev
-	@$(V) test vcx/tests/
+	@$(V) -cc cc test vcx/tests/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
@@ -617,7 +617,10 @@ test-vcx-v08: build-vcx-dev
 # `v run` also works. `@vlib` and `@vmodules` are the V-runtime
 # placeholders (stdlib + `$VMODULES`).
 V_MODULE_PATH := @vlib|@vmodules|vcx
-VFLAGS_VCX := -path "$(V_MODULE_PATH)"
+# `-cc cc` (clang): cx's patched builtin uses C11 atomics + `@[thread_local]` TLS
+# that tcc cannot compile on macOS (the V default cc for non-prod). Carried through
+# every `v test` / `v run` that uses VFLAGS_VCX so the conformance corpus builds.
+VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)"
 
 test-v: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v $(VFLAGS_VCX) run lang/v/conformance.v

@@ -41,13 +41,32 @@ commits; prerequisite = a83aabb). Restore: `git bundle unbundle` onto an a83aabb
 checkout. **cx-private's gitlink is NOT bumped yet** (still 0807dd15f) — correct: the
 bump waits on the full cx gate.
 
+## ✅ cx GATE GREEN under the forward-ported V (B14, 2026-06-12)
+cx builds (lib clang + cli clang) AND passes: **V impl gate 125/125**;
+**conformance green** (exit 0, incl cxpath 4/4). Forward-port required SIX cx-side
+adaptations to the 3-week-newer V (all small, none architectural):
+1. `vcx/code/stdlib_bytes.v` — `gzip.compress(b, compression_level: 6)` →
+   `gzip.compress(b)` (upstream dropped the options arg).
+2. `vcx/cx/codec.v` — global-singleton map mutation through an immutable const
+   pointer wrapped in `unsafe` (newer checker forbids the `mut` alias).
+3. `vcx/code/predicate_eval.v` — `BindingScope.context_item` moved to an immutable
+   field section (set once, can't be a `mut` ref holding an immutable `&Item`).
+4. `vcx/cx/schema_validate.v` — `single_collection_node` rewritten index-based; the
+   sum-type-option idioms (`found != none`, `found = n`) mis-codegen under newer V.
+5. `third_party/v` (fork) — `execute_capture_nix.h` uses `<spawn.h>` (posix_spawn
+   clash); committed on the branch (4e858f57c).
+6. Build config — `-cc cc` (clang) forced for cx's macOS builds (cli, lib-dev,
+   lib-arrow-dev, test-vcx-v08 `v test`, conform-ns-cxpath): tcc-macOS can't compile
+   the patched builtin's C11 atomics + `@[thread_local]` TLS (the old fork shipped a
+   TLS-patched tcc that the upstream forward-port replaced). In top Makefile +
+   vcx/Makefile.
+
 ## Remaining A7 sub-steps (next)
 1. **Publish the branch to cx-home/v.** Needs a83aabb's FULL history (the branch is
    rooted at the shallow a83aabb locally). Either GitHub-sync cx-home/v with vlang/v
    upstream first, or fetch vlang/v full history locally, then push
-   `cx-home/v-cx-patches`. Then delete/retire `cx-home/v0.7.0-cx-patches`.
+   `cx-home/v-cx-patches` (tip 4e858f57c). Then delete/retire `cx-home/v0.7.0-cx-patches`.
 2. **Bump cx's third_party/v gitlink** to the new tip + update `.gitmodules` branch
-   ref away from v0.7.0.
-3. **Full cx gate under the new V (B14):** build cx against the forward-ported V,
-   `make test` + conformance, `-prod` and non-prod. This is the real payoff — the #14
-   `[par]` workload measured under E in cx (B13).
+   ref away from v0.7.0. (Deferred until publish — gate is green so it's safe to bump.)
+3. **`[par]` real-scaling under E in cx (B13)** — the #14 payoff, measured in cx
+   under `-gc e`. Now unblocked (cx builds + gates green on the E-enabled fork).
