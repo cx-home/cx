@@ -160,12 +160,33 @@ allocator + main-thread registration, before `_vinit`) and a **late** part
 
 **Bug B (now the active failure):** `V panic: Negative number of jobs in
 waitgroup` (`main__churn+408`) under thread churn — a `sync.WaitGroup` counter
-underflow/corruption. Next: re-run the trace (GC cycles should now appear once a
-run survives long enough), and determine whether B is (i) a GC issue (the
-waitgroup or its backing struct collected/corrupted) or (ii) a V `sync.WaitGroup`
-race independent of the collector (test under `-gc none`/`-gc boehm` churn). The
-earlier `df8943dc` framing ("remove the clobber") is superseded by this: the clobber
-is real but unremovable at source; the fix is the `cmain.v` ordering.
+underflow/corruption. The earlier `df8943dc` framing ("remove the clobber") is
+superseded: the clobber is real but unremovable at source; the fix is the
+`cmain.v` ordering.
+
+### Bug B PARTITIONED 2026-06-11 — it's the vgc allocator/registration, NOT the STW collector
+
+12-run churn (`100 1 30`) matrix with bug A fixed:
+
+| mode | PASS | waitgroup-panic | other crash | hang | GC cycles fired |
+|---|---|---|---|---|---|
+| `-gc none`  | **12** | 0 | 0 | 0 | — |
+| `-gc boehm` | **12** | 0 | 0 | 0 | — |
+| `-gc vgc`   | 0 | **10** | 1 | 1 | **0 / 12** |
+
+Two conclusions: (1) the panic is **`-gc vgc`-specific** — `none`/`boehm` are
+clean, so it is **not** a V `sync.WaitGroup` stdlib race, it is ours. (2) it fires
+with **zero GC cycles** (GC_BEG=0 every run) → it is **not** the STW mark/sweep
+collector; it is the vgc **allocator / per-thread-mcache / thread-registration**
+path corrupting the heap-allocated, wave-shared `WaitGroup` under create/exit
+churn (the counter goes negative because the object's memory is clobbered/aliased,
+not because add/done are mismatched). **Next:** narrow within the allocator —
+suspect slot-reuse on thread exit/register (`free_slots` reuse + the mcache clear)
+handing two live threads overlapping spans, or the `vgc_ensure_registered` lazy
+path racing. A targeted repro: shrink to the `sync.new_waitgroup()` object alone
+under wave churn, watch its address + counter across register/exit events via the
+trace. This is a bounded allocator-correctness bug, not the open-ended STW race
+the "wall" was feared to be.
 
 ## Reproduce
 
