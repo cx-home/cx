@@ -229,19 +229,47 @@ Files: `vlib/builtin/vgc_d_vgc.c.v` (`vgc_spawn_roots`/add/remove),
 `vlib/builtin/vgc_gc_d_vgc.c.v` (shade loop), `vlib/v/gen/c/spawn_and_go.v`
 (add/remove emission, gated on `g.pref.gc_mode == .vgc` → non-vgc byte-identical;
 verified 0 refs in a `-gc boehm` build). Result: min_wg (heap & stack WaitGroup)
-0/15 → 14/15+ under vgc. A small residual (~1/15) is being characterized (hang vs
-panic) — a DISTINCT second cause if real, candidate = STW mach-suspend vs the
-WaitGroup's pthread cond/mutex; possibly a harness artifact (subshell-kill bug).
+0/15 → 14/15 under vgc (isolation harness min_wg.v). **HONEST SCOPE: the spawn-arg
+fix is NECESSARY BUT NOT SUFFICIENT — it does NOT close the canonical wall.** With
+BOTH fixes (spawn-arg root + registration-lock), `min_wg 100 1 30`-equivalent is
+~38/40 but the real `g_churn 100 1 30` STILL fails ~12/12, and disabling GC
+(next_gc=64GB) still passes — so a SECOND residual remains.
+
+### Residual (2026-06-11 PM) — a DISTINCT 2nd bug: extra `done()` on a CLEAN WaitGroup
+
+With both fixes applied, `g_churn 100 1 30` fails with `Negative number of jobs in
+waitgroup`. Instrumenting `WaitGroup.add()` at the panic shows, every time:
+`old=0x0 delta=-1 old_jobs=0 waiters=0` → the WaitGroup state is a **clean 0**, NOT
+garbage. So it is **NOT** memory corruption / a swept-or-aliased WaitGroup — it is a
+genuine **extra `done()`** (a 5th done against a 4-add wave, on a WaitGroup whose
+cycle already completed and reset to 0). Ruled OUT by controlled test (all with both
+fixes, g_churn ~100% repro, `perl -e 'alarm N; exec @ARGV'` for timeout since
+`timeout` is absent on this mac):
+- arg-struct sweep — FIXED (spawn-root registry); min_wg 0→38/40, but g_churn still fails.
+- registration-vs-STW race — FIXED (cache_lock held thru setup); neutral on residual.
+- cross-thread `vgc_free` bitmap race — `vgc_free`→no-op does NOT fix g_churn (10/10 still fail).
+- memory clobber / WaitGroup sweep — DISPROVEN (state is a clean 0 at the panic).
+GC-frequency-driven: min_wg (~400 allocs/worker) hits it ~5%; g_churn (2M-alloc
+steady churn → far more collections/run) hits it ~100%. ⇒ the residual is a
+thread-lifecycle issue where, under heavy collection, ONE extra worker-execution /
+`done()` occurs per run. **NEXT:** instrument churn/worker entry+exit with an atomic
+per-wave execution counter (vs the 4 expected) to catch the duplicate
+execution/done directly; suspect the spawn wrapper or pthread create/exit path
+under STW. g_churn 100 1 30 is a reliable (~100%) repro. min_atomic.v (own counter,
+no WaitGroup) passes — so a control without sync.WaitGroup helps localize.
 
 ## Reproduce
 
 ```
 cd /Users/ep/git-repos/cx/vlang-v-latest
 ./v -gc none -prod -o g_churn_none g_churn.v   # oracle
-./v -gc vgc  -prod -o g_churn_vgc  g_churn.v   # subject (minimal collector + spawn-root fix)
+./v -gc vgc  -prod -o g_churn_vgc  g_churn.v   # subject (minimal collector + both fixes)
 ./g_churn_vgc 20000 6 0   # steady  → PASS (GC now fires non-vacuously)
-./g_churn_vgc 100 1 30    # churn   → was SIGSEGV/panic; with the spawn-root fix → PASS
-# isolation harnesses (this session): min_wg.v (WaitGroup, mode 0 heap / 1 stack),
-# min_atomic.v (own atomic counter control). Use `perl -e 'alarm 30; exec @ARGV' ./bin …`
-# for hang detection (`timeout` is NOT installed on this macOS).
+./g_churn_vgc 100 1 30    # churn   → spawn-arg crash FIXED, but STILL fails ~100% on the
+                          #           residual extra-done() (the open 2nd bug)
+# isolation harnesses (this session, bench/parallel-alloc/): min_wg.v (WaitGroup,
+# mode 0 heap / 1 stack), min_atomic.v (own atomic-counter control).
+# `timeout` is NOT installed on this macOS → use `perl -e 'alarm 30; exec @ARGV' ./bin …`.
+# A subshell `( ./bin ) & kill $!` only kills the SUBSHELL not the child → false fails;
+# use the perl-alarm form for reliable hang/segv classification.
 ```
