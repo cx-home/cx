@@ -400,6 +400,81 @@ collector mark/sweep reclamation (GC isn't even running at the crash). This is t
 long-flagged thread-lifecycle×GC hard part, now isolated as the next bug to chase —
 the find_span fix removed the GC-reclamation crashes that were masking it.
 
+### BUG #2 (thread create/exit × STW segv) ROOT-CAUSED + FIXED 2026-06-12 — STW LOCK-STEAL breaks allocator mutual exclusion
+
+After the find_span fix, `g_churn 100 1 30` still SIGSEGV'd ~2/10 and `min_wg 0 60`
+(heavy) reliably. Disambiguation:
+- **Not span exhaustion.** A GC-and-retry on `vgc_span_alloc` failure (force a
+  collection + retry before returning nil; scan+noscan+large paths,
+  `vgc_collect_and_retry_span`) was added — a legitimate robustness fix, KEPT —
+  but its exhaustion-dump never fired, so malloc was not returning nil. Span-alloc
+  failure (the earlier "tag 93" flood) was a *downstream symptom* of the corruption
+  below, not the cause.
+- **Not WaitGroup.** `min_atomic 60 120000` (own atomic counter, NO WaitGroup, NO
+  steady threads) crashes identically → WaitGroup was a red herring.
+- **Not the worker's heavy alloc loop.** `min_atomic3` (atomic, +2 steady threads)
+  PASSES even at iters=50000 — because its long-lived **steady threads dominate
+  allocation and act as the collector**, so the wave workers are only ever
+  *scanned*. The crash needs a **churning wave-worker to BE the collector**
+  (min_wg/min_atomic have no steady threads → the allocating, create/exiting wave
+  workers trigger GC themselves).
+
+**Exact fault (lldb, current binary):** `_platform_memset(dest, 0, len=4)` at
+`vgc_central_get_span+468` (the inlined `vgc_span_init` bitmap memset) ←
+`vgc_cache_get_span` ← `vgc_malloc_typed_opts` ← worker; `dest` is a page-aligned
+**unmapped** address — the span's `alloc_bits`/`base` is garbage. The allocator's
+own metadata was corrupted.
+
+**ROOT CAUSE:** `vgc_gc_start`, after mach-suspending all mutators, **stole (zeroed)
+every allocator spinlock** — `vgc_heap.lock`, all `central[].lock`,
+`free_spans_lock`, `work_lock` — "so the collector cannot deadlock on a frozen
+owner." But `vgc_heap.lock` and `central[].lock` are **mutator-only** (the collector
+never acquires them — verified: acquisitions only in `vgc_span_alloc`/`vgc_alloc_large`/
+`vgc_central_get_span`/`vgc_central_return_span`). Zeroing a lock held by a mutator
+that was suspended **mid-`vgc_span_alloc`** means that on resume the lock reads 0,
+so a second allocator enters the critical section concurrently → two threads bump
+the same arena `used` → overlapping span bases → a span gets a garbage
+`base`/`alloc_bits` → `vgc_span_init`'s memset writes to an unmapped page → SIGSEGV.
+Frequency matches the churning-collector regime exactly (many GCs triggered by
+allocating wave workers racing each other on resume).
+
+**FIX (`vgc_gc_d_vgc.c.v` `vgc_gc_start`):** stop stealing `vgc_heap.lock` and the
+136 `central[].lock`s. A frozen owner keeps its lock → mutual exclusion is
+preserved on resume, and the collector never blocks (it never acquires them). Only
+`free_spans_lock` and `work_lock` are still stolen — the two locks the collector
+genuinely re-enters (`vgc_put_free_span` in sweep / `vgc_work_put|get` in mark);
+those remain a *narrower* latent issue (a frozen mutator mid-`vgc_get_free_span`
+can leak/race a free-span entry on resume — a leak, not the observed memset crash;
+banked as a follow-on, proper fix = acquire-before-suspend + non-locking put).
+
+**SECOND VECTOR (free_spans_lock) — same class, fixed 2026-06-12.** After the
+vgc_heap.lock/central fix, min_atomic stopped SIGSEGV-ing but min_wg still crashed;
+the fault MOVED to `vgc_malloc_typed_opts+284` (the object zero-fill `memset(ptr,0,n)`)
+with `ptr` in a span whose base was garbage — a **recycled span from a corrupted
+free-span list**, because `free_spans_lock` was *still* being stolen (the collector
+re-enters it via `vgc_put_free_span` in sweep, so it couldn't simply be left held by
+a frozen owner). FIX: the collector takes `free_spans_lock` ONCE at the very top of
+`vgc_gc_start` — **before** the world is stopped, so no mutator is ever frozen
+mid-`vgc_get_free_span` holding it — holds it across the whole cycle, and
+`vgc_put_free_span` (collector-only) is now lock-free; released right after sweep,
+before resume. Lock order free_spans_lock→cache_lock is deadlock-free (no mutator
+holds free_spans_lock then waits on cache_lock). `work_lock` is the only lock still
+zeroed (no mutator holds it under full-STW).
+
+**VALIDATION (12-core M-series, `-gc vgc -prod`):**
+- **`g_churn 100 1 30` (the CANONICAL wall): 10/10 PASS** (was ~0/12 originally,
+  8/10 after find_span). Heavier configs being confirmed.
+- min_atomic2 8/8, min_atomic3 14/0 (controls, find_span); g_churn steady `20000 6 0`
+  byte-identical to `-gc none`.
+- **OPEN residual: `min_wg 0 60` (heavy, 120000 iters) still SIGSEGVs.** This is the
+  most extreme case — NO long-lived thread, so the collector is ALWAYS a churning,
+  about-to-exit wave worker (g_churn/min_atomic3 have long-lived anchor/steady
+  threads that act as collector, sparing the wave workers). Same memset-wild
+  signature (recycled/fresh span with a bad base). Suspected remaining vector: the
+  weak-memory half-built `allspans`/`arenas[]` read by the collector while a mutator
+  is frozen mid-`vgc_span_alloc` (lock-free reads in find_span/sweep), maximal when
+  every thread is a heavy allocator. Chasing.
+
 ## Reproduce
 
 ```
