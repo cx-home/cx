@@ -67,11 +67,45 @@ The `-gc e` pref.v arm was reverted (it produced a crashing binary and would be 
 misleading surface); re-add once the decoupled emission lands. `-gc e` remains the
 intended target surface (recorded in INTEGRATION-SCOPE §C / spec §6 Phase 4).
 
-## Open decision (surfaced to user)
-How to deliver E's front line given autofree+GC incompatibility:
-- (a) Decouple Perceus into an independent cgen pass (recommended; the only path
-  that yields true E). Substantial.
-- (b) Root-cause and fix `-autofree`+`-gc` coexistence in V generally. Murkier,
-  larger blast radius, fights autofree's design.
-- (c) Re-scope E's front line (e.g. Perceus without a tracing backstop, or backstop
-  only). Contradicts the decided architecture.
+## Decision → (a) DECOUPLE — chosen by user, and DELIVERED 2026-06-12
+Re-host the validated Perceus emission so it fires WITHOUT enabling `pref.autofree`.
+It turned out cleaner than feared — when autofree is off, autofree's scope-exit
+freeing simply doesn't run, so there are no duplicate frees to suppress and no
+clone/temp machinery; the Perceus drops become the program's sole frees. The
+classifier already models V's no-clone value-sharing (it pins assignment-aliases),
+so it stays sound without autofree's clones.
+
+**Changes (clone, in vgc-collector-linux.patch):**
+1. `fn.v` — drive Perceus off the `perceus` define alone (drop the `g.is_autofree
+   &&` gate); with autofree off the suppress-set is inert.
+2. `autofree.v::needs_scope_cleanup()` — also true when `g.perceus_dropping` (set
+   only transiently inside `perceus_drop`), so the free dispatch fires under E
+   without enabling any other scope cleanup.
+3. `autofree.v` user-ref drop — under `-gc vgc`, emit `builtin___v_free` (routes to
+   `vgc_free`) instead of the bare libc `free`. **Bug found + fixed en route:** the
+   `&Foo` drop hardcoded libc `free`, which aborts on a GC-arena pointer ("pointer
+   being freed was not allocated"); arrays/maps/strings were already fine (they
+   route through `builtin___v_free`). Manual/autofree-no-gc keeps libc `free`, so
+   the validated path is byte-identical.
+4. `pref.v` — `-gc e` = `.vgc` + define `vgc` + define `perceus` (NO autofree).
+   `-gc boehm` stays default; `-gc e` is opt-in.
+
+**Validation (all green):**
+- `-gc e` corpus G-DIFF (uref/reuse/hazard/loop-hazard) `none == -gc e`: 4/4.
+- `-gc e` churn gate `g_churn 100 1 30`: 12/12 (also 15/15 as `-gc vgc -d perceus`).
+- Perceus front line is REAL under E: in-place map reuse marker fires (== the
+  validated autofree path).
+- Flag-off default build BYTE-IDENTICAL; validated `-autofree -d perceus` path
+  intact (uref_corpus correct).
+
+**E now composes:** Perceus front line (drops + reuse) + vgc backstop run together,
+churn-clean and corpus-correct, opt-in via one `-gc e` flag. A3 flag-unify COMPLETE.
+
+## Residual / next
+- **vgc_free concurrency:** `vgc_free` mutates span bits lock-free; under E it is now
+  exercised by mutator-thread drops. The churn gate is clean so far (Perceus frees
+  are rare + the unique objects it drops are thread-local), but harden `vgc_free`
+  (take the central[class] lock, consistent with the collector's lock-before-suspend
+  discipline) before heavy multi-thread E workloads. Tracked for B13 ([par]).
+- Next B-tasks: A7 fork forward-port (dominant risk) · B10-15 cx builds/eval/[par]/
+  full gate/picoev under `-gc e`.

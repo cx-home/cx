@@ -89,9 +89,11 @@ with P0 + DTLS + codegen patches.
 - **A6 platform → Linux REQUIRED, touchpoint-port DONE + native-validated 2026-06-12**
   (commit 04342bd2; both touchpoints, arm64+amd64). Integrated Linux `g_churn` gate
   deferred to (B)/forward-port (Decision-1 = accept touchpoint level as (a)-done).
-- **A3 flag-unify (the first (B) task) → single `-gc e` mode** that enables Perceus
-  emission (today `-autofree -d perceus`) AND selects the vgc backstop (today
-  `-gc vgc`). Extends the existing `-gc {none,boehm,vgc}` enum. (Implementation pending.)
+- **A3 flag-unify → DONE 2026-06-12.** Single `-gc e` mode = vgc backstop + Perceus
+  front line, **decoupled from `-autofree`** (the naive union crashed — autofree+any-GC
+  is incompatible; see E-INTEGRATION-FINDINGS.md). `-gc e` = `.vgc` + define `vgc` +
+  define `perceus`, no autofree. Validated: corpus G-DIFF `none==-gc e` 4/4, churn
+  12/12, reuse fires, flag-off byte-identical, `-autofree -d perceus` path intact.
 
 ## Biggest under-appreciated risks (updated 2026-06-12)
 - **A2** shared-RC unbuilt → R2s gap — **RESOLVED by decision: R2s formally

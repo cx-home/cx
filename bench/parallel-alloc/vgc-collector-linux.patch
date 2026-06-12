@@ -1947,10 +1947,25 @@ index c51a5a1..8f5bf01 100644
  
  	mut closure_var := ''
 diff --git a/vlib/v/gen/c/autofree.v b/vlib/v/gen/c/autofree.v
-index 6799cb1..a6b50b4 100644
+index 6799cb1..22cb9bc 100644
 --- a/vlib/v/gen/c/autofree.v
 +++ b/vlib/v/gen/c/autofree.v
-@@ -66,6 +66,12 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
+@@ -7,7 +7,13 @@ import strings
+ import v.ast
+ 
+ fn (g &Gen) needs_scope_cleanup() bool {
+-	return g.is_autofree || g.pref.gc_mode == .boehm_leak
++	// `g.perceus_dropping`: when Perceus emission is decoupled from `-autofree`
++	// (E mode: `-d perceus` without autofree, so autofree's scope-exit freeing /
++	// clone / temp machinery — incompatible with a tracing GC — never runs), the
++	// only frees in the program are the Perceus drops. This flag is true ONLY
++	// transiently inside perceus_drop(), so it authorizes that single free dispatch
++	// without enabling any other scope cleanup.
++	return g.is_autofree || g.pref.gc_mode == .boehm_leak || g.perceus_dropping
+ }
+ 
+ fn (mut g Gen) autofree_scope_vars(pos int, line_nr int, free_parent_scopes bool) {
+@@ -66,6 +72,12 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
  		match obj {
  			ast.Var {
  				g.trace_autofree('// var "${obj.name}" var.pos=${obj.pos.pos} var.line_nr=${obj.pos.line_nr}')
@@ -1963,7 +1978,7 @@ index 6799cb1..a6b50b4 100644
  				if obj.name in g.returned_var_names {
  					g.print_autofree_var(obj, 'returned from function')
  					g.trace_autofree('// skipping returned var')
-@@ -141,6 +147,29 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
+@@ -141,6 +153,29 @@ fn (mut g Gen) autofree_scope_vars2(scope &ast.Scope, start_pos int, end_pos int
  	}
  }
  
@@ -1993,21 +2008,31 @@ index 6799cb1..a6b50b4 100644
  fn (mut g Gen) autofree_variable(v ast.Var) {
  	// filter out invalid variables
  	if v.typ == 0 {
-@@ -201,7 +230,12 @@ fn (mut g Gen) autofree_variable(v ast.Var) {
+@@ -201,8 +236,21 @@ fn (mut g Gen) autofree_variable(v ast.Var) {
  	is_user_ref := v.typ.is_ptr() && sym.name.after('.')[0].is_capital()
  	// if g.pref.experimental && v.typ.is_ptr() && sym.name.after('.')[0].is_capital() {
  	if is_user_ref {
 -		if g.pref.experimental {
+-			g.autofree_var_call('free', v)
 +		// Perceus (`g.perceus_dropping`) authorizes freeing this user-reference
 +		// because its uniqueness analysis PROVED this `&Foo` uniquely owned and dead
 +		// here — which is exactly what the blanket `-experimental` flag cannot
 +		// establish. So we free it whether or not `-experimental` is set; without a
 +		// proof (no Perceus, no -experimental) we still leave it to leak.
 +		if g.pref.experimental || g.perceus_dropping {
- 			g.autofree_var_call('free', v)
++			// Under a tracing GC (E mode: a Perceus drop of a unique `&Foo`), the
++			// object was allocated by the GC allocator, so it must be returned via
++			// the GC's free (`builtin___v_free` routes to `vgc_free`), NOT libc
++			// `free` — freeing a GC-arena pointer with libc aborts ("pointer being
++			// freed was not allocated"). Manual / autofree-without-GC keeps libc
++			// `free` (allocations are libc there), so the validated `-autofree` path
++			// is byte-identical.
++			uref_free := if g.pref.gc_mode == .vgc { 'builtin___v_free' } else { 'free' }
++			g.autofree_var_call(uref_free, v)
  		} else {
  			g.print_autofree_var(v, 'user reference type, use -experimental to autofree those')
-@@ -236,7 +270,11 @@ fn (mut g Gen) autofree_var_call(free_fn_name string, v ast.Var) {
+ 		}
+@@ -236,7 +284,11 @@ fn (mut g Gen) autofree_var_call(free_fn_name string, v ast.Var) {
  	}
  	mut af := strings.new_builder(128)
  	if v.typ.is_ptr() && v.typ.idx() != ast.u8_type_idx {
@@ -2163,10 +2188,10 @@ index 7970e6a..906b81f 100644
  
  	mut before_each_fn := ''
 diff --git a/vlib/v/gen/c/fn.v b/vlib/v/gen/c/fn.v
-index 3a3f2a7..c9c2424 100644
+index 3a3f2a7..1de8620 100644
 --- a/vlib/v/gen/c/fn.v
 +++ b/vlib/v/gen/c/fn.v
-@@ -1179,6 +1179,32 @@ fn (mut g Gen) gen_fn_decl(node &ast.FnDecl, skip bool) {
+@@ -1179,6 +1179,39 @@ fn (mut g Gen) gen_fn_decl(node &ast.FnDecl, skip bool) {
  	defer {
  		g.is_autofree = old_g_autofree
  	}
@@ -2180,7 +2205,14 @@ index 3a3f2a7..c9c2424 100644
 +	g.perceus_drops = map[int][]string{}
 +	g.perceus_suppress = map[int]bool{}
 +	g.perceus_reused = map[int]bool{}
-+	if g.is_autofree && g.pref.compile_defines.contains('perceus') {
++	// Perceus emission is DECOUPLED from `-autofree`: it fires whenever the
++	// `perceus` define is set, with OR without autofree mode. With autofree on
++	// (the original validated path) the drops replace autofree's scope-exit frees
++	// (suppress set below avoids double-free). With autofree OFF (E mode under a
++	// tracing GC, where autofree's clone/temp/scope-free machinery is unsound) the
++	// Perceus drops are the program's ONLY frees, and the suppress set is inert
++	// because autofree emits no scope-exit frees to suppress.
++	if g.pref.compile_defines.contains('perceus') {
 +		g.perceus_drops = compute_emittable_drop_map(*node, mut g.table, g.perceus_escapes)
 +		if g.perceus_drops.len > 0 {
 +			g.is_perceus = true
@@ -2228,3 +2260,37 @@ index 5a14e9a..b3e2e9d 100644
  			if g.pref.prealloc {
  				g.gowrappers.writeln('\tfree(arg);')
  			} else {
+diff --git a/vlib/v/pref/pref.v b/vlib/v/pref/pref.v
+index a6e3eb5..2c29796 100644
+--- a/vlib/v/pref/pref.v
++++ b/vlib/v/pref/pref.v
+@@ -722,6 +722,19 @@ pub fn parse_args_and_show_errors(known_external_commands []string, args []strin
+ 						res.gc_mode = .vgc
+ 						res.parse_define('vgc')
+ 					}
++					'e' {
++						// Architecture E (RC-first hybrid), the unified "E on" mode:
++						// Perceus-disciplined front line (the `perceus` emission pass,
++						// DECOUPLED from `-autofree` — autofree's clone/temp/scope-free
++						// machinery is unsound under a tracing GC) + the precise STW
++						// backstop collector (the vgc-lineage mark-region collector).
++						// NOTE: deliberately does NOT set `autofree` — Perceus emission
++						// is driven by the `perceus` define alone. `-gc boehm` stays the
++						// default; `-gc e` is opt-in.
++						res.gc_mode = .vgc
++						res.parse_define('vgc')
++						res.parse_define('perceus')
++					}
+ 					else {
+ 						eprintln('unknown garbage collection mode `-gc ${gc_mode}`, supported modes are:`')
+ 						eprintln('  `-gc boehm` ............ default GC-mode (currently `boehm_full_opt`)')
+@@ -730,7 +743,8 @@ pub fn parse_args_and_show_errors(known_external_commands []string, args []strin
+ 						eprintln('  `-gc boehm_full_opt` ... optimized classic full collection')
+ 						eprintln('  `-gc boehm_incr_opt` ... optimized incremental collection')
+ 						eprintln('  `-gc boehm_leak` ....... leak detection (for debugging)')
+-						eprintln('  `-gc vgc` .............. V GC (concurrent tri-color mark-and-sweep)')
++						eprintln('  `-gc vgc` .............. V GC backstop collector (precise STW mark-region)')
++						eprintln('  `-gc e` ................ architecture E: Perceus front line + vgc backstop (opt-in)')
+ 						eprintln('  `-gc none` ............. no garbage collection')
+ 						exit(1)
+ 					}
