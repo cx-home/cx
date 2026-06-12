@@ -62,3 +62,42 @@ and it points at per-thread accounting as the next work.)
 
 Benches: bench_mp.v (committed), bench_scalar.v (committed). Re-run:
 `./v2 -gc {boehm,e,vgc} -prod [-enable-globals] -o bm bench_mp.v && ./bm alloc <T> 2000000`.
+
+---
+
+## ✅ FIX #1 DONE 2026-06-12 — per-thread heap accounting → R2 MET & EXCEEDED
+Made `heap_live`/`total_alloc` per-mcache (Go per-P style): the alloc/free fast
+path bumps THREAD-PRIVATE `live_delta`/`alloc_delta` (in VGC_Cache), flushing into
+the global atomics only every ~1 MB (`vgc_acct_flush`). Balanced alloc/free keeps
+`live_delta` near zero, so the hot path never touches a shared cacheline. Helpers
+`vgc_acct_alloc`/`vgc_acct_free` (vgc_d_vgc.c.v); the collector flushes+zeros all
+deltas under STW at the `heap_live = marked` rebaseline; slot (re)registration and
+thread-exit also reset/flush. In vgc-collector-linux.patch.
+
+**Result — scalar-only alloc (no nested heap), Mops/s best-of-2:**
+| threads | boehm | e (before) | **e (after)** |
+|---|---|---|---|
+| 1 | 76.9 | 60.6 | 76.9 |
+| 2 | 60.6 | 17.4 | **173.9** |
+| 4 | 61.5 | 11.3 | **333.3** |
+| 8 | 64.3 | 6.9 | **516.1** |
+
+E now scales near-LINEAR (6.7× T1→T8) and is **8× Boehm at T8**. The contention
+WAS the whole anti-scale. R2 met and exceeded.
+
+**bench_mp alloc (nested `pad` heap field — cause #2 still present):**
+| threads | boehm | **e (after)** |
+|---|---|---|
+| 1 | 39.2 | 30.8 |
+| 2 | 35.1 | 51.3 |
+| 4 | 32.9 | 76.2 |
+| 8 | 29.4 | 72.4 |
+E scales up and beats Boehm 2.5× at T8 even with the deep-free gap; the T8 plateau
+(76→72) is the residual pad-leak GC pressure → fix #2 (Perceus deep-free) closes it.
+
+**Correctness preserved (the accounting feeds the GC trigger):** `-gc e` churn
+g_churn 100 1 30 = 12/12; `-gc vgc` baseline 8/8 (unaffected); corpus G-DIFF
+none==e 4/4.
+
+**Status:** R2 delivered. Cause #2 (deep-free of nested heap fields, A5 coverage)
+is the remaining nested-object optimization — E already beats Boehm with it open.

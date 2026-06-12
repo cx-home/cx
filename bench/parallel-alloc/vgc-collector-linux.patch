@@ -473,7 +473,7 @@ index 12b69a1..d73de5d 100644
 +
  #endif // VGC_PLATFORM_H
 diff --git a/vlib/builtin/vgc_d_vgc.c.v b/vlib/builtin/vgc_d_vgc.c.v
-index d60140c..5eedd80 100644
+index d60140c..aa5d7e8 100644
 --- a/vlib/builtin/vgc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_d_vgc.c.v
 @@ -39,7 +39,22 @@ fn C.vgc_init_size_tables()
@@ -525,15 +525,24 @@ index d60140c..5eedd80 100644
  }
  
  // VGC_Cache is a per-thread allocation cache.
-@@ -115,6 +145,7 @@ mut:
+@@ -115,6 +145,16 @@ mut:
  	stack_hi   usize // highest stack address
  	thread_id  u64
  	stopped    u32 // 1 if stopped for GC
 +	mach_port  u32 // OS thread handle for OS-level suspend-the-world (darwin)
++	// Per-thread heap accounting (Go per-P style). The alloc/free fast path bumps
++	// these THREAD-PRIVATE counters (no shared atomic), flushing into the global
++	// heap_live/total_alloc only every ~vgc_acct_flush bytes. This removes the
++	// global-atomic cacheline contention that made alloc-heavy MP anti-scale
++	// (R2-E-FINDINGS.md): balanced alloc/free keeps live_delta near zero, so the
++	// hot path never touches a shared line. Only this thread writes its own slot;
++	// the collector reads/resets all slots under STW.
++	live_delta  i64 // un-flushed (allocated - freed) bytes by this thread
++	alloc_delta u64 // un-flushed total-allocated bytes by this thread
  }
  
  // VGC_Central is a central free list for one span class.
-@@ -158,16 +189,27 @@ mut:
+@@ -158,16 +198,27 @@ mut:
  	central [136]VGC_Central
  	// Large object spans
  	large_alloc &VGC_Span = unsafe { nil }
@@ -566,7 +575,7 @@ index d60140c..5eedd80 100644
  	// GC state
  	gc_phase   u32 // atomic: current GC phase
  	gc_enabled u32 // atomic: 1 = GC enabled
-@@ -196,23 +238,43 @@ mut:
+@@ -196,23 +247,43 @@ mut:
  	gc_percent int // like Go's GOGC, default 100
  }
  
@@ -611,7 +620,7 @@ index d60140c..5eedd80 100644
  	// Register the main thread
  	vgc_register_thread()
  }
-@@ -223,15 +285,54 @@ pub fn vgc_init() {
+@@ -223,15 +294,56 @@ pub fn vgc_init() {
  
  fn vgc_register_thread() {
  	C.vgc_mutex_lock(&vgc_heap.cache_lock)
@@ -662,6 +671,8 @@ index d60140c..5eedd80 100644
 +		vgc_heap.caches[idx].tiny_offset = 0
 +		vgc_heap.caches[idx].tiny_allocs = 0
 +		vgc_heap.caches[idx].stopped = 0
++		vgc_heap.caches[idx].live_delta = 0
++		vgc_heap.caches[idx].alloc_delta = 0
 +	}
  
  	C.vgc_set_cache_idx(idx)
@@ -670,7 +681,7 @@ index d60140c..5eedd80 100644
  	sp := usize(C.vgc_get_sp())
  	mut stack_lo := usize(0)
  	mut stack_hi := usize(0)
-@@ -248,8 +349,66 @@ fn vgc_register_thread() {
+@@ -248,8 +360,79 @@ fn vgc_register_thread() {
  	unsafe {
  		vgc_heap.caches[idx].registered = true
  		vgc_heap.caches[idx].stack_base = stack_base
@@ -713,6 +724,19 @@ index d60140c..5eedd80 100644
 +		return
 +	}
 +	unsafe {
++		// Flush this thread's un-flushed per-thread accounting into the global
++		// counters before the slot is released, so churn (frequent thread exit)
++		// doesn't drift heap_live between GC rebaselines. Under cache_lock, which
++		// the collector also holds across its cycle, so this is serialized.
++		ld := vgc_heap.caches[idx].live_delta
++		if ld >= 0 {
++			C.vgc_atomic_add_u64(&vgc_heap.heap_live, u64(ld))
++		} else {
++			C.vgc_atomic_sub_u64(&vgc_heap.heap_live, u64(-ld))
++		}
++		C.vgc_atomic_add_u64(&vgc_heap.total_alloc, vgc_heap.caches[idx].alloc_delta)
++		vgc_heap.caches[idx].live_delta = 0
++		vgc_heap.caches[idx].alloc_delta = 0
 +		vgc_heap.caches[idx].registered = false
 +		vgc_heap.caches[idx].stack_lo = 0
 +		vgc_heap.caches[idx].stack_hi = 0
@@ -737,7 +761,7 @@ index d60140c..5eedd80 100644
  }
  
  fn vgc_ensure_registered() {
-@@ -258,6 +417,58 @@ fn vgc_ensure_registered() {
+@@ -258,6 +441,58 @@ fn vgc_ensure_registered() {
  	}
  }
  
@@ -796,7 +820,7 @@ index d60140c..5eedd80 100644
  fn vgc_refresh_stack_range() {
  	cache_idx := C.vgc_get_cache_idx()
  	if cache_idx < 0 {
-@@ -300,7 +511,11 @@ fn vgc_get_free_span(npages u32) &VGC_Span {
+@@ -300,7 +535,11 @@ fn vgc_get_free_span(npages u32) &VGC_Span {
  			vgc_heap.free_spans[npages] = span.next
  			span.next = nil
  			span.prev = nil
@@ -809,7 +833,7 @@ index d60140c..5eedd80 100644
  		}
  		C.vgc_mutex_unlock(&vgc_heap.free_spans_lock)
  		return span
-@@ -315,31 +530,40 @@ fn vgc_put_free_span(mut span VGC_Span) {
+@@ -315,31 +554,40 @@ fn vgc_put_free_span(mut span VGC_Span) {
  	if npages == 0 || npages >= 32 {
  		return
  	}
@@ -864,7 +888,7 @@ index d60140c..5eedd80 100644
  }
  
  // Allocate a new span with the given number of pages
-@@ -347,6 +571,12 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
+@@ -347,6 +595,12 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
  	// First try to reuse a free span
  	recycled := vgc_get_free_span(npages)
  	if recycled != unsafe { nil } {
@@ -877,7 +901,7 @@ index d60140c..5eedd80 100644
  		return recycled
  	}
  
-@@ -410,7 +640,14 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
+@@ -410,7 +664,14 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
  		C.memset(span, 0, sizeof(VGC_Span))
  		span.base = base
  		span.npages = npages
@@ -893,7 +917,7 @@ index d60140c..5eedd80 100644
  	}
  	// Register span in arena's page map
  	if arena_idx >= 0 {
-@@ -425,13 +662,19 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
+@@ -425,13 +686,19 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
  		}
  	}
  
@@ -911,15 +935,15 @@ index d60140c..5eedd80 100644
 +		C.vgc_say(0xDEAD, u64(vgc_heap.nspans)) // span registry full — raise cap / make dynamic
 +		C.vgc_mutex_unlock(&vgc_heap.lock)
 +		C.abort()
-+	}
+ 	}
 +	unsafe {
 +		vgc_heap.allspans[vgc_heap.nspans] = span
- 	}
++	}
 +	vgc_heap.nspans++
  
  	C.vgc_mutex_unlock(&vgc_heap.lock)
  	return span
-@@ -451,16 +694,22 @@ fn vgc_span_init(mut span VGC_Span, class_idx u8, noscan bool) {
+@@ -451,16 +718,22 @@ fn vgc_span_init(mut span VGC_Span, class_idx u8, noscan bool) {
  	span.free_index = 0
  	span.alloc_count = 0
  
@@ -951,7 +975,7 @@ index d60140c..5eedd80 100644
  }
  
  // Find a free slot in a span and allocate it
-@@ -530,6 +779,10 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
+@@ -530,6 +803,10 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
  		unsafe {
  			span.next = nil
  			span.prev = nil
@@ -962,7 +986,7 @@ index d60140c..5eedd80 100644
  		}
  		C.vgc_mutex_unlock(&central.lock)
  		return span
-@@ -548,6 +801,8 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
+@@ -548,6 +825,8 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
  	unsafe {
  		vgc_span_init(mut new_span, class_idx, noscan)
  	}
@@ -971,7 +995,7 @@ index d60140c..5eedd80 100644
  
  	return new_span
  }
-@@ -570,6 +825,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
+@@ -570,6 +849,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
  		}
  		unsafe {
  			vgc_heap.central[span_class].partial = span
@@ -979,7 +1003,7 @@ index d60140c..5eedd80 100644
  		}
  	} else {
  		// Full - add to full list
-@@ -584,6 +840,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
+@@ -584,6 +864,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
  		}
  		unsafe {
  			vgc_heap.central[span_class].full = span
@@ -987,7 +1011,7 @@ index d60140c..5eedd80 100644
  		}
  	}
  
-@@ -653,9 +910,20 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+@@ -653,9 +934,20 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
  	}
  
  	span_class := int(class_idx) * 2 // scan variant
@@ -1010,7 +1034,19 @@ index d60140c..5eedd80 100644
  	}
  
  	// Set precise pointer map on span (first typed allocation wins)
-@@ -683,13 +951,75 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+@@ -669,9 +961,8 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+ 
+ 	ptr := unsafe { vgc_span_alloc_obj(mut span) }
+ 	if ptr != unsafe { nil } {
+-		// Track actual object bytes, not page bytes
+-		C.vgc_atomic_add_u64(&vgc_heap.heap_live, u64(span.elem_size))
+-		C.vgc_atomic_add_u64(&vgc_heap.total_alloc, u64(n))
++		// Track actual object bytes, not page bytes (per-thread; see vgc_acct_alloc)
++		vgc_acct_alloc(cache_idx, u64(span.elem_size), u64(n))
+ 		if zero_fill {
+ 			unsafe { C.memset(ptr, 0, n) }
+ 		}
+@@ -683,13 +974,124 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
  	return ptr
  }
  
@@ -1057,6 +1093,55 @@ index d60140c..5eedd80 100644
 +	return unsafe { nil } // genuine OOM after reclaim
 +}
 +
++// Per-thread heap-accounting flush threshold: a thread folds its private
++// live_delta/alloc_delta into the global counters once its net work crosses this
++// many bytes. Bounds global-counter staleness to ~vgc_acct_flush * nthreads while
++// keeping the alloc/free fast path off the shared cacheline. 1 MB is well under
++// the 256 MB GC goal, so the pacer trigger lags negligibly.
++const vgc_acct_flush = u64(1) << 20
++
++// Hot-path allocation accounting. Bumps THIS thread's private deltas; flushes to
++// the global heap_live/total_alloc only every ~vgc_acct_flush of total alloc (so
++// it flushes periodically even when live_delta oscillates near zero under balanced
++// alloc/free). cache_idx is the caller's own slot, so the writes are race-free.
++@[inline]
++fn vgc_acct_alloc(cache_idx int, live_sz u64, total_n u64) {
++	unsafe {
++		vgc_heap.caches[cache_idx].live_delta += i64(live_sz)
++		vgc_heap.caches[cache_idx].alloc_delta += total_n
++		if vgc_heap.caches[cache_idx].alloc_delta >= vgc_acct_flush {
++			ld := vgc_heap.caches[cache_idx].live_delta
++			if ld >= 0 {
++				C.vgc_atomic_add_u64(&vgc_heap.heap_live, u64(ld))
++			} else {
++				C.vgc_atomic_sub_u64(&vgc_heap.heap_live, u64(-ld))
++			}
++			C.vgc_atomic_add_u64(&vgc_heap.total_alloc, vgc_heap.caches[cache_idx].alloc_delta)
++			vgc_heap.caches[cache_idx].live_delta = 0
++			vgc_heap.caches[cache_idx].alloc_delta = 0
++		}
++	}
++}
++
++// Hot-path free accounting. Decrements the CALLING thread's private live_delta
++// (a cross-thread free legitimately drives this negative; the global stays correct
++// after aggregation). Falls back to the global atomic for an unregistered thread.
++@[inline]
++fn vgc_acct_free(sz u64) {
++	idx := C.vgc_get_cache_idx()
++	if idx < 0 {
++		C.vgc_atomic_sub_u64(&vgc_heap.heap_live, sz)
++		return
++	}
++	unsafe {
++		vgc_heap.caches[idx].live_delta -= i64(sz)
++		if vgc_heap.caches[idx].live_delta <= -i64(vgc_acct_flush) {
++			C.vgc_atomic_sub_u64(&vgc_heap.heap_live, u64(-vgc_heap.caches[idx].live_delta))
++			vgc_heap.caches[idx].live_delta = 0
++		}
++	}
++}
++
  // Amortized GC trigger check - avoids atomic loads on every allocation
  fn vgc_maybe_gc() {
 +	if vgc_said_pace == 0 { // diagnostic one-shot (benign race ok)
@@ -1087,7 +1172,27 @@ index d60140c..5eedd80 100644
  		}
  		if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
  			vgc_safepoint()
-@@ -764,9 +1094,15 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+@@ -738,7 +1140,9 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+ 					vgc_heap.caches[cache_idx].tiny_offset = off + n
+ 					vgc_heap.caches[cache_idx].tiny_allocs++
+ 				}
+-				C.vgc_atomic_add_u64(&vgc_heap.total_alloc, u64(n))
++				// tiny-block reuse: bytes already counted live at span alloc, so
++				// only the total-alloc stat is bumped (per-thread).
++				vgc_acct_alloc(cache_idx, 0, u64(n))
+ 				return ptr
+ 			}
+ 		}
+@@ -756,23 +1160,27 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+ 					vgc_heap.caches[cache_idx].tiny_offset = n
+ 					vgc_heap.caches[cache_idx].tiny_allocs++
+ 				}
+-				C.vgc_atomic_add_u64(&vgc_heap.heap_live, u64(span.elem_size))
+-				C.vgc_atomic_add_u64(&vgc_heap.total_alloc, u64(n))
++				vgc_acct_alloc(cache_idx, u64(span.elem_size), u64(n))
+ 				return ptr
+ 			}
+ 		}
  	}
  
  	span_class := int(class_idx) * 2 + 1 // noscan variant
@@ -1105,7 +1210,14 @@ index d60140c..5eedd80 100644
  	}
  
  	ptr := unsafe { vgc_span_alloc_obj(mut span) }
-@@ -783,9 +1119,19 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+ 	if ptr != unsafe { nil } {
+-		C.vgc_atomic_add_u64(&vgc_heap.heap_live, u64(span.elem_size))
+-		C.vgc_atomic_add_u64(&vgc_heap.total_alloc, u64(n))
++		vgc_acct_alloc(cache_idx, u64(span.elem_size), u64(n))
+ 		if zero_fill {
+ 			unsafe { C.memset(ptr, 0, n) }
+ 		}
+@@ -783,9 +1191,19 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
  // Allocate a large object (> 32KB) with its own span
  fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
  	npages := u32((n + vgc_page_size - 1) / vgc_page_size)
@@ -1127,7 +1239,7 @@ index d60140c..5eedd80 100644
  	}
  
  	unsafe {
-@@ -795,15 +1141,14 @@ fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
+@@ -795,15 +1213,14 @@ fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
  		span.nelems = 1
  		span.alloc_count = 1
  
@@ -1151,10 +1263,16 @@ index d60140c..5eedd80 100644
  	}
  	// Add to large allocation list
  	C.vgc_mutex_lock(&vgc_heap.lock)
-@@ -887,6 +1232,237 @@ fn vgc_free(ptr voidptr) {
- 	}
- }
- 
+@@ -882,9 +1299,240 @@ fn vgc_free(ptr voidptr) {
+ 					span.free_index = obj_idx
+ 				}
+ 			}
+-			C.vgc_atomic_sub_u64(&vgc_heap.heap_live, u64(span.elem_size))
++			vgc_acct_free(u64(span.elem_size))
++		}
++	}
++}
++
 +// DIAGNOSTIC: report allocation state of an address. Returns a packed status:
 +// 0 = no span (not a vgc heap ptr); else bit0=alloc_bit_set, bit1=span.in_use,
 +// and the high bits carry alloc_count (for the residual live-object-sweep probe).
@@ -1347,8 +1465,8 @@ index d60140c..5eedd80 100644
 +		}
 +		if span.noscan {
 +			v |= 32 // bit5: span is noscan (would never be scanned for outgoing ptrs)
-+		}
-+	}
+ 		}
+ 	}
 +	// bit4: does w pass vgc_shade's FAST-REJECT arena-bounds gate? vgc_shade
 +	// returns immediately (never marks) if this fails — yet find_span (bit0) and
 +	// sweep use the independent addr_map. A bit0=1,bit4=0 stage = the smoking gun:
@@ -1384,12 +1502,10 @@ index d60140c..5eedd80 100644
 +@[markused]
 +fn vgc_arena_hi_report() u64 {
 +	return u64(vgc_arena_hi)
-+}
-+
+ }
+ 
  // Calloc (zero-initialized allocation)
- fn vgc_calloc(n usize) voidptr {
- 	return vgc_malloc(n) // vgc_malloc already zeroes memory
-@@ -937,14 +1513,35 @@ fn vgc_memdup_noscan(src voidptr, n isize) voidptr {
+@@ -937,14 +1585,35 @@ fn vgc_memdup_noscan(src voidptr, n isize) voidptr {
  
  fn vgc_find_span(ptr voidptr) &VGC_Span {
  	addr := usize(ptr)
@@ -1431,7 +1547,7 @@ index d60140c..5eedd80 100644
  	page_idx := (addr - a.base) / vgc_page_size
  	if page_idx < vgc_pages_per_arena {
  		return a.page_span[page_idx]
-@@ -975,22 +1572,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
+@@ -975,22 +1644,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
  	return addr >= a.base && addr < a.base + a.used
  }
  
@@ -1463,7 +1579,7 @@ index d60140c..5eedd80 100644
 -	C.vgc_atomic_store_u32(&vgc_heap.caches[cache_idx].stopped, 0)
  }
 diff --git a/vlib/builtin/vgc_gc_d_vgc.c.v b/vlib/builtin/vgc_gc_d_vgc.c.v
-index d2369d7..091f314 100644
+index d2369d7..055c457 100644
 --- a/vlib/builtin/vgc_gc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_gc_d_vgc.c.v
 @@ -11,7 +11,11 @@ module builtin
@@ -1637,7 +1753,26 @@ index d2369d7..091f314 100644
  
  	// Disable write barrier
  	C.vgc_atomic_store_u32(&vgc_heap.wb_enabled, 0)
-@@ -81,15 +173,78 @@ fn vgc_gc_start() {
+@@ -71,7 +163,17 @@ fn vgc_gc_start() {
+ 	// Compute live bytes from mark bits
+ 	marked := vgc_count_marked()
+ 	C.vgc_atomic_store_u64(&vgc_heap.heap_marked, marked)
+-	// Reset heap_live to match what we actually found alive
++	// Reset heap_live to match what we actually found alive. The per-thread
++	// live_delta/alloc_delta (un-flushed accounting) are now stale — `marked` is
++	// the true live set — so flush each thread's total-alloc stat and zero both
++	// deltas. Safe: the world is stopped, so no mutator is mid-update.
++	for ci in 0 .. vgc_heap.ncaches {
++		unsafe {
++			vgc_heap.total_alloc += vgc_heap.caches[ci].alloc_delta
++			vgc_heap.caches[ci].alloc_delta = 0
++			vgc_heap.caches[ci].live_delta = 0
++		}
++	}
+ 	C.vgc_atomic_store_u64(&vgc_heap.heap_live, marked)
+ 
+ 	// === Phase 4: Sweep ===
+@@ -81,15 +183,78 @@ fn vgc_gc_start() {
  	C.vgc_atomic_store_u32(&vgc_heap.gc_phase, vgc_phase_sweep)
  
  	// Sweep synchronously - it's fast and avoids race conditions
@@ -1716,7 +1851,7 @@ index d2369d7..091f314 100644
  // ============================================================
  // Mark phase (translated from Go's mgcmark.go)
  // ============================================================
-@@ -111,7 +266,63 @@ fn vgc_clear_mark_bits() {
+@@ -111,7 +276,63 @@ fn vgc_clear_mark_bits() {
  // Conservative root scanning: scan thread stacks and look for pointers into the heap.
  // Translated from Go's markroot() / scanblock() - but using conservative scanning
  // since V compiles to C and we don't have precise type info at runtime.
@@ -1780,7 +1915,7 @@ index d2369d7..091f314 100644
  	// Scan each registered thread's stack
  	for i in 0 .. vgc_heap.ncaches {
  		cache := unsafe { &vgc_heap.caches[i] }
-@@ -120,6 +331,11 @@ fn vgc_mark_roots() {
+@@ -120,6 +341,11 @@ fn vgc_mark_roots() {
  		}
  		if cache.stack_lo > 0 && cache.stack_hi > 0 && cache.stack_hi > cache.stack_lo {
  			vgc_scan_range(cache.stack_lo, cache.stack_hi)
@@ -1792,7 +1927,7 @@ index d2369d7..091f314 100644
  		}
  	}
  }
-@@ -158,6 +374,10 @@ fn vgc_shade(addr usize) {
+@@ -158,6 +384,10 @@ fn vgc_shade(addr usize) {
  	if obj_idx >= span.nelems {
  		return
  	}
@@ -1803,7 +1938,7 @@ index d2369d7..091f314 100644
  	// Check if object is allocated
  	if span.alloc_bits == unsafe { nil } || C.vgc_bitmap_get(span.alloc_bits, obj_idx) == 0 {
  		return
-@@ -177,12 +397,13 @@ fn vgc_shade(addr usize) {
+@@ -177,12 +407,13 @@ fn vgc_shade(addr usize) {
  // Parallel mark using OS threads.
  // Translated from Go's gcDrain() with multiple workers.
  fn vgc_parallel_mark() {
@@ -1823,7 +1958,7 @@ index d2369d7..091f314 100644
  	vgc_heap.gc_nworkers = nworkers
  	C.vgc_atomic_store_u32(&vgc_heap.gc_workers_done, 0)
  
-@@ -440,11 +661,32 @@ fn vgc_sweep_span(span &VGC_Span) {
+@@ -440,11 +671,32 @@ fn vgc_sweep_span(span &VGC_Span) {
  	mut freed := u32(0)
  	mut new_free_index := span.nelems // will be set to lowest freed index
  
@@ -1856,7 +1991,7 @@ index d2369d7..091f314 100644
  		if garbage != 0 {
  			freed += u32(C.vgc_popcount8(garbage))
  			// Clear the garbage bits from alloc bitmap
-@@ -468,9 +710,41 @@ fn vgc_sweep_span(span &VGC_Span) {
+@@ -468,9 +720,41 @@ fn vgc_sweep_span(span &VGC_Span) {
  		}
  	}
  
