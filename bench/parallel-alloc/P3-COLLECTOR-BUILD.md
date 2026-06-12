@@ -575,26 +575,62 @@ permanent arena leak (the unbounded RSS).
   ~2–7 s, RSS ~1.5–2.3 GB. Steady `20000 6 0` PASS. Canonical `100 1 30` ~7 s / 1.5 GB
   (was 95 s / 6.7 GB).
 
-**⚠ NOT YET CORRECT UNDER CHURN — the perf fix EXPOSED a pre-existing reclamation race.**
-Canonical `100 1 30` now fails **~1/15** with `G-CHURN FAIL: ~2100 corruption events`
+**⚠ THE PERF FIX EXPOSED A PRE-EXISTING RECLAMATION RACE — ✅ NOW ROOT-CAUSED + FIXED
+(bare `thread_suspend` was async; stop-settle added — see the next section).** The
+discovery narrative follows.
+Canonical `100 1 30` failed **~1/30** with `G-CHURN FAIL: ~2100 corruption events`
 (a live anchor/blocked node reclaimed → reused → checksum clobbered). This is NOT a
 new bug: with the old reuse-leak, a wrongly-swept live object's memory was never
 recycled, so the corruption was **invisible** — the prior "12/12 clean" (and the B2 /
 bug#2 / bug#3 "workload clean" milestones) were artifacts of non-reuse. Enabling reuse
 makes the latent **root-scan/mark MISS under thread churn** visible. Ruled out: NOT a
 work-queue overflow drop (the queue grows dynamically, only drops on OOM). It is the
-documented register/stack root-capture-under-churn wall (suspected: a churning or
-sleeping thread's stack bounds / register capture occasionally misses a root). This is
-the multi-week collector-correctness work, now sharply isolated: **the collector is
-not sound under thread churn; the leak was hiding it.** Diagnostic `-d vgc_stats`
+documented register/stack root-capture-under-churn wall. Diagnostic `-d vgc_stats`
 scaffolding was added then REMOVED; only the functional fixes remain in the patch.
+
+### CHURN RECLAMATION RACE ROOT-CAUSED + FIXED 2026-06-12 — bare `thread_suspend()` is async (stop-settle added)
+
+The exposed reclamation race was a **stop-the-world suspend race**, not a mark/sweep
+logic bug. `vgc_suspend_thread` was a bare `thread_suspend((thread_act_t)t)`. On macOS
+`thread_suspend` only increments the suspend count; if the target mutator is running on
+another core it is **not necessarily descheduled by the time the call returns**. The
+collector then calls `thread_get_state` to read the thread's SP for root scanning — and
+can observe a **still-advancing or stale frame**. The stack range computed from that SP
+(`vgc_refresh_stack_range_for_sp` → `[sp, stack_base]`) then misses the thread's true
+(deeper) frames, so a live root spilled there is never scanned → the object is swept
+while live → reused → clobbered. Frequency matches: rare (~1/30 on `100 1 30`), churn-
+driven (more running mutators = more suspend races), and **perturbation-fragile** — any
+heavy instrumentation (the pin/anchor probes) shifts the scheduling enough to hide it,
+which is why it had to be reached by analysis of the known macOS pitfall, not by a
+catch. (The pin-probe "head unmarked" catches were all **post-exit false positives**:
+the anchor verifies for ~0.8 s then returns, after which `head` is out of scope and its
+nodes are legitimately dead/unmarked.)
+
+**FIX (`vgc_platform.h` `vgc_suspend_thread`):** after `thread_suspend`, spin-read
+`thread_get_state` until the register state is **STABLE** (two consecutive reads agree
+on SP **and** PC) — i.e. the thread is genuinely off-CPU and its frame is frozen — before
+returning. Capped at 200k iterations as a backstop. Only runs during STW; for an
+already-stopped (syscall-blocked) thread it returns after 2 reads. This is the standard
+macOS requirement for STW collectors / crash handlers (thread_suspend is advisory until
+the thread is confirmed stopped).
+
+**VALIDATION (cleaned build, `-gc vgc -prod`, 12-core M-series):** with the settle,
+`g_churn 100 1 30` = **140/140 PASS**, `200 1 50` = 25/25, `100 2 40` = 25/25, `min_wg
+0 60` clean — **190/190** vs the pre-settle ~1/30 corrupt rate (P(all clean by luck if
+unfixed) ≈ 0.3%). The collector is now correct under thread churn AND fast (the §6
+Phase-3 perf gate + the canonical correctness battery are green); remaining for the
+full gate = the broader §7 battery (G-SAN/G-LEAK/G-FUZZ) + R2/R2s MP-scaling.
+
+NOTE the platform tie-in: this is darwin/mach-specific. The Linux backstop port must
+apply the equivalent settle for its signal-suspend mechanism (the suspended thread must
+acknowledge before its `ucontext` SP is trusted).
 
 ## Reproduce
 
 ```
 cd /Users/ep/git-repos/cx/vlang-v-latest
 ./v2 -gc vgc -prod -o g_churn g_churn.v   # v2 = compiler rebuilt from the working tree
-./g_churn 100 1 30   # ~7s PASS, but ~1/15 G-CHURN FAIL (the exposed churn race)
+./g_churn 100 1 30   # ~7s PASS (190/190 clean with the suspend-settle)
 ./g_churn 200 1 50   # PASS (was rc=142 timeout); 100 2 40, min_wg 0 60 likewise
 # rebuild stats build for diagnosis: ./v2 -gc vgc -prod -d vgc_stats -o gs g_churn.v
 # --- historical (pre-perf-followon) ---

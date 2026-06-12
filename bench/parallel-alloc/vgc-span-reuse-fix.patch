@@ -1,5 +1,5 @@
 diff --git a/thirdparty/vgc/vgc_platform.h b/thirdparty/vgc/vgc_platform.h
-index 12b69a1..1bd8078 100644
+index 12b69a1..868157b 100644
 --- a/thirdparty/vgc/vgc_platform.h
 +++ b/thirdparty/vgc/vgc_platform.h
 @@ -7,6 +7,48 @@
@@ -69,7 +69,7 @@ index 12b69a1..1bd8078 100644
  
  // Maps (address >> 30) -> arena_index+1 (0 = not mapped)
  static uint16_t vgc_addr_map[VGC_ADDR_MAP_SIZE];
-@@ -382,4 +431,183 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
+@@ -382,4 +431,214 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
  }
  #endif
  
@@ -151,7 +151,38 @@ index 12b69a1..1bd8078 100644
 +  static inline uint32_t vgc_thread_self_port(void) {
 +      return (uint32_t)pthread_mach_thread_np(pthread_self());
 +  }
-+  static inline void vgc_suspend_thread(uint32_t t) { thread_suspend((thread_act_t)t); }
++  // thread_suspend() increments the suspend count but is ASYNCHRONOUS: if the target
++  // is running on another core it is not necessarily descheduled by the time this
++  // returns, and a subsequent thread_get_state() can observe a still-advancing /
++  // stale frame -> the stack range computed from that SP misses the thread's true
++  // (deeper) frames -> a live root there is not scanned -> swept while live. So after
++  // suspending, spin-read the register state until it is STABLE (two consecutive
++  // reads agree on SP+PC), which means the thread is genuinely off-CPU and its frame
++  // is frozen for the upcoming root scan.
++  static inline void vgc_suspend_thread(uint32_t t) {
++      if (thread_suspend((thread_act_t)t) != KERN_SUCCESS) return;
++      uintptr_t prev_sp = 0, prev_pc = 0;
++      for (int i = 0; i < 200000; i++) {
++        #if defined(__arm64__) || defined(__aarch64__)
++          arm_thread_state64_t st;
++          mach_msg_type_number_t n = ARM_THREAD_STATE64_COUNT;
++          if (thread_get_state((thread_act_t)t, ARM_THREAD_STATE64, (thread_state_t)&st, &n) != KERN_SUCCESS) return;
++          uintptr_t sp = (uintptr_t)arm_thread_state64_get_sp(st);
++          uintptr_t pc = (uintptr_t)arm_thread_state64_get_pc(st);
++        #elif defined(__x86_64__)
++          x86_thread_state64_t st;
++          mach_msg_type_number_t n = x86_THREAD_STATE64_COUNT;
++          if (thread_get_state((thread_act_t)t, x86_THREAD_STATE64, (thread_state_t)&st, &n) != KERN_SUCCESS) return;
++          uintptr_t sp = (uintptr_t)st.__rsp;
++          uintptr_t pc = (uintptr_t)st.__rip;
++        #else
++          return;
++        #endif
++          if (i > 0 && sp == prev_sp && pc == prev_pc) return; // frozen => stopped
++          prev_sp = sp;
++          prev_pc = pc;
++      }
++  }
 +  static inline void vgc_resume_thread(uint32_t t) { thread_resume((thread_act_t)t); }
 +  // Fill *sp_out + up to `max` callee/general register values; return count.
 +  static inline int vgc_thread_regs(uint32_t t, uintptr_t* sp_out, uintptr_t* regs, int max) {
