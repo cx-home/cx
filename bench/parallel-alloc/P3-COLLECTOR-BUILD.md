@@ -130,8 +130,42 @@ heavy spawn/done churn); it only surfaces once bug A is fixed and GC runs.
 
 The diagnostic instrumentation lives uncommitted in the clone working tree
 (`thirdparty/vgc/vgc_platform.h` trace ring + handler; `vgc_d_vgc.c.v` /
-`vgc_gc_d_vgc.c.v` trace calls + pacer self-heal; `g_churn.v` `vgc_trace_init()`
-in main). Reproduce: `./v -gc vgc -prod -o g_churn_trace g_churn.v && ./g_churn_trace 100 1 30`.
+`vgc_gc_d_vgc.c.v` trace calls; `g_churn.v` `vgc_trace_init()` in main).
+Reproduce: `./v -gc vgc -prod -o g_churn_trace g_churn.v && ./g_churn_trace 100 1 30`.
+
+### UPDATE — bug A pinned exactly + FIXED; bug B now active (2026-06-11)
+
+An immediate (non-ring) probe `vgc_say(tag, gc_enabled)` settled the mechanism:
+`tag=1` (right after `vgc_init` sets it) = **1**; `tag=2` (first allocation's
+pacer call) = **0**. So `vgc_init`'s write is fine, but something between init and
+`main__main` zeroes it — **`_vinit()`**. Crucially, V emits the global
+zero-initializer for `vgc_heap` *regardless of the source initializer*: with
+`__global vgc_heap = VGC_Heap{}` it's `vgc_heap = (VGC_Heap){…}`; with a no-init
+`__global` it's `vgc_heap = *(VGC_Heap*)&((VGC_Heap[]){{…}}[0])` — **either way a
+full zeroing assignment runs inside `_vinit`** (this is why proposed fix (b),
+"remove the initializer", CANNOT work — you can't stop V zero-initing a global in
+`_vinit`).
+
+**Fix (a), applied + verified:** move `builtin__vgc_init()` to *after* `_vinit()`
+in `cmain.v` (all three main variants — normal, sokol/android, tests). Patch:
+`bench/parallel-alloc/vgc-init-ordering-fix.patch`. After rebuilding the compiler,
+the generated `main()` is `_vinit(); builtin__vgc_init(); main__main();`, RSS drops
+**6.6GB → 2.05GB**, and the failure mode advances to **bug B** (the waitgroup
+panic) — i.e. GC is no longer disabled. *Caveat:* `_vinit` itself allocates once
+before `vgc_init` now (the `tag=2`-before-`tag=1` ordering), so those early allocs
+run pre-allocator-init (degraded to the large-alloc path; harmless here). A
+cleaner refinement is to split `vgc_init` into an **early** part (size tables +
+allocator + main-thread registration, before `_vinit`) and a **late** part
+(`gc_enabled`/`next_gc`/`gc_phase`, after `_vinit` so they survive the zero-init).
+
+**Bug B (now the active failure):** `V panic: Negative number of jobs in
+waitgroup` (`main__churn+408`) under thread churn — a `sync.WaitGroup` counter
+underflow/corruption. Next: re-run the trace (GC cycles should now appear once a
+run survives long enough), and determine whether B is (i) a GC issue (the
+waitgroup or its backing struct collected/corrupted) or (ii) a V `sync.WaitGroup`
+race independent of the collector (test under `-gc none`/`-gc boehm` churn). The
+earlier `df8943dc` framing ("remove the clobber") is superseded by this: the clobber
+is real but unremovable at source; the fix is the `cmain.v` ordering.
 
 ## Reproduce
 
