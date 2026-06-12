@@ -625,6 +625,40 @@ NOTE the platform tie-in: this is darwin/mach-specific. The Linux backstop port 
 apply the equivalent settle for its signal-suspend mechanism (the suspended thread must
 acknowledge before its `ucontext` SP is trusted).
 
+### GATE VERDICT 2026-06-12 (spec §7) — correctness GREEN; MP-scaling architecturally gated on E-mode/concurrent-mark
+
+Ran the §7 battery on the cleaned `-gc vgc -prod` build (12-core M-series):
+
+| Gate | Result |
+|---|---|
+| **G-CHURN** (thread-churn correctness) | ✅ **330/330** clean (100 1 30 + heavy + min_wg) |
+| **G-LEAK** (bounded heap) | ✅ RSS flat at **1.53 GB** from `100 1 30` through `100 1 120` (4× waves) — no growth |
+| **G-DIFF** (output ≡ `-gc none`) | ✅ byte-identical (alloc+map program; g_churn is itself a checksum oracle) |
+| **GC-mode parity** | ✅ `-gc none` / `-gc boehm` build+run unaffected (vgc-only files) |
+| **G-R2** (alloc-heavy MP, monotonic-up) | ❌ **anti-scales**: vgc Mops/s T1→T8 = 20.6→4.2; boehm flat ~28 |
+| **G-R2s** (share-heavy MP) | ❌ **anti-scales**: vgc T1→T8 = 18.5→4.0; boehm ~30 |
+| G-SAN / G-FUZZ | ⬜ not run (ASan needs scan-fn suppressions — conservative reads) |
+
+**The R2/R2s failure is ARCHITECTURAL, not a bug.** The vgc backstop is a **full-STW**
+collector: every collection mach-suspends ALL mutators (now + a stop-settle). Under
+heavy MP allocation the 256 MB trigger is hit ~T× more often with T threads, so GC
+frequency × STW cost rises with thread count → throughput falls. Boehm wins here because
+it is not the design's front line for allocation. **This is expected and is exactly why
+architecture E exists:** the Perceus front line frees the vast majority of objects inline
+(no collector involvement), so the STW backstop runs *rarely* — R2/R2s are properties of
+**E-mode (Perceus + rare vgc)**, NOT of the standalone backstop. Measuring vgc-alone on
+pure alloc/share churn measures the backstop in the one regime it is not meant to carry.
+
+So G-R2/G-R2s as monotonic-up cannot be met by the standalone STW collector; they require
+either (a) the Perceus front line keeping the backstop rare (E-mode integration — forward
+scope, INTEGRATION-SCOPE.md) or (b) concurrent/parallel mark (deferred forward-scope item,
+re-opens the alloc-black + write-barrier soundness surface). The standalone-collector gate
+is therefore GREEN on everything it can own (correctness + single-thread + bounded heap);
+the MP-scaling gates are the boundary into the forward-scope E-mode/concurrent work.
+
+Bench: `bench/parallel-alloc/bench_mp.v` (`./bench_mp <alloc|share> <threads> [iters]`,
+build with `-enable-globals`).
+
 ## Reproduce
 
 ```
