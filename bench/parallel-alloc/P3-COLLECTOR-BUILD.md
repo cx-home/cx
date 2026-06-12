@@ -264,16 +264,39 @@ the global add but their adjacent add to the per-wave heap object was lost — i
 3 workers' `c` pointer (delivered via the spawn arg) was wrong/stale, or those
 threads died between two adjacent statements, under heavy collection. The global
 (not passed via the arg) is unaffected; the per-wave heap object (passed via the
-arg) is corrupted. This is the SAME spawn-arg/per-thread-heap-arg-under-GC class as
-the dominant bug — the spawn-root registry cut the rate massively (min_wg 0→38/40)
-but a residual hole remains at high GC frequency. **NEXT:** find why the per-wave
-heap arg is still occasionally not preserved across the handoff under heavy GC
-(audit the spawn-root add/remove window vs the wrapper's arg deref; check whether
-`c`/the arg can be reclaimed or the arg's pointer fields corrupted during a
-collection that fires in the create→consume window despite the registry). Reliable
-repros: `g_churn 100 1 30` (~100%, with WaitGroup) and `min_atomic2 2000 400`
-(~100% under its 2 steady drivers, NO WaitGroup — cleaner). min_atomic.v (no steady
-driver, low GC) passes = the low-frequency control.
+arg) is corrupted. the spawn-root registry cut the rate massively (min_wg 0→38/40)
+but a residual hole remains at high GC frequency.
+
+**PINPOINTED 2026-06-11 (PM) via `min_atomic3.v` — the residual is a COLLECTOR
+LIVE-OBJECT RECLAMATION bug, NOT spawn-arg and NOT WaitGroup.** min_atomic3
+instruments the stall with: `g_ran`++ at worker end, `g_attempts`++ right before the
+per-wave `c.done` add, `g_wrong_c`++ if the worker's received `c` != the wave's
+expected `c`. At a stall (`min_atomic3 4000 400`):
+```
+wave 526 STALL: c.done=2 ran_delta=4 attempts_delta=4 wrong_c=0 bad_c=0x0
+```
+⇒ all 4 workers ran (ran=4), all 4 reached the add (attempts=4), all 4 had the
+CORRECT `c` pointer (wrong_c=0) — yet the per-wave HEAP `c.done` only reached 2.
+Two `atomic_fetch_add` to a correct, stable address were LOST. An atomic add cannot
+be lost unless the target memory is concurrently overwritten/reclaimed. The GLOBAL
+counters (`g_ran`,`g_attempts`) NEVER lose an increment; only the HEAP object does.
+**⇒ vgc reclaims the live, main-held per-wave heap object under heavy GC** (its span
+is swept/`vgc_os_decommit`-and-reused while live → adds land on recycled/zeroed
+memory). So a live object reachable from `main`'s stack/registers is NOT being
+marked (or is marked then wrongly swept) at high collection frequency. This is a
+**root-scan / mark / sweep correctness bug**, the genuine deeper wall — distinct
+from the spawn-arg sweep (fixed) and unrelated to sync.WaitGroup (the waitgroup
+panic was just g_churn's manifestation of the same reclaimed-counter).
+**NEXT:** instrument the collector to log, each cycle, whether the stalling `c`'s
+address is (a) in a scanned root range, (b) marked, (c) swept/decommitted — narrow
+to root-scan-miss vs mark-clear vs sweep-race. Suspects: the main thread's
+`[sp,stack_base]` range or register capture under the spin-loop; the
+mark-bits-vs-alloc-bits handoff in `vgc_sweep_span`; span decommit of a
+still-referenced span. Reliable repros (all ~100% at high GC freq, `perl -e 'alarm
+N; exec @ARGV'` for timeout): `min_atomic3 4000 400` (TIGHTEST — globals-vs-heap
+control built in, NO WaitGroup), `min_atomic2 2000 400`, `g_churn 100 1 30` (with
+WaitGroup). `min_atomic.v` (no steady driver, low GC) PASSES = low-frequency
+control.
 
 ## Reproduce
 
