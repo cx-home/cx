@@ -48,6 +48,16 @@ mut:
 	// callee absent from `escapes` is treated as fully escaping in both modes.
 	interproc bool
 	escapes   map[string][]bool
+	// Deep-drop analysis (for freeing nested heap fields of a dropped `&Foo`, not
+	// just the struct allocation). A var is deep-droppable iff it is born from a
+	// fresh `&Foo{...}` whose every heap field is freshly allocated (deep_fresh)
+	// AND no conflicting non-fresh assignment to it exists (deep_nonfresh) AND no
+	// heap field is ever selected through it (deep_field_exposed — which would mean
+	// a field buffer was read-aliased out or reassigned, making a deep free a UAF).
+	// Populated during the exhaustive pcs_scan_share pass, so it cannot miss a use.
+	deep_fresh         []string
+	deep_nonfresh      []string
+	deep_field_exposed []string
 }
 
 // PcsEscapeEnv drives the whole-program parameter-escape fixpoint. `fns` maps a
@@ -144,6 +154,68 @@ fn pcs_rhs_is_fresh_ref(rhs ast.Expr) bool {
 		return e.op == .amp && e.right is ast.StructInit
 	}
 	return false
+}
+
+// pcs_field_init_is_fresh reports whether a struct-field initializer allocates
+// FRESH memory uniquely owned by the struct (so deep-freeing it when the struct is
+// dropped is sound), vs. borrowing/aliasing external memory (ident/selector/call/
+// index — which would make a deep free a UAF on the real owner).
+fn (c &PcsCfg) pcs_field_init_is_fresh(e ast.Expr, ftyp ast.Type) bool {
+	mut ex := e
+	for ex is ast.ParExpr {
+		ex = (ex as ast.ParExpr).expr
+	}
+	return match ex {
+		ast.ArrayInit { true } // []T{...}
+		ast.MapInit { true } // {...}
+		ast.StringInterLiteral { true } // '...${x}...'
+		ast.StringLiteral { true } // literal: no owned heap buffer to alias
+		ast.IntegerLiteral, ast.FloatLiteral, ast.BoolLiteral, ast.CharLiteral { true }
+		ast.PrefixExpr { ex.op == .amp && ex.right is ast.StructInit } // &Bar{...}
+		ast.InfixExpr { ftyp == ast.string_type && ex.op == .plus } // fresh string concat
+		else { false } // ident / selector / call / index: may alias external memory
+	}
+}
+
+// pcs_struct_init_all_fields_fresh reports whether every HEAP-owning field of a
+// `&Foo{...}` is initialized with a fresh allocation, so the resulting struct
+// uniquely owns all its heap fields and deep-freeing them on drop is sound.
+fn (c &PcsCfg) pcs_struct_init_all_fields_fresh(rhs ast.Expr) bool {
+	mut e := rhs
+	for e is ast.ParExpr {
+		e = (e as ast.ParExpr).expr
+	}
+	if e !is ast.PrefixExpr {
+		return false
+	}
+	pe := e as ast.PrefixExpr
+	if pe.op != .amp || pe.right !is ast.StructInit {
+		return false
+	}
+	si := pe.right as ast.StructInit
+	if si.has_update_expr {
+		return false // `&Foo{...other}` may copy heap fields from `other` (aliased)
+	}
+	for f in si.init_fields {
+		if c.pcs_is_heap_owning(f.expected_type) {
+			if !c.pcs_field_init_is_fresh(f.expr, f.expected_type) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// pcs_deep_drop_set returns the names of dropped `&Foo` locals that are SOUND to
+// DEEP-free (free nested heap fields too). Computed from the exhaustive scan state.
+fn (c &PcsCfg) pcs_deep_drop_set() map[string]bool {
+	mut out := map[string]bool{}
+	for name in c.deep_fresh {
+		if name !in c.deep_nonfresh && name !in c.deep_field_exposed {
+			out[name] = true
+		}
+	}
+	return out
 }
 
 // pcs_is_fresh_array_call reports whether a call is a fresh-array-producing builtin
@@ -623,7 +695,19 @@ fn (mut c PcsCfg) pcs_scan_share(e ast.Expr) {
 		}
 		ast.ParExpr { c.pcs_scan_share(e.expr) }
 		ast.PostfixExpr { c.pcs_scan_share(e.expr) }
-		ast.SelectorExpr { c.pcs_scan_share(e.expr) }
+		ast.SelectorExpr {
+			// Deep-drop guard: selecting a HEAP field through a var (`p.buf`, read
+			// or write) means that field's buffer may be aliased out or reassigned,
+			// so the var is NOT safe to deep-free. (Scalar field reads like `p.a`
+			// are heap-owning=false and ignored.)
+			base := e.expr
+			if base is ast.Ident {
+				if c.pcs_is_heap_owning(e.typ) {
+					pcs_uniq_push(mut c.deep_field_exposed, base.name)
+				}
+			}
+			c.pcs_scan_share(e.expr)
+		}
 		ast.ArrayDecompose { c.pcs_scan_share(e.expr) }
 		ast.IfGuardExpr { c.pcs_scan_share(e.expr) }
 		ast.IsRefType { c.pcs_scan_share(e.expr) }
@@ -782,6 +866,21 @@ fn (mut c PcsCfg) pcs_scan_share(e ast.Expr) {
 fn (mut c PcsCfg) pcs_scan_share_stmt(st ast.Stmt) {
 	match st {
 		ast.AssignStmt {
+			// Deep-drop classification: a `name := &Foo{...}` whose every heap field
+			// is fresh makes `name` a deep-free candidate; any OTHER assignment to a
+			// name (reassignment, non-fresh init, or a field-store base) disqualifies
+			// it. (`name.f = x` has a SelectorExpr LHS → caught by deep_field_exposed
+			// in pcs_scan_share above; here we cover plain `name = ...` rebinds.)
+			if st.left.len == 1 && st.right.len == 1 {
+				l0 := st.left[0]
+				if l0 is ast.Ident {
+					if c.pcs_struct_init_all_fields_fresh(st.right[0]) {
+						pcs_uniq_push(mut c.deep_fresh, l0.name)
+					} else {
+						pcs_uniq_push(mut c.deep_nonfresh, l0.name)
+					}
+				}
+			}
 			for r in st.right {
 				c.pcs_scan_share(r)
 			}
@@ -1561,7 +1660,7 @@ pub fn compute_drop_map(fnd ast.FnDecl, mut table ast.Table) map[int][]string {
 // path-dependent leak (the failure mode of suppressing an unconditional
 // scope-exit free while only dropping on some branches). Branch/loop coverage is
 // future work, each widening separately re-gated (G-DIFF + G-LEAK).
-pub fn compute_emittable_drop_map(fnd ast.FnDecl, mut table ast.Table, escapes map[string][]bool) map[int][]string {
+pub fn compute_emittable_drop_map(fnd ast.FnDecl, mut table ast.Table, escapes map[string][]bool) (map[int][]string, map[string]bool) {
 	mut c := PcsCfg{
 		table:     table
 		interproc: true
@@ -1574,12 +1673,13 @@ pub fn compute_emittable_drop_map(fnd ast.FnDecl, mut table ast.Table, escapes m
 	// Uniqueness/aliasing classifier over the whole body. Runs AFTER lowering so
 	// `heap_vars` is populated (the assign-aliasing rule needs it). Marks shared
 	// every heap value whose buffer may be aliased/retained; only the residual
-	// (provably uniquely owned) heap locals remain drop candidates.
+	// (provably uniquely owned) heap locals remain drop candidates. The same
+	// exhaustive pass also records the deep-drop classification (see PcsCfg).
 	for st in fnd.stmts {
 		c.pcs_scan_share_stmt(st)
 	}
 	c.pcs_liveness()
-	return c.pcs_spine_drop_map()
+	return c.pcs_spine_drop_map(), c.pcs_deep_drop_set()
 }
 
 // pcs_spine_drop_map: pcs_drop_map restricted to the always-executed spine blocks

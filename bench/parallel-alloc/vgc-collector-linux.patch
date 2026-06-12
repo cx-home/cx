@@ -2082,7 +2082,7 @@ index c51a5a1..8f5bf01 100644
  
  	mut closure_var := ''
 diff --git a/vlib/v/gen/c/autofree.v b/vlib/v/gen/c/autofree.v
-index 6799cb1..22cb9bc 100644
+index 6799cb1..09971d0 100644
 --- a/vlib/v/gen/c/autofree.v
 +++ b/vlib/v/gen/c/autofree.v
 @@ -7,7 +7,13 @@ import strings
@@ -2143,7 +2143,7 @@ index 6799cb1..22cb9bc 100644
  fn (mut g Gen) autofree_variable(v ast.Var) {
  	// filter out invalid variables
  	if v.typ == 0 {
-@@ -201,8 +236,21 @@ fn (mut g Gen) autofree_variable(v ast.Var) {
+@@ -201,8 +236,37 @@ fn (mut g Gen) autofree_variable(v ast.Var) {
  	is_user_ref := v.typ.is_ptr() && sym.name.after('.')[0].is_capital()
  	// if g.pref.experimental && v.typ.is_ptr() && sym.name.after('.')[0].is_capital() {
  	if is_user_ref {
@@ -2155,19 +2155,35 @@ index 6799cb1..22cb9bc 100644
 +		// establish. So we free it whether or not `-experimental` is set; without a
 +		// proof (no Perceus, no -experimental) we still leave it to leak.
 +		if g.pref.experimental || g.perceus_dropping {
-+			// Under a tracing GC (E mode: a Perceus drop of a unique `&Foo`), the
-+			// object was allocated by the GC allocator, so it must be returned via
-+			// the GC's free (`builtin___v_free` routes to `vgc_free`), NOT libc
-+			// `free` — freeing a GC-arena pointer with libc aborts ("pointer being
-+			// freed was not allocated"). Manual / autofree-without-GC keeps libc
-+			// `free` (allocations are libc there), so the validated `-autofree` path
-+			// is byte-identical.
-+			uref_free := if g.pref.gc_mode == .vgc { 'builtin___v_free' } else { 'free' }
-+			g.autofree_var_call(uref_free, v)
++			if g.pref.gc_mode == .vgc && g.perceus_dropping && v.name in g.perceus_deep_drop {
++				// DEEP free under E: the deep-drop analysis proved this `&Foo`
++				// uniquely owns its heap fields (born fresh, no field aliased/
++				// reassigned), so cascade-free the nested heap fields via the
++				// generated `<Foo>_free` BEFORE reclaiming the struct allocation —
++				// otherwise the field buffers (e.g. a `[]u8` member) leak and drive
++				// GC pressure (R2-E-FINDINGS.md cause #2).
++				struct_typ := v.typ.set_nr_muls(0)
++				mut field_free := g.get_free_method(struct_typ)
++				if g.table.sym(struct_typ).is_builtin() {
++					field_free = 'builtin__${field_free}'
++				}
++				g.autofree_var_call(field_free, v)
++				g.autofree_var_call('builtin___v_free', v)
++			} else {
++				// Under a tracing GC (E mode: a Perceus drop of a unique `&Foo`), the
++				// object was allocated by the GC allocator, so it must be returned via
++				// the GC's free (`builtin___v_free` routes to `vgc_free`), NOT libc
++				// `free` — freeing a GC-arena pointer with libc aborts ("pointer being
++				// freed was not allocated"). Manual / autofree-without-GC keeps libc
++				// `free` (allocations are libc there), so the validated `-autofree`
++				// path is byte-identical.
++				uref_free := if g.pref.gc_mode == .vgc { 'builtin___v_free' } else { 'free' }
++				g.autofree_var_call(uref_free, v)
++			}
  		} else {
  			g.print_autofree_var(v, 'user reference type, use -experimental to autofree those')
  		}
-@@ -236,7 +284,11 @@ fn (mut g Gen) autofree_var_call(free_fn_name string, v ast.Var) {
+@@ -236,7 +300,11 @@ fn (mut g Gen) autofree_var_call(free_fn_name string, v ast.Var) {
  	}
  	mut af := strings.new_builder(128)
  	if v.typ.is_ptr() && v.typ.idx() != ast.u8_type_idx {
@@ -2181,10 +2197,10 @@ index 6799cb1..22cb9bc 100644
  		}
  		af.write_string('\t')
 diff --git a/vlib/v/gen/c/cgen.v b/vlib/v/gen/c/cgen.v
-index 084bacf..63ac43a 100644
+index 084bacf..ed1d239 100644
 --- a/vlib/v/gen/c/cgen.v
 +++ b/vlib/v/gen/c/cgen.v
-@@ -272,6 +272,13 @@ mut:
+@@ -272,6 +272,14 @@ mut:
  	arg_no_auto_deref   bool            // smartcast must not be dereferenced
  	branch_parent_pos   int             // used in BranchStmt (continue/break) for autofree stop position
  	returned_var_names  map[string]bool // to detect that vars doesn't need to be freed since it's being returned
@@ -2195,10 +2211,11 @@ index 084bacf..63ac43a 100644
 +	perceus_dropping    bool              // true only while perceus_drop() emits: authorizes freeing a proven-unique user-ref (`&Foo`) without -experimental
 +	perceus_cur_stmt_pos int             // ast.Stmt.pos.pos of the statement currently being emitted (drop-map key); lets in-place ops test "is this value dropped HERE"
 +	perceus_reused      map[int]bool      // ast.Var.pos.pos of locals whose buffer was consumed by an in-place reuse (P2) -> their Perceus drop is skipped (buffer now owned by the result)
++	perceus_deep_drop   map[string]bool   // names of dropped `&Foo` locals SOUND to DEEP-free (free nested heap fields too); see pcs_deep_drop_set
  	infix_left_var_name string          // a && if expr
  	curr_var_name       []string        // curr var name on assignment
  	called_fn_name      string
-@@ -456,6 +463,14 @@ pub fn gen(files []&ast.File, mut table ast.Table, pref_ &pref.Preferences) GenO
+@@ -456,6 +464,14 @@ pub fn gen(files []&ast.File, mut table ast.Table, pref_ &pref.Preferences) GenO
  	util.timing_measure('cgen init')
  	global_g.tests_inited = false
  	global_g.file = files.last()
@@ -2213,7 +2230,7 @@ index 084bacf..63ac43a 100644
  	if !pref_.no_parallel {
  		util.timing_start('cgen parallel processing')
  		mut pp := pool.new_pool_processor(callback: cgen_process_one_file_cb)
-@@ -1064,6 +1079,7 @@ fn cgen_process_one_file_cb(mut p pool.PoolProcessor, idx int, wid int) voidptr
+@@ -1064,6 +1080,7 @@ fn cgen_process_one_file_cb(mut p pool.PoolProcessor, idx int, wid int) voidptr
  		done_results:                       global_g.done_results
  		late_chan_types:                    global_g.late_chan_types
  		is_autofree:                        global_g.pref.autofree
@@ -2221,7 +2238,7 @@ index 084bacf..63ac43a 100644
  		obf_table:                          global_g.obf_table
  		referenced_fns:                     global_g.referenced_fns
  		is_cc_msvc:                         global_g.is_cc_msvc
-@@ -3859,8 +3875,14 @@ fn (mut g Gen) stmt(node ast.Stmt) {
+@@ -3859,8 +3876,14 @@ fn (mut g Gen) stmt(node ast.Stmt) {
  	}
  	old_inside_call := g.inside_call
  	g.inside_call = false
@@ -2236,7 +2253,7 @@ index 084bacf..63ac43a 100644
  	}
  	if !g.skip_stmt_pos {
  		g.set_current_pos_as_last_stmt_pos()
-@@ -4142,6 +4164,27 @@ fn (mut g Gen) stmt(node ast.Stmt) {
+@@ -4142,6 +4165,27 @@ fn (mut g Gen) stmt(node ast.Stmt) {
  	if !g.skip_stmt_pos { // && g.stmt_path_pos.len > 0 {
  		g.stmt_path_pos.delete_last()
  	}
@@ -2323,10 +2340,10 @@ index 7970e6a..906b81f 100644
  
  	mut before_each_fn := ''
 diff --git a/vlib/v/gen/c/fn.v b/vlib/v/gen/c/fn.v
-index 3a3f2a7..1de8620 100644
+index 3a3f2a7..ea05860 100644
 --- a/vlib/v/gen/c/fn.v
 +++ b/vlib/v/gen/c/fn.v
-@@ -1179,6 +1179,39 @@ fn (mut g Gen) gen_fn_decl(node &ast.FnDecl, skip bool) {
+@@ -1179,6 +1179,41 @@ fn (mut g Gen) gen_fn_decl(node &ast.FnDecl, skip bool) {
  	defer {
  		g.is_autofree = old_g_autofree
  	}
@@ -2340,6 +2357,7 @@ index 3a3f2a7..1de8620 100644
 +	g.perceus_drops = map[int][]string{}
 +	g.perceus_suppress = map[int]bool{}
 +	g.perceus_reused = map[int]bool{}
++	g.perceus_deep_drop = map[string]bool{}
 +	// Perceus emission is DECOUPLED from `-autofree`: it fires whenever the
 +	// `perceus` define is set, with OR without autofree mode. With autofree on
 +	// (the original validated path) the drops replace autofree's scope-exit frees
@@ -2348,7 +2366,8 @@ index 3a3f2a7..1de8620 100644
 +	// Perceus drops are the program's ONLY frees, and the suppress set is inert
 +	// because autofree emits no scope-exit frees to suppress.
 +	if g.pref.compile_defines.contains('perceus') {
-+		g.perceus_drops = compute_emittable_drop_map(*node, mut g.table, g.perceus_escapes)
++		g.perceus_drops, g.perceus_deep_drop = compute_emittable_drop_map(*node, mut g.table,
++			g.perceus_escapes)
 +		if g.perceus_drops.len > 0 {
 +			g.is_perceus = true
 +			for pos, names in g.perceus_drops {

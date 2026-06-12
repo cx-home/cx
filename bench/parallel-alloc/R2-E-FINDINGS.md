@@ -101,3 +101,40 @@ none==e 4/4.
 
 **Status:** R2 delivered. Cause #2 (deep-free of nested heap fields, A5 coverage)
 is the remaining nested-object optimization — E already beats Boehm with it open.
+
+---
+
+## ✅ FIX #2 DONE 2026-06-12 — sound Perceus deep-free of nested heap fields
+A dropped `&Foo` now cascade-frees its nested heap fields (via the generated
+`<Foo>_free`) before reclaiming the struct — but ONLY when proven sound. New
+deep-drop analysis (perceus.v, in the exhaustive `pcs_scan_share` pass so it cannot
+miss a use): a var is deep-droppable iff it is born from a fresh `&Foo{...}` whose
+every heap field is freshly allocated (`pcs_struct_init_all_fields_fresh`), has no
+conflicting non-fresh assignment, AND no heap field is ever selected through it
+(`deep_field_exposed` — a `x := p.buf` read-alias or `p.buf = ext` reassign
+disqualifies, since deep-freeing an aliased/borrowed field would UAF the real
+owner). Emitted as `<Foo>_free(p); builtin___v_free(p)` only under `-gc e`; threaded
+via `g.perceus_deep_drop`. In vgc-collector-linux.patch + the perceus.v mirror.
+
+**bench_mp alloc (nested `pad`) AFTER deep-free, Mops/s best-of-2:**
+| threads | boehm | e (before #2) | **e (after #2)** |
+|---|---|---|---|
+| 1 | 39.2 | 30.8 | 35.7 |
+| 2 | 37.4 | 51.3 | 70.2 |
+| 4 | 30.8 | 76.2 | 135.6 |
+| 8 | 29.3 | 72.4 | **266.7** |
+Deep-free closes the pad-leak GC pressure: the T8 plateau (72) becomes near-LINEAR
+(266.7, 7.5×) — **E is now 9× Boehm at T8** on the nested-object workload too.
+
+**Soundness proof (deep_free_hazard_corpus.v, loop form so drops FIRE under GC):**
+none == e, rc=0 at 2M iters/case, AND the analysis is precise — `owned_loop`
+deep-frees (1 `Box_free`), `aliased_loop` + `borrowed_loop` correctly do NOT (0) —
+so no UAF on aliased/borrowed fields. Full gates: -gc e churn 12/12; corpus G-DIFF
+none==e 5/5 (incl the deep-free hazards); flag-off byte-identical; `-autofree -d
+perceus` intact; -gc vgc baseline 6/6.
+
+**Both R2 causes now closed. E scales near-linearly and beats Boehm ~9× at T8 on
+both scalar and nested-object alloc-heavy MP.** Remaining deep-free gap (not a
+safety issue): nested `&Bar` pointer fields free Bar's fields but not the Bar
+allocation (V's auto free-methods don't recurse pointer ownership) — a leak-tightness
+follow-on, not unsound.
