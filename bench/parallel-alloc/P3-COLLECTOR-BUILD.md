@@ -518,10 +518,86 @@ no over-retention.)
   0 60. Current committed state (d57b878d): full data-segment scan — g_churn 100 1 30
   fully clean 12/12 (re-confirmed 8/8 after the revert).
 
+### PERF FOLLOW-ON 2026-06-12 — root cause was SPAN-REUSE, not the vgc_heap scan; FIXED (10–40× faster, RSS 6.7GB→1.5GB) but it EXPOSED a latent thread-churn reclamation race
+
+The "scan vgc_heap precisely / exclude its range" framing above was the WRONG
+hypothesis. Instrumenting the collector (per-cycle `marked / next_gc / narenas /
+nspans / total_alloc` + a put/get-free-span recycle histogram, all behind
+`-d vgc_stats`) showed the truth:
+
+- **`marked` ≈ 0 every cycle** (live set is tiny) — so it was NOT over-retention,
+  and the data-segment / vgc_heap scan was NOT the dominant cost.
+- **`nspans` pegged at the 16384 cap from cycle 0; `arenas` grew +2/cycle forever**
+  (RSS climbed to 6.7 GB on g_churn 100 1 30, 95 s wall). The collector reclaimed
+  everything (marked≈0) yet never REUSED a span: the recycle histogram showed
+  ~33k spans **pooled** per cycle but **`get_free_span` missed ~33k/cycle** — the
+  free-span pool filled but was never drained.
+
+**ROOT CAUSE (the real perf bug): stale mcache pointers across GC.** The collector
+sweeps ALL spans, including the one a thread has cached in `caches[i].alloc[class]`.
+Sweeping that span empty recycles it to the free-span pool (`in_use=false`,
+decommitted) **while the mcache still points at it**. `vgc_cache_get_span` then sees
+`alloc_count(0) < nelems(0)` == false, mis-treats the pooled span as "full", and the
+allocator carves a FRESH span — every cycle, forever. `nspans` then hit the silent
+`16384` cap and every span past it was untracked → never swept → never recycled →
+permanent arena leak (the unbounded RSS).
+
+**FIXES (all in `bench/parallel-alloc/vgc-span-reuse-fix.patch`; clone working tree):**
+1. `vgc_fixup_caches()` — after sweep, while the world is stopped, null every mcache
+   slot whose cached span sweep recycled (`!in_use`) + drop the tiny cursor. Threads
+   refill cleanly from central/pool. **This alone made spans/arenas STABLE** (66k /
+   9 arenas on 100 1 30, vs unbounded).
+2. **`sweep_gen` guard + deferred `in_use`** — span reuse exposed a span-init-vs-sweep
+   race: a mutator suspended mid-`vgc_span_init` (mark_bits just mmap'd, `alloc_count`
+   still 0, span already in `allspans`) was swept as "empty" → its `mark_bits` freed +
+   pages decommitted → resume → memset faults. Fix: `in_use` is now the
+   "fully-initialized" flag (span_alloc/get_free_span leave it false; span_init /
+   alloc_large set it true at the end → the collector skips half-built spans), AND a
+   span stamped `sweep_gen = gc_cycle` at acquisition is never empty-reclaimed in that
+   same cycle (covers the post-init / pre-first-alloc window).
+3. **Inline bitmaps + no per-pool decommit** — reuse made the per-span bitmap
+   `mmap`/`munmap` (each ~128-byte bitmap rounded to a 16 KB page; munmap = cross-core
+   TLB shootdowns) + data-page decommit/recommit dominate wall-clock (**193 s sys**).
+   Bitmaps are now INLINE in `VGC_Span` (`alloc_buf`/`mark_buf [136]u8`; max nobjs=1024
+   → 128 B), and `put_free_span` keeps pages committed. Reuse is pure pointer ops +
+   a memset. Removed ~2.1 GB (bitmaps) + ~190 s sys.
+4. `allspans` cap 16384 → 262144 (now load-bearing: reuse + the sweep_gen one-cycle
+   grace push the live span count to ~66k; 16384 would silently leak). Exceeding it is
+   now a LOUD `abort()`, not a silent drop. (TODO: make `allspans` dynamically grown.)
+5. **The vgc_heap exclusion is UNSAFE — do NOT apply it.** Excluding vgc_heap from the
+   data-segment scan reproducibly corrupts: vgc_heap's per-thread caches (tiny cursor /
+   in-flight mcache spans) conservatively root objects the stack+register scan does not
+   fully cover under thread churn. Isolation: full scan = 8/8 clean; exclusion = ~1/3
+   FAIL. Reverted; the full scan is cheap now that spans are bounded.
+
+**RESULT (12-core M-series, `-gc vgc -prod`):**
+- g_churn `200 1 50`, `100 2 40`, min_wg `0 60` — all **PASS** (were rc=142 TIMEOUT);
+  ~2–7 s, RSS ~1.5–2.3 GB. Steady `20000 6 0` PASS. Canonical `100 1 30` ~7 s / 1.5 GB
+  (was 95 s / 6.7 GB).
+
+**⚠ NOT YET CORRECT UNDER CHURN — the perf fix EXPOSED a pre-existing reclamation race.**
+Canonical `100 1 30` now fails **~1/15** with `G-CHURN FAIL: ~2100 corruption events`
+(a live anchor/blocked node reclaimed → reused → checksum clobbered). This is NOT a
+new bug: with the old reuse-leak, a wrongly-swept live object's memory was never
+recycled, so the corruption was **invisible** — the prior "12/12 clean" (and the B2 /
+bug#2 / bug#3 "workload clean" milestones) were artifacts of non-reuse. Enabling reuse
+makes the latent **root-scan/mark MISS under thread churn** visible. Ruled out: NOT a
+work-queue overflow drop (the queue grows dynamically, only drops on OOM). It is the
+documented register/stack root-capture-under-churn wall (suspected: a churning or
+sleeping thread's stack bounds / register capture occasionally misses a root). This is
+the multi-week collector-correctness work, now sharply isolated: **the collector is
+not sound under thread churn; the leak was hiding it.** Diagnostic `-d vgc_stats`
+scaffolding was added then REMOVED; only the functional fixes remain in the patch.
+
 ## Reproduce
 
 ```
 cd /Users/ep/git-repos/cx/vlang-v-latest
+./v2 -gc vgc -prod -o g_churn g_churn.v   # v2 = compiler rebuilt from the working tree
+./g_churn 100 1 30   # ~7s PASS, but ~1/15 G-CHURN FAIL (the exposed churn race)
+./g_churn 200 1 50   # PASS (was rc=142 timeout); 100 2 40, min_wg 0 60 likewise
+# rebuild stats build for diagnosis: ./v2 -gc vgc -prod -d vgc_stats -o gs g_churn.v
+# --- historical (pre-perf-followon) ---
 ./v -gc none -prod -o g_churn_none g_churn.v   # oracle
 ./v -gc vgc  -prod -o g_churn_vgc  g_churn.v   # subject (minimal collector + both fixes)
 ./g_churn_vgc 20000 6 0   # steady  → PASS (GC now fires non-vacuously)
