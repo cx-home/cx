@@ -1,0 +1,8 @@
+#!/bin/sh
+# Portable `timeout` shim — macOS ships no coreutils `timeout`/`gtimeout`.
+# Usage: timeout SECONDS command [args...]
+# On timeout the command is killed by SIGALRM (exit 142 = 128+14), matching the
+# convention used by the P3 GC repros (g_churn / min_wg / min_atomic*). Put this
+# dir on PATH, or call it directly: bench/parallel-alloc/timeout 60 ./bin args.
+#   142/14 = timed out (hang)   139 = SIGSEGV   1 = panic/exit(1)   0 = clean
+exec perl -e 'my $s=shift; alarm $s; exec @ARGV or die "exec: $!\n"' "$@"

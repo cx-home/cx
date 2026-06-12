@@ -14,6 +14,16 @@ fn vgc_is_allocated(ptr voidptr) u64 {
 	return C.builtin__vgc_is_allocated(ptr)
 }
 
+fn C.builtin__vgc_set_watch(ptr voidptr)
+fn vgc_set_watch(ptr voidptr) {
+	C.builtin__vgc_set_watch(ptr)
+}
+
+fn C.builtin__vgc_watch_report() u64
+fn vgc_watch_report() u64 {
+	return C.builtin__vgc_watch_report()
+}
+
 @[heap]
 struct Counter {
 mut:
@@ -86,6 +96,7 @@ fn main() {
 			done: 0
 		}
 		stdatomic.store_u64(&g_expected_c, u64(usize(c)))
+		vgc_set_watch(c) // DIAGNOSTIC: watch this wave's Counter across GC cycles
 		for _ in 0 .. 4 {
 			spawn worker(iters, c)
 		}
@@ -98,7 +109,8 @@ fn main() {
 				attd := stdatomic.load_u64(&g_attempts) - att0
 				wrongd := stdatomic.load_u64(&g_wrong_c) - wrong0
 				st := vgc_is_allocated(c)
-				eprintln('wave ${w} STALL: c.done=${dn} ran_delta=${rand} attempts_delta=${attd} wrong_c=${wrongd} c=0x${u64(usize(c)).hex()} alloc_status=${st} (bit0=allocbit bit1=in_use cnt=${st >> 8}) bad_c=0x${stdatomic.load_u64(&g_bad_c).hex()}')
+				wr := vgc_watch_report()
+				eprintln('wave ${w} STALL: c.done=${dn} ran_delta=${rand} attempts_delta=${attd} wrong_c=${wrongd} c=0x${u64(usize(c)).hex()} alloc_status=${st} (bit0=allocbit bit1=in_use cnt=${st >> 8}) watch=${wr} (bit0=in_root bit1=marked bit2=swept bit3=decommit cycles=${wr >> 8}) bad_c=0x${stdatomic.load_u64(&g_bad_c).hex()}')
 				bad++
 				break
 			}

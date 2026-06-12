@@ -314,9 +314,12 @@ cd /Users/ep/git-repos/cx/vlang-v-latest
 ./g_churn_vgc 20000 6 0   # steady  → PASS (GC now fires non-vacuously)
 ./g_churn_vgc 100 1 30    # churn   → spawn-arg crash FIXED, but STILL fails ~100% on the
                           #           residual extra-done() (the open 2nd bug)
-# isolation harnesses (this session, bench/parallel-alloc/): min_wg.v (WaitGroup,
-# mode 0 heap / 1 stack), min_atomic.v (own atomic-counter control).
-# `timeout` is NOT installed on this macOS → use `perl -e 'alarm 30; exec @ARGV' ./bin …`.
-# A subshell `( ./bin ) & kill $!` only kills the SUBSHELL not the child → false fails;
-# use the perl-alarm form for reliable hang/segv classification.
+# isolation harnesses (bench/parallel-alloc/): min_wg.v (WaitGroup, mode 0 heap /
+# 1 stack), min_atomic.v / min_atomic2.v / min_atomic3.v (own atomic-counter
+# controls; min_atomic3 has the vgc_is_allocated + vgc_watch probes wired).
+# TIMEOUT: macOS ships no coreutils `timeout`/`gtimeout`. Use the committed shim
+# `bench/parallel-alloc/timeout` (a perl-alarm wrapper): `timeout 60 ./bin args`.
+# Exit codes: 0=clean 142=timed-out(hang) 139=SIGSEGV 1=panic/exit(1).
+# Do NOT use `( ./bin ) & kill $!` — it kills only the SUBSHELL, not the child
+# (false "fails"); always wrap the binary directly with the shim.
 ```
