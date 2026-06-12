@@ -250,13 +250,30 @@ fixes, g_churn ~100% repro, `perl -e 'alarm N; exec @ARGV'` for timeout since
 - cross-thread `vgc_free` bitmap race — `vgc_free`→no-op does NOT fix g_churn (10/10 still fail).
 - memory clobber / WaitGroup sweep — DISPROVEN (state is a clean 0 at the panic).
 GC-frequency-driven: min_wg (~400 allocs/worker) hits it ~5%; g_churn (2M-alloc
-steady churn → far more collections/run) hits it ~100%. ⇒ the residual is a
-thread-lifecycle issue where, under heavy collection, ONE extra worker-execution /
-`done()` occurs per run. **NEXT:** instrument churn/worker entry+exit with an atomic
-per-wave execution counter (vs the 4 expected) to catch the duplicate
-execution/done directly; suspect the spawn wrapper or pthread create/exit path
-under STW. g_churn 100 1 30 is a reliable (~100%) repro. min_atomic.v (own counter,
-no WaitGroup) passes — so a control without sync.WaitGroup helps localize.
+steady churn → far more collections/run) hits it ~100%.
+
+**LOCALIZED 2026-06-11 (PM) — the residual is NOT WaitGroup-specific; it is per-wave
+HEAP-ARGUMENT corruption under heavy GC (same class as the dominant spawn-arg bug;
+the spawn-root fix reduced but did not eliminate it).** `min_atomic2.v` removes
+sync.WaitGroup entirely (each wave: a fresh heap `Counter`; 4 workers each do
+`atomic_add(&g_ran,1)` THEN `atomic_add(&c.done,1)` on adjacent lines; main
+spin-waits `c.done==4`) and adds 2 steady background allocators to drive GC to
+g_churn levels. It FAILS: `wave 1859: done=1 ran_delta=4` — the GLOBAL `g_ran` got
+all 4 increments but the PER-WAVE heap `c.done` got only 1. So 3 workers executed
+the global add but their adjacent add to the per-wave heap object was lost — i.e.
+3 workers' `c` pointer (delivered via the spawn arg) was wrong/stale, or those
+threads died between two adjacent statements, under heavy collection. The global
+(not passed via the arg) is unaffected; the per-wave heap object (passed via the
+arg) is corrupted. This is the SAME spawn-arg/per-thread-heap-arg-under-GC class as
+the dominant bug — the spawn-root registry cut the rate massively (min_wg 0→38/40)
+but a residual hole remains at high GC frequency. **NEXT:** find why the per-wave
+heap arg is still occasionally not preserved across the handoff under heavy GC
+(audit the spawn-root add/remove window vs the wrapper's arg deref; check whether
+`c`/the arg can be reclaimed or the arg's pointer fields corrupted during a
+collection that fires in the create→consume window despite the registry). Reliable
+repros: `g_churn 100 1 30` (~100%, with WaitGroup) and `min_atomic2 2000 400`
+(~100% under its 2 steady drivers, NO WaitGroup — cleaner). min_atomic.v (no steady
+driver, low GC) passes = the low-frequency control.
 
 ## Reproduce
 
