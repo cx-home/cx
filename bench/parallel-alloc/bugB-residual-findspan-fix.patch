@@ -1,8 +1,56 @@
 diff --git a/thirdparty/vgc/vgc_platform.h b/thirdparty/vgc/vgc_platform.h
-index 12b69a1..f0f588d 100644
+index 12b69a1..2a7bf93 100644
 --- a/thirdparty/vgc/vgc_platform.h
 +++ b/thirdparty/vgc/vgc_platform.h
-@@ -333,8 +333,15 @@ static inline void vgc_mutex_unlock(volatile uint32_t* lock) {
+@@ -8,6 +8,47 @@
+ #include <string.h>
+ #include <stdio.h>
+ 
++// ============================================================
++// Global / BSS data-segment roots
++// V `__global` variables (e.g. rand.default_rng, and any user global holding a
++// heap pointer) compile to C globals in the main executable's writable data
++// segments. The collector must scan them as roots; otherwise an object reachable
++// ONLY through a global is reclaimed, and code that later touches it (e.g. a
++// module's at-exit _deinit) dereferences freed memory -> SIGSEGV. Boehm scans the
++// data/bss segments for exactly this reason. We enumerate the main image's
++// writable segments (data + bss live inside them: getsegmentdata's size is the
++// segment vmsize, which spans bss) and hand the ranges to the conservative scan.
++// (vgc's own globals in here — vgc_heap.allspans/caches/central — hold pointers to
++// span STRUCTS allocated outside the GC arenas, which vgc_shade ignores, so
++// scanning them cannot over-retain heap objects.)
++// ============================================================
++#if defined(__APPLE__)
++  #include <mach-o/dyld.h>
++  #include <mach-o/getsect.h>
++  static inline int vgc_data_segments(uintptr_t* los, uintptr_t* his, int max_ranges) {
++      const struct mach_header_64* mh = (const struct mach_header_64*)_dyld_get_image_header(0);
++      if (mh == 0) return 0;
++      static const char* const seg_names[] = {"__DATA", "__DATA_CONST", "__DATA_DIRTY"};
++      int n = 0;
++      for (int i = 0; i < 3 && n < max_ranges; i++) {
++          unsigned long sz = 0;
++          uint8_t* p = getsegmentdata(mh, seg_names[i], &sz);
++          if (p != 0 && sz > 0) {
++              los[n] = (uintptr_t)p;
++              his[n] = (uintptr_t)p + (uintptr_t)sz;
++              n++;
++          }
++      }
++      return n;
++  }
++#else
++  // Non-darwin: not yet implemented (this collector is currently darwin/arm64).
++  static inline int vgc_data_segments(uintptr_t* los, uintptr_t* his, int max_ranges) {
++      (void)los; (void)his; (void)max_ranges;
++      return 0;
++  }
++#endif
++
+ // ============================================================
+ // Thread-local storage
+ // ============================================================
+@@ -333,8 +374,15 @@ static inline void vgc_mutex_unlock(volatile uint32_t* lock) {
  // Arena address index for O(1) pointer-to-arena lookup
  // Divides address space into 1GB chunks, maps to arena index.
  // ============================================================
@@ -20,7 +68,7 @@ index 12b69a1..f0f588d 100644
  
  // Maps (address >> 30) -> arena_index+1 (0 = not mapped)
  static uint16_t vgc_addr_map[VGC_ADDR_MAP_SIZE];
-@@ -382,4 +389,183 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
+@@ -382,4 +430,183 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
  }
  #endif
  
@@ -205,7 +253,7 @@ index 12b69a1..f0f588d 100644
 +
  #endif // VGC_PLATFORM_H
 diff --git a/vlib/builtin/vgc_d_vgc.c.v b/vlib/builtin/vgc_d_vgc.c.v
-index d60140c..2a876ea 100644
+index d60140c..90e21b8 100644
 --- a/vlib/builtin/vgc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_d_vgc.c.v
 @@ -39,7 +39,21 @@ fn C.vgc_init_size_tables()
@@ -230,7 +278,25 @@ index d60140c..2a876ea 100644
  fn C.vgc_addr_map_register(base usize, size usize, arena_idx int)
  fn C.vgc_addr_to_arena(addr usize) int
  
-@@ -115,6 +129,7 @@ mut:
+@@ -93,9 +107,16 @@ mut:
+ 	free_index  u32 // hint: scan from here for free slot
+ 	// Sweep generation (translated from Go's sweepgen)
+ 	sweep_gen u32
+-	// Linked list pointers for central free lists
++	// Linked list pointers — SHARED between the central partial/full lists and the
++	// free_spans recycle list (a span is on at most one at a time).
+ 	next &VGC_Span = unsafe { nil }
+ 	prev &VGC_Span = unsafe { nil }
++	// Which central list this span is currently linked on: 0=none, 1=partial, 2=full.
++	// The sweep MUST unlink a span from its central list before recycling it via
++	// vgc_put_free_span (which reuses `next`); otherwise the central list's `next`
++	// chain is hijacked into free_spans -> a later vgc_central_get_span traverses a
++	// garbage node -> returns a wild span -> SIGSEGV in the allocation memset.
++	on_central u8
+ }
+ 
+ // VGC_Cache is a per-thread allocation cache.
+@@ -115,6 +136,7 @@ mut:
  	stack_hi   usize // highest stack address
  	thread_id  u64
  	stopped    u32 // 1 if stopped for GC
@@ -238,7 +304,7 @@ index d60140c..2a876ea 100644
  }
  
  // VGC_Central is a central free list for one span class.
-@@ -165,9 +180,12 @@ mut:
+@@ -165,9 +187,12 @@ mut:
  	free_spans_lock u32
  	free_spans      [32]&VGC_Span // free spans indexed by npages (1..31, 0=unused)
  	// Per-thread caches
@@ -254,7 +320,7 @@ index d60140c..2a876ea 100644
  	// GC state
  	gc_phase   u32 // atomic: current GC phase
  	gc_enabled u32 // atomic: 1 = GC enabled
-@@ -196,23 +214,43 @@ mut:
+@@ -196,23 +221,43 @@ mut:
  	gc_percent int // like Go's GOGC, default 100
  }
  
@@ -299,7 +365,7 @@ index d60140c..2a876ea 100644
  	// Register the main thread
  	vgc_register_thread()
  }
-@@ -223,15 +261,54 @@ pub fn vgc_init() {
+@@ -223,15 +268,54 @@ pub fn vgc_init() {
  
  fn vgc_register_thread() {
  	C.vgc_mutex_lock(&vgc_heap.cache_lock)
@@ -358,7 +424,7 @@ index d60140c..2a876ea 100644
  	sp := usize(C.vgc_get_sp())
  	mut stack_lo := usize(0)
  	mut stack_hi := usize(0)
-@@ -248,8 +325,66 @@ fn vgc_register_thread() {
+@@ -248,8 +332,66 @@ fn vgc_register_thread() {
  	unsafe {
  		vgc_heap.caches[idx].registered = true
  		vgc_heap.caches[idx].stack_base = stack_base
@@ -425,7 +491,7 @@ index d60140c..2a876ea 100644
  }
  
  fn vgc_ensure_registered() {
-@@ -258,6 +393,58 @@ fn vgc_ensure_registered() {
+@@ -258,6 +400,58 @@ fn vgc_ensure_registered() {
  	}
  }
  
@@ -484,7 +550,7 @@ index d60140c..2a876ea 100644
  fn vgc_refresh_stack_range() {
  	cache_idx := C.vgc_get_cache_idx()
  	if cache_idx < 0 {
-@@ -315,6 +502,13 @@ fn vgc_put_free_span(mut span VGC_Span) {
+@@ -315,6 +509,13 @@ fn vgc_put_free_span(mut span VGC_Span) {
  	if npages == 0 || npages >= 32 {
  		return
  	}
@@ -498,7 +564,7 @@ index d60140c..2a876ea 100644
  	// Free bitmaps before zeroing nelems
  	bitmap_size := usize((span.nelems + 7) / 8)
  	if span.alloc_bits != unsafe { nil } {
-@@ -334,12 +528,18 @@ fn vgc_put_free_span(mut span VGC_Span) {
+@@ -334,12 +535,18 @@ fn vgc_put_free_span(mut span VGC_Span) {
  	// Decommit pages to return physical memory to OS
  	page_bytes := usize(npages) * vgc_page_size
  	C.vgc_os_decommit(voidptr(span.base), page_bytes)
@@ -519,7 +585,31 @@ index d60140c..2a876ea 100644
  }
  
  // Allocate a new span with the given number of pages
-@@ -653,9 +853,20 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+@@ -530,6 +737,7 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
+ 		unsafe {
+ 			span.next = nil
+ 			span.prev = nil
++			span.on_central = 0 // popped off the central list; now owned by a mcache
+ 		}
+ 		C.vgc_mutex_unlock(&central.lock)
+ 		return span
+@@ -570,6 +778,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
+ 		}
+ 		unsafe {
+ 			vgc_heap.central[span_class].partial = span
++			span.on_central = 1 // on the partial list
+ 		}
+ 	} else {
+ 		// Full - add to full list
+@@ -584,6 +793,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
+ 		}
+ 		unsafe {
+ 			vgc_heap.central[span_class].full = span
++			span.on_central = 2 // on the full list
+ 		}
+ 	}
+ 
+@@ -653,9 +863,20 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
  	}
  
  	span_class := int(class_idx) * 2 // scan variant
@@ -542,7 +632,7 @@ index d60140c..2a876ea 100644
  	}
  
  	// Set precise pointer map on span (first typed allocation wins)
-@@ -683,13 +894,75 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+@@ -683,13 +904,75 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
  	return ptr
  }
  
@@ -619,7 +709,7 @@ index d60140c..2a876ea 100644
  		}
  		if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
  			vgc_safepoint()
-@@ -764,9 +1037,15 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+@@ -764,9 +1047,15 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
  	}
  
  	span_class := int(class_idx) * 2 + 1 // noscan variant
@@ -637,7 +727,7 @@ index d60140c..2a876ea 100644
  	}
  
  	ptr := unsafe { vgc_span_alloc_obj(mut span) }
-@@ -783,9 +1062,19 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+@@ -783,9 +1072,19 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
  // Allocate a large object (> 32KB) with its own span
  fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
  	npages := u32((n + vgc_page_size - 1) / vgc_page_size)
@@ -659,7 +749,7 @@ index d60140c..2a876ea 100644
  	}
  
  	unsafe {
-@@ -887,6 +1176,237 @@ fn vgc_free(ptr voidptr) {
+@@ -887,6 +1186,237 @@ fn vgc_free(ptr voidptr) {
  	}
  }
  
@@ -897,7 +987,7 @@ index d60140c..2a876ea 100644
  // Calloc (zero-initialized allocation)
  fn vgc_calloc(n usize) voidptr {
  	return vgc_malloc(n) // vgc_malloc already zeroes memory
-@@ -937,14 +1457,35 @@ fn vgc_memdup_noscan(src voidptr, n isize) voidptr {
+@@ -937,14 +1467,35 @@ fn vgc_memdup_noscan(src voidptr, n isize) voidptr {
  
  fn vgc_find_span(ptr voidptr) &VGC_Span {
  	addr := usize(ptr)
@@ -939,7 +1029,7 @@ index d60140c..2a876ea 100644
  	page_idx := (addr - a.base) / vgc_page_size
  	if page_idx < vgc_pages_per_arena {
  		return a.page_span[page_idx]
-@@ -975,22 +1516,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
+@@ -975,22 +1526,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
  	return addr >= a.base && addr < a.base + a.used
  }
  
@@ -971,7 +1061,7 @@ index d60140c..2a876ea 100644
 -	C.vgc_atomic_store_u32(&vgc_heap.caches[cache_idx].stopped, 0)
  }
 diff --git a/vlib/builtin/vgc_gc_d_vgc.c.v b/vlib/builtin/vgc_gc_d_vgc.c.v
-index d2369d7..974be14 100644
+index d2369d7..1566e33 100644
 --- a/vlib/builtin/vgc_gc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_gc_d_vgc.c.v
 @@ -11,7 +11,11 @@ module builtin
@@ -987,7 +1077,7 @@ index d2369d7..974be14 100644
  fn vgc_gc_start() {
  	// Only one GC at a time
  	mut expected := vgc_phase_off
-@@ -19,51 +23,127 @@ fn vgc_gc_start() {
+@@ -19,51 +23,139 @@ fn vgc_gc_start() {
  		return
  	}
  
@@ -1029,6 +1119,27 @@ index d2369d7..974be14 100644
 +	// cycle ends — closing the thread-create-vs-STW race where a thread that
 +	// registers just as STW starts would run unsuspended and allocate white.
 +	C.vgc_mutex_lock(&vgc_heap.cache_lock)
++
++	// Acquire EVERY allocator lock BEFORE stopping the world, so no mutator is ever
++	// mach-suspended mid-critical-section. This is the root fix for the thread-churn
++	// segv class: previously the collector suspended first and then STOLE (zeroed)
++	// these locks "to avoid deadlocking on a frozen owner", but a mutator frozen
++	// mid-vgc_span_alloc / vgc_central_get_span / vgc_get_free_span would, on resume,
++	// find its lock zeroed and run concurrently with another allocator -> two threads
++	// bump the same arena / pop the same free span -> a span with a garbage base ->
++	// SIGSEGV in the allocation/bitmap memset. Acquiring up-front (while mutators are
++	// still RUNNING and will release promptly) means every allocator structure is
++	// quiescent and consistent for the whole cycle, and the frozen-owner problem
++	// cannot arise. Safe against deadlock: the collector never RE-ENTERS vgc_heap.lock
++	// or central[].lock (mutator-only; verified), and vgc_put_free_span is lock-free
++	// (the collector already holds free_spans_lock, taken at the top of this fn); a
++	// mutator never holds two allocator locks at once, so acquisition order is free.
++	// (cache_lock: the registration gate, already held. work_lock: re-entered by the
++	// mark; no mutator holds it under full-STW, so it is reset, not pre-acquired.)
++	C.vgc_mutex_lock(&vgc_heap.lock)
++	for i in 0 .. 136 {
++		C.vgc_mutex_lock(&vgc_heap.central[i].lock)
++	}
  
 -	// Wait for threads to stop (with timeout to avoid deadlock)
 -	mut wait_iters := 0
@@ -1037,8 +1148,6 @@ index d2369d7..974be14 100644
 -		wait_iters++
 -		if wait_iters > 1000000 {
 -			break // Don't wait forever - proceed with what we have
--		}
--	}
 +	for i in 0 .. vgc_heap.ncaches {
 +		c := unsafe { &vgc_heap.caches[i] }
 +		reg := if c.registered { u64(1) } else { u64(0) }
@@ -1046,20 +1155,11 @@ index d2369d7..974be14 100644
 +		if c.registered && i != self_idx && c.mach_port != 0 {
 +			C.vgc_suspend_thread(c.mach_port)
 +			C.vgc_trace(7, i, u64(c.mach_port), 0) // SUSP! (actually suspended)
-+		}
-+	}
-+	// All mutators are now frozen. Lock discipline across STW:
-+	//   - vgc_heap.lock / central[].lock: MUTATOR-ONLY (the collector never acquires
-+	//     them). NOT stolen — a frozen owner keeps its lock so mutual exclusion is
-+	//     preserved on resume. Stealing them was the residual thread-churn segv: a
-+	//     mutator suspended mid-vgc_span_alloc/vgc_central_get_span resumed into a
-+	//     zeroed lock, ran concurrently with another allocator -> overlapping arena
-+	//     bumps -> corrupt span base -> SIGSEGV in the allocation memset.
-+	//   - free_spans_lock: held by THIS collector for the whole cycle (acquired
-+	//     before the suspend, above), so no frozen owner exists; not stolen.
-+	//   - work_lock: re-entered by vgc_work_put/get during mark. No mutator holds it
-+	//     under full-STW (the write barrier never fires while mutators are frozen),
-+	//     so zeroing it is a harmless reset before the collector's own use.
+ 		}
+ 	}
++	// work_lock is re-entered by vgc_work_put/get during mark; no mutator holds it
++	// under full-STW (the write barrier never fires while mutators are frozen), so a
++	// plain reset is enough (it is not pre-acquired since the collector re-enters it).
 +	C.vgc_atomic_store_u32(&vgc_heap.work_lock, 0)
  
  	// Clear mark bits on all spans (prepare for new cycle)
@@ -1135,7 +1235,7 @@ index d2369d7..974be14 100644
  
  	// Disable write barrier
  	C.vgc_atomic_store_u32(&vgc_heap.wb_enabled, 0)
-@@ -81,15 +161,68 @@ fn vgc_gc_start() {
+@@ -81,15 +173,72 @@ fn vgc_gc_start() {
  	C.vgc_atomic_store_u32(&vgc_heap.gc_phase, vgc_phase_sweep)
  
  	// Sweep synchronously - it's fast and avoids race conditions
@@ -1144,8 +1244,12 @@ index d2369d7..974be14 100644
  	vgc_do_sweep()
 +	C.vgc_trace(10, self_idx, u64(vgc_heap.gc_cycle), 0) // SWEEP1
 +
-+	// Sweep (the only collector use of the free-span list) is done — release
-+	// free_spans_lock before resuming so resumed mutators don't block on it.
++	// Mark + sweep done — release every allocator lock held across the cycle before
++	// resuming, so resumed mutators don't block on them. (Reverse acquisition order.)
++	for i in 0 .. 136 {
++		C.vgc_mutex_unlock(&vgc_heap.central[i].lock)
++	}
++	C.vgc_mutex_unlock(&vgc_heap.lock)
 +	C.vgc_mutex_unlock(&vgc_heap.free_spans_lock)
 +
 +	// Resume the world: mark + sweep are complete, every live object survived.
@@ -1204,7 +1308,30 @@ index d2369d7..974be14 100644
  // ============================================================
  // Mark phase (translated from Go's mgcmark.go)
  // ============================================================
-@@ -120,6 +253,11 @@ fn vgc_mark_roots() {
+@@ -111,7 +260,22 @@ fn vgc_clear_mark_bits() {
+ // Conservative root scanning: scan thread stacks and look for pointers into the heap.
+ // Translated from Go's markroot() / scanblock() - but using conservative scanning
+ // since V compiles to C and we don't have precise type info at runtime.
++fn C.vgc_data_segments(los &usize, his &usize, max_ranges int) int
++
+ fn vgc_mark_roots() {
++	// Scan the global / BSS data segments (V __global roots). Without this, an
++	// object reachable only through a global (e.g. rand.default_rng) is reclaimed,
++	// and a later access — typically a module's at-exit _deinit — dereferences
++	// freed memory and SIGSEGVs. Conservative, like the stack scan.
++	mut seg_lo := [8]usize{}
++	mut seg_hi := [8]usize{}
++	nseg := C.vgc_data_segments(&seg_lo[0], &seg_hi[0], 8)
++	for k in 0 .. nseg {
++		if seg_lo[k] > 0 && seg_hi[k] > seg_lo[k] {
++			vgc_scan_range(seg_lo[k], seg_hi[k])
++		}
++	}
++
+ 	// Scan each registered thread's stack
+ 	for i in 0 .. vgc_heap.ncaches {
+ 		cache := unsafe { &vgc_heap.caches[i] }
+@@ -120,6 +284,11 @@ fn vgc_mark_roots() {
  		}
  		if cache.stack_lo > 0 && cache.stack_hi > 0 && cache.stack_hi > cache.stack_lo {
  			vgc_scan_range(cache.stack_lo, cache.stack_hi)
@@ -1216,7 +1343,7 @@ index d2369d7..974be14 100644
  		}
  	}
  }
-@@ -158,6 +296,10 @@ fn vgc_shade(addr usize) {
+@@ -158,6 +327,10 @@ fn vgc_shade(addr usize) {
  	if obj_idx >= span.nelems {
  		return
  	}
@@ -1227,7 +1354,7 @@ index d2369d7..974be14 100644
  	// Check if object is allocated
  	if span.alloc_bits == unsafe { nil } || C.vgc_bitmap_get(span.alloc_bits, obj_idx) == 0 {
  		return
-@@ -177,12 +319,13 @@ fn vgc_shade(addr usize) {
+@@ -177,12 +350,13 @@ fn vgc_shade(addr usize) {
  // Parallel mark using OS threads.
  // Translated from Go's gcDrain() with multiple workers.
  fn vgc_parallel_mark() {
@@ -1247,7 +1374,7 @@ index d2369d7..974be14 100644
  	vgc_heap.gc_nworkers = nworkers
  	C.vgc_atomic_store_u32(&vgc_heap.gc_workers_done, 0)
  
-@@ -440,11 +583,32 @@ fn vgc_sweep_span(span &VGC_Span) {
+@@ -440,11 +614,32 @@ fn vgc_sweep_span(span &VGC_Span) {
  	mut freed := u32(0)
  	mut new_free_index := span.nelems // will be set to lowest freed index
  
@@ -1280,3 +1407,37 @@ index d2369d7..974be14 100644
  		if garbage != 0 {
  			freed += u32(C.vgc_popcount8(garbage))
  			// Clear the garbage bits from alloc bitmap
+@@ -468,9 +663,32 @@ fn vgc_sweep_span(span &VGC_Span) {
+ 		}
+ 	}
+ 
+-	// If span is completely empty, recycle it to the free span pool
++	// If span is completely empty, recycle it to the free span pool. But FIRST
++	// unlink it from any central partial/full list it is on — vgc_put_free_span
++	// reuses span.next for the free_spans chain, so recycling a still-linked span
++	// would splice free_spans into the central list and a later vgc_central_get_span
++	// would traverse a garbage node -> wild span -> SIGSEGV. Safe to touch the
++	// central lists here: vgc_gc_start holds every central[].lock across the cycle.
+ 	if span.alloc_count == 0 && span.npages > 0 {
+ 		mut mspan := unsafe { &VGC_Span(span) }
++		if mspan.on_central != 0 {
++			sc := int(mspan.class_idx) * 2 + if mspan.noscan { 1 } else { 0 }
++			unsafe {
++				if mspan.prev != nil {
++					mspan.prev.next = mspan.next
++				} else if mspan.on_central == 1 {
++					vgc_heap.central[sc].partial = mspan.next
++				} else {
++					vgc_heap.central[sc].full = mspan.next
++				}
++				if mspan.next != nil {
++					mspan.next.prev = mspan.prev
++				}
++				mspan.on_central = 0
++				mspan.next = nil
++				mspan.prev = nil
++			}
++		}
+ 		vgc_put_free_span(mut mspan)
+ 	}
+ }

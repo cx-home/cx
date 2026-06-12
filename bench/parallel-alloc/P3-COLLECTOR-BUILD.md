@@ -461,19 +461,53 @@ before resume. Lock order free_spans_lock→cache_lock is deadlock-free (no muta
 holds free_spans_lock then waits on cache_lock). `work_lock` is the only lock still
 zeroed (no mutator holds it under full-STW).
 
+### FULL bug #2 RESOLUTION (2026-06-12) — three stacked vectors, + bug #3 (global roots)
+
+The "g_churn 100 1 30 = 10/10" above was a THRESHOLD ARTIFACT (heavier configs still
+failed). Pushing through revealed the complete picture. Bug #2 = THREE stacked STW /
+allocator-coherence vectors, all now fixed:
+1. **STW lock-steal of mutator-only locks.** `vgc_gc_start` zeroed `vgc_heap.lock` +
+   `central[].lock` after suspend; a mutator frozen mid-`vgc_span_alloc`/`vgc_central_get_span`
+   resumed into a zeroed lock → concurrent allocator → arena corruption. FIX: don't
+   steal them (collector never acquires them); instead **acquire ALL allocator locks
+   (vgc_heap.lock + 136 central + free_spans_lock) BEFORE the suspend**, so no mutator
+   is ever frozen mid-critical-section; hold across the cycle; release before resume.
+   Deadlock-free (collector never re-enters heap/central; mutators never nest two
+   allocator locks; put_free_span made lock-free under the held free_spans_lock).
+2. **free_spans_lock steal** — same class, folded into the acquire-before-suspend.
+3. **Sweep recycled a span still linked on a central list.** `next`/`prev` are SHARED
+   between the central partial/full lists and the free_spans recycle list, so
+   `vgc_put_free_span` (reusing `next`) on a still-central-linked empty span spliced
+   free_spans into the central chain → `vgc_central_get_span` later returned a wild
+   span → memset SIGSEGV (the dominant churning-collector crash, GC not even firing —
+   it's an allocator-path corruption seeded by a prior sweep). FIX: track
+   `span.on_central` (0/1/2), and in `vgc_sweep_span` **unlink the span from its
+   central list before `vgc_put_free_span`** (safe — the collector holds all central
+   locks per vector 1).
+
+**BUG #3 (surfaced once #2's workload was clean): no global/BSS root scan.**
+`vgc_mark_roots` scanned only thread stacks, never the data segment. An object
+reachable only via a V `__global` (e.g. `rand.default_rng`, unused by the test but
+init'd at startup) was reclaimed → the at-exit `rand__deinit` dereferenced freed
+memory → SIGSEGV *after* `G-CHURN PASS` printed. FIX: `vgc_data_segments`
+(`vgc_platform.h`, mach-o `getsegmentdata` over `__DATA`/`__DATA_CONST`/`__DATA_DIRTY`
+of the main image) + `vgc_mark_roots` conservatively scans those ranges. (vgc's own
+globals there point to span structs outside the arenas, which `vgc_shade` ignores →
+no over-retention.)
+
 **VALIDATION (12-core M-series, `-gc vgc -prod`):**
-- **`g_churn 100 1 30` (the CANONICAL wall): 10/10 PASS** (was ~0/12 originally,
-  8/10 after find_span). Heavier configs being confirmed.
-- min_atomic2 8/8, min_atomic3 14/0 (controls, find_span); g_churn steady `20000 6 0`
+- Bug #2 WORKLOAD CLEAN: **g_churn 100 1 30 = 12/12 workload-PASS, 0 corruptions,
+  0 mid-workload crashes**; min_wg 0 30 = 8/8 workload-PASS, 0 mid-crash. The
+  thread-churn allocator/STW corruption (the canonical wall) is RESOLVED.
+- Bug #3 CLEAN EXIT: with global roots, **g_churn 100 1 30 = 12/12 fully clean (rc=0)**
+  (was 0/12 clean — all crashed at exit before the global-root fix).
+- find_span controls: min_atomic2 8/8, min_atomic3 14/0; steady `20000 6 0`
   byte-identical to `-gc none`.
-- **OPEN residual: `min_wg 0 60` (heavy, 120000 iters) still SIGSEGVs.** This is the
-  most extreme case — NO long-lived thread, so the collector is ALWAYS a churning,
-  about-to-exit wave worker (g_churn/min_atomic3 have long-lived anchor/steady
-  threads that act as collector, sparing the wave workers). Same memset-wild
-  signature (recycled/fresh span with a bad base). Suspected remaining vector: the
-  weak-memory half-built `allspans`/`arenas[]` read by the collector while a mutator
-  is frozen mid-`vgc_span_alloc` (lock-free reads in find_span/sweep), maximal when
-  every thread is a heavy allocator. Chasing.
+- **OPEN residual (heavier load): g_churn `200 1 50` / `100 2 40` still fail
+  intermittently.** Characterizing whether mid-workload (a deeper vector at higher
+  concurrency — e.g. weak-memory half-built `allspans`/`arenas[]` read lock-free by
+  the collector) or another at-exit/global-root gap. min_wg 0 60 (extreme pure-churn)
+  likewise not yet fully clean.
 
 ## Reproduce
 
