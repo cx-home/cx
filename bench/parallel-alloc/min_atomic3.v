@@ -9,6 +9,11 @@
 import os
 import sync.stdatomic
 
+fn C.builtin__vgc_is_allocated(ptr voidptr) u64
+fn vgc_is_allocated(ptr voidptr) u64 {
+	return C.builtin__vgc_is_allocated(ptr)
+}
+
 @[heap]
 struct Counter {
 mut:
@@ -87,12 +92,13 @@ fn main() {
 		mut spins := i64(0)
 		for stdatomic.load_u64(&c.done) < 4 {
 			spins++
-			if spins > 8_000_000_000 {
+			if spins > 1_500_000_000 {
 				dn := stdatomic.load_u64(&c.done)
 				rand := stdatomic.load_u64(&g_ran) - ran0
 				attd := stdatomic.load_u64(&g_attempts) - att0
 				wrongd := stdatomic.load_u64(&g_wrong_c) - wrong0
-				eprintln('wave ${w} STALL: c.done=${dn} ran_delta=${rand} attempts_delta=${attd} wrong_c=${wrongd} expected_c=0x${u64(usize(c)).hex()} bad_c=0x${stdatomic.load_u64(&g_bad_c).hex()}')
+				st := vgc_is_allocated(c)
+				eprintln('wave ${w} STALL: c.done=${dn} ran_delta=${rand} attempts_delta=${attd} wrong_c=${wrongd} c=0x${u64(usize(c)).hex()} alloc_status=${st} (bit0=allocbit bit1=in_use cnt=${st >> 8}) bad_c=0x${stdatomic.load_u64(&g_bad_c).hex()}')
 				bad++
 				break
 			}

@@ -287,9 +287,16 @@ marked (or is marked then wrongly swept) at high collection frequency. This is a
 **root-scan / mark / sweep correctness bug**, the genuine deeper wall — distinct
 from the spawn-arg sweep (fixed) and unrelated to sync.WaitGroup (the waitgroup
 panic was just g_churn's manifestation of the same reclaimed-counter).
-**NEXT:** instrument the collector to log, each cycle, whether the stalling `c`'s
-address is (a) in a scanned root range, (b) marked, (c) swept/decommitted — narrow
-to root-scan-miss vs mark-clear vs sweep-race. Suspects: the main thread's
+**CONFIRMED via `vgc_is_allocated(c)` at the stall:** `wave 535 STALL: c.done=3
+attempts_delta=4 wrong_c=0 alloc_status=0` — `alloc_status=0` means `vgc_find_span(c)`
+returns NIL: c's span is no longer in the heap (freed/decommitted) **while main
+still holds c and workers write to it**. So the live, main-held object was
+RECLAIMED. Definitive: a collector root-scan/mark/sweep correctness bug that frees a
+live object reachable from `main`. **NEXT:** instrument the collector to log, each
+cycle, whether the stalling `c`'s address is (a) in a scanned root range, (b)
+marked, (c) swept/decommitted — narrow to root-scan-miss vs mark-clear vs
+sweep-race. `vgc_is_allocated(ptr)` (added to vgc_d_vgc.c.v, gated @[markused]) is
+the probe; min_atomic3 calls it at the stall. Suspects: the main thread's
 `[sp,stack_base]` range or register capture under the spin-loop; the
 mark-bits-vs-alloc-bits handoff in `vgc_sweep_span`; span decommit of a
 still-referenced span. Reliable repros (all ~100% at high GC freq, `perl -e 'alarm
