@@ -1,5 +1,5 @@
 diff --git a/thirdparty/vgc/vgc_platform.h b/thirdparty/vgc/vgc_platform.h
-index 12b69a1..5797dc3 100644
+index 12b69a1..c35160d 100644
 --- a/thirdparty/vgc/vgc_platform.h
 +++ b/thirdparty/vgc/vgc_platform.h
 @@ -7,6 +7,82 @@
@@ -103,7 +103,7 @@ index 12b69a1..5797dc3 100644
  
  // Maps (address >> 30) -> arena_index+1 (0 = not mapped)
  static uint16_t vgc_addr_map[VGC_ADDR_MAP_SIZE];
-@@ -382,4 +465,368 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
+@@ -382,4 +465,378 @@ static inline void vgc_start_thread(vgc_thread_fn fn) {
  }
  #endif
  
@@ -411,9 +411,23 @@ index 12b69a1..5797dc3 100644
 +#endif
 +
 +// ============================================================
-+// DIAGNOSTIC trace ring (P3 thread-churn wall investigation, 2026-06-11).
-+// Async-signal-safe crash dump correlates GC cycles with thread lifecycle.
-+// Not part of the canonical minimal-collector.patch — revert before shipping.
++// Minimal stderr write helpers — always available. Used by the loud
++// span-registry-overflow abort (vgc_say below); NOT diagnostic scaffolding.
++// ============================================================
++static void vgc__ws(const char* s) { size_t n = 0; while (s[n]) n++; (void)!write(2, s, n); }
++static void vgc__wh(uint64_t v) {
++    char b[18]; b[0] = '0'; b[1] = 'x';
++    for (int i = 0; i < 16; i++) { int d = (int)((v >> ((15 - i) * 4)) & 0xf); b[2 + i] = d < 10 ? '0' + d : 'a' + d - 10; }
++    (void)!write(2, b, 18);
++}
++static inline void vgc_say(uint64_t tag, uint64_t v) { // loud one-line stderr note
++    vgc__ws("[vgc tag="); vgc__wh(tag); vgc__ws(" v="); vgc__wh(v); vgc__ws("]\n");
++}
++
++#ifdef VGC_DIAG
++// ============================================================
++// OPTIONAL diagnostic trace ring + async-signal-safe crash dump (correlates GC
++// cycles with thread lifecycle). OFF by default; enable with `-cflags -DVGC_DIAG`.
 +// ============================================================
 +#include <signal.h>
 +typedef struct { uint32_t seq; int ev; int slot; uint64_t a; uint64_t b; uint32_t port; } vgc_tev;
@@ -435,12 +449,6 @@ index 12b69a1..5797dc3 100644
 +        case 99: return "INITDONE"; default: return "?      ";
 +    }
 +}
-+static void vgc__ws(const char* s) { size_t n = 0; while (s[n]) n++; (void)!write(2, s, n); }
-+static void vgc__wh(uint64_t v) {
-+    char b[18]; b[0] = '0'; b[1] = 'x';
-+    for (int i = 0; i < 16; i++) { int d = (int)((v >> ((15 - i) * 4)) & 0xf); b[2 + i] = d < 10 ? '0' + d : 'a' + d - 10; }
-+    (void)!write(2, b, 18);
-+}
 +static void vgc_trace_dump(void) {
 +    vgc__ws("\n=== VGC TRACE (oldest->newest) ===\n");
 +    uint32_t end = vgc_trace_seq;
@@ -453,9 +461,6 @@ index 12b69a1..5797dc3 100644
 +        vgc__ws(" a="); vgc__wh(e->a); vgc__ws(" b="); vgc__wh(e->b); vgc__ws("\n");
 +    }
 +    vgc__ws("=== END VGC TRACE ===\n");
-+}
-+static inline void vgc_say(uint64_t tag, uint64_t v) { // DIAGNOSTIC immediate stderr print
-+    vgc__ws("[vgc_say tag="); vgc__wh(tag); vgc__ws(" v="); vgc__wh(v); vgc__ws("]\n");
 +}
 +static volatile uint32_t vgc_dumping = 0;
 +static void vgc_crash_handler(int sig) {
@@ -470,13 +475,18 @@ index 12b69a1..5797dc3 100644
 +    signal(SIGSEGV, vgc_crash_handler);
 +    signal(SIGBUS, vgc_crash_handler);
 +}
++#else
++// Diagnostics compiled out: zero-overhead no-ops the optimizer elides.
++static inline void vgc_trace(int ev, int slot, uint64_t a, uint64_t b) { (void)ev; (void)slot; (void)a; (void)b; }
++static inline void vgc_trace_init(void) {}
++#endif // VGC_DIAG
 +
  #endif // VGC_PLATFORM_H
 diff --git a/vlib/builtin/vgc_d_vgc.c.v b/vlib/builtin/vgc_d_vgc.c.v
-index d60140c..ebfd655 100644
+index d60140c..8fc0d9a 100644
 --- a/vlib/builtin/vgc_d_vgc.c.v
 +++ b/vlib/builtin/vgc_d_vgc.c.v
-@@ -39,7 +39,22 @@ fn C.vgc_init_size_tables()
+@@ -39,7 +39,21 @@ fn C.vgc_init_size_tables()
  fn C.vgc_mutex_lock(lk &u32)
  fn C.vgc_mutex_unlock(lk &u32)
  fn C.vgc_start_thread(f voidptr)
@@ -489,17 +499,16 @@ index d60140c..ebfd655 100644
 +fn C.vgc_run_gc_spilled(range_lo &usize, range_hi &usize, stack_base usize)
  fn C.vgc_num_cpus() int
 +
-+// DIAGNOSTIC (P3 churn-wall trace; revert before shipping)
++// Optional diagnostic trace ring — no-ops unless built with `-cflags -DVGC_DIAG`.
 +fn C.vgc_trace(ev int, slot int, a u64, b u64)
 +fn C.vgc_trace_init()
-+fn C.vgc_say(tag u64, v u64)
++fn C.vgc_say(tag u64, v u64) // loud one-line stderr note (used by the span-registry abort)
 +fn C.abort()
 +
-+__global vgc_said_pace = u32(0) // diagnostic one-shot guard
  fn C.vgc_addr_map_register(base usize, size usize, arena_idx int)
  fn C.vgc_addr_to_arena(addr usize) int
  
-@@ -93,9 +108,24 @@ mut:
+@@ -93,9 +107,24 @@ mut:
  	free_index  u32 // hint: scan from here for free slot
  	// Sweep generation (translated from Go's sweepgen)
  	sweep_gen u32
@@ -525,7 +534,7 @@ index d60140c..ebfd655 100644
  }
  
  // VGC_Cache is a per-thread allocation cache.
-@@ -115,6 +145,16 @@ mut:
+@@ -115,6 +144,16 @@ mut:
  	stack_hi   usize // highest stack address
  	thread_id  u64
  	stopped    u32 // 1 if stopped for GC
@@ -542,7 +551,7 @@ index d60140c..ebfd655 100644
  }
  
  // VGC_Central is a central free list for one span class.
-@@ -158,16 +198,27 @@ mut:
+@@ -158,16 +197,27 @@ mut:
  	central [136]VGC_Central
  	// Large object spans
  	large_alloc &VGC_Span = unsafe { nil }
@@ -575,7 +584,7 @@ index d60140c..ebfd655 100644
  	// GC state
  	gc_phase   u32 // atomic: current GC phase
  	gc_enabled u32 // atomic: 1 = GC enabled
-@@ -196,23 +247,43 @@ mut:
+@@ -196,12 +246,30 @@ mut:
  	gc_percent int // like Go's GOGC, default 100
  }
  
@@ -607,20 +616,7 @@ index d60140c..ebfd655 100644
  // ============================================================
  // Initialization
  // ============================================================
- 
- @[markused]
- pub fn vgc_init() {
-+	C.vgc_trace_init() // DIAGNOSTIC: install crash-dump handler first
- 	C.vgc_init_size_tables()
- 	vgc_heap.gc_enabled = 1
- 	vgc_heap.gc_percent = 100
- 	vgc_heap.next_gc = 256 * 1024 * 1024 // favor throughput over early collections
- 	vgc_heap.gc_phase = vgc_phase_off
-+	C.vgc_say(1, u64(C.vgc_atomic_load_u32(&vgc_heap.gc_enabled))) // INIT: gc_enabled right after set
- 	// Register the main thread
- 	vgc_register_thread()
- }
-@@ -223,15 +294,56 @@ pub fn vgc_init() {
+@@ -223,15 +291,56 @@ pub fn vgc_init() {
  
  fn vgc_register_thread() {
  	C.vgc_mutex_lock(&vgc_heap.cache_lock)
@@ -681,7 +677,7 @@ index d60140c..ebfd655 100644
  	sp := usize(C.vgc_get_sp())
  	mut stack_lo := usize(0)
  	mut stack_hi := usize(0)
-@@ -248,8 +360,79 @@ fn vgc_register_thread() {
+@@ -248,8 +357,79 @@ fn vgc_register_thread() {
  	unsafe {
  		vgc_heap.caches[idx].registered = true
  		vgc_heap.caches[idx].stack_base = stack_base
@@ -761,7 +757,7 @@ index d60140c..ebfd655 100644
  }
  
  fn vgc_ensure_registered() {
-@@ -258,6 +441,58 @@ fn vgc_ensure_registered() {
+@@ -258,6 +438,58 @@ fn vgc_ensure_registered() {
  	}
  }
  
@@ -820,7 +816,7 @@ index d60140c..ebfd655 100644
  fn vgc_refresh_stack_range() {
  	cache_idx := C.vgc_get_cache_idx()
  	if cache_idx < 0 {
-@@ -300,7 +535,11 @@ fn vgc_get_free_span(npages u32) &VGC_Span {
+@@ -300,7 +532,11 @@ fn vgc_get_free_span(npages u32) &VGC_Span {
  			vgc_heap.free_spans[npages] = span.next
  			span.next = nil
  			span.prev = nil
@@ -833,7 +829,7 @@ index d60140c..ebfd655 100644
  		}
  		C.vgc_mutex_unlock(&vgc_heap.free_spans_lock)
  		return span
-@@ -315,31 +554,40 @@ fn vgc_put_free_span(mut span VGC_Span) {
+@@ -315,31 +551,40 @@ fn vgc_put_free_span(mut span VGC_Span) {
  	if npages == 0 || npages >= 32 {
  		return
  	}
@@ -888,7 +884,7 @@ index d60140c..ebfd655 100644
  }
  
  // Allocate a new span with the given number of pages
-@@ -347,6 +595,12 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
+@@ -347,6 +592,12 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
  	// First try to reuse a free span
  	recycled := vgc_get_free_span(npages)
  	if recycled != unsafe { nil } {
@@ -901,7 +897,7 @@ index d60140c..ebfd655 100644
  		return recycled
  	}
  
-@@ -410,7 +664,14 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
+@@ -410,7 +661,14 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
  		C.memset(span, 0, sizeof(VGC_Span))
  		span.base = base
  		span.npages = npages
@@ -917,7 +913,7 @@ index d60140c..ebfd655 100644
  	}
  	// Register span in arena's page map
  	if arena_idx >= 0 {
-@@ -425,13 +686,19 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
+@@ -425,13 +683,19 @@ fn vgc_span_alloc(npages u32) &VGC_Span {
  		}
  	}
  
@@ -943,7 +939,7 @@ index d60140c..ebfd655 100644
  
  	C.vgc_mutex_unlock(&vgc_heap.lock)
  	return span
-@@ -451,16 +718,22 @@ fn vgc_span_init(mut span VGC_Span, class_idx u8, noscan bool) {
+@@ -451,16 +715,22 @@ fn vgc_span_init(mut span VGC_Span, class_idx u8, noscan bool) {
  	span.free_index = 0
  	span.alloc_count = 0
  
@@ -975,7 +971,7 @@ index d60140c..ebfd655 100644
  }
  
  // Find a free slot in a span and allocate it
-@@ -530,6 +803,10 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
+@@ -530,6 +800,10 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
  		unsafe {
  			span.next = nil
  			span.prev = nil
@@ -986,7 +982,7 @@ index d60140c..ebfd655 100644
  		}
  		C.vgc_mutex_unlock(&central.lock)
  		return span
-@@ -548,6 +825,8 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
+@@ -548,6 +822,8 @@ fn vgc_central_get_span(span_class int) &VGC_Span {
  	unsafe {
  		vgc_span_init(mut new_span, class_idx, noscan)
  	}
@@ -995,7 +991,7 @@ index d60140c..ebfd655 100644
  
  	return new_span
  }
-@@ -570,6 +849,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
+@@ -570,6 +846,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
  		}
  		unsafe {
  			vgc_heap.central[span_class].partial = span
@@ -1003,7 +999,7 @@ index d60140c..ebfd655 100644
  		}
  	} else {
  		// Full - add to full list
-@@ -584,6 +864,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
+@@ -584,6 +861,7 @@ fn vgc_central_return_span(span_class int, mut span VGC_Span) {
  		}
  		unsafe {
  			vgc_heap.central[span_class].full = span
@@ -1011,7 +1007,7 @@ index d60140c..ebfd655 100644
  		}
  	}
  
-@@ -653,25 +934,35 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+@@ -653,25 +931,35 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
  	}
  
  	span_class := int(class_idx) * 2 // scan variant
@@ -1060,7 +1056,7 @@ index d60140c..ebfd655 100644
  		if zero_fill {
  			unsafe { C.memset(ptr, 0, n) }
  		}
-@@ -683,13 +974,124 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
+@@ -683,13 +971,120 @@ fn vgc_malloc_typed_opts(n usize, ptrmap u64, ptr_words u8, zero_fill bool) void
  	return ptr
  }
  
@@ -1158,10 +1154,6 @@ index d60140c..ebfd655 100644
 +
  // Amortized GC trigger check - avoids atomic loads on every allocation
  fn vgc_maybe_gc() {
-+	if vgc_said_pace == 0 { // diagnostic one-shot (benign race ok)
-+		vgc_said_pace = 1
-+		C.vgc_say(2, u64(C.vgc_atomic_load_u32(&vgc_heap.gc_enabled))) // FIRST pacer call: gc_enabled
-+	}
 +	C.vgc_trace(21, C.vgc_get_cache_idx(), C.vgc_atomic_load_u64(&vgc_heap.heap_live),
 +		u64(C.vgc_atomic_load_u32(&vgc_heap.gc_enabled))) // MAYBE_GC entry (diagnostic, pre-gate)
  	if C.vgc_atomic_load_u32(&vgc_heap.gc_enabled) != 0 {
@@ -1186,7 +1178,7 @@ index d60140c..ebfd655 100644
  		}
  		if C.vgc_atomic_load_u32(&vgc_heap.gc_stop_flag) != 0 {
  			vgc_safepoint()
-@@ -738,7 +1140,9 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+@@ -738,7 +1133,9 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
  					vgc_heap.caches[cache_idx].tiny_offset = off + n
  					vgc_heap.caches[cache_idx].tiny_allocs++
  				}
@@ -1197,7 +1189,7 @@ index d60140c..ebfd655 100644
  				return ptr
  			}
  		}
-@@ -756,23 +1160,27 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+@@ -756,23 +1153,27 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
  					vgc_heap.caches[cache_idx].tiny_offset = n
  					vgc_heap.caches[cache_idx].tiny_allocs++
  				}
@@ -1231,7 +1223,7 @@ index d60140c..ebfd655 100644
  		if zero_fill {
  			unsafe { C.memset(ptr, 0, n) }
  		}
-@@ -783,9 +1191,19 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
+@@ -783,9 +1184,19 @@ fn vgc_malloc_noscan_opts(n usize, zero_fill bool) voidptr {
  // Allocate a large object (> 32KB) with its own span
  fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
  	npages := u32((n + vgc_page_size - 1) / vgc_page_size)
@@ -1253,7 +1245,7 @@ index d60140c..ebfd655 100644
  	}
  
  	unsafe {
-@@ -795,15 +1213,14 @@ fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
+@@ -795,15 +1206,14 @@ fn vgc_alloc_large(n usize, noscan bool, zero_fill bool) voidptr {
  		span.nelems = 1
  		span.alloc_count = 1
  
@@ -1277,7 +1269,7 @@ index d60140c..ebfd655 100644
  	}
  	// Add to large allocation list
  	C.vgc_mutex_lock(&vgc_heap.lock)
-@@ -882,9 +1299,240 @@ fn vgc_free(ptr voidptr) {
+@@ -882,11 +1292,242 @@ fn vgc_free(ptr voidptr) {
  					span.free_index = obj_idx
  				}
  			}
@@ -1379,11 +1371,11 @@ index d60140c..ebfd655 100644
 +		if val == w {
 +			vgc_watch_in_stack = u32(idx + 1)
 +			return
-+		}
+ 		}
 +		addr += sizeof(usize)
-+	}
-+}
-+
+ 	}
+ }
+ 
 +// DIAGNOSTIC: does spawn-arg object p hold a pointer to the watched object
 +// (i.e. does shading the arg actually reach c via arg->...->c)? Sets bit1 of
 +// vgc_watch_in_spawn. Bounded to one span elem; gated on a live watch.
@@ -1479,8 +1471,8 @@ index d60140c..ebfd655 100644
 +		}
 +		if span.noscan {
 +			v |= 32 // bit5: span is noscan (would never be scanned for outgoing ptrs)
- 		}
- 	}
++		}
++	}
 +	// bit4: does w pass vgc_shade's FAST-REJECT arena-bounds gate? vgc_shade
 +	// returns immediately (never marks) if this fails — yet find_span (bit0) and
 +	// sweep use the independent addr_map. A bit0=1,bit4=0 stage = the smoking gun:
@@ -1516,10 +1508,12 @@ index d60140c..ebfd655 100644
 +@[markused]
 +fn vgc_arena_hi_report() u64 {
 +	return u64(vgc_arena_hi)
- }
- 
++}
++
  // Calloc (zero-initialized allocation)
-@@ -937,14 +1585,35 @@ fn vgc_memdup_noscan(src voidptr, n isize) voidptr {
+ fn vgc_calloc(n usize) voidptr {
+ 	return vgc_malloc(n) // vgc_malloc already zeroes memory
+@@ -937,14 +1578,35 @@ fn vgc_memdup_noscan(src voidptr, n isize) voidptr {
  
  fn vgc_find_span(ptr voidptr) &VGC_Span {
  	addr := usize(ptr)
@@ -1561,7 +1555,7 @@ index d60140c..ebfd655 100644
  	page_idx := (addr - a.base) / vgc_page_size
  	if page_idx < vgc_pages_per_arena {
  		return a.page_span[page_idx]
-@@ -975,22 +1644,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
+@@ -975,22 +1637,18 @@ fn vgc_is_heap_ptr(addr usize) bool {
  	return addr >= a.base && addr < a.base + a.used
  }
  
@@ -2081,7 +2075,7 @@ index d2369d7..5459c07 100644
  	}
  }
 diff --git a/vlib/v/gen/c/array.v b/vlib/v/gen/c/array.v
-index c51a5a1..8f5bf01 100644
+index c51a5a1..6f54798 100644
 --- a/vlib/v/gen/c/array.v
 +++ b/vlib/v/gen/c/array.v
 @@ -942,9 +942,40 @@ fn (mut g Gen) gen_array_map(node ast.CallExpr) {
@@ -2126,6 +2120,34 @@ index c51a5a1..8f5bf01 100644
  	}
  
  	mut closure_var := ''
+@@ -1070,13 +1101,25 @@ fn (mut g Gen) gen_array_map(node ast.CallExpr) {
+ 	}
+ 
+ 	if left_is_array {
+-		g.writeln2(';',
+-			'builtin__array_push${noscan}((array*)&${past.tmp_var}, &${tmp_map_expr_result_name});')
++		if perceus_map_reuse {
++			// In-place reuse: the buffer already has cap == orig.len and we refill
++			// exactly orig.len slots by ascending index, so a direct indexed store
++			// avoids array_push's call + grow-check + element memmove (the dominant
++			// single-thread cost). `len` is restored after the loop (it was zeroed).
++			g.writeln2(';', '((${ret_elem_styp}*)${past.tmp_var}.data)[${i}] = ${tmp_map_expr_result_name};')
++		} else {
++			g.writeln2(';',
++				'builtin__array_push${noscan}((array*)&${past.tmp_var}, &${tmp_map_expr_result_name});')
++		}
+ 	} else {
+ 		g.writeln2(';', '${past.tmp_var}[${i}] = ${tmp_map_expr_result_name};')
+ 	}
+ 	g.indent--
+ 	g.writeln('}')
++	if perceus_map_reuse {
++		// restore the length the direct-store loop bypassed (push would have bumped it)
++		g.writeln('${past.tmp_var}.len = ${past.tmp_var}_len;')
++	}
+ 	if !is_embed_map_filter {
+ 		g.set_current_pos_as_last_stmt_pos()
+ 	}
 diff --git a/vlib/v/gen/c/auto_free_methods.v b/vlib/v/gen/c/auto_free_methods.v
 index bb4ad74..e4a1803 100644
 --- a/vlib/v/gen/c/auto_free_methods.v
@@ -2332,7 +2354,7 @@ index 6799cb1..09971d0 100644
  		}
  		af.write_string('\t')
 diff --git a/vlib/v/gen/c/cgen.v b/vlib/v/gen/c/cgen.v
-index 084bacf..ed1d239 100644
+index 084bacf..fcb765e 100644
 --- a/vlib/v/gen/c/cgen.v
 +++ b/vlib/v/gen/c/cgen.v
 @@ -272,6 +272,14 @@ mut:
@@ -2416,6 +2438,23 @@ index 084bacf..ed1d239 100644
  	// TODO: If we have temporary string exprs to free after this statement, do it. e.g.:
  	// `foo('a' + 'b')` => `tmp := 'a' + 'b'; foo(tmp); string_free(&tmp);`
  }
+@@ -13738,6 +13782,16 @@ pub fn (mut g Gen) contains_ptr(el_typ ast.Type) bool {
+ 	if t_typ := g.contains_ptr_cache[el_typ] {
+ 		return t_typ
+ 	}
++	// Option/result wrappers (`?T` / `!T`) always embed an `IError err` field — a
++	// pointer-bearing interface — regardless of the payload type, so they contain a
++	// pointer even when the payload (e.g. `?int`) does not. This must be checked on
++	// el_typ BEFORE final_sym below, which strips the .option/.result flags and would
++	// otherwise classify `?int` as scan-free, emitting a `_noscan` allocation whose
++	// live err pointer a conservative GC mark would skip.
++	if el_typ.has_flag(.option) || el_typ.has_flag(.result) {
++		g.contains_ptr_cache[el_typ] = true
++		return true
++	}
+ 	if el_typ.is_any_kind_of_pointer() {
+ 		g.contains_ptr_cache[el_typ] = true
+ 		return true
 diff --git a/vlib/v/gen/c/cmain.v b/vlib/v/gen/c/cmain.v
 index 7970e6a..906b81f 100644
 --- a/vlib/v/gen/c/cmain.v
