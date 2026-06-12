@@ -188,13 +188,60 @@ under wave churn, watch its address + counter across register/exit events via th
 trace. This is a bounded allocator-correctness bug, not the open-ended STW race
 the "wall" was feared to be.
 
+### Bug B ROOT-CAUSED 2026-06-11 (PM) — SPAWN-ARG NOT GC-ROOTED ACROSS HANDOFF (the "PARTITIONED" allocator hypothesis above is DISPROVEN)
+
+The "allocator slot-reuse / overlapping spans, zero GC cycles" conclusion above was
+a **measurement error** (the trace ring buffer wrapped and did not capture the
+`GC_BEG` events; the steady churn thread alone allocates 2M×256B ≫ 256MB, so GC
+*does* fire). A controlled experiment series re-partitioned bug B:
+
+| experiment | result | inference |
+|---|---|---|
+| stack-allocated WaitGroup (cannot be swept/aliased) | still fails | not allocator slot-reuse / WaitGroup sweep |
+| `vgc_free` → no-op (kills cross-thread free race) | still fails | not the cross-thread free race |
+| own `stdatomic` counter, same 4-worker wave churn | passes 17/18 | not general thread/memory corruption |
+| `-gc none` ×40, `-gc boehm` ×40 | **0 fail** | vgc-specific; NOT a latent `sync.WaitGroup` race |
+| **GC disabled (`next_gc=64 GB`)** | **passes 12/12** | **GC running is REQUIRED → collector sweeps a live object** |
+| **`malloc` the thread-arg struct (uncollectable)** | **≈ all pass** (was 0) | **the swept live object is the spawn thread-arg struct** |
+
+**Root cause:** `spawn f(...)` heap-allocates the thread-argument struct with
+`builtin___v_malloc` (a GC object — `spawn_and_go.v`), fills it, and hands it to
+`pthread_create`. Between create and the child reading it, that struct is reachable
+from **no scanned root**: the spawning thread has dropped its local, and the child
+is **not yet vgc-registered** (it registers lazily on its first allocation, which
+happens *inside* the spawned fn — *after* the generated wrapper has already
+dereferenced `arg->fn`/`arg->argN`, the crash site `…_thread_wrapper+32`). A
+collection in that window sweeps the live arg struct → the wrapper reads
+freed/reused memory → either a `Negative number of jobs in waitgroup` panic (the
+`wg` field read as garbage / the counter clobbered) or a deadlock hang (lost
+semaphore post). This is exactly the long-flagged "spawn-arg not rooted across
+handoff" hazard — now proven to BE bug B, and it is the COLLECTOR/rooting after
+all (not the allocator). `-gc none` never frees it; `-gc boehm` intercepts
+`pthread_create` + conservatively scans, so it stays alive; only the precise-ish
+vgc scan drops it.
+
+**FIX (implemented; gated `-gc vgc`):** a spawn-arg root registry in vgc —
+`vgc_spawn_root_add(arg)` (emitted before `pthread_create`) / `vgc_spawn_root_remove(arg)`
+(emitted in the wrapper before the arg is freed); the collector shades every
+registered spawn root each STW cycle (after `vgc_mark_roots`, before
+`vgc_parallel_mark`), so the arg struct AND its referents survive the handoff.
+Files: `vlib/builtin/vgc_d_vgc.c.v` (`vgc_spawn_roots`/add/remove),
+`vlib/builtin/vgc_gc_d_vgc.c.v` (shade loop), `vlib/v/gen/c/spawn_and_go.v`
+(add/remove emission, gated on `g.pref.gc_mode == .vgc` → non-vgc byte-identical;
+verified 0 refs in a `-gc boehm` build). Result: min_wg (heap & stack WaitGroup)
+0/15 → 14/15+ under vgc. A small residual (~1/15) is being characterized (hang vs
+panic) — a DISTINCT second cause if real, candidate = STW mach-suspend vs the
+WaitGroup's pthread cond/mutex; possibly a harness artifact (subshell-kill bug).
+
 ## Reproduce
 
 ```
 cd /Users/ep/git-repos/cx/vlang-v-latest
 ./v -gc none -prod -o g_churn_none g_churn.v   # oracle
-./v -gc vgc  -prod -o g_churn_vgc  g_churn.v   # subject (minimal collector)
-./g_churn_vgc 20000 6 0   # steady  → PASS
-./g_churn_vgc 100 1 30    # churn   → SIGSEGV (the wall)
-./v -gc vgc -g -o g_churn_dbg g_churn.v        # debug, then: lldb -b -o 'run 100 1 30' -o 'bt' -- ./g_churn_dbg
+./v -gc vgc  -prod -o g_churn_vgc  g_churn.v   # subject (minimal collector + spawn-root fix)
+./g_churn_vgc 20000 6 0   # steady  → PASS (GC now fires non-vacuously)
+./g_churn_vgc 100 1 30    # churn   → was SIGSEGV/panic; with the spawn-root fix → PASS
+# isolation harnesses (this session): min_wg.v (WaitGroup, mode 0 heap / 1 stack),
+# min_atomic.v (own atomic counter control). Use `perl -e 'alarm 30; exec @ARGV' ./bin …`
+# for hang detection (`timeout` is NOT installed on this macOS).
 ```
