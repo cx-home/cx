@@ -67,6 +67,35 @@ beats Go's collector."
   (incl. syscall-blocked/tight-spin), which de-risked getting correctness right;
   signal-based suspension achieves the same on Linux.
 
+## Roadmap to maturity (ordered by leverage; cx-prioritized)
+
+V doesn't have to out-build Go's collector — Perceus removes most of the work, so the
+backstop runs RARELY. "Close the gap" = make the rare STW collector concurrent +
+portable + hardened. Committed near-term order (cx priorities; Windows deferred):
+
+1. **Finish the STW collector** — perf (vgc_heap precise root scan) + §7 gate +
+   R2 + strip probes. The known-good baseline.
+2. **Linux port (REQUIRED for cx — servers are Linux).** Signal-based suspend
+   (SIGUSR + ucontext registers) + ELF roots (dl_iterate_phdr / __data_start/_end/
+   __bss_start). Bounded/standard (Boehm/Go do this). Allocator + Perceus already
+   cross-platform; only the backstop's two touchpoints need it. Gets a correct,
+   DEPLOYABLE collector on Linux with rare STW pauses (acceptable MVP).
+3. **Concurrent mark (latency; HIGHEST RISK — do LAST, on the proven baseline).**
+   Closes most of the pause/tail-latency gap vs Go (STW collapses to root-scan +
+   mark-termination, sub-ms). BUT it re-opens the exact soundness surface removed
+   during bring-up: needs a CORRECT write barrier on every heap pointer store
+   (codegen-wide), alloc-black (objects born mid-mark start marked), careful
+   termination, + its own battery (TSan + barrier-coverage). Must NOT be layered
+   until the single-threaded STW backstop is gate-green and hardened.
+4. **Later:** parallel mark (multiple workers; low priority — backstop is rare),
+   OS scavenging + allocator polish, Windows port.
+
+Reality: items 1/2/4 are bounded engineering (quarters). Item 3 is real but
+deferrable — cx can ship on 1+2 (rare STW pauses, like Boehm's but rarer). The
+genuine multi-year long pole is "trusted at scale," earned via dogfooding (cx) +
+upstream adoption, NOT coding — and it's softened because the hot path isn't the
+collector.
+
 ## Why the backstop is single-threaded STW (a deliberate choice, not a gap)
 
 Concurrent/parallel mark was REMOVED during bring-up: objects allocated during a

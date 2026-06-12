@@ -35,10 +35,15 @@ with P0 + DTLS + codegen patches.
    classifier slice/borrow tracking; generic-instantiation escape summaries;
    return-of-scalar-projection over-pin; deep-free of nested heap fields in dropped
    `&Foo`. More coverage = more GC pressure removed = bigger win. Decide "enough".
-6. **Platform coverage — currently darwin/arm64 ONLY.** STW = mach thread_suspend;
-   data-segment roots = mach-o getsegmentdata. cx servers need **Linux** at least:
-   signal-based suspend-the-world + `/proc/self/maps` (or `__data_start`/`_end`/
-   `__bss_start`) roots; Windows later. Gates real deployment. Big chunk.
+6. **Platform — LINUX IS REQUIRED for cx (not just "maturity"); Windows deferred.**
+   Backstop is darwin/arm64-only IMPLEMENTED (mach thread_suspend + mach-o
+   getsegmentdata; Linux/Windows are safe stubs returning 0). cx servers run Linux →
+   the backstop is non-functional for real cx use until ported. **Linux port (do
+   right after the STW gate is green, bounded/standard):** signal-based suspend
+   (SIGUSR handler + registers from the signal `ucontext`) + ELF roots
+   (`dl_iterate_phdr` / `__data_start`/`_end`/`__bss_start`). Allocator + Perceus are
+   already cross-platform, so it's only the backstop's two touchpoints. Windows
+   (`SuspendThread`/`GetThreadContext` + PE sections) deferred — cx not concerned now.
 7. **Forward-port to cx's V fork.** All P1/P2/P3 is on the upstream-master clone;
    cx's fork is 0.7.0-era. Forward-port the patches onto the fork OR rebase the fork
    onto new upstream V (carrying ALL cx patches: P0 marker-pin/TLA, DTLS net.mbedtls
