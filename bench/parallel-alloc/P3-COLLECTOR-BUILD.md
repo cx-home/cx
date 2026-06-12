@@ -322,6 +322,84 @@ control built in, NO WaitGroup), `min_atomic2 2000 400`, `g_churn 100 1 30` (wit
 WaitGroup). `min_atomic.v` (no steady driver, low GC) PASSES = low-frequency
 control.
 
+### ROOT-CAUSED + FIXED 2026-06-11 (PM) — `vgc_find_span` addr_map 1GB-chunk COLLISION drops a live object; NOT a root-scan miss
+
+The "root-scan miss" framing above is **DISPROVEN**. New root-scan localizers
+(`vgc_watch_in_stack`/`in_reg`/`in_spawn`/`rng_cov` in `vgc_d_vgc.c.v`, logged from
+`vgc_mark_roots` / `vgc_scan_suspended_roots` / the spawn-root shade loop — all
+bounded, OFF the per-word `vgc_shade` hot path) show that at every stall `c` IS
+present in THREE scanned roots: `in_reg=1` (main's captured register, idx 0),
+`in_stack=6|7` (a worker's stack), `in_spawn=2` (a spawn-arg object holds c). So
+`vgc_shade(c)` is provably reachable. Yet `marked=0 → swept → decommit`.
+
+A STAGED mark-probe (`vgc_watch_snapshot(stage)` at 7 points across `vgc_gc_start`,
+recording per stage: bit0=span found / b1=in_use / b2=alloc / b3=mark /
+b4=in_arena_bounds / b5=noscan, + `span.base`) pinned it exactly:
+```
+S0..S6 ALL = 16  (ONLY bit4 set)   ⇒ found=0 at EVERY stage, span.base=0x0
+arena_lo=0x1057d8000 arena_hi=0x38d9b4000 c=0x1256c2fd0 c_in_bounds=true
+```
+`found=0` everywhere ⇒ **`vgc_find_span(c)` returns NIL for a live, in-bounds heap
+object — from the very start of the cycle.** That is why `vgc_shade(c)` (which calls
+`find_span` right after its bounds gate) returns early and never marks, while
+`vgc_do_sweep` walks `allspans` **directly** (not via `find_span`) → finds the span
+→ frees + decommits it. The find_span/sweep reachability asymmetry reclaims a live
+object.
+
+**MECHANISM:** `vgc_arena_size = 64 MB` (`vgc_d_vgc.c.v:69`) but the addr→arena map
+`vgc_addr_map` (`vgc_platform.h`) is **1 GB-granular** (`VGC_ADDR_SHIFT = 30`) with a
+**single `uint16` per chunk**. Up to **16 arenas share one 1 GB chunk**, and
+`vgc_addr_map_register` **OVERWRITES** the chunk entry on each new arena. So
+`vgc_addr_to_arena(addr)` resolves only the **newest** arena in a shared chunk; for
+`c` in an OLDER arena of that chunk, `find_span` checks `addr` against the wrong
+arena's `[base, base+64MB)`, fails, and returns nil. Frequency-dependent exactly as
+observed: bites only when ≥2 arenas occupy one chunk (heavy allocation → many 64MB
+arenas → ~100% on `g_churn`/`min_atomic3`; rare on low-alloc `min_wg`).
+
+**FIX (`vgc_d_vgc.c.v` `vgc_find_span`):** keep the addr_map as an O(1) hint, but if
+the hinted arena does not actually contain `addr`, fall back to a **linear scan over
+all arenas** (`narenas <= vgc_max_arenas = 64`) so `find_span` is as complete as the
+`allspans` sweep. Correctness-first; the scan runs only on a hint miss, and
+collection is rare behind the Perceus front line. (`vgc_is_heap_ptr` has the same
+latent collision but is dead code — no callers.) Diagnostic probes
+(`vgc_watch_*`/`vgc_watch_snapshot`/roots+stage reports) left wired in the clone
+working tree.
+
+**PERF COROLLARY (found during validation, fixed):** the linear fallback was firing
+on ~15/16 of all scanned heap-range words, because the 1GB addr_map chunk
+(`VGC_ADDR_SHIFT=30`) maps to a SINGLE 64MB arena — so 15/16 of addresses in a
+populated chunk resolve to the wrong arena → fallback. Heavy workloads crawled
+(min_wg 0 60 took 161s). FIX: matched the map granularity to the arena size —
+`VGC_ADDR_SHIFT 30→26` (64MB chunks) + `VGC_ADDR_MAP_SIZE 4096→65536` (keep 4TB
+coverage), in `vgc_platform.h`. Now the O(1) hint is correct for the body of every
+arena and the fallback only fires for the rare unaligned boundary chunk shared by
+two adjacent arenas.
+
+**VALIDATION (12-core M-series, darwin/arm64, `-gc vgc -prod`):**
+- find_span fix correctness: **min_atomic3 4000 400 → 14 PASS / 0 STALL** (was
+  ~1-in-2-3 STALL); **min_atomic2 2000 400 → 8/8 PASS**; **min_wg 0 60 2000 (light)
+  → 3/3 PASS in <1s**. The live-object-reclamation bug is CLOSED.
+- perf fix (shift 30→26): controls stay clean AND fast — **min_atomic3 4000 400
+  → 4/4 PASS ~100s each, 0 STALL** (the ~100s is the two steady-allocator GC load,
+  not find_span). min_wg 0 60 *heavy* (120000 iters) is ~130–150s by its own
+  ~28.8M-alloc weight under single-threaded STW (NOT a find_span regression) and now
+  reliably hits the residual thread-exit segv below.
+- flag-off / non-vgc parity: my edits are confined to `vgc_*_d_vgc.c.v` (compiled
+  only under `-gc vgc`) + `vgc_platform.h` (vgc-only) → `-gc none` / `-gc boehm`
+  builds are byte-identical by construction; no rebuild needed.
+
+### STILL OPEN — a DISTINCT residual: thread create/exit × STW segv (NOT find_span)
+
+`g_churn 100 1 30` now passes ~8/10 (was ~0/12) but **still SIGSEGVs ~2/10**, and
+`min_wg 0 60` (heavy) crashes the same way. The crash-dump trace shows the last
+events are `MAYBEGC`/`PACE` for a wave thread's slot with **`heap_live` (~135MB) <
+`next_gc` (256MB) — i.e. NO GC cycle firing** — immediately followed by `EXIT
+slot=7` and the SIGSEGV. So this residual is in the **thread create/exit churn path**
+(`vgc_thread_exit_cb` / slot reuse / mcache clear / V's spawn teardown), NOT a
+collector mark/sweep reclamation (GC isn't even running at the crash). This is the
+long-flagged thread-lifecycle×GC hard part, now isolated as the next bug to chase —
+the find_span fix removed the GC-reclamation crashes that were masking it.
+
 ## Reproduce
 
 ```
