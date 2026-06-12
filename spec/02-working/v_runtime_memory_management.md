@@ -507,8 +507,28 @@ studies; land the chosen collector + RC-atomicity scheme + §5.2 cycle policy.
 correctness battery (§7) byte-identical to `-gc none` under thread churn + GC
 pressure.
 
+**Phase 4 — integration & policy.** Make E real & shippable in cx. Full scope:
+`bench/parallel-alloc/INTEGRATION-SCOPE.md`. Cross-cutting policy **LOCKED
+2026-06-12**:
+- **Default policy:** E is **opt-in via one unified `-gc e` flag** (enables Perceus
+  emission + selects the precise backstop); **`-gc boehm` stays the default**.
+  Flip E to default only once the integrated Linux `g_churn` gate is green *and*
+  the Perceus coverage bar is met.
+- **R2s (share-heavy MP) FORMALLY DEFERRED for v1.** v1 ships R2 (alloc-heavy MP,
+  met via per-thread mcache); share-heavy workloads fall to STW tracing — a
+  documented v1 limitation. The §5.1 thread-local-handoff RC layer (the R2s
+  determinant, design-validated but unbuilt) is post-v1, built when a real
+  share-heavy workload demands it.
+- **Perceus coverage bar: measurement-driven.** Current coverage (spine +
+  simple-loop-body; R1 met) ships v1; widen the classifier only where the
+  integrated cx gate shows residual GC pressure.
+- **Platform:** Linux backstop touchpoints (signal-suspend+ack, ELF data-seg roots)
+  ported + native-validated (arm64+amd64) 2026-06-12; integrated Linux gate folds
+  into the fork forward-port. Windows deferred.
+
 Phases 1–3 are **upstream `vlang/v` compiler/runtime work**; they are tracked
-here and carried upstream as they mature. Phase 0 is local to our fork.
+here and carried upstream as they mature (filing currently HELD — revisit after
+cx dogfoods on Linux + the integrated gate is green). Phase 0 is local to our fork.
 
 ---
 

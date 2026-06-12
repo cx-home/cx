@@ -68,16 +68,39 @@ with P0 + DTLS + codegen patches.
     confirm the allocation parts benefit. NOTE: HTTP req/s is transport-bound — E is
     not the HTTP lever; picoev is.
 
-## C. Cross-cutting decisions to lock BEFORE integration code
+## C. Cross-cutting decisions — LOCKED 2026-06-12 (user)
 
-- Default policy (A4) · platform targets darwin-only vs +Linux (A6) ·
-  upstream-or-fork (A8) · Perceus coverage bar (A5) · shared-RC in scope or
-  R2s deferred (A2).
+- **A4 default policy → E is OPT-IN via one unified flag; Boehm stays the default
+  `-gc`.** cx dogfoods E (the maturity long-pole) without defaulting to it before
+  the integrated Linux gate + R2s land. Flip E to default only once the integrated
+  Linux `g_churn` gate is green AND the Perceus coverage bar (A5) is met. `-gc boehm`
+  remains the C-interop escape hatch either way.
+- **A2 shared-RC → R2s FORMALLY DEFERRED for v1.** Ship E with R2 (alloc-heavy MP,
+  already met via per-thread mcache). Share-heavy MP falls to STW tracing — document
+  as a known limitation. Build the §5.1 thread-local-handoff RC layer post-v1 when a
+  real share-heavy workload demands it. (cx's actual #14 pain is alloc-heavy `[par]`
+  = R2, which E already fixes.)
+- **A8 upstream-vs-fork → keep HELD.** Carry P1/P2/P3 in cx's fork; revisit upstream
+  after cx dogfoods on Linux and the integrated gate is green (evidence > design doc).
+- **A5 Perceus coverage bar → DEFER (measurement-driven).** Don't widen the classifier
+  speculatively. Current coverage (spine + simple-loop-body; R1 win met) ships v1; the
+  integrated cx gate (B11/B13 cx-eval + `[par]` under E) reveals which pins actually
+  cost GC cycles, then widen those specifically.
+- **A6 platform → Linux REQUIRED, touchpoint-port DONE + native-validated 2026-06-12**
+  (commit 04342bd2; both touchpoints, arm64+amd64). Integrated Linux `g_churn` gate
+  deferred to (B)/forward-port (Decision-1 = accept touchpoint level as (a)-done).
+- **A3 flag-unify (the first (B) task) → single `-gc e` mode** that enables Perceus
+  emission (today `-autofree -d perceus`) AND selects the vgc backstop (today
+  `-gc vgc`). Extends the existing `-gc {none,boehm,vgc}` enum. (Implementation pending.)
 
-## Biggest under-appreciated risks
-- **A2** shared-RC may be unbuilt → R2s (share-heavy scaling) gap.
-- **A6** Linux port (mach/mach-o are darwin-only).
-- **A7** forward-port onto cx's diverged fork.
+## Biggest under-appreciated risks (updated 2026-06-12)
+- **A2** shared-RC unbuilt → R2s gap — **RESOLVED by decision: R2s formally
+  deferred for v1** (no longer a delivery risk; a documented v1 limitation).
+- **A6** Linux port — **touchpoint-port DONE + native-validated** (arm64+amd64);
+  residual = the integrated Linux `g_churn` gate, folded into A7/B14.
+- **A7** forward-port onto cx's diverged 0.7.0 fork — **NOW THE DOMINANT RISK.**
+  All P1/P2/P3 + the Linux port live on the upstream-master clone; the fork is
+  0.7.0-era carrying P0/DTLS/posix_spawn/codegen patches. Substantial merge.
 
-These three are the substance of "integration"; the collector gate is the
-prerequisite, not the bulk.
+A7 is now the substance of "integration"; the collector gate + Linux touchpoints
+are done.
