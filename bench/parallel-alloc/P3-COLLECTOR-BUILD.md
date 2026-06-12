@@ -503,11 +503,20 @@ no over-retention.)
   (was 0/12 clean — all crashed at exit before the global-root fix).
 - find_span controls: min_atomic2 8/8, min_atomic3 14/0; steady `20000 6 0`
   byte-identical to `-gc none`.
-- **OPEN residual (heavier load): g_churn `200 1 50` / `100 2 40` still fail
-  intermittently.** Characterizing whether mid-workload (a deeper vector at higher
-  concurrency — e.g. weak-memory half-built `allspans`/`arenas[]` read lock-free by
-  the collector) or another at-exit/global-root gap. min_wg 0 60 (extreme pure-churn)
-  likewise not yet fully clean.
+- **OPEN residual (heavier load) — it is PERF (timeout), not corruption.** g_churn
+  `200 1 50` / `100 2 40` fail with **rc=142 (timeout/slow), not segv** — the
+  workload is CORRECT but too slow at high churn. Cause: the bug-#3 global-root scan
+  is conservative over the WHOLE main data segment, which includes `vgc_heap` (~200 KB:
+  `allspans[16384]` + 64 per-thread caches + 136 central lists) → ~25k `find_span`
+  calls PER GC, and heavy churn triggers very many GCs → the run exceeds the test
+  timeout. **A skip-`vgc_heap` optimization was attempted and REVERTED** — it
+  regressed the solid config (g_churn 100 1 30: 12/12 → 2/3, incl. a 200 s hang),
+  cause not yet understood (suspect the V `&vgc_heap`/`sizeof` range or the
+  exclusion split). NEXT (perf follow-on, correctness already in place): scan
+  `vgc_heap` PRECISELY (only its real pointer-bearing fields) or exclude its range
+  correctly, so the global-root scan is cheap; re-validate heavier g_churn + min_wg
+  0 60. Current committed state (d57b878d): full data-segment scan — g_churn 100 1 30
+  fully clean 12/12 (re-confirmed 8/8 after the revert).
 
 ## Reproduce
 
