@@ -110,7 +110,7 @@ fn main() {
 				wrongd := stdatomic.load_u64(&g_wrong_c) - wrong0
 				st := vgc_is_allocated(c)
 				wr := vgc_watch_report()
-				eprintln('wave ${w} STALL: c.done=${dn} ran_delta=${rand} attempts_delta=${attd} wrong_c=${wrongd} c=0x${u64(usize(c)).hex()} alloc_status=${st} (bit0=allocbit bit1=in_use cnt=${st >> 8}) watch=${wr} (bit0=in_root bit1=marked bit2=swept bit3=decommit cycles=${wr >> 8}) bad_c=0x${stdatomic.load_u64(&g_bad_c).hex()}')
+				eprintln('wave ${w} STALL: c.done=${dn} ran_delta=${rand} attempts_delta=${attd} wrong_c=${wrongd} c=0x${u64(usize(c)).hex()} alloc_status=${st} (bit0=allocbit bit1=in_use cnt=${st >> 8}) watch=${wr} (bit1=marked bit2=swept bit3=decommit cycles=${wr >> 8}; bit0 unused) bad_c=0x${stdatomic.load_u64(&g_bad_c).hex()}')
 				bad++
 				break
 			}

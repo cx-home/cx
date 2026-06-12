@@ -292,11 +292,28 @@ attempts_delta=4 wrong_c=0 alloc_status=0` — `alloc_status=0` means `vgc_find_
 returns NIL: c's span is no longer in the heap (freed/decommitted) **while main
 still holds c and workers write to it**. So the live, main-held object was
 RECLAIMED. Definitive: a collector root-scan/mark/sweep correctness bug that frees a
-live object reachable from `main`. **NEXT:** instrument the collector to log, each
-cycle, whether the stalling `c`'s address is (a) in a scanned root range, (b)
-marked, (c) swept/decommitted — narrow to root-scan-miss vs mark-clear vs
-sweep-race. `vgc_is_allocated(ptr)` (added to vgc_d_vgc.c.v, gated @[markused]) is
-the probe; min_atomic3 calls it at the stall. Suspects: the main thread's
+live object reachable from `main`.
+
+**MECHANISM PINNED 2026-06-11 (PM) via the `vgc_watch` probe → it is a MARK / ROOT-SCAN
+MISS (not a sweep race, not decommit-of-a-marked-object).** Added `vgc_set_watch(ptr)`
+/ `vgc_watch_report()` (vgc_d_vgc.c.v) + per-span hooks in `vgc_sweep_span`
+(marked = the watched obj's mark bit is set at sweep; swept = it was alloc&~mark and
+freed) and `vgc_put_free_span` (decommit) and a cycle counter at `vgc_gc_start`.
+(A first cut also hooked `vgc_shade` per-word but that perturbed the timing-sensitive
+bug enough to mask it — 8/8 clean — so the shade hook was removed; marked/swept are
+now derived once per span in sweep, near-zero overhead, and the bug reproduces.)
+Stall: `wave 1332: c.done=2 alloc_status=0 watch=268` → `268=(1<<8)|12` ⇒
+**cycles=1, marked=0, swept=1, decommit=1**: in ONE GC cycle the live, main-held `c`
+was NOT marked → swept (allocated-but-unmarked) → span decommitted. So the collector
+fails to MARK a live object that `main` (spin-waiting, holding `c`), the running
+workers (hold `c` as a param), and the spawn-root'd args (arg→arg2=c) all reference.
+**NEXT:** find WHICH root scan misses `c` — main's `[sp,stack_base]` + register
+capture under the spin-loop (prime suspect: `c` is held only in a register and the
+suspended-thread `vgc_thread_regs` capture / range is wrong, OR main's stack_base
+from vgc_init is stale), the new-thread worker stacks (registered late?), or the
+spawn-root drain (does shading the arg actually scan arg→arg2 to reach `c`?). Add a
+log in `vgc_mark_roots`/`vgc_scan_suspended_roots` of whether `vgc_watch_addr` falls
+in each scanned range and whether `vgc_shade(watch_addr)` is ever called this cycle. Suspects: the main thread's
 `[sp,stack_base]` range or register capture under the spin-loop; the
 mark-bits-vs-alloc-bits handoff in `vgc_sweep_span`; span decommit of a
 still-referenced span. Reliable repros (all ~100% at high GC freq, `perl -e 'alarm
