@@ -1,0 +1,62 @@
+--- a/vlib/builtin/vgc_d_vgc.c.v	2026-06-12 20:28:43.568307711 -0400
++++ b/vlib/builtin/vgc_d_vgc.c.v	2026-06-12 20:28:43.568432753 -0400
+@@ -94,6 +94,9 @@
+ 	noscan     bool  // true if objects contain no pointers (noscan variant)
+ 	in_use     bool  // true if span is allocated to a size class
+ 	has_ptrmap bool  // true if ptrmap is valid (precise scanning available)
++	is_tiny    bool  // true if the tiny allocator carved a packed block from this span
++	// (multiple independently-allocated sub-objects share one slot; an individual
++	// free must NOT reclaim such a slot — see vgc_free / the tiny allocator).
+ 	// Pointer bitmap: bit N = word offset N contains a pointer.
+ 	// Covers objects up to 512 bytes (64 words on 64-bit).
+ 	// For larger objects, falls back to conservative scanning.
+@@ -714,6 +717,7 @@
+ 	span.nelems = nobjs
+ 	span.free_index = 0
+ 	span.alloc_count = 0
++	span.is_tiny = false // reset on (re)use; set true only when the tiny allocator carves a packed block
+ 
+ 	// Bitmaps are inline in the span (alloc_buf/mark_buf); point the working pointers
+ 	// at them and zero the bytes in use. nobjs <= 1024 -> bitmap_size <= 128 <= 136,
+@@ -1149,6 +1153,11 @@
+ 					unsafe { C.memset(ptr, 0, usize(span.elem_size)) }
+ 				}
+ 				unsafe {
++					// Mark the span as tiny-packed: this slot will hold several
++					// independently-allocated sub-objects, so vgc_free must never
++					// reclaim it on an individual free (it would clobber live
++					// siblings). Only the tracing collector reclaims tiny blocks.
++					span.is_tiny = true
+ 					vgc_heap.caches[cache_idx].tiny = usize(ptr)
+ 					vgc_heap.caches[cache_idx].tiny_offset = n
+ 					vgc_heap.caches[cache_idx].tiny_allocs++
+@@ -1202,6 +1211,7 @@
+ 	unsafe {
+ 		span.class_idx = 0
+ 		span.noscan = noscan
++		span.is_tiny = false // large spans are never tiny-packed (reset in case of a recycled span)
+ 		span.elem_size = u32(n)
+ 		span.nelems = 1
+ 		span.alloc_count = 1
+@@ -1282,6 +1292,21 @@
+ 	if span.elem_size == 0 {
+ 		return
+ 	}
++	// TINY-BLOCK SAFETY: the tiny allocator (vgc_malloc_noscan_opts) packs several
++	// independently-allocated sub-objects (each < vgc_tiny_size) into a SINGLE span
++	// slot, Go-style. A tiny-packed slot is therefore NOT solely owned by the object
++	// whose pointer was passed here: `obj_idx` below maps every packed sub-object
++	// (and any interior pointer) to the same slot, so honoring this free would clear
++	// the alloc bit for the whole slot and let a later allocation reuse it while
++	// sibling sub-objects are still live -> their bytes get overwritten. (Observed as
++	// map corruption: a map's `delete` frees one short string key's char buffer,
++	// which shares a tiny block with other live keys.) Like Go, tiny objects are
++	// never reclaimed by an individual free; only the tracing collector reclaims a
++	// tiny block, and only once NONE of its packed sub-objects is reachable. So skip
++	// the eager-free hint for any span the tiny allocator carved from.
++	if span.is_tiny {
++		return
++	}
+ 	obj_idx := u32((usize(ptr) - span.base) / usize(span.elem_size))
+ 	if obj_idx < span.nelems && span.alloc_bits != unsafe { nil } {
+ 		if C.vgc_bitmap_get(span.alloc_bits, obj_idx) != 0 {
