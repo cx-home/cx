@@ -52,10 +52,31 @@ Validated: 34 → 12 failures. All ORM/sql/most interfaces+options+fns now pass 
    strings; smells like a Perceus/free early-drop of a builder/string.
 4. **`option_init_ptr_test` (compile, 1):** "extraneous `)` before `;`" — a distinct
    option-ptr-init close-paren codegen bug (NOT a `_free` issue).
-5. **`vgc_malloc_noscan` panic (runtime, 1):** `thread_wait_ptr_test` — `V panic:
-   fixed array index out of range (index: -1, len: 64)` inside `vgc_malloc_noscan`.
-   A real runtime memory-safety bug (looks like `cache_idx == -1` indexing a `[64]`
-   array on an unregistered thread). The one I'd least want to leave unfixed.
+5. **`vgc_malloc_noscan` panic (runtime, 1) — ✅ FIXED.** `thread_wait_ptr_test`
+   spawns ~999 concurrent `go` threads, far exceeding the fixed `[vgc_max_threads=64]`
+   cache table. `vgc_register_thread` deliberately leaves `cache_idx = -1` when the
+   table is exhausted, but the alloc fast path then indexed `caches[-1]` → `V panic:
+   fixed array index out of range (index: -1, len: 64)` (and the panic's own message
+   formatting re-entered malloc → infinite recursion). Two unguarded `caches[cache_idx]`
+   sites: `vgc_cache_get_span` and `vgc_acct_alloc` (`vgc_acct_free`/`vgc_safepoint`
+   already guarded `idx<0`). **Fix:** `cache_idx<0` → `vgc_cache_get_span` allocates
+   straight from central (locked, no per-thread cache); `vgc_acct_alloc` folds bytes
+   into the global atomics (mirrors `vgc_acct_free`). Patch:
+   `vgc-overflow-thread-alloc-fix.patch`. thread_wait_ptr passes; concurrency suite
+   67/69 (the 1 fail is `shared_generic`, the `_free` bug #1).
+   **KNOWN LIMITATION (pre-existing, not introduced here):** an overflow (>64th)
+   thread has no cache slot and is therefore NOT in the collector's suspend/root-scan
+   set, so heap objects reachable ONLY from such a thread's stack across a GC could be
+   reclaimed (UAF). The fix turns a guaranteed crash into correct behavior *when
+   overflow threads hold no cross-GC heap roots* (the common case — workers compute &
+   return values, as here). Fully sound >64-thread support needs overflow-thread root
+   scanning (or a larger cap) — a separate design item.
+
+## Status (this sweep)
+Fixed this pass: **HEAP_vgc arity (22 files)** + **vgc_malloc_noscan overflow panic (1)**.
+Original 34 `-gc e` failures → **~11 remaining**: undeclared `_free` ×3 (#1), reflection/
+generic-anon-fn segfaults ×4 (#2), string-output corruption ×3 (#3), `option_init_ptr`
+paren ×1 (#4). All deeper (DCE/reflection/Perceus-string) — distinct follow-ups.
 
 All V-only / CX-agnostic. Fixes live in the clone working tree; captured via
 `E-canonical.patch` + per-bug standalone patches.

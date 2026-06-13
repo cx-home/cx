@@ -1,0 +1,36 @@
+--- a/vlib/builtin/vgc_d_vgc.c.v	2026-06-12 21:26:06.689710979 -0400
++++ b/vlib/builtin/vgc_d_vgc.c.v	2026-06-12 21:26:06.689968312 -0400
+@@ -877,6 +877,18 @@
+ // ============================================================
+ 
+ fn vgc_cache_get_span(cache_idx int, span_class int) &VGC_Span {
++	if cache_idx < 0 {
++		// Unregistered thread: the fixed [vgc_max_threads] cache table is exhausted
++		// (e.g. >64 concurrent `go` threads — vgc_register_thread leaves idx = -1
++		// rather than scribble on caches[-1]). It has no per-thread mcache slot, so
++		// allocate straight from central (vgc_central_get_span is internally locked).
++		// No caching: each call gets its own span; partial spans are reclaimed by the
++		// collector. Slower for these overflow threads, but SAFE — previously this
++		// indexed caches[-1] -> "fixed array index out of range (index: -1, len: 64)"
++		// -> panic, and the panic's own message formatting re-entered malloc -> the
++		// same crash (infinite recursion).
++		return vgc_central_get_span(span_class)
++	}
+ 	span := unsafe { vgc_heap.caches[cache_idx].alloc[span_class] }
+ 	if span != unsafe { nil } {
+ 		// Check if span has free objects
+@@ -1031,6 +1043,14 @@
+ // alloc/free). cache_idx is the caller's own slot, so the writes are race-free.
+ @[inline]
+ fn vgc_acct_alloc(cache_idx int, live_sz u64, total_n u64) {
++	if cache_idx < 0 {
++		// Unregistered (overflow) thread: no per-thread accounting slot — fold the
++		// bytes straight into the global atomics (mirrors vgc_acct_free's idx<0 path).
++		// Without this, caches[-1] is an out-of-range fixed-array index -> panic.
++		C.vgc_atomic_add_u64(&vgc_heap.heap_live, live_sz)
++		C.vgc_atomic_add_u64(&vgc_heap.total_alloc, total_n)
++		return
++	}
+ 	unsafe {
+ 		vgc_heap.caches[cache_idx].live_delta += i64(live_sz)
+ 		vgc_heap.caches[cache_idx].alloc_delta += total_n
