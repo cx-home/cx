@@ -59,26 +59,47 @@ a hint; the collector is the backstop.
   `-gc vgc`/`-gc e` it reports `CORRUPT failures=25` (exit 1) WITHOUT the fix, `OK`
   WITH it. Byte-identical + exit 0 across none/boehm/vgc/e with the fix.
 
-## SEPARATE 2nd bug found (NOT this fix, NOT the collector) — Perceus drop, -gc e only
-`test_large_map` (:184) fails **only** under `-gc e` (passes none/boehm/vgc). It is a
-**Perceus front-line drop-placement** bug, pre-existing (A/B-confirmed it failed with
-the old free behavior too) and independent of the tiny-free fix. Generated C for
-`key := i.str(); m[key] = v`:
+## SEPARATE 2nd bug — Perceus drop-before-use, -gc e only — ✅ ALSO FIXED 2026-06-12
+`test_large_map` (:184) failed **only** under `-gc e` (passed none/boehm/vgc). A
+**Perceus front-line drop-PLACEMENT** bug, pre-existing and independent of the
+tiny-free fix (A/B-confirmed it failed with the old free behavior too). Generated C
+for `key := i.str(); m[key] = v`:
 
 ```c
 string key = builtin__int_literal_str(i);
-builtin__string_free(&key);                       // freed BEFORE its use
+builtin__string_free(&key);                       // freed BEFORE its use (BUG)
 builtin__map_set(&nums, &(string[]){key}, &(int[]){ i });
 ```
 
-`key` is freed, then a shallow struct-copy sharing `key.str` is passed to `map_set`,
-which clones from freed/reused memory → stored keys corrupt, map collapses (len=2
-after 30000 inserts; lookups miss). Fails with BOTH free and collection disabled ⇒
-pure codegen: Perceus's last-use analysis does not treat the address-of-temp-array
-map-set argument as a use of `key` (class = the banked "interproc escape /
-buffer-fresh" sharpen items). Non-tiny keys fail too, so it is not the tiny bug.
-Distinct subsystem (perceus.v / autofree.v / fn.v drop emission) — deferred to a
-focused follow-up (soundness first).
+`key` was freed, then a shallow struct-copy sharing `key.str` was passed to
+`map_set`, which cloned from freed/reused memory → stored keys corrupt, map
+collapses (len=2 after 30000 inserts; lookups miss). Fails with BOTH free and
+collection disabled ⇒ pure codegen.
+
+**Root cause — `perceus.v` CFG liveness, `pcs_lower_stmt` AssignStmt use-set.** It
+collected LHS identifiers as uses only for compound ops (`!= .assign && != .decl_assign`),
+and the `defs` loop only handled bare-`Ident` LHS. So for a **store target** with op
+`.assign` and a non-`Ident` LHS (`m[key] = v`, `s.f = v`, `*p = v`), the container /
+index / receiver identifiers (`m`, `key`) entered **neither** the use-set nor the
+def-set → `key` dropped out of the live set → Perceus placed its drop at the
+declaration, before `map_set` consumed it.
+
+**Fix (perceus-drop-store-target-fix.patch; folded into E-canonical.patch):**
+restructure the AssignStmt def/use build — a bare-`Ident` LHS is a def (also a use
+for compound ops); any **non-Ident store target** has all its identifiers collected
+as USES unconditionally (`pcs_collect(l)`), since they are read to locate the slot.
+Conservative by construction (adds uses → can only remove an unsound early drop,
+never license one). Generated C now emits `string_free(&key)` AFTER `map_set`.
+
+Validated: map_test fully GREEN under none/boehm/vgc/e; corpora none==e (6) byte-
+identical with the rebuilt compiler; g_churn battery under e clean; broad vlib sweep
+under e (datatypes 13/13, arrays 6/6, strconv 9/9) green. Gate `map_build_corpus.v`
+(this dir) has teeth: `failures=50001` under -gc e WITHOUT the fix, OK with.
+
+NOTE: this is a COMPILER fix (vlib/v/gen/c/perceus.v) → requires `./v2 -o v2 cmd/v`
+rebuild (unlike the tiny-free fix, which is in builtin and recompiled per target).
+perceus.v is untracked in the clone; it is captured via E-canonical.patch (new-file
+diff) — no separate mirror.
 
 ## State
 Fix is in the clone working tree (canonical, alongside the E tree) and folded into
