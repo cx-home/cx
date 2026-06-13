@@ -385,7 +385,7 @@ check-null-absence-conflation:
 # the named gate.
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
-	@$(V) test vcx/tests/effect_alignment_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/tests/effect_alignment_test.v
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
@@ -601,9 +601,15 @@ test-vcx-summary:
 # Each gate's coverage commitment is itemised in
 # `spec/v0_8_0_status.md §11.6`; this Make target is the V-side runner.
 # Wired into TEST_TARGETS via the `test-vcx` umbrella above.
+# v0.9.0 — the V-impl gate compiles the vcx test corpus under cx's default
+# memory model, architecture E (`-gc e`): Perceus RC front line + precise STW vgc
+# backstop. CX_GC is overridable (e.g. `make CX_GC='-gc boehm' test-vcx-v08`) to
+# A/B against the prior collector. Only the FORK `$(V)` implements `-gc e`; the
+# bare-`v` lang/v reference paths below stay on the upstream default.
+CX_GC ?= -gc e
 .PHONY: test-vcx-v08
 test-vcx-v08: build-vcx-dev
-	@$(V) -cc cc test vcx/tests/
+	@$(V) -cc cc $(CX_GC) test vcx/tests/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical

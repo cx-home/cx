@@ -3,7 +3,7 @@
 
    ONE [directive-doc] per directive in the §4.1 registry of
    spec/03-approved/core/code.md (the canonical, closed set; the retired
-   [?try] is excluded). Each block carries a name, the §4.1 category and
+   try directive is excluded). Each block carries a name, the §4.1 category and
    spec cross-reference, a one-line sig + summary, and — where the
    conformance corpus backs it — a runnable [example] whose [code] and
    [expect] appear verbatim in conformance/code.cxd (so the drift gate
