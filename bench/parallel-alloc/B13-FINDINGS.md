@@ -150,3 +150,63 @@ the in-tree `vgc_watch_*` / `vgc_watch_snapshot` localizers to pin which step
 drops the live object: (a) in a scanned root range? (b) marked? (c) swept/
 decommitted? Fix in the clone, re-validate g_churn + the new repro, add it to the
 standalone gate (it is exactly the gate gap), then forward-port. No CX anywhere.
+
+═══════════════════════════════════════════════════════════════════════
+## MEASURED 2026-06-12 — bug FIXED, payoff is SERIAL not PARALLEL
+The B13-blocking corruption is RESOLVED (conservative-mark fix): cx_e now
+computes the workload correctly. All 4 configs = `(80000200000 ×8)` correct.
+
+Workload: `[?to-sequence [?map (1..8) [using [?fn $x [?reduce [$range 0 400000]
+[using [?fn ($a $b) [+ $a $b]]] [init 0]]]] [par]?]]`. cx built `-prod -cc cc -gc {boehm,e}`
+from the fork (a95aff916b). Best-of-3 wall-clock, 12-core M-series:
+
+| config            | time (ms) | ratio                                  |
+|-------------------|-----------|----------------------------------------|
+| boehm serial      | 10339     | baseline                               |
+| boehm par (8-way) |  9634     | 0.93× serial (par barely helps = #14)  |
+| **E serial**      |  **4733** | **2.18× faster than boehm serial** ✅  |
+| E par (8-way)     |  8156     | 1.72× SLOWER than E serial (anti-scale)|
+
+CONCLUSION: E's payoff on this workload is the SERIAL Perceus front-line
+(2.18× boehm serial — less GC). E `[par]` ANTI-SCALES: 8 alloc-heavy workers
+trip the 256MB GC trigger ~8× more often and every collection is full-STW
+(mach-suspends all workers) → GC-freq × STW-cost dominates → par slower than
+its own serial. boehm par also barely scales (0.93×, the original #14
+alloc-lock symptom). Fastest config overall = E serial.
+
+This is the documented R2/concurrent-mark boundary (gate verdict §7 / E-VLANG-
+REVIEW): MP alloc-heavy scaling under the rare-STW backstop needs either
+concurrent mark (deferred, highest-risk) or much better GC pacing under
+parallelism (e.g. per-thread GC trigger / larger next_gc / scaling next_gc with
+live threads). The per-thread heap-accounting fix (R2-E-FINDINGS) removed the
+ALLOCATOR cacheline contention but NOT the STW-collection-frequency cost that
+dominates here.
+
+NEXT LEVERS (for the [par] payoff) — GC-pacing bump TESTED, does NOT work:
+raising next_gc 256MB->1GB leaves E par at 1.80x anti-scale (≈ the 256MB 1.72x);
+serial unchanged (~4.6s). Pushing to 4GB ABORTS on the allspans cap (262144
+spans) — with no GC the 8 alloc-heavy workers exhaust the span registry. Root:
+the 8 [par] workers' COMBINED alloc rate trips the (shared) trigger ~8x more
+often than serial, and every collection is full-STW (mach-suspends all 8) — so
+par GC-cost = ~8x frequency x 8-thread-suspend regardless of trigger height, and
+the trigger can't be raised past the span cap. So the MP payoff genuinely needs
+(a) CONCURRENT MARK (don't suspend all workers — the real fix, deferred,
+highest-risk) or (b) PER-THREAD GC pacing + dynamic span capacity, NOT a static
+trigger bump. The SERIAL 2.18x win is shippable today as the single-thread
+throughput case for `-gc e` (opt-in). [Corrected 2026-06-12: an initial 4GB
+"near-parity" reading was time-to-ABORT, not a valid result — retracted.]
+
+═══════════════════════════════════════════════════════════════════════
+## CORRECTION 2026-06-12 (B16) — "static trigger bump does NOT help" was WRONG
+The claim above that raising next_gc to 1GB "leaves E par at 1.80x anti-scale"
+is RETRACTED. It was ALSO a time-to-abort/measurement artifact (the 1GB run was
+on the pre-R2-fix fork and/or close to the span-cap regime). With the 262144
+span cap removed (dynamic mmap-backed allspans, B16) a **fixed 1GB trigger floor
+recovers `[par]` scaling**: cx par 8386ms -> **3377ms = 1.41x FASTER than E
+serial** (4756ms), 2.8x faster than boehm par, output verified `(80000200000
+x8)`. So a trigger bump DOES help — partially. What stays TRUE: the win is
+partial (1.41x, not 4-8x) and RSS-costly (5.5GB), because per-collection MARK
+COST scales with the concurrent live set (measured: par marks up to ~4x serial's
+bytes per collection at the SAME collection count). Full near-linear `[par]`
+payoff still needs CONCURRENT MARK. Full detail + soundness gate: B16-FINDINGS.md.
+═══════════════════════════════════════════════════════════════════════
