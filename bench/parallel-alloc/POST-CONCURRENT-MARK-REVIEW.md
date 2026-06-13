@@ -13,9 +13,15 @@ represented. Read `CONCURRENT-MARK-FINDINGS.md` (when written) for the landed
 state + measured `[par]` scaling before deciding.
 
 ## Framing lens (author, locked)
-**All software = access data → transform it → move it on.** CX is therefore a
-**dataflow / query language** (XQuery is the closest comparator). This narrows
-every decision below.
+**All software = access data → transform it → move it on** — the universal base of
+computation (Church-Turing / von Neumann; control flow, abstraction, code, I/O all
+reduce to it; the only sliver that doesn't is synchronization/ordering). So this is
+a **general-purpose, data-centric *foundation*, NOT a narrowing. CX is
+general-purpose.** XQuery is a useful comparator for the data/query *shape*, not a
+bound on scope. Consequence: CX must serve the FULL workload spread — bulk
+record/stream transforms AND tight scalar loops AND pointer-chasing/irregular
+graphs AND low-latency coordination — which want *different* representations. Hence
+the execution decision below is "both", not "columnar-only."
 
 ## State entering this session
 - **B17 DONE+SHIPPED** (commit e77775a5): COW closures fix — cut #14 GC pressure
@@ -34,7 +40,7 @@ every decision below.
 | Own vs rent runtime | V / JVM / .NET / Graal | **Own (V)** + *isolation-for-scaling* doctrine (linear scaling = per-thread/per-batch heap isolation, NOT a better shared GC; JVM optimizes pauses, wrong axis) |
 | Scaling memory | concurrent mark / regions / RC / generational | **Per-batch/per-request regions + off-heap Store** primary; concurrent mark = backstop; generational next; interpreter-RC optional |
 | Typing | dynamic / gradual-shape / full-static | **Schema/shape typing at boundaries** (XQuery-style, gradual). A static pass, if built = *shape/schema inference over the pipeline*, NOT general expression typing. Not mandatory Scala-static. |
-| Execution for bulk data | tree-walk boxed nodes / bytecode-VM+JIT / columnar-vectorized | **Columnar/vectorized (Arrow — already integrated: libcx_arrow, data_bin_arrow conformance)** for transforms; demote general VM/JIT (scalar unboxing only helps control-flow glue) |
+| Execution (GP workload spread) | tree-walk boxed nodes / fast general core (unbox+specialize/VM) / columnar-vectorized | **BOTH: a fast general execution core (unbox/specialize — the VM path) for scalar/control/irregular work, AND columnar/vectorized (Arrow — already integrated: libcx_arrow, data_bin_arrow) for bulk data movement.** Not either/or — general-purpose requires the full spread. (Earlier "columnar-only, demote VM" was downstream of the wrong narrow framing; corrected.) |
 | **Representation vs homoiconicity (the crux)** | uniform nodes / dual representation | **Dual** — see below |
 
 ## The crux: representation vs homoiconicity
