@@ -85,7 +85,8 @@ multi-reactor HTTP server + churn micro-benchmarks). References are fork commits
 | 9 | Sound eager-drop for **aliased call results** + `?&T` free-method codegen + `vgc_free` central lock | `38607b2d` | (a) a heap value bound from a call may alias the callee's traversed sub-objects → pin it (backstop, don't deep-drop); (b) option-of-pointer free emitted a struct member-access on the `_option_*` wrapper (C compile error); (c) `vgc_free` now takes the per-class central lock (was a real MP soundness gap). |
 | 10 | Option-aware free methods for `?SumType` / `?[]T` fields | `26ac2bbe` | `gen_free_for_sumtype`/`_array` emitted `it->_typ`/`it->len` on the `_option_*` wrapper → C error for any program freeing such a field under autofree/Perceus. |
 | 11 | `contains_ptr` treats `?T` / `!T` as pointer-bearing | `d112d5c8` | `[]?int` was flagged noscan (the option strips to `.int`), but `_option_int` carries an `IError` pointer → a pointer-bearing object marked noscan. |
-| 12 | Four `-gc e` correctness fixes: map tiny-free, Perceus drop, HEAP_vgc arity, overflow-thread panic | `a95aff916b` | Incl. the >`vgc_max_threads` case that indexed `caches[-1]` and recursed through malloc in the panic path. |
+| 12 | Four `-gc e` correctness fixes: map tiny-free, Perceus drop, HEAP_vgc arity, overflow-thread panic | `a95aff916b` | Incl. the >`vgc_max_threads` case that indexed `caches[-1]` and recursed through malloc in the panic path. The HEAP_vgc-arity fix alone cleared 22 of 34 of V's own `-gc e` test failures. |
+| 13 | Drop extraneous `)` when freeing an **option-pointer local** (`b := &?Foo{}`) | `3bcf843fb9` | The option branch closed the free call's paren and the shared tail closed it again → `free((Foo**)b.data));` C error. Fixes `option_init_ptr_test` under `-gc e`; boehm/none unaffected. |
 
 ---
 
@@ -129,8 +130,18 @@ workers did not, isolating the cost to in-process shared allocator state (not ba
   `vgc_verify` tooling (debug-gated), and the experimental `cx_region.c.v` /
   transport-layer patches (consumer-specific; excluded from this proposal).
 - Based on `a83aabb10f`; a rebase onto current master is required.
-- Known follow-ups: sound concurrent-mark GC-assist (cooperative safepoints); V's own
-  `-gc e` codegen edge cases (a handful of stdlib test programs); generational option.
+- Known follow-ups: sound concurrent-mark GC-assist (cooperative safepoints); generational
+  option; and V's own `-gc e` codegen edge cases — **~10 of 2146** `vlib/v/tests` programs
+  (all `-gc e`-specific, pass under `none`/`boehm`), characterized as three families:
+  (1) **option-wrapper / generic / sub-module `_free` not generated** — e.g. an array of
+  `?string` references `builtin___option_string_free` but the value-option wrapper free is
+  never emitted (free-method generation vs `-skip-unused` DCE; the unwrapped element sym
+  has a user `free`, so the option-wrapper free path is skipped);
+  (2) **reflection metadata reclaimed** (4 reflection / generic-anon-fn tests segfault);
+  (3) **Perceus string early-drop** (3 tmpl/comptime/interface-str tests produce
+  truncated/aliased strings). These touch shared autofree/option/Perceus codegen
+  (boehm-regression-sensitive) and runtime mark soundness — each warrants a dedicated pass,
+  not bundled here. Fix #13 above cleared one (`option_init_ptr`).
 
 ## How to verify
 

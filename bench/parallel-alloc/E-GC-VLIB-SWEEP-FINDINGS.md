@@ -80,3 +80,19 @@ paren ×1 (#4). All deeper (DCE/reflection/Perceus-string) — distinct follow-u
 
 All V-only / CX-agnostic. Fixes live in the clone working tree; captured via
 `E-canonical.patch` + per-bug standalone patches.
+
+## Update 2026-06-14 (PR-readiness pass)
+- **#4 `option_init_ptr` — ✅ FIXED** (fork `3bcf843fb9`): the option-pointer-local
+  free emitted a double close-paren (`free((Foo**)b.data));`). Fix in
+  `vlib/v/gen/c/autofree.v`: the option branch writes `.data` (no close); the shared
+  tail's single `)` closes the call, matching the non-option path. Passes under
+  `-gc e`/`boehm`/`none`; boehm `options/` suite 213/213 (no regression); cx V-impl
+  gate 125/125.
+- Remaining ~10 (re-characterized): family #1 = **value-option-wrapper / generic /
+  sub-module `_free` not generated** (sharper than "undeclared _free": e.g.
+  `builtin___option_string_free` for a `?string` array element is referenced but the
+  option-wrapper free is never emitted because the unwrapped element sym `string` has a
+  user `free`, so `gen_free_for_array`/`_struct` take the string-construct branch and
+  skip generating the wrapper; compounded by `-skip-unused` DCE). Family #2 = reflection
+  metadata reclamation (×4). Family #3 = Perceus string early-drop (×3). All
+  boehm-regression-sensitive / runtime-soundness — dedicated passes, not loop fixes.
