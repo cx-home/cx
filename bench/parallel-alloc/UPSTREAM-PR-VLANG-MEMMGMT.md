@@ -87,6 +87,8 @@ multi-reactor HTTP server + churn micro-benchmarks). References are fork commits
 | 11 | `contains_ptr` treats `?T` / `!T` as pointer-bearing | `d112d5c8` | `[]?int` was flagged noscan (the option strips to `.int`), but `_option_int` carries an `IError` pointer → a pointer-bearing object marked noscan. |
 | 12 | Four `-gc e` correctness fixes: map tiny-free, Perceus drop, HEAP_vgc arity, overflow-thread panic | `a95aff916b` | Incl. the >`vgc_max_threads` case that indexed `caches[-1]` and recursed through malloc in the panic path. The HEAP_vgc-arity fix alone cleared 22 of 34 of V's own `-gc e` test failures. |
 | 13 | Drop extraneous `)` when freeing an **option-pointer local** (`b := &?Foo{}`) | `3bcf843fb9` | The option branch closed the free call's paren and the shared tail closed it again → `free((Foo**)b.data));` C error. Fixes `option_init_ptr_test` under `-gc e`; boehm/none unaffected. |
+| 14 | Generate the **option-element free for `[]?T`** | `3d537762` | An array of `?string` referenced `_option_string_free`, a wrapper no path generated (the unwrapped sym has a user `free` → string-construct branch). Now inline the option-element payload free. Fixes `option_ifguard_array_of_option_test`. |
+| 15 | **Atomic `live_threads`** in register/unregister | `c69fd59b` | `vgc_maybe_gc` reads `live_threads` lock-free for per-thread GC pacing; the plain `++/--` raced that atomic read (TSan-flagged). |
 
 ---
 
@@ -94,7 +96,8 @@ multi-reactor HTTP server + churn micro-benchmarks). References are fork commits
 
 | # | Optimization | Commit | Claimed effect (verify) |
 |---|--------------|--------|-------------------------|
-| A | **Per-thread heap accounting** (Go per-P style): alloc/free bump thread-private `live_delta`/`alloc_delta`, flush to the global atomics only every ~1 MB | `677770dd` / `38607b2d` | Removes the global-atomic cacheline contention that made alloc-heavy MP anti-scale. Scalar-alloc T1→T8: ~6.7× (near-linear); ~8× Boehm at T8. |
+| A | **Per-thread heap accounting** (Go per-P style): alloc/free bump thread-private `live_delta`/`alloc_delta`, flush to the global atomics only every ~1 MB | `677770dd` / `38607b2d` | Removes global-atomic cacheline contention on the accounting path. |
+| A2 | **Lock-free free fast path** for mcache-resident / dropped spans (`on_central == 0`): `vgc_free` skips the per-class `central[].lock` (kept only for spans actually on a central list); bitmap+count stay atomic, the `fetch_and` prior value gates the decrement (double-free-safe) | `c69fd59b` | The residual-#4 fix had added that lock to *every* non-tiny free → a same-class free storm (`bench_scalar`: 8 threads alloc+drop one 32 B class) serialized N-way and anti-scaled (35→7 Mops/s T1→T8, below Boehm). With the skip it is **near-linear again: 45→326 Mops/s T1→T8 (7.2×, ~5.5× Boehm at T8)**; `bench_mp` T1 5.9→76. Verified residual-#4-safe (white-box selftest + container churn 15 rounds niltrace=0 + TSan 0). |
 | B | **Perceus deep-free** of nested heap fields of a dropped `&Foo`, gated by a sound deep-drop analysis | `677770dd` | Nested-object MP T1→T8 ~7.5× (near-linear); removes the GC pressure that compounded MP contention. |
 | C | **In-place reuse**: direct indexed stores for reused map slots | `d7e9f5a1` | Avoids re-hashing on reuse-in-place. |
 | D | **Dynamic span registry** (mmap-backed, lazily committed) + env-gated GC pacing | `72edb9e5` | Removes a fixed 262k-span cap; lets the trigger scale without a hard abort. |
@@ -130,7 +133,11 @@ workers did not, isolating the cost to in-process shared allocator state (not ba
   `vgc_verify` tooling (debug-gated), and the experimental `cx_region.c.v` /
   transport-layer patches (consumer-specific; excluded from this proposal).
 - Based on `a83aabb10f`; a rebase onto current master is required.
-- Known follow-ups: sound concurrent-mark GC-assist (cooperative safepoints); generational
+- Known follow-ups: **full deferred cross-thread free** (the targeted lock-free path #A2
+  already covers owner-frees of mcache-resident spans — the dominant case; a complete
+  mimalloc-style per-span atomic thread-free list would also make cross-thread frees of
+  central-listed spans lock-free); sound
+  concurrent-mark GC-assist (cooperative safepoints); generational
   option; and V's own `-gc e` codegen edge cases — **~10 of 2146** `vlib/v/tests` programs
   (all `-gc e`-specific, pass under `none`/`boehm`), characterized as three families:
   (1) **option-wrapper / generic / sub-module `_free` not generated** — e.g. an array of
