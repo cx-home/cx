@@ -13,7 +13,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGETS=()
 for arg in "$@"; do
  if [ -d "$arg" ]; then
- while IFS= read -r f; do TARGETS+=("$f"); done < <(find "$arg" -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*")
+ while IFS= read -r f; do TARGETS+=("$f"); done < <(find "$arg" -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/_archive/*")
  elif [ -f "$arg" ]; then
  TARGETS+=("$arg")
  fi

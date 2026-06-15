@@ -315,8 +315,11 @@ bench-compare:
 	  $(if $(STRICT),--strict,)
 
 # Documentation hygiene — every relative markdown link resolves.
+# Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
+# Pages site, which has no .md files — pointing the check there made the
+# target exit 2 on an empty target list).
 verify-doc-links:
-	@tools/verify-doc-links.sh docs/
+	@tools/verify-doc-links.sh docs-src/
 	@tools/verify-doc-links.sh README.md
 
 # Pre-tag version-string consistency (defaults to 0.6.0).
