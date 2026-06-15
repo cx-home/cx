@@ -190,8 +190,14 @@ git add VERSION cx.pc.in vcx/v.mod lang/v/v.mod \
         lang/python/pyproject.toml 2>/dev/null || true
 git commit -m "chore(release): bump version strings to $VERSION" || true
 
-note "creating signed tag"
-git tag -s "$TAG" -m "CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
+TAG_MSG="CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
+if git config --get user.signingkey >/dev/null 2>&1 && gpg --list-secret-keys >/dev/null 2>&1; then
+    note "creating signed tag"
+    git tag -s "$TAG" -m "$TAG_MSG"
+else
+    note "no GPG signing key configured — creating an annotated (unsigned) tag (matches the prior CX tags, e.g. v0.8.0/v0.10.0)"
+    git tag -a "$TAG" -m "$TAG_MSG"
+fi
 
 echo
 echo "== ready to push =="

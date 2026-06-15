@@ -31,8 +31,10 @@ stamp() { # <file> <sed-expr>
 }
 echo "Stamping static manifests to $NEW (VERSION is the source of truth):"
 stamp cx.pc.in                    "s/^Version: .*/Version: $NEW/"
-stamp vcx/v.mod                   "s/^\(\s*version:\s*\)'.*'/\1'$NEW'/"
-stamp lang/v/v.mod                "s/^\(\s*version:\s*\)'.*'/\1'$NEW'/"
+# v.mod is tab-indented `version: '...'`. Use POSIX [[:space:]] (BSD/macOS sed
+# does NOT understand \s) and capture the leading whitespace to preserve it.
+stamp vcx/v.mod                   "s/^\([[:space:]]*version:[[:space:]]*\)'.*'/\1'$NEW'/"
+stamp lang/v/v.mod                "s/^\([[:space:]]*version:[[:space:]]*\)'.*'/\1'$NEW'/"
 stamp lang/rust/cxlib/Cargo.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 
