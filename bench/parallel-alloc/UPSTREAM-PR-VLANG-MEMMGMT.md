@@ -200,7 +200,7 @@ v -gc e   prog.v     # Perceus front line + vgc backstop
 v -gc vgc prog.v     # backstop only
 v -gc e -d vgc_concurrent prog.v   # opt-in concurrent mark
 # benches (provider-neutral):
-v -enable-globals -gc e bench/parallel-alloc/bench_scalar.v   # MP alloc scaling vs boehm
-v -enable-globals -gc e bench/parallel-alloc/bench_mp.v
+v -enable-globals -gc e bench/parallel-alloc/poc/bench_scalar.v   # MP alloc scaling vs boehm
+v -enable-globals -gc e bench/parallel-alloc/poc/bench_mp.v
 v -gc e test bench/parallel-alloc/vgc_residual4_test.v        # white-box fix self-check
 ```
