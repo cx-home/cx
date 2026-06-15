@@ -2,7 +2,7 @@ Follow-up to the Perceus thread (#27166) and my earlier note — and per @JalonS
 
 We set out to validate whether V could meet our memory-management + multi-core needs *instead of* reaching for Rust, staying aligned with V's autofree / reuse-in-place direction. It went well enough to share. **Built as a POC with Claude (Anthropic's coding agent); the results look very positive but they need independent verification — please don't take our numbers as established.**
 
-PR: <PR_URL>
+PR: https://github.com/vlang/v/pull/27458
 
 What it adds (opt-in, `-gc e`): a Perceus-style reuse-in-place front line + a precise stop-the-world tracing collector as the backstop, for the C backend. Plus the concurrency/correctness fixes and allocator optimizations that made it sound and fast under heavy multi-threaded allocation.
 
