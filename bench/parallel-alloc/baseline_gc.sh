@@ -3,12 +3,16 @@
 # Runs programs with `cx <file>` (the default execution path) — NEVER `cx eval`.
 #
 # Usage:  bench/parallel-alloc/baseline_gc.sh
-# Env:    CX_CC=/path/to/clang  (default /usr/bin/cc — Apple clang; devbox's nix
-#                                ld aborts under -prod, so force Apple's here)
+# Env:    CX_CC=/path/to/clang  (default /usr/bin/cc — Apple clang)
+#         CX_LDDIR=/dir         (default /usr/bin — dir holding the linker; passed as
+#                                clang -B so Apple's ld is used. In a devbox/nix shell
+#                                the nix cctools ld is on PATH and ABORTS under -prod
+#                                (exit 134); -B/usr/bin forces Apple's ld instead.)
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 V="$ROOT/third_party/v/v"
 CC="${CX_CC:-/usr/bin/cc}"
+LDDIR="${CX_LDDIR:-/usr/bin}"
 WK=/tmp/cx_gcbaseline
 mkdir -p "$WK"
 
@@ -16,11 +20,12 @@ mkdir -p "$WK"
 printf '[?to-sequence [?map (1,2,3,4,5,6,7,8) [using [?fn $x [?reduce [$range 0 400000] [using [?fn ($a $b) [+ $a $b]]] [init 0]]]]]]\n' > "$WK/serial.cx"
 printf '[?to-sequence [?map (1,2,3,4,5,6,7,8) [using [?fn $x [?reduce [$range 0 400000] [using [?fn ($a $b) [+ $a $b]]] [init 0]]]] [par]]]\n' > "$WK/par.cx"
 
-echo "building cx_e (-gc e) + cx_boehm (-gc boehm), prod, cc=$CC ..."
+echo "building cx_e (-gc e) + cx_boehm (-gc boehm), prod, cc=$CC, ld dir=$LDDIR ..."
 ( cd "$ROOT/vcx" \
-  && "$V" -n -w -cc "$CC" -prod -gc e     -o "$WK/cx_e"     cmd/ \
-  && "$V" -n -w -cc "$CC" -prod -gc boehm -o "$WK/cx_boehm" cmd/ ) \
-  || { echo "BUILD FAILED (if ld aborted, you're likely in a devbox/nix shell — run in a plain terminal or set CX_CC=/usr/bin/cc)"; exit 1; }
+  && "$V" -n -w -cc "$CC" -cflags "-B$LDDIR" -prod -gc e     -o "$WK/cx_e"     cmd/ \
+  && "$V" -n -w -cc "$CC" -cflags "-B$LDDIR" -prod -gc boehm -o "$WK/cx_boehm" cmd/ ) \
+  || { echo "BUILD FAILED. If ld aborted (exit 134), the nix linker is still being used —"; \
+       echo "  try a plain terminal (outside 'devbox shell'), or set CX_LDDIR to a dir with Apple's ld."; exit 1; }
 
 # correctness: both builds, both workloads must print 80000200000 x8
 ok=1
