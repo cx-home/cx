@@ -1,9 +1,30 @@
 # Architecture E: a Perceus front-line + precise stop-the-world tracing backstop for V's C backend
 
-> Draft PR description for vlang/v. Branch: `cx-home/v-cx-patches` (fork `cx-home/v`),
-> based on upstream `a83aabb10f`. All changes are provider-neutral V-runtime / codegen
-> work; a downstream language (CX, a tree-walking interpreter) was the workload that
-> surfaced the bugs and motivated the optimizations, but nothing here is specific to it.
+## What this is (please read first)
+
+This is a **proof-of-concept, developed with Claude (Anthropic's coding agent)**, shared
+because **the results look very positive for V and we'd like the community to verify
+them**. We (the CX project — a tree-walking language interpreter written in V) set out to
+test whether V could meet our memory-management and multi-core needs *instead of*
+switching to Rust, while staying aligned with V's stated direction (autofree /
+reuse-in-place). It worked well enough to be worth contributing — at minimum a baseline
+POC, possibly a real contribution.
+
+**Direct about the claims:** every performance number below was measured **on our machines
+and our workloads only** — no broad independent benchmark suite, no third-party review.
+Treat them as *claims to verify*, not facts. The correctness work is firmer (TSan, a
+deterministic white-box self-check, and a churn reproducer — all included) but also wants
+independent eyes. We'd value the community pressure-testing both.
+
+Context: follows up on the Perceus discussion **#27166** (and a Discord exchange where
+@JalonSolov suggested a PR so Alex could look it over). **Open question for maintainers
+up front: target v1 (current master, where it's built + tested) or plan for v2?** If v2
+reworks the backend/codegen we're happy to advise on a port — better to know before deep
+review.
+
+All changes are **provider-neutral V-runtime / codegen** work: CX was the workload that
+surfaced the bugs and motivated the optimizations, but nothing here is specific to it
+(source scrubbed of downstream-specific naming).
 
 ## Summary (TL;DR)
 
@@ -149,6 +170,24 @@ workers did not, isolating the cost to in-process shared allocator state (not ba
   truncated/aliased strings). These touch shared autofree/option/Perceus codegen
   (boehm-regression-sensitive) and runtime mark soundness — each warrants a dedicated pass,
   not bundled here. Fix #13 above cleared one (`option_init_ptr`).
+
+## Test environment (so the numbers mean something — and what's NOT covered)
+
+Everything below was measured on a **single machine**. This is a real limitation: we have
+not tested other CPUs, x86, or native (non-virtualized) Linux. Please reproduce on your
+own hardware.
+
+- **Dev + all macOS benchmarks:** Apple **M2 Max**, 12 cores (8 performance + 4
+  efficiency), 64 GB RAM, macOS 26.4.1 (build 25E253), Apple clang 21.0.0. `-prod`
+  builds via `-cc cc`.
+- **Linux correctness/concurrency testing:** a **Docker container (Ubuntu 24.04.4,
+  clang 18.1.3, wrk 4.1.0), `aarch64`** — i.e. Linux 6.12 (linuxkit) running in Docker's
+  VM **on that same M2 Max**, not a separate native or x86 host. TSan + the concurrent-
+  HTTP churn reproducer ran here. So: **arm64 only; x86, native Linux, and other core
+  counts are unverified.** The collector's conservative stack/register scan and the
+  OS-suspend STW path are platform-sensitive — independent runs on x86/native Linux are
+  exactly the verification we're asking for.
+- Numbers are best-of-3 (compute benches) wall-clock; `-gc boehm` is the baseline.
 
 ## How to verify
 
