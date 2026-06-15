@@ -65,28 +65,26 @@ pub fn cx_free(s &char) {
 // surface — declaring libgc's `struct GC_stack_base *` from V triggers a
 // type-tag collision with the upstream `gc.h` forward declarations.
 
-#flag -I@VMODROOT/cx
-#flag @VMODROOT/cx/gc_thread_shim.c
-#include "gc_thread_shim.h"
-
-fn C.cx_gc_allow_register_threads()
-fn C.cx_gc_register_my_thread() int
-fn C.cx_gc_unregister_my_thread() int
+// The shim is Boehm-specific; it + its `#flag`/`C.` decls live in
+// gc_thread_shim_d_gcboehm.c.v (compiled only under a Boehm `-gc` mode), with a
+// `_notd_gcboehm` no-op fallback for `-gc vgc`/`e`/`none`. The exported ABI
+// symbols below dispatch to the `*_impl` helper selected by whichever file is
+// compiled.
 
 @[export: 'cx_init']
 pub fn cx_init() int {
-	C.cx_gc_allow_register_threads()
+	cx_gc_allow_register_threads_impl()
 	return 0
 }
 
 @[export: 'cx_thread_register']
 pub fn cx_thread_register() int {
-	return C.cx_gc_register_my_thread()
+	return cx_gc_register_my_thread_impl()
 }
 
 @[export: 'cx_thread_unregister']
 pub fn cx_thread_unregister() int {
-	return C.cx_gc_unregister_my_thread()
+	return cx_gc_unregister_my_thread_impl()
 }
 
 // ── WASM-only: arena sizing + reset ────────────────────────────

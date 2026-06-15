@@ -5,6 +5,6 @@ includedir=${prefix}/include
 
 Name: cx
 Description: CX format library
-Version: 0.6.1
+Version: 0.10.0
 Libs: -L${libdir} -lcx
 Cflags: -I${includedir}

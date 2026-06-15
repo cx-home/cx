@@ -1,6 +1,6 @@
 [package]
 name = "cxlib"
-version = "0.8.0"
+version = "0.10.0"
 edition = "2021"
 description = "CX format library — thin wrapper around libcx"
 

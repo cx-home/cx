@@ -1,3 +1,4 @@
 [submodule "third_party/v"]
 	path = third_party/v
 	url = https://github.com/cx-home/v.git
+	branch = cx-home/v-cx-patches

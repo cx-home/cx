@@ -7,6 +7,16 @@ SHELL  := /bin/bash
 V      := $(if $(wildcard $(CURDIR)/../third_party/v/v),$(CURDIR)/../third_party/v/v,v)
 TARGET := target
 
+# v0.9.0 — cx's DEFAULT memory model is architecture E (`-gc e`): the
+# Perceus-disciplined RC front line + the precise STW vgc tracing backstop.
+# Every cx build (lib + cli, prod + dev) passes it explicitly. The flip lives at
+# the cx build level — NOT V's global pref.v default — so the patched V stays a
+# general-purpose compiler whose own default (boehm) keeps the full V test suite
+# green; cx is simply E's first first-class adopter. Concurrent mark remains a
+# separate opt-in (`-d vgc_concurrent`); STW E is the default path. Override for
+# debugging with e.g. `make CX_GC='-gc boehm' build`.
+CX_GC  ?= -gc e
+
 # ── Platform detection ────────────────────────────────────────────────────────
 
 UNAME_S := $(shell uname -s)
@@ -112,12 +122,15 @@ VQUIET ?= -n -w
 # (Phase 3.11). Building from vcx/cx/ in isolation would leave the
 # code-eval family out of the shared library.
 lib: re2-shim $(TARGET)
-	$(V) $(VQUIET) $(PROD_FLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) code/
+	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) code/
 	$(STRIP) $(LIB)
 
-# Unoptimised build for local development (faster compile, debuggable)
+# Unoptimised build for local development (faster compile, debuggable).
+# `-cc cc` (clang): tcc on macOS cannot compile the patched builtin's C11 atomics
+# (`atomic_fetch_*_explicit`) or `@[thread_local]` TLS (see the `cli` note). `-prod`
+# builds already force clang; the dev builds must opt in explicitly.
 lib-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -shared -o $(LIB) code/
+	$(V) $(VQUIET) -cc cc $(CX_GC) -shared -o $(LIB) code/
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per
 # spec/abi.md §2.11). Separate from libcx; bindings dlopen
@@ -126,11 +139,11 @@ lib-dev: re2-shim $(TARGET)
 # itself does not set bit 23. Module-level state requires
 # -enable-globals.
 lib-arrow: $(TARGET)
-	$(V) $(VQUIET) -enable-globals -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
+	$(V) $(VQUIET) -enable-globals $(CX_GC) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
 	$(STRIP) $(LIB_ARROW)
 
 lib-arrow-dev: $(TARGET)
-	$(V) $(VQUIET) -enable-globals -shared -o $(LIB_ARROW) arrow/
+	$(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) -shared -o $(LIB_ARROW) arrow/
 
 # CLI binary — size-optimized (-Os via PROD_CFLAGS), NOT V `-prod`. `-prod`
 # turns warnings into errors, and the cmd/ semantic-token legend carries
@@ -139,13 +152,28 @@ lib-arrow-dev: $(TARGET)
 # logic ships -prod in libcx; the cli is a thin dispatch layer, so -Os is the
 # right trade. (To enable -prod cli later: reference the legend slots so V
 # doesn't flag them, then add $(PROD_FLAGS) here.)
+# `-cc cc` (clang) — NOT V's default tcc: cx's builtin carries `@[thread_local]`
+# globals (cx_region) + the vgc per-thread cache, and tcc on macOS cannot compile
+# `__thread` TLS ("';' expected (got 'bool')"). The upstream-V forward-port dropped
+# the old fork's TLS-patched tcc, so clang is required for any cx build.
+# Build-stamped version info, injected as V compile-time string defines and shown
+# by `cx --version`. CX_VERSION tracks `git describe` (tag + commits-ahead + hash);
+# CX_VFORK is the third_party/v gitlink; CX_GC_NAME is the active collector. Each
+# value is a single shell token (no spaces), safe to pass via `-d key=value`.
+CX_VERSION    := $(shell git -C $(CURDIR)/.. describe --tags --always --dirty 2>/dev/null || echo 0.9.0-dev)
+CX_COMMIT     := $(shell git -C $(CURDIR)/.. rev-parse --short HEAD 2>/dev/null || echo unknown)
+CX_VFORK      := $(shell git -C $(CURDIR)/../third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown)
+CX_BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+CX_GC_NAME    := $(lastword $(CX_GC))
+VERSION_DEFINES := -d cx_version=$(CX_VERSION) -d cx_commit=$(CX_COMMIT) -d cx_build_date=$(CX_BUILD_DATE) -d cx_gc=$(CX_GC_NAME) -d cx_vfork=$(CX_VFORK)
+
 cli: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
 	$(STRIP) $(CLI)
 
 # CLI binary — unoptimised dev build (faster compile, debuggable, unstripped)
 cli-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -o $(CLI) cmd/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(VERSION_DEFINES) -o $(CLI) cmd/
 
 # ── Conformance ───────────────────────────────────────────────────────────────
 
@@ -173,7 +201,7 @@ conform-ns:
 
 conform-ns-cxpath:
 	@echo "── cxpath conformance (v08_cxpath_*_test.v) ──────────────────────────"
-	$(V) test tests/v08_cxpath_dispatcher_test.v tests/v08_cxpath_forward_test.v tests/v08_cxpath_reverse_test.v tests/v08_cxpath_misc_test.v
+	$(V) -cc cc test tests/v08_cxpath_dispatcher_test.v tests/v08_cxpath_forward_test.v tests/v08_cxpath_reverse_test.v tests/v08_cxpath_misc_test.v
 
 conform-table:
 	@echo "── table.txt ─────────────────────────────────────────────────────────"
