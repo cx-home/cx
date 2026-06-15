@@ -1,4 +1,4 @@
-New V Lang Memory Management and Multicore (`-gc e`) POC
+New V Lang Memory Management and Multicore (-gc e) POC
 
 It's promising, with two key metrics (needs verifying):
 
