@@ -91,7 +91,10 @@ alloc/free fast path touches no shared cacheline or lock.
 ## Bugs fixed (correctness)
 
 Each is provider-neutral and was reproduced under heavy concurrent alloc/free (a
-multi-reactor HTTP server + churn micro-benchmarks). References are fork commits.
+multi-reactor HTTP server + churn micro-benchmarks). The commit hashes below are the
+**originating development commits**; each commit on this PR branch carries a
+`(cherry picked from commit …)` trailer, and the PR's *Commits* tab is the authoritative
+per-change view.
 
 | # | Fix | Commit | Notes |
 |---|-----|--------|-------|
