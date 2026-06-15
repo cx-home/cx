@@ -339,7 +339,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-stale-version check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check directive-docs-check
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check directive-docs-check
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -358,13 +358,24 @@ check-no-legacy-try:
 check-no-infix-range:
 	@python3 scripts/check_no_infix_range.py
 
-# ── NO-STALE-VERSION gate — the retired language name `CXL` must not reappear
+# ── NO-CXL-TOKEN gate — the retired language name `CXL` must not reappear
 # in conformance/ + docs-src/ + examples/ + scripts/ + tooling/ + top-level
 # project prose. Token-aware, not a raw grep (live identifiers cxlib / cxl: /
 # CXLS / CXLib are not matched; _archive*/_archived/_gate_evidence excluded).
-.PHONY: check-no-stale-version
-check-no-stale-version:
-	@python3 scripts/check_no_stale_version.py
+# (Formerly mis-named `check-no-stale-version` — it never checked versions;
+# version-number drift is now caught by check-version-consistency below.)
+.PHONY: check-no-cxl-token
+check-no-cxl-token:
+	@python3 scripts/check_no_cxl_token.py
+
+# ── VERSION-CONSISTENCY gate — the repo-root VERSION file is the single source
+# of truth for the release version. Every static manifest must equal it and the
+# code surfaces (cabi.v/main.v) must DERIVE it from the build define. Catches the
+# drift that previously went unnoticed (cx.pc.in at 0.6.1, C-ABI at 0.8.0 while
+# the CLI said 0.10.0). Re-stamp with scripts/bump_version.sh.
+.PHONY: check-version-consistency
+check-version-consistency:
+	@python3 scripts/check_version_consistency.py
 
 # ── check-null-absence-conflation gate (SAP C1 / spec/core/code.md §9.1.2.1
 # rule (b)) — the no-conflation guard: no builtin returns `null` to mean
@@ -727,7 +738,13 @@ release: publish publish-push
 
 release-v: publish-v publish-v-push
 
-release-all: release release-v publish-org
+# Tag the public mirrors (cx, cx-v) at the VERSION release version. Run AFTER
+# release + release-v so the tag lands on the pushed release content. Use
+# `make tag-public FORCE=--force` to move an existing published tag.
+tag-public:
+	@bash scripts/tag_public.sh $(FORCE)
+
+release-all: release release-v publish-org tag-public
 
 # ── Editor tooling ────────────────────────────────────────────────────────────
 #

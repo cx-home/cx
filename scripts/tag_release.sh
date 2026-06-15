@@ -145,12 +145,10 @@ if [[ $DRY_RUN -eq 1 ]]; then
     echo "          lang/rust/cxlib/Cargo.toml"
     echo "          lang/python/pyproject.toml"
 else
-    note "bumping version strings to $VERSION"
-    sed -i.bak "s/^Version: .*/Version: $VERSION/" cx.pc.in
-    sed -i.bak "s/^	version: '.*'/	version: '$VERSION'/" vcx/v.mod lang/v/v.mod 2>/dev/null || true
-    sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" lang/rust/cxlib/Cargo.toml 2>/dev/null || true
-    sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" lang/python/pyproject.toml 2>/dev/null || true
-    find . -name "*.bak" -not -path "./.git/*" -delete
+    note "stamping version to $VERSION (VERSION file + manifests via bump_version.sh)"
+    scripts/bump_version.sh "$VERSION"
+    note "verifying version consistency"
+    python3 scripts/check_version_consistency.py || fail "version inconsistent after bump"
 fi
 
 # -- Step 3: rebuild --------------------------------------------------
@@ -187,7 +185,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
 fi
 
 note "committing version bump"
-git add cx.pc.in vcx/v.mod lang/v/v.mod \
+git add VERSION cx.pc.in vcx/v.mod lang/v/v.mod \
         lang/rust/cxlib/Cargo.toml \
         lang/python/pyproject.toml 2>/dev/null || true
 git commit -m "chore(release): bump version strings to $VERSION" || true
