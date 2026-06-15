@@ -131,7 +131,12 @@ pub fn cx_wasm_reset() int {
 
 // ── version ───────────────────────────────────────────────────────────────────
 
-const cx_version_str = '0.8.0'
+// Release version — derives from the `cx_version` build define (the repo-root
+// VERSION file, single source of truth), so the C-ABI `cx_version()` and the
+// CLI `cx --version` can never disagree. The `0.0.0-dev` fallback applies only
+// to non-Makefile builds. (cx_abi_version_str is the ABI *contract* version —
+// independent of the release version, bumped only on ABI changes.)
+const cx_version_str = $d('cx_version', '0.0.0-dev')
 const cx_abi_version_str = '2.0'
 
 // Capability bitmask per spec/abi.md §3. Implemented capabilities in

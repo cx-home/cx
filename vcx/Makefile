@@ -157,10 +157,12 @@ lib-arrow-dev: $(TARGET)
 # `__thread` TLS ("';' expected (got 'bool')"). The upstream-V forward-port dropped
 # the old fork's TLS-patched tcc, so clang is required for any cx build.
 # Build-stamped version info, injected as V compile-time string defines and shown
-# by `cx --version`. CX_VERSION tracks `git describe` (tag + commits-ahead + hash);
-# CX_VFORK is the third_party/v gitlink; CX_GC_NAME is the active collector. Each
-# value is a single shell token (no spaces), safe to pass via `-d key=value`.
-CX_VERSION    := $(shell git -C $(CURDIR)/.. describe --tags --always --dirty 2>/dev/null || echo 0.9.0-dev)
+# by `cx --version`. CX_VERSION is the single declared source of truth — the
+# repo-root VERSION file (the release tag is derived FROM and checked AGAINST it;
+# see scripts/bump_version.sh + the check-version-consistency gate). CX_COMMIT is
+# the build commit (distinguishes dev builds); CX_VFORK is the third_party/v
+# gitlink; CX_GC_NAME is the active collector. Each value is a single shell token.
+CX_VERSION    := $(shell cat $(CURDIR)/../VERSION 2>/dev/null || echo 0.0.0-dev)
 CX_COMMIT     := $(shell git -C $(CURDIR)/.. rev-parse --short HEAD 2>/dev/null || echo unknown)
 CX_VFORK      := $(shell git -C $(CURDIR)/../third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown)
 CX_BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
