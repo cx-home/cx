@@ -1,11 +1,11 @@
 # CX Release & Publish Process
 
-**Status:** Draft (02-working) — governs from v0.11.0; pending graduation to `03-approved/process/`.
+**Status:** Current for v0.11.0.
 
 This document specifies how a CX release is cut and published. It is a
 **process/governance** specification. The release **gate** is normative in
-[`core/code.md §11.6/§11.7`](../03-approved/core/code.md); the **versioning**
-axes are normative in [`process/governance.md §9`](../03-approved/process/governance.md);
+[`core/code.md §11.6/§11.7`](../core/code.md); the **versioning**
+axes are normative in [`process/governance.md §9`](governance.md);
 this document is the authoritative end-to-end *procedure* that ties them together.
 
 ---
@@ -74,7 +74,7 @@ zero-cost.
 ## 5 — Versioning (cross-reference)
 
 The repo-root `VERSION` file is the single source of truth (see
-[`governance.md §9`](../03-approved/process/governance.md)); code derives it via
+[`governance.md §9`](governance.md)); code derives it via
 the `cx_version` build define, manifests + README badges are stamped by
 `bump_version.sh`, and drift is a red build via `check-version-consistency`
 (wired into `TEST_TARGETS`). Per-release detail lives in `CHANGELOG.md` +
@@ -83,7 +83,7 @@ also the body of the GitHub release (phase 5).
 
 ## 6 — Companion documents
 
-- [`core/code.md §11.3–§11.7`](../03-approved/core/code.md) — the normative release gates + evidence/sign-off.
-- [`process/governance.md §9`](../03-approved/process/governance.md) — the versioning axes.
-- [`process/v-dependency-management.md`](../03-approved/process/v-dependency-management.md) — the patched-V fork the build depends on.
+- [`core/code.md §11.3–§11.7`](../core/code.md) — the normative release gates + evidence/sign-off.
+- [`process/governance.md §9`](governance.md) — the versioning axes.
+- [`process/v-dependency-management.md`](v-dependency-management.md) — the patched-V fork the build depends on.
 - `scripts/release.sh --help` — the executable procedure (§1/§2).
