@@ -37,6 +37,12 @@ stamp vcx/v.mod                   "s/^\([[:space:]]*version:[[:space:]]*\)'.*'/\
 stamp lang/v/v.mod                "s/^\([[:space:]]*version:[[:space:]]*\)'.*'/\1'$NEW'/"
 stamp lang/rust/cxlib/Cargo.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
+# Narrative docs carry the version in ONE machine-checkable place: the shields
+# badge. Per-release prose lives in RELEASE_NOTES_v*.md (per-release by
+# construction), NOT in these READMEs — so the badge is the only token that can
+# drift, and it is stamped here + gated by check_version_consistency.py.
+stamp README.md                   "s|badge/version-v[0-9.]*-blue|badge/version-v$NEW-blue|"
+stamp vcx/README.md               "s|badge/version-v[0-9.]*-blue|badge/version-v$NEW-blue|"
 
 echo
 echo "VERSION = $NEW. Code (cabi.v/main.v) derives via the build define — not stamped."
