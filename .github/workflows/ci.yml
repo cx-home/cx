@@ -1,10 +1,11 @@
 name: CI
 
+# Manual-only: org GitHub Actions runners are unavailable (jobs fail at startup
+# with no runner; org billing/runner allocation). Auto-triggers removed so CI
+# stops failing red on every push. Re-add `push:`/`pull_request:` once runners
+# are restored (e.g. a self-hosted runner). Gate runs locally via `make test`.
 on:
-  push:
-    branches: [main, v0.8.0-dev, v0.7.0-dev]
-  pull_request:
-    branches: [main, v0.8.0-dev, v0.7.0-dev]
+  workflow_dispatch: {}
 
 jobs:
   test-matrix:

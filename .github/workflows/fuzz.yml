@@ -13,9 +13,10 @@ name: Fuzz (CC5)
 #   - workflow_dispatch with optional `duration_seconds` input for
 #     ad-hoc longer runs (e.g. before a release).
 
+# Manual-only: org GitHub Actions runners are unavailable (jobs fail at startup;
+# org billing/runner allocation). Nightly cron removed so it stops failing red.
+# Re-add the schedule once runners are restored.
 on:
-  schedule:
-    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       duration_seconds:

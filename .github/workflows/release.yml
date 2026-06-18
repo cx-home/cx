@@ -1,43 +1,47 @@
-# Release artifact CI (historical V5 gate from v0.7.0 status; carried
-# forward into v0.8.0). Triggers on tag push (v*.*.*) and produces:
-#   - signed binary tarballs per OS/arch
+# Release workflow — version-agnostic. Triggers on a `vX.Y.Z` tag push (or
+# manual dispatch) and produces, then publishes to the GitHub release:
+#   - per-OS/arch binary tarballs (cx CLI + libcx + cx.h)
 #   - dist/SHA256SUMS.txt
-#   - cx-conformance-<tag>.zip bundle
+#   - cx-conformance-<tag>.zip
 #
-# The reproducible-build workflow (reproducibility.yml) gates the
-# binaries before they're uploaded.
+# Build contract (must match the local build, see vcx/README + third_party/README):
+#   CX builds against the PATCHED V FORK in third_party/v (NOT stock vlang/v) —
+#   the fork supplies the `-gc e`/vgc runtime + the macOS hardened-runtime `-prod`
+#   GC fix. The fork is checked out via `submodules: recursive` and BUILT here so
+#   the Makefile picks up third_party/v/v (and thus `-prod`). RE2 (a C++ system
+#   dep) is required by the regex shim.
 
 name: release
 
+# Manual-only: org GitHub Actions runners are unavailable (jobs fail at startup;
+# org billing/runner allocation). Releases are cut LOCALLY via `make cut-release`
+# / scripts/release.sh. The build logic below is correct + ready; re-add the
+# `push: tags: ['v*.*.*']` trigger once runners are restored (e.g. a self-hosted
+# runner) to make tag-push auto-publish. Test first: `gh workflow run release.yml
+# -f tag=vX.Y.Z`.
 on:
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. v0.8.0)'
+        description: 'Tag to release (e.g. v0.11.0)'
         required: true
 
 jobs:
   build:
-    name: Build ${{ matrix.os }}-${{ matrix.arch }}
+    name: Build ${{ matrix.target }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
-            arch: x86_64
-            target: linux-x86_64
-          - os: ubuntu-22.04
-            arch: aarch64
-            target: linux-aarch64
-          - os: macos-14
-            arch: aarch64
-            target: macos-aarch64
-          - os: macos-13
-            arch: x86_64
-            target: macos-x86_64
+          - target: linux-x86_64
+            os: ubuntu-22.04
+          - target: linux-aarch64
+            os: ubuntu-22.04-arm     # GitHub-hosted arm64 runner (GA 2025)
+          - target: macos-aarch64
+            os: macos-14
+          # macos-x86_64 dropped: GitHub retired the free macos-13 x86 runners
+          # (Apple Silicon is the macOS baseline). Re-add on a paid runner if a
+          # macOS-Intel artifact is required.
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -45,32 +49,42 @@ jobs:
           submodules: recursive
           ref: ${{ inputs.tag || github.ref }}
 
-      - name: Install V toolchain
+      - name: Install RE2 (regex shim dep) + build tools
         run: |
-          git clone --depth=1 https://github.com/vlang/v ~/v
-          (cd ~/v && make)
-          echo "$HOME/v" >> $GITHUB_PATH
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            brew install re2
+          else
+            sudo apt-get update
+            sudo apt-get install -y libre2-dev build-essential
+          fi
 
-      - name: Build libcx + cx CLI
+      - name: Build the patched V fork (third_party/v)
+        run: |
+          make -C third_party/v            # produces third_party/v/v
+          third_party/v/v version
+
+      - name: Build libcx + cx CLI (-prod, against the fork)
         run: |
           export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
-          make build-vcx
-          make build-lib-arrow
+          make build-vcx                   # uses third_party/v/v automatically
+          make build-lib-arrow || echo "::warning::libcx_arrow build skipped (optional module)"
 
-      - name: Strip + package
+      - name: Package
         run: |
-          mkdir -p dist/${{ matrix.target }}
-          cp vcx/target/cx dist/${{ matrix.target }}/
-          cp vcx/target/libcx.dylib dist/${{ matrix.target }}/ 2>/dev/null || true
-          cp vcx/target/libcx.so dist/${{ matrix.target }}/ 2>/dev/null || true
-          cp dist/lib/libcx_arrow.* dist/${{ matrix.target }}/ 2>/dev/null || true
-          cp include/cx.h dist/${{ matrix.target }}/
-          cd dist && tar czf cx-${{ inputs.tag || github.ref_name }}-${{ matrix.target }}.tar.gz ${{ matrix.target }}/
+          T="${{ matrix.target }}"
+          TAG="${{ inputs.tag || github.ref_name }}"
+          mkdir -p "dist/$T"
+          cp vcx/target/cx "dist/$T/"
+          cp vcx/target/libcx.dylib "dist/$T/" 2>/dev/null || true
+          cp vcx/target/libcx.so   "dist/$T/" 2>/dev/null || true
+          cp dist/lib/libcx_arrow.* "dist/$T/" 2>/dev/null || true
+          cp include/cx.h "dist/$T/"
+          ( cd dist && tar czf "cx-$TAG-$T.tar.gz" "$T/" )
 
-      - name: Generate SHA256SUMS for this target
+      - name: SHA256SUMS for this target
         run: |
           cd dist
-          shasum -a 256 cx-${{ inputs.tag || github.ref_name }}-${{ matrix.target }}.tar.gz > SHA256SUMS.${{ matrix.target }}
+          shasum -a 256 cx-*-${{ matrix.target }}.tar.gz > "SHA256SUMS.${{ matrix.target }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -88,12 +102,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
-
       - name: Assemble conformance/
         run: |
-          cd conformance
-          zip -r ../cx-conformance-${{ inputs.tag || github.ref_name }}.zip . -x "*.bak"
-
+          zip -r "cx-conformance-${{ inputs.tag || github.ref_name }}.zip" conformance -x "*.bak"
       - name: Upload conformance bundle
         uses: actions/upload-artifact@v4
         with:
@@ -109,26 +120,44 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
 
-      - name: Build canonical SHA256SUMS.txt
+      - name: Canonical SHA256SUMS.txt
         run: |
           mkdir -p dist
           cat artifacts/*/SHA256SUMS.* > dist/SHA256SUMS.txt
+
+      - name: Resolve release notes (per-tag, never hardcoded)
+        id: notes
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          NOTES="RELEASE_NOTES_${TAG}.md"
+          if [ -f "$NOTES" ]; then
+            echo "path=$NOTES"  >> "$GITHUB_OUTPUT"
+            echo "gen=false"    >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::$NOTES not found — falling back to auto-generated notes"
+            echo "path="        >> "$GITHUB_OUTPUT"
+            echo "gen=true"     >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           name: CX ${{ inputs.tag || github.ref_name }}
-          body_path: RELEASE_NOTES_v0.8.0.md
+          body_path: ${{ steps.notes.outputs.path }}
+          generate_release_notes: ${{ steps.notes.outputs.gen }}
           files: |
             artifacts/*/cx-*.tar.gz
             artifacts/cx-conformance/cx-conformance-*.zip
             dist/SHA256SUMS.txt
-          generate_release_notes: false
-          draft: true
+          draft: false
+          fail_on_unmatched_files: true
