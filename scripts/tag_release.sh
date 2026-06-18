@@ -1,35 +1,33 @@
 #!/usr/bin/env bash
 #
-# CX release-tag procedure (v0.8.0 era).
+# CX release-tag procedure (version-agnostic).
 #
-# Runs on the maintainer's local machine when v0.8.0-dev is merged to main
-# and the §11.6 gates are all green. Performs:
+# Runs on the maintainer's local machine when the release branch is merged to
+# main and the gate is green. Performs:
 #   1. Sanity: on main, working tree clean, tag does not exist
-#   2. Bump version strings in cx.pc.in + vcx/v.mod + Tier-1 binding manifests
+#   2. Bump version strings (VERSION + manifests via bump_version.sh)
 #   3. Build libcx + cli
-#   4. Run `make test`
+#   4. Run `make test`  (the authoritative gate — all TEST_TARGETS)
 #   5. Run `make verify-doc-links`
-#   6. Generate the gate-evidence bundle (scripts/build_gate_evidence.sh)
-#   7. Create signed git tag
-#   8. Print push instructions (does NOT push automatically)
+#   6. Create git tag
+#   7. Print push instructions (does NOT push automatically)
 #
 # With --dry-run: exercises step 1 (sanity), confirms steps 4/5 targets
 # exist (without running them — heavy + may flake on dev branches),
-# reports what 2/3/6/7 would do; skips any state-changing operation. No
+# reports what 2/3/6 would do; skips any state-changing operation. No
 # git commits, no tags, no pushes. Useful as a CI sanity gate ahead of an
 # actual tag commit. The real tag run still executes make test and make
 # verify-doc-links in full.
 #
 # Usage:
-#   scripts/tag_release.sh v0.8.0            # full tag procedure
-#   scripts/tag_release.sh --dry-run v0.8.0  # exercise checks only
-#   scripts/tag_release.sh --dry-run         # defaults to v0.8.0
+#   scripts/tag_release.sh vX.Y.Z            # full tag procedure
+#   scripts/tag_release.sh --dry-run vX.Y.Z  # exercise checks only
+#   scripts/tag_release.sh --dry-run         # defaults to v$(cat VERSION)
 #
 # Prerequisites:
 #   - On branch `main` (or `<tag>-dev` for dry-run)
-#   - GPG signing key configured (for real tag)
+#   - GPG signing key configured (optional; unsigned annotated tag otherwise)
 #   - `make test` and `make verify-doc-links` pass locally
-#   - `scripts/build_gate_evidence.sh` produces a green bundle
 
 set -uo pipefail
 
@@ -50,9 +48,9 @@ done
 
 if [[ -z "$TAG" ]]; then
     if [[ $DRY_RUN -eq 1 ]]; then
-        TAG="v0.8.0"   # default for dry-run
+        TAG="v$(cat "$(dirname "$0")/../VERSION" 2>/dev/null | tr -d '[:space:]')"  # default for dry-run: current VERSION
     else
-        echo "Usage: $0 [--dry-run] <tag>  (e.g. v0.8.0)" >&2
+        echo "Usage: $0 [--dry-run] <tag>  (e.g. v$(cat "$(dirname "$0")/../VERSION" 2>/dev/null | tr -d '[:space:]'))" >&2
         exit 2
     fi
 fi
@@ -160,21 +158,7 @@ else
     make build-vcx
 fi
 
-# -- Step 6: gate-evidence bundle -------------------------------------
-
-if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would run: scripts/build_gate_evidence.sh"
-    if [[ -x scripts/build_gate_evidence.sh ]]; then
-        echo "[dry-run]   (script present and executable)"
-    else
-        fail "scripts/build_gate_evidence.sh missing or not executable"
-    fi
-else
-    note "building gate-evidence bundle"
-    scripts/build_gate_evidence.sh || fail "gate-evidence bundle failed"
-fi
-
-# -- Step 7: signed tag (skipped on dry-run) --------------------------
+# -- Step 6: tag (skipped on dry-run) ---------------------------------
 
 if [[ $DRY_RUN -eq 1 ]]; then
     echo "[dry-run] would commit version bump + create signed tag $TAG"
@@ -205,6 +189,5 @@ echo "Next steps:"
 echo "  1. Review the commit + tag: git show $TAG"
 echo "  2. Push:                    git push origin main && git push origin $TAG"
 echo "  3. Wait for .github/workflows/release.yml to publish the draft release"
-echo "  4. Attach dist/${TAG}-gate-evidence.tar.gz to the draft release"
-echo "  5. Edit the draft release body to reference RELEASE_NOTES_${TAG//\./_}.md"
-echo "  6. Publish the GitHub release"
+echo "  4. Edit the draft release body to reference RELEASE_NOTES_${TAG//\./_}.md"
+echo "  5. Publish the GitHub release"
