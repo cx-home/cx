@@ -746,6 +746,17 @@ tag-public:
 
 release-all: release release-v publish-org tag-public
 
+# ── The ONE end-to-end local release command ─────────────────────────────────
+# gate (make test + verify-doc-links) → bump → build → tag → push → GitHub
+# release → publish mirrors (release-all). The `release`/`release-all` targets
+# above are the building blocks it composes. Preview first:
+#   make cut-release ARGS='--dry-run vX.Y.Z'
+#   make cut-release ARGS='vX.Y.Z'
+# See scripts/release.sh --help. (Local because org CI runners are unavailable;
+# .github/workflows/release.yml is the CI equivalent once they're restored.)
+cut-release:
+	@bash scripts/release.sh $(ARGS)
+
 # ── Editor tooling ────────────────────────────────────────────────────────────
 #
 # Since v0.7.0 the language server is built into the `cx` binary itself —
