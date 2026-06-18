@@ -49,9 +49,16 @@ delegation (the dial, `[$xap:dial]` / `[$xap:why-allowed]`).
 ## Status
 
 Spec-conformant and **runs today** on the bundled `cx-xap` runtime: `cx
-agent.cx` produces `expected-output.txt` exactly. The dial (`[$xap:dial]` =
-`authz` delegation issuance) + `[$xap:why-allowed]` query are implemented; the
-resolver/agent hook is scripted for the demo (xap.md §20).
+agent.cx` produces `expected-output.txt` exactly — and now **computes** it rather
+than printing a literal. The PEP is real (cx-private#7): `[$xap:emit]` calls the
+`authz` decision (cascade §2.2) — a principal has inherent authority, an agent is
+**denied (`CXER4850`, nothing appended) until the dial issues the covering
+delegation**; `[$xap:dial]` issues a genuine principal-rooted `authz` delegation
+into the runtime's store (`from`/`to`/`id` derived from the call, not hardcoded);
+`[$xap:why-allowed]` is computed from that store, so `[$xap:revoke]` flips
+`allowed` to `false`. The resolver/agent hook is scripted for the demo (xap.md §20).
+See [`xap.md`](../../xap.md) (the PEP enforcement point §2.2 / delegations §21; cx-private #7) and the behavioral suite
+`vcx/tests/stdlib_xap_pep_test.v`.
 
 > Beyond D4 (no rewrite): raise the dial toward **guardian** (§22.4) within the
 > bright line; **federate** a second XAP into one experience (§22.6.1); reach a

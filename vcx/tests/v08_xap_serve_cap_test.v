@@ -17,7 +17,10 @@ fn cx_binary() string {
 }
 
 fn test_xap_serve_requires_net_grant() {
-	port := 19950 + int(time.now().unix_milli() % 40)
+	// Disjoint PID + nanosecond-salted band (27000-27099) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	port := 27000 + int(salt)
 	dir := os.temp_dir()
 	prog := os.join_path(dir, 'cx_xap_serve_nonet.cx')
 	os.write_file(prog, '[?lib \'cx-xap\' :as xap]\n' +

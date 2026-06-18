@@ -13,6 +13,43 @@ version, library version).
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-06-18
+
+The agentic-substrate release. Authoritative release-surface document:
+[`RELEASE_NOTES_v0.11.0.md`](RELEASE_NOTES_v0.11.0.md). Backward-compatible.
+(Changelog entries for 0.9.0–0.10.1 live in their `RELEASE_NOTES_v*.md`.)
+
+### Added
+
+- **`cx-x/` agentic tier** — the Runnable convention + combinators
+  (`cx-x/run`), an LLM provider (`cx-x/llm`), MCP client + server
+  (`cx-x/mcp`, `cx-x/mcp-server`), and A2A (`cx-x/a2a`, `cx-x/a2a-xap`:
+  tasks→journal, messages→bus, DID/VC auth).
+- **Stdlib modules** — `did` (`did:key` + `did:web`, base58btc), `vc`
+  (verifiable credentials) + `session/attach-did`, `jsonrpc` (JSON-RPC 2.0),
+  `jsonschema` (JSON Schema 2020-12, MCP subset).
+- **XAP** — real authz-backed PEP; feature augmentation/overlay composition
+  + coordination channel; XSP frame codec; DID/VC identity for all actors.
+
+### Changed
+
+- **Uniform lexical scoping (#19 / #22)** — callables resolve free names in
+  their defining scope (imported module siblings call each other; `[?const]`
+  in a `[?def]` body dereferences).
+- **CX decoupled from the V fork** — transport vendored into `vcx/transport/`,
+  dormant scope-region path retired; the patched-V fork is now CX-free
+  (Bucket-1 only). No runtime-behavior change. See
+  [`spec/03-approved/process/v-dependency-management.md`](spec/03-approved/process/v-dependency-management.md).
+
+### Fixed
+
+- **#45** — escaping/nested closures keep their environment (zero-arg def,
+  module def, and re-capture cases).
+- **#20** — module loader ignores `[?lib]`/`[?def]` inside `#` comments.
+- **#42** — `cx fmt` accepts operator-head expressions.
+- **#39** — namespaced `[$<codec>:parse]` / `:emit` accepted.
+- **XAP** — `emit` routes by intent verb; `[?for]` view-closures survive loop scope.
+
 ## [0.8.0] — 2026-06-09
 
 The "data + code" unification release. CXPath becomes a first-class

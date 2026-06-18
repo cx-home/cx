@@ -1,9 +1,10 @@
 module main
 
+import os
 import net
 import net.http
-import picoev
-import picohttpparser
+import transport.picoev
+import transport.picohttpparser
 import time
 
 // Increment-1 spike for the cx-native picoev + picohttpparser server leg
@@ -39,11 +40,12 @@ fn spike_callback(data voidptr, req picohttpparser.Request, mut res picohttppars
 	res.end()
 }
 
-// free_port returns a likely-free port. Mirrors the acceptance test's
-// pick_port heuristic but on a disjoint base so the two test files don't
-// collide when `v test vcx/tests/` runs them in the same job.
+// free_port returns a likely-free port on a disjoint PID + nanosecond-salted
+// band (25000-25099) so the concurrent `v test vcx/tests/` gate processes don't
+// collide — two same-nanosecond starts still differ via the PID term.
 fn free_port() int {
-	return 19200 + int(time.now().unix_milli() % 100)
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	return 25000 + int(salt)
 }
 
 fn test_picoev_engine_links_and_serves() {

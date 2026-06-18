@@ -21,12 +21,23 @@ fn curl(args string) string {
 	return r.output
 }
 
+// xap_port: disjoint PID + nanosecond-salted ports so the concurrent
+// `v test vcx/tests/` gate processes don't collide. A prior cross-test collision
+// sent the signer's POST to a different server (which answered 200), leaving this
+// server's surface empty — the "sign not reflected" flake. xap-render owns the
+// 24000-24699 band: three 200-wide slots (one per test fn), each salted so two
+// processes started in the same nanosecond still differ.
+fn xap_port(slot int) int {
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 200
+	return 24000 + slot * 250 + int(salt)
+}
+
 fn test_xap_single_render_path() {
 	if os.execute('which curl').exit_code != 0 {
 		eprintln('SKIP: curl not available')
 		return
 	}
-	port := 18650 + int(time.now().unix_milli() % 120)
+	port := xap_port(0)
 	dir := os.temp_dir()
 	prog := os.join_path(dir, 'cx_xap_render.cx')
 	os.write_file(prog, '[?lib \'cx-xap\' :as xap]\n' +
@@ -78,7 +89,7 @@ fn test_xap_three_process_sign() {
 		eprintln('SKIP: curl not available')
 		return
 	}
-	port := 18650 + int(time.now().unix_milli() % 120) + 200
+	port := xap_port(1)
 	dir := os.temp_dir()
 	srv := os.join_path(dir, 'cx_xap_3p_server.cx')
 	os.write_file(srv, '[?lib \'cx-xap\' :as xap]\n' +
@@ -118,8 +129,16 @@ fn test_xap_three_process_sign() {
 	assert sign_res.exit_code == 0, 'signer process failed: ${sign_res.output}'
 
 	// the signed name is now in the server-authoritative fold — visible to any
-	// client reading the surface (process 3's read).
-	surface := curl('http://127.0.0.1:${port}/surface')
+	// client reading the surface (process 3's read). Retry the read briefly to
+	// absorb any fold-propagation lag under a loaded parallel gate.
+	mut surface := ''
+	for _ in 0 .. 10 {
+		surface = curl('http://127.0.0.1:${port}/surface')
+		if surface.contains("[item 'Zoe']") {
+			break
+		}
+		time.sleep(100 * time.millisecond)
+	}
 	assert surface.contains("[item 'Zoe']"), 'cross-process sign not reflected in the live surface; got: ${surface}'
 }
 
@@ -131,7 +150,7 @@ fn test_xap_sse_push() {
 		eprintln('SKIP: curl not available')
 		return
 	}
-	port := 18650 + int(time.now().unix_milli() % 120) + 400
+	port := xap_port(2)
 	dir := os.temp_dir()
 	srv := os.join_path(dir, 'cx_xap_sse_server.cx')
 	os.write_file(srv, '[?lib \'cx-xap\' :as xap]\n' +

@@ -881,10 +881,15 @@ screen-thing.
 | Term | Definition |
 |---|---|
 | **Intent** (`[do …]`) | the unit of action itself, emitted identically by a principal (via a control) or an agent (as data). |
-| **Capability** | the composable unit a panel comes from — a component triple (§17) + context-affinity; in the trust model, the right to emit certain intents / read certain slices (§22). |
+| **Capability** | the composable unit a panel comes from — a component triple (§17) + context-affinity; in the trust model, the right to emit certain intents / read certain slices (§22). *(Terminology in flight: "feature" is the unit term that supersedes this composition sense; "capability" is being narrowed to the §22.2 granted right. See [`std-lib/vc.md`](../std-lib/vc.md) §1 and the feature↔capability reconciliation tracked separately.)* |
+| **Vocabulary** | a **named group of related capabilities — a domain** ("the radar vocabulary," "the chart vocabulary"); the domain-language facet of a feature: its intent-vocabulary (the `[do …]` it emits) + control-vocabulary (§18.1) + the slices it reads. The grouping is **load-bearing**, not incidental: (a) **identity/namespace** — you reference "the radar vocabulary" and `sweep` belongs to it; (b) **landing/authority is *by vocabulary*** — you are authorized for the radar vocabulary, not seven loose intents (§22.2); (c) a **shared concept across vocabularies is the seam** where they join (a common `viewport` is what makes pan-sync possible — §19.1). One vocabulary, **two readings**: the **authority surface** (which intents you may emit, §22.2) and the **presentation surface** (which controls/views render, §18.1). |
+| **Pool of vocabularies** | the composition-first reading of a **XAP**: a XAP is a *bounded pool* of vocabularies (the journal is the isolation/authority boundary, §22.6), and a **surface is a chosen blend across the available vocabularies** — controls come from each vocabulary in the blend, the shared seam links them. **Same pool → many surfaces; no "app" to open** (radar-native, §19). **1 … N XAPs collapse to the same pool** from the surface's view (§22.6.1): the journal count underneath is invisible above. |
 | **The dial** | how much initiative the agent takes — the **operational-control** axis (§21). *(Disambiguation: "the dial" is the governance axis "who drives"; "a **control**" — above — is an element you act through. The two never collide because the governance text says "the dial" / "operational control", never "a control".)* |
 | **Log** | the append-only, hash-chained record everything folds from (§14). |
 | **Medium / materialize** | see §13.2. |
+| **Coordination channel** | a transient, non-journaled per-feature pub/sub topic carrying *ephemeral* interaction state (viewport/selection/hover), distinct from the §22.3 enforcement bus and off the PEP-gated cascade — out-of-audit by design (§19.1). |
+| **Augmenting feature** | *descriptive, not a class:* a feature whose `view` reads another feature's **read-model** (durable, §19.1 Tier 1) and/or subscribes to its **coordination channel** (ephemeral, Tier 2). Overlay = arrangement:`overlaid` × coupling:`linked`; when it derives nouns it is a **composite feature** (`joined`). |
+| **linked-durable / linked-ephemeral** | the two durability classes of `linked` coupling (§19.1): *durable* = settled state via the read-model (journaled/auditable); *ephemeral* = continuous interaction via the coordination channel (transient/out-of-audit). |
 | **XAP interface** | the contact-layer artifact, when it must be distinguished from the felt experience. (XAP : interface :: UX : GUI.) |
 
 **eXperience leads** (the medium — the UX/DX/CX family); **Agent in the middle**
@@ -1187,6 +1192,51 @@ channel's gestures to `[do …]` intents and renders surfaces into the channel's
 representation — §15 generalized to non-HTTP transports). A channel is a
 renderer, not a new paradigm.
 
+### §16.1. The no-embedded-client invariant (N-CLIENT-2) — standard template
+
+> **N-CLIENT-2.** A XAP **MUST NOT embed its client or renderer.** The XAP
+> exposes the **medium-agnostic surface as data** over the shell transport
+> (XSP / the in-process `bus`); **materialization into a medium** — HTML for the
+> web, a cell grid for a TUI, speech for audio — is the **renderer's** job, and
+> the renderer lives in a **separate client application**, not in the XAP.
+
+This is the operational consequence of N-MEDIUM-1 (a surface is semantic, not
+pixels, §13.2) and agent-parity (§2.5): an XAP that renders screen-specific HTML
+inside itself has **baked in one medium** and can no longer be attached by a TUI,
+an agent, or a second medium without a parallel render path. The separation is
+not a style preference — it is what keeps the surface reusable across the client
+ladder (§16). Concretely:
+
+- The XAP answers **data** requests: the surface (or a feature's read-model) as
+  `application/cx` / an XSP frame with a `data-bin` payload (the native binding,
+  [`xsp.md`](../../02-working/xsp.md)). It serves **no** HTML and knows nothing
+  of panes, windows, or CSS.
+- A **client app** attaches over the shell, materializes the surface into its
+  medium, and owns all medium-specific concerns (layout, windowing, resize,
+  per-pane refresh cadence). It is a *separate program/process* (the §23
+  bridge), free to be rebuilt or replaced without touching the XAP.
+- An XAP MAY embed a renderer **only by explicit design request** recorded in its
+  spec (a deliberate, documented exception for a single-medium appliance); the
+  default, and the authored-XAP template, is separation.
+
+**Web client default — hypermedia (HTMX), minimal-JS-by-exception.** The
+reference web client is an **HTMX** app: the client app server-renders HTML from
+the surface data it pulls, and the browser is a generic hypermedia client (the
+§15 representation thesis). **JavaScript is added only by exception** — a small,
+named, justified script, and **only on an explicit design request** — for the
+few interactions hypermedia cannot express (e.g. drag-to-resize splitters).
+Live update is hypermedia-native: per-pane polling (`hx-trigger="every Ns"`,
+which also gives each feature its own refresh cadence) or the HTMX SSE extension;
+the XAP↔client link MAY carry XSP binary frames that the **client app** (not the
+browser) decodes. Default to no bespoke JS; reach for it deliberately, document
+it, and keep it contained.
+
+**This §16.1 separation is part of the standard XAP + surface spec template.**
+Every authored XAP declares its surface as data (the surface layer, §13.2 /
+authoring-process); every web client is authored as a *separate* HTMX client app
+with its own spec. (See the marine reference: `xap-marine` is the XAP;
+`xap-marine-htmx-web-client` is its separate HTMX client.)
+
 ---
 
 ## §17. Components — the typed triple
@@ -1249,7 +1299,10 @@ local render loop.
   human triggers them by gesture; the agent emits the *identical* intents as
   data. **A control set _is_ a capability set** (§17/§22) — so agent-operating
   a working panel = holding delegated capabilities for its controls, and the dial
-  / envelopes (§21) apply per-control.
+  / envelopes (§21) apply per-control. This is the **vocabulary, read two ways**
+  (§13.1): the same vocabulary is the **presentation surface** here (which
+  controls/views render) and the **authority surface** in §22.2 (which intents
+  you may emit) — one thing, two readings.
 
 Because the control shape is **standard per kind**, an agent that understands
 `data-grid` operates *any* data-grid working panel in *any* surface — controls are
@@ -1331,6 +1384,74 @@ anticipation layered in progressively — §20). New pieces:
   **peripheral-ready, not modal-interrupting**; cheap dismiss; "why is this
   here?" transparency. Only a handoff that needs the principal *now* earns the
   foreground (§21).
+
+### §19.1. Augmentation — overlay/linked composition & the coordination channel
+
+One feature may **augment** another — a `radar` overlay drawn *on* a `chart`
+panel, bound to where the chart is looking — rather than merely stacking two
+independent surfaces. Augmentation introduces **no new composition primitive**:
+it is an existing point in the composition algebra,
+**arrangement:`overlaid` × coupling:`linked` (or `joined`)**, surfaced
+`summoned`/`pinned` (composition-model §5). What this section blesses
+normatively is the *binding seam* (how the augmenting feature reads the
+augmented one's state) and the *trust rule* (§22.6.1).
+
+**`linked` coupling carries a durability tag.** "Share a frame/key for
+coordination only" spans two governance-meaningful classes:
+
+| `linked` sub-kind | shares | durability | seam |
+|---|---|---|---|
+| **linked-durable** | domain state + *settled* coordination (committed selection, released viewport) | journaled, auditable, replayable | the augmented feature's **read-model** (Tier 1) |
+| **linked-ephemeral** | *continuous* interaction state (live pan/zoom, hover) | transient, **not** journaled, out-of-audit | a **coordination channel** (Tier 2) |
+
+`joined` (derived nouns → a composite feature) is unchanged and always durable.
+
+**Tier 1 — read-model as a `view` input (durable).** A working panel exposes a
+**read-model** — its semantic state, a projection of the bound slice, never
+pixels (§18). An augmenting feature's `view` MAY read another feature's
+read-model:
+
+```
+augmenting.view  =  f( augmenting.slice , augmented.read-model )
+```
+
+- **Intra-XAP** — a direct read of the other feature's read-model, gated by the
+  §22.2 capability check at the one PEP (§22.3). This is **not** a journal
+  crossing: the read-model is a projection, not the journal. Settled
+  coordination (the committed viewport, the current selection) flows through the
+  cascade as ordinary events and projects into the read-model.
+- **Cross-XAP** — a **delegated intent** (§22.6.1), never a direct cross-journal
+  read (`CXER4862`). The data partition is preserved.
+
+**Tier 2 — the coordination channel (transient).** Continuous interaction state
+— live pan/zoom, hover, drag — is **not** journaled (it is 60 fps of noise
+through the synchronous PEP-gated cascade, §14, and no history worth replaying).
+It rides a **coordination channel**:
+
+- A feature MAY **publish** ephemeral interaction state to a named channel
+  (e.g. `coord/<feature>/<tenant>`): `[coordination viewport=… selection=… hover=…]`.
+- An augmenting feature **subscribes** to the augmented feature's channel.
+- The channel is **transient and non-journaled**: it does **not** flow through
+  the cascade's PEP-gated journal path, carries no durable authority, and is
+  **out-of-audit by design**. Carried over [`cx-stdlib/bus`](../std-lib/bus.md)
+  as a topic **distinct from the §22.3 enforcement bus**; publishing a
+  coordination frame is *not* an intent and never commits to the journal.
+- **Authorization is once, at wiring time** (§22.6.1), not per ephemeral
+  message — that is the whole point of keeping it off the PEP path. Revoking the
+  capability tears the subscription down.
+
+The authoritative coupling remains the read-model (Tier 1); Tier 2 is a
+live-coordination convenience. A passage replays correctly from the journal to
+every *settled* coordination state; only the in-between continuous motion is not
+reconstructable (and is not meant to be).
+
+**Lifecycle** needs no new mechanism — it is the surfacing axis (§13.1, §20).
+Summoning a radar onto an already-composed chart **wires** the Tier-1
+read-model dependency and **opens** the Tier-2 subscription (after the §22.6.1
+authorization); dismissing it (or revoking the capability) tears both down. The
+augmented feature is unaffected — augmentation is one-directional and additive
+(composition over modification). *(Resolves #25; companion working notes:
+`spec/02-working/xap_feature_augmentation.md`.)*
 
 ---
 
@@ -1729,6 +1850,14 @@ boundary — cross-tenant access is structurally impossible). *Data* partitions 
 "runtime/journal"; separating them is what lets one tenant hold many XAPs and
 thousands of streams while every isolation guarantee still holds.
 
+**Two halves of "XAP," not one.** The "one runtime = one journal" definition is
+the **isolation/authority** half. The **composition** half is equally load-bearing:
+a XAP is a **bounded pool of vocabularies** (§13.1) that presents a *composable*
+surface — you do not "open an app," you **blend a surface** across whatever
+vocabularies have landed. A XAP unioning many vocabularies and N XAPs federated
+(§22.6.1) are the *same pool* to the surface; the journal count underneath is
+only where state is isolated and attributed, invisible above.
+
 ### §22.6.1. Federation — composing many XAPs into one experience
 
 A principal's experience is a **composition of many XAPs**, not one monolith —
@@ -1744,6 +1873,18 @@ experience layer**, never shared state:
   never as implicit shared state — §14.2 cross-stream coordination raised one
   tier.
 
+**The 1 … N collapse.** From the surface's view, the **intra-XAP union of
+vocabularies** and **inter-XAP federation** are the *same operation* — a blend
+across vocabularies (§13.1). They differ only in **how many journals isolate the
+state underneath**: one journal (union within a pool) vs. N (federation across
+pools). Integration over a **shared concept** (e.g. `viewport` — "pan one, all
+follow") is performed by the resolver / **Radar** (§19) firing the shared intent
+into each landed vocabulary — *not* by cross-journal wiring (no XAP reads
+another's journal). Shared vocabulary *enables* the integration; the Radar
+*performs* it. This is why "compose capabilities into one experience" needs no
+"app" boundary: same pool affords many surfaces, and adding a federated peer XAP
+extends the pool without changing how a surface blends it.
+
 **Hierarchy and mesh are one primitive** — *a XAP-as-panel reached through a
 delegated session*. **Hierarchy:** a parent XAP embeds a child's surface as a
 nested panel (§13.1 CXPath-scoped nesting), holding the delegated session.
@@ -1754,6 +1895,31 @@ identical, and adds **no new trust primitive** (it is §22.2 delegation).
 **Admin / support XAPs** are the same primitive specialized: an
 over-the-shoulder mirrored attach (§16/§21) granted by a scoped, time-bounded,
 revocable delegation.
+
+**The carrier boundary is the *trust domain*, not the XAP.** A XAP is a
+packaging/process boundary; it can host features from **different trust
+domains** — notably a third-party / untrusted feature co-located with
+first-party ones. Two layers stay separate:
+
+- **Access control — always enforced.** Whether a feature may read another's
+  read-model (§19.1 Tier 1) or subscribe to its coordination channel (Tier 2)
+  is gated by the §22.2 capability model via the one PEP (§22.3), **intra-XAP
+  included**. "Same XAP" never implies "everything shared": a `navigation`
+  feature does not read a `crew-payroll` feature without a grant (default-deny,
+  N-TRUST-1).
+- **Authority carrier — keys on the trust-domain boundary.** Within **one trust
+  domain** (first-party features in one XAP) the carrier is a **local §22.2
+  delegation** — the runtime is the trust root; no signature, no DID. **Across a
+  trust domain** — a third-party feature *co-located in the same XAP*, or a
+  federated peer XAP — the grantee is a **DID** subject presenting a **VC**
+  ([vc.md](../std-lib/vc.md)): cryptographic proof, because co-location ≠ trust.
+
+So DID/VC (R9) is what you reach for when non-sharability is because the other
+feature is from a trust domain you do not control — **not** for two first-party
+features that merely lack a grant (a local delegation). This keeps DID/VC at
+trust-domain boundaries wherever they fall, *including inside a XAP*, and makes
+the marketplace vision concrete: third-party features are first-class but must
+prove identity + authority by DID/VC to augment another feature.
 
 ### §22.7. Tenancy
 Process-per-tenant by default (hard blast-radius / noisy-neighbor / data
@@ -2045,6 +2211,11 @@ predicates, capabilities, assurance tiers) extends *without* disturbing them.
   attenuating, revocable delegation (§22).
 - **N-CLIENT-1** — XAP is above the client; no client vocabulary leaks upward;
   human and agent are peers on one `[do …]` intent surface (§15, §23).
+- **N-CLIENT-2** — a XAP does not embed its client/renderer; it exposes the
+  medium-agnostic surface as **data**, and materialization lives in a **separate
+  client app** (HTMX-first for the web, minimal-JS-by-exception). Embedding a
+  renderer bakes in one medium and is a documented per-XAP exception only
+  (§16.1).
 - **Hard partition (two axes)** — *authority* partitions by tenant (cross-tenant
   access structurally impossible); *data* partitions by XAP→stream (no XAP reads
   another's journal). Cross-XAP composition is **federation** — delegated

@@ -4,11 +4,12 @@ This document is CX's living, public roadmap. It tracks what's
 landing in the next release, what's planned for later, and what is
 deliberately *not* on the roadmap.
 
-**The next tag is v0.8.0.** v0.8.0 is the API/format-stability
-boundary: from v0.8.0 onward through 1.0, no breaking changes to the
-public surface (C ABI, binding APIs, wire formats, spec-normative
-grammar). The "v0.8.0 — LOCKED" section below is the live scope.
-"v0.9.0 — planned" and "v1.0" describe the post-v0.8.0 horizon.
+**v0.8.0 was the API/format-stability boundary:** from v0.8.0 onward
+through 1.0, no breaking changes to the public surface (C ABI, binding
+APIs, wire formats, spec-normative grammar). For what has actually
+shipped and the current release, see [`CHANGELOG.md`](CHANGELOG.md) and
+the `RELEASE_NOTES_v*.md` files — this document is forward-looking and
+does not restate the current version.
 
 **Released history (frozen):**
 

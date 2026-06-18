@@ -26,8 +26,11 @@ fn cx_binary() string {
 	return abs
 }
 
+// Disjoint PID + nanosecond-salted band (26000-26099) so the concurrent
+// `v test vcx/tests/` gate processes don't collide on a port.
 fn pick_port() int {
-	return 19850 + int(time.now().unix_milli() % 120)
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	return 26000 + int(salt)
 }
 
 fn write_tmp(name string, content string) string {

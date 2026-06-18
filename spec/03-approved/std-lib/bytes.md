@@ -92,6 +92,15 @@ CXDM `bytes` is a sealed scalar: a length-prefixed byte buffer; length up to 2^3
 
 RFC 4648 base32 (uppercase, padded).
 
+### §3.5.1. Base58 encoding
+
+```
+[?def to-base58   scope=public pure [returns string] ($b::bytes) ...]
+[?def from-base58 scope=public pure [returns bytes]  ($s::string) ...]
+```
+
+base58btc — the **Bitcoin alphabet** (`123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz`), the multibase `z`-prefixed encoding. Leading zero bytes encode as leading `1`s (round-trip preserved). `from-base58` returns `CXER2302` on a character outside the alphabet. This is the payload encoding for `did:key` ([did.md](../../02-working/std-lib/did.md) §2.1).
+
 ### §3.6. Compression
 
 ```

@@ -58,7 +58,10 @@ fn run_guarded(inner string, secs int) os.Result {
 
 // ── dial leg: cx DTLS client round-trips against a cx DTLS server ───────────
 fn test_net_dial_dtls_roundtrip() {
-	port := 19950 + int(time.now().unix_milli() % 40)
+	// Disjoint PID + nanosecond-salted slot (27200-27299) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	port := 27200 + int(salt)
 	dir := os.temp_dir()
 	cert := os.join_path(dir, 'cx_dtls_cert.pem')
 	key := os.join_path(dir, 'cx_dtls_key.pem')
@@ -104,7 +107,10 @@ fn test_net_dial_dtls_roundtrip() {
 // V client's first ClientHello carries no cookie, the cx server replies with a
 // HelloVerifyRequest, and only the cookie-bearing retransmission completes.
 fn test_net_listen_dtls_roundtrip() {
-	port := 19950 + int(time.now().unix_milli() % 40) + 50
+	// Disjoint PID + nanosecond-salted slot (27320-27419) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	port := 27320 + int(salt)
 	dir := os.temp_dir()
 	cert := os.join_path(dir, 'cx_dtlssrv_cert.pem')
 	key := os.join_path(dir, 'cx_dtlssrv_key.pem')

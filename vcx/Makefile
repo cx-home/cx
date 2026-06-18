@@ -112,6 +112,15 @@ $(TARGET):
 # when using a system V without the patches. Detected by checking for
 # our patched-V marker file.
 PROD_FLAGS := $(if $(wildcard $(CURDIR)/../third_party/v/v),-prod,)
+# P4 guard (evict_cx_from_v): third_party/v/v is the patched V that BOTH supplies
+# the -gc e/vgc runtime AND is what flips -prod on above. If it is absent the
+# build silently falls back to PATH `v` (line 7) with PROD_FLAGS empty — NO -prod
+# — so binaries run ~5x slower and may link an unpatched GC. That degradation is
+# easily mistaken for a real perf regression (see the worktree-prod-bench trap).
+# Warn LOUDLY rather than fail, since the no-prod fallback is a documented mode.
+ifeq ($(wildcard $(CURDIR)/../third_party/v/v),)
+$(warning *** [cx build] patched V NOT FOUND at third_party/v/v — falling back to PATH `v` with -prod SILENTLY DROPPED (≈5x slower, GC may be unpatched). This is NOT a code regression. Fix: `git submodule update --init --recursive third_party/v && $(MAKE) -C ../third_party/v`. In a git worktree, symlink the main checkout's third_party/v. ***)
+endif
 # Quiet the V compiler's informational notices (-n) and warnings (-w) from the
 # build output — they're benign (unused stub params, signed-shift notices) and
 # drown the real signal. Override with `make VQUIET= …` to see them.

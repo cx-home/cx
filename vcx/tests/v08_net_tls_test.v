@@ -23,7 +23,10 @@ fn test_net_dial_tls_roundtrip() {
 		eprintln('SKIP: openssl not available (cert generation)')
 		return
 	}
-	port := 19800 + int(time.now().unix_milli() % 150)
+	// Disjoint PID + nanosecond-salted slot (27500-27599) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	port := 27500 + int(salt)
 	dir := os.temp_dir()
 	cert := os.join_path(dir, 'cx_tls_cert.pem')
 	key := os.join_path(dir, 'cx_tls_key.pem')
@@ -75,7 +78,10 @@ fn test_http_client_https_real() {
 		eprintln('SKIP: openssl not available (cert generation)')
 		return
 	}
-	port := 19800 + int(time.now().unix_milli() % 150) + 70
+	// Disjoint PID + nanosecond-salted slot (27620-27719) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	port := 27620 + int(salt)
 	dir := os.temp_dir()
 	cert := os.join_path(dir, 'cx_https_cert.pem')
 	key := os.join_path(dir, 'cx_https_key.pem')
@@ -126,7 +132,10 @@ fn test_net_listen_tls_roundtrip() {
 		eprintln('SKIP: openssl not available (cert generation)')
 		return
 	}
-	port := 19800 + int(time.now().unix_milli() % 150) + 110
+	// Disjoint PID + nanosecond-salted slot (27740-27839) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	port := 27740 + int(salt)
 	dir := os.temp_dir()
 	cert := os.join_path(dir, 'cx_tlssrv_cert.pem')
 	key := os.join_path(dir, 'cx_tlssrv_key.pem')

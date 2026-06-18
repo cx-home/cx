@@ -26,9 +26,10 @@ fn curl_available() bool {
 }
 
 fn pick_port() int {
-	// Disjoint base from the directive test (18800-18900) and the picoev
-	// spike (19200-19300) so a single `v test vcx/tests/` job does not collide.
-	return 19400 + int(time.now().unix_milli() % 100)
+	// Disjoint PID + nanosecond-salted band (25600-25699) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide on a port.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	return 25600 + int(salt)
 }
 
 fn spawn_eval(prog_path string, port int) int {

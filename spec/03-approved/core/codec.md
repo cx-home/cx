@@ -135,6 +135,15 @@ enumerations). The compositional `[$<Y>:emit [$<X>:parse …]]` form remains the
 primitive; `[$convert]` is for the common case and is where a `transform*` step is
 omitted.
 
+> **Parse-result shape.** `[$<codec>:parse]` returns the source document's
+> top-level node(s). When a document has more than one top-level node (e.g. a
+> leading comment plus a root element), the result is a **sequence**, not a single
+> element — navigate it with the **descendant axis** (`$doc//elem`,
+> `$doc//elem/@attr`). A direct child or attribute step on the sequence
+> (`$doc/@attr`) raises `CXER0001` ("attribute path step on non-element value").
+> The namespaced `[$<codec>:parse]` is canonical; the flat-dispatch alias
+> `[$<codec>-parse]` is also accepted.
+
 ## §8 — Worked examples
 
 ```cx
@@ -154,4 +163,9 @@ omitted.
 
 # the sugar
 [$convert [$io:read-file 'doc.md'] :from markdown :to xml]
+
+# parse a CX document, then navigate it — note the descendant axis `//` (§7):
+# the parse result is a sequence, so a direct `$doc/@name` would raise CXER0001.
+[?let [= $doc [$cx:parse [$io:read-file 'feature.cxd']]]
+  [$doc//feature/@name]]
 ```

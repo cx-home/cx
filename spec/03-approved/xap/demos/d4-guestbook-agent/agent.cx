@@ -18,7 +18,7 @@
 # :actor names the agent and authority still traces to the principal (N-CONTROL-2).
 # why-allowed audits the agent's sign and resolves the accountable party.
 [?let [= $rt [$xap:run {tenant: "demo" components: (guestbook)}]]
-[?let [= $d [$xap:dial $rt [scope :guestbook] [setting :semi-auto]]]   # = [$authz:delegate …]
+[?let [= $d [$xap:dial $rt [from id="principal:dana"] [to id="agent:greeter-1"] [scope :guestbook] [setting :semi-auto]]]   # = [$authz:delegate …]
 [?let [= $h [$xap:emit $rt [do :sign [name "Ada"]] {actor: "principal:dana"}]]    # human peer
 [?let [= $b [$xap:emit $rt [do :sign [name "Lin"]] {actor: "agent:greeter-1"}]]   # agent peer
   [$xap:why-allowed $rt [do :sign [name "Lin"]] {actor: "agent:greeter-1"}]]]]]

@@ -14,9 +14,11 @@ import time
 // a listener.  The next-port collision window is small but real; the
 // tests retry on bind-failure rather than depending on a fixed port.
 fn pick_port() int {
-	// Range chosen to avoid macOS ALF default-deny + GitHub Actions
-	// runner reserved ports.
-	return 18800 + int(time.now().unix_milli() % 100)
+	// Disjoint PID + nanosecond-salted band (25400-25499) so the concurrent
+	// `v test vcx/tests/` gate processes don't collide; the band sits below the
+	// ephemeral range and clear of macOS ALF / CI reserved ports.
+	salt := (u64(os.getpid()) * u64(2654435761) + u64(time.now().unix_nano())) % 100
+	return 25400 + int(salt)
 }
 
 fn cx_binary() string {

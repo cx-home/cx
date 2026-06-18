@@ -4759,6 +4759,21 @@ A `[?def]` body sees:
  any enclosing expression, nor names from any other module
  that has not been imported via `[?lib]`.
 
+**Defining-scope resolution (uniform lexical scoping).** This view is
+**lexical and stable**: a callable resolves its free names in the scope
+where it was **defined**, not where it is **applied**. The guarantee holds
+when a `[?def]` (or a `[?fn]`, §8.6) is passed or returned as a *value* and
+applied in **another module's** frame — e.g. a predicate/handler/mapper
+given to a library combinator still resolves its own module's siblings and
+imports, never the callee's. A module is thus a first-class lexical scope;
+captured bindings are by reference (declarations are immutable post-load, so
+no per-call copy). Mutual recursion and order independence follow (§12.5.5).
+This holds for an **escaping** `[?fn]` too: a lambda returned from a module def
+and applied in another frame resolves that module's **unqualified** siblings +
+consts, and combinators that re-capture a returned closure (`pipe`/`compose`
+nesting) preserve its environment — the escaping closure travels WITH its value
+(cx-private #45).
+
 #### §12.2.3 No overloading; bare-name references
 
 A module may declare **at most one** `[?def]` per name.

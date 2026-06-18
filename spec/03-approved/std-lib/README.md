@@ -32,7 +32,7 @@ Loading semantics are defined by [`spec/core/code.md`](../core/code.md) §12.1.
 
 ## §3. Module index (v0.8.0)
 
-The v0.8.0 stdlib enumerates **37 sub-packages** in four informative tiers. Tier is not addressable in the resolver; `[?lib]` always names `cx-stdlib/<name>`.
+The v0.8.0 stdlib enumerated **37 sub-packages** in four informative tiers; **5 post-v0.8.0 additions** (`did`, `vc`, `xsp`, `jsonrpc`, `jsonschema` — §3.2) bring the current frozen surface to **42**. A separate **`x/` experimental tier** (§3.3) sits alongside the frozen surface — in-tree and gated, but **exempt** from the frozen-stability promise. Tier is not addressable in the resolver; `[?lib]` always names `cx-stdlib/<name>` (frozen) or `cx-x/<name>` (experimental).
 
 ### Tier A — Value-shape & encoding
 
@@ -48,6 +48,7 @@ The v0.8.0 stdlib enumerates **37 sub-packages** in four informative tiers. Tier
 | `csv` | CSV / TSV parse / emit; dialect handling | [csv.md](csv.md) |
 | `format` | Canonical-form emission, pretty-print | [format.md](format.md) |
 | `validate` | Runtime schema validation (data-record validator) | [validate.md](validate.md) |
+| `jsonschema` | JSON Schema 2020-12 validation (the MCP tool-schema subset) | [jsonschema.md](jsonschema.md) |
 | `url` | URL parse / build / encode / decode | [url.md](url.md) |
 | `mime` | MIME types, content-type parsing, multipart helpers | [mime.md](mime.md) |
 | `locale` | Locale-aware collation, number/date/currency formatting, case mapping | [locale.md](locale.md) |
@@ -90,8 +91,12 @@ The in-review web/coordination stack, graduated together: an L7 server atop `net
 | `bus` | In-process pub/sub with synchronous ordered dispatch | [bus.md](bus.md) |
 | `journal` | Append-only, hash-chained, per-aggregate-stream event log + fold→state + replay/verify/snapshot | [journal.md](journal.md) |
 | `authz` | Authorization / trust model — capabilities, attenuating delegations, guardian grants, the PEP decision function | [authz.md](authz.md) |
-| `session` | `(principal, tenant)` sessions — attach, token verify, mirrored-attach | [session.md](session.md) |
+| `session` | `(principal, tenant)` sessions — attach (JWT bearer **or** DID proof-of-control), token verify, mirrored-attach | [session.md](session.md) |
 | `sched` | Scheduled events & cancelable timers; durable via `journal` | [sched.md](sched.md) |
+| `did` | Decentralized identifiers — `did:key` (offline) + `did:web`; create / parse / resolve / proof-of-control (R9 identity) | [did.md](did.md) |
+| `vc` | Verifiable credentials — issue / verify / present / revoke a portable, signed, attenuating §22.2 delegation (R9 authority) | [vc.md](vc.md) |
+| `jsonrpc` | JSON-RPC 2.0 message model — build / classify / validate (the wire under MCP + LSP) | [jsonrpc.md](jsonrpc.md) |
+| `xsp` | XAP Stream Protocol — frame codec (length-prefixed binary frames) | [../xap/xsp.md](../xap/xsp.md) |
 
 ### §3.1. Anti-duplication principle
 
@@ -101,7 +106,30 @@ A proposed sub-package does **not** belong in stdlib if it (1) controls evaluati
 
 ### §3.2. Frozen-surface discipline
 
-The 37-module set above is the **v0.8.0 frozen surface**. Adding a new sub-package post-v0.8.0 requires the same gating discipline that applies to the directive registry. Removing a sub-package is breaking at the binary's major-version boundary.
+The 37-module Tier A–D set is the **v0.8.0 frozen surface**. Adding a new sub-package post-v0.8.0 requires the same gating discipline that applies to the directive registry. Removing a sub-package is breaking at the binary's major-version boundary.
+
+**Post-v0.8.0 additions.** Five sub-packages have been added under this discipline, bringing the frozen surface to **42**:
+
+- `did`, `vc` (Tier D, issue #26) — concrete foundational libraries realizing the DID/VC authority-basis transport that [xap.md](../xap/xap.md) R9 framed and §28.3 D5 deferred. They add **no new trust primitive** (the PEP / N-TRUST-1 are unchanged); they make decentralized identity (`did`) + delegation (`vc`) real alongside the existing `crypto`/`session`/`authz`.
+- `xsp` (Tier D, issue #31) — the XAP Stream Protocol frame codec ([../xap/xsp.md](../xap/xsp.md)).
+- `jsonrpc`, `jsonschema` (issue #6 S1/S7) — the **agentic substrate**: the JSON-RPC 2.0 message model (the wire under MCP + LSP) and JSON Schema 2020-12 validation (MCP tool `inputSchema`s). They add no new core; they are pure message-model / validation libraries the agentic shims in the `x/` tier (§3.3) compose.
+
+### §3.3. The `x/` experimental tier
+
+The fast-moving agentic protocol shims live in a separate **`x/` experimental tier**, resolved as `cx-x/<name>` (e.g. `[?lib 'cx-x/run']`), with sources under the repo-root `x/` directory (parallel to `stdlib/`). Per cx-private #6 (decision D3), the tier is **in-tree** — one repo, one toolchain, one gate — but **explicitly exempt from the frozen-stability promise**: semver-breaking change is allowed while a protocol settles, and the experimental status is marked in each module header. The tier is enumerated separately (`bundled_x_names()`); the frozen-surface canary never counts it.
+
+Current `x/` modules:
+
+| Module | Purpose | Spec |
+|---|---|---|
+| `cx-x/run` | The **Runnable convention** + combinator library — invoke / batch / pipe / compose / fan-out over any callable (local fn ≡ MCP tool ≡ A2A skill ≡ pipeline step) | [../x/run.md](../x/run.md) |
+| `cx-x/llm` | Minimal LLM provider (Ollama `/api/chat`), the first Runnable | [../x/README.md](../x/README.md) |
+| `cx-x/mcp` | MCP (Model Context Protocol) **client** — JSON-RPC over HTTP; validates tool args via `jsonschema` | [../x/README.md](../x/README.md) |
+| `cx-x/mcp-server` | MCP **server** helpers — cap-gated tools (a tool's effects are gated by CX capabilities) | [../x/README.md](../x/README.md) |
+| `cx-x/a2a` | A2A (Agent-to-Agent) protocol client | [../x/README.md](../x/README.md) |
+| `cx-x/a2a-xap` | A2A over the xap substrate — tasks→`journal`, messages→`bus`, auth→`did`+`vc` | [../x/README.md](../x/README.md) |
+
+A module graduates from `x/` to the frozen surface only once its protocol is stable, by the same gating discipline as any frozen addition.
 
 ## §4. Loading semantics
 

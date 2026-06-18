@@ -2,9 +2,10 @@
 (cxlib.load_fixtures) — the Python mirror of vcx/cx/fixture_loader.v.
 
 Includes a parser canary (inline, file-free bootstrap guard, mirroring the
-V-side test_loader_parser_canary) plus a parity smoke over code.cxd (769
-cases, `---` inside RawText, `#]` splits). The canary keeps the loader's
-parse path honest even if the .cxd files are absent or relocated.
+V-side test_loader_parser_canary) plus a parity smoke over code.cxd (case
+count derived from the file, not hardcoded; `---` inside RawText, `#]`
+splits). The canary keeps the loader's parse path honest even if the .cxd
+files are absent or relocated.
 
 Exit codes: 0 = all pass, 1 = a check failed.
 """
@@ -100,14 +101,21 @@ def test_expect_codes_atom_array() -> None:
 def test_code_cxd_smoke() -> None:
     """Parity smoke over the real code.cxd corpus.
 
-    The count is a canary that the Python loader parses every case (it only
-    grows as the corpus does). Update it deliberately when fixtures are added.
+    The Python loader must read exactly the cases present in the file. The
+    expected count is DERIVED from the file (top-level `[case id=` markers),
+    so it tracks the corpus automatically — no hand-maintained magic number —
+    while still catching a loader that drops or duplicates cases.
     """
     path = _conformance("code.cxd")
     if not os.path.exists(path):
         return  # safe no-op before the file exists
     cases = cxlib.load_fixtures(path)
-    assert len(cases) == 772, f"expected 772 code.cxd cases, got {len(cases)}"
+    with open(path, encoding="utf-8") as fh:
+        expected = sum(1 for line in fh if line.lstrip().startswith("[case id="))
+    assert expected > 0, "code.cxd has no `[case id=` markers — corpus moved?"
+    assert len(cases) == expected, (
+        f"loader read {len(cases)} cases; file has {expected} `[case id=` markers"
+    )
     by_id = {c.name: c for c in cases}
     # A representative case with in_cx / in_code / out_text sections.
     c = by_id.get("program-for-001-all-emails")

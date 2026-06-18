@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>did — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a class="active" href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-did">
+  <h1>did</h1>
+  <p class="lede">Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. Supports did:key — offline and self-describing, encoding an Ed25519 public key directly in the identifier — and did:web, which is org/domain-anchored and resolves over an HTTPS seam. The module parses and inspects DID strings, produces DID documents, resolves them (offline or net-gated), and verifies a principal's proof-of-control.</p>
+  
+    <section id="fn-did-key-create" class="fn">
+      <h3>did:key-create</h3>
+      <p class="fn-sig"><code>[$did:key-create]  -> string</code>  —  Encode an Ed25519 public key as a self-describing did:key string.</p>
+      
+    </section>
+    <section id="fn-did-parse" class="fn">
+      <h3>did:parse</h3>
+      <p class="fn-sig"><code>[$did:parse]  -> element</code>  —  Parse a DID string into its structured components.</p>
+      
+    </section>
+    <section id="fn-did-method" class="fn">
+      <h3>did:method</h3>
+      <p class="fn-sig"><code>[$did:method]  -> string</code>  —  Extract the method name (e.g. key, web) from a DID string.</p>
+      
+    </section>
+    <section id="fn-did-document" class="fn">
+      <h3>did:document</h3>
+      <p class="fn-sig"><code>[$did:document]  -> element</code>  —  Build the DID document offline for self-describing methods such as did:key.</p>
+      
+    </section>
+    <section id="fn-did-resolve" class="fn">
+      <h3>did:resolve</h3>
+      <p class="fn-sig"><code>[$did:resolve]  -> element</code>  —  Resolve a DID to its document for any method, performing a net-gated HTTPS GET for did:web.</p>
+      
+    </section>
+    <section id="fn-did-key-of" class="fn">
+      <h3>did:key-of</h3>
+      <p class="fn-sig"><code>[$did:key-of]  -> bytes</code>  —  Recover the principal's public key bytes from a DID string.</p>
+      
+    </section>
+    <section id="fn-did-verify-control" class="fn">
+      <h3>did:verify-control</h3>
+      <p class="fn-sig"><code>[$did:verify-control]  -> bool</code>  —  Verify proof-of-control: that the DID's key signed the given challenge, returning whether the signature is valid.</p>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

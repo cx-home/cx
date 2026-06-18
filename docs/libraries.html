@@ -50,6 +50,7 @@
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-did.html">did</a></li>
     <li><a href="lib-email.html">email</a></li>
     <li><a href="lib-env.html">env</a></li>
     <li><a href="lib-format.html">format</a></li>
@@ -63,6 +64,8 @@
     <li><a href="lib-io.html">io</a></li>
     <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
     <li><a href="lib-math.html">math</a></li>
@@ -82,7 +85,9 @@
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
   </ul></section>
   <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
@@ -103,6 +108,7 @@
       <li><a href="lib-bytes.html">bytes</a>  —  Byte-level operations on the CX bytes scalar kind.</li>
       <li><a href="lib-crypto.html">crypto</a>  —  Operations involving a key, a secret, or authentication.</li>
       <li><a href="lib-csv.html">csv</a>  —  Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions.</li>
+      <li><a href="lib-did.html">did</a>  —  Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS.</li>
       <li><a href="lib-email.html">email</a>  —  Parse and build RFC 5322 + MIME multipart email messages.
 
    The surface covers parsing inbound messages, inspecting headers and bodies, extracting attachments, decoding encoded-words and address lists, and building outgoing messages with text + HTML alternatives and attachments.</li>
@@ -122,6 +128,8 @@
       <li><a href="lib-io.html">io</a>  —  File and stream I/O — whole-file reads and writes, streaming handles, line iteration, filesystem queries, directory operations, globbing, tempfiles, and advisory file locking.</li>
       <li><a href="lib-journal.html">journal</a>  —  An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state.</li>
       <li><a href="lib-json.html">json</a>  —  Parse JSON (RFC 8259) into CXDM values and emit CXDM values back to JSON.</li>
+      <li><a href="lib-jsonrpc.html">jsonrpc</a>  —  Bundled cx-stdlib module.</li>
+      <li><a href="lib-jsonschema.html">jsonschema</a>  —  Bundled cx-stdlib module.</li>
       <li><a href="lib-locale.html">locale</a>  —  The primitives layer of CX's internationalization surface.</li>
       <li><a href="lib-log.html">log</a>  —  Structured logging: leveled emit with arbitrary structured fields.</li>
       <li><a href="lib-math.html">math</a>  —  Numeric utilities over CX int and float scalar kinds.</li>
@@ -145,8 +153,10 @@
    (SHA-1) and v3 (MD5).</li>
       <li><a href="lib-validate.html">validate</a>  —  Validate a CX data record against a record-schema at runtime, in the
    JSON-Schema / pydantic style.</li>
+      <li><a href="lib-vc.html">vc</a>  —  Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity).</li>
       <li><a href="lib-xap.html">xap</a>  —  The XAP orchestrator — the experience layer at the top of the CX web
    stack.</li>
+      <li><a href="lib-xsp.html">xsp</a>  —  The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport.</li>
     
   </ul>
 </section>

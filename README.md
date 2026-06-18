@@ -1,6 +1,6 @@
 # CX
 
-[![Version](https://img.shields.io/badge/version-v0.8.0-blue.svg)](#status)
+[![Version](https://img.shields.io/badge/version-v0.11.0-blue.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
@@ -109,18 +109,14 @@ server.
 
 ## Status
 
-CX is **pre-1.0** and under active development; **v0.8.0** is the current line.
-The grammar is stable and the C ABI is versioned and forward-compatible.
+CX is **pre-1.0** and under active development — the current release is the
+version badge above. The grammar is stable and the C ABI is versioned and
+forward-compatible.
 
-**v0.8.0 — the CXPath + module-system release.** CXPath is now a first-class
-value kind (XPath-style, 12 axes, `//` and `/` step prefixes). `[?match]` gains
-heterogeneous multi-arm dispatch (`[case …]` / `[when …]` / `[else …]`); a new
-`[?modify]` directive does pure-functional updates with structural sharing.
-`[?def]` module functions, `[?lib]` module loading, and a `cx.lock` lockfile
-add a real module system, with a bundled standard library (`cx-stdlib/*`) and
-an HTTP client/server stack. An `atom` scalar kind (`:NAME`) joins the value
-kinds, and the playground gains tree and graph (ERD / CFG) views. Tier-1
-bindings ship for V, Python, Go, and Rust. Full reference is on the docs site.
+What's in each release — new surface, fixes, and any migration notes — lives in
+[`CHANGELOG.md`](CHANGELOG.md) and the per-release `RELEASE_NOTES_v*.md` files;
+the latest of those is the authoritative release surface. Full language and
+stdlib reference is on the [docs site](https://cx-home.github.io/cx/).
 
 Formal security review, fuzz-testing, and the multi-core performance work are
 still ahead — so pin a tested version and apply normal pre-1.0 caution, as the

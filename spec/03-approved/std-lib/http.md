@@ -488,6 +488,15 @@ top (§6).
 
 ### §3.6. SSE / streaming — held-open server push + client read
 
+> **Known limitation — concurrent server push (cx-private #28).** The client read
+> path (`sse-connect`/`sse-events`) and a single held-open server stream are real
+> and complete; what is **deferred** is *concurrent* server push — a held SSE
+> stream on the `accept-iter` path serializes the accept loop, and the `serve`
+> handler receives a `[request]` (not an `[exchange]`), so it cannot promote to
+> SSE. Server-initiated streaming that coexists with serving other requests is
+> tracked in #28. (A timeout/non-blocking std-stream read — the sibling gap for an
+> interactive client — is `cx-stdlib/io` #29.)
+
 > **Implementation tier (this revision).** The **live held-open socket transport
 > is implemented** on the L4 `net` layer (built on the real `accept-iter` /
 > exchange the low-level server loop uses): `sse` writes the event-stream prelude
