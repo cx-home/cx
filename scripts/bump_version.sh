@@ -36,6 +36,11 @@ stamp cx.pc.in                    "s/^Version: .*/Version: $NEW/"
 stamp vcx/v.mod                   "s/^\([[:space:]]*version:[[:space:]]*\)'.*'/\1'$NEW'/"
 stamp lang/v/v.mod                "s/^\([[:space:]]*version:[[:space:]]*\)'.*'/\1'$NEW'/"
 stamp lang/rust/cxlib/Cargo.toml  "s/^version = \".*\"/version = \"$NEW\"/"
+# Cargo.lock records the cxlib package's own version too; cargo would otherwise
+# regenerate it on the next build and leave a dirty tree (tripping the release
+# clean-tree check). Stamp ONLY the cxlib package's version line (match its
+# `name = "cxlib"` block, then the following `version =`), never other packages'.
+stamp lang/rust/cxlib/Cargo.lock  "/^name = \"cxlib\"\$/{n;s/^version = \".*\"/version = \"$NEW\"/;}"
 stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 # Narrative docs carry the version in ONE machine-checkable place: the shields
 # badge. Per-release prose lives in RELEASE_NOTES_v*.md (per-release by
