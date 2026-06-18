@@ -1,12 +1,12 @@
 # CX ⇄ V Dependency Management
 
-**Status:** Draft (02-working) — governs from v0.10.1; pending graduation to `03-approved/process/`.
+**Status:** Current for v0.11.0.
 
 This document specifies how CX depends on, patches, tracks, and ultimately
 sheds the V compiler/runtime it is built on. It is a **process/governance**
 specification, not a CX language specification: it constrains the *toolchain
 relationship*, not CX semantics. The operational quick-reference (pin convention,
-recovery commands) lives in [`third_party/README.md`](../../third_party/README.md);
+recovery commands) lives in [`third_party/README.md`](../../../third_party/README.md);
 this document is the authoritative *policy and rationale*.
 
 ---
@@ -69,7 +69,7 @@ CX records exactly which V it builds against; this is the single source of truth
   obtains it via `git submodule update --init --recursive`.
 
 Mechanics, the canonical branch/tag names, and the remote-dropped-SHA recovery
-procedure are in [`third_party/README.md`](../../third_party/README.md).
+procedure are in [`third_party/README.md`](../../../third_party/README.md).
 
 ## 5 — Keeping current with upstream V
 
@@ -103,7 +103,7 @@ patch series is what keeps these re-bases low-conflict — preserving that shape
 
 The endgame is **not** perpetual fork maintenance. Each Bucket-1 patch is submitted
 upstream (the memory-management line is tracked by
-[`../../vlang-perceus-rfc-draft.md`](../../vlang-perceus-rfc-draft.md)). Every patch
+[`../../vlang-perceus-rfc-draft.md`](../../../vlang-perceus-rfc-draft.md)). Every patch
 upstream accepts drops out of the series. When the series reaches zero, CX pins
 **stock upstream V**, the fork is retired, and §5 maintenance ends entirely. Until
 then, minimizing the series (upstreaming aggressively, never adding CX-specific
@@ -111,8 +111,8 @@ patches) is the strategy that both reduces re-base cost and brings that day clos
 
 ## 7 — Companion documents
 
-- [`third_party/README.md`](../../third_party/README.md) — operational pin convention + recovery.
-- [`v_runtime_memory_management.md`](v_runtime_memory_management.md) — the Bucket-1 mem-mgmt spec.
-- [`../../vlang-perceus-rfc-draft.md`](../../vlang-perceus-rfc-draft.md) — the upstreaming RFC to the V core team.
-- [`evict_cx_from_v_PLAN.md`](evict_cx_from_v_PLAN.md) — the one-time eviction that established §2.
-- [`vcx/Makefile`](../../vcx/Makefile) — the guard that warns loudly when the patched V is absent and `-prod` is silently dropped (the worktree build trap; see §4/§5).
+- [`third_party/README.md`](../../../third_party/README.md) — operational pin convention + recovery.
+- [`v_runtime_memory_management.md`](../../02-working/v_runtime_memory_management.md) — the Bucket-1 mem-mgmt spec.
+- [`../../vlang-perceus-rfc-draft.md`](../../../vlang-perceus-rfc-draft.md) — the upstreaming RFC to the V core team.
+- [`evict_cx_from_v_PLAN.md`](../../02-working/evict_cx_from_v_PLAN.md) — the one-time eviction that established §2.
+- [`vcx/Makefile`](../../../vcx/Makefile) — the guard that warns loudly when the patched V is absent and `-prod` is silently dropped (the worktree build trap; see §4/§5).

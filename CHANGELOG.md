@@ -39,7 +39,7 @@ The agentic-substrate release. Authoritative release-surface document:
 - **CX decoupled from the V fork** — transport vendored into `vcx/transport/`,
   dormant scope-region path retired; the patched-V fork is now CX-free
   (Bucket-1 only). No runtime-behavior change. See
-  [`spec/02-working/v-dependency-management.md`](spec/02-working/v-dependency-management.md).
+  [`spec/03-approved/process/v-dependency-management.md`](spec/03-approved/process/v-dependency-management.md).
 
 ### Fixed
 

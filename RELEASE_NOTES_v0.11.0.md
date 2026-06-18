@@ -61,7 +61,7 @@ agent-facing protocols. Each is a CX program, not engine code.
   the SSE/shared-listener patch); the dormant scope-region path is retired.
   The patched-V fork now carries **no CX-specific code** — only the
   CX-agnostic vgc/`-gc e` mem-mgmt work bound for upstream. See the new
-  [`spec/02-working/v-dependency-management.md`](spec/02-working/v-dependency-management.md)
+  [`spec/03-approved/process/v-dependency-management.md`](spec/03-approved/process/v-dependency-management.md)
   and [`third_party/README.md`](third_party/README.md). No runtime-behavior
   change (full gate identical).
 
@@ -89,7 +89,7 @@ agent-facing protocols. Each is a CX program, not engine code.
   and `-prod` is silently dropped (the worktree build trap), so the ~5×
   degraded build is never mistaken for a regression.
 - New process spec: **CX ⇄ V dependency management**
-  ([`spec/02-working/v-dependency-management.md`](spec/02-working/v-dependency-management.md))
+  ([`spec/03-approved/process/v-dependency-management.md`](spec/03-approved/process/v-dependency-management.md))
   — the layering, the "no CX in V" rule, the keep-current workflow, and the
   upstream→drop-fork lifecycle.
 
