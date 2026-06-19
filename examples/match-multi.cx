@@ -5,7 +5,7 @@
    predicate-only (scrutinee-less) match.
 
    Run (document-driven sections light up with the sample doc):
-     cx eval examples/match-multi.cx --data=examples/match-multi.input.cx #]
+     cx examples/match-multi.cx --data=examples/match-multi.input.cx #]
 
 [matches
 

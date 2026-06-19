@@ -4,7 +4,7 @@
    derived from each manifest entry's id slug.
 
    Run (the manifest is the input document):
-     cx eval docs-src/canonical/template.cx \
+     cx docs-src/canonical/template.cx \
        --data=docs-src/canonical/manifest.cxd --allow-read
 
    --allow-read grants the read capability the QName-dispatched

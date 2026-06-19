@@ -451,7 +451,7 @@
            includes entirely and refuses any directive that
            touches the filesystem or network:"""]
       [example lang=shell
-        """cx eval --profile untrusted untrusted.cx"""]
+        """cx --profile untrusted untrusted.cx"""]
       [body
         """The full capability matrix lives at
            [[include-capabilities]] and in
@@ -471,7 +471,7 @@
            CX_MAX_ATTRS=4096                   [# attrs per element #]
            CX_MAX_NODES=$((1024*1024))         [# total nodes      #]
            CX_EVAL_TIMEOUT_MS=5000             [# eval wall clock  #]
-           cx eval input.cx"""]]]
+           cx input.cx"""]]]
 
   [child id=faq-migration n=12.8 title='Migration'
 

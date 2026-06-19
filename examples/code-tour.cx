@@ -24,9 +24,9 @@
    module-top-level directives (§12) and are declared up here.
 
    Run:
-     cx eval examples/code-tour.cx
+     cx examples/code-tour.cx
    Or against the sample document (document-driven sections light up):
-     cx eval examples/code-tour.cx --data=examples/code-tour.input.cx #]
+     cx examples/code-tour.cx --data=examples/code-tour.input.cx #]
 
 [# ─── Module imports — [?lib] (§12.1) ───
    Three resolver shapes: bundled stdlib name ('cx-stdlib/strings'),

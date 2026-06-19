@@ -1048,7 +1048,7 @@
 
       [example lang=sh
         """$ cx convert input.json --to cx \\
-             | cx eval filter.cx --data - \\
+             | cx filter.cx --data - \\
              | cx convert - --to yaml"""]
 
       [body
@@ -1854,7 +1854,7 @@
         """Run `cx eval -e` with a CX template that filters by
            predicate. The CXPath predicate `//user[@role='admin']`
            selects only admins."""]
-      [example lang=shell """cx eval template.cx --data=users.cx"""]]
+      [example lang=shell """cx template.cx --data=users.cx"""]]
 
     [child id=recipe-count n=8.14.3 title='Count records'
       [example lang=shell """cx eval -e '[?= count(//order)]' --data=orders.cx"""]]
@@ -1866,7 +1866,7 @@
              port=[?= //env/@port]
              workers=[?if [//env/@env = "prod", 32, 4]]
              cache=[?if [//env/@env = "prod", /var/cache/app, /tmp/cache]]]"""]
-      [example lang=shell """cx eval server.cx --data=env.prod.cx --to=toml > server.toml"""]]
+      [example lang=shell """cx server.cx --data=env.prod.cx --to=toml > server.toml"""]]
 
     [child id=recipe-write-stream n=8.14.5 title='Write a stream'
       [example lang=python
@@ -1887,7 +1887,7 @@
         """[?include 'partials/header.cx']
            [?for [in $item //order/line] [yield [?include 'partials/line.cx']]]
            [?include 'partials/footer.cx']"""]
-      [example lang=shell """cx eval order.cx --data=order.cx --include-root=./templates"""]]
+      [example lang=shell """cx order.cx --data=order.cx --include-root=./templates"""]]
 
     [child id=recipe-read-parquet n=8.14.8 title='Read a Parquet file into CX'
       [example lang=shell """cx table load orders.parquet --to=cx > orders.cx"""]]

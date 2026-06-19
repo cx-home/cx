@@ -130,8 +130,8 @@ build-playground-wasm-for-guide:
 ##                                   replaces the historical V/veb shim.
 .PHONY: guide-http
 guide-http: guide
-	@echo "[guide-http] starting cx-guide-serve via cx eval"
-	@vcx/target/cx eval scripts/gen_guide/guide_serve.cx
+	@echo "[guide-http] starting cx-guide-serve via cx"
+	@vcx/target/cx scripts/gen_guide/guide_serve.cx
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.

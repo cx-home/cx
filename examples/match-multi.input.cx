@@ -2,7 +2,7 @@
    match sections (element-shape dispatch, scalar-status patterns,
    age buckets, event handlers, request routing, CXPath patterns).
    Run:
-     cx eval examples/match-multi.cx --data=examples/match-multi.input.cx #]
+     cx examples/match-multi.cx --data=examples/match-multi.input.cx #]
 
 [doc
   [things

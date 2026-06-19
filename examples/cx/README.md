@@ -16,13 +16,13 @@ elsewhere in the repo (the canonical tours: `examples/code-tour.cx`,
 
 ```sh
 # Inspect the data
-cx eval greet.cx
-cx eval users.cx
+cx greet.cx
+cx users.cx
 
 # Drive a tour script over its sample document
-cx eval ../code-tour.cx --data=../code-tour.input.cx
-cx eval ../cxpath-tour.cx --data=../cxpath-tour.input.cx
-cx eval ../modify-crud.cx --data=../modify-crud.input.cx
+cx ../code-tour.cx --data=../code-tour.input.cx
+cx ../cxpath-tour.cx --data=../cxpath-tour.input.cx
+cx ../modify-crud.cx --data=../modify-crud.input.cx
 ```
 
 For the full Code surface, see [`docs/CX code.md`](../../docs/CX%20code.md)

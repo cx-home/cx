@@ -292,7 +292,7 @@
                 shows per-directive timing + span emission;
                 `cx eval --explain` shows the AST + dispatch path."""]
         [item """**Bisect** if the bug appeared between versions —
-                `git bisect run sh -c 'cx eval repro.cx; test $? = 0'`."""]
+                `git bisect run sh -c 'cx repro.cx; test $? = 0'`."""]
         [item """**Check the conformance suite** — does a similar
                 fixture exist? If yes, what's different about yours?"""]
         [item """**File a fixture** alongside the bug report (see

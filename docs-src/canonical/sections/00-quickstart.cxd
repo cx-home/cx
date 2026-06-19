@@ -53,7 +53,7 @@
 
     [example lang=shell
       """docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx --version
-         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx eval"""]
+         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx"""]
 
     [note
       """If `cx --version` prints `cx 0.8.0 (gNNNNNNN)` you are ready.
@@ -66,7 +66,7 @@
          literal into `cx eval` and see what comes out."""]
 
     [example lang=shell
-      """echo '[hello greeting="world"]' | cx eval"""]
+      """echo '[hello greeting="world"]' | cx"""]
 
     [body
       """The output is the same shape you typed:"""]
@@ -89,7 +89,7 @@
          yields:"""]
 
     [example lang=shell
-      """echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx eval"""]
+      """echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx"""]
 
     [example lang=cx
       """([n 1], [n 2], [n 3])"""]]
@@ -163,7 +163,7 @@
          simplest query asks: "which users are active?""""]
 
     [example lang=shell
-      """cx eval --xpath '//user[@active=true]/@email' users.cx"""]
+      """cx --xpath '//user[@active=true]/@email' users.cx"""]
 
     [example lang=cx
       """('ada@example.com', 'linus@example.com')"""]
