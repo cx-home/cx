@@ -1,4 +1,4 @@
-[- Server / database / logging configuration.
+[; Server / database / logging configuration.
    Showcases v3.4 idioms: sized numeric types, boolean sigils,
    numeric underscores, line comments, leading-zero strings. ]
 
@@ -18,6 +18,6 @@
 [logging
   [level info]
   [file /var/log/app.log]
-  [- v3.4: a leading-zero token stays a string, never an octal-looking int ]
+  [; v3.4: a leading-zero token stays a string, never an octal-looking int ]
   [rotate_at_hour 03]              # the literal string "03", not int 3
 ]

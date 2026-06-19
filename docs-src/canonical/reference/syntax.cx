@@ -1,4 +1,4 @@
-[- docs-src/canonical/reference/syntax.cx — co-located source for the
+[; docs-src/canonical/reference/syntax.cx — co-located source for the
    guide's core-syntax reference (docs/guide/syntax.html).
 
    ONE [syntax-doc] per element of the CX surface syntax (the data /
@@ -11,7 +11,7 @@
    identity}.cxd). The drift gate pins each example to those fixtures, the
    same way the stdlib reference pins [fn-doc] examples to their corpus.
 
-   Single source of truth: edit here; the guide projects it. -]
+   Single source of truth: edit here; the guide projects it. ]
 
 [syntax-doc name='element' kind='structure'
   [sig """[name attr=val CHILD…]"""]
@@ -118,10 +118,10 @@
 ]
 
 [syntax-doc name='comment' kind='comment'
-  [sig """[- … ]"""]
-  [summary """A block comment `[- … ]` is preserved by the lossless formatter and dropped by the strict canonical form."""]
-  [example [code """[-a comment]
-[p text]"""] [expect """[-a comment]
+  [sig """[; … ]"""]
+  [summary """A block comment `[; … ]` is preserved by the lossless formatter and dropped by the strict canonical form."""]
+  [example [code """[;a comment]
+[p text]"""] [expect """[;a comment]
 [p text]"""]]
 ]
 

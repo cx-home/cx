@@ -457,7 +457,7 @@
     [child id=tut-6 n=0.9.6 title='Comments'
       [body
         """Hash line comments live outside element bodies.
-           Bracket-dash block comments live inside elements and
+           Bracket-semicolon block comments live inside elements and
            can span lines."""]
       [example lang=cx """[shop port=8080 [menu [pizza name=Margherita]]]"""]
       [note """**Exercises.** Check what `cx fmt` preserves and what `cx canonical` drops."""]]

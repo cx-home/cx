@@ -41,21 +41,23 @@
 
     [child id=comments n=2.1.2 title='Comments (line and block)'
       [body
-        """CX has one comment form: `[# … #]`. It nests, it spans any number
-           of lines, and it is allowed anywhere whitespace is allowed. The
+        """CX has two comment forms: a `#` line comment that runs to
+           end-of-line, and a `[; … ]` block comment that spans any number of
+           lines and is allowed anywhere whitespace is allowed. The block
            comment is a real lexical element, not a hack on top of a string
            — the parser drops it before AST construction. Comments are
            preserved by the lossless canonicalizer (`cx fmt`) and stripped
            by the strict canonicalizer (`cx canon`); see [[canonical]]."""]
       [example lang=cx
-        """[# A single-line note. #]
+        """[; A single-line note. ]
            [config
-             [# This sub-comment is fine, even
-                [# nested #] inside another. #]
+             [; A block comment can nest inside an element
+                and span lines. ]
              [host 'localhost']]"""]
       [note
-        """Older CX dialects used `[-` `-]` for block comments. v0.8.0 keeps
-           the `[# #]` form only. See [[migration]] for the rename."""]]
+        """Older CX dialects used `[-` `-]` for block comments. v0.8.0 uses
+           the `[; … ]` form only; `[# … #]` is raw text / CDATA, not a
+           comment. See [[migration]] for the rename."""]]
 
     [child id=whitespace n=2.1.3 title='Whitespace'
       [body

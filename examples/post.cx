@@ -1,4 +1,4 @@
-[- Blog post in plain element markup: headings, inline markup, code blocks,
+[; Blog post in plain element markup: headings, inline markup, code blocks,
    lists, blockquote, link. All v0.8.0 — no markdown surface. ]
 
 [article

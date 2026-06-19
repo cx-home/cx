@@ -1,9 +1,9 @@
-[- Library catalogue as :table — column-major in binary form
+[; Library catalogue as :table — column-major in binary form
    (5–10× smaller than element-per-row for large datasets);
    row-major in CX text for human reading. v3.4 idiom showcase. ]
 
 [library
-  [- v3.4 :table form with typed columns; ISBNs stay strings even
+  [; v3.4 :table form with typed columns; ISBNs stay strings even
      though the leading digit makes them look numeric ]
   [books :table[title:string author:string year:u16 isbn:string available:bool]
     'The Hobbit'        'J.R.R. Tolkien'     1937   978-0547928227   true
@@ -13,6 +13,6 @@
     'The Diamond Age'   'Neal Stephenson'    1995   978-0553380965   true
   ]
 
-  [- ad-hoc per-shelf tagging stays in element form, not the table ]
+  [; ad-hoc per-shelf tagging stays in element form, not the table ]
   [shelf id=sci-fi-classics :string[] tags=hugo,nebula,canon]
 ]

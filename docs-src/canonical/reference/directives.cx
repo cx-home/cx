@@ -1,4 +1,4 @@
-[- docs-src/canonical/reference/directives.cx — co-located source for the
+[; docs-src/canonical/reference/directives.cx — co-located source for the
    guide's directive reference (docs/guide/directives.html).
 
    ONE [directive-doc] per directive in the §4.1 registry of
@@ -11,7 +11,7 @@
    green fixture, exactly as the stdlib reference pins [fn-doc] examples to
    conformance/stdlib/*.cxd).
 
-   Single source of truth: edit here; the guide projects it. -]
+   Single source of truth: edit here; the guide projects it. ]
 
 [directive-doc name='?match' category="Core — pattern dispatch (single-arm + multi-arm)" spec="§5.2, §8.2"
   [sig """[?match VALUE [case PAT BODY]… [else …]] -> result"""]
