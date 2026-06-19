@@ -132,7 +132,7 @@ Collapsing the test source onto the doc examples would discard all negative/edge
 coverage.
 
 **End state (chosen):** the `.cxd` corpus remains the authoritative, executed
-test source (run green by `make test-vcx-v08`’s `test_stdlib_module_fixtures`);
+test source (run green by `make test-vcx-suite`’s `test_stdlib_module_fixtures`);
 the doc examples are **pinned to it** by `guide-check`’s example-backing check.
 Because every documented example must match a corpus case verbatim, and the
 corpus is run green, a documented example is transitively a green example — and

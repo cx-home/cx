@@ -1,7 +1,7 @@
 [# Section 8 — tooling: CLI, editors, LSP, tree-sitter, lint, diff,
    cookbook, diagnostics, build integration, doc-gen, playground,
    profiling. Anchors normative depth in
-   tooling/lsp/v0_8_0_diagnostics.md, tooling/tree-sitter-cx/,
+   tooling/lsp/diagnostics.md, tooling/tree-sitter-cx/,
    scripts/gen_docs/, vcx/cmd/. Authored 2026-05-22 against v0.8.0-dev.
    File extension: .cxd (data-only). #]
 
@@ -584,7 +584,7 @@
         """Implementation lives in `vcx/cmd/lsp_features.v`. The
            Phase 5 v0.8.0 work added the CXLS001-004 diagnostic
            emitters per
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)."""]]
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)."""]]
 
     [child id=lsp-diagnostics n=8.3.2 title='Diagnostic codes'
       [body
@@ -610,7 +610,7 @@
         """Codes are stable strings; editor configs may key off them
            to surface custom UI (e.g. fold a CXLS003 cluster into a
            single inlay). See
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
            for the emit contracts."""]]
 
     [child id=lsp-hover n=8.3.3 title='Hover'
@@ -659,7 +659,7 @@
         """All completion items carry `data.kind` so editors can
            sort and group them. CXPath items are tagged
            `data.path_axis=true` per
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)."""]]
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)."""]]
 
     [child id=lsp-codeactions n=8.3.5 title='Code actions'
       [body
@@ -682,7 +682,7 @@
       [body
         """CXLS003 consolidation auto-fix is post-v0.8.0
            (recognise-only at v0.8.0 per
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
            §out-of-scope)."""]]
 
     [child id=lsp-semantic-tokens n=8.3.6 title='Semantic tokens'

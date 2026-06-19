@@ -16,7 +16,7 @@
 #   (2) EXAMPLE BACKING (directives) -- every [directive-doc]/[example]'s
 #       [code] block AND its [expect] output appear verbatim in
 #       conformance/code.cxd. Because that corpus is executed green by
-#       `make test-vcx-v08` (the code-eval fixture suite), a documented
+#       `make test-vcx-suite` (the code-eval fixture suite), a documented
 #       example backed by it is, transitively, an example that runs green.
 #       A directive with no backing example (e.g. [?meta], which has no
 #       fixture in code.cxd) carries sig+summary only and is allowed.

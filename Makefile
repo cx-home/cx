@@ -11,7 +11,7 @@
 # invokes `v`. It carries the macOS hardened-runtime libgc / -prod fixes and
 # the picoev shared-listener patch (`new_with_listen_fd`) the http
 # multi-reactor code needs to compile. Without this, recipes that invoke a
-# bare `v` (e.g. `make test-vcx-v08`) pick whatever is first on PATH — under
+# bare `v` (e.g. `make test-vcx-suite`) pick whatever is first on PATH — under
 # devbox that is the unpatched /usr/local/bin/v, which fails to compile the
 # `code` module on the http branch. Prepending the submodule dir makes bare
 # `v` resolve to the patched binary; if the submodule isn't built yet the dir
@@ -271,7 +271,7 @@ install-hooks:
 # presence parity (every public [?def] has a [fn-doc] and vice-versa),
 # purity agreement, and that every [fn-doc] example is backed verbatim by
 # the module's conformance corpus (conformance/stdlib/<m>.cxd, run green by
-# `make test-vcx-v08`). Nonzero exit on drift propagates through make.
+# `make test-vcx-suite`). Nonzero exit on drift propagates through make.
 # Module-set parity is owned by `make stdlib-catalogue-gate`.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
 .PHONY: guide-check
@@ -578,7 +578,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-v08
+test-vcx: build-vcx-dev test-vcx-suite
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -592,37 +592,23 @@ test-vcx-summary:
 	grep -iE 'FAIL|[0-9]+ passed, [0-9]+ failed|[0-9]+ errored' /tmp/cx-test-vcx.log || true; \
 	echo "full log: /tmp/cx-test-vcx.log"; exit $$st
 
-# ── v0.8.0 V-side ADR surface tests ───────────────────────────────────────
-# Drives the conformance/code.txt fixture-runner tests + the v0.8.0 ADR
-# surface unit tests under vcx/tests/. Files use two prefix conventions:
-#   - `code_*_test.v`        — evaluator / parser / lexer / renderer /
-#                              fixture-runner against conformance/code.txt
-#                              (gate 4 + the per-binding parity input).
-#   - `v08_*_test.v`         — v0.8.0 additions: PathNode + CXPath
-#                              axes (gate 28.7), `[?match]`
-#                              multi-arm, `[?modify]` action
-#                              vocabulary (gate 28.8), atoms,
-#                              `[?def]` (gate 28.11),
-#                              `[?lib]` / `[?const]` / lockfile / module
-#                              loader (gate 28.12), `[?expr]`
-#                              general predicate (gate 28.13),
-#                              `:pure` / `:impure` (gate
-#                              28.14), `code_diagram` / `code_tree`
-#                              (gates 37.2 / 37.4 / 37.5 / 37.10),
-#                              ABI v0.8.0 surface (gate 11 / 28.9
-#                              evidence floor).
-#
-# Each gate's coverage commitment is itemised in
-# `spec/v0_8_0_status.md §11.6`; this Make target is the V-side runner.
-# Wired into TEST_TARGETS via the `test-vcx` umbrella above.
+# ── V-side unit + fixture-runner suite ────────────────────────────────────
+# Runs the entire vcx/tests/ corpus: the conformance fixture-runners
+# (code_*_test.v against conformance/code.txt et al.) plus the per-feature
+# unit tests (CXPath axes, [?match], [?modify], atoms, [?def], [?lib]/
+# [?const]/lockfile, [?expr], purity, code_diagram/code_tree, the C ABI
+# surface, stdlib modules, net/http real-socket behavior, …). Test files are
+# named for what they cover — NO version prefix (the single VERSION file is
+# the only place a version lives). Wired into TEST_TARGETS via the `test-vcx`
+# umbrella above.
 # v0.9.0 — the V-impl gate compiles the vcx test corpus under cx's default
 # memory model, architecture E (`-gc e`): Perceus RC front line + precise STW vgc
-# backstop. CX_GC is overridable (e.g. `make CX_GC='-gc boehm' test-vcx-v08`) to
+# backstop. CX_GC is overridable (e.g. `make CX_GC='-gc boehm' test-vcx-suite`) to
 # A/B against the prior collector. Only the FORK `$(V)` implements `-gc e`; the
 # bare-`v` lang/v reference paths below stay on the upstream default.
 CX_GC ?= -gc e
-.PHONY: test-vcx-v08
-test-vcx-v08: build-vcx-dev
+.PHONY: test-vcx-suite
+test-vcx-suite: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/tests/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
@@ -644,11 +630,11 @@ VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)"
 
 test-v: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v $(VFLAGS_VCX) run lang/v/conformance.v
-	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/v0_8_0_surface_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/surface_test.v
 	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/native_atom_test.v
 
 test-vcx-api: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/v0_8_0_surface_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/surface_test.v
 
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
@@ -858,8 +844,8 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # ── v0.8.0 §11.6 gate-evidence targets (5 / 6 / 9 / 12 / 28.7 / 28.8 / 30.5) ──
 #
 # Each target below corresponds to a §11.6 release gate that the master
-# gate-check (`scripts/v0_8_0_gate_check.sh`) invokes by name. The
-# underlying test files all exist and already pass via the `test-vcx-v08`
+# gate-check (`scripts/gate_check.sh`) invokes by name. The
+# underlying test files all exist and already pass via the `test-vcx-suite`
 # umbrella; these targets are narrowly-scoped gate-evidence pointers so
 # the gate-check can verify each gate's coverage in isolation rather
 # than relying on the umbrella having run a moment earlier. Per
@@ -897,20 +883,20 @@ test-vcx-services: build-vcx
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_diagram_roundtrip_test.v \
-		vcx/tests/v08_code_diagram_test.v
+		vcx/tests/code_diagram_test.v
 
 # ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────
 # Drives the V-side renderer test suite — `code_render_test.v` covers
 # the production code renderer (vcx/code/render.v: body-quote selection,
 # attribute serialisation, scalar typing, directive shape, structural
-# vs. text round-trips); `v08_path_renderer_test.v` covers the
+# vs. text round-trips); `path_renderer_test.v` covers the
 # PathNode → source emitter introduced for the CXPath value kind. LSP CodeLens
 # tests are not yet authored; this target tracks the V-side renderer
 # coverage. Per spec/v0_8_0_status.md §11.6 gate 12.
 .PHONY: test-renderer
 test-renderer: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_render_test.v \
-		vcx/tests/v08_path_renderer_test.v
+		vcx/tests/path_renderer_test.v
 
 # ── Gate 28.7 — CXPath axis coverage (all 12 axes) ────────────────────────
 # Drives the V-side per-axis test files: forward axes (21 tests:
@@ -923,27 +909,27 @@ test-renderer: build-vcx
 # 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
 .PHONY: test-cxpath-axis-coverage
 test-cxpath-axis-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/v08_cxpath_forward_test.v \
-		vcx/tests/v08_cxpath_reverse_test.v \
-		vcx/tests/v08_cxpath_misc_test.v \
-		vcx/tests/v08_cxpath_dispatcher_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/cxpath_forward_test.v \
+		vcx/tests/cxpath_reverse_test.v \
+		vcx/tests/cxpath_misc_test.v \
+		vcx/tests/cxpath_dispatcher_test.v
 
 # ── Gate 28.8 — [?modify] action coverage (all 11 actions) ────────────────
-# Drives the V-side modify test files: `v08_modify_eval_test.v` covers
+# Drives the V-side modify test files: `modify_eval_test.v` covers
 # the structural evaluator with one positive case per
 # action (:set / :delete / :using / :rename / :set-attr / :delete-attr /
 # :append / :prepend / :insert-before / :insert-after / :replace) plus
 # action-chain semantics, focus-miss-skip-not-error, pure-functional
 # invariant, multi-match focus, and Z79g path-aware dispatcher hop;
-# `v08_modify_node_test.v` + `_codec_test.v` cover the ModifyNode shape
-# + binary codec round-trip; `v08_modify_parser_test.v` covers the
+# `modify_node_test.v` + `_codec_test.v` cover the ModifyNode shape
+# + binary codec round-trip; `modify_parser_test.v` covers the
 # `[?modify]` directive parser. Per spec/v0_8_0_status.md §11.6 gate
 # 28.8 (structural-sharing perf budget lives at gate 30.5).
 .PHONY: test-modify-action-coverage
 test-modify-action-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/v08_modify_eval_test.v \
-		vcx/tests/v08_modify_node_test.v \
-		vcx/tests/v08_modify_node_codec_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/modify_eval_test.v \
+		vcx/tests/modify_node_test.v \
+		vcx/tests/modify_node_codec_test.v
 
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
 # Drives vcx/tests/runners/code_modify_sharing_bench.v — single-match

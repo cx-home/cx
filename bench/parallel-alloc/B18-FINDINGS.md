@@ -80,7 +80,7 @@ HTTP (guide_serve, wrk -t8 -c128, container): base 116.5K → b18 **122.3K req/s
 
 ## Soundness gate (all GREEN)
 - residual #4 white-box selftest (`vgc_residual4_test.v`, B+C teeth): PASS.
-- cx V-impl gate `make test-vcx-v08`: **125/125** under `-gc e`.
+- cx V-impl gate `make test-vcx-suite`: **125/125** under `-gc e`.
 - Local MP stress: 50/50 `[par]` runs across triggers, 0 corruption.
 - **HTTP churn repro** (container, `wrk -t8 -c256 -d10s -H "Connection: close"` ×15
   rounds vs guide_serve.cx — the residual-#4 reproducer): **SURVIVED 15 rounds,

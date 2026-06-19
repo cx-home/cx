@@ -64,7 +64,7 @@ heap overshooting (Go's gcAssist model).
 
 **Phase 0 — baseline.** Rebuild `./v2 -o v2 cmd/v` (macOS: `-cc cc`). Confirm the
 current STW `-gc e` is green: g_churn battery, corpora none==e, map_test/array_test
-(commands below). Confirm cx builds + gates under the fork (`make test-vcx-v08`
+(commands below). Confirm cx builds + gates under the fork (`make test-vcx-suite`
 125/125 + `make conform`) so you have a known-good integration starting point.
 
 **Phase 1 — design + standalone soundness prototype.** Write a short design note
@@ -99,7 +99,7 @@ path:
 
 **Phase 4 — integrate + cx validation + capture.** Forward-port the change to the
 fork `third_party/v` (CX-free), rebuild cx (`cd vcx && ../third_party/v/v -n -w
--cc cc -prod -gc e -o /tmp/cx_e cmd/`), and re-gate cx: `make test-vcx-v08`
+-cc cc -prod -gc e -o /tmp/cx_e cmd/`), and re-gate cx: `make test-vcx-suite`
 (125/125) + `make conform`, plus re-measure the #14 `[par]` payoff (`/tmp/w_par.cx`
 vs `/tmp/w_serial.cx`, verify `80000200000 ×8` — a fast time can be time-to-abort,
 always check correctness). Write `CONCURRENT-MARK-FINDINGS.md`, commit on the
@@ -124,7 +124,7 @@ diff <(/tmp/x_none) <(/tmp/x_e)            # must be byte-identical for corpora
 # concurrent build (your new define)
 ./v2 -gc e -d vgc_concurrent -prod -cc cc -o /tmp/x_cm repro.v
 ```
-cx gate (from cx-private root): `make test-vcx-v08` then `make conform`.
+cx gate (from cx-private root): `make test-vcx-suite` then `make conform`.
 The #14 workload files `/tmp/w_serial.cx` + `/tmp/w_par.cx`:
 `[?to-sequence [?map (1,2,3,4,5,6,7,8) [using [?fn $x [?reduce [$range 0 400000] [using [?fn ($a $b) [+ $a $b]]] [init 0]]]] [par]?]]`
 (serial = drop `[par]`).

@@ -56,7 +56,7 @@ adaptations to the 3-week-newer V (all small, none architectural):
 5. `third_party/v` (fork) — `execute_capture_nix.h` uses `<spawn.h>` (posix_spawn
    clash); committed on the branch (4e858f57c).
 6. Build config — `-cc cc` (clang) forced for cx's macOS builds (cli, lib-dev,
-   lib-arrow-dev, test-vcx-v08 `v test`, conform-ns-cxpath): tcc-macOS can't compile
+   lib-arrow-dev, test-vcx-suite `v test`, conform-ns-cxpath): tcc-macOS can't compile
    the patched builtin's C11 atomics + `@[thread_local]` TLS (the old fork shipped a
    TLS-patched tcc that the upstream forward-port replaced). In top Makefile +
    vcx/Makefile.

@@ -137,7 +137,7 @@ Cost: O(result size), paid once per work unit — negligible vs the scope's work
 1. Land the region runtime (§2–§3) behind `-d cx_regions`, inert by default.
 2. Wire `region_enter/exit` + `region_export` for `[?worker]` ONLY first.
 3. Gate widening on ALL of:
-   - full `make test-vcx-v08` green under `-d cx_regions`;
+   - full `make test-vcx-suite` green under `-d cx_regions`;
    - the conformance corpus green under `-d cx_regions`;
    - a **corruption battery**: parallel workers under `GC_gcollect` pressure +
      small region blocks (force frequent fallback + reset) + heavy result trees,

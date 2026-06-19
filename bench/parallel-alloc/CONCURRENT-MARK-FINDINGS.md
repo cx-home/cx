@@ -67,7 +67,7 @@ Fork (`third_party/v` @ cx-home/v-cx-patches) + cx:
 * cx builds clean with the barrier compiler in BOTH modes — including
   `-gc e -d vgc_concurrent`, which validates the codegen barrier emits valid C
   across the entire cx interpreter (a large, diverse V codebase).
-* cx default gate GREEN with the barrier-enabled fork: **test-vcx-v08 125/125 +
+* cx default gate GREEN with the barrier-enabled fork: **test-vcx-suite 125/125 +
   conform exit 0** (the barrier is inert in the default build → no regression).
 
 ## A real soundness gap found + fixed

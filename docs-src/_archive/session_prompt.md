@@ -52,7 +52,7 @@ READ FIRST — in this order
 ═════════════════════════════════════════════════════════════════
 1.  memory/MEMORY.md (auto-loaded)
 2.  docs-src/canonical/backlog.cxd
-3.  docs-src/canonical/v0_8_0_session_prompt.md (this file)
+3.  docs-src/canonical/session_prompt.md (this file)
 4.  spec/code.md (full — normative; CXPath value kind, `[?match]`, `[?modify]`)
 8.  spec/bindings.md (two-layer binding contract)
 9.  spec/grammar.ebnf [127e] + [130]–[148e]
@@ -80,7 +80,7 @@ ALREADY DONE — do not redo
 - conformance/code.txt: in_cxl→in_code, [?find]→[?for], +29 fixtures
   (10 cxpath + 10 match-multi + 9 modify)
 - vcx/code/tokens.v: 'find' removed, 'modify' added
-- docs-src/canonical/{manifest.cxd, backlog.cx, v0_8_0_session_prompt.md}
+- docs-src/canonical/{manifest.cxd, backlog.cx, session_prompt.md}
   scaffolded
 - backlog.cx: decisions d-2026-05-22-01 through d-2026-05-22-15 ratified
 
