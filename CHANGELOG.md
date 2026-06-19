@@ -13,6 +13,43 @@ version, library version).
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-06-19
+
+The correctness-and-ergonomics release. Authoritative release-surface document:
+[`RELEASE_NOTES_v0.12.0.md`](RELEASE_NOTES_v0.12.0.md). One breaking change
+(block comments unified on `[; … ]`); everything else is backward-compatible.
+
+### Changed
+
+- **Block comments are `[; … ]` only** — `[- … -]` / `[-- … --]` retired as
+  comments; `[- a b]` is always subtraction (breaking; migration in the
+  release notes).
+- `cx <file>` renders every top-level form, not just the last (#16).
+- `--allow-net` no longer bypasses the §4.5 SSRF deny-set; only `--allow-all`
+  does (#47).
+
+### Added
+
+- `cx-stdlib/strings` `to-number` / `to-int` / `to-float` — locale-free
+  string→number parsing, absence `()` on non-numeric input (#54).
+- Concurrent SSE push on the `serve` path — topic pub/sub (#28).
+- `cx -` (stdin) and `cx -e EXPR` (inline) evaluation.
+
+### Fixed
+
+- Silent-wrong / data-loss: idiv/mod/div reject bigint+decimal (#38); JSON/YAML
+  `:table` emit projects rows (#10); `[?for]` over a collection-valued map
+  member iterates members (#21).
+- Fail-loud: `[?def]` body errors surface (#46); set-deadline/set-opt reject
+  std-streams (#29); accept-iter surfaces a non-responding handler (#23);
+  read-all/read-line/line-iter honor the read-deadline (#56); zero-arg def is
+  callable (#55); bareword recursive def dispatches (#53).
+- Lossless YAML (#4) and TOML (#5) import.
+- Pure-data resource self-evaluates (#11); HTTP waits for the full POST body
+  (#48); `[?select]` diagram arrows (#27); `cx:parse` single-root navigable
+  (#39); `[where]` infix error points at the prefix form (#18); `cx-v` package
+  ships transport/+x/ and builds with clang (#15).
+
 ## [0.11.0] — 2026-06-18
 
 The agentic-substrate release. Authoritative release-surface document:
