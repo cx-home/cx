@@ -211,7 +211,7 @@ review.
  
  and listed under "Next" below.
 - **Comment-style consistency** across docs: `# line` for one-liners,
- `[- block ]` for multi-token or multi-line.
+ `[; block ]` for multi-token or multi-line.
 
 ### Release-hygiene docs (landed 2026-05-08)
 

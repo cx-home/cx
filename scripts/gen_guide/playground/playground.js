@@ -250,12 +250,12 @@
     return idx >= 0 ? { idx, ...ALL_ENTRIES[idx] } : null;
   }
 
-  // ANNOTATION_RE matches the trailing `[-- … --]` block we append to
+  // ANNOTATION_RE matches the trailing `[; ─── … ─── ]` block we append to
   // each example's source. We strip it before feeding source to
   // cxlib.tree() / cxlib.diagram() (wasm tree builder bug with block
   // comments) and we use its position to figure out where the program
   // ends in the editor (for the cursor-to-tree bridge).
-  const ANNOTATION_RE = /\n*\[-{2,}[\s\S]*?-{2,}\]\s*$/;
+  const ANNOTATION_RE = /\n*\[;\s*─+[\s\S]*?─+\s*\]\s*$/;
   function annotationStart(src) {
     const m = src.match(ANNOTATION_RE);
     return m ? m.index : src.length;
@@ -267,7 +267,7 @@
   function composeSource(ex) {
     if (!ex) return '';
     if (ex.note) {
-      return `${ex.input}\n\n[--------------------------------------------\n${ex.note}\n--------------------------------------------]\n`;
+      return `${ex.input}\n\n[; \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n${ex.note}\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ]\n`;
     }
     return ex.input;
   }

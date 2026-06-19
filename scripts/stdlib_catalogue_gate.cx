@@ -31,8 +31,8 @@
 # pass / 1 fail). `write-line` to a std-stream flushes immediately, and
 # `env:exit` flushes pending stdout/stderr before terminating, so no output
 # is lost. Effect-then-exit is sequenced with `[?let]` (bind the write, then
-# evaluate the exit in the body). (NOTE: in a program, `[- ... -]` is the
-# subtraction operator, not a comment; comments are `#` to end-of-line.)
+# evaluate the exit in the body). (NOTE: `[- a b]` is the subtraction
+# operator; block comments are `[; … ]` and `#` runs to end-of-line.)
 #
 # Capabilities: glob / read-file need `read`; write-line needs `write`;
 # the env standard streams + exit are ambient (never gated, env.md §7).

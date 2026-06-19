@@ -23,7 +23,7 @@
 
   const RULES = {
     cx: [
-      [/\[-[\s\S]*?-\]/g, 'comment'],
+      [/\[;[\s\S]*?\]/g, 'comment'],
       // Line comment: `#` followed by whitespace or end-of-line.
       // `#identifier` is the id sigil, handled later by the sigil rule.
       [/(^|[\s\(])#(?:[ \t][^\n]*|(?=\n|$))/gm, 'comment'],

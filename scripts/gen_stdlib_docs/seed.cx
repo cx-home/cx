@@ -41,13 +41,15 @@
 [?def purity-of scope=public ($sig)
   [?if [>= [$strings:find $sig 'impure'] 0] [then 'impure'] [else 'pure']]]
 
-[# module scope: the first [- … -] header comment in the bundle source (it
-   already carries a one-line purpose), stripped of the 'cx-stdlib/<m> — ' lead. #]
+[# module scope: the first [; … ] header comment in the bundle source (it
+   already carries a one-line purpose), stripped of the 'cx-stdlib/<m> — ' lead.
+   Approximate: closes at the first ']' (a header whose prose contains a bracket
+   truncates there) — fine for a seed-then-refine-in-place tool. #]
 [?def header-scope scope=public impure ($f)
   [?let [= $t [$io:read-file $f]]
-        [= $i [+ [$strings:find $t '[-'] 2]]
+        [= $i [+ [$strings:find $t '[;'] 2]]
         [= $rest [$strings:slice $t $i [$strings:length $t]]]
-        [= $j [$strings:find $rest '-]']]
+        [= $j [$strings:find $rest ']']]
         [= $raw [$strings:trim [$strings:slice $rest 0 $j]]]
         [= $dash [$strings:find $raw '— ']]
     [?if [< $dash 0] [then $raw]
@@ -91,7 +93,7 @@
 [# the appended block for one module: a header comment + module-doc + fn-docs. #]
 [?def module-block scope=public impure ($m $cov)
   [$cat (
-    '\n[- co-located docs (seeded — refine in place). -]\n',
+    '\n[; co-located docs (seeded — refine in place). ]\n',
     '[module-doc name=', $m, '\n  [scope """', [$header-scope [$cat ('stdlib/', $m, '.cx')]], '"""]]\n',
     [$strings:join [?for [in $fn $cov//function] [yield
       [?if [= $fn@module $m] [then [$fn-doc-text $m $fn]] [else '']]]] ''])]]
