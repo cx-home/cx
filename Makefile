@@ -484,6 +484,14 @@ test-xpath-parity: build-vcx
 test-binding-api-parity:
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_binding_api_parity.sh
 
+# Pin the Python binding to the freshly-built libcx (vcx/target) so the gate
+# tests THIS build, not whatever libcx is installed system-wide. The cxlib
+# loader (lang/python/cxlib/cx.py) checks /usr/local/lib and /opt/homebrew/lib
+# BEFORE the repo build, so a stale installed libcx.dylib silently shadows the
+# fresh one — which is exactly how a pre-`[; …]`-migration install made the
+# gate report spurious comment-parse failures. LIBCX_LIB_DIR (loader priority 2)
+# wins over the system paths. Go/Rust already pin vcx/target via rpath.
+test-python: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
 test-python: build-vcx
 	$(PYTHON) lang/python/test_fixture_loader.py
 	$(PYTHON) lang/python/conformance.py
