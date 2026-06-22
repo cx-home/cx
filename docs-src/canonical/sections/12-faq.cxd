@@ -59,7 +59,7 @@
            PE-format `cx.exe` and `cxlib.dll` — is on the
            roadmap; the bottleneck is the V toolchain's Windows
            support, not CX itself. Track issue
-           [#windows-native](https://github.com/cx-lang/cx/issues/windows-native)
+           [#windows-native](https://github.com/cx-home/cx/issues/windows-native)
            for the current state."""]]]
 
   [child id=faq-parsing n=12.2 title='Parsing and syntax'
@@ -132,7 +132,7 @@
            cx fmt doc.cx | cx canon | shasum -a 256
            [# Both should produce identical hex output on every host. #]"""]
       [note
-        """File a bug at https://github.com/cx-lang/cx/issues with
+        """File a bug at https://github.com/cx-home/cx/issues with
            the source document and the divergent hashes from both
            platforms. Include `cx --version` output from each."""]]
 

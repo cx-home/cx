@@ -28,9 +28,11 @@
          cx --version"""]
 
     [body
-      """**Manual download.** Prebuilt binaries are published with each
-         tagged release on GitHub. Download the archive for your
-         platform, extract, and put `cx` on your `PATH`:"""]
+      """**Manual download.** Prebuilt binaries are published on the
+         GitHub Releases page. **Today only macOS (Apple Silicon) ships a
+         prebuilt binary** — Linux, macOS Intel, and Windows build from
+         source (see §0.10) until the project's CI runners are restored.
+         Download the archive, extract, and put `cx` on your `PATH`:"""]
 
     [example lang=shell
       """curl -L https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
@@ -307,7 +309,7 @@
               the first-week-of-CX questions."""]]
 
     [note
-      """The community lives at https://github.com/cx-lang/cx — file
+      """The community lives at https://github.com/cx-home/cx — file
          bugs, browse RFCs, and read the spec under `spec/*.md`. The
          playground at https://cx-lang.org/playground lets you try
          CX from a browser with no install."""]]
@@ -329,9 +331,12 @@
 
     [child id=install-status n=0.10.1 title='Release status'
       [body
-        """CX is the "data + code" unification release. The install
-           paths below build from source or fetch the most recent
-           tagged release. Production users should pin to a tag."""]]
+        """The install paths below either build from source or fetch a
+           tagged release. **Prebuilt binaries currently cover macOS
+           (Apple Silicon) only**; Linux, macOS Intel, and Windows build
+           from source with `devbox run -- make build` until the
+           project's CI runners are restored. Production users should
+           pin to a tag."""]]
 
     [child id=install-macos n=0.10.2 title='macOS'
       [example lang=shell """brew install cx-lang/tap/cx"""]
@@ -341,9 +346,11 @@
 
     [child id=install-linux n=0.10.3 title='Linux'
       [body
-        """Homebrew works on Linux too. The static binary tarball
-           from the GitHub Releases page works on any glibc-based
-           distro."""]
+        """Homebrew works on Linux too. A static binary tarball from
+           the GitHub Releases page works on any glibc-based distro —
+           though the prebuilt Linux tarball is not published yet (CI
+           runners offline); build from source with
+           `devbox run -- make build` in the meantime."""]
       [example lang=shell
         """brew install cx-lang/tap/cx
            curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
@@ -351,9 +358,12 @@
 
     [child id=install-windows n=0.10.4 title='Windows'
       [body
-        """A static `cx.exe` ships per release on
-           github.com/cx-home/cx/releases. Drop it on PATH; no
-           installer, no dependencies."""]]
+        """A static `cx.exe` is planned per release on
+           github.com/cx-home/cx/releases, but is not published yet (CI
+           runners offline, and the V toolchain's Windows support is
+           still on the roadmap — see [[faq]]); build from source in the
+           meantime. Drop the binary on PATH; no installer, no
+           dependencies."""]]
 
     [child id=install-wasm n=0.10.5 title='WebAssembly bundle'
       [body
