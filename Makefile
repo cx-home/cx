@@ -738,7 +738,9 @@ release-v: publish-v publish-v-push
 tag-public:
 	@bash scripts/tag_public.sh $(FORCE)
 
-release-all: release release-v publish-org tag-public
+# tag-public (the real release step) runs BEFORE publish-org (best-effort org
+# branding), so a failed/empty org-README sync can never block tagging a release.
+release-all: release release-v tag-public publish-org
 
 # ── The ONE end-to-end local release command ─────────────────────────────────
 # gate (make test + verify-doc-links) → bump → build → tag → push → GitHub
