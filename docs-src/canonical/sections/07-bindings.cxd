@@ -1,8 +1,7 @@
 [# Section 7 — bindings: C ABI, two-layer model, type mapping,
    thread safety, lifetime, codegen, quickstarts.
    Anchored in spec/bindings.md + spec/abi.md + spec/misc/parity-matrix.md.
-   v0.8.0 ships
-   V (native reference), Python, Go, Rust as Tier-1 bindings.
+   CX ships V (native reference), Python, Go, Rust as Tier-1 bindings.
    File extension .cxd — data-only source. #]
 
 [section id=bindings n=7 title='Bindings'
@@ -13,7 +12,7 @@
        per binding: **Layer 1** (the conformance contract — 16
        canonical methods, byte-identical semantics across hosts) and
        **Layer 2** (opt-in host-idiomatic sugar that desugars to
-       Layer 1). v0.8.0 ships V, Python, Go, and Rust at Tier 1; six
+       Layer 1). CX ships V, Python, Go, and Rust at Tier 1; six
        other bindings (TypeScript, Java, C#, Ruby, Kotlin, Swift) are
        archived under `lang/_archived/` pending restoration — see
        [[migration]]. Normative spec:
@@ -696,7 +695,7 @@
     [body
       """**The bitmask is a NUL-terminated lowercase hex string.**
          Each bit covers one optional feature. New features get new
-         bits; bits are never repurposed. A libcx v2.0.0 returns
+         bits; bits are never repurposed. A libcx v2.0.0 returns [; version-literal-ok ]
          `"3ffff"` (bits 0-17 set); a libcx that has added bit 18
          returns `"7ffff"`; and so on."""]
 
@@ -882,10 +881,10 @@
     [intro
       """When a CX schema (`.cxs`, see [[schema]]) is available,
          every binding can generate typed Layer-2 projections from
-         it. This is **post-v0.8.0 follow-up work**; the spec slot
+         it. This is **planned follow-up work**; the spec slot
          is reserved in [`spec/bindings.md`](../../spec/bindings.md)
          §7 and the CLI command (`cx schema codegen`) is stubbed
-         but not active in v0.8.0."""]
+         but not yet active."""]
 
     [example lang=cx
       """[# users.cxs — the schema source #]
@@ -896,7 +895,7 @@
              [attribute name=active type=bool  default=true]]]"""]
 
     [body
-      """**Planned per-target output (post-v0.8.0):**"""]
+      """**Planned per-target output (future revision):**"""]
     [list
       [item """**Python** —
               `cx schema codegen --target python --in users.cxs --out users.py`
@@ -920,12 +919,12 @@
               when the schema is loaded at runtime."""]]
 
     [body
-      """**Status — v0.8.0 ships the schema validator but not the
-         codegen.** The `cx schema codegen` CLI prints
-         `"codegen targets are post-v0.8.0; see spec/bindings.md §7"`
+      """**Status — the schema validator is available but codegen
+         is not yet active.** The `cx schema codegen` CLI prints
+         `"codegen targets are not yet active; see spec/bindings.md §7"`
          and exits with status 2. The intermediate path —
          hand-authored Layer-2 using `#[derive(CxData)]` (Rust) or
-         struct tags (Go) — is available today on v0.8.0. Per
+         struct tags (Go) — is available today. Per
          [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
          §schema-codegen — deferred."""]]
 
@@ -997,7 +996,7 @@
            — pre-publish use a path dependency to
            `lang/rust/cxlib/`). Requires Rust 1.75+."""]
       [example lang=rust
-        """// Cargo.toml: cxlib = "0.8.0"
+        """// Cargo.toml: cxlib = "..."   [; see crates.io for the current version ]
            use cxlib::Doc;
 
            fn main() -> cxlib::Result<()> {
@@ -1069,7 +1068,7 @@
            DSL. With a `.cxs` schema in scope, `cx.coerce(node,
            User)` validates a Node against a Python dataclass at
            runtime; full typed iterators land with schema codegen
-           post-v0.8.0."""]
+           in a future revision."""]
       [example lang=python
         """import cxlib as cx
            from cxlib.idioms import *      # opt-in sugar
@@ -1229,7 +1228,7 @@
                                         cx_code_write_cb write_cb, void *user,
                                         char **err);
 
-           /* Diagram + tree (v0.8.0, cap bits 31 / 32). */
+           /* Diagram + tree (cap bits 31 / 32). */
            char *cx_code_diagram (const char *source, size_t source_len,
                                   const char *format, size_t format_len);
            char *cx_code_tree    (const char *source, size_t source_len,
@@ -1261,11 +1260,7 @@
            int cx_wasm_set_arena_size(unsigned int bytes);
            int cx_wasm_reset(void);"""]
       [note
-        """v0.8.0 adds bits 31 (`cx_code_diagram`), 32
-           (`cx_code_tree`), 33 (atoms), 34 (`[?def]`),
-           35 (`[?lib]`), and 36
-           (PathNode wire format / ast_bin v8). Bit 28
-           (CX code evaluator) is unchanged from v0.7.6."""]]
+        """v0.8.0 adds bits 31 (`cx_code_diagram`), 32 (`cx_code_tree`), 33 (atoms), 34 (`[?def]`), 35 (`[?lib]`), and 36 (PathNode wire format / ast_bin v8). Bit 28 (CX code evaluator) is unchanged from v0.7.6."""]] [; version-literal-ok ]
 
     [child id=v-detail n=7.11.2 title='V binding — install, Layer 1, atom'
       [body
@@ -1393,8 +1388,8 @@
       [note
         """Type mapping (CX → Python): `int → int`, `bigint → int`,
            `decimal → decimal.Decimal`, `float / f32 / f64 → float`,
-           `bool → bool`, `string → str`, `atom → cx.Atom` (new at
-           v0.8.0), `date → datetime.date`, `datetime →
+           `bool → bool`, `string → str`, `atom → cx.Atom`,
+           `date → datetime.date`, `datetime →
            datetime.datetime`, `bytes → bytes`, `null → None`."""]]
 
     [child id=go-detail n=7.11.4 title='Go binding — install, Layer 1, cgo'
@@ -1464,8 +1459,8 @@
            chokepoint; `cx_thread_register` and `cx_thread_unregister`
            fire automatically, so manual setup is unnecessary.
            Stateless conversions can be called from any thread
-           without coordination. Schema validate is 📋 for Rust at
-           v0.8.0-dev (the one Tier-1 row not yet ✓ in
+           without coordination. Schema validate is 📋 for Rust
+           (the one Tier-1 row not yet ✓ in
            `spec/misc/parity-matrix.md §2`)."""]
       [example lang=shell """cargo add cx-lang"""]
       [example lang=rust
@@ -1494,7 +1489,7 @@
            assert!(status.equals(&Atom::new("paid").into()));
            assert!(!status.equals(&"paid".into()));   // type-strict
 
-           // Schema validation (📋 mid-flight at v0.8.0-dev).
+           // Schema validation (📋 in progress).
            use cx_lang::{validate, Mode, Severity};
            let diags = validate(doc, schema)
                .mode(Mode::Strict)
@@ -1505,6 +1500,6 @@
            if `:iN`/`:uN`), `bigint → num_bigint::BigInt`, `decimal
            → rust_decimal::Decimal`, `float → f64` (or `f32` if
            sized), `bool → bool`, `string → String`, `atom →
-           cx_lang::Atom` (new at v0.8.0), `date →
+           cx_lang::Atom`, `date →
            chrono::NaiveDate`, `datetime → chrono::DateTime`,
            `bytes → Vec<u8>`."""]]]]

@@ -55,7 +55,7 @@
                 and span lines. ]
              [host 'localhost']]"""]
       [note
-        """Older CX dialects used `[-` `-]` for block comments. v0.8.0 uses
+        """Older CX dialects used `[-` `-]` for block comments. CX currently uses
            the `[; … ]` form only; `[# … #]` is raw text / CDATA, not a
            comment. See [[migration]] for the rename."""]]
 
@@ -190,9 +190,9 @@
         """Integers do not auto-promote to a larger type on overflow.
            Adding `1` to `9223372036854775807` (max i64) raises CXER0103
            (numeric overflow). For arbitrary-precision arithmetic use the
-           `:bigint` type tag with a string-form literal; the v0.8.0 builtin
+           `:bigint` type tag with a string-form literal; the current builtin
            library does not include BigInt arithmetic — that is a
-           post-v0.8.0 follow-up."""]]
+           planned follow-up."""]]
 
     [child id=booleans n=2.3.3 title='Booleans'
       [body
@@ -747,7 +747,7 @@
   [child id=doctype n=2.12 title='Doctype declarations'
     [intro
       """A `[?cx doctype=…]` directive at the top of a document declares
-         the document type. In v0.8.0 doctype is informational metadata;
+         the document type. Currently doctype is informational metadata;
          the validator MAY use it as a default schema-binding hint."""]
     [example lang=cx
       """[?cx doctype='users-v1' encoding=utf-8]
@@ -755,9 +755,9 @@
            [user id=1 email='ada@example.com']]"""]
     [body
       """The doctype name is a free-form identifier; convention is
-         `<name>-v<major>`. A future v0.9.x extension promotes doctype to
+         `<name>-v<major>`. A future revision promotes doctype to
          an *active* declaration (auto-load the schema by name, validate
-         on parse) — for v0.8.0 it is reserved for that direction."""]]
+         on parse) — currently it is reserved for that direction."""]]
 
   [child id=encoding n=2.13 title='Document encoding (UTF-8, BOM, alternates)'
     [intro
@@ -887,7 +887,7 @@
     [body
       """**Directive name keywords** (the first token after `[?`):"""]
     [body
-      """All 40 directives in the v0.8.0 registry — see
+      """All 40 directives in the current registry — see
          [[directives]] in the code section. Notable: `for`, `match`,
          `if`, `let`, `fn`, `def`, `try`, `modify`, `cx`, `pipe`."""]
 

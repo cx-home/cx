@@ -261,42 +261,42 @@
         """Capability bits are the forward-compat mechanism. When a
            newer libcx adds a feature, it claims a new cap bit. Readers
            that don't know that bit refuse the payload (rather than
-           silently mis-interpret it). The full table as of v0.8.0:"""]
+           silently mis-interpret it). The full table:"""]
       [table columns=('bit' 'name' 'meaning' 'introduced')
-        [row bit=1  name='schema-driven' meaning='data-bin omits tag bytes; schema is the dictionary' v='v0.5.0']
-        [row bit=2  name='external-entity' meaning='resolver may load external XML entities' v='v0.5.0']
-        [row bit=3  name='xml-space-preserve' meaning='xml:space attribute is parser-honored' v='v0.5.0']
-        [row bit=4  name='include-local' meaning='[?cx include] resolves file-system paths under doc tree' v='v0.5.0']
-        [row bit=5  name='include-absolute' meaning='[?cx include] resolves absolute paths' v='v0.5.0']
-        [row bit=6  name='include-network' meaning='[?cx include] resolves HTTPS URLs' v='v0.5.0']
-        [row bit=7  name='multi-encoding' meaning='document may declare alternate encoding' v='v0.5.0']
-        [row bit=8  name='doctype-active' meaning='doctype declaration triggers auto-schema-binding' v='reserved for v0.9.x']
-        [row bit=9  name='namespaces' meaning='xmlns: declarations resolved' v='v0.5.0']
-        [row bit=10 name='cx-lang' meaning='cx:lang scoping honored' v='v0.5.0']
-        [row bit=11 name='collection-literals' meaning='() [] {} literal forms' v='v0.6.0']
-        [row bit=12 name='ast-bin-v4' meaning='ast-bin format version 4' v='v0.6.0']
-        [row bit=13 name='delimited-csv' meaning='CSV / TSV / PSV projections' v='v0.6.0']
-        [row bit=14 name='diff-tree' meaning='cx diff produces tree-structured diff' v='v0.6.0']
-        [row bit=15 name='lint-rules' meaning='cx lint rule registry' v='v0.6.0']
-        [row bit=16 name='streaming-parse' meaning='pull-based streaming parser' v='v0.7.0']
-        [row bit=17 name='streaming-write' meaning='callback-driven streaming emit' v='v0.7.0']
-        [row bit=18 name='services' meaning='[?service] / [?http-client] directives' v='v0.7.6']
-        [row bit=19 name='workers' meaning='[?worker] / [?channel] / [?select] directives' v='v0.7.6']
-        [row bit=20 name='async' meaning='[?async] / [?await] / [?await-all/-any/-race]' v='v0.7.6']
-        [row bit=21 name='resilience' meaning='[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]' v='v0.7.6']
-        [row bit=22 name='cxcol-format' meaning='CXCol column-oriented binary format' v='v0.7.0']
-        [row bit=23 name='arrow-bridge' meaning='Arrow C Data Interface zero-copy bridge' v='v0.7.0']
-        [row bit=24 name='parquet-bridge' meaning='Parquet read/write via cxlib_arrow' v='v0.7.0']
-        [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6']
-        [row bit=26 name='thread-register' meaning='cx_thread_register required for cross-thread FFI' v='v0.6.0']
-        [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind' v='v0.8.0']
-        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children' v='v0.8.0']
-        [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary' v='v0.8.0']
-        [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing' v='v0.8.x']
-        [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0']
-        [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.8.0']]
+        [row bit=1  name='schema-driven' meaning='data-bin omits tag bytes; schema is the dictionary' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=2  name='external-entity' meaning='resolver may load external XML entities' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=3  name='xml-space-preserve' meaning='xml:space attribute is parser-honored' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=4  name='include-local' meaning='[?cx include] resolves file-system paths under doc tree' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=5  name='include-absolute' meaning='[?cx include] resolves absolute paths' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=6  name='include-network' meaning='[?cx include] resolves HTTPS URLs' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=7  name='multi-encoding' meaning='document may declare alternate encoding' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=8  name='doctype-active' meaning='doctype declaration triggers auto-schema-binding' v='reserved for v0.9.x'] [; version-literal-ok ]
+        [row bit=9  name='namespaces' meaning='xmlns: declarations resolved' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=10 name='cx-lang' meaning='cx:lang scoping honored' v='v0.5.0'] [; version-literal-ok ]
+        [row bit=11 name='collection-literals' meaning='() [] {} literal forms' v='v0.6.0'] [; version-literal-ok ]
+        [row bit=12 name='ast-bin-v4' meaning='ast-bin format version 4' v='v0.6.0'] [; version-literal-ok ]
+        [row bit=13 name='delimited-csv' meaning='CSV / TSV / PSV projections' v='v0.6.0'] [; version-literal-ok ]
+        [row bit=14 name='diff-tree' meaning='cx diff produces tree-structured diff' v='v0.6.0'] [; version-literal-ok ]
+        [row bit=15 name='lint-rules' meaning='cx lint rule registry' v='v0.6.0'] [; version-literal-ok ]
+        [row bit=16 name='streaming-parse' meaning='pull-based streaming parser' v='v0.7.0'] [; version-literal-ok ]
+        [row bit=17 name='streaming-write' meaning='callback-driven streaming emit' v='v0.7.0'] [; version-literal-ok ]
+        [row bit=18 name='services' meaning='[?service] / [?http-client] directives' v='v0.7.6'] [; version-literal-ok ]
+        [row bit=19 name='workers' meaning='[?worker] / [?channel] / [?select] directives' v='v0.7.6'] [; version-literal-ok ]
+        [row bit=20 name='async' meaning='[?async] / [?await] / [?await-all/-any/-race]' v='v0.7.6'] [; version-literal-ok ]
+        [row bit=21 name='resilience' meaning='[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]' v='v0.7.6'] [; version-literal-ok ]
+        [row bit=22 name='cxcol-format' meaning='CXCol column-oriented binary format' v='v0.7.0'] [; version-literal-ok ]
+        [row bit=23 name='arrow-bridge' meaning='Arrow C Data Interface zero-copy bridge' v='v0.7.0'] [; version-literal-ok ]
+        [row bit=24 name='parquet-bridge' meaning='Parquet read/write via cxlib_arrow' v='v0.7.0'] [; version-literal-ok ]
+        [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6'] [; version-literal-ok ]
+        [row bit=26 name='thread-register' meaning='cx_thread_register required for cross-thread FFI' v='v0.6.0'] [; version-literal-ok ]
+        [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind' v='v0.8.0'] [; version-literal-ok ]
+        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children' v='v0.8.0'] [; version-literal-ok ]
+        [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary' v='v0.8.0'] [; version-literal-ok ]
+        [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing' v='v0.8.x'] [; version-literal-ok ]
+        [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0'] [; version-literal-ok ]
+        [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.8.0']] [; version-literal-ok ]
       [body
-        """Bits 33-63 reserved for v0.9.x and beyond. The cap-bit
+        """Bits 33-63 reserved for future revisions. The cap-bit
            layout is fixed; bits are never re-assigned."""]]
 
     [child id=ast-bin-versioning n=4.3.3 title='Version negotiation + forward-compat'
@@ -316,7 +316,7 @@
                 mode accepts (the unknown bits are forward-feature
                 hints; the payload's required-bits are explicit)."""]]
       [body
-        """The lenient mode is the default for v0.8.0; strict mode is
+        """Lenient mode is the default; strict mode is
            opt-in via `cx_set_strict(true)`. The choice trades
            forward-compat against accidental-misinterpretation risk."""]]]
 
@@ -539,7 +539,7 @@
            dropping below the binding layer to raw FFI."""]
       [body
         """**Cap bit 26 (thread-register):** advertised by libcx ≥
-           v0.6.0. Older libcx (pre-v0.6.0) ran single-threaded only;
+           v0.6.0. Older libcx (pre-v0.6.0) ran single-threaded only; [; version-literal-ok ]
            the cap bit's introduction signaled thread-safe FFI."""]
       [body
         """**Practical implication:** spawning a thread from host code

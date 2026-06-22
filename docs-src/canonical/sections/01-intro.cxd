@@ -1,5 +1,5 @@
 [# Section 1 — Hello CX, design philosophy, how to read this guide.
-   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Authored 2026-05-22.
    Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
    resolves them at emit time. #]
 
@@ -165,7 +165,7 @@
 
   [child id=reading n=1.3 title='How to read this guide'
     [intro
-      """This guide is the developer-facing reference for CX v0.8.0. Read it
+      """This guide is the developer-facing reference for CX. Read it
          linearly the first time. After that, sections are independent
          enough to use as topic-specific reference."""]
 
@@ -203,7 +203,7 @@
       [item """[[concepts]] — pure-functional updates, structural sharing,
               capability bits, error-code namespace, ABI versioning,
               governance."""]
-      [item """[[migration]] — v0.7.x → v0.8.0: renames, retired surfaces,
+      [item """[[migration]] — upgrade guide: renames, retired surfaces,
               the automated migration script, the archived binding set."""]]
 
     [body

@@ -1,5 +1,5 @@
 [# Section 0 — Quickstart. Front-matter; appears before the §1 intro.
-   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Authored 2026-05-22.
    Goal: a developer who has never seen CX is running CX in under five
    minutes. Cross-links use [[anchor]] form; spec references use
    ordinary markdown links. File extension .cxd — data-only source. #]
@@ -33,7 +33,7 @@
          platform, extract, and put `cx` on your `PATH`:"""]
 
     [example lang=shell
-      """curl -L https://github.com/cx-lang/cx/releases/download/v0.8.0/cx-darwin-arm64.tar.gz | tar xz
+      """curl -L https://github.com/cx-lang/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
          sudo mv cx /usr/local/bin/
          cx --version"""]
 
@@ -52,11 +52,11 @@
          experimentation:"""]
 
     [example lang=shell
-      """docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx --version
-         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx"""]
+      """docker run --rm -i ghcr.io/cx-lang/cx:latest cx --version
+         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:latest cx"""]
 
     [note
-      """If `cx --version` prints `cx 0.8.0 (gNNNNNNN)` you are ready.
+      """If `cx --version` prints a version line, you are ready.
          If you see `command not found`, your `PATH` does not include
          the install location — see [[faq]] for recovery steps."""]]
 
@@ -296,7 +296,7 @@
               the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
               `cx lint`, `cx diff`, and the playground."""]
       [item """**Migrate an existing codebase.** [[migration]]
-              covers v0.7.x → v0.8.0 and intake from
+              covers prior-version migration and intake from
               JSON / YAML / TOML / XML."""]
       [item """**Compare against alternatives.** [[comparison]]
               is the side-by-side against JSON, YAML, TOML, XML,
@@ -329,12 +329,9 @@
 
     [child id=install-status n=0.10.1 title='Release status'
       [body
-        """CX is on v0.8.0-dev — the "data + code" unification
-           release on branch `v0.8.0-dev`. There is no tagged
-           0.8.0 release yet; the install paths below either
-           build from source on that branch or fetch the most
-           recent tagged 0.7.x bottle. Production users should
-           pin to a tag once 0.8.0 ships."""]]
+        """CX is the "data + code" unification release. The install
+           paths below build from source or fetch the most recent
+           tagged release. Production users should pin to a tag."""]]
 
     [child id=install-macos n=0.10.2 title='macOS'
       [example lang=shell """brew install cx-lang/tap/cx"""]
@@ -361,7 +358,7 @@
     [child id=install-wasm n=0.10.5 title='WebAssembly bundle'
       [body
         """The `libcx-wasm` bundle powers the live evaluator in
-           the playground; on v0.8.0 it exports the
+           the playground; it exports the
            `_cx_code_eval` family plus `_cx_code_diagram` and
            `_cx_code_tree`. The bundle ships
            alongside the `cx` binary on release tags."""]]
@@ -370,14 +367,13 @@
       [example lang=shell
         """git clone https://github.com/cx-home/cx
            cd cx
-           git checkout v0.8.0-dev   # while 0.8.0 is in development
            devbox run -- make build-vcx
            devbox run -- make test"""]
       [body
         """The build chain expects V on PATH or the `cx-home` V
            fork at `third_party/v`; the Makefile auto-detects
-           either. Drop the checkout line to build the most
-           recent tagged release instead."""]]
+           either. Check out the latest release tag to build
+           a specific release."""]]
 
     [child id=install-verify n=0.10.7 title='Verify the install'
       [example lang=shell
