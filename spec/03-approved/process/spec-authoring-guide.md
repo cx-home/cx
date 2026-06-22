@@ -1,6 +1,6 @@
 # CX Spec Authoring Guide
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Authoring conventions for normative CX specification documents. Reviewers use this guide when checking whether a spec is admission-ready. The corpus governance rules themselves (G1 mutual compatibility, G2 terseness, G3 user-only approval) live in [`governance.md`](governance.md) §13; this file is the practical author-facing companion.
 
@@ -34,7 +34,7 @@ Every binary-format spec ([`../core/data-bin.md`](../core/data-bin.md), [`../cor
 
 ## 3 — Orthogonality (uniform application)
 
-**Status: Current for v0.8.0** (admitted with the errors/effects/fp SAP migration). This section binds authors per the rollout scope below; the `UNIFORM` review gate is a reviewer checklist item in [`readiness-rubric.md`](readiness-rubric.md).
+**Status: Current** (admitted with the errors/effects/fp SAP migration). This section binds authors per the rollout scope below; the `UNIFORM` review gate is a reviewer checklist item in [`readiness-rubric.md`](readiness-rubric.md).
 
 A language feature MUST apply uniformly across its **natural domain** — every value kind it could sensibly act on, every position, every type. A user must never have to discover *by trial* that a feature works on X but not the cognate Y. The canonical smell: a `sort` that silently works on ints but not floats is **broken**, not "limited." Asymmetry forces every user to carry a standing question — *how limited is this feature?* — which is a tax on every use and a first-class defect, the same way ambiguity is (§1).
 
@@ -50,7 +50,7 @@ Any cell a feature does **not** cover MUST be a **documented, justified exceptio
 
 ## 4 — Learnability (progressive disclosure)
 
-**Status: Current for v0.8.0** (admitted with the errors/effects/fp SAP migration). This section binds authors of beginner-facing material; the Tier-1-only constraint on the guide intro/quickstart is a **standing executable gate** (`scripts/check_docs_tier1_guardrail.py`, wired into `make test`) and a reviewer checklist item in [`readiness-rubric.md`](readiness-rubric.md).
+**Status: Current** (admitted with the errors/effects/fp SAP migration). This section binds authors of beginner-facing material; the Tier-1-only constraint on the guide intro/quickstart is a **standing executable gate** (`scripts/check_docs_tier1_guardrail.py`, wired into `make test`) and a reviewer checklist item in [`readiness-rubric.md`](readiness-rubric.md).
 
 CX's mantra is **"easy to learn and fun to code."** The language carries real *conceptual* depth (the four-channel value model, the `fp` protocol, effect-totality, structured concurrency); that depth is **available, never required**. To keep the mantra a design constraint rather than an afterthought, the surface is laddered, and **beginner-facing material MUST lead with Tier 1 only**:
 

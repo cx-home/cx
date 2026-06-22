@@ -1,10 +1,10 @@
 # CX Per-binding Parity Matrix
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 This document records per-binding compliance with the parity rule in
 [`spec/process/governance.md`](../process/governance.md). Active
-bindings in v0.8.0 scope: **V (native)**, **Python**, **Go**, **Rust**.
+bindings in scope: **V (native)**, **Python**, **Go**, **Rust**.
 
 ---
 
@@ -73,8 +73,8 @@ canonical bytes for the same input.
 
 Playground view rows are `—` for Python/Go/Rust because the C ABI
 exports (`cx_code_diagram`, `cx_code_tree`) target the wasm playground
-front-end via the V core; per-FFI-binding wrappers are not in v0.8.0
-scope.
+front-end via the V core; per-FFI-binding wrappers are not currently
+in scope.
 
 ---
 
@@ -142,7 +142,7 @@ bindings:
   one C call.
 - CXPath routes through `cx_code_eval` with a path-value expression
   (the standalone `cx_select` / `cx_select_all` C ABI was retired at
-  v0.8.0 — see [`core/abi.md §2.7`](../core/abi.md)). Bindings retain
+  see [`core/abi.md §2.7`](../core/abi.md)). Bindings retain
   their `Doc.select()` / `Doc.select_all()` Layer-1 surfaces; only the
   underlying ABI symbol changed.
 - Streaming uses the `cx_events_*` family.

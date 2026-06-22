@@ -1,6 +1,6 @@
 # CX Governance Specification
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 This document specifies normative governance rules for the CX project:
 how implementations conform, how the binding ecosystem stays coherent,
@@ -247,10 +247,10 @@ gates but are published with each release for community scrutiny.
 > §1, §2, §3, §5, and §6. Findings are documented in
 > `spec/binding_audit_YYYY.md`.**
 
-v0.8.0 ships without the first audit artifact; `spec/binding_audit_YYYY.md`
+The first audit artifact is not yet present; `spec/binding_audit_YYYY.md`
 lands at the first annual audit cycle. This section is informational
-at v0.8.0 and becomes enforcement (a release blocker if missing for a
-given annual cycle) at v0.9.0.
+now and becomes enforcement (a release blocker if missing for a
+given annual cycle) in a future cycle.
 
 ### 7.1 Process
 
@@ -308,11 +308,11 @@ A third-party binding declares conformance by:
 Conformance is not exclusive. A binding may be certified, drift, and be
 de-listed in a future audit.
 
-v0.8.0 ships without `spec/conformance_registry.md`; the registry file
+Currently ships without `spec/conformance_registry.md`; the registry file
 is created when the first third-party binding submits a conformance
-claim. This section is informational at v0.8.0 and becomes enforcement
-(a missing registry entry blocks a third-party "conformant" claim) at
-v0.9.0.
+claim. This section is informational now and becomes enforcement
+(a missing registry entry blocks a third-party "conformant" claim) in
+a future cycle.
 
 ---
 

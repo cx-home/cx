@@ -1,6 +1,6 @@
 # CX ⇄ V Dependency Management
 
-**Status:** Current for v0.11.0.
+**Status:** Current.
 
 This document specifies how CX depends on, patches, tracks, and ultimately
 sheds the V compiler/runtime it is built on. It is a **process/governance**
