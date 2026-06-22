@@ -35,12 +35,19 @@ principle.
   **sound by construction** rather than racing the collector. Revert with
   `-d vgc_legacy_stw` if needed. Single-reactor throughput is within noise;
   8-reactor is the tuning follow-up.
-- **Reactor heap is bounded (#57).** The HTTP reactor performs a gated
-  collection on its per-request transient heap (`CX_HTTP_GC_EVERY`), so a busy
-  server no longer grows RSS without bound.
-- **HTTP defaults to a single reactor.** Multi-core is now explicit opt-in via
-  `CX_HTTP_LOOPS=N` — the safe default for the common case, with scaling
-  available when you ask for it.
+- **Reactor heap is bounded by heap growth, not request count (#57).** The HTTP
+  reactor collects its per-request transient heap once it has grown by
+  `CX_HTTP_GC_MB` MB (default 64) since the last collect — self-tuning across
+  light and heavy handlers. A light handler barely allocates so it almost never
+  collects (full throughput + multi-reactor scaling); a heavy handler trips it
+  every few requests so RSS stays bounded. (The earlier every-N-requests gate,
+  default 64, fired a global stop-the-world ~hundreds of times/sec and cut
+  throughput ~3× — that regression is fixed here. `CX_HTTP_GC_MB=0` disables it;
+  the legacy `CX_HTTP_GC_EVERY` request-count gate is still honored when set.)
+- **HTTP defaults to a single reactor.** Multi-core is explicit opt-in via
+  `CX_HTTP_LOOPS=N`, and now *scales* (positive across cores) on the
+  cooperative-safepoint collector — the safe default for the common case, with
+  near-linear scaling to a few reactors when you ask for it.
 - **Streaming `data-bin` writes are bounded under `-gc e` (#52).** Large-span
   recycling plus periodic collection cap the live set on the fd-streaming write
   path, so emitting a large document no longer balloons memory.
