@@ -870,6 +870,16 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 test-vcx-resilience-matrix: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
 
+# #63/#58 concurrency-soundness gate. Stresses the cooperative-safepoint collector
+# (now the default) under multi-reactor HTTP + concurrent [?worker] threads and
+# asserts ZERO sweep-while-live via the passive detector oracle (0xbf1) + crash
+# count. The gate builds its own detector binary and has proven detection power
+# (RED on the legacy -d vgc_legacy_stw collector, GREEN on the default). Skips the
+# HTTP stressor gracefully if `wrk` is absent. See scripts/concurrency_soundness_gate.sh.
+.PHONY: test-vcx-concurrency-soundness
+test-vcx-concurrency-soundness:
+	zsh scripts/concurrency_soundness_gate.sh
+
 # ── Gate 6 — service + client round-trip ──────────────────────────────────
 # Drives the 21 services + clients fixtures in conformance/code.txt via
 # the same vcx/tests/code_eval_fixtures_test.v whose `supported_fixtures`
