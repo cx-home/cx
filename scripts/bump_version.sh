@@ -48,6 +48,13 @@ stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 # drift, and it is stamped here + gated by check_version_consistency.py.
 stamp README.md                   "s|badge/version-v[0-9.]*-blue|badge/version-v$NEW-blue|"
 stamp vcx/README.md               "s|badge/version-v[0-9.]*-blue|badge/version-v$NEW-blue|"
+# VS Code extension version — user-visible in the marketplace. npm needs a
+# literal semver, so stamp it (package.json has a single `"version"` key).
+stamp tooling/vscode/package.json "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW\"/"
+# package-lock mirrors it in TWO spots (top-level + the \"\" self-package node),
+# each immediately preceded by `\"name\": \"cx-language\"`. Stamp only those —
+# never the dependency versions (which carry no cx-language name line above).
+stamp tooling/vscode/package-lock.json "/\"name\": \"cx-language\"/{n;s/\"version\": \"[^\"]*\"/\"version\": \"$NEW\"/;}"
 
 echo
 echo "VERSION = $NEW. Code (cabi.v/main.v) derives via the build define — not stamped."

@@ -1,5 +1,5 @@
 [# Section 6 — the CX code language.
-   Authored / expanded 2026-05-22 against the v0.8.0-dev branch.
+   Authored / expanded 2026-05-22.
    Anchored in spec/code.md (post-rename from programs.md), spec/cxpath_alignment.md,
    spec/cxdm.md §4.6 (EBV).
    Largest section in the guide. Cross-links use [[anchor]] form.
@@ -57,7 +57,7 @@
 
   [child id=directives n=6.2 title='Directive registry'
     [intro
-      """v0.8.0 has **forty normative directives** — including
+      """There are currently **forty normative directives** — including
          `[?modify]`.
          Adding or removing any directive requires a governance change per
          [`spec/governance.md`](../../spec/governance.md) §10. The
@@ -140,7 +140,7 @@
          returning its terminal value or `[err]`."""]
 
     [note
-      """**Retired in v0.8.0.** `[?find]` is no longer a directive. Use
+      """**Retired in v0.8.0.** `[?find]` is no longer a directive. Use [; version-literal-ok ]
          `[?for]` with a pattern generator, or CXPath `//pattern`. See
          [[migration]] for mechanical migration rules. The rationale:
          CXPath is the universal selector, so the
@@ -457,7 +457,7 @@
            dictates (see [[pattern-element-shape]]). Naming
            collisions inside one arm raise `CXER0100`
            (PARSE_ERROR) — `[user @id=$x @name=$x]` would require
-           the values be equal, which the v0.8.0 spec does not
+           the values be equal, which the current spec does not
            support; use a single bind and check with a `[when …]` clause."""]]
 
     [child id=pattern-type-guards n=6.4.6 title='Type-guard heads'
@@ -563,11 +563,11 @@
 
     [child id=match n=6.6.2 title='[?match] — dispatch (single + multi-arm)'
       [body
-        """`[?match]` is pattern dispatch. v0.8.0 supports two
+        """`[?match]` is pattern dispatch. CX supports two
            forms: **2-arg destructure** (single arm, asserts the
            value matches or raises) and **multi-arm** (first-match-
-           wins across N arms). The multi-arm form is the major
-           addition for v0.8.0."""]
+           wins across N arms). The multi-arm form is a recent
+           addition."""]
 
       [body
         """**Single-arm form** — pattern-bind a value and assert
@@ -674,7 +674,7 @@
           [item """**Single Scalar** of kind `date` / `datetime` /
                   `bytes` → true (existence is truthy)."""]
           [item """**Single Node (element)** → true."""]
-          [item """**Single Array** (v1.1 / v0.8.0) → true iff
+          [item """**Single Array** (v1.1 / v0.8.0) → true iff [; version-literal-ok ]
                   non-empty (length > 0)."""]
           [item """**Single Map** (v1.1) → true iff non-empty."""]
           [item """**Sequence of length > 1** → true."""]]
@@ -712,14 +712,14 @@
              $admin@email]"""]
       [body
         """`[?let]` is the only way to give an expression a name
-           in v0.8.0 — there is no `def` inside a function body,
+           currently — there is no `def` inside a function body,
            no inline `where` (that is a `[?for]` filter). To name
            a value that is used multiple times, `[?let]` is
            idiomatic."""]]
 
     [child id=modify n=6.6.5 title='[?modify] — pure-functional updates'
       [body
-        """`[?modify]` is the v0.8.0 update directive. It takes a
+        """`[?modify]` is the update directive. It takes a
            document (or sub-tree), a CXPath focus, and one or
            more action slots; it returns a **new** document with
            the action applied at every focus match. The original
@@ -1231,7 +1231,7 @@
              [?pipe $c [$get _ '/users/42']]]"""]
 
       [body
-        """**Status.** Services are a v0.8.0-stable surface;
+        """**Status.** Services are a stable surface;
            Tier-1 V binding ships the full implementation.
            Tier-2 bindings expose `[?http-client]` and
            `[?service-handle]` lookup but service-hosting may
@@ -1309,7 +1309,7 @@
            `[case [from CH $msg HANDLER]]` for a receive and
            `[case [timeout DURATION HANDLER]]` for a deadline. The
            spec/core/code.md §10.4.7 registry holds the
-           authoritative shape. The v0.7.x `:case [:from CH $msg H]`
+           authoritative shape. The v0.7.x `:case [:from CH $msg H]` [; version-literal-ok ]
            colon-slot form is retired — there is no dual-accept."""]]
 
     [child id=async n=6.9.3 title='Async, await, and cancellation'
@@ -1389,7 +1389,7 @@
            after 5s if `slow-call` hasn't completed."""]
 
       [body
-        """**Status.** Async/await is v0.8.0-stable in V.
+        """**Status.** Async/await is stable in V.
            Tier-2 binding parity (Python `asyncio`, Go
            `chan`, Rust `tokio`) ships per
            [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
@@ -1591,7 +1591,7 @@
 
     [child id=patterns-walking n=6.11.2 title='Pattern matching — walking the tree'
       [body
-        """The v0.8.0 program surface replaces XPath-style queries
+        """The current program surface replaces XPath-style queries
            with `[?for]` pattern generators and CXPath path values
            (`[?find]` retired). A pattern is a CX
            literal where element names match by shape, attribute
@@ -1660,7 +1660,7 @@
           """The path-to-iterator taxonomy (D26): a CXPath value is
              **not** an `Iterator` — it is a *description of a
              selection*. Evaluation materialises it to a `sequence`
-             (eager, the kind that ships in v0.8.0). The `sequence`
+             (eager, the kind currently in use). The `sequence`
              flows into Iterator combinators on opt-in via `[?for]`
              or the explicit `[?to-iterator]` directive. There is no
              `iterator → path` direction — paths describe; iterators
@@ -1679,7 +1679,7 @@
          modifier). XPath 3.1 alignment and divergences are
          tabulated in
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md).
-         CXPath is a first-class value kind at v0.8.0;
+         CXPath is a first-class value kind;
          general predicates with `$_` / `$_position` / `$_last`."""]
 
     [child id=cxpath-quick-table n=6.12.1 title='Quick reference'
@@ -1752,7 +1752,7 @@
 
     [child id=cxpath-predicates n=6.12.4 title='General predicate + reserved bindings'
       [body
-        """Predicates filter the step sequence. v0.8.0 ratified
+        """Predicates filter the step sequence. CX supports
            the `[expr]` general predicate: every
            predicate body is an arbitrary CX expression coerced
            to a boolean via the Effective Boolean Value (EBV)
@@ -1807,14 +1807,14 @@
       [example lang=rust    """let emails = doc.select_all("//user[@active=true]/@email")?;"""]
       [example lang=v       """emails := doc.select_all('//user[@active=true]/@email')!"""]]]
 
-  [child id=errors-catalog n=6.13 title='Error code catalog (v0.8.0)'
+  [child id=errors-catalog n=6.13 title='Error code catalog'
     [intro
       """Every CX error carries a structured payload: `cx-err:CODE`
          then a unit separator (US, `0x1F`) then a human-readable
          description then optionally another unit separator and a
          value. Bindings preserve this shape so `[?match]` can match
          on code rather than on text. The catalog below
-         covers the v0.8.0 ranges; the full normative table lives
+         covers the current ranges; the full normative table lives
          in [`spec/errors.md`](../../spec/errors.md)."""]
 
     [child id=errors-security n=6.13.1 title='CXER001x — security caps'

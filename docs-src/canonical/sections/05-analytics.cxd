@@ -1,5 +1,5 @@
 [# Section 5 — analytics, columnar formats, and bridges.
-   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Authored 2026-05-22.
    Anchored in spec/misc/table-api.md +
    spec/core/data-bin.md §3.10-3.13 + spec/streaming.md.
    Cross-links use [[anchor]] form. #]
@@ -316,7 +316,7 @@
       [note
         """Schema-driven mode requires the reader to retrieve the schema
            by its content hash. Local lookup is the default; the
-           callback-shaped content-store ABI is a post-v0.8.0
+           callback-shaped content-store ABI is a planned
            follow-up."""]]]
 
   [child id=arrow-bridge n=5.4 title='Arrow bridge — zero-copy interop'
@@ -329,7 +329,7 @@
          advertises Arrow when libcx_arrow is loaded."""]
 
     [body
-      """The bridge exports four C ABI symbols at v0.8.0:
+      """The bridge exports four C ABI symbols:
          `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
          CXCol → Arrow, and `cx_arrow_import_to_data_bin` /
          `cx_arrow_import_to_data_bin_fd` for Arrow → CXCol. Bindings
@@ -377,7 +377,7 @@
 
     [child id=arrow-type-mapping n=5.4.2 title='Type mapping'
       [body
-        """The CX ↔ Arrow type map is normative at v0.8.0. The
+        """The CX ↔ Arrow type map is normative. The
            high-level summary:"""]
       [list
         [item """`:int` / `:i64` ↔ `Int64`; `:i32` ↔ `Int32`; sized
@@ -400,7 +400,7 @@
         [item """`nullable T` → Arrow's standard nullable variant
                 (validity bitmap)."""]]
       [body
-        """v0.8.0 column-type coverage in `libcx_arrow` is 9 of
+        """Current column-type coverage in `libcx_arrow` is 9 of
            10 types (int / i8 / i16 / i32 / float / bool / string / date /
            bytes). `:datetime`, `:decimal`, and dictionary / extension
            columns remain deferred to a future libcx_arrow expansion;
@@ -427,16 +427,16 @@
            default; `--arrow-format=file` opts into the file-format
            variant."""]]
 
-    [child id=arrow-flight n=5.4.4 title='Arrow Flight (post-v0.8.0)'
+    [child id=arrow-flight n=5.4.4 title='Arrow Flight (planned)'
       [body
         """Arrow Flight is Arrow's gRPC-based RPC framing for cross-
            process record batches. It is the natural next layer above
            the IPC stream — a Flight server publishes batches by
            descriptor; a Flight client subscribes. CX integration is
-           **post-v0.8.0**: no Flight surface ships in v0.8.0; the
+           **planned**: no Flight surface ships currently; the
            tooling-layer story will be specified when it lands."""]
       [note
-        """For cross-process CXCol transport in v0.8.0, use Arrow IPC
+        """For cross-process CXCol transport currently, use Arrow IPC
            over your existing transport (HTTP, pipe, socket). The
            `[?http-client]` directive can carry Arrow IPC streams as
            binary bodies."""]]]
@@ -526,7 +526,7 @@
 
     [child id=parquet-types n=5.5.3 title='CX ↔ Parquet type mapping'
       [body
-        """The mapping is normative at v0.8.0. Most types round-trip
+        """The mapping is normative. Most types round-trip
            cleanly through Arrow; a small
            number of CX types have lossy edges that `--strict` mode
            rejects rather than silently coerces."""]
@@ -549,7 +549,7 @@
         [item """`:bigint` → `Decimal256(38, 0)` with diagnostic;
                 `--strict` rejects."""]
         [item """`arr[T]` → `LIST<T-projection>`."""]
-        [item """`map[K, V]` → `MAP<K, V>` (string-keyed at v0.8.0)."""]
+        [item """`map[K, V]` → `MAP<K, V>` (string-keyed)."""]
         [item """`seq[T]` → `LIST<T-projection>` after sequence flatten;
                 `--strict` rejects (re-import produces `arr[T]`, not
                 `seq[T]`)."""]
@@ -613,7 +613,7 @@
          CXCol chunks one at a time. The gate-15 perf target is **≥ 200
          MB/s sustained on JSON-shape workloads** (per
          [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md) gate 15);
-         the v0.8.0 measurement runs green at 353 MB/s on the
+         the current measurement runs green at 353 MB/s on the
          realistic-marshaling bench."""]
 
     [body
@@ -666,7 +666,7 @@
 
     [child id=streaming-perf n=5.6.2 title='Performance posture'
       [body
-        """The streaming evaluator's optimization stack at v0.8.0
+        """The streaming evaluator's optimization stack
            includes pre-compiled CXPath, env-rooted memoization,
            pointer-arithmetic emit into a pre-grown buffer, and a 64 KiB
            flush threshold tuned for page-cluster alignment. The full
@@ -765,7 +765,7 @@
            Python data-science ecosystem assumes it, but the
            cross-boundary cost is real on large tables."""]]
 
-    [child id=datafusion n=5.7.4 title='DataFusion (post-v0.8.0)'
+    [child id=datafusion n=5.7.4 title='DataFusion (planned)'
       [body
         """Apache DataFusion is a Rust query engine over Arrow. Its
            `TableProvider` trait accepts arbitrary Arrow record-batch
@@ -773,12 +773,12 @@
            as a DataFusion table, run SQL or DataFrame queries against
            it with the same zero-copy guarantees as Polars."""]
       [body
-        """Status: **post-v0.8.0**. A `libcx_query` C ABI is
-           **drafted** but not in scope for v0.8.0. Adopters who need DataFusion
+        """Status: **planned**. A `libcx_query` C ABI is
+           **drafted** but not yet shipped. Adopters who need DataFusion
            today wire it manually via the Arrow bridge — the path
            works, it just lacks the convenience layer."""]
       [example lang=rust
-        """// Manual wiring at v0.8.0 — convenience layer post-v0.8.0
+        """// Manual wiring — convenience layer is planned
            use cxlib::cxcol;
            use datafusion::prelude::*;
 
@@ -799,7 +799,7 @@
            `.parquet` from CX, point Spark at the directory, run
            PySpark / Spark SQL. For zero-copy in cluster contexts,
            Arrow Flight is the long-term path; status is
-           **post-v0.8.0** per [[arrow-flight]]."""]
+           **planned** per [[arrow-flight]]."""]
       [example lang=python
         """import cxlib
            from pyspark.sql import SparkSession
@@ -822,13 +822,13 @@
     [intro
       """The analytics lane's perf budgets and where they're measured.
          Numbers below are the spec gates (target floor) and the most
-         recent measurement on the v0.8.0 branch. Re-run
+         recent measurement. Re-run
          instructions live in the per-bench `Makefile` targets."""]
 
     [list
       [item """**Streaming throughput (JSON-shape, ~75 B/record).**
               Spec gate: mean ≥ 200 MB/s, no trial < 80% of mean.
-              Measured at v0.8.0 at 353 MB/s. Source:
+              Measured at 353 MB/s. Source:
               [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
               gate 15; bench: `bench-code-streaming`."""]
       [item """**Parquet write (default Snappy, 2²⁰ row-group).**
