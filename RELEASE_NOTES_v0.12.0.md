@@ -1,14 +1,18 @@
 # CX v0.12.0 — Release Notes
 
-**Date:** 2026-06-19
+**Date:** 2026-06-22
 **Tag:** `v0.12.0`
 
-The **correctness-and-ergonomics** release. The block-comment syntax is unified
-on `[; … ]` (the one breaking change — see Migration), CX gains a locale-free
-string→number stdlib bridge and concurrent server-sent-event push, the CLI
-learns stdin / inline evaluation, and roughly fifteen bugs are fixed — several
-of them silent-wrong-answer or capability-fails-silently violations of CX's
-fail-loud principle.
+The **reliability** release. Concurrency and memory move from "works with
+caveats" to **sound by construction**: tail calls no longer overflow the native
+stack, the precise GC's cooperative-safepoint collector becomes the default so
+multi-reactor HTTP and concurrent workers are safe, and the reactor / streaming
+write paths are bounded against runaway RSS. Alongside that: the block-comment
+syntax is unified on `[; … ]` (the one breaking change — see Migration), the
+single-source-of-truth versioning model is enforced end to end, the CLI learns
+stdin / inline evaluation, and roughly twenty bugs are fixed — several of them
+silent-wrong-answer or capability-fails-silently violations of CX's fail-loud
+principle.
 
 ## Changed (breaking)
 
@@ -16,6 +20,37 @@ fail-loud principle.
   as comment forms, and `[- a b]` is **always** subtraction. This removes the
   long-standing `[-`-token ambiguity between a comment and a minus expression.
   See **Migration** below. (Language version → 0.12.0.)
+
+## Reliability — concurrency & memory
+
+- **Tail-call optimization (#60).** Tail self-calls and tail closure-calls now
+  run in O(1) native stack via a trampoline in the evaluator, so loop-shaped
+  recursion no longer SIGSEGVs at depth (pure tail recursion is exercised
+  100,000,000 deep). Semantics-preserving; non-tail and a few non-trampolined
+  shapes fall back to ordinary recursion.
+- **Cooperative-safepoint STW is now the default GC collector (#63 / #58).**
+  The precise `-gc e` collector parks running mutators at cooperative safepoints
+  (mach-suspending only stragglers) before a stop-the-world cycle, so
+  multi-reactor HTTP (`CX_HTTP_LOOPS>1`) and concurrent `[?worker]` threads are
+  **sound by construction** rather than racing the collector. Revert with
+  `-d vgc_legacy_stw` if needed. Single-reactor throughput is within noise;
+  8-reactor is the tuning follow-up.
+- **Reactor heap is bounded (#57).** The HTTP reactor performs a gated
+  collection on its per-request transient heap (`CX_HTTP_GC_EVERY`), so a busy
+  server no longer grows RSS without bound.
+- **HTTP defaults to a single reactor.** Multi-core is now explicit opt-in via
+  `CX_HTTP_LOOPS=N` — the safe default for the common case, with scaling
+  available when you ask for it.
+- **Streaming `data-bin` writes are bounded under `-gc e` (#52).** Large-span
+  recycling plus periodic collection cap the live set on the fd-streaming write
+  path, so emitting a large document no longer balloons memory.
+- **Comprehension memory fix (#62).** `[?for]`’s per-item `env.clone()` no
+  longer deep-copies the shared closures table, eliminating a general
+  (non-HTTP) memory blow-up on large comprehensions.
+- **Concurrent `[?worker]` threads (#58),** behind `CX_WORKER_THREADS`. A
+  `[?worker]` body runs on its own thread and coexists with a `{block:true}`
+  `serve`, instead of monopolizing the thread so the server never binds. Off by
+  default this release.
 
 ## Changed
 
@@ -39,6 +74,22 @@ fail-loud principle.
   every subscriber.
 - **`cx -` and `cx -e EXPR`.** Read a program from stdin (`cx -`) or evaluate an
   inline expression (`cx -e '…'`) — no `cx eval` needed.
+- **`tools/vgc-debug/` toolkit (#70).** Durable probes, gated diagnostic patches,
+  and methodology for the precise-GC concurrency work — for contributors
+  investigating collector behavior.
+
+## Versioning & release hygiene (#67)
+
+- **The repo-root `VERSION` file is the single source of truth, enforced.**
+  Every surface either *derives* the version (the CLI / C-ABI via the build
+  define, the guide at build time, the wasm build, runtime error messages) or is
+  *stamped* from it by `bump_version.sh` (package manifests, README badges, the
+  VS Code extension). User-facing error messages no longer cite a frozen release
+  (e.g. the `cast` error lists supported kinds instead of "v0.8.0 supports …").
+- **`check-version-consistency` now scans `vcx/`, `spec/`, `docs-src/`,
+  `stdlib/`, and `tooling/`** and fails the build on any stray `vX.Y.Z` literal
+  outside an explicit history allowlist — so a release can no longer ship docs,
+  tooling, or a playground that advertise an older version.
 
 ## Fixed
 
@@ -64,18 +115,22 @@ Fail-loud / capability-silent:
   (`[f]`) instead of parsing as a data element.
 - **#53** — a bareword-head recursive `[?def]` call with computed arguments now
   dispatches instead of falling through to data construction.
+- **#11** — unknown / retired directives stay fail-loud rather than silently
+  falling back to a data literal (a pure-data resource still evaluates to
+  itself; the fallback no longer over-reaches).
 
 Lossless import:
 - **#4 / #5** — YAML and TOML now import losslessly into the native map/array
   value model.
 
 Other:
-- **#11** — a pure-data resource evaluates to itself (data fallback for prose).
 - **#48** — the HTTP server waits for the full POST body before invoking the
   handler.
 - **#27** — `[?select]` sequence diagrams emit arrows with correct labels.
 - **#39** — `cx:parse` of a single-root document returns a navigable node.
 - **#18** — a `[where]` infix-comparison error points at the prefix form.
+- **#17** — docs / examples / scripts use `cx <file>` instead of the redundant
+  `cx eval`.
 - **#15** — the published `cx-v` package ships `transport/` + `x/` and builds
   with `clang` (`-cc cc`).
 
@@ -84,7 +139,7 @@ Other:
 The only breaking change. Block comments must use `[; … ]`:
 
 ```
-[; this is a comment ;]            ; old [- … -] / [-- … --] forms are retired
+[; this is a comment ]             ; the old [- … -] / [-- … --] forms are retired
 [- 5 2]                            ; this is now subtraction (= 3), never a comment
 ```
 
@@ -96,5 +151,8 @@ The only breaking change. Block comments must use `[; … ]`:
 ## Compatibility
 
 Language version advances to **0.12.0**. The comment-syntax unification is the
-sole breaking change; every other change is backward-compatible. The ABI,
-format, and library version axes are unchanged.
+sole breaking change; every other change is backward-compatible. The
+cooperative-safepoint GC default is transparent to programs (revertible with
+`-d vgc_legacy_stw`), and the new concurrency knobs (`CX_HTTP_LOOPS`,
+`CX_WORKER_THREADS`) are opt-in. The ABI, on-disk format, and bundled-library
+version axes are unchanged.

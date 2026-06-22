@@ -13,11 +13,24 @@ version, library version).
 
 ## [Unreleased]
 
-## [0.12.0] — 2026-06-19
+## [0.12.0] — 2026-06-22
 
-The correctness-and-ergonomics release. Authoritative release-surface document:
+The reliability release. Authoritative release-surface document:
 [`RELEASE_NOTES_v0.12.0.md`](RELEASE_NOTES_v0.12.0.md). One breaking change
 (block comments unified on `[; … ]`); everything else is backward-compatible.
+
+### Reliability — concurrency & memory
+
+- **Tail-call optimization** — trampolined tail self/closure calls run in O(1)
+  native stack; loop-shaped recursion no longer SIGSEGVs (#60).
+- **Cooperative-safepoint STW is the default `-gc e` collector** — multi-reactor
+  HTTP (`CX_HTTP_LOOPS>1`) and concurrent `[?worker]` threads are sound by
+  construction; revert with `-d vgc_legacy_stw` (#63 / #58).
+- HTTP reactor heap bounded by a gated collect (#57); HTTP defaults to a single
+  reactor (multi-core opt-in via `CX_HTTP_LOOPS`).
+- Streaming `data-bin` writes bounded under `-gc e` (#52); `[?for]` no longer
+  deep-copies the shared closures table per item (#62).
+- Concurrent `[?worker]` threads behind `CX_WORKER_THREADS` (#58).
 
 ### Changed
 
@@ -34,6 +47,13 @@ The correctness-and-ergonomics release. Authoritative release-surface document:
   string→number parsing, absence `()` on non-numeric input (#54).
 - Concurrent SSE push on the `serve` path — topic pub/sub (#28).
 - `cx -` (stdin) and `cx -e EXPR` (inline) evaluation.
+- `tools/vgc-debug/` precise-GC debugging toolkit (#70).
+
+### Versioning (#67)
+
+- `VERSION` is the enforced single source of truth: every surface derives or is
+  stamped from it; `check-version-consistency` scans `vcx/`, `spec/`,
+  `docs-src/`, `stdlib/`, `tooling/` and fails on a stray `vX.Y.Z`.
 
 ### Fixed
 
