@@ -9,7 +9,7 @@
   [standard ref='TLS' title='Transport']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference (on graduation) for the `cx-stdlib/session` sub-package: the
 session layer of the XAP web stack — it sits **above** the L7 `cx-stdlib/http`
@@ -947,7 +947,7 @@ cookie config dropping `HttpOnly` or setting `SameSite=None` without
       other in-review XAP modules — `bus`/`journal`/`authz`/`xap` — and with
       `net`/`fp`/`http`; each graduation applies +1 to whatever the count is then).
       Add `'cx-stdlib/session'` to the skeleton test
-      (`vcx/tests/v08_stdlib_skeleton_test.v`) bundled-name list + bump its assert.
+      (`vcx/tests/stdlib_skeleton_test.v`) bundled-name list + bump its assert.
 - [ ] **Add the stub / real bodies** for the full §3 surface:
       `attach`/`attach-token`/**`attach-cookie`**/`detach`/`detach-client`/`touch`;
       `of`/`by-id`/`by-client`/**`from-cookie`**; `principal`/`tenant`/`clients`/`valid`/
@@ -989,7 +989,7 @@ a genuine **+1** to the bundled-name surface at its graduation (unlike `http`, w
 was already a bundled name and is a *reconciliation*; [`http.md`](http.md)
 §12). It is **not yet bundled** (absent from the skeleton test's expected list
 today), so at graduation it adds its name to
-`vcx/tests/v08_stdlib_skeleton_test.v`'s list **and** bumps that test's assert by 1,
+`vcx/tests/stdlib_skeleton_test.v`'s list **and** bumps that test's assert by 1,
 and adds a README §3 Tier-B row + bumps the README intro/frozen-surface counts — all
 +1 on whatever the count is at that moment (order-independent with the other XAP
 modules and the in-review `net`/`fp`). **No edits are made by this draft** (G3) — the

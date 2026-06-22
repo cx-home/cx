@@ -1,6 +1,6 @@
 # CX Codec API — format ⇄ tree, one model everywhere
 
-**Status:** Current for v0.8.0. Graduated 2026-06-06 (G3).
+**Status:** Current. Graduated 2026-06-06 (G3).
 
 This document specifies *how* a conversion between a serialization format and CX
 is invoked, and the contract every format implementation satisfies. It is the
@@ -130,7 +130,7 @@ parallel implementation):
 [$convert SRC :from <codec> :to <codec>]   ≡   [$<to>:emit [$<from>:parse SRC]]
 ```
 
-`:from`/`:to` take **atom** codec names (the v0.8.0 idiom for closed
+`:from`/`:to` take **atom** codec names (the CX idiom for closed
 enumerations). The compositional `[$<Y>:emit [$<X>:parse …]]` form remains the
 primitive; `[$convert]` is for the common case and is where a `transform*` step is
 omitted.
@@ -164,8 +164,10 @@ omitted.
 # the sugar
 [$convert [$io:read-file 'doc.md'] :from markdown :to xml]
 
-# parse a CX document, then navigate it — note the descendant axis `//` (§7):
-# the parse result is a sequence, so a direct `$doc/@name` would raise CXER0001.
+# parse a CX document, then navigate it (§7). A SINGLE-root source navigates
+# directly (`$doc@name`, `$doc/child`); a MULTI-root source (e.g. a leading
+# `[; … ]` comment + the root) is a transparent multi-root carrier, navigated
+# with the descendant axis `//` (a direct step on the carrier raises CXER0001).
 [?let [= $doc [$cx:parse [$io:read-file 'feature.cxd']]]
-  [$doc//feature/@name]]
+  [$doc//feature/@name]]   # // works for both shapes; `$doc@name` also works single-root
 ```

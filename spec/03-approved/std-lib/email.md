@@ -9,7 +9,7 @@
   [standard ref='RFC 3464' title='DSN/bounce']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/email` sub-package.
 
@@ -261,11 +261,11 @@ An **unsupported** transfer encoding (one outside `7bit` / `8bit` / `quoted-prin
 
 ### §4.3. Multipart boundary generation
 
-Generated via `[$mime:multipart-boundary]` — random, guaranteed not to occur in part bodies. v0.8.0 uses 24 random hex chars prefixed with `=_Part_`.
+Generated via `[$mime:multipart-boundary]` — random, guaranteed not to occur in part bodies. The implementation uses 24 random hex chars prefixed with `=_Part_`.
 
 ### §4.4. Supported decode charsets
 
-Both `decode-encoded-word` and text-body decoding convert from the declared charset to UTF-8. v0.8.0 pins:
+Both `decode-encoded-word` and text-body decoding convert from the declared charset to UTF-8. The implementation pins:
 
 - **Unicode** — UTF-8.
 - **Western/European** — ISO-8859-1 through ISO-8859-15 (Latin-1 … Latin-9), Windows-1250 through Windows-1258.

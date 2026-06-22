@@ -7,7 +7,7 @@ module code
 // HTTPS fetch, no SRI verification, no version pin beyond the
 // `bundled:<binary-version>` tag in cx.lock.
 //
-// This file ships the **v0.8.0 signature-only skeleton** — each of the
+// This file ships the **signature-only skeleton** — each of the
 // 14 frozen sub-packages from spec/stdlib.md §3 is represented by a
 // single CX source file whose [?def] declarations expose the public
 // surface only. Bodies are `null` placeholders + TODO markers; full
@@ -112,7 +112,7 @@ const stdlib_src_session = $embed_file('../../stdlib/session.cx').to_string()
 
 const stdlib_src_authz = $embed_file('../../stdlib/authz.cx').to_string()
 
-// did/vc — post-v0.8.0 trust additions (std-lib/README §3.2; issue #26).
+// did/vc — deferred trust additions (std-lib/README §3.2; issue #26).
 const stdlib_src_did = $embed_file('../../stdlib/did.cx').to_string()
 
 const stdlib_src_vc = $embed_file('../../stdlib/vc.cx').to_string()
@@ -330,9 +330,9 @@ fn bundled_codec_module_names() []string {
 // (`<fmt>-parse` etc., vcx/code/stdlib_codec.v → vcx/cx/codec.v node entry
 // points). `pure` per §5 — codecs charge no capability.
 fn codec_module_source(fmt string) string {
-	return '[- cx-stdlib/${fmt} — codec surface (core; codec.md §3). Synthesized
+	return '[; cx-stdlib/${fmt} — codec surface (core; codec.md §3). Synthesized
    from the codec registry; bodies forward to registry-driven native
-   primitives. The CX tree is the universal pivot (codec.md §1). -]
+   primitives. The CX tree is the universal pivot (codec.md §1). ]
 [?def parse        scope=public pure [returns any]    (\$s::string) [\$${fmt}-parse \$s]]
 [?def parse-bytes  scope=public pure [returns any]    (\$b::bytes)  [\$${fmt}-parse-bytes \$b]]
 [?def emit         scope=public pure [returns string] (\$v::any)    [\$${fmt}-emit \$v]]

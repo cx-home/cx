@@ -1,6 +1,6 @@
 # CX AST Binary Wire Format (`ast_bin`)
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 The **ast_bin** format is the wire-level binary serialization of a CX
 parse AST. It is produced by `cx_to_ast_bin` and the per-format
@@ -10,7 +10,7 @@ the marshalling format between the V core library and binding-native
 AST representations.
 
 This spec is **normative**. The byte-level layout is part of the
-v0.8.0 format-stability lock and the cap-bit commitments in
+format-stability lock and the cap-bit commitments in
 [`abi.md` §3](abi.md).
 
 ---
@@ -41,7 +41,7 @@ v0.8.0 format-stability lock and the cap-bit commitments in
 [element_count nodes]
 ```
 
-The version byte is **8** at v0.8.0. Decoders MUST reject buffers
+The version byte is **8**. Decoders MUST reject buffers
 whose version byte is higher than the highest version they support.
 Lower-versioned buffers are decodable in forward-compatible mode (the
 decoder treats absent v(N) extensions as their default-zero values).
@@ -88,14 +88,14 @@ Each node is recursively encoded as:
 | `0x08` | PI | `String:target OptString:data` |
 | `0x09` | XMLDecl | `String:version OptString:encoding OptString:standalone` |
 | `0x0A` | CXDirective | `u16:attr_count attrs[]` — matches `ast.md CXDirective` shape (`attrs` only). The `[?cx …]` surface admits no AnchorDef and no body items per grammar.ebnf. |
-| `0x0B` | DoctypeDecl | `String:name OptString:external_id OptString:int_subset` — `external_id` encodes the PUBLIC/SYSTEM portion (verbatim source form); `int_subset` carries the internal subset bytes verbatim when present. The in-memory AST kinds `ElementDecl`, `AttlistDecl`, `NotationDecl`, `EntityDecl`, and `ConditionalSect` (per `ast.md`) live inside the internal subset and are **NOT** carried as structured wire nodes at v0.8.0 — they round-trip as bytes within `int_subset` and are recovered by re-parsing when an in-memory AST is needed. Streaming-API events for `ElementDecl` / `AttlistDecl` (per `streaming.md §1.1`) are fabricated by re-parsing `int_subset` on the read side; the write side rejects them with `W009`. Structured wire encoding for the five DTD kinds is a future extension and would land behind a new capability bit. |
+| `0x0B` | DoctypeDecl | `String:name OptString:external_id OptString:int_subset` — `external_id` encodes the PUBLIC/SYSTEM portion (verbatim source form); `int_subset` carries the internal subset bytes verbatim when present. The in-memory AST kinds `ElementDecl`, `AttlistDecl`, `NotationDecl`, `EntityDecl`, and `ConditionalSect` (per `ast.md`) live inside the internal subset and are **NOT** carried as structured wire nodes — they round-trip as bytes within `int_subset` and are recovered by re-parsing when an in-memory AST is needed. Streaming-API events for `ElementDecl` / `AttlistDecl` (per `streaming.md §1.1`) are fabricated by re-parsing `int_subset` on the read side; the write side rejects them with `W009`. Structured wire encoding for the five DTD kinds is a future extension and would land behind a new capability bit. |
 | `0x0C` | BlockContent | `u16:child_count nodes[]` |
 | `0x0D` | Interpolation | `String:expr` |
-| `0x0E` | EvalDirective | `String:name u16:item_count nodes[]` — encodes the `items` field of `ast.md EvalDirective`. Per `ast.md`, `items` is the directive's body items **directly** (no wrapping `ArrayNode`): `item_count` is the body-item count — `0` for an empty body (`[?Name]`), `N` otherwise — and `nodes[]` are the body items in source order. `EvalDirective` is structurally uniform with `StartElement`'s body (name + items), the v0.8.0 reshape having retired the prior single-`ArrayNode` "ArgArray" wrapper. Attrs are NOT valid on EvalDirective (the vestigial runtime `attrs` field is always empty); wire carries no `attr_count`. Module-system directives (`?def`, `?lib`, `?const`) are carried under this tag — the structured `DefNode` / `LibNode` / `ConstNode` shapes documented in `ast.md` are recovered from `name` + the body items by the program AST layer; ast_bin has no separate tags for them. |
+| `0x0E` | EvalDirective | `String:name u16:item_count nodes[]` — encodes the `items` field of `ast.md EvalDirective`. Per `ast.md`, `items` is the directive's body items **directly** (no wrapping `ArrayNode`): `item_count` is the body-item count — `0` for an empty body (`[?Name]`), `N` otherwise — and `nodes[]` are the body items in source order. `EvalDirective` is structurally uniform with `StartElement`'s body (name + items), the reshape having retired the prior single-`ArrayNode` "ArgArray" wrapper. Attrs are NOT valid on EvalDirective (the vestigial runtime `attrs` field is always empty); wire carries no `attr_count`. Module-system directives (`?def`, `?lib`, `?const`) are carried under this tag — the structured `DefNode` / `LibNode` / `ConstNode` shapes documented in `ast.md` are recovered from `name` + the body items by the program AST layer; ast_bin has no separate tags for them. |
 | `0x0F` | SequenceNode | `u16:item_count nodes[]` |
 | `0x10` | ArrayNode | `u16:item_count nodes[]` |
 | `0x11` | MapNode | `u16:entry_count entries[]` — see §4.3. |
-| `0x12` | Atom (reserved) | Reserved for a future compact flattened atom encoding. v0.8.0 producers MUST NOT emit `0x12`; v0.8.0 decoders MUST reject buffers containing `0x12`. Atoms are encoded under `0x03 Scalar` with `data_type = "atom"`. |
+| `0x12` | Atom (reserved) | Reserved for a future compact flattened atom encoding. Producers MUST NOT emit `0x12`; decoders MUST reject buffers containing `0x12`. Atoms are encoded under `0x03 Scalar` with `data_type = "atom"`. |
 | `0x13` | PathNode | `u8:form OptString:binding u16:step_count steps[] u16:predicate_count nodes[]` — see §4.4. Advisory `source` / `loc` fields are NOT carried on the wire. |
 | `0x14` | MatchNode | `u8:mode OptString:scrutinee u16:arm_count arms[]` — see §4.5. Advisory `source` / top-level `loc` and per-arm `arm.loc` are NOT carried on the wire. |
 | `0x15` | ModifyNode | `OptString:doc OptString:focus u16:action_count actions[]` — see §4.6. Advisory `source` / top-level `loc` and per-action `action.loc` are NOT carried on the wire. |
@@ -105,7 +105,7 @@ Each node is recursively encoded as:
 **Atom encoding.** Atoms encode under the existing `0x03 Scalar` tag
 with `data_type = "atom"` and `value` = the atom's UTF-8 name. Wire
 byte `0x12` is reserved for a future tag-flattened compact form;
-v0.8.0 encoders MUST NOT emit `0x12`. Atom support is signaled by
+encoders MUST NOT emit `0x12`. Atom support is signaled by
 capability bit 33 (`0x200000000` per [`abi.md` §3](abi.md)).
 
 Unrecognized node-type IDs in the range `[0x17 .. 0xFE]` are

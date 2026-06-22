@@ -378,7 +378,7 @@
             <p>Capability bits are the forward-compat mechanism. When a
            newer libcx adds a feature, it claims a new cap bit. Readers
            that don't know that bit refuse the payload (rather than
-           silently mis-interpret it). The full table as of v0.8.0:</p>
+           silently mis-interpret it). The full table:</p>
             <table>
               
                 <row bit="1" name="schema-driven" meaning="data-bin omits tag bytes; schema is the dictionary" v="v0.5.0"/>
@@ -415,7 +415,7 @@
                 <row bit="32" name="wasm-tree-view" meaning="playground wasm exposes data-tree view C ABI" v="v0.8.0"/>
               
             </table>
-            <p>Bits 33-63 reserved for v0.9.x and beyond. The cap-bit
+            <p>Bits 33-63 reserved for future revisions. The cap-bit
            layout is fixed; bits are never re-assigned.</p>
           
         </section>
@@ -439,7 +439,7 @@
                 hints; the payload's required-bits are explicit).</li>
               
             </ul>
-            <p>The lenient mode is the default for v0.8.0; strict mode is
+            <p>Lenient mode is the default; strict mode is
            opt-in via `cx_set_strict(true)`. The choice trades
            forward-compat against accidental-misinterpretation risk.</p>
           
@@ -691,7 +691,7 @@
            code doesn't call `cx_thread_register` directly unless
            dropping below the binding layer to raw FFI.</p>
             <p>**Cap bit 26 (thread-register):** advertised by libcx ≥
-           v0.6.0. Older libcx (pre-v0.6.0) ran single-threaded only;
+           v0.6.0. Older libcx (pre-v0.6.0) ran single-threaded only; [; version-literal-ok ]
            the cap bit's introduction signaled thread-safe FFI.</p>
             <p>**Practical implication:** spawning a thread from host code
            and calling a CX binding method from it is safe — the

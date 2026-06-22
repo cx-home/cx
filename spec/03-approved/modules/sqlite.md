@@ -1,6 +1,6 @@
 # `sqlite:` module — embedded SQL database
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `sqlite:` external-system module. Wraps `libsqlite3` and exposes SQL operations as CX functions.
 

@@ -1,5 +1,5 @@
 [# Section 13 — Comparison to alternatives. Back-matter; appears
-   after §12 FAQ. Authored 2026-05-22 against the v0.8.0-dev branch.
+   after §12 FAQ. Authored 2026-05-22.
 
    The goal is to help an evaluator decide whether to adopt CX. Be
    honest where CX loses — ecosystem maturity, library breadth,
@@ -471,7 +471,7 @@
     [note
       """If you have a workload that does not match any row of
          this table or §13.1's decision tree, file an issue at
-         https://github.com/cx-lang/cx — the comparison is
+         https://github.com/cx-home/cx — the comparison is
          maintained as a living document; new alternatives and
          new use-case scenarios are added as the ecosystem
          evolves."""]]

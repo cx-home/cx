@@ -2,7 +2,7 @@
 
 **INTERNAL — DO NOT PUBLISH. DO NOT MIRROR TO `cx-home/cx`. SEE [`README.md`](README.md).**
 
-**Status:** Draft. Phase 0.5 deliverable, ships day-of-v0.8.0 (gated on Layer-1 V impl from v0.8.0 Phase 2).
+**Status:** Draft. Phase 0.5 deliverable (gated on Layer-1 V impl from Phase 2).
 **Scope:** The Embedded tier of CXStore — a Store abstraction layered over the Layer-1 16-method API, dispatching to multiple storage backends (local filesystem, memory, HTTP, HTTPS+WebDAV, S3, FTP/FTPS, SFTP) via URL scheme. All processing happens client-side regardless of where bytes live.
 
 ---
@@ -16,7 +16,7 @@ CXStore has two independent design dimensions ([`plan.md`](plan.md) "Storage bac
 
 This document specifies the **Embedded tier** — all URL-dispatched backends where bytes are pulled to the client process for local processing. The eventual pack-backed indexed performance variant within Embedded is specified in [`pack_format.md`](pack_format.md). The Service tier (CSRP-speaking remote nodes) is specified at `spec/misc/cxstore-remote-protocol.md`. All three expose the *same* Store API; users switch by URL scheme.
 
-Phase 0.5 ships **day-of-v0.8.0** without waiting for the pack format, indexes, or a remote-protocol implementation. Performance is sacrificed for ubiquity within Embedded: queries are O(N corpus size) because no indexes exist, but every modern byte-source transport (filesystem, HTTP, object store, FTP, SFTP) becomes a usable CXStore byte source immediately. Production-scale pushdown ships alongside via the Service tier in Phase 0.7.
+Phase 0.5 ships without waiting for the pack format, indexes, or a remote-protocol implementation. Performance is sacrificed for ubiquity within Embedded: queries are O(N corpus size) because no indexes exist, but every modern byte-source transport (filesystem, HTTP, object store, FTP, SFTP) becomes a usable CXStore byte source immediately. Production-scale pushdown ships alongside via the Service tier in Phase 0.7.
 
 ---
 
@@ -144,7 +144,7 @@ A `store.cxd` (or `store.cxbin`) at the root holds:
   [layout [depth "2"] [width "2"]]
   [format [content "cxbin"] [compression "zst"]]
   [capabilities [read "true"] [write "true"] [list "true"]]
-  [doc_count "12345"]    [- optional, updated lazily -]
+  [doc_count "12345"]    [; optional, updated lazily ]
 ]
 ```
 

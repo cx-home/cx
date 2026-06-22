@@ -100,7 +100,7 @@
 <main>
 <section id="directives">
   <h1>Directive reference</h1>
-  <p class="lede">Every directive in the closed v0.8.0 registry (<code>spec/core/code.md</code> §4.1) — the bracketed <code>[?…]</code> forms that drive pattern dispatch, comprehensions, binding, iterators, resilience, services, concurrency, and async. Each entry is generated from the co-located reference source and, where the conformance corpus backs it, carries a runnable example pinned verbatim to a green fixture.</p>
+  <p class="lede">Every directive in the closed directive registry (<code>spec/core/code.md</code> §4.1) — the bracketed <code>[?…]</code> forms that drive pattern dispatch, comprehensions, binding, iterators, resilience, services, concurrency, and async. Each entry is generated from the co-located reference source and, where the conformance corpus backs it, carries a runnable example pinned verbatim to a green fixture.</p>
   
     <section id="dir-match" class="fn">
       <h3>
@@ -327,7 +327,7 @@
       <h3>
         <code>?for</code>
       </h3>
-      <p class="fn-sig"><code>[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence</code>  —  For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence.</p>
+      <p class="fn-sig"><code>[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence</code>  —  For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence. [where] takes a PREFIX predicate — `[where [= $x/@attr value]]` — which is the reliable form everywhere (also inside `not(…)` and as a node-set predicate `//u[@attr=value]`); a bare infix comparison `[where $x/@attr=value]` is a parse error that points back at the prefix form.</p>
       <p class="note">Core — for-comprehension (Sequence outer; D15)  ·  §7</p>
       
         <div class="example">
@@ -1429,6 +1429,15 @@ B</code>
       </h3>
       <p class="fn-sig"><code>[?meta {KEY: VALUE…} FORM] -> FORM</code>  —  Core: attach an inert metadata map to the value of FORM; the value is unchanged and only `meta-of` and the XML serializer observe the map.</p>
       <p class="note">Core — inert metadata annotation on a value  ·  §4.2</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?let [= $doc [?meta {author: alice} [report "Q3"]]] [meta-of $doc]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>{author: alice}</code>
+          </pre>
+        </div>
       
     </section>
   

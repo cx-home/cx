@@ -7,7 +7,7 @@
   [standard ref='SSE' title='Server-Sent Events']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference (on graduation) for the `cx-stdlib/http` sub-package: the L7
 HTTP/1.1 layer — methods, headers, status, redirects, content decoding, and a
@@ -488,14 +488,20 @@ top (§6).
 
 ### §3.6. SSE / streaming — held-open server push + client read
 
-> **Known limitation — concurrent server push (cx-private #28).** The client read
-> path (`sse-connect`/`sse-events`) and a single held-open server stream are real
-> and complete; what is **deferred** is *concurrent* server push — a held SSE
-> stream on the `accept-iter` path serializes the accept loop, and the `serve`
-> handler receives a `[request]` (not an `[exchange]`), so it cannot promote to
-> SSE. Server-initiated streaming that coexists with serving other requests is
-> tracked in #28. (A timeout/non-blocking std-stream read — the sibling gap for an
-> interactive client — is `cx-stdlib/io` #29.)
+> **Concurrent server push (cx-private #28, RESOLVED).** Two SSE shapes coexist:
+> a **single held-open stream** on the `accept-iter` path (`sse`/`send-event`,
+> below) — correct for one producer, but the `accept-iter` consumer is **serial
+> by design**, so a *long-lived* feed there blocks the loop; and the **pub/sub**
+> path on the concurrent `serve` engine (`sse-subscribe` + `sse-publish`, §3.6.1)
+> — the right shape for live multi-client push. A `serve` handler promotes its
+> connection by **returning `[sse-subscribe topic="…" [event …]?]`**; the reactor
+> holds the fd and joins it to the named topic; **any** handler (on any worker)
+> fans out with `[$http:sse-publish "…" [event …]]`. No reactor thread is ever
+> blocked — pushes are event-driven from whichever request causes them, never a
+> producer loop on a single exchange. Use `accept-iter`+`sse` for a one-shot
+> stream; use `serve`+`sse-subscribe`/`sse-publish` for concurrent live feeds.
+> (A timeout/non-blocking std-stream read — the sibling gap for an interactive
+> client — is `cx-stdlib/io` #29.)
 
 > **Implementation tier (this revision).** The **live held-open socket transport
 > is implemented** on the L4 `net` layer (built on the real `accept-iter` /
@@ -513,7 +519,7 @@ top (§6).
 > (CR/LF-in-field, incl. CR in `data` — round-trip is identity) hold both on the
 > frame and parse sides. The shared pure framing/parsing codec keeps the symmetry
 > invariant (what the server frames parses back equal on the client). Behavioral
-> coverage: `vcx/tests/v08_http_sse_real_test.v` (server push + client read over
+> coverage: `vcx/tests/http_sse_real_test.v` (server push + client read over
 > real loopback sockets); codec symmetry: `vcx/tests/http_sse_test.v`.
 >
 > **Two refinement bounds are best-effort in this revision** and surfaced, never
@@ -541,6 +547,29 @@ A streaming response keeps the connection fd **registered and held open** and wr
 - `sse` `opts`: `retry` (initial reconnect-hint ms), `keep-alive` (`15s` auto-heartbeat; `0s` off), `headers`, `last-event-id` (inbound resume convenience).
 - `send-event` frames + flushes one `[event]` as a chunk (empty `[event]` → `CXER4539`; CR/LF in `event`/`id` → `CXER4531`); on a disconnected peer or any send/heartbeat after the stream is closed → `CXER4544` (`CXER4535` is reserved for client/server/exchange handles). `heartbeat` writes one `:`-comment liveness frame. `stream-open` is the pure producer-loop guard.
 - **Reconnect is client-driven and the server is stateless** — no replay buffer; the handler reads `Last-Event-ID` and decides what to replay (for XAP that is the `journal`-fold-from-cursor). **Bounded resources** (`serve`/`listen` opts): `max-streams` (`1024`; beyond → `CXER4545`), `stream-write-timeout` (`30s`; a stalled slow consumer → `CXER4546` and the stream closes — backpressure is **surfaced, not absorbed**, never an unbounded pending-event buffer). Open streams count against net's handle quota (`CXER4518`).
+
+#### §3.6.1. Concurrent SSE on `serve` — topic pub/sub (#28)
+
+The `sse`/`send-event` surface above promotes **one** `[exchange]` on the serial `accept-iter` path. For **live multi-client push that coexists with serving other requests**, a `[$http:serve]` handler uses the pub/sub surface, which runs on the concurrent `serve` engine without blocking a worker:
+
+```
+[?def sse-publish scope=public impure [returns int] ($topic::string $event::element) ...]
+```
+
+- **Subscribe.** A handler **promotes its connection to a live feed by RETURNING** `[sse-subscribe topic="<name>" [event …]?]` (instead of a `[response]`). The server writes the SSE prelude, holds the connection open (exempt from the idle timeout), and joins the fd to the string-keyed **topic**. The optional single `[event …]` child is written as the **initial frame** (a malformed initial event → `500`; an empty/missing `topic` → `500`). The handler returns immediately — the connection stays open as a subscriber.
+- **Publish.** `[$http:sse-publish "<topic>" [event …]]` frames the `[event]` once (same pure codec, so `CXER4539`/`CXER4531` apply) and writes it to **every** connection currently subscribed to `<topic>`, returning the **count delivered**. It is callable from **any** handler on **any** worker thread; a subscriber whose write fails (peer gone) is dropped from the topic. Writing to the subscriber sockets is a net effect (capability `net`, `CXER0271` when ungranted).
+- **Cleanup is synchronous.** When a subscriber connection closes, its fd is removed from every topic before the socket is reused, so a concurrent `sse-publish` can never write to a stale fd.
+- **No producer loop.** Pushes are **event-driven** — emitted by whichever request mutates state (e.g. a `POST /commit` handler calls `sse-publish`), not by a loop holding one exchange. This is what makes it concurrent where a `send-event` loop on a single `accept-iter` exchange is not.
+
+```cx
+[?def handler impure ($req)
+  [?let [= $p [$text $req@path]]
+    [?if [= $p "/events"]
+      [then [sse-subscribe topic="prices" [event data="ready"]]]   ; this connection joins "prices"
+      [else [?let [= $n [$http:sse-publish "prices" [event data="42"]]]   ; fan out to all subscribers
+              [response status=200 [body "pushed"]]]]]]]
+[$http:serve "tcp://0.0.0.0:8080" $handler {}]
+```
 
 **Client read** (the `EventSource` equivalent). `sse-connect` opens a streaming GET; on a 2xx `text/event-stream` it returns an `[sse-source]` read handle, on a non-2xx a materialized `[response]` **value** (a 2xx that is *not* an event stream → `CXER4547`). URL-first and `net`-gated like `get`.
 
@@ -1082,7 +1111,7 @@ This section states the **single correct count** and the **exact lines** that ch
 at graduation; per Rule G3 it makes **no edits**.
 
 **"Bundled name" ≠ "module behavior."** The skeleton test
-`vcx/tests/v08_stdlib_skeleton_test.v` (`test_stdlib_surface_enumerates_bundled_subpackages`)
+`vcx/tests/stdlib_skeleton_test.v` (`test_stdlib_surface_enumerates_bundled_subpackages`)
 asserts that 30 sub-package **names** exist with non-empty, parseable,
 public-`[?def]` source — its header comment explicitly admits **signature-only
 `null` placeholders**. So the skeleton proves `'cx-stdlib/http'` is a **bundled
@@ -1108,7 +1137,7 @@ count-history comment is refreshed):
 | `README.md` §3 intro sentence | "enumerates **29** sub-packages" | "**30**" |
 | `README.md` §3.2 frozen-surface sentence | "The **29-module** … frozen surface" | "**30-module**" |
 | `README.md` §3 Tier-B table | (no `http` row) | add `\| http \| HTTP/1.1 client + server (built on net) \| [http.md](http.md) \|` |
-| `v08_stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | asserts **30**, lists `'cx-stdlib/http'` | **unchanged** — already correct; refresh the count-history comment above it |
+| `stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | asserts **30**, lists `'cx-stdlib/http'` | **unchanged** — already correct; refresh the count-history comment above it |
 
 **Interaction with the other in-review drafts (local facts only).** http is a
 **reconciliation, not an addition** — it corrects README 29→30 to match the binary's

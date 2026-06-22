@@ -1,6 +1,6 @@
 # `cx.lock` — normative lockfile specification
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 **Normative reference for:** `[?lib]` module resolution per [`code.md` §12.1](code.md).
 **Authoritative formal grammar:** [`grammar.ebnf`](grammar.ebnf) productions [149]–[151] (`[?lib]` surface) plus the CX-data grammar (the lockfile itself is a CX-data document).
 
@@ -67,7 +67,7 @@ element encoding the cross-module dependency edges.
 ### §3.1 Schema versioning
 
 The `version` attribute on the root element identifies the
-lockfile schema. **v0.8.0 ships `version=1`.** Loaders MUST
+lockfile schema. **The current schema is `version=1`.** Loaders MUST
 reject any `version` value they do not recognise; future schema
 versions will be additive (new attributes, new sub-elements) but
 the schema version is bumped whenever the loader's read-side
@@ -84,10 +84,10 @@ bytes:
 
 ```
 [module
-  name=STRING       [- the resolver string from [?lib] -]
-  resolved=STRING   [- absolute resolution; see §4.1 -]
-  version=STRING?   [- semver-style version, optional -]
-  sri=STRING?       [- SRI integrity hash; required for HTTPS -]
+  name=STRING       [; the resolver string from [?lib] ]
+  resolved=STRING   [; absolute resolution; see §4.1 ]
+  version=STRING?   [; semver-style version, optional ]
+  sri=STRING?       [; SRI integrity hash; required for HTTPS ]
   ]
 ```
 
@@ -316,12 +316,12 @@ updates are deliberate, reviewed commits.
 
 ## §10. Future work
 
-The following extensions are reserved for post-v0.8.0:
+The following extensions are reserved for future revisions:
 
 - **Bearer / Basic authentication** on `[?lib]` HTTPS fetches.
   Grammar reserves the attribute positions (see `grammar.ebnf`
   [151]); credential storage, rotation, and per-module scoping
-  all out of scope at v0.8.0.
+  are currently out of scope.
 - **`:vendor`** field on `[module]` entries — opt-in mirror-from-
   source-control behaviour where the lockfile records both a
   primary URL and a fallback location.

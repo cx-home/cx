@@ -5,7 +5,7 @@
    one [cxpath-tour …] element.
 
    Run:
-     cx eval examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx #]
+     cx examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx #]
 
 [cxpath-tour version='0.8.0'
 

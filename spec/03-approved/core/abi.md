@@ -1,16 +1,16 @@
 # CX C ABI Specification (libcx)
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 This document specifies the public C ABI exposed by `libcx` (built from
 `vcx/cx/cabi.v`). All non-V language bindings consume CX through this
 ABI. The native V binding (`lang/v/native/`) is the only consumer that
 imports `vcx.cx` directly and bypasses this ABI; FFI bindings link
 against `libcx.dylib` / `libcx.so` / `libcx.dll` and call these symbols.
-**v0.8.0 conformance-active bindings** are V (native), Python, Go,
+**Conformance-active bindings** are V (native), Python, Go,
 and Rust per [`misc/parity-matrix.md`](../misc/parity-matrix.md);
 additional FFI bindings (TypeScript, Java, Kotlin, C#, Swift, Ruby)
-exist and consume the ABI but are outside the v0.8.0 conformance set.
+exist and consume the ABI but are outside the current conformance set.
 
 The ABI surface covers: text-format conversions, binary AST round-trip,
 data-binding (`cx_to_data_bin` / `cx_from_data_bin`), CX-code
@@ -114,7 +114,7 @@ Per-symbol classification:
 | `cx_to_data_bin`, `cx_from_data_bin`, `cx_*_to_data_bin`, `cx_data_bin_to_*` (§2.4) | S | |
 | `cx_to_delimited`, `cx_from_delimited`, `cx_to_csv`/`cx_from_csv`/`cx_to_tsv`/`cx_from_tsv`/`cx_to_psv`/`cx_from_psv`, `cx_csv_to_data_bin`/`cx_tsv_to_data_bin`/`cx_psv_to_data_bin`, `cx_data_bin_to_csv`/`cx_data_bin_to_tsv`/`cx_data_bin_to_psv` (§2.5) | S | |
 | `cx_fmt`, `cx_canonical`, `cx_hash`, `cx_eq` (§2.6) | S | |
-| `cx_code_eval`, `cx_code_eval_with_len`, `cx_code_eval_streaming`, `cx_code_eval_caps` (§2.16.1) | S | CX code evaluator (production). Sole CXPath / query / transform entry-point family at v0.8.0; the narrow §2.7 CXPath C ABI is retired (see §2.7). `cx_code_eval_caps` adds a capability-set parameter (bit 38, security.md); the param-less members run pure-only (empty default) — additive, non-breaking |
+| `cx_code_eval`, `cx_code_eval_with_len`, `cx_code_eval_streaming`, `cx_code_eval_caps` (§2.16.1) | S | CX code evaluator (production). Sole CXPath / query / transform entry-point family; the narrow §2.7 CXPath C ABI is retired (see §2.7). `cx_code_eval_caps` adds a capability-set parameter (bit 38, security.md); the param-less members run pure-only (empty default) — additive, non-breaking |
 | `cx_to_ast_bin`, `cx_to_ast_bin_with_len`, `cx_to_events_bin`, `cx_to_events_bin_with_len`, `cx_to_events` (§2.0) | S | ABI v1 carry-over family; cap bits 1 / 2 (always set) |
 | `cx_diff`, `cx_diff_with_len` (§2.17) | S | semantic diff over strict canonical bytes; cap bit 18 |
 | `cx_lint`, `cx_lint_with_len` (§2.18) | S | programmatic lint with default / custom ruleset; cap bit 19 |
@@ -536,17 +536,17 @@ char* cx_eq (const char* a, const char* b, char** err_out); /* "1" iff strict-ca
 
 All defined per `canonical.md`.
 
-### 2.7 CXPath — retired at v0.8.0
+### 2.7 CXPath — retired
 
 The standalone CXPath C ABI (`cx_select` / `cx_select_all`, audit
-finding **CB-5**) is retired at v0.8.0. CXPath path-value expressions
+finding **CB-5**) is retired. CXPath path-value expressions
 now evaluate through `cx_code_eval` (§2.16.1) — bindings call the
 unified evaluator with the path expression as the `program` argument
 (e.g. `//user[@active=true]/@email`). Layer-1 binding wrappers
 (`Doc.select` / `Doc.select_all`, see
 [`misc/bindings.md §2.1`](../misc/bindings.md)) are retained and route
 through `cx_code_eval` internally. Capability bit 8 (the former
-`cx_select` advertisement) is RESERVED at v0.8.0; see §3.
+`cx_select` advertisement) is RESERVED; see §3.
 
 CXPath grammar remains normative in [`code.md` §5.5](code.md); only the
 dedicated C ABI symbol pair is retired.
@@ -684,7 +684,7 @@ have been tested against:
 | Binding | Arrow library + version |
 |---|---|
 | Python | `pyarrow` ≥ 10.0 (via `cffi` C-Data bridge) |
-| Go | `github.com/apache/arrow/go/v18` v18.0.0 |
+| Go | `github.com/apache/arrow/go/v18` (v18.x) |
 | Rust | `arrow` crate ≥ 50.0 (the `arrow::ffi_stream` module) |
 | TypeScript | `apache-arrow` JS — bridge via Arrow IPC bytes; C Data Interface bridge is not feasible from V8 |
 
@@ -856,7 +856,7 @@ notes for the cross-binding determinism guarantee. The validator
 ships with the bootstrap rule set: S002 / S003 / S004 /
 S005 / S008 / S017 implemented end-to-end; S001 / S006 / S007 /
 S009 / S010 / S011 / S012 / S013 / S014 / S015 / S016 / S018 /
-S019 / S020 implemented end-to-end before the v0.8.0 tag.
+S019 / S020 implemented end-to-end.
 
 ### 2.14 Explicit-length C ABI variants (hardening)
 
@@ -975,7 +975,7 @@ The CX-code evaluator entry points are documented under §2.16.1
 
 `cx_code_eval` / `cx_code_eval_with_len` /
 `cx_code_eval_streaming` are the entry points for the unified CX code
-evaluator (`code.md`). At v0.8.0 this family is the sole CXPath /
+evaluator (`code.md`). This family is the sole CXPath /
 query / transform surface; the standalone CXPath C ABI (`cx_select` /
 `cx_select_all`, formerly §2.7) is retired — see §2.7.
 
@@ -1057,7 +1057,7 @@ the §11.6 gate 15 throughput work — the binding-facing contract
 does not change.
 
 **Capability bit.** Bit 28 (`0x10000000`) advertises the CX code
-surface. At v0.8.0 `cx_code_eval*` is the sole evaluator entry-point
+surface. `cx_code_eval*` is the sole evaluator entry-point
 family. Bindings probing bit 28 commit to the full §4.1 directive
 registry in `code.md`.
 
@@ -1260,7 +1260,7 @@ A clean lint pass returns the empty diagnostics document
 `[diagnostics]`.
 
 **Default ruleset.** When `ruleset == NULL`, `cx_lint` runs the
-following v0.8.0 minimum:
+following minimum:
 
 | Code | Severity | Rule |
 |---|---|---|
@@ -1269,7 +1269,7 @@ following v0.8.0 minimum:
 | L003 | warn  | Element with `merge` ref to a nonexistent anchor |
 | L004 | warn  | Attribute declared but never read (only when a schema is supplied in `ruleset`) |
 | L005 | error | Schema violation (delegates to `cx_validate` semantics; surfaces `S001..S020` codes per `core/schema.md`) |
-| L006 | warn  | Deprecated directive form (e.g., pre-v0.8.0 surfaces) |
+| L006 | warn  | Deprecated directive form (e.g., earlier-revision surfaces) |
 | L007 | warn  | Empty string for a `pattern=`-constrained attribute |
 
 Lint codes are registered in `core/code.md §9.4` / `§9.5` (the
@@ -1309,7 +1309,7 @@ features the loaded library does not implement.
 | 5 | 0x0020 | data_bin one-shot loaders / dumpers|
 | 6 | 0x0040 | Delimited (CSV / TSV / PSV / arbitrary single-char) |
 | 7 | 0x0080 | Canonical form (cx_fmt / cx_canonical / cx_hash / cx_eq)|
-| 8 | 0x0100 | RESERVED at v0.8.0 — formerly CXPath C ABI (`cx_select` / `cx_select_all`). CXPath queries now route through `cx_code_eval` (§2.16.1) with a path-value expression; the dedicated symbol pair is retired (§2.7). New libcx builds leave bit 8 clear. |
+| 8 | 0x0100 | RESERVED — formerly CXPath C ABI (`cx_select` / `cx_select_all`). CXPath queries now route through `cx_code_eval` (§2.16.1) with a path-value expression; the dedicated symbol pair is retired (§2.7). New libcx builds leave bit 8 clear. |
 | 9 | 0x0200 | Real streaming (cx_events_open / next / close)|
 | 10 | 0x0400 | `[table[ … ]` table block in grammar |
 | 11 | 0x0800 | `::decimal` type |
@@ -1359,8 +1359,8 @@ requirements but enforced via the perf-regression suite (see
 | `cx_events_next` per event | < 1 µs | | |
 
 (Selection is covered by `cx_code_eval` with a CXPath path expression
-(e.g. `//user[@active=true]`); the §11.6 release-gate-15 budget in
-`v0_8_0_status.md` applies.)
+(e.g. `//user[@active=true]`); the gate-15 performance budget in
+`code.md` §11.4.4 applies.)
 
 Measured on Apple M-class or x86_64 ≥3 GHz. CI tracks regressions
 against these targets per binding.

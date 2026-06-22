@@ -118,11 +118,13 @@
           <code class="language-shell">brew install cx-lang/cx/cx
          cx --version</code>
         </pre>
-        <p>**Manual download.** Prebuilt binaries are published with each
-         tagged release on GitHub. Download the archive for your
-         platform, extract, and put `cx` on your `PATH`:</p>
+        <p>**Manual download.** Prebuilt binaries are published on the
+         GitHub Releases page. **Today only macOS (Apple Silicon) ships a
+         prebuilt binary** — Linux, macOS Intel, and Windows build from
+         source (see §0.10) until the project's CI runners are restored.
+         Download the archive, extract, and put `cx` on your `PATH`:</p>
         <pre>
-          <code class="language-shell">curl -L https://github.com/cx-lang/cx/releases/download/v0.8.0/cx-darwin-arm64.tar.gz | tar xz
+          <code class="language-shell">curl -L https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
          sudo mv cx /usr/local/bin/
          cx --version</code>
         </pre>
@@ -137,10 +139,10 @@
         <p>**Docker.** No host install required; useful for CI or quick
          experimentation:</p>
         <pre>
-          <code class="language-shell">docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx --version
-         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx eval</code>
+          <code class="language-shell">docker run --rm -i ghcr.io/cx-lang/cx:latest cx --version
+         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:latest cx</code>
         </pre>
-        <p class="note">If `cx --version` prints `cx 0.8.0 (gNNNNNNN)` you are ready.
+        <p class="note">If `cx --version` prints a version line, you are ready.
          If you see `command not found`, your `PATH` does not include
          the install location — see <a class="xref" href="faq.html">faq</a> for recovery steps.</p>
       
@@ -151,7 +153,7 @@
         <p>Every interactive CX session starts the same way: pipe a CX
          literal into `cx eval` and see what comes out.</p>
         <pre>
-          <code class="language-shell">echo '[hello greeting="world"]' | cx eval</code>
+          <code class="language-shell">echo '[hello greeting="world"]' | cx</code>
         </pre>
         <p>The output is the same shape you typed:</p>
         <pre>
@@ -168,7 +170,7 @@
         <p>Try a tiny program too. The `[?for]` directive iterates and
          yields:</p>
         <pre>
-          <code class="language-shell">echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx eval</code>
+          <code class="language-shell">echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx</code>
         </pre>
         <pre>
           <code class="language-cx">([n 1], [n 2], [n 3])</code>
@@ -238,7 +240,7 @@
          iteration, for update focus. Same vocabulary everywhere. The
          simplest query asks: "which users are active?"</p>
         <pre>
-          <code class="language-shell">cx eval --xpath '//user[@active=true]/@email' users.cx</code>
+          <code class="language-shell">cx --xpath '//user[@active=true]/@email' users.cx</code>
         </pre>
         <pre>
           <code class="language-cx">('ada@example.com', 'linus@example.com')</code>
@@ -358,7 +360,7 @@
               the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
               `cx lint`, `cx diff`, and the playground.</li>
             <li>**Migrate an existing codebase.** <a class="xref" href="migration.html">migration</a>
-              covers v0.7.x → v0.8.0 and intake from
+              covers prior-version migration and intake from
               JSON / YAML / TOML / XML.</li>
             <li>**Compare against alternatives.** <a class="xref" href="comparison.html">comparison</a>
               is the side-by-side against JSON, YAML, TOML, XML,
@@ -369,7 +371,7 @@
               the first-week-of-CX questions.</li>
           
         </ul>
-        <p class="note">The community lives at https://github.com/cx-lang/cx — file
+        <p class="note">The community lives at https://github.com/cx-home/cx — file
          bugs, browse RFCs, and read the spec under `spec/*.md`. The
          playground at https://cx-lang.org/playground lets you try
          CX from a browser with no install.</p>
@@ -385,12 +387,12 @@
         <section id="install-status">
           <h3>Release status</h3>
           
-            <p>CX is on v0.8.0-dev — the "data + code" unification
-           release on branch `v0.8.0-dev`. There is no tagged
-           0.8.0 release yet; the install paths below either
-           build from source on that branch or fetch the most
-           recent tagged 0.7.x bottle. Production users should
-           pin to a tag once 0.8.0 ships.</p>
+            <p>The install paths below either build from source or fetch a
+           tagged release. **Prebuilt binaries currently cover macOS
+           (Apple Silicon) only**; Linux, macOS Intel, and Windows build
+           from source with `devbox run -- make build` until the
+           project's CI runners are restored. Production users should
+           pin to a tag.</p>
           
         </section>
         <section id="install-macos">
@@ -406,9 +408,11 @@
         <section id="install-linux">
           <h3>Linux</h3>
           
-            <p>Homebrew works on Linux too. The static binary tarball
-           from the GitHub Releases page works on any glibc-based
-           distro.</p>
+            <p>Homebrew works on Linux too. A static binary tarball from
+           the GitHub Releases page works on any glibc-based distro —
+           though the prebuilt Linux tarball is not published yet (CI
+           runners offline); build from source with
+           `devbox run -- make build` in the meantime.</p>
             <pre>
               <code class="language-shell">brew install cx-lang/tap/cx
            curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
@@ -419,16 +423,19 @@
         <section id="install-windows">
           <h3>Windows</h3>
           
-            <p>A static `cx.exe` ships per release on
-           github.com/cx-home/cx/releases. Drop it on PATH; no
-           installer, no dependencies.</p>
+            <p>A static `cx.exe` is planned per release on
+           github.com/cx-home/cx/releases, but is not published yet (CI
+           runners offline, and the V toolchain's Windows support is
+           still on the roadmap — see <a class="xref" href="faq.html">faq</a>); build from source in the
+           meantime. Drop the binary on PATH; no installer, no
+           dependencies.</p>
           
         </section>
         <section id="install-wasm">
           <h3>WebAssembly bundle</h3>
           
             <p>The `libcx-wasm` bundle powers the live evaluator in
-           the playground; on v0.8.0 it exports the
+           the playground; it exports the
            `_cx_code_eval` family plus `_cx_code_diagram` and
            `_cx_code_tree`. The bundle ships
            alongside the `cx` binary on release tags.</p>
@@ -440,14 +447,13 @@
             <pre>
               <code class="language-shell">git clone https://github.com/cx-home/cx
            cd cx
-           git checkout v0.8.0-dev   # while 0.8.0 is in development
            devbox run -- make build-vcx
            devbox run -- make test</code>
             </pre>
             <p>The build chain expects V on PATH or the `cx-home` V
            fork at `third_party/v`; the Makefile auto-detects
-           either. Drop the checkout line to build the most
-           recent tagged release instead.</p>
+           either. Check out the latest release tag to build
+           a specific release.</p>
           
         </section>
         <section id="install-verify">
@@ -551,7 +557,7 @@
           <h3>Comments</h3>
           
             <p>Hash line comments live outside element bodies.
-           Bracket-dash block comments live inside elements and
+           Bracket-semicolon block comments live inside elements and
            can span lines.</p>
             <pre>
               <code class="language-cx">[shop port=8080 [menu [pizza name=Margherita]]]</code>

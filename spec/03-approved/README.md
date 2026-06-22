@@ -1,6 +1,6 @@
-# CX Specification (v0.8.0)
+# CX Specification
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 The CX language and its companion specifications, organised into five directories. Read in the order listed; each later layer depends on the earlier ones.
 
@@ -59,4 +59,4 @@ The `cx-stdlib` module specs. See [`std-lib/README.md`](std-lib/README.md) for t
 
 ## `_archive/` — historical (read-only)
 
-Read-only archive of ADRs, design audits, cross-reference guides, and superseded drafts. **No active spec cites `_archive/`** — the v0.8.0 corpus stands alone without ADR archaeology.
+Read-only archive of ADRs, design audits, cross-reference guides, and superseded drafts. **No active spec cites `_archive/`** — the current corpus stands alone without ADR archaeology.

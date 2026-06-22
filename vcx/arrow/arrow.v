@@ -143,13 +143,13 @@ fn arrow_format_for_cxcol_type(type_name string) !string {
 		'bytes'             { 'z' }     // binary (32-bit offsets)
 		'decimal128'        { 'd:38,10' } // decimal128 default precision/scale
 		else {
-			error("column type '${type_name}' not yet supported in v0.7.0; "
+			error("column type '${type_name}' not yet supported; "
 				+ 'supported scalar set: int, i8, i16, i32, float, bool, string, date, '
 				+ 'datetime, bytes, decimal128 (or decimal128[P,S]), '
 				+ 'timestamp[unit, tz], fixed-size-binary[N], dict-utf8. '
 				+ 'Nested types (struct, list, fixed-size-list) require cx-table '
 				+ 'cell-model evolution to carry nested cells natively '
-				+ '(tracked separately; depends on cx-table v0.8.0 schema work).')
+				+ '(tracked separately; depends on cx-table schema work).')
 		}
 	}
 }
@@ -190,7 +190,7 @@ fn cxcol_type_name_from_arrow_format(fmt string) !string {
 		'tsn:UTC'     { 'datetime' }
 		'z'           { 'bytes' }
 		else {
-			error("Arrow format '${fmt}' not yet supported in v0.7.0; "
+			error("Arrow format '${fmt}' not yet supported; "
 				+ "supported set: 'l' (int64), 'c' (int8), 's' (int16), 'i' (int32), "
 				+ "'g' (float64), 'b' (bool), 'u' (utf8), 'tdD' (date32), "
 				+ "'tsn:UTC' (timestamp[ns, UTC]), 'z' (binary), "

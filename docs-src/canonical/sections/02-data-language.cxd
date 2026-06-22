@@ -41,21 +41,23 @@
 
     [child id=comments n=2.1.2 title='Comments (line and block)'
       [body
-        """CX has one comment form: `[# … #]`. It nests, it spans any number
-           of lines, and it is allowed anywhere whitespace is allowed. The
+        """CX has two comment forms: a `#` line comment that runs to
+           end-of-line, and a `[; … ]` block comment that spans any number of
+           lines and is allowed anywhere whitespace is allowed. The block
            comment is a real lexical element, not a hack on top of a string
            — the parser drops it before AST construction. Comments are
            preserved by the lossless canonicalizer (`cx fmt`) and stripped
            by the strict canonicalizer (`cx canon`); see [[canonical]]."""]
       [example lang=cx
-        """[# A single-line note. #]
+        """[; A single-line note. ]
            [config
-             [# This sub-comment is fine, even
-                [# nested #] inside another. #]
+             [; A block comment can nest inside an element
+                and span lines. ]
              [host 'localhost']]"""]
       [note
-        """Older CX dialects used `[-` `-]` for block comments. v0.8.0 keeps
-           the `[# #]` form only. See [[migration]] for the rename."""]]
+        """Older CX dialects used `[-` `-]` for block comments. CX currently uses
+           the `[; … ]` form only; `[# … #]` is raw text / CDATA, not a
+           comment. See [[migration]] for the rename."""]]
 
     [child id=whitespace n=2.1.3 title='Whitespace'
       [body
@@ -188,9 +190,9 @@
         """Integers do not auto-promote to a larger type on overflow.
            Adding `1` to `9223372036854775807` (max i64) raises CXER0103
            (numeric overflow). For arbitrary-precision arithmetic use the
-           `:bigint` type tag with a string-form literal; the v0.8.0 builtin
+           `:bigint` type tag with a string-form literal; the current builtin
            library does not include BigInt arithmetic — that is a
-           post-v0.8.0 follow-up."""]]
+           planned follow-up."""]]
 
     [child id=booleans n=2.3.3 title='Booleans'
       [body
@@ -745,7 +747,7 @@
   [child id=doctype n=2.12 title='Doctype declarations'
     [intro
       """A `[?cx doctype=…]` directive at the top of a document declares
-         the document type. In v0.8.0 doctype is informational metadata;
+         the document type. Currently doctype is informational metadata;
          the validator MAY use it as a default schema-binding hint."""]
     [example lang=cx
       """[?cx doctype='users-v1' encoding=utf-8]
@@ -753,9 +755,9 @@
            [user id=1 email='ada@example.com']]"""]
     [body
       """The doctype name is a free-form identifier; convention is
-         `<name>-v<major>`. A future v0.9.x extension promotes doctype to
+         `<name>-v<major>`. A future revision promotes doctype to
          an *active* declaration (auto-load the schema by name, validate
-         on parse) — for v0.8.0 it is reserved for that direction."""]]
+         on parse) — currently it is reserved for that direction."""]]
 
   [child id=encoding n=2.13 title='Document encoding (UTF-8, BOM, alternates)'
     [intro
@@ -885,7 +887,7 @@
     [body
       """**Directive name keywords** (the first token after `[?`):"""]
     [body
-      """All 40 directives in the v0.8.0 registry — see
+      """All 40 directives in the current registry — see
          [[directives]] in the code section. Notable: `for`, `match`,
          `if`, `let`, `fn`, `def`, `try`, `modify`, `cx`, `pipe`."""]
 

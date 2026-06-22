@@ -1,10 +1,9 @@
-[- Site-wide configuration for the v0.7.6 documentation system.
-   Consumed by scripts/gen_docs/scaffold.sh + build.cx. -]
+[; Site-wide configuration for the CX documentation system.
+   Consumed by scripts/gen_docs/scaffold.sh + build.cx. ]
 [site
   [meta
     name='CX'
     tagline='The CX Data Language'
-    version='0.7.6'
     base-url='/'
     repo='https://github.com/cx-home/cx'
   ]

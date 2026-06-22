@@ -5,7 +5,7 @@
   [standard ref='WHATWG HTML' title='Parse/serialize']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/html` sub-package: function-level surface, safe-default sanitizer policy, and policy-element shape.
 

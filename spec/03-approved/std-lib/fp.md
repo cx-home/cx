@@ -4,7 +4,7 @@
 [module-meta name=fp tier=A status=current]
 ```
 
-**Status:** Current for v0.8.0. **Advanced / opt-in.** A CX author is fully
+**Status:** Current. **Advanced / opt-in.** A CX author is fully
 productive without ever opening this module; it adds the abstraction *over the
 container* — one `traverse`/`fold` that works for a sequence, a `result`, and a
 user-defined tagged container alike. The words "monad" / "functor" / "typeclass"
@@ -34,7 +34,7 @@ do not appear in beginner material (the learnability ladder, Tier 3 — `process
 A type **"is a Functor"** iff the instance registry has a `map` arm for its head
 tag — **duck-typed, checked at the value**. There is **no static kind system**
 (`[returns ::F[_]]` is RESERVE) and **no explicit `[typeclass]`/`[instance]`
-registry surface** in v0.8.0 (RESERVE-upgrade if duck typing proves too loose);
+registry surface** (RESERVE-upgrade if duck typing proves too loose);
 the instances are the closed built-in set below plus user-registered tagged
 containers.
 

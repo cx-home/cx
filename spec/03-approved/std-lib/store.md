@@ -7,7 +7,7 @@
   [standard ref='RFC 4217' title='FTPS']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/store` sub-package.
 
@@ -60,7 +60,7 @@ CXStore is organised in two tiers — Embedded (client-process processing) and S
 |---|---|---|---|
 | CSRP Service | `cx-store://[user@]host[:port]/store-name/` (HTTPS) or `cx-store+http://` (plaintext, dev only) | read + write + list + push-down query | HTTP/1.1 + Bearer-token + binary streaming ast_bin response. See [`spec/misc/cxstore-remote-protocol.md`](../misc/cxstore-remote-protocol.md) |
 
-The Service tier is the only way to get server-side query pushdown in v0.8.0.
+The Service tier is the only way to get server-side query pushdown.
 
 ## §3. Public function surface
 
@@ -84,7 +84,7 @@ Raises `CXER1100 E_STORE_UNRESOLVED_BACKEND` on unknown URL scheme; `CXER1101 E_
 
 #### §3.1.1. Authentication
 
-Built-in per-backend authentication ships in v0.8.0 via two sources:
+Built-in per-backend authentication ships via two sources:
 
 - **URL userinfo** — `ftp://user:pass@host/dir/`, `sftp://user@host/dir/`.
 - **`opts.auth` table** — `username` / `password` (FTP, FTPS, SFTP-password, HTTP basic), `key-path` (SFTP private-key file), `known-hosts` (SFTP host-key verification), bearer token (HTTP / CSRP), plus standard SDK credential chains for S3 and HTTP.
@@ -123,7 +123,7 @@ Re-validates the hash after parse — raises `CXER1120 E_STORE_INTEGRITY_MISMATC
 [?def query scope=public impure [returns [sequence element]] ($store::element $cxpath::path) ...]
 ```
 
-Evaluate the CXPath `cxpath` against every doc in the Store. Returns a sequence of `[hash $h matches [sequence ...]]` for docs where the path matches non-empty. **Naive O(N corpus)** in v0.8.0 — no inverted index. Parallelism is automatic (worker pool bounded by `backend.recommended-concurrency`). For high-frequency queries on large corpora, use `cx-stdlib/ft` or migrate to a future indexed backend.
+Evaluate the CXPath `cxpath` against every doc in the Store. Returns a sequence of `[hash $h matches [sequence ...]]` for docs where the path matches non-empty. **Naive O(N corpus)** — no inverted index. Parallelism is automatic (worker pool bounded by `backend.recommended-concurrency`). For high-frequency queries on large corpora, use `cx-stdlib/ft` or migrate to a future indexed backend.
 
 ### §3.6. Modifying docs
 
@@ -153,7 +153,7 @@ Retrieve doc at `hash`, apply Layer-1 `modify(action)`, store the result as a ne
 
 ### §3.9. Aliases — mutable name→hash
 
-The content store is immutable and content-addressed (§5). The **alias layer** is the one mutable surface: a lightweight name→hash map stored in an `aliases.cxd` sidecar at the store root. Aliases are **last-write-wins, single-writer** in v0.8.0.
+The content store is immutable and content-addressed (§5). The **alias layer** is the one mutable surface: a lightweight name→hash map stored in an `aliases.cxd` sidecar at the store root. Aliases are **last-write-wins, single-writer**.
 
 ```
 [?def set-alias    scope=public impure [returns null]             ($store::element $name::string $hash::string) ...]
@@ -177,7 +177,7 @@ The content store is immutable and content-addressed (§5). The **alias layer** 
 
 Copy every doc from `from` to `to`. Walks `from` via `list-docs`, fetches via `get-doc` (re-validating integrity), writes via `put-doc`. Doc IDs are content hashes, so every ID is preserved — lossless across backends and encodings. Aliases are migrated via `set-alias`. Returns `[migration-report doc-count=$n hashes-verified=$n bytes-written=$n]`.
 
-`migrate` is a first-class library function in v0.8.0. The `cxstore migrate <from-url> <to-url>` CLI subcommand wraps it.
+`migrate` is a first-class library function. The `cxstore migrate <from-url> <to-url>` CLI subcommand wraps it.
 
 ## §4. Storage layout
 
@@ -239,7 +239,7 @@ The compression suffix is part of the filename, sniffed on read — a single Sto
 
 ## §6. Query semantics
 
-v0.8.0 query is naive scan, fanned out across a worker pool with backend-aware concurrency (filesystem low-dozens, HTTP ~10, S3 hundreds). Streaming via `iter-docs` keeps memory bounded.
+Query is currently a naive scan, fanned out across a worker pool with backend-aware concurrency (filesystem low-dozens, HTTP ~10, S3 hundreds). Streaming via `iter-docs` keeps memory bounded.
 
 | Corpus size | LocalFiles | HTTP | S3 |
 |---|---|---|---|

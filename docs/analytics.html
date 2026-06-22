@@ -426,7 +426,7 @@
            [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.13.</p>
             <p class="note">Schema-driven mode requires the reader to retrieve the schema
            by its content hash. Local lookup is the default; the
-           callback-shaped content-store ABI is a post-v0.8.0
+           callback-shaped content-store ABI is a planned
            follow-up.</p>
           
         </section>
@@ -441,7 +441,7 @@
          separate dynamic library that depends on libcx + the Arrow
          C-Data ABI. Core libcx is Arrow-free; capability bit 23
          advertises Arrow when libcx_arrow is loaded.</p>
-        <p>The bridge exports four C ABI symbols at v0.8.0:
+        <p>The bridge exports four C ABI symbols:
          `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
          CXCol → Arrow, and `cx_arrow_import_to_data_bin` /
          `cx_arrow_import_to_data_bin_fd` for Arrow → CXCol. Bindings
@@ -492,7 +492,7 @@
         <section id="arrow-type-mapping">
           <h3>Type mapping</h3>
           
-            <p>The CX ↔ Arrow type map is normative at v0.8.0. The
+            <p>The CX ↔ Arrow type map is normative. The
            high-level summary:</p>
             <ul>
               
@@ -517,7 +517,7 @@
                 (validity bitmap).</li>
               
             </ul>
-            <p>v0.8.0 column-type coverage in `libcx_arrow` is 9 of
+            <p>Current column-type coverage in `libcx_arrow` is 9 of
            10 types (int / i8 / i16 / i32 / float / bool / string / date /
            bytes). `:datetime`, `:decimal`, and dictionary / extension
            columns remain deferred to a future libcx_arrow expansion;
@@ -548,15 +548,15 @@
           
         </section>
         <section id="arrow-flight">
-          <h3>Arrow Flight (post-v0.8.0)</h3>
+          <h3>Arrow Flight (planned)</h3>
           
             <p>Arrow Flight is Arrow's gRPC-based RPC framing for cross-
            process record batches. It is the natural next layer above
            the IPC stream — a Flight server publishes batches by
            descriptor; a Flight client subscribes. CX integration is
-           **post-v0.8.0**: no Flight surface ships in v0.8.0; the
+           **planned**: no Flight surface ships currently; the
            tooling-layer story will be specified when it lands.</p>
-            <p class="note">For cross-process CXCol transport in v0.8.0, use Arrow IPC
+            <p class="note">For cross-process CXCol transport currently, use Arrow IPC
            over your existing transport (HTTP, pipe, socket). The
            `[?http-client]` directive can carry Arrow IPC streams as
            binary bodies.</p>
@@ -656,7 +656,7 @@
     <section id="parquet-types">
       <h2>CX ↔ Parquet type mapping</h2>
       
-        <p>The mapping is normative at v0.8.0. Most types round-trip
+        <p>The mapping is normative. Most types round-trip
            cleanly through Arrow; a small
            number of CX types have lossy edges that `--strict` mode
            rejects rather than silently coerces.</p>
@@ -680,7 +680,7 @@
             <li>`:bigint` → `Decimal256(38, 0)` with diagnostic;
                 `--strict` rejects.</li>
             <li>`arr[T]` → `LIST&lt;T-projection&gt;`.</li>
-            <li>`map[K, V]` → `MAP&lt;K, V&gt;` (string-keyed at v0.8.0).</li>
+            <li>`map[K, V]` → `MAP&lt;K, V&gt;` (string-keyed).</li>
             <li>`seq[T]` → `LIST&lt;T-projection&gt;` after sequence flatten;
                 `--strict` rejects (re-import produces `arr[T]`, not
                 `seq[T]`).</li>

@@ -3,7 +3,7 @@
   "name": "CX",
   "scopeName": "source.cx",
   "fileTypes": ["cx", "cxs"],
-  "comment": "TextMate grammar for CX v0.8.0. Covers the program surface (the code.md §4.1 directive registry — modify / match / for / for-array / for-map / let / fn / def / lib / const / if / pipe / map / reduce / iterator stdlib / resilience / services / concurrency / async / with-* family) plus CXPath value expressions (grammar.ebnf [130]-[135]: '//'-prefix paths, axis specifiers, attribute tests, general predicates), reserved bindings `$_` / `$_position` / `$_last` (code.md §5.5.2), the `(bind $name)` path-step annotation (grammar.ebnf [160a]), bare `pure` / `impure` def modifiers (code.md §12.2), and the universal CX data surface (anchors / IDs / merges / `[table …]` typed tables / glued `::T` annotations / mixed content / [- comments -] in data context, [# comments #] in program context). Directive arms and actions are bracket clause-children per code.md §§7-8 ([case …] / [when …] / [else …] / [set …] / [yield …] …) — the v0.7 colon-slot surface (`:case`, `:set`, `:scope`, …) is retired and intentionally unrecognized, as are the `+name`/`-name` bool sigils and `[?try]`.",
+  "comment": "TextMate grammar for CX. Covers the program surface (the code.md §4.1 directive registry — modify / match / for / for-array / for-map / let / fn / def / lib / const / if / pipe / map / reduce / iterator stdlib / resilience / services / concurrency / async / with-* family) plus CXPath value expressions (grammar.ebnf [130]-[135]: '//'-prefix paths, axis specifiers, attribute tests, general predicates), reserved bindings `$_` / `$_position` / `$_last` (code.md §5.5.2), the `(bind $name)` path-step annotation (grammar.ebnf [160a]), bare `pure` / `impure` def modifiers (code.md §12.2), and the universal CX data surface (anchors / IDs / merges / `[table …]` typed tables / glued `::T` annotations / mixed content / [; block comments ] (asymmetric, closes on the matching ]), [# raw text #]). Directive arms and actions are bracket clause-children per code.md §§7-8 ([case …] / [when …] / [else …] / [set …] / [yield …] …) — the v0.7 colon-slot surface (`:case`, `:set`, `:scope`, …) is retired and intentionally unrecognized, as are the `+name`/`-name` bool sigils and `[?try]`. <!-- version-literal-ok -->",
   "patterns": [
     { "include": "#comment" },
     { "include": "#xml-decl" },
@@ -5188,8 +5188,15 @@
       "patterns": [
         { "name": "comment.line.number-sign.cx", "match": "#.*$" },
         { "name": "comment.block.program.cx", "begin": "\\[#", "end": "#\\]" },
-        { "name": "comment.block.cx", "begin": "\\[-", "end": "\\]" }
+        { "name": "comment.block.cx", "begin": "\\[;", "end": "\\]",
+          "patterns": [ { "include": "#comment-bracket-balance" } ] }
       ]
+    },
+    "comment-bracket-balance": {
+      "comment": "Inside a [; … ] block comment, consume balanced [ … ] so an inner ] does NOT close the comment early — it closes on the ] matching the [;'s [ (the parser's read_until_close balances bracket depth). The nested region carries no name, so it inherits comment.block.cx and the whole block stays commented.",
+      "begin": "\\[",
+      "end": "\\]",
+      "patterns": [ { "include": "#comment-bracket-balance" } ]
     },
     "xml-decl": {
       "match": "\\[\\?xml\\s+[^\\]]*\\]",

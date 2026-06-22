@@ -9,7 +9,7 @@
   [standard ref='RFC 9147' title='DTLS 1.3']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference (on graduation) for the `cx-stdlib/net` sub-package: the L4
 transport layer — TCP, UDP, Unix-domain sockets, TLS — beneath the L7
@@ -257,6 +257,15 @@ trailing `\n`/`\r\n` and `write-line` appends a terminator per the socket's
 **`line-terminator`** option (a stream-only `set-opt`, §3.7; default `"auto"`→LF;
 rev-4 H4 — the option has a real surface, not a phantom param). `read-bytes` `n` ≥ 1 else `CXER4522`. `read-all*`
 `opts.max-bytes` defaults **64 MiB**, never unbounded; over → `CXER4510`.
+**Read deadline (§2.4/§3.7).** The read-until-EOF forms — `read-line`, `read-all`,
+`read-all-bytes`, `line-iter` — honor a configured read deadline (set via the
+dial opt `{read-deadline}` §3.2, or `set-deadline` `{read|both}` §3.7): on a
+peer that never closes (a continuous stream), a lapsed deadline raises
+`cx-err:CXER4507 E_NET_TIMEOUT` rather than blocking forever or returning a
+partial that looks complete; the handle stays usable. The deadline is a
+per-operation budget. The bounded `read-bytes`/`read-exact` instead return the
+bytes read so far (a short read, §4.3) on a lapse — never a hang — so a
+fixed-chunk pull off an always-on stream returns promptly.
 
 ### §3.5. Datagram I/O (UDP / Unix-datagram)
 ```
@@ -435,6 +444,18 @@ metadata endpoint — the rebinding defense). Reaching an internal service *by
 hostname* therefore requires granting its **literal IP**; this is the secure default
 and uses only admitted grant grammar. The chosen candidate is **pinned** for the
 connection lifetime. Hosts MAY extend (never empty) the deny set.
+
+**`--allow-all` bypasses the deny set; bare `--allow-net` does not.** The
+grant-EVERYTHING opt-out `--allow-all` reaches *every* host — loopback / private
+ranges included — bypassing the §4.5 deny set entirely (it is the explicit "I
+want everything" escape hatch). A bare `--allow-net` (unscoped) grants all hosts
+for the step-1 capability match but **keeps** the deny set: a private/loopback
+target is still `CXER4504` unless a literal-IP / `localhost` scope overrides it.
+The deny set is the secure default for any net grant absent such a scope — an
+easy-to-type `--allow-net` must not silently expose internal services. To reach a
+specific private host, either scope it (`--allow-net=127.0.0.1`) or grant
+`--allow-all`. (Earlier, `--allow-all` itself wrongly forbade loopback: it
+carries no scope spec, so the override had nothing to match — fixed in #47.)
 
 ## §5. Capability integration
 

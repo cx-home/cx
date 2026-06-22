@@ -75,7 +75,7 @@ const expected_parse_failures = [
 	// (grammar.ebnf GR-SLICE-STEP-ZERO) and D21's stated parse-time intent.
 	// The fixture's out-err CXER0100 is still satisfied (the eval runner
 	// accepts a parse-time CXER0100); a COMPUTED zero step keeps the eval-time
-	// D21 check. See vcx/tests/v08_slice_step_zero_test.v.
+	// D21 check. See vcx/tests/slice_step_zero_test.v.
 	'program-slice-013-step-zero',
 ]
 

@@ -887,6 +887,51 @@
         </div>
       
     </section>
+    <section id="fn-strings-to-number" class="fn">
+      <h3>strings:to-number</h3>
+      <p class="fn-sig"><code>[$strings:to-number]  -> [or number absence]</code>  —  Parse a locale-free numeric string into a number — int for pure-integer syntax, float for fractional / exponent syntax. Surrounding whitespace is trimmed; a non-numeric input (trailing junk, grouping separators, empty) yields the absence channel () rather than a silent string passthrough, so callers branch with [?else]. For grouping / Unicode digits use cx-stdlib/locale.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/strings']
+[$strings:to-number "3.07"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>3.07</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-strings-to-int" class="fn">
+      <h3>strings:to-int</h3>
+      <p class="fn-sig"><code>[$strings:to-int]  -> [or int absence]</code>  —  Parse a locale-free integer string (optional sign, ASCII digits) into an int; fractional or exponent syntax ("3.07", "1e3") and non-numeric input yield the absence channel ().</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/strings']
+[$strings:to-int "42"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>42</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-strings-to-float" class="fn">
+      <h3>strings:to-float</h3>
+      <p class="fn-sig"><code>[$strings:to-float]  -> [or float absence]</code>  —  Parse any locale-free numeric string into a float ("5" -> 5.0); a non-numeric input yields the absence channel ().</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/strings']
+[$strings:to-float "5"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5.0</code>
+          </pre>
+        </div>
+      
+    </section>
   
 </section>
 </main>

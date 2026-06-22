@@ -1,6 +1,6 @@
 # CX Command-Line Interface
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 The CX CLI (`cx`) is the user-facing wrapper over libcx. Every
 subcommand delegates to a libcx ABI symbol (per
@@ -274,7 +274,7 @@ and `2` are emitted by every subcommand and are not repeated.
 
 ## 6 — Stability and version compatibility
 
-- Subcommands and flags introduced at v0.8.0 are stable through 1.0 —
+- Subcommands and flags in the current release are stable through 1.0 —
   renaming or removing requires a major version bump.
 - New subcommands and new flags are additive at minor versions.
 - Exit-code semantics are stable through 1.0; new codes are only

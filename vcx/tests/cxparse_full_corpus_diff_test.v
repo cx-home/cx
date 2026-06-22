@@ -202,9 +202,12 @@ fn test_full_corpus_data_differential() {
 	// agree 441→440 (−1), multi 25→26 (+1); diverge/cx_only/code_only/
 	// both_reject/total unchanged. (Strict `cx canonical` still STRIPS comments,
 	// so the canonical-hash corpus is unaffected.)
+	// +1 total/agree (#12): code.cxd gained program-meta-001-annotate-and-read
+	// (the [?meta]/meta-of fixture backing the directive reference); both parsers
+	// agree on it. total 548→549, agree 440→441; others unchanged.
 	baseline := {
-		'total':       548
-		'agree':       440
+		'total':       549
+		'agree':       441
 		'diverge':     10
 		'cx_only':     69
 		'code_only':   1

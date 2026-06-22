@@ -356,7 +356,7 @@ System config uses CX format (`.cx` files). CX advantages for this use case:
 One CX file per source or target system. Environments are nested elements inside. Adding an environment touches one file per affected system, not the entire tree.
 
 ```cx
-[- config/systems/sources/system_x.cx -]
+[; config/systems/sources/system_x.cx ]
 
 [system_x
 
@@ -367,7 +367,7 @@ One CX file per source or target system. Environments are nested elements inside
   ]
 
   [defaults
-    [- values that apply to all environments unless overridden -]
+    [; values that apply to all environments unless overridden ]
     api_version=v2
     page_size=100
   ]
@@ -378,9 +378,9 @@ One CX file per source or target system. Environments are nested elements inside
       schema_version=v1
       [api
         base_url='http://localhost:8000'
-        api_version=v1                         [- override -]
+        api_version=v1                         [; override ]
         api_key_ref=SYSTEM_X_API_KEY
-        page_size=10                           [- override -]
+        page_size=10                           [; override ]
       ]
       [db
         connection_string_ref=SYSTEM_X_DB_URL
@@ -616,7 +616,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
 ### File Structure
 
 ```cx
-[- config/field_maps/customers_field_map.cx -]
+[; config/field_maps/customers_field_map.cx ]
 
 [field_map target_domain=customers
 
@@ -631,14 +631,14 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
 
   [fields
 
-    [- Simple rename — no transform children needed -]
+    [; Simple rename — no transform children needed ]
     [field target=customer_id source_system=system_x source_field=customer_id
       schema_version=v2
       source_type=string target_type=string
       required=true nullable=false pk=true fk=false
     ]
 
-    [- Cast with lineage across schema versions -]
+    [; Cast with lineage across schema versions ]
     [field target=customer_id source_system=system_x source_field=cust_id
       schema_version=v1
       source_type=integer target_type=string
@@ -650,7 +650,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
       ]
     ]
 
-    [- Multiple validations on one field -]
+    [; Multiple validations on one field ]
     [field target=phone source_system=system_x source_field=ph_num
       source_type=string target_type=string
       required=false nullable=true pk=false fk=false
@@ -660,14 +660,14 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
         'Validates normalized length after standardize_phone runs']
     ]
 
-    [- Lookup transform with default and lookup_miss handling -]
+    [; Lookup transform with default and lookup_miss handling ]
     [field target=customer_tier source_system=system_x source_field=tier_cd
       source_type=string target_type=string
       required=false nullable=true default_value=unknown
       [transform type=lookup table=tier_codes on_failure=flag]
     ]
 
-    [- FK reference with constraint -]
+    [; FK reference with constraint ]
     [field target=order_id source_system=system_x source_field=order_id
       source_type=integer target_type=integer
       required=true nullable=false pk=false fk=true
@@ -677,7 +677,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
         'Must exist in orders table before customer record is loaded']
     ]
 
-    [- Email validation, applies to all versions of salesforce -]
+    [; Email validation, applies to all versions of salesforce ]
     [field target=email source_system=salesforce source_field=Email
       source_type=string target_type=string
       required=false nullable=true pk=false fk=false
@@ -685,7 +685,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
       [validation type=regex pattern='^[^@]+@[^@]+\.[^@]+$' on_failure=flag]
     ]
 
-    [- Complex transform deferred to code -]
+    [; Complex transform deferred to code ]
     [field target=customer_tier source_system=system_x source_field=tier_cd
       schema_version=v2
       source_type=string target_type=string
@@ -700,7 +700,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
 
   [merges
 
-    [- Many-to-one: name fields with edge cases -]
+    [; Many-to-one: name fields with edge cases ]
     [merge target=full_name source_system=system_x schema_version=v1
       target_type=string required=true nullable=false on_failure=flag
       [sources
@@ -713,7 +713,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
          See _build_full_name() in customer_transformer.py']
     ]
 
-    [- Many-to-one: simple concat -]
+    [; Many-to-one: simple concat ]
     [merge target=full_address source_system=system_x
       target_type=string required=false nullable=true on_failure=flag
       [sources
@@ -728,7 +728,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
 
   [splits
 
-    [- One-to-many: address parsing -]
+    [; One-to-many: address parsing ]
     [split source_field=full_address source_system=system_x schema_version=v1
       required=false on_failure=flag
       [targets
@@ -746,7 +746,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
 
   [constraints
 
-    [- Cross-field constraint -]
+    [; Cross-field constraint ]
     [constraint name=valid_date_range type=cross_field on_failure=reject
       [fields
         [field ref=start_date]
@@ -755,7 +755,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
       [rule 'start_date <= end_date']
     ]
 
-    [- Complex cross-field deferred to code -]
+    [; Complex cross-field deferred to code ]
     [constraint name=status_product_match type=cross_field on_failure=flag
       [fields
         [field ref=status]
@@ -782,7 +782,7 @@ The full tradeoff analysis appears in Section 11 (Decisions Made).
       [entry source=9 target=suspended]
     ]
 
-    [- Reference an external lookup source instead of inline entries -]
+    [; Reference an external lookup source instead of inline entries ]
     [lookup_table name=country_codes
       [external source='file:config/lookup_data/iso3166.csv' refresh=static]
     ]

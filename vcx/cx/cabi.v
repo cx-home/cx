@@ -184,7 +184,7 @@ const cx_abi_version_str = '2.0'
 // §1.5 — V evaluator lexical-scope frames, positional template-
 // invocation, W018 arg-count mismatch, `?def` 3-slot positional
 // shape with legacy 2-slot auto-expansion.
-// Bit 31 is the v0.8.0 CX program diagram renderer
+// Bit 31 is the CX program diagram renderer
 // (`cx_code_diagram` / spec/abi.md §2.16.2) — Mermaid
 // emit from the wasm-safe path with auto-detection
 // (`flowchart TD` for code sources containing a top-level
@@ -193,14 +193,14 @@ const cx_abi_version_str = '2.0'
 // per import-cycle constraints; cap bit advertised here because
 // `cx_features` is the single capability-bitmask surface per
 // spec/abi.md §3.
-// Bit 32 is the v0.8.0 CX code tree projection
+// Bit 32 is the CX code tree projection
 // (`cx_code_tree` /) — new C ABI symbol
 // returning JSON projection of the parsed source; every node
 // carries `{kind, name?, value?, loc:{start,end}, children?}`
 // with UTF-8 byte offsets into the original source. Enables
 // the bidirectional selection bridge between the playground
 // tree pane and source pane without further ABI
-// plumbing. Re-framed at v0.8.0 (the earlier
+// plumbing. The earlier
 // gate-17 framing — "no new C ABI; JS-side `cx_to_json` walk"
 // — never shipped). Phase 2.11 lands a stub returning a
 // minimal-shape JSON for the source's root element; (Q) agent
@@ -1992,9 +1992,9 @@ pub fn cx_events_writer_end_table(handle voidptr, err_out &&char) &char {
 // a single substitution `cx_eval` → `cx_code_eval` and rebuild.
 // No released binary carries both names.
 
-// ── v0.8.0 cx_code_tree (Phase 2.11 /) ─────────────────────
+// ── cx_code_tree (Phase 2.11 /) ──────────────────────────────
 //
-// New C ABI symbol exported at v0.8.0 (two-export carve-out,
+// C ABI symbol (two-export carve-out,
 // JSON contract, cap-bit framing per spec/core/ast.md). Returns a JSON
 // projection of the parsed source where every node carries
 // `{kind, name?, value?, loc:{start,end}, children?}` — the `loc`
@@ -2023,7 +2023,7 @@ pub fn cx_events_writer_end_table(handle voidptr, err_out &&char) &char {
 //
 // Returns: heap-allocated UTF-8 JSON; caller frees via `cx_free`.
 // `out_len` (if non-NULL) receives the byte length of the JSON
-// payload (NUL terminator NOT included), matching the v0.8.0
+// payload (NUL terminator NOT included), matching the
 // length-out-parameter convention. On error, returns NULL and (if
 // `out_len` non-NULL) sets `*out_len = 0`. Cap bit 32
 // (`0x100000000`) advertises this symbol; bindings probe

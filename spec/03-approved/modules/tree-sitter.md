@@ -1,6 +1,6 @@
 # `tree-sitter:` module — polyglot AST parsing
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `tree-sitter:` external-system module. Wraps `libtree-sitter` plus a bundled grammar set, exposing parse trees as CX values for downstream CXPath / `[?match]` / `[?modify]` composition.
 
@@ -57,7 +57,7 @@ Once the source is CX, CXPath / `[?match]` / `[?modify]` / schema validation / `
 
 ## §3. Grammar registry
 
-v0.8.0 ships a fixed set of compiled grammars:
+The current release ships a fixed set of compiled grammars:
 
 | Language | Grammar source |
 |---|---|
@@ -94,7 +94,7 @@ Per-grammar mapping detail is mechanical from the grammar's `node-types.json`; a
 
 - **Source-size DoS.** Parsing a 1 GB input is 1 GB of work (O(n) typical, O(n²) pathological). Applications validate source length before passing to `parse`.
 - **Pathological grammars.** Custom grammars loaded via `load-grammar` are trusted code; a malicious or buggy grammar can cause infinite loops inside the parser.
-- **Grammar ABI version drift.** A grammar compiled against one libtree-sitter ABI may fail against another. Bundled grammars at v0.8.0 are versioned with their host library; external grammars are caller's responsibility.
+- **Grammar ABI version drift.** A grammar compiled against one libtree-sitter ABI may fail against another. Bundled grammars are versioned with their host library; external grammars are caller's responsibility.
 
 See [`spec/process/threat-model.md`](../process/threat-model.md) for the document-level threat model.
 

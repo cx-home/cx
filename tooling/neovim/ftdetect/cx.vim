@@ -1,1 +1,1 @@
-au BufRead,BufNewFile *.cx set filetype=cx
+au BufRead,BufNewFile *.cx,*.cxd,*.cxs set filetype=cx

@@ -4,7 +4,7 @@
 [module-meta name=xap tier=D status=new]
 ```
 
-**Status:** **Approved — design-frozen for v0.8.0** (graduated to `03-approved` 2026-06-09). The design is frozen here; the **empirical resolver-accuracy gate (§20/§26) remains OPEN**, along with the impl / §10 fixtures / governance + package registration items in §11 — graduating the text does **not** close the on-real-use gate. Runtime **incrementally implemented**. The XAP experience-layer paradigm (Part II) + the orchestrator module that composes the general-purpose modules (bus / journal / authz / session / sched + http / crypto / time). The `cx-xap` package is bundled (`[?lib 'cx-xap' :as xap]`) and the demo ladder (`spec/03-approved/xap/demos/` D1–D4) runs on it: the pure constructors, the cascade (`run`/`emit`/`state`), the dial (`dial`/`why-allowed`), the web `serve` leg (GET shell / POST cascade over the core picoev engine), **and the live `GET /events` SSE feed (§24): held-open, event-driven server push on each committed intent — implemented on the picoev engine, no longer bridge-deferred**. Deferred: the broader subsystem surface. Graduation to a fully frozen module is still gated on the empirical resolver-accuracy test (§20, §26).
+**Status:** **Approved — design-frozen** (graduated to `03-approved` 2026-06-09). The design is frozen here; the **empirical resolver-accuracy gate (§20/§26) remains OPEN**, along with the impl / §10 fixtures / governance + package registration items in §11 — graduating the text does **not** close the on-real-use gate. Runtime **incrementally implemented**. The XAP experience-layer paradigm (Part II) + the orchestrator module that composes the general-purpose modules (bus / journal / authz / session / sched + http / crypto / time). The `cx-xap` package is bundled (`[?lib 'cx-xap' :as xap]`) and the demo ladder (`spec/03-approved/xap/demos/` D1–D4) runs on it: the pure constructors, the cascade (`run`/`emit`/`state`), the dial (`dial`/`why-allowed`), the web `serve` leg (GET shell / POST cascade over the core picoev engine), **and the live `GET /events` SSE feed (§24): held-open, event-driven server push on each committed intent — implemented on the picoev engine, no longer bridge-deferred**. Deferred: the broader subsystem surface. Graduation to a fully frozen module is still gated on the empirical resolver-accuracy test (§20, §26).
 
 Normative reference (on graduation) for the `cx-xap` sub-package: the
 experience layer at the top of the CX web stack — component/surface/view-tree
@@ -719,7 +719,7 @@ cap) → `CXER0271` exercised through http/io/process.
 - [ ] **Package registration (see §12) — NOT a stdlib count bump.** `cx-xap` is its
       **own bundled package**, parallel to `cx-stdlib`: add the `bundled:<version>`
       lockfile shape + `[?lib 'cx-xap']` resolution, and add `'cx-xap'` to the
-      bundled-**package** list in `vcx/tests/v08_stdlib_skeleton_test.v` (distinct
+      bundled-**package** list in `vcx/tests/stdlib_skeleton_test.v` (distinct
       from the `cx-stdlib/*` list). **Do not** add an `xap` row to the `cx-stdlib`
       README or bump its 37-module count — `cx-xap` is not a stdlib module.
 - [x] **The primitives have graduated** (hard dependency — xap composes them):
@@ -741,7 +741,7 @@ cap) → `CXER0271` exercised through http/io/process.
       all 42 internal links re-depthed `../../03-approved/` → `../` at the move.
 - [x] Graduate via the normal spec pipeline (user-only G3): moved
       `spec/02-working/xap/` → `spec/03-approved/xap/` (2026-06-09) and set the Status
-      header to **Approved — design-frozen for v0.8.0**. `cx-xap` follows the standard
+      header to **Approved — design-frozen**. `cx-xap` follows the standard
       pipeline like every other module — `02-working` while in development,
       `03-approved` once frozen. *(The design is frozen; the empirical gate above and
       the impl/registration items below stay OPEN — see the Status note.)*
@@ -2599,7 +2599,7 @@ lexicon is medium-agnostic, not screen-bound.
   the **resolver/agent** + the dial (`authz` delegation). The dial sits **at the
   floor** (agent silent) through D1–D3; D4 turns it up.
 
-> Caveat: the CX below is **illustrative spec-level authoring** in the v0.8.0
+> Caveat: the CX below is **illustrative spec-level authoring** using the current
 > surface — `[$xap:…]` / `[$journal:…]` are the §25.1 module functions; the
 > pure-constructor slice (D1) is the first to be implemented.
 

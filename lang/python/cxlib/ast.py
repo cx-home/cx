@@ -1174,7 +1174,7 @@ def _emit_node(node: Node, depth: int) -> str:
     if isinstance(node, (SequenceNode, ArrayNode, MapNode)):
         return f'{ind}{_emit_collection(node)}\n'
     if isinstance(node, Comment):
-        return f'{ind}[-{node.value}]\n'
+        return f'{ind}[;{node.value}]\n'
     if isinstance(node, RawText):
         return f'{ind}[#{node.value}#]\n'
     if isinstance(node, EntityRef):

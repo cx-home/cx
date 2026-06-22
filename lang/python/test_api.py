@@ -477,8 +477,14 @@ def test_parse_json_to_document():
     assert doc.to_cx() == '{server: {port: 8080}}'
 
 def test_parse_yaml_to_document():
+    # YAML now imports losslessly: a top-level mapping parses to a native
+    # MapNode root (same as JSON), NOT synthesized elements (issues #4/#5).
     doc = cxlib.parse_yaml('server:\n  port: 8080\n')
-    assert doc.find_first('server') is not None
+    root = doc.elements[0]
+    assert isinstance(root, cxlib.MapNode)
+    server = next(e for e in root.entries if e.key_value == 'server')
+    assert isinstance(server.value, cxlib.MapNode)
+    assert any(e.key_value == 'port' for e in server.value.entries)
 
 # ── main ──────────────────────────────────────────────────────────────────────
 

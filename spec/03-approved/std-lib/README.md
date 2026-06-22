@@ -1,6 +1,6 @@
 # `cx-stdlib` — bundled standard library
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/*` namespace addressable via `[?lib]`. Each module's function-level surface is the subject of its own spec under `spec/std-lib/`.
 
@@ -30,9 +30,9 @@ Loading semantics are defined by [`spec/core/code.md`](../core/code.md) §12.1.
 
 **Stdlib version follows the CX binary.** Upgrading the binary upgrades the stdlib in lockstep. There is no independent stdlib version pin.
 
-## §3. Module index (v0.8.0)
+## §3. Module index
 
-The v0.8.0 stdlib enumerated **37 sub-packages** in four informative tiers; **5 post-v0.8.0 additions** (`did`, `vc`, `xsp`, `jsonrpc`, `jsonschema` — §3.2) bring the current frozen surface to **42**. A separate **`x/` experimental tier** (§3.3) sits alongside the frozen surface — in-tree and gated, but **exempt** from the frozen-stability promise. Tier is not addressable in the resolver; `[?lib]` always names `cx-stdlib/<name>` (frozen) or `cx-x/<name>` (experimental).
+The stdlib enumerates **37 sub-packages** in four informative tiers; **5 post-initial additions** (`did`, `vc`, `xsp`, `jsonrpc`, `jsonschema` — §3.2) bring the current frozen surface to **42**. A separate **`x/` experimental tier** (§3.3) sits alongside the frozen surface — in-tree and gated, but **exempt** from the frozen-stability promise. Tier is not addressable in the resolver; `[?lib]` always names `cx-stdlib/<name>` (frozen) or `cx-x/<name>` (experimental).
 
 ### Tier A — Value-shape & encoding
 
@@ -106,9 +106,9 @@ A proposed sub-package does **not** belong in stdlib if it (1) controls evaluati
 
 ### §3.2. Frozen-surface discipline
 
-The 37-module Tier A–D set is the **v0.8.0 frozen surface**. Adding a new sub-package post-v0.8.0 requires the same gating discipline that applies to the directive registry. Removing a sub-package is breaking at the binary's major-version boundary.
+The 37-module Tier A–D set is the **frozen surface**. Adding a new sub-package post-initial release requires the same gating discipline that applies to the directive registry. Removing a sub-package is breaking at the binary's major-version boundary.
 
-**Post-v0.8.0 additions.** Five sub-packages have been added under this discipline, bringing the frozen surface to **42**:
+**Post-initial additions.** Five sub-packages have been added under this discipline, bringing the frozen surface to **42**:
 
 - `did`, `vc` (Tier D, issue #26) — concrete foundational libraries realizing the DID/VC authority-basis transport that [xap.md](../xap/xap.md) R9 framed and §28.3 D5 deferred. They add **no new trust primitive** (the PEP / N-TRUST-1 are unchanged); they make decentralized identity (`did`) + delegation (`vc`) real alongside the existing `crypto`/`session`/`authz`.
 - `xsp` (Tier D, issue #31) — the XAP Stream Protocol frame codec ([../xap/xsp.md](../xap/xsp.md)).
@@ -145,6 +145,6 @@ User-authored modules importing `cx-stdlib/*` still need a `cx.lock` entry namin
 
 - [`spec/core/code.md`](../core/code.md) §12 — module system surface; `[?lib]`, packages, sub-paths, manifest gating.
 - [`spec/core/lockfile.md`](../core/lockfile.md) — `cx.lock` shape and `bundled:` `resolved=` form.
-- [`spec/core/abi.md`](../core/abi.md) — capability bit 35 gates `[?lib]` reachability as a single switch. A binding without bit 35 cannot import any `cx-stdlib/*` module. Per-module gating is not used at v0.8.0; all stdlib modules are reachable when bit 35 is set.
+- [`spec/core/abi.md`](../core/abi.md) — capability bit 35 gates `[?lib]` reachability as a single switch. A binding without bit 35 cannot import any `cx-stdlib/*` module. Per-module gating is not currently used; all stdlib modules are reachable when bit 35 is set.
 - [`spec/misc/bindings.md`](../misc/bindings.md) — Layer-1 16-method API that `cx-stdlib/store` builds atop.
 - [`spec/misc/parity-matrix.md`](../misc/parity-matrix.md) — per-binding stdlib coverage tracking.

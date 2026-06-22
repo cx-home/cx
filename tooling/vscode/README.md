@@ -4,7 +4,7 @@ Syntax highlighting + LSP (diagnostics, hover, completion, goto,
 references, rename, formatting, outline, folding, smart selection,
 signature help) + snippets for `.cx` / `.cxs` / `.cx` files.
 
-## v0.8.0 highlights
+## Highlights
 
 - **CXPath as a value kind** (code.md §5.5) — `//user[@active=true]`
   highlights as a path; `name`, `count`, `matches`, etc. read as
@@ -37,7 +37,7 @@ signature help) + snippets for `.cx` / `.cxs` / `.cx` files.
 ## Requirements
 
 - VS Code ≥ 1.75
-- `cx` binary v0.8.0+ on `$PATH` (or configure `cx.serverPath`)
+- `cx` binary on `$PATH` (or configure `cx.serverPath`)
 
 Install `cx`:
 
@@ -107,8 +107,8 @@ cargo install --git https://github.com/cx-home/cx cx-cli # from source
 cd tooling/vscode
 npm install
 npm run build
-npm run package      # produces cx-language-0.8.0.vsix
-code --install-extension cx-language-0.8.0.vsix
+npm run package      # produces cx-language-<version>.vsix
+code --install-extension cx-language-<version>.vsix
 ```
 
 The build is intentionally vendored-free — the only dependency that
@@ -118,4 +118,4 @@ The language server itself is the `cx` binary, installed separately.
 ## Marketplace publication
 
 This package is set up for publication under the `cx-home` publisher
-ID. Per-tag publication runs from the v0.8.x release workflow.
+ID. Per-tag publication runs from the release workflow.

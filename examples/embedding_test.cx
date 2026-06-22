@@ -1,6 +1,6 @@
 [doc title="Embedding Test"
 
-  [- Demonstrates code blocks containing foreign-syntax content.
+  [; Demonstrates code blocks containing foreign-syntax content.
      Use [# ... #] (raw text, never parsed) when the embedded code
      contains brackets or quotes; the lang attr drives tree-sitter
      injection / syntax highlighting of the embedded source. ]

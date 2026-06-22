@@ -33,7 +33,7 @@ CXLS004 + completion provider live in
 `vcx/cmd/lsp_modify_diagnostics.v`. A future session moves these into
 the canonical `conformance/lsp/` envelope (`LSP_REQUEST` /
 `LSP_RESPONSE` JSON pair) once the conformance runner gains an LSP
-mode — see `tooling/lsp/v0_8_0_diagnostics.md` "Tests" section for
+mode — see `tooling/lsp/diagnostics.md` "Tests" section for
 the reserved fixture names.
 
 ## Expected diagnostic emit

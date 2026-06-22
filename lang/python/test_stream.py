@@ -118,8 +118,8 @@ def test_stream_context_manager():
     assert 'StartElement' in result
 
 def test_stream_comment():
-    # CX comment syntax: [-text]
-    s = cxlib.stream('[root [-a comment][child]]')
+    # CX comment syntax: [;text]
+    s = cxlib.stream('[root [;a comment][child]]')
     events = list(s)
     types = [e.type for e in events]
     assert 'Comment' in types, types

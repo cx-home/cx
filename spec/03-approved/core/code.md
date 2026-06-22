@@ -1,6 +1,6 @@
 # CX Programs — Normative Specification
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 This document is the normative specification for CX code — the unified
 pattern, query, and transform language. The CX surface is homoiconic
@@ -42,7 +42,7 @@ is dynamically typed at evaluation time; values are CX values per
 | C8 | Errors are CX values, not exceptions |
 | C9 | Parallelism is one annotation |
 
-### §1.2 Out of scope for v0.8.0
+### §1.2 Out of scope
 
 The following are deliberately out of scope and require a future
 spec amendment to enter scope in a later release:
@@ -71,15 +71,32 @@ is equivalent to `cx eval <file|url|->` (a pure-data resource evaluates to
 itself). Output defaults to canonical CX; `--xml` / `--json` / `--to=…` render
 the RESULT, and `--from=…` ingests a non-CX input. Because data is a
 self-evaluating program, the two readings agree on every value except where an
-explicit MODE rule says otherwise (SEQ-NEST, `cxdm.md` §1.2; the name-char fork,
-`lexicon.ebnf` §2; and the `[- … ]` block-comment-vs-subtraction fork — a `[-`
-is a data-layer comment but a subtraction operator head in the program reading,
-like SEQ-NEST). The pure-data constructs that carry no program meaning of their
+explicit MODE rule says otherwise (SEQ-NEST, `cxdm.md` §1.2; and the name-char
+fork, `lexicon.ebnf` §2). The single block comment `[; … ]` reads identically
+under both, and `[-` is ALWAYS the subtraction operator head — there is no
+comment-vs-subtraction fork. The pure-data constructs that carry no program meaning of their
 own — raw text `[# … #]` ([L2]/[L3]), entity / character references `&name;` /
 `&#nnn;`, and declarations `[! … ]` (DTD declarations and `[!DOCTYPE … ]`) —
 read identically under both: the program reading admits each as a literal that
 evaluates to the same `cx.Node` the data reading produces (it IS the data
 reading), so a data file using them round-trips through `cx <file>` unchanged.
+
+The reference program reader is tokenized (a lexer + parser over `[120]
+Program`), whereas the data reader is scannerless. The program lexer therefore
+cannot tokenize free-text element-body **prose** — em-dash, `;`, `,`, bullets
+and other content punctuation the scannerless data reader accepts in body
+position. To preserve the "a pure-data resource evaluates to itself" invariant
+for such markup/prose documents, a host MUST, when the program reading of a
+bare resource fails to parse AND no separate data input (`$doc`) was supplied,
+fall back to the data reading: a resource that is valid DATA but not a valid
+PROGRAM evaluates to itself. The reference CLI implements this fallback so that
+`cx doc.cx` and `cx doc.cx --json|--to=…` on a prose/markup data document
+produce output byte-identical to `cx --from=cx --to=…  doc.cx`. A resource that
+parses as neither a program nor data surfaces the original program parse error.
+(A future program reader that gives the lexer/parser an element-body free-text
+mode would make the fallback unobservable — the program reading would simply
+accept the prose directly. The fallback is the host-level guarantee in the
+interim.)
 
 ---
 
@@ -129,7 +146,7 @@ See `lexicon.ebnf` for the normative productions; in summary: source is UTF-8
 (a leading BOM is consumed silently, a BOM elsewhere is `cx-err:CXER0100`
 PARSE_ERROR — lexicon §0); whitespace is space / tab / CR / LF and is
 non-semantic outside string literals and CX-data subtrees (lexicon §1,
-`canonical.md` §2); line comments run `#`…EOL and block comments are `[- … ]`,
+`canonical.md` §2); line comments run `#`…EOL and block comments are `[; … ]`,
 while `[# … #]` is raw text / CDATA, NOT a comment (lexicon §1 [L2]/[L3],
 `grammar.ebnf` [30]/[31]); the identifier / QName token (lexicon §2 [L10]/[L11])
 admits full Unicode name chars and `_`-leading names, with ASCII kebab-case
@@ -260,7 +277,7 @@ and the program lexer (`vcx/code/lexer.v`).
 ## §4. Grammar
 
 The complete EBNF lives in `grammar.ebnf` (CX code
-productions added during v0.8.0 implementation). The summary below
+productions added during implementation). The summary below
 shows the language at-a-glance.
 
 ```ebnf
@@ -301,7 +318,7 @@ no `[through]` wrapper.
 
 ### §4.1 Directive registry
 
-The set of normative directives is fixed at v0.8.0 by the following
+The set of normative directives is fixed by the following
 registry. The complete EBNF in
 `grammar.ebnf` enumerates the same set under
 the `DirName` production. Gate 2 (§11.4.1) and gate 3 enforce
@@ -1461,7 +1478,7 @@ single-sequence form.)
 | `local-name(elem)` | 1 | The element's local name with any namespace prefix stripped (`svg:circle` → `circle`; unprefixed names are returned unchanged). Non-element argument raises `cx-err:CXER0100`. |
 | `string(value)` | 1 | The string value of the argument: a scalar's canonical text, or an element/attribute's text content. |
 
-**Type-coercion built-in (`cast` — v0.8.0):**
+**Type-coercion built-in (`cast`):**
 
 CX is type-strict — atomic scalars of different kinds never compare
 equal even when their canonical text matches (`"42" != 42`,
@@ -1481,11 +1498,11 @@ was deliberately not adopted (locked 2026-05-23 — see ).
 | `[cast value :type-tag]` | Canonical user-facing form (e.g. `[cast $p :int]`, `[cast "42" :int]`). `cast` is a **reserved operator head** — the one built-in with dedicated element-head syntax (it takes a `:type-tag` atom) — not a plain data element. |
 | `cast(value, :type-tag)` | **Signature notation only** — documents arity/arguments (§6.5); NOT a call surface. The paren form is admitted only as a predicate FunctionCall (§6.3, grammar [132b]), never in general expression position. |
 
-**Target kinds (v0.8.0):** `:int`, `:float`, `:string`, `:bool`, `:atom`.
+**Target kinds:** `:int`, `:float`, `:string`, `:bool`, `:atom`.
 
 Compound type expressions (`[or T1 T2 …]`, `[sequence T]`) from D7 are
 reserved for a follow-on iteration — the grammar admits only the
-kind-name atoms at v0.8.0.
+kind-name atoms.
 
 **Coercion semantics** (normative):
 
@@ -1529,8 +1546,8 @@ built-in surface but is dispatchable to keep its conformance fixture
 self-contained.
 
 **Window built-ins.** Tumbling and sliding window operators are not
-specified at v0.8.0; they require a grammar extension to the `[?for]`
-directive (XQuery 4.0 §4.13.4) and are filed for v0.8.0.x.
+currently specified; they require a grammar extension to the `[?for]`
+directive (XQuery 4.0 §4.13.4) and are filed for a future revision.
 
 ### §6.5.x Built-in purity classification
 
@@ -1555,7 +1572,7 @@ module-load.
 | Numeric | `sum`, `max`, `min`, `avg`, `abs`, `floor`, `ceiling`, `round`, `mod`, `div`, `idiv` |
 | Logical | `not`, `and`, `or`, `eq` |
 | Node-accessor | `name`, `local-name`, `string` |
-| Type-test / cast | `cast` (builtin — v0.8.0, §6.5 P6), `instance of` (operator), `cast as` (operator), `exists` |
+| Type-test / cast | `cast` (builtin — §6.5 P6), `instance of` (operator), `cast as` (operator), `exists` |
 | EBV / identity | EBV operator (implicit in `[?if]`, `[when …]` arms, predicates); identity hash; atom-equality |
 | Path / CXPath | CXPath evaluation over a frozen input document (the document is read-only from the predicate's perspective; the path itself is a value
 
@@ -1713,13 +1730,13 @@ $t[1:2, "name":"email"] # cols name..email (inclusive) for rows 1-2
 (the default) to a zero-copy **view**; `[?views BLOCK]` is the scoped
 form, marking every slice inside the block as view-flavored. Because
 CX values are immutable, a view is **observationally
-identical** to a copy — it yields the same value — so at v0.8.0 these
+identical** to a copy — it yields the same value — so these
 directives are a **semantic no-op that documents intent**:
 `[= [?view $xs[2:4]] $xs[2:4]]` is `true`. The static "source not
 mutated for the view's lifetime" check is trivially satisfied since CX
 has no mutation. True zero-copy walking (a view that strides the source
-in place rather than materialising) is a **post-v0.8.0 runtime
-optimisation** and is intentionally not part of the v0.8.0 surface.
+in place rather than materialising) is a **future runtime
+optimisation** and is intentionally not part of the current surface.
 
 **Distinct from CXPath predicates.** `$bind[Expr]` may appear to
 collide with the predicate form. The parser disambiguates
@@ -1994,6 +2011,89 @@ both inside `[in [PATTERN] SRC]`:
  [yield $u]]
 ```
 
+### §7.7 Iteration idioms (informative)
+
+cx has no imperative loop primitive, and this is deliberate (§3.1: every
+form is `[head …]` evaluating to a value; `break`/`continue` are
+out-of-band control transfers with no CX⇄XML image). The iteration model
+is three orthogonal tools, each with one meaning:
+
+| Need | Tool | Returns |
+|------|------|---------|
+| **Collect** — transform a source into a sequence/array/map | `[?for]` (§7) | the collected container |
+| **Fold** — reduce a source to a single value, carrying state | `[?reduce]` (§8.10.6) | the accumulator |
+| **Drive effects** — run a body per item / per step, keep nothing | tail recursion (below), or a streaming/discarding `[?for]` | the loop's final value / `()` |
+
+There is no fourth construct because each effect-loop shape already has a
+home. Choose by **what drives the loop**:
+
+**Self-driven loops (a server accept/read loop, a supervisor, a poll/retry
+loop, "do this forever") — use tail recursion.** A tail call to a
+`[?def]` closure runs in **O(1) native stack** (the evaluator
+trampolines tail positions; tail position threads through `[?if]`
+branches and `[?let]` bodies). The body MAY perform capability-gated
+effects; the accumulator is carried as a parameter:
+
+```cx
+; unbounded effect loop (the device-reader case): O(1) stack, no growth
+[?def read-loop ($conn)
+ [?let [= $chunk [read $conn 4096]]
+  [?if [eof? $chunk]
+   [then ()]
+   [else [?do [publish $store $chunk] [read-loop $conn]]]]]]
+
+; bounded count with a carried accumulator
+[?def count-up ($n $acc)
+ [?if [= $n 0] [then $acc] [else [count-up [- $n 1] [+ $acc 1]]]]]
+```
+
+This is the general loop. The recursive call MUST be in **tail position**
+to run in constant stack — a call nested under an operator (e.g.
+`[+ [loop …] 1]`) is not a tail call and recurses normally. Mutual
+recursion across two closures is *not* trampolined into constant stack;
+keep a forever-loop self-recursive.
+
+**Source-driven loops (run a body for each item of a sequence or
+generator, discard the results) — use a discarding `[?for]`.** At
+statement / top-level position a `[?for]` with no `[order-by]`/`[group-by]`
+**streams** (§7.4): each item is produced, the yield body runs (effects
+included), and the result is sunk without buffering — an O(1) live set
+even over an unbounded generator with a `[take …]`/`[takewhile …]` bound:
+
+```cx
+; effect-for-each, streaming, O(1) live set at top level
+[?for [in $x $events] [yield [emit $x]]]
+
+; over a generator, bounded
+[?for [in $line [$iterate next-line $start]] [takewhile [some? $line]]
+ [yield [log $line]]]
+```
+
+The yield value is the per-item effect's result and is discarded here.
+Note the asymmetry: in **expression** position (a `[?for]` nested inside
+another form) the results are still collected into a container, so a
+genuine effect-for-each belongs at statement position where the streaming
+path applies.
+
+**O(1) fold (the streaming-reduce case).** `[?reduce]` carries an
+accumulator and its body MAY perform effects. Over a bounded integer
+`[$range lo hi step?]` it folds with an **O(1) live set** (the range is
+generated step-by-step, never materialised); over other sources it
+materialises the source first. Use it when the loop genuinely produces a
+result value:
+
+```cx
+[?reduce [$range 1 1000000] [using [?fn ($a $x) [+ $a $x]]] [init 0]]
+```
+
+**Why no `[?loop]`.** A dedicated imperative loop (with `break`/
+`continue`/`while`/`forever`) would duplicate capability already present
+— `break` ≈ `[takewhile]`, skip ≈ `[where]`, accumulator ≈ `[?reduce]`'s
+`[init]`, forever ≈ `[$range lo *]` / self-recursion — while importing
+out-of-band control flow that has no homoiconic data image. The three
+tools above cover every shape; keeping them orthogonal (one tool, one
+meaning) is worth more than a more-powerful single construct.
+
 ---
 
 ## §8. Directives reference
@@ -2157,14 +2257,14 @@ trailing positional ProgramExpr. Invoked via `[$fn args]` — the only
 general function-call surface (§6.3); there is no paren-call carrier
 (`name(args)` is reserved for XPath built-ins in predicate bodies).
 
-**Function values are not data-serializable (v0.8.0).** A function value
+**Function values are not data-serializable.** A function value
 captures lexical scope and has no faithful data round-trip, so reaching any
 data-serialization boundary with one — the program result, a format
 conversion (`--json`/`--xml`/…), or `[cast … data]` — raises
 `cx-err:CXER0291` (E_FN_NOT_SERIALIZABLE). Function values remain
 first-class *within* code (bound, passed, applied); only their projection to
 data is rejected. (Serializing functions as a reference/closure
-representation is deferred; the boundary error is the v0.8.0 posture.)
+representation is deferred; the boundary error is the current posture.)
 
 ### §8.7 `[?def]` — module-level function
 
@@ -2172,7 +2272,7 @@ representation is deferred; the boundary error is the v0.8.0 posture.)
 [?def name scope=public [returns T] (params) body]
 ```
 
-**v0.8.0 — superseded by §12.** `[?def]` is now a module-top-level directive declaring a
+**Superseded by §12.** `[?def]` is now a module-top-level directive declaring a
 named, **module-scoped** function with **no closure capture**. The
 full surface — parameter shapes (positional, named-with-default,
 positional-with-default, rest `*$name`), visibility
@@ -2306,7 +2406,7 @@ every matched node. Zero matches → returns `doc` unchanged (not an error).
 Multiple actions on one `[?modify]` apply left-to-right to each
 matched node.
 
-`[using FN]` accepts a `[?fn]` lambda in v0.8.0:
+`[using FN]` accepts a `[?fn]` lambda:
 ```cx
 [?modify $doc //price [using [?fn ($p) [* $p 1.1]]]]
 ```
@@ -2465,7 +2565,7 @@ attribute the runtime records when the handle is created).
 `[?with-open]` invokes **that** registered contract on scope exit; it
 does **not** call `io/close` (or any module's `close`) by name. The
 contract is therefore **module-agnostic** — the directive has no
-dependency on `cx-stdlib/io` or any other module. The v0.8.0
+dependency on `cx-stdlib/io` or any other module. The current
 implementers are `cx-stdlib/io` handles / locks / tempfiles
 (`stdlib_io.md` §3.4 / §3.6),
 `cx-stdlib/process` handles
@@ -2595,7 +2695,7 @@ and the prior context restored, exactly once:
 
 **Logging-agnostic:** `[?with-scope]` knows nothing about
 logging; it establishes a dynamic context that whatever reads the active
-context consumes. `cx-stdlib/log` is the v0.8.0 reader — at emit time
+context consumes. `cx-stdlib/log` is the current reader — at emit time
 each `log/*` call merges the active context **under** its own `fields=` attribute
 (call-site fields win for shared keys). The `log/current-scope` *function*
 (a `[?def]`, not a directive) returns the active context for diagnostics.
@@ -2635,7 +2735,7 @@ template loaded at runtime (`spec/std-lib/strings.md` §8).
 CXPath binding-path expression (`ProgramBinding` / `ProgramPath`,
 `grammar.ebnf [124]`): a bare `$binding`, a path navigation
 (`$x/child`), or a filtered query (`$x//y[@pred]`). Full program
-calls inside a hole are **not** in scope at v0.8.0 — bind first, then
+calls inside a hole are **not** currently in scope — bind first, then
 interpolate:
 
 ```
@@ -2969,18 +3069,18 @@ Per (amended 2026-05-21), CX code reserves the
 | CXER0150 – CXER0159 | Resilience: circuit-breaker / fallback / rate-limit / bulkhead |
 | CXER0160 – CXER0179 | Services (HTTP server) |
 | CXER0180 – CXER0199 | Clients (HTTP client) |
-| CXER0200 – CXER0203 | Channels (narrowed at v0.8.0 — see note below) |
+| CXER0200 – CXER0203 | Channels (narrowed — see note below) |
 | CXER0204 – CXER0215 | Module system (§§12.1–12.5) |
 | CXER0216 | Module system — member visibility (§12.6) |
 | CXER0217 – CXER0219 | Reserved (formerly Channels range) |
-| CXER0220 – CXER0229 | Workers (narrowed at v0.8.0 — see note below) |
+| CXER0220 – CXER0229 | Workers (narrowed — see note below) |
 | CXER0230 – CXER0239 | Purity / predicate (§§8.6, 12.2 — `:pure` annotation) |
-| CXER0240 – CXER0249 | Futures (narrowed at v0.8.0 — see note below) |
+| CXER0240 – CXER0249 | Futures (narrowed — see note below) |
 | CXER0250 – CXER0259 | Retired — `[?cx include]` errors are parse-time data-parse `E` codes (`E901–E911`, cxdm.md §11); range reserved, not reassigned |
-| CXER0260 – CXER0269 | Cancellation (narrowed at v0.8.0 — see note below) |
-| CXER0270 – CXER0279 | Host capability / runtime environment (v0.8.0+) |
+| CXER0260 – CXER0269 | Cancellation (narrowed — see note below) |
+| CXER0270 – CXER0279 | Host capability / runtime environment |
 | CXER0280 – CXER0289 | Visualization / renderer |
-| CXER0290 – CXER0299 | Type coercion / cast (v0.8.0 — `cast` builtin, §6.5 P6) |
+| CXER0290 – CXER0299 | Type coercion / cast (`cast` builtin, §6.5 P6) |
 | L001 – L020 | Lint codes (emitted by `cx_lint`, `core/abi.md §2.18`) |
 
 **CXER0001 (`CX_PANIC`) — the `!` panic, catchable value-form.** `CXER0001` is
@@ -2996,31 +3096,31 @@ codes in the CX-code range (`CXER0100` for application/arity, `CXER0106`,
 `CXER0108`, `CXER0109`; see §9.5) — any stray call-shape `CXER0001` raise in an
 implementation is a conformance bug to re-code (arity → `CXER0100`).
 
-**v0.8.0 range amendment — module system.** The original Channels
+**Range amendment — module system.** The original Channels
 allocation (CXER0200–CXER0219) used only four codes (CXER0200..0203
-— see §9.5 wire-code map). At v0.8.0 the module system (§§12.1–12.5)
+— see §9.5 wire-code map). The module system (§§12.1–12.5)
 claims CXER0204..CXER0215; the range table is split accordingly.
 CXER0216 is the member-visibility error (§12.6); slots
 CXER0217..CXER0219 stay reserved for any future Channels growth.
 No existing wire code is renumbered.
 
-**v0.8.0 range amendment (`cast` builtin) — type-coercion codes.** The
+**Range amendment (`cast` builtin) — type-coercion codes.** The
 original Visualization allocation (CXER0280–CXER0299) used only two
 codes (CXER0280..0281 — RENDER_FAILED / UNRENDERABLE_DIRECTIVE; see
-§9.5 wire-code map). At v0.8.0 the `cast` builtin (§6.5 P6, locked
+§9.5 wire-code map). The `cast` builtin (§6.5 P6, locked
 2026-05-23) claims a new "Type coercion / cast" range at
 CXER0290..0299. Visualization narrows to CXER0280..0289 (with 8
 reserved codes for future renderer growth at CXER0282..0289). No
 existing wire code is renumbered.
 
-**v0.8.0 range amendment — purity codes.** The
+**Range amendment — purity codes.** The
 original Workers allocation (CXER0220–CXER0239) used only three codes
 (CXER0220..0222 — see §9.5 wire-code map). The range is split: Workers
 narrows to CXER0220..0229 (with 7 reserved codes for future Workers
 growth at CXER0223..0229), and a new purity / predicate range claims
 CXER0230..0239. No existing wire code is renumbered.
 
-**v0.8.0 range amendment — host capability codes.** The
+**Range amendment — host capability codes.** The
 original Cancellation allocation (CXER0260–CXER0279) used only one
 code (CXER0260 — CANCELLED). The range is split: Cancellation
 narrows to CXER0260..CXER0269 (with 9 reserved codes for future
@@ -3029,7 +3129,7 @@ capability / runtime-environment range claims CXER0270..CXER0279, of which
 CXER0270 (WALL_SLEEP_UNSUPPORTED_IN_HOST) and CXER0271 (E_CAP_DENIED,
 `security.md`) are allocated. No existing wire code is renumbered.
 
-**v0.8.0 range amendment — Futures + retired include range.** The
+**Range amendment — Futures + retired include range.** The
 original Futures allocation (CXER0240–CXER0259) used only two codes
 (CXER0240..0241 — AWAIT_ALL_FAILED / AWAIT_TIMEOUT; see §9.5
 wire-code map). Futures narrows to CXER0240..0249 (8 reserved codes
@@ -3039,7 +3139,7 @@ parse/assembly time, so its errors are data-parse `E` codes
 (`E901–E911`, cxdm.md §11); CXER0250..0259 is therefore **retired**
 (reserved, not reassigned). No existing wire code is renumbered.
 
-**v0.8.0 — Lint code namespace.** Lint codes (`L001..L020`) are
+**Lint code namespace.** Lint codes (`L001..L020`) are
 emitted by `cx_lint` (`core/abi.md §2.18`); they share the diagnostic
 wire format with `S` schema codes and `W` write-warning codes but live
 in a separate code namespace so consumers can filter lint output by
@@ -3132,7 +3232,7 @@ symbolic names used in §§5–10 error tables and their wire codes.
 | UNRESOLVED_MERGE | `L003` | Lint (`cx_lint`) | Element with `merge` ref to a nonexistent anchor |
 | UNUSED_ATTRIBUTE | `L004` | Lint (`cx_lint`) | Schema-declared attribute never read in the document (only when a schema is supplied via the `ruleset` parameter) |
 | SCHEMA_VIOLATION | `L005` | Lint (`cx_lint`) | Schema violation; delegates to `cx_validate` semantics and surfaces the underlying `S001..S020` code in the message body |
-| DEPRECATED_FORM | `L006` | Lint (`cx_lint`) | Deprecated directive form (e.g., pre-v0.8.0 surfaces) |
+| DEPRECATED_FORM | `L006` | Lint (`cx_lint`) | Deprecated directive form (e.g., retired surfaces) |
 | EMPTY_PATTERNED_ATTR | `L007` | Lint (`cx_lint`) | Empty string supplied for an attribute carrying a `pattern=` constraint |
 
 Per-directive error tables in §§10.1.5, 10.2.6, 10.3.5, 10.4.5,
@@ -3295,7 +3395,7 @@ order. A network sink (`[sink [http …]]`) requires the `net` capability
 configures the hooks for a whole program (built-in + custom; selected/extended
 like `cx-format.cx`):
 ```
-[- cx-errors.cx -]
+[; cx-errors.cx ]
 [error-pipeline
   [enrich [using [?fn ($err)
     [?modify $err . [set-attr service checkout-api] [set-attr env $DEPLOY-ENV]]]]]
@@ -3315,11 +3415,11 @@ the propagating err.
 
 **Examples.**
 ```
-[- observe: log every error raised in the body, then let it propagate -]
+[; observe: log every error raised in the body, then let it propagate ]
 [?with-error-hook [observe [using [?fn ($err) [$log $err@code $err@message]]]]
   [?for [in $u //user] [yield [$validate $u]]]]
 
-[- report: audit errors surfacing to the host -]
+[; report: audit errors surfacing to the host ]
 [?with-error-hook
   [report [format profile=canonical] [sink [using $audit]]]
   [$run-pipeline $input]]
@@ -3399,9 +3499,9 @@ be rejected in the diagram UI with a pointer to the source location.
 The canonical AST is always the source of truth; the diagram is a
 projection.
 
-#### §10.1.4 Reference renderer (v0.8.0 deliverable)
+#### §10.1.4 Reference renderer
 
-The v0.8.0 reference renderer ships three packaging formats sharing
+The reference renderer ships three packaging formats sharing
 one renderer core:
 
 1. **CLI:** `cx diagram <file>` emits SVG, PNG, or Mermaid output.
@@ -4159,7 +4259,7 @@ per the cut.
 
 ### §11.3 Release gates
 
-v0.8.0 release gates per
+Release gates per
 §11.6 / design doc §11.6. Sixteen gates across four categories:
 
 **Spec gates (1–3):**
@@ -4184,7 +4284,7 @@ v0.8.0 release gates per
 10. V reference implementation complete — no stubs, no `TODO` markers.
 11. Tier-1 bindings (V/Python/Go) pass full conformance suite.
 12. Reference renderer complete (CLI + web component + LSP CodeLens).
-13. Documentation complete: this spec, CHANGELOG entry on v0.8.0.
+13. Documentation complete: this spec, CHANGELOG entry for the release.
 
 **Performance gates (14–16):**
 14. Pattern compilation: depth-8, 32-binding patterns compile in
@@ -4201,7 +4301,7 @@ Each gate has an unambiguous verification protocol below. A gate is
 "blocked" otherwise. Implementations **MUST NOT** mark a gate green by
 inspection, by partial run, or by waiver.
 
-Every protocol is executed in CI from the canonical v0.8.0-dev branch
+Every protocol is executed in CI from the canonical dev branch
 HEAD prior to tag. Re-runs after the tag are governed by §11.7.
 
 #### §11.4.1 Spec gates (gates 1–3) — procedure
@@ -4228,7 +4328,7 @@ exit 0 ⇔ green).
 
 A normative section is any `##` or `###` heading whose body does not
 begin with the literal HTML comment `<!-- informative -->` (this
-convention is locked at v0.8.0 — adding it to a section excludes that
+convention is normative — adding it to a section excludes that
 section's body from the gate). The banner is reserved for
 development-tracking aids and other non-normative content.
 
@@ -4355,7 +4455,7 @@ error code.**
 
 1. The harness instantiates a fixed topology of 16 worker pools, each
  with 8 workers connected by 4 channels per pool with depth 256
- (`scripts/run_concurrency_soak.sh` parameters; locked at v0.8.0 by
+ (`scripts/run_concurrency_soak.sh` parameters; locked by
  the harness, not by this spec).
 2. For 24 wall-clock hours the driver injects message bursts (Poisson
  arrival, mean 1 ms inter-arrival), worker churn (a worker is
@@ -4488,7 +4588,7 @@ renderer's three output formats (SVG, PNG, Mermaid).
 *Protocol:*
 
 1. Gate 1 passes (this file complete).
-2. `CHANGELOG.md` **MUST** carry the v0.8.0 release entry
+2. `CHANGELOG.md` **MUST** carry the release entry
  announcing CX code.
 3. No file in `spec/` whose header line is not a `*Historical*`
  banner may contain the literal substring `coming soon`.
@@ -4552,45 +4652,45 @@ echo service.
 Reference hardware for gates 14–16 is the GitHub Actions hosted
 runner image pinned in `.github/workflows/perf.yml` (currently
 `ubuntu-22.04`, x86_64, 4 vCPU, 16 GB RAM, ephemeral SSD). A pinned
-runner image is part of the v0.8.0 release artefact; image bumps
-between v0.8.0 and any patch release require a maintainer
-`workflow_dispatch publish-baseline` action and a baseline
-regeneration, per the governance procedure in
+runner image is part of the release artefacts; image bumps between
+releases require a maintainer `workflow_dispatch publish-baseline`
+action and a baseline regeneration, per the governance procedure in
 `governance.md` §6.
 
 Implementations that meet the gates on alternative hardware **MAY**
-publish a comparative bench, but the v0.8.0 ship gate is computed
-against the pinned image.
+publish a comparative bench, but the ship gate is computed against the
+pinned image.
 
 ### §11.6 Gate evidence and sign-off
 
-Each gate produces a CI artefact (JSON report, log, or histogram, as
-specified above). The complete v0.8.0 release evidence bundle is the
-union of all 16 artefacts plus the git commit hash of v0.8.0-dev
-HEAD at the time of the run.
+Each gate produces evidence: the spec, test, and implementation gates
+(1–13) are evidenced by the `make test` target — the full version-agnostic
+`TEST_TARGETS` set, which runs and reports each gate's pass/fail — together
+with `make verify-doc-links`; the performance gates (14–16) are evidenced by
+`.github/workflows/perf.yml` when CI runner capacity is available.
 
-The release manager **MUST** publish the evidence bundle as a GitHub
-release attachment named `v0.8.0-gate-evidence.tar.gz` alongside the
-tag. A tag without a complete evidence bundle is not a conforming
-release.
+A release's evidence is the gate result for the tagged commit. The release
+procedure (`scripts/release.sh`) runs `make test` + `make verify-doc-links`
+and **MUST** refuse to bump, tag, or publish on a red gate, so a published
+tag is gate-green by construction. A release manager **MAY** additionally
+attach a gate-evidence bundle named `<tag>-gate-evidence.tar.gz` to the
+GitHub release; when CI capacity is available `.github/workflows/release.yml`
+produces it. A tag whose gate is red is not a conforming release.
 
 ### §11.7 Re-running gates between releases
 
-After v0.8.0 tags, every subsequent patch and minor release
-**MUST** re-run gates 1–6 and 10–13 and **SHOULD** re-run gates 7–9
-and 14–16. A release that re-runs a SHOULD gate and finds it red
-publishes the red result in the release notes and gates the offending
-fix into the next release; it does not silently ship.
-
-The v0.8.0 tag re-runs every gate from scratch and publishes a fresh
-evidence bundle (`v0.8.0-gate-evidence.tar.gz`), establishing the
-post-burn-in stable baseline.
+Every release re-runs the full gate (`make test` + `make verify-doc-links`)
+against the tagged commit; the spec, test, and implementation gates run on
+every release, and the performance gates (14–16) run when CI capacity is
+available. A release that finds a gate red publishes the red result in the
+release notes and gates the offending fix into the next release; it does not
+silently ship.
 
 ---
 
 ## §12. Module system
 
-The module system is the v0.8.0 surface for cross-file code re-use,
+The module system is the normative surface for cross-file code re-use,
 encapsulation, and reproducible builds. It is **normatively** specified
 in this section; the
 directives are listed in the §4.1 registry, the EBNF lives in
@@ -4638,9 +4738,9 @@ Without an `as=` attribute, the imported module's bound name is the
 last path-segment of the resolver string:
 
 ```
-[?lib 'cx-stdlib/strings'] [- bound as 'strings' -]
-[?lib './local-helpers.cx'] [- bound as 'local-helpers' -]
-[?lib 'github.com/example/regex'] [- bound as 'regex' -]
+[?lib 'cx-stdlib/strings'] [; bound as 'strings' ]
+[?lib './local-helpers.cx'] [; bound as 'local-helpers' ]
+[?lib 'github.com/example/regex'] [; bound as 'regex' ]
 ```
 
 `as=IDENT` rebinds the import under an explicit local name:
@@ -4667,13 +4767,13 @@ via its `prefix:local` QName.
 
 ```
 [?lib 'cx-stdlib/strings' [only upper lower]]
-[$upper hello]            [- referred: unqualified -]
-[$strings:trim ' x ']     [- not referred: still reachable, qualified -]
+[$upper hello]            [; referred: unqualified ]
+[$strings:trim ' x ']     [; not referred: still reachable, qualified ]
 
 [?lib './geometry'     [only floor]]
 [?lib 'cx-stdlib/math' [only [floor as=mfloor]]]
-[$floor 4.7]              [- geometry -]
-[$mfloor 4.7]             [- math -]
+[$floor 4.7]              [; geometry ]
+[$mfloor 4.7]             [; math ]
 ```
 
 #### §12.1.3 HTTPS fetch — recursive, cached, integrity-pinned
@@ -4702,10 +4802,10 @@ Source code names modules by **namespace path only**. The
 lockfile is the single source of truth for the version → bytes
 mapping. The grammar reserves `version='X'` as a peer attribute on
 `[?lib]` for hotfix-override scenarios but it is **not idiomatic**
-and no v0.8.0 use case requires it. See D8.
+and no current use case requires it. See D8.
 
 Bearer-token and HTTP Basic authentication attributes are reserved
-in the grammar but their semantics are **not specified** at v0.8.0.
+in the grammar but their semantics are **not specified** in this revision.
 
 #### §12.1.5 Errors
 
@@ -4786,12 +4886,12 @@ Function references use the **bare name**:
 [?def double (x) [* x 2]]
 [?def triple (x) [* x 3]]
 
-[map double [1 2 3]] [- pass `double` as a value -]
-[?const TRIPLER triple] [- bind to a [?const] -]
+[map double [1 2 3]] [; pass `double` as a value ]
+[?const TRIPLER triple] [; bind to a [?const] ]
 ```
 
 Arity-tagged references (`name#N`, `name/N`) are **not** part of
-the v0.8.0 grammar.
+the current grammar.
 
 #### §12.2.4 Parameter shapes
 
@@ -4858,7 +4958,7 @@ Conformance test runs and CI invocations are expected to set
 annotations never become a perf cost in the hot path.
 
 `[throws T]` is reserved as a sibling clause to `[returns T]` but
-its **semantics are not specified** at v0.8.0.
+its **semantics are not specified** in this revision.
 
 #### §12.2.6 Errors
 
@@ -4905,7 +5005,7 @@ const forces the lazy one. Standard memoization semantics.
 
 `[?const]`s are **single-assignment**. There is **no** `mutable`
 modifier, no reassignment syntax, no rebinding. Module-level
-mutable state is out of scope for v0.8.0; if a future use case
+mutable state is out of scope; if a future use case
 requires it, a separate directive will be proposed.
 
 #### §12.3.4 Errors
@@ -4928,12 +5028,12 @@ or more `.cx` files:
 
 ```
 cx-stdlib/
- cx.pkg [- manifest at root -]
- strings.cx [- single-file leaf -]
+ cx.pkg [; manifest at root ]
+ strings.cx [; single-file leaf ]
  json/
- main.cx [- multi-file entry point -]
- encoder.cx [- private to json package -]
- decoder.cx [- private -]
+ main.cx [; multi-file entry point ]
+ encoder.cx [; private to json package ]
+ decoder.cx [; private ]
  http/
  main.cx
 ```
@@ -4951,7 +5051,7 @@ root holds `cx.pkg`; the manifest enumerates which sub-paths inside
 the archive are public.
 
 Per,
-the zip-archive surface is **designed at v0.8.0 but its runtime
+the zip-archive surface is **designed but its runtime
 implementation lands in a follow-up release**. The grammar
 productions, manifest shape, and lockfile encoding are locked now; the actual
 zip-extract + memory-mount code ships when a real consumer
@@ -4999,7 +5099,7 @@ When a package has multiple `.cx` files, the **entry file
 controls the public surface** via explicit re-exports:
 
 ```
-[- json/main.cx -]
+[; json/main.cx ]
 [?lib './encoder.cx']
 [?lib './decoder.cx']
 
@@ -5071,7 +5171,7 @@ declarations before any function body executes. Likewise for
 `[?const]`:
 
 ```
-[?const B [* A 10]] [- references A; works fine -]
+[?const B [* A 10]] [; references A; works fine ]
 [?const A 5]
 ```
 
@@ -5091,16 +5191,16 @@ Visibility is declared via the `scope=` attribute on `[?def]`
 and `[?const]`:
 
 ```
-[?def helper ($x) ...] [- private; not exported -]
+[?def helper ($x) ...] [; private; not exported ]
 
 [?def serve
  scope=public
  ($request)
- ...] [- public; exported -]
+ ...] [; public; exported ]
 
-[?const VERSION "1.0"] [- private -]
+[?const VERSION "1.0"] [; private ]
 
-[?const scope=public PUBLIC-VERSION "1.0"] [- exported -]
+[?const scope=public PUBLIC-VERSION "1.0"] [; exported ]
 ```
 
 **Module-private is the default.** Only definitions with

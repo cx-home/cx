@@ -137,21 +137,23 @@
         <section id="comments">
           <h3>Comments (line and block)</h3>
           
-            <p>CX has one comment form: `[# … #]`. It nests, it spans any number
-           of lines, and it is allowed anywhere whitespace is allowed. The
+            <p>CX has two comment forms: a `#` line comment that runs to
+           end-of-line, and a `[; … ]` block comment that spans any number of
+           lines and is allowed anywhere whitespace is allowed. The block
            comment is a real lexical element, not a hack on top of a string
            — the parser drops it before AST construction. Comments are
            preserved by the lossless canonicalizer (`cx fmt`) and stripped
            by the strict canonicalizer (`cx canon`); see <a class="xref" href="identity.html#canonical">canonical</a>.</p>
             <pre>
-              <code class="language-cx">[# A single-line note. #]
+              <code class="language-cx">[; A single-line note. ]
            [config
-             [# This sub-comment is fine, even
-                [# nested #] inside another. #]
+             [; A block comment can nest inside an element
+                and span lines. ]
              [host 'localhost']]</code>
             </pre>
-            <p class="note">Older CX dialects used `[-` `-]` for block comments. v0.8.0 keeps
-           the `[# #]` form only. See <a class="xref" href="migration.html">migration</a> for the rename.</p>
+            <p class="note">Older CX dialects used `[-` `-]` for block comments. CX currently uses
+           the `[; … ]` form only; `[# … #]` is raw text / CDATA, not a
+           comment. See <a class="xref" href="migration.html">migration</a> for the rename.</p>
           
         </section>
         <section id="whitespace">
@@ -297,9 +299,9 @@
             <p>Integers do not auto-promote to a larger type on overflow.
            Adding `1` to `9223372036854775807` (max i64) raises CXER0103
            (numeric overflow). For arbitrary-precision arithmetic use the
-           `:bigint` type tag with a string-form literal; the v0.8.0 builtin
+           `:bigint` type tag with a string-form literal; the current builtin
            library does not include BigInt arithmetic — that is a
-           post-v0.8.0 follow-up.</p>
+           planned follow-up.</p>
           
         </section>
         <section id="booleans">
@@ -945,7 +947,7 @@
       <h2>Doctype declarations</h2>
       
         <p>A `[?cx doctype=…]` directive at the top of a document declares
-         the document type. In v0.8.0 doctype is informational metadata;
+         the document type. Currently doctype is informational metadata;
          the validator MAY use it as a default schema-binding hint.</p>
         <pre>
           <code class="language-cx">[?cx doctype='users-v1' encoding=utf-8]
@@ -953,9 +955,9 @@
            [user id=1 email='ada@example.com']]</code>
         </pre>
         <p>The doctype name is a free-form identifier; convention is
-         `&lt;name&gt;-v&lt;major&gt;`. A future v0.9.x extension promotes doctype to
+         `&lt;name&gt;-v&lt;major&gt;`. A future revision promotes doctype to
          an *active* declaration (auto-load the schema by name, validate
-         on parse) — for v0.8.0 it is reserved for that direction.</p>
+         on parse) — currently it is reserved for that direction.</p>
       
     </section>
     <section id="encoding">
@@ -1086,7 +1088,7 @@
           
         </ul>
         <p>**Directive name keywords** (the first token after `[?`):</p>
-        <p>All 40 directives in the v0.8.0 registry — see
+        <p>All 40 directives in the current registry — see
          <a class="xref" href="code.html#directives">directives</a> in the code section. Notable: `for`, `match`,
          `if`, `let`, `fn`, `def`, `try`, `modify`, `cx`, `pipe`.</p>
         <p>**CXPath axis keywords** (before `::` inside path expressions):</p>

@@ -2,7 +2,7 @@
 
 **INTERNAL — DO NOT PUBLISH. DO NOT MIRROR TO `cx-home/cx`. DO NOT REFERENCE FROM `docs-src/content/`, `spec/`, OR `spec/decisions/`.**
 
-This directory captures the in-flight design of CXStore — a content-addressed store and query engine for CX data, to be developed on top of the v0.8.0 baseline. The design is not yet locked, not yet ratified by ADR, and not yet announced. Treat everything here as commercial-shape strategy: hold inside `cx-home/private` only.
+This directory captures the in-flight design of CXStore — a content-addressed store and query engine for CX data. The design is not yet locked, not yet ratified by ADR, and not yet announced. Treat everything here as commercial-shape strategy: hold inside `cx-home/private` only.
 
 ## Org layout (for context)
 
@@ -13,7 +13,7 @@ This directory captures the in-flight design of CXStore — a content-addressed 
 ## Files
 
 - [`plan.md`](plan.md) — TL;DR plan, two-tier design (embedded + service), backend-orthogonal-to-tier framing, phase estimates (0.5 / 0.7 / 1 / 2 / 3), decision gates, prerequisites.
-- [`embedded.md`](embedded.md) — Phase 0.5 spec: the URL-dispatched Embedded Store. Store interface + backends (LocalFiles / Memory / HTTP / HTTP-WebDAV / S3 / FTP / SFTP). Day-of-v0.8.0-shippable, BaseX-class feature set minus indexed-perf, forward-compatible with pack backend.
+- [`embedded.md`](embedded.md) — Phase 0.5 spec: the URL-dispatched Embedded Store. Store interface + backends (LocalFiles / Memory / HTTP / HTTP-WebDAV / S3 / FTP / SFTP). BaseX-class feature set minus indexed-perf, forward-compatible with pack backend.
 - [`pack_format.md`](pack_format.md) — Phase 1 sub-deliverable: pack file binary layout (the eventual indexed-perf backend within the Embedded tier).
 - [`performance.md`](performance.md) — performance expectations + competitive positioning. Two Mermaid quadrant charts (ingest × query throughput; scale × cost-efficiency), per-workload estimates, scale envelopes, tail-latency honesty, slots for measured numbers as Phase 0.5+ ships.
 

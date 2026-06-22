@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# v0.8.0: cx CLI bash completion.
+# cx CLI bash completion.
 #
 # Install: source this file from ~/.bashrc or symlink to
 #   /etc/bash_completion.d/cx (system-wide) or
 #   ~/.local/share/bash-completion/completions/cx (user).
 
 _cx_subcmds() {
-  # v0.8.0 surface — `select` retired (CXPath now first-class value
+  # `select` retired (CXPath is now a first-class value
   # kind per code.md §5.5; use `cx eval` with a //path expression).
   # `diagram` renders a data-shaped diagram; `code-diagram`/`code-tree`
   # render the program AST; `lock` manages the dependency lockfile.

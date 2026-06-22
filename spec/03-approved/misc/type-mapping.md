@@ -1,8 +1,8 @@
 # CX Type Mapping
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
-How CX scalar and container types map to native types in each v0.8.0
+How CX scalar and container types map to native types in each
 binding (V native, Python, Go, Rust). Mappings are normative; bindings
 exposing different host types fail conformance. This is the source of
 truth for the parity matrix (`misc/parity-matrix.md`) and for user

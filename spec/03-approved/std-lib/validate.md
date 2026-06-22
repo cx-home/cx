@@ -5,7 +5,7 @@
   [standard ref='RE2' title='Pattern matching']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/validate` sub-package — the **data-record validator** (JSON-Schema / pydantic-shaped) that validates a CX value at runtime via `validate-shape`.
 
@@ -123,10 +123,10 @@ Validate `$value` against the inline `$schema`. Returns `[ok $value]` on success
 
 Validate against a schema registered under `$schema-ref`. Raises `CXER1600 E_VALIDATE_SCHEMA_NOT_FOUND` if unregistered.
 
-> **Operability deferred to v0.8.x.** This signature is **specified but
-> not operable at v0.8.0**: there is no Current way to populate the
+> **Operability deferred.** This signature is **specified but
+> not currently operable**: there is no Current way to populate the
 > named-schema registry. Schema registration (`register-schema` and the
-> `[?schema-register]` directive) is deferred to a future v0.8.x
+> `[?schema-register]` directive) is deferred to a future
 > amendment (§7). Until that ships, `validate-against` always raises
 > `CXER1600` because the registry is unpopulable. Use the Current,
 > fully-operable `validate-shape` (§3.1) with an inline schema instead.
@@ -334,9 +334,9 @@ Under `conformance/stdlib/validate.cxd`:
 
 - **Declarative `returns=SchemaRef` on `[?def]`** — integrates with the type checker; future amendment to the function-definition surface.
 - **Schema-as-data registration directive `[?schema-register]`** — `validate-against` resolves through a named-schema registry; the registration directive specified in a future amendment.
-- **Schema composition — intersection / union** — single-inheritance `extends=` ships at v0.8.0; intersection / union deferred. Record-level `validate-with=` covers many use cases.
+- **Schema composition — intersection / union** — single-inheritance `extends=` ships currently; intersection / union deferred. Record-level `validate-with=` covers many use cases.
 - **Convergence with `spec/core/schema.md`** — opportunistic; not a blocker.
-- **Per-language error message localization** — v0.8.0 messages are English; future `format-violations` with `locale=` localizes.
+- **Per-language error message localization** — current messages are English; future `format-violations` with `locale=` localizes.
 
 ## §8. Cross-references
 

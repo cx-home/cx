@@ -622,16 +622,16 @@ def infer_tags(key, label, src, note):
 
 
 def compose(src, note):
-    return src + "\n\n[--------------------------------------------\n" + note + "\n--------------------------------------------]\n"
+    return src + "\n\n[; \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n" + note + "\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ]\n"
 
 
 def cli_eval(src, timeout=12):
     f = tempfile.NamedTemporaryFile(mode='w', suffix='.cx', delete=False)
     f.write(src); f.close()
     try:
-        r = subprocess.run(['vcx/target/cx', 'eval', f.name],
+        r = subprocess.run(['vcx/target/cx', f.name],
                            capture_output=True, text=True, timeout=timeout)
-        return (r.returncode == 0 and not r.stdout.startswith('cx eval:'),
+        return (r.returncode == 0 and not r.stdout.startswith('error:'),
                 r.stdout.strip() or r.stderr.strip())
     finally:
         os.unlink(f.name)

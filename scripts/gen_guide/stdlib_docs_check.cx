@@ -14,7 +14,7 @@
 #   (3) EXAMPLE BACKING  -- every [fn-doc]/[example]'s code block AND its
 #       expected output appear verbatim in the module's conformance corpus
 #       (conformance/stdlib/<m>.cxd). Because that corpus is executed green
-#       by `make test-vcx-v08` (test_stdlib_module_fixtures), a documented
+#       by `make test-vcx-suite` (test_stdlib_module_fixtures), a documented
 #       example that is backed by it is, transitively, an example that runs
 #       green -- and a hand-edited example that drifts from real behavior
 #       (wrong call or wrong output) is no longer backed and fails here.

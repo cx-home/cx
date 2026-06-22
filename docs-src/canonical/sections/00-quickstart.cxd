@@ -1,5 +1,5 @@
 [# Section 0 — Quickstart. Front-matter; appears before the §1 intro.
-   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Authored 2026-05-22.
    Goal: a developer who has never seen CX is running CX in under five
    minutes. Cross-links use [[anchor]] form; spec references use
    ordinary markdown links. File extension .cxd — data-only source. #]
@@ -28,12 +28,14 @@
          cx --version"""]
 
     [body
-      """**Manual download.** Prebuilt binaries are published with each
-         tagged release on GitHub. Download the archive for your
-         platform, extract, and put `cx` on your `PATH`:"""]
+      """**Manual download.** Prebuilt binaries are published on the
+         GitHub Releases page. **Today only macOS (Apple Silicon) ships a
+         prebuilt binary** — Linux, macOS Intel, and Windows build from
+         source (see §0.10) until the project's CI runners are restored.
+         Download the archive, extract, and put `cx` on your `PATH`:"""]
 
     [example lang=shell
-      """curl -L https://github.com/cx-lang/cx/releases/download/v0.8.0/cx-darwin-arm64.tar.gz | tar xz
+      """curl -L https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
          sudo mv cx /usr/local/bin/
          cx --version"""]
 
@@ -52,11 +54,11 @@
          experimentation:"""]
 
     [example lang=shell
-      """docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx --version
-         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:0.8.0 cx eval"""]
+      """docker run --rm -i ghcr.io/cx-lang/cx:latest cx --version
+         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:latest cx"""]
 
     [note
-      """If `cx --version` prints `cx 0.8.0 (gNNNNNNN)` you are ready.
+      """If `cx --version` prints a version line, you are ready.
          If you see `command not found`, your `PATH` does not include
          the install location — see [[faq]] for recovery steps."""]]
 
@@ -66,7 +68,7 @@
          literal into `cx eval` and see what comes out."""]
 
     [example lang=shell
-      """echo '[hello greeting="world"]' | cx eval"""]
+      """echo '[hello greeting="world"]' | cx"""]
 
     [body
       """The output is the same shape you typed:"""]
@@ -89,7 +91,7 @@
          yields:"""]
 
     [example lang=shell
-      """echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx eval"""]
+      """echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx"""]
 
     [example lang=cx
       """([n 1], [n 2], [n 3])"""]]
@@ -163,7 +165,7 @@
          simplest query asks: "which users are active?""""]
 
     [example lang=shell
-      """cx eval --xpath '//user[@active=true]/@email' users.cx"""]
+      """cx --xpath '//user[@active=true]/@email' users.cx"""]
 
     [example lang=cx
       """('ada@example.com', 'linus@example.com')"""]
@@ -296,7 +298,7 @@
               the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
               `cx lint`, `cx diff`, and the playground."""]
       [item """**Migrate an existing codebase.** [[migration]]
-              covers v0.7.x → v0.8.0 and intake from
+              covers prior-version migration and intake from
               JSON / YAML / TOML / XML."""]
       [item """**Compare against alternatives.** [[comparison]]
               is the side-by-side against JSON, YAML, TOML, XML,
@@ -307,7 +309,7 @@
               the first-week-of-CX questions."""]]
 
     [note
-      """The community lives at https://github.com/cx-lang/cx — file
+      """The community lives at https://github.com/cx-home/cx — file
          bugs, browse RFCs, and read the spec under `spec/*.md`. The
          playground at https://cx-lang.org/playground lets you try
          CX from a browser with no install."""]]
@@ -329,12 +331,12 @@
 
     [child id=install-status n=0.10.1 title='Release status'
       [body
-        """CX is on v0.8.0-dev — the "data + code" unification
-           release on branch `v0.8.0-dev`. There is no tagged
-           0.8.0 release yet; the install paths below either
-           build from source on that branch or fetch the most
-           recent tagged 0.7.x bottle. Production users should
-           pin to a tag once 0.8.0 ships."""]]
+        """The install paths below either build from source or fetch a
+           tagged release. **Prebuilt binaries currently cover macOS
+           (Apple Silicon) only**; Linux, macOS Intel, and Windows build
+           from source with `devbox run -- make build` until the
+           project's CI runners are restored. Production users should
+           pin to a tag."""]]
 
     [child id=install-macos n=0.10.2 title='macOS'
       [example lang=shell """brew install cx-lang/tap/cx"""]
@@ -344,9 +346,11 @@
 
     [child id=install-linux n=0.10.3 title='Linux'
       [body
-        """Homebrew works on Linux too. The static binary tarball
-           from the GitHub Releases page works on any glibc-based
-           distro."""]
+        """Homebrew works on Linux too. A static binary tarball from
+           the GitHub Releases page works on any glibc-based distro —
+           though the prebuilt Linux tarball is not published yet (CI
+           runners offline); build from source with
+           `devbox run -- make build` in the meantime."""]
       [example lang=shell
         """brew install cx-lang/tap/cx
            curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
@@ -354,14 +358,17 @@
 
     [child id=install-windows n=0.10.4 title='Windows'
       [body
-        """A static `cx.exe` ships per release on
-           github.com/cx-home/cx/releases. Drop it on PATH; no
-           installer, no dependencies."""]]
+        """A static `cx.exe` is planned per release on
+           github.com/cx-home/cx/releases, but is not published yet (CI
+           runners offline, and the V toolchain's Windows support is
+           still on the roadmap — see [[faq]]); build from source in the
+           meantime. Drop the binary on PATH; no installer, no
+           dependencies."""]]
 
     [child id=install-wasm n=0.10.5 title='WebAssembly bundle'
       [body
         """The `libcx-wasm` bundle powers the live evaluator in
-           the playground; on v0.8.0 it exports the
+           the playground; it exports the
            `_cx_code_eval` family plus `_cx_code_diagram` and
            `_cx_code_tree`. The bundle ships
            alongside the `cx` binary on release tags."""]]
@@ -370,14 +377,13 @@
       [example lang=shell
         """git clone https://github.com/cx-home/cx
            cd cx
-           git checkout v0.8.0-dev   # while 0.8.0 is in development
            devbox run -- make build-vcx
            devbox run -- make test"""]
       [body
         """The build chain expects V on PATH or the `cx-home` V
            fork at `third_party/v`; the Makefile auto-detects
-           either. Drop the checkout line to build the most
-           recent tagged release instead."""]]
+           either. Check out the latest release tag to build
+           a specific release."""]]
 
     [child id=install-verify n=0.10.7 title='Verify the install'
       [example lang=shell
@@ -457,7 +463,7 @@
     [child id=tut-6 n=0.9.6 title='Comments'
       [body
         """Hash line comments live outside element bodies.
-           Bracket-dash block comments live inside elements and
+           Bracket-semicolon block comments live inside elements and
            can span lines."""]
       [example lang=cx """[shop port=8080 [menu [pizza name=Margherita]]]"""]
       [note """**Exercises.** Check what `cx fmt` preserves and what `cx canonical` drops."""]]

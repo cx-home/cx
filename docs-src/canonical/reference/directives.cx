@@ -1,4 +1,4 @@
-[- docs-src/canonical/reference/directives.cx — co-located source for the
+[; docs-src/canonical/reference/directives.cx — co-located source for the
    guide's directive reference (docs/guide/directives.html).
 
    ONE [directive-doc] per directive in the §4.1 registry of
@@ -11,7 +11,7 @@
    green fixture, exactly as the stdlib reference pins [fn-doc] examples to
    conformance/stdlib/*.cxd).
 
-   Single source of truth: edit here; the guide projects it. -]
+   Single source of truth: edit here; the guide projects it. ]
 
 [directive-doc name='?match' category="Core — pattern dispatch (single-arm + multi-arm)" spec="§5.2, §8.2"
   [sig """[?match VALUE [case PAT BODY]… [else …]] -> result"""]
@@ -93,7 +93,7 @@
 
 [directive-doc name='?for' category="Core — for-comprehension (Sequence outer; D15)" spec="§7"
   [sig """[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence"""]
-  [summary """For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence."""]
+  [summary """For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence. [where] takes a PREFIX predicate — `[where [= $x/@attr value]]` — which is the reliable form everywhere (also inside `not(…)` and as a node-set predicate `//u[@attr=value]`); a bare infix comparison `[where $x/@attr=value]` is a parse error that points back at the prefix form."""]
   [example [code """[?for [in $x [$range 1 5]] [yield $x]]"""] [expect """1
 2
 3
@@ -501,5 +501,6 @@ B"""] [expect """50"""]]
 [directive-doc name='?meta' category="Core — inert metadata annotation on a value" spec="§4.2"
   [sig """[?meta {KEY: VALUE…} FORM] -> FORM"""]
   [summary """Core: attach an inert metadata map to the value of FORM; the value is unchanged and only `meta-of` and the XML serializer observe the map."""]
+  [example [code """[?let [= $doc [?meta {author: alice} [report "Q3"]]] [meta-of $doc]]"""] [expect """{author: alice}"""]]
 ]
 

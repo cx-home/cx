@@ -2126,6 +2126,10 @@
                 },
                 {
                   "type": "STRING",
+                  "value": "-"
+                },
+                {
+                  "type": "STRING",
                   "value": "*"
                 },
                 {
@@ -2584,12 +2588,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "["
-        },
-        {
-          "type": "STRING",
-          "value": "-"
+          "type": "SYMBOL",
+          "name": "_comment_open"
         },
         {
           "type": "REPEAT",
@@ -2603,6 +2603,17 @@
           "value": "]"
         }
       ]
+    },
+    "_comment_open": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 5,
+        "content": {
+          "type": "STRING",
+          "value": "[;"
+        }
+      }
     },
     "_comment_child": {
       "type": "CHOICE",

@@ -112,7 +112,7 @@ signature, summary, and verified example.
 (`scripts/gen_guide/stdlib_docs_check.cx`, CX-native) verifies, for every
 module, presence parity (`[?def]` ⇄ `[fn-doc]`), purity agreement, and that each
 example is backed verbatim by `conformance/stdlib/<m>.cxd` (the corpus run green
-by `make test-vcx-v08`). Wired into `TEST_TARGETS`. Module-set parity is owned by
+by `make test-vcx-suite`). Wired into `TEST_TARGETS`. Module-set parity is owned by
 `make stdlib-catalogue-gate`.
 
 ## Playground page

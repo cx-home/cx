@@ -633,8 +633,30 @@ fn test_parse_json_to_document() {
 
 #[test]
 fn test_parse_yaml_to_document() {
+    // YAML imports LOSSLESS (issues #4/#5): a top-level YAML mapping becomes a
+    // cx MAP, not synthesized elements — so the root is a Node::MapNode whose
+    // "server" entry holds a nested map { port: 8080 }, and find_first (an
+    // element search) returns None.
     let doc = parse_yaml("server:\n  port: 8080\n").unwrap();
-    assert!(doc.find_first("server").is_some());
+    assert!(doc.find_first("server").is_none());
+
+    let root = match doc.elements.first() {
+        Some(Node::MapNode(entries)) => entries,
+        other => panic!("expected top-level MapNode, got {other:?}"),
+    };
+    let server = root.iter()
+        .find(|e| e.key_value == Value::String("server".to_string()))
+        .expect("map should contain a 'server' entry");
+    let server_map = match &server.value {
+        Node::MapNode(entries) => entries,
+        other => panic!("expected 'server' value to be a nested MapNode, got {other:?}"),
+    };
+    let port = server_map.iter()
+        .find(|e| e.key_value == Value::String("port".to_string()))
+        .expect("nested map should contain a 'port' entry");
+    assert!(matches!(&port.value, Node::Scalar { value, .. } if value.as_i64() == Some(8080)));
+
+    assert_eq!(doc.to_cx(), "{server: {port: 8080}}");
 }
 
 // ── stream / binary events ────────────────────────────────────────────────────

@@ -138,22 +138,22 @@
 
   [child id=td-26 n=14.26 title='26. Inline block comment'
     [body """Element-shaped — fits inside brackets where `#` cannot reach."""]
-    [example lang=cx """[pizza name=Diavola [- TODO confirm price ] price=14]"""]]
+    [example lang=cx """[pizza name=Diavola [; TODO confirm price ] price=14]"""]]
 
   [child id=td-27 n=14.27 title='27. Multi-line block comment'
     [body """Canonical for multi-line notes."""]
     [example lang=cx
-      """[-
+      """[;
            Pricing review:
              - Diavola: bump to 16?
              - Hawaiian: hold at 14
          ]"""]]
 
   [child id=td-28 n=14.28 title='28. When to use which'
-    [body """`#` for line-scoped headers; `[- … ]` when the comment must nest inside an element or span lines. Not HTML's `<!-- … -->` — CX has its own."""]
+    [body """`#` for line-scoped headers; `[; … ]` when the comment must nest inside an element or span lines. Not HTML's `<!-- … -->` — CX has its own."""]
     [example lang=cx
       """# top-of-file header
-         [shop [- inline aside on this branch ] port=8080]"""]]
+         [shop [; inline aside on this branch ] port=8080]"""]]
 
   [child id=td-29 n=14.29 title='29. Nesting'
     [body """Brackets inside brackets."""]
@@ -301,7 +301,7 @@
          [shop &flagship name='New Haven' port=8080 +open
            # opening hours
            [hours mon-fri=11-22 sat=12-23 sun=closed]
-           [- menu reviewed 2026-05-01 ]
+           [; menu reviewed 2026-05-01 ]
            [menu :table[name:string size price:decimal vegan:bool]
              Margherita medium 12.00 true
              Hawaiian   large  14.00 false

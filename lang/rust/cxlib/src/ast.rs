@@ -1148,7 +1148,7 @@ fn emit_node(node: &Node, depth: usize) -> String {
         Node::Element(e) => emit_element(e, depth),
         Node::Text(s) => cx_quote_text(s),
         Node::Scalar { data_type, value } => emit_scalar_value(data_type, value),
-        Node::Comment(s) => format!("{}[-{}]\n", ind, s),
+        Node::Comment(s) => format!("{}[;{}]\n", ind, s),
         Node::RawText(s) => format!("{}[#{}#]\n", ind, s),
         Node::EntityRef(name) => format!("&{};", name),
         Node::Alias(name) => format!("{}[*{}]\n", ind, name),

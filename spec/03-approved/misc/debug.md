@@ -1,6 +1,6 @@
 # CX Debugging (local + remote)
 
-**Status:** Current for v0.8.0. The CX debug surface (local + remote). The host
+**Status:** Current. The CX debug surface (local + remote). The host
 bindings are specified in their owning files: the `cx run --debug…` / `cx dap` /
 `cx debug attach`/`replay` subcommands in `cli.md` §2.3/§3.7, and the
 debug-capability bit (39) in `abi.md`. Integrations reference the capability

@@ -1,12 +1,12 @@
 # CX Grammar Specification
-# Version: v0.8.0
+# Version: tracks the repo-root VERSION file (single source of truth)
 # Status: Current
 # Description: CX is a bracket-based markup language. Every single resolved CX Document
 # can be serialized to XML using the cx: namespace for CX-specific metadata. Both CX and
 # XML parse to the same canonical AST (see ast.md).
 #
-# v0.8.0 surface highlights (normative — every production below
-# reflects the v0.8.0 grammar contract):
+# Surface highlights (normative — every production below
+# reflects the current grammar contract):
 #
 # * Homoiconic Lisp-1: every form is `[head …]`.
 # Directives carry only clause-children (`[clause-head child …]`),
@@ -34,7 +34,7 @@
 # this is the grammar-side summary and MUST agree with it. Inside `[…]`, the
 # parser examines the FIRST ITEM (O(first-token) local lookahead), in order:
 # 1. STRUCTURAL OPENERS bind first (not subject to this rule): `[?` directive,
-# `[!` decl/doctype, `[#` raw text, `[-` comment, `[|` block,
+# `[!` decl/doctype, `[#` raw text, `[;` comment, `[|` block,
 # `[$` call (program mode), `[*` alias, `[&` ref/anchor.
 # 2. empty `[]` → ArrayLiteral (the empty array), valid in expression position.
 # 3. first char ∉ Name-start (and not a structural opener) → ArrayLiteral.
@@ -151,7 +151,7 @@
  name chars are retained (XML-derived, keeps CX⇄XML bijective). The unified
  parser lexes a lone ':' as its OWN token and folds `prefix:local` into a
  QName ([L11]); ':' is NOT a NameChar (the one deliberate departure from the
- pre-v0.8.0 model where ':' was a NameChar). Reserved prefixes (cannot be
+ the earlier model where ':' was a NameChar). Reserved prefixes (cannot be
  redeclared): 'xml' (XML built-in), 'cx' (CX metadata), 'xmlns' (declaration
  syntax only) — see cxdm.md §1, §2. */
 [7d] NsDecl ::= 'xmlns' ('=' AttValue
@@ -202,7 +202,7 @@
  Load-bearing points retained here for cross-reference:
  - Leading-zero tokens ('02134') auto-type as Text, not int (ZIP/SKU safety).
  - A '-' immediately before a digit is part of a Number; otherwise a NameChar.
- - lexicon §9 SUPERSEDES the pre-v0.8.0 [25a] (@CHOICE-1): whitespace NEVER
+ - lexicon §9 SUPERSEDES the earlier [25a] (@CHOICE-1): whitespace NEVER
    auto-arrays. A no-comma run of self-delimiting tokens (typed scalars / atoms /
    quoted strings — no bareword) is DISCRETE auto-typed children; a bareword makes
    the whole no-comma body one PROSE string; a comma (or `::T[]`/`::[]`) makes an
@@ -309,9 +309,9 @@
 
 # ─── Comments ─────────────────────────────────────────────────────────────────
 
-[30] Comment ::= '[-' CommentContent ']'
- /* [-comment text] → <!-- comment text -->
- Value stored in AST excludes the [- and ] delimiters. */
+[30] Comment ::= '[;' CommentContent ']'
+ /* [;comment text] → <!-- comment text -->
+ Value stored in AST excludes the [; and ] delimiters. */
 [30a] CommentContent ::= Char* - (Char* ']' Char*)
 
 [30b] LineComment ::= '#' [^#xA]* (#xA | EOF)
@@ -494,7 +494,7 @@
  → string "a,b"). The AST `value` IS the scalar — there is no `body` field
  (ast.md §Attribute). See lexicon.ebnf §10 [L70]. */
 
-[55c] BracketBody — REMOVED (v0.8.0). The former BracketBody
+[55c] BracketBody — REMOVED. The former BracketBody
  /* `'[' BodyItem* ']'` production and the attribute `body` field it implied
  are retired. With D2 (scalar-only attributes, lexicon §10) a `[`-opened
  attribute value is a PARSE ERROR except the `[#…#]` raw-string form; it is
@@ -510,7 +510,7 @@
  ambiguity. CSV/delimited conversion emits `col=true`;
  strict/lossless canonical emit was already the explicit form. */
 
-# ─── Collection literals (Extended; v0.8.0) ────────────────────
+# ─── Collection literals (Extended) ────────────────────
 #
 # Three new container-Item source-text forms §D1. The CXDM
 # runtime data model (cxdm.md §2.4–§2.6) defines the value semantics;
@@ -532,15 +532,15 @@
  - A Name head IMMEDIATELY followed by `,` is a PARSE ERROR (CXER0100): the
    bare bareword array `[web, prod]` is ambiguous with an element head — write
    `['web', 'prod']`, or name the list `[tags web, prod]`. This RATIFIES the
-   lexicon §11 rule and SUPERSEDES the pre-v0.8.0 "first separator `,` →
+   lexicon §11 rule and SUPERSEDES the earlier "first separator `,` →
    ArrayLiteral" reading that wrongly admitted `[web, prod]` as a string array.
  - MapEntry computed-key form is `[?entry KEY-EXPR VAL]` ([127u], maps only).
    MapKey = Name | QuotedText | Scalar; `null` is not a valid key (W014).
  Trailing commas accepted; canonical emit omits them (canonical.md §D14). */
 
-# ─── program evaluation forms (Extended; reserved at v0.8.0; evaluator v0.8.0+) ──
+# ─── program evaluation forms (Extended) ──
 #
-# CX code (the CX Language) is the post-v0.8.0 expression family:
+# CX code (the CX Language) is the current expression family:
 # one syntax, one parser, one data model spanning data (.cx), schemas
 # (.cxs), shapes (.cxsh), and CX code (.cx) used for templating,
 # querying, and transformation. program evaluation forms extend the existing
@@ -558,10 +558,10 @@
  production captures everything between `[?=` and the matching
  `]` as a string, with internal `[` and `]` required to balance.
 
- v0.8.0 parsers MUST recognize the production and produce an
+ Parsers MUST recognize the production and produce an
  Interpolation AST node carrying the captured expression text.
- **v0.8.0 ships both the parser and the CX code 1.0 evaluator**
- (pulled forward from v0.8.0 in the 2026-05-10 amendment to
+ The parser and the CX code 1.0 evaluator ship together
+ (the evaluator was pulled forward in the 2026-05-10 amendment
  when CX code became the sole output-shape mechanism).
  The program evaluator parses the captured text as CXPath.
 
@@ -600,7 +600,7 @@
 
  EvalName is any Name that is not currently recognized as XMLDecl
  ('xml'), CXDirective ('cx'), or a PI target. See [59a] for the
- closed v0.8.0 set.
+ closed set.
 
  Disambiguation from PI [27]: the parser recognizes EvalNames as
  EvalDirective; all other targets (`php`, `xslt-stylesheet`,
@@ -623,7 +623,7 @@
 [59a.3] ModulePrefix ::= 'cx' | 'log' | 'fn' | 'map' | 'array' | 'math'
  /* 'let' / 'fn' / 'match' / 'try' / 'modify' / 'def' / 'lib' /
  'const' / 'with-open' / 'with-scope' and the resilience +
- concurrency directives are members of the closed v0.8.0
+ concurrency directives are members of the closed
  directive name set per [127e].
 
  The bare name `cx` is NOT an EvalName — `[?cx ...]` always parses
@@ -635,7 +635,7 @@
  (e.g., `[?cx:fn ...]`), distinguished from the CXDirective by the
  colon-Name follow-up.
 
- ModulePrefix enumerates the v0.8.0 module namespaces:
+ ModulePrefix enumerates the current module namespaces:
  'fn' / 'map' / 'array' / 'math' — XQuery 4.0 standard
  namespaces §D2
  'cx' — self-host module §D (DD row)
@@ -643,8 +643,8 @@
  New stdlib modules (`file:`, `http:`, `hash:`, `random:`,...)
  each land as a new ModulePrefix without an EBNF break.
 
- FrozenFilterName (the v0.8.0 closed filter set: `upper`,
- `lower`, `trim`, etc.) and XQuery40FnName (the v0.8.0 XQuery
+ FrozenFilterName (the closed filter set: `upper`,
+ `lower`, `trim`, etc.) and XQuery40FnName (the XQuery
  4.0 fn:* arrivals callable without the `fn:` prefix for
  backward compatibility) are enumerated in code.md §4 and
  §D2 §C respectively.
@@ -739,7 +739,7 @@
 # CX code is the unified pattern / query / transform language ratified by
 # and reshaped to the homoiconic Lisp-1 surface by.
 # Normatively specified in code.md. The productions below cover
-# the v0.8.0 reference implementation (vcx/code/). They reuse host CX
+# the reference implementation (vcx/code/). They reuse host CX
 # productions for literal CX data ([50] Element, [56] CollectionLiteral,
 # etc.) — a CX code program is itself a CX value whose top-level Node
 # is a ProgramExpr.
@@ -943,7 +943,7 @@
     as Interpolation [58]). Each hole body is a CXPath binding-path
     expression (ProgramBinding / ProgramPath [124]): a `$binding`, a
     path navigation (`$x/child`), or a filtered query (`$x//y[@pred]`).
-    Program calls inside a hole are NOT admitted at v0.8.0. Literal
+    Program calls inside a hole are NOT admitted currently. Literal
     braces are written `{{` / `}}`. An unbalanced brace, an empty hole
     `{}`, or a non-path / call hole body raises cx-err:CXER0100 at
     parse time. See code.md §8.12. */
@@ -973,7 +973,7 @@
  | 'element' | 'attr' | 'entry' | 'name'
  | 'quote' | 'unquote' | 'splice' | 'eval'
  | 'meta'
- /* Closed directive name set. v0.8.0 additions: 'modify'; 'with-open';
+ /* Closed directive name set. Current additions: 'modify'; 'with-open';
     'with-scope'; 'for-array' / 'for-map'; the iterator combinator stdlib —
     'filter' / 'take' / 'drop' / 'zip' / 'enumerate' / 'chunks' / 'concat' /
     'chain' / 'cycle' / 'scan' / 'flatten' / 'partition' / 'group-by' — and
@@ -1357,8 +1357,8 @@
 [144] ModifyDelete ::= '[delete' S? ']'
 [145] ModifyUsing ::= '[using' S ProgramExpr S? ']'
  /* ProgramExpr must be a function value ([?fn] lambda). Receives matched node
- as single argument; return value replaces node. Lambda-only in v0.8.0
-. Named function refs deferred to v0.8.x. */
+ as single argument; return value replaces node. Lambda-only in this revision.
+ Named function refs are a future extension. */
 [146] ModifyRename ::= '[rename' S (Name | ComputedName) S? ']'
 [147] ModifySetAttr ::= '[set-attr' S (Name | ComputedName) S ProgramExpr S? ']'
  /* The name slot of [rename] / [set-attr] accepts either a literal Name
@@ -1438,7 +1438,7 @@
  | ReturnsClause
  | ThrowsClause
 [152b] ReturnsClause ::= '[returns' S Type S? ']'
-[152c] ThrowsClause ::= '[throws' S Type S? ']' /* reserved at v0.8.0 (D5.2) */
+[152c] ThrowsClause ::= '[throws' S Type S? ']' /* reserved (D5.2) */
  /* def modifiers map as:
  scope=public|private visibility attribute
  pure | impure purity bareword
@@ -1650,7 +1650,7 @@
 # | `)` of a fn-call `fn(args)` | BindingPostfix→SliceAxes |
 # | Otherwise (expression-head / post-directive-close)| Array literal |
 #
-# IMPLEMENTATION NOTE (v0.8.0 W5b refinement). When the preceding token
+# IMPLEMENTATION NOTE (W5b refinement). When the preceding token
 # is a $binding, the parser additionally inspects the FIRST token inside
 # the bracket. If that token is an "element-head token" (an `ident` or
 # one of the operator heads `+ - * / = != < <= > >=`), the bracket
@@ -1662,7 +1662,7 @@
 # * leading `*` followed by `]` or `,` (full-axis marker)
 # * top-level `:` / `::` / `,` between expression tokens
 # Otherwise the bracket leaves the slice surface and falls back to a
-# single-Expr predicate body (no-op at v0.8.0 on bare $bindings; the
+# single-Expr predicate body (no-op currently on bare $bindings; the
 # surface is reserved for a future predicate-on-binding extension).
 #
 # The CXPath PathPredicate [159] is unchanged — slice never appears
@@ -1744,7 +1744,7 @@
 # [?xml → XMLDecl
 # [?cx → CXDirective
 # [?Name → PI
-# [- → Comment
+# [; → Comment
 # [# → RawText (scan until #] terminator)
 # [| → BlockContent (Extended); body parsed as BodyItem* with
 # literal newlines; closed by ] with normal bracket counting

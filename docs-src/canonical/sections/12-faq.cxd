@@ -1,6 +1,5 @@
 [# Section 12 — Frequently Asked Questions. Back-matter; appears
-   after §11 glossary. Authored 2026-05-22 against the v0.8.0-dev
-   branch.
+   after §11 glossary. Authored 2026-05-22.
 
    These are the questions a first-week CX developer actually asks.
    Each Q has a one-paragraph recovery pattern with a concrete
@@ -57,17 +56,17 @@
       [body
         """Today: yes, via WSL2 (Ubuntu or Debian inside Windows).
            The Linux build runs unchanged. Native Windows — a
-           PE-format `cx.exe` and `cxlib.dll` — is on the post-v0.8.0
+           PE-format `cx.exe` and `cxlib.dll` — is on the
            roadmap; the bottleneck is the V toolchain's Windows
            support, not CX itself. Track issue
-           [#windows-native](https://github.com/cx-lang/cx/issues/windows-native)
+           [#windows-native](https://github.com/cx-home/cx/issues/windows-native)
            for the current state."""]]]
 
   [child id=faq-parsing n=12.2 title='Parsing and syntax'
 
     [child id=faq-find-retired title='Why does my `[?find]` fail with CXER0100?'
       [body
-        """`[?find]` was retired in v0.8.0 — it was
+        """`[?find]` was retired in v0.8.0 — it was [; version-literal-ok ]
            always sugar for `[?for]` over a pattern. Rewrite each
            `[?find pattern [yield body]]` to either a direct CXPath
            (when the pattern is just an element with optional
@@ -133,7 +132,7 @@
            cx fmt doc.cx | cx canon | shasum -a 256
            [# Both should produce identical hex output on every host. #]"""]
       [note
-        """File a bug at https://github.com/cx-lang/cx/issues with
+        """File a bug at https://github.com/cx-home/cx/issues with
            the source document and the divergent hashes from both
            platforms. Include `cx --version` output from each."""]]
 
@@ -170,20 +169,19 @@
 
     [child id=faq-find-vs-for title='What is the difference between `[?for]` and the old `[?find]`?'
       [body
-        """They are the same operation. `[?find]` was retired in
-           v0.8.0 because it was always
+        """They are the same operation. `[?find]` was retired because it was always
            pattern-driven `[?for]` with one less keyword. Anything
            you wrote in `[?find]` form can be expressed as `[?for]`
            over a pattern, or — more directly — as a CXPath
            expression. See [[from-v07x]] for the migration table."""]
       [example lang=cx
-        """[# v0.7.x                                                   #]
+        """[# v0.7.x — old form (retired)                              #] # version-literal-ok
            [?find [user @active=true $u] :yield $u]
 
-           [# v0.8.0 — CXPath form (preferred)                         #]
+           [# v0.8.0 — CXPath form (preferred)                         #] # version-literal-ok
            //user[@active=true]
 
-           [# v0.8.0 — equivalent pattern form                         #]
+           [# v0.8.0 — equivalent pattern form                         #] # version-literal-ok
            [?for [user @active=true $u] [yield $u]]"""]]
 
     [child id=faq-dispatch-on-type title='How do I dispatch on element type?'
@@ -368,7 +366,7 @@
         """The parser is bounded by `CX_MAX_BODY` (default 256 MiB).
            For files larger than the cap, use the streaming
            evaluator — see [[streaming-data]]. Gate 15 of the
-           v0.8.0 readiness rubric measures the streaming
+           gate 15 measures the streaming
            throughput at **353 MB/s** on the reference workload."""]
       [example lang=shell
         """[# Raise the cap if your workflow needs it                  #]
@@ -451,7 +449,7 @@
            includes entirely and refuses any directive that
            touches the filesystem or network:"""]
       [example lang=shell
-        """cx eval --profile untrusted untrusted.cx"""]
+        """cx --profile untrusted untrusted.cx"""]
       [body
         """The full capability matrix lives at
            [[include-capabilities]] and in
@@ -471,34 +469,33 @@
            CX_MAX_ATTRS=4096                   [# attrs per element #]
            CX_MAX_NODES=$((1024*1024))         [# total nodes      #]
            CX_EVAL_TIMEOUT_MS=5000             [# eval wall clock  #]
-           cx eval input.cx"""]]]
+           cx input.cx"""]]]
 
   [child id=faq-migration n=12.8 title='Migration'
 
-    [child id=faq-migrate-v07 title='How do I migrate from v0.7.x?'
+    [child id=faq-migrate-v07 title='How do I migrate from v0.7.x?' [; version-literal-ok ]
       [body
-        """v0.8.0 is the pre-release API/format-stability boundary
-           and ships with no external users, so there is no
-           standing migration tool — the changes are mechanical
+        """v0.8.0 is the pre-release API/format-stability boundary. [; version-literal-ok ]
+           The changes are mechanical
            renames plus the `[?find]` → `[?for]`/CXPath rewrite.
-           The full diff between v0.7.x and v0.8.0 is documented at
+           The full diff between v0.7.x and v0.8.0 is documented at [; version-literal-ok ]
            [[from-v07x]]; the non-mechanical cases (custom directive
            names that collide with new core directives) are listed
            at the bottom of that section. If you do need to migrate
-           a v0.7.x codebase, the rename tables there give
+           a v0.7.x codebase, the rename tables there give [; version-literal-ok ]
            you everything to do it by hand or with a one-off
            project-local script."""]]
 
     [child id=faq-archived-bindings title='What if I am on TypeScript / Java / C# / Ruby / Kotlin / Swift binding?'
       [body
-        """Those bindings were archived in v0.8.0 — they are still
-           available on v0.7.5 (last release before the archive)
+        """Those bindings were archived in v0.8.0 — they are still [; version-literal-ok ]
+           available on v0.7.5 (last release before the archive) [; version-literal-ok ]
            and live under `lang/_archived/` for reference. The
-           v0.8.0 binding set is V, Python, Go, Rust (Tier 1)
+           current binding set is V, Python, Go, Rust (Tier 1)
            only. Your options:
-           (a) **Stay on v0.7.5** — it remains tagged and
-           supported for the v0.7.x bugfix line; CX file format
-           is forward-compatible to v0.8.0.
+           (a) **Stay on v0.7.5** — it remains tagged and [; version-literal-ok ]
+           supported for the v0.7.x bugfix line; CX file format [; version-literal-ok ]
+           is forward-compatible.
            (b) **Migrate to a Tier-1 binding** — Layer 1 is
            identical across all four, so the migration is mostly
            module-import changes plus host-idiomatic adjustments
@@ -509,7 +506,7 @@
       [note
         """The decision to archive was about resource focus, not
            technical limitation — those bindings worked. The
-           v0.8.0 Tier-1 set was chosen for ecosystem reach
+           The Tier-1 set was chosen for ecosystem reach
            (Python for analytics, Go for services, Rust for
            systems, V as the native reference). Community-
            maintained revivals are welcome and the C ABI stays
@@ -517,7 +514,7 @@
 
   [# Migrated from docs-src/content/faq.cx during Phase B docs →
      guide consolidation (2026-05-24). Unique Q&A from the
-     pre-v0.8.0 docs FAQ that complement §12.1-§12.8 above. #]
+     pre-Phase-B docs FAQ that complement §12.1-§12.8 above. #]
 
   [child id=faq-first-thirty n=12.9 title='First thirty minutes — quick answers'
     [intro

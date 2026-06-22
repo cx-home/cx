@@ -1,6 +1,6 @@
 # `cx:` module — CX self-host surface
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx:` module. Always-on, no `[?lib]` required: the homoiconic claim demands runtime cx-on-cx operations be present without opt-in.
 
@@ -143,6 +143,8 @@ an `[err]` produced *by* the evaluated code railway-propagates out unchanged.
 ## §4. AST-vs-wire distinction
 
 `cx:parse` returns CXDM values matching the in-memory shape per [`spec/core/cxdm.md`](../core/cxdm.md); `cx:serialize` produces concrete-syntax bytes accepted by [`spec/core/grammar.ebnf`](../core/grammar.ebnf). Round-trip identity `cx:serialize(cx:parse($t)) ≡ cx:canonical($t)` holds for any canonical input.
+
+**Result shape (codec.md §7).** A source with a **single** top-level node parses to that node **directly**, so it is navigable as the value — `[?let [= $f [$cx:parse "[feature name=helm]"]] $f@name]` → `'helm'`. A source with **more than one** top-level node (e.g. a leading `[; … ]` comment plus a root element) parses to a transparent multi-root carrier; navigate it with the **descendant axis** (`$f//feature/@name`), since a direct child/attribute step on the multi-root carrier raises `CXER0001`. `[$cx:parse]` is the canonical form; the flat-dispatch alias `[$cx-parse]` is also accepted.
 
 ---
 

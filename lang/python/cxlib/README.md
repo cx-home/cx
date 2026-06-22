@@ -309,7 +309,7 @@ decimals → `float`, everything else → `str`. An invalid expression raises
 
 ```py
 from cxlib import cx
-src1 = "[config\n  [- a comment]\n  [server host=localhost]\n]"
+src1 = "[config\n  [; a comment]\n  [server host=localhost]\n]"
 src2 = "[config [server host=localhost]]"
 cx.fmt(src1)        # preserves the comment, normalizes whitespace
 cx.canonical(src1)  # comment stripped

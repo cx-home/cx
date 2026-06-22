@@ -8,7 +8,7 @@
   [standard ref='Okapi BM25' title='Ranking']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/ft` sub-package.
 
@@ -16,7 +16,7 @@ Normative reference for the `cx-stdlib/ft` sub-package.
 
 ## §1. Scope
 
-`cx-stdlib/ft` provides in-program fulltext search with structured ranking and snippet generation. v0.8.0 ships a **naive in-memory inverted index** built per call from a doc set or [`cx-stdlib/store`](store.md). Tokenization, stopword handling, English stemming, scoring (TF-IDF or BM25), phrase queries via positional postings, and snippet extraction run inside the process — no persistent index, no external engine.
+`cx-stdlib/ft` provides in-program fulltext search with structured ranking and snippet generation. The module ships a **naive in-memory inverted index** built per call from a doc set or [`cx-stdlib/store`](store.md). Tokenization, stopword handling, English stemming, scoring (TF-IDF or BM25), phrase queries via positional postings, and snippet extraction run inside the process — no persistent index, no external engine.
 
 The Index is an **opaque in-memory value rebuilt per program run**; there is no cross-run persistence and no serialization format. Persistence is the job of the future pack backend (§6); the API surface stays the same when persistence lands.
 
@@ -35,9 +35,9 @@ segment  →  case-fold  →  stopword-removal  →  stem
 1. **segment** — Unicode word-boundary segmentation (UAX #29 §4.1). Punctuation drops; numbers and identifiers retain.
 2. **case-fold** — fold to lowercase (skipped when `case-sensitive=true`).
 3. **stopword-removal** — drop stopwords for the configured language (§4.2); disable with `:none`.
-4. **stem** — Snowball Porter2 English stemmer (default for `language="en"`); other languages default to no stemming until v0.8.x.
+4. **stem** — Snowball Porter2 English stemmer (default for `language="en"`); other languages default to no stemming until a future revision.
 
-| Language | Stopwords (bundled) | Stemmer (v0.8.0) |
+| Language | Stopwords (bundled) | Stemmer |
 |---|---|---|
 | `en` (default) | English standard ~150 words | Snowball Porter2 (default-on) |
 | `es`, `fr`, `de`, `pt`, `it`, `ru`, `nl` | bundled standard list | none |
@@ -216,13 +216,13 @@ Both produce non-negative scores. Higher = better. Comparable within an Index, n
 
 ## §6. Forward compatibility — pack-backed persistent index
 
-v0.8.x will add a pack-backed persistent inverted index exposed as `[$ft:index-persistent]`. Same `search` query API; only the build call changes:
+A future revision will add a pack-backed persistent inverted index exposed as `[$ft:index-persistent]`. Same `search` query API; only the build call changes:
 
 ```cx
-[?let [= $idx [$ft:index $docs]]            ; v0.8.0
+[?let [= $idx [$ft:index $docs]]            
   [$ft:search $idx "query" 10]]
 
-[?let [= $idx [$ft:index-persistent "pack-ft:///path/to/index" $docs]]   ; v0.8.x
+[?let [= $idx [$ft:index-persistent "pack-ft:///path/to/index" $docs]]   ; future revision
   [$ft:search $idx "query" 10]]             ; same call shape
 ```
 

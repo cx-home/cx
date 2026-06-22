@@ -11,7 +11,7 @@
 [manifest
   title='CX — The CX Data and Code Language'
   subtitle='Developer guide and reference'
-  branch=v0.8.0-dev
+  branch=main
   target-output='docs/cx-data-and-code-guide.md (single file) + multi-file emit later'
   status=scaffold
 
@@ -222,7 +222,7 @@
       [child n=6.12.4 id=cxpath-predicates      title='General predicate + reserved bindings']
       [child n=6.12.5 id=cxpath-bind            title=':bind peer-modifier']
       [child n=6.12.6 id=cxpath-binding-surface title='In the host bindings']]
-    [child n=6.13 id=errors-catalog      title='Error code catalog (v0.8.0)'
+    [child n=6.13 id=errors-catalog      title='Error code catalog'
       [child n=6.13.1 id=errors-security    title='CXER001x — security caps']
       [child n=6.13.2 id=errors-eval-gates  title='CXER004x — evaluator gates']
       [child n=6.13.3 id=errors-include     title='E9xx — include resolver']
@@ -295,11 +295,11 @@
     [child n=9.15 id=wasm-three-tier   title='Wasm three-tier rendering and respin status'
       [child n=9.15.1 id=wasm-why            title='Why WebAssembly']
       [child n=9.15.2 id=wasm-three-tier-render title='Three-tier diagram rendering']
-      [child n=9.15.3 id=wasm-status         title='Wasm respin status (v0.8.0)']]
+      [child n=9.15.3 id=wasm-status         title='Wasm respin status']]
     [child n=9.16 id=performance-numbers title='Performance numbers — parse, emit, eval, FFI']]
 
   [section n=10 id=migration file='10-migration.cxd'
-    [child n=10.1 id=from-v07x        title='From v0.7.x to v0.8.0']
+    [child n=10.1 id=from-v07x        title='From v0.7.x'] [; version-literal-ok ]
     [child n=10.2 id=from-xml         title='From XML']
     [child n=10.3 id=from-json-yaml   title='From JSON / YAML / TOML']
     [child n=10.4 id=retired-surfaces title='Retired surfaces and replacements']

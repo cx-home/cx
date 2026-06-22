@@ -1,6 +1,6 @@
 # `cx-stdlib/did` — decentralized identifiers
 
-**Status:** Approved (post-v0.8.0 addition per [std-lib/README.md](README.md) §3.2). Tier D — trust.
+**Status:** Approved (post-initial addition per [std-lib/README.md](README.md) §3.2). Tier D — trust.
 
 Normative reference for the `cx-stdlib/did` module: create, parse, resolve, and prove control of **W3C Decentralized Identifiers (DIDs)**. A DID is a globally-unique, self-sovereign, cryptographically-verifiable identifier — the **decentralized** identity source named in [xap.md](../xap/xap.md) §22.1 (an external identity source is "an IdP (OIDC/SAML) **or** a DID resolver"), and the concrete realization of **R9**: *a DID identifies a principal*.
 

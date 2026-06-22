@@ -1,10 +1,10 @@
-[# template.cx — renders the cx-data-and-code-guide (v0.8.0 surface).
+[# template.cx — renders the cx-data-and-code-guide.
    Walks docs-src/canonical/manifest.cxd, loads each section file, and
    emits a single consolidated document tree with section anchors
    derived from each manifest entry's id slug.
 
    Run (the manifest is the input document):
-     cx eval docs-src/canonical/template.cx \
+     cx docs-src/canonical/template.cx \
        --data=docs-src/canonical/manifest.cxd --allow-read
 
    --allow-read grants the read capability the QName-dispatched
@@ -16,7 +16,7 @@
    QName (§12.1.1): [$io:read-file …].
 
    The template is intentionally CX itself — the doc generator eats its
-   own dog food. Every directive used below is v0.8.0 vocabulary:
+   own dog food. Every directive used below is current CX vocabulary:
      §5.5  CXPath as a value kind (steps + predicates)
      §8.2  multi-arm [?match] ([case PATTERN RESULT] / [else RESULT])
      §8.3  [?for] comprehension (clause-children: [in], [where], [yield])

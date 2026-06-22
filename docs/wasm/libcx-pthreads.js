@@ -6332,22 +6332,6 @@ function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
   }
 }
 
-var __timegm_js = function(tmPtr) {
-  var ret = (() => {
-    var time = Date.UTC((growMemViews(), HEAP32)[(((tmPtr) + (20)) >> 2)] + 1900, (growMemViews(), 
-    HEAP32)[(((tmPtr) + (16)) >> 2)], (growMemViews(), HEAP32)[(((tmPtr) + (12)) >> 2)], (growMemViews(), 
-    HEAP32)[(((tmPtr) + (8)) >> 2)], (growMemViews(), HEAP32)[(((tmPtr) + (4)) >> 2)], (growMemViews(), 
-    HEAP32)[((tmPtr) >> 2)], 0);
-    var date = new Date(time);
-    (growMemViews(), HEAP32)[(((tmPtr) + (24)) >> 2)] = date.getUTCDay();
-    var start = Date.UTC(date.getUTCFullYear(), 0, 1, 0, 0, 0, 0);
-    var yday = ((date.getTime() - start) / (1e3 * 60 * 60 * 24)) | 0;
-    (growMemViews(), HEAP32)[(((tmPtr) + (28)) >> 2)] = yday;
-    return date.getTime() / 1e3;
-  })();
-  return BigInt(ret);
-};
-
 var __tzset_js = (timezone, daylight, std_name, dst_name) => {
   // TODO: Use (malleable) environment variables instead of system settings.
   var currentYear = (new Date).getFullYear();
@@ -7572,6 +7556,8 @@ var dynCall_iiiii = makeInvalidEarlyAccess("dynCall_iiiii");
 
 var dynCall_iiiiii = makeInvalidEarlyAccess("dynCall_iiiiii");
 
+var dynCall_viiiiiii = makeInvalidEarlyAccess("dynCall_viiiiiii");
+
 var dynCall_jiji = makeInvalidEarlyAccess("dynCall_jiji");
 
 var dynCall_iidiiii = makeInvalidEarlyAccess("dynCall_iidiiii");
@@ -7650,6 +7636,7 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["dynCall_ii"] != "undefined", "missing Wasm export: dynCall_ii");
   assert(typeof wasmExports["dynCall_iiiii"] != "undefined", "missing Wasm export: dynCall_iiiii");
   assert(typeof wasmExports["dynCall_iiiiii"] != "undefined", "missing Wasm export: dynCall_iiiiii");
+  assert(typeof wasmExports["dynCall_viiiiiii"] != "undefined", "missing Wasm export: dynCall_viiiiiii");
   assert(typeof wasmExports["dynCall_jiji"] != "undefined", "missing Wasm export: dynCall_jiji");
   assert(typeof wasmExports["dynCall_iidiiii"] != "undefined", "missing Wasm export: dynCall_iidiiii");
   assert(typeof wasmExports["asyncify_start_unwind"] != "undefined", "missing Wasm export: asyncify_start_unwind");
@@ -7718,6 +7705,7 @@ function assignWasmExports(wasmExports) {
   dynCall_ii = dynCalls["ii"] = createExportWrapper("dynCall_ii", 2);
   dynCall_iiiii = dynCalls["iiiii"] = createExportWrapper("dynCall_iiiii", 5);
   dynCall_iiiiii = dynCalls["iiiiii"] = createExportWrapper("dynCall_iiiiii", 6);
+  dynCall_viiiiiii = dynCalls["viiiiiii"] = createExportWrapper("dynCall_viiiiiii", 8);
   dynCall_jiji = dynCalls["jiji"] = createExportWrapper("dynCall_jiji", 4);
   dynCall_iidiiii = dynCalls["iidiiii"] = createExportWrapper("dynCall_iidiiii", 7);
   _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
@@ -7772,7 +7760,6 @@ function assignWasmImports() {
     /** @export */ _emscripten_thread_set_strongref: __emscripten_thread_set_strongref,
     /** @export */ _localtime_js: __localtime_js,
     /** @export */ _mmap_js: __mmap_js,
-    /** @export */ _timegm_js: __timegm_js,
     /** @export */ _tzset_js: __tzset_js,
     /** @export */ clock_time_get: _clock_time_get,
     /** @export */ emscripten_check_blocking_allowed: _emscripten_check_blocking_allowed,

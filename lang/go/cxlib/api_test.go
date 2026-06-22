@@ -855,13 +855,38 @@ func TestParseJsonToDocument(t *testing.T) {
 	}
 }
 
+// topMapEntry returns the value of the named entry in a top-level MapNode root.
+// #4/#5: YAML & TOML now import LOSSLESSLY to the native value model (a MapNode
+// root), matching JSON — not synthesized elements. So the root is a *MapNode,
+// navigated by entry key (not FindFirst, which searches Elements).
+func topMapEntry(t *testing.T, doc *Document, key string) Node {
+	t.Helper()
+	if len(doc.Elements) != 1 {
+		t.Fatalf("expected a single value root, got %d", len(doc.Elements))
+	}
+	m, ok := doc.Elements[0].(*MapNode)
+	if !ok {
+		t.Fatalf("expected top-level MapNode (lossless import), got %T", doc.Elements[0])
+	}
+	for _, e := range m.Entries {
+		if k, isStr := e.KeyValue.(string); isStr && k == key {
+			return e.Value
+		}
+	}
+	return nil
+}
+
 func TestParseYamlToDocument(t *testing.T) {
 	doc, err := ParseYaml("server:\n  port: 8080\n")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if doc.FindFirst("server") == nil {
-		t.Fatal("expected server element")
+	server := topMapEntry(t, doc, "server")
+	if server == nil {
+		t.Fatal("expected 'server' map entry")
+	}
+	if _, ok := server.(*MapNode); !ok {
+		t.Fatalf("expected nested map value for 'server', got %T", server)
 	}
 }
 
@@ -870,8 +895,12 @@ func TestParseToml(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if doc.Root() == nil || doc.Root().Name != "server" {
-		t.Fatalf("expected root name 'server', got %v", doc.Root())
+	server := topMapEntry(t, doc, "server")
+	if server == nil {
+		t.Fatal("expected 'server' map entry")
+	}
+	if _, ok := server.(*MapNode); !ok {
+		t.Fatalf("expected nested map value for 'server', got %T", server)
 	}
 }
 

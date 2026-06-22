@@ -4,7 +4,7 @@
 [module-meta name=test tier=C status=current]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/test` sub-package.
 

@@ -1,6 +1,6 @@
 # CX AST Specification
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 Both the CX parser and XML parser produce this AST. It is the canonical representation
 shared by all emitters (CX, XML, JSON) and all language implementations.
@@ -138,7 +138,7 @@ XML: `<?php echo $foo;?>`
 {"type": "Comment", "value": "comment text"}
 ```
 
-CX: `[-comment text]`
+CX: `[;comment text]`
 XML: `<!--comment text-->`
 
 ---
@@ -592,7 +592,7 @@ every body item is a clause-child element or positional value
 (e.g. `[?for [in $xs] [yield $x]]` → `items == [Element "in",
 Element "yield"]`); no `:name value` syntax is accepted at the parser.
 This makes `EvalDirective` structurally uniform with `Element`
-(name + body items). The v0.8.0 reshape retired the prior single-
+(name + body items). The reshape retired the prior single-
 `ArrayNode` "ArgArray" wrapper; the program AST layer reconstructs the
 specialised `ProgramDirective` / `DefNode` / `LibNode` / `ConstNode`
 shapes from `name` + the body items.
@@ -812,7 +812,7 @@ The `]]>` sequence is valid in CX raw text (only `#]` is forbidden in CX source)
 by re-parsing the DOCTYPE internal subset. The ast_bin wire format
 carries the internal subset as verbatim bytes inside
 `DoctypeDecl.int_subset` ([`ast-bin.md` §4.1](ast-bin.md) tag `0x0B`)
-— there are no per-kind wire tags at v0.8.0. Consumers that need
+— there are no per-kind wire tags currently. Consumers that need
 structured DTD content re-parse `int_subset` themselves; the
 streaming-read API performs this re-parse to fabricate `ElementDecl` /
 `AttlistDecl` events.
@@ -925,7 +925,7 @@ Conformance tests specify Round-trip XML in their `out_xml` sections.
 
 CX code — the unified pattern / query / transform language ratified by
 [`code.md`](code.md) — adds seven AST node types, and four further node
-types at v0.8.0 for the module system (`LibNode`, `DefNode`,
+types for the module system (`LibNode`, `DefNode`,
 `ConstNode`, `TypeExprNode` per [`code.md` §12](code.md)).
 Every CX source file parses to a `Program` whose body is a single
 `ProgramExpr` subtree; module-top-level files additionally carry a
@@ -1179,8 +1179,8 @@ definition to importers. `returns` / `throws` carry the optional
 `[returns T]` / `[throws T]` clause-children. The `throws` slot is
 reserved by [`code.md` §12.2.5](code.md): its surface syntax parses
 and the AST carries the clause, but its runtime checking semantics
-are deferred to a post-v0.8.0 revision and consumers MUST treat the
-field as informational at v0.8.0.
+are deferred to a future revision and consumers MUST treat the
+field as informational.
 
 `params` is the ordered parameter list. Each entry's `kind`
 discriminates positional / named-with-default / rest. At most one
@@ -1664,7 +1664,7 @@ only AST shape.
 | XMLDecl | Core | [?xml ...] | <?xml ...?> |
 | CXDirective | Core | [?cx include=f.cx] | <?cx include="f.cx"?> |
 | PI | Core | [?target data] | <?target data?> |
-| Comment | Core | [-text] | <!--text--> |
+| Comment | Core | [;text] | <!--text--> |
 | DoctypeDecl | Core | [!DOCTYPE ...] | <!DOCTYPE ...> |
 | Element | Core | [name ...] | <name>...</name> |
 | Alias | Extended | [*name] | <cx:alias name="name"/> |

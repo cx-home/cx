@@ -63,7 +63,7 @@ type ScalarNode struct {
 
 func (n *ScalarNode) cxNode() {}
 
-// CommentNode is a CX comment `[- ... ]`.
+// CommentNode is a CX comment `[; ... ]`.
 type CommentNode struct{ Value string }
 
 func (n *CommentNode) cxNode() {}
@@ -1439,7 +1439,7 @@ func emitNode(node Node, depth int) string {
 	case *ScalarNode:
 		return emitScalar(n)
 	case *CommentNode:
-		return ind + "[-" + n.Value + "]\n"
+		return ind + "[;" + n.Value + "]\n"
 	case *RawTextNode:
 		return ind + "[#" + n.Value + "#]\n"
 	case *EntityRefNode:

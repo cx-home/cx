@@ -10,7 +10,7 @@
   [standard ref='RFC 7231' title='Accept']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/mime` sub-package.
 

@@ -9,7 +9,7 @@ via `libcx`.
 Four convenience functions for canonical text, hashing, and equality:
 
 ```go
-src1 := "[config\n  [- comment]\n  [server host=localhost]\n]"
+src1 := "[config\n  [; comment]\n  [server host=localhost]\n]"
 src2 := "[config [server host=localhost]]"
 cxlib.Fmt(src1)        // lossless canonical — preserves the comment
 cxlib.Canonical(src1)  // strict canonical   — comment stripped

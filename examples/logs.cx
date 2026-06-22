@@ -1,4 +1,4 @@
-[- logs.cx — logfmt mode (v3.4): top-level key=value attribute lines,
+[; logs.cx — logfmt mode (v3.4): top-level key=value attribute lines,
    no enclosing element. Each line parses as a synthetic Element with
    the attributes attached. Type fidelity is preserved: `latency_ms=45`
    is int, `slow=true` is bool, `ts=2026-05-07T10:30:00Z` is datetime.

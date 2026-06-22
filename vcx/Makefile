@@ -212,7 +212,7 @@ conform-ns:
 
 conform-ns-cxpath:
 	@echo "── cxpath conformance (v08_cxpath_*_test.v) ──────────────────────────"
-	$(V) -cc cc test tests/v08_cxpath_dispatcher_test.v tests/v08_cxpath_forward_test.v tests/v08_cxpath_reverse_test.v tests/v08_cxpath_misc_test.v
+	$(V) -cc cc test tests/cxpath_dispatcher_test.v tests/cxpath_forward_test.v tests/cxpath_reverse_test.v tests/cxpath_misc_test.v
 
 conform-table:
 	@echo "── table.txt ─────────────────────────────────────────────────────────"
@@ -235,6 +235,12 @@ conform-data-bin-chunked:
 	@echo "── data_bin_chunked.txt ──────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_DATA_BIN_CHUNKED)
 
+# Runs under the shipped default `-gc e`/vgc. cmp-005-fd-streaming-write-bounded-memory
+# asserts the fd-streaming write path keeps RSS O(1) in the number of row-groups.
+# The writer now forces a vgc collection every streaming_write_gc_interval_bytes of
+# output (#52), so the transient per-group framing buffers are reclaimed and reused
+# instead of accumulating — the assertion holds under `-gc e` without the earlier
+# `-gc boehm` crutch. The other cases here are encoding-correctness (GC-agnostic).
 conform-data-bin-compress:
 	@echo "── data_bin_compression.txt ──────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_DATA_BIN_COMPRESS)

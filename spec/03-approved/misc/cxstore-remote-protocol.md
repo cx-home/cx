@@ -1,6 +1,6 @@
 # CXStore Remote Protocol (CSRP)
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Wire protocol for the Service tier of `cx-stdlib/store`. Companions:
 [`spec/std-lib/store.md`](../std-lib/store.md) (client-side Store API),

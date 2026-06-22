@@ -1,6 +1,6 @@
 # `cx-stdlib/vc` — verifiable credentials
 
-**Status:** Approved (post-v0.8.0 addition per [std-lib/README.md](README.md) §3.2). Tier D — trust.
+**Status:** Approved (post-initial addition per [std-lib/README.md](README.md) §3.2). Tier D — trust.
 
 Normative reference for the `cx-stdlib/vc` module: **issue, verify, present, and revoke verifiable credentials**. Per [xap.md](../xap/xap.md) **R9**, a verifiable credential **is** a *portable, signed, attenuating [§22.2](../xap/xap.md) delegation* — the decentralized way to carry authority between DIDs without a shared central IdP. `vc` is the authority-carrying counterpart to [`did`](did.md) (identity).
 

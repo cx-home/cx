@@ -2,7 +2,7 @@
    Pizzeria-edition tour of CX directives, simple to complex,
    in 50 examples. Migrated from docs-src/content/tour/programs.cx
    during Phase B docs → guide consolidation (2026-05-24).
-   Migrated to the v0.8.0 homoiconic-Lisp-1 surface
+   Migrated to the current homoiconic-Lisp-1 surface
    2026-05-27. Designer pre-approved as guide appendix.
    File extension .cxd — data-only source. #]
 

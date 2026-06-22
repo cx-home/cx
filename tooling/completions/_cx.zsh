@@ -1,12 +1,12 @@
 #compdef cx
-# v0.8.0: cx CLI zsh completion.
+# cx CLI zsh completion.
 #
 # Install: place in a directory on $fpath (e.g.
 #   /usr/local/share/zsh/site-functions/_cx or
 #   ~/.zfunc/_cx) and add `autoload -U _cx` to .zshrc.
 
 _cx() {
-  # v0.8.0: `select` retired (CXPath is a first-class value kind
+  # `select` retired (CXPath is a first-class value kind
   # per code.md §5.5, use `cx eval` with a //path expression);
   # `diagram` renders a DATA-shaped diagram, `code-diagram` / `code-tree`
   # render the PROGRAM AST; `lock` manages the dependency lockfile.
@@ -20,7 +20,7 @@ _cx() {
     'lint:Lint a CX file'
     'validate:Validate against a schema'
     'table:Table operations (info/dump/load)'
-    'demo:Run the v0.8.0 demo'
+    'demo:Run the cx demo'
     'scaffold:Scaffold a new CX project'
     'eval:Evaluate a CX program'
     'diagram:Render a diagram from a CX source (mermaid / graphviz)'

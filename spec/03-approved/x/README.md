@@ -12,7 +12,7 @@ The foundational convention, [`cx-x/run`](run.md) (the Runnable), has its own sp
 
 ## `cx-x/llm` — minimal LLM provider (the first Runnable)
 
-Targets the Ollama `/api/chat` protocol (local, keyless). Pure shaping (`chat-request`, `completion-of`, `user-message`) is split from the effectful `complete` (POST one prompt → completion text), which composes `http:post` + `json`. Compose it as a Runnable via the call-site idiom: `[$run:invoke [?fn ($p) [$llm:complete $base $model $p]] "Hi"]`. Run under a scoped net grant (`--allow-net=127.0.0.1:11434`), never `--allow-all`. `stream` (NDJSON token sequence) is deferred. Fixtures: `conformance/stdlib/llm.cxd` + a live mock-server round-trip (`vcx/tests/v08_llm_real_test.v`).
+Targets the Ollama `/api/chat` protocol (local, keyless). Pure shaping (`chat-request`, `completion-of`, `user-message`) is split from the effectful `complete` (POST one prompt → completion text), which composes `http:post` + `json`. Compose it as a Runnable via the call-site idiom: `[$run:invoke [?fn ($p) [$llm:complete $base $model $p]] "Hi"]`. Run under a scoped net grant (`--allow-net=127.0.0.1:11434`), never `--allow-all`. `stream` (NDJSON token sequence) is deferred. Fixtures: `conformance/stdlib/llm.cxd` + a live mock-server round-trip (`vcx/tests/llm_real_test.v`).
 
 ## `cx-x/mcp` — MCP (Model Context Protocol) client
 
@@ -22,11 +22,11 @@ MCP is JSON-RPC 2.0 over HTTP, so the client is composition over `jsonrpc` + `ht
 
 The server counterpart: pure request readers (`method-of`, `id-of`, `tool-name-of`, `tool-args-of`) + JSON-RPC response builders (`initialize-result`, `tools-list-result`, `tool-result`, `tool-error`, `protocol-error`). The transport is the real `http:serve`; a `[?def]` handler reads the request, dispatches on the method, runs the tool, and returns a `[response]`.
 
-**The differentiator (ties [`spec/03-approved/xap/xap.md`](../xap/xap.md)'s PEP / #7).** A tool handler is ordinary CX, so its effects are gated by **CX capabilities** at the effect point — a tool that reads a file / opens a socket is **denied** (`CXER0271`) unless the server was granted that capability, which the handler maps to an `isError` tool result via `tool-error`. The language enforces the tool sandbox. Proven end-to-end (server + denial) in `vcx/tests/v08_mcp_server_real_test.v`; pure helpers in `conformance/stdlib/mcp-server.cxd`. A *generic* tool registry (closures-in-data dispatched by name) awaits #45; direct `[?if]` dispatch works today.
+**The differentiator (ties [`spec/03-approved/xap/xap.md`](../xap/xap.md)'s PEP / #7).** A tool handler is ordinary CX, so its effects are gated by **CX capabilities** at the effect point — a tool that reads a file / opens a socket is **denied** (`CXER0271`) unless the server was granted that capability, which the handler maps to an `isError` tool result via `tool-error`. The language enforces the tool sandbox. Proven end-to-end (server + denial) in `vcx/tests/mcp_server_real_test.v`; pure helpers in `conformance/stdlib/mcp-server.cxd`. A *generic* tool registry (closures-in-data dispatched by name) awaits #45; direct `[?if]` dispatch works today.
 
 ## `cx-x/a2a` — A2A (Agent-to-Agent) client
 
-A2A is also JSON-RPC over HTTP. Pure shaping (`text-part`, `message`, `user-message`, `send-request`, `agent-card`) + extractors (`message-text`, `task-state`) + the effectful `send-message` / `ask`. An A2A peer composes as a Runnable via `[?fn ($t) [$a2a:ask $endpoint $t]]`. Fixtures: `conformance/stdlib/a2a.cxd` + a cx↔cx round-trip (`vcx/tests/v08_a2a_real_test.v`).
+A2A is also JSON-RPC over HTTP. Pure shaping (`text-part`, `message`, `user-message`, `send-request`, `agent-card`) + extractors (`message-text`, `task-state`) + the effectful `send-message` / `ask`. An A2A peer composes as a Runnable via `[?fn ($t) [$a2a:ask $endpoint $t]]`. Fixtures: `conformance/stdlib/a2a.cxd` + a cx↔cx round-trip (`vcx/tests/a2a_real_test.v`).
 
 ## `cx-x/a2a-xap` — A2A over the xap substrate
 

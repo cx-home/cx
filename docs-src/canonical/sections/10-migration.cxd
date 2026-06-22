@@ -134,7 +134,7 @@
 
     [list
       [item """**Comments.** JSON has none; YAML and TOML have ad-hoc
-              comments. CX has structured `[# … #]` comments that
+              comments. CX has structured `[; … ]` comments that
               survive `cx fmt` and round-trip across projections."""]
       [item """**Schemas.** JSON Schema / YAML schemas are external
               artifacts. CX schemas are first-class CX, in the same
@@ -157,7 +157,7 @@
     [table columns=(retired, replacement, source)
       [row retired='[?find]' replacement='[?for] over pattern, or CXPath //name'
         source='CXPath value-kind alignment']
-      [row retired='[- comment -]' replacement='[# comment #]'
+      [row retired='[- comment -]' replacement='[; comment ]'
         source='lexer consolidation']
       [row retired=':contains predicate hack' replacement='ancestor:: axis'
         source='CXPath value-kind alignment']
@@ -292,7 +292,7 @@
                 shows per-directive timing + span emission;
                 `cx eval --explain` shows the AST + dispatch path."""]
         [item """**Bisect** if the bug appeared between versions —
-                `git bisect run sh -c 'cx eval repro.cx; test $? = 0'`."""]
+                `git bisect run sh -c 'cx repro.cx; test $? = 0'`."""]
         [item """**Check the conformance suite** — does a similar
                 fixture exist? If yes, what's different about yours?"""]
         [item """**File a fixture** alongside the bug report (see

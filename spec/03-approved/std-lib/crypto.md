@@ -13,7 +13,7 @@
   [standard ref='RFC 7519' title='JWT']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/crypto` sub-package.
 
@@ -27,7 +27,7 @@ Normative reference for the `cx-stdlib/crypto` sub-package.
 
 HMAC lives here even though it uses SHA-256 underneath: HMAC is keyed and its purpose is authentication, not content addressing.
 
-v0.8.0 ships with bodies:
+The module ships with:
 
 - **HMAC** (RFC 2104) over SHA-256 / SHA-384 / SHA-512, single-shot and streaming.
 - **keyed-BLAKE3** — BLAKE3 in 32-byte-key MAC mode.

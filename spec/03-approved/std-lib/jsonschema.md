@@ -6,7 +6,7 @@
   [standard ref='RE2' title='Pattern matching']]
 ```
 
-**Status:** Current (post-v0.8.0 frozen addition; cx-private #6 S7)
+**Status:** Current (post-initial frozen addition; cx-private #6 S7)
 
 Normative reference for the `cx-stdlib/jsonschema` sub-package — validation of a CX value against a **JSON Schema 2020-12** document (the common subset MCP tool `inputSchema`s use). It lets CX consume MCP tool schemas (which **are** JSON Schema) without reinventing.
 

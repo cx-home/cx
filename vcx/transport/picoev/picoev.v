@@ -239,12 +239,37 @@ pub fn (mut pv Picoev) close_conn(fd int) {
 	close_socket(fd)
 }
 
+// request_content_length scans the parsed request headers for Content-Length
+// (case-insensitive) and returns its value, or 0 when absent/malformed. picoev
+// must keep reading the socket until this many body bytes are buffered before
+// it hands the request to the callback — otherwise a POST body that arrives in
+// a later TCP segment (common on cold or rapid connections) is seen as empty.
+@[direct_array_access]
+fn request_content_length(req pico_http_parser.Request) int {
+	for i in 0 .. req.num_headers {
+		h := req.headers[i]
+		if h.name.len == 14 && h.name.to_lower() == 'content-length' {
+			n := h.value.trim_space().int()
+			return if n > 0 { n } else { 0 }
+		}
+	}
+	return 0
+}
+
 // raw_callback handles raw events (read, write, timeout) for a file descriptor.
 @[direct_array_access]
 fn raw_callback(fd int, events int, context voidptr) {
 	mut pv := unsafe { &Picoev(context) }
+	// By default the per-fd read buffer is reset once this callback returns. But
+	// when a request is only partially read (headers or body still in flight on a
+	// later TCP segment), we must PRESERVE the accumulated bytes so the next read
+	// event resumes the same request rather than re-parsing a fragment. The read
+	// path sets `keep_buffer` before its EAGAIN return in that case.
+	mut keep_buffer := false
 	defer {
-		pv.idx[fd] = 0
+		if !keep_buffer {
+			pv.idx[fd] = 0
+		}
 	}
 	if events & picoev_timeout != 0 {
 		trace_fd('timeout ${fd}')
@@ -276,8 +301,14 @@ fn raw_callback(fd int, events int, context voidptr) {
 			buf:       response_buffer
 			date:      pv.date.str
 		}
+		// Request parsing loop. picohttpparser's `pret` only covers the request
+		// line + headers — NOT the body. So once the headers parse (`pret > 0`)
+		// we must keep reading until the full Content-Length body is buffered
+		// before invoking the callback; otherwise a body that lands in a later
+		// TCP segment is seen as empty (the intermittent empty-POST-body bug).
+		mut header_len := -1
+		mut content_length := 0
 		for {
-			// Request parsing loop
 			r := req_read(fd, request_buffer, pv.max_read, pv.idx[fd]) // Get data from socket
 			if r == 0 {
 				// connection closed by peer
@@ -285,6 +316,10 @@ fn raw_callback(fd int, events int, context voidptr) {
 				return
 			} else if r == -1 {
 				if fatal_socket_error(fd) == false {
+					// EAGAIN/EWOULDBLOCK: no more data available right now. Keep the
+					// bytes read so far (partial headers, or a body still arriving in a
+					// later segment) and resume on the next read event.
+					keep_buffer = true
 					return
 				}
 				elog('Error during req_read')
@@ -293,21 +328,42 @@ fn raw_callback(fd int, events int, context voidptr) {
 				return
 			}
 			pv.idx[fd] += r
-			mut s := unsafe { tos(request_buffer, pv.idx[fd]) }
-			pret := req.parse_request(s) or {
-				// Parse error
-				pv.error_callback(pv.user_data, req, mut &res, err)
-				return
+			if header_len < 0 {
+				// Headers not yet complete — try to parse them.
+				mut s := unsafe { tos(request_buffer, pv.idx[fd]) }
+				pret := req.parse_request(s) or {
+					// Parse error
+					pv.error_callback(pv.user_data, req, mut &res, err)
+					return
+				}
+				if pret > 0 {
+					header_len = pret
+					content_length = request_content_length(req)
+				} else {
+					assert pret == -2
+					// request headers incomplete, continue the loop
+					if pv.idx[fd] >= pv.max_read {
+						pv.error_callback(pv.user_data, req, mut &res, error('RequestIsTooLongError'))
+						return
+					}
+					continue
+				}
 			}
-			if pret > 0 { // Success
+			// Headers are complete. Wait until the whole Content-Length body has
+			// arrived, then bind `req.body` to its full extent (parse_request's
+			// is_complete fast path never re-sets the body, so we set it here).
+			have_body := pv.idx[fd] - header_len
+			if content_length <= have_body {
+				req.body = unsafe {
+					(&request_buffer[header_len]).vstring_literal_with_len(content_length)
+				}
 				break
 			}
-			assert pret == -2
-			// request is incomplete, continue the loop
-			if pv.idx[fd] == sizeof(request_buffer) {
+			if pv.idx[fd] >= pv.max_read {
 				pv.error_callback(pv.user_data, req, mut &res, error('RequestIsTooLongError'))
 				return
 			}
+			// body incomplete — keep reading
 		}
 		// Callback (should call .end() itself)
 		pv.cb(pv.user_data, req, mut &res)

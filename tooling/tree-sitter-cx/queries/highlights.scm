@@ -7,8 +7,9 @@
 (call (call_head) @function.call)
 
 ; ── Operator head  [op …]  (code.md §6.5 reserved bare operators) ─────────────
-; `+ * / = != < <= > >= and or not cast` (subtraction `[-` is the by-design
-; comment/operator mode fork — left to `cx lsp`).
+; `+ - * / = != < <= > >= and or not cast` (subtraction `[- …]` is a plain
+; operator now — the retired `[- …-]` block comment is gone; the current
+; comment is the asymmetric `[; …]`).
 (operator (operator_head) @operator)
 
 ; ── Program binding  $name  (code.md §3.6) ───────────────────────────────────
@@ -43,7 +44,7 @@
 (atom_literal) @constant
 
 ; ── Block content [| … |] and raw text [#…#] (CDATA) ──────────────────────────
-; v0.8.0 has NO Markdown surface (lexicon [L83]); `[#…#]` is RawText/CDATA, not a
+; CX has NO Markdown surface (lexicon [L83]); `[#…#]` is RawText/CDATA, not a
 ; heading, and there is no inline markup or fenced code block.
 (block_content "[" @punctuation.special)
 (block_content "|]" @punctuation.special)
@@ -56,7 +57,7 @@
 
 ; ── Directives ──────────────────────────────────────────────────────────────
 ;
-; v0.8.0 bracket-clause surface (grammar.ebnf [127]): the structured directives
+; Bracket-clause surface (grammar.ebnf [127]): the structured directives
 ; (match / modify / def / lib / const) expose sub-trees so editors can color
 ; clause heads / modifier keywords / CXPath axes. Non-structured directives
 ; ([?for], [?fn], [?if], [?let], [?=], …) — and any head not in the §4.1
@@ -133,14 +134,12 @@
 ;
 ; This grammar provides STRUCTURAL highlighting only — element names, the
 ; `[$…]` call surface, the reserved operator heads, attributes, scalars, raw
-; text / block content, plus a best-effort structural tree for the v0.8.0
+; text / block content, plus a best-effort structural tree for the
 ; bracket-clause directive surface (match / modify / def / lib / const + path /
 ; predicate / bind-annot).
 ;
 ; NOT modelled here (left to `cx lsp` semanticTokens, the authoritative
-; highlighter): subtraction `[- …]` — `[-` is the by-design data↔program mode
-; fork (data `[-…]` = comment, program `[-…]` = subtract), unresolvable in a
-; single context-free grammar, so `[-` stays a comment; a BARE-name path or a
+; highlighter): a BARE-name path or a
 ; `//`-path in element-BODY position (vs inside a call/operator, which IS
 ; handled) — admitting it would mis-color data URLs like `https://…` as CXPath;
 ; and any per-directive SEMANTIC coloring (e.g. `[returns int]` vs

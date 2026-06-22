@@ -3,7 +3,7 @@
 **INTERNAL — DO NOT PUBLISH. DO NOT MIRROR TO `cx-home/cx`. SEE [`README.md`](README.md).**
 
 **Status:** Draft. Captured 2026-05-23 from a design conversation. Not yet ratified.
-**Branch context:** Designed against v0.8.0-dev. Assumes v0.8.0 ships with ast_bin v7, CXPath value-kind, Layer-1 16-method API, and CXCol bridges as currently planned.
+**Branch context:** Designed against main. Assumes ast_bin v7, CXPath value-kind, Layer-1 16-method API, and CXCol bridges are shipped.
 
 ---
 
@@ -52,7 +52,7 @@ CXStore has **two independent design dimensions**, not one:
 | Tier (where processing happens) | embedded · service |
 | Backend (storage layout + transport) | pack · files · http · ftp · sftp · s3 · tar · zip · git · memory · cx-store (CSRP) · … |
 
-The non-pack Embedded backends (Phase 0.5) ship in v0.8.0 as the **URL-dispatched Embedded Store** — slower-than-pack but transport-portable, requires zero new infrastructure beyond what filesystems / HTTP / object stores already provide. The `pack` backend (Phase 1) is the eventual indexed performance upgrade within the Embedded tier.
+The non-pack Embedded backends (Phase 0.5) ship as the **URL-dispatched Embedded Store** — slower-than-pack but transport-portable, requires zero new infrastructure beyond what filesystems / HTTP / object stores already provide. The `pack` backend (Phase 1) is the eventual indexed performance upgrade within the Embedded tier.
 
 The Service tier (Phase 2+) speaks **CSRP** and is dispatched via the `cx-store://` URL scheme. Server-side speaks the same CSRP whether running single-node or multi-node distributed.
 
@@ -98,11 +98,11 @@ Same code on both sides of the URL change. See [`embedded.md`](embedded.md) for 
 
 ## Phases & estimates
 
-Sessions = focused AI-paired work units of a few hours each, matching the v0.6.0 / v0.7.x / v0.8.0 cadence. Calendar months assume sustained but not full-time work.
+Sessions = focused AI-paired work units of a few hours each. Calendar months assume sustained but not full-time work.
 
 | Phase | Tier | Product | Scope | Sessions | Calendar |
 |---|---|---|---|---|---|
-| **0** | — | Prereqs | v0.8.0 ships (ast_bin v7, CXPath value-kind, Layer-1 API, gate 28.6) | already in flight | — |
+| **0** | — | Prereqs | ast_bin v7, CXPath value-kind, Layer-1 API, gate 28.6 — shipped | done | — |
 | **0.5** | Embedded | **URL-dispatched Embedded Store** | Store interface trait + URL dispatch + format conventions; LocalFiles, Memory, HTTP-RO, HTTP-WebDAV, S3, FTP/FTPS, SFTP backends; naive O(N) query; migration tool; 4-language bindings; cxd + cxbin encodings; gzip + zstd compression | 14–20 | 3–6 wks |
 | **0.7** | Service | **CSRP + single-node Service (minimum)** | CSRP wire protocol spec; cx-store:// client backend; reference server CX program using `[?service]` + Embedded Store; Bearer-token auth; capability negotiation; binary streaming response | 4–6 | 1–2 wks |
 | **1** | Embedded | **Pack-backed Embedded Store** | Pack file format + ADR; mmap writer/reader; master hash→offset index; bloom filters; four secondary indexes (element / attribute / path summary / full-text); query rewriter; perf-gated against BaseX; pack-aware migration tool | 110–220 | 3.5–9 mo |
@@ -140,7 +140,7 @@ Sessions = focused AI-paired work units of a few hours each, matching the v0.6.0
 | Full-text index is a substantial sub-project on its own | 1 | Vendor Tantivy or comparable; do not build full-text from scratch |
 | Multi-tenancy retrofitted vs designed-in | 3 | Plan tenant boundary in Phase 2's auth model |
 
-## v0.8.0 anchors this depends on
+## Baseline anchors this depends on
 
 - ast_bin v7 wire format (`spec/core/ast-bin.md`, atom-as-scalar).
 - CXPath as first-class value kind (`spec/cxpath_alignment.md`).
@@ -151,8 +151,8 @@ Sessions = focused AI-paired work units of a few hours each, matching the v0.6.0
 
 ## Build-order commitment
 
-**Commit to Phase 0.5 + Phase 0.7 together for v0.8.0.** Embedded URL-dispatched Store gives CXStore a working surface day-of-v0.8.0 (assuming Layer-1 V impl lands in v0.8.0's Phase 2). CSRP single-node Service ships alongside as a ~4–6 session add — small because it composes existing primitives (`[?service]` + local Embedded Store + Layer-1 binary form). Together they cover the agentic-deployment shape: byte-source backends for legacy/cloud storage, plus query pushdown for remote corpora that don't fit the "download then process" model.
+**Commit to Phase 0.5 + Phase 0.7 together.** Embedded URL-dispatched Store gives CXStore a working surface (assuming Layer-1 V impl lands in Phase 2). CSRP single-node Service ships alongside as a ~4–6 session add — small because it composes existing primitives (`[?service]` + local Embedded Store + Layer-1 binary form). Together they cover the agentic-deployment shape: byte-source backends for legacy/cloud storage, plus query pushdown for remote corpora that don't fit the "download then process" model.
 
 **Phase 1 (pack backend) is then a performance upgrade, not a new product.** Users keep the same API; they switch URL schemes (`file://` → `pack://`) when they need indexed query performance. Migration is `cxstore migrate <from> <to>`; no application rewrite.
 
-Single-node CSRP Service (Phase 0.7) is the **smallest viable Service tier** and ships in v0.8.0 alongside the Embedded Store. Production Service (Phase 2) adds operational features (daemon lifecycle, RBAC, observability) on top. Multi-node distributed Service (Phase 3) is ~1.5–2× the work of pack-backend Embedded and only justified if Phases 0.7 + 1 + 2 get traction. Stopping after Phase 2 is a real outcome, not a failure mode.
+Single-node CSRP Service (Phase 0.7) is the **smallest viable Service tier**. Production Service (Phase 2) adds operational features (daemon lifecycle, RBAC, observability) on top. Multi-node distributed Service (Phase 3) is ~1.5–2× the work of pack-backend Embedded and only justified if Phases 0.7 + 1 + 2 get traction. Stopping after Phase 2 is a real outcome, not a failure mode.

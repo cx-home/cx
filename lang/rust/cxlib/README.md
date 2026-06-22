@@ -9,7 +9,7 @@ a streaming event API, and direct format-conversion functions.
 ## Canonical-form tooling (v3.4)
 
 ```rust
-let src1 = "[config\n  [- comment]\n  [server host=localhost]\n]";
+let src1 = "[config\n  [; comment]\n  [server host=localhost]\n]";
 let src2 = "[config [server host=localhost]]";
 cxlib::fmt(src1)?;          // lossless canonical (preserves the comment)
 cxlib::canonical(src1)?;    // strict canonical   (comment stripped)

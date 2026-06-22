@@ -6,7 +6,7 @@
   [standard ref='RFC 9562' title='UUID v7']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/uuid` sub-package.
 
@@ -14,7 +14,7 @@ Normative reference for the `cx-stdlib/uuid` sub-package.
 
 ## §1. Scope
 
-`cx-stdlib/uuid` generates, parses, formats, and validates Universally Unique Identifiers. v0.8.0 supports four variants:
+`cx-stdlib/uuid` generates, parses, formats, and validates Universally Unique Identifiers. The module supports four variants:
 
 - **UUID v4** — fully random (RFC 4122 §4.4).
 - **UUID v7** — timestamp-ordered with random tail (RFC 9562 §5.7); intra-millisecond monotonic counter (RFC 9562 §6.2 method 1, §3.1).

@@ -5,7 +5,7 @@
   [standard ref='JSON-RPC 2.0' title='JSON-RPC 2.0 Specification']]
 ```
 
-**Status:** Current (post-v0.8.0 frozen addition; cx-private #6 S1)
+**Status:** Current (post-initial frozen addition; cx-private #6 S1)
 
 Normative reference for the `cx-stdlib/jsonrpc` sub-package — the **JSON-RPC 2.0 message model**: it builds, classifies, and validates JSON-RPC values as ordinary CX maps. It is the stable wire shared by MCP and the LSP, and the substrate the agentic shims (`cx-x/mcp`, `cx-x/mcp-server`, `cx-x/a2a`) compose.
 

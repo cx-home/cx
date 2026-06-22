@@ -4,7 +4,7 @@
 [module-meta name=bus tier=D status=current]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference (on graduation) for the `cx-stdlib/bus` sub-package: a single
 in-process message bus that delivers each published message to its matching
@@ -576,7 +576,7 @@ point** (bus surfaces no code of its own).
       [`spec/std-lib/README.md`](../std-lib/README.md) §3 (Tier-B) and bump the
       module count by **+1** on the then-current count, and the skeleton-test
       assertion + `expected` list in
-      `vcx/tests/v08_stdlib_skeleton_test.v` to include `'cx-stdlib/bus'`
+      `vcx/tests/stdlib_skeleton_test.v` to include `'cx-stdlib/bus'`
       (bus is **not yet a bundled name** — a genuine +1, unlike http's
       reconciliation, §12).
 - [ ] **Implement the module** (`stdlib/bus.cx`, or the bundled host path): `bus`/
@@ -608,7 +608,7 @@ README 29→30 to match an *already-bundled* name,
 bundled name** — it is absent from the skeleton test's `expected` list and from
 `spec/std-lib/README.md` §3. So bus is a genuine **+1** at its own graduation:
 both the README count **and** the
-`v08_stdlib_skeleton_test.v::test_stdlib_surface_enumerates_bundled_subpackages`
+`stdlib_skeleton_test.v::test_stdlib_surface_enumerates_bundled_subpackages`
 assertion (currently 30) **and** its `expected` list (add `'cx-stdlib/bus'`) move
 together, in the graduation PR.
 
@@ -617,7 +617,7 @@ together, in the graduation PR.
 | `README.md` §3 intro sentence | "enumerates **N** sub-packages" | "**N+1**" |
 | `README.md` §3.2 frozen-surface sentence | "The **N-module** … frozen surface" | "**(N+1)-module**" |
 | `README.md` §3 Tier-B table | (no `bus` row) | add `\| bus \| in-process pub/sub, synchronous ordered dispatch \| [bus.md](bus.md) \|` |
-| `v08_stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | asserts **N**, no `'cx-stdlib/bus'` | asserts **N+1**, lists `'cx-stdlib/bus'` |
+| `stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | asserts **N**, no `'cx-stdlib/bus'` | asserts **N+1**, lists `'cx-stdlib/bus'` |
 
 **Order-independence with the other XAP modules.** Each of the five XAP modules
 (`bus`, `journal`, `authz`, `session`, `xap`) is an independent **+1** applied to

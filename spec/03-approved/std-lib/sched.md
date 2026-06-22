@@ -4,7 +4,7 @@
 [module-meta name=sched tier=D status=current]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Lifted out of the http SSE/streaming amendment
 ([`stdlib_http_streaming_amendment.md`](stdlib_http_streaming_amendment.md)) so http
@@ -630,7 +630,7 @@ core `CXER0260`.
 - [ ] **Module index + count (see §12).** Add a `sched` row to
       [`spec/std-lib/README.md`](../std-lib/README.md) §3 (Tier-B); bump the
       sub-package count by **+1** (on the then-current count); add `'cx-stdlib/sched'`
-      to the skeleton test `vcx/tests/v08_stdlib_skeleton_test.v` `expected` list and
+      to the skeleton test `vcx/tests/stdlib_skeleton_test.v` `expected` list and
       bump its asserted count by +1.
 - [ ] **Implement** the §3 surface on the picoev timer wheel (§9):
       `after`/`at`/`every`/`recur`/`cron`/`cancel`/`timer-state`;
@@ -667,7 +667,7 @@ This section states the count delta and the **exact lines** that change at
 graduation; per Rule G3 it makes **no edits**.
 
 `cx-stdlib/sched` is a **genuine new module** (a +1), not a reconciliation: it is
-**not yet a bundled name** in `vcx/tests/v08_stdlib_skeleton_test.v`
+**not yet a bundled name** in `vcx/tests/stdlib_skeleton_test.v`
 (`test_stdlib_surface_enumerates_bundled_subpackages`) and has no
 [`spec/std-lib/README.md`](../std-lib/README.md) §3 row. So unlike `http` (which
 reconciled an existing bundled name), sched **adds** a name and **bumps** both the
@@ -678,7 +678,7 @@ README count and the skeleton assert by +1.
 | `README.md` §3 intro sentence | "enumerates **N** sub-packages" | "**N+1**" |
 | `README.md` §3.2 frozen-surface sentence | "The **N-module** … frozen surface" | "**(N+1)-module**" |
 | `README.md` §3 Tier-B table | (no `sched` row) | add `\| sched \| scheduled events & timers — relative/absolute/recurring/cron + durable, on the event loop \| [sched.md](sched.md) \|` |
-| `v08_stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | asserts **N**, no `'cx-stdlib/sched'` | assert **N+1**, add `'cx-stdlib/sched'` to `expected` |
+| `stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | asserts **N**, no `'cx-stdlib/sched'` | assert **N+1**, add `'cx-stdlib/sched'` to `expected` |
 
 **`N` is the then-current count** — sched applies **+1** to whatever the live count is
 at its graduation (order-independent vs. the other in-flight drafts: http reconciles

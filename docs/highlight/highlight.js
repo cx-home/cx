@@ -21,9 +21,39 @@
 (function (global) {
   'use strict';
 
+  // A CX `[; … ]` block comment closes on the `]` that MATCHES the `[;`'s `[`:
+  // brackets balance, and `[#…#]` / `[|…|]` are atomic spans whose inner `]`
+  // does not count (mirrors the parser's read_until_close). A regex can't
+  // balance brackets, so scan. Returns [{start,end}] spans (used as a rule
+  // below — highlightCode accepts a function in the pattern slot).
+  function scanCxComment(code) {
+    const out = [];
+    for (let i = 0; i < code.length; i++) {
+      if (code[i] === '[' && code[i + 1] === ';') {
+        let depth = 1;            // the `[;`'s `[`
+        let j = i + 2;
+        while (j < code.length && depth > 0) {
+          const c = code[j], n = code[j + 1];
+          if (c === '[' && n === '#') {           // atomic raw text [# … #]
+            const k = code.indexOf('#]', j + 2);
+            j = k === -1 ? code.length : k + 2;
+          } else if (c === '[' && n === '|') {    // atomic block content [| … |]
+            const k = code.indexOf('|]', j + 2);
+            j = k === -1 ? code.length : k + 2;
+          } else if (c === '[') { depth++; j++; }
+          else if (c === ']') { depth--; j++; }
+          else { j++; }
+        }
+        out.push({ start: i, end: j });
+        i = j - 1;
+      }
+    }
+    return out;
+  }
+
   const RULES = {
     cx: [
-      [/\[-[\s\S]*?-\]/g, 'comment'],
+      [scanCxComment, 'comment'],
       // Line comment: `#` followed by whitespace or end-of-line.
       // `#identifier` is the id sigil, handled later by the sigil rule.
       [/(^|[\s\(])#(?:[ \t][^\n]*|(?=\n|$))/gm, 'comment'],
@@ -184,7 +214,21 @@
     const rules = resolve(lang);
     if (!rules) return escapeHtml(code);
     const matches = [];
+    const addMatch = (start, end, kind, text) => {
+      for (const x of matches) {
+        if (start < x.end && end > x.start) return; // earlier rule wins
+      }
+      matches.push({ start, end, kind, text });
+    };
     for (const [pattern, kind] of rules) {
+      // A rule's pattern may be a function (start/end scanner) for grammar a
+      // regex can't express — e.g. bracket-balanced [; … ] block comments.
+      if (typeof pattern === 'function') {
+        for (const r of pattern(code)) {
+          addMatch(r.start, r.end, kind, code.slice(r.start, r.end));
+        }
+        continue;
+      }
       pattern.lastIndex = 0;
       let m;
       while ((m = pattern.exec(code)) !== null) {

@@ -4,7 +4,7 @@
 [module-meta name=authz tier=D status=current]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 `cx-stdlib/authz` is built **on the existing `crypto` module** (hash, sign/verify)
 for the T1/T2 assurance tiers ([`xap.md`](xap.md) §22.9) and the signed,
@@ -906,7 +906,7 @@ exactly one negative fixture above.
       §3, Tier-B): add an `authz` row and bump the sub-package count by **+1 on the
       then-current count** (order-independent with the other in-review XAP modules
       `bus`/`journal`/`session`/`xap`, each its own +1). Add the bundled name
-      `'cx-stdlib/authz'` to `vcx/tests/v08_stdlib_skeleton_test.v` and bump its
+      `'cx-stdlib/authz'` to `vcx/tests/stdlib_skeleton_test.v` and bump its
       asserted count.
 - [ ] **The five XAP modules graduate as a coherent set** — `authz` depends on
       `journal` (the attributed log) + `crypto` (signing) and is **called by**
@@ -945,7 +945,7 @@ edits**.
 **`authz` is a NEW bundled name (a genuine +1), not a reconciliation.** Unlike
 `http` — which corrected the README to match an *already-bundled* name
 ([`http.md`](http.md) §12) — `cx-stdlib/authz` is **not yet
-bundled**: it is absent from `vcx/tests/v08_stdlib_skeleton_test.v`'s expected list.
+bundled**: it is absent from `vcx/tests/stdlib_skeleton_test.v`'s expected list.
 So each of the five XAP modules (`bus`, `journal`, `authz`, `session`, `xap`) is a
 genuine **+1** at its own graduation, applied to **whatever the current count is**
 (order-independent, exactly as `net`/`fp` each +1 over the post-`http` baseline,
@@ -955,7 +955,7 @@ genuine **+1** at its own graduation, applied to **whatever the current count is
 |---|---|
 | `README.md` §3 intro + §3.2 frozen-surface sentence | count **+1** (current → current+1) |
 | `README.md` §3 Tier-B table | add `\| authz \| XAP trust model — principals, delegation, guardian grants, the PEP decision function (built on crypto; distinct from caps) \| [authz.md](authz.md) \|` |
-| `v08_stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | add `'cx-stdlib/authz'` to `expected`; bump the asserted count **+1** |
+| `stdlib_skeleton_test.v` — `test_stdlib_surface_enumerates_bundled_subpackages` | add `'cx-stdlib/authz'` to `expected`; bump the asserted count **+1** |
 
 **No edits are made by this draft** (G3) — the table above is for the graduation PR.
 

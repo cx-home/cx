@@ -5,7 +5,7 @@
   [standard ref='IEEE 754' title='Floating point']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/math` sub-package.
 
@@ -15,7 +15,7 @@ Normative reference for the `cx-stdlib/math` sub-package.
 
 `cx-stdlib/math` covers numeric utilities across CXDM's int / float scalar kinds: basic arithmetic, powers / logs / roots, trigonometry, statistics, bit operations, predicates, number theory, special constants, and explicit modular arithmetic.
 
-Decimal arbitrary-precision support is gated on cap bit 11 ([`spec/core/abi.md`](../core/abi.md)); v0.8.0 supports basic ops only on decimals.
+Decimal arbitrary-precision support is gated on cap bit 11 ([`spec/core/abi.md`](../core/abi.md)); currently only basic ops are supported on decimals.
 
 ## §2. Type model
 
@@ -23,7 +23,7 @@ Decimal arbitrary-precision support is gated on cap bit 11 ([`spec/core/abi.md`]
 |---|---|---|
 | `int` | Signed 64-bit | Overflow raises `CXER3000 E_MATH_OVERFLOW` (checked by default); explicit modular arithmetic via `wrapping-*` (§3.9) |
 | `float` | IEEE 754 double | NaN, infinity, denormals representable |
-| `decimal` | Arbitrary precision | Cap bit 11; v0.8.0 basic ops only |
+| `decimal` | Arbitrary precision | Cap bit 11; basic ops only |
 
 Mixed int + float arithmetic promotes to float.
 
@@ -214,7 +214,7 @@ Mixed-type ops promote to float. `[+ 1 2.5]` returns `3.5`. Statistical ops alwa
 
 ### §4.4. Decimal support
 
-Cap bit 11 gates decimal-typed values. v0.8.0 supports basic ops (abs, +, -, *, /, comparison) on decimals; transcendentals (sqrt, log, exp, trig) on decimals raise `CXER3002 E_MATH_DECIMAL_NOT_SUPPORTED`. Decimal overflow raises `CXER3000`.
+Cap bit 11 gates decimal-typed values. Currently basic ops (abs, +, -, *, /, comparison) on decimals; transcendentals (sqrt, log, exp, trig) on decimals raise `CXER3002 E_MATH_DECIMAL_NOT_SUPPORTED`. Decimal overflow raises `CXER3000`.
 
 ### §4.5. Bit-shift count out of range
 
@@ -226,7 +226,7 @@ Shift count ≥ 64 saturates per §3.5: `bit-shift-left` and logical right shift
 |---|---|---|
 | `CXER3000` | `E_MATH_OVERFLOW` | Checked operators `+` / `-` / `*` / `pow` on int64 overflow; `factorial(n > 20)`; decimal overflow |
 | `CXER3001` | `E_MATH_EMPTY_SEQUENCE` | Statistical functions on empty input |
-| `CXER3002` | `E_MATH_DECIMAL_NOT_SUPPORTED` | Transcendental ops on decimal in v0.8.0 |
+| `CXER3002` | `E_MATH_DECIMAL_NOT_SUPPORTED` | Transcendental ops on decimal |
 | `CXER3003` | `E_MATH_DOMAIN_ERROR` | Negative bit-shift count (§3.5 / §4.5) |
 
 ## §6. Conformance fixtures

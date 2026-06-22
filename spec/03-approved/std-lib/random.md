@@ -5,7 +5,7 @@
   [standard ref='xoshiro256++' title='PRNG']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/random` sub-package.
 
@@ -148,7 +148,7 @@ Crypto-random does not support seeding. Determinism is incompatible with cryptog
 
 ### §4.1. PRNG algorithm — xoshiro256++ (pinned)
 
-xoshiro256++ (Vigna 2019), 256-bit state, period `2^256 - 1`. **Pinned as part of the v0.8.0 API/format-stability surface.** A given seed produces a byte-for-byte identical sequence:
+xoshiro256++ (Vigna 2019), 256-bit state, period `2^256 - 1`. **Pinned as part of the API/format-stability surface.** A given seed produces a byte-for-byte identical sequence:
 
 - Across CX versions for the life of the v0.8 line.
 - Across all Tier-1 bindings (V, Python, Go, Rust).
@@ -159,7 +159,7 @@ Any future change to the PRNG algorithm, its seed-mixing, or its output transfor
 
 ### §4.2. Crypto-random source
 
-System CSPRNG. v0.8.0 implementation: Linux `getrandom(2)`; macOS `getentropy(2)`; Windows `BCryptGenRandom`; other Unix `/dev/urandom`. Raises `CXER1900 E_RANDOM_ENTROPY_UNAVAILABLE` if the system source is unavailable.
+System CSPRNG. Implementation: Linux `getrandom(2)`; macOS `getentropy(2)`; Windows `BCryptGenRandom`; other Unix `/dev/urandom`. Raises `CXER1900 E_RANDOM_ENTROPY_UNAVAILABLE` if the system source is unavailable.
 
 ## §5. Error codes
 

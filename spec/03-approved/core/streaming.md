@@ -1,6 +1,6 @@
 # CX Streaming API Specification
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 The CX Streaming API provides a SAX/StAX-style event sequence for processing CX
 documents without building a full in-memory tree. It is suited for large documents,
@@ -29,7 +29,7 @@ There are **32 `StreamEvent` types** organised into six groups:
 
 (Totals: 2 + 5 + 12 + 8 + 2 + 3 = 32. The full set is the read-side
 vocabulary; the write-side surface in §6 covers a 14-event subset at
-v0.8.0 — see §6.3 and §6.6 for the subset and the `W009` rejection
+see §6.3 and §6.6 for the subset and the `W009` rejection
 applied to the other 18 at emit time.)
 
 ### 1.1 — Event type reference
@@ -120,7 +120,7 @@ An inline comment.
 
 | Field | Type | Required | Value |
 |---------|--------|----------|-------|
-| `value` | string | yes | Comment text, without the `[-` / `-]` delimiters |
+| `value` | string | yes | Comment text, without the `[;` / `]` delimiters |
 
 ---
 
@@ -234,7 +234,7 @@ A `# ...` line comment (CX Extended, grammar [30b]).
 |---------|--------|----------|-------|
 | `value` | string | yes | Comment text without the leading `#` |
 
-Distinct from Comment (`[- ... ]`) by source surface; both round-trip.
+Distinct from Comment (`[; ... ]`) by source surface; both round-trip.
 
 **Event-layer distinction only.** LineComment is an event-layer
 distinction maintained for round-trip fidelity from the `# ...`
@@ -677,7 +677,7 @@ Total: **4 lifecycle symbols.**
 ### 6.3 — Event vocabulary
 
 The writer accepts a **14-event subset** of the 32-event read-side
-vocabulary defined in §1. At v0.8.0 the subset is:
+vocabulary defined in §1. The subset is:
 
 - **Lifecycle:** StartDoc, EndDoc
 - **Element + body:** StartElement, EndElement, Text, Scalar,
@@ -688,14 +688,14 @@ The other 18 event types (XMLDecl, CXDirective, DoctypeDecl,
 ElementDecl, AttlistDecl, LineComment, StartBlock, EndBlock,
 Interpolation, EvalDirective, StartArray, EndArray, StartMap, EndMap,
 StartSequenceAsItem, EndSequenceAsItem, Path, Iterator) have no
-emit entry point at v0.8.0 and MUST reject with `W009` at emit time
+emit entry point and MUST reject with `W009` at emit time
 (see §6.6). The read/write asymmetry is deliberate — see §6.6.1 / §6.6.2
 for the structural-mismatch rationale on JSON/YAML/TOML formats and
 the analogous reasoning that gates the other 18 events.
 
 Adopters who need a faithful event-round-trip use the non-streaming
 `cx_to_*` surfaces (which buffer the document by design) or extend
-their write pipeline once an emit symbol lands in a future v0.8.x.
+their write pipeline once an emit symbol lands in a future revision.
 
 ### 6.4 — Per-event emit functions
 

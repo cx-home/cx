@@ -523,6 +523,21 @@
         </div>
       
     </section>
+    <section id="fn-http-sse-publish" class="fn">
+      <h3>http:sse-publish</h3>
+      <p class="fn-sig"><code>[$http:sse-publish]  -> int</code>  —  Fan out one `[event]` to every connection subscribed to a topic (the concurrent-SSE producer half on the `serve` path); returns the delivered count. Subscribe by returning `[sse-subscribe topic="…" [event …]?]` from a `serve` handler.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/http']
+[$http:sse-publish "prices" [event]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER4539</code>
+          </pre>
+        </div>
+      
+    </section>
     <section id="fn-http-heartbeat" class="fn">
       <h3>http:heartbeat</h3>
       <p class="fn-sig"><code>[$http:heartbeat]  -> null</code>  —  Write one comment-only liveness frame to an SSE stream.</p>

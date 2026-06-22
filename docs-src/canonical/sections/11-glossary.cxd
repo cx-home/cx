@@ -1,5 +1,5 @@
 [# Section 11 — Glossary. Back-matter; appears after §10 migration.
-   Authored 2026-05-22 against the v0.8.0-dev branch.
+   Authored 2026-05-22.
    Every term in this glossary is used elsewhere in the guide; each
    entry cross-links to the section where the term is first
    introduced. Entries are alphabetical (case-insensitive). File
@@ -59,7 +59,7 @@
       """A host-language wrapper around the compiled `libcx`. Layer 1
          is the 16 canonical methods every binding must implement
          identically; Layer 2 is host-idiomatic syntactic sugar that
-         varies per language. v0.8.0 ships V, Python, Go, and Rust.
+         varies per language. Currently ships V, Python, Go, and Rust.
          See [[bindings]]."""]]
 
   [child id=g-body title='body'
@@ -172,7 +172,7 @@
          (`[?match]`), and update focus (`[?modify]`). XPath 3.1
          aligned with deliberate divergences (see
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
-         and a value-kind in v0.8.0. See [[cxpath]]."""]]
+         and a value-kind. See [[cxpath]]."""]]
 
   [child id=g-data-bin title='data-bin'
     [body
@@ -215,7 +215,7 @@
     [body
       """An element whose name starts with `?` (e.g. `[?for]`,
          `[?match]`, `[?modify]`). Interpreted by the evaluator
-         rather than carried as data. v0.8.0 has 40 normative
+         rather than carried as data. Currently 40 normative
          directives. See [[directives]]."""]]
 
   [child id=g-doctype title='doctype'
@@ -618,8 +618,8 @@
     [body
       """Processing a document without loading it entirely into
          memory. CX's streaming evaluator handles documents up to
-         the host's filesystem size; gate 15 in the v0.8.0
-         readiness rubric measures the throughput floor. See
+         the host's filesystem size; gate 15 measures
+         the throughput floor. See
          [[streaming]]."""]]
 
   [child id=g-structural-sharing title='structural sharing'
@@ -691,7 +691,7 @@
       """The WebAssembly build of libcx used by the playground
          and any browser-hosted CX tooling. Exposes a subset of
          the C ABI plus `_cx_code_diagram` and friends. Two
-         artifacts at v0.8.0: `libcx-async.js` (Asyncify, no
+         artifacts: `libcx-async.js` (Asyncify, no
          pthreads — works under file:// and any HTTP host),
          `libcx-pthreads.{js,wasm}` (real OS threads via
          SharedArrayBuffer — requires HTTP with COOP/COEP

@@ -1,6 +1,6 @@
-" cx.vim — Vim/Neovim syntax for the CX language (v0.8.0 surface)
+" cx.vim — Vim/Neovim syntax for the CX language
 "
-" v0.8.0 has NO Markdown sigils (lexicon [L83]): the retired heading
+" CX has NO Markdown sigils (lexicon [L83]): the retired heading
 " (`[# …]`), inline-markup (`[** …]`, `[* …]`, `[~~ …]`, `[~ …]`, `[^ …]`,
 " `[__ …]`, `[` …]`, `[> …]`), and fenced code-block (`[``` lang=X …]`)
 " surfaces are gone. `#`, `>`, `~`, `^`, the backtick are ordinary
@@ -9,8 +9,8 @@ if exists("b:current_syntax") | finish | endif
 
 syn case match
 
-" ── Comments  [- … ] ──────────────────────────────────────────────────────────
-syn region cxComment       start=/\[-/ end=/\]/ contains=cxComment,cxCommentBracket
+" ── Comments  [; … ]  (asymmetric — open `[;`, close on the matching `]`) ──────
+syn region cxComment       start=/\[;/ end=/\]/ contains=cxComment,cxCommentBracket
 syn region cxCommentBracket start=/\[/  end=/\]/ contains=cxComment,cxCommentBracket contained
 
 " ── Raw text  [# … #]  (CDATA, grammar.ebnf [31]) ─────────────────────────────
@@ -23,10 +23,10 @@ syn region cxBlockContent start=/\[|/ end=/|\]/
 syn region cxTripleQuoted start=/'''/ end=/'''/
 
 " ── PI  [? … ] ────────────────────────────────────────────────────────────────
-" v0.8.0: directive interior is opaque at the Vim syntax layer (same
+" Directive interior is opaque at the Vim syntax layer (same
 " structural-only discipline as tree-sitter). Per-directive interior
 " coloring (modify action clauses, match arm clauses, CXPath axes) is
-" delivered by `cx lsp` semanticTokens. Directives recognised at v0.8.0:
+" delivered by `cx lsp` semanticTokens. Directives recognised:
 "   * [?modify] (code.md §8.10 — [set] / [delete] / [using] / [rename] /
 "     [set-attr] / [delete-attr] / [append] / [prepend] / [insert-before] /
 "     [insert-after] / [replace])
@@ -56,8 +56,8 @@ syn match cxDecl /\[![^\]]*\]/
 " ── Call  [$name …] / module member [$prefix:local …]  (code.md §6.3) ─────────
 " The `[$` structural opener glues to the head Name. The head colors as a
 " function; the body is transparent so arguments keep their own highlighting.
-" Symbolic operator heads ([+ …], [= …], [- …], [* …], …) are NOT modelled —
-" `-`/`*` collide with [- comment / [* alias, `=`/`<`/`>` with attr/path; that
+" Symbolic operator heads ([+ …], [= …], [- …], [* …], …) are NOT modelled here —
+" `*` collides with the [* alias and `=`/`<`/`>` with attr/path; that
 " coloring is `cx lsp`'s job.
 syn region cxCall matchgroup=cxCallHead
   \ start=/\[\$[a-zA-Z_][a-zA-Z0-9._:-]*/ end=/\]/
@@ -67,12 +67,13 @@ syn region cxCall matchgroup=cxCallHead
   \   cxTypeAnnotation,cxAtom,cxFloat,cxInteger,cxBoolean,cxNull,cxString,cxEntityRef
 
 " ── Operator head  [op …]  (code.md §6.5 reserved bare operators) ─────────────
-" `+ * / = != < <= > >= and or not cast`. A trailing space after the op keeps
-" `[* …]` multiply distinct from the `[*name]` alias. Subtraction `[- …]` is the
-" by-design data↔program comment/operator fork — left as a comment (cxComment),
-" coloring deferred to `cx lsp`.
+" `+ - * / = != < <= > >= and or not cast`. A trailing space after the op keeps
+" `[* …]` multiply distinct from the `[*name]` alias and `[- …]` subtraction
+" distinct from any `[name]` element open. The retired `[- …-]` block comment is
+" gone (the current comment is the asymmetric `[; …]`), so `[- ` is now plainly
+" the minus operator.
 syn region cxOperator matchgroup=cxOperatorHead
-  \ start=/\[\(!=\|<=\|>=\|+\|\*\|\/\|=\|<\|>\|and\|or\|not\|cast\)\ze\s/ end=/\]/
+  \ start=/\[\(!=\|<=\|>=\|+\|-\|\*\|\/\|=\|<\|>\|and\|or\|not\|cast\)\ze\s/ end=/\]/
   \ transparent
   \ contains=cxComment,cxRawText,cxBlockContent,cxTripleQuoted,cxPI,cxDecl,
   \   cxCall,cxOperator,cxAlias,cxElement,cxProgramBinding,cxAttribute,
@@ -84,7 +85,7 @@ syn region cxOperator matchgroup=cxOperatorHead
 syn match cxCXPathPrefix /\v\/\/?\ze[A-Za-z_*@]/
 syn match cxCXPathAxis /\v(child|descendant-or-self|descendant|parent|ancestor-or-self|ancestor|following-sibling|preceding-sibling|following|preceding|self|attribute)::/
 
-" ── v0.8.0 code bindings  $name (spec/code.md §3.6) ──────────────────────────
+" ── Code bindings  $name (spec/code.md §3.6) ─────────────────────────────────
 syn match cxProgramBinding /\$[a-zA-Z_][a-zA-Z0-9_-]*/
 
 " ── Alias  [*name] ────────────────────────────────────────────────────────────
@@ -135,7 +136,7 @@ syn region cxElement matchgroup=cxTag
 "   @operator → =
 
 if has('nvim')
-  " v0.8.0 CXPath highlights
+  " CXPath highlights
   hi def link cxCXPathPrefix   @keyword.operator
   hi def link cxCXPathAxis     @keyword.coroutine
 

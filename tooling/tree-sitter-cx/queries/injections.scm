@@ -1,6 +1,6 @@
-; Embedded-language injection for CX v0.8.0.
+; Embedded-language injection for CX.
 ;
-; v0.8.0 has NO fenced code-block surface ([``` lang=X …] was the removed
+; CX has NO fenced code-block surface ([``` lang=X …] was the removed
 ; Markdown feature). The language signal is instead the WRAPPING ELEMENT:
 ;
 ;   [python [| def f(): return 1 |]]      ← element name names the language

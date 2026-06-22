@@ -36,7 +36,7 @@ Schema spec (DRAFT, do NOT graduate — user owns G3):
 
 Gate commands (run after each chunk; all must be green):
 - `make build-vcx-dev` (binary at `vcx/target/cx`)
-- `make test-vcx-v08` (NOT raw `v test`; currently 123/123)
+- `make test-vcx-suite` (NOT raw `v test`; currently 123/123)
 - `make -C vcx conform-all` (currently 146/146)
 - render: `vcx/target/cx scripts/gen_guide/guide_build.cx --allow-read --allow-write`
   (or `make guide`, which also rebuilds wasm — slow).

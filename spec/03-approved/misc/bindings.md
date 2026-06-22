@@ -1,8 +1,8 @@
 # CX Bindings — Two-Layer Surface
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
-The v0.8.0 binding surface is two layers per binding. Layer 1 is the
+The binding surface is two layers per binding. Layer 1 is the
 canonical CX surface — identical method names + semantics across V,
 Python, Go, Rust. Layer 2 is per-language idiom packs that desugar to
 Layer 1. Layer 1 is the conformance contract; Layer 2 is opt-in sugar.
@@ -346,8 +346,8 @@ other `cx_*` call. Full details in
 ## 6 — Versioning
 
 Each binding tracks the parent CX version. `Cargo.toml`,
-`pyproject.toml`, `go.mod`, V version constant all read `0.8.0` at
-the v0.8.0 tag. ABI cap bits (from `cx_features()`, per
+`pyproject.toml`, `go.mod`, V version constant all read the current
+release version. ABI cap bits (from `cx_features()`, per
 [`core/abi.md §3`](../core/abi.md)) provide forward compatibility — a
 Layer-1 binding can advertise that it understands cap bit N and fall
 back gracefully if a newer libcx adds cap bit N+1.
@@ -376,7 +376,7 @@ exposed across an IPC or HTTP boundary.
 ### 7.2 HTTP context — suggested Content-Types
 
 The following media-type strings are SUGGESTED for HTTP transports.
-They are not IANA-registered at v0.8.0; consumers MAY also accept the
+They are not currently IANA-registered; consumers MAY also accept the
 generic `application/octet-stream` for binary wire formats.
 
 | Wire format | Suggested Content-Type |

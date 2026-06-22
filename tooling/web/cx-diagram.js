@@ -9,7 +9,7 @@
 //
 // The CX → Mermaid conversion is the server-side responsibility (run
 // `cx diagram program.cx --format=mermaid` to produce the input).
-// v0.8.0 diagram shapes (emitted by the V-side renderer using
+// Diagram shapes (emitted by the V-side renderer using
 // standard Mermaid flowchart primitives — no JS-layer styling hooks
 // required; the component stays a generic Mermaid host):
 //

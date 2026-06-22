@@ -1,6 +1,6 @@
 # CX Security — capability-based, deny-by-default
 
-**Status:** Current for v0.8.0. Capability-based security model for CX. The
+**Status:** Current. Capability-based security model for CX. The
 `[?with-caps]` directive (registered in `code.md` §4.1) and the `E_CAP_DENIED`
 error code (`CXER0271`) are admitted here and in `code.md`. The host bindings
 are specified in their owning files: the `--allow-*` flags in `cli.md` §3.7, the

@@ -15,12 +15,12 @@
 # For the TRANSCRIBED productions (tokens, §1-§8, §11) the cited source wins and
 # THIS file is the bug if they disagree — the goal is zero drift; this is the
 # consolidation. TWO sections DELIBERATELY DECIDE NEW behavior that SUPERSEDES
-# the pre-v0.8.0 core spec (graduated 2026-06-03; core reconciled TO them):
+# the earlier core spec (graduated 2026-06-03; core reconciled TO them):
 #   • §9  BODY VALUE (@CHOICE-1): a no-comma body of self-delimiting tokens
 #         (typed scalars / atoms / quoted strings — NO bareword) is a list of
 #         DISCRETE auto-typed children (mixed content), NOT an array; a bareword
 #         makes the whole no-comma body one prose string; a comma (or a `::T[]`/
-#         `::[]` head) makes an array. REVISES the pre-v0.8.0 [25a] whitespace
+#         `::[]` head) makes an array. REVISES the earlier [25a] whitespace
 #         auto-array — whitespace NEVER auto-arrays; the comma is the array signal.
 #   • §10 ATTRIBUTES: scalar-only — DELIBERATELY REMOVES node-valued attributes
 #         (formerly supported by grammar [55a] / ast.md / conversions.md).
@@ -53,7 +53,7 @@
 # ─── 1. Whitespace & comments (skipped; never reach the parser) ────────────────
 [L1]  S            ::= (#x20 | #x09 | #x0D | #x0A)+     /* §3.2 space tab CR LF */
 [L2]  LineComment  ::= '#' [^#x0A]* (#x0A | EOF)        /* §3.3, [30b] */
-[L3]  BlockComment ::= '[-' (Char* - (Char* ']' Char*)) ']'  /* §3.3, [30] */
+[L3]  BlockComment ::= '[;' (Char* - (Char* ']' Char*)) ']'  /* §3.3, [30] */
 #  NOTE  `[# … #]` is NOT a comment — it is RawText / CDATA [31]. Do not
 #        confuse the two; this exact slip lived in the old lexer's header.
 
@@ -405,7 +405,7 @@
 #     canonical home; grammar [50.D] is a summary that MUST agree. Decided by the
 #     FIRST token after `[`. Identical in BodyItem / Node position.
 #       0. STRUCTURAL OPENERS bind FIRST (not subject to this rule): `[?`
-#          directive, `[!` decl/doctype, `[#` raw text, `[-` comment, `[|` block,
+#          directive, `[!` decl/doctype, `[#` raw text, `[;` comment, `[|` block,
 #          `[$` call (program mode), `[*` alias, `[&` ref/anchor. CX has NO Markdown sigils —
 #          `>`, `~`, `^`, the backtick, and `#` are ordinary content/operators,
 #          never element-head openers.

@@ -1,8 +1,8 @@
 # CX Table API
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
-The `Table` API every v0.8.0 binding (V native, Python, Go, Rust)
+The `Table` API every binding (V native, Python, Go, Rust)
 exposes when `loads` encounters a `:table` block. The API is
 consistent across all bindings within unavoidable host-language naming
 differences.

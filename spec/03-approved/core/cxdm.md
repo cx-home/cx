@@ -1,6 +1,6 @@
 # CX Data Model (CXDM)
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 The CXDM is the value substrate of CX: the typed values that the parser
 produces, that the program language operates over, that the schema
@@ -84,7 +84,7 @@ A Node is a CX tree value, corresponding to AST node types in
 | Element    | Named element with attributes and items. |
 | Text       | Character data. |
 | ScalarNode | Typed scalar appearing in element body. |
-| Comment    | `[- text -]` comment. |
+| Comment    | `[; text ]` comment. |
 | PI         | Processing instruction. |
 | Directive  | `[?cx …]` file-level directive. |
 | Document   | Document root; sequence of top-level items. |

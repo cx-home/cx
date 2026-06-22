@@ -53,7 +53,7 @@ module.exports = grammar({
 
     // ── Directive PI  [?Name ...]  ────────────────────────────────────────────
     //
-    // grammar.ebnf [127]; the v0.8.0 bracket-clause directive surface. Phase 5.1
+    // grammar.ebnf [127]; the bracket-clause directive surface. Phase 5.1
     // exposes structural sub-trees for the structured directives so editors can
     // color clause heads / modifier keywords / CXPath axes via tree-sitter
     // captures (queries/highlights.scm). The LSP remains the authoritative
@@ -599,8 +599,8 @@ module.exports = grammar({
     // module members `[$prefix:local …]` (the `:local` is glued into the head).
     // Args are ordinary inline nodes (scalars, strings, `$name` bindings, nested
     // calls/elements/directives). Symbolic operator heads (`[+ …]`, `[= …]`,
-    // `[- …]`, `[* …]`, …) are NOT modelled here: `-`/`*` collide with the
-    // `[-` comment / `[*` alias structural openers and `=`/`/`/`<`/`>` collide
+    // `[* …]`, …) are NOT modelled here: `*` collides with the
+    // `[*` alias structural opener and `=`/`/`/`<`/`>` collide
     // with attribute/path tokens — operator-head coloring is the LSP's job
     // (semanticTokens), consistent with this grammar's best-effort discipline.
     // The open token GLUES `[$` to the head Name (+ optional `:local` module
@@ -620,19 +620,20 @@ module.exports = grammar({
     // so the head reliably dispatches under GLR and a trailing whitespace keeps
     // each token in its lane.
     //
-    // The set here is the spec's reserved operators MINUS `-`: subtraction `[-`
-    // vs the `[-` block comment is a by-design data↔program mode fork (the core
-    // parser leaves it mode-dependent — data `[-…]` = comment, program `[-…]` =
-    // subtract), unresolvable in a single context-free grammar, so `[-` stays a
-    // comment here. `*` multiply is safe: the `[*name]` alias glues its Name
-    // with no space, so a space after `*` disambiguates to the operator.
+    // The set here INCLUDES subtraction `[- …]`. The retired `[- …-]` block
+    // comment is gone (the current comment is the asymmetric `[; …]`), so `[-`
+    // followed by a space is now unambiguously the minus operator — there is no
+    // longer a data↔program comment fork to guard against. `*` multiply is safe
+    // too: the `[*name]` alias glues its Name with no space, so a space after
+    // `*` disambiguates to the operator. The trailing whitespace requirement
+    // keeps `[-` distinct from any `[name]` element open.
     operator: ($) =>
       seq(alias($._operator_open, $.operator_head), repeat($._call_arg), "]"),
     _operator_open: (_) =>
       token(prec(5, seq(
         "[",
         // Longest-match within the token settles `!=`/`<=`/`>=` over `<`/`>`/`=`.
-        choice("!=", "<=", ">=", "+", "*", "/", "=", "<", ">",
+        choice("!=", "<=", ">=", "+", "-", "*", "/", "=", "<", ">",
                "and", "or", "not", "cast"),
         /[ \t\r\n]/
       ))),
@@ -707,7 +708,7 @@ module.exports = grammar({
 
     // ── Raw text  [#…#]  (atomic, prec 1 — wins when content ends in #]) ──────
     //
-    // v0.8.0 has NO Markdown sigils (lexicon [L83]): `[#…#]` is RawText / CDATA
+    // CX has NO Markdown sigils (lexicon [L83]): `[#…#]` is RawText / CDATA
     // (grammar.ebnf [31]), NOT a heading. The retired heading (`[# …]` /
     // `[###### …]`), inline-markup (`[** …]`, `[* …]`, `[~~ …]`, `[~ …]`,
     // `[^ …]`, `[__ …]`, `[\` …]`, `[> …]`), and fenced code-block
@@ -743,9 +744,16 @@ module.exports = grammar({
     block_text: (_) => /[^|\[]+/,
     block_pipe: (_) => "|",
 
-    // ── Comment element  [-…]  (structural, handles nested elements) ──────────
+    // ── Comment element  [; …]  (structural, handles nested elements) ─────────
+    // Block comment: ASYMMETRIC — open `[;`, body, close on the matching
+    // `]` (lexicon [L82]). The retired `[- …-]` / `[-- …--]` forms are NO LONGER
+    // comments: `[- a b]` is ALWAYS the minus operator now. The open is a single
+    // `[;`-glued token (prec 5, matching the structural-opener discipline used by
+    // `call`/`operator`) so a bare `[` followed by `;` content can never be
+    // mis-dispatched, and `[-` falls through to the `operator` / `element` path.
     comment_element: ($) =>
-      seq("[", "-", repeat($._comment_child), "]"),
+      seq($._comment_open, repeat($._comment_child), "]"),
+    _comment_open: (_) => token(prec(5, "[;")),
 
     // `raw_text` is a comment child so a `[#…#]` mention INSIDE a block comment
     // (e.g. prose documenting the raw-text syntax) parses as one raw_text node.

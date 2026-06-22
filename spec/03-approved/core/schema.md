@@ -1,6 +1,6 @@
 # CX Schema Language Specification (`.cxs`)
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 ---
 

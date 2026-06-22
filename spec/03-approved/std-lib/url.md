@@ -7,7 +7,7 @@
   [standard ref='Unicode UTS #46' title='IDNA']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/url` sub-package.
 
@@ -179,7 +179,7 @@ For byte-faithful round-trip of pre-encoded components, pair `parse` with `build
     [url [scheme "https"]
          [host "api.example.com"]
          [path [$strings:join ["/users/" $username "/profile"] ""]]]]]
-[- → https://api.example.com/users/a%2Fb%20c/profile -]
+[; → https://api.example.com/users/a%2Fb%20c/profile ]
 ```
 
 For pre-encoded values use `build-raw`. Never pre-encode then call `build`, or values double-encode.

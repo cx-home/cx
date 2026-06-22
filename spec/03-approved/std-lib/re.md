@@ -5,7 +5,7 @@
   [standard ref='RE2' title='Regex syntax']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/re` sub-package.
 

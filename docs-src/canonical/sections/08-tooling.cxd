@@ -1,8 +1,8 @@
 [# Section 8 — tooling: CLI, editors, LSP, tree-sitter, lint, diff,
    cookbook, diagnostics, build integration, doc-gen, playground,
    profiling. Anchors normative depth in
-   tooling/lsp/v0_8_0_diagnostics.md, tooling/tree-sitter-cx/,
-   scripts/gen_docs/, vcx/cmd/. Authored 2026-05-22 against v0.8.0-dev.
+   tooling/lsp/diagnostics.md, tooling/tree-sitter-cx/,
+   scripts/gen_docs/, vcx/cmd/.
    File extension: .cxd (data-only). #]
 
 [section id=tooling n=8 title='Tooling'
@@ -51,7 +51,7 @@
 
     [child id=cli-overview n=8.1.1 title='Subcommand catalogue'
       [body
-        """The full subcommand set at v0.8.0:"""]
+        """The full subcommand set:"""]
 
       [table columns=(command, purpose, status)
         [row command='cx parse FILE'              purpose='Parse and pretty-print (or emit AST)'      status='shipped']
@@ -73,12 +73,12 @@
         [row command='cx scaffold KIND'           purpose='Drop a skeleton on stdout'                  status='shipped']
         [row command='cx version'                 purpose='Print version + ABI capability bits'        status='shipped']
         [row command='cx help [SUBCOMMAND]'       purpose='Per-subcommand help text'                   status='shipped']
-        [row command='cx repl'                    purpose='Interactive evaluator'                      status='post-v0.8.0']
-        [row command='cx patch A B'               purpose='Apply a cx-diff patch'                      status='post-v0.8.0']]
+        [row command='cx repl'                    purpose='Interactive evaluator'                      status='planned']
+        [row command='cx patch A B'               purpose='Apply a cx-diff patch'                      status='planned']]
 
       [body
         """The next sub-sections walk each shipped subcommand in
-           detail: purpose, flags, exit codes, examples. Post-v0.8.0
+           detail: purpose, flags, exit codes, examples. Planned
            items are noted explicitly and tracked in
            [`ROADMAP.md`](../../ROADMAP.md) "Later"."""]]
 
@@ -170,7 +170,7 @@
 
       [list
         [item """`--algorithm sha256 | blake3` — digest algorithm.
-                Default `sha256`. `blake3` is post-v0.8.0."""]
+                Default `sha256`. `blake3` is planned for a future revision."""]
         [item """`--hex` (default) / `--base64` — encoding."""]]
 
       [example lang=sh
@@ -264,8 +264,8 @@
            $ cx validate --profile strict --format json config.cx --schema config.cxs"""]
 
       [note
-        """Exit code 3 is reserved for schema-violation under the
-           v0.8.x extension — at v0.8.0 schema failures exit 1 (with
+        """Exit code 3 is reserved for schema-violation in a future
+           extension — currently schema failures exit 1 (with
            the violation count in the summary). The 3-code carve-out
            lets CI gates distinguish "schema bad" from "lint bad"
            once it lands."""]]
@@ -309,7 +309,7 @@
         [item """`--explain` — print the dispatch path and inferred
                 types alongside the result."""]
         [item """`--profile` — pprof-style profile output. Status:
-                post-v0.8.0; flag is reserved."""]]
+                planned; flag is reserved."""]]
 
       [example lang=sh
         """$ cx eval report.cx --data data.cx
@@ -382,11 +382,11 @@
       [body
         """Schema utilities. Subcommands: `check` (validate the
            `.cxs` schema syntax itself), `codegen` (emit host-language
-           type definitions — status: post-v0.8.0)."""]
+           type definitions — status: planned)."""]
 
       [example lang=sh
         """$ cx schema check config.cxs
-           $ cx schema codegen --target rust config.cxs    # post-v0.8.0"""]]
+           $ cx schema codegen --target rust config.cxs    # planned"""]]
 
     [child id=cli-table n=8.1.16 title='cx table'
       [body
@@ -440,7 +440,7 @@
 
       [example lang=sh
         """$ cx version
-           cx 0.8.0 (build deadbeef, libcx 0.8.0, ABI bits 0-32)
+           cx <current> (build deadbeef, libcx <current>, ABI bits 0-32)
 
            $ cx help lint"""]]]
 
@@ -461,14 +461,14 @@
            configuration (brackets, comments), snippets
            (`snippets/cx.json`), and an LSP client that spawns
            `cx lsp` on demand. Install via the published `.vsix` or
-           `code --install-extension tooling/vscode/cx-language-0.8.0.vsix`."""]
+           `code --install-extension tooling/vscode/cx-language.vsix`."""]
 
       [example lang=sh
         """# Build and install locally
            cd tooling/vscode
            npm install
-           npm run package        # produces cx-language-0.8.0.vsix
-           code --install-extension cx-language-0.8.0.vsix
+           npm run package        # produces cx-language.vsix
+           code --install-extension cx-language.vsix
 
            # Or from the bundled installer
            bash tooling/install/install-vscode.sh"""]
@@ -540,7 +540,7 @@
 
       [note
         """A dedicated JetBrains plugin (richer than the LSP-only
-           path) is post-v0.8.0; tracked as a v0.8.x candidate in
+           path) is planned; tracked in
            [`ROADMAP.md`](../../ROADMAP.md)."""]]
 
     [child id=editor-sublime n=8.2.5 title='Sublime / Zed / other LSP clients'
@@ -576,15 +576,15 @@
         [row method='textDocument/references'                     status='shipped' notes='anchor + alias + merge']
         [row method='textDocument/codeLens'                       status='shipped' notes='diagram preview, eval result']
         [row method='textDocument/codeAction'                     status='shipped' notes='quick-fix for CXLS001-004']
-        [row method='textDocument/signatureHelp'                  status='v0.8.x' notes='for directive arg slots']
-        [row method='textDocument/inlayHint'                      status='v0.8.x' notes='inferred types']
-        [row method='textDocument/rename'                         status='v0.8.x' notes='cross-include rename']]
+        [row method='textDocument/signatureHelp'                  status='planned' notes='for directive arg slots']
+        [row method='textDocument/inlayHint'                      status='planned' notes='inferred types']
+        [row method='textDocument/rename'                         status='planned' notes='cross-include rename']]
 
       [body
         """Implementation lives in `vcx/cmd/lsp_features.v`. The
-           Phase 5 v0.8.0 work added the CXLS001-004 diagnostic
+           CXLS001-004 diagnostic
            emitters per
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)."""]]
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)."""]]
 
     [child id=lsp-diagnostics n=8.3.2 title='Diagnostic codes'
       [body
@@ -598,7 +598,7 @@
         [item """**CX-L\\*** — lint findings from `cx_lint` (see
                 [[lint]]); same codes the CLI emits."""]
         [item """**CXLS\\*** — LSP-only static-analysis diagnostics
-                that don't have a CLI surface. Reserved at v0.8.0:"""]]
+                that don't have a CLI surface. Currently reserved:"""]]
 
       [table columns=(code, severity, trigger)
         [row code='CXLS001' severity='warning' trigger='unreachable [?match] arm (after [else …] or [case _ …])']
@@ -610,7 +610,7 @@
         """Codes are stable strings; editor configs may key off them
            to surface custom UI (e.g. fold a CXLS003 cluster into a
            single inlay). See
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
            for the emit contracts."""]]
 
     [child id=lsp-hover n=8.3.3 title='Hover'
@@ -659,12 +659,12 @@
         """All completion items carry `data.kind` so editors can
            sort and group them. CXPath items are tagged
            `data.path_axis=true` per
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)."""]]
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)."""]]
 
     [child id=lsp-codeactions n=8.3.5 title='Code actions'
       [body
         """Code actions are quick-fixes the editor offers for
-           diagnostics. v0.8.0 ships:"""]
+           diagnostics. Currently shipped:"""]
 
       [list
         [item """**CXLS001** (unreachable arm) — "remove unreachable
@@ -680,9 +680,9 @@
                 anchor" (with a placeholder body)."""]]
 
       [body
-        """CXLS003 consolidation auto-fix is post-v0.8.0
-           (recognise-only at v0.8.0 per
-           [`tooling/lsp/v0_8_0_diagnostics.md`](../../tooling/lsp/v0_8_0_diagnostics.md)
+        """CXLS003 consolidation auto-fix is planned
+           (recognise-only currently per
+           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
            §out-of-scope)."""]]
 
     [child id=lsp-semantic-tokens n=8.3.6 title='Semantic tokens'
@@ -806,7 +806,7 @@
 
     [child id=lint-catalogue n=8.5.1 title='Rule catalogue'
       [body
-        """Five lint checks ship at v0.8.0:"""]
+        """Five lint checks are currently shipped:"""]
 
       [table columns=(id, severity, name)
         [row id='CX-L001' severity='info'  name='comment-style consistency']
@@ -883,7 +883,7 @@
       [body
         """The CXLS\\* codes ([[lsp-diagnostics]]) are surfaced only
            through the LSP and have no corresponding `cx lint`
-           check at v0.8.0. They live in the LSP because they need
+           check. They live in the LSP because they need
            document-wide static analysis (cross-arm reachability,
            focus-path type-check) and aren't general-enough to be
            CLI default behaviour. Suppression inside a document
@@ -891,11 +891,11 @@
            CX-L\\* codes); CLI suppression is moot since `cx lint`
            doesn't emit them."""]]
 
-    [child id=lint-custom n=8.5.6 title='Custom rule plugins (post-v0.8.0)'
+    [child id=lint-custom n=8.5.6 title='Custom rule plugins (planned)'
       [body
-        """A plugin model for user-defined checks is post-v0.8.0
-           (rejected for v0.6.0; the question is reopened in
-           [`ROADMAP.md`](../../ROADMAP.md) "Later"). For v0.8.0,
+        """A plugin model for user-defined checks is planned
+           (previously rejected; the question is reopened in
+           [`ROADMAP.md`](../../ROADMAP.md) "Later"). Currently,
            extending the check set means contributing a check to
            `vcx/cx/lint.v` upstream. Schema-violation checks are a
            separate path — they layer in automatically as the schema
@@ -1048,7 +1048,7 @@
 
       [example lang=sh
         """$ cx convert input.json --to cx \\
-             | cx eval filter.cx --data - \\
+             | cx filter.cx --data - \\
              | cx convert - --to yaml"""]
 
       [body
@@ -1205,7 +1205,7 @@
       [body
         """`cx repl` is the planned interactive evaluator — read
            one CX expression, evaluate against a context document,
-           print the value, loop. Status: **post-v0.8.0**. Until it
+           print the value, loop. Status: **planned**. Until it
            ships, the equivalent is `cx eval -` (read from stdin)
            with a quick shell wrapper:"""]
 
@@ -1298,7 +1298,7 @@
       [body
         """Use `build.rs` to validate `.cxs`/`.cx` pairs at compile
            time; once `cx schema codegen --target rust` ships
-           (post-v0.8.0) the same step generates Rust types directly
+           the same step generates Rust types directly
            from the schema."""]
 
       [example lang=rust
@@ -1320,7 +1320,7 @@
                    panic!(\"config validation failed\");
                }
 
-               // Post-v0.8.0: codegen
+               // Planned: codegen
                // Command::new(\"cx\")
                //     .args([\"schema\", \"codegen\", \"--target\", \"rust\",
                //            \"config/config.cxs\",
@@ -1585,13 +1585,13 @@
 
       [list
         [item """**Tier 1** — browser-only Mermaid render. What the
-                playground uses. No external service. Shipped at
-                v0.8.0."""]
+                playground uses. No external service. Currently
+                shipped."""]
         [item """**Tier 2** — HTTP service that shells out to
                 graphviz for richer (DOT-based) renders. Editor /
                 CI integration story. Shipped as
                 `tooling/diagram-svc/`."""]
-        [item """**Tier 3** — wasm-graphviz inline. Post-v0.8.0
+        [item """**Tier 3** — wasm-graphviz inline. Planned
                 follow-up. Eliminates the Tier-2 service hop while
                 keeping the richer-render output quality."""]]
 
@@ -1632,7 +1632,7 @@
     [child id=profile-eval n=8.12.1 title='Per-directive profiling'
       [body
         """`cx eval --profile` is the planned pprof-compatible
-           profile output. Status: **post-v0.8.0**. At v0.8.0 the
+           profile output. Status: **planned**. Currently the
            flag is reserved (accepted by the CLI but emits a
            "not yet implemented" note). The same data is available
            today via `--trace` plus offline analysis — see
@@ -1677,13 +1677,13 @@
         """The Go shim has a known SIGSEGV at 1 MB+ inputs as of
            2026-05. The fix is tracked. Python's decoder ceiling
            (~90 ms at 1 MB, pure-Python floor) is architectural —
-           a C extension is a post-v0.8.0 candidate."""]]
+           a C extension is a planned future candidate."""]]
 
     [child id=profile-targets n=8.12.4 title='Regression tracking'
       [body
         """The bench numbers are tracked against
            [`spec/governance.md §6`](../../spec/governance.md)
-           SLA targets. Headline numbers at v0.8.0:"""]
+           SLA targets. Current headline numbers:"""]
 
       [list
         [item """**Streaming evaluator** — 340 MB/s on the
@@ -1839,8 +1839,7 @@
       """Recipes carried forward from the pre-Phase-B docs
          cookbook + showcase. The §8.7 children above (recipes
          §8.7.1-§8.7.9) cover the most common nine; this section
-         adds 13 more focused recipes that surfaced as
-         load-bearing in the pre-v0.8.0 doc set."""]
+         adds 13 more focused recipes."""]
 
     [child id=recipe-extract n=8.14.1 title='Extract a single value'
       [example lang=shell """cx eval -e '[?= //server/@host]' --data=config.cx"""]
@@ -1854,7 +1853,7 @@
         """Run `cx eval -e` with a CX template that filters by
            predicate. The CXPath predicate `//user[@role='admin']`
            selects only admins."""]
-      [example lang=shell """cx eval template.cx --data=users.cx"""]]
+      [example lang=shell """cx template.cx --data=users.cx"""]]
 
     [child id=recipe-count n=8.14.3 title='Count records'
       [example lang=shell """cx eval -e '[?= count(//order)]' --data=orders.cx"""]]
@@ -1866,7 +1865,7 @@
              port=[?= //env/@port]
              workers=[?if [//env/@env = "prod", 32, 4]]
              cache=[?if [//env/@env = "prod", /var/cache/app, /tmp/cache]]]"""]
-      [example lang=shell """cx eval server.cx --data=env.prod.cx --to=toml > server.toml"""]]
+      [example lang=shell """cx server.cx --data=env.prod.cx --to=toml > server.toml"""]]
 
     [child id=recipe-write-stream n=8.14.5 title='Write a stream'
       [example lang=python
@@ -1887,7 +1886,7 @@
         """[?include 'partials/header.cx']
            [?for [in $item //order/line] [yield [?include 'partials/line.cx']]]
            [?include 'partials/footer.cx']"""]
-      [example lang=shell """cx eval order.cx --data=order.cx --include-root=./templates"""]]
+      [example lang=shell """cx order.cx --data=order.cx --include-root=./templates"""]]
 
     [child id=recipe-read-parquet n=8.14.8 title='Read a Parquet file into CX'
       [example lang=shell """cx table load orders.parquet --to=cx > orders.cx"""]]
@@ -1966,7 +1965,7 @@
            the XML projection of the parsed tree. No server, no
            signup. Twelve starter examples ship in the corpus
            — three data shapes (atom, nested element, whole-shop)
-           and nine program snippets covering the v0.8.0
+           and nine program snippets covering the
            directive surface."""]]
 
     [child id=pg-visualize n=8.15.2 title='Visualize'

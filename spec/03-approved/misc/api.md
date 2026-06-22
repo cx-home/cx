@@ -1,9 +1,9 @@
 # CX Document API
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 The Document API is the uniform host-language interface for navigating,
-reading, and modifying a parsed CX tree. Every v0.8.0 binding (V
+reading, and modifying a parsed CX tree. Every binding (V
 native, Python, Go, Rust) implements it with case-adjusted names and
 identical semantics. The API operates over the CXDM value model
 defined in [`core/cxdm.md`](../core/cxdm.md); selection and mutation

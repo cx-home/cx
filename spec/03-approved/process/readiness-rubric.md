@@ -1,6 +1,6 @@
 # CX Readiness Rubric
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 This document is the gate criterion for CX releases. It catalogs the
 capabilities a serious data/document format is expected to provide —
@@ -116,7 +116,7 @@ Status reflects branch HEAD, not the latest released version.
 | Cardinality constraints | ✅ | `core/schema.md` |
 | Enum / pattern / range constraints | ✅ | `core/schema.md` |
 | Schema diagnostics (line/col, friendly errors) | ✅ | `core/schema.md` |
-| Schema-aware editor support (LSP) | 📋 | post-v0.8.0 |
+| Schema-aware editor support (LSP) | 📋 | planned |
 
 ## 6 — Conversion / interop
 
@@ -136,7 +136,7 @@ Status reflects branch HEAD, not the latest released version.
 | Schema-driven encoding | ✅ | `core/data-bin.md` |
 | Streaming Table C ABI | ✅ | `core/abi.md` |
 | Apache Arrow C-Data interop | ✅ | `core/abi.md` |
-| Parquet bridge (via Arrow) | 📋 | post-v0.8.0 |
+| Parquet bridge (via Arrow) | 📋 | planned |
 | Binary AST format (`cx_ast_bin`) | ✅ | `core/ast-bin.md` |
 | Data-bin one-shot loaders/dumpers | ✅ | `core/abi.md` |
 | Delimited (CSV / TSV / PSV) | ✅ | `std-lib/csv.md`, `core/conversions.md` |
@@ -238,8 +238,8 @@ Status reflects branch HEAD, not the latest released version.
 | Documented SLA budgets | ✅ | `process/governance.md` |
 | Microbenchmark suite | ✅ | `bench/` |
 | CI regression gate against SLA budgets | ✅ | `.github/workflows/perf.yml` |
-| Comparative benchmarks vs text formats | 📋 | post-v0.8.0 |
-| Comparative benchmarks vs binary formats | 📋 | post-v0.8.0 |
+| Comparative benchmarks vs text formats | 📋 | planned |
+| Comparative benchmarks vs binary formats | 📋 | planned |
 | Per-binding CI matrix | ✅ | `.github/workflows/ci.yml` |
 
 ## 14 — Governance & change management
@@ -250,7 +250,7 @@ Status reflects branch HEAD, not the latest released version.
 | Deprecation policy | ✅ | `process/governance.md` |
 | Spec-change workflow | ✅ | `process/governance.md` |
 | Annual binding audit cadence | ✅ | `process/governance.md` |
-| Release process documented | 🚧 | covered inline in `process/governance.md` §9 + §10.4; standalone `docs/RELEASE_PROCESS.md` planned post-v0.8.0 |
+| Release process documented | 🚧 | covered inline in `process/governance.md` §9 + §10.4; standalone `docs/RELEASE_PROCESS.md` planned |
 | Adoption-review gate (this rubric) | ✅ | this document |
 | Public roadmap | ✅ | `ROADMAP.md` |
 | Third-party conformance certification | ✅ | `process/governance.md` |

@@ -5,7 +5,7 @@
   [standard ref='HDR Histogram' title='Latency stats']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/prof` sub-package.
 

@@ -12,7 +12,7 @@
 
 Every number below is **estimated**, not measured, until CXStore exists to benchmark. Sources:
 
-- CX-specific baselines from v0.8.0 gates (gate 15 streaming throughput, gate 16 HTTP service throughput).
+- CX-specific baselines from perf gates (gate 15 streaming throughput, gate 16 HTTP service throughput).
 - Peer-system benchmarks from published papers, blog posts, and known production deployments (Snowflake, DuckDB, Trino, Elasticsearch, MarkLogic, Cassandra, etc.).
 - Standard distributed-systems extrapolations (Amdahl, S3 bandwidth ceilings, hardware-accelerated SHA-256 throughput).
 
@@ -328,4 +328,4 @@ Detailed methodology will land in a `conformance/cxstore_bench.txt` fixture suit
 - [`embedded.md`](embedded.md) — Phase 0.5 spec (URL-dispatched Embedded Store).
 - [`pack_format.md`](pack_format.md) — Phase 1 pack file layout (indexed-perf Embedded backend).
 - `spec/misc/cxstore-remote-protocol.md` — CSRP spec (Service tier wire protocol; pending Phase 0.7).
-- v0.8.0 perf gates (15, 16) — `spec/v0_8_0_status.md`.
+- Perf gates (15, 16) — `spec/v0_8_0_status.md`. <!-- version-literal-ok -->

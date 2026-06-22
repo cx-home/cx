@@ -4,7 +4,7 @@
 [module-meta name=io tier=B status=current]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/io` sub-package.
 

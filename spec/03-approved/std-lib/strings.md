@@ -5,7 +5,7 @@
   [standard ref='Unicode UAX #29' title='Text segmentation']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/strings` sub-package.
 
@@ -151,7 +151,7 @@ True iff every character matches the class. Empty string → true (vacuous). Uni
 [?def format scope=public pure [returns string] ($template::string $args::[sequence any]) ...]
 ```
 
-Template uses `{}` placeholders for positional args and `{name}` for named args. A single optional **type char** may follow a colon — `{name:type}`. No width, precision, alignment, fill, sign, or grouping specifiers in v0.8.0.
+Template uses `{}` placeholders for positional args and `{name}` for named args. A single optional **type char** may follow a colon — `{name:type}`. No width, precision, alignment, fill, sign, or grouping specifiers are currently supported.
 
 ```cx
 [$strings:format "Hello, {}! You have {} messages." ["Alice" 5]]
@@ -161,7 +161,7 @@ Template uses `{}` placeholders for positional args and `{name}` for named args.
   → "Hex: ff"
 ```
 
-Full v0.8.0 format-spec grammar:
+Full format-spec grammar:
 
 ```
 replacement_field ::= "{" [field_name] [":" type_char] "}"
@@ -169,7 +169,7 @@ field_name        ::= integer | identifier
 type_char         ::= "d" | "f" | "s" | "x" | "X"
 ```
 
-That is the entire surface — five type chars, no other modifiers. Width / precision / alignment / fill / sign / grouping can be added non-breaking in v0.8.x.
+That is the entire surface — five type chars, no other modifiers. Width / precision / alignment / fill / sign / grouping can be added non-breaking in a future revision.
 
 For deferred features, compose with dedicated functions: decimal places via `math/round-to` then `{:f}`; width/alignment/fill via `pad-start` / `pad-end` / `center`; locale-aware number grouping via `locale/format-number`.
 
@@ -188,6 +188,34 @@ For deferred features, compose with dedicated functions: decimal places via `mat
 - `escape-shell` — POSIX shell-safe quoting (single-quote based).
 - `escape-json` — JSON string escapes.
 - `escape-regex` — thin alias delegating to `re/escape` ([`cx-stdlib/re`](re.md) §4.6).
+
+### §3.11. Locale-free numeric parsing
+
+```
+[?def to-number scope=public pure [returns [or number absence]] ($s::string) ...]
+[?def to-int    scope=public pure [returns [or int absence]]    ($s::string) ...]
+[?def to-float  scope=public pure [returns [or float absence]]  ($s::string) ...]
+```
+
+- The plain, locale-free string→number bridge. The accepted grammar is
+  `ws? sign? mantissa exponent? ws?` where `mantissa` is `digits | digits "."
+  digits? | "." digits` (at least one ASCII digit) and `exponent` is
+  `("e"|"E") sign? digits` (at least one digit). Surrounding whitespace is
+  trimmed.
+- `to-number` returns an **int** for pure-integer syntax (`"-5"` → `-5`) and a
+  **float** for fractional / exponent syntax (`"3.07"` → `3.07`, `"1e3"` →
+  `1000.0`). `to-int` accepts integer syntax only (`"3.07"` / `"1e3"` →
+  absence). `to-float` coerces any valid numeric string to a float (`"5"` →
+  `5.0`).
+- A non-numeric input — trailing junk (`"3.07abc"`), grouping separators
+  (`"1,234"`), a lone sign / `.`, a missing-mantissa exponent (`"e3"`), or the
+  empty string — yields the **absence channel `()`** (never a silent string
+  passthrough), so callers branch with `[?else …]`. This is the safe
+  replacement for the `[$cx:parse …]` workaround, which leaked non-numeric
+  input through as a string and only failed at a later arithmetic op.
+- For grouping, Unicode digits, or alternate decimal separators use
+  [`cx-stdlib/locale`](locale.md) `parse-number-locale` (which raises on
+  failure rather than signaling absence).
 
 ## §4. Edge cases
 
@@ -247,7 +275,7 @@ Compile-time string interpolation ships as the `[?str]` **directive** (not a fun
 [?str "Active users: {$users//u[@active]/@email}"]
 ```
 
-What's allowed inside `{...}` is a CXPath expression (a `$binding`, a path navigation `$x/child`, or a filtered query `$x//y[@pred]`). Full CX expressions (function calls inside `{...}`) are not in scope at v0.8.0 — bind first, then interpolate:
+What's allowed inside `{...}` is a CXPath expression (a `$binding`, a path navigation `$x/child`, or a filtered query `$x//y[@pred]`). Full CX expressions (function calls inside `{...}`) are not currently in scope — bind first, then interpolate:
 
 ```
 [?let [= $upper [$strings:upper $name]]

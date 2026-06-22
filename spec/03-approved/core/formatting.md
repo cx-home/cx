@@ -1,6 +1,6 @@
 # CX Formatting Profiles
 
-**Status:** Current for v0.8.0. This file admits the **profile model** — the
+**Status:** Current. This file admits the **profile model** — the
 axes (§2), the built-in profiles (§3), and the `cx-format.cx` configuration
 document (§4). The `cx fmt --profile` flag is specified in `cli.md` §3.1. The
 remaining apply surfaces — the `[?cx format=NAME]` processing instruction

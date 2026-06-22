@@ -7,7 +7,7 @@
   [standard ref='WGS 84' title='Datum']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/geo` sub-package.
 
@@ -193,7 +193,7 @@ First `[ring]` is the outer boundary; subsequent `[hole]` rings are interior bou
 OGC Well-Known Text. Examples:
 
 - `"POINT(-122.4194 37.7749)"`
-- `"LINESTRING(-122.4 37.7, -122.5 37.8)"` (sequence of points; not a first-class CX type at v0.8.0)
+- `"LINESTRING(-122.4 37.7, -122.5 37.8)"` (sequence of points; not a first-class CX type)
 - `"POLYGON((-122.5 37.7, -122.4 37.7, -122.4 37.8, -122.5 37.8, -122.5 37.7))"`
 
 WKT uses `(lon lat)` order; CX point elements use named `lat=` / `lon=` attrs.
@@ -233,7 +233,7 @@ RFC 7946. `parse-geojson` accepts:
 | `CXER3602` | `E_GEO_POLYGON_INVALID` | Polygon fails the full OGC validity check |
 | `CXER3603` | `E_GEO_WKT_MALFORMED` | `parse-wkt` on unparseable input |
 | `CXER3604` | `E_GEO_GEOJSON_MALFORMED` | `parse-geojson` on unparseable input |
-| `CXER3605` | `E_GEO_GEOMETRY_TYPE_UNSUPPORTED` | Parse encounters geometry type not in v0.8.0 surface |
+| `CXER3605` | `E_GEO_GEOMETRY_TYPE_UNSUPPORTED` | Parse encounters geometry type not in the current surface |
 
 ## §6. Conformance fixtures
 

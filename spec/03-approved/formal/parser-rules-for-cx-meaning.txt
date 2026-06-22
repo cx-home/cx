@@ -152,9 +152,9 @@
 
 [M-COMMENT]  A comment images as an XML comment, or <cx:comment> if it contains '--'.
   RULE     xml(Comment{t}) ⇒ t has no '--' ? '<!--'t'-->' : '<cx:comment>'escape(t)'</cx:comment>'
-           comment text t is VERBATIM between '[-' and ']' (no WS trim — consistent with Raw, D4);
+           comment text t is VERBATIM between '[;' and ']' (no WS trim — consistent with Raw, D4);
            stored RAW; cx() does not re-unescape (the XML parser already decoded).
-  WITNESS  [- note] → <!-- note-->                  (leading space is verbatim content)
+  WITNESS  [; note] → <!-- note-->                  (leading space is verbatim content)
 
 [M-ALIAS]  An alias node images as <cx:alias cx:name>.
   RULE     xml(Alias{n}) ⇒ '<cx:alias cx:name="'n'"/>'  ;  inverse symmetric.
@@ -313,7 +313,7 @@
 # D-B MARKDOWN RULED (2026-06-05): CX has NO markdown syntax — gone. Markdown is just another language,
 # embedded as OPAQUE text in a '[# … #]' raw block, like any other code. No sigil shorthands, no
 # markdown-specific elements; the parser has zero markdown awareness. So '>' is unambiguously the
-# operator, '[#' unconditional raw, '[-' unconditional comment — no totality carve-out. Any CX→Markdown
+# operator, '[#' unconditional raw, '[;' unconditional comment — no totality carve-out. Any CX→Markdown
 # RENDERING is a conversion over generic data (conversions.md §2.5), not a parser concern, not in these
 # files. md.cxd's markdown-syntax cases test a non-existent feature ⇒ obsolete (drop, or embed the
 # markdown in a '[# … #]' raw block).

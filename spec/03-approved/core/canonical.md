@@ -1,6 +1,6 @@
 # CX Canonical Form Specification
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 This document defines canonical forms for CX across every output format. Two
 implementations are conformant if and only if they produce byte-identical
@@ -266,7 +266,7 @@ The implementation runs as a post-pass in `cx_text_canonical`
 
 **Lossless canonical:** preserved.
 
-- Comments emitted as `[- text -]` with internal whitespace unchanged.
+- Comments emitted as `[; text ]` with internal whitespace unchanged.
 - Line comments (`# text`) emitted as `# text`, terminated at end of line, not
  converted to block form. Comment placement preserved relative to nodes.
 - CXDirectives emitted in source position, with attribute order preserved.
@@ -442,7 +442,7 @@ terse form.
 
 The ten non-default, non-attribute axes (all of XPath 3.1's axis set
 per grammar [131a]) emit their full `axis::` spelling. There is no
-shorter terse form for these axes at v0.8.0.
+shorter terse form for these axes.
 
 #### 2.12.4 Node-test emit rules
 

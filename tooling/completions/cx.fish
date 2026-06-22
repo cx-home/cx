@@ -1,7 +1,7 @@
-# v0.8.0: cx CLI fish completion.
+# cx CLI fish completion.
 # Install: place at ~/.config/fish/completions/cx.fish
 
-# Subcommands (v0.8.0: `select` retired — CXPath is a first-class value
+# Subcommands (`select` retired — CXPath is a first-class value
 # kind per code.md §5.5, use `cx eval //path`; `diagram` renders a data
 # diagram, `code-diagram`/`code-tree` render the program AST, `lock`
 # manages the dependency lockfile).
@@ -13,7 +13,7 @@ complete -c cx -f -n '__fish_use_subcommand' -a diff -d 'Semantic diff'
 complete -c cx -f -n '__fish_use_subcommand' -a lint -d 'Lint a CX file'
 complete -c cx -f -n '__fish_use_subcommand' -a validate -d 'Validate against schema'
 complete -c cx -f -n '__fish_use_subcommand' -a table -d 'Table operations'
-complete -c cx -f -n '__fish_use_subcommand' -a demo -d 'Run v0.8.0 demo'
+complete -c cx -f -n '__fish_use_subcommand' -a demo -d 'Run the cx demo'
 complete -c cx -f -n '__fish_use_subcommand' -a scaffold -d 'Scaffold new project'
 complete -c cx -f -n '__fish_use_subcommand' -a eval -d 'Evaluate a CX program'
 complete -c cx -f -n '__fish_use_subcommand' -a diagram -d 'Render a diagram from a CX source'
@@ -32,7 +32,7 @@ complete -c cx -f -n '__fish_seen_subcommand_from table' -l output -r -d 'output
 complete -c cx -f -n '__fish_seen_subcommand_from eval' -l data -r -d 'input CX file (- for stdin)'
 complete -c cx -f -n '__fish_seen_subcommand_from eval' -l target -a 'text cx json yaml xml csv tsv' -d 'output target'
 
-# diagram flags (v0.8.0)
+# diagram flags
 complete -c cx -f -n '__fish_seen_subcommand_from diagram' -l format -a 'mermaid graphviz' -d 'diagram format'
 complete -c cx -f -n '__fish_seen_subcommand_from diagram' -l output -r -d 'output file'
 complete -c cx -f -n '__fish_seen_subcommand_from diagram' -l depth -d 'max depth'

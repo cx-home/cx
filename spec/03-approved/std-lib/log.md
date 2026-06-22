@@ -5,7 +5,7 @@
   [standard ref='ISO 8601' title='Timestamps']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/log` sub-package.
 

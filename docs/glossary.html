@@ -164,7 +164,7 @@
         <p>A host-language wrapper around the compiled `libcx`. Layer 1
          is the 16 canonical methods every binding must implement
          identically; Layer 2 is host-idiomatic syntactic sugar that
-         varies per language. v0.8.0 ships V, Python, Go, and Rust.
+         varies per language. Currently ships V, Python, Go, and Rust.
          See <a class="xref" href="bindings.html">bindings</a>.</p>
       
     </section>
@@ -309,7 +309,7 @@
          (`[?match]`), and update focus (`[?modify]`). XPath 3.1
          aligned with deliberate divergences (see
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
-         and a value-kind in v0.8.0. See <a class="xref" href="code.html#cxpath">cxpath</a>.</p>
+         and a value-kind. See <a class="xref" href="code.html#cxpath">cxpath</a>.</p>
       
     </section>
     <section id="g-data-bin">
@@ -366,7 +366,7 @@
       
         <p>An element whose name starts with `?` (e.g. `[?for]`,
          `[?match]`, `[?modify]`). Interpreted by the evaluator
-         rather than carried as data. v0.8.0 has 40 normative
+         rather than carried as data. Currently 40 normative
          directives. See <a class="xref" href="code.html#directives">directives</a>.</p>
       
     </section>
@@ -889,8 +889,8 @@
       
         <p>Processing a document without loading it entirely into
          memory. CX's streaming evaluator handles documents up to
-         the host's filesystem size; gate 15 in the v0.8.0
-         readiness rubric measures the throughput floor. See
+         the host's filesystem size; gate 15 measures
+         the throughput floor. See
          <a class="xref" href="analytics.html#streaming">streaming</a>.</p>
       
     </section>
@@ -984,7 +984,7 @@
         <p>The WebAssembly build of libcx used by the playground
          and any browser-hosted CX tooling. Exposes a subset of
          the C ABI plus `_cx_code_diagram` and friends. Two
-         artifacts at v0.8.0: `libcx-async.js` (Asyncify, no
+         artifacts: `libcx-async.js` (Asyncify, no
          pthreads — works under file:// and any HTTP host),
          `libcx-pthreads.{js,wasm}` (real OS threads via
          SharedArrayBuffer — requires HTTP with COOP/COEP

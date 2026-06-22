@@ -1,6 +1,6 @@
 # CX Format Conversion Semantics
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 This document specifies the semantics of all conversion paths between the 5
 supported formats: CX, XML, JSON, YAML, and TOML. Self-to-self paths

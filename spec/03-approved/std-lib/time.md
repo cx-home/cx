@@ -10,7 +10,7 @@
   [standard ref='IANA TZ' title='Time zones']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/time` sub-package.
 

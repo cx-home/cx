@@ -194,10 +194,10 @@
 
 [# index-body: the landing page (docs/guide/index.html) body — title, lede,
    grouped table of contents (reusing nav-group), source note. #]
-[?def index-body scope=public ($metas $libfiles)
+[?def index-body scope=public ($metas $libfiles $ver)
   [$cat (
     '<h1>CX — The Data and Code Language</h1>\n',
-    '<p class="lede">A developer guide and reference for v0.8.0-dev.\n',
+    [$cat ('<p class="lede">A developer guide and reference for CX v', $ver, '.\n')],
     '   Bracket form for data, the same bracket form for code, one\n',
     '   evaluator, one identity function.</p>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
@@ -375,7 +375,7 @@
       [section id=directives
         [h1 'Directive reference']
         [p class="lede"
-          'Every directive in the closed v0.8.0 registry ('
+          'Every directive in the closed directive registry ('
           [code 'spec/core/code.md'] ' §4.1) — the bracketed '
           [code '[?…]'] ' forms that drive pattern dispatch, comprehensions, '
           'binding, iterators, resilience, services, concurrency, and async. '
@@ -472,6 +472,7 @@
   [= $out 'docs/guide']
   [= $metas [$load-metas $src]]
   [= $libfiles [$io:glob 'stdlib/*.cx']]
+  [= $ver [$strings:trim [$io:read-file 'VERSION']]]
   [= $man [$cx:parse [$io:read-file [$cat ($src, '/manifest.cxd')]]]]
   [= $sec-ancs [?for [in $s $man//section] [yield
     [anc name=$s@id slug=[$slug-of $s@file] frag='']]]]
@@ -501,7 +502,7 @@
     [$copy-if 'dist/wasm/libcx.js'            [$cat ($out, '/wasm/libcx.js')]],
     [$copy-if 'dist/wasm/libcx.wasm'          [$cat ($out, '/wasm/libcx.wasm')]],
     [$io:write-file [$cat ($out, '/index.html')]
-      [$wrap-page 'CX Guide' 'index' $metas $libfiles [$index-body $metas $libfiles]]],
+      [$wrap-page 'CX Guide' 'index' $metas $libfiles [$index-body $metas $libfiles $ver]]],
     [$io:write-file [$cat ($out, '/about.html')]
       [$wrap-page 'About' 'about' $metas $libfiles [$io:read-file [$cat ($src, '/about.html')]]]],
     [?for [in $m $metas] [yield

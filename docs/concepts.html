@@ -381,13 +381,11 @@
          is binding-agnostic: any two `Doc` values resulting from the
          same `[?modify]` chain can be freely passed across binding
          and thread boundaries; libcx tracks the underlying graph.</p>
-        <p>**Implementation status.** The persistent-tree
-         implementation is targeted for v0.8.x. v0.8.0 ships the
-         `[?modify]` surface with
-         full-copy semantics; v0.8.x lands the spine-copy optimisation
-         and the formal perf gate enforcement. Functional semantics
-         are identical between the two — only the allocation profile
-         tightens.</p>
+        <p>**Implementation status.** The `[?modify]` surface is
+         currently shipped with full-copy semantics; the spine-copy
+         optimisation and formal perf gate enforcement are planned.
+         Functional semantics are identical between the two —
+         only the allocation profile tightens.</p>
       
     </section>
     <section id="streaming">
@@ -503,7 +501,7 @@
         </pre>
         <p class="note">**Status.** The `[using FN]` clause-child form is the sole
          accepted shape for `[?map]`/`[?reduce]`/`[?par-map]`; there is
-         no legacy colon-slot form (the v0.8.0 surface is uniformly
+         no legacy colon-slot form (the current surface is uniformly
          `[head …]`, never `:slot`).</p>
         <p>**Why this is safe.** No CX expression can mutate a value
          another thread is reading. `[?modify]` returns a new tree;
@@ -691,9 +689,9 @@
          minting via per-capability flags. Untrusted code by default
          can compute, transform, hash — it cannot reach the network,
          the disk, or spawn concurrency. Effect typing as a
-         compile-time mechanism is a post-v0.8.0 design direction
+         compile-time mechanism is a future design direction
          (see <a class="xref" href="#sandboxing">sandboxing</a>).</p>
-        <p>**Pre-v0.8.0 caveat.** CX has not received an external
+        <p>**External audit pending.** CX has not received an external
          security audit. The hardening above is real and tested
          through conformance, fuzz harness, and reproducibility CI,
          but until the audit lands the recommended posture for
@@ -857,7 +855,7 @@
           
             <li>**0.x.y** — pre-1.0. The ABI can break at minor
               versions; the project annotates each break in
-              `CHANGELOG.md` and provides a migration guide. v0.8.0
+              `CHANGELOG.md` and provides a migration guide. v0.8.0 [; version-literal-ok ]
               renamed the evaluator symbol prefix
               (`cx_program_*` → `cx_code_*`); callers update via the
               migration script in <a class="xref" href="migration.html#from-v07x">from-v07x</a>.</li>
@@ -875,7 +873,7 @@
          A binding examines the bitmask on load and refuses to use
          features the loaded library doesn't implement. New features
          get a new bit; the old bits keep their meanings forever.
-         The bit map at v0.8.0:</p>
+         The bit map (as currently defined):</p>
         <table>
           
             <row bit="0" hex="0x00000001" capability="ABI v1 conversion symbols" cx:attr-types="hex=string"/>
@@ -941,7 +939,7 @@
          the whitelist in the same PR. Removed symbols cause CI
          failure unless the major version is bumped. ABI v1
          signatures are frozen forever; ABI v2 signatures are frozen
-         as of v0.8.0 — future signature changes
+         as of v0.8.0 — future signature changes [; version-literal-ok ]
          introduce `_v3` suffixed symbols without removing v2.</p>
         <p>**Schema (.cxs) compatibility.** The schema language itself
          versions independently. Within a major version of the
@@ -1033,7 +1031,7 @@
          walks the shared subtree without copying. Boehm GC tracks
          the reachability; when no thread holds the subtree
          anymore, it's collected.</p>
-        <p>**Service / worker / async surfaces (v0.8.0).** Three
+        <p>**Service / worker / async surfaces.** Three
          compositional layers from
          [`spec/code.md`](../../spec/code.md):</p>
         <table>
@@ -1180,7 +1178,7 @@
         </ul>
         <p>**cxlib.js — the Layer-1 surface.** A small (~140 LOC)
          hand-written JavaScript wrapper exposes the wasm C ABI as
-         a clean JS API. Sixteen methods at v0.8.0:</p>
+         a clean JS API. Sixteen methods:</p>
         <table>
           
             <row method="loads(text)" what-it-does="Parse CX text → Doc handle"/>
@@ -1225,7 +1223,7 @@
          the program diagram and tree
          viz wasm paths are linked. Cacheable in the browser
          (long-lived Cache-Control header), gzip-compresses to
-         ~600 KB on the wire. The target ceiling for v0.7.x is
+         ~600 KB on the wire. The target ceiling is
          **2 MB** uncompressed; growth past that triggers a
          linker-level audit.</p>
         <p>**When wasm makes sense.**</p>
@@ -1269,10 +1267,10 @@
          `dist/wasm/`. The playground at
          [demo.html](../../tooling/web/demo.html) uses cxlib.js to
          evaluate CX programs live in-browser. Gate-17 design
-         points D1-D11 ship at v0.8.0 (see
+         points D1-D11 are shipped (see
          [`spec/audits/playground_gate17_design_v1.md`](../../spec/audits/playground_gate17_design_v1.md)).
          Tier-3 (wasm-graphviz for SVG diagrams in-browser) is
-         post-v0.8.0.</p>
+         planned.</p>
         <p>**The playground is a constrained demonstration surface, not
          the performance target.** Bundling CX into a browser carries
          unavoidable overhead — Asyncify instrumentation (so wall-clock
@@ -1640,11 +1638,11 @@
          template includes, but nothing else":</p>
         <pre>
           <code class="language-sh"># Grant only local includes, nothing else:
-         cx eval untrusted.cx --profile untrusted --cap include-local
+         cx untrusted.cx --profile untrusted --cap include-local
 
          # Grant local includes + HTTP client, but not absolute
          # filesystem or worker spawn:
-         cx eval untrusted.cx --profile untrusted \\
+         cx untrusted.cx --profile untrusted \\
              --cap include-local \\
              --cap http-client</code>
         </pre>
@@ -1687,11 +1685,11 @@
               the caller's set.</li>
           
         </ul>
-        <p>**Effect typing — post-v0.8.0 direction.** The capability
+        <p>**Effect typing — future direction.** The capability
          model above is **runtime**: capabilities are checked when
          the offending directive is evaluated, not at parse time.
          The complementary design — **compile-time effect typing**
-         — is a post-v0.8.0 direction. Each directive would carry
+         — is a future direction. Each directive would carry
          a static effect signature (`Pure`, `IO`, `Net`, `Spawn`,
          `Mutate`); the type checker would reject a `--profile
          untrusted` program that statically references an
@@ -1707,9 +1705,9 @@
          Status: design level per
          [`spec/process/threat-model.md`](../../spec/process/threat-model.md) §11.4
          (no CPU/memory budget per fragment — the runtime check
-         is what's load-bearing today). The v0.8.0 surface ships
+         is what's load-bearing today). The current surface ships
          the runtime capability model; effect typing waits.</p>
-        <p>**Known limits at v0.8.0.**</p>
+        <p>**Known limits.**</p>
         <ul>
           
             <li>**No CPU/memory budget per `cx:eval` fragment.** The
@@ -1729,7 +1727,7 @@
               through to error reporting but are caller-asserted;
               a fragment cannot rely on them for security
               decisions.</li>
-            <li>**External audit pending.** Pre-v0.8.0, CX has not
+            <li>**External audit pending.** CX has not yet
               received an external security audit. The capability
               model is real and tested through conformance; the
               audit closes residual confidence gaps. See
@@ -1884,13 +1882,13 @@
         <section id="wasm-three-tier-render">
           <h3>Three-tier diagram rendering</h3>
           
-            <p>The v0.8.0 reference renderer (gate 12) makes every
+            <p>The reference renderer (gate 12) makes every
            well-formed CX program renderable to SVG, PNG, or
            Mermaid text per `spec/code.md` §10.1.2. Three
            rendering tiers land at different capability levels —
            the playground commits to tier 1, the editor and CI
            integration story commits to tier 2, and tier 3 is
-           reserved for post-v0.8.0.</p>
+           reserved for a future revision.</p>
             <p>- **Tier 1** — Mermaid text via `libcx.wasm`, rendered
              to inline SVG by Mermaid.js in the browser. Pure
              browser, no server. Powers the playground Visualize
@@ -1901,12 +1899,11 @@
              The supported integration story for editor plugins
              and docs CI when source text is too large or the
              visual richer than Mermaid handles. Composes cleanly
-             with the v0.8.0 `[?service]` in ~30 lines of CX.
+             with `[?service]` in ~30 lines of CX.
            - **Tier 3** — bundled wasm-graphviz (e.g.,
              `@hpcc-js/wasm`) running `dot` layout entirely in
-             the browser, ~1 MB additional bundle. Out of scope
-             for v0.8.0; revisited post-v0.8.0 once tier 1 +
-             tier 2 are exercised in the wild.</p>
+             the browser, ~1 MB additional bundle. Planned
+             once tier 1 + tier 2 are exercised in the wild.</p>
             <p class="note">Diagrams round-trip per gate 9 — every renderer output
            carries the original program bytes as metadata
            (Mermaid leading `%%cx:&lt;base64&gt;%%` comment, SVG
@@ -1917,10 +1914,10 @@
           
         </section>
         <section id="wasm-status">
-          <h3>Wasm respin status (v0.8.0)</h3>
+          <h3>Wasm respin status</h3>
           
-            <p>`libcx-wasm` ships at v0.8.0 (respun from the original
-           v0.7.5 cut to track the renamed code surface). V source
+            <p>`libcx-wasm` is shipped (respun from the original
+           v0.7.5 cut to track the renamed code surface). [; version-literal-ok ] V source
            compiled through V-emit-C and then
            emscripten, a focused C ABI subset for the
            playground-load-bearing surface (`cx_code_eval`,
@@ -1945,7 +1942,7 @@
     <section id="performance-numbers">
       <h2>Performance numbers — parse, emit, eval, FFI</h2>
       
-        <p>v0.8.0-dev throughput on a single core. Bench setup: M2
+        <p>Throughput on a single core. Bench setup: M2
          Pro, libcx built with `-prod`, 1 MB fixture per format.
          The harness lives at
          `vcx/tests/runners/streaming_bench.v` and
@@ -1956,8 +1953,7 @@
         <section id="perf-parse">
           <h3>Parse</h3>
           
-            <p>Parse throughput on the v0.8.0-dev harness, indicative
-           ranges (refresh each release):
+            <p>Parse throughput, indicative ranges (refresh each release):
            - **CX** — ~250 MB/s (the canonical-form parser is
              slower than dialect-specific parsers because it
              handles type-strict scalars, sized integer ranges,
@@ -1985,7 +1981,7 @@
             <p>The CX code streaming evaluator runs at ~340 MB/s on
            the comparable bench corpus — about 17% under the
            comparable JSON benchmark on the same workload. The
-           v0.7.0 target was 300 MB/s; that line has been
+           v0.7.0 target was 300 MB/s; that line has been [; version-literal-ok ]
            crossed.</p>
           
         </section>

@@ -4,7 +4,7 @@
 [module-meta name=journal tier=D status=current]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 > **Per-aggregate streams (R2) — IMPLEMENTED (complete).** §2.1.1 generalizes the single-chain handle to **per-aggregate streams** (the scalability model XAP requires, [`xap.md`](xap.md) §14.2). The default stream is the **invisible degenerate case** (no stream attr/coordinate, legacy alias), so the prior single-chain behavior is preserved **byte-identically** (all original conformance cases green, unchanged). **Implemented** in `vcx/code/stdlib_journal.v` across the whole surface: the `stream` key on `append` (per-stream `seq`/head/chain + per-stream `expect-prev-seq` conflict + parallel disjoint append); stream-scoped `read`/`slice`/`since`/`head`, `verify`, `fold`/`fold-slice`/`replay`, `snapshot`/`snapshot-verify`/`fold-from`, and `retain`/`compact` (per-stream seam-anchored copy-forward); the `streams` enumerator; and `file://` **reload** of named streams (via a persisted stream index). Tenant-wide state is the **caller's order-independent composition** of per-stream folds (the journal exposes per-stream `fold` + `streams`; it cannot merge opaque user states itself). Fixtures **journal-059…071** green (§10). The R2 graduation gate is **closed**; remaining graduation is the normal §11 checklist + user G3.
 
@@ -1148,7 +1148,7 @@ This section states the count delta; per Rule G3 it makes **no edits**.
 **journal is a genuine `+1`** (unlike http, which was a README-vs-binary
 *reconciliation* of an already-bundled name — [`http.md`](http.md)
 §12). journal is **not yet a bundled name**: it is absent from the skeleton test
-`vcx/tests/v08_stdlib_skeleton_test.v`. So at graduation it adds **+1 to the
+`vcx/tests/stdlib_skeleton_test.v`. So at graduation it adds **+1 to the
 then-current bundled-name count** — both a new `'cx-stdlib/journal'` entry in the
 skeleton's `expected` list (with its assert bumped) **and** a new `journal` row +
 count bump in [`spec/std-lib/README.md`](../std-lib/README.md) §3.

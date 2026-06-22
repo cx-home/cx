@@ -1,6 +1,6 @@
 -- CX language support for Neovim 0.11+ (LazyVim / lazy.nvim path).
 --
--- Since v0.7.0 the language server is built into the `cx` binary —
+-- The language server is built into the `cx` binary —
 -- `cx lsp` speaks JSON-RPC 2.0 over stdio (vcx/cmd/lsp.v). No npm
 -- toolchain, no separate server.js. Just `cx` on $PATH.
 --
@@ -15,7 +15,7 @@
 --
 -- Requires: Neovim 0.11+.
 
-vim.filetype.add({ extension = { cx = 'cx', cxs = 'cx' } })
+vim.filetype.add({ extension = { cx = 'cx', cxd = 'cx', cxs = 'cx' } })
 vim.treesitter.language.register('cx', 'cx')
 
 -- START tree-sitter highlighting for cx buffers. `language.register` above only
@@ -42,8 +42,8 @@ local function find_cx_bin()
   return nil
 end
 
--- on_attach wires the full v0.8.0 LSP capability surface to keybindings.
--- v0.8.0 surface covered: structured directives ([?match] / [?modify] /
+-- on_attach wires the full LSP capability surface to keybindings.
+-- Surface covered: structured directives ([?match] / [?modify] /
 -- [?def] / [?lib] / [?const]); CXPath value expressions with 12 axes +
 -- reserved sigils ($_ / $_position / $_last) + (bind $name) step
 -- annotation; bare pure / impure def modifiers. Lifted out of the
@@ -84,7 +84,7 @@ local function cx_on_attach(client, bufnr)
   kmap('n', '[d',       vim.diagnostic.goto_prev,  'CX: prev diagnostic')
   kmap('n', '<leader>d', vim.diagnostic.open_float, 'CX: show diagnostic')
 
-  -- Inlay hints (placeholder at v0.8.0; populated at v0.8.x)
+  -- Inlay hints (placeholder; populated inlayHints pending)
   if client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
     vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
   end

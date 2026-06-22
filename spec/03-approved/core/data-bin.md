@@ -1,6 +1,6 @@
 # CX Binary Data Format Specification (`cx_to_data_bin`)
 
-**Status:** Current for v0.8.0.
+**Status:** Current.
 
 Format identifier: CXCol v1.
 

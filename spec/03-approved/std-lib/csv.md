@@ -5,7 +5,7 @@
   [standard ref='RFC 4180' title='CSV']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/csv` sub-package.
 

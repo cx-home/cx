@@ -1,15 +1,15 @@
 # CX — Neovim Setup
 
 LSP-driven highlighting + diagnostics + hover + completion + goto
-for `.cx` files. Since v0.7.0 the language server is built into the
-`cx` binary — `cx lsp` speaks JSON-RPC 2.0 over stdio.
+for `.cx` files. The language server is built into the `cx` binary —
+`cx lsp` speaks JSON-RPC 2.0 over stdio.
 
 **Requirements:** Neovim ≥ 0.11, `cx` on `$PATH` (or `CX_BIN` env var).
 
 **Highlighting architecture.** `cx lsp` semanticTokens are
-the source of truth for v0.8.0 directive interiors — the full
+the source of truth for directive interiors — the full
 40-directive registry per spec/code.md §4.1, including the structured
-v0.8.0 additions `[?def]` / `[?lib]` / `[?const]` (code.md §12.2 / code.md §12.1/§12.3),
+additions `[?def]` / `[?lib]` / `[?const]` (code.md §12.2 / code.md §12.1/§12.3),
 multi-arm `[?match]` with `[case]` / `[when]` / `[where]` / `[else]`
 clause-children (code.md §8.2), `[?modify]` with the eleven action
 clauses (`[set]` / `[delete]` / `[using]` / `[rename]` / `[set-attr]` /
@@ -18,7 +18,7 @@ clauses (`[set]` / `[delete]` / `[using]` / `[rename]` / `[set-attr]` /
 expressions with 12 axes + reserved sigils `$_` / `$_position` /
 `$_last` + `(bind $name)` step annotation (code.md §5.5 + code.md §5.5.2), and
 `pure` / `impure` def modifiers (code.md §12.2).
-Tree-sitter is structural plus the new v0.8.0 structured directives
+Tree-sitter is structural plus the structured directives
 (`match_directive` / `modify_directive` / `def_directive` /
 `lib_directive` / `const_directive`); legacy directives fall through
 to opaque `unknown_directive` regions. Embedded-language injection — into a
@@ -62,7 +62,7 @@ dofile('/path/to/cx-repo/tooling/neovim/cx.lua')
 
 ```sh
 which cx          # → /usr/local/bin/cx (or wherever)
-cx --version      # → cx 0.8.0
+cx --version      # → prints the cx version
 ```
 
 If `cx` lives somewhere non-standard, set `CX_BIN=/abs/path/to/cx` in

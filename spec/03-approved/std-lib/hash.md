@@ -8,7 +8,7 @@
   [standard ref='W3C SRI' title='Subresource integrity']]
 ```
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 Normative reference for the `cx-stdlib/hash` sub-package.
 
@@ -16,7 +16,7 @@ Normative reference for the `cx-stdlib/hash` sub-package.
 
 ## §1. Scope
 
-`cx-stdlib/hash` provides content-addressable hashing — fixed-length digests of arbitrary byte payloads. Four algorithms at v0.8.0:
+`cx-stdlib/hash` provides content-addressable hashing — fixed-length digests of arbitrary byte payloads. Four algorithms:
 
 - **SHA-256** (default; FIPS 180-4) — 32-byte output. CX content-addressing canon.
 - **SHA-384** / **SHA-512** (FIPS 180-4) — 48 / 64 bytes.

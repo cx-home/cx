@@ -1,16 +1,16 @@
-[- CX FORMAT TOUR — every structural feature in one document.
+[; CX FORMAT TOUR — every structural feature in one document.
    For the eval / directive surface, see examples/code-tour.cx.
    Open with cx-language wired up to test highlight, hover, fold,
    outline, goto-definition, references, rename, snippets. ]
 
 [doc lang=en
 
-  [- 1. Elements with attributes (quoted + unquoted values) ]
+  [; 1. Elements with attributes (quoted + unquoted values) ]
   [meta name=author content="J. Smith"]
   [meta name=published content=2026-05-19]
   [link rel=canonical href="https://cx.dev/tour"]
 
-  [- 2. Scalars + type annotations.
+  [; 2. Scalars + type annotations.
      Auto-typing: 8080 to int, 1.5 to float, true to bool, null to null.
      Type annotations pin a range or shape and fail at parse time
      when violated. ]
@@ -23,11 +23,11 @@
     workers=4
   ]
 
-  [- 3. Collection-literal attribute values ]
+  [; 3. Collection-literal attribute values ]
   [tags ::string[] cx markup format tutorial]
   [scores ::float[] 1.0 2.5 3.14]
 
-  [- 4. ID declarations and references. Hash-prefix declares; at-prefix
+  [; 4. ID declarations and references. Hash-prefix declares; at-prefix
      refers. The LSP resolves cross-document via goto-definition. ]
   [section #intro
     [h1 What is CX?]
@@ -37,7 +37,7 @@
     ]
   ]
 
-  [- 5. Anchors and merges. Ampersand declares; star merges, YAML-style. ]
+  [; 5. Anchors and merges. Ampersand declares; star merges, YAML-style. ]
   [defaults &base
     log-level=info
     retries=3
@@ -48,7 +48,7 @@
     port::u16=8080
   ]
 
-  [- 6. Rich prose via ordinary named elements. CX has NO markdown syntax
+  [; 6. Rich prose via ordinary named elements. CX has NO markdown syntax
      (ruling D-B); styled text is just elements — strong, em, code, etc. ]
   [section #prose
     [h2 Prose markup]
@@ -58,7 +58,7 @@
       Combine them: [strong bold with [em italic] inside].
     ]
 
-    [- Headings one through six are ordinary elements. ]
+    [; Headings one through six are ordinary elements. ]
     [h1 H1 top-level heading]
     [h2 H2 section heading]
     [h3 H3 subsection heading]
@@ -86,7 +86,7 @@
     ]
   ]
 
-  [- 7. Tables — plain prose form and compact [table[…]] form. ]
+  [; 7. Tables — plain prose form and compact [table[…]] form. ]
   [section #tables
     [h2 Tables]
     [table
@@ -104,7 +104,7 @@
     ]
   ]
 
-  [- 8. Code blocks — embedded source as raw text. CX has no fenced-code
+  [; 8. Code blocks — embedded source as raw text. CX has no fenced-code
      syntax; embed any language verbatim in a [#…#] raw-text node (the
      lang attr drives tree-sitter injection / highlighting). ]
   [section #code-blocks
@@ -129,36 +129,36 @@ cx --version
 #]]]
   ]
 
-  [- 9. Entity and character references. ]
+  [; 9. Entity and character references. ]
   [section #entities
     [h2 Special characters]
     [p Predefined: &amp; &lt; &gt; &apos; &quot;]
     [p Numeric: &#169; 2026 Acme Corp, registered &#174;]
   ]
 
-  [- 10. Comments — line and block forms. ]
+  [; 10. Comments — line and block forms. ]
   [section #comments
     [h2 Comments]
     # this is a line comment to end of line
-    [- this is a block comment -]
+    [; this is a block comment ]
     [p
       Comments are stripped from canonical output and never affect
       hash or equality semantics.
     ]
   ]
 
-  [- 11. Raw text — preserves bracket-laden content literally. ]
+  [; 11. Raw text — preserves bracket-laden content literally. ]
   [section #raw
     [h2 Raw text]
     [pre [# [server host=x port::u16=80 tls=true] #]]
   ]
 
-  [- 12. Body-position references. The ref element
+  [; 12. Body-position references. The ref element
      reads its body from another element identified by id. ]
   [snippet #greeting Hello world]
   [output [ref @greeting]]
 
-  [- 13. Closing section with reference back to intro. ]
+  [; 13. Closing section with reference back to intro. ]
   [section #outro
     [h2 Closing]
     [p
