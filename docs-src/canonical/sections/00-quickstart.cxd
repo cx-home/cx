@@ -33,7 +33,7 @@
          platform, extract, and put `cx` on your `PATH`:"""]
 
     [example lang=shell
-      """curl -L https://github.com/cx-lang/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
+      """curl -L https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
          sudo mv cx /usr/local/bin/
          cx --version"""]
 
