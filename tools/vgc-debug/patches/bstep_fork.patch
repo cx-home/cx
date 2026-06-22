@@ -1,0 +1,104 @@
+diff --git a/thirdparty/vgc/vgc_platform.h b/thirdparty/vgc/vgc_platform.h
+index b10a7a4dd0..255b1d86c8 100644
+--- a/thirdparty/vgc/vgc_platform.h
++++ b/thirdparty/vgc/vgc_platform.h
+@@ -685,6 +685,66 @@ static inline void vgc_install_thread_exit(int idx) { (void)idx; }
+       (void)t; (void)sp_out; (void)regs; (void)max; return 0;
+     #endif
+   }
++
++  // ============================================================
++  // #63 B-STEP single-step controller (-d vgc_bstep, diagnostic only).
++  // A handler thread catches each EXC_BREAKPOINT (hardware single-step via
++  // ARM_DEBUG_STATE64 MDSCR_EL1.SS) on a task-wide exception port and calls the V
++  // callback vgc_bstep_on_step(thread_port) to inspect the stepped (worker) thread's
++  // root coverage. Validated standalone in scratchpad/single_step_probe.c. The
++  // handler thread never allocates via vgc (so it is not GC-registered / does not
++  // perturb STW); the worker arms SS on itself at a watched MatchEnv_clone and
++  // disarms at clone exit. Run with GC disabled (VGC_NEXT_GC_MB huge) so vgc's own
++  // mach suspend never races the single-step.
++  // ============================================================
++  #include <pthread.h>
++  #include <string.h>
++  extern void vgc_bstep_on_step(uint32_t thread_port); // V callback
++  static mach_port_t vgc_bstep_exc_port = MACH_PORT_NULL;
++  static volatile int vgc_bstep_active = 0;     // re-arm SS while set
++  static volatile int vgc_bstep_handler_up = 0;
++  #pragma pack(4)
++  typedef struct { mach_msg_header_t Head; mach_msg_body_t body;
++    mach_msg_port_descriptor_t thread; mach_msg_port_descriptor_t task;
++    NDR_record_t NDR; exception_type_t exception; mach_msg_type_number_t codeCnt;
++    int64_t code[2]; char pad[256]; } vgc_bstep_req_t;
++  typedef struct { mach_msg_header_t Head; NDR_record_t NDR; kern_return_t RetCode; } vgc_bstep_rep_t;
++  #pragma pack()
++  static inline void vgc_bstep_set_ss(uint32_t th, int en) {
++    arm_debug_state64_t ds; mach_msg_type_number_t c = ARM_DEBUG_STATE64_COUNT;
++    if (thread_get_state((thread_act_t)th, ARM_DEBUG_STATE64, (thread_state_t)&ds, &c) != KERN_SUCCESS) return;
++    if (en) ds.__mdscr_el1 |= 1ULL; else ds.__mdscr_el1 &= ~1ULL;
++    thread_set_state((thread_act_t)th, ARM_DEBUG_STATE64, (thread_state_t)&ds, ARM_DEBUG_STATE64_COUNT);
++  }
++  static void* vgc_bstep_handler(void* a) {
++    (void)a;
++    for (;;) {
++      vgc_bstep_req_t req; memset(&req, 0, sizeof(req));
++      if (mach_msg(&req.Head, MACH_RCV_MSG, 0, sizeof(req), vgc_bstep_exc_port,
++                   MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL) != KERN_SUCCESS) continue;
++      uint32_t th = req.thread.name;
++      vgc_bstep_on_step(th);
++      if (vgc_bstep_active) vgc_bstep_set_ss(th, 1);
++      vgc_bstep_rep_t rep; memset(&rep, 0, sizeof(rep));
++      rep.Head.msgh_bits = MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(req.Head.msgh_bits), 0);
++      rep.Head.msgh_size = sizeof(rep); rep.Head.msgh_remote_port = req.Head.msgh_remote_port;
++      rep.Head.msgh_local_port = MACH_PORT_NULL; rep.Head.msgh_id = req.Head.msgh_id + 100;
++      rep.NDR = req.NDR; rep.RetCode = KERN_SUCCESS;
++      mach_msg(&rep.Head, MACH_SEND_MSG, sizeof(rep), 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
++    }
++    return 0;
++  }
++  static inline void vgc_bstep_init(void) {
++    if (vgc_bstep_handler_up) return;
++    if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &vgc_bstep_exc_port) != KERN_SUCCESS) return;
++    mach_port_insert_right(mach_task_self(), vgc_bstep_exc_port, vgc_bstep_exc_port, MACH_MSG_TYPE_MAKE_SEND);
++    task_set_exception_ports(mach_task_self(), EXC_MASK_BREAKPOINT, vgc_bstep_exc_port,
++        EXCEPTION_DEFAULT | MACH_EXCEPTION_CODES, ARM_THREAD_STATE64);
++    pthread_t t; pthread_create(&t, 0, vgc_bstep_handler, 0);
++    vgc_bstep_handler_up = 1;
++  }
++  static inline void vgc_bstep_arm(uint32_t th)    { vgc_bstep_active = 1; vgc_bstep_set_ss(th, 1); }
++  static inline void vgc_bstep_disarm(uint32_t th) { vgc_bstep_active = 0; vgc_bstep_set_ss(th, 0); }
+ #elif defined(__linux__)
+   // ----------------------------------------------------------------------------
+   // Linux OS-level stop-the-world via signal-based suspension.
+diff --git a/vlib/builtin/map.v b/vlib/builtin/map.v
+index b1e15b4b1c..369359f0ac 100644
+--- a/vlib/builtin/map.v
++++ b/vlib/builtin/map.v
+@@ -835,6 +835,28 @@ fn (d &DenseArray) clone() DenseArray {
+ 
+ // clone returns a clone of the `map`.
+ @[unsafe]
++// vgc_bstep_clone_begin / _end (-d vgc_bstep): fork-side accessors so cx-private
++// MatchEnv.clone() can arm B-STEP on the SOURCE bindings map WITHOUT touching map's
++// private `key_values` field itself. Bodies are no-ops unless single-step is wired;
++// callers in matcher.v are themselves `$if vgc_bstep ?`-gated, so normal builds are
++// untouched. #63 diagnostic only.
++@[markused]
++pub fn (m &map) vgc_bstep_clone_begin() {
++	$if vgc_bstep ? {
++		if m.has_string_keys && m.key_values.keys != unsafe { nil } && m.key_values.cap > 0 {
++			ks := usize(m.key_values.keys)
++			vgc_bstep_begin(ks, ks + usize(m.key_values.cap) * usize(m.key_values.key_bytes))
++		}
++	}
++}
++
++@[markused]
++pub fn (m &map) vgc_bstep_clone_end() {
++	$if vgc_bstep ? {
++		vgc_bstep_end()
++	}
++}
++
+ pub fn (m &map) clone() map {
+ 	metasize := int(sizeof(u32) * (m.even_index + 2 + m.extra_metas))
+ 	res := map{
