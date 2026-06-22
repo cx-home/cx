@@ -169,13 +169,13 @@ if [[ $DRY_RUN -eq 1 ]]; then
 fi
 
 note "committing version bump"
-# Stage EXACTLY the files bump_version.sh stamps (must stay in sync with it,
-# and with the manifest set check_version_consistency.py verifies) — otherwise
-# the tagged commit carries stale badges / a dirty Cargo.lock.
-git add VERSION cx.pc.in vcx/v.mod lang/v/v.mod \
-        lang/rust/cxlib/Cargo.toml lang/rust/cxlib/Cargo.lock \
-        lang/python/pyproject.toml \
-        README.md vcx/README.md 2>/dev/null || true
+# Stage every file bump_version.sh just stamped. The tree was verified clean
+# at the start of this script and the build emits only gitignored artifacts, so
+# the only tracked modifications now are the version stamps — `git add -u`
+# captures them all and CANNOT drift out of sync with bump_version.sh the way a
+# hand-maintained file list does (that drift left vscode/package.json at the
+# old version in a tagged commit).
+git add -u 2>/dev/null || true
 git commit -m "chore(release): bump version strings to $VERSION" || true
 
 TAG_MSG="CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
