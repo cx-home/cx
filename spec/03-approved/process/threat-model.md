@@ -1,6 +1,6 @@
 # CX Threat Model
 
-**Status:** Current for v0.8.0
+**Status:** Current
 
 This document records CX's threat model: what the project is hardened against, what it isn't, the assumed deployment model, and where the trust boundaries sit. It is normative for hardening claims and informative for adopters evaluating CX for a particular deployment.
 

@@ -2,7 +2,7 @@
 
 **Status:** 02-inprogress (DRAFT — not graduated; only the user moves this to 03-approved)
 
-**Target version:** v0.8.0
+**Target version:** current
 
 ## §0. Goal
 

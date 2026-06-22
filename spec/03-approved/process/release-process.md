@@ -1,6 +1,6 @@
 # CX Release & Publish Process
 
-**Status:** Current for v0.11.0.
+**Status:** Current.
 
 This document specifies how a CX release is cut and published. It is a
 **process/governance** specification. The release **gate** is normative in
