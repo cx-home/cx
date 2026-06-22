@@ -31,7 +31,7 @@ principle.
 - **Cooperative-safepoint STW is now the default GC collector (#63 / #58).**
   The precise `-gc e` collector parks running mutators at cooperative safepoints
   (mach-suspending only stragglers) before a stop-the-world cycle, so
-  multi-reactor HTTP (`CX_HTTP_LOOPS>1`) and concurrent `[?worker]` threads are
+  multi-reactor HTTP (`CX_HTTP_WORKERS>1`) and concurrent `[?worker]` threads are
   **sound by construction** rather than racing the collector. Revert with
   `-d vgc_legacy_stw` if needed. Single-reactor throughput is within noise;
   8-reactor is the tuning follow-up.
@@ -45,7 +45,7 @@ principle.
   throughput ~3× — that regression is fixed here. `CX_HTTP_GC_MB=0` disables it;
   the legacy `CX_HTTP_GC_EVERY` request-count gate is still honored when set.)
 - **HTTP defaults to a single reactor.** Multi-core is explicit opt-in via
-  `CX_HTTP_LOOPS=N`, and now *scales* (positive across cores) on the
+  `CX_HTTP_WORKERS=N`, and now *scales* (positive across cores) on the
   cooperative-safepoint collector — the safe default for the common case, with
   near-linear scaling to a few reactors when you ask for it.
 - **Streaming `data-bin` writes are bounded under `-gc e` (#52).** Large-span
@@ -160,6 +160,6 @@ The only breaking change. Block comments must use `[; … ]`:
 Language version advances to **0.12.0**. The comment-syntax unification is the
 sole breaking change; every other change is backward-compatible. The
 cooperative-safepoint GC default is transparent to programs (revertible with
-`-d vgc_legacy_stw`), and the new concurrency knobs (`CX_HTTP_LOOPS`,
+`-d vgc_legacy_stw`), and the new concurrency knobs (`CX_HTTP_WORKERS`,
 `CX_WORKER_THREADS`) are opt-in. The ABI, on-disk format, and bundled-library
 version axes are unchanged.

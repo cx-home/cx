@@ -11,7 +11,7 @@ cd ../vcx && ../third_party/v/v -n -w -cc cc -gc e -d <flag>... -o target/<bin> 
 ```
 Repros live in `../../vcx/tests/soundness/` (`serve57.cx` multi-reactor HTTP;
 `workers8.cx` 8 concurrent `[?worker]`). Run multi-reactor:
-`CX_HTTP_LOOPS=8 target/<bin> --allow-all vcx/tests/soundness/serve57.cx` + `wrk -t12 -c200 -d4s`.
+`CX_HTTP_WORKERS=8 target/<bin> --allow-all vcx/tests/soundness/serve57.cx` + `wrk -t12 -c200 -d4s`.
 
 ## `passive_detector.patch` — the sweep-while-live ORACLE  (recommended first tool)
 Flags `-d vgc_passive -d vgc_nosweep`. Adds a UAF detector at the crash-path read

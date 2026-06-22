@@ -2,7 +2,7 @@
 # #63/#58 concurrency-soundness gate.
 #
 # Asserts the collector exhibits ZERO sweep-while-live under the two multi-mutator
-# stressors that previously reproduced #63 — multi-reactor HTTP (CX_HTTP_LOOPS=8)
+# stressors that previously reproduced #63 — multi-reactor HTTP (CX_HTTP_WORKERS=8)
 # and concurrent [?worker] threads (CX_WORKER_THREADS=1) — using the passive
 # detector ORACLE (tag 0xbf1 = a freed map-key buffer read in map_clone_string),
 # plus a crash count. The oracle is masking-proof: a freed-buffer read is caught
@@ -50,7 +50,7 @@ else
 fi
 for r in $(seq 1 $ROUNDS_HTTP); do
   cleanup; sleep 0.3
-  CX_HTTP_LOOPS=8 "$BIN" --allow-all $FIX/serve57.cx >/dev/null 2>>$log &
+  CX_HTTP_WORKERS=8 "$BIN" --allow-all $FIX/serve57.cx >/dev/null 2>>$log &
   SRV=$!; bound=0
   for i in $(seq 1 20); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
   if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi

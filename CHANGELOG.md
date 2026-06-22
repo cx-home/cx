@@ -24,10 +24,10 @@ The reliability release. Authoritative release-surface document:
 - **Tail-call optimization** — trampolined tail self/closure calls run in O(1)
   native stack; loop-shaped recursion no longer SIGSEGVs (#60).
 - **Cooperative-safepoint STW is the default `-gc e` collector** — multi-reactor
-  HTTP (`CX_HTTP_LOOPS>1`) and concurrent `[?worker]` threads are sound by
+  HTTP (`CX_HTTP_WORKERS>1`) and concurrent `[?worker]` threads are sound by
   construction; revert with `-d vgc_legacy_stw` (#63 / #58).
 - HTTP reactor heap bounded by a gated collect (#57); HTTP defaults to a single
-  reactor (multi-core opt-in via `CX_HTTP_LOOPS`).
+  reactor (multi-core opt-in via `CX_HTTP_WORKERS`).
 - Streaming `data-bin` writes bounded under `-gc e` (#52); `[?for]` no longer
   deep-copies the shared closures table per item (#62).
 - Concurrent `[?worker]` threads behind `CX_WORKER_THREADS` (#58).

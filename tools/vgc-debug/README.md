@@ -76,7 +76,7 @@ from the #63/#58 investigation (see the case study below).
 - **Fix:** make the cooperative-safepoint collector the default — every running mutator
   self-parks at the alloc-path poll and self-spills its own roots (the proven-sound
   shape); syscall-blocked stragglers are mach-suspended (GAP-1 makes that sound). This
-  removed the arbitrary-PC scan entirely. Evidence: HTTP `CX_HTTP_LOOPS=8` 0/60 crashes +
+  removed the arbitrary-PC scan entirely. Evidence: HTTP `CX_HTTP_WORKERS=8` 0/60 crashes +
   0/40 oracle (vs legacy 7/40 + 3/20); workers 0/20 oracle (vs 12/20); full gate green.
 - **Tuning follow-up:** the cooperative stop costs ~22% 8-reactor throughput (single
   ~flat) — tracked in issue #68.
