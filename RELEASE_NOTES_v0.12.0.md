@@ -48,9 +48,11 @@ principle.
   out across a few cores out of the box — sound on the cooperative-safepoint
   collector, and ~4 reactors is the sweet spot before the per-request GC lock
   starts to contend on a many-core box. Tune with `CX_HTTP_WORKERS`: an integer
-  (clamped to 1..16; above the core count oversubscribes), `max` for one per
-  core, or `1` to opt back into a single reactor. (Measured: ~162k req/sec
-  default, ~110k at `=1`, on a 12-core box with a trivial handler.)
+  (honored as asked — a 64-core test gets 64; above the core count it
+  oversubscribes, with a one-line note, and a 256 safety ceiling guards typos),
+  `max` for one worker per core, or `1` to opt back into a single reactor.
+  (Measured: ~162k req/sec default, ~110k at `=1`, on a 12-core box with a
+  trivial handler.)
 - **Streaming `data-bin` writes are bounded under `-gc e` (#52).** Large-span
   recycling plus periodic collection cap the live set on the fd-streaming write
   path, so emitting a large document no longer balloons memory.
