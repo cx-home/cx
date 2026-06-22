@@ -44,10 +44,13 @@ principle.
   default 64, fired a global stop-the-world ~hundreds of times/sec and cut
   throughput ~3× — that regression is fixed here. `CX_HTTP_GC_MB=0` disables it;
   the legacy `CX_HTTP_GC_EVERY` request-count gate is still honored when set.)
-- **HTTP defaults to a single reactor.** Multi-core is explicit opt-in via
-  `CX_HTTP_WORKERS=N`, and now *scales* (positive across cores) on the
-  cooperative-safepoint collector — the safe default for the common case, with
-  near-linear scaling to a few reactors when you ask for it.
+- **HTTP serves multi-reactor by default (`min(4, cores)`).** The server fans
+  out across a few cores out of the box — sound on the cooperative-safepoint
+  collector, and ~4 reactors is the sweet spot before the per-request GC lock
+  starts to contend on a many-core box. Tune with `CX_HTTP_WORKERS`: an integer
+  (clamped to 1..16; above the core count oversubscribes), `max` for one per
+  core, or `1` to opt back into a single reactor. (Measured: ~162k req/sec
+  default, ~110k at `=1`, on a 12-core box with a trivial handler.)
 - **Streaming `data-bin` writes are bounded under `-gc e` (#52).** Large-span
   recycling plus periodic collection cap the live set on the fd-streaming write
   path, so emitting a large document no longer balloons memory.

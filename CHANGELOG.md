@@ -26,8 +26,9 @@ The reliability release. Authoritative release-surface document:
 - **Cooperative-safepoint STW is the default `-gc e` collector** — multi-reactor
   HTTP (`CX_HTTP_WORKERS>1`) and concurrent `[?worker]` threads are sound by
   construction; revert with `-d vgc_legacy_stw` (#63 / #58).
-- HTTP reactor heap bounded by a gated collect (#57); HTTP defaults to a single
-  reactor (multi-core opt-in via `CX_HTTP_WORKERS`).
+- HTTP reactor heap bounded by a heap-growth collect (#57); HTTP serves
+  multi-reactor by default (`min(4, cores)`), tunable via
+  `CX_HTTP_WORKERS=N|max|1`.
 - Streaming `data-bin` writes bounded under `-gc e` (#52); `[?for]` no longer
   deep-copies the shared closures table per item (#62).
 - Concurrent `[?worker]` threads behind `CX_WORKER_THREADS` (#58).
