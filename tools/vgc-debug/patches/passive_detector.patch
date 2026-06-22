@@ -1,0 +1,334 @@
+diff --git a/vlib/builtin/map.v b/vlib/builtin/map.v
+index b1e15b4b1c..64d2c107dc 100644
+--- a/vlib/builtin/map.v
++++ b/vlib/builtin/map.v
+@@ -259,6 +259,24 @@ fn map_map_eq(a map, b map) bool {
+ fn map_clone_string(dest voidptr, pkey voidptr) {
+ 	unsafe {
+ 		s := *&string(pkey)
++		$if vgc_passive ? {
++			$if !vgc_nodet ? { // attribution: -d vgc_nodet disables the per-clone detector
++				// #63 PASSIVE detector at the exact crash-path read (no arming). If the
++				// source key struct/buffer was freed-while-live, the detector fires here;
++				// GOLD correlation if it matches a swept-log entry.
++				if s.len < 0 || s.len > 0x08000000 {
++					vgc_uaf_report(usize(pkey), s.len, usize(s.str))
++				} else {
++					vgc_uaf_check_buf(usize(s.str), s.len)
++				}
++			}
++			$if vgc_markbit ? {
++				// #63 mark-bit: record (victim buffer, source key-slot). NO find_span here —
++				// the holder (keys-array) is resolved + mark-read IN-STW at the freeing GC
++				// by vgc_assoc_marksweep. Cheap: two stores per key clone.
++				vgc_assoc_record(usize(s.str), usize(pkey))
++			}
++		}
+ 		cloned := s.clone()
+ 		// Use memcpy for native backend compatibility
+ 		// (*&string(dest)) = cloned doesn't reliably store full struct
+diff --git a/vlib/builtin/string.v b/vlib/builtin/string.v
+index 0bd3e3b0fd..994478a597 100644
+--- a/vlib/builtin/string.v
++++ b/vlib/builtin/string.v
+@@ -349,6 +349,18 @@ pub fn (a string) clone() string {
+ 	if a.len <= 0 {
+ 		return ''
+ 	}
++	$if vgc_passive ? {
++		$if !vgc_nodet ? { // attribution: -d vgc_nodet disables the per-clone detector
++			// #63 PASSIVE buffer-UAF detector at the fault site (the vmemcpy below reads
++			// a.str). Fires if a.str was freed-while-live; GOLD if it matches the swept-log.
++			// Detector reads span METADATA only (crash-safe) and does NOT skip the vmemcpy,
++			// so the SIGSEGV is preserved (no masking).
++			if a.len > 0x08000000 {
++				vgc_uaf_report(usize(a.str), a.len, usize(a.str))
++			}
++			vgc_uaf_check_buf(usize(a.str), a.len)
++		}
++	}
+ 	mut b := string{
+ 		str: unsafe { malloc_noscan(a.len + 1) }
+ 		len: a.len
+diff --git a/vlib/builtin/vgc_d_vgc.c.v b/vlib/builtin/vgc_d_vgc.c.v
+index a5977af05a..46bafd15e9 100644
+--- a/vlib/builtin/vgc_d_vgc.c.v
++++ b/vlib/builtin/vgc_d_vgc.c.v
+@@ -2153,3 +2153,234 @@ fn vgc_safepoint() {
+ 			&vgc_heap.caches[cache_idx].stack_hi, vgc_heap.caches[cache_idx].stack_base)
+ 	}
+ }
++
++// ─────────────────────────────────────────────────────────────────────────────
++// #63 PASSIVE CAPTURE INSTRUMENT — recovered from session 0feb7822 (reference) +
++// reviewed. Reproduces the GOLD victim correlation with NO masking. Includes ONLY:
++//   (1) UAF detector (vgc_uaf_check_buf/_report/_classify),
++//   (2) swept-log written DIRECTLY by the sweep free-path (vgc_slog_record),
++//   (3) GOLD correlation (read-after-free vs swept-log → 0xc0de/0xc0d1).
++// EXCLUDES (non-negotiable, these masked the crash or were dead paths in cx_watch):
++//   arming/ring, quarantine/poison, holder-find/reverse-scan, forced collections.
++// Function bodies are always compiled but only CALLED from `$if vgc_passive ?`
++// sites in map.v/string.v/the sweep loop, so the default build is unaffected.
++// Tags: 0xbf1=freed buf ptr, 0xbf2=len, 0xbf3=size-class; 0xc0de=GOLD victim,
++//       0xc0d1=freed-at-gen; 0xda1-3/0xdb0/0xdc0=absurd-len report+classify.
++// ─────────────────────────────────────────────────────────────────────────────
++
++const vgc_slog_n = 65536
++__global vgc_slog_addr = [65536]usize{} // freed small-buffer addrs (ring)
++__global vgc_slog_gen = [65536]u32{} // gc gen when freed
++__global vgc_slog_sc = [65536]u32{} // size class
++__global vgc_slog_head = u32(0)
++__global vgc_slog_total = u64(0) // total small frees recorded (stat)
++__global vgc_uaf_count = u32(0)
++__global vgc_gold_total = u64(0) // total GOLD correlations (swept -> read-after-free)
++
++// vgc_slog_record: called from the sweep free-path (STW) for each freed small
++// noscan buffer. Lock-free ring push (collector is the only writer during STW).
++fn vgc_slog_record(addr usize, sc u32) {
++	vgc_slog_total++
++	h := vgc_slog_head % u32(vgc_slog_n)
++	vgc_slog_addr[h] = addr
++	vgc_slog_gen[h] = u32(vgc_heap.gc_cycle)
++	vgc_slog_sc[h] = sc
++	vgc_slog_head = h + 1
++}
++
++// vgc_slog_find: was `addr` recorded as swept-freed? Returns gen+1 if so, else 0.
++fn vgc_slog_find(addr usize) u64 {
++	for i in 0 .. vgc_slog_n {
++		if vgc_slog_addr[i] == addr {
++			return u64(vgc_slog_gen[i]) + 1
++		}
++	}
++	return 0
++}
++
++// vgc_uaf_classify: report size class + alloc/mark/noscan state of the GC object
++// at `addr` (or a sentinel if non-arena / not a live span object).
++fn vgc_uaf_classify(tag u64, addr usize) {
++	if addr < vgc_arena_lo || addr >= vgc_arena_hi {
++		C.vgc_say(tag, u64(0xffffffffffffffff)) // not in GC arena (C/anon/stack)
++		return
++	}
++	span := vgc_find_span(voidptr(addr))
++	if span == unsafe { nil } || !span.in_use || span.elem_size == 0 {
++		C.vgc_say(tag, u64(0xdeadbeef))
++		return
++	}
++	idx := u32((addr - span.base) / usize(span.elem_size))
++	mut a := u32(9)
++	mut m := u32(9)
++	if span.alloc_bits != unsafe { nil } && idx < span.nelems {
++		a = u32(C.vgc_bitmap_get(span.alloc_bits, idx))
++	}
++	if span.mark_bits != unsafe { nil } && idx < span.nelems {
++		m = u32(C.vgc_bitmap_get(span.mark_bits, idx))
++	}
++	C.vgc_say(tag, u64(span.elem_size))
++	C.vgc_say(tag + 1, (u64(a) << 4) | u64(m))
++	C.vgc_say(tag + 2, if span.noscan { u64(1) } else { u64(0) })
++}
++
++// vgc_uaf_report: an absurd .len was read from a key struct (struct freed + span
++// reused with payload bytes). Reports the read + classifies the holder + buffer.
++fn vgc_uaf_report(loc usize, slen int, strptr usize) {
++	vgc_uaf_count++
++	if vgc_uaf_count > 60 {
++		return
++	}
++	C.vgc_say(0xda1, u64(loc))
++	C.vgc_say(0xda2, u64(u32(slen)))
++	C.vgc_say(0xda3, u64(strptr))
++	vgc_uaf_classify(0xdb0, loc)
++	vgc_uaf_classify(0xdc0, strptr)
++}
++
++// vgc_uaf_check_buf: inspects ONLY span metadata for the char buffer at `strptr`
++// (never the possibly-unmapped data page — crash-safe), reporting whether it has
++// been freed (alloc bit clear) or its span recycled. Returns true on a freed
++// buffer = a direct buffer-UAF. A swept-log hit ⇒ GOLD (sweep-freed → read).
++fn vgc_uaf_check_buf(strptr usize, slen int) bool {
++	if strptr < vgc_arena_lo || strptr >= vgc_arena_hi {
++		return false // literal / malloc / non-GC memory — not a vgc free
++	}
++	span := vgc_find_span(voidptr(strptr))
++	if span == unsafe { nil } || !span.in_use || span.elem_size == 0 {
++		vgc_uaf_count++
++		if vgc_uaf_count <= 200 {
++			C.vgc_say(0xbf1, u64(strptr))
++			C.vgc_say(0xbf2, u64(u32(slen)))
++			C.vgc_say(0xbf3, u64(0xdec0)) // span recycled/decommitted
++			g := vgc_slog_find(strptr)
++			if g != 0 { // GOLD: sweep-freed at gen g-1 → read-after-free
++				vgc_gold_total++
++				C.vgc_say(0xc0de, u64(strptr))
++				C.vgc_say(0xc0d1, g - 1)
++			}
++		}
++		return true
++	}
++	idx := u32((strptr - span.base) / usize(span.elem_size))
++	mut a := u32(9)
++	if span.alloc_bits != unsafe { nil } && idx < span.nelems {
++		a = u32(C.vgc_bitmap_get(span.alloc_bits, idx))
++	}
++	if a == 0 {
++		vgc_uaf_count++
++		if vgc_uaf_count <= 200 {
++			C.vgc_say(0xbf1, u64(strptr))
++			C.vgc_say(0xbf2, u64(u32(slen)))
++			C.vgc_say(0xbf3, u64(span.elem_size)) // size class of the freed buffer
++			g := vgc_slog_find(strptr)
++			if g != 0 { // GOLD correlation
++				vgc_gold_total++
++				C.vgc_say(0xc0de, u64(strptr))
++				C.vgc_say(0xc0d1, g - 1)
++			}
++		}
++		return true
++	}
++	return false
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// #63 MARK-BIT mechanism (-d vgc_markbit) — fork-only, keys-array level. Answers
++// the falsification question: when a map-key buffer is swept, is its HOLDER (the
++// keys-array that contains the key struct) MARKED at that GC?
++//   holder UNMARKED  -> root-miss at/above keys-array (map/MatchEnv/renv chain)
++//   holder MARKED, buffer swept -> shade/mark race on the buffer (NOT a root miss)
++// Recording is CHEAP: at the clone site we store (buf, pkey) only — NO find_span,
++// NO slog. The find_span (holder identity + mark read) is DEFERRED to a bounded
++// (~1024) table scan run IN-STW immediately after vgc_do_sweep (freed buffers have
++// alloc=0; this cycle's mark bits are still valid — cleared only next cycle). So
++// the per-clone cost is ~one ring push, and the per-GC cost is bounded by the
++// table size, NOT the freed-buffer count. NO arming-retention, NO holder-find scan.
++// Tags: 0x6ab0=swept key-buffer, 0x6ab1=holder(keys-array obj base),
++//       0x6ab2=holder mark (0=unmarked/root-miss, 1=marked/shade-race, ffffffff=n/a),
++//       0x6abf=count of swept-with-holder-check this GC.
++// ─────────────────────────────────────────────────────────────────────────────
++
++const vgc_assoc_n = 1024
++__global vgc_assoc_buf = [1024]usize{} // key-buffer addr (victim candidate)
++__global vgc_assoc_pkey = [1024]usize{} // source key-slot addr (interior ptr into keys-array)
++__global vgc_assoc_head = u32(0)
++__global vgc_assoc_total = u64(0) // total associations recorded (stat)
++__global vgc_assoc_unmarked = u64(0) // swept buffer whose holder was UNMARKED (root-miss)
++__global vgc_assoc_marked = u64(0) // swept buffer whose holder was MARKED (shade-race)
++
++// vgc_assoc_record: at the clone site only. Two stores, no find_span. Rolling ring.
++fn vgc_assoc_record(buf usize, pkey usize) {
++	if buf == 0 || pkey == 0 {
++		return
++	}
++	vgc_assoc_total++
++	h := vgc_assoc_head % u32(vgc_assoc_n)
++	vgc_assoc_buf[h] = buf
++	vgc_assoc_pkey[h] = pkey
++	vgc_assoc_head = h + 1
++}
++
++// vgc_assoc_marksweep: IN-STW, immediately after vgc_do_sweep (mark bits still
++// valid, freed buffers have alloc=0). Scans the bounded table (~1024), and for each
++// key-buffer FREED this GC, resolves its holder (keys-array, via find_span(pkey))
++// and reads the holder's mark bit. Reports each + clears the entry (report-once).
++fn vgc_assoc_marksweep() {
++	mut nrep := 0
++	for i in 0 .. vgc_assoc_n {
++		buf := vgc_assoc_buf[i]
++		if buf == 0 {
++			continue
++		}
++		// Is the key-buffer FREED this GC? (alloc bit clear / span recycled)
++		mut freed := false
++		if buf < vgc_arena_lo || buf >= vgc_arena_hi {
++			vgc_assoc_buf[i] = 0
++			continue
++		}
++		bspan := vgc_find_span(voidptr(buf))
++		if bspan == unsafe { nil } || !bspan.in_use || bspan.elem_size == 0 {
++			freed = true
++		} else {
++			bidx := u32((buf - bspan.base) / usize(bspan.elem_size))
++			if bidx < bspan.nelems && bspan.alloc_bits != unsafe { nil }
++				&& C.vgc_bitmap_get(bspan.alloc_bits, bidx) == 0 {
++				freed = true
++			}
++		}
++		if !freed {
++			continue // still live — leave in the rolling table for a later GC
++		}
++		// Freed this GC: resolve the holder (keys-array containing pkey) + read its mark.
++		pkey := vgc_assoc_pkey[i]
++		mut hm := i64(-1) // -1 = holder not in arena / not resolvable
++		mut hbase := usize(0)
++		if pkey >= vgc_arena_lo && pkey < vgc_arena_hi {
++			hspan := vgc_find_span(voidptr(pkey))
++			if hspan != unsafe { nil } && hspan.in_use && hspan.elem_size != 0
++				&& hspan.mark_bits != unsafe { nil } {
++				hidx := u32((pkey - hspan.base) / usize(hspan.elem_size))
++				if hidx < hspan.nelems {
++					hbase = hspan.base + usize(hidx) * usize(hspan.elem_size)
++					hm = if C.vgc_bitmap_get(hspan.mark_bits, hidx) != 0 { i64(1) } else { i64(0) }
++				}
++			}
++		}
++		if nrep < 64 {
++			C.vgc_say(0x6ab0, u64(buf))
++			C.vgc_say(0x6ab1, u64(hbase))
++			C.vgc_say(0x6ab2, u64(hm))
++		}
++		if hm == 1 {
++			vgc_assoc_marked++
++		} else if hm == 0 {
++			vgc_assoc_unmarked++
++		}
++		nrep++
++		vgc_assoc_buf[i] = 0 // report-once: clear the swept entry
++	}
++	if nrep > 0 {
++		C.vgc_say(0x6abf, u64(nrep))
++	}
++}
+diff --git a/vlib/builtin/vgc_gc_d_vgc.c.v b/vlib/builtin/vgc_gc_d_vgc.c.v
+index 062b83a1db..de2fe61485 100644
+--- a/vlib/builtin/vgc_gc_d_vgc.c.v
++++ b/vlib/builtin/vgc_gc_d_vgc.c.v
+@@ -219,6 +219,12 @@ fn vgc_gc_start() {
+ 	C.vgc_trace(9, self_idx, u64(vgc_heap.gc_cycle), 0) // SWEEP0
+ 	vgc_do_sweep()
+ 	C.vgc_trace(10, self_idx, u64(vgc_heap.gc_cycle), 0) // SWEEP1
++	$if vgc_markbit ? {
++		// #63 mark-bit: IN-STW, immediately post-sweep — freed buffers have alloc=0 and
++		// THIS cycle's mark bits are still valid (cleared only at next cycle's start).
++		// Bounded ~1024-entry table scan, NOT per-freed-buffer. World resumes below.
++		vgc_assoc_marksweep()
++	}
+ 
+ 	// Drop mcache slots whose cached span sweep just recycled to the pool (and the
+ 	// tiny cursor). Must run while the world is still stopped, after sweep. Without
+@@ -1197,6 +1203,25 @@ fn vgc_sweep_span(span &VGC_Span) {
+ 		}
+ 		if garbage != 0 {
+ 			freed += u32(C.vgc_popcount8(garbage))
++			$if vgc_passive ? {
++				$if !vgc_nosweep ? { // attribution: -d vgc_nosweep disables the sweep-hook
++					// #63 PASSIVE: record each freed SMALL noscan buffer (the map-key
++					// char-buffer class) at its TRUE freeing GC into the swept-log. PURELY
++					// PASSIVE — alloc bits are still cleared below (no retention), so the
++					// crash is preserved. Bit-loop only over small noscan spans, bounded.
++					if span.noscan && span.elem_size <= u32(32) { // 16/24/32B = key-buffer classes
++						for bit in 0 .. 8 {
++							if garbage & (u8(1) << bit) != 0 {
++								oi := u32(b) * 8 + u32(bit)
++								if oi < span.nelems {
++									vgc_slog_record(span.base + usize(oi) * usize(span.elem_size),
++										span.elem_size)
++								}
++							}
++						}
++					}
++				}
++			}
+ 			// Clear the garbage bits from alloc bitmap
+ 			unsafe {
+ 				span.alloc_bits[b] = alloc_byte & mark_byte

@@ -1,0 +1,16 @@
+diff --git a/vcx/code/matcher.v b/vcx/code/matcher.v
+index d69870e2..69711047 100644
+--- a/vcx/code/matcher.v
++++ b/vcx/code/matcher.v
+@@ -624,9 +624,11 @@ fn (e MatchEnv) clone() MatchEnv {
+ 		dyn_context: e.dyn_context.clone()
+ 		scope:    e.scope // share the program scope (heap, read-only at call time)
+ 	}
++	$if vgc_bstep ? { e.bindings.vgc_bstep_clone_begin() } // #63 B-STEP diagnostic (gated, revert-before-finish)
+ 	for k, v in e.bindings {
+ 		copy.bindings[k] = v
+ 	}
++	$if vgc_bstep ? { e.bindings.vgc_bstep_clone_end() } // #63 B-STEP diagnostic (gated)
+ 	for k, c in e.closures {
+ 		copy.closures[k] = c
+ 	}
