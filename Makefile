@@ -287,6 +287,18 @@ directive-docs-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 directive-docs-check: build-vcx
 	@"$(CX_BIN)" eval scripts/gen_guide/directive_docs_check.cx --allow-all
 
+# Playground example drift gate (#92) — every entry in
+# scripts/gen_guide/playground/playground.examples.js must still run clean on
+# the current binary, and the committed file must match a fresh render. The
+# generator audits the *composed* form (input + the `[; … ]` note comment) with
+# NO capability flags, mirroring the file:// wasm sandbox: a top-level parse/
+# eval error fails the gate, an unbalanced bracket in a note (→ unterminated
+# comment) fails the gate, and examples needing a wasm-unavailable capability
+# carry runnable:false (exempt). --check verifies without rewriting the file.
+.PHONY: verify-playground-examples
+verify-playground-examples: build-vcx
+	@python3 scripts/gen_guide/playground/gen_examples.py --check
+
 # stdlib catalogue drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
@@ -339,7 +351,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check directive-docs-check
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check directive-docs-check verify-playground-examples
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
