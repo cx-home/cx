@@ -293,6 +293,16 @@
     lastEvalRawCx = '';
     resetVizPanes();
     refreshView();
+    // Examples flagged runnable:false need a capability the file:// wasm
+    // sandbox can't grant (net / subprocess / fs). They still Run — they just
+    // return a capability-denied `[err …]` value. Surface that up front so the
+    // result isn't mistaken for a bug.
+    if (found.ex.runnable === false) {
+      setStatus('This example needs a capability unavailable in the wasm playground '
+        + '(network / subprocess / filesystem). Run it under `make guide-http` or '
+        + '`cx --allow-net` in your terminal; here it returns a capability-denied result.',
+        'pending');
+    }
   }
 
   pick.addEventListener('change', () => loadExample(pick.value));
@@ -914,6 +924,13 @@
       setStatus('Source is empty. Pick an example or type something to evaluate.', 'error');
       return;
     }
+    // Strip the trailing `[; ─── note ─── ]` annotation before evaluating,
+    // exactly as the tree/diagram path does. The note is documentation, not
+    // program input; passing it through is harmless when its brackets balance
+    // but turns the block comment unterminated (→ CXER0100) when the prose
+    // contains an unbalanced bracket. Stripping makes a Run immune to note
+    // content; results are identical for well-formed notes.
+    const evalSrc = stripAnnotation(src);
     for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
     runBtn.classList.add('is-running');
     runBtn.disabled = true;
@@ -923,15 +940,15 @@
     let accumulated = '';
     try {
       if (typeof cxlib.evalCodeStreamingAsync === 'function') {
-        await cxlib.evalCodeStreamingAsync(src, 'cx', (chunk) => {
+        await cxlib.evalCodeStreamingAsync(evalSrc, 'cx', (chunk) => {
           accumulated += chunk;
           outs.cx.textContent = accumulated;
         }, '');
       } else if (typeof cxlib.evalCodeAsync === 'function') {
-        accumulated = await cxlib.evalCodeAsync(src, 'cx', '');
+        accumulated = await cxlib.evalCodeAsync(evalSrc, 'cx', '');
         outs.cx.textContent = accumulated;
       } else {
-        accumulated = cxlib.evalCode(src, 'cx', '');
+        accumulated = cxlib.evalCode(evalSrc, 'cx', '');
         outs.cx.textContent = accumulated;
       }
       outs.cx.dataset.raw = accumulated;
