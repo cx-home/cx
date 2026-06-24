@@ -53,7 +53,7 @@ empty-path-as-empty-sequence" XPath divergence.
 
 ## Open gap log
 
-1. **`$path/child` raises `CXER0001` instead of returning empty sequence when the parent has no such child.** This contradicts the XPath 3.1 model (where `/a/missing-child` is empty, not an error). Filing this would close cleanly via a one-line eval-loop change. **Files a NEW ADR or an amendment to `spec/cxpath.md` §6.**
+1. **`$path/child` raises `CXER0001` instead of returning empty sequence when the parent has no such child.** This contradicts the XPath 3.1 model (where `/a/missing-child` is empty, not an error). Filing this would close cleanly via a one-line eval-loop change. **Warrants a spec item or an amendment to `spec/cxpath.md` §6.**
 
 2. **Predicate-context arithmetic on positional builtins.** `last()-1` doesn't parse inside `[...]` predicate. Filing under existing CXPath predicate completeness work. **May close as an extension to that work.**
 
@@ -62,5 +62,5 @@ empty-path-as-empty-sequence" XPath divergence.
 4. **No native "stack" abstraction.** This is design-level: CX neither has a list-as-stack with `push`/`pop`/`peek` builtins nor a deque. The XPath sequence is immutable and grow-from-tail-only via concat. Worth noting alongside the `[?reduce]` companions work as a gap in the surface that motivates real stack-based programs.
 
 The fact that #1 *blocks* the program at the first token is a real
-finding — the corpus surfaces the gap before any new ADR cycle could
+finding — the corpus surfaces the gap before any new spec cycle could
 discover it.

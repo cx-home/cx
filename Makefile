@@ -432,6 +432,7 @@ check-docs-tier1-guardrail:
 # token-aware; the gate script + the SAP audit report are allowlisted.
 .PHONY: check-no-adr-citations
 check-no-adr-citations:
+	@python3 scripts/check_no_adr_citations.py --self-test
 	@python3 scripts/check_no_adr_citations.py
 
 # ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle
