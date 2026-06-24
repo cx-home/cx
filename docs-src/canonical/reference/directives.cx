@@ -293,7 +293,7 @@ B"""] [expect """50"""]]
 
 [directive-doc name='?timeout' category="Resilience" spec="§10.2"
   [sig """[?timeout DURATION BODY] -> result"""]
-  [summary """Resilience: bound BODY by a wall-clock duration; exceeding it yields a timeout error."""]
+  [summary """Resilience: bound BODY by a duration; on elapse yields a timeout error (CXER0141). Enforced against LOGICAL time — `[?sleep DUR mock]` advances the clock and trips it; a real wall-clock-blocking body is NOT interrupted (real-time cancellation requires the production scheduler)."""]
   [example [code """[?timeout 1s fast]"""] [expect """fast"""]]
 ]
 
@@ -320,7 +320,7 @@ B"""] [expect """50"""]]
 
 [directive-doc name='?bulkhead' category="Resilience" spec="§10.2"
   [sig """[?bulkhead max-concurrent=N queue=Q BODY] -> result"""]
-  [summary """Resilience: cap concurrent executions at `max-concurrent` with a bounded queue; saturation yields a bulkhead error."""]
+  [summary """Resilience (EXPERIMENTAL): cap concurrent executions at `max-concurrent`; saturation yields CXER0152. Immediate-reject works, but the bounded `queue`/backpressure engages ONLY under the cooperative scheduler (`[?test-concurrent]`) and the slot cap is not reliably enforced under real thread contention. Not the `[par]` bounding mechanism (#94 — `[par N]` owns width); for production load-shedding prefer `[?rate-limit]` or a buffered `[?channel]`."""]
   [example [code """[?bulkhead max-concurrent=4 queue=0 ran]"""] [expect """ran"""]]
 ]
 
