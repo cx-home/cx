@@ -228,7 +228,7 @@
                 doesn't handle it — that's the bug; file it. If runner
                 green, your fixture is now a regression gate."""]]]
 
-    [child id=propose-adr n=10.5.3 title='Proposing a design change'
+    [child id=propose-change n=10.5.3 title='Proposing a design change'
       [body
         """CX changes that affect the spec / ABI / surface are made by
            editing the spec — the spec is the single source of truth.

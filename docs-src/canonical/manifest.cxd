@@ -306,7 +306,7 @@
     [child n=10.5 id=extend-contribute title='Extend and contribute'
       [child n=10.5.1 id=file-bug             title='Filing an issue']
       [child n=10.5.2 id=add-fixture          title='Adding a conformance fixture']
-      [child n=10.5.3 id=propose-adr          title='Proposing a design change']
+      [child n=10.5.3 id=propose-change          title='Proposing a design change']
       [child n=10.5.4 id=ship-binding         title='Shipping a new binding']
       [child n=10.5.5 id=debug-investigate    title='Debugging an implementation']
       [child n=10.5.6 id=memory-update        title='Updating the project memory']]]

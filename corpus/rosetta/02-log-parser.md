@@ -63,7 +63,7 @@ shape is BLOCKED on the missing string-ops surface.
 
 Surface-completeness hypothesis confirmations:
 
-1. **String ops beyond basics missing — `split` / `tokenize` / `format` / interpolation.** Listed in 0045 §"Confidence-ranked gap inventory" as "Very high" confidence (hypothesis #34 in the task brief). Confirmed here: no way to split a log line into timestamp / level / message. RE2 shim is built (per memory `project_v_re2_gap` and `vcx/Makefile` `LIB_RE2`) but not exposed in the code surface. **Files a NEW ADR (string-ops surface).**
+1. **String ops beyond basics missing — `split` / `tokenize` / `format` / interpolation.** Listed in 0045 §"Confidence-ranked gap inventory" as "Very high" confidence (hypothesis #34 in the task brief). Confirmed here: no way to split a log line into timestamp / level / message. RE2 shim is built (per memory `project_v_re2_gap` and `vcx/Makefile` `LIB_RE2`) but not exposed in the code surface. **Warrants a spec item (string-ops surface).**
 
 2. **Atom-as-attribute-value syntax — `[entry :level :info]` vs `[entry level=info]`.** Discovered while writing the program. `[entry level=:info]` parse-fails (atom can't be an attribute value); `[entry :level :info]` works but uses keyword-modifier shape rather than the conventional `name=value` attribute pair. This is consistent with §3.5 of `spec/code.md` (atoms are values, attribute values are scalars/strings), but the surface friction is real. **Probably closed by spec — but worth noting.**
 

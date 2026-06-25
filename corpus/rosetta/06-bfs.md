@@ -68,6 +68,5 @@ Surface-completeness hypothesis confirmations:
 5. **Pattern destructure of attributes via `:from $f :to $t` keyword-style fails.** `[edges @from=$f @to=$t]` works; `[edges :from $f :to $t]` parses as `pattern body item` and rejects `:` between attrs. The `:foo` keyword-modifier shape only works in directive heads, not in match patterns over element shapes. Worth a one-line spec note in `spec/code.md §5.2`.
 
 The cascading nature of these gaps (#2 + #3 + #4 together block the
-real algorithm; #1 is a single-line fix) is the kind of finding ADR
-0045 anticipated. BFS is *the* canonical "do I have enough surface
+real algorithm; #1 is a single-line fix) is the kind of finding the 0045 gap inventory anticipated. BFS is *the* canonical "do I have enough surface
 to write a real program" probe; today CX doesn't.

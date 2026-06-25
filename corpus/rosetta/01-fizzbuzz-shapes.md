@@ -86,15 +86,15 @@ binding a catchall via `:case $x :yield ...` recovers the value.
 
 Surface-completeness hypothesis confirmations from this program:
 
-1. **Numeric coercion / integer arithmetic edge — `mod` / `div` / `idiv` missing.** Listed in 0045 §"Confidence-ranked gap inventory" row "High — Numeric coercion / promotion edges." Confirmed here: no integer modulo, no integer division, no XPath `mod` / `div` / `idiv` infix tokens. **Files a NEW ADR.**
+1. **Numeric coercion / integer arithmetic edge — `mod` / `div` / `idiv` missing.** Listed in 0045 §"Confidence-ranked gap inventory" row "High — Numeric coercion / promotion edges." Confirmed here: no integer modulo, no integer division, no XPath `mod` / `div` / `idiv` infix tokens. **Warrants a spec item.**
 
-2. **Math builtins are XPath-call-only, not directive-form callable.** Newly surfaced — *not* in 0045's hypothesis register. `floor` / `ceiling` / `round` / `abs` work as `floor(EXPR)` only; `[floor EXPR]` returns the literal directive shape without reducing. **Files a NEW ADR or amends `spec/code.md §6.5`.**
+2. **Math builtins are XPath-call-only, not directive-form callable.** Newly surfaced — *not* in 0045's hypothesis register. `floor` / `ceiling` / `round` / `abs` work as `floor(EXPR)` only; `[floor EXPR]` returns the literal directive shape without reducing. **Warrants a spec item or amends `spec/code.md §6.5`.**
 
-3. **Paren-expression `(EXPR OP EXPR)` rejects comparison / arithmetic ops.** `($score >= 90)`, `($x > 4)`, `(1 = 1)`, `($a + $b)` all parse-fail. Only the directive forms `[>= $score 90]` / `[> $x 4]` / `[= 1 1]` / `[+ $a $b]` work. This contradicts the conformance-fixture example at `conformance/code.txt:3495` (`:when ($score >= 90)`), which itself fails on current HEAD. **Files a NEW ADR or surfaces an open fixture-status item.**
+3. **Paren-expression `(EXPR OP EXPR)` rejects comparison / arithmetic ops.** `($score >= 90)`, `($x > 4)`, `(1 = 1)`, `($a + $b)` all parse-fail. Only the directive forms `[>= $score 90]` / `[> $x 4]` / `[= 1 1]` / `[+ $a $b]` work. This contradicts the conformance-fixture example at `conformance/code.txt:3495` (`:when ($score >= 90)`), which itself fails on current HEAD. **Warrants a spec item or surfaces an open fixture-status item.**
 
 4. **`[?def NAME (params) body]` module-level function form unimplemented.** Per `spec/code.md §12.2.1` this is the v0.8.0 normative function-declaration form. `[?def add (a b) [+ a b]]` parse-fails on current HEAD. The form is specced; V reference impl is Phase 2 work (per spec/v0_8_0_status.md row 2.12). **Tracked under `[?def]` implementation.**
 
-5. **Multi-arg `[?fn ($a, $b) :body BODY]` body does not substitute parameters on application.** `[?let $f = [?fn ($a, $b) :body [+ $a $b]] :in $f(1, 2)]` returns the literal body. Single-arg form works. **Files a NEW ADR.**
+5. **Multi-arg `[?fn ($a, $b) :body BODY]` body does not substitute parameters on application.** `[?let $f = [?fn ($a, $b) :body [+ $a $b]] :in $f(1, 2)]` returns the literal body. Single-arg form works. **Warrants a spec item.**
 
 The blocking nature of (1) and (2) is striking: FizzBuzz is the
 canonical 30-second exercise. The natural form is unwritable. This

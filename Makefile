@@ -80,7 +80,7 @@ build-vcx:
 # identical for tests but compiles far faster; the test path depends on
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
 build-vcx-dev:
-	$(MAKE) -C vcx build-dev
+	$(MAKE) -C vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
@@ -432,6 +432,7 @@ check-docs-tier1-guardrail:
 # token-aware; the gate script + the SAP audit report are allowlisted.
 .PHONY: check-no-adr-citations
 check-no-adr-citations:
+	@python3 scripts/check_no_adr_citations.py --self-test
 	@python3 scripts/check_no_adr_citations.py
 
 # ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle

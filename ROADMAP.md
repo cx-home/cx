@@ -142,7 +142,7 @@ already have committed design context.
 > record of the v0.6.0 / v0.7.x roadmap. The live v0.8.0 scope is
 > the "v0.8.0 — LOCKED" section above and
 > [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md). Many items here
-> shipped during v0.6.0; others were superseded by later ADRs.
+> shipped during v0.6.0; others were superseded by later decisions.
 
 ### Now — v0.6.0 era
 
@@ -588,16 +588,16 @@ governs the loader). Candidate modules in rough priority order:
 11. **`xslt`** — XSLT engine wrap, deferred until a concrete
     consumer surfaces.
 
-These ship through their own ADRs as standalone modules rather
-than a single-cut release tag — the v0.8.0 stability boundary
+These ship as standalone modules — each with its own spec section —
+rather than a single-cut release tag; the v0.8.0 stability boundary
 means new function-module surface lands additively without
 breaking the bundled stdlib contract.
 
-### v0.9.0+ — concurrency and parallel processing (separate ADR)
+### v0.9.0+ — concurrency and parallel processing
 
 14. **`jobs:` module** — async / background / parallel evaluation.
     Load-bearing for the "large-scale highly parallel data processing
-    systems" pitch. Requires substantive ADR covering evaluator-
+    systems" pitch. Requires substantive spec work covering evaluator-
     state isolation, result collection, error propagation,
     determinism / byte-identity preservation under parallelism.
 15. **`proc:` module** — subprocess spawning.
@@ -786,7 +786,7 @@ and next-lever ordering.
   arrays form is bytecode-shaped already; a cranelift / V-codegen
   backend that emits native code for the inner emit loop would
   yield an estimated 3–5× on top of the current stack. Big project;
-  warrants its own ADR.
+  warrants its own design spec.
 
 ### v1.0 — quality + audit milestone
 
@@ -811,8 +811,8 @@ and next-lever ordering.
  v0.8.0's stability scope as a tooling win; falls back to v0.9.0
  if it doesn't land cleanly inside burn-in. Bigger AOT/JIT
  trajectories (whole-program codegen, per-function `.so` JIT,
- native LLVM codegen) are deferred — they need their own ADR
- defining the static CX subset and are unscoped for now.
+ native LLVM codegen) are deferred — they need their own spec
+ section defining the static CX subset and are unscoped for now.
 - **Native module loader (V `-shared` + dlopen)** — split cx's own
  stdlib modules (`cx:`, `log:`, future `crypto:` / `regex:` /
  `http:` / ...) out of the libcx core into per-module `.so`s
