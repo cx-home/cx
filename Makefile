@@ -80,7 +80,7 @@ build-vcx:
 # identical for tests but compiles far faster; the test path depends on
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
 build-vcx-dev:
-	$(MAKE) -C vcx build-dev
+	$(MAKE) -C vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
