@@ -42,8 +42,13 @@ check_file() {
 	local rel="${f#$ROOT/}"
 
 	# examples/htmx/ is parked (DO-NOT-PUBLISH); skip entirely.
+	# examples/cxstore/ is a Makefile-orchestrated client+server demo (server.cx
+	# runs an accept loop that blocks; client.cx needs a live server) — exercised
+	# via its own `make run`, not standalone eval, so this single-file checker
+	# would hang on the server and fail the client.
 	case "$rel" in
 		examples/htmx/*) return ;;
+		examples/cxstore/*) return ;;
 	esac
 
 	if "$CX" fmt "$f" > /dev/null 2>&1; then
