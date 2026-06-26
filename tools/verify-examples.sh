@@ -51,30 +51,32 @@ check_file() {
 		examples/cxstore/*) return ;;
 	esac
 
-	if "$CX" fmt "$f" > /dev/null 2>&1; then
-		# DATA reading: parsed cleanly. Must also convert to JSON via the
-		# lossless data path (the conversion the bindings expose).
-		if ! "$CX" --from=cx --to=json "$f" > /dev/null 2>&1; then
+	# A publishable example is valid under EITHER reading. `cx fmt` is NOT a
+	# data/program discriminator — it succeeds for both (a valid program passes
+	# through unchanged), so the old "fmt ok ⇒ data" branch wrongly routed PROGRAM
+	# tours (cxpath/modify/match/code) through the data→JSON path, where program
+	# surface (directives, [$call], node-valued attrs) fails E211/"expected name".
+	#
+	# Correct discriminator: try the DATA reading (lossless CX→JSON, the surface
+	# the bindings expose) first; if the file is not valid data, fall back to the
+	# PROGRAM reading and evaluate it (with a sibling <name>.input.cx as $doc when
+	# present). Fail only when NEITHER reading works.
+	if "$CX" --from=cx --to=json "$f" > /dev/null 2>&1; then
+		PASS=$((PASS + 1))
+		return
+	fi
+	local input="${f%.cx}.input.cx"
+	if [ -f "$input" ]; then
+		if ! "$CX" eval "$f" --data="$input" > /dev/null 2>&1; then
 			FAIL=$((FAIL + 1))
-			FAIL_DETAILS+=("$rel [data JSON conversion failed]")
+			FAIL_DETAILS+=("$rel [neither data-JSON nor eval (with $(basename "$input")) succeeded]")
 			return
 		fi
 	else
-		# PROGRAM reading: not data — evaluate it. Pair with a sibling
-		# <name>.input.cx as the eval input document when present.
-		local input="${f%.cx}.input.cx"
-		if [ -f "$input" ]; then
-			if ! "$CX" eval "$f" --data="$input" > /dev/null 2>&1; then
-				FAIL=$((FAIL + 1))
-				FAIL_DETAILS+=("$rel [eval failed (with $(basename "$input"))]")
-				return
-			fi
-		else
-			if ! "$CX" eval "$f" > /dev/null 2>&1; then
-				FAIL=$((FAIL + 1))
-				FAIL_DETAILS+=("$rel [eval failed]")
-				return
-			fi
+		if ! "$CX" eval "$f" > /dev/null 2>&1; then
+			FAIL=$((FAIL + 1))
+			FAIL_DETAILS+=("$rel [neither data-JSON nor program eval succeeded]")
+			return
 		fi
 	fi
 
