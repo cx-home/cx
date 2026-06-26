@@ -516,6 +516,7 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_identity.py
 	$(PYTHON) lang/python/test_delimited.py
 	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
+	cd lang/python && $(PYTHON) -m unittest test_store_client -v
 
 # Apache Arrow C-Data interop tests (Phase 7.74c-cont-bindings).
 # Skip-cleanly if pyarrow is not installed; otherwise builds libcx_arrow
