@@ -600,7 +600,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-suite
+test-vcx: build-vcx-dev test-vcx-suite test-vcx-code
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -632,6 +632,16 @@ CX_GC ?= -gc e
 .PHONY: test-vcx-suite
 test-vcx-suite: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/tests/
+
+# White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
+# they exercise unexported internals (e.g. the object-graph store, dedup
+# introspection) that the black-box vcx/tests/ corpus cannot reach. `v test` only
+# runs the directory it is given, so vcx/tests/ does not pull these in; this
+# dedicated target wires the in-module suite into the gate (same default -gc e
+# memory model as test-vcx-suite).
+.PHONY: test-vcx-code
+test-vcx-code: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) test vcx/code/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
