@@ -634,11 +634,11 @@ test-vcx-suite: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/tests/
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
-# they exercise unexported internals (e.g. the object-graph store, dedup
-# introspection) that the black-box vcx/tests/ corpus cannot reach. `v test` only
-# runs the directory it is given, so vcx/tests/ does not pull these in; this
-# dedicated target wires the in-module suite into the gate (same default -gc e
-# memory model as test-vcx-suite).
+# they exercise unexported internals (e.g. store_cxpack_flush / store_put_canonical
+# / the object-graph persistence) that the black-box vcx/tests/ corpus cannot
+# reach. `v test` only runs the directory it is given, so vcx/tests/ does not pull
+# these in; this dedicated target wires the in-module suite into the gate (under
+# the same default -gc e memory model as test-vcx-suite).
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/code/
