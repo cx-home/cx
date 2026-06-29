@@ -629,9 +629,19 @@ test-vcx-summary:
 # A/B against the prior collector. Only the FORK `$(V)` implements `-gc e`; the
 # bare-`v` lang/v reference paths below stay on the upstream default.
 CX_GC ?= -gc e
+# `v test dir/` compiles EACH `*_test.v` as its own standalone executable, and
+# with no cache every one recompiles the whole graph (builtin + os + all vcx
+# modules) from scratch — the dominant cost is the per-file clang subprocess.
+# `-usecache` C-compiles each unchanged module ONCE and reuses the object across
+# every test binary (and across re-runs): the first file pays a cold tax, the
+# rest reuse the shared `vcx`/`builtin`/`os` objects. Cache-safe with `-gc e` —
+# the cache salt folds in the gc defines + `cc` + cflags + lookup path
+# (third_party/v/vlib/v/pref/default.v), so different flags get distinct buckets.
+# Overridable to A/B: `make CX_CACHE= test-vcx-suite` disables it.
+CX_CACHE ?= -usecache
 .PHONY: test-vcx-suite
 test-vcx-suite: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) test vcx/tests/
+	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/tests/
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
 # they exercise unexported internals (e.g. store_cxpack_flush / store_put_canonical
@@ -641,7 +651,7 @@ test-vcx-suite: build-vcx-dev
 # the same default -gc e memory model as test-vcx-suite).
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) test vcx/code/
+	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/code/
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
