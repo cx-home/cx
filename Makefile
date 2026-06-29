@@ -600,7 +600,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-suite test-vcx-code
+test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cxstore
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -652,6 +652,21 @@ test-vcx-suite: build-vcx-dev
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/code/
+
+# White-box unit tests for the `cxstore` module (vcx/cxstore/*_test.v) — the
+# content-addressed object store internals (pack/seqtree/bloom/index/gc/reflog/
+# repo/planner/retention/mmap/compression + the cx adapter + round-trip). Like
+# test-vcx-code, `v test` only runs the directory it is given, so neither
+# vcx/tests/ nor vcx/code/ pulls these in; this dedicated target wires the
+# cxstore in-module suite into the gate (same default -gc e memory model).
+# Scoped to the top-level `*_test.v` glob (NOT the directory) so it excludes
+# the `cxsqlite/` subdir — that DB-engine backend test needs sqlite3.h +
+# `-d cx_db_sqlite` (the separate db-access milestone) and is not part of the
+# default build surface. The glob still picks up every cxstore module test
+# (V compiles the whole `cxstore` module behind the listed test files).
+.PHONY: test-vcx-cxstore
+test-vcx-cxstore: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
