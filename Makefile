@@ -668,6 +668,27 @@ test-vcx-code: build-vcx-dev
 test-vcx-cxstore: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
 
+# ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
+# The columnar document backend (document+file://…?encoding=parquet) lives behind
+# `-d cxstore_columnar`; its Arrow file I/O lives behind `-d cx_arrow_files`
+# (libcx_arrow + libparquet via the C++ shim). It is therefore NOT in the default
+# `make test` gate — that gate stays green Arrow-free, and an ungranted/absent-Arrow
+# caller gets an honest E_STORE_UNRESOLVED_BACKEND (the gated-substrate posture).
+# This DEDICATED target builds the shim and runs the spec §9 acceptance gate
+# (store_columnar_test.v) with BOTH flags + Apache Arrow discovered via pkg-config,
+# so the backend is genuinely exercised (no unconsumed seam). CI runs this target on
+# a runner where Apache Arrow is installed (brew install apache-arrow / apt
+# libarrow-dev libparquet-dev). Mirrors test-python-arrow's build-the-lib-first shape.
+ifeq ($(UNAME_S),Darwin)
+  COLUMNAR_ARROW_PKGCONFIG := /opt/homebrew/opt/apache-arrow/lib/pkgconfig
+else
+  COLUMNAR_ARROW_PKGCONFIG :=
+endif
+.PHONY: test-vcx-columnar
+test-vcx-columnar: build-vcx-dev
+	$(MAKE) -C vcx arrow-shim
+	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/code/store_columnar_test.v
+
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
 # fix was to symlink `lang/v/cx → ../../vcx/cx` and `lang/v/code →
