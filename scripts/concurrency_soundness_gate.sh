@@ -54,17 +54,42 @@ if ! grep -q 'fn vgc_uaf_check_buf' $ROOT/third_party/v/vlib/builtin/vgc_d_vgc.c
   exit 2
 fi
 
+# TWO builds, TWO independent signals — they must NOT be conflated (2026-07-01):
+#   BIN  = -d vgc_passive -d vgc_nosweep detector → the bf1 ORACLE (masking-proof
+#          sweep-while-live). CRASHES on this build are NOT counted: with sweep
+#          disabled the reactor's per-request transients are never reclaimed, so the
+#          big-string churn handler balloons RSS to multi-GB and OOMs — a DETECTOR
+#          ARTIFACT that is memory-pressure-variable and has nothing to do with a UAF.
+#          (This exact confound produced a false "#145 regressed" verdict on 06-30:
+#          bf1=0 but crash=1..5 = pure nosweep-OOM.) Only 0xbf1 counts on BIN.
+#   CRASHBIN = the REAL-SWEEP shipping collector (${GCMODE}, no nosweep). Real sweep +
+#          the #131 churn-collect bound RSS, so a crash here is a GENUINE fault (UAF
+#          segfault or a real OOM), not a nosweep artifact. Crashes counted on CRASHBIN.
 BIN=${CX_SOUNDNESS_BIN:-}
 if [ -z "$BIN" ]; then
   BIN=$ROOT/vcx/target/cx_soundness_gate
-  echo "[gate] building detector binary: $GCMODE -d vgc_passive -d vgc_nosweep"
+  echo "[gate] building bf1 detector: $GCMODE -d vgc_passive -d vgc_nosweep"
   ( cd $ROOT/vcx && ../third_party/v/v -n -w -cc cc ${=GCMODE} -d vgc_passive -d vgc_nosweep \
-      -o target/cx_soundness_gate cmd/ ) || { echo "[gate] BUILD FAIL"; exit 2; }
+      -o target/cx_soundness_gate cmd/ ) || { echo "[gate] BUILD FAIL (detector)"; exit 2; }
 fi
-[ -x "$BIN" ] || { echo "[gate] no binary: $BIN"; exit 2; }
+[ -x "$BIN" ] || { echo "[gate] no detector binary: $BIN"; exit 2; }
 
-log=$(mktemp); crashes=0
-cleanup() { pkill -9 -f "serve57|serve_churn_heavy|workers8|wrk -t12" 2>/dev/null; }
+CRASHBIN=${CX_CRASH_BIN:-}
+if [ -z "$CRASHBIN" ]; then
+  CRASHBIN=$ROOT/vcx/target/cx_crash_gate
+  echo "[gate] building real-sweep crash binary: $GCMODE (no nosweep)"
+  ( cd $ROOT/vcx && ../third_party/v/v -n -w -cc cc ${=GCMODE} \
+      -o target/cx_crash_gate cmd/ ) || { echo "[gate] BUILD FAIL (crash bin)"; exit 2; }
+fi
+[ -x "$CRASHBIN" ] || { echo "[gate] no crash binary: $CRASHBIN"; exit 2; }
+
+# PER-STRESSOR logs (2026-07-01): a single shared log conflated the HTTP and
+# worker stressors' bf1 counts — every catch was attributable to any of them, which
+# mis-directed a whole investigation cycle (#145 "regressed" verdicts that were
+# actually the #58 worker path). Each stressor now gets its own log + verdict line.
+log_http=$(mktemp); log_churn=$(mktemp); log_workers=$(mktemp); log_mainloop=$(mktemp)
+crash_http=0; crash_churn=0; crash_workers=0; crash_mainloop=0
+cleanup() { pkill -9 -f "serve57|serve_churn_heavy|serve_mainloop|workers8|wrk -t12" 2>/dev/null; }
 trap cleanup EXIT
 
 # --- multi-reactor HTTP (the #63 reactor stressor) ---
@@ -78,44 +103,101 @@ else
 fi
 for r in $(seq 1 $ROUNDS_HTTP); do
   cleanup; sleep 0.3
-  CX_HTTP_N=8 "$BIN" --allow-all $FIX/serve57.cx >/dev/null 2>>$log &
+  CX_HTTP_N=8 "$BIN" --allow-all $FIX/serve57.cx >/dev/null 2>>$log_http &
   SRV=$!; bound=0
   for i in $(seq 1 20); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
   if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi
   sleep 0.3
-  kill -0 $SRV 2>/dev/null || crashes=$((crashes+1))
-  kill -9 $SRV 2>/dev/null
+  kill -9 $SRV 2>/dev/null # crash NOT counted on the nosweep detector (OOM artifact) — see crash pass
 done
 
 # --- #145 churn-cadence multi-reactor HTTP (the PR #144 production config) ---
-# Clone-heavy handler (many short string-keyed bindings) + CX_HTTP_GC_KB churn cadence
-# at high reactor count = the configuration that reproduces the residual sweep-while-live
-# at ~80% per-round rate (N=24). This is the #145 ACCEPTANCE TEST: it FAILS on the current
-# shipping binary by design (real reproduced UAF) and will PASS only when the vgc residual
-# is fixed. Single-reactor (CX_HTTP_N=1) is verified sound (interim production posture).
+# Clone-heavy handler (many short string-keyed bindings) + CX_HTTP_GC_KB churn cadence at
+# high reactor count — the configuration that historically reproduced the residual
+# sweep-while-live. bf1 is the arbiter here; under -d vgc_nosweep this handler's big
+# per-request strings are never reclaimed, so RSS balloons and it may OOM mid-round — that
+# OOM is NOT counted (crash detection is the separate real-sweep pass below).
 if command -v wrk >/dev/null 2>&1; then
   for r in $(seq 1 $ROUNDS); do
     cleanup; sleep 0.3
-    CX_HTTP_N=$NREACT CX_HTTP_GC_KB=4 "$BIN" --allow-all $FIX/serve_churn_heavy.cx >/dev/null 2>>$log &
+    CX_HTTP_N=$NREACT CX_HTTP_GC_KB=4 "$BIN" --allow-all $FIX/serve_churn_heavy.cx >/dev/null 2>>$log_churn &
     SRV=$!; bound=0
     for i in $(seq 1 30); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
     if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi
     sleep 0.3
-    kill -0 $SRV 2>/dev/null || crashes=$((crashes+1))
-    kill -9 $SRV 2>/dev/null
+    kill -9 $SRV 2>/dev/null # crash NOT counted (nosweep-OOM) — see crash pass
   done
 fi
 
-# --- concurrent workers (the #58 worker stressor) ---
+# --- concurrent workers (the #58 worker stressor) — bf1 detection only ---
+# workers8 = the high-power amplifier; workers4_20k asserts the default-adjacent
+# concurrency level explicitly (soundness must hold at EVERY worker count —
+# rarity at low N is detection power, not safety).
 for r in $(seq 1 $ROUNDS); do
-  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=4 "$BIN" $FIX/workers8.cx >/dev/null 2>>$log
-  [ $? -ne 0 ] && crashes=$((crashes+1))
+  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$BIN" $FIX/workers8.cx >/dev/null 2>>$log_workers
+  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=1 VGC_PACE_MB=0 "$BIN" $FIX/workers4_20k.cx >/dev/null 2>>$log_workers
 done
 
-catches=$(grep -c 'tag=0x[0-9a-f]*bf1 ' $log 2>/dev/null)
-echo "[gate] concurrency-soundness: rounds=$ROUNDS/stressor  oracle-catches(0xbf1)=$catches  crashes=$crashes"
-if [ "$catches" -ne 0 ] || [ "$crashes" -ne 0 ]; then
-  echo "[gate] CONCURRENCY-SOUNDNESS: FAIL (sweep-while-live detected — #63/#58 regression)"
+# --- #57 FIELD SHAPE: DEFAULT-env multi-reactor serve + busy ALLOCATING MAIN thread ---
+# No CX_HTTP_N / CX_WORKER_THREADS overrides: this is the stock posture the field
+# workload (xap-marine) runs — reactors at the default fan-out plus the main thread
+# evaluating an allocation-heavy loop. Multi-mutator by default; previously uncovered.
+if command -v wrk >/dev/null 2>&1; then
+  for r in $(seq 1 $ROUNDS); do
+    cleanup; sleep 0.3
+    VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$BIN" --allow-all $FIX/serve_mainloop.cx >/dev/null 2>>$log_mainloop &
+    SRV=$!; bound=0
+    for i in $(seq 1 20); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
+    if [ $bound -eq 1 ]; then wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1; fi
+    sleep 0.3
+    kill -9 $SRV 2>/dev/null # crash NOT counted on the nosweep detector — see crash pass
+  done
+fi
+
+# ============================================================================
+# CRASH-DETECTION PASS — on the REAL-SWEEP collector (CRASHBIN), where memory IS
+# reclaimed, so a process death is a GENUINE fault (UAF segfault / real OOM), not the
+# nosweep artifact above. bf1 output from this pass (if any) also counts (grep is over
+# the shared $log). This pass is what makes crash>0 trustworthy.
+# ============================================================================
+crashlog_http=$(mktemp); crashlog_churn=$(mktemp); crashlog_mainloop=$(mktemp); crashlog_workers=$(mktemp)
+run_serve_crash_rounds() { # fixf, n (empty = default fan-out), env_extra, crashlog; echoes crash count
+  local fixf=$1 n=$2 env_extra=$3 clog=$4 cnt=0
+  for r in $(seq 1 $ROUNDS); do
+    cleanup; sleep 0.3
+    env ${n:+CX_HTTP_N=$n} ${env_extra:+${=env_extra}} "$CRASHBIN" --allow-all $FIX/$fixf >/dev/null 2>>$clog &
+    local SRV=$! bound=0
+    for i in $(seq 1 30); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
+    [ $bound -eq 1 ] && wrk -t12 -c200 -d3s http://127.0.0.1:$PORT/ >/dev/null 2>&1
+    sleep 0.3
+    kill -0 $SRV 2>/dev/null || cnt=$((cnt+1))
+    kill -9 $SRV 2>/dev/null
+  done
+  echo $cnt
+}
+if command -v wrk >/dev/null 2>&1; then
+  crash_http=$(run_serve_crash_rounds serve57.cx 8 "" $crashlog_http)
+  crash_churn=$(run_serve_crash_rounds serve_churn_heavy.cx $NREACT "CX_HTTP_GC_KB=4" $crashlog_churn)
+  crash_mainloop=$(run_serve_crash_rounds serve_mainloop.cx "" "" $crashlog_mainloop)
+fi
+for r in $(seq 1 $ROUNDS); do
+  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$CRASHBIN" $FIX/workers8.cx >/dev/null 2>>$crashlog_workers
+  [ $? -ne 0 ] && crash_workers=$((crash_workers+1))
+  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=1 VGC_PACE_MB=0 "$CRASHBIN" $FIX/workers4_20k.cx >/dev/null 2>>$crashlog_workers
+  [ $? -ne 0 ] && crash_workers=$((crash_workers+1))
+done
+
+# PER-STRESSOR verdicts: bf1 catches from the detector pass AND the real-sweep pass.
+fail=0
+for s in http churn mainloop workers; do
+  eval "dlog=\$log_$s; clog=\$crashlog_$s; scrash=\$crash_$s"
+  scatch=$(cat $dlog $clog 2>/dev/null | grep -c 'tag=0x[0-9a-f]*bf1 ')
+  echo "[gate] stressor=$s rounds=$ROUNDS oracle-catches(0xbf1)=$scatch real-sweep-crashes=$scrash"
+  [ "$scatch" -ne 0 ] && { echo "[gate]   -> FAIL: sweep-while-live UAF on the $s stressor (#63/#58/#145)"; fail=1; }
+  [ "$scrash" -ne 0 ] && { echo "[gate]   -> FAIL: real-sweep crash on the $s stressor (genuine fault, not nosweep-OOM)"; fail=1; }
+done
+if [ $fail -ne 0 ]; then
+  echo "[gate] CONCURRENCY-SOUNDNESS: FAIL"
   exit 1
 fi
 echo "[gate] CONCURRENCY-SOUNDNESS: PASS"
