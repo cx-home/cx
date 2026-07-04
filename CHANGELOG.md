@@ -13,6 +13,21 @@ version, library version).
 
 ## [Unreleased]
 
+### Reliability — concurrency & memory
+
+- **The `#57/#58/#63/#145` GC sweep-while-live UAF lineage is root-caused and
+  fixed** — the allocator fast paths were not atomic w.r.t. the async-signal
+  stop-the-world: a mutator frozen mid-allocation could have its tiny-allocator
+  cursor invalidated (→ near-NULL buffer handed out, the field `string_clone`
+  SIGSEGV) or its in-flight slot claim swept out from under it (→ one slot,
+  two owners). Concurrency-soundness gate green at every reactor/worker count
+  on macOS and Linux, including under CPU-load amplification.
+- **Concurrent `[?worker]` threads are the default** — `[?worker]` now runs
+  its body on its own thread, matching the spec's "runs concurrently with
+  siblings" semantics (§10.4.6). The interim synchronous run-to-completion
+  default (kept while the UAF above was open) is retired;
+  `CX_WORKER_THREADS=0` remains as a diagnostics-only escape hatch (#58).
+
 ## [0.12.0] — 2026-06-22
 
 The reliability release. Authoritative release-surface document:

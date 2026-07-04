@@ -3,7 +3,7 @@
 #
 # Asserts the collector exhibits ZERO sweep-while-live under the multi-mutator
 # stressors that reproduced the residual GC UAF — multi-reactor HTTP (CX_HTTP_N>=8)
-# and concurrent [?worker] threads (CX_WORKER_THREADS=1) — using the passive
+# and concurrent [?worker] threads (the §10.4.6 DEFAULT; env pinned empty) — using the passive
 # detector ORACLE (tag 0xbf1 = a freed map-key buffer read in map_clone_string),
 # plus a crash count. The oracle is masking-proof: a freed-buffer read is caught
 # deterministically at the use site regardless of timing, so 0 catches means no
@@ -130,12 +130,14 @@ if command -v wrk >/dev/null 2>&1; then
 fi
 
 # --- concurrent workers (the #58 worker stressor) — bf1 detection only ---
+# Runs in the DEFAULT env (CX_WORKER_THREADS pinned empty = concurrent, the §10.4.6
+# semantics — graduated once the #58-lineage UAF was fixed).
 # workers8 = the high-power amplifier; workers4_20k asserts the default-adjacent
 # concurrency level explicitly (soundness must hold at EVERY worker count —
 # rarity at low N is detection power, not safety).
 for r in $(seq 1 $ROUNDS); do
-  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$BIN" $FIX/workers8.cx >/dev/null 2>>$log_workers
-  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=1 VGC_PACE_MB=0 "$BIN" $FIX/workers4_20k.cx >/dev/null 2>>$log_workers
+  CX_WORKER_THREADS= VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$BIN" $FIX/workers8.cx >/dev/null 2>>$log_workers
+  CX_WORKER_THREADS= VGC_NEXT_GC_MB=1 VGC_PACE_MB=0 "$BIN" $FIX/workers4_20k.cx >/dev/null 2>>$log_workers
 done
 
 # --- #57 FIELD SHAPE: DEFAULT-env multi-reactor serve + busy ALLOCATING MAIN thread ---
@@ -181,9 +183,9 @@ if command -v wrk >/dev/null 2>&1; then
   crash_mainloop=$(run_serve_crash_rounds serve_mainloop.cx "" "" $crashlog_mainloop)
 fi
 for r in $(seq 1 $ROUNDS); do
-  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$CRASHBIN" $FIX/workers8.cx >/dev/null 2>>$crashlog_workers
+  CX_WORKER_THREADS= VGC_NEXT_GC_MB=4 VGC_PACE_MB=0 "$CRASHBIN" $FIX/workers8.cx >/dev/null 2>>$crashlog_workers
   [ $? -ne 0 ] && crash_workers=$((crash_workers+1))
-  CX_WORKER_THREADS=1 VGC_NEXT_GC_MB=1 VGC_PACE_MB=0 "$CRASHBIN" $FIX/workers4_20k.cx >/dev/null 2>>$crashlog_workers
+  CX_WORKER_THREADS= VGC_NEXT_GC_MB=1 VGC_PACE_MB=0 "$CRASHBIN" $FIX/workers4_20k.cx >/dev/null 2>>$crashlog_workers
   [ $? -ne 0 ] && crash_workers=$((crash_workers+1))
 done
 
