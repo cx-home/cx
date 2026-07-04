@@ -62,11 +62,19 @@ docker run --rm \
     /work/third_party/v/v_lx -n -w -cc cc -gc e -d vgc_passive -d vgc_nosweep '"$DEFINES"' \
       -o /tmp/cx_soundness_gate_linux cmd/
     test -x /tmp/cx_soundness_gate_linux
+    # Build the REAL-SWEEP crash binary too (the gate is two-build since the
+    # 2026-07-01 hardening: bf1 oracle on the detector, crash counting on real
+    # sweep). Without this the gate falls back to building it with the mounted
+    # macOS `../third_party/v/v` -> "exec format error" and the docker gate dies.
+    /work/third_party/v/v_lx -n -w -cc cc -gc e '"$DEFINES"' \
+      -o /tmp/cx_crash_gate_linux cmd/
+    test -x /tmp/cx_crash_gate_linux
     rm -f /work/third_party/v/v_boot /work/third_party/v/v_lx
 
-    # Run the existing gate against the prebuilt linux detector (zsh: the gate uses
+    # Run the existing gate against the prebuilt linux binaries (zsh: the gate uses
     # ${0:A:h:h} for ROOT, so it must run from /work under zsh).
     cd /work
-    CX_SOUNDNESS_BIN=/tmp/cx_soundness_gate_linux SOUNDNESS_N="$NREACT" \
+    CX_SOUNDNESS_BIN=/tmp/cx_soundness_gate_linux CX_CRASH_BIN=/tmp/cx_crash_gate_linux \
+      SOUNDNESS_N="$NREACT" \
       SOUNDNESS_ROUNDS="$ROUNDS" zsh /work/scripts/concurrency_soundness_gate.sh
   '
