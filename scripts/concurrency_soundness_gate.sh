@@ -189,8 +189,32 @@ for r in $(seq 1 $ROUNDS); do
   [ $? -ne 0 ] && crash_workers=$((crash_workers+1))
 done
 
+# --- V-thread RETURN-BOX integrity (v4 addendum, STW-HARDENING-2026-07.md §8) ---
+# A checksummed multi-worker allocate/discard loop at a forced high collection
+# cadence. VALUE-INTEGRITY oracle: the exit->join return-box UAF recycles the
+# swept box before the waiter reads it, so by read time the slot is usually
+# REALLOCATED (alloc bit set, someone else's live data) — the bf1 detector,
+# which watches freed-buffer reads, is structurally blind to it. Only the
+# checksum sees the corruption (pre-fix: 6/6 rounds corrupt at this cadence on
+# the pacer tree; 1/6 frequency-matched on the pre-pacer tree).
+echo "[gate] building vthread-ret checksum stressor (plain ${GCMODE})"
+RETBIN=$(mktemp -d)/hot_ret
+VNOBUGREPORT=1 $ROOT/third_party/v/v ${=GCMODE} -o $RETBIN $ROOT/third_party/v/bench/parallel-alloc/hot_loop_rss.v >/dev/null 2>&1 \
+  || { echo "[gate] ABORT: vthread-ret stressor build failed"; exit 2; }
+RET_EXPECT=298074064 # acc for 4 workers x 2,000,000 iterations (deterministic)
+ret_corrupt=0
+for r in $(seq 1 $ROUNDS); do
+  out=$(VGC_NEXT_GC_MB=8 $RETBIN 4 2000000 2>/dev/null)
+  case "$out" in
+    *"acc=${RET_EXPECT} "*) ;;
+    *) ret_corrupt=$((ret_corrupt+1)) ;;
+  esac
+done
+
 # PER-STRESSOR verdicts: bf1 catches from the detector pass AND the real-sweep pass.
 fail=0
+echo "[gate] stressor=vthread-ret rounds=$ROUNDS checksum-corruptions=$ret_corrupt"
+[ "$ret_corrupt" -ne 0 ] && { echo "[gate]   -> FAIL: thread-return-box result corruption (exit->join UAF; STW-HARDENING-2026-07.md §8)"; fail=1; }
 for s in http churn mainloop workers; do
   eval "dlog=\$log_$s; clog=\$crashlog_$s; scrash=\$crash_$s"
   scatch=$(cat $dlog $clog 2>/dev/null | grep -c 'tag=0x[0-9a-f]*bf1 ')
