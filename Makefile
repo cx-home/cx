@@ -351,7 +351,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl guide-check directive-docs-check verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences guide-check directive-docs-check verify-playground-examples
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
@@ -447,6 +447,29 @@ check-no-adr-citations:
 .PHONY: check-no-stub-impl
 check-no-stub-impl:
 	@python3 scripts/check_no_stub_impl.py
+
+# Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
+# (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
+# ships NO parallel primitive — no own hashing, no archive format, no
+# transport, no second compose gate.
+.PHONY: check-xap-dist-absences
+check-xap-dist-absences:
+	@python3 scripts/check_xap_dist_absences.py
+
+# Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
+# sign + alias a package directory into registry/store, then re-verify.
+#   CX_PKG_DIR=packages/nmea0183 CX_PKG_NAME=nmea0183 CX_PKG_VERSION=0.1.0 \
+#     make registry-publish
+.PHONY: registry-publish
+registry-publish: build-vcx-dev
+	@vcx/target/cx --allow-all registry/publish.cx
+
+# Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
+# behind the CSRP daemon on loopback. Consumers open
+# cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
+.PHONY: registry-serve
+registry-serve: build-vcx-dev
+	@vcx/target/cx store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
