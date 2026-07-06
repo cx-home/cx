@@ -456,6 +456,14 @@ check-no-stub-impl:
 check-xap-dist-absences:
 	@python3 scripts/check_xap_dist_absences.py
 
+# Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
+# sign + alias a package directory into registry/store, then re-verify.
+#   CX_PKG_DIR=packages/nmea0183 CX_PKG_NAME=nmea0183 CX_PKG_VERSION=0.1.0 \
+#     make registry-publish
+.PHONY: registry-publish
+registry-publish: build-vcx-dev
+	@vcx/target/cx --allow-all registry/publish.cx
+
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
 TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 8)
