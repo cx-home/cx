@@ -689,6 +689,25 @@ test-vcx-columnar: build-vcx-dev
 	$(MAKE) -C vcx arrow-shim
 	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/code/store_columnar_test.v
 
+# ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
+# The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3);
+# it is NOT in the default `make test` gate so that gate stays green without
+# sqlite headers. This DEDICATED target runs the gated in-module suite — the
+# round-trip/dedup/integrity tests plus the #220 concurrent-writer stress
+# (32-wide burst through the daemon dispatch path → no crash, cold reopen
+# intact) — with the flag. On macOS the system libsqlite3 ships no headers, so
+# they come from Homebrew sqlite.
+ifeq ($(UNAME_S),Darwin)
+  SQLITE_CFLAGS := -I/opt/homebrew/opt/sqlite/include
+  SQLITE_LDFLAGS := -L/opt/homebrew/opt/sqlite/lib
+else
+  SQLITE_CFLAGS :=
+  SQLITE_LDFLAGS :=
+endif
+.PHONY: test-vcx-sqlite
+test-vcx-sqlite: build-vcx-dev
+	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/code/store_sqlite_test.v vcx/code/store_concurrent_writer_test.v
+
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
 # fix was to symlink `lang/v/cx → ../../vcx/cx` and `lang/v/code →
