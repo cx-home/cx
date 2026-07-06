@@ -464,6 +464,13 @@ check-xap-dist-absences:
 registry-publish: build-vcx-dev
 	@vcx/target/cx --allow-all registry/publish.cx
 
+# Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
+# behind the CSRP daemon on loopback. Consumers open
+# cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
+.PHONY: registry-serve
+registry-serve: build-vcx-dev
+	@vcx/target/cx store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
+
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
 TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 8)
