@@ -13,6 +13,108 @@ version, library version).
 
 ## [Unreleased]
 
+The platform release in progress on `release/0.13.0`: the cx store grows a
+content-addressed engine and a single-node production service tier, XAP gains
+the full feature-distribution pipeline, build-gated database access to
+external engines lands, and a deep reliability campaign hardens the whole
+serve plane. One breaking change (store scheme cutover, under **Changed**).
+
+### Added — cx store: content-addressed engine
+
+- **Content-addressed multimodel store engine** (Phase 1; #75 #80–#89) — a
+  universal subtree object model across substrates (mem / file / sqlite / s3)
+  plus a document model, on one canonical URI surface (#129).
+- **Incremental cxpack persistence** — segment packs, append-only manifest,
+  compaction; xor8 membership filter; inline-node object format; object-graph
+  introspection (object count + dedup ratio) on `/metrics` (#129).
+- **Pluggable storage seams** — the storage-backend seam and the object-level
+  `ObjectBackend` seam (#76); a columnar Parquet/Arrow document backend.
+- **Networked backends + CSRP** — s3 / http / ftp / sftp substrates and the
+  `cx-store://` remote protocol (#78 #90 #91 #100 #106); remote `store:query`
+  pushes filters to the server instead of returning silently empty (#119).
+- **Encryption-at-rest** on the pack, object-per-key, sqlite, and s3
+  substrates — AEAD envelopes, KMS seam, fail-closed in both mode
+  directions (#114 #229).
+- **Two-tier identity** — Tier-1 lock-and-name + Tier-2 code identity
+  (`put-def` / `get-def`) (#79 #82), with strict-canonical
+  anchor/alias/merge expansion per canonical.md.
+- **Directory tree ⇄ store ingest/sync** — dir-sync recipe (`.cx` code +
+  `.cxd` data), continuous filesystem watch on real inotify/FSEvents, CX code
+  storage (#128); `[$store:modify-doc]` completed: nested-target select,
+  child remove, CXPath step predicates, and the `[using FN]` computed
+  per-node replacement action (#134 #141).
+
+### Added — cx store: production service tier (#105)
+
+- **`cx store-serve`** — a multi-threaded CSRP daemon: static / JWT / DID /
+  OIDC authN, RBAC + store-per-tenant isolation, Prometheus `/metrics` +
+  OTel traces + structured logs, sd_notify health probe, systemd/Docker
+  deploy artifacts.
+- **gRPC interface** with normative CSRP parity — full op surface
+  (iter/query/modify), concurrent multiplexing, and the `cx-store+grpc://`
+  client transport; HTTP/2 hardening (CONTINUATION cap, RFC error codes,
+  strict proto3 decoder) (#222 #223 #224).
+- **Wire & lifecycle** — CSRP binary wire (cxbin bodies + length-prefixed
+  frame stream) on client and server (#182 #196); HTTP/1.1 keep-alive and a
+  client connection pool (#234); graceful drain with readiness-probe grace
+  (#233); capability discovery at open.
+- **Admin plane** — status / gc wire ops and tenant-filtered mounts
+  enumeration, with gRPC parity and CX bindings (#248); **runtime config
+  reload** — validate-then-swap engine, SIGHUP + config-reload op, live TLS
+  cert rotation (#251).
+- **Client libraries** — thin Python / Go / Rust clients driven through the
+  one V protocol core, with query/iter and typed errors (#197).
+- **Phase-2 hardening waves (W0–W15)** — data-loss closed (op-lock
+  serialization, persist-error propagation, S3 auth honesty, wire CAS:
+  #213 #217 #218 #220 #221); lifecycle (cxobj open, TLS bind, env-secrets,
+  watchdog, bounded drain, framing: #180 #181 #183 #186 #187 #199 #211
+  #219); silent-partial guards (#185 #192 #209); observability (child
+  spans, context propagation, byte counters, async OTel export: #200 #202
+  #207); fail-closed residuals (unknown-store CXER1710, subtree+/compression:
+  #203 #204 #205); CSRP wire-conformance parity matrix (#208).
+- **Store management console contract** locked in the approved spec, plus the
+  `cx store-token` bootstrap helper (#249). The console itself ships from its
+  own repo.
+
+### Added — XAP feature distribution
+
+- **The distribution staircase (M0–M6)** — the composition engine
+  (`[$xap:compose]` / `compose-report` / `resolve` / `grammar-hash` as pure
+  builtins, integrated compose→runtime); packaging (`pkg-tree` / `pkg-seal` /
+  `pkg-sign` / `pkg-publish` / `pkg-fetch` / `pkg-verify` / `pkg-install` /
+  `pkg-requires-closure` / `pkg-catalog`); entitlement VCs (`license-issue` /
+  `license-verify`); git-repo-as-registry; the market dogfooded as a XAP.
+- **The deployment host** — `[$xap:host]`: a XAP server is data plus
+  adapters, zero bespoke server code; `pkg:` module loading + the feature
+  runtime contract; host extend seams (adapter-first routing, prefix routes,
+  host-push, apply-refusal).
+- Specs: the grammar-composition algebra and the feature distribution &
+  market spec (02-working); the market-as-a-product and payment rails remain
+  specified, not implemented.
+
+### Added — database access: external engines (build-gated)
+
+- Engine-neutral SQL/K-V surface — `[$sql-open]` / `[$sql-exec]` /
+  `[$sql-query]` / `[$sql-close]` and `[$redis-open]` / `[$redis-cmd]` /
+  `[$redis-close]` — with per-engine builds: `-d cx_db_sqlite`, `-d cx_db_pg`,
+  `-d cx_db_mysql`, `-d cx_db_redis`; Parquet / Arrow-IPC file I/O behind
+  `-d cx_arrow_files` (also `cx table dump/load --to=parquet|arrow`). The
+  default build links none of them and says so (CXER1100); opens are
+  capability-guarded.
+
+### Added — language & stdlib
+
+- `[?str]` interpolation holes accept full expressions (#66).
+- Raw triple-quoted strings `r'''…'''`; `strings:replace-exactly` +
+  `io:edit-file` surgical text edits (#93).
+- `cx-x/term` — raw-mode terminal input + `term:select` multi-source
+  wait (#30).
+- One concurrency-degree spelling: `[par N]` / `[par max]` (#95); `[par]`
+  redesigned to own its width — bounded pools, real for-par, HTTP fail-loud
+  cap (#94).
+- CX-L006 lint — flags pure single-binding `[?let]` staircases
+  (detect-only) (#65).
+
 ### Reliability — concurrency & memory
 
 - **The `#57/#58/#63/#145` GC sweep-while-live UAF lineage is root-caused and
@@ -27,6 +129,83 @@ version, library version).
   siblings" semantics (§10.4.6). The interim synchronous run-to-completion
   default (kept while the UAF above was open) is retired;
   `CX_WORKER_THREADS=0` remains as a diagnostics-only escape hatch (#58).
+- **The per-`[?let]`/`[?for]` full-environment clone is gone (#272)** — the
+  evaluator no longer clones the whole environment per binding/iteration
+  (loaded p99 latency 692 → 61 ms in the field case that surfaced it);
+  the pacer livelock at the soft heap limit is fixed with it.
+- **vgc adaptive pacer (#71)** — transient allocations are reclaimed by
+  construction; the per-loop collect crutches are retired; a distinct
+  thread-return-box UAF fixed.
+- **Terminal heap exhaustion dies loudly (#277)** — an OOM panic with
+  forensics (arena census, allocation site) instead of a SIGSEGV in the next
+  array growth; `VGC_MAX_ARENAS` can lower the ceiling for testing.
+- **Store `file://` persist and open are fully streamed (#283)** — the
+  monolithic whole-index encode/decode buffers (a heap-staircase death
+  trigger past 64 MB) are gone from both the snapshot and replay paths.
+- Churn-paced reactor GC bounds `http:serve` RSS (#131); signal-suspend STW
+  on macOS makes multi-reactor `http:serve` sound on macOS + Linux (#145).
+- Deterministic worker cancellation — blocking channel send/receive are real
+  §10.5.4 cancellation points.
+
+### Reliability — serve plane & networking
+
+- **Handlers run off the reactors** — reactors do I/O only; a bounded
+  executor pool runs handlers and overflow answers 503, so a slow handler can
+  no longer freeze the HTTP plane (#275).
+- **SIGPIPE immunity + backpressure-correct fd writes** on the serve path —
+  a peer RST no longer kills the process (#273 #276).
+- The whole-request HTTP client timeout is enforced — CXER4534 (#275).
+- Datagram sockets honor read deadlines — `recv` / `recv-from` raise
+  CXER4507 instead of blocking forever (§3.7).
+- SSE subscribe ack is atomic with topic registration — no missed-push
+  window (#28 #124).
+
+### Changed
+
+- **Store scheme cutover (breaking)** — the non-canonical `cxpack://` /
+  `cxobj://` scheme tokens are retired: bare `file://` is the universal
+  subtree model, `document+<substrate>://` the document model, and
+  `?encoding=pack|object-per-key` selects the framing. Stores reopen
+  self-describing from the on-disk marker; a URI contradicting the on-disk
+  form is a hard CXER1120 (#129).
+- `CX_HTTP_WORKERS` → `CX_HTTP_N` (deprecated alias kept) (#97).
+- Honest labels: `[?bulkhead]` is marked experimental; `[?timeout]` is
+  documented as logical-clock (#96).
+- xap.md state model resolved to snapshot-anchored event-sourcing
+  (hybrid) (#35).
+- Specs graduated to 03-approved: store.md (the faceted #129 surface), the
+  gRPC interface, Tier-2 code identity, the store-management console; the
+  Phase-2 wire canonical, CXER1709/1710, and capabilities scope
+  reconciled (#182 #203 #204 #205 #214 #215 #216).
+
+### Fixed
+
+- `cx fmt` no longer destroys program files on save (#118).
+- Element-construction attribute values that cannot round-trip fail loud
+  (CXER0100) instead of silently dropping; a bare URL attribute value in a
+  program fails with a quote-the-value hint.
+- Program-shaped resources fail loud on program-parse failure — no silent
+  data echo.
+- Verifiable credentials survive serialization round-trips — offline VC
+  portability (verify + revocation checks) was broken.
+- Store fail-open paths closed: CX-map open opts (e.g. `encrypt-key-id`) are
+  honored instead of silently dropped, and the deployment host surfaces
+  apply errors (#259); remote alias ops refuse with CXER1709 (#271).
+- `cxstore file://` append-only index kills the O(n²) persist; a `[par]`
+  shared store handle raises a clean error (#74).
+- Nested user-def calls apply in argument position (#59); infix `=` in
+  `[where]` fails loud — no silent data-fallback (#18).
+- Playground examples run clean, enforced by a drift gate (#92).
+- Deployment-host fixes surfaced by the first field consumer, including
+  `pkg-install` enable merging into an existing same-name deployment row.
+
+### Tooling & internal
+
+- The vcx test gate builds with `-usecache` (~1.5× faster, 2.4× less
+  compile), with deterministic `$embed_file` resolution and embedded-asset
+  cache invalidation (#151).
+- Release automation publishes the public binary release with a flat,
+  stable-named asset; install docs point at the current repo home.
 
 ## [0.12.0] — 2026-06-22
 
@@ -491,5 +670,5 @@ wire formats, spec-normative grammar).
 - BREAKING: leading-zero integers are now strings (`02134` is a string, not int 2134).
 - BREAKING: binding `loads()` / `dumps()` preserve integer/float distinction via CXDB v1 (was JSON-coerced in v0.5).
 
-[Unreleased]: https://github.com/cx-home/cx/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/cx-home/cx/compare/v0.12.0...HEAD
 [0.6.0]: https://github.com/cx-home/cx/releases/tag/v0.6.0
