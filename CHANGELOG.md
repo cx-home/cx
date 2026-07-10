@@ -180,6 +180,10 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 
 ### Fixed
 
+- Deep NON-tail eval recursion never SIGSEGVs: a per-thread native-stack
+  watermark raises the catchable `CXER0272 E_STACK_EXHAUSTED` with ~1 MiB of
+  headroom left (worker threads guarded with their own bounds; tail calls
+  stay trampolined), and the per-level C-stack footprint dropped ~16% (#319).
 - `cx fmt` no longer destroys program files on save (#118).
 - Element-construction attribute values that cannot round-trip fail loud
   (CXER0100) instead of silently dropping; a bare URL attribute value in a
