@@ -184,6 +184,17 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
   watermark raises the catchable `CXER0272 E_STACK_EXHAUSTED` with ~1 MiB of
   headroom left (worker threads guarded with their own bounds; tail calls
   stay trampolined), and the per-level C-stack footprint dropped ~16% (#319).
+- The V fork's `return f()!` lowering forwards the callee's result directly
+  when the result types match — the three dead `_result_T` stack temporaries
+  plus payload-sized compound literal per call site are gone compiler-wide,
+  making PR #325's hand-rewritten bare-return idiom unnecessary (#327); the
+  eval dispatch/tail resolvers look up `env.closures` through the fork's new
+  by-ref `unsafe { m.value_ptr(k) }` map get instead of copying the
+  ~450-500 B Closure into an option temp per lookup — tail loop ~1.2% /
+  dispatch ~0.7% faster, 15% less at the lookup seam itself (#342).
+- `v test` works again inside the fork's `bench/parallel-alloc/` — the
+  standalone RSS drivers moved into per-program subdirs so their module-main
+  symbols no longer collide with the dir's test builds (#337).
 - `cx fmt` no longer destroys program files on save (#118).
 - Element-construction attribute values that cannot round-trip fail loud
   (CXER0100) instead of silently dropping; a bare URL attribute value in a

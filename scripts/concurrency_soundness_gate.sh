@@ -199,7 +199,7 @@ done
 # the pacer tree; 1/6 frequency-matched on the pre-pacer tree).
 echo "[gate] building vthread-ret checksum stressor (plain ${GCMODE})"
 RETBIN=$(mktemp -d)/hot_ret
-VNOBUGREPORT=1 $ROOT/third_party/v/v ${=GCMODE} -o $RETBIN $ROOT/third_party/v/bench/parallel-alloc/hot_loop_rss.v >/dev/null 2>&1 \
+VNOBUGREPORT=1 $ROOT/third_party/v/v ${=GCMODE} -o $RETBIN $ROOT/third_party/v/bench/parallel-alloc/hot_loop_rss/hot_loop_rss.v >/dev/null 2>&1 \
   || { echo "[gate] ABORT: vthread-ret stressor build failed"; exit 2; }
 RET_EXPECT=298074064 # acc for 4 workers x 2,000,000 iterations (deterministic)
 ret_corrupt=0
