@@ -627,14 +627,16 @@ test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cxstore
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
-# log, then print a digest of just the FAIL lines + per-file counts. Uses
-# `bash -o pipefail` so the recipe exits with the real `test-vcx` status
-# (a plain `... | grep` would mask failures behind grep's exit code).
+# log, then print a digest of just the FAIL lines + per-file counts + the
+# skipped-with-reason lanes (#318 — absent prerequisites, counted separately,
+# never failures). Uses `bash -o pipefail` so the recipe exits with the real
+# `test-vcx` status (a plain `... | grep` would mask failures behind grep's
+# exit code).
 .PHONY: test-vcx-summary
 test-vcx-summary:
 	@bash -o pipefail -c '$(MAKE) test-vcx 2>&1 | tee /tmp/cx-test-vcx.log'; st=$$?; \
-	echo "──── failures / counts ────"; \
-	grep -iE 'FAIL|[0-9]+ passed, [0-9]+ failed|[0-9]+ errored' /tmp/cx-test-vcx.log || true; \
+	echo "──── failures / skips / counts ────"; \
+	grep -iE '^FAIL|[0-9]+ passed, [0-9]+ failed|[0-9]+ errored|^SKIP |lane\(s\) SKIPPED' /tmp/cx-test-vcx.log || true; \
 	echo "full log: /tmp/cx-test-vcx.log"; exit $$st
 
 # ── V-side unit + fixture-runner suite ────────────────────────────────────
@@ -662,9 +664,21 @@ CX_GC ?= -gc e
 # (third_party/v/vlib/v/pref/default.v), so different flags get distinct buckets.
 # Overridable to A/B: `make CX_CACHE= test-vcx-suite` disables it.
 CX_CACHE ?= -usecache
+# #318 — a lane whose environment prerequisite is absent (e.g. vcx/target/cx
+# not built in a bare out-of-tree checkout) SELF-SKIPS with a named reason via
+# vcx/testenv (exit 0, never failing-as-regression) and records the reason in
+# this ledger. Plain `v test` suppresses passing-lane output, so the recipe
+# truncates the ledger before the run and prints the skipped-with-reason
+# digest LOUDLY after it — skips are counted separately, never silently.
+CX_SKIP_LOG := vcx/target/test-skips.log
 .PHONY: test-vcx-suite
 test-vcx-suite: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/tests/
+	@rm -f $(CX_SKIP_LOG)
+	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/tests/; st=$$?; \
+	if [ -s $(CX_SKIP_LOG) ]; then \
+	  echo "──── $$(wc -l < $(CX_SKIP_LOG) | tr -d ' ') lane(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
+	  cat $(CX_SKIP_LOG); \
+	fi; exit $$st
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
 # they exercise unexported internals (e.g. store_cxpack_flush / store_put_canonical

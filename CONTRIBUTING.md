@@ -87,6 +87,29 @@ because they are thin wrappers around `libcx`.
 If you change the grammar, the conversion logic, or anything format-
 adjacent, `make conform` must pass before you push.
 
+### Bare / out-of-tree checkouts and lane skips
+
+Many `vcx/tests/` lanes (the http/net/xap/store service lanes) exec the
+built CLI at `vcx/target/cx`. The one setup step a fresh checkout needs
+before invoking `v test` directly is:
+
+```sh
+make build-vcx-dev
+```
+
+`make test-vcx-suite` performs that build for you. A lane whose
+environment prerequisite is absent — the unbuilt binary, an opt-in
+external service such as `CX_TEST_S3_ENDPOINT`/`CX_TEST_FTP_URL`/
+`CX_TEST_SFTP_URL`, or a missing host tool like `openssl` — **self-skips
+with a named reason instead of failing**, so a bare checkout never reads
+as a wall of phantom regressions. Whole-lane skips are recorded in
+`vcx/target/test-skips.log` and `make test-vcx-suite` prints the
+skipped-with-reason digest after the run (they are counted separately,
+never as failures). Plain `v test` suppresses the output of passing
+lanes; use `v -stats test …` to see `SKIP` lines inline. The binary
+path is resolved relative to the source tree, so lanes behave the same
+from any invocation directory.
+
 ---
 
 ## Coding rules
