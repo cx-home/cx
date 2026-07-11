@@ -351,7 +351,17 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences guide-check directive-docs-check verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences guide-check directive-docs-check verify-playground-examples
+
+# ── -prod strictness gate (#338) — shipped artifacts build with -prod
+# (`build-vcx`), which enforces strict map-index checks (`or {}` required on
+# sum-type / pointer-carrying map values) that the dev builds tolerate. This
+# runs the V checker (no codegen, ~2s) over vcx/code/ with the `lib` -prod
+# flags, wired into TEST_TARGETS so a -prod-only break surfaces on every
+# `make test` (the release gate) instead of sitting dark until a cut.
+.PHONY: check-prod-build
+check-prod-build:
+	@$(MAKE) -s -C vcx check-prod
 
 # ── NO-LEGACY-TRY gate (SAP C3c) — the retired [?try]/[catch]/[on-error]
 # surfaces must not reappear in conformance/ + docs-src/ + examples/ + lang/.
