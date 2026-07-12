@@ -277,34 +277,34 @@
                     [resource [get "/ping"]
                       [response status=200 [body "pong"]]]]]
           [= $client [?http-client target="cx-test://ping"]]
-      [?let [= $reply [$get $client "/ping"]]
-        ([?stop $svc], $reply)]]]
+      [= $reply [$get $client "/ping"]]
+      ([?stop $svc], $reply)]]
 
   [# ─── §16. Concurrency (§10.4) ─── #]
 
   [section title='channel + worker pattern'
     [?let [= $work [?channel name=work buffer=16]]
-      [?let [= $producer [?worker name="producer"
+      [= $producer [?worker name="producer"
                            [?for [in $i [$range 1 10]] [yield [?send $i to=$work]]]]]
-            [= $consumer [?worker name="consumer"
+          [= $consumer [?worker name="consumer"
                            [?for [in $i [$range 1 10]]
-                             [yield [processed [?receive from=$work]]]]]]
-        [joined produced=[$count [?wait-for worker=$producer]]
-                consumed=[$count [?wait-for worker=$consumer]]]]]]
+                           [yield [processed [?receive from=$work]]]]]]
+      [joined produced=[$count [?wait-for worker=$producer]]
+              consumed=[$count [?wait-for worker=$consumer]]]]]
 
   [section title='select — first ready case wins'
     [?let [= $inbox [?channel name=inbox buffer=4]]
-      [?let [= $sent [?send "hi" to=$inbox]]
-        [?select
-          [case [from $inbox $msg] [got $msg]]
-          [case [timeout 50ms] [no-message]]]]]]
+      [= $sent [?send "hi" to=$inbox]]
+      [?select
+        [case [from $inbox $msg] [got $msg]]
+        [case [timeout 50ms] [no-message]]]]]
 
   [# ─── §17. Async + await (§10.5) ─── #]
 
   [section title='async + await-all'
     [?let [= $f1 [?async [fetched src='a']]]
-      [?let [= $f2 [?async [fetched src='b']]]
-        [?let [= $f3 [?async [fetched src='c']]]
-          [gathered [?await-all ($f1, $f2, $f3)]]]]]]
+      [= $f2 [?async [fetched src='b']]]
+      [= $f3 [?async [fetched src='c']]]
+      [gathered [?await-all ($f1, $f2, $f3)]]]]
 
 ]
