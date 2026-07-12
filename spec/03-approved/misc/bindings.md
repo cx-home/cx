@@ -39,7 +39,7 @@ Two audiences:
           ▼                ▼                  ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  Layer 1 — canonical (identical across all bindings)         │
-│         doc.select_all("//user[@active=true]")               │
+│         doc.select_all("//user[= $_@active true]")           │
 └──────────────────────────┬───────────────────────────────────┘
                            │ C ABI
                            ▼
@@ -110,22 +110,22 @@ cross-binding.
 
 ```python
 # Python — Layer 1
-emails = doc.select_all("//user[@active=true]/@email")
+emails = doc.select_all("//user[= $_@active true]/@email")
 ```
 
 ```go
 // Go — Layer 1
-emails, _ := doc.SelectAll("//user[@active=true]/@email")
+emails, _ := doc.SelectAll("//user[= $_@active true]/@email")
 ```
 
 ```rust
 // Rust — Layer 1
-let emails = doc.select_all("//user[@active=true]/@email")?;
+let emails = doc.select_all("//user[= $_@active true]/@email")?;
 ```
 
 ```v
 // V — Layer 1
-emails := doc.select_all('//user[@active=true]/@email')!
+emails := doc.select_all('//user[= $_@active true]/@email')!
 ```
 
 The bytes returned across the C ABI are identical across bindings.
@@ -152,8 +152,8 @@ of the eleven actions of
 | `[replace V]` | `cx.Replace(value)` |
 
 ```python
-new_doc = doc.modify("//user[@id=1]/@name", cx.Set("Alice"))
-new_doc = doc.modify("//user[@banned=true]", cx.Delete())
+new_doc = doc.modify("//user[= $_@id 1]/@name", cx.Set("Alice"))
+new_doc = doc.modify("//user[= $_@banned true]", cx.Delete())
 new_doc = doc.modify("//price", cx.Using(lambda p: float(p) * 1.1))
 ```
 
@@ -202,12 +202,12 @@ doc = Doc.parse(open("users.cx", "rb").read())
 
 # List comprehension over Nodes — desugars to select_all
 active_users = [u for u in doc if u.tag == "user" and u.attr("active") == True]
-# ≡ doc.select_all("//user[@active=true]")
+# ≡ doc.select_all("//user[= $_@active true]")
 
 # Subscript with CXPath string
 new_doc = doc.copy()
-new_doc["//user[@id=1]/@name"] = "Alice"
-# ≡ doc = doc.modify("//user[@id=1]/@name", cx.Set("Alice"))
+new_doc["//user[= $_@id 1]/@name"] = "Alice"
+# ≡ doc = doc.modify("//user[= $_@id 1]/@name", cx.Set("Alice"))
 
 # Generator over a relative path
 for email in doc / "//user/@email":
@@ -228,7 +228,7 @@ doc, _ := cxlib.Parse(data)
 
 // Builder chain compiles to CXPath
 emails := doc.Filter("user").Where("@active=true").Get("/@email")
-// ≡ doc.SelectAll("//user[@active=true]/@email")
+// ≡ doc.SelectAll("//user[= $_@active true]/@email")
 
 // Typed projection
 type User struct {
@@ -236,7 +236,7 @@ type User struct {
     Email string `cx:"@email"`
 }
 users := Project[User](doc.Filter("user").Where("@active=true"))
-// ≡ doc.SelectAll("//user[@active=true]") + struct mapping
+// ≡ doc.SelectAll("//user[= $_@active true]") + struct mapping
 ```
 
 ### 3.3 Rust — `cxlib::idioms`
@@ -252,13 +252,13 @@ let emails: Vec<_> = doc.iter_users()
     .filter(|u| u.active())
     .map(|u| u.email())
     .collect();
-// ≡ doc.select_all("//user[@active=true]/@email")?
+// ≡ doc.select_all("//user[= $_@active true]/@email")?
 
 // Typed via #[derive(CxData)]
 #[derive(CxData)]
 struct User { id: u32, email: String, #[cx(attr)] active: bool }
 
-let users: Vec<User> = doc.collect::<User>("//user[@active=true]")?;
+let users: Vec<User> = doc.collect::<User>("//user[= $_@active true]")?;
 ```
 
 ### 3.4 V — Layer 2 is Layer 1
@@ -268,10 +268,10 @@ idiomatic V. No separate Layer 2 wrapper. Layer 1 IS the V surface.
 
 ```v
 doc := cx.parse(data)!
-for user in doc.select_all('//user[@active=true]') {
+for user in doc.select_all('//user[= $_@active true]') {
     println(user.attr('email') or { '<no email>' })
 }
-new_doc := doc.modify('//user[@id=1]/@name', cx.Set('Alice'))!
+new_doc := doc.modify('//user[= $_@id 1]/@name', cx.Set('Alice'))!
 ```
 
 ---
@@ -305,7 +305,7 @@ doc.select_all("//user/@email")
 --- in_cx
 [users [user @id=1 @name="A"]]
 --- call
-doc.modify("//user[@id=1]/@name", cx.Set("Alice")).bytes()
+doc.modify("//user[= $_@id 1]/@name", cx.Set("Alice")).bytes()
 --- out_text
 [users [user @id=1 @name="Alice"]]
 ```
