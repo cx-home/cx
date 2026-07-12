@@ -162,6 +162,23 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 
 ### Changed
 
+- **CXPath predicate sublanguage retired (breaking; #110)** — `~` means
+  "approximately" everywhere and every construct has ONE spelling: the
+  XPath-parity infix predicates (`[@a=v]`, `!=`/`<`/`<=`/`>`/`>=`), paren
+  function calls (`count(*)`, `last()`, `position()`, `name(args)` and
+  `$f(x)` anywhere), infix `and`/`or`, `instance of`/`cast as`, infix
+  `union`/`intersect`/`except`, and `||` are parse errors with prefix
+  rewrite hints. Predicates are homoiconic CX code with FUSED brackets
+  (`//user[= $_@id 991]`, `//u[$flagged $_]`, `//u[?match $_ …]`); the
+  operator-free notation atoms (`[N]`, `[@name]`, `[@!name]`, `[name]`)
+  stay. Set operators became reserved prefix heads valid in every
+  expression position (`[union a b]` / `[intersect a b]` / `[except a b]`).
+  Missing-attribute reads yield absence per code.md §6.2 O4 (never crash;
+  comparisons with absence are false; reads through `[err]` propagate the
+  err). Migration: `cx fmt --migrate-predicates -w FILE...` (fail-closed,
+  island-aware for `.cxd`/`.md`); the full repo was swept. The ft query
+  model moved to a canonical `[query …]` element with `[$ft:parse-query]`
+  as the only string-format consumer (#111).
 - **Store scheme cutover (breaking)** — the non-canonical `cxpack://` /
   `cxobj://` scheme tokens are retired: bare `file://` is the universal
   subtree model, `document+<substrate>://` the document model, and
