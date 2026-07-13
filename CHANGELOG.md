@@ -118,6 +118,12 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
   Double Metaphone, numeric, temporal), ft-delegated normalizers, per-field
   weights, caller-supplied decision cuts (never baked in), and the
   known-verdicts resolutions tier for review-resume. Errors CXER4900/4901.
+- **`cx-x/adjudicate`** (#376) — out-of-band agent adjudicator for the
+  `similar` review band: consumes review-band `[pair …]` elements and
+  produces the `[resolution verdict=… decided-by='agent:<model>' …]` records
+  the known-verdicts tier consumes, composing `cx-x/llm:complete` under a
+  scoped net grant. Runs *between* runs — each run stays deterministic;
+  unparseable model replies default to `:review` (never silent promotion).
 - `[?str]` interpolation holes accept full expressions (#66).
 - Raw triple-quoted strings `r'''…'''`; `strings:replace-exactly` +
   `io:edit-file` surgical text edits (#93).
