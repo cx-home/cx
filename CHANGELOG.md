@@ -225,6 +225,15 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 - CXPath predicates no longer keep elements whose tested attribute is
   ABSENT: `//pair[$_@score]` read the absence marker as a truthy named
   element instead of the empty sequence (#384).
+- One EBV authority for every boolean position (#383, owner ruling: the
+  cxdm.md EBV table wins wholesale over code.md's old not() prose row). A
+  present named element is truthy by presence — `[?if [flag]]` and the
+  `[?if //flag]` existence idiom hold for empty marker elements — and a
+  singleton sequence wrapper recurses into its item, so `[?if (0)]` is
+  falsy like `[?if 0]`. Bare `[not x]` and `[$not x]` (which disagreed on
+  empty named elements) now share one EBV fn and agree by construction;
+  containers keep the empty-is-falsy convention (`[]` / `{}`); truthiness
+  now also reads through `[?meta]` in `$`-head/guard positions (D5).
 - A space-separated atom after a path step no longer folds into a phantom
   QName attribute name (`[= $e@kind :active]` misread as attribute
   `kind:active` → CXER0100): PROGRAM-mode QName folding now requires byte
