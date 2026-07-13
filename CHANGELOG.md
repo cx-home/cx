@@ -211,6 +211,13 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 
 ### Fixed
 
+- A space-separated atom after a path step no longer folds into a phantom
+  QName attribute name (`[= $e@kind :active]` misread as attribute
+  `kind:active` → CXER0100): PROGRAM-mode QName folding now requires byte
+  adjacency, matching DATA mode's in-name scan (grammar [131b], lexicon
+  [L11]). Attribute reads and `@attr=$k` pattern captures yield the
+  attribute's **typed** value per cxdm.md §2.4 — `kind=:active` reads back
+  `:active`, never the string `'active'`.
 - Deep NON-tail eval recursion never SIGSEGVs: a per-thread native-stack
   watermark raises the catchable `CXER0272 E_STACK_EXHAUSTED` with ~1 MiB of
   headroom left (worker threads guarded with their own bounds; tail calls
