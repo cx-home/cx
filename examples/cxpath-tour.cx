@@ -26,16 +26,16 @@
   [# ─── §2. Predicates — attribute equality, comparison, position ─── #]
 
   [section title='attribute equality'
-    [example total=[$count //user[@active=true]]]]
+    [example total=[$count //user[= $_@active true]]]]
 
   [section title='attribute comparison'
-    [example total=[$count //user[@age>=21]]]]
+    [example total=[$count //user[>= $_@age 21]]]]
 
   [section title='string equality'
-    [example total=[$count //user[@name='Alice']]]]
+    [example total=[$count //user[= $_@name 'Alice']]]]
 
   [section title='stacked predicates — implicit AND'
-    [example total=[$count //user[@active=true][@age>=21]]]]
+    [example total=[$count //user[= $_@active true][>= $_@age 21]]]]
 
   [section title='positional predicate'
     [example [items //user[1]]]]
@@ -91,28 +91,28 @@
      as predicate combinators. #]
 
   [section title='intersection — young AND active'
-    [example total=[$count //user[$_@age < 25 and $_@active = true]]]]
+    [example total=[$count //user[and [< $_@age 25] [= $_@active true]]]]]
 
   [section title='union — active OR admin'
-    [example total=[$count //user[$_@active = true or $_@admin = true]]]]
+    [example total=[$count //user[or [= $_@active true] [= $_@admin true]]]]]
 
   [section title='difference — all except banned'
     [# not($_@banned = true) is spec-admissible but the XPath-call arg
        parser currently rejects comparisons inside call parens (triage
        F11); bare-truthy not($_@banned) and the = false spelling both
        work. #]
-    [example total=[$count //user[$_@banned = false]]]]
+    [example total=[$count //user[= $_@banned false]]]]
 
   [# ─── §7. Paths drive [?for] generators ─── #]
 
   [section title='paths inside [?for]'
-    [?for [in $u //user[@active=true]]
+    [?for [in $u //user[= $_@active true]]
       [yield [active-user name=$u/@name email=$u/@email]]]]
 
   [# ─── §8. Paths inside [?if] cond — truthy iff non-empty ─── #]
 
   [section title='paths inside [?if]'
-    [?if //user[@admin=true]
+    [?if //user[= $_@admin true]
       [then [admin-banner "Admins present."]]
       [else [admin-banner "No admins."]]]]
 

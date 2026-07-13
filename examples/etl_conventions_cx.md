@@ -488,7 +488,7 @@ class ConfigLoader:
             raise ConfigError(f"Failed to load {system}/{environment}: {e}") from e
 
     def _select_environment(self, system_root, environment: str):
-        env = system_root.select(f"environments/environment[@name={environment}]")
+        env = system_root.select(f"environments/environment[= $_@name {environment}]")
         if env is None:
             raise ConfigError(f"Environment '{environment}' not defined")
         return env
@@ -598,8 +598,8 @@ CXPath enables filtered access — load only fields relevant to the active schem
 
 ```python
 active = doc.select_all(
-    f"//field[@source_system={system} and "
-    f"(not(@schema_version) or @schema_version={schema_version})]"
+    f"//field[and [= $_@source_system {system}] "
+    f"[or [not [$exists $_@schema_version]] [= $_@schema_version {schema_version}]]]"
 )
 ```
 
@@ -937,11 +937,11 @@ class CustomerTransformer(BaseTransformer):
 
         if schema_version:
             self.fields = doc.select_all(
-                f"//field[@source_system={source_system} and "
-                f"(not(@schema_version) or @schema_version={schema_version})]"
+                f"//field[and [= $_@source_system {source_system}] "
+                f"[or [not [$exists $_@schema_version]] [= $_@schema_version {schema_version}]]]"
             )
         else:
-            self.fields = doc.select_all(f"//field[@source_system={source_system}]")
+            self.fields = doc.select_all(f"//field[= $_@source_system {source_system}]")
 
         self.merges      = doc.find_all("merge")
         self.splits      = doc.find_all("split")
@@ -1630,7 +1630,7 @@ This section captures decisions made by this spec where reasonable alternatives 
 | Comments | Yes | Yes |
 | Indentation sensitivity | No | No |
 | Programmatic access | Manual key lookup | Document API: `at()`, `attr()`, `select_all()` |
-| Query by attribute | No | CXPath: `//environment[@name=prod]` |
+| Query by attribute | No | CXPath: `//environment[= $_@name prod]` |
 | Hierarchical structure | Flat with dotted keys | Native nesting |
 | Standard library | `tomllib` (Python 3.11+) | Requires cxlib |
 | Ecosystem maturity | Established | Newer — adoption risk on some projects |
