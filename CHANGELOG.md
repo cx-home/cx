@@ -234,6 +234,14 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
   empty named elements) now share one EBV fn and agree by construction;
   containers keep the empty-is-falsy convention (`[]` / `{}`); truthiness
   now also reads through `[?meta]` in `$`-head/guard positions (D5).
+- An Iterator in a boolean position raises a loud, catchable `CXER0100`
+  instead of reading silently falsy (#388, owner ruling): EBV never forces
+  a lazy stream — network-backed source kinds would block or perform I/O
+  inside a condition — so `[?if [$range 1 *] …]` now errors with guidance
+  to force explicitly (`[take]` / `[$count]` / a `[?for]` bound) and
+  `[?fallback]` catches it. Finite `[$range lo hi]` stays an eager
+  Sequence with ordinary sequence EBV. cxdm.md's EBV table and the
+  code.md `not()` row both state the rule.
 - A space-separated atom after a path step no longer folds into a phantom
   QName attribute name (`[= $e@kind :active]` misread as attribute
   `kind:active` → CXER0100): PROGRAM-mode QName folding now requires byte
