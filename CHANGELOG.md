@@ -217,6 +217,14 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 
 ### Fixed
 
+- Floats obey the numeric truthiness rule everywhere (cxdm.md §6 rule 2 —
+  value ≠ 0): `[?if 0.98 …]` no longer silently takes the else branch. The
+  shared `[?if]` / `[?match]`-guard / `[$not]`/`[$and]`/`[$or]` /
+  filter-predicate EBV site treated every float as falsy (#382). The
+  `not()` truthiness enumeration in code.md now names floats explicitly.
+- CXPath predicates no longer keep elements whose tested attribute is
+  ABSENT: `//pair[$_@score]` read the absence marker as a truthy named
+  element instead of the empty sequence (#384).
 - A space-separated atom after a path step no longer folds into a phantom
   QName attribute name (`[= $e@kind :active]` misread as attribute
   `kind:active` → CXER0100): PROGRAM-mode QName folding now requires byte
