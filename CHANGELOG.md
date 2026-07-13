@@ -104,6 +104,20 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 
 ### Added — language & stdlib
 
+- **Graded similarity: the `~` core operator + `cx-stdlib/similar`** (#108) —
+  `[~ a b]` / `[~ a b $pred]` returns a `[similar score=… band=…]` element
+  (truthy iff `band=:match`), defined once and applied uniformly: cxpath
+  predicates (`//vendor[~ $_@name "x"]`), `[?match]` `when` arms, `[?if]`, and
+  the collection verbs. New core verbs `join` (labeled linkage,
+  `:greedy-best`/`:top-k`/`:all-above`/`:optimal` Hungarian selection),
+  `sort` (ranking, `similarity-to` keys), vocabulary `validate`; `contains`
+  gains sequence membership + graded best-match; `distinct`/`group-by` gain
+  predicate-driven clustering (`:transitive-closure`/`:complete-linkage`/
+  `:singletons` with cohesion). Module ships ten scorers (Jaro-Winkler,
+  Levenshtein, true Damerau-Levenshtein, token-set/sort, Jaccard, cosine,
+  Double Metaphone, numeric, temporal), ft-delegated normalizers, per-field
+  weights, caller-supplied decision cuts (never baked in), and the
+  known-verdicts resolutions tier for review-resume. Errors CXER4900/4901.
 - `[?str]` interpolation holes accept full expressions (#66).
 - Raw triple-quoted strings `r'''…'''`; `strings:replace-exactly` +
   `io:edit-file` surgical text edits (#93).
