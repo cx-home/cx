@@ -241,9 +241,10 @@ verify-readme-blocks: build-vcx
 verify-binding-quickstarts:
 	@tools/verify-binding-quickstarts.sh
 
-# Documentation hygiene — every fenced ```cx block parses.
+# Documentation hygiene — every fenced ```cx block parses. No args =
+# the script's defaults (spec/ docs-src/ docs/ README.md).
 verify-doc-blocks: build-vcx
-	@tools/verify-doc-blocks.sh docs/
+	@tools/verify-doc-blocks.sh
 
 # V2 — upstream V patch tracking. Reports status of the vlang/v
 # issues that block cx v0.7.0. Exit non-zero only
@@ -351,7 +352,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences guide-check directive-docs-check verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences guide-check directive-docs-check verify-doc-blocks verify-playground-examples
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
