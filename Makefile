@@ -330,18 +330,30 @@ bench-compare:
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
 # Pages site, which has no .md files — pointing the check there made the
-# target exit 2 on an empty target list).
+# target exit 2 on an empty target list). Coverage includes EVERY published
+# root doc (the #426 audit found ROADMAP/SECURITY/CONTRIBUTING rotting
+# precisely because only docs-src/ + README were gated).
 verify-doc-links:
 	@tools/verify-doc-links.sh docs-src/
-	@tools/verify-doc-links.sh README.md
+	@tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md \
+	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md
 
-# Pre-tag version-string consistency (defaults to 0.6.0).
+# Pre-tag version-string consistency. VERSION (the repo-root file) is the
+# single source of truth; scripts/check_version_consistency.py verifies every
+# stamped manifest + derived code surface against it. An explicit
+# VERSION=X.Y.Z arg additionally asserts the file holds the version you
+# intend to release (catches "forgot to run scripts/bump_version.sh").
 bump-version-check:
-	@tools/bump-version.sh --check $(or $(VERSION),0.6.0)
+	@if [ -n "$(VERSION)" ] && [ "$(VERSION)" != "$$(cat VERSION)" ]; then \
+	  echo "bump-version-check: VERSION file holds $$(cat VERSION), expected $(VERSION) — run scripts/bump_version.sh $(VERSION)"; \
+	  exit 1; \
+	fi
+	@python3 scripts/check_version_consistency.py
 
 # Full pre-tag check — runs everything in the release process + §0.5.
+# Defaults to the VERSION file (single source of truth).
 release-verify:
-	@tools/release-verify.sh $(or $(VERSION),0.6.0)
+	@tools/release-verify.sh $(or $(VERSION),$(shell cat VERSION))
 
 # ── Test ───────────────────────────────────────────────────────────────────────
 
