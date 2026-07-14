@@ -41,7 +41,8 @@ endif
         guide-diff \
         guide-clean \
         guide-check \
-        guide-snippets-check
+        guide-snippets-check \
+        playground-examples-regen
 
 ## guide        Build docs/guide/ from docs-src/canonical/. The "Standard
 ##                                   library" / "Reference" pages are projected
@@ -70,10 +71,32 @@ guide-snippets-check: $(GUIDE_CX_DEP)
 	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) $(GUIDE_GEN)/snippet_check.cx \
 	  --allow-read --allow-write --allow-subprocess --allow-env
 
-## guide-wasm    Rebuild the playground wasm, then render the guide. Use when
+## playground-examples-regen  Regenerate + re-audit
+##                                   scripts/gen_guide/playground/
+##                                   playground.examples.js from its generator
+##                                   (gen_examples.py: every entry CLI-audited
+##                                   against the current binary, then the file
+##                                   is rewritten). Run after any engine/syntax
+##                                   change the playground must reflect.
+playground-examples-regen: $(GUIDE_CX_DEP)
+	@python3 $(GUIDE_GEN)/playground/gen_examples.py
+
+## guide-wasm    Rebuild the playground wasm AND regenerate the playground
+##                                   examples, then render the guide. Use when
 ##                                   the cx engine changed and the in-browser
 ##                                   playground must reflect it.
-guide-wasm: build-playground-wasm-for-guide guide
+##
+## COUPLING INVARIANT: the shipped wasm bundle (dist/wasm/*, staged to
+## docs/guide/wasm/) and playground.examples.js (staged to
+## docs/guide/playground/) must always be of the same syntax era — the
+## examples run inside that wasm engine. So the wasm is never rebuilt
+## without regenerating the examples in the same invocation; `guide` runs
+## from the recipe (not the prerequisite list) so the render always stages
+## AFTER both, even under `make -j`. Drift between the generator and the
+## checked-in examples.js is gated by `make verify-playground-examples`
+## (top-level Makefile, in TEST_TARGETS next to guide-check).
+guide-wasm: build-playground-wasm-for-guide playground-examples-regen
+	@$(MAKE) --no-print-directory guide
 
 ## guide-check  Gate the co-located stdlib docs against drift
 ##                                   (presence parity, purity agreement,
