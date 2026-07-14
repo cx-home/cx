@@ -110,12 +110,16 @@
         [when [< $clock@hour 18] 'afternoon']
         [else                    'evening']]]]]
 
-  [# ─── 9. No-match — without [else], yields ()-empty ─── #]
+  [# ─── 9. No-match — without [else], yields ()-empty ───
+       An empty sequence may render as element CONTENT (the [result]
+       element below simply stays empty), but writing it into an
+       attribute is fail-closed: `result=$maybe` with $maybe=() raises
+       CXER0100 rather than silently writing result=''. #]
 
   [section title='no-match yields empty'
     [?let [= $maybe [?match 42
                       [case 1 'one']
                       [case 2 'two']]]
-      [debug result=$maybe empty=[$empty $maybe]]]]
+      [debug [result $maybe] empty=[$empty $maybe]]]]
 
 ]
