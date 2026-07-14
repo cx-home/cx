@@ -48,6 +48,11 @@ stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 # drift, and it is stamped here + gated by check_version_consistency.py.
 stamp README.md                   "s|badge/version-v[0-9.]*-blue|badge/version-v$NEW-blue|"
 stamp vcx/README.md               "s|badge/version-v[0-9.]*-blue|badge/version-v$NEW-blue|"
+# SECURITY.md names the supported minor SERIES (X.Y.x) — derived from VERSION
+# here and gated by check_version_consistency.py so it can never drift again
+# (it sat at "0.7.x" for five releases before the 2026-07-14 audit caught it).
+SERIES="$(printf '%s' "$NEW" | cut -d. -f1-2).x"
+stamp SECURITY.md                 "s/\*\*[0-9][0-9]*\.[0-9][0-9]*\.x\*\*/**$SERIES**/"
 # VS Code extension version — user-visible in the marketplace. npm needs a
 # literal semver, so stamp it (package.json has a single `"version"` key).
 stamp tooling/vscode/package.json "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW\"/"
