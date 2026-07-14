@@ -53,7 +53,9 @@
          wildcard, and `[where …]` guards. The 2-arg form (single arm,
          raises `CXER0100` on miss) is preserved unchanged."""]
 
-    [example lang=cx
+    [; check=none — migration panel: the first half deliberately shows
+       the RETIRED v0.7.x slot form, which the current parser rejects. ]
+    [example lang=cx check=none
       """[# v0.7.x — nested if chain (legacy slot form)                 #]
          [?if (name($n) = 'prose') :then [p $n]
               :else [?if (name($n) = 'code') :then [pre $n]
