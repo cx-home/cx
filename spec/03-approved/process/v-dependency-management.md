@@ -103,7 +103,7 @@ patch series is what keeps these re-bases low-conflict — preserving that shape
 
 The endgame is **not** perpetual fork maintenance. Each Bucket-1 patch is submitted
 upstream (the memory-management line is tracked by
-[`../../vlang-perceus-rfc-draft.md`](../../../vlang-perceus-rfc-draft.md)). Every patch
+[`docs/internal/vlang-perceus-rfc-draft.md`](../../../docs/internal/vlang-perceus-rfc-draft.md)). Every patch
 upstream accepts drops out of the series. When the series reaches zero, CX pins
 **stock upstream V**, the fork is retired, and §5 maintenance ends entirely. Until
 then, minimizing the series (upstreaming aggressively, never adding CX-specific
@@ -113,6 +113,6 @@ patches) is the strategy that both reduces re-base cost and brings that day clos
 
 - [`third_party/README.md`](../../../third_party/README.md) — operational pin convention + recovery.
 - [`v_runtime_memory_management.md`](../../02-working/v_runtime_memory_management.md) — the Bucket-1 mem-mgmt spec.
-- [`../../vlang-perceus-rfc-draft.md`](../../../vlang-perceus-rfc-draft.md) — the upstreaming RFC to the V core team.
+- [`docs/internal/vlang-perceus-rfc-draft.md`](../../../docs/internal/vlang-perceus-rfc-draft.md) — the upstreaming RFC to the V core team.
 - [`evict_cx_from_v_PLAN.md`](../../02-working/evict_cx_from_v_PLAN.md) — the one-time eviction that established §2.
 - [`vcx/Makefile`](../../../vcx/Makefile) — the guard that warns loudly when the patched V is absent and `-prod` is silently dropped (the worktree build trap; see §4/§5).

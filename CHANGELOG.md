@@ -7,7 +7,7 @@ instructions live alongside each release-notes file (e.g.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
-plus the additional [`spec/governance.md §9` versioning rules](spec/governance.md#9-versioning)
+plus the additional [`spec/governance.md §9` versioning rules](spec/03-approved/process/governance.md#9-versioning)
 for the multi-axis CX project (language version, ABI version, format
 version, library version).
 
@@ -394,9 +394,9 @@ pure-functional updates with structural sharing; a module system with
 bundled stdlib lands; atom joins the scalar kinds. v0.7.6 was an
 internal design pass (never released); its scope merged into v0.8.0.
 Tier-1 bindings narrow to V / Python / Go / Rust under a two-layer
-contract ([`spec/bindings.md`](spec/bindings.md)). Authoritative
+contract ([`spec/03-approved/misc/bindings.md`](spec/03-approved/misc/bindings.md)). Authoritative
 release-surface document: [`RELEASE_NOTES_v0.8.0.md`](RELEASE_NOTES_v0.8.0.md).
-Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
+Live gate state was tracked in `spec/v0_8_0_status.md` (retired with the spec-tree reorg).
 
 ### Added
 
@@ -419,7 +419,7 @@ Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
   constants, `:scope public` / `:scope private` visibility.
 - **Bundled `cx-stdlib`** — 14 sub-packages: strings / json / http /
   re / time / math / io / bytes / format / path / log / hash / env /
-  test. [`spec/stdlib.md`](spec/stdlib.md).
+  test. [`spec/03-approved/std-lib/`](spec/03-approved/std-lib/README.md).
 - **Atom scalar kind** — `:NAME` literals with type-strict
   name-equality and a disjoint hash domain.
 - **`[expr]` general predicate body** + `:pure` / `:impure` modifier
@@ -430,7 +430,7 @@ Live gate state: [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md).
   via byte-offset `loc`.
 - **`cx_code_diagram`** (Mermaid emit, ERD-or-CFG auto-detect) +
   **`cx_code_tree`** (JSON with `loc` byte offsets) C ABI exports.
-- **`cast()` generic builtin** + **`exists()`** in [`spec/code.md §6.5`](spec/code.md).
+- **`cast()` generic builtin** + **`exists()`** in [`spec/03-approved/core/code.md` §6.5](spec/03-approved/core/code.md).
 - **ast_bin v8 wire format** with PathNode kind discriminator `0x13`
   (cap bit 36).
 - **42 §11.6 release gates** — 16 v0.7.6 carryover + 14 new for the
@@ -484,7 +484,7 @@ tests (passed by reduction) and partial specs. Users who need
 production-ready query/transform begin at v0.7.6.
 
 Authoritative design reference:
-[`spec/audits/code_design_v1.md`](spec/audits/code_design_v1.md)
+`spec/audits/code_design_v1.md` (audit doc, since retired)
 (20 cxpath/cxquery → CX code side-by-side examples + complete §11
 integration-capability specs). Normative spec
 (`spec/code.md`) is in progress and is a §11.6 release gate.
@@ -740,7 +740,7 @@ wire formats, spec-normative grammar).
 ### Changed
 - **`columns` → `cols` rename** across the Table API surface.
 - **`select` → `select_cols`** rename across bindings (avoids LINQ / Enumerable conflicts in .NET / Ruby; uniform for consistency).
-- Migration docs restructured: per-version under [`docs/migrations/`](docs/migrations/) with an index README.
+- Migration docs restructured: per-version under `docs/migrations/` (tree since retired; migration notes live in the release-notes files) with an index README.
 - Private docs (`CONTEXT.md`, `community/`) moved to [`docs/internal/`](docs/internal/); simplifies `.publishignore`.
 - Internal grammar revisions during this cycle (v3.3 → v3.4 → v3.5 → v3.6) are now hidden from user-facing docs; users observe only the v0.5 → v0.6.0 transition.
 
@@ -750,7 +750,7 @@ wire formats, spec-normative grammar).
 - Parser quote+bracket fix — body-text tokenizer is now quote- and bracket-aware; closes the last two carried parser limits.
 
 ### Migration
-- See [`docs/migrations/v0.5-to-v0.6.md`](docs/migrations/v0.5-to-v0.6.md) for the full upgrade guide.
+- See the v0.5→v0.6 migration guide (since retired; see `RELEASE_NOTES_v0.6.0.md`) for the full upgrade guide.
 - BREAKING: leading-zero integers are now strings (`02134` is a string, not int 2134).
 - BREAKING: binding `loads()` / `dumps()` preserve integer/float distinction via CXDB v1 (was JSON-coerced in v0.5).
 
