@@ -177,7 +177,7 @@
 
     [example lang=cx
       """//user                       [# every user, anywhere in doc      #]
-         //user[@active=true]         [# every active user                #]
+         //user[= $_@active true]     [# every active user                #]
          //user/@email                [# scalar attribute values          #]
          //section[1]                 [# first section (1-indexed)        #]
          //section[h2]                [# section that has an h2 child     #]"""]
@@ -186,11 +186,12 @@
       """The grammar is the XPath 3.1 **selection core**, lifted into
          CX with one comparison operator family:"""]
 
-    [example lang=cx
+    [example lang=text
       """PathExpr   ::= '//' StepList | '/' StepList | StepList
          Step       ::= ( Axis '::' )? NodeTest Predicate*
          Predicate  ::= '[' PredExpr ']'
-         PredExpr   ::= AttrTest | INT | FunctionCall | BooleanExpr"""]
+         PredExpr   ::= INT | AttrTest | StepTest | ScalarLiteral
+                      | BindingOrPath | FusedPrefixForm"""]
 
     [child id=cxpath-axes n=6.3.1 title='The twelve axes'
       [body
@@ -217,44 +218,49 @@
            //user/following-sibling::user             [# later peer users      #]
            //tr/parent::table                         [# tables containing tr  #]
            //h2/preceding-sibling::*[1]               [# immediate prior sib   #]
-           //user[self::admin]                        [# only-if-admin filter  #]
+           //user[= $_@role 'admin']                  [# only-if-admin filter  #]
            //user/attribute::email                    [# == //user/@email      #]"""]
       [body
-        """All twelve axes are reachable from any binding too — `$u`
-           plus an axis-qualified step navigates from that value:
-           `$u/ancestor::section` walks upward from `$u`. See
-           [[bindings]]."""]]
+        """Axis-qualified steps apply to document-anchored paths.
+           From a **binding**, the child / descendant / attribute
+           steps work directly (`$u/name`, `$u//item`, `$u@email`);
+           axis-qualified steps on a binding (`$u/ancestor::…`) are
+           not yet supported — anchor the path at the document and
+           filter instead. See [[bindings]]."""]]
 
     [child id=cxpath-predicates n=6.3.2 title='Predicates — positional, attribute, function, composite'
       [body
-        """A predicate is `[...]` after a step. CXPath recognises four
-           predicate shapes; mixed forms compose:"""]
+        """A predicate is `[...]` after a step. The predicate body is
+           **prefix CX code over the context node `$_`** — plus a
+           small set of atomic shorthands. The admitted shapes:"""]
       [list
         [item """**Positional** — `INT` selects the Nth match
                 (1-indexed). `//section[1]` is the first section.
-                Negative positions are NOT supported; use
-                `[last()]` for the last."""]
-        [item """**Attribute** — `@name`, `@name=value`,
-                `@name!=value`, `@name<value` etc. Tests an
-                attribute's value. Sigil shortcut: `[+active]`
-                ≡ `[@active=true]`, `[-banned]` ≡ `[@banned=false]`."""]
-        [item """**Function** — any boolean-returning builtin or
-                user-defined function: `[contains(@name, 'Ada')]`,
-                `[starts-with(@email, 'a')]`, `[count(*) > 0]`."""]
-        [item """**Composite** — boolean combinations with `and` /
-                `or` / `not`: `[@active=true and @region='EU']`,
-                `[@status='ok' or @status='warn']`."""]]
+                Negative positions are NOT supported; `[$_last]`
+                selects the last, `[= $_position N]` the Nth."""]
+        [item """**Attribute test** — `[@name]` (attribute present)
+                and `[@!name]` (attribute absent). Value comparisons
+                are prefix forms: `[= $_@name V]`, `[!= …]`,
+                `[< …]` etc."""]
+        [item """**Step-existence** — a bare child name: `[h2]`
+                keeps elements that have an `h2` child."""]
+        [item """**Prefix expression** — any prefix CX form over
+                `$_`: comparisons (`[= $_@id 42]`), boolean
+                combinators (`[and …]` / `[or …]` / `[not …]`), and
+                function calls (`[$strings:contains $_@email
+                '@example.com']`)."""]]
       [example lang=cx
         """//user[1]                              [# first user                #]
-           //user[@id=42]                         [# attr equality             #]
-           //user[+active]                        [# sigil shorthand           #]
-           //user[contains(@email, '@example.com')]
-           //user[@age >= 18 and @country='US']
-           //section[h2 and p]                    [# has both h2 and p children#]"""]
+           //user[= $_@id 42]                     [# attr equality             #]
+           //user[@active]                        [# attr present              #]
+           //user[$strings:contains $_@email '@example.com']
+           //user[and [>= $_@age 18] [= $_@country 'US']]
+           //section[h2]                          [# has an h2 child           #]
+           //section[and [$count $_/h2] [$count $_/p]]"""]
       [body
-        """Predicates chain: `//user[@active=true][1]` is the first
-           active user — the second predicate filters the result of
-           the first. The order matters."""]]
+        """Predicates chain: `//user[= $_@active true][1]` is the
+           first active user — the second predicate filters the
+           result of the first. The order matters."""]]
 
     [child id=cxpath-comparison n=6.3.3 title='Comparison — one operator family'
       [body
@@ -269,48 +275,56 @@
            *any* `x` equals 1 — a common gotcha when the path
            silently returns multiple nodes. In CX, the path must
            return a single value, or the comparison raises. To
-           express "any equals", use the explicit builtin:
-           `some(//x, fn($v){ $v = 1 })`."""]
+           express "any equals", filter the sequence itself:
+           `[$exists //x[= $_ 1]]`."""]
       [example lang=cx
-        """//user[@age = 42]              [# single attr → ok               #]
-           //section[count(p) > 3]        [# both sides single → ok         #]
-           //user[@email = 'ada@…']       [# single string equality         #]
-           [# //user[@tags = 'admin']     # raises if @tags is multi-valued #]
-           //user[some(@tags, fn($t){ $t = 'admin' })]"""]]
+        """//user[= $_@age 42]              [# single attr → ok             #]
+           //section[> [$count $_/p] 3]     [# both sides single → ok       #]
+           //user[= $_@email 'ada@example.com']
+           [# a multi-valued operand raises — filter the sequence
+              instead of comparing it wholesale #]
+           [$exists //user/tag[= $_ 'admin']]"""]]
 
     [child id=cxpath-bindings n=6.3.4 title='Paths on bindings'
       [body
         """A CXPath rooted at a binding navigates from that value
            instead of from the document root:"""]
       [example lang=cx
-        """$u/name                  [# direct child element               #]
-           $u/*                     [# all direct children                #]
-           $u//item                 [# descendant                         #]
-           $u/ancestor::section     [# explicit axis                      #]
-           $u@active                [# attribute access (shorthand)       #]
-           $u/@active               [# attribute access (full)            #]
-           $u.region                [# map-key access (when $u is a map)  #]"""]
+        """[?let [= $u [user active=true region='EU'
+                        [name 'Ada'] [item 1] [item 2]]]
+           ($u/name,                [# direct child element               #]
+            $u/*,                   [# all direct children                #]
+            $u//item,               [# descendant                         #]
+            $u@active,              [# attribute access (shorthand)       #]
+            $u/@active)]            [# attribute access (full)            #]"""]
       [body
         """The path operators that work on bindings are the same
            operators that work on the implicit document — one
            vocabulary. The leading `//` form is anchored at the
            **document root**, regardless of context; `$u//x` is
            anchored at `$u`. Use `//x` to escape upward when you
-           already have a binding."""]]
+           already have a binding. Axis-qualified steps
+           (`ancestor::` etc.) are document-path syntax and are not
+           yet supported on a binding; map-key access on a map-valued
+           binding uses `[$map:get $m 'key']`."""]]
 
     [child id=cxpath-context n=6.3.5 title='Where CXPath values are accepted'
       [body
         """CXPath is a value kind. Every construct that takes "a
            selector" accepts a CXPath value:"""]
-      [example lang=cx
-        """[?for [in $u //user[@active=true]] [yield [$render $u]]]
+      [example lang=cx check=none
+        """[?for [in $u //user[= $_@active true]] [yield [$render $u]]]
            [?if //admin [then [admin-panel]] [else ()]]
-           [?match $n [case //prose [yield [p $n]]]]
+           [?match $n [case //prose [p $n]] [else ()]]
            [?let [= $cfg //meta/@config] [$render $cfg]]
            [?modify $doc //user/@status [set 'verified']]
-           [$count //user[@active=true]]"""]
+           [$count //user[= $_@active true]]"""]
+      [; check=none — position catalog, not a runnable program: each line
+         shows the same path value in a different accepting position and
+         references illustrative helpers ($render, $n, $doc) that carry no
+         definition here. ]
       [body
-        """The same path expression — `//user[@active=true]` —
+        """The same path expression — `//user[= $_@active true]` —
            appears as a `[?for]` generator, as an `[?if]` condition,
            as a `[?match]` arm, as a `[?let]` initializer, as a
            `[?modify]` focus, and as a builtin argument. This is the
@@ -347,11 +361,12 @@
                 CX moves binding into the `[?for]` / `[?let]`
                 directive surface; predicates take expressions but
                 not binding clauses. Use the surrounding directive."""]
-        [item """**No XPath functions in head position** — bare
-                `count(//user)` parses at expression top-level (a
-                builtin call) but not inside a path step;
-                `[count(*) > 0]` works because it is a predicate
-                expression."""]]
+        [item """**No paren-calls anywhere** — XPath's `count(//user)`
+                spelling does not exist; every call is the
+                head-dispatch form `[$count //user]`, in predicates
+                too (`[> [$count $_/*] 0]`). `position()` / `last()`
+                are the reserved predicate bindings `$_position` /
+                `$_last`."""]]
       [note
         """The full XPath 3.1 alignment table — what is adopted, what
            is deliberately not, what is on the XPath 4.0 watch list —
@@ -416,15 +431,17 @@
         """A CXPath value used as a pattern matches if the
            candidate value is in the path's result sequence:"""]
       [example lang=cx
-        """[?match $node
-           [case //heading [h2 $node]]
-           [case //prose   [p $node]]
-           [else           $node]]"""]
+        """[doc [heading 'Title'] [prose 'Body.']]
+           [?let [= $node [$first //heading]]
+             [?match $node
+               [case //heading [h2 [$text $node]]]
+               [case //prose   [p  [$text $node]]]
+               [else           $node]]]"""]
       [body
         """In a `[?for]` body, the same CXPath as the generator
            selects directly:"""]
       [example lang=cx
-        """[?for [in $u //user[@active=true]] [yield $u@email]]"""]
+        """[?for [in $u //user[= $_@active true]] [yield $u@email]]"""]
       [body
         """CXPath patterns and element-shape patterns compose in
            the same arm list — `[?match]` can dispatch on a mix of
@@ -438,25 +455,26 @@
                 element and binds it. `[section * $body]` matches
                 any section and binds the body wildcard slot."""]
         [item """**`**` — recursive descent.** `[**]` matches any
-                element at this position or deeper. Combined with
-                a name: `[**user]` matches any `user` anywhere in
-                the body."""]
+                element at this position or deeper. Wrapping an
+                inner pattern — `[** [user $u]]` — matches a `user`
+                anywhere in the body and binds it."""]
         [item """**`_` — anything, no bind.** `_` matches any value
                 (including non-elements) without binding it. The
                 idiomatic catch-all in `[?match]`."""]]
       [example lang=cx
-        """[?match $node
-           [case [section * $body] [$process-section $body]]
-           [case [**code $c]       [$highlight $c]]
-           [case _                 $node]]"""]]
+        """[?let [= $node [section [h2 'T'] [code 'x = 1']]]
+             [?match $node
+               [case [section * $body] [matched-section]]
+               [case [** [code $c]]    [highlighted $c]]
+               [case _                 $node]]]"""]]
 
     [child id=pattern-binding n=6.4.5 title='Named bindings — $name'
       [body
         """`$name` (lowercase, leading `$`) is a binding hole. It
            appears in attribute-value position
            (`[user email=$e]`), in body position (`[user $u]`),
-           and in destructuring-let position
-           (`[?let [user @id=1 $admin] = …]`)."""]
+           and in a destructuring `[?for]` generator
+           (`[?for [in [user $u] /users/user] …]`)."""]
       [body
         """A bind hole always succeeds at its position; the
            bind value depends on what the surrounding pattern
@@ -468,19 +486,22 @@
 
     [child id=pattern-type-guards n=6.4.6 title='Type-guard heads'
       [body
-        """A type guard `:TypeName` at element-head position
+        """A type guard `:TypeName` at **pattern-head position**
            narrows by schema-typed shape:"""]
-      [example lang=cx
-        """[# Match only elements with declared schema type ServerConfig    #]
+      [; check=none — type-guard dispatch requires a schema in scope
+         (the guard resolves against the document's schema binding), so
+         the fragment is illustrative rather than self-contained. ]
+      [example lang=cx check=none
+        """[# Match only elements whose schema type is ServerConfig #]
            [?match $cfg
-             [case [* :ServerConfig $c] [$validate-server $c]]
-             [case [* :ClientConfig $c] [$validate-client $c]]
+             [case [:ServerConfig $c] [$validate-server $c]]
+             [case [:ClientConfig $c] [$validate-client $c]]
              [else [result status=err code='CXER0103' reason='unknown config']]]"""]
       [body
         """Type-guard resolution is by the document's schema
-           binding (see [[schema]] in the data section). When no
-           schema is in scope the guard fails by default; pair
-           with schema-on-validate (`[?cx schema='…']`) for
+           binding (see [[schema]] in the data section); with no
+           schema in scope type guards are rejected at program
+           load. Pair with schema binding (`[?cx schema='…']`) for
            type-driven dispatch."""]]]
 
   [child id=bindings n=6.5 title='Bindings and paths'
@@ -491,8 +512,10 @@
          CX's pure-functional discipline)."""]
 
     [example lang=cx
-      """[?let [= $admins //user[@role='admin']]
-            [?for [in $a $admins] [yield $a@email]]]"""]
+      """[users [user role='admin' email='root@example.com']
+              [user role='user'  email='ada@example.com']]
+         [?let [= $admins //user[= $_@role 'admin']]
+           [?for [in $a $admins] [yield $a@email]]]"""]
 
     [body
       """A binding's value is whatever expression produced it:
@@ -535,32 +558,39 @@
            generator — the `[?find]` replacement), or any expression
            that evaluates to a sequence."""]
       [example lang=cx
-        """[# CXPath generator                                           #]
+        """[site
+             [user id=1 email='ada@example.com'   age=36 active=true]
+             [user id=2 email='grace@example.com' age=17 active=false]
+             [post author=1 [title 'Notes']]
+             [request 'r1'] [request 'r2']
+             [logs [row 'a'] [row 'b']]]
+
+           [# CXPath generator                                           #]
            [?for [in $u //user] [yield $u@email]]
 
            [# Pattern generator (the `[?find]` replacement)              #]
            [?for [user @active=true $u] [yield $u@email]]
 
            [# Filter with [where …]                                      #]
-           [?for [in $u //user] [where [>= $u@age 18]] [yield $u]]
+           [?for [in $u //user] [where [>= $u@age 18]] [yield $u@id]]
 
            [# Multiple generators (Cartesian, in declared order)         #]
            [?for [in $u //user]
-                 [in $p //post[@author=$u@id]]
-                 [yield [tuple $u $p]]]
+                 [in $p //post[= $_@author $u@id]]
+                 [yield [pair user=$u@id post=[$text $p/title]]]]
 
            [# Parallel evaluation                                        #]
-           [?for [in $r //request] par=true [yield [$process $r]]]
+           [?for [in $r //request] [par] [yield [got [$text $r]]]]
 
            [# Streaming over large input                                 #]
-           [?for [in $row //logs/row] stream=true [yield [$extract $row]]]"""]
+           [?for [in $row //logs/row] [stream] [yield [$text $row]]]"""]
       [body
-        """`par=true` and `stream=true` are evaluation modifiers — same
-           surface, different scheduler. `par=true` distributes
-           iterations across worker threads (preserving output
-           order). `stream=true` couples the generator to a streaming
-           input source so that the iteration runs in bounded
-           memory regardless of input size. Full semantics in
+        """`[par]` and `[stream]` are evaluation-modifier clauses —
+           same surface, different scheduler. `[par]` distributes
+           iterations across worker threads (add `[ordered]` to
+           preserve source order). `[stream]` couples the generator
+           to a streaming input source so that the iteration runs in
+           bounded memory regardless of input size. Full semantics in
            [`spec/code.md`](../../spec/code.md) §7."""]
       [body
         """**Multiple `[where …]` clauses** AND together; **multiple
@@ -580,7 +610,8 @@
            the shape:"""]
       [example lang=cx
         """[# Destructures $result as [ok V] or raises CXER0100 #]
-           [?match $result [ok $v] [yield [$render $v]]]"""]
+           [?let [= $result [ok 42]]
+             [?match $result [ok $v] [yield [rendered $v]]]]"""]
 
       [body
         """**Multi-arm form** — first-match-wins across `[case …]` /
@@ -588,24 +619,26 @@
            patterns, scalar literals, CXPath paths, wildcards,
            and predicate-only `[when …]` clauses:"""]
       [example lang=cx
-        """[?match $node
-           [case [prose $p]   [p $p]]
-           [case [code $c]    [pre $c]]
-           [case //heading    [h2 $node]]
-           [case 'separator'  [hr]]
-           [case _            ()]]
+        """[?let [= $node [code 'x = 1']]
+             [?match $node
+               [case [prose $p]   [p $p]]
+               [case [code $c]    [pre $c]]
+               [case 'separator'  [hr]]
+               [case _            ()]]]
 
            [# SQL Searched-CASE — predicate-only mode (no scrutinee)     #]
-           [?match
-             [when [> $x 100]   :big]
-             [when [> $y 50]    :medium]
-             [else              :small]]
+           [?let [= $x 120] [= $y 10]
+             [?match
+               [when [> $x 100]   :big]
+               [when [> $y 50]    :medium]
+               [else              :small]]]
 
            [# Guards on case arms — [where …] filters even on a match    #]
-           [?match $req
-             [case [http-get $u] [where [$allowed $u]] [route $u]]
-             [case [http-get $u]                       [403 forbidden]]
-             [else                                     [400 bad-request]]]"""]
+           [?let [= $req [http-get '/admin']]
+             [?match $req
+               [case [http-get $u] [where [= $u '/admin']] [route $u]]
+               [case [http-get $u]                         [status 403]]
+               [else                                       [status 400]]]]"""]
 
       [body
         """**Arm semantics:**"""]
@@ -648,9 +681,12 @@
            branch. The condition is evaluated with the EBV
            (Effective Boolean Value) rule — see [[ebv]] below."""]
       [example lang=cx
-        """[?if //admin [then [admin-panel]] [else [user-panel]]]
-           [?if [>= $age 18] [then :adult] [else :minor]]
-           [?if @debug [then [$debug-trace]] [else ()]]"""]
+        """[site [admin 'root'] [config debug=false]]
+           [?if //admin [then [admin-panel]] [else [user-panel]]]
+           [?let [= $age 36]
+             [?if [>= $age 18] [then :adult] [else :minor]]]
+           [?let [= $cfg [$first //config]]
+             [?if $cfg@debug [then [debug-trace]] [else ()]]]"""]
       [body
         """For multi-way conditionals prefer `[?match]` multi-arm
            (see [[match]]). `[?if]` stays separate from `[?match]`
@@ -661,8 +697,8 @@
       [body
         """**The `[else …]` clause is optional.** When omitted, an
            untrue condition yields `()` (the empty sequence). Many
-           CX idioms exploit this — `[?if @hidden [then ()] [else
-           [$render ...]]]` reads as "render unless hidden"."""]
+           CX idioms exploit this — `[?if $n@hidden [then ()] [else
+           [$render $n]]]` reads as "render unless hidden"."""]
 
       [child id=ebv n=6.6.3.1 title='EBV — the Effective Boolean Value rule'
         [body
@@ -704,18 +740,14 @@
         """`[?let]` introduces a local binding. The bound name is
            in scope inside the body that follows."""]
       [example lang=cx
-        """[?let [= $config //meta/@config]
-             [$render $config]]
+        """[meta host='api.example.com' port='8443']
 
-           [# Multiple bindings — sequential, each sees the prior  #]
-           [?let [= $base //meta/@host]
-                 [= $port //meta/@port]
+           [# Multiple bindings — flat, sequential, each sees the prior #]
+           [?let [= $meta [$first //meta]]
+                 [= $base [$string $meta@host]]
+                 [= $port [$string $meta@port]]
                  [= $url  [$concat 'https://' $base ':' $port]]
-                 [http-client target=$url]]
-
-           [# Destructuring let — pattern in binding position      #]
-           [?let [= [user @id=1 $admin] //user[@id=1]]
-             $admin@email]"""]
+             [endpoint target=$url]]"""]
       [body
         """`[?let]` is the only way to give an expression a name
            currently — there is no `def` inside a function body,
@@ -749,11 +781,18 @@
         [tr [td '[replace V]'] [td 'Replace entire matched node (including its surrounding placement) with V']]]
 
       [example lang=cx
-        """[# Scalar attribute update                                    #]
-           [?modify $doc //user[@id=1]/@name [set 'Alice']]
+        """[doc
+             [user id=1 name='Ada' active=true]
+             [user id=2 name='Bob' active=false banned=true]
+             [section id='intro' [para 'Hi.']]
+             [list [item 'a']]
+             [h2 'T'] [code 'x'] [price 10.0] [para 'p'] [deprecated 'old']]
+
+           [# Scalar attribute update                                    #]
+           [?modify $doc //user[= $_@id 1]/@name [set 'Alice']]
 
            [# Delete matching nodes                                      #]
-           [?modify $doc //user[@active=false] [delete]]
+           [?modify $doc //user[= $_@active false] [delete]]
 
            [# Transform with [using …]                                   #]
            [?modify $doc //price [using [?fn ($p) [* $p 1.1]]]]
@@ -766,7 +805,7 @@
            [?modify $doc //user [delete-attr legacy-id]]
 
            [# Append + prepend children                                  #]
-           [?modify $doc //section[@id='intro'] [append [para 'Added.']]]
+           [?modify $doc //section[= $_@id 'intro'] [append [para 'Added.']]]
            [?modify $doc //list [prepend [item 'header item']]]
 
            [# Insert siblings                                            #]
@@ -779,7 +818,7 @@
            [# Multi-step pipeline composition (see [[pipe]])             #]
            [?pipe $doc
              [?modify //user/@status [set 'verified']]
-             [?modify //user[@banned=true] [delete]]
+             [?modify //user[= $_@banned true] [delete]]
              [?modify //user [set-attr last-audit '2026-05-22']]]"""]
 
       [body
@@ -804,7 +843,7 @@
            where `//x` matches no nodes returns `$doc` unchanged
            — same canonical bytes, same SHA-256. `[?modify $doc
            //x [delete]]` where every `//x` is removed returns a
-           value with `count(//x) = 0`. Round-trip through
+           value where `[$count //x]` is 0. Round-trip through
            ast-bin / data-bin / JSON preserves the post-modify
            shape exactly."""]
 
@@ -886,12 +925,15 @@
     [body
       """**Invocation.** Every call uses the
          bracket head-dispatch form: `[$name args…]` for the
-         $-bound surface, or `[prefix/name args…]` for
-         module-qualified calls. The legacy paren form
-         `name(args)` is being retired. The whitespace-separated
-         element form `[name a b]` without a leading `$` is
-         **always** element construction; write `[$count //user]`
-         (call) versus `[count //user]` (data element)."""]
+         built-in surface, or `[$module:name args…]` for
+         stdlib-module calls. There is **no paren-call form** —
+         `name(args)` is a parse error everywhere. The
+         whitespace-separated element form `[name a b]` without a
+         leading `$` is **always** element construction; write
+         `[$count //user]` (call) versus `[count //user]` (data
+         element). The `name(args)` spelling in the tables below is
+         arity notation (mirroring the spec), not invocation
+         syntax."""]
 
     [child id=sequence-builtins n=6.7.1 title='Sequence built-ins'
       [body
@@ -901,8 +943,7 @@
            sequence)."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
-        [tr [td 'count(seq)'] [td '1'] [td 'Integer count; scalar input yields 1; alias: length(seq)']]
-        [tr [td 'length(seq)'] [td '1'] [td 'Synonym for count']]
+        [tr [td 'count(seq) / length(seq)'] [td '1'] [td 'Integer count; scalar input yields 1']]
         [tr [td 'empty(seq)'] [td '1'] [td 'Boolean — true iff count(seq) == 0']]
         [tr [td 'exists(seq)'] [td '1'] [td 'Boolean — true iff count(seq) > 0; opposite of empty']]
         [tr [td 'first(seq)'] [td '1'] [td 'First item; scalar passes through; XQuery fn:head parity']]
@@ -911,26 +952,26 @@
         [tr [td 'tail(seq)'] [td '1'] [td 'All items except first; scalar yields ()']]
         [tr [td 'reverse(seq)'] [td '1'] [td 'Items in reverse order; scalar passes through']]
         [tr [td 'distinct(seq)'] [td '1'] [td 'Items with structural duplicates removed; first-occurrence order']]
-        [tr [td 'union(a, b)'] [td '2'] [td 'Concatenate then dedupe — set union by structural equality']]
-        [tr [td 'intersect(a, b)'] [td '2'] [td 'Items present in both; structural-equality test']]
-        [tr [td 'except(a, b)'] [td '2'] [td 'Items in a but not in b']]
-        [tr [td 'flatten(seq)'] [td '1'] [td 'Flatten one level — Sequence-of-Array → Sequence-of-items']]
         [tr [td 'nth(seq, n)'] [td '2'] [td '1-indexed item access; out-of-range raises CXER0100']]
         [tr [td 'position(seq, item)'] [td '2'] [td '1-based index of first structural match; zero if absent']]
-        [tr [td 'range(start, end)'] [td '2'] [td 'Inclusive integer sequence [start..end]; empty if end<start']]
-        [tr [td 'identity(x)'] [td '1'] [td 'Returns x unchanged — for pipe stages and shape testing']]
-        [tr [td 'sort-by(seq, key)'] [td '2'] [td 'Sort seq by key — key is a function or attribute reference']]
-        [tr [td 'group-by(seq, key)'] [td '2'] [td 'Partition seq into groups keyed by key; yields a Map']]
-        [tr [td 'take(seq, n)'] [td '2'] [td 'First n items; idempotent if n >= count(seq)']]
-        [tr [td 'drop(seq, n)'] [td '2'] [td 'All items after the first n; empty if n >= count(seq)']]
-        [tr [td 'some(seq, pred)'] [td '2'] [td 'Boolean — true iff any item satisfies pred']]
-        [tr [td 'every(seq, pred)'] [td '2'] [td 'Boolean — true iff all items satisfy pred (vacuous true)']]]
+        [tr [td 'range(lo, hi, step?)'] [td '2-3'] [td 'Arithmetic progression, inclusive bound; [\$range lo *] is a lazy open iterator']]
+        [tr [td 'iterate(f, seed)'] [td '2'] [td 'Lazy infinite iterator: seed, f(seed), f(f(seed)), …']]
+        [tr [td 'unfold(f, seed)'] [td '2'] [td 'Anamorphism: f(state) yields () to stop or [value, next-state] to emit']]
+        [tr [td 'identity(x)'] [td '1'] [td 'Returns x unchanged — for pipe stages and shape testing']]]
+      [body
+        """Set combinators are **reserved operator heads**, not
+           `[\$…]` builtins: `[union A B]`, `[intersect A B]`,
+           `[except A B]`. Slicing / windowing / ordering /
+           grouping are directives and comprehension clauses:
+           `[?take]`, `[?drop]`, `[?filter]`, `[?flatten]`,
+           `[order-by …]`, `[group-by …]` (see [[for]])."""]
       [example lang=cx
-        """[$count //user[@active=true]]
-           [$sort-by //user @last-login]
-           [$distinct //tag]
-           [?pipe [$range 1 100] [$take _ 10]]
-           [$some //user [?fn ($u) [= $u@role 'admin']]]"""]]
+        """[site [user active=true] [user active=false]
+                 [tag 'a'] [tag 'b'] [tag 'a']]
+           ([\$count //user[= \$_@active true]],
+            [\$distinct [?for [in \$t //tag] [yield [\$text \$t]]]],
+            [?take 3 [\$range 1 100]],
+            [union (1, 2) (2, 3)])"""]]
 
     [child id=string-builtins n=6.7.2 title='String built-ins'
       [body
@@ -940,31 +981,30 @@
            otherwise."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
-        [tr [td 'upper(s)'] [td '1'] [td 'Unicode upper-cased copy of s; alias: upcase']]
-        [tr [td 'lower(s)'] [td '1'] [td 'Unicode lower-cased copy of s; alias: lowcase']]
-        [tr [td 'trim(s)'] [td '1'] [td 'Whitespace stripped from both ends']]
-        [tr [td 'concat(s1, s2, …)'] [td '≥1'] [td 'String concatenation; non-string scalars stringified']]
+        [tr [td 'upper(s)'] [td '1'] [td 'Unicode upper-cased copy of s']]
+        [tr [td 'lower(s)'] [td '1'] [td 'Unicode lower-cased copy of s']]
         [tr [td 'contains(s, sub)'] [td '2'] [td 'Boolean substring test; empty sub yields true']]
         [tr [td 'starts-with(s, prefix)'] [td '2'] [td 'Boolean prefix test; empty prefix yields true']]
         [tr [td 'ends-with(s, suffix)'] [td '2'] [td 'Boolean suffix test; empty suffix yields true']]
-        [tr [td 'substring(s, start, len?)'] [td '2–3'] [td '1-indexed substring; positions clamp; never raises']]
-        [tr [td 'substring-before(s, sub)'] [td '2'] [td 'Prefix of s before first occurrence of sub']]
-        [tr [td 'substring-after(s, sub)'] [td '2'] [td 'Suffix of s after first occurrence of sub']]
+        [tr [td 'substring(s, start, len?)'] [td '2-3'] [td '1-indexed substring; positions clamp; never raises']]
         [tr [td 'string-length(s)'] [td '1'] [td 'Integer count of Unicode codepoints (NOT bytes)']]
-        [tr [td 'string-join(seq, sep)'] [td '2'] [td 'Join sequence of strings with separator']]
-        [tr [td 'tokenize(s, sep)'] [td '2'] [td 'Split s on sep (regex); yields sequence of strings']]
-        [tr [td 'split(s, sep)'] [td '2'] [td 'Synonym for tokenize with a literal (non-regex) separator']]
-        [tr [td 'replace(s, find, repl)'] [td '3'] [td 'Replace all occurrences of find with repl']]
-        [tr [td 'matches(s, regex)'] [td '2'] [td 'Boolean regex test (RE2 semantics)']]
         [tr [td 'normalize-space(s)'] [td '1'] [td 'Strip leading/trailing + collapse internal whitespace']]
-        [tr [td 'format(template, args)'] [td '2'] [td 'Format string with positional args (e.g. {0}, {1})']]
+        [tr [td 'concat(s1, s2, …)'] [td '≥1'] [td 'String concatenation; non-string scalars stringified']]
         [tr [td 'text(elem)'] [td '1'] [td 'Body text of elem as string; concatenates text children']]]
+      [body
+        """The wider string toolkit — trim, split/join, replace,
+           case-folding variants, padding — is the
+           `cx-stdlib/strings` module (`[?lib 'cx-stdlib/strings']`,
+           then `[\$strings:trim …]`, `[\$strings:split …]`,
+           `[\$strings:join …]`, `[\$strings:replace …]`). Regular
+           expressions are `cx-stdlib/re`. See [[stdlib]]."""]
       [example lang=cx
-        """[$upper 'hello world']                     [# → 'HELLO WORLD'  #]
-           [$contains @email '@example.com']
-           [$string-join (//user/@name) ', ']
-           [$tokenize 'a,b,c' ',']                    [# → ('a', 'b', 'c') #]
-           [$replace $body 'foo' 'bar']"""]]
+        """[?lib 'cx-stdlib/strings']
+           ([\$upper 'hello world'],
+            [\$contains 'ada@example.com' '@example.com'],
+            [\$strings:join ('a', 'b', 'c') ', '],
+            [\$strings:split 'a,b,c' ','],
+            [\$strings:replace 'foofoo' 'foo' 'bar'])"""]]
 
     [child id=numeric-builtins n=6.7.3 title='Numeric built-ins'
       [body
@@ -982,20 +1022,24 @@
         [tr [td 'floor(x)'] [td '1'] [td 'Largest integer ≤ x; int passes through']]
         [tr [td 'ceiling(x)'] [td '1'] [td 'Smallest integer ≥ x; int passes through']]
         [tr [td 'round(x)'] [td '1'] [td 'Half-away-from-zero rounding (XPath fn:round)']]
-        [tr [td 'mod(a, b)'] [td '2'] [td 'Modulo; sign follows dividend (C-style truncation)']]
-        [tr [td 'pow(b, e)'] [td '2'] [td 'b raised to e; integer^integer stays int when possible']]
-        [tr [td 'range(start, end)'] [td '2'] [td 'See sequence-builtins — duplicated here for discoverability']]
-        [tr [td 'to-int(v)'] [td '1'] [td 'Coerce v to int; non-coercible raises CXER0103']]
-        [tr [td 'to-float(v)'] [td '1'] [td 'Coerce v to float; non-coercible raises CXER0103']]
-        [tr [td 'to-string(v)'] [td '1'] [td 'Coerce v to canonical string form']]
-        [tr [td 'is-nan(x)'] [td '1'] [td 'Boolean — true iff x is the float NaN value']]
-        [tr [td 'is-finite(x)'] [td '1'] [td 'Boolean — true iff x is finite (not nan/inf/-inf)']]]
+        [tr [td 'mod(a, b)'] [td '2'] [td 'Remainder; sign follows dividend; b=0 raises CXER0101']]
+        [tr [td 'div(a, b)'] [td '2'] [td 'True division if either is float; integer division if both int']]
+        [tr [td 'idiv(a, b)'] [td '2'] [td 'Integer (truncating) division regardless of operand kinds']]]
+      [body
+        """Type coercion is the single explicit `cast` operator —
+           `[cast '42' :int]`, `[cast 3 :float]`, `[cast 42
+           :string]` — there is no `to-int` / `to-float` family.
+           CX floats are **finite-only**: `NaN` and `±Inf` never
+           arise (an operation that would produce one raises
+           `CXER0101`), so there is nothing to test with an
+           `is-nan`. Exponentiation is `[\$math:pow]` in
+           `cx-stdlib/math`."""]
       [example lang=cx
-        """[$sum //order/@amount]
-           [$avg //user/@age]
-           [$round 3.7]                               [# → 4              #]
-           [$pow 2 10]                                [# → 1024           #]
-           [$mod 17 5]                                [# → 2              #]"""]]
+        """[orders [order amount=10] [order amount=32]]
+           ([\$sum [?for [in \$o //order] [yield \$o@amount]]],
+            [\$round 3.7],
+            [\$mod 17 5],
+            [cast '42' :int])"""]]
 
     [child id=logical-builtins n=6.7.4 title='Logical built-ins'
       [body
@@ -1004,22 +1048,23 @@
            argument."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
-        [tr [td 'not(v)'] [td '1'] [td 'Boolean negation under EBV (cxdm §4.6)']]
-        [tr [td 'boolean(v)'] [td '1'] [td 'Coerce v to bool under EBV — explicit EBV evaluation']]
-        [tr [td 'exists(v)'] [td '1'] [td 'Boolean — true iff v is non-empty (count > 0)']]
-        [tr [td 'empty(v)'] [td '1'] [td 'Boolean — true iff v is the empty sequence']]
-        [tr [td 'and(a, b, …)'] [td '≥1'] [td 'Boolean — true iff all args truthy; short-circuit L→R']]
-        [tr [td 'or(a, b, …)'] [td '≥1'] [td 'Boolean — true iff any arg truthy; short-circuit L→R']]
-        [tr [td 'xor(a, b)'] [td '2'] [td 'Boolean — true iff exactly one of a, b is truthy']]
-        [tr [td 'if(c, t, e)'] [td '3'] [td 'Expression form of [?if] — c with EBV selects t or e']]
-        [tr [td 'eq(a, b)'] [td '2'] [td 'Structural equality — types, values, attributes, children all match']]
-        [tr [td 'ne(a, b)'] [td '2'] [td 'Structural inequality — convenience for not(eq(a, b))']]
-        [tr [td 'instance-of(v, type)'] [td '2'] [td 'Boolean — true iff v has the given type (scalar kind or schema type)']]]
+        [tr [td 'not(v)'] [td '1'] [td 'Boolean negation under EBV (cxdm §6); an Iterator operand raises — force it first']]
+        [tr [td 'and(a, b, …)'] [td '≥1'] [td 'Boolean — true iff all args truthy; short-circuit L→R; bare operator head']]
+        [tr [td 'or(a, b, …)'] [td '≥1'] [td 'Boolean — true iff any arg truthy; short-circuit L→R; bare operator head']]
+        [tr [td 'eq(a, b)'] [td '2'] [td 'Structural equality — types, values, attributes, children all match']]]
+      [body
+        """`and` / `or` / `not` are bare operator heads
+           (`[and P Q]`, no `\$` sigil); `eq` is the structural
+           equality the `=` operator also uses. There is no
+           `xor` / `if()` / `instance-of` builtin — branch with
+           `[?if]`, and test types by schema validation or
+           `[?match]` shape dispatch."""]
       [example lang=cx
-        """[$if @active 'green' 'gray']
-           [and @verified @active [not @banned]]
-           [$exists //error]                          [# any errors at all? #]
-           [$instance-of @port ::u16]"""]]
+        """[site [user verified=true active=true banned=false] [error 'e1']]
+           [?let [= \$u [\$first //user]]
+             ([and \$u@verified \$u@active [not \$u@banned]],
+              [\$exists //error],
+              [eq [a 1] [a 1]])]"""]]
 
     [child id=accessor-builtins n=6.7.5 title='Node-accessor built-ins'
       [body
@@ -1028,27 +1073,24 @@
            binding methods (see [[layer-1]])."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
-        [tr [td 'name(elem)'] [td '1'] [td 'Element name as a string; non-element raises CXER0100']]
+        [tr [td 'name(elem)'] [td '1'] [td 'Element name as a string (including any namespace prefix); non-element raises CXER0100']]
         [tr [td 'local-name(elem)'] [td '1'] [td 'Element name without namespace prefix']]
-        [tr [td 'namespace-uri(elem)'] [td '1'] [td 'URI of the namespace bound to the element prefix, or empty string']]
-        [tr [td 'kind(elem)'] [td '1'] [td 'Element / scalar / array / map / sequence — the cxdm Item kind']]
-        [tr [td 'node-kind(elem)'] [td '1'] [td 'Synonym for kind — XPath fn:node-kind parity']]
-        [tr [td 'attrs(elem)'] [td '1'] [td 'Map of attributes as {name: value} pairs']]
-        [tr [td 'children(elem)'] [td '1'] [td 'Sequence of direct child elements (excludes scalar/text)']]
-        [tr [td 'body(elem)'] [td '1'] [td 'Body content of elem — scalars, elements, mixed; preserves order']]
-        [tr [td 'parent(elem)'] [td '1'] [td 'Direct parent, or empty sequence if elem is root']]
-        [tr [td 'root(elem)'] [td '1'] [td 'Topmost ancestor — root of the containing document']]
-        [tr [td 'id(name)'] [td '1'] [td 'Resolve an id-sigil reference to its target element']]
-        [tr [td 'idref(elem)'] [td '1'] [td 'Inverse of id — elements referring to elem via id-sigil']]
-        [tr [td 'position()'] [td '0'] [td 'Inside a predicate: 1-based position of context within its sequence']]
-        [tr [td 'last()'] [td '0'] [td 'Inside a predicate: total count of items in the context sequence']]
-        [tr [td 'current()'] [td '0'] [td 'The current context node — inside nested paths']]
-        [tr [td 'document-uri(elem)'] [td '1'] [td 'URI of the document containing elem (file path or stream id)']]]
+        [tr [td 'string(value)'] [td '1'] [td "A scalar's canonical text, or an element/attribute's text content"]]
+        [tr [td 'text(elem)'] [td '1'] [td 'Body text of elem; concatenates text children (string builtin, listed for discoverability)']]]
+      [body
+        """Structural navigation is CXPath, not accessor calls:
+           children are `\$e/*`, the parent is
+           `//x/parent::*` (document-anchored), attributes are
+           `\$e@name`. Inside a predicate the reserved bindings
+           `\$_position` and `\$_last` replace XPath's
+           `position()` / `last()` — there are no zero-arity
+           accessor calls."""]
       [example lang=cx
-        """[$name //section[1]]                       [# → 'section'      #]
-           [$kind $v]                                 [# → :scalar/:elem  #]
-           [$children //user[1]]                      [# → seq of children#]
-           //*[position() = last()]                   [# last child match #]"""]]]
+        """[doc [section 'one'] [section 'two']]
+           ([\$name [\$first //section]],               [# → 'section'      #]
+            [\$string [\$first //section]],             [# → 'one'          #]
+            //section[\$_last],                        [# last section     #]
+            //section[= \$_position 1])"""]]]
 
   [child id=errors n=6.8 title='Errors as values'
     [intro
@@ -1071,7 +1113,9 @@
               CX/binding boundary). Use sparingly — it converts
               the error from a value to a runtime trap."""]]
 
-    [example lang=cx
+    [; check=none — error-dispatch shape catalog around an illustrative
+       [$lookup-user] call; deliberately prints [err …] values. ]
+    [example lang=cx check=none
       """[?match [?let [= $u [$lookup-user $id]?] [$render $u]]
            [case [err code='CXER0204'] [err message='no such user']]
            [case [err code='CXER0163'] [err message='lookup timed out']]
@@ -1182,15 +1226,17 @@
 
     [child id=services n=6.9.1 title='Services and clients'
       [body
-        """`[?service]` declares a named HTTP service with
+        """`[?http-service]` declares a named HTTP service with
            resource handlers. `[?http-client]` is its client
            side. Resources handle requests and return
            responses; the bodies are ordinary CX code."""]
 
       [body
         """**Service definition:**"""]
-      [example lang=cx
-        """[?service on=http port=8080 name='users'
+      [; check=none — starts a listening HTTP service (long-running,
+         port-binding); illustrative in a docs gate. ]
+      [example lang=cx check=none
+        """[?http-service on=http port=8080 name='users'
            read-timeout=30s
            write-timeout=30s
            max-body-bytes=10485760            [# 10 MiB                  #]
@@ -1219,35 +1265,36 @@
         """**Request and response shapes:**"""]
       [example lang=cx
         """[request method='GET' path='/users/42'
-                   path-params={id: 42}
-                   query-params={…}
-                   headers=([header name='Accept' value='application/cx'])
-                   body=$body]
+             [path-params [id 42]]
+             [query-params]
+             [headers [header name='Accept' value='application/cx']]
+             [body]]
 
            [response status=200
-                     headers=(…)
-                     body=$body]"""]
+             [headers [header name='Content-Type' value='application/cx']]
+             [body [user id=42]]]"""]
 
       [body
-        """**Lifecycle.** `[?service]` returns a handle.
-           `[?service-handle :name N]` looks up an existing
+        """**Lifecycle.** `[?http-service]` returns a handle.
+           `[?service-handle name=N]` looks up an existing
            service. `[?stop $handle]` initiates graceful
            shutdown — drains in-flight requests for up to
-           `:grace-period`, then force-closes; new requests
+           `grace-period=`, then force-closes; new requests
            during drain receive HTTP 503 (`CXER0166`).
-           `[?wait-for :service $handle]` blocks until
-           termination. Process SIGTERM / SIGINT also triggers
-           graceful shutdown."""]
+           Process SIGTERM / SIGINT also triggers graceful
+           shutdown."""]
 
       [body
-        """**HTTP client.** `[?http-client :target URL …]`
+        """**HTTP client.** `[?http-client target=URL …]`
            returns a client value; operations pipe through
            it:"""]
-      [example lang=cx
+      [; check=none — performs a live network call; illustrative in a
+         docs gate. ]
+      [example lang=cx check=none
         """[?let [= $c [?http-client target='https://api.example.com'
                                     timeout=30s
-                                    resilience=([?retry max=3])]]
-             [?pipe $c [$get _ '/users/42']]]"""]
+                                    [resilience [?retry max=3]]]]
+             [?pipe $c [$get '/users/42']]]"""]
 
       [body
         """**Status.** Services are a stable surface;
@@ -1265,13 +1312,21 @@
            multi-way receive."""]
 
       [example lang=cx
+        """[?let [= $ch    [?channel name='jobs' buffer=8]]
+              [= $sent1 [?send 1 to=$ch]]
+              [= $sent2 [?send 2 to=$ch]]
+           ([?receive from=$ch], [?receive from=$ch])]"""]
+      [; check=none — spawns concurrent workers over a shared channel;
+         completion timing is scheduler-dependent, so the fragment is
+         illustrative rather than deterministic. ]
+      [example lang=cx check=none
         """[?let [= $ch [?channel name='jobs' buffer=100]]
-               [?worker name='producer'
-                 [?for [in $i [$range 1 100]]
-                       [yield [?send $i to=$ch]]]]
-               [?worker name='consumer'
-                 [?for [in $msg [$range 1 100]]
-                       [yield [$process [?receive from=$ch]]]]]]"""]
+             ([?worker name='producer'
+                [body [?for [in $i [$range 1 100]]
+                        [yield [?send $i to=$ch]]]]],
+              [?worker name='consumer'
+                [body [?for [in $i [$range 1 100]]
+                        [yield [$process [?receive from=$ch]]]]]])]"""]
 
       [body
         """**Channel semantics.** `[?channel :buffer N]` has
@@ -1307,11 +1362,13 @@
       [body
         """**Worker observability.** Workers are
            handle-addressable:"""]
-      [example lang=cx
-        """[?let [= $w [?worker name='sync-job' [$sync-database]]]
-               [?wait-for worker=$w]                   [# block until done #]
-               [?cancel worker=$w]                     [# cooperative      #]
-               [?check-cancel]                         [# polling point    #]]"""]
+      [; check=none — handle-lifecycle catalog around an illustrative
+         [$sync-database] worker body. ]
+      [example lang=cx check=none
+        """[?let [= $w [?worker name='sync-job' [body [$sync-database]]]]
+             ([?wait-for worker=$w],                  [# block until done #]
+              [?cancel worker=$w],                    [# cooperative      #]
+              [?check-cancel])]                       [# polling point    #]"""]
 
       [body
         """**Select — multi-way receive.** Evaluates all
@@ -1319,14 +1376,17 @@
            first ready. Uniform-random selection on
            simultaneous readiness:"""]
       [example lang=cx
-        """[?select
-           [case [from $jobs   $job [$handle-job $job]]]
-           [case [from $signal $sig [$handle-signal $sig]]]
-           [case [timeout 5s        [$heartbeat]]]]"""]
+        """[?let [= $jobs   [?channel name='jobs' buffer=1]]
+              [= $signal [?channel name='sig'  buffer=1]]
+              [= $sent   [?send 42 to=$jobs]]
+           [?select
+             [case [from $jobs $job]   [handled $job]]
+             [case [from $signal $sig] [signalled $sig]]
+             [case [timeout 5s]        [heartbeat]]]]"""]
       [note
         """**Shape.** `[?select]` clauses are clause-children:
-           `[case [from CH $msg HANDLER]]` for a receive and
-           `[case [timeout DURATION HANDLER]]` for a deadline. The
+           `[case [from CH $msg] HANDLER]` for a receive and
+           `[case [timeout DURATION] HANDLER]` for a deadline. The
            spec/core/code.md §10.4.7 registry holds the
            authoritative shape. The v0.7.x `:case [:from CH $msg H]` [; version-literal-ok ]
            colon-slot form is retired — there is no dual-accept."""]]
@@ -1337,10 +1397,10 @@
            context and returns a future immediately:"""]
 
       [example lang=cx
-        """[?let [= $f1 [?async [$fetch $url1]]]
-                [= $f2 [?async [$fetch $url2]]]
-                [= $f3 [?async [$fetch $url3]]]
-                [?await-all $f1 $f2 $f3]]"""]
+        """[?let [= $f1 [?async [+ 1 1]]]
+              [= $f2 [?async [* 2 2]]]
+              [= $f3 [?async [$upper 'go']]]
+           [?await-all $f1 $f2 $f3]]"""]
 
       [body
         """**Future state machine.** Futures progress through
@@ -1354,15 +1414,15 @@
         [item """`[?await $f]` — block until terminal; return
                 value on done, propagate err on failed,
                 CANCELLED on cancelled."""]
-        [item """`[?await $f :timeout DURATION]` — add a hard
+        [item """`[?await $f timeout=DURATION]` — add a hard
                 deadline; on expiry return `CXER0241`
                 (AWAIT_TIMEOUT). The future continues running
-                — `:timeout` bounds the caller's wait, not the
+                — `timeout=` bounds the caller's wait, not the
                 future itself."""]
         [item """`[?await-all FUTURES]` — block until all
                 terminal. If all done, yield sequence of
                 values. If any failed/cancelled, yield
-                `CXER0240` with `:causes` slot containing
+                `CXER0240` with a `[causes …]` child carrying
                 every non-done cause in input order."""]
         [item """`[?await-any FUTURES]` — yield first to
                 terminate. Other futures continue running;
@@ -1395,10 +1455,11 @@
            cancellation is pending."""]
 
       [example lang=cx
-        """[?def cancellable-compute ($n)
+        """[?def cancellable-compute impure ($n)
              [?for [in $i [$range 1 $n]]
                [where [= [?check-cancel] [ok]]]
-               [yield [$expensive-op $i]]]]"""]
+               [yield [* $i $i]]]]
+           [$cancellable-compute 4]"""]
 
       [body
         """**Composition with resilience.** `[?async]`
@@ -1452,10 +1513,11 @@
            `D`; `full` = `uniform(0, D)`; `equal` = `D/2 +
            uniform(0, D/2)`; `decorrelated` = `uniform(delay,
            last_delay × 3)`."""]
-      [example lang=cx
+      [; check=none — wraps a live client call ($client); illustrative policy shape. ]
+      [example lang=cx check=none
         """[?retry max=5 backoff=exponential delay=200ms jitter=equal
            [on [?fn ($e) [= $e@code 'CXER0163']]]        [# only on timeout #]
-           [?pipe $client [$get _ '/users/42']]]"""]]
+           [?pipe $client [$get '/users/42']]]"""]]
 
     [child id=timeout n=6.10.2 title='[?timeout] — hard deadline'
       [body
@@ -1469,7 +1531,8 @@
         [tr [td 'DURATION (positional)'] [td '(required)'] [td 'Hard deadline; e.g. 5s, 250ms']]
         [tr [td 'body (positional)'] [td '(required)'] [td 'Inner expression with cooperative cancel points']]
         [tr [td '[on-timeout EXPR]'] [td '(none)'] [td 'Fallback expression on expiry; otherwise raises CXER0141']]]
-      [example lang=cx
+      [; check=none — wraps a live database call; illustrative policy shape. ]
+      [example lang=cx check=none
         """[?timeout 5s
              [$slow-database-query $q]
              [on-timeout [result status=err code='CXER0141' reason='db slow']]]"""]]
@@ -1495,11 +1558,12 @@
         [tr [td 'min-samples=INT'] [td '10'] [td 'Minimum sample count before threshold check']]
         [tr [td 'name=STR'] [td '(lexical position)'] [td 'State-identity key for cross-position sharing']]
         [tr [td 'body (positional)'] [td '(required)'] [td 'Inner expression']]]
-      [example lang=cx
+      [; check=none — wraps a live client call; illustrative policy shape. ]
+      [example lang=cx check=none
         """[?circuit-breaker
              threshold=0.5 window=60s reset=30s min-samples=20
              name='users-api'
-             [?pipe $client [$get _ '/users/42']]]"""]]
+             [?pipe $client [$get '/users/42']]]"""]]
 
     [child id=fallback n=6.10.4 title='[?fallback] — alternative on error'
       [body
@@ -1510,9 +1574,10 @@
         [tr [th 'parameter'] [th 'default'] [th 'semantics']]
         [tr [td 'body (positional)'] [td '(required)'] [td 'First expression tried (primary)']]
         [tr [td '[recover-with SECONDARY]'] [td '(required)'] [td 'Fallback expression evaluated only on primary err']]]
-      [example lang=cx
+      [; check=none — wraps a live client call with an illustrative cache fallback. ]
+      [example lang=cx check=none
         """[?fallback
-             [?pipe $client [$get _ '/users/42']]
+             [?pipe $client [$get '/users/42']]
              [recover-with [$load-from-cache 42]]]"""]
       [note
         """**`$err` in `[recover-with …]`.** Inside the recovery
@@ -1534,9 +1599,10 @@
         [tr [td 'per=DURATION'] [td '(required)'] [td 'Refill window']]
         [tr [td 'name=STR'] [td '(lexical position)'] [td 'State-identity key']]
         [tr [td 'body (positional)'] [td '(required)'] [td 'Inner expression']]]
-      [example lang=cx
+      [; check=none — wraps a live client call; illustrative policy shape. ]
+      [example lang=cx check=none
         """[?rate-limit max=100 per=1s name='github-api'
-             [?pipe $client [$get _ '/repos/cx-home/cx']]]"""]]
+             [?pipe $client [$get '/repos/cx-home/cx']]]"""]]
 
     [child id=bulkhead n=6.10.6 title='[?bulkhead] — bound concurrent calls'
       [body
@@ -1550,7 +1616,8 @@
         [tr [td 'queue=INT'] [td '0'] [td 'Wait-queue depth; 0 = no queue, fail-fast on full']]
         [tr [td 'name=STR'] [td '(lexical position)'] [td 'State-identity key']]
         [tr [td 'body (positional)'] [td '(required)'] [td 'Inner expression']]]
-      [example lang=cx
+      [; check=none — wraps a live database call; illustrative policy shape. ]
+      [example lang=cx check=none
         """[?bulkhead max-concurrent=10 queue=50 name='db-pool'
              [$query-database $q]]"""]]
 
@@ -1560,7 +1627,8 @@
            outermost runs first, so its policy sees the
            inner policies' err codes. Standard pattern reads
            top-down:"""]
-      [example lang=cx
+      [; check=none — composed policies around a live network call; illustrative. ]
+      [example lang=cx check=none
         """[?retry max=3
             [?timeout 10s
               [?circuit-breaker threshold=0.5 window=60s reset=30s
@@ -1607,12 +1675,12 @@
            Directives parse as regular CX, evaluate to text or
            values, and compose with each other through their slot
            bodies."""]
-      [example lang=cx
-        """EXPR                                     # bare expression evaluates
-           [?for [in $x PATH] [yield BODY]]         # iterate
-           [?if COND [then THEN] [else ELSE]]       # branch
-           [?let [= $x EXPR] BODY]                  # bind a name
-           [?def name ($a $b) BODY]                 # define a function"""]]
+      [example lang=text
+        """EXPR                                     [; bare expression evaluates ]
+           [?for [in $x PATH] [yield BODY]]         [; iterate ]
+           [?if COND [then THEN] [else ELSE]]       [; branch ]
+           [?let [= $x EXPR] BODY]                  [; bind a name ]
+           [?def name ($a $b) BODY]                 [; define a function ]"""]]
 
     [child id=patterns-walking n=6.11.2 title='Pattern matching — walking the tree'
       [body
@@ -1625,7 +1693,11 @@
            default) and binds for each match; `[?match]` tests a
            single value (multi-arm dispatch)."""]
       [example lang=cx
-        """[?for [user [name $n]] [yield $n]]
+        """[shop
+             [user [name 'Ada']]
+             [item active=true 'i1']
+             [pizza [name 'Margherita'] [price 12]]]
+           [?for [user [name $n]] [yield $n]]
            [?for [item @active=true $i] [yield $i]]
            [?for [pizza [name $n] [price $p]]
                  [yield [hit name=$n price=$p]]]"""]]
@@ -1639,8 +1711,8 @@
            directive composes them."""]
       [example lang=cx
         """[?for [in $x (1, 2, 3)] [where [> $x 1]] [yield [* $x $x]]]
-           [?let [= $a 10] [?let [= $b 32] [+ $a $b]]]
-           [?pipe (1, 2, 3, 4) count]"""]
+           [?let [= $a 10] [= $b 32] [+ $a $b]]
+           [?pipe (1, 2, 3, 4) [$count]]"""]
 
       [child id=comprehensions-future-surface n=6.11.3.1
              title='Future surface — ranges, slices, Iterator'
@@ -1669,7 +1741,10 @@
              closure (`spec/cxpath.md` §2.2) — bare-fn-call, path
              predicate, and slice postfix coexist."""]
 
-        [example lang=cx
+        [; check=none — future surface (§W1-§W8): slice postfix, open
+           ranges with [take …], and [yield-map] are parse-deferred until
+           the Iterator surface lands (fixtures pinned out_err). ]
+        [example lang=cx check=none
           """[# W1 — strided range, then slice, then comprehension #]
              [?def $odds [$range 1 99 2]]
              [?def $first-ten $odds[:10]]
@@ -1709,38 +1784,35 @@
 
     [child id=cxpath-quick-table n=6.12.1 title='Quick reference'
       [example lang=cx
-        """# Every user in the document.
+        """[; Every user in the document. ]
            //user
 
-           # Every user whose @active attribute equals true.
-           //user[@active=true]
+           [; Every user whose @active attribute equals true. ]
+           //user[= $_@active true]
 
-           # Email addresses of every active user.
-           //user[@active=true]/@email
+           [; Email addresses of every active user. ]
+           //user[= $_@active true]/@email
 
-           # The third user in document order.
+           [; The third user in document order. ]
            //user[3]
 
-           # Anything two levels deep under root.
+           [; Anything two levels deep under root. ]
            /*/*
 
-           # Every sibling that follows the first user.
+           [; Every sibling that follows the first user. ]
            //user[1]/following-sibling::user
 
-           # Every ancestor element of a [para] node.
+           [; Every ancestor element of a [para] node. ]
            //para/ancestor::*
 
-           # General predicate — explicit $_ context binding.
-           //user[$_@age >= 18 and $_@active]
+           [; General predicate — prefix code over the $_ context binding. ]
+           //user[and [>= $_@age 18] $_@active]
 
-           # Cross-step :bind — name the outer focus, reference from inner predicate.
-           //team :bind t / member[$_@role = "lead" and count($t/member) >= 3]
-
-           # Range and sequence ops — XPath 3.1 idioms.
+           [; Range and set combinators. ]
            [$range 1 10]
-           //a union //b
-           //x intersect //y
-           //all except //banned"""]]
+           [union //a //b]
+           [intersect //x //y]
+           [except //all //banned]"""]]
 
     [child id=cxpath-four-forms n=6.12.2 title='Four leading forms'
       [body
@@ -1777,14 +1849,14 @@
 
     [child id=cxpath-predicates n=6.12.4 title='General predicate + reserved bindings'
       [body
-        """Predicates filter the step sequence. CX supports
-           the `[expr]` general predicate: every
-           predicate body is an arbitrary CX expression coerced
-           to a boolean via the Effective Boolean Value (EBV)
-           rule. Atomic forms — `[@name]`, `[@name=V]`, `[N]`,
-           `[fn(…)]` — remain available as parse-time sugar and
-           round-trip via canonical re-emit when the AST matches
-           a recognised template."""]
+        """Predicates filter the step sequence. A predicate body
+           is prefix CX code coerced to a boolean via the
+           Effective Boolean Value (EBV) rule. The atomic
+           shorthands — `[@name]` / `[@!name]` (attribute
+           present / absent), `[N]` (position), a bare child name
+           (step-existence) — remain available and round-trip via
+           canonical re-emit. Value comparisons are always prefix:
+           `[= $_@name V]`."""]
       [body
         """**Three reserved bindings** in scope inside every
            predicate body: `$_` (current candidate item, type
@@ -1802,35 +1874,36 @@
            predicate body MUST be pure; impure
            callees fail load with `CXER0230`."""]]
 
-    [child id=cxpath-bind n=6.12.5 title=':bind peer-modifier'
+    [child id=cxpath-bind n=6.12.5 title='Cross-step reference — nested generators'
       [body
-        """`:bind NAME` is a peer-modifier slot on a path step,
-           appearing between the NodeTest and any trailing
-           predicates. At most one `:bind` per step. The name
-           binds the step's focus value under the given
-           identifier, and the binding is visible in every
-           predicate enclosed by that step and in every
-           subsequent step of the same PathExpr."""]
+        """To reference an **outer** step's focus from an inner
+           predicate ("leads of teams with at least three
+           members"), stack `[?for]` generators — each generator
+           names its focus, and every later clause sees the
+           earlier bindings:"""]
       [example lang=cx
-        """//team :bind t / member[ $_@role = "lead" and count($t/member) >= 3 ]
-
-           # $t — the team the path is currently resolving
-           # $_ — the current member (rebinds at each predicate)"""]
+        """[org
+             [team [member role='lead' [name 'a']] [member [name 'b']] [member [name 'c']]]
+             [team [member role='lead' [name 'e']]]]
+           [?for [in $t //team]
+                 [in $m $t/member]
+                 [where [and [= $m@role 'lead'] [>= [$count $t/member] 3]]]
+             [yield $m/name]]"""]
       [note
-        """`:bind _` is rejected with `CXER0232` (reserved bind
-           name). `:bind` participates in the closed
-           modifier-keyword set for the path-step
-           disambiguation rule."""]]
+        """The grammar reserves a `:bind` path-step modifier
+           (grammar.ebnf [159]-[160]) for naming a step's focus
+           inline; the nested-generator form above is the
+           conformance-exercised idiom."""]]
 
     [child id=cxpath-binding-surface n=6.12.6 title='In the host bindings'
       [body
         """Every Tier-1 binding exposes CXPath identically through
            its Layer-1 surface — same selector, same bytes
            returned across the C ABI."""]
-      [example lang=python """emails = doc.select_all("//user[@active=true]/@email")"""]
-      [example lang=go      """emails, _ := doc.SelectAll("//user[@active=true]/@email")"""]
-      [example lang=rust    """let emails = doc.select_all("//user[@active=true]/@email")?;"""]
-      [example lang=v       """emails := doc.select_all('//user[@active=true]/@email')!"""]]]
+      [example lang=python """emails = doc.select_all("//user[= $_@active true]/@email")"""]
+      [example lang=go      """emails, _ := doc.SelectAll("//user[= $_@active true]/@email")"""]
+      [example lang=rust    """let emails = doc.select_all("//user[= $_@active true]/@email")?;"""]
+      [example lang=v       """emails := doc.select_all('//user[= $_@active true]/@email')!"""]]]
 
   [child id=errors-catalog n=6.13 title='Error code catalog'
     [intro
@@ -1878,7 +1951,8 @@
 
     [child id=errors-catching n=6.13.4 title='Recovering with [?match]'
       [example lang=cx
-        """[?match [$read-file $path]
-             [case [err @code=$c] [where [= $c 'E906']] [file-missing]]
-             [case [err $e] [other-error code=$e/@code]]
-             [case $v $v]]"""]]]]
+        """[?lib 'cx-stdlib/io']
+           [?match [$io:read-file '/no/such/file.cx']
+             [case [err @code=$c] [where [= $c 'cx-err:CXER0271']] [needs-capability]]
+             [case [err $e] [other-error code=$e@code]]
+             [else :ok]]"""]]]]
