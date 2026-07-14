@@ -932,11 +932,14 @@ cut-release:
 #
 # `make build-vscode` produces a publishable .vsix wrapping the VS Code
 # extension at tooling/vscode/. The .vsix bundles the TextMate grammar,
-# snippets, language configuration, and LSP-client glue; it does NOT
-# bundle a `cx` binary — users install that separately.
+# snippets, language configuration, and the esbuild-bundled extension
+# (LSP-client glue compiled into out/extension.js); it does NOT bundle
+# a `cx` binary — users install that separately. `npm run package`
+# (vsce, a devDependency) runs the typecheck + bundle via
+# vscode:prepublish. Needs node >= 18.13.
 
 build-vscode:
-	cd tooling/vscode && npm install --silent && npm run build && npx vsce package --no-dependencies --allow-missing-repository
+	cd tooling/vscode && npm ci --silent && npm run package
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
