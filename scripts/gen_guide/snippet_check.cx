@@ -1,4 +1,4 @@
-[# scripts/gen_guide/snippet_check.cx — the docs-example gate (#425).
+[; scripts/gen_guide/snippet_check.cx — the docs-example gate (#425).
 
    Every [example lang=cx] snippet in docs-src/canonical/sections/*.cxd
    is extracted and RUN against the live binary (`cx <tmpfile>`, no
@@ -28,7 +28,7 @@
    snippets are run with (default: the `cx` on PATH).
 
    Exit 0 with a summary when everything passes; exit 1 after listing
-   every failure otherwise. All defs are strictly define-before-use. #]
+   every failure otherwise. All defs are strictly define-before-use. ]
 
 [?lib 'cx-stdlib/io']
 [?lib 'cx-stdlib/cx']
@@ -41,22 +41,22 @@
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 
-[# first-line: the snippet's first source line, for failure reports. #]
+[; first-line: the snippet's first source line, for failure reports. ]
 [?def first-line scope=public ($s)
   [?let [= $t [$strings:trim $s]]
         [= $i [$strings:find $t '\n']]
     [?if [< $i 0] [then $t] [else [$strings:slice $t 0 $i]]]]]
 
-[# text-of: the [example]'s single text child. #]
+[; text-of: the [example]'s single text child. ]
 [?def text-of scope=public ($ex)
   [?match $ex [case [example $code] $code] [else '']]]
 
-[# detail-of: a [fail]'s [detail] text. #]
+[; detail-of: a [fail]'s [detail] text. ]
 [?def detail-of scope=public ($x)
   [$strings:join [?for [in $c $x/*] [yield
     [?match $c [case [detail $t] $t] [else ()]]]] '']]
 
-[# check-one: run one snippet; () on pass, [fail …] on failure. #]
+[; check-one: run one snippet; () on pass, [fail …] on failure. ]
 [?def check-one scope=public impure ($cxbin $tmp $file $code)
   [?let [= $w [$io:write-file $tmp $code]]
         [= $r [$process:run ($cxbin, $tmp)]]
@@ -67,8 +67,8 @@
       [else [fail file=$file head=[$first-line $code]
               [detail [$strings:trim $out]]]]]]]
 
-[# file-fails: all failures for one section file (sequence of [fail]).
-   A section file that itself fails to parse is a gate failure too. #]
+[; file-fails: all failures for one section file (sequence of [fail]).
+   A section file that itself fails to parse is a gate failure too. ]
 [?def file-fails scope=public impure ($cxbin $tmp $f)
   [?let [= $d [$cx:parse [$io:read-file $f]]]
     [?match $d
@@ -79,7 +79,7 @@
           [where [and [= $ex@lang 'cx'] [not [= $ex@check 'none']]]]
           [yield [$check-one $cxbin $tmp $f [$text-of $ex]]]]]]]]
 
-[# counts: total / opt-out lang=cx examples in one section file. #]
+[; counts: total / opt-out lang=cx examples in one section file. ]
 [?def counts scope=public impure ($f)
   [?let [= $d [$cx:parse [$io:read-file $f]]]
     [?match $d
@@ -102,7 +102,7 @@
   [= $total [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@total]]]]
   [= $optout [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@optout]]]]
   [= $nfail [$count $fails]]
-  (
+  [= $done (
     [?if [$empty $files]
       [then ([$cry 'snippet-check: no section files found — run from the repo root'],
              [$env:exit 2])]
@@ -122,3 +122,4 @@
                  [$string $nfail], ' fail')]],
     [?if [> $nfail 0] [then [$env:exit 1]] [else ()]]
   )]
+  [?if false [then '']]]
