@@ -10,11 +10,11 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-EXPECTED_VERSION="${1:-}"
+# Default to the repo-root VERSION file — the single source of truth.
+EXPECTED_VERSION="${1:-$(cat "$ROOT/VERSION")}"
 
 if [ -z "$EXPECTED_VERSION" ]; then
- echo "Usage: $0 <expected-version>"
- echo "Example: $0 0.6.0"
+ echo "Usage: $0 [expected-version]   (default: the VERSION file)"
  exit 2
 fi
 
@@ -40,8 +40,10 @@ check() {
 }
 
 section "Version consistency"
-check "all 11 version locations = $EXPECTED_VERSION" \
- "tools/bump-version.sh --check $EXPECTED_VERSION"
+check "VERSION file = $EXPECTED_VERSION" \
+ "test \"\$(cat VERSION)\" = \"$EXPECTED_VERSION\""
+check "manifests + derived surfaces match VERSION" \
+ "python3 scripts/check_version_consistency.py"
 
 section "Working tree state"
 check "git working tree clean" \
