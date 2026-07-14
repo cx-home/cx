@@ -21,7 +21,7 @@
     [intro
       """Two CX documents are equal iff their **strict canonical bytes**
          are equal. Canonical bytes are the unique serialization
-         produced by `cx canon` — the rules are summarized in
+         produced by `cx canonical` — the rules are summarized in
          [[canonical-strict]] and stated normatively in
          [`spec/canonical.md`](../../spec/canonical.md)."""]
 
@@ -43,7 +43,7 @@
         [item """**Lossless canonical (`cx fmt`)** — preserves comments,
                 anchors, aliases, presentation. Idempotent. Used for
                 source-file formatting and diff stability."""]
-        [item """**Strict canonical (`cx canon` / `cx hash`)** — strips
+        [item """**Strict canonical (`cx canonical` / `cx hash`)** — strips
                 comments, expands anchors and aliases, normalizes date
                 offsets, sorts attributes lexicographically. Two docs
                 with the same data hash identically. Used for content
@@ -55,9 +55,9 @@
            to the same SHA-256."""]
       [example lang=cx
         """[# Source: #]
-           [user email='ada@example.com' id=42 +active]
+           [user email='ada@example.com' id=42 active=true]
 
-           [# cx canon output (strict canonical bytes): #]
+           [# cx canonical output (strict canonical bytes): #]
            [user active=true email='ada@example.com' id=42]"""]
       [body
         """**Canonicalization rules (strict):**"""]
@@ -73,8 +73,7 @@
         [item """**Numeric form:** integers as plain digits; floats in the
                 shortest representation that round-trips to the same
                 value (IEEE-754 shortest-form)."""]
-        [item """**Boolean form:** `true` / `false`. Sigil shortcuts
-                `+name` / `-name` expand."""]
+        [item """**Boolean form:** `true` / `false`."""]
         [item """**Date/datetime:** offset preserved (NOT normalized to
                 UTC); fractional seconds dropped if all zero;
                 identity-comparison is by absolute instant."""]
@@ -169,14 +168,15 @@
            with N items and a hash of B bits, the probability of any
            collision crosses 50% at roughly N ≈ √(π/2 · 2^B). Useful
            safe-truncation lengths:"""]
-      [table columns=('truncated to' 'bits' 'safe collection size (1% collision risk)' 'safe (one-in-billion)')
-        [row truncated='4 hex (16 bits)' bits=16 safe1='~16' safe1b='very small']
-        [row truncated='8 hex (32 bits)' bits=32 safe1='~6,500' safe1b='~200']
-        [row truncated='12 hex (48 bits)' bits=48 safe1='~1.7 M' safe1b='~50,000']
-        [row truncated='16 hex (64 bits)' bits=64 safe1='~400 M' safe1b='~13 M']
-        [row truncated='20 hex (80 bits)' bits=80 safe1='~26 B' safe1b='~860 M']
-        [row truncated='24 hex (96 bits)' bits=96 safe1='~1.7 T' safe1b='~55 B']
-        [row truncated='full (256 bits)' bits=256 safe1='astronomical' safe1b='astronomical']]
+      [table
+        [tr [th 'truncated to'] [th 'bits'] [th 'safe collection size (1% collision risk)'] [th 'safe (one-in-billion)']]
+        [tr [td '4 hex (16 bits)'] [td '16'] [td '~16'] [td 'very small']]
+        [tr [td '8 hex (32 bits)'] [td '32'] [td '~6,500'] [td '~200']]
+        [tr [td '12 hex (48 bits)'] [td '48'] [td '~1.7 M'] [td '~50,000']]
+        [tr [td '16 hex (64 bits)'] [td '64'] [td '~400 M'] [td '~13 M']]
+        [tr [td '20 hex (80 bits)'] [td '80'] [td '~26 B'] [td '~860 M']]
+        [tr [td '24 hex (96 bits)'] [td '96'] [td '~1.7 T'] [td '~55 B']]
+        [tr [td 'full (256 bits)'] [td '256'] [td 'astronomical'] [td 'astronomical']]]
       [body
         """**Recommended:** 16 hex (64 bits) for short IDs in
            UI / URL / log contexts. 24 hex (96 bits) for cross-tenant
@@ -262,39 +262,40 @@
            newer libcx adds a feature, it claims a new cap bit. Readers
            that don't know that bit refuse the payload (rather than
            silently mis-interpret it). The full table:"""]
-      [table columns=('bit' 'name' 'meaning' 'introduced')
-        [row bit=1  name='schema-driven' meaning='data-bin omits tag bytes; schema is the dictionary' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=2  name='external-entity' meaning='resolver may load external XML entities' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=3  name='xml-space-preserve' meaning='xml:space attribute is parser-honored' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=4  name='include-local' meaning='[?cx include] resolves file-system paths under doc tree' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=5  name='include-absolute' meaning='[?cx include] resolves absolute paths' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=6  name='include-network' meaning='[?cx include] resolves HTTPS URLs' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=7  name='multi-encoding' meaning='document may declare alternate encoding' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=8  name='doctype-active' meaning='doctype declaration triggers auto-schema-binding' v='reserved for v0.9.x'] [; version-literal-ok ]
-        [row bit=9  name='namespaces' meaning='xmlns: declarations resolved' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=10 name='cx-lang' meaning='cx:lang scoping honored' v='v0.5.0'] [; version-literal-ok ]
-        [row bit=11 name='collection-literals' meaning='() [] {} literal forms' v='v0.6.0'] [; version-literal-ok ]
-        [row bit=12 name='ast-bin-v4' meaning='ast-bin format version 4' v='v0.6.0'] [; version-literal-ok ]
-        [row bit=13 name='delimited-csv' meaning='CSV / TSV / PSV projections' v='v0.6.0'] [; version-literal-ok ]
-        [row bit=14 name='diff-tree' meaning='cx diff produces tree-structured diff' v='v0.6.0'] [; version-literal-ok ]
-        [row bit=15 name='lint-rules' meaning='cx lint rule registry' v='v0.6.0'] [; version-literal-ok ]
-        [row bit=16 name='streaming-parse' meaning='pull-based streaming parser' v='v0.7.0'] [; version-literal-ok ]
-        [row bit=17 name='streaming-write' meaning='callback-driven streaming emit' v='v0.7.0'] [; version-literal-ok ]
-        [row bit=18 name='services' meaning='[?service] / [?http-client] directives' v='v0.7.6'] [; version-literal-ok ]
-        [row bit=19 name='workers' meaning='[?worker] / [?channel] / [?select] directives' v='v0.7.6'] [; version-literal-ok ]
-        [row bit=20 name='async' meaning='[?async] / [?await] / [?await-all/-any/-race]' v='v0.7.6'] [; version-literal-ok ]
-        [row bit=21 name='resilience' meaning='[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]' v='v0.7.6'] [; version-literal-ok ]
-        [row bit=22 name='cxcol-format' meaning='CXCol column-oriented binary format' v='v0.7.0'] [; version-literal-ok ]
-        [row bit=23 name='arrow-bridge' meaning='Arrow C Data Interface zero-copy bridge' v='v0.7.0'] [; version-literal-ok ]
-        [row bit=24 name='parquet-bridge' meaning='Parquet read/write via cxlib_arrow' v='v0.7.0'] [; version-literal-ok ]
-        [row bit=25 name='diagram-renderer' meaning='[?diagram] renders SVG/PNG/Mermaid' v='v0.7.6'] [; version-literal-ok ]
-        [row bit=26 name='thread-register' meaning='cx_thread_register required for cross-thread FFI' v='v0.6.0'] [; version-literal-ok ]
-        [row bit=27 name='cxpath-value' meaning='CXPath as first-class value kind' v='v0.8.0'] [; version-literal-ok ]
-        [row bit=28 name='match-multi' meaning='multi-arm [?match] with [case]/[when]/[else] clause children' v='v0.8.0'] [; version-literal-ok ]
-        [row bit=29 name='modify' meaning='[?modify] directive with action vocabulary' v='v0.8.0'] [; version-literal-ok ]
-        [row bit=30 name='structural-sharing' meaning='[?modify] uses spine-copy structural sharing' v='v0.8.x'] [; version-literal-ok ]
-        [row bit=31 name='wasm-diagram' meaning='playground wasm exports cx_code_diagram' v='v0.8.0'] [; version-literal-ok ]
-        [row bit=32 name='wasm-tree-view' meaning='playground wasm exposes data-tree view C ABI' v='v0.8.0']] [; version-literal-ok ]
+      [table
+        [tr [th 'bit'] [th 'name'] [th 'meaning'] [th 'introduced']]
+        [tr [td '1'] [td 'schema-driven'] [td 'data-bin omits tag bytes; schema is the dictionary'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '2'] [td 'external-entity'] [td 'resolver may load external XML entities'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '3'] [td 'xml-space-preserve'] [td 'xml:space attribute is parser-honored'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '4'] [td 'include-local'] [td '[?cx include] resolves file-system paths under doc tree'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '5'] [td 'include-absolute'] [td '[?cx include] resolves absolute paths'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '6'] [td 'include-network'] [td '[?cx include] resolves HTTPS URLs'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '7'] [td 'multi-encoding'] [td 'document may declare alternate encoding'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '8'] [td 'doctype-active'] [td 'doctype declaration triggers auto-schema-binding'] [td 'reserved for v0.9.x']] [; version-literal-ok ]
+        [tr [td '9'] [td 'namespaces'] [td 'xmlns: declarations resolved'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '10'] [td 'cx-lang'] [td 'cx:lang scoping honored'] [td 'v0.5.0']] [; version-literal-ok ]
+        [tr [td '11'] [td 'collection-literals'] [td '() [] {} literal forms'] [td 'v0.6.0']] [; version-literal-ok ]
+        [tr [td '12'] [td 'ast-bin-v4'] [td 'ast-bin format version 4'] [td 'v0.6.0']] [; version-literal-ok ]
+        [tr [td '13'] [td 'delimited-csv'] [td 'CSV / TSV / PSV projections'] [td 'v0.6.0']] [; version-literal-ok ]
+        [tr [td '14'] [td 'diff-tree'] [td 'cx diff produces tree-structured diff'] [td 'v0.6.0']] [; version-literal-ok ]
+        [tr [td '15'] [td 'lint-rules'] [td 'cx lint rule registry'] [td 'v0.6.0']] [; version-literal-ok ]
+        [tr [td '16'] [td 'streaming-parse'] [td 'pull-based streaming parser'] [td 'v0.7.0']] [; version-literal-ok ]
+        [tr [td '17'] [td 'streaming-write'] [td 'callback-driven streaming emit'] [td 'v0.7.0']] [; version-literal-ok ]
+        [tr [td '18'] [td 'services'] [td '[?service] / [?http-client] directives'] [td 'v0.7.6']] [; version-literal-ok ]
+        [tr [td '19'] [td 'workers'] [td '[?worker] / [?channel] / [?select] directives'] [td 'v0.7.6']] [; version-literal-ok ]
+        [tr [td '20'] [td 'async'] [td '[?async] / [?await] / [?await-all/-any/-race]'] [td 'v0.7.6']] [; version-literal-ok ]
+        [tr [td '21'] [td 'resilience'] [td '[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]'] [td 'v0.7.6']] [; version-literal-ok ]
+        [tr [td '22'] [td 'cxcol-format'] [td 'CXCol column-oriented binary format'] [td 'v0.7.0']] [; version-literal-ok ]
+        [tr [td '23'] [td 'arrow-bridge'] [td 'Arrow C Data Interface zero-copy bridge'] [td 'v0.7.0']] [; version-literal-ok ]
+        [tr [td '24'] [td 'parquet-bridge'] [td 'Parquet read/write via cxlib_arrow'] [td 'v0.7.0']] [; version-literal-ok ]
+        [tr [td '25'] [td 'diagram-renderer'] [td '[?diagram] renders SVG/PNG/Mermaid'] [td 'v0.7.6']] [; version-literal-ok ]
+        [tr [td '26'] [td 'thread-register'] [td 'cx_thread_register required for cross-thread FFI'] [td 'v0.6.0']] [; version-literal-ok ]
+        [tr [td '27'] [td 'cxpath-value'] [td 'CXPath as first-class value kind'] [td 'v0.8.0']] [; version-literal-ok ]
+        [tr [td '28'] [td 'match-multi'] [td 'multi-arm [?match] with [case]/[when]/[else] clause children'] [td 'v0.8.0']] [; version-literal-ok ]
+        [tr [td '29'] [td 'modify'] [td '[?modify] directive with action vocabulary'] [td 'v0.8.0']] [; version-literal-ok ]
+        [tr [td '30'] [td 'structural-sharing'] [td '[?modify] uses spine-copy structural sharing'] [td 'v0.8.x']] [; version-literal-ok ]
+        [tr [td '31'] [td 'wasm-diagram'] [td 'playground wasm exports cx_code_diagram'] [td 'v0.8.0']] [; version-literal-ok ]
+        [tr [td '32'] [td 'wasm-tree-view'] [td 'playground wasm exposes data-tree view C ABI'] [td 'v0.8.0']]] [; version-literal-ok ]
       [body
         """Bits 33-63 reserved for future revisions. The cap-bit
            layout is fixed; bits are never re-assigned."""]]
@@ -443,13 +444,14 @@
     [child id=id-cross-format n=4.5.3 title='Identity preservation across projections'
       [body
         """IDs survive round-trip through every supported projection:"""]
-      [table columns=('format' 'ID encoding' 'IDREF encoding')
-        [row format='CX (canonical)' id="#name (on element)" idref='#name (in value position)']
-        [row format='XML'           id='id="name"'           idref='attribute value or xlink:href']
-        [row format='JSON'          id='"_cx_id": "name"'    idref='{"$ref": "name"} envelope']
-        [row format='YAML'          id='&name (anchor)'      idref='*name (alias) — note YAML semantics differ slightly (anchors are syntactic; IDs are semantic)']
-        [row format='TOML'          id='id = "name"'         idref='ref = "#name"']
-        [row format='ast-bin'       id='attribute on Element' idref='bytes containing #name']]
+      [table
+        [tr [th 'format'] [th 'ID encoding'] [th 'IDREF encoding']]
+        [tr [td 'CX (canonical)'] [td "#name (on element)"] [td '#name (in value position)']]
+        [tr [td 'XML'] [td 'id="name"'] [td 'attribute value or xlink:href']]
+        [tr [td 'JSON'] [td '"_cx_id": "name"'] [td '{"$ref": "name"} envelope']]
+        [tr [td 'YAML'] [td '&name (anchor)'] [td '*name (alias) — note YAML semantics differ slightly (anchors are syntactic; IDs are semantic)']]
+        [tr [td 'TOML'] [td 'id = "name"'] [td 'ref = "#name"']]
+        [tr [td 'ast-bin'] [td 'attribute on Element'] [td 'bytes containing #name']]]
       [body
         """The data layer preserves the identity; the lossy
            projections (CSV / JSONL with flattening) lose it. For

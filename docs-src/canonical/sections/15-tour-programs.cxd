@@ -25,10 +25,10 @@
     [example lang=cx """'Hand-tossed since 1987'"""]]
 
   [child id=tp-3  n=15.3  title='3. Read an attribute — @name'
-    [body """`@name` is a path expression for the attribute named `name`. Prints "Margherita"."""]
+    [body """`@name` after a path step selects the attribute named `name`. Prints "Margherita"."""]
     [example lang=cx
       """[pizza name=Margherita]
-         @name"""]]
+         //pizza/@name"""]]
 
   [child id=tp-4  n=15.4  title='4. Find anywhere — //'
     [body """`//` matches a `pizza` element at any depth."""]
@@ -37,22 +37,25 @@
          //pizza/@name"""]]
 
   [child id=tp-5  n=15.5  title='5. Inside body text'
-    [body """A directive sits inside text. The rest stays as written."""]
+    [body """A `[?str]` template drops a computed value into text. The rest stays as written."""]
     [example lang=cx
       """[pizza name=Margherita]
-         [receipt Thanks for ordering @name!]"""]]
+         [?let [= $p [$first //pizza]]
+           [receipt [?str 'Thanks for ordering {$p@name}!']]]"""]]
 
   [child id=tp-6  n=15.6  title='6. Inside an attribute value'
-    [body """Path expressions evaluate in attribute-value position via `[?str …]`. One mechanism, two positions."""]
+    [body """Expressions evaluate in attribute-value position via `[?str …]`. One mechanism, two positions."""]
     [example lang=cx
       """[user id=42 name=Joe]
-         [a href=[?str "/u/{@id}/profile"] View [?str "{@name}'s profile"]]"""]]
+         [?let [= $u [$first //user]]
+           [a href=[?str '/u/{$u@id}/profile'] [?str "View {$u@name}'s profile"]]]"""]]
 
-  [child id=tp-7  n=15.7  title='7. Several on one line'
-    [body """Each expression evaluates independently."""]
+  [child id=tp-7  n=15.7  title='7. Several holes in one template'
+    [body """A template can carry any number of holes."""]
     [example lang=cx
       """[pizza name=Margherita price=12]
-         [line @name — @price€]"""]]
+         [?let [= $p [$first //pizza]]
+           [line [?str '{$p@name} — {$p@price}€']]]"""]]
 
   [child id=tp-8  n=15.8  title='8. Inside a generated element'
     [body """Per iteration, build a fully-formed `[a href=… …]` element."""]
@@ -82,59 +85,66 @@
     [body """Walks siblings to the right of the matched node."""]
     [example lang=cx
       """[row [cell n=1] [cell n=2] [cell n=3]]
-         [?for [in $x //cell[@n=1]/following-sibling::*] [yield [?str "{$x/@n};"]]]"""]]
+         [?for [in $x //cell[= $_@n 1]/following-sibling::*] [yield [?str "{$x/@n};"]]]"""]]
 
   [child id=tp-13 n=15.13 title='13. Predicate filter — [@attr=value]'
-    [body """Brackets inside path expressions are predicates, not new elements."""]
+    [body """Brackets inside path expressions are predicates — prefix code over the context node `$_`."""]
     [example lang=cx
       """[menu [pizza name=Margherita] [pizza name=Hawaiian]]
-         //pizza[@name='Hawaiian']/@name"""]]
+         //pizza[= $_@name 'Hawaiian']/@name"""]]
 
   [child id=tp-14 n=15.14 title='14. Upper-case'
     [body """Wrap a value in a call form to apply a function."""]
     [example lang=cx
       """[pizza name=margherita]
-         [$upper @name]"""]]
+         [?let [= $p [$first //pizza]] [$upper $p@name]]"""]]
 
   [child id=tp-15 n=15.15 title='15. Default — fall back when missing'
-    [body """Graceful fallback; no exception."""]
+    [body """`[?else EXPR DEFAULT]` yields EXPR unless it is absent (or an error) — graceful fallback, no exception."""]
     [example lang=cx
       """[pizza name=Mystery]
-         [$default @price 0]"""]]
+         [?else //pizza/@price 0]"""]]
 
   [child id=tp-16 n=15.16 title='16. Composed filters — nested'
     [body """Inside-out: trim, then upper."""]
     [example lang=cx
       """[pizza name='  margherita  ']
-         [$upper [$trim @name]]"""]]
+         [?lib 'cx-stdlib/strings']
+         [?let [= $p [$first //pizza]]
+           [$upper [$strings:trim [$string $p@name]]]]"""]]
 
   [child id=tp-17 n=15.17 title='17. String length'
     [body """Counts characters. Prints 10."""]
     [example lang=cx
       """[pizza name=Margherita]
-         [$string-length @name]"""]]
+         [?let [= $p [$first //pizza]] [$string-length $p@name]]"""]]
 
   [child id=tp-18 n=15.18 title="18. Today's date"
-    [body """`time/now`, `time/now-dt`, `time/now-time` from the `cx-stdlib/time` module."""]
-    [example lang=cx """[time/now-date]"""]]
+    [body """`[$time:now]` and `[$time:today]` from the `cx-stdlib/time` module (clock capability — grant `--allow-clock`)."""]
+    [example lang=cx """[?lib 'cx-stdlib/time']
+[$time:today]"""]]
 
   [child id=tp-19 n=15.19 title='19. Pipeline — left-to-right composition'
     [body """Same result as composed filters, read top-down instead of inside-out."""]
     [example lang=cx
       """[pizza name='  margherita  ']
-         [?pipe @name [$trim _] [$upper _]]"""]]
+         [?lib 'cx-stdlib/strings']
+         [?let [= $p [$first //pizza]]
+           [?pipe [$string $p@name] [$strings:trim] [$upper]]]"""]]
 
   [child id=tp-20 n=15.20 title='20. Method-call style via pipe'
     [body """Reads as "take name, then lower it". The value threads through each bare stage; `_` is the threaded value."""]
     [example lang=cx
       """[pizza name=MARGHERITA]
-         [?pipe @name [$lower _]]"""]]
+         [?let [= $p [$first //pizza]]
+           [?pipe $p@name [$lower]]]"""]]
 
   [child id=tp-21 n=15.21 title='21. String concatenation'
     [body """Join strings with `[$concat …]`."""]
     [example lang=cx
       """[user first=Ada last=Lovelace]
-         [$concat @first ' ' @last]"""]]
+         [?let [= $u [$first //user]]
+           [$concat $u@first ' ' $u@last]]"""]]
 
   [child id=tp-22 n=15.22 title='22. Range — M to N'
     [body """Inclusive range. Prints "1;2;3;4;"."""]
@@ -144,19 +154,22 @@
     [body """Three clauses: condition, [then …], [else …]."""]
     [example lang=cx
       """[pizza stock=0]
-         [?if [> @stock 0] [then in stock] [else out of stock]]"""]]
+         [?let [= $p [$first //pizza]]
+           [?if [> $p@stock 0] [then 'in stock'] [else 'out of stock']]]"""]]
 
   [child id=tp-24 n=15.24 title='24. If — alternate values'
     [body """Same semantics, named clause children read clearly."""]
     [example lang=cx
       """[pizza stock=5]
-         [?if [> @stock 0] [then in stock] [else out of stock]]"""]]
+         [?let [= $p [$first //pizza]]
+           [?if [> $p@stock 0] [then 'in stock'] [else 'out of stock']]]"""]]
 
   [child id=tp-25 n=15.25 title='25. Skip the else branch'
     [body """A false condition yields the empty sequence — `[else …]` is optional."""]
     [example lang=cx
       """[pizza featured=true]
-         [?if @featured [then ★ featured!]]"""]]
+         [?let [= $p [$first //pizza]]
+           [?if $p@featured [then '★ featured!']]]"""]]
 
   [child id=tp-26 n=15.26 title='26. Existence check'
     [body """A node-set is truthy when non-empty."""]
@@ -168,23 +181,24 @@
     [body """Use multi-arm `[?match]` with predicate-only `[when …]` clauses."""]
     [example lang=cx
       """[pizza stock=2]
-         [?match
-           [when [> @stock 100] plenty]
-           [when [> @stock 10]  some]
-           [when [> @stock 0]   last few]
-           [else                sold out]]"""]]
+         [?let [= $p [$first //pizza]]
+           [?match
+             [when [> $p@stock 100] 'plenty']
+             [when [> $p@stock 10]  'some']
+             [when [> $p@stock 0]   'last few']
+             [else                  'sold out']]]"""]]
 
   [child id=tp-28 n=15.28 title='28. For — explicit binding'
     [body """The `[in $v SRC]` clause introduces the loop variable and source."""]
     [example lang=cx
       """[pizza [topping cheese] [topping basil] [topping oil]]
-         [?for [in $t //topping] [yield [?str "{$t/@name};"]]]"""]]
+         [?for [in $t //topping] [yield [?str '{[$text $t]};']]]"""]]
 
   [child id=tp-29 n=15.29 title='29. For — anonymous over implicit $_'
     [body """Drop the variable to bind `$_` automatically for each iteration."""]
     [example lang=cx
       """[pizza [topping cheese] [topping basil] [topping oil]]
-         [?for [in //topping] [yield [?str "{$_/@name};"]]]"""]]
+         [?for [in //topping] [yield [?str '{[$text $_]};']]]"""]]
 
   [child id=tp-30 n=15.30 title='30. Range loop — generate elements'
     [body """Produces `[slot id=1][slot id=2][slot id=3]`."""]
@@ -195,7 +209,7 @@
     [example lang=cx
       """[shop [pizza name=Margherita [topping cheese] [topping basil]]]
          [?for [in $p //pizza] [yield
-           [grp [?str "{$p/@name}: "] [?for [in $t $p/topping] [yield [?str "{$t/@name},"]]]]]]"""]]
+           [grp [?str "{$p/@name}: "] [?for [in $t $p/topping] [yield [?str '{[$text $t]},']]]]]]"""]]
 
   [child id=tp-32 n=15.32 title='32. For — over a single element'
     [body """A single-element source binds once. Prints "Pepe / IT"."""]
@@ -213,22 +227,24 @@
     [body """Compute tax once, use it where the binding is in scope."""]
     [example lang=cx
       """[pizza price=12]
-         [?let [= $tax [* @price 0.22]]
-           [?str "Total: {[+ @price $tax]}€"]]"""]]
+         [?let [= $p   [$first //pizza]]
+               [= $tax [* $p@price 0.22]]
+           [?str "Total: {[+ $p@price $tax]}€"]]"""]]
 
   [child id=tp-35 n=15.35 title='35. Let — bind a pipeline result'
     [body """Pipelines and let-bindings compose naturally."""]
     [example lang=cx
       """[pizza name='  margherita  ']
-         [?let [= $clean [?pipe @name [$trim _] [$upper _]]]
+         [?lib 'cx-stdlib/strings']
+         [?let [= $p [$first //pizza]]
+               [= $clean [?pipe [$string $p@name] [$strings:trim] [$upper]]]
            [?str "Welcome, {$clean}!"]]"""]]
 
   [child id=tp-36 n=15.36 title='36. Define a template fragment'
-    [body """`[?def name () BODY]` — zero-arg function definition. Call as `[$greet]`."""]
+    [body """`[?def name () BODY]` — zero-arg function definition. Call as `[$slogan]`."""]
     [example lang=cx
-      """[?def greet () [?str "Hello {@name}!"]]
-         [pizza name=Pepe]
-         [$greet]"""]]
+      """[?def slogan () [?str 'Hand-tossed since 1987']]
+         [$slogan]"""]]
 
   [child id=tp-37 n=15.37 title='37. With one parameter'
     [body """Parameters go in the `(…)` parameter list. Call with `[$shout arg]`."""]
@@ -258,72 +274,85 @@
 
   [child id=tp-41 n=15.41 title='41. HTML-safe output'
     [body """`[?cx output-target=html]` switches the evaluator into context-aware escaping. No XSS from the menu."""]
-    [example lang=cx
-      """[pizza name='<script>alert(1)</script>']
-         [?cx output-target=html]
-         @name"""]]
+    [; check=none — [?cx output-target] is approved evaluator-config
+       surface; the current binary rejects every [?cx …] directive,
+       tracked as engine regression #421. ]
+    [example lang=cx check=none
+      """[?cx output-target=html]
+         [pizza name='<script>alert(1)</script>']
+         //pizza/@name"""]]
 
   [child id=tp-42 n=15.42 title='42. Plain-text output'
     [body """Useful for terminals and files where escaping would be noise."""]
-    [example lang=cx
+    [; check=none — [?cx output-target] is approved evaluator-config
+       surface; rejected by the current binary (#421). ]
+    [example lang=cx check=none
       """[?cx output-target=text]
          [pizza name='<b>Margherita</b>']
-         @name"""]]
+         //pizza/@name"""]]
 
-  [child id=tp-43 n=15.43 title='43. Activate a module'
-    [body """Modules expose new directive namespaces (`cx:`, `log:`, …) once activated. Module-qualified calls use `[prefix/fn args]`."""]
+  [child id=tp-43 n=15.43 title='43. Load a module'
+    [body """`[?lib]` loads a bundled stdlib module; module-qualified calls use `[$prefix:fn args]`."""]
     [example lang=cx
-      """[?cx use-module=cx]
-         [cx/canonical [cx/parse '[a   x=1  ]']]"""]]
+      """[?lib 'cx-stdlib/cx']
+         [?lib 'cx-stdlib/format']
+         [$format:canonical [$cx:parse '[a   x=1  ]']]"""]]
 
-  [child id=tp-44 n=15.44 title='44. cx/parse — read CX from a string'
+  [child id=tp-44 n=15.44 title='44. [$cx:parse] — read CX from a string'
     [body """CX reads its own syntax as data. Code is data."""]
     [example lang=cx
-      """[?cx use-module=cx]
-         [cx/parse '[pizza name=Margherita]']"""]]
+      """[?lib 'cx-stdlib/cx']
+         [$cx:parse '[pizza name=Margherita]']"""]]
 
-  [child id=tp-45 n=15.45 title='45. cx/serialize — emit a value back to text'
-    [body """Round-trip: parse then serialize. Prints `[a x=1 y=2]`."""]
+  [child id=tp-45 n=15.45 title='45. [$cx:emit] — emit a value back to text'
+    [body """Round-trip: parse then emit. Prints `[a x=1 y=2]`."""]
     [example lang=cx
-      """[?cx use-module=cx]
-         [cx/serialize [cx/parse '[a x=1 y=2]']]"""]]
+      """[?lib 'cx-stdlib/cx']
+         [$cx:emit [$cx:parse '[a x=1 y=2]']]"""]]
 
-  [child id=tp-46 n=15.46 title='46. cx/canonical — normalize'
+  [child id=tp-46 n=15.46 title='46. [$format:canonical] — normalize'
     [body """Whitespace and attribute order canonicalized; idempotent."""]
     [example lang=cx
-      """[?cx use-module=cx]
-         [cx/canonical [cx/parse '[a   x=1   y=2]']]"""]]
+      """[?lib 'cx-stdlib/cx']
+         [?lib 'cx-stdlib/format']
+         [$format:canonical [$cx:parse '[a   x=1   y=2]']]"""]]
 
-  [child id=tp-47 n=15.47 title='47. cx/hash — content digest'
-    [body """Stable hash over the canonical form. Same input always yields the same hash, in every binding."""]
+  [child id=tp-47 n=15.47 title='47. Content digest — hash the canonical form'
+    [body """Stable digest over the canonical bytes. Same input always yields the same hash, in every binding."""]
     [example lang=cx
-      """[?cx use-module=cx]
-         [cx/hash [cx/parse '[pizza name=Margherita]']]"""]]
+      """[?lib 'cx-stdlib/cx']
+         [?lib 'cx-stdlib/format']
+         [?lib 'cx-stdlib/hash']
+         [$hash:sha256-hex [$format:canonical [$cx:parse '[pizza name=Margherita]']]]"""]]
 
-  [child id=tp-48 n=15.48 title='48. cx/merge — three-policy semantic merge'
-    [body """Two trees combined by element identity. Coupon's `price=10` overrides the order's."""]
+  [child id=tp-48 n=15.48 title='48. Override — pure-functional update as merge'
+    [body """Two trees combined with `[?modify]`. The coupon's `price=10` overrides the order's; the original order is unchanged."""]
     [example lang=cx
-      """[?cx use-module=cx]
-         [order [pizza name=Margherita price=12]]
-         [coupon [pizza price=10]]
-         [cx/merge //order //coupon]"""]]
+      """[order [pizza name=Margherita price=12]]
+         [coupon price=10]
+         [?let [= $order [$first //order]]
+               [= $coupon [$first //coupon]]
+           [?modify $order //pizza/@price [set $coupon@price]]]"""]]
 
   [child id=tp-49 n=15.49 title='49. Structured logging'
-    [body """`[log/level msg fields]` emits a structured event. Second arg is a map of fields."""]
+    [body """`[$log:LEVEL msg fields=…]` emits a structured event; `fields=` is a map."""]
     [example lang=cx
-      """[?cx use-module=log log-level=info]
-         [log/info 'sale' {pizza: 'Margherita', price: 12}]
-         [log/debug 'suppressed at info level']"""]]
+      """[?lib 'cx-stdlib/log']
+         [$log:info 'sale' fields={pizza: 'Margherita', price: 12}]
+         [$log:debug 'suppressed at the default level']"""]]
 
   [child id=tp-50 n=15.50 title='50. The whole kitchen'
-    [body """Module activation, HTML-safe escaping, function definition, structured logging, semantic merge, iteration. Six lines; the whole arc."""]
+    [body """Module loading, function definition, structured logging, pure-functional override, iteration. A handful of lines; the whole arc."""]
     [example lang=cx
-      """[?cx use-module=cx output-target=html log-level=info]
+      """[order [pizza name=Margherita price=12]]
+         [coupon price=10]
+         [?lib 'cx-stdlib/log']
          [?def line ($p) [li [?str "{$p/@name} — {$p/@price}€"]]]
-         [order [pizza name='<b>Margherita</b>' price=12]]
-         [coupon [pizza price=10]]
-         [log/info 'rendering receipt']
-         [ul [?for [in $p [cx/merge //order //coupon]/pizza] [yield [$line $p]]]]"""]]
+         [?let [= $order [$first //order]]
+               [= $coupon [$first //coupon]]
+               [= $final [?modify $order //pizza/@price [set $coupon@price]]]
+           ([$log:info 'rendering receipt'],
+            [ul [?for [in $p $final/pizza] [yield [$line $p]]]])]"""]]
 
   [note
     """**The arc.** Read a value → put it in context → walk paths

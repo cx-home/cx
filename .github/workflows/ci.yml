@@ -149,3 +149,40 @@ jobs:
               exit 1
           fi
           echo "OK: cx demo finished in ${elapsed_ms}ms"
+
+  guide:
+    name: Guide build + docs-example gate (#425)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install V
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+
+      - name: Build cx
+        run: make build-vcx
+
+      # Fail-loud render: guide_build.cx exits non-zero naming the file
+      # on any section parse failure (no more silently-partial sites).
+      - name: Build the guide
+        run: make guide GUIDE_SKIP_CX_BUILD=1
+
+      - name: All 16 guide section pages present
+        run: |
+          missing=0
+          for p in quickstart intro data-language surfaces identity analytics \
+                   code bindings tooling concepts migration glossary faq \
+                   comparison tour-data tour-programs; do
+            if [ ! -f "docs/guide/$p.html" ]; then
+              echo "MISSING docs/guide/$p.html"; missing=1
+            fi
+          done
+          exit $missing
+
+      # Docs-example gate: every [example lang=cx] snippet in
+      # docs-src/canonical/sections/ runs clean on the built binary
+      # (check=none opts out deliberately-illustrative fragments).
+      - name: Docs-example gate
+        run: make guide-snippets-check GUIDE_SKIP_CX_BUILD=1

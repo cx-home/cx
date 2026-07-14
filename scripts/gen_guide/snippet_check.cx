@@ -1,0 +1,125 @@
+[; scripts/gen_guide/snippet_check.cx — the docs-example gate (#425).
+
+   Every [example lang=cx] snippet in docs-src/canonical/sections/*.cxd
+   is extracted and RUN against the live binary (`cx <tmpfile>`, no
+   capability grants) — the same method as the 2026-07-14 release audit
+   that found 10 of 16 guide pages unbuildable and ~65 stale taught
+   examples. The guide must never again teach surface the binary
+   rejects.
+
+   Verdict per snippet:
+     - exit-code 0 and no `cx-err:` in the output          → PASS
+     - output contains ONLY capability denials (CXER0271)  → PASS
+       (the snippet parsed and evaluated to the effect point; the gate
+        grants no capabilities, so the denial is environmental, not
+        staleness)
+     - anything else (parse error, eval error, non-zero rc) → FAIL
+
+   Opt-out: [example lang=cx check=none …] skips the run for a
+   deliberately-illustrative fragment (multi-doc walkthrough panels,
+   error-value demos, snippets that depend on external files or
+   long-running services, and the [?cx include] examples that trip
+   engine regression #421). Every check=none carries a nearby [; …]
+   comment saying why.
+
+   Run:  cx scripts/gen_guide/snippet_check.cx \
+           --allow-read --allow-write --allow-subprocess --allow-env
+   (or `make guide-snippets-check`). CX_BIN overrides the binary the
+   snippets are run with (default: the `cx` on PATH).
+
+   Exit 0 with a summary when everything passes; exit 1 after listing
+   every failure otherwise. All defs are strictly define-before-use. ]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/cx']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/fp']
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[; first-line: the snippet's first source line, for failure reports. ]
+[?def first-line scope=public ($s)
+  [?let [= $t [$strings:trim $s]]
+        [= $i [$strings:find $t '\n']]
+    [?if [< $i 0] [then $t] [else [$strings:slice $t 0 $i]]]]]
+
+[; text-of: the [example]'s single text child. ]
+[?def text-of scope=public ($ex)
+  [?match $ex [case [example $code] $code] [else '']]]
+
+[; detail-of: a [fail]'s [detail] text. ]
+[?def detail-of scope=public ($x)
+  [$strings:join [?for [in $c $x/*] [yield
+    [?match $c [case [detail $t] $t] [else ()]]]] '']]
+
+[; check-one: run one snippet; () on pass, [fail …] on failure. ]
+[?def check-one scope=public impure ($cxbin $tmp $file $code)
+  [?let [= $w [$io:write-file $tmp $code]]
+        [= $r [$process:run ($cxbin, $tmp)]]
+        [= $out [$cat ($r@stdout, ' ', $r@stderr)]]
+        [= $clean [$strings:replace $out 'cx-err:CXER0271' '']]
+        [= $ok [and [= $r@exit-code 0] [< [$strings:find $clean 'cx-err:'] 0]]]
+    [?if $ok [then ()]
+      [else [fail file=$file head=[$first-line $code]
+              [detail [$strings:trim $out]]]]]]]
+
+[; file-fails: all failures for one section file (sequence of [fail]).
+   A section file that itself fails to parse is a gate failure too. ]
+[?def file-fails scope=public impure ($cxbin $tmp $f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+    [?match $d
+      [case [err $e]
+        ([fail file=$f head='<file does not parse>' [detail $e@message]])]
+      [else
+        [?for [in $ex $d//example]
+          [where [and [= $ex@lang 'cx'] [not [= $ex@check 'none']]]]
+          [yield [$check-one $cxbin $tmp $f [$text-of $ex]]]]]]]]
+
+[; counts: total / opt-out lang=cx examples in one section file. ]
+[?def counts scope=public impure ($f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+    [?match $d
+      [case [err $e] [c total=0 optout=0]]
+      [else
+        [c total=[$count [?for [in $ex $d//example]
+                   [where [= $ex@lang 'cx']] [yield 1]]]
+           optout=[$count [?for [in $ex $d//example]
+                    [where [and [= $ex@lang 'cx'] [= $ex@check 'none']]]
+                    [yield 1]]]]]]]]
+
+[?let
+  [= $cxbin [$env:var-or-default 'CX_BIN' 'cx']]
+  [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-snippet-check')]]
+  [= $tmp [$cat ($tmpdir, '/snippet.cx')]]
+  [= $mk [$io:make-dirs $tmpdir]]
+  [= $files [$io:glob 'docs-src/canonical/sections/*.cxd']]
+  [= $fails [$fp:flat-map $files [?fn ($f) [$file-fails $cxbin $tmp $f]]]]
+  [= $per [?for [in $f $files] [yield [$counts $f]]]]
+  [= $total [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@total]]]]
+  [= $optout [$fp:fold $per 0 [?fn ($a $c) [+ $a $c@optout]]]]
+  [= $nfail [$count $fails]]
+  [= $done (
+    [?if [$empty $files]
+      [then ([$cry 'snippet-check: no section files found — run from the repo root'],
+             [$env:exit 2])]
+      [else ()]],
+    [?for [in $x $fails] [yield
+      [?match $x
+        [case [err $e]
+          ([$cry [$cat ('snippet-check: INTERNAL ERROR — ', $e@message,
+                        ' (missing a capability grant? run with --allow-read --allow-write --allow-subprocess --allow-env)')]],
+           [$env:exit 2])]
+        [else
+          ([$cry [$cat ('snippet-check: FAIL ', $x@file, ' — ', $x@head)]],
+           [$cry [$cat ('  ', [$detail-of $x])]])]]]],
+    [$say [$cat ('snippet-check: ', [$string $total], ' lang=cx examples — ',
+                 [$string [- [- $total $optout] $nfail]], ' pass, ',
+                 [$string $optout], ' opt-out (check=none), ',
+                 [$string $nfail], ' fail')]],
+    [?if [> $nfail 0] [then [$env:exit 1]] [else ()]]
+  )]
+  [?if false [then '']]]

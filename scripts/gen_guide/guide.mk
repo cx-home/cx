@@ -40,7 +40,8 @@ endif
         guide-wasm \
         guide-diff \
         guide-clean \
-        guide-check
+        guide-check \
+        guide-snippets-check
 
 ## guide        Build docs/guide/ from docs-src/canonical/. The "Standard
 ##                                   library" / "Reference" pages are projected
@@ -56,6 +57,18 @@ endif
 guide: $(GUIDE_CX_DEP)
 	@$(GUIDE_CX_BIN) $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
+
+## guide-snippets-check  Docs-example gate (#425): run every
+##                                   [example lang=cx] snippet in
+##                                   docs-src/canonical/sections/*.cxd against
+##                                   the built binary (no capability grants;
+##                                   [example … check=none] opts a
+##                                   deliberately-illustrative fragment out).
+##                                   Nonzero exit on any failing snippet or any
+##                                   unparseable section file.
+guide-snippets-check: $(GUIDE_CX_DEP)
+	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) $(GUIDE_GEN)/snippet_check.cx \
+	  --allow-read --allow-write --allow-subprocess --allow-env
 
 ## guide-wasm    Rebuild the playground wasm, then render the guide. Use when
 ##                                   the cx engine changed and the in-browser
@@ -135,7 +148,12 @@ guide-http: guide
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
+## Honors GUIDE_SKIP_CX_BUILD=1 (reuse the existing binary), same as `guide`.
+ifeq ($(GUIDE_SKIP_CX_BUILD),)
 guide-diff: build-vcx
+else
+guide-diff:
+endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
 	 $(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null; \

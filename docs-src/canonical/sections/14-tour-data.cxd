@@ -45,8 +45,8 @@
     [example lang=cx """[pizza vegan=true gluten-free=false]"""]]
 
   [child id=td-8  n=14.8  title='8. Boolean sigil shorthand'
-    [body """`+name` means `name=true`; `-name` means `name=false`. Compact form for many booleans."""]
-    [example lang=cx """[pizza +vegan -nuts -gluten]"""]]
+    [body """Booleans are ordinary attributes — `name=true` / `name=false`; the bare tokens auto-type as bool."""]
+    [example lang=cx """[pizza vegan=true nuts=false gluten=false]"""]]
 
   [child id=td-9  n=14.9  title='9. Numbers — int, decimal, negative, hex, underscores'
     [body """All bare, all auto-typed. Underscores in numbers are readability sugar."""]
@@ -108,15 +108,15 @@
            Still on the line every Friday.
          ''']"""]]
 
-  [child id=td-22 n=14.22 title='22. Block content [| … ]'
-    [body """Like a text body, but indentation and newlines are kept verbatim. Unlike triple-quoted, inner elements such as `[em best]` are still real markup."""]
+  [child id=td-22 n=14.22 title='22. Block content [| … |]'
+    [body """Like a text body, but indentation and newlines are kept verbatim; the block closes with `|]`. Unlike triple-quoted, inner elements such as `[em best]` are still real markup."""]
     [example lang=cx
       """[poem [|
            Roses are red,
              violets are blue,
            the [em best] pizza
              is waiting for you.
-         ]]"""]]
+         |]]"""]]
 
   [child id=td-23 n=14.23 title='23. Raw text [# … #]'
     [body """The CDATA of CX. Brackets, quotes, `<`, `>` — all literal characters. The terminator is `#]`."""]
@@ -295,23 +295,22 @@
            ''']]"""]]
 
   [child id=td-50 n=14.50 title='50. The whole shop'
-    [body """XML decl, anchor, sigil flags, line comment, block comment, typed table, merged child, map and sequence attribute values, triple-quoted text. One syntax, everywhere."""]
+    [body """XML decl, anchor, block comments, typed table, merged child, map and sequence children, triple-quoted text. One syntax, everywhere."""]
     [example lang=cx
       """[?xml version=1.0 encoding=UTF-8]
-         [shop &flagship name='New Haven' port=8080 +open
-           # opening hours
+         [shop &flagship name='New Haven' port=8080 open=true
+           [; opening hours ]
            [hours mon-fri=11-22 sat=12-23 sun=closed]
            [; menu reviewed 2026-05-01 ]
            [menu :table[name:string size price:decimal vegan:bool]
              Margherita medium 12.00 true
              Hawaiian   large  14.00 false
              Diavola    medium 13.00 false]
-           [staff [cook &lead name=Pepe shift=morning +founder]
-                  [cook *lead name=Maria shift=closing -founder]]
-           [contact
-             address='123 Forno Lane'
-             coords={lat: 40.8518, lon: 14.2681}
-             phones=('+39 555 0101', '+39 555 0102')]
+           [staff [cook &lead name=Pepe shift=morning founder=true]
+                  [cook *lead name=Maria shift=closing founder=false]]
+           [contact address='123 Forno Lane'
+             [coords {lat: 40.8518, lon: 14.2681}]
+             [phones ('+39 555 0101', '+39 555 0102')]]
            [tagline '''
              Hand-tossed since 1987.
              Still tossing.
