@@ -209,7 +209,7 @@
            [[datetime-detail]] for timezone, precision, and leap-second
            semantics."""]]
 
-    [child id=null n=2.3.5 title='Null'
+    [child id='null' n=2.3.5 title='Null'
       [body
         """`null` is the absent-value scalar. Distinct from the empty
            sequence `()`. `null` is a value; `()` is the absence of any
@@ -747,7 +747,7 @@
     [intro
       """CX reserves a doctype declaration slot (the `[!…]` declaration
          lexical space inherited from XML, and a capability bit named
-         `doctype-active` — see [[capability-bits]]) but does not yet
+         `doctype-active` — see [[ast-bin-capabilities]]) but does not yet
          define an active doctype surface."""]
     [body
       """The roadmap direction: a doctype names the document type
@@ -1105,7 +1105,7 @@
            directive is preserved untouched unless a resolution root
            is supplied (`--include-root=DIR` on the CLI). A program
            that needs a *computed* path reads the file itself with
-           [[stdlib]] `[$io:read-file]` + `[$cx:parse]`."""]
+           the standard library's `[$io:read-file]` + `[$cx:parse]`."""]
       [example lang=shell """cx --cx --include-root=./conf main.cx"""]
       [; check=none — [?cx include] is approved surface (code.md §13); the
          current binary rejects every [?cx …] directive, tracked as engine

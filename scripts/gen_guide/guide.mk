@@ -148,7 +148,12 @@ guide-http: guide
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
+## Honors GUIDE_SKIP_CX_BUILD=1 (reuse the existing binary), same as `guide`.
+ifeq ($(GUIDE_SKIP_CX_BUILD),)
 guide-diff: build-vcx
+else
+guide-diff:
+endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
 	 $(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null; \

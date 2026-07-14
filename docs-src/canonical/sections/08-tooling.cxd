@@ -127,7 +127,7 @@
            `--allow-net`, `--allow-env`, `--allow-clock`,
            `--allow-random`, `--allow-subprocess`, `--allow-eval`,
            `--allow-secret-reveal`, and the blanket `--allow-all`.
-           See [[capabilities]] for the security model."""]
+           See [[security]] for the security model."""]
       [body
         """A help-hidden `cx eval FILE` alias exists for the same
            action; prefer the plain `cx FILE` spelling — the alias

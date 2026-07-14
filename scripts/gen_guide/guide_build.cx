@@ -193,6 +193,22 @@
    on its own page drops to a bare #fragment. Unknown [[name]] tokens become
    a visible <span class="xref-unresolved">. #]
 
+[# escape-code-xrefs: HTML-entity-escape '[[' inside <code>…</code> spans
+   so literal double brackets in code samples (TOML [[array-of-tables]],
+   xref syntax shown as syntax) are never treated as cross-references. #]
+[?def escape-code-xrefs scope=public impure ($h)
+  [?let [= $i [$strings:find $h '<code']]
+    [?if [< $i 0] [then $h]
+      [else
+        [?let [= $head [$strings:slice $h 0 $i]]
+              [= $rest [$strings:slice $h $i [$strings:length $h]]]
+              [= $end  [$strings:find $rest '</code>']]
+          [?if [< $end 0] [then $h]
+            [else [$cat (
+              $head,
+              [$strings:replace [$strings:slice $rest 0 [+ $end 7]] '[[' '&#91;&#91;'],
+              [$escape-code-xrefs [$strings:slice $rest [+ $end 7] [$strings:length $rest]]])]]]]]]]]
+
 [# anchor-href: target href for one reference, given the current page slug. #]
 [?def anchor-href scope=public ($cur $slug $frag $name)
   [?let [= $base [?if [= $slug $cur] [then ''] [else [$cat ($slug, '.html')]]]]
@@ -210,7 +226,9 @@
 [?def resolve-anchors scope=public impure ($body $cur $sec $chl)
   [$re:replace [$re:compile '\[\[[a-z][a-z0-9-]*\]\]']
     [$fp:fold $chl
-      [$fp:fold $sec $body [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
+      [$fp:fold $sec
+        [$strings:replace [$escape-code-xrefs $body] '`[[' '`&#91;&#91;']
+        [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
       [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
     '<span class="xref-unresolved">$0</span>']]
 
@@ -274,7 +292,7 @@
       [?let [= $d [$parse-or-die $f]]
             [= $s $d//section]
         [?if [$empty $s] [then ()] [else
-          [m group='Guide' n=$s@n slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
+          [m group='Guide' n=$s@n id=$s@id slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
 
 [# ── Standard-library projection ──────────────────────────────────────────
    Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
@@ -482,12 +500,15 @@
       [h3 'Agent-parity']
       [p 'Agents are first-class peers. They emit the same intents as humans and are gated by the same authz dial — a delegation you can attenuate, time-bound, or revoke. Surfaces are medium-agnostic, so the same capability renders for a terminal, a browser, or an agent.']
       [h3 'Using it']
-      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. '
-         [code 'cx xap init <dir>'] ' scaffolds a project. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
+      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
       [h3 'The demo ladder']
       [ul [?for [in $d [$xap-demos]] [yield [$xap-ladder-item $d]]]]]]]]
 
-[# ── main: render every section page ─────────────────────────────────── #]
+[# ── main: render every section page ───────────────────────────────────
+   Cross-reference anchors are derived from the section files themselves
+   (their [section id=] and nested [child id=]s) — the manifest is a
+   descriptive outline and is NOT consulted, so anchors can never go
+   stale against it. #]
 [?let
   [= $src 'docs-src/canonical']
   [= $gen 'scripts/gen_guide']
@@ -495,12 +516,12 @@
   [= $metas [$load-metas $src]]
   [= $libfiles [$io:glob 'stdlib/*.cx']]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
-  [= $man [$parse-or-die [$cat ($src, '/manifest.cxd')]]]
-  [= $sec-ancs [?for [in $s $man//section] [yield
-    [anc name=$s@id slug=[$slug-of $s@file] frag='']]]]
-  [= $child-ancs [$fp:flat-map $man//section [?fn ($s)
-    [?for [in $c $s//child] [yield
-      [anc name=$c@id slug=[$slug-of $s@file] frag=$c@id]]]]]]
+  [= $sec-ancs [?for [in $m $metas] [yield
+    [anc name=$m@id slug=$m@slug frag='']]]]
+  [= $child-ancs [$fp:flat-map $metas [?fn ($m)
+    [?let [= $d [$parse-or-die $m@srcpath]]
+      [?for [in $c $d//child] [yield
+        [anc name=$c@id slug=$m@slug frag=$c@id]]]]]]]
   (
     [$io:make-dirs [$cat ($out, '/assets')]],
     [$io:make-dirs [$cat ($out, '/highlight')]],

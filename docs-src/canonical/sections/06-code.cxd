@@ -999,7 +999,7 @@
            `cx-stdlib/strings` module (`[?lib 'cx-stdlib/strings']`,
            then `[$strings:trim …]`, `[$strings:split …]`,
            `[$strings:join …]`, `[$strings:replace …]`). Regular
-           expressions are `cx-stdlib/re`. See [[stdlib]]."""]
+           expressions are `cx-stdlib/re`. See the Standard-library pages."""]
       [example lang=cx
         """[?lib 'cx-stdlib/strings']
            ([$upper 'hello world'],
@@ -1216,7 +1216,7 @@
       [body
         """The CXER0000–0099 range is reserved for data-language
            errors (parse, validate, canonicalize); see
-           [[data-errors]] in the data section. CXER0300+ is
+           [[limits]] in the data section. CXER0300+ is
            reserved for future subsystems."""]]]
 
   [child id=concurrency n=6.9 title='Concurrency'
