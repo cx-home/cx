@@ -48,33 +48,35 @@
 
     [child id=cli-overview n=8.1.1 title='Subcommand catalogue'
       [body
-        """The full shipped set. `cx --help` currently lists only
-           the first group; the rest are shipped but help-hidden
-           (the help gap is tracked in the issue tracker):"""]
+        """The full shipped set. `cx --help` lists every subcommand —
+           the catalogue and the dispatch are generated from one
+           table in `vcx/cmd/main.v`, so they cannot drift — and
+           every subcommand answers `cx <subcommand> --help` with
+           its own usage:"""]
 
       [table
-        [tr [th 'command'] [th 'purpose'] [th 'in cx --help']]
-        [tr [td 'cx FILE'] [td 'Parse + evaluate a document / program (the default action)'] [td 'yes']]
-        [tr [td 'cx fmt FILE'] [td 'Lossless canonical formatter (preserves comments, anchors; normalizes whitespace/quoting)'] [td 'yes']]
-        [tr [td 'cx canonical FILE'] [td 'Strict canonical text (strips presentation; data-equivalent output)'] [td 'yes']]
-        [tr [td 'cx hash FILE'] [td 'SHA-256 hex of the strict-canonical bytes'] [td 'yes']]
-        [tr [td 'cx eq A B'] [td 'Exit 0 iff strict-canonical(A) == strict-canonical(B)'] [td 'yes']]
-        [tr [td 'cx diff A B'] [td 'Semantic diff over strict-canonical forms'] [td 'yes']]
-        [tr [td 'cx lint FILE'] [td 'Style + correctness warnings'] [td 'yes']]
-        [tr [td 'cx validate FILE --schema=S.cxs'] [td 'Schema validation'] [td 'yes']]
-        [tr [td 'cx table VERB'] [td 'Table API surface (info / dump / load)'] [td 'yes']]
-        [tr [td 'cx demo'] [td 'Self-contained showcase, no I/O, < 1s'] [td 'yes']]
-        [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)'] [td 'yes']]
-        [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives'] [td 'no — help-hidden']]
-        [tr [td 'cx lsp'] [td 'Language server on stdio'] [td 'no — help-hidden']]
-        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png)'] [td 'no — help-hidden']]
-        [tr [td 'cx code-diagram FILE'] [td 'Sequence diagram of a CX program'] [td 'no — help-hidden']]
-        [tr [td 'cx code-tree FILE'] [td 'Evaluation-tree rendering of a CX program'] [td 'no — help-hidden']]
-        [tr [td 'cx store-serve'] [td 'Serve a cx-store (reference store server)'] [td 'no — help-hidden']]
-        [tr [td 'cx store-health'] [td 'Store health probe'] [td 'no — help-hidden']]
-        [tr [td 'cx store-token'] [td 'Mint store access tokens'] [td 'no — help-hidden']]
-        [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key'] [td 'no — help-hidden']]
-        [tr [td 'cx eval FILE'] [td 'Alias of the default run action'] [td 'no — help-hidden; prefer cx FILE']]]
+        [tr [th 'command'] [th 'purpose']]
+        [tr [td 'cx FILE'] [td 'Parse + evaluate a document / program (the default action)']]
+        [tr [td 'cx fmt FILE'] [td 'Lossless canonical formatter (preserves comments, anchors; normalizes whitespace/quoting)']]
+        [tr [td 'cx canonical FILE'] [td 'Strict canonical text (strips presentation; data-equivalent output)']]
+        [tr [td 'cx hash FILE'] [td 'SHA-256 hex of the strict-canonical bytes']]
+        [tr [td 'cx eq A B'] [td 'Exit 0 iff strict-canonical(A) == strict-canonical(B)']]
+        [tr [td 'cx diff A B'] [td 'Semantic diff over strict-canonical forms']]
+        [tr [td 'cx lint FILE'] [td 'Style + correctness warnings']]
+        [tr [td 'cx validate FILE --schema=S.cxs'] [td 'Schema validation']]
+        [tr [td 'cx table VERB'] [td 'Table API surface (info / dump / load)']]
+        [tr [td 'cx demo'] [td 'Self-contained showcase, no I/O, < 1s']]
+        [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
+        [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]
+        [tr [td 'cx lsp'] [td 'Language server on stdio']]
+        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png)']]
+        [tr [td 'cx code-diagram FILE'] [td 'Sequence diagram of a CX program']]
+        [tr [td 'cx code-tree FILE'] [td 'Evaluation-tree rendering of a CX program']]
+        [tr [td 'cx store-serve'] [td 'Serve a cx-store (reference store server)']]
+        [tr [td 'cx store-health'] [td 'Store health probe']]
+        [tr [td 'cx store-token'] [td 'Mint store access tokens']]
+        [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key']]
+        [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]]
 
       [body
         """There is **no** `cx parse` / `cx convert` / `cx select` /
@@ -102,7 +104,8 @@
         [item """Projection flags: `--ast` `--cx` `--xml` `--json`
                 `--yaml` `--toml` `--md` `--csv` `--tsv` `--psv`,
                 each optionally with `--compact`."""]
-        [item """`--from=cx|xml|md --to=cx|xml|json|yaml|toml|md|csv|tsv|psv`
+        [item """`--from=cx|xml|json|yaml|toml|md|csv|tsv|psv
+                --to=cx|xml|json|yaml|toml|md|csv|tsv|psv`
                 — explicit conversion; `--lossless` makes XML carry
                 per-value types (`<cx:T>`) for an exact round-trip."""]
         [item """`--include-root=DIR` — resolve `[?cx include=…]`
@@ -129,9 +132,8 @@
            `--allow-secret-reveal`, and the blanket `--allow-all`.
            See [[security]] for the security model."""]
       [body
-        """A help-hidden `cx eval FILE` alias exists for the same
-           action; prefer the plain `cx FILE` spelling — the alias
-           adds nothing."""]]
+        """A `cx eval FILE` alias exists for the same action; prefer
+           the plain `cx FILE` spelling — the alias adds nothing."""]]
 
     [child id=cli-fmt n=8.1.4 title='cx fmt'
       [body
@@ -199,7 +201,7 @@
 
     [child id=cli-table n=8.1.9 title='cx table'
       [body
-        """The public Table API surface for CXCol / `:table`
+        """The public Table API surface for CXCol / `[table[…]]`
            payloads: `cx table info FILE` (column/row counts, types,
            byte size), `cx table dump FILE --to=cx` (round-trip via
            the Table API), `cx table load FILE --to=cx` (symmetric
@@ -211,7 +213,7 @@
 
     [child id=cli-diagram n=8.1.10 title='cx diagram / code-diagram / code-tree'
       [body
-        """Visualization commands (help-hidden). `cx diagram FILE`
+        """Visualization commands. `cx diagram FILE`
            renders a containment diagram
            (`--format=mermaid|svg|png`, `-o out.file`); `cx
            code-diagram FILE` renders a locked sequence-diagram view
@@ -228,8 +230,8 @@
         """`cx scaffold KIND` drops a typed, commented skeleton on
            stdout — KIND ∈ `config`, `data`, `doc`, `log`, `table`.
            `cx demo` runs a self-contained showcase (typed
-           round-trip, `:table` → CSV, a CX program) with no file
-           I/O and no network. `cx lock` (help-hidden) generates or
+           round-trip, `[table[…]]` → CSV, a CX program) with no
+           file I/O and no network. `cx lock` generates or
            verifies `cx.lock` from a project's `[?lib]` directives —
            `--check`, `--update NAME`, `--output PATH`."""]
       [example lang=sh
@@ -240,7 +242,7 @@
     [child id=cli-lsp n=8.1.12 title='cx lsp'
       [body
         """Starts the language server on stdio (JSON-RPC 2.0 per
-           LSP 3.17); help-hidden but shipped. See [[lsp]] for the
+           LSP 3.17). See [[lsp]] for the
            capability surface. Editors spawn it on demand — see
            [[editors]]."""]
       [example lang=sh
