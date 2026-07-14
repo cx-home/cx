@@ -45,8 +45,8 @@
     [example lang=cx """[pizza vegan=true gluten-free=false]"""]]
 
   [child id=td-8  n=14.8  title='8. Boolean sigil shorthand'
-    [body """`+name` means `name=true`; `-name` means `name=false`. Compact form for many booleans."""]
-    [example lang=cx """[pizza +vegan -nuts -gluten]"""]]
+    [body """Booleans are ordinary attributes — `name=true` / `name=false`; the bare tokens auto-type as bool."""]
+    [example lang=cx """[pizza vegan=true nuts=false gluten=false]"""]]
 
   [child id=td-9  n=14.9  title='9. Numbers — int, decimal, negative, hex, underscores'
     [body """All bare, all auto-typed. Underscores in numbers are readability sugar."""]

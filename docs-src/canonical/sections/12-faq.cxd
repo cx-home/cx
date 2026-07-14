@@ -128,8 +128,8 @@
            blocker."""]
       [example lang=shell
         """[# Reproduce on both platforms and bisect                   #]
-           cx canon doc.cx | shasum -a 256
-           cx fmt doc.cx | cx canon | shasum -a 256
+           cx canonical doc.cx | shasum -a 256
+           cx fmt doc.cx | cx canonical | shasum -a 256
            [# Both should produce identical hex output on every host. #]"""]
       [note
         """File a bug at https://github.com/cx-home/cx/issues with

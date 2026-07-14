@@ -21,7 +21,7 @@
     [intro
       """Two CX documents are equal iff their **strict canonical bytes**
          are equal. Canonical bytes are the unique serialization
-         produced by `cx canon` — the rules are summarized in
+         produced by `cx canonical` — the rules are summarized in
          [[canonical-strict]] and stated normatively in
          [`spec/canonical.md`](../../spec/canonical.md)."""]
 
@@ -43,7 +43,7 @@
         [item """**Lossless canonical (`cx fmt`)** — preserves comments,
                 anchors, aliases, presentation. Idempotent. Used for
                 source-file formatting and diff stability."""]
-        [item """**Strict canonical (`cx canon` / `cx hash`)** — strips
+        [item """**Strict canonical (`cx canonical` / `cx hash`)** — strips
                 comments, expands anchors and aliases, normalizes date
                 offsets, sorts attributes lexicographically. Two docs
                 with the same data hash identically. Used for content
@@ -55,9 +55,9 @@
            to the same SHA-256."""]
       [example lang=cx
         """[# Source: #]
-           [user email='ada@example.com' id=42 +active]
+           [user email='ada@example.com' id=42 active=true]
 
-           [# cx canon output (strict canonical bytes): #]
+           [# cx canonical output (strict canonical bytes): #]
            [user active=true email='ada@example.com' id=42]"""]
       [body
         """**Canonicalization rules (strict):**"""]
@@ -73,8 +73,7 @@
         [item """**Numeric form:** integers as plain digits; floats in the
                 shortest representation that round-trips to the same
                 value (IEEE-754 shortest-form)."""]
-        [item """**Boolean form:** `true` / `false`. Sigil shortcuts
-                `+name` / `-name` expand."""]
+        [item """**Boolean form:** `true` / `false`."""]
         [item """**Date/datetime:** offset preserved (NOT normalized to
                 UTC); fractional seconds dropped if all zero;
                 identity-comparison is by absolute instant."""]

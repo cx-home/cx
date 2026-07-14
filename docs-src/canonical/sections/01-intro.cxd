@@ -13,7 +13,7 @@
          deployment — there is one shape, and you write everything in it."""]
 
     [example lang=cx
-      """[hello :greeting 'world']"""]
+      """[hello greeting='world']"""]
 
     [body
       """That is a complete CX document. It is also a complete CX program when
@@ -30,18 +30,18 @@
       """[# 1. Data: a small document
          #]
          [users
-           [user :id 1 :email 'ada@example.com' :active true]
-           [user :id 2 :email 'grace@example.com' :active false]
-           [user :id 3 :email 'linus@example.com' :active true]]
+           [user id=1 email='ada@example.com' active=true]
+           [user id=2 email='grace@example.com' active=false]
+           [user id=3 email='linus@example.com' active=true]]
 
          [# 2. Code: select active users with CXPath
          #]
-         [?for [in $u //user[@active=true]] [yield
-           [active-user :email $u@email]]]
+         [?for [in $u //user[= $_@active true]] [yield
+           [active-user email=$u@email]]]
 
          [# 3. Pure-functional update: mark one user verified
          #]
-         [?modify $doc //user[@id=1]/@status :set 'verified']"""]
+         [?modify $doc //user[= $_@id 1]/@status [set 'verified']]"""]
 
     [body
       """Three forms, one language. No string concatenation; no AST mismatch

@@ -35,18 +35,18 @@
                 stability across edits that don't change data; code
                 review where reviewers see only meaningful changes."""]]
       [example lang=cx
-        """[# Source — author-friendly form (mixed quoting, sigil sugar) #]
+        """[# Source — author-friendly form (loose layout, mixed quoting) #]
            [user
-             email='ada@example.com'
+             email="ada@example.com"
              id=42
-             +active]
+             active=true]
 
            [# cx fmt output — presentation normalized, comments preserved #]
-           [user id=42 email='ada@example.com' active=true]"""]]
+           [user email='ada@example.com' id=42 active=true]"""]]
 
-    [child id=canonical-strict n=3.1.2 title='Strict canonical (cx canon / cx hash)'
+    [child id=canonical-strict n=3.1.2 title='Strict canonical (cx canonical / cx hash)'
       [body
-        """Strict canonical (`cx canon`) reduces input to
+        """Strict canonical (`cx canonical`) reduces input to
            **data-equivalence form**. Strips comments, expands anchors
            and aliases, resolves merges, removes presentation-only
            directives, normalizes date offsets to UTC. Two CX documents
@@ -68,9 +68,9 @@
              [# regrettably noisy comment #]
              email='ada@example.com'
              id=42
-             +active]
+             active=true]
 
-           [# cx canon output — comments stripped, attributes sorted #]
+           [# cx canonical output — comments stripped, attributes sorted #]
            [user active=true email='ada@example.com' id=42]"""]
       [body
         """The strict-canonical bytes are what the SHA-256 hash is
@@ -86,7 +86,7 @@
          [`spec/conversions.md §4`](../../spec/conversions.md)."""]
 
     [example lang=cx
-      """[user id=42 email='ada@example.com' +active
+      """[user id=42 email='ada@example.com' active=true
               [roles ('admin', 'editor')]]"""]
 
     [example lang=json
@@ -116,7 +116,7 @@
       [body
         """JSON → CX reverses this: a `_cx_prose` key reconstructs the
            mixed-content body in order. Round-trip is byte-identical
-           against `cx canon` output."""]]
+           against `cx canonical` output."""]]
 
     [child id=json-namespaces n=3.2.2 title='Namespace handling'
       [body

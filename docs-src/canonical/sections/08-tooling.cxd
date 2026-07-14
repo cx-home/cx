@@ -56,7 +56,7 @@
       [table
         [tr [th 'command'] [th 'purpose'] [th 'status']]
         [tr [td 'cx parse FILE'] [td 'Parse and pretty-print (or emit AST)'] [td 'shipped']]
-        [tr [td 'cx canon FILE'] [td 'Emit strict canonical bytes'] [td 'shipped']]
+        [tr [td 'cx canonical FILE'] [td 'Emit strict canonical bytes'] [td 'shipped']]
         [tr [td 'cx fmt FILE'] [td 'Lossless canonical formatter'] [td 'shipped']]
         [tr [td 'cx hash FILE'] [td 'SHA-256 over canonical bytes'] [td 'shipped']]
         [tr [td 'cx eq A B'] [td 'Exit 0 if data-equivalent'] [td 'shipped']]
@@ -113,7 +113,7 @@
            syntax error, malformed input). `cx parse` never exits 1
            — there are no recoverable diagnostics at this stage."""]]
 
-    [child id=cli-canon n=8.1.3 title='cx canon'
+    [child id=cli-canon n=8.1.3 title='cx canonical'
       [body
         """Emits the **strict canonical bytes** per
            [`spec/canonical.md`](../../spec/canonical.md) §1.2.
@@ -126,17 +126,17 @@
         [item """`--include-root DIR` — same as `cx parse`."""]
         [item """`--profile lossless | strict` — `lossless` (default
                 for `cx fmt`) preserves comments and original
-                attribute order; `strict` (default for `cx canon`)
+                attribute order; `strict` (default for `cx canonical`)
                 applies the full normalisation set."""]]
 
       [example lang=sh
-        """$ cx canon config.cx | sha256sum   # equivalent to cx hash
-           $ diff <(cx canon a.cx) <(cx canon b.cx)   # data-equivalence by eye"""]
+        """$ cx canonical config.cx | sha256sum   # equivalent to cx hash
+           $ diff <(cx canonical a.cx) <(cx canonical b.cx)   # data-equivalence by eye"""]
 
       [note
-        """`cx canon` and `cx fmt` are the same binary entry point in
+        """`cx canonical` and `cx fmt` are the same binary entry point in
            two profiles. Use `cx fmt` for in-place reformatting that
-           preserves the user's authorial choices; use `cx canon`
+           preserves the user's authorial choices; use `cx canonical`
            when you need byte-stable equivalence."""]]
 
     [child id=cli-fmt n=8.1.4 title='cx fmt'
