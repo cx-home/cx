@@ -705,10 +705,11 @@
     [child id=ns-reserved n=2.10.3 title='Reserved prefixes'
       [body
         """Three prefixes are reserved by CX and cannot be redeclared:"""]
-      [table columns=('prefix' 'URI' 'notes')
-        [row prefix='xml' uri='http://www.w3.org/XML/1998/namespace' notes='XML built-in; always resolves; xml:lang accepted as alias for cx:lang']
-        [row prefix='cx' uri='https://cx-home.org/ns/cx' notes='CX metadata; cannot be redeclared; carries cx:lang etc.']
-        [row prefix='xmlns' uri='declaration syntax only' notes='Never resolves as a name prefix']]]
+      [table
+        [tr [th 'prefix'] [th 'URI'] [th 'notes']]
+        [tr [td 'xml'] [td 'http://www.w3.org/XML/1998/namespace'] [td 'XML built-in; always resolves; xml:lang accepted as alias for cx:lang']]
+        [tr [td 'cx'] [td 'https://cx-home.org/ns/cx'] [td 'CX metadata; cannot be redeclared; carries cx:lang etc.']]
+        [tr [td 'xmlns'] [td 'declaration syntax only'] [td 'Never resolves as a name prefix']]]]
 
     [child id=ns-equality n=2.10.4 title='Equality and canonical form'
       [body
@@ -815,15 +816,16 @@
       """CX has finite resource budgets to prevent adversarial inputs
          from exhausting host memory or stack. All limits are
          configurable via environment variables."""]
-    [table columns=('limit' 'default' 'env var' 'error')
-      [row limit='Max document depth (nested brackets)' default=512 var=CX_MAX_DEPTH error=CXER0142]
-      [row limit='Max attributes per element' default=1024 var=CX_MAX_ATTRS error=CXER0143]
-      [row limit='Max body byte length per element' default='256 MiB' var=CX_MAX_BODY error=CXER0144]
-      [row limit='Max include depth' default=16 var=CX_INCLUDE_MAX_DEPTH error=CXER0141]
-      [row limit='Max entity-reference expansion' default='10000 chars' var=CX_MAX_ENTITY_EXPAND error=CXER0145]
-      [row limit='Max recursion depth in [?for]/[?def]' default=1024 var=CX_MAX_RECURSE error=CXER0146]
-      [row limit='Max parse time per document' default='30 s' var=CX_MAX_PARSE_TIME error=CXER0147]
-      [row limit='Max canonical-form size' default='1 GiB' var=CX_MAX_CANON error=CXER0148]]
+    [table
+      [tr [th 'limit'] [th 'default'] [th 'env var'] [th 'error']]
+      [tr [td 'Max document depth (nested brackets)'] [td '512'] [td 'CX_MAX_DEPTH'] [td 'CXER0142']]
+      [tr [td 'Max attributes per element'] [td '1024'] [td 'CX_MAX_ATTRS'] [td 'CXER0143']]
+      [tr [td 'Max body byte length per element'] [td '256 MiB'] [td 'CX_MAX_BODY'] [td 'CXER0144']]
+      [tr [td 'Max include depth'] [td '16'] [td 'CX_INCLUDE_MAX_DEPTH'] [td 'CXER0141']]
+      [tr [td 'Max entity-reference expansion'] [td '10000 chars'] [td 'CX_MAX_ENTITY_EXPAND'] [td 'CXER0145']]
+      [tr [td 'Max recursion depth in [?for]/[?def]'] [td '1024'] [td 'CX_MAX_RECURSE'] [td 'CXER0146']]
+      [tr [td 'Max parse time per document'] [td '30 s'] [td 'CX_MAX_PARSE_TIME'] [td 'CXER0147']]
+      [tr [td 'Max canonical-form size'] [td '1 GiB'] [td 'CX_MAX_CANON'] [td 'CXER0148']]]
     [body
       """For untrusted-input processing (parsing CX received over a
          network), tighten these via the `--profile untrusted` flag on

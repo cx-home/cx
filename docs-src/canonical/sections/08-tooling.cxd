@@ -53,28 +53,29 @@
       [body
         """The full subcommand set:"""]
 
-      [table columns=(command, purpose, status)
-        [row command='cx parse FILE'              purpose='Parse and pretty-print (or emit AST)'      status='shipped']
-        [row command='cx canon FILE'              purpose='Emit strict canonical bytes'                status='shipped']
-        [row command='cx fmt FILE'                purpose='Lossless canonical formatter'               status='shipped']
-        [row command='cx hash FILE'               purpose='SHA-256 over canonical bytes'               status='shipped']
-        [row command='cx eq A B'                  purpose='Exit 0 if data-equivalent'                  status='shipped']
-        [row command='cx diff A B'                purpose='Semantic diff (tree, not text)'             status='shipped']
-        [row command='cx lint FILE'               purpose='Style + correctness warnings'               status='shipped']
-        [row command='cx validate FILE --schema'  purpose='Schema validation (.cxs)'                   status='shipped']
-        [row command='cx convert FILE --to FMT'   purpose='Project to JSON/YAML/TOML/XML/MD/CXCol'     status='shipped']
-        [row command='cx eval PROG --data CTX'    purpose='Evaluate CX code against a document'        status='shipped']
-        [row command='cx select EXPR --data CTX'  purpose='CXPath query'                               status='shipped']
-        [row command='cx modify FILE PATH ACTION' purpose='Pure-functional update (returns new doc)'   status='shipped']
-        [row command='cx diagram FILE'            purpose='Render Mermaid containment diagram'         status='shipped']
-        [row command='cx schema --check'          purpose='Validate the .cxs schema itself'            status='shipped']
-        [row command='cx table info FILE'         purpose='Inspect CXCol / :table payloads'            status='shipped']
-        [row command='cx lsp'                     purpose='Start language server on stdio'             status='shipped']
-        [row command='cx scaffold KIND'           purpose='Drop a skeleton on stdout'                  status='shipped']
-        [row command='cx version'                 purpose='Print version + ABI capability bits'        status='shipped']
-        [row command='cx help [SUBCOMMAND]'       purpose='Per-subcommand help text'                   status='shipped']
-        [row command='cx repl'                    purpose='Interactive evaluator'                      status='planned']
-        [row command='cx patch A B'               purpose='Apply a cx-diff patch'                      status='planned']]
+      [table
+        [tr [th 'command'] [th 'purpose'] [th 'status']]
+        [tr [td 'cx parse FILE'] [td 'Parse and pretty-print (or emit AST)'] [td 'shipped']]
+        [tr [td 'cx canon FILE'] [td 'Emit strict canonical bytes'] [td 'shipped']]
+        [tr [td 'cx fmt FILE'] [td 'Lossless canonical formatter'] [td 'shipped']]
+        [tr [td 'cx hash FILE'] [td 'SHA-256 over canonical bytes'] [td 'shipped']]
+        [tr [td 'cx eq A B'] [td 'Exit 0 if data-equivalent'] [td 'shipped']]
+        [tr [td 'cx diff A B'] [td 'Semantic diff (tree, not text)'] [td 'shipped']]
+        [tr [td 'cx lint FILE'] [td 'Style + correctness warnings'] [td 'shipped']]
+        [tr [td 'cx validate FILE --schema'] [td 'Schema validation (.cxs)'] [td 'shipped']]
+        [tr [td 'cx convert FILE --to FMT'] [td 'Project to JSON/YAML/TOML/XML/MD/CXCol'] [td 'shipped']]
+        [tr [td 'cx eval PROG --data CTX'] [td 'Evaluate CX code against a document'] [td 'shipped']]
+        [tr [td 'cx select EXPR --data CTX'] [td 'CXPath query'] [td 'shipped']]
+        [tr [td 'cx modify FILE PATH ACTION'] [td 'Pure-functional update (returns new doc)'] [td 'shipped']]
+        [tr [td 'cx diagram FILE'] [td 'Render Mermaid containment diagram'] [td 'shipped']]
+        [tr [td 'cx schema --check'] [td 'Validate the .cxs schema itself'] [td 'shipped']]
+        [tr [td 'cx table info FILE'] [td 'Inspect CXCol / :table payloads'] [td 'shipped']]
+        [tr [td 'cx lsp'] [td 'Start language server on stdio'] [td 'shipped']]
+        [tr [td 'cx scaffold KIND'] [td 'Drop a skeleton on stdout'] [td 'shipped']]
+        [tr [td 'cx version'] [td 'Print version + ABI capability bits'] [td 'shipped']]
+        [tr [td 'cx help [SUBCOMMAND]'] [td 'Per-subcommand help text'] [td 'shipped']]
+        [tr [td 'cx repl'] [td 'Interactive evaluator'] [td 'planned']]
+        [tr [td 'cx patch A B'] [td 'Apply a cx-diff patch'] [td 'planned']]]
 
       [body
         """The next sub-sections walk each shipped subcommand in
@@ -565,20 +566,21 @@
         """The server advertises the following capabilities in its
            `initialize` response:"""]
 
-      [table columns=(method, status, notes)
-        [row method='textDocument/didOpen / didChange / didClose' status='shipped' notes='full document sync']
-        [row method='textDocument/publishDiagnostics'             status='shipped' notes='parse + lint + schema + CXLS001-004']
-        [row method='textDocument/hover'                          status='shipped' notes='element, attr, directive, CXPath']
-        [row method='textDocument/completion'                     status='shipped' notes='triggers : / @ $']
-        [row method='textDocument/semanticTokens/full'            status='shipped' notes='10-token legend']
-        [row method='textDocument/formatting'                     status='shipped' notes='lossless fmt']
-        [row method='textDocument/definition'                     status='shipped' notes='cross-include and anchor']
-        [row method='textDocument/references'                     status='shipped' notes='anchor + alias + merge']
-        [row method='textDocument/codeLens'                       status='shipped' notes='diagram preview, eval result']
-        [row method='textDocument/codeAction'                     status='shipped' notes='quick-fix for CXLS001-004']
-        [row method='textDocument/signatureHelp'                  status='planned' notes='for directive arg slots']
-        [row method='textDocument/inlayHint'                      status='planned' notes='inferred types']
-        [row method='textDocument/rename'                         status='planned' notes='cross-include rename']]
+      [table
+        [tr [th 'method'] [th 'status'] [th 'notes']]
+        [tr [td 'textDocument/didOpen / didChange / didClose'] [td 'shipped'] [td 'full document sync']]
+        [tr [td 'textDocument/publishDiagnostics'] [td 'shipped'] [td 'parse + lint + schema + CXLS001-004']]
+        [tr [td 'textDocument/hover'] [td 'shipped'] [td 'element, attr, directive, CXPath']]
+        [tr [td 'textDocument/completion'] [td 'shipped'] [td 'triggers : / @ $']]
+        [tr [td 'textDocument/semanticTokens/full'] [td 'shipped'] [td '10-token legend']]
+        [tr [td 'textDocument/formatting'] [td 'shipped'] [td 'lossless fmt']]
+        [tr [td 'textDocument/definition'] [td 'shipped'] [td 'cross-include and anchor']]
+        [tr [td 'textDocument/references'] [td 'shipped'] [td 'anchor + alias + merge']]
+        [tr [td 'textDocument/codeLens'] [td 'shipped'] [td 'diagram preview, eval result']]
+        [tr [td 'textDocument/codeAction'] [td 'shipped'] [td 'quick-fix for CXLS001-004']]
+        [tr [td 'textDocument/signatureHelp'] [td 'planned'] [td 'for directive arg slots']]
+        [tr [td 'textDocument/inlayHint'] [td 'planned'] [td 'inferred types']]
+        [tr [td 'textDocument/rename'] [td 'planned'] [td 'cross-include rename']]]
 
       [body
         """Implementation lives in `vcx/cmd/lsp_features.v`. The
@@ -600,11 +602,12 @@
         [item """**CXLS\\*** — LSP-only static-analysis diagnostics
                 that don't have a CLI surface. Currently reserved:"""]]
 
-      [table columns=(code, severity, trigger)
-        [row code='CXLS001' severity='warning' trigger='unreachable [?match] arm (after [else …] or [case _ …])']
-        [row code='CXLS002' severity='hint'    trigger='[?match] with no [else …] (silent () fallout)']
-        [row code='CXLS003' severity='hint'    trigger='sibling [case …] arms with similar [when …] predicates (consolidation suggestion)']
-        [row code='CXLS004' severity='error'   trigger='[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]
+      [table
+        [tr [th 'code'] [th 'severity'] [th 'trigger']]
+        [tr [td 'CXLS001'] [td 'warning'] [td 'unreachable [?match] arm (after [else …] or [case _ …])']]
+        [tr [td 'CXLS002'] [td 'hint'] [td '[?match] with no [else …] (silent () fallout)']]
+        [tr [td 'CXLS003'] [td 'hint'] [td 'sibling [case …] arms with similar [when …] predicates (consolidation suggestion)']]
+        [tr [td 'CXLS004'] [td 'error'] [td '[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]]
 
       [body
         """Codes are stable strings; editor configs may key off them
@@ -692,17 +695,18 @@
            The 10-token legend maps directly to TextMate scopes for
            cross-editor consistency:"""]
 
-      [table columns=(token, example)
-        [row token='namespace' example='module prefixes, schema-qualified names']
-        [row token='keyword'   example='directive names ([?for], [?if], [?match]...)']
-        [row token='variable'  example='$ctx, $-bound names from [?let]']
-        [row token='parameter' example='function-parameter names and pattern $bindings']
-        [row token='property'  example='attribute names']
-        [row token='string'    example='string literals (single, double, triple quoted)']
-        [row token='number'    example='int, float, hex, sized-type literals']
-        [row token='comment'   example='[# block #] and # line comments']
-        [row token='operator'  example='= + - * / sigils, CXPath operators']
-        [row token='decorator' example='type annotations (:int, :date, ...)']]]
+      [table
+        [tr [th 'token'] [th 'example']]
+        [tr [td 'namespace'] [td 'module prefixes, schema-qualified names']]
+        [tr [td 'keyword'] [td 'directive names ([?for], [?if], [?match]...)']]
+        [tr [td 'variable'] [td '$ctx, $-bound names from [?let]']]
+        [tr [td 'parameter'] [td 'function-parameter names and pattern $bindings']]
+        [tr [td 'property'] [td 'attribute names']]
+        [tr [td 'string'] [td 'string literals (single, double, triple quoted)']]
+        [tr [td 'number'] [td 'int, float, hex, sized-type literals']]
+        [tr [td 'comment'] [td '[# block #] and # line comments']]
+        [tr [td 'operator'] [td '= + - * / sigils, CXPath operators']]
+        [tr [td 'decorator'] [td 'type annotations (:int, :date, ...)']]]]
 
     [child id=lsp-debugging n=8.3.7 title='Debugging the server'
       [body
@@ -808,12 +812,13 @@
       [body
         """Five lint checks are currently shipped:"""]
 
-      [table columns=(id, severity, name)
-        [row id='CX-L001' severity='info'  name='comment-style consistency']
-        [row id='CX-L002' severity='info'  name='type-annotation form consistency']
-        [row id='CX-L003' severity='warn'  name='unused anchor']
-        [row id='CX-L004' severity='error' name='dangling alias / merge']
-        [row id='CX-L005' severity='warn'  name='deprecated v3.3→v3.4 pattern']]
+      [table
+        [tr [th 'id'] [th 'severity'] [th 'name']]
+        [tr [td 'CX-L001'] [td 'info'] [td 'comment-style consistency']]
+        [tr [td 'CX-L002'] [td 'info'] [td 'type-annotation form consistency']]
+        [tr [td 'CX-L003'] [td 'warn'] [td 'unused anchor']]
+        [tr [td 'CX-L004'] [td 'error'] [td 'dangling alias / merge']]
+        [tr [td 'CX-L005'] [td 'warn'] [td 'deprecated v3.3→v3.4 pattern']]]
 
       [body
         """Each check has a normative ID, a default severity, and a
@@ -1473,13 +1478,14 @@
            scripts/gen_docs/docs.mk` to bring the doc targets into
            scope:"""]
 
-      [table columns=(target, purpose)
-        [row target='make docs'         purpose='build the site into _docs_staging/']
-        [row target='make docs-diff'    purpose='diff staging vs the live docs/ tree']
-        [row target='make docs-publish' purpose='copy staging → docs/ with backup on divergence']
-        [row target='make docs-clean'   purpose='wipe _docs_staging/']
-        [row target='make docs-check'   purpose='broken-link + missing-anchor verification']
-        [row target='make docs-all'     purpose='docs + docs-check']]]
+      [table
+        [tr [th 'target'] [th 'purpose']]
+        [tr [td 'make docs'] [td 'build the site into _docs_staging/']]
+        [tr [td 'make docs-diff'] [td 'diff staging vs the live docs/ tree']]
+        [tr [td 'make docs-publish'] [td 'copy staging → docs/ with backup on divergence']]
+        [tr [td 'make docs-clean'] [td 'wipe _docs_staging/']]
+        [tr [td 'make docs-check'] [td 'broken-link + missing-anchor verification']]
+        [tr [td 'make docs-all'] [td 'docs + docs-check']]]]
 
     [child id=docgen-staging n=8.10.2 title='Staging vs live'
       [body

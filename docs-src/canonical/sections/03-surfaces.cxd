@@ -479,18 +479,19 @@
          that all the others share. The CX↔surface bridge applies a
          deterministic encoding per surface:"""]
 
-    [table columns=('surface' 'wire form' 'notes')
-      [row surface='CX (canonical)' wire='0x<hex>'           notes='hex digits, even count; default']
-      [row surface='CX (literal)'   wire="base64('…') or hex('…')" notes='constructor builtins on input']
-      [row surface='data-bin'       wire='length-prefixed raw' notes='no encoding overhead']
-      [row surface='ast-bin'        wire='length-prefixed raw' notes='same as data-bin']
-      [row surface='JSON'           wire='{"_cx_bytes": "base64..."}' notes='envelope; JSON has no native bytes']
-      [row surface='YAML'           wire='!!binary base64...'  notes='native YAML 1.2 binary tag']
-      [row surface='XML'            wire='<![CDATA[base64...]]>' notes='CDATA-wrapped base64; xsi:type="xs:base64Binary" attribute optional']
-      [row surface='TOML'           wire='[col :bytes \\"hex...\\"]' notes='TOML has no binary type; encoded as a string with the :bytes type tag preserved via envelope']
-      [row surface='Markdown'       wire='`![data](data:application/octet-stream;base64,...)`' notes='data URI inside MD link form']
-      [row surface='CSV / TSV'      wire='base64(...)'         notes='base64 string in the cell; deserializer needs schema to know it is bytes']
-      [row surface='CXCol / Parquet' wire='binary column type' notes='native; zero-copy through the Arrow bridge']]
+    [table
+      [tr [th 'surface'] [th 'wire form'] [th 'notes']]
+      [tr [td 'CX (canonical)'] [td '0x<hex>'] [td 'hex digits, even count; default']]
+      [tr [td 'CX (literal)'] [td "base64('…') or hex('…')"] [td 'constructor builtins on input']]
+      [tr [td 'data-bin'] [td 'length-prefixed raw'] [td 'no encoding overhead']]
+      [tr [td 'ast-bin'] [td 'length-prefixed raw'] [td 'same as data-bin']]
+      [tr [td 'JSON'] [td '{"_cx_bytes": "base64..."}'] [td 'envelope; JSON has no native bytes']]
+      [tr [td 'YAML'] [td '!!binary base64...'] [td 'native YAML 1.2 binary tag']]
+      [tr [td 'XML'] [td '<![CDATA[base64...]]>'] [td 'CDATA-wrapped base64; xsi:type="xs:base64Binary" attribute optional']]
+      [tr [td 'TOML'] [td '[col :bytes \\"hex...\\"]'] [td 'TOML has no binary type; encoded as a string with the :bytes type tag preserved via envelope']]
+      [tr [td 'Markdown'] [td '`![data](data:application/octet-stream;base64,...)`'] [td 'data URI inside MD link form']]
+      [tr [td 'CSV / TSV'] [td 'base64(...)'] [td 'base64 string in the cell; deserializer needs schema to know it is bytes']]
+      [tr [td 'CXCol / Parquet'] [td 'binary column type'] [td 'native; zero-copy through the Arrow bridge']]]
 
     [body
       """All non-native bytes encodings (envelope, CDATA, data URI)
@@ -528,16 +529,17 @@
     [body
       """**Lossiness matrix** (per [`spec/conversions.md §9`](../../spec/conversions.md)):"""]
 
-    [table columns=('from \\ to' 'CX' 'XML' 'JSON' 'YAML' 'TOML' 'MD' 'CSV' 'JSONL' 'CXCol/Parquet')
-      [row from='CX'             cx='lossless' xml='lossless‡' json='envelope◊' yaml='envelope◊' toml='envelope◊' md='lossy' csv='lossy§' jsonl='per-record' cxcol='table-only']
-      [row from='XML'            cx='lossless' xml='lossless'  json='envelope◊' yaml='envelope◊' toml='envelope◊' md='lossy' csv='lossy§' jsonl='per-record' cxcol='table-only']
-      [row from='JSON'           cx='adds struct' xml='adds struct' json='lossless¶' yaml='lossless¶' toml='lossless¶' md='lossy' csv='lossy§' jsonl='lossless if 1-per-line' cxcol='table-only']
-      [row from='YAML'           cx='lossy*' xml='lossy*' json='lossless¶' yaml='lossless¶' toml='lossless¶' md='lossy' csv='lossy§' jsonl='per-doc'    cxcol='table-only']
-      [row from='TOML'           cx='lossless**' xml='lossless**' json='lossless¶' yaml='lossless¶' toml='lossless¶' md='lossy' csv='lossy§' jsonl='1-doc'      cxcol='table-only']
-      [row from='MD'             cx='lossy' xml='lossy' json='lossy' yaml='lossy' toml='lossy' md='lossless' csv='lossy§' jsonl='1-doc'      cxcol='lossy']
-      [row from='CSV / TSV'      cx='lossy§' xml='lossy§' json='lossy§' yaml='lossy§' toml='lossy§' md='lossy§' csv='lossless' jsonl='lossless via :table' cxcol='lossless']
-      [row from='JSONL'          cx='1-doc-per-rec' xml='1-doc-per-rec' json='lossy (concat)' yaml='lossless' toml='lossless if homogeneous' md='lossy' csv='lossless if flat' jsonl='lossless' cxcol='lossless if flat']
-      [row from='CXCol / Parquet' cx=':table form' xml=':table form' json='per-row' yaml='per-row' toml='lossy' md='lossy' csv='lossless' jsonl='per-row' cxcol='lossless']]
+    [table
+      [tr [th 'from \\ to'] [th 'CX'] [th 'XML'] [th 'JSON'] [th 'YAML'] [th 'TOML'] [th 'MD'] [th 'CSV'] [th 'JSONL'] [th 'CXCol/Parquet']]
+      [tr [td 'CX'] [td 'lossless'] [td 'lossless‡'] [td 'envelope◊'] [td 'envelope◊'] [td 'envelope◊'] [td 'lossy'] [td 'lossy§'] [td 'per-record'] [td 'table-only']]
+      [tr [td 'XML'] [td 'lossless'] [td 'lossless'] [td 'envelope◊'] [td 'envelope◊'] [td 'envelope◊'] [td 'lossy'] [td 'lossy§'] [td 'per-record'] [td 'table-only']]
+      [tr [td 'JSON'] [td 'adds struct'] [td 'adds struct'] [td 'lossless¶'] [td 'lossless¶'] [td 'lossless¶'] [td 'lossy'] [td 'lossy§'] [td 'lossless if 1-per-line'] [td 'table-only']]
+      [tr [td 'YAML'] [td 'lossy*'] [td 'lossy*'] [td 'lossless¶'] [td 'lossless¶'] [td 'lossless¶'] [td 'lossy'] [td 'lossy§'] [td 'per-doc'] [td 'table-only']]
+      [tr [td 'TOML'] [td 'lossless**'] [td 'lossless**'] [td 'lossless¶'] [td 'lossless¶'] [td 'lossless¶'] [td 'lossy'] [td 'lossy§'] [td '1-doc'] [td 'table-only']]
+      [tr [td 'MD'] [td 'lossy'] [td 'lossy'] [td 'lossy'] [td 'lossy'] [td 'lossy'] [td 'lossless'] [td 'lossy§'] [td '1-doc'] [td 'lossy']]
+      [tr [td 'CSV / TSV'] [td 'lossy§'] [td 'lossy§'] [td 'lossy§'] [td 'lossy§'] [td 'lossy§'] [td 'lossy§'] [td 'lossless'] [td 'lossless via :table'] [td 'lossless']]
+      [tr [td 'JSONL'] [td '1-doc-per-rec'] [td '1-doc-per-rec'] [td 'lossy (concat)'] [td 'lossless'] [td 'lossless if homogeneous'] [td 'lossy'] [td 'lossless if flat'] [td 'lossless'] [td 'lossless if flat']]
+      [tr [td 'CXCol / Parquet'] [td ':table form'] [td ':table form'] [td 'per-row'] [td 'per-row'] [td 'lossy'] [td 'lossy'] [td 'lossless'] [td 'per-row'] [td 'lossless']]]
 
     [body
       """**Legend:**"""]
