@@ -313,6 +313,39 @@ stdlib-catalogue-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalogue-gate: build-vcx
 	@"$(CX_BIN)" eval scripts/stdlib_catalogue_gate.cx --allow-all
 
+# Format-companion regeneration (#424) — the derived companions under
+# examples/ (books.*, config.*, doc.md, comparisons/table_block.csv) are
+# GENERATED from their .cx sources; regenerate them here so they cannot
+# drift from what the live binary actually emits (gen-docs discipline:
+# never hand-edit a companion). Run after any change to the sources or
+# to a conversion lane, then commit the results.
+# Override the binary with CX_BIN=path (default vcx/target/cx).
+#
+# ── EXCLUDED LANES — never commit corrupt companions ──────────────────
+#   * examples/books.json and examples/books.xml are NOT generated: the
+#     JSON and XML conversion lanes currently DESTROY [table[…]] content
+#     (all rows dropped — JSON emits "items":[], XML emits a bare
+#     <books cx:type="table"/>). Tracked as cx-home/cx-private#413; when
+#     that lands, add the two lanes below and commit the new companions.
+#     (YAML import separately loses data on block-sequence-of-mappings —
+#     cx-home/cx-private#412 — but the YAML *emit* of these sources is
+#     complete and parseable, so the .yaml companions stay generated.)
+.PHONY: examples-regen
+examples-regen: CX_BIN ?= $(CURDIR)/vcx/target/cx
+examples-regen:
+	@test -x "$(CX_BIN)" || { echo "examples-regen: no cx binary at $(CX_BIN); run 'make build-vcx' or pass CX_BIN=/path/to/cx"; exit 1; }
+	@echo "==> regenerating examples/ format companions with $(CX_BIN)"
+	"$(CX_BIN)" --json examples/config.cx > examples/config.json
+	"$(CX_BIN)" --yaml examples/config.cx > examples/config.yaml
+	"$(CX_BIN)" --toml examples/config.cx > examples/config.toml
+	"$(CX_BIN)" --xml  examples/config.cx > examples/config.xml
+	"$(CX_BIN)" --yaml examples/books.cx  > examples/books.yaml
+	"$(CX_BIN)" --toml examples/books.cx  > examples/books.toml
+	@# books.json + books.xml deliberately absent — see EXCLUDED LANES (#413).
+	"$(CX_BIN)" --md   examples/doc.cx    > examples/doc.md
+	"$(CX_BIN)" --csv  examples/comparisons/table_block.cx > examples/comparisons/table_block.csv
+	@echo "==> done; review with 'git diff examples/' and commit"
+
 # V7 — bench harness JSON runner. Drives bench-streaming and emits
 # a stable JSON shape consumable by scripts/compare_bench.py.
 bench-json:
