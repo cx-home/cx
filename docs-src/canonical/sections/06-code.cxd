@@ -290,13 +290,12 @@
         """A CXPath rooted at a binding navigates from that value
            instead of from the document root:"""]
       [example lang=cx
-        """[?let [= $u [user active=true region='EU'
+        """[# $u/name — direct child · $u/* — all children ·
+            $u//item — descendant · $u@active — attribute (shorthand) ·
+            $u/@active — attribute (full axis form)                    #]
+           [?let [= $u [user active=true region='EU'
                         [name 'Ada'] [item 1] [item 2]]]
-           ($u/name,                [# direct child element               #]
-            $u/*,                   [# all direct children                #]
-            $u//item,               [# descendant                         #]
-            $u@active,              [# attribute access (shorthand)       #]
-            $u/@active)]            [# attribute access (full)            #]"""]
+             ($u/name, $u/*, $u//item, $u@active, $u/@active)]"""]
       [body
         """The path operators that work on bindings are the same
            operators that work on the implicit document — one
@@ -624,7 +623,7 @@
                [case [prose $p]   [p $p]]
                [case [code $c]    [pre $c]]
                [case 'separator'  [hr]]
-               [case _            ()]]]
+               [else              ()]]]
 
            [# SQL Searched-CASE — predicate-only mode (no scrutinee)     #]
            [?let [= $x 120] [= $y 10]
@@ -862,10 +861,13 @@
            user-defined functions into readable top-to-bottom
            data flow."""]
       [example lang=cx
-        """[?pipe //user[@active=true]
-           [$filter-by-region _ 'EU']
-           [$sort-by _ @last-login]
-           [$take _ 10]]"""]
+        """[shop [user active=true age=30]
+               [user active=true age=20]
+               [user active=false age=40]]
+           [?pipe //user[= $_@active true]
+             [?fn ($us) [?for [in $u $us] [yield $u@age]]]
+             [$reverse]
+             [$nth _ 1]]"""]
       [body
         """**Stages are bare transforms.** `[?pipe SRC STAGE …]`
            evaluates `SRC`, then supplies the value to each `STAGE`
@@ -893,8 +895,8 @@
            runs the comprehension:"""]
       [example lang=cx
         """[?pipe //user
-           [?fn ($us) [?for [in $u $us] [yield [$decorate $u]]]]
-           [$sort-by _ @name]]"""]
+           [?fn ($us) [?for [in $u $us] [yield [decorated name=$u@name]]]]
+           [$count]]"""]
       [body
         """**`[tap f]` — observe without diverting (§8.9.2).** A
            `[tap f]` stage applies `f` to the current value for its
@@ -954,13 +956,13 @@
         [tr [td 'distinct(seq)'] [td '1'] [td 'Items with structural duplicates removed; first-occurrence order']]
         [tr [td 'nth(seq, n)'] [td '2'] [td '1-indexed item access; out-of-range raises CXER0100']]
         [tr [td 'position(seq, item)'] [td '2'] [td '1-based index of first structural match; zero if absent']]
-        [tr [td 'range(lo, hi, step?)'] [td '2-3'] [td 'Arithmetic progression, inclusive bound; [\$range lo *] is a lazy open iterator']]
+        [tr [td 'range(lo, hi, step?)'] [td '2-3'] [td 'Arithmetic progression, inclusive bound; [$range lo *] is a lazy open iterator']]
         [tr [td 'iterate(f, seed)'] [td '2'] [td 'Lazy infinite iterator: seed, f(seed), f(f(seed)), …']]
         [tr [td 'unfold(f, seed)'] [td '2'] [td 'Anamorphism: f(state) yields () to stop or [value, next-state] to emit']]
         [tr [td 'identity(x)'] [td '1'] [td 'Returns x unchanged — for pipe stages and shape testing']]]
       [body
         """Set combinators are **reserved operator heads**, not
-           `[\$…]` builtins: `[union A B]`, `[intersect A B]`,
+           `[$…]` builtins: `[union A B]`, `[intersect A B]`,
            `[except A B]`. Slicing / windowing / ordering /
            grouping are directives and comprehension clauses:
            `[?take]`, `[?drop]`, `[?filter]`, `[?flatten]`,
@@ -968,9 +970,9 @@
       [example lang=cx
         """[site [user active=true] [user active=false]
                  [tag 'a'] [tag 'b'] [tag 'a']]
-           ([\$count //user[= \$_@active true]],
-            [\$distinct [?for [in \$t //tag] [yield [\$text \$t]]]],
-            [?take 3 [\$range 1 100]],
+           ([$count //user[= $_@active true]],
+            [$distinct [?for [in $t //tag] [yield [$text $t]]]],
+            [?take 3 [$range 1 100]],
             [union (1, 2) (2, 3)])"""]]
 
     [child id=string-builtins n=6.7.2 title='String built-ins'
@@ -995,16 +997,16 @@
         """The wider string toolkit — trim, split/join, replace,
            case-folding variants, padding — is the
            `cx-stdlib/strings` module (`[?lib 'cx-stdlib/strings']`,
-           then `[\$strings:trim …]`, `[\$strings:split …]`,
-           `[\$strings:join …]`, `[\$strings:replace …]`). Regular
+           then `[$strings:trim …]`, `[$strings:split …]`,
+           `[$strings:join …]`, `[$strings:replace …]`). Regular
            expressions are `cx-stdlib/re`. See [[stdlib]]."""]
       [example lang=cx
         """[?lib 'cx-stdlib/strings']
-           ([\$upper 'hello world'],
-            [\$contains 'ada@example.com' '@example.com'],
-            [\$strings:join ('a', 'b', 'c') ', '],
-            [\$strings:split 'a,b,c' ','],
-            [\$strings:replace 'foofoo' 'foo' 'bar'])"""]]
+           ([$upper 'hello world'],
+            [$contains 'ada@example.com' '@example.com'],
+            [$strings:join ('a', 'b', 'c') ', '],
+            [$strings:split 'a,b,c' ','],
+            [$strings:replace 'foofoo' 'foo' 'bar'])"""]]
 
     [child id=numeric-builtins n=6.7.3 title='Numeric built-ins'
       [body
@@ -1032,13 +1034,13 @@
            CX floats are **finite-only**: `NaN` and `±Inf` never
            arise (an operation that would produce one raises
            `CXER0101`), so there is nothing to test with an
-           `is-nan`. Exponentiation is `[\$math:pow]` in
+           `is-nan`. Exponentiation is `[$math:pow]` in
            `cx-stdlib/math`."""]
       [example lang=cx
         """[orders [order amount=10] [order amount=32]]
-           ([\$sum [?for [in \$o //order] [yield \$o@amount]]],
-            [\$round 3.7],
-            [\$mod 17 5],
+           ([$sum [?for [in $o //order] [yield $o@amount]]],
+            [$round 3.7],
+            [$mod 17 5],
             [cast '42' :int])"""]]
 
     [child id=logical-builtins n=6.7.4 title='Logical built-ins'
@@ -1054,16 +1056,16 @@
         [tr [td 'eq(a, b)'] [td '2'] [td 'Structural equality — types, values, attributes, children all match']]]
       [body
         """`and` / `or` / `not` are bare operator heads
-           (`[and P Q]`, no `\$` sigil); `eq` is the structural
+           (`[and P Q]`, no `$` sigil); `eq` is the structural
            equality the `=` operator also uses. There is no
            `xor` / `if()` / `instance-of` builtin — branch with
            `[?if]`, and test types by schema validation or
            `[?match]` shape dispatch."""]
       [example lang=cx
         """[site [user verified=true active=true banned=false] [error 'e1']]
-           [?let [= \$u [\$first //user]]
-             ([and \$u@verified \$u@active [not \$u@banned]],
-              [\$exists //error],
+           [?let [= $u [$first //user]]
+             ([and $u@verified $u@active [not $u@banned]],
+              [$exists //error],
               [eq [a 1] [a 1]])]"""]]
 
     [child id=accessor-builtins n=6.7.5 title='Node-accessor built-ins'
@@ -1079,18 +1081,20 @@
         [tr [td 'text(elem)'] [td '1'] [td 'Body text of elem; concatenates text children (string builtin, listed for discoverability)']]]
       [body
         """Structural navigation is CXPath, not accessor calls:
-           children are `\$e/*`, the parent is
+           children are `$e/*`, the parent is
            `//x/parent::*` (document-anchored), attributes are
-           `\$e@name`. Inside a predicate the reserved bindings
-           `\$_position` and `\$_last` replace XPath's
+           `$e@name`. Inside a predicate the reserved bindings
+           `$_position` and `$_last` replace XPath's
            `position()` / `last()` — there are no zero-arity
            accessor calls."""]
       [example lang=cx
-        """[doc [section 'one'] [section 'two']]
-           ([\$name [\$first //section]],               [# → 'section'      #]
-            [\$string [\$first //section]],             [# → 'one'          #]
-            //section[\$_last],                        [# last section     #]
-            //section[= \$_position 1])"""]]]
+        """[# name → 'section' · string → 'one' · [$_last] → the last
+            section · [= $_position 1] → the first                    #]
+           [doc [section 'one'] [section 'two']]
+           ([$name [$first //section]],
+            [$string [$first //section]],
+            //section[$_last],
+            //section[= $_position 1])"""]]]
 
   [child id=errors n=6.8 title='Errors as values'
     [intro
@@ -1294,7 +1298,7 @@
         """[?let [= $c [?http-client target='https://api.example.com'
                                     timeout=30s
                                     [resilience [?retry max=3]]]]
-             [?pipe $c [$get '/users/42']]]"""]
+             [?pipe $c [$get _ '/users/42']]]"""]
 
       [body
         """**Status.** Services are a stable surface;
@@ -1517,7 +1521,7 @@
       [example lang=cx check=none
         """[?retry max=5 backoff=exponential delay=200ms jitter=equal
            [on [?fn ($e) [= $e@code 'CXER0163']]]        [# only on timeout #]
-           [?pipe $client [$get '/users/42']]]"""]]
+           [?pipe $client [$get _ '/users/42']]]"""]]
 
     [child id=timeout n=6.10.2 title='[?timeout] — hard deadline'
       [body
@@ -1563,7 +1567,7 @@
         """[?circuit-breaker
              threshold=0.5 window=60s reset=30s min-samples=20
              name='users-api'
-             [?pipe $client [$get '/users/42']]]"""]]
+             [?pipe $client [$get _ '/users/42']]]"""]]
 
     [child id=fallback n=6.10.4 title='[?fallback] — alternative on error'
       [body
@@ -1577,7 +1581,7 @@
       [; check=none — wraps a live client call with an illustrative cache fallback. ]
       [example lang=cx check=none
         """[?fallback
-             [?pipe $client [$get '/users/42']]
+             [?pipe $client [$get _ '/users/42']]
              [recover-with [$load-from-cache 42]]]"""]
       [note
         """**`$err` in `[recover-with …]`.** Inside the recovery
@@ -1602,7 +1606,7 @@
       [; check=none — wraps a live client call; illustrative policy shape. ]
       [example lang=cx check=none
         """[?rate-limit max=100 per=1s name='github-api'
-             [?pipe $client [$get '/repos/cx-home/cx']]]"""]]
+             [?pipe $client [$get _ '/repos/cx-home/cx']]]"""]]
 
     [child id=bulkhead n=6.10.6 title='[?bulkhead] — bound concurrent calls'
       [body

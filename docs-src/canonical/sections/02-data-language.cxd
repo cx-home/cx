@@ -974,9 +974,13 @@
              [pizza #pepperoni  price=14]]
            [order #o1234 customer=alice
              [line item=@margherita count=2]  [; @-sigil reference to a declared id ]
-             [line item=@pepperoni  count=1]]
+             [line item=@pepperoni  count=1]]"""]
+      [body
+        """In CXPath the same `@` sigil is attribute access:"""]
+      [example lang=cx
+        """[order [line sku='margherita' count=2]]
            [?for [in $line //order/line] [yield
-             [row sku=$line/@item]]]           [; @-sigil attribute access in CXPath ]"""]
+             [row sku=$line/@sku]]]            [; @-sigil attribute access in CXPath ]"""]
       [example lang=cx
         """[defaults &shared timeout=30 retries=3]
            [server *shared name=api]

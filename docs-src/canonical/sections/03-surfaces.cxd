@@ -230,7 +230,7 @@
 
     [example lang=cx
       """[config
-           [server host='localhost' +tls
+           [server host='localhost' tls=true
              [tls cert='site.pem']]
            [users
              [user id=1 email='ada@example.com']
