@@ -321,15 +321,12 @@ stdlib-catalogue-gate: build-vcx
 # to a conversion lane, then commit the results.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
 #
-# ── EXCLUDED LANES — never commit corrupt companions ──────────────────
-#   * examples/books.json and examples/books.xml are NOT generated: the
-#     JSON and XML conversion lanes currently DESTROY [table[…]] content
-#     (all rows dropped — JSON emits "items":[], XML emits a bare
-#     <books cx:type="table"/>). Tracked as cx-home/cx-private#413; when
-#     that lands, add the two lanes below and commit the new companions.
-#     (YAML import separately loses data on block-sequence-of-mappings —
-#     cx-home/cx-private#412 — but the YAML *emit* of these sources is
-#     complete and parseable, so the .yaml companions stay generated.)
+# ── LANE NOTES ─────────────────────────────────────────────────────────
+#   * books.json/books.xml use the explicit --from=cx conversion lane:
+#     the #413 table fix landed there, while the AST-JSON projection
+#     shorthand (`--json FILE`) still drops table rows — tracked as
+#     cx-home/cx-private#443. Do not switch books.json to the shorthand
+#     until #443 lands.
 .PHONY: examples-regen
 examples-regen: CX_BIN ?= $(CURDIR)/vcx/target/cx
 examples-regen:
@@ -341,7 +338,8 @@ examples-regen:
 	"$(CX_BIN)" --xml  examples/config.cx > examples/config.xml
 	"$(CX_BIN)" --yaml examples/books.cx  > examples/books.yaml
 	"$(CX_BIN)" --toml examples/books.cx  > examples/books.toml
-	@# books.json + books.xml deliberately absent — see EXCLUDED LANES (#413).
+	"$(CX_BIN)" --from=cx --to=json examples/books.cx > examples/books.json
+	"$(CX_BIN)" --from=cx --to=xml  examples/books.cx > examples/books.xml
 	"$(CX_BIN)" --md   examples/doc.cx    > examples/doc.md
 	"$(CX_BIN)" --csv  examples/comparisons/table_block.cx > examples/comparisons/table_block.csv
 	@echo "==> done; review with 'git diff examples/' and commit"

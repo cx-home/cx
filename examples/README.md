@@ -60,6 +60,7 @@ live binary:
 | --------- | ------ | ---- |
 | `config.json` / `config.yaml` / `config.toml` / `config.xml` | `config.cx` | `cx --json/--yaml/--toml/--xml` |
 | `books.yaml` / `books.toml` | `books.cx` | `cx --yaml/--toml` |
+| `books.json` / `books.xml` | `books.cx` | `cx --from=cx --to=json/--to=xml` (see note below) |
 | `doc.md` | `doc.cx` | `cx --md` |
 | `comparisons/table_block.csv` | `comparisons/table_block.cx` | `cx --csv` |
 
@@ -70,10 +71,10 @@ make examples-regen                          # repo build (vcx/target/cx)
 make examples-regen CX_BIN=$(command -v cx)  # or any installed binary
 ```
 
-`books.json` and `books.xml` are deliberately **absent**: the JSON and
-XML conversion lanes currently destroy `[table[…]]` content (rows
-dropped — [#413](https://github.com/cx-home/cx-private/issues/413)),
-and corrupt companions are never committed. The YAML *emit* of these
-sources is complete and parseable, so the `.yaml` companions stay
-(YAML *import* loss is tracked separately as
-[#412](https://github.com/cx-home/cx-private/issues/412)).
+`books.json` and `books.xml` are generated via the explicit
+`--from=cx --to=…` conversion lane: the
+[#413](https://github.com/cx-home/cx-private/issues/413) table fix
+landed there, while the AST-JSON projection shorthand (`--json FILE`)
+still drops table rows
+([#443](https://github.com/cx-home/cx-private/issues/443)). The XML
+companion round-trips back to `books.cx` exactly (`cx eq` clean).
