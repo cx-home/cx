@@ -175,7 +175,8 @@
     [body
       """The simplest CXPath is the descendant search:"""]
 
-    [example lang=cx
+    [; check=none — path-idiom catalog over an assumed document; doc-rooted fragments without a data root now raise CXER0001 by spec (#454). Runnable anchored examples accompany each section. ]
+      [example lang=cx check=none
       """//user                       [# every user, anywhere in doc      #]
          //user[= $_@active true]     [# every active user                #]
          //user/@email                [# scalar attribute values          #]
@@ -211,7 +212,8 @@
         [tr [td 'preceding'] [td 'document'] [td 'Every node before context in document order (excluding ancestors)']]
         [tr [td 'self'] [td 'self'] [td 'Context node itself — useful for predicate filters']]
         [tr [td 'attribute'] [td 'attr'] [td 'Attributes of context — shorthand is `@name`']]]
-      [example lang=cx
+      [; check=none — path-idiom catalog over an assumed document; doc-rooted fragments without a data root now raise CXER0001 by spec (#454). Runnable anchored examples accompany each section. ]
+      [example lang=cx check=none
         """[# Common axis idioms                                              #]
            //section//*                              [# all descendants       #]
            //code/ancestor::section                   [# enclosing sections    #]
@@ -249,7 +251,8 @@
                 combinators (`[and …]` / `[or …]` / `[not …]`), and
                 function calls (`[$strings:contains $_@email
                 '@example.com']`)."""]]
-      [example lang=cx
+      [; check=none — path-idiom catalog over an assumed document; doc-rooted fragments without a data root now raise CXER0001 by spec (#454). Runnable anchored examples accompany each section. ]
+      [example lang=cx check=none
         """//user[1]                              [# first user                #]
            //user[= $_@id 42]                     [# attr equality             #]
            //user[@active]                        [# attr present              #]
@@ -277,7 +280,8 @@
            return a single value, or the comparison raises. To
            express "any equals", filter the sequence itself:
            `[$exists //x[= $_ 1]]`."""]
-      [example lang=cx
+      [; check=none — path-idiom catalog over an assumed document; doc-rooted fragments without a data root now raise CXER0001 by spec (#454). Runnable anchored examples accompany each section. ]
+      [example lang=cx check=none
         """//user[= $_@age 42]              [# single attr → ok             #]
            //section[> [$count $_/p] 3]     [# both sides single → ok       #]
            //user[= $_@email 'ada@example.com']
@@ -440,7 +444,9 @@
         """In a `[?for]` body, the same CXPath as the generator
            selects directly:"""]
       [example lang=cx
-        """[?for [in $u //user[= $_@active true]] [yield $u@email]]"""]
+        """[users [user email='ada@ex.com' active=true]
+                [user email='bob@ex.com' active=false]]
+           [?for [in $u //user[= $_@active true]] [yield $u@email]]"""]
       [body
         """CXPath patterns and element-shape patterns compose in
            the same arm list — `[?match]` can dispatch on a mix of
@@ -894,7 +900,8 @@
            For a per-item transform, thread a `[?fn]` lambda that
            runs the comprehension:"""]
       [example lang=cx
-        """[?pipe //user
+        """[users [user name=ada] [user name=bob]]
+           [?pipe //user
            [?fn ($us) [?for [in $u $us] [yield [decorated name=$u@name]]]]
            [$count]]"""]
       [body
@@ -1787,7 +1794,8 @@
          general predicates with `$_` / `$_position` / `$_last`."""]
 
     [child id=cxpath-quick-table n=6.12.1 title='Quick reference'
-      [example lang=cx
+      [; check=none — path-idiom catalog over an assumed document; doc-rooted fragments without a data root now raise CXER0001 by spec (#454). Runnable anchored examples accompany each section. ]
+      [example lang=cx check=none
         """[; Every user in the document. ]
            //user
 

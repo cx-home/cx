@@ -169,7 +169,10 @@
       """The same path drives iteration in a program:"""]
 
     [example lang=cx
-      """[?for [in $u //user[= $_@active true]] [yield
+      """[users
+           [user email='ada@example.com' active=true]
+           [user email='bob@example.com' active=false]]
+         [?for [in $u //user[= $_@active true]] [yield
            [active-user email=$u@email]]]"""]]
 
   [child id=first-validation n=0.6 title='Validate with a schema'
@@ -510,7 +513,8 @@
            element whose name starts with `?`. Directives parse
            as regular CX and evaluate against the surrounding
            tree when `cx` runs the document."""]
-      [example lang=cx """[h1 //page/@title]"""]]
+      [example lang=cx """[page title='Menu — New Haven']
+         [h1 //page/@title]"""]]
 
     [child id=tut-13 n=0.9.13 title='Path expressions (CXPath)'
       [body
@@ -518,7 +522,9 @@
            separated by `/`; predicates in `[…]` are prefix CX code
            over the context node `$_`; axes navigate by
            relationship."""]
-      [example lang=cx """//pizza[> $_@price 10]"""]]
+      [example lang=cx """[menu [pizza name=Margherita price=12]
+               [pizza name=Marinara price=9]]
+         //pizza[> $_@price 10]"""]]
 
     [child id=tut-14 n=0.9.14 title='Let and for'
       [body
