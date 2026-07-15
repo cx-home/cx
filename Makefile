@@ -397,7 +397,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences guide-check directive-docs-check verify-doc-blocks verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -511,6 +511,31 @@ check-no-stub-impl:
 .PHONY: check-xap-dist-absences
 check-xap-dist-absences:
 	@python3 scripts/check_xap_dist_absences.py
+
+# ── Shell-completion drift gate (#423) — the bash/zsh/fish completions in
+# tooling/completions/ must mention every subcommand in the vcx/cmd/main.v
+# dispatch table (and none it doesn't have), and the `cx diagram` flag surface
+# must match vcx/cmd/diagram.v (--format=mermaid|svg|png + -o; the fabricated
+# --format=graphviz / --output= / --depth= surface must never reappear).
+.PHONY: check-completions-drift
+check-completions-drift:
+	@python3 scripts/check_completions_drift.py
+
+# ── TextMate grammar single-sourcing gate (#423) — the canonical grammar is
+# tooling/vscode/syntaxes/cx.tmLanguage.json (scope-tested via
+# `npm run test:grammar`); tooling/syntax/cx.tmLanguage.json is a derived
+# byte-identical copy for path-stable consumers (GitHub web view / Shiki /
+# docs-site configs). Regenerate with `make sync-tmlanguage`.
+.PHONY: check-tmlanguage-sync
+check-tmlanguage-sync:
+	@cmp -s tooling/vscode/syntaxes/cx.tmLanguage.json tooling/syntax/cx.tmLanguage.json \
+		|| { echo "check-tmlanguage-sync: tooling/syntax/cx.tmLanguage.json has drifted from the canonical tooling/vscode/syntaxes/cx.tmLanguage.json — run 'make sync-tmlanguage'"; exit 1; }
+	@echo "check-tmlanguage-sync: OK — tooling/syntax copy is byte-identical to the canonical vscode grammar"
+
+.PHONY: sync-tmlanguage
+sync-tmlanguage:
+	@cp tooling/vscode/syntaxes/cx.tmLanguage.json tooling/syntax/cx.tmLanguage.json
+	@echo "sync-tmlanguage: tooling/syntax/cx.tmLanguage.json refreshed from tooling/vscode/syntaxes/"
 
 # Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
 # sign + alias a package directory into registry/store, then re-verify.
