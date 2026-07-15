@@ -321,6 +321,22 @@
   [section n=14 id=tour-data      file='14-tour-data.cxd']
   [section n=15 id=tour-programs  file='15-tour-programs.cxd']
 
+  [# operational topics — the issue #425 coverage gaps. #]
+  [section n=16 id=capabilities file='16-capabilities.cxd'
+    [child n=16.1 id=caps-model     title='Deny-by-default']
+    [child n=16.2 id=caps-grants    title='The grant list']
+    [child n=16.3 id=caps-net       title='Scoping the network grant']
+    [child n=16.4 id=caps-allow-all title='The --allow-all opt-out']
+    [child n=16.5 id=caps-narrowing title='Narrowing with [?with-caps]']
+    [child n=16.6 id=caps-errors    title='Denials are values']]
+  [section n=17 id=operations file='17-operations.cxd'
+    [child n=17.1 id=ops-process      title='Process model']
+    [child n=17.2 id=ops-store-daemon title='The store service daemon']
+    [child n=17.3 id=ops-artifacts    title='Deployment artifacts']
+    [child n=17.4 id=ops-env          title='Environment variables']
+    [child n=17.5 id=ops-gc           title='Garbage collection at a glance']
+    [child n=17.6 id=ops-logging      title='Logging and journaling']]
+
   [# The "Standard library" area (libraries.html + lib-<m>.html) and the
      "XAP" area are NOT manifest sections: guide_build.cx projects them
      directly from the co-located [module-doc]/[fn-doc] in stdlib/*.cx and
