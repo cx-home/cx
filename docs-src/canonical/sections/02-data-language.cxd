@@ -127,7 +127,7 @@
         """A bare scalar body is auto-typed per the rules in
            [`spec/ast.md`](../../spec/ast.md) §Scalar — `42` becomes `:int`,
            `3.14` becomes `:float`, `2026-05-22` becomes `:date`, etc. To
-           force a type, prefix it: `[port :u16 8080]`."""]]]
+           force a type, glue an ascription to the name: `[port::u16 8080]`."""]]]
 
   [child id=scalars n=2.3 title='Scalar kinds'
     [intro
@@ -178,8 +178,8 @@
            [pi 3.14159]
            [big 1e18]
            [color 0xff8800]
-           [port :u16 8080]
-           [pixel-density :f32 1.5]"""]
+           [port::u16 8080]
+           [pixel-density::f32 1.5]"""]
       [body
         """Special float values: `nan`, `inf`, `-inf` are recognised. NaN
            does not equal NaN under `=` (per IEEE-754); the `is-nan`
@@ -225,18 +225,16 @@
            sequence with no character semantics. Use it for image data,
            hashes, encrypted payloads, or any opaque binary value."""]
       [example lang=cx
-        """[hash :bytes 0x3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b]
-           [logo :bytes base64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB...')]"""]
+        """[hash::bytes 0x3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b]
+           [magic::bytes 0x89504e470d0a1a0a]"""]
       [body
-        """Bytes literals accept three syntaxes: a hex string prefixed `0x`,
-           or the `base64('…')` / `hex('…')` builtin constructors. The
-           canonical form emits the hex string with the `0x` prefix; the
-           data-bin wire format uses raw length-prefixed bytes (no
-           encoding overhead). Each projection has its own bytes form:
-           JSON emits a `{"_cx_bytes": "base64..."}` envelope (no native
-           bytes in JSON); YAML uses `!!binary base64...`; XML uses CDATA
-           with base64 content; Markdown uses a data URI in a code fence.
-           See [[surfaces]] §3.10 (bytes wire forms) for the full table."""]]
+        """A bytes value is a `0x`-prefixed hex literal (even digit count)
+           under a `::bytes` ascription. The canonical form emits the hex
+           string with the `0x` prefix; the data-bin wire format uses raw
+           length-prefixed bytes (no encoding overhead). The conversion
+           contract maps bytes to base64 / tagged forms per lane — see
+           [[surfaces]] §3.10 for the table and its implementation
+           status."""]]
 
     [child id=sized-types n=2.3.7 title='Sized type tags'
       [body
@@ -252,7 +250,7 @@
       [body
         """A literal without a type tag is auto-typed as `:int` (for whole
            numbers) or `:float` (for numbers with `.` or `e`). To force a
-           sized variant: `[port :u16 8080]`, `[pixel-density :f32 1.5]`.
+           sized variant: `[port::u16 8080]`, `[pixel-density::f32 1.5]`.
            Sized variants flow through ast-bin and data-bin with their
            type identifier preserved; bindings translate to the host's
            native numeric type."""]
@@ -417,10 +415,10 @@
 
     [child id=type n=2.5.4 title='The : type sigil'
       [body
-        """`:` is reserved for two surface roles. In **value position**
-           (`[port :u16 8080]`) it introduces a type tag (the long-name
-           ascription form `::T` is the canonical spelling — `:u16` here
-           is the short-name shorthand). In **atom position** (`:ok`,
+        """`:` is reserved for two surface roles. Glued to a name as `::T`
+           (`[port::u16 8080]`) it is the type-ascription sigil — the
+           doubled form is the only ascription spelling; a spaced `:name`
+           in body position is never a type. In **atom position** (`:ok`,
            `:not-found`) it introduces a symbolic atom literal. The
            parser disambiguates by context. The `:` sigil is no
            longer used to introduce labeled directive slots — every
@@ -1028,10 +1026,10 @@
            legal range. Out-of-range values fail at parse time,
            not at runtime in some downstream consumer."""]
       [example lang=cx
-        """[port :u16 8080]              # rejects values over 65535
-           [balance :i64 -1234567890]    # signed 64-bit
-           [ratio :f32 3.14]             # 32-bit float
-           [count :u8 200]               # rejects 256 and up"""]
+        """[port::u16 8080]              # rejects values over 65535
+           [balance::i64 -1234567890]    # signed 64-bit
+           [ratio::f32 3.14]             # 32-bit float
+           [count::u8 200]               # rejects 256 and up"""]
       [body
         """**Decimal and bigint.** IEEE 754 floats lose precision
            for money and high-precision quantities; signed 64-bit
@@ -1039,17 +1037,17 @@
            for both cases, with binding mappings to each language's
            native big-number type."""]
       [example lang=cx
-        """[total :decimal 19.99]
-           [user-id :bigint 18446744073709551616]"""]
+        """[total::decimal 19.99]
+           [user-id::bigint 18446744073709551616]"""]
       [body
-        """**Typed bodies and arrays.** A colon-type annotation
+        """**Typed bodies and arrays.** A glued `::T` ascription
            pins not just attribute values but body content as
            well."""]
       [example lang=cx
-        """[count :int 42]
-           [ratio :decimal 3.14159]
-           [oven-temps :int[] 220 240 260 480]
-           [tags :[] cheap fast tasty]"""]]]
+        """[count::int 42]
+           [ratio::decimal 3.14159]
+           [oven-temps ::int[] 220 240 260 480]
+           [tags ::[] cheap fast tasty]"""]]]
 
   [# Migrated from docs-src/content/reference/{schemas,includes,streaming,tables}.cx
      during Phase B docs → guide consolidation (2026-05-24). Compact

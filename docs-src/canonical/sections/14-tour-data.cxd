@@ -228,21 +228,21 @@
          }]"""]]
 
   [child id=td-42 n=14.42 title='42. Explicit type annotation'
-    [body """Colon-type after the name pins the body's type, overriding auto-typing."""]
+    [body """A glued `::T` ascription on the name pins the body's type, overriding auto-typing."""]
     [example lang=cx
-      """[count :int 42]
-         [ratio :decimal 3.14159]"""]]
+      """[count::int 42]
+         [ratio::decimal 3.14159]"""]]
 
   [child id=td-43 n=14.43 title='43. Typed array as body'
-    [body """`:int[]` for typed; `:[]` for inferred (string array here)."""]
+    [body """`::int[]` for typed; `::[]` for inferred (string array here)."""]
     [example lang=cx
-      """[oven-temps :int[] 220 240 260 480]
-         [tags :[] cheap fast tasty]"""]]
+      """[oven-temps ::int[] 220 240 260 480]
+         [tags ::[] cheap fast tasty]"""]]
 
   [child id=td-44 n=14.44 title='44. Plain table — header plus rows'
-    [body """The `:table` form declares column names in brackets. Each line below is a row."""]
+    [body """The `[table[…]]` block declares column names once. Each line below is a row."""]
     [example lang=cx
-      """[menu :table[name size price]
+      """[menu [table[name size price]]
            Margherita medium 12
            Hawaiian   large  14
            Diavola    medium 13]"""]]
@@ -250,14 +250,14 @@
   [child id=td-45 n=14.45 title='45. Typed columns'
     [body """Each column can carry a colon-type. Cells parse accordingly."""]
     [example lang=cx
-      """[orders :table[item:string qty:int paid:bool when:date]
+      """[orders [table[item::string qty::int paid::bool when::date]]
            Margherita 2 true  2026-05-09
            Hawaiian   1 false 2026-05-09]"""]]
 
   [child id=td-46 n=14.46 title='46. Quoted cells and nulls'
     [body """Quote cells with spaces. `null` is a real null in the cell."""]
     [example lang=cx
-      """[shifts :table[cook hours:int notes]
+      """[shifts [table[cook hours::int notes]]
            Pepe       8 morning
            Maria      6 'closing crew'
            'Jean-Luc' 4 null]"""]]
@@ -278,7 +278,7 @@
     [body """Tabular ingredients, prose steps with inline markup, multi-line notes — all in one document, one syntax."""]
     [example lang=cx
       """[recipe name=Margherita serves=2
-           [ingredients :table[item amount:string]
+           [ingredients [table[item amount::string]]
              flour      300g
              water      200ml
              yeast      2g
@@ -302,7 +302,7 @@
            [; opening hours ]
            [hours mon-fri=11-22 sat=12-23 sun=closed]
            [; menu reviewed 2026-05-01 ]
-           [menu :table[name:string size price:decimal vegan:bool]
+           [menu [table[name::string size price::decimal vegan::bool]]
              Margherita medium 12.00 true
              Hawaiian   large  14.00 false
              Diavola    medium 13.00 false]

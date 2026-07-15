@@ -481,25 +481,24 @@
 
     [table
       [tr [th 'surface'] [th 'wire form'] [th 'notes']]
-      [tr [td 'CX (canonical)'] [td '0x<hex>'] [td 'hex digits, even count; default']]
-      [tr [td 'CX (literal)'] [td "base64('…') or hex('…')"] [td 'constructor builtins on input']]
+      [tr [td 'CX (canonical)'] [td '0x<hex>'] [td 'hex digits, even count; the only literal form']]
       [tr [td 'data-bin'] [td 'length-prefixed raw'] [td 'no encoding overhead']]
       [tr [td 'ast-bin'] [td 'length-prefixed raw'] [td 'same as data-bin']]
-      [tr [td 'JSON'] [td '{"_cx_bytes": "base64..."}'] [td 'envelope; JSON has no native bytes']]
-      [tr [td 'YAML'] [td '!!binary base64...'] [td 'native YAML 1.2 binary tag']]
-      [tr [td 'XML'] [td '<![CDATA[base64...]]>'] [td 'CDATA-wrapped base64; xsi:type="xs:base64Binary" attribute optional']]
-      [tr [td 'TOML'] [td '[col :bytes \\"hex...\\"]'] [td 'TOML has no binary type; encoded as a string with the :bytes type tag preserved via envelope']]
-      [tr [td 'Markdown'] [td '`![data](data:application/octet-stream;base64,...)`'] [td 'data URI inside MD link form']]
-      [tr [td 'CSV / TSV'] [td 'base64(...)'] [td 'base64 string in the cell; deserializer needs schema to know it is bytes']]
+      [tr [td 'JSON'] [td 'string (base64)'] [td 'lossless adds the cx:type sidecar; JSON has no native bytes']]
+      [tr [td 'YAML'] [td 'string with !!binary tag'] [td 'YAML 1.2 binary tag']]
+      [tr [td 'XML'] [td 'text; cx:type="bytes" when lossless'] [td 'hex text content']]
+      [tr [td 'TOML'] [td 'string (base64)'] [td 'TOML has no binary type']]
+      [tr [td 'Markdown'] [td 'text (base64)'] [td 'plain text form']]
+      [tr [td 'CSV / TSV'] [td 'base64 string in the cell'] [td 'deserializer needs schema to know it is bytes']]
       [tr [td 'CXCol / Parquet'] [td 'binary column type'] [td 'native; zero-copy through the Arrow bridge']]]
 
     [body
-      """All non-native bytes encodings (envelope, CDATA, data URI)
-         are explicitly identifiable by the host reader. Schema-driven
-         emit (with a `.cxs` schema declaring the column as `:bytes`)
-         strips envelope wrappers — the reader knows from the schema
-         that base64 means bytes. Tag-driven emit (no schema) keeps the
-         envelopes."""]]
+      """The table states the conversions contract. Implementation
+         status: the shipped JSON/YAML/TOML/Markdown lanes currently
+         emit the canonical `0x` hex string rather than the base64 /
+         `!!binary` forms — lane wiring is tracked in
+         [#458](https://github.com/cx-home/cx-private/issues/458);
+         the XML lossless lane matches the contract today."""]]
 
   [child id=roundtrip n=3.10 title='Round-trip guarantees and lossiness matrix'
     [intro

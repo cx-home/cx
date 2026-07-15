@@ -431,11 +431,11 @@
 
     [child id=tut-4 n=0.9.4 title='Types'
       [body
-        """CX auto-types most values; for the rest, a colon-type
-           annotation pins the value or body type. Sized variants
+        """CX auto-types most values; for the rest, a glued `::T`
+           ascription pins the value or body type. Sized variants
            carry range constraints that validate at parse time."""]
-      [example lang=cx """[port :u16 8080]"""]
-      [note """**Exercises.** Try setting `:u16` to `70000` and observe the error. Compare `[n 12]` vs `[n :decimal 12]` in `cx --ast`."""]]
+      [example lang=cx """[port::u16 8080]"""]
+      [note """**Exercises.** Try setting the `::u16` value to `70000` and observe the error. Compare `[n 12]` vs `[n::decimal 12]` in `cx --ast`."""]]
 
     [child id=tut-5 n=0.9.5 title='Element bodies'
       [body
@@ -477,7 +477,7 @@
 
     [child id=tut-9 n=0.9.9 title='Typed tables'
       [body
-        """A colon-table block declares column names and types.
+        """A `[table[…]]` block declares column names and types.
            Each non-blank line below is a row; cells parse against
            the declared column types. Round-trips to CSV with
            types preserved via the header row. In the binary
@@ -485,7 +485,7 @@
            to 10 times smaller than equivalent element-per-row
            encoding."""]
       [example lang=cx
-        """[orders :table[item:string qty:u32 paid:bool when:date]
+        """[orders [table[item::string qty::u32 paid::bool when::date]]
              Margherita 2 true  2026-05-09
              Hawaiian   1 false 2026-05-09]"""]]
 
