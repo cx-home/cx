@@ -2,6 +2,7 @@
    Showcases v3.4 idioms: sized numeric types, boolean sigils,
    numeric underscores, line comments, leading-zero strings. -->
 <server host="0.0.0.0" tls="true" debug="false">
+  <!--+tls → tls=true; -debug → debug=false-->
   <port cx:type="u16">8080</port>
   <!--sized: u16 covers 0..65535-->
   <workers cx:type="u8">4</workers>
