@@ -679,7 +679,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cxstore
+test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -760,6 +760,15 @@ test-vcx-code: build-vcx-dev
 .PHONY: test-vcx-cxstore
 test-vcx-cxstore: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
+
+# White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
+# they assert on the cmd module's own constants (e.g. the `cx scaffold`
+# templates, #306/#448) that neither vcx/tests/ nor vcx/code/ can import.
+# `v test` only runs the directory it is given, so without this target the
+# cmd suite had NO gate consumer (#448 wired it in).
+.PHONY: test-vcx-cmd
+test-vcx-cmd: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/cmd/
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
