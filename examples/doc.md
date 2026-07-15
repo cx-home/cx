@@ -41,7 +41,13 @@ See the [full documentation](https://cxhome.org/docs) for details.
 
 ### Tables
 
-<!-- [formats] -->
+| format | input | output |
+| --- | --- | --- |
+| CX | true | true |
+| XML | true | true |
+| JSON | true | true |
+| YAML | true | true |
+| TOML | true | true |
 
 ## Images
 

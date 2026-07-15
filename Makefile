@@ -322,11 +322,11 @@ stdlib-catalogue-gate: build-vcx
 # Override the binary with CX_BIN=path (default vcx/target/cx).
 #
 # ── LANE NOTES ─────────────────────────────────────────────────────────
-#   * books.json/books.xml use the explicit --from=cx conversion lane:
-#     the #413 table fix landed there, while the AST-JSON projection
-#     shorthand (`--json FILE`) still drops table rows — tracked as
-#     cx-home/cx-private#443. Do not switch books.json to the shorthand
-#     until #443 lands.
+#   * books.json/books.xml use the explicit --from=cx conversion lane.
+#     Since #443 the `--json FILE` shorthand no longer drops table rows,
+#     but it renders the AST-JSON projection (the eval-render shape,
+#     "table": {cols, rows}), NOT the semantic JSON image the companion
+#     pins — so books.json stays on the conversion lane by design.
 .PHONY: examples-regen
 examples-regen: CX_BIN ?= $(CURDIR)/vcx/target/cx
 examples-regen:
