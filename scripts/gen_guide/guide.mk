@@ -42,6 +42,7 @@ endif
         guide-clean \
         guide-check \
         guide-snippets-check \
+        check-retired-surface \
         playground-examples-regen
 
 ## guide        Build docs/guide/ from docs-src/canonical/. The "Standard
@@ -70,6 +71,18 @@ guide: $(GUIDE_CX_DEP)
 guide-snippets-check: $(GUIDE_CX_DEP)
 	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) $(GUIDE_GEN)/snippet_check.cx \
 	  --allow-read --allow-write --allow-subprocess --allow-env
+	@$(GUIDE_GEN)/check_retired_surface.sh
+
+## check-retired-surface  Companion scan to the snippet gate: rejects
+##                                   retired forms that PARSE as something
+##                                   else (`:table[`, spaced `:T` body
+##                                   annotations, `:T[]` arrays) and so slip
+##                                   through a parse-only gate. Waive a
+##                                   deliberate retired-form panel with a
+##                                   `retired-ok` marker on the line.
+.PHONY: check-retired-surface
+check-retired-surface:
+	@$(GUIDE_GEN)/check_retired_surface.sh
 
 ## playground-examples-regen  Regenerate + re-audit
 ##                                   scripts/gen_guide/playground/
