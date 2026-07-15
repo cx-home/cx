@@ -336,6 +336,21 @@
     [child n=17.4 id=ops-env          title='Environment variables']
     [child n=17.5 id=ops-gc           title='Garbage collection at a glance']
     [child n=17.6 id=ops-logging      title='Logging and journaling']]
+  [section n=18 id=store file='18-store.cxd'
+    [child n=18.1 id=store-model      title='Content addressing and identity']
+    [child n=18.2 id=store-embedded   title='The embedded workflow']
+    [child n=18.3 id=store-porcelain  title='Porcelain — introspect, branch, replicate']
+    [child n=18.4 id=store-service    title='The service tier — cx store-serve']
+    [child n=18.5 id=store-transports title='Transports — CSRP and gRPC']
+    [child n=18.6 id=store-security   title='Security and encryption at rest']
+    [child n=18.7 id=store-console    title='The management console']]
+  [section n=19 id=xap-distribution file='19-xap-distribution.cxd'
+    [child n=19.1 id=dist-what         title='The unit — what a feature is']
+    [child n=19.2 id=dist-authoring    title='Authoring — spec plus contract module']
+    [child n=19.3 id=dist-registry     title='Publishing — a git repo is a registry']
+    [child n=19.4 id=dist-consuming    title='Consuming — verify, install, pin']
+    [child n=19.5 id=dist-entitlements title='Entitlements and identity']
+    [child n=19.6 id=dist-market       title='The marketplace — today versus specified']]
 
   [# The "Standard library" area (libraries.html + lib-<m>.html) and the
      "XAP" area are NOT manifest sections: guide_build.cx projects them
