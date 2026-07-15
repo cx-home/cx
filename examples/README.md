@@ -60,6 +60,7 @@ live binary:
 | --------- | ------ | ---- |
 | `config.json` / `config.yaml` / `config.toml` / `config.xml` | `config.cx` | `cx --json/--yaml/--toml/--xml` |
 | `books.yaml` / `books.toml` | `books.cx` | `cx --yaml/--toml` |
+| `books.json` / `books.xml` | `books.cx` | `cx --from=cx --to=json/--to=xml` (see note below) |
 | `doc.md` | `doc.cx` | `cx --md` |
 | `comparisons/table_block.csv` | `comparisons/table_block.cx` | `cx --csv` |
 
