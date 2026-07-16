@@ -817,7 +817,6 @@ CX_SKIP_LOG := vcx/target/test-skips.log
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
-                      vcx/tests/store_admin_plane_test.v \
                       vcx/tests/a2a_real_test.v
 
 test-vcx-suite: build-vcx-dev
