@@ -168,8 +168,13 @@ build-rust: build-vcx
 build-rust-arrow: build-vcx build-lib-arrow
 	cargo build --features arrow --manifest-path lang/rust/cxlib/Cargo.toml --release
 
+# Go toolchain: prefer a go whose GOARCH matches the host — an Intel-brew
+# go in /usr/local shadowing an arm64 host cannot link the arm64 libcx
+# (cgo link failure). Falls back to plain `go` everywhere else.
+GO ?= $(shell if [ "$$(uname -sm)" = "Darwin arm64" ] && [ -x /opt/homebrew/bin/go ] && [ "$$(go env GOARCH 2>/dev/null)" != "arm64" ]; then echo /opt/homebrew/bin/go; else echo go; fi)
+
 build-go: build-vcx
-	cd lang/go/cxlib && go build ./...
+	cd lang/go/cxlib && $(GO) build ./...
 
 # Arrow C-Data Go binding (Phase 7.74c-cont-bindings-multi-go,
 # spec/abi.md §2.11). Gated behind `-tags arrow` so the default
@@ -936,11 +941,11 @@ test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
 
 test-go: build-go
-	cd lang/go/cxlib && go test ./...
-	cd lang/go/conformance && go run .
+	cd lang/go/cxlib && $(GO) test ./...
+	cd lang/go/conformance && $(GO) run .
 
 test-go-api: build-go
-	cd lang/go/cxlib && go test ./...
+	cd lang/go/cxlib && $(GO) test ./...
 
 # Apache Arrow C-Data interop tests for the Go binding
 # (Phase 7.74c-cont-bindings-multi-go). Mirrors test-python-arrow:
