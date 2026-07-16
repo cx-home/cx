@@ -1177,7 +1177,7 @@
         """**Services — CXER016x:**"""]
       [table
         [tr [th 'code'] [th 'symbolic'] [th 'meaning'] [th 'recovery']]
-        [tr [td 'CXER0160'] [td 'BAD_REQUEST'] [td 'HTTP 400 — malformed body or path-param parse failure'] [td 'Return [response status=400 body=err] to client']]
+        [tr [td 'CXER0160'] [td 'BAD_REQUEST'] [td 'HTTP 400 — malformed body or path-param parse failure'] [td 'Return [response status=400 [body $err]] to client']]
         [tr [td 'CXER0161'] [td 'UNAUTHORIZED'] [td 'HTTP 401 — :auth returned err'] [td 'Return 401; client re-authenticates']]
         [tr [td 'CXER0162'] [td 'NOT_FOUND'] [td 'HTTP 404 — no resource matched path + method'] [td 'Return 404; client checks URL']]
         [tr [td 'CXER0163'] [td 'REQUEST_TIMEOUT'] [td 'HTTP 408 — :read-timeout exceeded'] [td 'Retry with backoff; reduce request size']]
@@ -1256,12 +1256,12 @@
 
            [resource method=GET path='/users/:id'
              [?let [= $u //user[@id=$request/path-params/id]]
-               [response status=200 body=$u]]]
+               [response status=200 [body $u]]]]
 
            [resource method=POST path='/users'
              consumes=application/cx
              [?let [= $body $request/body]
-               [response status=201 body=[$create-user $body]]]]]"""]
+               [response status=201 [body [$create-user $body]]]]]]"""]
 
       [body
         """**Resource parameters.** Each `[resource]` declares

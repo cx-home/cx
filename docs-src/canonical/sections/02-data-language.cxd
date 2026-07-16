@@ -578,13 +578,13 @@
         """Beyond type-tag matching, schemas support a constraint
            vocabulary on attributes and element bodies:"""]
       [list
-        [item """`pattern='regex'` — attribute value matches the regex"""]
-        [item """`min=N` / `max=N` — numeric bounds"""]
-        [item """`min-length=N` / `max-length=N` — string length"""]
-        [item """`enum=(a, b, c)` — value is one of the listed atoms"""]
-        [item """`one-of=(...)` — value matches one of N sub-schemas"""]
-        [item """`required=true|false` — attribute presence"""]
-        [item """`occurs='0..*'` — child element cardinality (XSD form)"""]]
+        [item """`[pattern S]` — string value matches the RE2 regex"""]
+        [item """`[range M N]` / `[min M] [max N]` — numeric bounds"""]
+        [item """`[len M N]` / `[min-length M] [max-length N]` — string/bytes length"""]
+        [item """`[enum V ...]` — value is one of the listed values"""]
+        [item """`[req]` / `[opt]` — presence policy"""]
+        [item """`[card "M..N"]` — child element cardinality range"""]
+        [item """`[default V]` — inserted when absent"""]]
       [body
         """Constraint violations produce CXER01xx errors with the failing
            constraint identified in the error context. Full vocabulary +
