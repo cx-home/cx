@@ -20,11 +20,10 @@ cx greet.cx
 cx users.cx
 ```
 
-> **Known issue (cx-home/cx-private#415):** the documented tour run
-> line `cx ../code-tour.cx --data=../code-tour.input.cx` does not bind
-> the input today — bare `cx` silently swallows the `--data=` flag, so
-> the document-driven sections render empty. Track #415 for the fix
-> (bind `$doc` or convert the tours to inline data).
+The tour run line `cx ../code-tour.cx --data=../code-tour.input.cx`
+binds the input document as `$doc` (the
+[#415](https://github.com/cx-home/cx-private/issues/415) fix), so the
+document-driven sections render against the sample data.
 
 For the full Code surface, see the rendered guide chapter
 [`docs/guide/code.html`](../../docs/guide/code.html) (built into

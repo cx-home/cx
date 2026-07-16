@@ -8,8 +8,9 @@
 #     `cx --from=cx --to=json` (the lossless data conversion the library
 #     bindings use). NOTE: `cx --json FILE` is the *eval* reading and is the
 #     wrong tool for prose markup — its body parses as program expressions.
-#   • PROGRAM tours (code-tour, cxpath-tour, …) — validated via the EVAL
-#     reading: `cx eval FILE [--data=FILE.input.cx]`.
+#   • PROGRAM tours (code-tour, cxpath-tour, …) — validated via the RUN
+#     surface's documented line: `cx FILE [--data=FILE.input.cx]` (#415:
+#     --data binds the companion as $doc).
 #
 # A file passes if the reading that matches it succeeds. The category is
 # auto-detected: if `cx fmt` parses it, it is data; otherwise it is treated
@@ -65,17 +66,21 @@ check_file() {
 		PASS=$((PASS + 1))
 		return
 	fi
+	# The PROGRAM reading runs the DOCUMENTED bare-surface line (#415):
+	# `cx FILE [--data=FILE.input.cx]` — the same spelling the READMEs and
+	# tour headers carry, so this checker exercises the real run surface
+	# (including the --data $doc binding) rather than the `cx eval` alias.
 	local input="${f%.cx}.input.cx"
 	if [ -f "$input" ]; then
-		if ! "$CX" eval "$f" --data="$input" > /dev/null 2>&1; then
+		if ! "$CX" "$f" --data="$input" > /dev/null 2>&1; then
 			FAIL=$((FAIL + 1))
-			FAIL_DETAILS+=("$rel [neither data-JSON nor eval (with $(basename "$input")) succeeded]")
+			FAIL_DETAILS+=("$rel [neither data-JSON nor the documented run line (with $(basename "$input")) succeeded]")
 			return
 		fi
 	else
-		if ! "$CX" eval "$f" > /dev/null 2>&1; then
+		if ! "$CX" "$f" > /dev/null 2>&1; then
 			FAIL=$((FAIL + 1))
-			FAIL_DETAILS+=("$rel [neither data-JSON nor program eval succeeded]")
+			FAIL_DETAILS+=("$rel [neither data-JSON nor program run succeeded]")
 			return
 		fi
 	fi
