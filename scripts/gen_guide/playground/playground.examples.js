@@ -505,9 +505,9 @@
     },
     "71-builtin-head-tail": {
       label: "[71] Sequence \u2014 head + tail",
-      input: "[?let [= $xs (10, 20, 30, 40)] [list first=[head $xs] rest=[tail $xs]]]",
+      input: "[?let [= $xs (10, 20, 30, 40)] [list first=[$head $xs] [rest [$tail $xs]]]]",
       note:  "**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).",
-      tags:  ["builtin", "eq", "head", "let", "tail"],
+      tags:  ["eq", "let"],
       runnable: true,
     },
     "72-builtin-nth": {
@@ -547,9 +547,9 @@
     },
     "77-numeric-round": {
       label: "[77] Numeric \u2014 round / floor / ceiling",
-      input: "[stats r=[round 3.7] f=[floor 3.7] c=[ceiling 3.2]]",
+      input: "[stats r=[$round 3.7] f=[$floor 3.7] c=[$ceiling 3.2]]",
       note:  "**Introduces:** `[round f]` / `[floor f]` / `[ceiling f]` \u2014 float-to-int with three rounding modes.",
-      tags:  ["builtin", "ceiling", "floor", "round"],
+      tags:  [],
       runnable: true,
     },
     "78-string-substring": {
@@ -561,9 +561,9 @@
     },
     "79-string-starts-ends": {
       label: "[79] Strings \u2014 starts-with / ends-with",
-      input: "[checks starts=[starts-with \"hello world\" \"hello\"] ends=[ends-with \"hello world\" \"world\"]]",
+      input: "[checks starts=[$starts-with \"hello world\" \"hello\"] ends=[$ends-with \"hello world\" \"world\"]]",
       note:  "**Introduces:** `[starts-with s prefix]` + `[ends-with s suffix]` \u2014 boolean tests.",
-      tags:  ["builtin", "ends-with", "starts-with"],
+      tags:  [],
       runnable: true,
     },
     "80-string-normalize": {
@@ -883,9 +883,9 @@
     },
     "125-min-max": {
       label: "[125] Aggregate \u2014 min / max",
-      input: "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]] [stats lo=[min $doc/s/@v] hi=[max $doc/s/@v] avg=[avg $doc/s/@v]]]",
+      input: "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]] [stats lo=[$min $doc/s/@v] hi=[$max $doc/s/@v] avg=[$avg $doc/s/@v]]]",
       note:  "**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element.",
-      tags:  ["avg", "builtin", "cxpath", "eq", "let", "max", "min"],
+      tags:  ["cxpath", "eq", "let"],
       runnable: true,
     },
     "126-group-aggregate": {
@@ -1030,7 +1030,7 @@
     },
     "146-pivot-rows-to-attrs": {
       label: "[146] ETL \u2014 pivot (row-shape \u2192 attr-shape)",
-      input: "[?let [= $doc [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]]] [snapshot cpu=$doc/m[= $_@k \"cpu\"]/@v mem=$doc/m[= $_@k \"mem\"]/@v disk=$doc/m[= $_@k \"disk\"]/@v]]",
+      input: "[?let [= $doc [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]]] [snapshot [cpu $doc/m[= $_@k \"cpu\"]/@v] [mem $doc/m[= $_@k \"mem\"]/@v] [disk $doc/m[= $_@k \"disk\"]/@v]]]",
       note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k \u2026]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly \u2014 no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; to read the raw scalar `87`, bind the row first \u2014 `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
       tags:  ["cxpath", "eq", "let"],
       runnable: true,
@@ -1058,7 +1058,7 @@
     },
     "150-join-by-key": {
       label: "[150] ETL \u2014 join two collections by attribute",
-      input: "[?let [= $orders [o-set [o id=1 user=\"A\" amt=100] [o id=2 user=\"B\" amt=200] [o id=3 user=\"A\" amt=50]]] [?let [= $users [u-set [u name=\"A\" email=\"a@x.com\"] [u name=\"B\" email=\"b@x.com\"]]] [?for [in $o $orders//o] [yield [joined order-id=$o/@id amt=$o/@amt email=$users//u[= $_@name $o/@user]/@email]]]]]",
+      input: "[?let [= $orders [o-set [o id=1 user=\"A\" amt=100] [o id=2 user=\"B\" amt=200] [o id=3 user=\"A\" amt=50]]] [?let [= $users [u-set [u name=\"A\" email=\"a@x.com\"] [u name=\"B\" email=\"b@x.com\"]]] [?for [in $o $orders//o] [yield [joined order-id=$o/@id amt=$o/@amt [email $users//u[= $_@name $o/@user]/@email]]]]]]",
       note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
       runnable: true,
