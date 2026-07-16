@@ -30,6 +30,9 @@ FAIL=0
 FAIL_DETAILS=()
 
 # Extract `](RELATIVE)` links. Ignore http(s):// and mailto: and fragment-only.
+# Fenced code blocks and inline code spans are stripped first — text inside
+# them renders literally, so `[text](url)` examples and code like
+# `Project[User](doc.Filter(...))` are not links.
 for file in "${TARGETS[@]}"; do
  file_dir=$(dirname "$file")
  while IFS= read -r link; do
@@ -45,7 +48,9 @@ for file in "${TARGETS[@]}"; do
  FAIL=$((FAIL + 1))
  FAIL_DETAILS+=("$file → $target (resolved as $resolved)")
  fi
- done < <(grep -oE '\]\(([^)]+)\)' "$file" \
+ done < <(awk 'BEGIN{fence=0} /^[[:space:]]*(```|~~~)/{fence=!fence; next} !fence' "$file" \
+ | sed -E 's/`[^`]*`//g' \
+ | grep -oE '\]\(([^)]+)\)' \
  | sed -E 's/^\]\(//; s/\)$//' \
  | grep -vE '^(https?:|mailto:|#)' \
  | grep -vE '^$')

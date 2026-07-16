@@ -363,9 +363,12 @@ bench-compare:
 # Pages site, which has no .md files — pointing the check there made the
 # target exit 2 on an empty target list). Coverage includes EVERY published
 # root doc (the #426 audit found ROADMAP/SECURITY/CONTRIBUTING rotting
-# precisely because only docs-src/ + README were gated).
+# precisely because only docs-src/ + README were gated) and the approved
+# spec tree (#499/#503 found spec/03-approved/ links rotting invisibly
+# because the gate never looked there).
 verify-doc-links:
 	@tools/verify-doc-links.sh docs-src/
+	@tools/verify-doc-links.sh spec/03-approved/
 	@tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md \
 	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md
 
