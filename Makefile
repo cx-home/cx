@@ -42,7 +42,9 @@ PREFIX ?= /usr/local
 UNAME_S := $(shell uname -s)
 
 # ── Python / Go toolchain paths ──────────────────────────────────────────────
-PYTHON ?= python3
+# Python: prefer a modern interpreter when the default python3 is too old
+# (Xcode ships 3.9; the binding + emscripten need >= 3.10).
+PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then echo python3; elif [ -x /opt/homebrew/bin/python3 ]; then echo /opt/homebrew/bin/python3; else echo python3; fi)
 
 .PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow build-rust build-rust-arrow \
  build-go build-go-arrow \
