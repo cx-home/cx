@@ -23,9 +23,8 @@
    one [tour …] element at the end; [?lib] / [?def] / [?const] are
    module-top-level directives (§12) and are declared up here.
 
-   Run:
-     cx examples/code-tour.cx
-   Or against the sample document (document-driven sections light up):
+   Run (the sample document binds as $doc — document-driven sections
+   need it; without --data the document-rooted queries raise loudly):
      cx examples/code-tour.cx --data=examples/code-tour.input.cx #]
 
 [# ─── Module imports — [?lib] (§12.1) ───

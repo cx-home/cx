@@ -76,15 +76,18 @@
         [tr [td 'cx store-health'] [td 'Store health probe']]
         [tr [td 'cx store-token'] [td 'Mint store access tokens']]
         [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key']]
-        [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]]
+        [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]
+        [tr [td 'cx select PATH FILE'] [td 'CXPath query over a document — matches in canonical CX, one per line']]
+        [tr [td 'cx version'] [td 'Version / build info (same output as -v / --version)']]]
 
       [body
-        """There is **no** `cx parse` / `cx convert` / `cx select` /
-           `cx modify` / `cx schema` / `cx version` / `cx help`
-           subcommand — parsing and conversion ride the projection
-           flags below, selection and update are programs you run
-           with `cx FILE`, `-v` / `--version` prints the build line,
-           and schema checking is `cx validate`."""]]
+        """There is **no** `cx parse` / `cx convert` / `cx modify` /
+           `cx schema` / `cx help` subcommand — parsing and
+           conversion ride the projection flags below, updates are
+           programs you run with `cx FILE`, and schema checking is
+           `cx validate`. Ad-hoc selection has its own verb:
+           `cx select 'PATH' [FILE]` evaluates one CXPath expression
+           against a document (see below)."""]]
 
     [child id=cli-projections n=8.1.2 title='Projection and conversion flags'
       [body
@@ -114,7 +117,24 @@
 
     [child id=cli-run-caps n=8.1.3 title='Running programs and capability flags'
       [body
-        """`cx program.cx` evaluates a program. Effects are
+        """`cx program.cx` evaluates a program. A separate data
+           input rides `--data=INPUT.cx` (or `--data=-` for stdin):
+           the input is loaded via the data reading and bound as
+           `$doc` / `$input` before evaluation, and the caller-supplied
+           input **wins** — the program's own data roots never rebind
+           it. Without `--data`, the program's first data root binds
+           implicitly; a document-driven program run without any input
+           raises the loud unbound-`$doc` error rather than silently
+           matching nothing. The four `examples/` tours run exactly
+           this way (`cx examples/code-tour.cx
+           --data=examples/code-tour.input.cx`)."""]
+      [body
+        """Unknown flags on this surface are **hard usage errors**
+           (exit 2, naming the flag) — including misspelled
+           `--allow-*` grants. Nothing on the run surface is silently
+           ignored."""]
+      [body
+        """Effects are
            **deny-by-default**: a program that reads files, writes
            files, touches the network, reads environment variables,
            spawns subprocesses, or asks for randomness must be
@@ -122,7 +142,8 @@
            (denied effect points raise the catchable capability
            error `CXER0271`):"""]
       [example lang=sh
-        """$ cx build_site.cx --allow-read --allow-write
+        """$ cx report.cx --data=orders.cx       # orders.cx binds as $doc
+           $ cx build_site.cx --allow-read --allow-write
            $ cx serve.cx --allow-net
            $ cx pipeline.cx --allow-all          # every capability"""]
       [body
@@ -246,7 +267,28 @@
            capability surface. Editors spawn it on demand — see
            [[editors]]."""]
       [example lang=sh
-        """$ cx lsp    # editor connects on stdio"""]]]
+        """$ cx lsp    # editor connects on stdio"""]]
+
+    [child id=cli-select n=8.1.13 title='cx select'
+      [body
+        """CXPath query over one document —
+           `cx select 'PATH' [FILE]` (stdin when FILE is `-` or
+           absent). The document binds as `$doc`; PATH is a single
+           CXPath value expression (`$doc/…`, `/…`, or `//…`,
+           predicates included). Matches print one per line in
+           canonical CX, in document order; attribute-axis matches
+           materialize as `[name value]` fields. Exit 0 with at
+           least one match, 1 on an empty match set (grep-style),
+           2 on error. A pure read — no capability grants accepted
+           or needed. Contract:
+           [`spec/misc/cli.md`](../../spec/03-approved/misc/cli.md) §3.8."""]
+      [example lang=sh
+        """$ cx select '//user[= $_@role admin]' users.cx
+           [user name=Alice role=admin]
+           $ cx select '$doc/user@name' users.cx
+           [name 'Alice']
+           [name 'Bob']
+           $ cat users.cx | cx select '//user' && echo matched"""]]]
 
   [child id=editors n=8.2 title='Editor integration'
     [intro
@@ -1544,10 +1586,15 @@
            cx validate FILE --schema=S.cxs
            cx table info FILE
            cx scaffold KIND         # drop a skeleton on stdout
+           cx select '//user' FILE  # CXPath query (exit 1 = no match)
+           cx version               # build info (same as -v)
 
            # Run a program (data + program in one input).
            cat data.cx program.cx | cx
            cx pipeline.cx --allow-read --allow-write
+
+           # Run a program against a separate input document ($doc).
+           cx program.cx --data=input.cx
 
            # Include resolution.
            cx --xml --include-root=./conf main.cx     # resolve [?cx include=…]"""]

@@ -55,7 +55,10 @@
     [body
       """Nine capabilities cover every effectful surface in the engine
          and standard library, plus one blanket opt-out. This is the
-         full set the binary accepts — there are no hidden grants:"""]
+         full set the binary accepts — there are no hidden grants, and
+         a misspelled grant flag (`--alow-net`, `--allow-nett`, …) is a
+         hard usage error (exit 2) naming the flag, never a silent
+         no-grant:"""]
     [table
       [tr [th 'flag'] [th 'capability'] [th 'gates']]
       [tr [td '--allow-read'] [td 'read'] [td 'filesystem reads, [?cx include], terminal input']]

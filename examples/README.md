@@ -7,7 +7,9 @@ build flags, no scaffolding. Two kinds of file live here:
   `cx FILE` to render (a data document renders as itself), or convert
   with `cx --json|--yaml|--toml|--xml|--md|--csv FILE`.
 - **Program tours** — `.cx` programs exercising the code surface
-  (directives, CXPath, match, modify). Run `cx FILE`.
+  (directives, CXPath, match, modify). Run `cx FILE`, adding
+  `--data=FILE.input.cx` where the tour ships an input companion
+  (it binds as `$doc`).
 
 ## Index
 
@@ -24,10 +26,10 @@ build flags, no scaffolding. Two kinds of file live here:
 | [`embedding_test.cx`](embedding_test.cx) | Foreign-syntax code blocks via `[# … #]` raw text | `cx examples/embedding_test.cx` | passing |
 | [`vcore.cx`](vcore.cx) | Core-grammar showcase, one canonical sample per feature | `cx examples/vcore.cx` | passing |
 | [`cx-tour.cx`](cx-tour.cx) | FORMAT tour — every structural feature in one document | `cx examples/cx-tour.cx` | passing |
-| [`code-tour.cx`](code-tour.cx) | CODE tour — every core directive | `cx examples/code-tour.cx` | passing standalone; `--data` sections blocked on [#415](https://github.com/cx-home/cx-private/issues/415) |
-| [`cxpath-tour.cx`](cxpath-tour.cx) | CXPath tour — every axis and predicate kind | `cx examples/cxpath-tour.cx` | passing standalone; `--data` sections blocked on [#415](https://github.com/cx-home/cx-private/issues/415) |
-| [`match-multi.cx`](match-multi.cx) | Multi-arm `[?match]` — case/when/else, patterns, wildcard | `cx examples/match-multi.cx` | passing standalone; `--data` sections blocked on [#415](https://github.com/cx-home/cx-private/issues/415) |
-| [`modify-crud.cx`](modify-crud.cx) | Pure-functional CRUD via `[?modify]` | `cx examples/modify-crud.cx --data=examples/modify-crud.input.cx` | **blocked on [#415](https://github.com/cx-home/cx-private/issues/415)** — bare `cx` swallows `--data=`, and the tour needs `$doc` bound |
+| [`code-tour.cx`](code-tour.cx) | CODE tour — every core directive | `cx examples/code-tour.cx --data=examples/code-tour.input.cx` | passing |
+| [`cxpath-tour.cx`](cxpath-tour.cx) | CXPath tour — every axis and predicate kind | `cx examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx` | passing |
+| [`match-multi.cx`](match-multi.cx) | Multi-arm `[?match]` — case/when/else, patterns, wildcard | `cx examples/match-multi.cx --data=examples/match-multi.input.cx` | passing |
+| [`modify-crud.cx`](modify-crud.cx) | Pure-functional CRUD via `[?modify]` | `cx examples/modify-crud.cx --data=examples/modify-crud.input.cx` | passing |
 | [`validate/`](validate/) | `.cxs` schema + `cx validate` — pass and fail runs with exact diagnostics | see [`validate/README.md`](validate/README.md) | passing |
 | [`comparisons/`](comparisons/) | CX vs JSON/YAML/CSV side-by-side, per-lane trade-offs | see [`comparisons/README.md`](comparisons/README.md) | passing |
 | [`cx/`](cx/) | Two tiny data fixtures (`greet.cx`, `users.cx`) | `cx examples/cx/users.cx` | passing |
@@ -37,15 +39,13 @@ build flags, no scaffolding. Two kinds of file live here:
 | [`htmx/`](htmx/) | Server-rendered htmx demos | — | **parked, do not publish** — pre-v0.8.0 syntax; see [`htmx/DO-NOT-PUBLISH.md`](htmx/DO-NOT-PUBLISH.md) |
 
 The four tours ship a `*.input.cx` companion (`code-tour`, `cxpath-tour`,
-`match-multi`, `modify-crud`). Their documented
-`cx TOUR.cx --data=TOUR.input.cx` run line does not bind the input
-today: bare `cx` silently swallows the `--data=` flag
-([#415](https://github.com/cx-home/cx-private/issues/415)), so
-document-driven sections render empty (`()`/`total=0`). The three tours
-marked "passing standalone" are still complete runs of their surface;
-`modify-crud.cx` is document-driven throughout and fails without the
-binding. Repair lands with the #415 decision (bind `$doc` or convert
-to inline data).
+`match-multi`, `modify-crud`). The documented
+`cx TOUR.cx --data=TOUR.input.cx` run line binds the companion as
+`$doc` / `$input` (the [#415](https://github.com/cx-home/cx-private/issues/415)
+decision: the run surface takes `--data=`, and unknown flags are hard
+errors instead of silent no-ops). The tours are document-driven —
+running one without `--data` raises the loud unbound-`$doc` error by
+design rather than rendering empty sections.
 
 `etl_conventions_cx.md` (ETL conventions write-up) is prose, not a
 runnable example; parts of it are stale and tracked in
