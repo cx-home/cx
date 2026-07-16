@@ -116,8 +116,13 @@ make promote-cli        # verify + install the CLI to /usr/local/bin
 cx --version
 ```
 
-A hosted one-line installer is planned but not live yet — the two paths above
-are the supported installs today.
+**One-line install** — once `cxhome.org`'s DNS is live, the hosted installer
+downloads the latest release for your platform, verifies its SHA-256, and
+installs to `~/.local` (override with `PREFIX=`):
+
+```sh
+curl -sSL https://cxhome.org/install | sh
+```
 
 V users — the native V binding lives in its own
 [`cx-home/cx-v`](https://github.com/cx-home/cx-v) repo so V's package manager
