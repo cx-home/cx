@@ -53,6 +53,7 @@ PYTHON ?= python3
  release release-v release-all \
  dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
  test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
+ test-rust-parquet test-rust-arrow-conformance \
  test-go test-go-arrow \
  test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-go-api \
  test-xpath-parity test-binding-api-parity \
@@ -610,7 +611,7 @@ test-binding-api-parity:
 # gate report spurious comment-parse failures. LIBCX_LIB_DIR (loader priority 2)
 # wins over the system paths. Go/Rust already pin vcx/target via rpath.
 test-python: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-test-python: build-vcx
+test-python: check-python-test-lane check-python-interpreter build-vcx
 	$(PYTHON) lang/python/test_fixture_loader.py
 	$(PYTHON) lang/python/conformance.py
 	$(PYTHON) lang/python/conformance_code.py
@@ -620,8 +621,42 @@ test-python: build-vcx
 	$(PYTHON) lang/python/test_namespaces.py
 	$(PYTHON) lang/python/test_identity.py
 	$(PYTHON) lang/python/test_delimited.py
+	$(PYTHON) lang/python/test_streaming_table.py
+	$(PYTHON) lang/python/test_iterator.py
 	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
 	cd lang/python && $(PYTHON) -m unittest test_store_client -v
+	cd lang/python && $(PYTHON) -m unittest test_event_writer -v
+	cd lang/python && $(PYTHON) -m unittest test_surface -v
+	cd lang/python && $(PYTHON) -m unittest test_surfaces -v
+	cd lang/python && $(PYTHON) -m unittest test_table -v
+
+# Interpreter preflight (#512). cxlib needs Python >= 3.10 (cx.py carries
+# runtime `X | None` unions); stock macOS `python3` is the Xcode 3.9-era
+# build, which fails the import in ways that masquerade as cxlib bugs.
+# Fail loudly with the remedy instead.
+.PHONY: check-python-interpreter
+check-python-interpreter:
+	@$(PYTHON) -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null || { \
+	  echo "ERROR: test-python needs Python >= 3.10; '$(PYTHON)' reports: $$($(PYTHON) --version 2>&1)."; \
+	  echo "       Re-run as: make test-python PYTHON=/opt/homebrew/bin/python3 (or any modern python3)."; \
+	  exit 1; }
+
+# Lane completeness (#512) — no test file in lang/python/ may sit outside
+# every Makefile lane (that is how test_table.py silently missed #509).
+# Every lang/python/test_*.py must be referenced somewhere in this
+# Makefile — this lane or an opt-in lane (test-python-arrow, …).
+.PHONY: check-python-test-lane
+check-python-test-lane:
+	@missing=""; \
+	for f in lang/python/test_*.py; do \
+	  b=$$(basename $$f .py); \
+	  grep -qw "$$b" Makefile || missing="$$missing $$b"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  echo "ERROR: python test files wired into NO Makefile lane (#512):$$missing"; \
+	  echo "       Add each to test-python (or an opt-in lane) in the top-level Makefile."; \
+	  exit 1; \
+	fi
 
 # Apache Arrow C-Data interop tests (Phase 7.74c-cont-bindings).
 # Skip-cleanly if pyarrow is not installed; otherwise builds libcx_arrow
@@ -687,6 +722,14 @@ abi-c-test: build-vcx build-lib-arrow
 	 -o $(ABI_C_TEST_BIN)
 	$(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
+# Pin the Rust binding to the freshly-built libcx (vcx/target), same
+# rationale as test-python above: build.rs probes /usr/local/lib and
+# /opt/homebrew/lib BEFORE the repo-relative fallback, so a stale
+# installed libcx.dylib silently shadows THIS build — and the arrow
+# lanes fail to link outright, because system paths carry libcx but
+# never libcx_arrow (#511). LIBCX_LIB_DIR is build.rs's priority-1
+# override and also sets the rpath to vcx/target.
+test-rust: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
 test-rust: build-rust
 	cargo test --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
 
@@ -695,12 +738,22 @@ test-rust: build-rust
 # builds libcx_arrow then exercises the 9-type round-trip surface
 # under `--features arrow`. Pulls in the `arrow` crate (v53.x) the
 # first time it runs.
+test-rust-arrow: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
 test-rust-arrow: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
+
+# Parquet bridge tests + smoke example (`parquet` implies `arrow`).
+# Before #511 this surface was wired into NO lane, which is how the
+# missing `ipc` feature sat unbuildable on release/0.13.0.
+test-rust-parquet: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
+test-rust-parquet: build-vcx build-lib-arrow
+	cargo test --features parquet --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
+	cargo run --features parquet --example parquet_smoke --manifest-path lang/rust/cxlib/Cargo.toml
 
 # Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
 # fixtures through the Rust binding. Mirrors test-python-arrow-conformance
 # and test-go-arrow-conformance (cross-binding parity per spec/abi.md §2.11).
+test-rust-arrow-conformance: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
 test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
