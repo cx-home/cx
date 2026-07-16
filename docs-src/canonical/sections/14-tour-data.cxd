@@ -194,23 +194,26 @@
     [body """One file, several independent documents. Same separator as YAML — three dashes on a line by themselves between documents."""]]
 
   [child id=td-36 n=14.36 title='36. Sequence (a, b, c) — flat list'
-    [body """Reads: attribute `toppings`, value is the sequence of three strings."""]
-    [example lang=cx """[pizza toppings=(cheese, basil, oil)]"""]]
+    [body """Reads: element `toppings`, body is the sequence of three strings.
+       Collections live in a child element's body — attributes hold a single
+       scalar, never a collection."""]
+    [example lang=cx """[pizza [toppings (cheese, basil, oil)]]"""]]
 
   [child id=td-37 n=14.37 title='37. Array [a, b, c] — nested list'
     [body """Arrays preserve structure; sequences flatten. Use arrays when nesting matters."""]
-    [example lang=cx """[grid cells=[1, 2, 3]]"""]]
+    [example lang=cx """[grid [cells [1, 2, 3]]]"""]]
 
   [child id=td-38 n=14.38 title='38. Nested arrays'
     [body """A matrix is just an array of arrays."""]
     [example lang=cx
-      """[board cells=[[1, 0, 1],
-                       [0, 1, 0],
-                       [1, 0, 1]]]"""]]
+      """[board
+           [cells [[1, 0, 1],
+                   [0, 1, 0],
+                   [1, 0, 1]]]]"""]]
 
   [child id=td-39 n=14.39 title='39. Map {k: v} — named key to value'
-    [body """Reads: attribute `prices`, value is a map with three entries."""]
-    [example lang=cx """[pizza prices={small: 9, medium: 12, large: 15}]"""]]
+    [body """Reads: element `prices`, body is a map with three entries."""]
+    [example lang=cx """[pizza [prices {small: 9, medium: 12, large: 15}]]"""]]
 
   [child id=td-40 n=14.40 title='40. Collections in body position'
     [body """Sequences, arrays, and maps can sit inside an element body too."""]

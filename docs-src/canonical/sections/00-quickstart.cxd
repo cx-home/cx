@@ -473,10 +473,11 @@
         """Three first-class collection shapes. Sequence with
            parens flattens; array with square brackets preserves
            nesting; map with braces gives named key-to-value
-           entries."""]
+           entries. Collections live in an element body —
+           attributes hold a single scalar, never a collection."""]
       [example lang=cx
-        """[pizza toppings=(cheese, basil, oil)]
-           [pizza prices={small: 9, medium: 12, large: 15}]"""]]
+        """[pizza [toppings (cheese, basil, oil)]]
+           [pizza [prices {small: 9, medium: 12, large: 15}]]"""]]
 
     [child id=tut-9 n=0.9.9 title='Typed tables'
       [body

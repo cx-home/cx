@@ -108,11 +108,14 @@
                 n=$sec@n
                 id=$sec@id
                 title=[$section-title $sec]
-                children=[?for [in $child $sec/child]
+                [; children ride in body position — attributes are
+                   scalar-only (code.md §6.4.1); a [?for]-yielded sequence
+                   may not be an attribute value. ]
+                [children [?for [in $child $sec/child]
                   [yield [toc-child
                           n=$child@n
                           id=$child@id
-                          title=[$section-title $child]]]]]]]]
+                          title=[$section-title $child]]]]]]]]]
 
     [# ─── Body — one section per manifest entry. Each manifest section
          carries a `file=` attribute; a missing `file` renders an [err]

@@ -92,7 +92,13 @@
          compiled output, and a requirement's acceptance criteria are
          its conformance fixtures. The skeleton (the full-size real
          reference is `xap-marine/features/own-ship/`):"""]
-    [example lang=cx
+    [; check=none — a *.feature.cxd is a DATA document consumed by the
+       feature toolchain (cx validate --schema=feature.cxs), not a
+       runnable program: its intent-template $placeholders ($text) are
+       tokens the DATA reading keeps verbatim, but the snippet gate's
+       program run would treat them as unbound bindings feeding an
+       attribute (CXER0100 under the §6.4.1 scalar-only attr rule). ]
+    [example lang=cx check=none
       """[feature name=notes version='0.1.0'
   [summary 'A shared notebook']
   [nouns [noun name=note [field name=text type=string]]]
