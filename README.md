@@ -8,7 +8,8 @@
 > **One concise syntax for data *and* code.** Configs, structured documents,
 > tabular data, queries, transforms, and the programs that tie them together —
 > one tree of `[...]` forms with typed, spec-defined conversions to and from
-> XML, JSON, YAML, TOML, and CSV — including a fully lossless XML lane.
+> XML, JSON, YAML, TOML, and CSV — including fully lossless XML, JSON, and
+> YAML lanes.
 >
 > **Agentic-ready.** Programs are CX values; data is CX values. Humans and AI
 > agents read, write, and run the same artifacts through the same parser, the
@@ -48,13 +49,13 @@ form. The conversion contract, exactly as the spec
 
 - **XML** — lossless round-trip, working on the shipped CLI today
   (`cx --to=xml --lossless … | cx --from=xml` recovers the original document;
-  type metadata travels as `cx:` namespace attributes/carriers). One known
-  defect: `[table]`-block content doesn't survive the round-trip yet (#413).
-- **JSON / YAML** — typed conversions both ways; each has a spec-defined
-  lossless encoding (a `cx:type` sidecar object for JSON, native `!!cx:T`
-  tags for YAML). The CLI's `--lossless` flag for these lanes is not wired
-  up yet — tracked as #416 in the
-  [issue tracker](https://github.com/cx-home/cx/issues).
+  type metadata travels as `cx:` namespace attributes/carriers, `[table]`
+  blocks as `cx:cols`/`cx:row`).
+- **JSON / YAML** — typed conversions both ways, and a full lossless mode on
+  the shipped CLI: `cx --to=json --lossless … | cx --from=json` (same for
+  yaml) recovers an element document byte-identically. Structure rides the
+  reserved `$tag` envelope; value types ride a `cx:type` sidecar + per-item
+  carriers in JSON and native `!!cx:T` tags in YAML.
 - **TOML** — typed idiomatic conversion both ways. TOML's grammar has no
   extension point for type tags, so the spec defines no lossless mode for
   it; round through CX or XML when you need full fidelity.
@@ -81,7 +82,7 @@ data is programs; one syntax substrate, one universal container.
 |---|:---:|:---:|:---:|:---:|
 | Homoiconic substrate | S-expressions | EDN | S-expressions | CX trees |
 | Data is code | ✓ | ✓ | ✓ | ✓ |
-| Format-interop with non-Lisp world | weak | partial (EDN ↔ JSON) | weak | typed conversions to/from XML/JSON/YAML/TOML/CSV (XML lossless) |
+| Format-interop with non-Lisp world | weak | partial (EDN ↔ JSON) | weak | typed conversions to/from XML/JSON/YAML/TOML/CSV (XML/JSON/YAML lossless) |
 | Schema language | external | spec / malli | contracts | built-in |
 | Named element / attribute model | — | — | — | ✓ |
 

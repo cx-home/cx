@@ -104,6 +104,21 @@ serve plane. One breaking change (store scheme cutover, under **Changed**).
 
 ### Added — language & stdlib
 
+- **Full lossless JSON / YAML lanes: the `$tag` structure envelope** (#475,
+  folding in #485 item 2) — `cx --to=json|yaml --lossless` now emits element
+  documents as a reserved `$tag` envelope (`$tag` / `$anchor` / `$merge` /
+  `$id` / `$type` / `$ref` / `$attrs` + `$attr-types` / `$children` /
+  `$cols`+`$rows`; multi-root under `$doc`), so a CX→json|yaml→CX round-trip
+  recovers the document byte-identically (strict-canonical eq): element-vs-map
+  shape, attr-vs-child distinction, mixed-content order, anchors/merges/ids,
+  tables, and typed values all survive. Typed values gain position-independent
+  carriers: the per-item `{"cx:T": …}` JSON carrier for array positions and
+  the `cx:key-type` sidecar for non-string map keys (YAML rides its native
+  tags). User keys that look reserved escape behind `cx:k:`. Import
+  reconstruction is unconditional (reserved `cx:`/`$` protocol shapes), the
+  default idiomatic lanes are untouched, and the whole `examples/*.cx` corpus
+  round-trips through both lanes as a conformance matrix
+  (conversions.md §2.2.1/§2.3.1).
 - **Graded similarity: the `~` core operator + `cx-stdlib/similar`** (#108) —
   `[~ a b]` / `[~ a b $pred]` returns a `[similar score=… band=…]` element
   (truthy iff `band=:match`), defined once and applied uniformly: cxpath
