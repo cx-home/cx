@@ -1,4 +1,4 @@
-[# Section 19 — XAP feature distribution: the v0.13.0 headline. What a
+[# Section 19 — XAP feature distribution (the v0.13.0 headline; version-literal-ok). What a
    feature is, authoring, publishing to a registry, consuming by pin,
    entitlements, and the honest marketplace status. Spec home: the
    feature distribution & market spec
@@ -12,7 +12,7 @@
 [section id=xap-distribution n=19 title='XAP feature distribution'
 
   [intro
-    """The headline of v0.13.0 is that XAP features became a
+    """The headline of the 0.13 release is that XAP features became a
        **distribution unit**: sealed, signed, published, discovered,
        verified, installed, and entitled — end to end, on machinery the
        platform already had. Distribution introduces no archive format,
@@ -366,7 +366,7 @@
          itself a XAP whose features are catalog, entitlement, and
          distribution; N markets compose into one discovery surface
          exactly as N XAPs compose into one experience. Honest status
-         at v0.13.0:"""]
+         as of this release:"""]
     [table
       [tr [th 'piece'] [th 'status']]
       [tr [td 'packaging, signing, publish, verify, install, pkg: loading, deployment host'] [td 'implemented']]
