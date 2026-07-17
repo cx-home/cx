@@ -10,7 +10,7 @@ import (
 //
 // W3f scope: synthetic IteratorNode round-trip via the ast_bin
 // encoder/decoder. True lazy-pull via a C ABI `cx_iterator_pull` export
-// lands in a follow-on ADR; this milestone covers wire transport +
+// lands in a follow-on spec change; this milestone covers wire transport +
 // binding-side IteratorNode type surface.
 //
 // The W3c renderer (V core) materialises iterators at the host emit

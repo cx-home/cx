@@ -240,8 +240,8 @@
   },
   "cxpath descendant": {
     "prefix": "path",
-    "body": ["//${1:name}${2:[@${3:attr}=${4:value}]}$0"],
-    "description": "CXPath descendant selection (code.md §5.5)"
+    "body": ["//${1:name}${2:[= \\$_@${3:attr} ${4:value}]}$0"],
+    "description": "CXPath descendant selection with prefix-form predicate (code.md §5.5.2 — infix [@attr=value] is retired)"
   },
   "cxpath child step": {
     "prefix": "path-child",
@@ -285,13 +285,16 @@
   },
   "typed table": {
     "prefix": "table",
-    "body": ["[${1:name} [table [${2:col1}::${3:int} ${4:col2}]] ${5:rows}]$0"],
-    "description": "Typed table — [table [cols]] header block + row cells in the element body, glued ::T columns (grammar.ebnf [29])"
+    "body": [
+      "[${1:name} [table [${2:col1}::${3:int} ${4:col2}::${5:string}]]",
+      "  ${6:1} ${7:a}]$0"
+    ],
+    "description": "Typed table — [table [cols]] header block + positional row cells in the element body, glued ::T columns (grammar.ebnf [29])"
   },
   "code block lang": {
     "prefix": "code",
-    "body": ["[``` lang=${1:python} [|", "${2:source}", "|]]$0"],
-    "description": "Embedded-language code block"
+    "body": ["[code lang=${1:python} [|", "${2:source}", "|]]$0"],
+    "description": "Embedded-language code block — [code lang=… [|…|]] (a bare [${1:python} [|…|]] wrapper works too)"
   },
   "log:info": {
     "prefix": "loginfo",

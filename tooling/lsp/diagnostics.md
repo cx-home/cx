@@ -16,15 +16,16 @@ load-bearing for diagnostic-aware editor configs and test fixtures.
 | `CXLS003` | hint       | sibling `[when …]` arms with byte-identical predicate source text (consolidation suggestion; no semantic equivalence) | code.md §8.2 | implemented (Phase 5.5; full-AST) |
 | `CXLS004` | error      | `[?modify]` `[set-attr …]` / `[delete-attr …]` targeting an attribute-step focus path | code.md §8.10 | implemented (Phase 5.5 finish; static-parse-error remap + defensive AST walk) |
 | `CXLS005` | hint       | `[?map]` / `[?reduce]` with a `[par]` clause whose function body **calls an impure builtin** (code.md §7.3) with no `[?bulkhead]` wrap — impure workers spawn one-per-item (unbounded fan-out can race / exhaust resources). A **pure** `[par]` body is safe to evaluate in parallel and reorder (no effect races) and gets no hint. Suggested fix: wrap in `[?bulkhead max-concurrent=K]`. | code.md §7.3 | implemented (v0.8.0; SAP C5 §7.3 impure-gate — `code.node_calls_impure_builtin` over the function body) |
-| `CXLS006` | error      | predicate-body purity violation — `[expr]` body calls an impure function or classified-impure builtin (paired with runtime `CXER0230`) | code.md §5.5.2 |
-| `CXLS007` | error      | `$_` / `$_position` / `$_last` reference outside a PredicateExpr body (paired with runtime `CXER0231` for `$_position` / `$_last`; `$_` outside a predicate is a normal binding so this fires only when no in-scope user binding exists) | code.md §5.5.2 |
-| `CXLS008` | error      | inferred-purity mismatch — `[?def]` annotated `pure` (explicit or default) whose call graph reaches an `impure` function or classified-impure builtin (paired with runtime `CXER0233`) | code.md §12.2 |
+| `CXLS006` | error      | predicate-body purity violation — `[expr]` body calls an impure function or classified-impure builtin (paired with runtime `CXER0230`) | code.md §5.5.2 | implemented (emitters in `vcx/cmd/lsp_features.v`) |
+| `CXLS007` | error      | `$_` / `$_position` / `$_last` reference outside a PredicateExpr body (paired with runtime `CXER0231` for `$_position` / `$_last`; `$_` outside a predicate is a normal binding so this fires only when no in-scope user binding exists) | code.md §5.5.2 | implemented (emitters in `vcx/cmd/lsp_features.v`) |
+| `CXLS008` | error      | inferred-purity mismatch — `[?def]` annotated `pure` (explicit or default) whose call graph reaches an `impure` function or classified-impure builtin (paired with runtime `CXER0233`) | code.md §12.2 | **reserved — not yet implemented** (no `CXLS008` emitter exists in `vcx/cmd`) |
 
 Codes are stable strings; editor configs (`tooling/lsp/{vscode,
 neovim, helix}.example.*`) may key off them to surface custom UI.
-`CXLS004` maps to the runtime error `CXER0100` (see
-`spec/cx_native_error_codes.md`) — same surface, but caught at LSP
-analysis time before evaluation.
+`CXLS004` maps to the runtime error `CXER0100` (see the CX code
+error-code reservation table in
+[`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md))
+— same surface, but caught at LSP analysis time before evaluation.
 
 ## Reserved protocol slots
 
@@ -37,7 +38,8 @@ A hover on a CXPath path expression shows:
 2. Live match-count against the document the hover is in
    (`select_all(path).len`).
 3. Axis-name documentation (one-line synopsis from the XPath 3.1
-   alignment table in `spec/cxpath_alignment.md`).
+   alignment notes in the CXPath section of
+   [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)).
 
 Sample LSP `Hover.contents`:
 
@@ -73,7 +75,8 @@ path, the completion list contains:
 4. **Function names** (after typing an identifier in predicate
    position): `count()`, `position()`, `last()`, `name()`,
    `local-name()`, `sum()`, etc. — XPath 3.1 functions whose
-   alignment is recorded in `spec/cxpath_alignment.md`.
+   alignment is recorded in the CXPath section of
+   [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md).
 
 Each completion item carries `data.path_axis: true` so the editor can
 sort path completions distinct from generic identifier completions.
@@ -228,17 +231,20 @@ interim manual driver is `tooling/lsp/tests/probe.py`, see
 
 `cx lsp` `initialize` response must continue to advertise
 `hoverProvider: true` and `completionProvider: { triggerCharacters:
-[":", "/", "@", "$"] }`. v0.8.0 adds `/` to the trigger set so path
-completions fire at the start of `//path` typing.
+["[", "?", "@", ":", "/"] }` (the live advertised set — verified by
+[`tests/check_capabilities.py`](tests/check_capabilities.py)). `/` is
+in the trigger set so path completions fire at the start of `//path`
+typing.
 
 ## Atom literal recognition (code.md §3.6)
 
 The v0.8.0 surface introduces atom literals (`:NAME`) as a new
-first-class scalar kind (see [`spec/core/code.md` §3.6](../../spec/core/code.md)).
+first-class scalar kind (see [`spec/03-approved/core/code.md` §3.6](../../spec/03-approved/core/code.md)).
 Atom recognition in `cx lsp` is now fully implemented across both
 highlighting paths:
 
-- **TextMate scope (`tooling/syntax/cx.tmLanguage.json`)** — atoms
+- **TextMate scope (`tooling/vscode/syntaxes/cx.tmLanguage.json`, canonical;
+  `tooling/syntax/` is a synced copy)** — atoms
   match `constant.other.atom.cx` via the `:[A-Za-z_][A-Za-z0-9_-]*`
   pattern. Editor highlighting picks this up automatically on reload.
 - **Semantic tokens (`textDocument/semanticTokens/full`)** — atoms
@@ -264,9 +270,9 @@ is needed.
 
 The v0.8.0 surface introduces `[expr]` general predicates with
 reserved bindings (`$_`, `$_position`, `$_last`) and a per-step
-`(bind $name)` step annotation (see [`spec/core/code.md` §5.5.2](../../spec/core/code.md)),
+`(bind $name)` step annotation (see [`spec/03-approved/core/code.md` §5.5.2](../../spec/03-approved/core/code.md)),
 backed by a static purity-annotation system on `[?def]`
-(`pure` / `impure` per [`spec/core/code.md` §12.2](../../spec/core/code.md)).
+(`pure` / `impure` per [`spec/03-approved/core/code.md` §12.2](../../spec/03-approved/core/code.md)).
 The LSP exposes three new diagnostic codes (`CXLS006` /
 `CXLS007` / `CXLS008` above) and the following protocol surfaces.
 

@@ -1,18 +1,21 @@
+server:
+  host: 0.0.0.0
+  tls: true
+  debug: false
+  port: 8080
+  workers: 4
+  max_request_bytes: 1048576
+  allowed_origins:
+    - https://example.com
+    - https://app.example.com
 database:
   host: localhost
   name: myapp
-  pool_size: 10
-  port: 5432
   ssl: false
+  port: 5432
+  pool_size: 10
+  statement_timeout_ms: 30000
 logging:
-  file: /var/log/app.log
   level: info
-server:
-  allowed_origins:
-  - https://example.com
-  - https://app.example.com
-  debug: false
-  host: localhost
-  port: 8080
-  workers: 4
-
+  file: /var/log/app.log
+  rotate_at_hour: "03"

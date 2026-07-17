@@ -1,0 +1,18 @@
+[?lib 'cx-stdlib/store' :as store]
+[?let
+  [= $c   [$store:open "cx-store+grpc://127.0.0.1:18911/docs/"]]
+  [= $doc [note id="n1"
+            [title "Greetings over gRPC"]
+            [body "hello-over-grpc"]
+            [tags [tag "demo"] [tag "grpc"]]]]
+  [= $h    [$store:put-doc $c $doc]]
+  [= $got  [$store:get-doc $c $h]]
+  [= $n    [$count [$store:list-docs $c]]]
+  [= $h2   [$store:modify-doc $c $h [set-attr name=reviewed value="true"]]]
+  [= $rev  [$store:get-doc $c $h2]]
+  [result [hash $h]
+    [count $n]
+    [got $got]
+    [titles [$store:query $c "//title"]]
+    [modified-hash $h2]
+    [reviewed $rev]]]

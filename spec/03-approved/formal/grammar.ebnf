@@ -247,28 +247,33 @@
 
 # ─── Tabular Block (Extended) ───────────────────────────────────────────
 
-[29] TableBlock ::= '[table' S '[' TableHeader ']' S? ']' S TableRows
+[29] TableBlock ::= '[table[' TableHeader ']' S? ']' S TableRows
  /* Extended. Tabular data with declared column types. Appears in
  ElementMeta position [301] in place of TypeAnnotation [26].
  Header declares column names and types once; rows are
  positional values, parsed per the declared column type.
  The element name ([50] Element's Name) is the table's name.
 
- Per, the `[table [cols] rows]` form is a
- clause-child element under the table's parent.
+ The `[table[cols]]` clause-child opener is the single GLUED
+ TABLE_OPEN token (see the lexer note): `[table` followed by
+ whitespace is an ORDINARY element named `table` — plain
+ composition, never a TableBlock claim (#484). The reserved
+ token appears ONLY in ElementMeta position; anywhere else it
+ is a parse error (a TableBlock closes a NAMED element's head,
+ [50]).
 
  Example:
- [users [table [name::string age::int active::bool]]
+ [users [table[name::string age::int active::bool]]
  alice 30 true
  bob 25 false
  ]
 
  Header form:
- [table [c1 c2 c3...]] — untyped columns (all string)
- [table [c1::T1 c2::T2 c3::T3...]] — explicitly typed columns
- [table [c1 c2::T2 c3]] — mixed; untyped columns are string
+ [table[c1 c2 c3...]] — untyped columns (all string)
+ [table[c1::T1 c2::T2 c3::T3...]] — explicitly typed columns
+ [table[c1 c2::T2 c3]] — mixed; untyped columns are string
 
- (The `[table …]` opener is a reserved clause-child element in
+ (The `[table[` opener is a reserved clause-child token in
  ElementMeta position; column types use the `::` form.)
 
  Each row is a whitespace-separated sequence of token values, one
@@ -312,7 +317,12 @@
 [30] Comment ::= '[;' CommentContent ']'
  /* [;comment text] → <!-- comment text -->
  Value stored in AST excludes the [; and ] delimiters. */
-[30a] CommentContent ::= Char* - (Char* ']' Char*)
+[30a] CommentContent ::= ( (Char - ('[' | ']')) | '[' CommentContent ']' )*
+ /* Brackets in comment prose BALANCE (#312, 2026-07-10): the comment ends at
+    the ']' that returns bracket depth to zero, so prose can quote CX forms —
+    `[; see [?let] ]` is one comment. A lone '[' runs to EOF (unterminated,
+    error); a lone ']' ends the comment at depth zero. Unbalanced-bracket
+    prose belongs in a '#' line comment [30b]. See lexicon [L3]/[L3a]. */
 
 [30b] LineComment ::= '#' [^#xA]* (#xA | EOF)
  /* Line comment from '#' to end-of-line.
@@ -417,9 +427,18 @@
 # ─── Elements ─────────────────────────────────────────────────────────────────
 
 [50] Element ::= '[' Name (S ElementMeta)* S? Body? ']'
- | '[' Name S? TableBlock ']'
- /* The TableBlock alternative is the tabular form. The element's
- body is the rows of the table; no other ElementMeta or Body items
+ | '[' Name (S ElementMeta)* S? TableBlock ']'
+ /* The TableBlock alternative is the tabular form. The TableBlock
+ occupies the TypeAnnotation slot of ElementMeta ([29] "in place of
+ TypeAnnotation [26]"), so the OTHER ElementMeta items — AnchorDef,
+ MergeRef, IdDecl, Attribute* — coexist with it, in the [51] canonical
+ order, and the parser MUST attach them (#478; silent drop violated
+ the no-silent-loss contract). The TableBlock always closes the head:
+ it follows the attributes, because the `[table[` opener is the
+ transition into the row body. An explicit glued TypeAnnotation [26]
+ on a table-block element is a parse error — the table clause IS the
+ element's type (the implied annotation is `table`, never rendered).
+ The element's body is the rows of the table; no other Body items
  apply. See [29] TableBlock. */
 
 [50a] BodyRef ::= '[' 'ref' S '@' IdName ']'
@@ -476,7 +495,27 @@
  /* Unquoted body token. Auto-typed per rule [25] when element qualifies.
  Otherwise stored as Text node with whitespace normalization. */
 
-[55] Attribute ::= Name Eq AttValue
+[55] Attribute ::= Name TypeAnnotation? Eq AttValue
+ /* D3 typed attribute `name::T=value` (lexicon §7 [L50]: the glued `::T`
+ is valid in attribute position and OVERRIDES §9 auto-typing). The
+ annotation, when present, is BYTE-GLUED on both sides (Name`::`T`=`,
+ no spaces — the same adjacency discipline as the head annotation).
+ Attributes are scalar-only (D2), so an ARRAY annotation (`::T[]` /
+ `::[]`) in attribute position is a parse error (cx-err:CXER0100).
+ The value is coercion-CHECKED against T exactly like an ascribed body
+ scalar ([L25d] / M-ERR-2 / D-H): a token that cannot coerce to T is
+ cx-err:CXER0109 and a sized-integer value out of range is
+ cx-err:CXERLEX-RANGE — never a silent 0 / clamp. Verbatim string
+ carriers (bytes / decimal / bigint / duration / period / date /
+ datetime) store the token text; `T` rides on the attribute's
+ data-type carrier (ast.md Attribute). EXCEPTION (#466 ruling): a hex
+ token (`0x…`) under `::decimal` / `::bigint` is a coercion error
+ (cx-err:CXER0109) in BOTH readings — decimal and bigint are base-10
+ value types, so a hex spelling there is a mistake, never stored
+ verbatim (`::bytes` remains the verbatim home for hex payloads). Both readings share this
+ production: the program element literal reuses it via CxLiteral
+ [122a], so `[e port::u16=8080]` parses identically as data and as
+ program (#466). */
 [55a] AttValue — MOVED to lexicon.ebnf §10 (scalar-only; D2).
  /* DECISION D2: an attribute value is ALWAYS A SINGLE SCALAR. The admitted
  forms are BareValue | QuotedText | TripleQuoted | RawTextStr — where
@@ -492,7 +531,14 @@
  QuotedText / TripleQuoted / `[#…#]` are always string; array auto-type and the
  comma=list rule do NOT apply (a comma in `att=a,b` is a literal BareValue char
  → string "a,b"). The AST `value` IS the scalar — there is no `body` field
- (ast.md §Attribute). See lexicon.ebnf §10 [L70]. */
+ (ast.md §Attribute). See lexicon.ebnf §10 [L70].
+ The PROGRAM reading is the evaluation-time dual (code.md §6.4.1): an
+ element-construction `attr=VALUE` admits any ProgramExpr syntactically,
+ but at construction VALUE MUST reduce to a scalar — a non-scalar result
+ (element / array / map / sequence / empty sequence) raises
+ cx-err:CXER0100, NEVER a canonical stringify (#466/#268 ruling; the
+ former validate.md attr-collection stringify seam is removed — that
+ vocabulary is child elements now). */
 
 [55c] BracketBody — REMOVED. The former BracketBody
  /* `'[' BodyItem* ']'` production and the attribute `body` field it implied
@@ -757,6 +803,7 @@
  | ProgramBinding
  | ProgramPath
  | ProgramCall
+ | OperatorForm
  | ProgramPattern
  | ProgramDirective
  /* CX code expression — the universal RHS production. Disambiguation
@@ -764,19 +811,23 @@
  '$' → ProgramBinding (then optional path / postfix)
  '[$' → ProgramCall (head-dispatch `[$fn args]`)
  '[?' → ProgramDirective
+ '[' + reserved operator token → OperatorForm ([125f])
  '[' (other) → ProgramPattern
  else → ProgramLiteral.
- There is NO general paren-call at expression level: `name(args)` is
- admitted ONLY as [132b] FunctionCall inside CXPath predicate bodies
- ([132a] PredExpr), per code.md §6.3.
- There is NO infix on the CX program surface: the homoiconic invariant
- (every form is `[head …]`) holds without exception. Pipe `|` is
+ There is NO paren-call anywhere: `name(args)` is a parse error at
+ every position, including CXPath predicate bodies ([159]) — built-ins
+ are invoked head-dispatch `[$name …]` per code.md §6.3.
+ There is NO infix anywhere on the CX surface: the homoiconic invariant
+ (every form is `[head …]`) holds WITHOUT EXCEPTION — CXPath predicate
+ bodies included; the former "embedded query sublanguage" carve-out is
+ retired (see the [132]–[134] retirement note). Pipe `|` is
  retired (use the prefix combinators); the former infix range
  `lo 'to' hi 'by' step` is retired — ranges are the prefix builtin
- `[$range lo hi step?]` ([125d] RangeCall). The set operators
- `union`/`intersect`/`except`/`||` ([134] SequenceOp) and `name(args)`
- calls ([132b]) are CXPath-predicate-only — the embedded query
- sublanguage, intentionally not homoiconic. */
+ `[$range lo hi step?]` ([125d] RangeCall); infix `union`/`intersect`/
+ `except` and `||` are retired — the set operators are reserved
+ prefix heads `[union a b]` / `[intersect a b]` / `[except a b]`
+ ([125f]/[125g]), admitted in every expression position, and string/
+ sequence concatenation is the `[$concat …]` builtin. */
 
 [122] ProgramLiteral ::= StringLit | NumberLit | BoolLit | AtomLiteral | CxLiteral
 [122a] CxLiteral ::= Element | CollectionLiteral | Scalar
@@ -845,6 +896,33 @@
  force/budget rules are in code.md §6.3 / §6.7. The former infix
  `lo 'to' hi ('by' step)?` is retired — no tombstone, no dual-accept. */
 
+[125f] OperatorForm ::= '[' OpHead (S ProgramArg)* S? ']'
+[125g] OpHead ::= '+' | '-' | '*' | '/'
+ | '=' | '!=' | '<' | '<=' | '>' | '>=' | '~'
+ | 'and' | 'or' | 'not' | 'cast'
+ | 'union' | 'intersect' | 'except'
+ /* The closed reserved-operator set of code.md §6.5, admitted BARE in
+ head position — `[= $x V]`, `[and P Q]`, `[not P]`, `[cast $v :int]`,
+ `[union A B]`. Operator forms are never data elements and never take
+ a `$` sigil; arity is fixed per the code.md §6.5 arity table
+ (violation: cx-err:CXER0100). `union`/`intersect`/`except` (the
+ set/sequence combinators, formerly the CXPath-predicate-only [134]
+ SequenceOp) join the reserved set here and are valid in EVERY
+ expression position; their former infix spellings and `||` are parse
+ errors (concatenation is the `[$concat …]` builtin). This production
+ makes the code.md §6.5 bare-operator surface grammatically explicit —
+ it was previously normative in code.md only, with no grammar
+ production admitting `[= …]`.
+ `~` is the GRADED-similarity cognate of `=` (std-lib/similar.md §3.1):
+ 2-or-3-ary (`[~ a b]`, `[~ a b $pred]`) — the one non-binary
+ comparison head. Its result is a `[similar score=… band=…]` element,
+ truthy in a boolean position iff band=:match. `~` means
+ "approximately" EVERYWHERE (the #108/#110/#111 doctrine): this
+ program-operator head and ft's phrase-slop `~n` (a data format inside
+ query strings, consumed only by [$ft:parse-query]) never meet in one
+ grammar; DATA-surface `~` (markdown shorthand, BareValue content) is
+ untouched — program and data lexers are disjoint. */
+
 [126] ProgramPattern ::= '[' ProgramPatternHead ProgramPatternAttrs ProgramPatternBody? ']'
 [126a] ProgramPatternHead ::= ('**' | '*' | ProgramTypeGuard | Name)
  (S? ProgramBinding)?
@@ -897,7 +975,7 @@
  dedicated specialisation production. */
 
 [127m] MapDirective ::= '[?map' S ProgramExpr S '[using' S ProgramExpr S? ']'
- (S '[par' S? ']')? (S '[ordered' S? ']')? S? ']'
+ (S '[par' (S ProgramParWidth)? S? ']')? (S '[ordered' S? ']')? S? ']'
  /* Specialisation of ProgramDirective [127] with DirName='map'.
  First positional child is the source sequence; [using FN] is
  the unary closure applied per item. Output order:
@@ -909,7 +987,7 @@
  See code.md §8.10.5 and + */
 
 [127n] ReduceDirective ::= '[?reduce' S ProgramExpr S '[using' S ProgramExpr S? ']'
- S '[init' S ProgramExpr S? ']' (S '[par' S? ']')? S? ']'
+ S '[init' S ProgramExpr S? ']' (S '[par' (S ProgramParWidth)? S? ']')? S? ']'
  /* Specialisation of ProgramDirective [127] with DirName='reduce'.
  First positional child is the source sequence; [using FN] is
  the binary fold closure; [init V] is the initial accumulator
@@ -1175,7 +1253,15 @@
  /* The per-iteration '[on-error $e H]' clause is RETIRED with [?try] (code.md
     §8.8/§9.3). Per-iteration handling folds into a yield-body [?match]/[?else]:
     [yield [?match [$f $x] [case [err $e] H] [else $v]]]. */
-[129o] ProgramForPar ::= '[par' S? ']'
+[129o] ProgramForPar ::= '[par' (S ProgramParWidth)? S? ']'
+[129o1] ProgramParWidth ::= INT | 'max'
+ /* #94: [par] owns its degree of concurrency — the MAX number of concurrent
+    workers (a bounded pool), NOT one thread per item. [par] = default width
+    min(4, ncpu); [par N] = N (INT >= 1); [par max] = ncpu. An INT < 1, a
+    non-integer, a non-'max' identifier, or more than one width token is a parse
+    error (cx-err:CXER0100). An explicit N > 64*ncpu is the fail-loud sanity cap
+    (cx-err:CXER0153) — never silently clamped. Same width surface on the
+    [?map]/[?reduce] [par] clause (code.md §8.10.5/§8.10.6). */
 [129p] ProgramForStream ::= '[stream' S? ']'
 [129q] ProgramForOrdered ::= '[ordered' S? ']'
 [129r] ProgramForFailFast ::= '[fail-fast' S? ']'
@@ -1217,8 +1303,25 @@
  canonical emit as the terse '//' form. */
 
 [130a] StepList ::= Step ('/' Step)*
+ /* Rooted-path steps are '/'-separated — canonical.md §2.12.6 puts a
+ '/' between EVERY pair of steps. An attribute step in a rooted path
+ is therefore spelled with its separator: `//team/member/@id` (the
+ `@` sigil is the `attribute::` axis terse form, canonical.md
+ §2.12.3). The GLUED attribute tail `NodeTest '@' Name`
+ (`//team/member@id`, `//team/member[pred]@id`) is NOT a PathExpr
+ production — the glued form is BindingPath-only surface ([135a]
+ BindingStep / [162] BindingPostfix, `$x@attr`). Error contract
+ (#472): an implementation MUST reject a glued `@` tail on a rooted
+ path with cx-err:CXER0100 pointing at the `/@Name` spelling — never
+ silently degrade the path to a data text run. When any step of the
+ path carries a parsed PredicateExpr the parser has committed to a
+ program construct (fused [159b] bodies are not prose), so the error
+ is program intent and MUST NOT data-fallback; the bare no-predicate
+ shape remains prose-eligible at the eval boundary's data-fallback
+ seam (code.md §1.3 — `//host/share@snap`-like spans are legitimate
+ data text). */
 
-[131] Step ::= (AxisSpecifier '::')? NodeTest Predicate*
+[131] Step ::= (AxisSpecifier '::')? NodeTest PredicateExpr*
 
 [131a] AxisSpecifier ::= 'child' | 'descendant' | 'descendant-or-self'
  | 'parent' | 'ancestor' | 'ancestor-or-self'
@@ -1239,32 +1342,41 @@
  A `:` in Step-trailing position is always either (a) the start
  of a QName prefix continuation (`prefix:local`), or (b) the
  start of an atom literal `:NAME` [122b] that terminates the
- Step. */
+ Step. Discriminator: BYTE-ADJACENCY. A QName is a single lexical
+ name (lexicon [L11] — PROGRAM mode's fold must equal DATA mode's
+ scannerless in-name scan, which never spans whitespace), so the
+ `:` continues the Step as (a) only when `name`, `:`, and the
+ following name are all byte-adjacent. Any whitespace before or
+ after the `:` selects (b): the Step ends and `:NAME` is an atom
+ operand — `[= $e@kind :active]` compares the `kind` attribute
+ against the atom `:active`; `$e@kind:active` (glued) reads the
+ attribute named `kind:active`. */
 
-[132] Predicate ::= '[' PredExpr ']'
-
-[132a] PredExpr ::= AttrTest | INT | FunctionCall | BooleanExpr
- | InstanceOf | CastAs | SequenceOp
-
-[132b] FunctionCall ::= Name '(' (ProgramExpr (',' S? ProgramExpr)*)? ')'
- /* CXPath built-in function call (XPath syntactic-parity carrier).
- Permitted ONLY inside Predicate [132] / PredicateExpr [159]
- bodies, where it invokes built-in XPath functions
- (`count(*)`, `last()`, `position()`, `contains(...)`, etc.) as
- standard XPath syntax. General CX function calls use the
- head-dispatch element form [125] ProgramCall: `[$fn args]`. */
-
-[133] AttrTest ::= '@' Name (CompOp ProgramExpr)?
-
-[133a] CompOp ::= '=' | '!=' | '<' | '<=' | '>' | '>='
- /* Value-comparison semantics only. No keyword synonyms (eq/ne/lt/le/gt/ge
- are NOT in the grammar). Both sides must be single values;
- multi-valued operand raises CXER0103. */
-
-[134] SequenceOp ::= ProgramExpr ('union' | 'intersect' | 'except') ProgramExpr
- | ProgramExpr '||' ProgramExpr
- /* Set/sequence combinators — reachable ONLY from [132a] PredExpr
- (CXPath predicate bodies), not from [121] program expressions. */
+/* [132]–[134] CXPath predicate sublanguage — RETIRED. The closed
+ predicate enumeration ([132] Predicate, [132a] PredExpr, [132b]
+ FunctionCall, [133] AttrTest with comparison tail, [133a] CompOp,
+ [134] SequenceOp, plus the never-productioned BooleanExpr /
+ InstanceOf / CastAs names) is removed from the grammar. A CXPath
+ predicate is [159] PredicateExpr — the homoiconic prefix form —
+ everywhere; the predicate body is CX code, not an embedded query
+ sublanguage. Paren-calls `name(args)`, infix comparisons `@a=v`
+ (and `!=`/`<`/`<=`/`>`/`>=`), infix `and`/`or`, `instance of` /
+ `cast as`, infix `union`/`intersect`/`except`, and `||` are parse
+ errors inside predicate bodies exactly as at every other expression
+ position (cx-err:CXER0100). No tombstone, no dual-accept — the
+ [134a] precedent. Replacements:
+   name(args)        → [$name args]          (head-dispatch [125])
+   @a <op> V         → [<op> $_@a V]         (OperatorForm [125f])
+   P and Q / P or Q  → [and P Q] / [or P Q]
+   V cast as T       → [cast V :T]
+   A union B         → [union A B]           (likewise intersect /
+                        except; reserved prefix heads [125g], valid
+                        in every expression position)
+   A || B            → [$concat A B]
+ The surviving operator-free notation atoms (positional INT,
+ attribute existence/absence, step existence) are enumerated at
+ [159a] — they are path notation with defined semantics, not
+ operator sugar. */
 
 /* [134a] RangeExpr — RETIRED. The infix integer range
  `lo 'to' hi ('by' step)?` was the last binary infix on the CX
@@ -1536,20 +1648,57 @@
  this identifier. Restrictions on Name [7] in element-name position
  are otherwise identical (NameStartChar/NameChar). */
 
-# ─── : [expr] general predicate + $_ context binding ─────────────────
+# ─── [expr] general predicate + $_ context binding ─────────────────
 # Productions [159]–[161].
 #
-# General predicates supersede the closed PredExpr enumeration in [132a].
-# The closed enumeration's alternatives (AttrTest, INT, FunctionCall,
-# BooleanExpr, InstanceOf, CastAs, SequenceOp) survive as parse-time SUGAR
-# that desugars into a PredicateExpr AST node before evaluation. The canonical renderer prefers the terse atomic form on round-trip
-# when the AST matches a recognized template; otherwise it emits the
-# general form.
+# The predicate body is homoiconic CX code — the former [132a] sugar
+# enumeration (infix comparisons, paren FunctionCalls, infix set ops)
+# is RETIRED; see the [132]–[134] retirement note. The canonical
+# renderer emits the form as written: there is NO template-preferring
+# rewrite on round-trip, in either direction.
 
-[159] PredicateExpr ::= '[' ProgramExpr ']'
- /* General predicate body. ProgramExpr is per [121]. Inside the body,
- three reserved bindings are in scope and bound by the runtime
- before evaluation:
+[159] PredicateExpr ::= '[' PredBody ']'
+[159a] PredBody ::= INT                /* positional selection */
+ | '@' Name                            /* attribute existence */
+ | '@!' Name                           /* attribute absence */
+ | (AxisSpecifier '::')? NodeTest      /* step existence */
+ | '$' Name (BindingStep)*             /* EBV of a binding / path */
+ | AtomLiteral | StringLit | BoolLit   /* constant EBV (cxdm.md §6); INT is positional */
+ | FusedBody
+[159b] FusedBody ::= OpHead (S ProgramArg)* S?           /* OperatorForm interior */
+ | '$' Name (S ProgramArg)+ S? ('?' | '!')?              /* ProgramCall interior */
+ | '?' ProgramDirName (S ProgramChild)* S?               /* ProgramDirective interior */
+ /* FUSED BRACKETS (normative). When the predicate body is a form,
+ the predicate's own brackets serve as the form's brackets — the
+ body is the form's INTERIOR, so one bracket pair, never [[…]]:
+   //user[= $_@id 991]      OperatorForm ([125f]) fused
+   //user[~ $_@name "erik"] OperatorForm fused — graded (truthy iff band=:match)
+   //user[$flagged $_]      ProgramCall ([125]) fused
+   //user[?match $_ …]      ProgramDirective ([127]) fused
+ Nested subexpressions inside a fused body are ordinary fully-
+ bracketed ProgramExprs:
+   //team[and [= $_@role "lead"] [>= [$count $_/member] 3]]
+ Disambiguation by leading token(s): INT → positional; '@'/'@!' →
+ attribute existence/absence; reserved operator token ([125g]) →
+ OperatorForm interior; '?' → directive interior; '$'Name followed
+ by whitespace+argument → call interior, otherwise (path steps or
+ ']') → EBV of the binding/path; any other Name / axis / '*' /
+ ElementName → step existence. A reserved operator token in head
+ position ALWAYS denotes the operator — an element child named e.g.
+ `and` or `union` is tested with the general form [$exists $_/and].
+
+ NOTATION ATOMS (normative semantics). The operator-free atoms are
+ defined by these equivalences — path notation with defined
+ semantics, not rewrite sugar; the renderer never converts between
+ an atom and its general-form equivalent in either direction:
+   [N]        keep c_i  iff  i = N            (N a positive INT)
+   [@name]    keep c_i  iff  [$exists $_@name]
+   [@!name]   keep c_i  iff  [not [$exists $_@name]]
+   [name]     keep c_i  iff  [$exists $_/name]  (likewise
+              [axis::name] over $_/axis::name)
+
+ GENERAL BODY. Inside every predicate body three reserved bindings
+ are in scope, bound by the runtime before evaluation:
  $_ — current candidate item (any item kind; D2)
  $_position — 1-based int index of $_ within the candidate sequence
  $_last — int size of the candidate sequence
@@ -1558,8 +1707,7 @@
  violation raises CXER0230.
 
  REPLACES [132] Predicate at every site (Step [131], BindingPath
- [135]). The legacy [132a] PredExpr enumeration is retained in
- comments as documentation of the recognised sugar templates. */
+ [135]). */
 
 [160] Step′ ::= (AxisSpecifier '::')? NodeTest BindAnnot? PredicateExpr*
 [160a] BindAnnot ::= '(' 'bind' S '$' NCName ')'

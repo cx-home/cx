@@ -1,6 +1,11 @@
 # `cx-stdlib/did` — decentralized identifiers
 
-**Status:** Approved (post-initial addition per [std-lib/README.md](README.md) §3.2). Tier D — trust.
+```cx
+[module-meta name=did tier=D status=current
+  [standard ref='W3C DID Core 1.0' title='Decentralized Identifiers']]
+```
+
+**Status:** Current (owner ruling 2026-07-12, #363 item 1(a) — graduated from Approved; the module ships and the spec was already normative, only the catalogue linkage lagged). Tier D — trust.
 
 Normative reference for the `cx-stdlib/did` module: create, parse, resolve, and prove control of **W3C Decentralized Identifiers (DIDs)**. A DID is a globally-unique, self-sovereign, cryptographically-verifiable identifier — the **decentralized** identity source named in [xap.md](../xap/xap.md) §22.1 (an external identity source is "an IdP (OIDC/SAML) **or** a DID resolver"), and the concrete realization of **R9**: *a DID identifies a principal*.
 
@@ -49,43 +54,43 @@ All bodies bottom out in the `did-*` native primitives (see `vcx/code/stdlib_did
 ```cx
 [?lib 'cx-stdlib/did']
 
-; ── construct ──────────────────────────────────────────────────────────────
-; Encode an Ed25519 public key as a did:key string.
+# ── construct ──────────────────────────────────────────────────────────────
+# Encode an Ed25519 public key as a did:key string.
 [?def key-create  scope=public pure   [returns string]  ($public-key::bytes)
   [$did-key-create $public-key]]
 
-; ── inspect ────────────────────────────────────────────────────────────────
-; Structural parse of any DID string → [did method=… id=… raw=…].
+# ── inspect ────────────────────────────────────────────────────────────────
+# Structural parse of any DID string → [did method=… id=… raw=…].
 [?def parse       scope=public pure   [returns element] ($did::string)
   [$did-parse $did]]
 
-; Method name only ("key" | "web" | …).
+# Method name only ("key" | "web" | …).
 [?def method      scope=public pure   [returns string]  ($did::string)
   [$did-method $did]]
 
-; ── resolve ────────────────────────────────────────────────────────────────
-; Synthesize the DID Document OFFLINE for self-describing methods (did:key).
-; Errors (CXER-DID-NOT-SELF-DESCRIBING) for methods that require the network
-; (did:web) — use `resolve` for those.
+# ── resolve ────────────────────────────────────────────────────────────────
+# Synthesize the DID Document OFFLINE for self-describing methods (did:key).
+# Errors (CXER-DID-NOT-SELF-DESCRIBING) for methods that require the network
+# (did:web) — use `resolve` for those.
 [?def document    scope=public pure   [returns element] ($did::string)
   [$did-document $did]]
 
-; Resolve ANY supported method to a DID Document. did:key is offline;
-; did:web performs an HTTPS GET (net-gated on the domain) via cx-stdlib/http.
+# Resolve ANY supported method to a DID Document. did:key is offline;
+# did:web performs an HTTPS GET (net-gated on the domain) via cx-stdlib/http.
 [?def resolve     scope=public impure [returns element] ($did::string $opts::map {})
   [$did-resolve $did $opts]]
 
-; ── keys & proof-of-control ──────────────────────────────────────────────────
-; Extract the Ed25519 public-key bytes from a self-describing DID (did:key),
-; derived offline from the identifier. Errors (CXER-DID-NOT-SELF-DESCRIBING)
-; for did:web — read the verification method from `resolve`'s document instead.
+# ── keys & proof-of-control ──────────────────────────────────────────────────
+# Extract the Ed25519 public-key bytes from a self-describing DID (did:key),
+# derived offline from the identifier. Errors (CXER-DID-NOT-SELF-DESCRIBING)
+# for did:web — read the verification method from `resolve`'s document instead.
 [?def key-of      scope=public pure   [returns bytes]   ($did::string)
   [$did-key-of $did]]
 
-; Proof-of-control: verify that `sig` over `challenge` was made by the key
-; behind `did`. For self-describing DIDs (did:key) this is fully offline and
-; pure — the auth handshake for an attach (§22.1). For network-resolved
-; methods, resolve → key-of → [$crypto:ed25519-verify].
+# Proof-of-control: verify that `sig` over `challenge` was made by the key
+# behind `did`. For self-describing DIDs (did:key) this is fully offline and
+# pure — the auth handshake for an attach (§22.1). For network-resolved
+# methods, resolve → key-of → [$crypto:ed25519-verify].
 [?def verify-control scope=public pure [returns bool]   ($did::string $challenge::bytes $sig::bytes)
   [$did-verify-control $did $challenge $sig]]
 ```
@@ -120,6 +125,15 @@ For `did:key` every field is derived from the identifier itself (no I/O). For `d
 - **TLS required**; net capability is gated on the domain (the existing `net`/`http` capability surface — §4.5 SSRF guard applies).
 - `opts` may carry `timeout`, `http-client`, and a `trust-domains` allow-list (the [§22.10](../xap/xap.md) honor-list of domains a tenant accepts — a D5 open decision surfaced here).
 - The fetched document MUST declare `id == <the DID>` or resolution fails (`CXER-DID-DOC-MISMATCH`).
+- **Caching (resolve-once, verify-many):** a resolver MAY TTL-cache a resolved
+  `did:web` document (keyed by DID), so repeated `verify-control` / key lookups
+  for the same DID need not re-fetch within the TTL. The cache is an
+  availability/latency optimization only — it never changes the trust decision
+  (the cached verification key is still checked against a fresh challenge), and
+  a short TTL bounds staleness given `did:web` has no revocation ledger
+  (revocation is expressed via short-lived credentials, not document edits). The
+  TTL is implementation-configured; `did:key` is offline and never cached. The
+  CSRP service tier uses such a cache (shared with its OIDC JWKS cache).
 
 ## §6. Purity & effects
 
@@ -139,11 +153,11 @@ The split keeps the **offline/marine** path (`did:key`) entirely pure and capabi
 Attach handshake (realized — [`session/attach-did`](session.md)):
 
 ```cx
-; client proves control of its DID by signing a server-issued nonce
+# client proves control of its DID by signing a server-issued nonce
 [?let [= $sig [$crypto:ed25519-sign $client-priv $nonce]]
   [$session:attach-did $client-did $nonce $sig {tenant: "acme"} {tls: true}]]
-; server-side attach-did internally verifies control (did:key offline), gates on
-; TLS, optionally verifies a cfg `vc`, and binds a (DID-principal, tenant) session.
+# server-side attach-did internally verifies control (did:key offline), gates on
+# TLS, optionally verifies a cfg `vc`, and binds a (DID-principal, tenant) session.
 ```
 
 ## §8. Errors

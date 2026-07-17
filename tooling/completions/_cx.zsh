@@ -4,15 +4,19 @@
 # Install: place in a directory on $fpath (e.g.
 #   /usr/local/share/zsh/site-functions/_cx or
 #   ~/.zfunc/_cx) and add `autoload -U _cx` to .zshrc.
+#
+# Kept in lockstep with the dispatch table in vcx/cmd/main.v —
+# `make check-completions-drift` fails if a subcommand is missing here.
 
 _cx() {
-  # `select` retired (CXPath is a first-class value kind
-  # per code.md §5.5, use `cx eval` with a //path expression);
-  # `diagram` renders a DATA-shaped diagram, `code-diagram` / `code-tree`
-  # render the PROGRAM AST; `lock` manages the dependency lockfile.
-  local -a subcmds
+  # `select` is the CXPath query subcommand (#462; cli.md §3.8):
+  # `cx select 'PATH' [FILE]`, flagless;
+  # `diagram` renders the program as a diagram, `code-diagram` / `code-tree`
+  # render the PROGRAM AST; `lock` manages the dependency lockfile;
+  # `store-*` are the CSRP store-service verbs.
+  local -a subcmds allow_flags
   subcmds=(
-    'fmt:Format CX text canonically'
+    'fmt:Format CX text canonically (lossless)'
     'canonical:Strict canonical form for hashing'
     'hash:SHA-256 of strict canonical bytes'
     'eq:Compare two files at canonical-equality'
@@ -21,21 +25,99 @@ _cx() {
     'validate:Validate against a schema'
     'table:Table operations (info/dump/load)'
     'demo:Run the cx demo'
-    'scaffold:Scaffold a new CX project'
+    'scaffold:Scaffold a typed CX skeleton (config/data/doc/log/table)'
     'eval:Evaluate a CX program'
-    'diagram:Render a diagram from a CX source (mermaid / graphviz)'
+    'version:Version / build info (same as -v / --version)'
+    'select:CXPath query over a document (matches in canonical CX)'
+    'diagram:Render a CX program as a diagram (mermaid / svg / png)'
     'code-diagram:Render the program AST to a Mermaid diagram'
     'code-tree:Render the program AST as an indented tree'
     'lock:Manage the dependency lockfile (--check / --update)'
+    'store-serve:Run the CSRP store-service daemon'
+    'store-health:Readiness probe against a running store service'
+    'store-token:Mint a store-service auth token'
+    'store-rotate-kek:Rotate the store key-encryption key'
     'lsp:Run the cx Language Server over stdio (JSON-RPC 2.0)'
+  )
+  # Capability grants (security.md §3): deny-by-default; --allow-all opts out.
+  allow_flags=(
+    '--allow-all[grant all capabilities (trusted-local opt-out)]'
+    '--allow-read[grant filesystem read]'
+    '--allow-write[grant filesystem write]'
+    '--allow-net=-[grant network access (optionally host\:port)]'
+    '--allow-env[grant environment access]'
+    '--allow-clock[grant clock access]'
+    '--allow-random[grant randomness]'
+    '--allow-subprocess[grant subprocess spawning]'
+    '--allow-eval[grant dynamic eval]'
+    '--allow-secret-reveal[grant secret reveal]'
   )
 
   if (( CURRENT == 2 )); then
-    _describe 'subcommand' subcmds
+    if [[ "${words[2]}" == -* ]]; then
+      # Top-level (no subcommand) conversion / evaluation flags — vcx/cmd/main.v.
+      _arguments \
+        '--ast[dump the parsed AST]' \
+        '--cx[emit canonical CX]' \
+        '--xml[emit XML]' \
+        '--json[emit JSON]' \
+        '--yaml[emit YAML]' \
+        '--toml[emit TOML]' \
+        '--md[emit Markdown]' \
+        '--csv[emit CSV]' \
+        '--tsv[emit TSV]' \
+        '--psv[emit PSV]' \
+        '--cxcol[emit columnar CX]' \
+        '--compact[compact output]' \
+        '--lossless[XML carries per-value types for exact round-trip]' \
+        '--from=[input format (selects the convert pipeline)]:format:(cx xml json yaml toml md)' \
+        '--to=[output format]:format:(cx xml json yaml toml md csv tsv psv)' \
+        '--include-root=[resolve \[?cx include\] against this root]:dir:_files -/' \
+        '--data=[separate data input, bound as $doc (- for stdin)]:file:_files -g "*.(cx|cxd)"' \
+        '-e[inline program expression]:program:' \
+        '--expression[inline program expression]:program:' \
+        "${allow_flags[@]}" \
+        '(-v --version)'{-v,--version}'[print version]' \
+        '(-h --help)'{-h,--help}'[show usage]'
+    else
+      _describe 'subcommand' subcmds
+    fi
     return 0
   fi
 
   case "${words[2]}" in
+    fmt)
+      _arguments \
+        '-w[write changed files in place]' \
+        '--migrate-predicates[predicate-surface cutover sweep]' \
+        '--collapse-lets[collapse cascading let idioms]' \
+        '*:file:_files -g "*.(cx|cxd|md)"'
+      ;;
+    diff)
+      _arguments \
+        '--format=[output format]:format:(unified json summary)' \
+        '--no-color[disable color output]' \
+        '--color=-[color output]:when:(auto always never)' \
+        '*:file:_files -g "*.(cx|cxd)"'
+      ;;
+    lint)
+      _arguments \
+        '--format=[output format]:format:(text json summary)' \
+        '--fail-on=[exit-1 severity threshold]:severity:(info warn error none)' \
+        '--disable=[comma-separated rule IDs to disable]:ids:' \
+        '--only=[run only this rule ID]:id:' \
+        '--config=[explicit .cxlint.cx path]:file:_files' \
+        '--no-config[skip .cxlint.cx discovery]' \
+        '*:file:_files -g "*.(cx|cxd)"'
+      ;;
+    validate)
+      _arguments \
+        '--schema=[schema file]:schema:_files -g "*.cxs"' \
+        '--fail-on=[exit-1 severity threshold]:severity:(info warn error none)' \
+        '--mode=[schema mode override]:mode:(open strict closed)' \
+        '--apply-defaults[apply schema defaults to the document]' \
+        '*:file:_files -g "*.(cx|cxd)"'
+      ;;
     table)
       if (( CURRENT == 3 )); then
         _values 'verb' 'info[show column count/row count]' \
@@ -47,19 +129,39 @@ _cx() {
         '--to=[output format]:format:(cx parquet arrow)' \
         '--from=[input format]:format:(cx parquet arrow)' \
         '--output=[output file]:file:_files' \
+        '--strict[strict column typing]' \
         '*:file:_files -g "*.(cx|parquet|arrow)"'
+      ;;
+    scaffold)
+      if (( CURRENT == 3 )); then
+        _values 'kind' 'config[typed config skeleton]' \
+                       'data[typed data entities]' \
+                       'doc[mixed prose + structured data]' \
+                       'log[logfmt-mode event lines]' \
+                       'table[column-typed rows]'
+        return 0
+      fi
       ;;
     eval)
       _arguments \
-        '--data=[input CX file (- for stdin)]:file:_files -g "*.cx"' \
-        '--target=[output target]:target:(text cx json yaml xml csv tsv)' \
+        '--data=[input CX file (- for stdin)]:file:_files -g "*.(cx|cxd)"' \
+        '--target=[output target]:target:(text cx json yaml xml csv tsv mermaid svg png)' \
+        '(-e --expression)'{-e,--expression}'[inline program]:program:' \
+        '(-d --data-text)'{-d,--data-text}'[inline input data]:data:' \
+        "${allow_flags[@]}" \
         '*:program:_files -g "*.cx"'
+      ;;
+    select)
+      # cx select 'PATH' [FILE] — PATH is a CXPath expression (typed, not
+      # completed); the optional second positional is the input document.
+      _arguments \
+        '1:cxpath expression:' \
+        '2:file:_files -g "*.(cx|cxd)"'
       ;;
     diagram)
       _arguments \
-        '--format=[diagram format]:format:(mermaid graphviz)' \
-        '--output=[output file]:file:_files' \
-        '--depth=[max depth]:depth:' \
+        '--format=[diagram format]:format:(mermaid svg png)' \
+        '-o[output file (recommended for svg/png)]:file:_files' \
         '*:program:_files -g "*.cx"'
       ;;
     code-diagram)
@@ -79,13 +181,33 @@ _cx() {
         '--help[show usage]' \
         '*:manifest:_files -g "*.cx"'
       ;;
+    store-serve)
+      _arguments \
+        '--config=[service config (cxstore.service.cx)]:file:_files -g "*.cx"' \
+        "${allow_flags[@]}"
+      ;;
+    store-health)
+      _arguments \
+        '--url=[ready-probe URL of the running daemon]:url:'
+      ;;
+    store-token)
+      _arguments \
+        '--id=[token principal name]:name:' \
+        '--roles=[roles (e.g. admin)]:roles:' \
+        '--tenant=[tenant scope (e.g. "*")]:tenant:'
+      ;;
+    store-rotate-kek)
+      _arguments \
+        '--url=[store URL]:url:' \
+        '--encrypt-key-id=[current KEK id]:key-id:' \
+        '--new-key-id=[replacement KEK id]:key-id:'
+      ;;
     lsp)
       _arguments \
-        '--verbose[trace incoming methods on stderr]' \
-        '--help[show usage]'
+        '--verbose[trace incoming methods on stderr]'
       ;;
     *)
-      _files -g '*.(cx|xml|json|yaml|toml|arrow|parquet)'
+      _files -g '*.(cx|cxd|cxs|xml|json|yaml|yml|toml|md|csv|tsv|psv|arrow|parquet)'
       ;;
   esac
 }

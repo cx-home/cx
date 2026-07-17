@@ -191,13 +191,13 @@ EX = [
         "**Introduces:** the full composition — `[?map :par]` over a `[using]` closure that nests `[?retry]` + `[?timeout]` + `[?sleep]`. Parallel workers compose freely with resilience directives."),
     # ── 61+ : modify / pipe / cxpath ──
     ("61-modify-delete", "[61] [?modify] — pure-functional :delete",
-        "[?let [= $doc [users\n  [user id=1 name=Alice  banned=false]\n  [user id=2 name=Bob    banned=true]\n  [user id=3 name=Carol banned=false]\n  [user id=4 name=Dave   banned=true]]] [?modify $doc //user[@banned=true] [delete]]]",
+        "[?let [= $doc [users\n  [user id=1 name=Alice  banned=false]\n  [user id=2 name=Bob    banned=true]\n  [user id=3 name=Carol banned=false]\n  [user id=4 name=Dave   banned=true]]] [?modify $doc //user[= $_@banned true] [delete]]]",
         "**Introduces:** `[?modify DOC PATH :ACTION]`. Pure-functional — returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` is a CXPath predicate filter; `:delete` removes the matches."),
     ("62-modify-set-attr", "[62] [?modify] — :set-attr on every match",
         "[?let [= $doc [users\n  [user id=1 [name \"Alice\"]]\n  [user id=2 [name \"Bob\"]]]] [?modify $doc //user [set-attr status \"active\"]]]",
         "**Introduces:** `:set-attr NAME VALUE` — writes an attribute on every matched node. Adds `status=active` to every user."),
     ("63-modify-chain", "[63] [?modify] — chained transforms via [?let]",
-        "[?let [= $doc [users\n  [user id=1 name=Alice banned=false]\n  [user id=2 name=Bob   banned=true]\n  [user id=3 name=Carol banned=false]]] [?let [= $clean [?modify $doc //user[@banned=true] [delete]]] [?modify $clean //user [set-attr role \"member\"]]]]",
+        "[?let [= $doc [users\n  [user id=1 name=Alice banned=false]\n  [user id=2 name=Bob   banned=true]\n  [user id=3 name=Carol banned=false]]] [?let [= $clean [?modify $doc //user[= $_@banned true] [delete]]] [?modify $clean //user [set-attr role \"member\"]]]]",
         "**Introduces:** composing multiple `[?modify]` steps with `[?let]`. First delete banned users, then set `role=member` on the survivors."),
     ("64-cxpath-axes", "[64] CXPath — child + attribute axes",
         "[?let [= $doc [order [item qty=2] [item qty=3] [item qty=5]]] [?for [in $i $doc/item] [yield $i/@qty]]]",
@@ -222,7 +222,7 @@ EX = [
         "**Introduces:** `[?fallback]` happy path. When positional body returns a non-err value, that value is returned and `[recover-with …]` is never evaluated."),
     # ── 71+ : builtins ──
     ("71-builtin-head-tail", "[71] Sequence — head + tail",
-        "[?let [= $xs (10, 20, 30, 40)] [list first=[head $xs] rest=[tail $xs]]]",
+        "[?let [= $xs (10, 20, 30, 40)] [list first=[$head $xs] [rest [$tail $xs]]]]",
         "**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first)."),
     ("72-builtin-nth", "[72] Sequence — nth (0-indexed)",
         "[nth (10, 20, 30, 40) 2]",
@@ -240,13 +240,13 @@ EX = [
         "[abs -42]",
         "**Introduces:** `[abs n]` — absolute value."),
     ("77-numeric-round", "[77] Numeric — round / floor / ceiling",
-        "[stats r=[round 3.7] f=[floor 3.7] c=[ceiling 3.2]]",
+        "[stats r=[$round 3.7] f=[$floor 3.7] c=[$ceiling 3.2]]",
         "**Introduces:** `[round f]` / `[floor f]` / `[ceiling f]` — float-to-int with three rounding modes."),
     ("78-string-substring", "[78] Strings — substring",
         "[substring \"hello world\" 6 11]",
         "**Introduces:** `[substring s start end]` — half-open substring slice."),
     ("79-string-starts-ends", "[79] Strings — starts-with / ends-with",
-        "[checks starts=[starts-with \"hello world\" \"hello\"] ends=[ends-with \"hello world\" \"world\"]]",
+        "[checks starts=[$starts-with \"hello world\" \"hello\"] ends=[$ends-with \"hello world\" \"world\"]]",
         "**Introduces:** `[starts-with s prefix]` + `[ends-with s suffix]` — boolean tests."),
     ("80-string-normalize", "[80] Strings — normalize-space",
         "[normalize-space \"  hello   world  \"]",
@@ -330,11 +330,11 @@ EX = [
         "[?let [= $doc [list [item id=1] [item id=2] [item id=3] [item id=4]]] $doc/item[2]]",
         "**Pattern:** pick the Nth match. **Uses:** `[N]` inline predicate (1-indexed per XPath convention). Returns the second `item`. (G3 closed.)"),
     ("106-cxpath-last", "[106] CXPath — last-position `[last()]`",
-        "[?let [= $doc [list [item id=1] [item id=2] [item id=3]]] $doc/item[last()]]",
-        "**Pattern:** pick the final match. **Uses:** `[last()]` — special-form predicate that resolves to the count of preceding matches at application time."),
+        "[?let [= $doc [list [item id=1] [item id=2] [item id=3]]] $doc/item[= $_position $_last]]",
+        "**Pattern:** pick the final match. **Uses:** `[= $_position $_last]` — the reserved position bindings select the final match at application time."),
     ("107-cxpath-compound", "[107] CXPath — compound predicate `[and …]`",
-        "[?let [= $doc [users [user active=true age=30] [user active=false age=40] [user active=true age=22]]] $doc/user[and [= @active true] [> @age 25]]]",
-        "**Pattern:** filter by multiple conditions. **Uses:** `[and a b]` predicate body wrapping `[= @attr v]` and `[> @attr v]` comparisons. The bracket-form predicates compose; `or` works the same way. Per `[expr]` general predicate framing."),
+        "[?let [= $doc [users [user active=true age=30] [user active=false age=40] [user active=true age=22]]] $doc/user[and [= $_@active true] [> $_@age 25]]]",
+        "**Pattern:** filter by multiple conditions. **Uses:** `[and a b]` predicate body wrapping `[= $_@attr v]` and `[> $_@attr v]` comparisons. The bracket-form predicates compose; `or` works the same way. Per `[expr]` general predicate framing."),
     ("108-cxpath-parent", "[108] CXPath — parent axis `..`",
         "[?let [= $doc [orders [order id=1 [line p=10]] [order id=2 [line p=20]] [order id=3 [line p=30]]]] [?for [in $l $doc//line] [yield $l/../@id]]]",
         "**Pattern:** find the container of a match. **Uses:** `..` parent axis, chained with `/@id`. For each `line` element, navigate up to its `order` parent and read that order's `id`. (G2 closed.)"),
@@ -375,19 +375,19 @@ EX = [
         "[?let [= $doc [log [hit user=alice] [hit user=bob] [hit user=alice] [hit user=carol] [hit user=bob]]] [?for [in $h $doc//hit] [group-by $h/@user] [yield $h/@user]]]",
         "**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause — each distinct key appears once. Different from `[distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute."),
     ("121-composite-predicate", "[121] Filter — composite predicate",
-        "[?let [= $doc [users [user active=true age=30 role=admin] [user active=true age=22 role=user] [user active=false age=40 role=admin]]] $doc/user[and [= @active true] [>= @age 25]]]",
-        "**Pattern:** combine multiple filter conditions inline. **Uses:** `[and [= @a v] [>= @b N]]` inline predicate with two clauses. Each `[op @attr value]` is an independent boolean; `and` short-circuits. (G3 closed.)"),
+        "[?let [= $doc [users [user active=true age=30 role=admin] [user active=true age=22 role=user] [user active=false age=40 role=admin]]] $doc/user[and [= $_@active true] [>= $_@age 25]]]",
+        "**Pattern:** combine multiple filter conditions inline. **Uses:** `[and [= $_@a v] [>= $_@b N]]` inline predicate with two clauses. Each `[op @attr value]` is an independent boolean; `and` short-circuits. (G3 closed.)"),
     ("122-attr-presence", "[122] Filter — attribute presence",
         "[?let [= $doc [users [user id=1 email=\"a@x.com\"] [user id=2] [user id=3 email=\"c@x.com\"]]] $doc/user[@email]]",
         "**Pattern:** keep records that *have* a given attribute. **Uses:** bare `[@email]` predicate — truthy if the attribute exists on the candidate. Drops `user id=2` (no email)."),
     ("123-count-matches", "[123] Aggregate — count matches",
-        "[?let [= $doc [log [hit ok=true] [hit ok=false] [hit ok=true] [hit ok=true]]] [count $doc/hit[@ok=true]]]",
-        "**Pattern:** how many records match the predicate? **Uses:** `[count $bind]` builtin in element-call form (Phase 1 dispatch) over an inline-predicate-filtered path."),
+        "[?let [= $doc [log [hit ok=true] [hit ok=false] [hit ok=true] [hit ok=true]]] [$count $doc/hit[= $_@ok true]]]",
+        "**Pattern:** how many records match the predicate? **Uses:** the `[$count $bind]` head-dispatch builtin over an inline-predicate-filtered path."),
     ("124-sum-attr", "[124] Aggregate — sum an attribute",
         "[?let [= $doc [order [line qty=2 price=10] [line qty=1 price=20] [line qty=3 price=5]]] [sum $doc/line/@price]]",
         "**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price` on child axis (gap A fix: `$doc/line` enumerates every `line` child)."),
     ("125-min-max", "[125] Aggregate — min / max",
-        "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]] [stats lo=[min $doc/s/@v] hi=[max $doc/s/@v] avg=[avg $doc/s/@v]]]",
+        "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]] [stats lo=[$min $doc/s/@v] hi=[$max $doc/s/@v] avg=[$avg $doc/s/@v]]]",
         "**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element."),
     ("126-group-aggregate", "[126] Aggregate — group-by attribute → count per group",
         "[?let [= $doc [orders [o region=US amt=100] [o region=EU amt=200] [o region=US amt=50] [o region=EU amt=80] [o region=APAC amt=300]]] [?for [in $o $doc/o] [group-by $o/@region] [yield $o/@region]]]",
@@ -399,8 +399,8 @@ EX = [
         "[?let [= $doc [groups [g [item \"a\"] [item \"b\"]] [g [item \"c\"]] [g [item \"d\"] [item \"e\"]]]] [?for [in $g $doc/g] [yield $g/item]]]",
         "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence."),
     ("129-name-via-builtin", "[129] Tree — node name via local-name()",
-        "[?let [= $doc [config [database host=A] [cache provider=R] [logging level=W]]] [?for [in $section $doc/*] [yield [section type=local-name($section)]]]]",
-        "**Pattern:** capture each child's own name as data. **Uses:** `local-name($node)` bare-fn-call (B15 closed), `[?for]` + dynamic data shape. Output records the kind of each section."),
+        "[?let [= $doc [config [database host=A] [cache provider=R] [logging level=W]]] [?for [in $section $doc/*] [yield [section type=[$local-name $section]]]]]",
+        "**Pattern:** capture each child's own name as data. **Uses:** `[$local-name $node]` head-dispatch builtin, `[?for]` + dynamic data shape. Output records the kind of each section."),
     ("130-siblings", "[130] Tree — find siblings of a node",
         "[?let [= $doc [post [title \"On X\"] [author \"Alice\"] [body \"...\"] [tags \"T1\" \"T2\"]]] [?for [in $a $doc//author] [yield $a/../*]]]",
         "**Pattern:** walk to parent, then back down to all children. **Uses:** `..` parent axis + `/*` wildcard. Returns every direct child of the post (including the author itself)."),
@@ -409,8 +409,8 @@ EX = [
         "[?let [= $doc [tree [n [n1 [leaf id=1]] [leaf id=2]] [leaf id=3]]] [?for [in $l $doc//leaf] [yield $l/@id]]]",
         "**Pattern:** select only the leaf-shaped nodes by name. **Uses:** `//leaf` descendant-by-name. For tree-shape-with-mixed-names, filter by `count(child::*)=0` once that surface lands."),
     ("132-pipe-of-modifies", "[132] Compose — pipe of [?modify] stages",
-        "[?let [= $doc [users [user id=1 banned=true] [user id=2 banned=false] [user id=3 banned=true]]] [?pipe $doc [?modify //user[@banned=true] [delete]] [?modify //user [set-attr role \"member\"]]]]",
-        "**Pattern:** chain two `[?modify]` stages — first delete banned users (predicate `[@banned=true]`), then tag the survivors `role=member`. Stages thread the document left to right."),
+        "[?let [= $doc [users [user id=1 banned=true] [user id=2 banned=false] [user id=3 banned=true]]] [?pipe $doc [?modify //user[= $_@banned true] [delete]] [?modify //user [set-attr role \"member\"]]]]",
+        "**Pattern:** chain two `[?modify]` stages — first delete banned users (predicate `[= $_@banned true]`), then tag the survivors `role=member`. Stages thread the document left to right."),
     ("133-filter-map-reduce", "[133] Compose — filter → map → reduce",
         "[?pipe (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) [?fn ($xs) [?for [in $x $xs] [where [> $x 4]] [yield [* $x $x]]]] [?fn ($xs) [?reduce $xs [using [?fn ($a $b) [+ $a $b]]] [init 0]]]]",
         "**Pattern:** a classic data pipeline — keep `> 4`, square, then sum (25+36+49+64+81+100 = 355). Two function stages over a `[?pipe]`."),
@@ -424,21 +424,21 @@ EX = [
         "[triples\n  [t s=Alice p=knows o=Bob]\n  [t s=Bob   p=knows o=Carol]\n  [t s=Alice p=likes o=pizza]\n  [t s=Carol p=likes o=tea]]",
         "**Pattern:** model an RDF graph as triple records. **Uses:** flat element shape with `s` / `p` / `o` attributes. Queries are CXPath predicates against this shape."),
     ("137-query-by-subject", "[137] Graph — query by subject",
-        "[?let [= $g [triples [t s=Alice p=knows o=Bob] [t s=Alice p=likes o=pizza] [t s=Bob p=likes o=tea]]] $g//t[@s=\"Alice\"]]",
-        "**Pattern:** find all statements about a subject. **Uses:** `[@s=\"Alice\"]` inline predicate against the triples graph. Returns every triple where the subject is `Alice`."),
+        "[?let [= $g [triples [t s=Alice p=knows o=Bob] [t s=Alice p=likes o=pizza] [t s=Bob p=likes o=tea]]] $g//t[= $_@s \"Alice\"]]",
+        "**Pattern:** find all statements about a subject. **Uses:** `[= $_@s \"Alice\"]` inline predicate against the triples graph. Returns every triple where the subject is `Alice`."),
     ("138-query-by-predicate", "[138] Graph — query by predicate (relation)",
-        "[?let [= $g [triples [t s=A p=knows o=B] [t s=B p=knows o=C] [t s=A p=likes o=X]]] $g//t[@p=\"knows\"]]",
-        "**Pattern:** find all statements of a given relation. **Uses:** `[@p=\"knows\"]` inline predicate. Returns the `knows` edges of the graph; flip the predicate for any other relation."),
+        "[?let [= $g [triples [t s=A p=knows o=B] [t s=B p=knows o=C] [t s=A p=likes o=X]]] $g//t[= $_@p \"knows\"]]",
+        "**Pattern:** find all statements of a given relation. **Uses:** `[= $_@p \"knows\"]` inline predicate. Returns the `knows` edges of the graph; flip the predicate for any other relation."),
     ("139-out-edges", "[139] Graph — out-edges from a node",
-        "[?let [= $g [triples [t s=A p=r1 o=B] [t s=A p=r2 o=C] [t s=B p=r1 o=D]]] [?for [in $t $g//t[@s=\"A\"]] [yield [edge to=$t/@o via=$t/@p]]]]",
-        "**Pattern:** all edges leaving a node. **Uses:** `[@s=\"A\"]` predicate, `[?for]` reshape. Each output records the destination and the relation."),
+        "[?let [= $g [triples [t s=A p=r1 o=B] [t s=A p=r2 o=C] [t s=B p=r1 o=D]]] [?for [in $t $g//t[= $_@s \"A\"]] [yield [edge to=$t/@o via=$t/@p]]]]",
+        "**Pattern:** all edges leaving a node. **Uses:** `[= $_@s \"A\"]` predicate, `[?for]` reshape. Each output records the destination and the relation."),
     ("140-in-edges", "[140] Graph — in-edges to a node",
-        "[?let [= $g [triples [t s=A p=r1 o=B] [t s=C p=r1 o=B] [t s=A p=r2 o=D]]] [?for [in $t $g//t[@o=\"B\"]] [yield [edge from=$t/@s via=$t/@p]]]]",
-        "**Pattern:** all edges arriving at a node. **Uses:** `[@o=\"B\"]` predicate against the triples. Each output records the source and relation."),
+        "[?let [= $g [triples [t s=A p=r1 o=B] [t s=C p=r1 o=B] [t s=A p=r2 o=D]]] [?for [in $t $g//t[= $_@o \"B\"]] [yield [edge from=$t/@s via=$t/@p]]]]",
+        "**Pattern:** all edges arriving at a node. **Uses:** `[= $_@o \"B\"]` predicate against the triples. Each output records the source and relation."),
     # ── 141+ : data shapes ──
     ("141-reachability-1hop", "[141] Graph — one-hop reachability",
-        "[?let [= $g [triples [t s=A p=knows o=B] [t s=A p=knows o=C] [t s=B p=knows o=D]]] [?for [in $t $g//t[and [= @s \"A\"] [= @p \"knows\"]]] [yield $t/@o]]]",
-        "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= @s \"A\"] [= @p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) — bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly."),
+        "[?let [= $g [triples [t s=A p=knows o=B] [t s=A p=knows o=C] [t s=B p=knows o=D]]] [?for [in $t $g//t[and [= $_@s \"A\"] [= $_@p \"knows\"]]] [yield $t/@o]]]",
+        "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s \"A\"] [= $_@p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) — bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly."),
     ("142-set-union", "[142] Set — union (concat + distinct)",
         "[?let [= $a (1, 2, 3, 4)] [?let [= $b (3, 4, 5, 6)] [distinct ((1, 2, 3, 4, 3, 4, 5, 6))]]]",
         "**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (Lazy `[?chain]` + `[?distinct]` combinators are a planned addition.)"),
@@ -452,8 +452,8 @@ EX = [
         "[?for [in $a (1, 2, 3)] [in $b (\"x\", \"y\")] [yield [pair a=$a b=$b]]]",
         "**Pattern:** every combination of two sequences. **Uses:** multi-source `[?for]` — outer loop over `$a`, inner loop over `$b`. Yields 6 pairs (3 × 2)."),
     ("146-pivot-rows-to-attrs", "[146] ETL — pivot (row-shape → attr-shape)",
-        "[?let [= $doc [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]]] [snapshot cpu=$doc/m[@k=\"cpu\"]/@v mem=$doc/m[@k=\"mem\"]/@v disk=$doc/m[@k=\"disk\"]/@v]]",
-        "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[@k=…]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly — no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; bind the row via `[?let $cpu = $doc/m[@k=\"cpu\"]` and read `$cpu@v` when you need the raw scalar `87`. The shape still pivots skinny-tall → wide. (G4 closed.)"),
+        "[?let [= $doc [stats [m k=cpu v=87] [m k=mem v=62] [m k=disk v=44]]] [snapshot [cpu $doc/m[= $_@k \"cpu\"]/@v] [mem $doc/m[= $_@k \"mem\"]/@v] [disk $doc/m[= $_@k \"disk\"]/@v]]]",
+        "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k …]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly — no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; to read the raw scalar `87`, bind the row first — `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall → wide. (G4 closed.)"),
     ("147-unpivot", "[147] ETL — unpivot (attrs → rows)",
         "[?let [= $row [snapshot cpu=87 mem=62 disk=44]] ([m k=cpu v=$row/@cpu], [m k=mem v=$row/@mem], [m k=disk v=$row/@disk])]",
         "**Pattern:** the inverse of pivot. **Uses:** literal sequence + `$row/@…` reads. Output is the skinny-tall form. Generalizes when there's a known attribute set; an arbitrary-attr unpivot waits on iterator combinators."),
@@ -461,10 +461,10 @@ EX = [
         "[?let [= $m [matrix\n  [row a=1 b=2 c=3]\n  [row a=4 b=5 c=6]\n  [row a=7 b=8 c=9]]] [?let [= $r1 $m/row[1]] [?let [= $r2 $m/row[2]] [?let [= $r3 $m/row[3]] [transposed\n    [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]\n    [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]\n    [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]]]]",
         "**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed) on the child axis `$m/row[N]` (gap A: child axis now returns every match — picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool."),
     ("149-group-then-sum", "[149] ETL — group-aggregate (region → total)",
-        "[?let [= $doc [orders [o region=US amt=100] [o region=EU amt=200] [o region=US amt=50] [o region=EU amt=80]]] [totals\n    us=[sum $doc//o[@region=\"US\"]/@amt]\n    eu=[sum $doc//o[@region=\"EU\"]/@amt]]]",
-        "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[@region=\"US\"]`, `[sum …]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits.)"),
+        "[?let [= $doc [orders [o region=US amt=100] [o region=EU amt=200] [o region=US amt=50] [o region=EU amt=80]]] [totals\n    us=[$sum $doc//o[= $_@region \"US\"]/@amt]\n    eu=[$sum $doc//o[= $_@region \"EU\"]/@amt]]]",
+        "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region \"US\"]`, `[sum …]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits.)"),
     ("150-join-by-key", "[150] ETL — join two collections by attribute",
-        "[?let [= $orders [o-set [o id=1 user=\"A\" amt=100] [o id=2 user=\"B\" amt=200] [o id=3 user=\"A\" amt=50]]] [?let [= $users [u-set [u name=\"A\" email=\"a@x.com\"] [u name=\"B\" email=\"b@x.com\"]]] [?for [in $o $orders//o] [yield [joined order-id=$o/@id amt=$o/@amt email=$users//u[@name=$o/@user]/@email]]]]]",
+        "[?let [= $orders [o-set [o id=1 user=\"A\" amt=100] [o id=2 user=\"B\" amt=200] [o id=3 user=\"A\" amt=50]]] [?let [= $users [u-set [u name=\"A\" email=\"a@x.com\"] [u name=\"B\" email=\"b@x.com\"]]] [?for [in $o $orders//o] [yield [joined order-id=$o/@id amt=$o/@amt [email $users//u[= $_@name $o/@user]/@email]]]]]]",
         "**Pattern:** inner-join two collections by a shared key — look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[…]` does the lookup). Terminal `/@email` materialises the value as `[email \"…\"]` (gap-D class — same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired."),
     # ── 151+ : ranges / streams ──
     ("151-range-by-stride", "[151] Range — strided `[$range lo hi step]`",
@@ -625,38 +625,69 @@ def compose(src, note):
     return src + "\n\n[; \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n" + note + "\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ]\n"
 
 
-def cli_eval(src, timeout=12):
+def audit(src, timeout=20):
+    """Run an example exactly as the playground does: the editor textarea
+    holds `input` + the note wrapped as a `[; … ]` block comment, and that
+    whole composed string is what cxlib.evalCode() executes (see
+    playground.js composeSource + the Run handler). So the CLI audit must
+    evaluate the *composed* form too — that's what catches an unbalanced
+    bracket in the note prose (which turns the `[; … ]` comment unterminated
+    → CXER0100 at runtime). No capability flags are passed, mirroring the
+    file:// wasm sandbox (no net / subprocess / fs).
+
+    Returns (status, runnable, msg):
+      status   'ok'   — ran with no top-level error (a returned `[err …]`
+                        VALUE is a legitimate result, not a failure)
+               'fail' — top-level parse/eval error (nonzero exit or the
+                        runtime printed `error:`); this is real drift.
+      runnable False  — the example surfaced CXER0271 (E_CAP_DENIED): it
+                        needs a capability the wasm sandbox can't grant, so
+                        it is non-runnable in the playground but exempt.
+    """
     f = tempfile.NamedTemporaryFile(mode='w', suffix='.cx', delete=False)
     f.write(src); f.close()
     try:
         r = subprocess.run(['vcx/target/cx', f.name],
                            capture_output=True, text=True, timeout=timeout)
-        return (r.returncode == 0 and not r.stdout.startswith('error:'),
-                r.stdout.strip() or r.stderr.strip())
+        combined = (r.stdout or '') + (r.stderr or '')
+        msg = (r.stdout.strip() or r.stderr.strip())
+        runnable = 'CXER0271' not in combined
+        if r.returncode != 0 or r.stdout.startswith('error:'):
+            return 'fail', runnable, msg
+        return 'ok', runnable, msg
+    except subprocess.TimeoutExpired:
+        return 'fail', True, f'TIMEOUT after {timeout}s'
     finally:
         os.unlink(f.name)
 
 
-def main():
+def render():
+    """Audit every entry and render the playground.examples.js body.
+    Returns (text, failures) where failures is a list of (key, msg) for
+    entries with a top-level error — the drift the gate must reject. Every
+    entry that audits clean is emitted (cap-gated ones carry runnable:false);
+    nothing is silently dropped."""
     out = []
-    out.append("// CX Playground — 182 progressive eval examples (every entry CLI-audited).")
+    out.append(f"// CX Playground — {len(EX)} progressive eval examples (every entry CLI-audited).")
     out.append("// Single ordered list, simple → complex:")
     out.append("//   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])")
     out.append("//   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience")
     out.append("//   101-160 cxpath + transforms / composition  ·  161-172 diagrams")
     out.append("//   173-182 functional composition (cx-stdlib/fp)")
-    out.append("// Generator: scripts/gen_guide/playground/gen_examples.py — re-run (or `make guide`) after any syntax change.")
+    out.append("// runnable:false marks an example that needs a wasm-unavailable capability")
+    out.append("// (net / subprocess / fs); it is exempt from the clean-run gate.")
+    out.append("// Generator: scripts/gen_guide/playground/gen_examples.py — re-run (or `make guide`)")
+    out.append("// after any syntax change; `--check` verifies this file without rewriting it.")
     out.append("")
     out.append("(function () {")
     out.append("  'use strict';")
     out.append("")
     out.append("  const program = {")
     failures = []
-    passing = 0
     for key, label, src, note in EX:
-        ok, msg = cli_eval(compose(src, note))
-        if not ok:
-            failures.append((key, msg[:140]))
+        status, runnable, msg = audit(compose(src, note))
+        if status == 'fail':
+            failures.append((key, msg[:160]))
             continue
         tags = infer_tags(key, label, src, note)
         out.append(f"    {json.dumps(key)}: {{")
@@ -664,23 +695,55 @@ def main():
         out.append(f"      input: {json.dumps(src)},")
         out.append(f"      note:  {json.dumps(note)},")
         out.append(f"      tags:  {json.dumps(tags)},")
+        out.append(f"      runnable: {json.dumps(runnable)},")
         out.append(f"    }},")
-        passing += 1
     out.append("  };")
     out.append("")
     out.append("  window.cxPlaygroundExamples = { program };")
     out.append("})();")
+    return '\n'.join(out) + '\n', failures
+
+
+def main():
+    check = '--check' in sys.argv[1:]
+    text, failures = render()
+    js_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           'playground.examples.js')
+
+    if failures:
+        # Fail loud — never silently drop a broken example (the old behaviour
+        # let drift ship unnoticed). A red gate forces a fix or an explicit
+        # capability exemption.
+        print(f"=== gen_examples: {len(failures)} example(s) FAILED — refusing to "
+              f"{'verify' if check else 'write'} ===", file=sys.stderr)
+        for k, m in failures:
+            print(f"FAIL  {k:40s} {m}", file=sys.stderr)
+        sys.exit(1)
+
+    if check:
+        # Drift gate: the committed file must match a fresh, all-clean render.
+        try:
+            with open(js_path) as f:
+                current = f.read()
+        except FileNotFoundError:
+            current = None
+        if current != text:
+            print("=== gen_examples --check: playground.examples.js is STALE ===",
+                  file=sys.stderr)
+            print("    Run: python3 scripts/gen_guide/playground/gen_examples.py",
+                  file=sys.stderr)
+            sys.exit(1)
+        print(f"=== gen_examples --check: OK — {len(EX)} examples clean & current ===",
+              file=sys.stderr)
+        return
+
     # Write directly to the .js file rather than stdout so wrappers like
     # `devbox run --` cannot prepend their preamble (rustc/toolchain
     # banners) into the generated JavaScript and break the playground.
-    js_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           'playground.examples.js')
     with open(js_path, 'w') as f:
-        f.write('\n'.join(out) + '\n')
+        f.write(text)
     print(f"=== wrote: {js_path}", file=sys.stderr)
-    print(f"=== passing: {passing}/{len(EX)} ===", file=sys.stderr)
-    for k, m in failures:
-        print(f"FAIL  {k:40s} {m}", file=sys.stderr)
+    print(f"=== passing: {len(EX)}/{len(EX)} (all clean) ===", file=sys.stderr)
 
 
 if __name__ == '__main__':

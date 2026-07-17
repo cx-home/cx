@@ -14,10 +14,10 @@
   [section title='element-shape dispatch'
     [?for [in $item //thing/*]
       [yield [?match $item
-        [case [user $_]    [labeled kind='user'    item=$item]]
-        [case [group $_]   [labeled kind='group'   item=$item]]
-        [case [service $_] [labeled kind='service' item=$item]]
-        [else              [labeled kind='unknown' item=$item]]]]]]
+        [case [user $_]    [labeled kind='user'    [item $item]]]
+        [case [group $_]   [labeled kind='group'   [item $item]]]
+        [case [service $_] [labeled kind='service' [item $item]]]
+        [else              [labeled kind='unknown' [item $item]]]]]]]
 
   [# ─── 2. Scalar literal patterns (type-strict, §5.2 rule 8) ───
        Scrutinees are literal ints so the type-strict scalar match fires
@@ -41,10 +41,10 @@
   [section title='[when] guards'
     [?for [in $u //users/user]
       [yield [?match $u
-        [when [< $u/@age 18]                       [bucket name='minor'  user=$u]]
-        [when [and [>= $u/@age 18] [< $u/@age 65]]  [bucket name='adult'  user=$u]]
-        [when [>= $u/@age 65]                       [bucket name='senior' user=$u]]
-        [else                                       [bucket name='unknown-age' user=$u]]]]]]
+        [when [< $u/@age 18]                       [bucket name='minor'  [user $u]]]
+        [when [and [>= $u/@age 18] [< $u/@age 65]]  [bucket name='adult'  [user $u]]]
+        [when [>= $u/@age 65]                       [bucket name='senior' [user $u]]]
+        [else                                       [bucket name='unknown-age' [user $u]]]]]]]
 
   [# ─── 4. Mixed [case] / [when] / [else] (SQL-CASE discipline) ───
        Shape-first dispatch ([case [scroll $_]]) keeps the @delta guard
@@ -110,12 +110,16 @@
         [when [< $clock@hour 18] 'afternoon']
         [else                    'evening']]]]]
 
-  [# ─── 9. No-match — without [else], yields ()-empty ─── #]
+  [# ─── 9. No-match — without [else], yields ()-empty ───
+       An empty sequence may render as element CONTENT (the [result]
+       element below simply stays empty), but writing it into an
+       attribute is fail-closed: `result=$maybe` with $maybe=() raises
+       CXER0100 rather than silently writing result=''. #]
 
   [section title='no-match yields empty'
     [?let [= $maybe [?match 42
                       [case 1 'one']
                       [case 2 'two']]]
-      [debug result=$maybe empty=[$empty $maybe]]]]
+      [debug [result $maybe] empty=[$empty $maybe]]]]
 
 ]

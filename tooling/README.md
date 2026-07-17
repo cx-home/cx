@@ -1,6 +1,6 @@
 # CX editor tooling
 
-Editor integration for `.cx` / `.cxs` / `.cx` files. The language server
+Editor integration for `.cx` / `.cxd` / `.cxs` files. The language server
 is built into the `cx` binary — `cx lsp` speaks JSON-RPC 2.0 over stdio.
 No npm toolchain, no separate server process.
 
@@ -8,13 +8,18 @@ No npm toolchain, no separate server process.
 tooling/
   lsp/             cx-lsp editor configs (VS Code / Neovim / Helix)
   completions/     bash / zsh / fish shell completions for `cx <verb>`
-  syntax/          TextMate grammar (cx.tmLanguage.json) for VS Code
+  vscode/          VS Code extension — canonical TextMate grammar
+                   (syntaxes/cx.tmLanguage.json), snippets, LSP client
+  syntax/          derived copy of the canonical TextMate grammar for
+                   path-stable consumers (GitHub web view, Shiki, docs
+                   sites); regenerate with `make sync-tmlanguage`,
+                   drift-gated by `make check-tmlanguage-sync`
   neovim/          Standalone Vim-regex highlighter + lspconfig glue
   tree-sitter-cx/  tree-sitter grammar (structural highlighting +
                    embedded-language injection; tracks structured
-                   structured directives (match / modify / def / lib /
-                   const) + opaque-fallback for the remaining 35
-                   directives per spec/code.md §4.1;
+                   directives (match / modify / def / lib /
+                   const) + opaque-fallback for the rest of the
+                   code.md §4.1 directive registry;
                    `find` retired per code.md §5.5)
   binding_native_status.json   per-binding parity dashboard
 ```
@@ -52,11 +57,17 @@ instructions.
 | zsh | [`completions/_cx.zsh`](completions/_cx.zsh) |
 | fish | [`completions/cx.fish`](completions/cx.fish) |
 
-Cover the full subcommand list (`fmt`, `canonical`, `hash`, `eq`,
-`diff`, `lint`, `validate`, `table`, `demo`, `scaffold`, `eval`,
-`diagram`, `lock`, `lsp`), per-subcommand flags, and file
-extension completion for `.cx` / `.cxs` / `.cx` / `.xml` / `.json` /
-`.md` / `.yaml` / `.toml` / `.arrow` / `.parquet`.
+Cover the full subcommand list from the `vcx/cmd/main.v` dispatch table
+(`fmt`, `canonical`, `hash`, `eq`, `diff`, `lint`, `validate`, `table`,
+`demo`, `scaffold`, `eval`, `diagram`, `code-diagram`, `code-tree`,
+`lock`, `store-serve`, `store-health`, `store-token`,
+`store-rotate-kek`, `lsp`), per-subcommand flags (including the
+`--allow-*` capability grants), the top-level conversion flags, and
+file-extension completion for `.cx` / `.cxd` / `.cxs` plus the
+convertible foreign formats (`.xml` / `.json` / `.yaml` / `.toml` /
+`.md` / `.csv` / `.tsv` / `.psv` / `.arrow` / `.parquet`).
+`make check-completions-drift` fails when the three files fall out of
+lockstep with the dispatch table.
 
 ## Capabilities (`cx lsp`)
 
@@ -87,8 +98,12 @@ The canonical highlighters are **`cx lsp`** (LSP semanticTokens, for
 editors that speak LSP) and **TextMate** (for VS Code without LSP,
 GitHub web view, Shiki, docs sites). Both track the current directive
 surface directly — `cx lsp` via libcx parse, TextMate via the curated
-keyword set in [`syntax/cx.tmLanguage.json`](syntax/cx.tmLanguage.json)
-(40-directive registry per spec/code.md §4.1; `find` retired per
+keyword set in the canonical grammar at
+[`vscode/syntaxes/cx.tmLanguage.json`](vscode/syntaxes/cx.tmLanguage.json)
+(scope-tested via `npm run test:grammar` in `tooling/vscode/`;
+[`syntax/cx.tmLanguage.json`](syntax/cx.tmLanguage.json) is a
+byte-identical derived copy for path-stable consumers). The keyword set
+follows the code.md §4.1 directive registry (`find` retired per
 code.md §5.5; multi-arm `[?match]` per code.md §8.2; `[?modify]` action
 vocabulary per code.md §8.10; `[?def]` / `[?lib]` / `[?const]` per
 code.md §12.2 / code.md §12.1/§12.3; reserved sigils `$_` / `$_position` / `$_last`

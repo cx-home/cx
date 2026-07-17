@@ -1,0 +1,72 @@
+[; watch.cx — keep a content-addressed store LIVE as a directory tree changes      ]
+[; (cxstore #128-B). Where ingest.cx is a one-shot load, this blocks on a REAL OS   ]
+[; filesystem watch (inotify on Linux, FSEvents on macOS — not polling) and         ]
+[; re-ingests each file the instant it changes, so the store never drifts from the  ]
+[; tree. Same extension routing as ingest.cx (.cx -> put-def, else -> put-doc-text).]
+[;                                                                                  ]
+[; The watch contract this recipe relies on (io.md §3.10):                          ]
+[;   - watch-next BLOCKS until the next change and returns                          ]
+[;     [change path=… op=created|modified|deleted].                                 ]
+[;   - with NO timeout it blocks forever, returning ABSENCE only when the watch is  ]
+[;     closed — so [?else] on watch-next@op is the clean stop condition.            ]
+[;   - [change op=overflow] means the OS dropped events under load: the only safe   ]
+[;     answer is to RESCAN the whole tree (a missed change == a stale store == the  ]
+[;     bug #128-B exists to prevent). reingest-all is that answer.                  ]
+[;                                                                                  ]
+[; Run it (make watch), then edit/add/delete files under sample/ in another shell   ]
+[; and watch the store track every change. Ctrl-C to stop. Point $store:open at any ]
+[; writable backend (file:// / remote cx-store(+grpc)://).              ]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/store' :as store]
+
+[; rel-name turns an absolute change path into its path relative to the watch root,
+   so aliases match ingest.cx's naming regardless of where the tree lives. ]
+[?def rel-name ($root $abs)
+  [$str-slice $abs [+ [$str-length $root] 1] [$str-length $abs]]]
+
+[; ingest-file content-addresses one file and (re)points its alias — idempotent:
+   identical content re-puts to the same hash (a no-op) and rewrites the alias. ]
+[?def ingest-file impure ($c $abs $rel)
+  [?if [$str-ends-with $abs ".cx"]
+    [then [$store:set-alias $c $rel [$store:put-def $c [$io:read-file $abs]]]]
+    [else [$store:set-alias $c $rel [$store:put-doc-text $c [$io:read-file $abs]]]]]]
+
+[; reingest-all walks the whole tree and ingests every file — the initial load AND
+   the overflow response. ]
+[?def reingest-all impure ($c $root)
+  [?for [in $e [$io:walk $root]]
+    [yield
+      [?if $e@is-file
+        [then [ingest-file $c $e@path [rel-name $root $e@path]]]
+        [else []]]]]]
+
+[; apply-change routes one change: overflow -> full rescan; deleted -> drop the
+   alias; created/modified of a file -> re-ingest it (directory events are ignored,
+   their files arrive as their own changes). ]
+[?def apply-change impure ($c $root $change)
+  [?if [$eq $change@op "overflow"]
+    [then [reingest-all $c $root]]
+    [else [?if [$eq $change@op "deleted"]
+      [then [$store:delete-alias $c [rel-name $root $change@path]]]
+      [else [?if [$io:is-file $change@path]
+        [then [ingest-file $c $change@path [rel-name $root $change@path]]]
+        [else []]]]]]]]
+
+[; watch-loop blocks for the next change, applies it, and tail-recurses (CX's
+   blessed "forever" loop — code.md §7). watch-next returns absence only when the
+   watch is closed, so the [?else] guard ends the loop cleanly. ]
+[?def watch-loop impure ($c $root $w)
+  [?let [= $change [$io:watch-next $w]]
+    [?if [$eq [?else $change@op ""] ""]
+      [then []]
+      [else [?let [= $applied [apply-change $c $root $change]]
+        [watch-loop $c $root $w]]]]]]
+
+[; entry: open the store, start the watch, do an initial full ingest so the store
+   reflects the current tree, then track changes until the watch is closed. ]
+[?let
+  [= $c [$store:open "file://./out-store"]]
+  [= $w [$io:watch "sample"]]
+  [= $root $w@path]
+  [= $initial [reingest-all $c $root]]
+  [watch-loop $c $root $w]]

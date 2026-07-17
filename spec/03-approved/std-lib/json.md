@@ -31,7 +31,7 @@ The data subset round-trips ceremony-free; elements are the explicit special cas
 | `[1, 2, 3]` | `array` value |
 | `{"k": v}` | `map` value |
 
-**Parse is lossless.** A JSON object parses to a CX `map`; a JSON array to a CX `array`; scalars to scalars — every ordinary JSON value round-trips exactly. The one exception is the **`named` element encoding** below: an object whose keys are exactly a subset of `{$tag, $attrs, $children}` with `$tag` present is parsed back into the CX **element** it encodes (the parse inverse of lossless emit), so `parse(emit(el, {lossless: true})) ≡ el`.
+**Parse is lossless.** A JSON object parses to a CX `map`; a JSON array to a CX `array`; scalars to scalars — every ordinary JSON value round-trips exactly. The one exception is the **`named` element encoding** below: an object whose keys are exactly a subset of `{$tag, $attrs, $children}` with `$tag` present — and whose `$attrs` values are all scalars — is parsed back into the CX **element** it encodes (the parse inverse of lossless emit), so `parse(emit(el, {lossless: true})) ≡ el`. The conversion lane ([`spec/core/conversions.md`](../core/conversions.md)) extends this encoding to a full document envelope with additional reserved `$`-keys; those extended shapes are reconstructed by the conversion importer, not by this module's `parse`, which reads them as plain maps.
 
 A CX **element** has no idiomatic JSON counterpart, so `emit` is lossy-by-default and lossless-on-demand (matching conversions.md §0.2):
 

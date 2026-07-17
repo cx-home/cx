@@ -178,7 +178,7 @@ For byte-faithful round-trip of pre-encoded components, pair `parse` with `build
   [$url:build
     [url [scheme "https"]
          [host "api.example.com"]
-         [path [$strings:join ["/users/" $username "/profile"] ""]]]]]
+         [path [$strings:join ["/users/", $username, "/profile"] ""]]]]]
 [; → https://api.example.com/users/a%2Fb%20c/profile ]
 ```
 

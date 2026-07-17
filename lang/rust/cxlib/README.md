@@ -278,12 +278,12 @@ let first = doc.select("//service").unwrap().unwrap();
 println!("{}", first.attr("name").unwrap());   // auth
 
 // All with port >= 8000
-let high = doc.select_all("//service[@port>=8000]").unwrap();
+let high = doc.select_all("//service[>= $_@port 8000]").unwrap();
 println!("{}", high.len());  // 2
 
 // select on an Element searches only its subtree
 let services = doc.at("services").unwrap();
-let active = services.select_all("service[@active=true]").unwrap();
+let active = services.select_all("service[= $_@active true]").unwrap();
 println!("{}", active.len());  // 2
 
 // Invalid expression
@@ -410,15 +410,15 @@ Cross-format conversions follow the same pattern: `xml_to_json`, `json_to_xml`,
 | `a/b/c` | Child path |
 | `*` | Any element (wildcard) |
 | `[@attr]` | Has attribute |
-| `[@attr=val]` | Attribute equals value (typed) |
-| `[@attr!=val]` | Attribute not equal |
-| `[@attr>=val]` | Numeric comparison (`>`, `<`, `>=`, `<=`) |
-| `[@a=x and @b=y]` | Boolean `and` / `or` |
-| `[not(@attr)]` | Negation |
+| `[= $_@attr val]` | Attribute equals value (typed) |
+| `[!= $_@attr val]` | Attribute not equal |
+| `[>= $_@attr val]` | Numeric comparison (`>`, `<`, `>=`, `<=`) |
+| `[and [= $_@a x] [= $_@b y]]` | Boolean `and` / `or` |
+| `[not [$exists $_@attr]]` | Negation |
 | `[childname]` | Has a direct child element named `childname` |
-| `[1]`, `[2]`, `[last()]` | Position (1-based) |
-| `[contains(@k, 'v')]` | Attribute contains substring |
-| `[starts-with(@k, 'v')]` | Attribute starts with prefix |
+| `[1]`, `[2]`, `[= $_position $_last]` | Position (1-based; `[= $_position $_last]` = last) |
+| `[$contains $_@k 'v']` | Attribute contains substring |
+| `[$starts-with $_@k 'v']` | Attribute starts with prefix |
 
 Attribute values auto-type: `true`/`false` → `bool`, integers → `int`,
 decimals → `float`, everything else → `str`. An invalid expression returns
@@ -495,7 +495,7 @@ assert_eq!(cxa::features(), 0x800000);
 
 // Forward — CXCol chunked-table → Arrow.
 let payload = to_data_bin_chunked(
-    "[points :table[name:string score:int] alice 91 bob 88]")?;
+    "[points [table[name::string score::int]] alice 91 bob 88]")?;
 let mut reader = cxa::export(&payload)?;        // ArrowArrayStreamReader
 while let Some(rec) = reader.next() {
     let rec = rec?;
@@ -550,7 +550,7 @@ fn main() -> anyhow::Result<()> {
     println!("{}", to_json("[user [id :i64 9007199254740993]]")?);
 
     // Public Table API — 17-member surface
-    let src = r#"[users :table[name age:int]
+    let src = r#"[users [table[name age::int]]
   alice 30
   bob   25
 ]"#;

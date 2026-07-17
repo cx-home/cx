@@ -58,13 +58,19 @@ CONFORMANCE_IDENTITY := ../conformance/identity.cxd
 # v0.8.0: atom scalar kind.
 CONFORMANCE_ATOMS    := ../conformance/atoms.cxd
 CONFORMANCE_DELIMITED := ../conformance/delimited.cxd
+CONFORMANCE_YAML      := ../conformance/yaml.cxd
+CONFORMANCE_CONVERSIONS := ../conformance/conversions.cxd
 CONFORMANCE_DATA_BIN_CHUNKED  := ../conformance/data_bin_chunked.cxd
 CONFORMANCE_DATA_BIN_COMPRESS := ../conformance/data_bin_compression.cxd
 CONFORMANCE_DATA_BIN_SCHEMA   := ../conformance/data_bin_schema_driven.cxd
 CONFORMANCE_DATA_BIN_ARROW    := ../conformance/data_bin_arrow.cxd
 CONFORMANCE_SCHEMA_VALIDATE   := ../conformance/schema_validate.cxd
+# #421: [?cx include] no-resolution baseline (inc-001..inc-003). The suite
+# existed but was never wired into `conform`, so the gate stayed silently
+# green while the CLI's program reading regressed on [?cx …].
+CONFORMANCE_INCLUDE  := ../conformance/include.cxd
 
-.PHONY: all build build-dev lib lib-dev lib-arrow lib-arrow-dev re2-shim cli cli-dev conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate clean
+.PHONY: all build build-dev check-prod lib lib-dev lib-arrow lib-arrow-dev arrow-shim lib-arrow-files lib-arrow-files-dev re2-shim cli cli-dev conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-yaml conform-conversions conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-include clean
 
 # ── Targets ───────────────────────────────────────────────────────────────────
 
@@ -138,8 +144,25 @@ lib: re2-shim $(TARGET)
 # `-cc cc` (clang): tcc on macOS cannot compile the patched builtin's C11 atomics
 # (`atomic_fetch_*_explicit`) or `@[thread_local]` TLS (see the `cli` note). `-prod`
 # builds already force clang; the dev builds must opt in explicitly.
+# CX_DFLAGS — extra `-d` build flags for opt-in, gated backends that link an
+# external library the default build must NOT pull in (e.g. `-d cx_sftp` →
+# libssh2 for store sftp://, #106; same shape as the `-d cx_db_*` SQL engines).
+# Default empty, so the standard build links nothing extra. Example:
+#   make -C vcx build-dev CX_DFLAGS='-d cx_sftp'
+CX_DFLAGS ?=
 lib-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) -shared -o $(LIB) code/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) -shared -o $(LIB) code/
+
+# -prod strictness gate (#338): run the V *checker* with the same -prod flags
+# `lib` compiles with. -prod enables strict map-index checks (`or {}` required
+# on sum-type / pointer-carrying map values) that the dev build tolerates, so
+# a dev-green tree can still fail the shipped-artifact build. Checker-only
+# (`-check`, no codegen, no cc), so it runs in ~2s and never touches target/.
+# `-prod` is passed explicitly — NOT $(PROD_FLAGS) — because PROD_FLAGS goes
+# empty when third_party/v is absent (the documented fallback keeps *builds*
+# working); the checker needs no patched runtime, so the gate must still bite.
+check-prod:
+	$(V) $(VQUIET) -prod $(CX_GC) -check -shared code/
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per
 # spec/abi.md §2.11). Separate from libcx; bindings dlopen
@@ -153,6 +176,44 @@ lib-arrow: $(TARGET)
 
 lib-arrow-dev: $(TARGET)
 	$(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) -shared -o $(LIB_ARROW) arrow/
+
+# ── Optional Apache Arrow FILE I/O: Parquet + Arrow IPC ("Phase C").
+# Gated `-d cx_arrow_files`; links libarrow/libparquet (which YOU supply — cx
+# ships only the thin C++ connector shim, never Arrow itself) into libcx_arrow.
+# The base lib-arrow above stays fully dependency-free; core libcx never links
+# Arrow at all. Apache Arrow is discovered via pkg-config.
+#
+#   macOS:  brew install apache-arrow   (keg-only; pkgconfig dir added below)
+#   Linux:  apt install libarrow-dev libparquet-dev   (or dnf/conda/vcpkg)
+#
+# LEAN PRODUCTION BUILD: the brew bottle is full-featured and drags S3/aws +
+# flight/gandiva (llvm/grpc) you don't need. For a minimal footprint build
+# Arrow from source with Parquet on and the rest off:
+#   cmake -DARROW_PARQUET=ON -DARROW_S3=OFF -DARROW_FLIGHT=OFF \
+#         -DARROW_GANDIVA=OFF -DARROW_BUILD_SHARED=ON …
+# Our path links only libarrow + libparquet (+ thrift/compression) ≈ tens of MB.
+ARROW_SHIM_SRC := arrow/shim/cx_arrow_shim.cc
+ARROW_SHIM_LIB := $(TARGET)/libcx_arrow_shim.a
+ifeq ($(UNAME_S), Darwin)
+  ARROW_PKGCONFIG := /opt/homebrew/opt/apache-arrow/lib/pkgconfig
+else
+  ARROW_PKGCONFIG :=
+endif
+ARROW_PC := PKG_CONFIG_PATH="$(ARROW_PKGCONFIG):$$PKG_CONFIG_PATH"
+ARROW_CXXFLAGS := $(shell $(ARROW_PC) pkg-config --cflags arrow parquet 2>/dev/null)
+
+arrow-shim: $(ARROW_SHIM_LIB)
+
+$(ARROW_SHIM_LIB): $(ARROW_SHIM_SRC) arrow/shim/cx_arrow_shim.h | $(TARGET)
+	c++ -std=c++20 -O2 -fPIC $(ARROW_CXXFLAGS) -c $(ARROW_SHIM_SRC) -o $(TARGET)/cx_arrow_shim.o
+	ar rcs $(ARROW_SHIM_LIB) $(TARGET)/cx_arrow_shim.o
+
+lib-arrow-files: arrow-shim $(TARGET)
+	$(ARROW_PC) $(V) $(VQUIET) -enable-globals $(CX_GC) -d cx_arrow_files -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
+	$(STRIP) $(LIB_ARROW)
+
+lib-arrow-files-dev: arrow-shim $(TARGET)
+	$(ARROW_PC) $(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) -d cx_arrow_files -shared -o $(LIB_ARROW) arrow/
 
 # CLI binary — size-optimized (-Os via PROD_CFLAGS), NOT V `-prod`. `-prod`
 # turns warnings into errors, and the cmd/ semantic-token legend carries
@@ -184,11 +245,15 @@ cli: re2-shim $(TARGET)
 
 # CLI binary — unoptimised dev build (faster compile, debuggable, unstripped)
 cli-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(VERSION_DEFINES) -o $(CLI) cmd/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(VERSION_DEFINES) $(CX_DFLAGS) -o $(CLI) cmd/
 
 # ── Conformance ───────────────────────────────────────────────────────────────
 
-conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint
+conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-yaml conform-conversions conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint conform-include
+
+conform-include:
+	@echo "── include.cxd ───────────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_INCLUDE)
 
 conform-core:
 	@echo "── core.txt ──────────────────────────────────────────────────────────"
@@ -231,16 +296,25 @@ conform-delimited:
 	@echo "── delimited.txt ─────────────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_DELIMITED)
 
+conform-yaml:
+	@echo "── yaml.cxd ──────────────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_YAML)
+
+conform-conversions:
+	@echo "── conversions.cxd ───────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_CONVERSIONS)
+
 conform-data-bin-chunked:
 	@echo "── data_bin_chunked.txt ──────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_DATA_BIN_CHUNKED)
 
 # Runs under the shipped default `-gc e`/vgc. cmp-005-fd-streaming-write-bounded-memory
-# asserts the fd-streaming write path keeps RSS O(1) in the number of row-groups.
-# The writer now forces a vgc collection every streaming_write_gc_interval_bytes of
-# output (#52), so the transient per-group framing buffers are reclaimed and reused
-# instead of accumulating — the assertion holds under `-gc e` without the earlier
-# `-gc boehm` crutch. The other cases here are encoding-correctness (GC-agnostic).
+# asserts the fd-streaming write path keeps RSS O(1) in the number of row-groups:
+# the #71 adaptive pacer bounds the loop's transients on its own trigger (no
+# call-site gc_collect crutch — retired), and the runner's explicit gc_collect()
+# before each RSS snapshot returns the collector's reuse pool to the OS (#52),
+# so the snapshots measure retention, not the pacer's committed working set.
+# The other cases here are encoding-correctness (GC-agnostic).
 conform-data-bin-compress:
 	@echo "── data_bin_compression.txt ──────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_DATA_BIN_COMPRESS)

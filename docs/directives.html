@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a class="active" href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -387,7 +392,7 @@
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $a 10] [?let [= $b 32] [+ $a $b]]]</code>
+            <code class="language-cx">[?let [= $a 10] [= $b 32] [+ $a $b]]</code>
           </pre>
           <pre class="sample-output">
             <code>42</code>
@@ -879,7 +884,7 @@ B</code>
       <h3>
         <code>?timeout</code>
       </h3>
-      <p class="fn-sig"><code>[?timeout DURATION BODY] -> result</code>  —  Resilience: bound BODY by a wall-clock duration; exceeding it yields a timeout error.</p>
+      <p class="fn-sig"><code>[?timeout DURATION BODY] -> result</code>  —  Resilience: bound BODY by a duration; on elapse yields a timeout error (CXER0141). Enforced against LOGICAL time — `[?sleep DUR mock]` advances the clock and trips it; a real wall-clock-blocking body is NOT interrupted (real-time cancellation requires the production scheduler).</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -950,7 +955,7 @@ B</code>
       <h3>
         <code>?bulkhead</code>
       </h3>
-      <p class="fn-sig"><code>[?bulkhead max-concurrent=N queue=Q BODY] -> result</code>  —  Resilience: cap concurrent executions at `max-concurrent` with a bounded queue; saturation yields a bulkhead error.</p>
+      <p class="fn-sig"><code>[?bulkhead max-concurrent=N queue=Q BODY] -> result</code>  —  Resilience (EXPERIMENTAL): cap concurrent executions at `max-concurrent`; saturation yields CXER0152. Immediate-reject works, but the bounded `queue`/backpressure engages ONLY under the cooperative scheduler (`[?test-concurrent]`) and the slot cap is not reliably enforced under real thread contention. Not the `[par]` bounding mechanism (#94 — `[par N]` owns width); for production load-shedding prefer `[?rate-limit]` or a buffered `[?channel]`.</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -974,7 +979,7 @@ B</code>
           <pre>
             <code class="language-cx">[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
                 [resource [get "/quick"]
-                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]</code>
+                   [response status=200 body="done"]]]] [= $_ [?stop $svc]] [?wait-for service=$svc]]</code>
           </pre>
           <pre class="sample-output">
             <code>[terminated name=svc-020 reason=graceful]</code>
@@ -992,7 +997,7 @@ B</code>
         <div class="example">
           <pre>
             <code class="language-cx">[?let [= $_ [?http-service on=http port=0 name="svc-021"
-              [resource [get "/"] [response status=200 body="ok"]]]] [?let [= $h [?service-handle name="svc-021"]] [?let [= $_ [?stop $h]] [terminated name="svc-021" reason="graceful"]]]]</code>
+              [resource [get "/"] [response status=200 body="ok"]]]] [= $h [?service-handle name="svc-021"]] [= $_ [?stop $h]] [terminated name="svc-021" reason="graceful"]]</code>
           </pre>
           <pre class="sample-output">
             <code>[terminated name=svc-021 reason=graceful]</code>
@@ -1043,7 +1048,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $_ [?worker name="w4" [body lookupable]]] [?let [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]]</code>
+            <code class="language-cx">[?let [= $_ [?worker name="w4" [body lookupable]]] [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]</code>
           </pre>
           <pre class="sample-output">
             <code>lookupable</code>
@@ -1060,7 +1065,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]</code>
+            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]</code>
           </pre>
           <pre class="sample-output">
             <code>'hello'</code>
@@ -1077,7 +1082,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]</code>
+            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]</code>
           </pre>
           <pre class="sample-output">
             <code>'hello'</code>
@@ -1094,7 +1099,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]</code>
+            <code class="language-cx">[?let [= $ch [?channel name="c1" buffer=1]] [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]</code>
           </pre>
           <pre class="sample-output">
             <code>'hello'</code>
@@ -1111,7 +1116,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $ch [?channel name="c5" buffer=1]] [?let [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]]</code>
+            <code class="language-cx">[?let [= $ch [?channel name="c5" buffer=1]] [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]</code>
           </pre>
           <pre class="sample-output">
             <code>[err code=cx-err:CXER0201 message='send timed out']</code>
@@ -1145,7 +1150,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $ch [?channel name="c4" buffer=2]] [?let [= $_ [?send "a" to=$ch]] [?let [= $_ [?close $ch]] [?let [= $first [?receive from=$ch]] [?let [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]]]]]</code>
+            <code class="language-cx">[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]</code>
           </pre>
           <pre class="sample-output">
             <code>([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])</code>
@@ -1162,9 +1167,9 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $a [?channel name="sa" buffer=1]] [?let [= $b [?channel name="sb" buffer=1]] [?let [= $_ [?send "from-a" to=$a]] [?select
-                 [case [from $a $msg] [picked ch="a" value=$msg]]
-                 [case [from $b $msg] [picked ch="b" value=$msg]]]]]]</code>
+            <code class="language-cx">[?let [= $a [?channel name="sa" buffer=1]] [= $b [?channel name="sb" buffer=1]] [= $_ [?send "from-a" to=$a]] [?select
+[case [from $a $msg] [picked ch="a" value=$msg]]
+[case [from $b $msg] [picked ch="b" value=$msg]]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[picked ch=a value=from-a]</code>
@@ -1183,7 +1188,7 @@ B</code>
           <pre>
             <code class="language-cx">[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
                 [resource [get "/quick"]
-                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]</code>
+                   [response status=200 body="done"]]]] [= $_ [?stop $svc]] [?wait-for service=$svc]]</code>
           </pre>
           <pre class="sample-output">
             <code>[terminated name=svc-020 reason=graceful]</code>
@@ -1251,7 +1256,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $a [?async 1]] [?let [= $b [?async 2]] [?let [= $c [?async 3]] [?await-all ($a, $b, $c)]]]]</code>
+            <code class="language-cx">[?let [= $a [?async 1]] [= $b [?async 2]] [= $c [?async 3]] [?await-all ($a, $b, $c)]]</code>
           </pre>
           <pre class="sample-output">
             <code>(1, 2, 3)</code>
@@ -1268,7 +1273,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $bad [?async [err code='bad' message='bad']]] [?let [= $good [?async good]] [?await-any ($bad, $good)]]]</code>
+            <code class="language-cx">[?let [= $bad [?async [err code='bad' message='bad']]] [= $good [?async good]] [?await-any ($bad, $good)]]</code>
           </pre>
           <pre class="sample-output">
             <code>good</code>
@@ -1285,7 +1290,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $fast [?async fast]] [?let [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [?let [= $winner [?await-race ($fast, $slow)]] [?let [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]]]]</code>
+            <code class="language-cx">[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]</code>
@@ -1302,7 +1307,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $f [?async [?sleep 10s mock]]] [?let [= $_ [?cancel $f]] [?await $f]]]</code>
+            <code class="language-cx">[?let [= $f [?async [?sleep 10s mock]]] [= $_ [?cancel $f]] [?await $f]]</code>
           </pre>
           <pre class="sample-output">
             <code>[err code=cx-err:CXER0260 message='operation cancelled']</code>
@@ -1320,10 +1325,10 @@ B</code>
         <div class="example">
           <pre>
             <code class="language-cx">[?let [= $f [?async [?check-cancel]]]
-  [?let [= $_ [?cancel $f]]
-    [?match [?await $f]
-      [case [err @code='cx-err:CXER0260'] [cancelled]]
-      [else [other]]]]]</code>
+  [= $_ [?cancel $f]]
+  [?match [?await $f]
+    [case [err @code='cx-err:CXER0260'] [cancelled]]
+    [else [other]]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[cancelled]</code>

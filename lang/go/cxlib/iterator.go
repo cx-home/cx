@@ -95,7 +95,7 @@ func IterKindName(k IteratorSourceKind) string {
 // At v0.8.0 the binding has no re-evaluation handle into libcx (no
 // `cx_iterator_pull` C ABI yet), so Next / Materialize yield only the
 // memoised items already populated by the producer. The eager-materialise
-// renderer path (W3c) is the public emit channel; a follow-on ADR
+// renderer path (W3c) is the public emit channel; a follow-on spec change
 // will design the per-iterator pull export to enable true lazy
 // traversal in the binding.
 type IteratorNode struct {

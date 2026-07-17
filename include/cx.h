@@ -8,7 +8,7 @@ extern "C" {
 /*
  * CX C API — implemented in V (vcx/)
  *
- * Grammar v3.4 / AST v2.4 (ast_bin v8 at v0.8.0).
+ * Grammar v3.4 / AST v2.4 (ast_bin v9 — the Element table record, cap bit 40).
  * All 6×7 input/output format combinations (6 input formats × 7 outputs
  * including AST) plus cx_free and cx_version. Plus the CX code
  * evaluator (cx_code_eval family, cap bit 28), program diagram /
@@ -190,6 +190,20 @@ char* cx_to_events(const char* input, char** err_out);
  * decoders MUST reject buffers containing it. v6 readers MUST reject
  * v7 files. Reserved names `:true` / `:false` / `:null` are forbidden
  * at lex time (CXER0100). See spec/core/ast-bin.md §7 + spec/abi.md §3.
+ *
+ * ast_bin v9 (capability bit 40 / 0x10000000000): a table-bearing
+ * Element carries its pooled `[table[...]]` payload as a table record
+ * (tag 0x17) in the FIRST entry of nodes[] (counted in child_count):
+ *   0x17: u16:col_count cols[] u32:row_count rows[]
+ *         col:  str:name str:type_name ("" = string-default)
+ *         row:  u16:cell_count (== col_count) cells[]
+ *         cell: one node — 0x03 Scalar (int/float/bool/null/string)
+ *               or 0x0F/0x10/0x11 collection
+ * Version byte 9 is emitted only when a table payload is present
+ * (table-free documents keep their previous envelope byte-for-byte).
+ * v8 readers MUST reject v9 files; decoders MUST reject 0x17 anywhere
+ * other than an Element's first child slot or in a < v9 envelope.
+ * See spec/core/ast-bin.md §4.8.
  *
  * Binary format spec: see the cx_to_events_bin/cx_to_ast_bin comments above.
  */

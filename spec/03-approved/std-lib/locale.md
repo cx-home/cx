@@ -112,7 +112,7 @@ Tokens:
 
 ```cx
 [$locale:format-date $today "fr-FR" "EEEE d MMMM yyyy"]
-  ; → "mardi 26 mai 2026"
+  # → "mardi 26 mai 2026"
 ```
 
 Style atoms — `:short` / `:medium` / `:long` / `:full` — emit the locale's conventional date style:

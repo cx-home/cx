@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -116,7 +121,7 @@
       
         <p>Two CX documents are equal iff their **strict canonical bytes**
          are equal. Canonical bytes are the unique serialization
-         produced by `cx canon` — the rules are summarized in
+         produced by `cx canonical` — the rules are summarized in
          <a class="xref" href="surfaces.html#canonical-strict">canonical-strict</a> and stated normatively in
          [`spec/canonical.md`](../../spec/canonical.md).</p>
         <p>Why this matters: every distributed-systems primitive in CX —
@@ -137,7 +142,7 @@
                 <li>**Lossless canonical (`cx fmt`)** — preserves comments,
                 anchors, aliases, presentation. Idempotent. Used for
                 source-file formatting and diff stability.</li>
-                <li>**Strict canonical (`cx canon` / `cx hash`)** — strips
+                <li>**Strict canonical (`cx canonical` / `cx hash`)** — strips
                 comments, expands anchors and aliases, normalizes date
                 offsets, sorts attributes lexicographically. Two docs
                 with the same data hash identically. Used for content
@@ -150,9 +155,9 @@
            to the same SHA-256.</p>
             <pre>
               <code class="language-cx">[# Source: #]
-           [user email='ada@example.com' id=42 +active]
+           [user email='ada@example.com' id=42 active=true]
 
-           [# cx canon output (strict canonical bytes): #]
+           [# cx canonical output (strict canonical bytes): #]
            [user active=true email='ada@example.com' id=42]</code>
             </pre>
             <p>**Canonicalization rules (strict):**</p>
@@ -169,8 +174,7 @@
                 <li>**Numeric form:** integers as plain digits; floats in the
                 shortest representation that round-trips to the same
                 value (IEEE-754 shortest-form).</li>
-                <li>**Boolean form:** `true` / `false`. Sigil shortcuts
-                `+name` / `-name` expand.</li>
+                <li>**Boolean form:** `true` / `false`.</li>
                 <li>**Date/datetime:** offset preserved (NOT normalized to
                 UTC); fractional seconds dropped if all zero;
                 identity-comparison is by absolute instant.</li>
@@ -277,15 +281,62 @@
            collision crosses 50% at roughly N ≈ √(π/2 · 2^B). Useful
            safe-truncation lengths:</p>
             <table>
-              
-                <row truncated="4 hex (16 bits)" bits="16" safe1="~16" safe1b="very small"/>
-                <row truncated="8 hex (32 bits)" bits="32" safe1="~6,500" safe1b="~200"/>
-                <row truncated="12 hex (48 bits)" bits="48" safe1="~1.7 M" safe1b="~50,000"/>
-                <row truncated="16 hex (64 bits)" bits="64" safe1="~400 M" safe1b="~13 M"/>
-                <row truncated="20 hex (80 bits)" bits="80" safe1="~26 B" safe1b="~860 M"/>
-                <row truncated="24 hex (96 bits)" bits="96" safe1="~1.7 T" safe1b="~55 B"/>
-                <row truncated="full (256 bits)" bits="256" safe1="astronomical" safe1b="astronomical"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>truncated to</th>
+                    <th>bits</th>
+                    <th>safe collection size (1% collision risk)</th>
+                    <th>safe (one-in-billion)</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>4 hex (16 bits)</td>
+                    <td>16</td>
+                    <td>~16</td>
+                    <td>very small</td>
+                  </tr>
+                  <tr>
+                    <td>8 hex (32 bits)</td>
+                    <td>32</td>
+                    <td>~6,500</td>
+                    <td>~200</td>
+                  </tr>
+                  <tr>
+                    <td>12 hex (48 bits)</td>
+                    <td>48</td>
+                    <td>~1.7 M</td>
+                    <td>~50,000</td>
+                  </tr>
+                  <tr>
+                    <td>16 hex (64 bits)</td>
+                    <td>64</td>
+                    <td>~400 M</td>
+                    <td>~13 M</td>
+                  </tr>
+                  <tr>
+                    <td>20 hex (80 bits)</td>
+                    <td>80</td>
+                    <td>~26 B</td>
+                    <td>~860 M</td>
+                  </tr>
+                  <tr>
+                    <td>24 hex (96 bits)</td>
+                    <td>96</td>
+                    <td>~1.7 T</td>
+                    <td>~55 B</td>
+                  </tr>
+                  <tr>
+                    <td>full (256 bits)</td>
+                    <td>256</td>
+                    <td>astronomical</td>
+                    <td>astronomical</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Recommended:** 16 hex (64 bits) for short IDs in
            UI / URL / log contexts. 24 hex (96 bits) for cross-tenant
@@ -380,40 +431,212 @@
            that don't know that bit refuse the payload (rather than
            silently mis-interpret it). The full table:</p>
             <table>
-              
-                <row bit="1" name="schema-driven" meaning="data-bin omits tag bytes; schema is the dictionary" v="v0.5.0"/>
-                <row bit="2" name="external-entity" meaning="resolver may load external XML entities" v="v0.5.0"/>
-                <row bit="3" name="xml-space-preserve" meaning="xml:space attribute is parser-honored" v="v0.5.0"/>
-                <row bit="4" name="include-local" meaning="[?cx include] resolves file-system paths under doc tree" v="v0.5.0"/>
-                <row bit="5" name="include-absolute" meaning="[?cx include] resolves absolute paths" v="v0.5.0"/>
-                <row bit="6" name="include-network" meaning="[?cx include] resolves HTTPS URLs" v="v0.5.0"/>
-                <row bit="7" name="multi-encoding" meaning="document may declare alternate encoding" v="v0.5.0"/>
-                <row bit="8" name="doctype-active" meaning="doctype declaration triggers auto-schema-binding" v="reserved for v0.9.x"/>
-                <row bit="9" name="namespaces" meaning="xmlns: declarations resolved" v="v0.5.0"/>
-                <row bit="10" name="cx-lang" meaning="cx:lang scoping honored" v="v0.5.0"/>
-                <row bit="11" name="collection-literals" meaning="() [] {} literal forms" v="v0.6.0"/>
-                <row bit="12" name="ast-bin-v4" meaning="ast-bin format version 4" v="v0.6.0"/>
-                <row bit="13" name="delimited-csv" meaning="CSV / TSV / PSV projections" v="v0.6.0"/>
-                <row bit="14" name="diff-tree" meaning="cx diff produces tree-structured diff" v="v0.6.0"/>
-                <row bit="15" name="lint-rules" meaning="cx lint rule registry" v="v0.6.0"/>
-                <row bit="16" name="streaming-parse" meaning="pull-based streaming parser" v="v0.7.0"/>
-                <row bit="17" name="streaming-write" meaning="callback-driven streaming emit" v="v0.7.0"/>
-                <row bit="18" name="services" meaning="[?service] / [?http-client] directives" v="v0.7.6"/>
-                <row bit="19" name="workers" meaning="[?worker] / [?channel] / [?select] directives" v="v0.7.6"/>
-                <row bit="20" name="async" meaning="[?async] / [?await] / [?await-all/-any/-race]" v="v0.7.6"/>
-                <row bit="21" name="resilience" meaning="[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]" v="v0.7.6"/>
-                <row bit="22" name="cxcol-format" meaning="CXCol column-oriented binary format" v="v0.7.0"/>
-                <row bit="23" name="arrow-bridge" meaning="Arrow C Data Interface zero-copy bridge" v="v0.7.0"/>
-                <row bit="24" name="parquet-bridge" meaning="Parquet read/write via cxlib_arrow" v="v0.7.0"/>
-                <row bit="25" name="diagram-renderer" meaning="[?diagram] renders SVG/PNG/Mermaid" v="v0.7.6"/>
-                <row bit="26" name="thread-register" meaning="cx_thread_register required for cross-thread FFI" v="v0.6.0"/>
-                <row bit="27" name="cxpath-value" meaning="CXPath as first-class value kind" v="v0.8.0"/>
-                <row bit="28" name="match-multi" meaning="multi-arm [?match] with [case]/[when]/[else] clause children" v="v0.8.0"/>
-                <row bit="29" name="modify" meaning="[?modify] directive with action vocabulary" v="v0.8.0"/>
-                <row bit="30" name="structural-sharing" meaning="[?modify] uses spine-copy structural sharing" v="v0.8.x"/>
-                <row bit="31" name="wasm-diagram" meaning="playground wasm exports cx_code_diagram" v="v0.8.0"/>
-                <row bit="32" name="wasm-tree-view" meaning="playground wasm exposes data-tree view C ABI" v="v0.8.0"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>bit</th>
+                    <th>name</th>
+                    <th>meaning</th>
+                    <th>introduced</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>1</td>
+                    <td>schema-driven</td>
+                    <td>data-bin omits tag bytes; schema is the dictionary</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td>external-entity</td>
+                    <td>resolver may load external XML entities</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td>xml-space-preserve</td>
+                    <td>xml:space attribute is parser-honored</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td>include-local</td>
+                    <td>[?cx include] resolves file-system paths under doc tree</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td>include-absolute</td>
+                    <td>[?cx include] resolves absolute paths</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>6</td>
+                    <td>include-network</td>
+                    <td>[?cx include] resolves HTTPS URLs</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>7</td>
+                    <td>multi-encoding</td>
+                    <td>document may declare alternate encoding</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>8</td>
+                    <td>doctype-active</td>
+                    <td>doctype declaration triggers auto-schema-binding</td>
+                    <td>reserved for v0.9.x</td>
+                  </tr>
+                  <tr>
+                    <td>9</td>
+                    <td>namespaces</td>
+                    <td>xmlns: declarations resolved</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>10</td>
+                    <td>cx-lang</td>
+                    <td>cx:lang scoping honored</td>
+                    <td>v0.5.0</td>
+                  </tr>
+                  <tr>
+                    <td>11</td>
+                    <td>collection-literals</td>
+                    <td>() [] {} literal forms</td>
+                    <td>v0.6.0</td>
+                  </tr>
+                  <tr>
+                    <td>12</td>
+                    <td>ast-bin-v4</td>
+                    <td>ast-bin format version 4</td>
+                    <td>v0.6.0</td>
+                  </tr>
+                  <tr>
+                    <td>13</td>
+                    <td>delimited-csv</td>
+                    <td>CSV / TSV / PSV projections</td>
+                    <td>v0.6.0</td>
+                  </tr>
+                  <tr>
+                    <td>14</td>
+                    <td>diff-tree</td>
+                    <td>cx diff produces tree-structured diff</td>
+                    <td>v0.6.0</td>
+                  </tr>
+                  <tr>
+                    <td>15</td>
+                    <td>lint-rules</td>
+                    <td>cx lint rule registry</td>
+                    <td>v0.6.0</td>
+                  </tr>
+                  <tr>
+                    <td>16</td>
+                    <td>streaming-parse</td>
+                    <td>pull-based streaming parser</td>
+                    <td>v0.7.0</td>
+                  </tr>
+                  <tr>
+                    <td>17</td>
+                    <td>streaming-write</td>
+                    <td>callback-driven streaming emit</td>
+                    <td>v0.7.0</td>
+                  </tr>
+                  <tr>
+                    <td>18</td>
+                    <td>services</td>
+                    <td>[?service] / [?http-client] directives</td>
+                    <td>v0.7.6</td>
+                  </tr>
+                  <tr>
+                    <td>19</td>
+                    <td>workers</td>
+                    <td>[?worker] / [?channel] / [?select] directives</td>
+                    <td>v0.7.6</td>
+                  </tr>
+                  <tr>
+                    <td>20</td>
+                    <td>async</td>
+                    <td>[?async] / [?await] / [?await-all/-any/-race]</td>
+                    <td>v0.7.6</td>
+                  </tr>
+                  <tr>
+                    <td>21</td>
+                    <td>resilience</td>
+                    <td>[?retry] / [?timeout] / [?circuit-breaker] / [?fallback] / [?rate-limit] / [?bulkhead]</td>
+                    <td>v0.7.6</td>
+                  </tr>
+                  <tr>
+                    <td>22</td>
+                    <td>cxcol-format</td>
+                    <td>CXCol column-oriented binary format</td>
+                    <td>v0.7.0</td>
+                  </tr>
+                  <tr>
+                    <td>23</td>
+                    <td>arrow-bridge</td>
+                    <td>Arrow C Data Interface zero-copy bridge</td>
+                    <td>v0.7.0</td>
+                  </tr>
+                  <tr>
+                    <td>24</td>
+                    <td>parquet-bridge</td>
+                    <td>Parquet read/write via cxlib_arrow</td>
+                    <td>v0.7.0</td>
+                  </tr>
+                  <tr>
+                    <td>25</td>
+                    <td>diagram-renderer</td>
+                    <td>[?diagram] renders SVG/PNG/Mermaid</td>
+                    <td>v0.7.6</td>
+                  </tr>
+                  <tr>
+                    <td>26</td>
+                    <td>thread-register</td>
+                    <td>cx_thread_register required for cross-thread FFI</td>
+                    <td>v0.6.0</td>
+                  </tr>
+                  <tr>
+                    <td>27</td>
+                    <td>cxpath-value</td>
+                    <td>CXPath as first-class value kind</td>
+                    <td>v0.8.0</td>
+                  </tr>
+                  <tr>
+                    <td>28</td>
+                    <td>match-multi</td>
+                    <td>multi-arm [?match] with [case]/[when]/[else] clause children</td>
+                    <td>v0.8.0</td>
+                  </tr>
+                  <tr>
+                    <td>29</td>
+                    <td>modify</td>
+                    <td>[?modify] directive with action vocabulary</td>
+                    <td>v0.8.0</td>
+                  </tr>
+                  <tr>
+                    <td>30</td>
+                    <td>structural-sharing</td>
+                    <td>[?modify] uses spine-copy structural sharing</td>
+                    <td>v0.8.x</td>
+                  </tr>
+                  <tr>
+                    <td>31</td>
+                    <td>wasm-diagram</td>
+                    <td>playground wasm exports cx_code_diagram</td>
+                    <td>v0.8.0</td>
+                  </tr>
+                  <tr>
+                    <td>32</td>
+                    <td>wasm-tree-view</td>
+                    <td>playground wasm exposes data-tree view C ABI</td>
+                    <td>v0.8.0</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>Bits 33-63 reserved for future revisions. The cap-bit
            layout is fixed; bits are never re-assigned.</p>
@@ -582,14 +805,49 @@
           
             <p>IDs survive round-trip through every supported projection:</p>
             <table>
-              
-                <row format="CX (canonical)" id="#name (on element)" idref="#name (in value position)"/>
-                <row format="XML" id="id=&quot;name&quot;" idref="attribute value or xlink:href"/>
-                <row format="JSON" id="&quot;_cx_id&quot;: &quot;name&quot;" idref="{&quot;$ref&quot;: &quot;name&quot;} envelope"/>
-                <row format="YAML" id="&amp;name (anchor)" idref="*name (alias) — note YAML semantics differ slightly (anchors are syntactic; IDs are semantic)"/>
-                <row format="TOML" id="id = &quot;name&quot;" idref="ref = &quot;#name&quot;"/>
-                <row format="ast-bin" id="attribute on Element" idref="bytes containing #name"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>format</th>
+                    <th>ID encoding</th>
+                    <th>IDREF encoding</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CX (canonical)</td>
+                    <td>#name (on element)</td>
+                    <td>#name (in value position)</td>
+                  </tr>
+                  <tr>
+                    <td>XML</td>
+                    <td>id="name"</td>
+                    <td>attribute value or xlink:href</td>
+                  </tr>
+                  <tr>
+                    <td>JSON</td>
+                    <td>"_cx_id": "name"</td>
+                    <td>{"$ref": "name"} envelope</td>
+                  </tr>
+                  <tr>
+                    <td>YAML</td>
+                    <td>&amp;name (anchor)</td>
+                    <td>*name (alias) — note YAML semantics differ slightly (anchors are syntactic; IDs are semantic)</td>
+                  </tr>
+                  <tr>
+                    <td>TOML</td>
+                    <td>id = "name"</td>
+                    <td>ref = "#name"</td>
+                  </tr>
+                  <tr>
+                    <td>ast-bin</td>
+                    <td>attribute on Element</td>
+                    <td>bytes containing #name</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>The data layer preserves the identity; the lossy
            projections (CSV / JSONL with flattening) lose it. For

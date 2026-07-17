@@ -352,7 +352,7 @@ underlying wire form is chunked.
 
 | Field | Type | Required | Value |
 |------------|----------|----------|-------|
-| `name` | string | yes | Element name (matches the enclosing `[name [table [cols]] rows]` per grammar [29]) |
+| `name` | string | yes | Element name (matches the enclosing `[name [table[cols]] rows]` per grammar [29]) |
 | `col_spec` | binary | yes | The chunked-table col-spec as `uvarint(count) (string-tag name) (col-type-tag)*` per `data-bin.md §3.10.1` — column entries use uvarint count + tagged strings + scalar-type tag, NOT raw u32 LE |
 
 Ordering: emitted instead of `StartElement` for chunked tables.

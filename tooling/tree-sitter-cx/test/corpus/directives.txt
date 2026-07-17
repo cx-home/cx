@@ -1,0 +1,121 @@
+================================================================================
+[?def] with pure modifier and operator body
+================================================================================
+
+[?def double pure ($x) [* $x 2]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (def_directive
+    (directive_name)
+    (def_modifier
+      (modifier_keyword))
+    (directive_body
+      (predicate_expr
+        (predicate_chunk)
+        (predicate_chunk)
+        (predicate_chunk)))))
+
+================================================================================
+[?match] with case and else arms
+================================================================================
+
+[?match :ok
+  [case :ok "fine"]
+  [else "broken"]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (match_directive
+    (directive_body
+      (atom_literal))
+    (match_arm
+      (case_arm
+        (clause_head)
+        (directive_body
+          (atom_literal)
+          (quoted_string))))
+    (match_arm
+      (else_arm
+        (clause_head)
+        (directive_body
+          (quoted_string))))))
+
+================================================================================
+[?for] comprehension with in / where / yield clauses
+================================================================================
+
+[out [?for [in $x (1, 2, 3)] [where [> $x 1]] [yield $x]]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (for_directive
+      (for_clause
+        (clause_head)
+        (directive_body))
+      (for_clause
+        (clause_head)
+        (directive_body
+          (predicate_expr
+            (predicate_chunk)
+            (predicate_chunk)
+            (predicate_chunk))))
+      (yield_clause
+        (clause_head)
+        (directive_body)))))
+
+================================================================================
+[?if] with then and else clauses
+================================================================================
+
+[out [?if true [then yes] [else no]]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (if_directive
+      (directive_body
+        (path_expr
+          (path_step
+            (node_test))))
+      (then_clause
+        (clause_head)
+        (directive_body
+          (path_expr
+            (path_step
+              (node_test)))))
+      (else_arm
+        (clause_head)
+        (directive_body
+          (path_expr
+            (path_step
+              (node_test))))))))
+
+================================================================================
+[?=] interpolation: opaque CXPath body, internal brackets balance
+================================================================================
+
+[report [?=//service[@port=8080]/@host]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (interpolation
+      (directive_head)
+      (directive_body
+        (path_expr
+          (path_step
+            (node_test)
+            (predicate_expr
+              (predicate_chunk)))
+          (path_step
+            (node_test)))))))

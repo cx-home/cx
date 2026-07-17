@@ -219,16 +219,16 @@ A **`[recurrence]`** is a pure, homoiconic VALUE describing a repeating schedule
 
 ```cx
 [recurrence
-  freq=:weekly                      ; SECONDLY|MINUTELY|HOURLY|DAILY|WEEKLY|MONTHLY|YEARLY (atom)
-  interval=1                        ; positive int; default 1
-  anchor="2026-06-01T09:00:00"      ; wall-clock seed (ISO-8601 local datetime, §3.6)
-  tz="America/New_York"             ; IANA tz (§3.8); anchor + BYHOUR/MINUTE/SECOND are LOCAL to it
-  wkst=:monday                      ; week-start atom; default :monday (RFC 5545 MO)
-  count=10                          ; bound — at most 10 fires (mutually exclusive with until)
+  freq=:weekly                      # SECONDLY|MINUTELY|HOURLY|DAILY|WEEKLY|MONTHLY|YEARLY (atom)
+  interval=1                        # positive int; default 1
+  anchor="2026-06-01T09:00:00"      # wall-clock seed (ISO-8601 local datetime, §3.6)
+  tz="America/New_York"             # IANA tz (§3.8); anchor + BYHOUR/MINUTE/SECOND are LOCAL to it
+  wkst=:monday                      # week-start atom; default :monday (RFC 5545 MO)
+  count=10                          # bound — at most 10 fires (mutually exclusive with until)
   [by-second 0] [by-minute 0 30] [by-hour 9 17]
-  [by-day :tuesday [nth -1 :friday]]   ; weekday atoms, or [nth N :weekday] ordinal pairs (MONTHLY/YEARLY only)
+  [by-day :tuesday [nth -1 :friday]]   # weekday atoms, or [nth N :weekday] ordinal pairs (MONTHLY/YEARLY only)
   [by-month-day 1 15 -1] [by-year-day 1 -1] [by-week-no 1 -1] [by-month 1 6 12]
-  [by-set-pos 1 -1]]                ; pick the i-th / i-th-from-last candidate of each interval
+  [by-set-pos 1 -1]]                # pick the i-th / i-th-from-last candidate of each interval
 ```
 
 Field semantics mirror RFC 5545 §3.3.10: `freq`+`interval` set the base interval; `BY*` parts coarser-than-or-equal-to `freq` **filter**, finer parts **expand**, in the RFC's fixed evaluation order; `BYSETPOS` selects from the fully-expanded sorted candidate set of one interval. `anchor`/`until` are **wall-clock local in `tz`** so a rule round-trips through DST without drift (§4.2, gap→forward/overlap→earlier adopted verbatim). With neither `count` nor `until` the rule is infinite. `[recurrence]` is a new tag, not a handle (no `on-close`).

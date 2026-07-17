@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -125,7 +130,7 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index-with-opts ([doc [title "Database design"] [body "schemas and indexes"]]) {"fields" ("title")}]]
-  [$ft:search $idx "body:schemas" 10]]</code>
+  [$ft:search $idx [$ft:parse-query "body:schemas"] 10]]</code>
           </pre>
           <pre class="sample-output">
             <code>cx-err:CXER1202</code>
@@ -141,10 +146,25 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc "database design"], [doc "schema migrations"])]]
-  [$ft:search $idx "" 10]]</code>
+  [$ft:search $idx [$ft:parse-query ""] 10]]</code>
           </pre>
           <pre class="sample-output">
             <code>()</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-ft-parse-query" class="fn">
+      <h3>ft:parse-query</h3>
+      <p class="fn-sig"><code>[$ft:parse-query]  -> element</code>  —  Parse an end-user query string (the §2.2.1 data format) into the canonical [query …] element — the only place the string format exists.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/ft']
+[$ft:parse-query "database"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[query [term 'database']]</code>
           </pre>
         </div>
       
@@ -157,7 +177,7 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc id="d1" "database one"], [doc id="d2" "database two"], [doc id="d3" "database three"])]]
-  [$count [$ft:search-with-opts $idx "database" {limit: 2}]]]</code>
+  [$count [$ft:search-with-opts $idx [$ft:parse-query "database"] {limit: 2}]]]</code>
           </pre>
           <pre class="sample-output">
             <code>2</code>
@@ -174,8 +194,8 @@
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/store']
 [?let [= $store [$store:open "mem:///ft-conformance"]]
-  [?let [= $_ [$store:put-doc $store [doc id="d1" "database design and analytics"]]]
-    [$ft:doc-ids [$ft:search-store $store "database" 10]]]]</code>
+  [= $_ [$store:put-doc $store [doc id="d1" "database design and analytics"]]]
+  [$ft:doc-ids [$ft:search-store $store [$ft:parse-query "database"] 10]]]</code>
           </pre>
           <pre class="sample-output">
             <code>('d1')</code>
@@ -191,7 +211,7 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/strings']
-[$strings:contains [$ft:snippet [doc "the database design covers schemas and indexes"] "database" 80] "<mark>"]</code>
+[$strings:contains [$ft:snippet [doc "the database design covers schemas and indexes"] [$ft:parse-query "database"] 80] "<mark>"]</code>
           </pre>
           <pre class="sample-output">
             <code>true</code>
@@ -207,7 +227,7 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/strings']
-[$strings:contains [$ft:snippet-with-opts [doc "the database design covers schemas"] "database" {mark-prefix: "[[", mark-suffix: "]]"}] "[[database]]"]</code>
+[$strings:contains [$ft:snippet-with-opts [doc "the database design covers schemas"] [$ft:parse-query "database"] {mark-prefix: "[[", mark-suffix: "]]"}] "[[database]]"]</code>
           </pre>
           <pre class="sample-output">
             <code>true</code>
@@ -239,7 +259,7 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc id="d1" "database design and analytics"], [doc id="d2" "kitchen recipes for soup"])]]
-  [$ft:doc-ids [$ft:search $idx "database" 10]]]</code>
+  [$ft:doc-ids [$ft:search $idx [$ft:parse-query "database"] 10]]]</code>
           </pre>
           <pre class="sample-output">
             <code>('d1')</code>
@@ -255,8 +275,8 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc id="d1" "database design"])]]
-  [?let [= $results [$ft:search $idx "database" 10]]
-    [$gte [$ft:score-of [$first $results]] 0.0]]]</code>
+  [= $results [$ft:search $idx [$ft:parse-query "database"] 10]]
+  [$gte [$ft:score-of [$first $results]] 0.0]]</code>
           </pre>
           <pre class="sample-output">
             <code>true</code>

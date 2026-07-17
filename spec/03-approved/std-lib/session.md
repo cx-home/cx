@@ -14,8 +14,9 @@
 Normative reference (on graduation) for the `cx-stdlib/session` sub-package: the
 session layer of the XAP web stack — it sits **above** the L7 `cx-stdlib/http`
 engine ([`http.md`](http.md), in review) and **above** the
-`crypto` JWT/JWKS verify amendment ([`stdlib_crypto_jwt_amendment.md`](stdlib_crypto_jwt_amendment.md),
-in review), and **below** `authz` ([`authz.md`](authz.md), the PEP)
+`crypto` JWT/JWKS verify surface ([`crypto.md`](crypto.md) §3.10 — the former
+`stdlib_crypto_jwt_amendment.md`, since folded into `crypto.md`),
+and **below** `authz` ([`authz.md`](authz.md), the PEP)
 and `xap` ([`xap.md`](xap.md), the orchestrator):
 
 ```
@@ -33,7 +34,7 @@ changed at G3, the marked clauses are revisited.
 
 | Amendment | What session relies on |
 |---|---|
-| [`stdlib_crypto_jwt_amendment.md`](stdlib_crypto_jwt_amendment.md) — **`crypto` JWT / JWKS verify** | the **sole** token-verification primitive. `attach` delegates *all* cryptography — signature verification against the IdP JWKS, `exp`/`nbf`/`iat`/`aud`/`iss` validation — to `[$crypto:jwt-verify …]`; session **adds no crypto of its own** (§2.2). **This holds for the cookie adapter too** (§2.8): a cookie session is *established* by the same verified token — the cookie carries an **opaque session id**, never the raw token, and `jwt-verify` still runs at attach. The IdP is **integrated, not built**: session never issues, signs, or refreshes an IdP token; it consumes a *verified claim-set* and maps it to a principal (§2.3). This is the load-bearing identity decision ([`xap.md`](xap.md) §22.1). |
+| [`crypto.md`](crypto.md) §3.10 — **`crypto` JWT / JWKS verify** (the former `stdlib_crypto_jwt_amendment.md`, since folded into `crypto.md`) | the **sole** token-verification primitive. `attach` delegates *all* cryptography — signature verification against the IdP JWKS, `exp`/`nbf`/`iat`/`aud`/`iss` validation — to `[$crypto:jwt-verify …]`; session **adds no crypto of its own** (§2.2). **This holds for the cookie adapter too** (§2.8): a cookie session is *established* by the same verified token — the cookie carries an **opaque session id**, never the raw token, and `jwt-verify` still runs at attach. The IdP is **integrated, not built**: session never issues, signs, or refreshes an IdP token; it consumes a *verified claim-set* and maps it to a principal (§2.3). This is the load-bearing identity decision ([`xap.md`](xap.md) §22.1). |
 | [`http.md`](http.md) — **the transport that carries attach** | attach is driven by a server-form `[request]` yielded by `[$http:serve]`/`accept-iter` (§3.2); the bearer token is read from its `Authorization` header, the session cookie from its `Cookie` header, and the response cookie written via `Set-Cookie` (`http` §3.4 `header`/response). session **never opens a socket** — it reads an already-parsed request and inherits `http`/`net`'s TLS posture (§2.4 TLS guarantee). |
 | `code.md` §9.1.2 — **four-channel model** | a **missing / unattached** session rides the **absence channel** (empty node-set), *not* `null` and *not* a fault — `[$session:of …]` on an unknown handle yields the empty node-set (§2.5). A **rejected attach** (bad/expired/wrong-audience token) is a **failure** on the `[err]` channel (§2.6). An **established session** is a present `[session]` **value** that flows. No-conflation guard. |
 | SAP §2 — **`[?try]`/`[catch]` retirement** | attach faults are handled with `[?match]` / `[?else]` / `[?fallback]` only; this spec never uses `[?try]`. Canonical call form is `[$session:attach …]` (`[head …]`), never an infix. |
@@ -66,7 +67,7 @@ is: **`http` (transport) + `crypto` (token verify) → `session` (this spec) →
 | Surface | Home | Role |
 |---|---|---|
 | **`cx-stdlib/session` module** (this spec) | `[?lib 'cx-stdlib/session']` | establishes & resolves the `(principal, tenant)` session; the **two attach transports** (Bearer §2.2, cookie §2.8) + **CSRF** defense (§2.9); the mirrored-attach lifecycle |
-| `[$crypto:jwt-verify …]` | [`stdlib_crypto_jwt_amendment.md`](stdlib_crypto_jwt_amendment.md) | verifies the token; emits a claim-set |
+| `[$crypto:jwt-verify …]` | [`crypto.md`](crypto.md) §3.10 | verifies the token; emits a claim-set |
 | `[$authz:check …]` | [`authz.md`](authz.md) | reads the session's principal/tenant; decides intents |
 
 **Two attach transports, one session model (decision — v1).** A `(principal, tenant)`
@@ -91,7 +92,7 @@ Out of scope (and where it lives instead):
 
 | Concern | Owner |
 |---|---|
-| Token signature / `exp`/`nbf`/`aud`/`iss` verification, JWKS fetch & key rotation | `crypto` JWT/JWKS amendment ([`stdlib_crypto_jwt_amendment.md`](stdlib_crypto_jwt_amendment.md)) |
+| Token signature / `exp`/`nbf`/`aud`/`iss` verification, JWKS fetch & key rotation | `crypto` JWT/JWKS surface ([`crypto.md`](crypto.md) §3.10) |
 | **Identity issuance** — login UI, password/credential storage, token *minting*, refresh, logout-at-IdP | the **external IdP** (OIDC/SAML) — XAP integrates, never builds it ([`xap.md`](xap.md) §22.1) |
 | TCP/TLS sockets, the HTTP request/response transport | `cx-stdlib/net` / `cx-stdlib/http` |
 | Authorization decisions (capabilities, delegations, guardian grants, the PEP) | `cx-stdlib/authz` ([`authz.md`](authz.md)) — session only *carries* the principal it checks (§6) |
@@ -115,14 +116,14 @@ capability** — it requires the **`net`** capability transitively via the JWKS 
 One impure handle kind wraps the server-held session state:
 
 ```cx
-[session id="s-7b3f…" state="attached"            ; the session — server-held; id doubles as the opaque cookie value (§2.8)
+[session id="s-7b3f…" state="attached"            # the session — server-held; id doubles as the opaque cookie value (§2.8)
   on-close="session/detach"
-  [principal id="dana" [tenant acme]]             ; the bound (principal, tenant) — IMMUTABLE for the session's life (§2.3)
+  [principal id="dana" [tenant acme]]             # the bound (principal, tenant) — IMMUTABLE for the session's life (§2.3)
   [established-at "2026-06-06T18:04:11Z"]
-  [clients                                        ; ZERO-or-more attached clients (mirrored attach, §2.7)
-    [client id="c-web-1"   channel=http via=cookie attached-at="…" last-seen="…"]   ; browser, cookie transport (§2.8) → CSRF-guarded (§2.9)
-    [client id="c-agent-1" channel=cx   via=bearer attached-at="…" last-seen="…"]]  ; agent, Bearer transport (§2.2) → CSRF-exempt
-  [csrf-token "…opaque server-held secret…"]]     ; per-session synchronizer CSRF token (§2.9); present once any cookie client attaches
+  [clients                                        # ZERO-or-more attached clients (mirrored attach, §2.7)
+    [client id="c-web-1"   channel=http via=cookie attached-at="…" last-seen="…"]   # browser, cookie transport (§2.8) → CSRF-guarded (§2.9)
+    [client id="c-agent-1" channel=cx   via=bearer attached-at="…" last-seen="…"]]  # agent, Bearer transport (§2.2) → CSRF-exempt
+  [csrf-token "…opaque server-held secret…"]]     # per-session synchronizer CSRF token (§2.9); present once any cookie client attaches
 ```
 
 The per-client **`via`** marker records the attach transport (`bearer` §2.2 / `cookie`
@@ -232,8 +233,8 @@ flows inertly — **not** `null` and **not** a fault. An unattached request is a
 
 ```cx
 [?match [$session:of $req]
-  [case []   [$http:respond $ex [response status=401 …]]]   ; absence → not yet authenticated
-  [case $s   …authorized work with $s…]]                    ; present → a [session] value
+  [case []   [$http:respond $ex [response status=401]]]   # absence → not yet authenticated
+  [case $s   [authorized-work session=$s]]]               # present → a [session] value
 ```
 
 There is **no `principal-or-null` accessor**: the principal is reached through a
@@ -684,8 +685,9 @@ with `http` ([`http.md`](http.md) §5).
 session adds **nothing** to the capability model: the only network reach is the
 JWKS fetch, which is `crypto`'s effect point under `net`. A denial there raises
 `cx-err:CXER0271 E_CAP_DENIED` naming the missing `net` grant + the JWKS host:port,
-exactly as `http`/`crypto` surface it. CLI: `cx run --allow-net=idp.example.com:443
-FILE`. **Cancellation + revocation** follow `net` / SAP §5.2 (§4.5).
+exactly as `http`/`crypto` surface it. CLI:
+`cx FILE --allow-net=idp.example.com:443`. **Cancellation + revocation** follow
+`net` / SAP §5.2 (§4.5).
 
 > **session never gains a capability the IdP/crypto layer does not already need.**
 > If the JWKS is supplied as a literal key-set (the air-gapped / test posture),
@@ -704,15 +706,15 @@ hands it to the PEP.
 
 ```cx
 [?match [$session:of $req]
-  [case []  [response status=401 …]]                              ; not attached → absence (§2.5)
+  [case []  [response status=401]]                                 # not attached → absence (§2.5)
   [case $s
-    [?match [$authz:check                                          ; the PEP reads session's principal/tenant
+    [?match [$authz:check                                          # the PEP reads session's principal/tenant
               {actor:    [$session:principal $s]
                tenant:   [$session:tenant $s]
                intent:   $do
                over:     $slice}]
-      [case [err @code='cx-err:CXER4810'] [response status=403 …]] ; authz denial (its band)
-      [case $grant …commit the intent…]]]]
+      [case [err @code='cx-err:CXER4810'] [response status=403]]  # authz denial (its band)
+      [case $grant [commit-intent grant=$grant]]]]]
 ```
 
 - **session : authz :: identity : authorization.** session establishes *who*
@@ -733,14 +735,14 @@ hands it to the PEP.
 
 ```cx
 [?match [$session:from-cookie $req]
-  [case []  [response status=401 …]]                              ; no/invalid cookie → absence (§2.8.2)
+  [case []  [response status=401]]                                # no/invalid cookie → absence (§2.8.2)
   [case $s
-    [?match [$session:csrf-verify $req $s]                        ; CSRF gate (cookie clients; no-op for Bearer)
-      [case [err @code='cx-err:CXER4808'] [response status=403 …]]; missing CSRF token
-      [case [err @code='cx-err:CXER4809'] [response status=403 …]]; CSRF mismatch
+    [?match [$session:csrf-verify $req $s]                        # CSRF gate (cookie clients; no-op for Bearer)
+      [case [err @code='cx-err:CXER4808'] [response status=403]] # missing CSRF token
+      [case [err @code='cx-err:CXER4809'] [response status=403]] # CSRF mismatch
       [case $s2
-        [?match [$authz:check {actor: [$session:principal $s2] …}] ; then the usual PEP (§6)
-          …]]]]]
+        [?match [$authz:check {actor: [$session:principal $s2]}] # then the usual PEP (§6)
+          [case $grant [commit-intent grant=$grant]]]]]]]
 ```
 
 - **Resilience / lifecycle.** A wrapping `[?timeout]` over `attach` cancels
@@ -850,7 +852,7 @@ held for a future generic session fault). `CXER4812–CXER4849` are **unallocate
 (capability denial on the JWKS fetch, §5); `cx-err:CXER0260` (cancellation, §4.5);
 `cx-err:CXER0108` never raised (the session is closeable, §2.1). **Inherited faults
 (propagate as-is, not remapped):** the **`crypto` JWT verify** fault wrapped inside
-`CXER4801` (its own band, per [`stdlib_crypto_jwt_amendment.md`](stdlib_crypto_jwt_amendment.md));
+`CXER4801` (its own `CXER37xx` band, per [`crypto.md`](crypto.md) §5);
 **`net` transport faults** from the JWKS fetch (`CXER45xx`, via `crypto`/`http`);
 **`authz`** denials (`CXER48xx` in its own band — the PEP's, §6, never session's).
 
@@ -862,7 +864,7 @@ above) — the band stays thin, matching the thin module.
 
 | session surface | Building block | Note |
 |---|---|---|
-| `attach`/`attach-token` token verify | `[$crypto:jwt-verify $token $cfg]` ([`stdlib_crypto_jwt_amendment.md`](stdlib_crypto_jwt_amendment.md)) | the **only** crypto; JWKS fetch + key rotation + cache are the amendment's, gated by `net` |
+| `attach`/`attach-token` token verify | `[$crypto:jwt-verify $token $cfg]` ([`crypto.md`](crypto.md) §3.10) | the **only** crypto; JWKS fetch + key rotation + cache are `crypto`'s (§3.10), gated by `net` |
 | token read from request | `[$http:header $req 'Authorization']` (`http` §3.4) + `Bearer ` strip | latin-1 header value, single header; obs-fold already rejected by `http` |
 | TLS precondition (§2.4) | inspect the carrying `[$http:serve]` listener's bind scheme (`tls://`) or a gateway TLS-attested marker | session reads the posture; it never wraps TLS |
 | session store (server-held state) | an in-process tenant-rooted map keyed by session id, under internal sync; per-tenant worker owns its own ([`xap.md`](xap.md) §14.1/§22.7) | mirrored-attach client set is a sub-map; `touch` updates last-seen; the opaque session id (§2.8) is the map key |
@@ -974,8 +976,9 @@ cookie config dropping `HttpOnly` or setting `SameSite=None` without
       no-op-without-context behavior.
 - [ ] Author §10 fixtures; wire into the gate.
 - [ ] Validate repo-relative cross-references render (note: several siblings —
-      `stdlib_crypto_jwt_amendment.md`, `authz.md`, `xap.md` — are
-      themselves in-review; cross-refs resolve once they land).
+      `crypto.md` (which absorbed the former `stdlib_crypto_jwt_amendment.md`),
+      `authz.md`, `xap.md` — were in-review when this was authored; all have
+      since landed beside this spec).
 - [ ] Move `spec/02-inprogress/xap/session.md` → `spec/std-lib/session.md`
       (user-only).
 

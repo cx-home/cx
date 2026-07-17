@@ -129,8 +129,8 @@ pattern-generators and projection. Common shapes:
 | CXPath shape                         | Notes |
 |--------------------------------------|------------------------|
 | `//user`                             | All `user` elements |
-| `//user[@active=true]`               | Attribute filter |
-| `//service[@port>=8000]`             | Numeric predicate |
+| `//user[= $_@active true]`           | Attribute filter |
+| `//service[>= $_@port 8000]`         | Numeric predicate |
 | `//user[2]`                          | Position predicate |
 | transform `//service` → modify       | `[?for $s :in //service :yield (update-attr $s "active" true)]` |
 
@@ -350,15 +350,15 @@ functions (`XmlToJson`, `YamlToXml`, etc.) follow the same pattern.
 | `a/b/c` | Child path |
 | `*` | Any element (wildcard) |
 | `[@attr]` | Has attribute |
-| `[@attr=val]` | Attribute equals value (typed) |
-| `[@attr!=val]` | Attribute not equal |
-| `[@attr>=val]` | Numeric comparison (`>`, `<`, `>=`, `<=`) |
-| `[@a=x and @b=y]` | Boolean `and` / `or` |
-| `[not(@attr)]` | Negation |
+| `[= $_@attr val]` | Attribute equals value (typed) |
+| `[!= $_@attr val]` | Attribute not equal |
+| `[>= $_@attr val]` | Numeric comparison (`>`, `<`, `>=`, `<=`) |
+| `[and [= $_@a x] [= $_@b y]]` | Boolean `and` / `or` |
+| `[not [$exists $_@attr]]` | Negation |
 | `[childname]` | Has a direct child element named `childname` |
-| `[1]`, `[2]`, `[last()]` | Position (1-based) |
-| `[contains(@k, 'v')]` | Attribute contains substring |
-| `[starts-with(@k, 'v')]` | Attribute starts with prefix |
+| `[1]`, `[2]`, `[= $_position $_last]` | Position (1-based; `[= $_position $_last]` = last) |
+| `[$contains $_@k 'v']` | Attribute contains substring |
+| `[$starts-with $_@k 'v']` | Attribute starts with prefix |
 
 Attribute values auto-type: `true`/`false` → `bool`, integers → `int64`,
 decimals → `float64`, everything else → `string`. An invalid expression returns
@@ -437,7 +437,7 @@ if cxlib.ArrowAvailable() {                       // always true under -tags arr
 }
 
 // Forward — CXCol chunked-table → Arrow.
-payload, _ := cxlib.ToDataBinChunked(`[points :table[name:string score:int]
+payload, _ := cxlib.ToDataBinChunked(`[points [table[name::string score::int]]
   alice 91
   bob 88]`)
 reader, _ := cxlib.ArrowExport(payload)           // array.RecordReader
@@ -501,7 +501,7 @@ func main() {
     fmt.Println(out)
 
     // Public Table API — 17-member surface
-    src := `[users :table[name age:int]
+    src := `[users [table[name age::int]]
   alice 30
   bob   25
 ]`

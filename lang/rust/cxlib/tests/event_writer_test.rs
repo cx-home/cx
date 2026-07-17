@@ -199,7 +199,7 @@ fn chunked_table_cx_round_trip() {
     w.end_element("points").unwrap();
     w.end_doc().unwrap();
     let s = String::from_utf8(w.close_get_bytes().unwrap()).unwrap();
-    for want in [":table", "alice", "91"] {
+    for want in ["[table[", "alice", "91"] {
         assert!(s.contains(want), "missing {want:?} in cx emit: {s}");
     }
 }

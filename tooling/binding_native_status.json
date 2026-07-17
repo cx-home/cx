@@ -1,7 +1,7 @@
 {
-  "comment": "Per-binding native-implementation dashboard. Tracks which program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Tier 1 (V / Python / Go) is c-abi-passthrough by design and locked at parity. Tier 2 (Rust / TypeScript) catch up once per release.",
+  "comment": "Per-binding native-implementation dashboard. Tracks which program-evaluator-surface features each binding's native path covers vs which routes through the libcx C ABI. The evaluator family is cx_code_eval / cx_code_eval_with_len / cx_code_eval_streaming / cx_code_diagram (spec/abi.md §2.16.1 + §2.16.2). Active binding set per backlog d-2026-05-22-03: V / Python / Go (Tier 1, c-abi-passthrough by design, locked at parity) + Rust (Tier 2, catches up once per release). All other bindings live in lang/_archived/.",
   "version": "current",
-  "as_of": "2026-05-21",
+  "as_of": "2026-07-14",
   "bindings": {
     "v": {
       "tier": 1,
@@ -29,27 +29,20 @@
       "native_coverage": ["data-bin", "ast-parse"],
       "ffi_coverage": ["cx_code_eval", "cx_code_eval_with_len", "cx_code_eval_streaming", "cx_code_diagram", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "cx_data_bin_chunked", "to_*"],
       "comment": "Native data-bin + AST; everything else routes through libcx FFI via ensure_thread(). Tier 2 catchup: surface migration from cx_eval to cx_code_eval is pending."
-    },
-    "typescript": {
-      "tier": 2,
-      "implementation": "c-abi-passthrough",
-      "native_coverage": ["data-bin", "ast-parse"],
-      "ffi_coverage": ["cx_code_eval", "cx_code_eval_with_len", "cx_code_eval_streaming", "cx_code_diagram", "cx_diff", "cx_hash", "cx_canonical", "cx_arrow_*", "to_*"],
-      "comment": "koffi FFI to libcx for most surfaces. Arrow + Parquet via apache-arrow JS IPC bridge (W7 / X6) — composes with libcx C-Data export. Tier 2 catchup: surface migration from cx_eval to cx_code_eval is pending."
     }
   },
   "frozen_bindings": {
-    "csharp": {"tier": 3, "status": "frozen", "reason": "Not in Tier-1 / Tier-2 parity matrix"},
-    "java":   {"tier": 3, "status": "frozen", "reason": "Same"},
-    "kotlin": {"tier": 3, "status": "frozen", "reason": "Same"},
-    "ruby":   {"tier": 3, "status": "frozen", "reason": "Same"},
-    "swift":  {"tier": 3, "status": "frozen", "reason": "Same"}
+    "typescript": {"tier": 3, "status": "archived", "reason": "Archived to lang/_archived/ per backlog d-2026-05-22-03 (active set is V/Python/Go/Rust); restoration is community opt-in once the Layer-1 16-method surface stabilizes (spec/bindings.md)"},
+    "csharp": {"tier": 3, "status": "archived", "reason": "Not in the d-2026-05-22-03 active set; in lang/_archived/"},
+    "java":   {"tier": 3, "status": "archived", "reason": "Same"},
+    "kotlin": {"tier": 3, "status": "archived", "reason": "Same"},
+    "ruby":   {"tier": 3, "status": "archived", "reason": "Same"},
+    "swift":  {"tier": 3, "status": "archived", "reason": "Same"}
   },
   "v0_7_x_native_port_roadmap": {
     "comment": "v0.7.x / v0.8.0 candidates for native-implementation expansion. Order: data-bin → emitters → cx_code_eval (the latter is large and binding-specific — the v0.7.6 program evaluator is a substantial body of work to port natively). version-literal-ok",
     "priority_order": [
       "rust.cx_code_eval surface migration (Tier 2 catchup; FFI signature change, not native port)",
-      "typescript.cx_code_eval surface migration (Tier 2 catchup; FFI signature change, not native port)",
       "go.cx_diff (native Go diff)",
       "python.cx_diff (native Python diff)",
       "rust.cx_canonical (native Rust canonical)"

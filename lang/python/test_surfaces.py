@@ -2,7 +2,7 @@
 through the Python Tier-1 binding.
 
 Covers:
-  - CXPath value expressions (`//user[@active=true]`)
+  - CXPath value expressions (`//user[= $_@active true]`)
   - code.md §8.2 — multi-arm `[?match]` (`[case …]` … `[else …]`)
   - code.md §8.10 — `[?modify]` with `[set]` / `[delete]` / `[set-attr]` /
                `[rename]` / `[using]`
@@ -50,7 +50,7 @@ class TestCXPathValueExpr(unittest.TestCase):
         self.assertEqual(len(out.strip().splitlines()), 3)
 
     def test_attribute_predicate_filters(self):
-        out = cxlib.eval_code(self.DOC_USERS, '//user[@active=true]', 'text')
+        out = cxlib.eval_code(self.DOC_USERS, '//user[= $_@active true]', 'text')
         lines = out.strip().splitlines()
         self.assertEqual(len(lines), 2)
         # Both surviving rows must be the active-true rows.
@@ -72,39 +72,39 @@ class TestMatchMultiArm(unittest.TestCase):
 
     def test_scalar_literal_case_hits(self):
         prog = (
-            '[?let $s = 200 :in '
+            '[?let [= $s 200] '
             '  [?match $s '
-            '    :case 200 :yield :ok '
-            '    :case 404 :yield :not-found '
-            '    :else     :yield :err]]'
+            '    [case 200 :ok] '
+            '    [case 404 :not-found] '
+            '    [else :err]]]'
         )
         self.assertEqual(_strip(cxlib.eval_code('[doc]', prog, 'text')), ':ok')
 
     def test_else_arm_fires_on_miss(self):
         prog = (
-            '[?let $s = 500 :in '
+            '[?let [= $s 500] '
             '  [?match $s '
-            '    :case 200 :yield :ok '
-            '    :case 404 :yield :not-found '
-            '    :else     :yield :err]]'
+            '    [case 200 :ok] '
+            '    [case 404 :not-found] '
+            '    [else :err]]]'
         )
         self.assertEqual(_strip(cxlib.eval_code('[doc]', prog, 'text')), ':err')
 
     def test_no_else_returns_empty_sequence(self):
         prog = (
-            '[?let $s = 500 :in '
+            '[?let [= $s 500] '
             '  [?match $s '
-            '    :case 200 :yield :ok '
-            '    :case 404 :yield :not-found]]'
+            '    [case 200 :ok] '
+            '    [case 404 :not-found]]]'
         )
         self.assertEqual(_strip(cxlib.eval_code('[doc]', prog, 'text')), '')
 
     def test_wildcard_case(self):
         prog = (
-            '[?let $v = "surprise" :in '
+            '[?let [= $v "surprise"] '
             '  [?match $v '
-            '    :case 200 :yield :http-ok '
-            '    :case _   :yield :other]]'
+            '    [case 200 :http-ok] '
+            '    [case _ :other]]]'
         )
         self.assertEqual(_strip(cxlib.eval_code('[doc]', prog, 'text')), ':other')
 
@@ -117,7 +117,7 @@ class TestModify(unittest.TestCase):
 
     def test_set_attribute_value(self):
         # Setting an attribute value at a focused path.
-        prog = '[?modify $doc //user[@id=1]/@name [set "Alicia"]]'
+        prog = '[?modify $doc //user[= $_@id 1]/@name [set "Alicia"]]'
         out = cxlib.eval_code(self.DOC_USERS, prog, 'text')
         self.assertIn('Alicia', out)
         # Bob is untouched.
@@ -127,7 +127,7 @@ class TestModify(unittest.TestCase):
         doc = ('[users '
                '[user active=true [name Alice]] '
                '[user active=false [name Bob]]]')
-        prog = '[?modify $doc //user[@active=false] [delete]]'
+        prog = '[?modify $doc //user[= $_@active false] [delete]]'
         out = cxlib.eval_code(doc, prog, 'text')
         self.assertNotIn('Bob', out)
         self.assertIn('Alice', out)
@@ -140,7 +140,7 @@ class TestModify(unittest.TestCase):
         self.assertNotIn('[widget', out)
 
     def test_no_match_is_identity(self):
-        prog = '[?modify $doc //missing :delete]'
+        prog = '[?modify $doc //missing [delete]]'
         out = cxlib.eval_code(self.DOC_USERS, prog, 'text').strip()
         # No matches → unchanged.
         self.assertIn('Alice', out)
@@ -157,7 +157,7 @@ class TestAtomScalarKind(unittest.TestCase):
         self.assertEqual(_strip(out), ':ok')
 
     def test_for_yields_atom_sequence(self):
-        prog = '[?for $i :in (:a, :b, :c) :yield $i]'
+        prog = '[?for [in $i (:a, :b, :c)] [yield $i]]'
         out = cxlib.eval_code('', prog, 'text')
         self.assertEqual(_strip(out), ':a\n:b\n:c')
 
@@ -192,13 +192,15 @@ class TestAtomScalarKind(unittest.TestCase):
         # Mix atom value with [?match] dispatch — both surfaces in one
         # program.
         prog = (
-            '[?let $x = :ok :in '
+            '[?let [= $x :ok] '
             '  [?match $x '
-            '    :case :ok  :yield "good" '
-            '    :else      :yield "bad"]]'
+            '    [case :ok "good"] '
+            '    [else "bad"]]]'
         )
         out = cxlib.eval_code('[doc]', prog, 'text')
-        self.assertEqual(_strip(out), '"good"')
+        # String scalars render single-quoted in text output (canonical
+        # surface; matches conformance/code.cxd out-text convention).
+        self.assertEqual(_strip(out), "'good'")
 
     # ── Layer-1 helpers ──────────────────────────────────────
 
@@ -298,7 +300,7 @@ class TestDocumentSelectAll(unittest.TestCase):
 
     def test_select_all_with_predicate(self):
         doc = cxlib.parse(self.DOC)
-        res = doc.select_all('//user[@active=true]')
+        res = doc.select_all('//user[= $_@active true]')
         self.assertEqual(len(res), 2)
         for e in res:
             self.assertIsInstance(e, cxlib.Element)
@@ -325,7 +327,7 @@ class TestDocumentModify(unittest.TestCase):
             '[user active=true [name Alice]] '
             '[user active=false [name Bob]]]'
         )
-        new_doc = doc.modify('//user[@active=false]', '[delete]')
+        new_doc = doc.modify('//user[= $_@active false]', '[delete]')
         self.assertIsInstance(new_doc, cxlib.Document)
         out = new_doc.to_cx()
         self.assertNotIn('Bob', out)
@@ -363,7 +365,7 @@ class TestCombined(unittest.TestCase):
                '[user active=true [name Alice]] '
                '[user active=false [name Bob]] '
                '[user active=true [name Carol]]]')
-        prog = '[?modify $doc //user[@active=false] [delete]]'
+        prog = '[?modify $doc //user[= $_@active false] [delete]]'
         out = cxlib.eval_code(doc, prog, 'text')
         self.assertNotIn('Bob', out)
         self.assertIn('Alice', out)

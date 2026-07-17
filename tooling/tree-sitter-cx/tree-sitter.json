@@ -3,9 +3,13 @@
     {
       "name": "cx",
       "scope": "source.cx",
-      "file-types": ["cx"],
-      "highlights": "queries/highlights.scm",
-      "injections": "queries/injections.scm"
+      "file-types": [
+        "cx",
+        "cxd",
+        "cxs"
+      ],
+      "highlights": "queries/cx/highlights.scm",
+      "injections": "queries/cx/injections.scm"
     }
   ],
   "metadata": {

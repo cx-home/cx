@@ -1,13 +1,15 @@
 # ETL Project Conventions — CX Edition
 
-**Version:** 1.0
+**Version:** 1.1
 **Format:** CX-standardized edition (CX config, CX field maps)
-**Companion:** `etl_conventions.md` for the base edition (TOML config, Excel field maps)
 **CX format reference:** https://github.com/cx-home/cx
 
-This is the CX-standardized edition. Sections 1–3 and 6–11 are identical to the base
-edition. Sections 4 (Configuration) and 5 (Field Maps) differ — they use CX format
-with the CX Document API and CXPath for navigation and querying.
+This document stands alone. It descends from a base edition (TOML config, Excel
+field maps) that is no longer shipped; everything that mattered from it is inlined
+here — Sections 4 (Configuration) and 5 (Field Maps) are the CX-native surfaces,
+and Section 11 (Decisions Made) carries the CX-vs-TOML and CX-vs-Excel tradeoff
+analysis, so the retired edition's approach remains visible as the considered
+alternative. Navigation and querying use the CX Document API and CXPath.
 
 ---
 
@@ -100,8 +102,8 @@ etl/
     │   └── {system_name}.md
     ├── pipelines/                      # one README per pipeline
     │   └── {pipeline_name}.md
-    └── adr/                            # architecture decision records
-        └── 0001-{title}.md
+    └── conventions.md                  # THIS spec — the single source of truth
+                                        # for project decisions (see §10)
 ```
 
 ### File Naming Rules
@@ -488,7 +490,7 @@ class ConfigLoader:
             raise ConfigError(f"Failed to load {system}/{environment}: {e}") from e
 
     def _select_environment(self, system_root, environment: str):
-        env = system_root.select(f"environments/environment[@name={environment}]")
+        env = system_root.select(f"environments/environment[= $_@name {environment}]")
         if env is None:
             raise ConfigError(f"Environment '{environment}' not defined")
         return env
@@ -598,8 +600,8 @@ CXPath enables filtered access — load only fields relevant to the active schem
 
 ```python
 active = doc.select_all(
-    f"//field[@source_system={system} and "
-    f"(not(@schema_version) or @schema_version={schema_version})]"
+    f"//field[and [= $_@source_system {system}] "
+    f"[or [not [$exists $_@schema_version]] [= $_@schema_version {schema_version}]]]"
 )
 ```
 
@@ -937,11 +939,11 @@ class CustomerTransformer(BaseTransformer):
 
         if schema_version:
             self.fields = doc.select_all(
-                f"//field[@source_system={source_system} and "
-                f"(not(@schema_version) or @schema_version={schema_version})]"
+                f"//field[and [= $_@source_system {source_system}] "
+                f"[or [not [$exists $_@schema_version]] [= $_@schema_version {schema_version}]]]"
             )
         else:
-            self.fields = doc.select_all(f"//field[@source_system={source_system}]")
+            self.fields = doc.select_all(f"//field[= $_@source_system {source_system}]")
 
         self.merges      = doc.find_all("merge")
         self.splits      = doc.find_all("split")
@@ -1016,7 +1018,7 @@ def export_to_excel(cx_path: str, excel_path: str) -> None:
 
 Stakeholders review the Excel output, comment, and return changes. Engineers apply changes to the `.cx` source file. Excel is a projection for review, never edited as source.
 
-For teams where stakeholders must edit directly without engineer involvement, the Excel-as-master approach in the base spec is more appropriate.
+For teams where stakeholders must edit directly without engineer involvement, the Excel-as-master approach is more appropriate — see the tradeoff analysis in Section 11 (Decisions Made).
 
 ### Field Map Validation
 
@@ -1225,14 +1227,19 @@ Pipelines that cannot be made idempotent must document this explicitly in their 
 
 Rejected and quarantined rows are written to durable destinations, not just logged. Configuration:
 
-```toml
-# config/systems/targets/postgres.toml
+```cx
+[; config/systems/targets/postgres.cx ]
 
-[environments.prod]
-connection_string_ref = "TARGET_DB_URL"
-schema = "public"
-quarantine_table = "etl_quarantine"      # all quarantined rows from any pipeline
-reject_table = "etl_rejects"             # all rejected rows from any pipeline
+[postgres
+  [environments
+    [environment name=prod
+      connection_string_ref=TARGET_DB_URL
+      schema=public
+      quarantine_table=etl_quarantine    [; all quarantined rows from any pipeline ]
+      reject_table=etl_rejects           [; all rejected rows from any pipeline ]
+    ]
+  ]
+]
 ```
 
 Quarantine and reject tables have a standard schema:
@@ -1584,30 +1591,19 @@ What this pipeline does in one paragraph.
 - Primary owner, escalation
 ```
 
-### Architecture Decision Records
+### Decision Records — Spec-First, No Separate ADR Tree
 
-Significant architectural decisions go in `docs/adr/`. Format:
+Significant architectural decisions live **in this conventions spec itself**, not
+in a parallel `docs/adr/` tree. The spec is the single source of truth: Section 11
+(Decisions Made) is the decision log — each row records the decision and the
+alternative considered, and the normative sections carry the decision's actual
+content.
 
-```markdown
-# ADR-NNNN: {Title}
-
-Date: YYYY-MM-DD
-Status: proposed | accepted | superseded by ADR-MMMM
-
-## Context
-What problem are we solving? What constraints apply?
-
-## Decision
-What did we decide?
-
-## Consequences
-What follows from this decision — both positive and negative.
-
-## Alternatives Considered
-What else did we look at and why didn't we choose them?
-```
-
-ADRs are immutable once accepted. Superseding an ADR creates a new one, never edits the old.
+When a decision changes, update the affected sections **and** the Section 11 row
+in the same change; the git history of this file is the audit trail. A separate
+immutable decision-record tree is deliberately rejected: it inevitably drifts from
+the spec it annotates, and readers end up reconciling two sources. Prose anywhere
+in the project that contradicts this spec is a bug in that prose.
 
 ---
 
@@ -1619,8 +1615,8 @@ This section captures decisions made by this spec where reasonable alternatives 
 
 | Area | Decision | Alternative considered |
 |---|---|---|
-| Config format | CX | TOML (the base spec choice — viable when CX tooling unavailable) |
-| Field map format | CX | Excel (the base spec choice — better when stakeholders edit directly) |
+| Config format | CX | TOML (the retired base edition's choice — viable when CX tooling unavailable) |
+| Field map format | CX | Excel (the retired base edition's choice — better when stakeholders edit directly) |
 
 ### CX vs TOML for Configuration
 
@@ -1630,7 +1626,7 @@ This section captures decisions made by this spec where reasonable alternatives 
 | Comments | Yes | Yes |
 | Indentation sensitivity | No | No |
 | Programmatic access | Manual key lookup | Document API: `at()`, `attr()`, `select_all()` |
-| Query by attribute | No | CXPath: `//environment[@name=prod]` |
+| Query by attribute | No | CXPath: `//environment[= $_@name prod]` |
 | Hierarchical structure | Flat with dotted keys | Native nesting |
 | Standard library | `tomllib` (Python 3.11+) | Requires cxlib |
 | Ecosystem maturity | Established | Newer — adoption risk on some projects |
@@ -1679,7 +1675,7 @@ Excel forces a choice between many sparse columns, encoded strings, or splitting
 - Stakeholders must be able to edit directly without engineer involvement
 - CX tooling is not yet stable for the project
 
-### Decisions Shared with the Base Spec
+### Decisions Inherited from the Retired Base Edition
 
 | Area | Decision | Alternative considered |
 |---|---|---|

@@ -47,12 +47,12 @@ A dialect is an element describing tokenization rules:
 [dialect
   [delimiter ","]
   [quote-char "\""]
-  [escape "double"]            ; "double" (RFC 4180) | "backslash"
-  [line-terminator "auto"]     ; "auto" | "crlf" | "lf"
+  [escape "double"]            # "double" (RFC 4180) | "backslash"
+  [line-terminator "auto"]     # "auto" | "crlf" | "lf"
   [header true]
   [skip-empty-lines true]
   [trim-whitespace false]
-  [on-error "raise"]]           ; "raise" (default) | "collect"
+  [on-error "raise"]]           # "raise" (default) | "collect"
 ```
 
 **Validity.** A dialect element supplied to `parse-with-dialect` / `emit-with-dialect` MUST be validatable into a complete dialect: the resolved dialect requires `delimiter`, `quote-char`, `escape`, and `line-terminator`. A fully-specified element supplies them directly; a name reference (`[dialect [name "tsv"]]`) inherits them from the named built-in; any field absent from both the element and the resolved built-in inherits the `csv` defaults shown above. The resolved `delimiter` MUST be a single character — the empty string and any multi-character string are invalid. An element that resolves to a missing required field, or to an invalid `delimiter`, is rejected with `CXER1502 E_CSV_DIALECT_INVALID`. Validation runs identically and completely before any parsing or emission work begins.

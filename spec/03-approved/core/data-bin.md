@@ -1310,7 +1310,7 @@ fidelity preserved.)
 Input CX:
 
 ```
-[points::table[x::f64 y::f64 z::f64]
+[points [table[x::f64 y::f64 z::f64]]
  1.5 2.5 3.5
  1.6 2.6 3.6
  1.7 2.7 3.7

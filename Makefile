@@ -41,8 +41,11 @@ build-dev: v-toolchain
 	$(MAKE) -C vcx build-dev
 
 ## test         Run the V unit/test suite + the conformance corpus.
+##              `-cc cc`: V's bundled tcc cannot compile the patched builtin
+##              (C11 atomics / @[thread_local]) — same flags the private
+##              test gate uses. `-gc e` is cx's shipped memory model.
 test: build-dev conform
-	$(V) test vcx/tests/
+	$(V) -cc cc -gc e test vcx/tests/
 
 ## conform      Run the conformance corpus against the built cx binary.
 conform: build

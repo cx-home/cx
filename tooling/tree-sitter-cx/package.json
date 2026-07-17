@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "description": "Tree-sitter grammar for the CX markup language",
   "main": "bindings/node",
-  "keywords": ["tree-sitter", "cx"],
+  "keywords": [
+    "tree-sitter",
+    "cx"
+  ],
   "license": "MIT",
   "dependencies": {
     "nan": "^2.17.0"
   },
   "devDependencies": {
-    "tree-sitter-cli": "^0.20.8"
+    "tree-sitter-cli": "^0.26.7"
   },
   "scripts": {
     "generate": "tree-sitter generate",
@@ -19,9 +22,13 @@
   "tree-sitter": [
     {
       "scope": "source.cx",
-      "file-types": ["cx"],
-      "highlights": "queries/highlights.scm",
-      "injections": "queries/injections.scm"
+      "file-types": [
+        "cx",
+        "cxd",
+        "cxs"
+      ],
+      "highlights": "queries/cx/highlights.scm",
+      "injections": "queries/cx/injections.scm"
     }
   ]
 }

@@ -92,7 +92,15 @@ defines, per-type per-format, three behaviors:
   asks for clean, idiomatic output. Type metadata may be lost.
 - **Lossless** (opt-in via `--lossless` flag / `lossless=true` API
   parameter): how the value emits to enable byte-identical CX→fmt→CX
-  recovery. May use format-native extensions or sidecar metadata.
+  recovery — "byte-identical" meaning the recovered document's
+  **strict-canonical** form (`canonical.md`, the `cx eq` relation)
+  equals the original's. May use format-native extensions, sidecar
+  metadata, or — for element documents on the JSON / YAML lanes — the
+  `$tag` structure envelope (§2.2.1 / §2.3.1). The recovery domain is
+  the **document/data model**: program directives (`[?…]` forms) are
+  outside every conversion lane's lossless domain (they are dropped on
+  emit, on the XML lane too); programs interchange as CX text or
+  `ast`-bin.
 - **Schema-aware** (preferred for production): if the consumer
   reconstructs CX with a `.cxs` schema present, the type is
   recovered from the schema; no wire-format metadata is needed.
@@ -127,10 +135,51 @@ name. Example:
 }
 ```
 
-CX import in lossless mode reads the `cx:type` sidecar and
+CX import reads the `cx:type` sidecar (unconditionally — `cx:` is
+CX's reserved protocol namespace at every conversion boundary) and
 reconstructs typed scalars; clients that don't know the convention
 treat the values as plain strings and the `cx:type` object as
 metadata.
+
+**JSON per-item carrier (array positions, lossless mode).** The
+sidecar keys by field name, so it cannot cover typed values in JSON
+**array** positions. In lossless mode a typed scalar at an array /
+sequence-item position instead emits as a reserved single-key carrier
+object — `{"cx:T": payload}`, the JSON image of the XML `<cx:T>`
+per-item carrier:
+
+```json
+["a", {"cx:decimal": "3.14"}, {"cx:duration": "1h30m"}, {"cx:u16": 8080}]
+```
+
+Payloads use the same per-type images as the sidecar protocol: sized
+numerics ride their native JSON number; `bytes` rides base64; `atom`
+rides the bare name (the carrier key names the type, so no `:` prefix);
+every other kind rides its verbatim canonical text. Import consumes the
+carrier unconditionally (reserved `cx:` shape) and reconstructs the
+typed scalar. Together the sidecar (map positions) and the per-item
+carrier (array positions) make typed values position-independent on the
+lossless JSON lane. YAML needs no carrier: `!!cx:T` tags are
+position-independent natively.
+
+**Non-string map keys (`cx:key-type`, lossless mode).** JSON object
+keys are strings, so a CX Map with non-string keys (int / float / bool
+/ date / datetime / bytes, `cxdm.md` §2.6) is key-lossy by default
+(§2.2). In lossless mode the object additionally carries a reserved
+`cx:key-type` sidecar — serialized-key → key-type-name for exactly the
+non-string keys — and import re-types those entry keys. The same
+object rides the YAML lossless lane (one envelope, two renderings).
+
+**`#485` ruling — typed collection values and the CX text lane.** The
+lossless carrier lanes (XML `<cx:T>` / JSON sidecar + per-item carrier
+/ YAML tags) are the designated round-trip spelling for `decimal` /
+`bytes` / sized-numeric values in Map-value and Array-item positions.
+CX **text** deliberately defines no additional spelling for them: the
+canonical text image of such a value stays the bare payload
+(`{score: 3.14}`) and re-imports per its lexical shape — the
+typed-lossy contract the `conv-006` conformance case pins. Producers
+needing those types to survive a **text** round-trip route through a
+carrier lane or `data-bin`.
 
 **YAML native tags (lossless mode).** YAML's tag system natively
 supports the lossless case via `!!cx:T` tags (e.g.,
@@ -143,6 +192,15 @@ tag syntax; MD has no type system. Lossless mode for these formats
 is **not supported**; the default lossy emit is the only mode.
 Producers needing roundtrip stability through TOML/MD must round
 through CX or XML instead.
+
+**Flag surface (fail-loud).** A lossless request (`--lossless` /
+`lossless=true`) against a target whose emitter does not honor it
+MUST be rejected with an error — never accepted as a silent no-op.
+The lossless-capable targets are `cx` (inherently lossless), `xml`
+(`cx:` carriers, §2.1), `json` (`cx:type` sidecar + per-item carrier
++ the `$tag` structure envelope, §2.2.1) and `yaml` (`!!cx:T` tags +
+the same envelope, §2.3.1); TOML and MD are rejected per the
+no-extension-protocol rule above.
 
 **XML lossless per-value carrier (`<cx:T>`).** The `cx:type="T"` form in the
 table above is the image of an element-level *annotation* (`[x::int 1]` →
@@ -341,8 +399,8 @@ bare lexical form:
 annotation map (as a `<cx:map>`) followed by the annotated value:
 
 ```
-[?meta {pii: true} [user name=ann]]   →   <cx:meta><cx:map><entry key="pii">true</entry></cx:map><user name="ann"/></cx:meta>
-[?meta {unit: :years} 331]            →   <cx:meta><cx:map><entry key="unit">years</entry></cx:map>331</cx:meta>
+[?meta {pii: true} [user name=ann]]   →   <cx:meta><cx:map><cx:entry cx:key="pii">true</cx:entry></cx:map><user name="ann"/></cx:meta>
+[?meta {unit: :years} 331]            →   <cx:meta><cx:map><cx:entry cx:key="unit">years</cx:entry></cx:map>331</cx:meta>
 ```
 
 The wrapper is uniform for any inner value (element, scalar, or collection),
@@ -421,6 +479,7 @@ guarantee above):
 | `<cx:entry cx:key="K" [cx:key-type="T"]>v</cx:entry>` | Map entry `K → v` (key typed per `cx:key-type`) |
 | `<cx:seq>…</cx:seq>` | Sequence of the contained items |
 | `<cx:arr/>` / `<cx:map/>` | empty Array / empty Map |
+| `<cx:row><cx:cell>…</cx:cell>…</cx:row>` | one `[table]` data row — valid **only** as a direct child of an element carrying `cx:type="table"` + `cx:cols` (§2.1 `[table]` blocks); elsewhere it is an import error (reserved `cx:`) |
 
 A `cx:`-namespaced element in any **other** shape (not one of these
 markers) is an import error — the `cx:` namespace is reserved.
@@ -454,6 +513,55 @@ above. The `cx:` namespace marks every CX-structural wrapper so XML →
 CX round-trips unambiguously: a bare `<item>` would collide with a
 user element named `item`, breaking the lossless-bijection guarantee.
 
+**`[table]` blocks:**
+
+A table-bearing element (grammar `[table[ ... ]` block) MUST emit its
+declared columns in the reserved `cx:cols` attribute — space-separated
+`name::type` tokens in declaration order, exactly the canonical CX
+header text; an untyped column is the bare name — and each data row as
+a reserved `<cx:row>` element whose children are `<cx:cell>` elements,
+one per column in column order. The element keeps its `cx:type="table"`
+annotation. A header-only table (zero rows, valid per §8.3) emits as a
+self-closing element carrying both attributes.
+
+Cell emission:
+
+| cell value | XML emission |
+|---|---|
+| scalar whose bare text re-imports (per the column's declared type) to the same value | `<cx:cell>` escaped text `</cx:cell>` |
+| scalar the column-driven recovery would mis-type (a string cell under a non-string column, the literal string `null`, whitespace-only strings, a variant disagreeing with the declared column type) | `<cx:cell><cx:TYPE>` text `</cx:TYPE></cx:cell>` — the same per-item carrier as typed-list items |
+| null cell | `<cx:cell><cx:null/></cx:cell>` |
+| empty string | `<cx:cell/>` |
+| Array / Map / Sequence cell | the `cx:arr` / `cx:map` / `cx:seq` carriers of this section, inside `<cx:cell>` |
+
+On `xml_to_cx`, an element carrying `cx:type="table"` **and** a
+non-empty `cx:cols` reconstructs the table payload: every
+non-whitespace child MUST be a `<cx:row>` of `<cx:cell>` children
+matching the declared column count (anything else is a reserved-shape
+import error); bare cell text is typed by its column exactly as the CX
+parser types a bare cell (the literal token `null` is the null cell in
+any column; a string-family column keeps the text verbatim). An
+element with `cx:type="table"` but **no** `cx:cols` keeps the plain
+reading: a `::table`-annotated element with no payload. This emission
+applies in both the idiomatic and lossless modes — the rows are data,
+not type metadata.
+
+Example:
+
+```cx
+[users [table[name::string age::int active::bool]]
+  alice 30 true
+  bob 25 false
+]
+```
+
+```xml
+<users cx:type="table" cx:cols="name::string age::int active::bool">
+  <cx:row><cx:cell>alice</cx:cell><cx:cell>30</cx:cell><cx:cell>true</cx:cell></cx:row>
+  <cx:row><cx:cell>bob</cx:cell><cx:cell>25</cx:cell><cx:cell>false</cx:cell></cx:row>
+</users>
+```
+
 **Mixed content:**
 
 Elements whose body contains both text/scalars and child elements are emitted
@@ -486,7 +594,7 @@ BlockContent structure. The XML elements and their content remain correct.
 ```cx
 [config &srv
  [server host=localhost port=8080 :int]
- [tags [web, api]]
+ [tags ["web", "api"]]
 ]
 ```
 
@@ -563,10 +671,10 @@ encodes the full parse tree.
 (element with single null scalar) both serialize to `{"items": null}`
 on JSON emit and parse back as `[items]` (per §4.1's "JSON null →
 empty Element" rule). This is a documented one-bit loss in the
-CX-element-vs-CX-null distinction at the JSON boundary.
-Workaround: callers requiring round-trip fidelity through JSON
-should use the AST JSON path (`cx_to_ast`) rather than semantic
-JSON.
+CX-element-vs-CX-null distinction at the JSON boundary — in the
+**default** lane. The lossless `$tag` envelope (§2.2.1) keeps the
+distinction; callers requiring round-trip fidelity use `--lossless`
+(or the AST JSON path, `cx_to_ast`).
 
 **Non-string map keys.** JSON requires object keys to be strings.
 CX Maps with non-string keys (int, float, date, etc., per
@@ -611,6 +719,14 @@ order.
 The text is captured under the key `"_"`. Child elements are emitted as their
 named keys. If multiple text segments exist, they are concatenated.
 
+**Attributed table elements** (#478): an element carrying both
+attributes and a `[table[…]]` block (grammar [29]) projects as an
+object — attribute keys in source order, then the row array under
+`"_"` (the same `_`-body convention as mixed content and
+attrs-plus-scalar bodies). An attribute-free table element stays the
+bare array of column-keyed row objects. The same shape applies to the
+YAML and TOML semantic lanes, which share this projection.
+
 **Multiple documents:**
 
 A multi-document stream produces a JSON array, one object per document.
@@ -642,8 +758,8 @@ for data binding (`loads`/`dumps`-style) when the caller wants native types.
 
 ```cx
 [server host=localhost port=8080 debug=false]
-[tags [web, api]]
-[metadata {region: us-west, replicas: 3}]
+[tags ["web", "api"]]
+[metadata {region: "us-west", replicas: 3}]
 ```
 
 ```json
@@ -663,6 +779,137 @@ for data binding (`loads`/`dumps`-style) when the caller wants native types.
 
 The pre-form `[tags :string[] web api]` parses unchanged and
 produces the same JSON output per §0.2 desugaring.
+
+#### 2.2.1 — Lossless structure encoding: the `$tag` envelope (`--lossless`)
+
+The semantic mapping above is **structure-lossy** for elements: the
+element-vs-map shape, the attr-vs-child distinction, mixed-content
+order, and element metadata all collapse. Under `--lossless` /
+`lossless=true`, an **element** instead emits as a `$tag`
+**envelope** — a JSON object over a reserved key set, extending the
+`$tag` / `$attrs` / `$children` `named` encoding of `json.md` §2 to
+full document fidelity. The default lane is untouched — the envelope
+exists only in lossless mode. A `--lossless` CX→json→CX round-trip
+recovers an element document byte-identically at the strict-canonical
+level (§0.2), which the conformance suite pins over the `examples/`
+corpus.
+
+**Reserved envelope keys** (emit order fixed as listed; every key
+except `$tag` is omitted when empty/absent):
+
+| Key | Value | CX feature |
+|---|---|---|
+| `$tag` | string — element name (prefix included) | Element name |
+| `$anchor` | string | `&name` anchor |
+| `$merge` | string | `*name` merge |
+| `$id` | string | `#id` IdDecl (grammar [51a]) |
+| `$type` | string — the annotation name verbatim (`int`, `u16`, `string[]`, `table`, …) | `::type` element annotation |
+| `$ref` | string — target id | body-position reference `[ref @id]` |
+| `$attrs` | object — attr name → value, **source order** | attributes |
+| `$attr-types` | object — attr name → CX type name | typed / ref attributes (the JSON image of XML's `cx:attr-types`, D3) |
+| `$children` | array — body items, **source order** | element body |
+| `$cols` | array of strings — canonical header tokens (`name` / `name::type`), declaration order | `[table[…]]` columns |
+| `$rows` | array of arrays — cell values, row/column order | `[table[…]]` data rows |
+
+A top-level document with a **single element root** emits the
+envelope directly; **multiple roots** emit as a reserved
+`{"$doc": [image, …]}` wrapper, one image per root in source order.
+Value-model documents (Map / Array / scalar root) are untouched —
+they emit as §2.2/§4.1 already define, sidecar rules included.
+
+**`$attrs` values.** JSON's native types carry the base scalar kinds
+directly: `int` / `float` / `bool` / `null` emit as JSON numbers /
+booleans / null, and a string attribute emits as a JSON string — no
+`name=string` pinning is needed (unlike XML, JSON strings are typed
+natively). An attribute whose CX type JSON cannot express lists its
+type in `$attr-types` and emits the idiomatic payload image: sized
+numerics ride the native JSON number; `bytes` rides base64; `atom`
+rides the bare name; `decimal` / `bigint` / `date` / `datetime` /
+`duration` / `period` ride their verbatim canonical text. A reference
+attribute (`assigned=@u-1`) emits the bare id (`"u-1"`) with the
+pseudo-type entry `"assigned": "ref"`.
+
+**`$children` items** map 1:1, in source order:
+
+| body item | JSON image |
+|---|---|
+| child Element | nested envelope |
+| TextNode / plain string scalar | JSON string (import reads it back as body text; the two are strict-canonical-equivalent — except under a `$type` annotation, where import keeps string children as string *scalars* so the `::string` / `::T[]` pinning canonicalizes bare, exactly as the CX parser reads them) |
+| `int` / `float` / `bool` / `null` scalar | native JSON scalar |
+| typed scalar (`atom` / `date` / `datetime` / `bytes` / `decimal` / `bigint` / `duration` / `period`) | per-item carrier `{"cx:T": payload}` (§0.2) |
+| Array item | JSON array (items recurse; typed items take the per-item carrier) |
+| Map item | JSON object (§2.2 rules + `cx:type` / `cx:key-type` sidecars; reserved-looking keys escape, below) |
+| Sequence-as-item | `{"cx:seq": [ … ]}` (the JSON image of XML's `<cx:seq>`) |
+| RawTextNode (`[#…#]`) | `{"cx:raw": "verbatim text"}` |
+| EntityRefNode | `{"cx:entity": "name"}` |
+| BlockContent (`[\|…\|]`) | dissolved into its text / element runs (the strict-canonical reading) |
+| comments / PIs / XML decl / program directives (`[?…]`) | dropped (comments and PIs are outside strict canonical; directives are outside every lane's lossless domain, §0.2) |
+
+**Tables.** A table-bearing element emits `$cols` (the canonical
+header tokens, exactly the CX header text per column) and `$rows`.
+Cell values are JSON-native (`int` / `float` / `bool` / `string` /
+`null` map directly — a JSON string cell is unambiguous, so no
+carrier is needed); collection cells use the collection images above.
+An attributed table element carries `$attrs` alongside `$cols` /
+`$rows` (#478). A header-only table emits `$cols` with `$rows: []`
+omitted.
+
+**Reserved-key escaping (non-collision).** The envelope must never
+be forged by user data. On lossless emit, a user Map key or attribute
+name that starts with `$` or `cx:` emits with the reserved escape
+prefix **`cx:k:`**; import strips one `cx:k:` prefix from every
+object key, unconditionally. Import reconstruction itself fires only
+on the exact reserved shapes — an object is an envelope only when
+`$tag` is present **and** every key is reserved; a carrier only as a
+single-key object with a recognized `cx:` key — so escaped keys
+(which no longer look reserved) round-trip as ordinary map keys.
+Under the **default** (non-lossless) emit no escaping happens; user
+keys in the `cx:` / `$tag` shapes are in CX's reserved conversion
+namespace and may be consumed on re-import (same contract as the
+reserved `cx:` XML namespace, §2.1).
+
+**Import (JSON → CX) is unconditional** — the envelope, the per-item
+carrier, the sidecars, and the `cx:k:` escape are reserved protocol
+shapes recognized on every JSON→CX read (no import-side flag),
+exactly like the XML importer's reserved `cx:` markers. The encoding
+is self-describing: no schema is needed to reconstruct the document.
+
+**Worked example:**
+
+```cx
+[event &e1 kind=:click count::u16=5
+  'seen ' [em twice] ' today'
+  [total::decimal 19.99]
+]
+```
+
+```json
+{
+  "$tag": "event",
+  "$anchor": "e1",
+  "$attrs": {"kind": "click", "count": 5},
+  "$attr-types": {"kind": "atom", "count": "u16"},
+  "$children": [
+    "seen ",
+    {"$tag": "em", "$children": ["twice"]},
+    " today",
+    {"$tag": "total", "$type": "decimal", "$children": [{"cx:decimal": "19.99"}]}
+  ]
+}
+```
+
+`cx --from=json --to=cx` over that output recovers the original
+document (strict-canonical eq — the anchor is carried and resolves
+identically on both sides).
+
+**Fidelity note (`§2.2` ambiguities resolved).** Under the envelope,
+the `[items]`-vs-`[items null]` ambiguity of §2.2 disappears
+(`{"$tag":"items"}` vs `{"$tag":"items","$children":[null]}`), mixed
+content keeps its run order (no `"_"` concatenation), same-named
+children stay positional (no array folding), and non-string map keys
+recover via `cx:key-type` (§0.2). What remains lossy even here:
+comments and processing instructions (outside strict canonical) and
+program directives (§0.2 domain note).
 
 ---
 
@@ -736,6 +983,63 @@ regardless of insertion order — same rule as JSON; see §2.2.)
  preserved as the key)
 - Sequence-vs-Array distinction at the top-level value position
  (both map to YAML sequences; nested Arrays preserve)
+
+Everything in this list except comments / PIs is recovered by the
+lossless structure encoding below.
+
+#### 2.3.1 — YAML lossless structure encoding (`--lossless`)
+
+The YAML lossless lane mirrors the JSON `$tag` envelope (§2.2.1) —
+**one envelope, two renderings**. An element emits as a YAML mapping
+over the same reserved key set (`$tag`, `$anchor`, `$merge`, `$id`,
+`$type`, `$ref`, `$attrs`, `$attr-types`, `$children`, `$cols`,
+`$rows`; multi-root documents under `$doc`), with the same emit
+order, the same `$attrs` / `$attr-types` protocol, the same
+`$children` item mapping, the same table encoding, and the same
+`cx:k:` reserved-key escaping. The differences are exactly YAML's
+native strengths:
+
+- **Typed scalars need no carrier objects**: a typed value in any
+  position (map value, array item, `$children` item) rides its
+  `!!cx:T` / `!!binary` tag or native date form per the §0.2 YAML
+  rows. `{"cx:decimal": "3.14"}` in JSON is `!!cx:decimal "3.14"`
+  in YAML.
+- **Strings that would re-read as another type** stay protected by
+  the standing YAML quoting rules (a plain `1h30m` string quotes; a
+  genuine duration tags in lossless mode).
+- The structural carriers that are not scalars keep their reserved
+  single-key mapping shape from §2.2.1 (`cx:seq`, `cx:raw`,
+  `cx:entity`, `cx:key-type`), rendered as ordinary YAML mappings.
+
+Import is unconditional and shared with the JSON inverse: the YAML
+reader materializes the value tree (tags → typed scalars), then the
+same envelope / carrier / escape reconstruction recovers the element
+document. `--lossless` CX→yaml→CX round-trips element documents
+strict-canonical-identically (pinned over `examples/` alongside the
+JSON lane).
+
+Worked example (the §2.2.1 document):
+
+```yaml
+$tag: event
+$anchor: e1
+$attrs:
+  kind: click
+  count: 5
+$attr-types:
+  kind: atom
+  count: u16
+$children:
+  - "seen "
+  - $tag: em
+    $children:
+      - twice
+  - " today"
+  - $tag: total
+    $type: decimal
+    $children:
+      - !!cx:decimal "19.99"
+```
 
 ---
 
@@ -935,12 +1239,20 @@ Examples:
 A top-level array or scalar reads directly: `[1, 2, 3]` → `[1, 2, 3]` ·
 `42` → `42` · `"hi"` → `hi`.
 
-**Lossless element round-trip (`$tag` encoding).** The semantic emitter
+**Lossless element round-trip (`$tag` envelope).** The semantic emitter
 (§2.2) is lossy for CX elements (tag/attrs/children collapse to a plain
-object). Emitting an element with `lossless=true` (json.md §2) uses the
-reserved `$tag` / `$attrs` / `$children` encoding instead; JSON → CX
-recognises that encoding and reconstructs the original element, so
-`parse(emit(el, lossless)) ≡ el`.
+object). Emitting an element with `lossless=true` uses the reserved
+`$tag` envelope instead — the full structure encoding of §2.2.1,
+extending the `named` `$tag` / `$attrs` / `$children` encoding of
+json.md §2. JSON → CX recognises every reserved protocol shape
+**unconditionally** — the envelope, the per-item `{"cx:T": …}`
+carrier, the `cx:type` / `cx:key-type` sidecars, the `cx:seq` /
+`cx:raw` / `cx:entity` carriers, and the `cx:k:` key escape — and
+reconstructs the original document, so a lossless emit re-imports
+byte-identically (strict-canonical eq, §0.2). The in-program
+`[$json:parse]` module surface reconstructs the `named` three-key
+subset per json.md §2; the extended envelope keys are a
+conversion-lane protocol.
 
 **Strict parse.** JSON → CX is a strict reader (json.md §3): malformed
 input, duplicate object keys, depth / byte-limit overruns, and out-of-range
@@ -958,7 +1270,7 @@ numbers raise `CXER3100`–`CXER3106` rather than producing a best-effort tree.
 
 **What is lossless:** all JSON scalars, strings, booleans, null, numbers,
 objects and arrays round-trip exactly. CX elements round-trip only via the
-`$tag` lossless encoding above; under the default semantic emit they degrade
+`$tag` envelope above; under the default semantic emit they degrade
 to plain objects (§2.2).
 
 ---
@@ -1022,6 +1334,15 @@ float, bool, date) maps directly onto CXDM Map keys per
 resulting CX does not contain CX anchors, merges, or aliases. A YAML → CX → YAML
 round-trip recovers the data but not the YAML anchor/alias structure.
 
+**Lossless structure import.** After the value tree materializes
+(tags → typed scalars per the table above), the reader applies the
+same unconditional reserved-shape reconstruction as the JSON importer
+(§4.1): `$tag` envelopes rebuild elements, `$doc` rebuilds multi-root
+documents, the `cx:seq` / `cx:raw` / `cx:entity` / `cx:key-type`
+carriers rebuild their nodes, and `cx:k:` key escapes strip. This is
+the import inverse of §2.3.1, closing the `--lossless` CX→yaml→CX
+round-trip.
+
 ---
 
 ### 5.2 — YAML → XML, JSON, TOML
@@ -1069,16 +1390,50 @@ All apply §6.1 (TOML → CX) then the appropriate CX → target conversion.
 
 ---
 
-## 7 — Markdown (removed — ruling D-B)
+## 7 — Markdown (codec only — ruling D-B, refined)
 
-Markdown is **not** a CX conversion format. CX has no markdown syntax and no
-CX↔Markdown conversion layer: the parser is markdown-unaware, and the former
-`cx_md_to_*` / `cx_*_to_md` C ABI symbols and the `md` format target no longer
-exist. Markdown, like any other source language (a shell script, a SQL query),
-is carried verbatim as opaque payload inside a `[#…#]` raw-text node — see
-`grammar.ebnf` and `lexicon.ebnf` (`[#…#]` raw text). There is nothing to
-convert: a document that embeds markdown round-trips it byte-for-byte as raw
-text through any CX⇄XML/JSON/YAML/TOML path.
+Markdown is **not** a CX conversion format (it is not one of the five
+lossless data formats this document specifies). CX has no markdown syntax:
+the parser is markdown-unaware, and markdown embedded IN a CX document —
+like any other source language — is carried verbatim as opaque payload
+inside a `[#…#]` raw-text node and round-trips byte-for-byte through any
+CX⇄XML/JSON/YAML/TOML path.
+
+What exists is the markdown **codec** (see the header note and
+[`codec.md` §4](codec.md)): `cx --md` / `cx --from=md --to=md` /
+`[$markdown:emit]`, a best-effort, **typed-lossy** projection — prose
+emit, no lossless mode, no round-trip guarantee. The element→markdown
+images (headings, lists, emphasis, code fences, links, images) are pinned
+by the `md` conformance suite. One image is data-bearing enough to fix
+normatively here:
+
+**`[table[…]]` blocks → pipe table (emit).** An element carrying a
+`[table[…]]` block (grammar [29]; payload in the pooled TableData field,
+not in body items) emits as a GFM pipe table — never dropped:
+
+- header row from the declared column **names** in header order, then a
+  `---` separator row, then one row per data row with cells in column
+  order;
+- column **types**, the wrapper element **name**, and the wrapper's
+  **attributes** (#478) are dropped (typed-lossy, same convention as
+  the collection-literal wrapper);
+- a null cell emits as the empty cell (null and the empty string coincide
+  in markdown); booleans as `true`/`false`; numbers in canonical form;
+- cell text is neutralized for the pipe-table grammar: `\` → `\\`,
+  `|` → `\|`, newline → `<br>`;
+- collection cells (array / map / sequence) use the inline collection
+  rendering (`[a, b]` / `{k: v}` / `[a, b]`), then the same escaping;
+- a header-only table emits the header + separator rows only.
+
+```
+[formats [table[format::string input::bool]]     | format | input |
+  CX  true                              →        | --- | --- |
+  XML true                                       | CX | true |
+]                                                | XML | true |
+```
+
+No import inverse is required: markdown is typed-lossy by ruling, and
+`--lossless --to=md` remains a hard error (§0.2).
 
 ---
 
@@ -1136,6 +1491,11 @@ id,name,admin
 **Dotted-path mode.** Each leaf attribute becomes a column at
 `<child>.<...>.<attr>`. The root element name is not in the path.
 Output is one row.
+
+A flattening that yields **zero columns** — no `[table]` block, no
+attribute-bearing repeated children, no leaf attributes anywhere —
+is an **error**: delimited emit never produces blank output for a
+document that carries no tabular content.
 
 ```cx
 [config
@@ -1230,11 +1590,16 @@ bob,,false
 ```
 
 ```cx
-[table [name::string age::int active::bool]
- alice 30 true
- bob null false
+[table [table[name age::int active::bool]]
+  alice 30 true
+  bob null false
 ]
 ```
+
+(The element is named `table` by the delimited importer; its head is
+closed by the glued `[table[…]]` clause-child — grammar [29]. The
+`name` column stays untyped: every value is a plain string, the
+`::string` default.)
 
 ### 8.3 — Empty input
 
@@ -1321,7 +1686,7 @@ Arbitrary-delimiter callers compose `cx_to_delimited` /
 
 | From \ To | CX | XML | JSON | YAML | TOML | MD | CSV† |
 |-----------|------------|--------------|--------------|--------------|--------------|--------------|------------|
-| **CX** | lossless | lossless‡ | lossy◊ | lossy◊ | lossy◊ | lossy◊ | lossy§ |
+| **CX** | lossless | lossless‡ | lossy◊ / lossless▣ | lossy◊ / lossless▣ | lossy◊ | lossy◊ | lossy§ |
 | **XML** | lossless | lossless | lossy◊ | lossy◊ | lossy◊ | lossy | lossy§ |
 | **JSON** | adds struct| adds struct | lossless¶ | lossless¶ | lossless¶ | lossy | lossy§ |
 | **YAML** | lossy* | lossy* | lossless¶ | lossless¶ | lossless¶ | lossy | lossy§ |
@@ -1331,6 +1696,12 @@ Arbitrary-delimiter callers compose `cx_to_delimited` /
 
 ‡ cx→xml is lossless when consumers preserve the `cx:` namespace attributes.
  Consumers that strip `cx:` attributes lose CX-specific metadata.
+
+▣ under `--lossless`: the `$tag` structure envelope (§2.2.1 / §2.3.1)
+ plus the §0.2 value carriers recover element documents
+ byte-identically (strict-canonical eq). The default lane keeps the ◊
+ losses. Program directives stay outside the lossless domain on every
+ lane (§0.2).
 
 ¶ lossless within the expressive range of that format.
 

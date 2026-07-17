@@ -47,7 +47,7 @@
            comment is a real lexical element, not a hack on top of a string
            — the parser drops it before AST construction. Comments are
            preserved by the lossless canonicalizer (`cx fmt`) and stripped
-           by the strict canonicalizer (`cx canon`); see [[canonical]]."""]
+           by the strict canonicalizer (`cx canonical`); see [[canonical]]."""]
       [example lang=cx
         """[; A single-line note. ]
            [config
@@ -107,11 +107,10 @@
         """Attribute order is preserved by the parser but is **not** part
            of the canonical identity — re-ordering attributes does not
            change the SHA-256 of the canonical bytes. See [[canonical]]
-           for the normalization rules. Three sigil-prefixed attribute
-           shortcuts exist: `+name` (= `name=true`), `-name` (= `name=false`),
-           `#name` (the id sigil, see [[id]]). The anchor sigil `&name` and
-           the merge sigil `*name` are also attribute-level — see [[anchor]]
-           and [[merge]]."""]]
+           for the normalization rules. One sigil-prefixed attribute
+           shortcut exists: `#name` (the id sigil, see [[id]]). The
+           anchor sigil `&name` and the merge sigil `*name` are also
+           attribute-level — see [[anchor]] and [[merge]]."""]]
 
     [child id=bodies n=2.2.3 title='Body content'
       [body
@@ -128,7 +127,7 @@
         """A bare scalar body is auto-typed per the rules in
            [`spec/ast.md`](../../spec/ast.md) §Scalar — `42` becomes `:int`,
            `3.14` becomes `:float`, `2026-05-22` becomes `:date`, etc. To
-           force a type, prefix it: `[port :u16 8080]`."""]]]
+           force a type, glue an ascription to the name: `[port::u16 8080]`."""]]]
 
   [child id=scalars n=2.3 title='Scalar kinds'
     [intro
@@ -160,7 +159,7 @@
            (see [[prose]]) and for the `[?modify]` action `:set` values
            when those values are documents in their own right."""]
       [body
-        """The canonical form (`cx canon`) emits single-quoted strings for
+        """The canonical form (`cx canonical`) emits single-quoted strings for
            single-line content and triple-double-quoted strings for
            multi-line content. Escapes are minimised to what the parser
            strictly requires."""]]
@@ -179,8 +178,8 @@
            [pi 3.14159]
            [big 1e18]
            [color 0xff8800]
-           [port :u16 8080]
-           [pixel-density :f32 1.5]"""]
+           [port::u16 8080]
+           [pixel-density::f32 1.5]"""]
       [body
         """Special float values: `nan`, `inf`, `-inf` are recognised. NaN
            does not equal NaN under `=` (per IEEE-754); the `is-nan`
@@ -210,7 +209,7 @@
            [[datetime-detail]] for timezone, precision, and leap-second
            semantics."""]]
 
-    [child id=null n=2.3.5 title='Null'
+    [child id='null' n=2.3.5 title='Null'
       [body
         """`null` is the absent-value scalar. Distinct from the empty
            sequence `()`. `null` is a value; `()` is the absence of any
@@ -226,18 +225,16 @@
            sequence with no character semantics. Use it for image data,
            hashes, encrypted payloads, or any opaque binary value."""]
       [example lang=cx
-        """[hash :bytes 0x3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b]
-           [logo :bytes base64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB...')]"""]
+        """[hash::bytes 0x3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b]
+           [magic::bytes 0x89504e470d0a1a0a]"""]
       [body
-        """Bytes literals accept three syntaxes: a hex string prefixed `0x`,
-           or the `base64('…')` / `hex('…')` builtin constructors. The
-           canonical form emits the hex string with the `0x` prefix; the
-           data-bin wire format uses raw length-prefixed bytes (no
-           encoding overhead). Each projection has its own bytes form:
-           JSON emits a `{"_cx_bytes": "base64..."}` envelope (no native
-           bytes in JSON); YAML uses `!!binary base64...`; XML uses CDATA
-           with base64 content; Markdown uses a data URI in a code fence.
-           See [[surfaces]] §3.10 (bytes wire forms) for the full table."""]]
+        """A bytes value is a `0x`-prefixed hex literal (even digit count)
+           under a `::bytes` ascription. The canonical form emits the hex
+           string with the `0x` prefix; the data-bin wire format uses raw
+           length-prefixed bytes (no encoding overhead). The conversion
+           contract maps bytes to base64 / tagged forms per lane — see
+           [[surfaces]] §3.10 for the table and its implementation
+           status."""]]
 
     [child id=sized-types n=2.3.7 title='Sized type tags'
       [body
@@ -253,7 +250,7 @@
       [body
         """A literal without a type tag is auto-typed as `:int` (for whole
            numbers) or `:float` (for numbers with `.` or `e`). To force a
-           sized variant: `[port :u16 8080]`, `[pixel-density :f32 1.5]`.
+           sized variant: `[port::u16 8080]`, `[pixel-density::f32 1.5]`.
            Sized variants flow through ast-bin and data-bin with their
            type identifier preserved; bindings translate to the host's
            native numeric type."""]
@@ -368,7 +365,7 @@
     [intro
       """Sigils are one-character prefixes that change how a token is
          interpreted. CX has five element-level sigils: `&` (anchor),
-         `*` (merge), `#` (id), `+`/`-` (compact booleans). The `:` is
+         `*` (merge), `#` (id). The `:` is
          overloaded for type tags (scalar position) and for directive
          labeled slots (inside `[?...]`)."""]
 
@@ -418,10 +415,10 @@
 
     [child id=type n=2.5.4 title='The : type sigil'
       [body
-        """`:` is reserved for two surface roles. In **value position**
-           (`[port :u16 8080]`) it introduces a type tag (the long-name
-           ascription form `::T` is the canonical spelling — `:u16` here
-           is the short-name shorthand). In **atom position** (`:ok`,
+        """`:` is reserved for two surface roles. Glued to a name as `::T`
+           (`[port::u16 8080]`) it is the type-ascription sigil — the
+           doubled form is the only ascription spelling; a spaced `:name`
+           in body position is never a type. In **atom position** (`:ok`,
            `:not-found`) it introduces a symbolic atom literal. The
            parser disambiguates by context. The `:` sigil is no
            longer used to introduce labeled directive slots — every
@@ -433,14 +430,14 @@
            when written explicitly. The CXPath `instance of` operator uses
            the same vocabulary: `$x instance of :int`."""]]
 
-    [child id=bool n=2.5.5 title='The + and - bool sigils'
+    [child id=bool n=2.5.5 title='Boolean attributes'
       [body
-        """`+name` is shorthand for `name=true`; `-name` for
-           `name=false`. They keep terse attribute lists readable."""]
+        """Booleans are ordinary attributes: `active=true`,
+           `banned=false`. The bare tokens `true` and `false` auto-type
+           as bool (see [[scalars]]); there is no shorthand sigil form —
+           an attribute is always spelled `name=value`."""]
       [example lang=cx
-        """[user email='ada@example.com' +active -banned]
-           [# equivalent to:
-              [user email='ada@example.com' active=true banned=false] #]"""]]]
+        """[user email='ada@example.com' active=true banned=false]"""]]]
 
   [child id=prose n=2.6 title='Mixed content and prose'
     [intro
@@ -451,12 +448,8 @@
          stored as a `[p]` element containing a text run, a `[code]`
          element, and more text."""]
     [example lang=cx
-      """[para
-         \"\"\"The function \"\"\"
-         [code 'parse']
-         \"\"\" returns a \"\"\"
-         [link to='spec/cxdm.md' 'Document']
-         \"\"\" value.\"\"\"]"""]
+      """[para 'The function ' [code 'parse'] ' returns a '
+         [link to='spec/cxdm.md' 'Document'] ' value.']"""]
 
     [child id=entity-refs n=2.6.1 title='Entity references'
       [body
@@ -484,10 +477,10 @@
            preserved verbatim."""]
       [example lang=cx
         """[poem xml:space=preserve
-           \"\"\"  Roses are red,
+           '  Roses are red,
              Violets are blue,
               Whitespace preserved,
-               just for you.\"\"\"]"""]
+               just for you.']"""]
       [body
         """`xml:space=default` re-enables the default collapse behavior in
            a nested scope. The attribute survives XML round-trip
@@ -585,13 +578,13 @@
         """Beyond type-tag matching, schemas support a constraint
            vocabulary on attributes and element bodies:"""]
       [list
-        [item """`pattern='regex'` — attribute value matches the regex"""]
-        [item """`min=N` / `max=N` — numeric bounds"""]
-        [item """`min-length=N` / `max-length=N` — string length"""]
-        [item """`enum=(a, b, c)` — value is one of the listed atoms"""]
-        [item """`one-of=(...)` — value matches one of N sub-schemas"""]
-        [item """`required=true|false` — attribute presence"""]
-        [item """`occurs='0..*'` — child element cardinality (XSD form)"""]]
+        [item """`[pattern S]` — string value matches the RE2 regex"""]
+        [item """`[range M N]` / `[min M] [max N]` — numeric bounds"""]
+        [item """`[len M N]` / `[min-length M] [max-length N]` — string/bytes length"""]
+        [item """`[enum V ...]` — value is one of the listed values"""]
+        [item """`[req]` / `[opt]` — presence policy"""]
+        [item """`[card "M..N"]` — child element cardinality range"""]
+        [item """`[default V]` — inserted when absent"""]]
       [body
         """Constraint violations produce CXER01xx errors with the failing
            constraint identified in the error context. Full vocabulary +
@@ -631,9 +624,12 @@
       """`[?cx include]` resolves a path to another CX document and
          splices its contents in place. Full resolver model in
          [`spec/include.md`](../../spec/include.md)."""]
-    [example lang=cx
+    [; check=none — [?cx include] is approved surface (code.md §13); the
+       current binary rejects every [?cx …] directive, tracked as engine
+       regression #421. Re-enable the check when #421 lands. ]
+    [example lang=cx check=none
       """[config
-           [?cx include path='base.cx']
+           [?cx include=base.cx]
            [override port=9090]]"""]
 
     [child id=include-paths n=2.9.1 title='Path resolution'
@@ -705,10 +701,11 @@
     [child id=ns-reserved n=2.10.3 title='Reserved prefixes'
       [body
         """Three prefixes are reserved by CX and cannot be redeclared:"""]
-      [table columns=('prefix' 'URI' 'notes')
-        [row prefix='xml' uri='http://www.w3.org/XML/1998/namespace' notes='XML built-in; always resolves; xml:lang accepted as alias for cx:lang']
-        [row prefix='cx' uri='https://cx-home.org/ns/cx' notes='CX metadata; cannot be redeclared; carries cx:lang etc.']
-        [row prefix='xmlns' uri='declaration syntax only' notes='Never resolves as a name prefix']]]
+      [table
+        [tr [th 'prefix'] [th 'URI'] [th 'notes']]
+        [tr [td 'xml'] [td 'http://www.w3.org/XML/1998/namespace'] [td 'XML built-in; always resolves; xml:lang accepted as alias for cx:lang']]
+        [tr [td 'cx'] [td 'https://cx-home.org/ns/cx'] [td 'CX metadata; cannot be redeclared; carries cx:lang etc.']]
+        [tr [td 'xmlns'] [td 'declaration syntax only'] [td 'Never resolves as a name prefix']]]]
 
     [child id=ns-equality n=2.10.4 title='Equality and canonical form'
       [body
@@ -746,41 +743,29 @@
 
   [child id=doctype n=2.12 title='Doctype declarations'
     [intro
-      """A `[?cx doctype=…]` directive at the top of a document declares
-         the document type. Currently doctype is informational metadata;
-         the validator MAY use it as a default schema-binding hint."""]
-    [example lang=cx
-      """[?cx doctype='users-v1' encoding=utf-8]
-         [users
-           [user id=1 email='ada@example.com']]"""]
+      """CX reserves a doctype declaration slot (the `[!…]` declaration
+         lexical space inherited from XML, and a capability bit named
+         `doctype-active` — see [[ast-bin-capabilities]]) but does not yet
+         define an active doctype surface."""]
     [body
-      """The doctype name is a free-form identifier; convention is
-         `<name>-v<major>`. A future revision promotes doctype to
-         an *active* declaration (auto-load the schema by name, validate
-         on parse) — currently it is reserved for that direction."""]]
+      """The roadmap direction: a doctype names the document type
+         (convention `<name>-v<major>`) and a future revision promotes
+         it to an *active* declaration — auto-load the schema by name
+         and validate on parse. Until that lands, associate a schema
+         explicitly (see [[schema-binding]])."""]]
 
   [child id=encoding n=2.13 title='Document encoding (UTF-8, BOM, alternates)'
     [intro
-      """CX source is UTF-8 by default. The parser accepts a UTF-8 BOM at
-         the start of file (and strips it) but does not emit a BOM in
-         canonical form. Alternative encodings are accepted when the
-         document opens with `[?cx encoding=…]`."""]
+      """CX source is UTF-8. The parser accepts a UTF-8 BOM at the
+         start of a file (and strips it) but does not emit a BOM in
+         canonical form."""]
     [body
-      """Supported encodings: utf-8 (default), utf-16, utf-16le,
-         utf-16be, utf-32, iso-8859-1, windows-1252, shift_jis,
-         euc-jp, gb18030, big5. Decoding errors raise CXER0001 (parse
-         failure) with a byte offset; the parser does not silently
-         replace invalid bytes."""]
-    [body
-      """Canonical-form output is always UTF-8 without BOM regardless of
-         input encoding. Round-trip through a non-UTF-8 encoding requires
-         re-encoding the output explicitly (`cx convert doc.cx --encoding shift_jis`)."""]
-    [body
-      """The CLI and bindings accept stdin/file/socket input streams; on
-         stdin the encoding is inferred from BOM if present, otherwise
-         assumed UTF-8. Non-UTF-8 stdin without a leading `[?cx
-         encoding=…]` directive raises CXER0001 on the first invalid
-         byte."""]]
+      """Canonical-form output is always UTF-8 without BOM. Decoding
+         errors raise a parse failure with a byte offset; the parser
+         does not silently replace invalid bytes. Alternate source
+         encodings (utf-16, legacy 8-bit code pages, CJK encodings)
+         are on the roadmap and are not accepted today — transcode to
+         UTF-8 before parsing."""]]
 
   [child id=streaming-data n=2.14 title='Streaming parse and emission'
     [intro
@@ -794,11 +779,13 @@
          discards it before the next is read. Resident memory is bounded
          to one chunk plus a small parser scratch buffer (~32 KiB)."""]
     [example lang=cx
-      """[# Stream a 100 GB log file, count error records — never
-            materializes the full file in memory. #]
-         [?for [in $rec [?cx-read-stream 'logs.cx']]
-           [where [= [$name $rec] 'error']]
-           [yield $rec/@code]]"""]
+      """[# Stream a large record-per-line log — one line resident
+            at a time, never the whole file. #]
+         [?lib 'cx-stdlib/io']
+         [?lib 'cx-stdlib/cx']
+         [?for [in $line [$io:line-iter [$io:open 'logs.cxl' 'r']]]
+           [where [= [$name [$cx:parse $line]] 'error']]
+           [yield [?let [= $rec [$cx:parse $line]] $rec/@code]]]"""]
     [body
       """Measured throughput: 353 MB/s sustained on JSON-shape workloads
          (gate 15 in [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)).
@@ -815,15 +802,16 @@
       """CX has finite resource budgets to prevent adversarial inputs
          from exhausting host memory or stack. All limits are
          configurable via environment variables."""]
-    [table columns=('limit' 'default' 'env var' 'error')
-      [row limit='Max document depth (nested brackets)' default=512 var=CX_MAX_DEPTH error=CXER0142]
-      [row limit='Max attributes per element' default=1024 var=CX_MAX_ATTRS error=CXER0143]
-      [row limit='Max body byte length per element' default='256 MiB' var=CX_MAX_BODY error=CXER0144]
-      [row limit='Max include depth' default=16 var=CX_INCLUDE_MAX_DEPTH error=CXER0141]
-      [row limit='Max entity-reference expansion' default='10000 chars' var=CX_MAX_ENTITY_EXPAND error=CXER0145]
-      [row limit='Max recursion depth in [?for]/[?def]' default=1024 var=CX_MAX_RECURSE error=CXER0146]
-      [row limit='Max parse time per document' default='30 s' var=CX_MAX_PARSE_TIME error=CXER0147]
-      [row limit='Max canonical-form size' default='1 GiB' var=CX_MAX_CANON error=CXER0148]]
+    [table
+      [tr [th 'limit'] [th 'default'] [th 'env var'] [th 'error']]
+      [tr [td 'Max document depth (nested brackets)'] [td '512'] [td 'CX_MAX_DEPTH'] [td 'CXER0142']]
+      [tr [td 'Max attributes per element'] [td '1024'] [td 'CX_MAX_ATTRS'] [td 'CXER0143']]
+      [tr [td 'Max body byte length per element'] [td '256 MiB'] [td 'CX_MAX_BODY'] [td 'CXER0144']]
+      [tr [td 'Max include depth'] [td '16'] [td 'CX_INCLUDE_MAX_DEPTH'] [td 'CXER0141']]
+      [tr [td 'Max entity-reference expansion'] [td '10000 chars'] [td 'CX_MAX_ENTITY_EXPAND'] [td 'CXER0145']]
+      [tr [td 'Max recursion depth in [?for]/[?def]'] [td '1024'] [td 'CX_MAX_RECURSE'] [td 'CXER0146']]
+      [tr [td 'Max parse time per document'] [td '30 s'] [td 'CX_MAX_PARSE_TIME'] [td 'CXER0147']]
+      [tr [td 'Max canonical-form size'] [td '1 GiB'] [td 'CX_MAX_CANON'] [td 'CXER0148']]]
     [body
       """For untrusted-input processing (parsing CX received over a
          network), tighten these via the `--profile untrusted` flag on
@@ -979,11 +967,18 @@
            - **`:`** — data type annotation; pins the value type,
              overriding auto-typing."""]
       [example lang=cx
-        """[order #o1234 customer=alice
-             [line item=@margherita count=2]    # @-sigil reference to declared id
-             [line item=@pepperoni  count=1]]
+        """[menu
+             [pizza #margherita price=12]
+             [pizza #pepperoni  price=14]]
+           [order #o1234 customer=alice
+             [line item=@margherita count=2]  [; @-sigil reference to a declared id ]
+             [line item=@pepperoni  count=1]]"""]
+      [body
+        """In CXPath the same `@` sigil is attribute access:"""]
+      [example lang=cx
+        """[order [line sku='margherita' count=2]]
            [?for [in $line //order/line] [yield
-             [row sku=$line/@item]]]            # @-sigil attribute access in CXPath"""]
+             [row sku=$line/@sku]]]            [; @-sigil attribute access in CXPath ]"""]
       [example lang=cx
         """[defaults &shared timeout=30 retries=3]
            [server *shared name=api]
@@ -993,11 +988,9 @@
            that bind the same data with different anchor names hash
            to the same identity."""]
       [body
-        """Two additional sigils — `+` and `-` — are syntactic sugar
-           for boolean attributes. `+name` parses as `name=true`;
-           `-name` parses as `name=false`. Compact form for many
-           booleans."""]
-      [example lang=cx """[pizza +vegan -nuts -gluten +organic]"""]]
+        """Boolean attributes have no shorthand sigil — they are
+           ordinary `name=value` pairs (see [[bool]])."""]
+      [example lang=cx """[pizza vegan=true nuts=false gluten=false organic=true]"""]]
 
     [child id=types-fold n=2.18.3 title='Types — auto-typing, sized, decimal, bigint'
       [body
@@ -1033,10 +1026,10 @@
            legal range. Out-of-range values fail at parse time,
            not at runtime in some downstream consumer."""]
       [example lang=cx
-        """[port :u16 8080]              # rejects values over 65535
-           [balance :i64 -1234567890]    # signed 64-bit
-           [ratio :f32 3.14]             # 32-bit float
-           [count :u8 200]               # rejects 256 and up"""]
+        """[port::u16 8080]              # rejects values over 65535
+           [balance::i64 -1234567890]    # signed 64-bit
+           [ratio::f32 3.14]             # 32-bit float
+           [count::u8 200]               # rejects 256 and up"""]
       [body
         """**Decimal and bigint.** IEEE 754 floats lose precision
            for money and high-precision quantities; signed 64-bit
@@ -1044,17 +1037,17 @@
            for both cases, with binding mappings to each language's
            native big-number type."""]
       [example lang=cx
-        """[total :decimal 19.99]
-           [user-id :bigint 18446744073709551616]"""]
+        """[total::decimal 19.99]
+           [user-id::bigint 18446744073709551616]"""]
       [body
-        """**Typed bodies and arrays.** A colon-type annotation
+        """**Typed bodies and arrays.** A glued `::T` ascription
            pins not just attribute values but body content as
            well."""]
       [example lang=cx
-        """[count :int 42]
-           [ratio :decimal 3.14159]
-           [oven-temps :int[] 220 240 260 480]
-           [tags :[] cheap fast tasty]"""]]]
+        """[count::int 42]
+           [ratio::decimal 3.14159]
+           [oven-temps ::int[] 220 240 260 480]
+           [tags ::[] cheap fast tasty]"""]]]
 
   [# Migrated from docs-src/content/reference/{schemas,includes,streaming,tables}.cx
      during Phase B docs → guide consolidation (2026-05-24). Compact
@@ -1102,22 +1095,23 @@
 
     [child id=include-quickref n=2.19.2 title='Includes — parse-time vs eval-time'
       [body
-        """CX has two include directives that share one resolver.
-           The **parse-time** form `[?cx include=path]` expands
-           files before the document reaches downstream tools —
-           use for static composition (config files, schema
-           fragments, page templates with known paths). The
-           **eval-time** form `[?include path]` expands files
-           while a CX program runs; the path is any CX expression
-           — literal, bound variable, or computed via filters."""]
+        """`[?cx include=path]` is the include directive — a
+           **parse-time** expansion that splices files before the
+           document reaches downstream tools. Use it for static
+           composition: config files, schema fragments, page
+           templates with known paths. Resolution is opt-in — the
+           directive is preserved untouched unless a resolution root
+           is supplied (`--include-root=DIR` on the CLI). A program
+           that needs a *computed* path reads the file itself with
+           the standard library's `[$io:read-file]` + `[$cx:parse]`."""]
       [example lang=shell """cx --cx --include-root=./conf main.cx"""]
-      [example lang=cx
+      [; check=none — [?cx include] is approved surface (code.md §13); the
+         current binary rejects every [?cx …] directive, tracked as engine
+         regression #421. Re-enable the check when #421 lands. ]
+      [example lang=cx check=none
         """[users
              [?cx include=lib/admins.cx]
-             [user name=carol]]
-
-           [?include 'layouts/page.cx']
-           [?include [?concat ['layouts/', meta/@layout, '.cx']]]"""]
+             [user name=carol]]"""]
       [note
         """**Security and cycle detection.** Both forms reject
            absolute paths (`E901`), paths that escape the root

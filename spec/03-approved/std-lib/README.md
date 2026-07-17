@@ -55,6 +55,7 @@ The stdlib enumerates **37 sub-packages** in four informative tiers; **5 post-in
 | `i18n` | Message catalogs, locale-fallback, ICU MessageFormat with CLDR plural rules | [i18n.md](i18n.md) |
 | `geo` | Coordinate primitives, Haversine, WKT/GeoJSON round-trip | [geo.md](geo.md) |
 | `ft` | Fulltext search — inverted index, TF-IDF/BM25, phrase queries | [ft.md](ft.md) |
+| `similar` | Graded similarity — the `~` operator's backing, scorers, record linkage, clustering | [similar.md](similar.md) |
 | `email` | RFC 5322 + MIME multipart parse / emit | [email.md](email.md) |
 | `crypto` | Security primitives — HMAC, keyed-BLAKE3, HKDF, constant-time verify | [crypto.md](crypto.md) |
 | `html` | HTML5 parse / sanitize / serialize / extract-text | [html.md](html.md) |

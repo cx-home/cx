@@ -41,10 +41,17 @@ format-stability lock and the cap-bit commitments in
 [element_count nodes]
 ```
 
-The version byte is **8**. Decoders MUST reject buffers
+The version byte is **9**. Decoders MUST reject buffers
 whose version byte is higher than the highest version they support.
 Lower-versioned buffers are decodable in forward-compatible mode (the
 decoder treats absent v(N) extensions as their default-zero values).
+
+Producers emit the LOWEST version byte that carries the document:
+**6** for the common case, **8** when a PathNode / MatchNode /
+ModifyNode is present, **9** when any Element carries a `[table[…]]`
+payload (the §4.8 table record). A document that needs no v8/v9
+feature therefore produces bytes identical to the pre-v8/v9 layout,
+and every buffer an older reader could decode is unchanged.
 
 ---
 
@@ -100,6 +107,7 @@ Each node is recursively encoded as:
 | `0x14` | MatchNode | `u8:mode OptString:scrutinee u16:arm_count arms[]` — see §4.5. Advisory `source` / top-level `loc` and per-arm `arm.loc` are NOT carried on the wire. |
 | `0x15` | ModifyNode | `OptString:doc OptString:focus u16:action_count actions[]` — see §4.6. Advisory `source` / top-level `loc` and per-action `action.loc` are NOT carried on the wire. |
 | `0x16` | IteratorNode | `u8:source_kind u8:single_use u16:source_args_count nodes[]` — see §4.7 for the byte-ordinal table and per-source-kind argument shapes. The runtime-derived `memo` / `exhausted` fields are NOT carried on the wire; `single_use` IS. Gated by capability bit 37. |
+| `0x17` | Table record | `u16:col_count cols[] u32:row_count rows[]` — see §4.8. NOT a standalone Node kind: it carries the pooled `Element.table` payload ([`ast.md` §Element "table"](ast.md)) and is valid ONLY as the **first** entry of an Element's `nodes[]` (counted in `child_count`). Format version 9; gated by capability bit 40. Decoders MUST reject `0x17` anywhere else, and in any buffer whose version byte is < 9. |
 | `0xFF` | Skip / unknown | (no payload; decoder skips the node) |
 
 **Atom encoding.** Atoms encode under the existing `0x03 Scalar` tag
@@ -108,7 +116,7 @@ byte `0x12` is reserved for a future tag-flattened compact form;
 encoders MUST NOT emit `0x12`. Atom support is signaled by
 capability bit 33 (`0x200000000` per [`abi.md` §3](abi.md)).
 
-Unrecognized node-type IDs in the range `[0x17 .. 0xFE]` are
+Unrecognized node-type IDs in the range `[0x18 .. 0xFE]` are
 reserved; decoders MUST reject buffers containing reserved IDs.
 Tag `0x16` (IteratorNode) is gated by capability bit 37
 ([`abi.md` §3](abi.md)); decoders without bit 37 MUST raise
@@ -246,11 +254,13 @@ PathStep:
 | `0x06` | `element()` (element nodes only) | `""` (empty) |
 | `0x07` | `attribute()` (attribute nodes only) | `""` (empty) |
 
-Step predicates carry the general `ProgramExpr` body. The closed
-`PredExpr` enumeration of grammar [132a] is parse-time sugar over the
-unified `ProgramExpr` form, and the canonical-form emit (and therefore
-the wire payload) materialises every predicate as a `ProgramExpr` AST
-subtree, encoded under the existing per-kind tags in §4.1.
+Step predicates carry the general `ProgramExpr` body per grammar
+[159] (the closed `PredExpr` enumeration of the former [132a] is
+RETIRED — its infix/paren surface no longer parses). The
+canonical-form emit (and therefore the wire payload) materialises
+every predicate as a `ProgramExpr` AST subtree, encoded under the
+existing per-kind tags in §4.1; the operator-free notation atoms
+(`[N]`, `[@name]`, `[@!name]`, `[name]`) keep their dedicated kinds.
 
 **Form / binding consistency.** Producers MUST set `binding` present
 iff `form == 0x03 (binding)`. Decoders MUST reject buffers where the
@@ -266,7 +276,7 @@ list on the whole path expression (rare). Per-step `predicates`
 attaches to each step in source order. Both lists preserve source
 order on the wire — there is no canonical re-ordering (predicates
 may be order-sensitive when they contain side-effect-free positional
-filters like `[1]` vs `[last()]`).
+filters like `[1]` vs `[= $_position $_last]`).
 
 **Advisory fields elided.** The `source` snippet and `loc` `{line,
 col}` fields documented on the AST shape are NOT carried on the
@@ -543,6 +553,92 @@ the wire. On decode, fresh iterators are restored with `memo=[]` /
 `source_args` on first pull. Round-trip preserves the iterator's
 program, not its consumption state.
 
+### 4.8 Table record encoding
+
+The table record (tag `0x17`, format version 9) carries the pooled
+`Element.table` payload — the parsed contents of a `[table[…]]` block
+(grammar [29], [`ast.md` §Element "table"](ast.md)). It is **not** a
+standalone Node kind: it appears ONLY as the **first** entry of a
+table-bearing Element's `nodes[]` (counted in `child_count`), and the
+decoder re-attaches it as the element's table payload, not as a body
+item. At most one table record per Element.
+
+The shape mirrors the AST-JSON `"table"` object introduced for the
+same payload ([`ast.md` §Element "table"](ast.md), #443): declared
+columns (name + canonical long type, absent = string-default) and
+rows of cells, with collection cells riding the existing
+collection-node encodings.
+
+```
+Table record (tag 0x17, v9+):
+  u16 LE:col_count
+  cols[col_count]:
+    String:name          — column name
+    String:type_name     — declared column type, canonical long form
+                           ("int", not "i"); the EMPTY string ("") for
+                           an undeclared (string-default) column,
+                           mirroring the canonical CX header where an
+                           untyped column is the bare name
+  u32 LE:row_count       — u32, not u16: tables are the bulk-data
+                           structure (cf. data-bin.md row payloads)
+  rows[row_count]:
+    u16 LE:cell_count    — MUST equal col_count; the decoder MUST
+                           reject a mismatch (malformed-payload
+                           tripwire for ragged or corrupted rows)
+    cells[cell_count]    — one recursively-encoded node per cell,
+                           in column order
+```
+
+**Cell encoding.** Each cell is one node per the §4 envelope,
+restricted to the legal cell kinds:
+
+- Scalar cells encode as `0x03 Scalar` with `data_type` ∈ `"int"`,
+  `"float"`, `"bool"`, `"null"`, `"string"` — the cell's in-memory
+  variant, NOT the declared column type. A cell in a `date`- or
+  `decimal`-typed column carries its string payload as
+  `Scalar{"string", …}`; the column header carries the type (exactly
+  as in the AST-JSON lane, where scalar cells are JSON-native).
+- Collection cells encode under the existing SequenceNode (`0x0F`) /
+  ArrayNode (`0x10`) / MapNode (`0x11`) tags (§4.1/§4.3), unchanged.
+
+Decoders MUST reject a cell whose node is any other kind (Text,
+Element, Comment, …) or whose Scalar `data_type` is outside the five
+base kinds — loudly, never by dropping the cell.
+
+**Position and version rules.** Producers emit the table record only
+inside a version-9 buffer, only in the first child slot of an
+Element, at most once per Element. Decoders MUST reject `0x17`:
+
+- in any buffer whose version byte is < 9 (no v1–v8 producer ever
+  emitted the tag);
+- anywhere other than the first entry of an Element's `nodes[]` —
+  top level, prolog, a later child slot, inside a container node, or
+  in cell position.
+
+**Version discipline.** Version 9 is emitted only when a table
+payload is actually present somewhere in the Document (same additive
+rule as the v6 → v8 bump, §2): a table-free document keeps its
+previous envelope and its exact previous bytes. In the unversioned
+single-node frame (`emit_node_bin` / `node_from_bin`, used by the
+cxstore content-addressed engine), the reader is primed at the
+current max version; table-free subtree bytes are unchanged, and a
+pre-v9 reader hitting a table record fails loud on the unknown tag
+rather than misparsing.
+
+**Runtime fields elided.** The in-memory `from_chunked` provenance
+flag on TableData (set by the data_bin chunked reader,
+[`streaming.md` §1.1](streaming.md)) is NOT carried on the wire;
+decoded tables restore `from_chunked = false`. Round-trip preserves
+the table's columns and rows, not its ingest provenance.
+
+**Relationship to data_bin.** The DATA wire has its own table
+encodings (`data-bin.md` tags `0x60` / `0x61` / `0x63`) whose cells
+are self-describing DataVal records in data_bin's tag namespace. The
+ast_bin table record deliberately does NOT reuse that record shape:
+ast_bin cells reuse ast_bin's own node encodings, keeping each
+format internally consistent (one tag namespace per format) — the
+same reuse rule the AST-JSON lane follows.
+
 ---
 
 ## 5 — Example: empty document
@@ -624,7 +720,7 @@ hash-different).
 
 ## 6.5 — Example: PathNode
 
-**Input:** `//user[@active=true]`
+**Input:** `//user[= $_@active true]`
 
 **Parsed:** `PathNode { form: "descendant", binding: null, steps: [ { axis: "child", node_test: "user", predicates: [ AttrTest{@active = true} ] } ], predicates: [] }`
 
@@ -641,7 +737,7 @@ The PathNode emits:
 00                                            step[0].binding = absent (present=0)
 01 00                                         step[0].step_pred_count = 1 (u16 LE)
 …                                             step[0].predicates[0]: ProgramExpr
-                                              for `@active = true`, encoded
+                                              for `[= $_@active true]`, encoded
                                               under its own ProgramExpr tag
                                               (see §4.1)
 00 00                                         predicate_count = 0 (top-level)
@@ -733,10 +829,10 @@ PathNode advisory-elision convention).
 
 **Input:**
 ```
-[?modify $doc //user[@id=1]/@name [set "Alice"] [set-attr status "active"] [delete-attr stale]]
+[?modify $doc //user[= $_@id 1]/@name [set "Alice"] [set-attr status "active"] [delete-attr stale]]
 ```
 
-**Parsed:** `ModifyNode { doc: "$doc", focus: "//user[@id=1]/@name", actions: [ {kind:set, value:"\"Alice\""}, {kind:set-attr, name:"status", value:"\"active\""}, {kind:delete-attr, name:"stale"} ] }`
+**Parsed:** `ModifyNode { doc: "$doc", focus: "//user[= $_@id 1]/@name", actions: [ {kind:set, value:"\"Alice\""}, {kind:set-attr, name:"status", value:"\"active\""}, {kind:delete-attr, name:"stale"} ] }`
 
 The ModifyNode emits (canonical 2-head shape with three actions
 covering an expression-only action, a Name+Expr action, and a Name-only
@@ -747,8 +843,8 @@ action — exercises all three slot-presence patterns):
 01                                            doc = present (OptString)
 04 00 00 00 24 64 6F 63                       doc = "$doc" (len=4)
 01                                            focus = present (OptString)
-13 00 00 00 2F 2F 75 73 65 72 5B 40 69 64 3D 31 5D 2F 40 6E 61 6D 65
-                                              focus = "//user[@id=1]/@name" (len=19)
+17 00 00 00 2F 2F 75 73 65 72 5B 3D 20 24 5F 40 69 64 20 31 5D 2F 40 6E 61 6D 65
+                                              focus = "//user[= $_@id 1]/@name" (len=23)
 03 00                                         action_count = 3 (u16 LE)
 
 00                                            action[0].action_kind = 0x00 (set)
@@ -824,6 +920,59 @@ pulled.
 
 ---
 
+## 6.9 — Example: table record
+
+**Input:**
+```
+[t [table[a b::int]]
+  x 1
+]
+```
+
+**Parsed:** `Element { name: "t", dataType: "table", table: TableData { cols: [{a}, {b, int}], rows: [["x", 1]] } }`
+
+The full framed buffer (the table record starts at the element's
+first child slot):
+
+```
+58 00 00 00                     payload_size = 88 (u32 LE)
+09                              version = 9 (table record present)
+00 00                           prolog_count = 0 (u16 LE)
+01 00                           element_count = 1 (u16 LE)
+01                              node_type = 0x01 (Element)
+01 00 00 00 74                  name = "t" (len=1)
+00                              anchor = absent
+01 05 00 00 00 74 61 62 6C 65   data_type = present, "table" (len=5)
+00                              merge = absent
+00                              id = absent
+00                              body_ref = absent
+00 00                           attr_count = 0 (u16 LE)
+01 00                           child_count = 1 (the table record)
+
+17                              table record tag (0x17)
+02 00                           col_count = 2 (u16 LE)
+01 00 00 00 61                  col[0].name = "a" (len=1)
+00 00 00 00                     col[0].type_name = "" (string-default)
+01 00 00 00 62                  col[1].name = "b" (len=1)
+03 00 00 00 69 6E 74            col[1].type_name = "int" (len=3)
+01 00 00 00                     row_count = 1 (u32 LE)
+02 00                           row[0].cell_count = 2 (MUST == col_count)
+03                              cell[0]: node_type = 0x03 (Scalar)
+06 00 00 00 73 74 72 69 6E 67   data_type = "string" (len=6)
+01 00 00 00 78                  value = "x" (len=1)
+03                              cell[1]: node_type = 0x03 (Scalar)
+03 00 00 00 69 6E 74            data_type = "int" (len=3)
+01 00 00 00 31                  value = "1" (len=1)
+```
+
+A header-only table (`[t [table[a b::int]]]`) replaces the
+`01 00 00 00` row_count with `00 00 00 00` and carries no row bytes.
+The same document WITHOUT the table (`[t]`) emits version byte `06`
+and no `0x17` record — the v9 envelope appears only when a table
+payload is present (§4.8 version discipline).
+
+---
+
 ## 7 — Version compatibility
 
 ### 7.1 Forward compatibility
@@ -851,6 +1000,7 @@ The ast_bin codec advertises support through capability bits in
 | 33 (`0x200000000`) | Atom scalar kind — encoded under `0x03 Scalar` with `data_type = "atom"`. |
 | 36 (`0x1000000000`) | PathNode (`0x13`), MatchNode (`0x14`), ModifyNode (`0x15`) — co-allocated within version 8. |
 | 37 (`0x2000000000`) | IteratorNode (`0x16`). |
+| 40 (`0x10000000000`) | Element table record (`0x17`) — version 9. |
 
 A producer emitting a value whose kind requires a capability bit
 not advertised by the binding is an internal error: the producer
@@ -868,11 +1018,15 @@ with `CXER0290`.
   exact structure.
 - [`abi.md` §2.3](abi.md) — C ABI symbols that produce/consume
   ast_bin.
-- [`abi.md` §3](abi.md) — capability bitmask (bits 29 / 33 / 36 / 37).
+- [`abi.md` §3](abi.md) — capability bitmask (bits 29 / 33 / 36 / 37
+  / 40).
 - [`cxdm.md` §2.5–§2.7](cxdm.md) — runtime data model for Array,
   Map, and Sequence-as-Item kinds.
-- [`grammar.ebnf`](grammar.ebnf) — source-text grammar (collection
-  literals [56]; MatchExpr [136]; ModifyExpr [141]; CXPath
-  productions [131a]/[131b]/[132a]/[160]).
+- [`grammar.ebnf`](../formal/grammar.ebnf) — source-text grammar (collection
+  literals [56]; `[table[…]]` blocks [29]; MatchExpr [136];
+  ModifyExpr [141]; CXPath productions [131a]/[131b]/[132a]/[160]).
 - [`canonical.md` §2.11.1](canonical.md) — map key ordering used by
   hash-stable producers.
+- [`data-bin.md`](data-bin.md) — the DATA wire's own table encodings
+  (`0x60` / `0x61` / `0x63`); deliberately NOT reused by the §4.8
+  table record (one tag namespace per format).

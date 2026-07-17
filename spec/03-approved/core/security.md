@@ -49,7 +49,7 @@ capability (consistent with the `pure` classifier — pure code is capability-fr
 by construction).
 
 ## §3 Granting + narrowing
-- **CLI (deny-by-default):** `cx run --allow-read=./data --allow-net=api.example.com:443 --allow-env=HOME FILE`. No `--allow-*` ⇒ empty set (pure-only). `--allow-all` is an explicit opt-out for trusted local use.
+- **CLI (deny-by-default):** `cx FILE --allow-read=./data --allow-net=api.example.com:443 --allow-env=HOME`. No `--allow-*` ⇒ empty set (pure-only). `--allow-all` is an explicit opt-out for trusted local use.
 - **Embedding / ABI:** the host passes a capability set to `cx_code_eval`/`cx:eval`; defaults to empty.
 - **Manifest declaration:** `cx.pkg` MAY declare the capabilities a module *requests* (`[capabilities [net api.example.com:443] [env …]]`); the host reviews/grants — a module never self-grants.
 - **In-program narrowing:** `[?with-caps [deny net] [deny subprocess] BODY]` drops capabilities for `BODY`'s dynamic extent (narrow-only; a `deny` cannot be undone inside `BODY`). Run untrusted sub-computations with a reduced set. Grammar `[167]`: ≥1 `[deny CAP (resource)?]` clause + one body expr; a malformed shape is `CXER0100`, and a denied effect at the effect point raises `CXER0271` (§4).
@@ -62,7 +62,7 @@ Denial is **not** catchable into success by the offending op (it is a normal
 err value; `[?match]` / `[?else]` / `[?fallback]` may recover it). Grants/denials
 are audit-events (see §5).
 
-**Default-deny is normative everywhere (CLI + embedding).** `cx run FILE` with
+**Default-deny is normative everywhere (CLI + embedding).** `cx FILE` with
 no grant runs pure-only. To keep deny-by-default *ergonomic* (declare-once, not
 flag-every-run), three things are **required**:
 1. **Actionable errors** — `E_CAP_DENIED` MUST name the exact grant to add (the

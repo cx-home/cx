@@ -5,8 +5,10 @@
 -- toolchain, no separate server.js. Just `cx` on $PATH.
 --
 -- SETUP:
---   1. (Optional) Install the tree-sitter grammar for embedded-language
---      injection inside [``` lang=X [| ... |] ] blocks:
+--   1. (Optional) Install the tree-sitter grammar for structural
+--      highlighting + embedded-language injection into a block wrapped
+--      by a language-named element ([python [| ... |]], [json [# ... #]])
+--      or an explicit [code lang=X [| ... |]]:
 --        cd tooling/tree-sitter-cx && make install-nvim
 --   2. Ensure `cx` is on $PATH (or set $CX_BIN to an absolute path).
 --   3. Drop this file into your plugin directory.
@@ -114,8 +116,10 @@ return {
       local cx_bin = find_cx_bin()
       if not cx_bin then
         vim.notify(
-          'CX: `cx` binary not found on $PATH. Install with ' ..
-          '`brew install cx-home/tap/cx` or set $CX_BIN to an absolute path.',
+          'CX: `cx` binary not found on $PATH. Build it from source ' ..
+          '(`make build-vcx` in the cx repo produces vcx/target/cx — see ' ..
+          'tooling/README.md), then add it to $PATH or set $CX_BIN to an ' ..
+          'absolute path.',
           vim.log.levels.WARN
         )
         return
@@ -124,7 +128,7 @@ return {
       opts.servers.cx_ls = {
         cmd              = { cx_bin, 'lsp' },
         filetypes        = { 'cx' },
-        root_markers     = { 'cx.yaml', 'cxlint.yaml', 'v.mod', '.git' },
+        root_markers     = { '.cxlint.cx', 'v.mod', '.git' },
         single_file_support = true,
         mason            = false,
         on_attach        = cx_on_attach,

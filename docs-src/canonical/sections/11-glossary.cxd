@@ -71,14 +71,9 @@
   [child id=g-bool title='boolean'
     [body
       """The `true` / `false` scalar kind. Bare `true` and `false`
-         are reserved tokens. The bool sigils `+name` and `-name` are
-         attribute shortcuts (`name=true` and `name=false`). See
+         are reserved tokens; booleans are ordinary `name=value`
+         attributes — there is no shorthand sigil form. See
          [[booleans]] and [[bool]]."""]]
-
-  [child id=g-bool-sigil title='bool sigil (+ / -)'
-    [body
-      """Attribute shortcuts: `[el +active]` is `[el active=true]`,
-         `[el -active]` is `[el active=false]`. See [[bool]]."""]]
 
   [child id=g-bytes title='bytes'
     [body
@@ -583,7 +578,7 @@
     [body
       """A leading punctuation character that prefixes an
          identifier and changes its interpretation: `&` (anchor),
-         `*` (merge), `#` (id), `:` (type tag), `+`/`-` (bool),
+         `*` (merge), `#` (id), `:` (type tag),
          `$` (binding variable), `?` (directive). See [[sigils]]."""]]
 
   [child id=g-signed-canonical title='signed canonical'
@@ -609,7 +604,7 @@
 
   [child id=g-strict-canonical title='strict canonical'
     [body
-      """The form produced by `cx canon` — strips comments,
+      """The form produced by `cx canonical` — strips comments,
          re-sorts attributes lexicographically, normalises quote
          choice, normalises whitespace, NFC-normalises identifiers
          and strings. Hash input. See [[canon-lossless-strict]]."""]]

@@ -38,6 +38,10 @@ The distinctive positioning: A2A semantics mapped onto CX's durable substrate, n
 
 Fixtures (hermetic, via `mem://` journal + in-process bus + a fresh keypair): `conformance/stdlib/a2a-xap.cxd`.
 
+## `cx-x/adjudicate` — agent adjudicator for the `similar` review band
+
+Full spec: [`adjudicate.md`](adjudicate.md) (cx-private #376 — the similar.md §5.3 ruling-Q4 follow-up). An **out-of-band producer** for `similar`'s resume seam: consumes review-band `[pair …]` elements and produces the `[resolution verdict=… decided-by='agent:<model>' [left][right]]` records the known-verdicts tier already consumes — no cascade change, each run stays deterministic (the adjudicator runs *between* runs). Pure `prompt-of` / `verdict-of` (precedence `no-match` > `match` > `review`; unparseable → `:review` — an adjudicator can refuse, never silently promote) / `resolution-of` / `decisive` split from the effectful `adjudicate(-pair)`, which composes `cx-x/llm:complete` under a scoped net grant. Fixtures: `conformance/stdlib/adjudicate.cxd` + a mock `/api/chat` round-trip (`vcx/tests/adjudicate_real_test.v`).
+
 ---
 
 ## Cross-references

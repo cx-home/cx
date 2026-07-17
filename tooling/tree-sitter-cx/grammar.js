@@ -76,8 +76,24 @@ module.exports = grammar({
         $.const_directive,
         $.for_directive,
         $.if_directive,
+        $.interpolation,
         $.unknown_directive
       ),
+
+    // ── [?=…] value interpolation  (grammar.ebnf [58]) ────────────────────────
+    // Opaque CXPath body between `[?=` and the matching `]`, internal brackets
+    // balancing ([58a]). The body reuses `directive_body` (quoted strings,
+    // path_expr with predicates, reserved bindings, balanced predicate_expr),
+    // which enforces exactly the [58a] bracket-balance discipline. Without
+    // this rule `[?=` matched NO open token (`_unknown_open` requires a
+    // letter head) and fell to error recovery.
+    interpolation: ($) =>
+      seq(
+        alias($._interp_open, $.directive_head),
+        optional($.directive_body),
+        "]"
+      ),
+    _interp_open: (_) => token(prec(5, "[?=")),
 
     // Fallback for directives without a structured rule (e.g. `[?fn]`, `[?let]`,
     // `[?=]`, the iterator combinators, and the RETIRED `[?try]`). Because the
@@ -684,7 +700,7 @@ module.exports = grammar({
               "i8", "i16", "i32", "i64",
               "u8", "u16", "u32", "u64",
               "f16", "f32", "f64",
-              "duration", "instant", "secret"
+              "duration", "period", "instant", "secret"
             ),
             optional("[]")
           ),
@@ -692,13 +708,16 @@ module.exports = grammar({
         )
       ),
 
-    // ── Atom literal  :NAME  (grammar.ebnf [122b]) ──────────────────────────
+    // ── Atom literal  :NAME  (grammar.ebnf [122b], lexicon [L40]) ────────────
     // Tag-shaped scalar value. Single colon glued to a Name in value position.
+    // Dotted segments join into ONE hierarchical atom name (`:order.placed`,
+    // covered by the `.` in the name class), and the terminal `.*` prefix-glob
+    // (bus.md topic patterns, `:order.*`) is part of the same token.
     // Reserved :true / :false / :null are rejected at the runtime layer
     // (CXER0100); the grammar admits any Name. Negative precedence relative to
     // the `::` type_annotation token so `::T` always wins the longer match.
     atom_literal: (_) =>
-      token(seq(":", /[a-zA-Z_][a-zA-Z0-9._-]*/)),
+      token(seq(":", /[a-zA-Z_][a-zA-Z0-9._-]*/, optional(".*"))),
 
     // ── Line comment  # to EOL ──────────────────────────────────────────────
     // prec 1 so an EMPTY `#` line (`#`\n) lexes as a 1-char line_comment rather
@@ -870,11 +889,14 @@ module.exports = grammar({
     // NAME-start char MUST be glued to `#` — `# comment` (hash + space) stays a
     // line comment, so the token requires a name-start byte immediately after
     // `#`. IdName excludes `:` (IDs are not namespace-qualified), matching the
-    // anchor/merge name shape. Lexical prec(1) beats `line_comment` (`#`…EOL,
-    // an `extras` token at default prec 0) which would otherwise win the glued
-    // `#name run by longest-match; `# comment` (hash + space) does not match
-    // this token, so it still lexes as a line comment.
-    id_decl: (_) => token(prec(1, seq("#", /[a-zA-Z_][a-zA-Z0-9._-]*/))),
+    // anchor/merge name shape. Lexical prec MUST be STRICTLY ABOVE
+    // `line_comment`'s prec(1): at equal precedence the LONGEST match wins,
+    // and `#`…EOL is always at least as long as the glued `#name` run — so at
+    // prec(1) every `[user #u1 …]` lexed as a line_comment that swallowed the
+    // closing `]` (MISSING "]", tree corrupt from there). prec(2) makes the
+    // glued `#name` win; `# comment` (hash + space) does not match this token,
+    // so it still lexes as a line comment.
+    id_decl: (_) => token(prec(2, seq("#", /[a-zA-Z_][a-zA-Z0-9._-]*/))),
     anchor_ref: (_) => token(seq("&", /[a-zA-Z_][a-zA-Z0-9._-]*/)),
     merge_ref: (_) => token(seq("*", /[a-zA-Z_][a-zA-Z0-9._-]*/)),
 

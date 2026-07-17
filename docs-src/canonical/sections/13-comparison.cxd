@@ -67,25 +67,20 @@
          comparisons are where CX has features JSON does not, and
          where JSON has ecosystem JSON does not."""]
 
-    [table columns=(dimension, json, cx)
-      [row dimension='Schema' json='JSON Schema (separate spec)'
-           cx='.cxs — same syntax as data (see [[schema]])']
-      [row dimension='Identity / hash' json='No canonical form; hash drifts on key reorder'
-           cx='SHA-256 of canonical bytes; stable across platforms (see [[hash]])']
-      [row dimension='Comments' json='None (in the standard); JSON5 / JSONC are extensions'
-           cx='[# … #] preserved by cx fmt, stripped by cx canon']
-      [row dimension='Trailing commas' json='Forbidden' cx='Not applicable — bracket form, no commas in attribute list']
-      [row dimension='Number precision' json='Underspecified; JS doubles by default'
-           cx='Sized type tags (:i64, :u32, :f32) (see [[sized-types]])']
-      [row dimension='Multi-line strings' json='Escaped only' cx='Triple-quoted, whitespace-preserving (see [[strings]])']
-      [row dimension='Date / datetime' json='String only' cx='First-class :date / :datetime scalar (see [[dates]])']
-      [row dimension='Bytes' json='Base64 in a string' cx='First-class :bytes scalar (see [[bytes]])']
-      [row dimension='Tooling ecosystem' json='Vast — every language, every editor, every CDN'
-           cx='Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing']
-      [row dimension='Wire size' json='Baseline' cx='Comparable text form; data-bin / CXCol smaller']
-      [row dimension='Parse speed' json='Highly optimized parsers everywhere'
-           cx='Reference parser ~600 MB/s on the gate-15 workload']
-      [row dimension='Learning curve' json='Trivial' cx='Bracket-and-sigil form; ~one hour for the data subset']]
+    [table
+      [tr [th 'dimension'] [th 'json'] [th 'cx']]
+      [tr [td 'Schema'] [td 'JSON Schema (separate spec)'] [td '.cxs — same syntax as data (see [[schema]])']]
+      [tr [td 'Identity / hash'] [td 'No canonical form; hash drifts on key reorder'] [td 'SHA-256 of canonical bytes; stable across platforms (see [[hash]])']]
+      [tr [td 'Comments'] [td 'None (in the standard); JSON5 / JSONC are extensions'] [td '[# … #] preserved by cx fmt, stripped by cx canonical']]
+      [tr [td 'Trailing commas'] [td 'Forbidden'] [td 'Not applicable — bracket form, no commas in attribute list']]
+      [tr [td 'Number precision'] [td 'Underspecified; JS doubles by default'] [td 'Sized type tags (:i64, :u32, :f32) (see [[sized-types]])']]
+      [tr [td 'Multi-line strings'] [td 'Escaped only'] [td 'Triple-quoted, whitespace-preserving (see [[strings]])']]
+      [tr [td 'Date / datetime'] [td 'String only'] [td 'First-class :date / :datetime scalar (see [[dates]])']]
+      [tr [td 'Bytes'] [td 'Base64 in a string'] [td 'First-class :bytes scalar (see [[bytes]])']]
+      [tr [td 'Tooling ecosystem'] [td 'Vast — every language, every editor, every CDN'] [td 'Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing']]
+      [tr [td 'Wire size'] [td 'Baseline'] [td 'Comparable text form; data-bin / CXCol smaller']]
+      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Reference parser ~600 MB/s on the gate-15 workload']]
+      [tr [td 'Learning curve'] [td 'Trivial'] [td 'Bracket-and-sigil form; ~one hour for the data subset']]]
 
     [body
       """**When to pick JSON instead of CX.** Your consumers are
@@ -108,23 +103,17 @@
          large surface area (indentation sensitivity, tag system,
          anchor / alias / merge keys, the Norway problem)."""]
 
-    [table columns=(dimension, yaml, cx)
-      [row dimension='Indentation' yaml='Semantic (whitespace-sensitive)'
-           cx='Insignificant — bracket-structured']
-      [row dimension='Anchors and aliases' yaml='&anchor / *alias / << merge keys'
-           cx='&anchor / *merge sigils — same idea, no separate merge keyword (see [[anchor]] / [[merge]])']
-      [row dimension='Multiline strings' yaml='| (literal) and > (folded)'
-           cx='Triple-quoted (always literal)']
-      [row dimension='Norway problem' yaml='no parses as false in YAML 1.1' cx='Only true/false are bools; no /yes is a string']
-      [row dimension='Schema' yaml='JSON Schema (separate)' cx='.cxs (same syntax)']
-      [row dimension='Identity / hash' yaml='No canonical form'
-           cx='SHA-256 of canonical bytes (see [[hash]])']
-      [row dimension='Comments' yaml='# line comments only'
-           cx='[# … #] nest, span lines, preserved by cx fmt']
-      [row dimension='Tooling' yaml='Kubernetes, GitLab CI, Ansible'
-           cx='Growing — LSP + tree-sitter + VS Code; analytical pipelines']
-      [row dimension='Round-trip' yaml='Lossy in many YAML 1.1 → 1.2 cases'
-           cx='Lossless by spec (see [[roundtrip]])']]
+    [table
+      [tr [th 'dimension'] [th 'yaml'] [th 'cx']]
+      [tr [td 'Indentation'] [td 'Semantic (whitespace-sensitive)'] [td 'Insignificant — bracket-structured']]
+      [tr [td 'Anchors and aliases'] [td '&anchor / *alias / << merge keys'] [td '&anchor / *merge sigils — same idea, no separate merge keyword (see [[anchor]] / [[merge]])']]
+      [tr [td 'Multiline strings'] [td '| (literal) and > (folded)'] [td 'Triple-quoted (always literal)']]
+      [tr [td 'Norway problem'] [td 'no parses as false in YAML 1.1'] [td 'Only true/false are bools; no /yes is a string']]
+      [tr [td 'Schema'] [td 'JSON Schema (separate)'] [td '.cxs (same syntax)']]
+      [tr [td 'Identity / hash'] [td 'No canonical form'] [td 'SHA-256 of canonical bytes (see [[hash]])']]
+      [tr [td 'Comments'] [td '# line comments only'] [td '[# … #] nest, span lines, preserved by cx fmt']]
+      [tr [td 'Tooling'] [td 'Kubernetes, GitLab CI, Ansible'] [td 'Growing — LSP + tree-sitter + VS Code; analytical pipelines']]
+      [tr [td 'Round-trip'] [td 'Lossy in many YAML 1.1 → 1.2 cases'] [td 'Lossless by spec (see [[roundtrip]])']]]
 
     [body
       """**When to pick YAML.** Your config consumers are
@@ -146,18 +135,15 @@
          configs (Cargo.toml, pyproject.toml) and struggles with
          deep nesting."""]
 
-    [table columns=(dimension, toml, cx)
-      [row dimension='Nesting' toml='Dotted keys / [[arrays of tables]] — awkward past 2-3 levels'
-           cx='Native — every element nests']
-      [row dimension='Schema' toml='No standard schema language' cx='.cxs (see [[schema]])']
-      [row dimension='Identity / hash' toml='No canonical form'
-           cx='SHA-256 of canonical bytes']
-      [row dimension='Tooling' toml='Cargo, pip, Poetry — narrow but deep'
-           cx='LSP + tree-sitter; broader workloads than configs alone']
-      [row dimension='Round-trip' toml='Lossy — comment placement and key order'
-           cx='Lossless']
-      [row dimension='Mixed content' toml='Not supported' cx='Native (prose form, see [[prose]])']
-      [row dimension='Date / datetime' toml='Native :datetime' cx='Native :date / :datetime / :time']]
+    [table
+      [tr [th 'dimension'] [th 'toml'] [th 'cx']]
+      [tr [td 'Nesting'] [td 'Dotted keys / [[arrays of tables]] — awkward past 2-3 levels'] [td 'Native — every element nests']]
+      [tr [td 'Schema'] [td 'No standard schema language'] [td '.cxs (see [[schema]])']]
+      [tr [td 'Identity / hash'] [td 'No canonical form'] [td 'SHA-256 of canonical bytes']]
+      [tr [td 'Tooling'] [td 'Cargo, pip, Poetry — narrow but deep'] [td 'LSP + tree-sitter; broader workloads than configs alone']]
+      [tr [td 'Round-trip'] [td 'Lossy — comment placement and key order'] [td 'Lossless']]
+      [tr [td 'Mixed content'] [td 'Not supported'] [td 'Native (prose form, see [[prose]])']]
+      [tr [td 'Date / datetime'] [td 'Native :datetime'] [td 'Native :date / :datetime / :time']]]
 
     [body
       """**When to pick TOML.** Your config is flat — language
@@ -180,22 +166,18 @@
          density and the surrounding ecosystem (XSLT, XPath,
          XSD)."""]
 
-    [table columns=(dimension, xml, cx)
-      [row dimension='Syntax verbosity' xml='Open + close tag pair' cx='Single bracket pair']
-      [row dimension='Attribute syntax' xml='name="value" inside open tag'
-           cx='name=value inside bracket (see [[attributes]])']
-      [row dimension='Mixed content' xml='Native' cx='Native (see [[prose]])']
-      [row dimension='Namespaces' xml='xmlns:prefix=URI' cx='xmlns:prefix=URI (XML-aligned, see [[namespaces]])']
-      [row dimension='Selector' xml='XPath 3.1' cx='CXPath — XPath 3.1 aligned (see [[cxpath]])']
-      [row dimension='Schema' xml='XSD (large, complex) or RELAX NG' cx='.cxs (CX syntax, small)']
-      [row dimension='Identity / hash' xml='C14N (XML Canonicalization)'
-           cx='cx canon + SHA-256']
-      [row dimension='Templating' xml='XSLT (separate language)'
-           cx='[?for] / [?modify] — same language as data']
-      [row dimension='Tooling' xml='Vast in enterprise / publishing; less in modern web'
-           cx='Growing; same ecosystem reach is the long-term goal']
-      [row dimension='Learning curve' xml='Familiar to a generation of developers'
-           cx='Lower if XML is new; comparable if XML is known']]
+    [table
+      [tr [th 'dimension'] [th 'xml'] [th 'cx']]
+      [tr [td 'Syntax verbosity'] [td 'Open + close tag pair'] [td 'Single bracket pair']]
+      [tr [td 'Attribute syntax'] [td 'name="value" inside open tag'] [td 'name=value inside bracket (see [[attributes]])']]
+      [tr [td 'Mixed content'] [td 'Native'] [td 'Native (see [[prose]])']]
+      [tr [td 'Namespaces'] [td 'xmlns:prefix=URI'] [td 'xmlns:prefix=URI (XML-aligned, see [[namespaces]])']]
+      [tr [td 'Selector'] [td 'XPath 3.1'] [td 'CXPath — XPath 3.1 aligned (see [[cxpath]])']]
+      [tr [td 'Schema'] [td 'XSD (large, complex) or RELAX NG'] [td '.cxs (CX syntax, small)']]
+      [tr [td 'Identity / hash'] [td 'C14N (XML Canonicalization)'] [td 'cx canonical + SHA-256']]
+      [tr [td 'Templating'] [td 'XSLT (separate language)'] [td '[?for] / [?modify] — same language as data']]
+      [tr [td 'Tooling'] [td 'Vast in enterprise / publishing; less in modern web'] [td 'Growing; same ecosystem reach is the long-term goal']]
+      [tr [td 'Learning curve'] [td 'Familiar to a generation of developers'] [td 'Lower if XML is new; comparable if XML is known']]]
 
     [body
       """**When to pick XML.** You are working in publishing /
@@ -217,23 +199,16 @@
          you control both ends, the schema rarely changes, and
          every byte on the wire matters."""]
 
-    [table columns=(dimension, protobuf, cx)
-      [row dimension='Wire format' protobuf='Binary — varint + length-prefix'
-           cx='Text (CX), or data-bin / CXCol (binary)']
-      [row dimension='Schema requirement' protobuf='Required — wire is unparseable without .proto'
-           cx='Optional — value is self-describing']
-      [row dimension='Wire size' protobuf='Typically smallest of any format here'
-           cx='Comparable text size; data-bin closer to protobuf']
-      [row dimension='Throughput' protobuf='Very high — compiled (de)serializers'
-           cx='High but text-shaped; data-bin closes the gap']
-      [row dimension='Schema evolution' protobuf='Tag-numbered fields — strong forward/backward compat'
-           cx='Schema modes (open/strict/closed); attribute order is data-only']
-      [row dimension='Tooling' protobuf='protoc + every major language'
-           cx='Tier-1 V/Python/Go/Rust; growing']
-      [row dimension='Human readability' protobuf='None — binary opaque'
-           cx='Text-first; binary is an optimization']
-      [row dimension='Identity / hash' protobuf='Wire bytes — stable iff schema is fixed'
-           cx='Canonical bytes — stable regardless of schema']]
+    [table
+      [tr [th 'dimension'] [th 'protobuf'] [th 'cx']]
+      [tr [td 'Wire format'] [td 'Binary — varint + length-prefix'] [td 'Text (CX), or data-bin / CXCol (binary)']]
+      [tr [td 'Schema requirement'] [td 'Required — wire is unparseable without .proto'] [td 'Optional — value is self-describing']]
+      [tr [td 'Wire size'] [td 'Typically smallest of any format here'] [td 'Comparable text size; data-bin closer to protobuf']]
+      [tr [td 'Throughput'] [td 'Very high — compiled (de)serializers'] [td 'High but text-shaped; data-bin closes the gap']]
+      [tr [td 'Schema evolution'] [td 'Tag-numbered fields — strong forward/backward compat'] [td 'Schema modes (open/strict/closed); attribute order is data-only']]
+      [tr [td 'Tooling'] [td 'protoc + every major language'] [td 'Tier-1 V/Python/Go/Rust; growing']]
+      [tr [td 'Human readability'] [td 'None — binary opaque'] [td 'Text-first; binary is an optimization']]
+      [tr [td 'Identity / hash'] [td 'Wire bytes — stable iff schema is fixed'] [td 'Canonical bytes — stable regardless of schema']]]
 
     [body
       """**When to pick Protobuf.** You have a controlled RPC
@@ -254,17 +229,14 @@
          than text JSON, slightly slower than protobuf because
          it carries kind tags."""]
 
-    [table columns=(dimension, msgpack, cx)
-      [row dimension='Wire format' msgpack='Binary, schemaless' cx='Text (CX) or binary (data-bin)']
-      [row dimension='Schema' msgpack='None' cx='.cxs (optional)']
-      [row dimension='Wire size' msgpack='Smaller than JSON; comparable to data-bin'
-           cx='data-bin similar; CXCol smaller for tabular']
-      [row dimension='Type richness' msgpack='Scalars + map + array; ext-type extension'
-           cx='Eight scalar kinds, elements with attributes, mixed content, namespaces']
-      [row dimension='Identity / hash' msgpack='Wire bytes — stable iff serializer is deterministic'
-           cx='Canonical bytes — stable by construction']
-      [row dimension='Tooling' msgpack='Wide language coverage'
-           cx='Tier-1 V/Python/Go/Rust']]
+    [table
+      [tr [th 'dimension'] [th 'msgpack'] [th 'cx']]
+      [tr [td 'Wire format'] [td 'Binary, schemaless'] [td 'Text (CX) or binary (data-bin)']]
+      [tr [td 'Schema'] [td 'None'] [td '.cxs (optional)']]
+      [tr [td 'Wire size'] [td 'Smaller than JSON; comparable to data-bin'] [td 'data-bin similar; CXCol smaller for tabular']]
+      [tr [td 'Type richness'] [td 'Scalars + map + array; ext-type extension'] [td 'Eight scalar kinds, elements with attributes, mixed content, namespaces']]
+      [tr [td 'Identity / hash'] [td 'Wire bytes — stable iff serializer is deterministic'] [td 'Canonical bytes — stable by construction']]
+      [tr [td 'Tooling'] [td 'Wide language coverage'] [td 'Tier-1 V/Python/Go/Rust']]]
 
     [body
       """**When to pick MessagePack.** You want JSON semantics
@@ -286,21 +258,16 @@
          is also code" peer to CX, with a different design
          centre."""]
 
-    [table columns=(dimension, pkl, cx)
-      [row dimension='Surface' pkl='Custom syntax — class-oriented' cx='Bracket form — homoiconic']
-      [row dimension='Typing' pkl='Strong, static, gradual'
-           cx='Schema-validated (.cxs); type tags on scalars']
-      [row dimension='Computation' pkl='Lambdas, comprehensions, methods'
-           cx='Directives — [?for], [?match], [?modify], [?let]']
-      [row dimension='Output formats' pkl='JSON / YAML / Plist / Properties + custom renderers'
-           cx='CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']
-      [row dimension='Identity / hash' pkl='Not built-in' cx='SHA-256 of canonical bytes']
-      [row dimension='Module system' pkl='Imports, packages, semantic versioning'
-           cx='[?cx include] — capability-gated path resolution']
-      [row dimension='Tooling' pkl='LSP, IntelliJ plugin, CLI — solid'
-           cx='LSP + tree-sitter + VS Code — comparable']
-      [row dimension='Ecosystem' pkl='Apple-backed; growing community'
-           cx='Open-source; growing community']]
+    [table
+      [tr [th 'dimension'] [th 'pkl'] [th 'cx']]
+      [tr [td 'Surface'] [td 'Custom syntax — class-oriented'] [td 'Bracket form — homoiconic']]
+      [tr [td 'Typing'] [td 'Strong, static, gradual'] [td 'Schema-validated (.cxs); type tags on scalars']]
+      [tr [td 'Computation'] [td 'Lambdas, comprehensions, methods'] [td 'Directives — [?for], [?match], [?modify], [?let]']]
+      [tr [td 'Output formats'] [td 'JSON / YAML / Plist / Properties + custom renderers'] [td 'CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']]
+      [tr [td 'Identity / hash'] [td 'Not built-in'] [td 'SHA-256 of canonical bytes']]
+      [tr [td 'Module system'] [td 'Imports, packages, semantic versioning'] [td '[?cx include] — capability-gated path resolution']]
+      [tr [td 'Tooling'] [td 'LSP, IntelliJ plugin, CLI — solid'] [td 'LSP + tree-sitter + VS Code — comparable']]
+      [tr [td 'Ecosystem'] [td 'Apple-backed; growing community'] [td 'Open-source; growing community']]]
 
     [body
       """**When to pick Pkl.** You want a strongly typed config
@@ -320,20 +287,16 @@
          non-Turing-complete, with a sound type system and
          normalised import semantics."""]
 
-    [table columns=(dimension, dhall, cx)
-      [row dimension='Type system' dhall='Total, sound, dependent-ish (System Fω)'
-           cx='Schema validation; type tags on scalars']
-      [row dimension='Computation' dhall='λ-calculus — total, no recursion without bound'
-           cx='Directives — [?for] / [?match] / [?modify]; bounded by resilience directives']
-      [row dimension='Surface' dhall='Haskell-flavoured ML syntax' cx='Bracket form']
-      [row dimension='Output formats' dhall='JSON / YAML / Text' cx='CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']
-      [row dimension='Imports' dhall='Content-addressed by hash — same idea as CX'
-           cx='[?cx include] with capability gating']
-      [row dimension='Identity / hash' dhall='Standard form hash for imports'
-           cx='Canonical bytes + SHA-256 for any value']
-      [row dimension='Learning curve' dhall='Steep — ML / Haskell familiarity helps'
-           cx='Moderate — bracket form is unfamiliar but small']
-      [row dimension='Tooling' dhall='LSP, type-aware; narrow' cx='LSP + tree-sitter + VS Code']]
+    [table
+      [tr [th 'dimension'] [th 'dhall'] [th 'cx']]
+      [tr [td 'Type system'] [td 'Total, sound, dependent-ish (System Fω)'] [td 'Schema validation; type tags on scalars']]
+      [tr [td 'Computation'] [td 'λ-calculus — total, no recursion without bound'] [td 'Directives — [?for] / [?match] / [?modify]; bounded by resilience directives']]
+      [tr [td 'Surface'] [td 'Haskell-flavoured ML syntax'] [td 'Bracket form']]
+      [tr [td 'Output formats'] [td 'JSON / YAML / Text'] [td 'CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']]
+      [tr [td 'Imports'] [td 'Content-addressed by hash — same idea as CX'] [td '[?cx include] with capability gating']]
+      [tr [td 'Identity / hash'] [td 'Standard form hash for imports'] [td 'Canonical bytes + SHA-256 for any value']]
+      [tr [td 'Learning curve'] [td 'Steep — ML / Haskell familiarity helps'] [td 'Moderate — bracket form is unfamiliar but small']]
+      [tr [td 'Tooling'] [td 'LSP, type-aware; narrow'] [td 'LSP + tree-sitter + VS Code']]]
 
     [body
       """**When to pick Dhall.** You want totality, soundness,
@@ -356,23 +319,16 @@
          compression. CX is not Parquet's competitor; CXCol is,
          and Parquet is CX's export target."""]
 
-    [table columns=(dimension, parquet, cx-cxcol)
-      [row dimension='Layout' parquet='Column-oriented, on-disk'
-           cx-cxcol='Column-oriented (CXCol), in-memory; on-disk possible']
-      [row dimension='Compression' parquet='Snappy / Gzip / Zstd / LZ4 page-level'
-           cx-cxcol='Dictionary encoding on; compression optional']
-      [row dimension='Schema' parquet='Embedded — required for read'
-           cx-cxcol='.cxs schema or embedded type tags']
-      [row dimension='Ecosystem' parquet='Spark, DuckDB, Polars, pandas, Athena, BigQuery'
-           cx-cxcol='Native CX pipelines; Arrow bridge for everything else']
-      [row dimension='Bridge' parquet='—'
-           cx-cxcol='CX ↔ Parquet bridge via Arrow (see [[parquet-bridge]])']
-      [row dimension='Identity / hash' parquet='File hash — sensitive to write order'
-           cx-cxcol='Canonical bytes of the logical value']
-      [row dimension='Streaming' parquet='Row-group oriented'
-           cx-cxcol='Native streaming evaluator (see [[streaming]])']
-      [row dimension='Write speed' parquet='~150 MB/s on the reference benchmark'
-           cx-cxcol='Faster — no compression overhead by default']]
+    [table
+      [tr [th 'dimension'] [th 'parquet'] [th 'cx-cxcol']]
+      [tr [td 'Layout'] [td 'Column-oriented, on-disk'] [td 'Column-oriented (CXCol), in-memory; on-disk possible']]
+      [tr [td 'Compression'] [td 'Snappy / Gzip / Zstd / LZ4 page-level'] [td 'Dictionary encoding on; compression optional']]
+      [tr [td 'Schema'] [td 'Embedded — required for read'] [td '.cxs schema or embedded type tags']]
+      [tr [td 'Ecosystem'] [td 'Spark, DuckDB, Polars, pandas, Athena, BigQuery'] [td 'Native CX pipelines; Arrow bridge for everything else']]
+      [tr [td 'Bridge'] [td '—'] [td 'CX ↔ Parquet bridge via Arrow (see [[parquet-bridge]])']]
+      [tr [td 'Identity / hash'] [td 'File hash — sensitive to write order'] [td 'Canonical bytes of the logical value']]
+      [tr [td 'Streaming'] [td 'Row-group oriented'] [td 'Native streaming evaluator (see [[streaming]])']]
+      [tr [td 'Write speed'] [td '~150 MB/s on the reference benchmark'] [td 'Faster — no compression overhead by default']]]
 
     [body
       """**When to pick Parquet.** Your data is large, tabular,
@@ -393,17 +349,14 @@
          MessagePack, it is not a CX competitor — it is a layer
          CX integrates with."""]
 
-    [table columns=(dimension, arrow, cx-cxcol)
-      [row dimension='Layout' arrow='Column-oriented, in-memory'
-           cx-cxcol='Column-oriented, in-memory (compatible)']
-      [row dimension='Wire format' arrow='Flight (gRPC streaming) / IPC'
-           cx-cxcol='data-bin chunked tables']
-      [row dimension='Interop' arrow='pandas, Polars, DuckDB, Datafusion — zero-copy'
-           cx-cxcol='CX ↔ Arrow bridge (zero-copy, see [[arrow-bridge]])']
-      [row dimension='Schema' arrow='Embedded' cx-cxcol='.cxs or embedded']
-      [row dimension='Identity / hash' arrow='None standard' cx-cxcol='Canonical bytes + SHA-256']
-      [row dimension='Use case' arrow='Cross-process / cross-language analytics'
-           cx-cxcol='Same plus document semantics']]
+    [table
+      [tr [th 'dimension'] [th 'arrow'] [th 'cx-cxcol']]
+      [tr [td 'Layout'] [td 'Column-oriented, in-memory'] [td 'Column-oriented, in-memory (compatible)']]
+      [tr [td 'Wire format'] [td 'Flight (gRPC streaming) / IPC'] [td 'data-bin chunked tables']]
+      [tr [td 'Interop'] [td 'pandas, Polars, DuckDB, Datafusion — zero-copy'] [td 'CX ↔ Arrow bridge (zero-copy, see [[arrow-bridge]])']]
+      [tr [td 'Schema'] [td 'Embedded'] [td '.cxs or embedded']]
+      [tr [td 'Identity / hash'] [td 'None standard'] [td 'Canonical bytes + SHA-256']]
+      [tr [td 'Use case'] [td 'Cross-process / cross-language analytics'] [td 'Same plus document semantics']]]
 
     [body
       """**When to pick Arrow.** You are doing pure analytics —
@@ -424,37 +377,18 @@
          alternative. **Pick CX** is the column that matters
          most for an evaluator question."""]
 
-    [table columns=(format, strength, weakness, pick-cx-when)
-      [row format='JSON' strength='Universal ecosystem'
-           weakness='No schema, no comments, no identity'
-           pick-cx-when='You need any of: schema / comments / identity / mixed content / dates / bytes']
-      [row format='YAML' strength='Human-readable config'
-           weakness='Indentation footguns, lossy round-trip, Norway problem'
-           pick-cx-when='You want YAML readability without the footguns']
-      [row format='TOML' strength='Flat config readability'
-           weakness='Awkward at depth, no schema'
-           pick-cx-when='Your config is hierarchical or grows beyond config']
-      [row format='XML' strength='Tree-shaped, mixed content, XPath ecosystem'
-           weakness='Verbose, XSD complexity, no homoiconic code-as-data'
-           pick-cx-when='You want the XML data model in a denser syntax with code-as-data unified']
-      [row format='Protobuf' strength='Wire size and throughput'
-           weakness='Schema-required, opaque without .proto, no document semantics'
-           pick-cx-when='Your data is also config / docs / hashed payloads, not just RPC wire']
-      [row format='MessagePack' strength='Compact binary JSON'
-           weakness='Flat / no document semantics'
-           pick-cx-when='Your data has shape (attributes / mixed content / namespaces)']
-      [row format='Pkl' strength='Strongly typed config language'
-           weakness='Config-only; no data identity, narrower output formats'
-           pick-cx-when='The same documents are data and code, not just config']
-      [row format='Dhall' strength='Total, sound, content-addressed imports'
-           weakness='Steep learning curve, config-only'
-           pick-cx-when='You want Dhall semantics plus rich data shape and broad outputs']
-      [row format='Parquet' strength='Analytical scan, ecosystem'
-           weakness='File-format only, no document semantics'
-           pick-cx-when='Producer and consumer are CX-native; export to Parquet for interchange']
-      [row format='Arrow' strength='Zero-copy in-memory columnar'
-           weakness='No document semantics, no identity'
-           pick-cx-when='You want Arrow plus CX semantics (use the bridge — they coexist)']]
+    [table
+      [tr [th 'format'] [th 'strength'] [th 'weakness'] [th 'pick-cx-when']]
+      [tr [td 'JSON'] [td 'Universal ecosystem'] [td 'No schema, no comments, no identity'] [td 'You need any of: schema / comments / identity / mixed content / dates / bytes']]
+      [tr [td 'YAML'] [td 'Human-readable config'] [td 'Indentation footguns, lossy round-trip, Norway problem'] [td 'You want YAML readability without the footguns']]
+      [tr [td 'TOML'] [td 'Flat config readability'] [td 'Awkward at depth, no schema'] [td 'Your config is hierarchical or grows beyond config']]
+      [tr [td 'XML'] [td 'Tree-shaped, mixed content, XPath ecosystem'] [td 'Verbose, XSD complexity, no homoiconic code-as-data'] [td 'You want the XML data model in a denser syntax with code-as-data unified']]
+      [tr [td 'Protobuf'] [td 'Wire size and throughput'] [td 'Schema-required, opaque without .proto, no document semantics'] [td 'Your data is also config / docs / hashed payloads, not just RPC wire']]
+      [tr [td 'MessagePack'] [td 'Compact binary JSON'] [td 'Flat / no document semantics'] [td 'Your data has shape (attributes / mixed content / namespaces)']]
+      [tr [td 'Pkl'] [td 'Strongly typed config language'] [td 'Config-only; no data identity, narrower output formats'] [td 'The same documents are data and code, not just config']]
+      [tr [td 'Dhall'] [td 'Total, sound, content-addressed imports'] [td 'Steep learning curve, config-only'] [td 'You want Dhall semantics plus rich data shape and broad outputs']]
+      [tr [td 'Parquet'] [td 'Analytical scan, ecosystem'] [td 'File-format only, no document semantics'] [td 'Producer and consumer are CX-native; export to Parquet for interchange']]
+      [tr [td 'Arrow'] [td 'Zero-copy in-memory columnar'] [td 'No document semantics, no identity'] [td 'You want Arrow plus CX semantics (use the bridge — they coexist)']]]
 
     [body
       """**The honest summary.** CX wins on **unification**:

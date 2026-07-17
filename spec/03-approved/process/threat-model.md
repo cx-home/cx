@@ -4,7 +4,7 @@
 
 This document records CX's threat model: what the project is hardened against, what it isn't, the assumed deployment model, and where the trust boundaries sit. It is normative for hardening claims and informative for adopters evaluating CX for a particular deployment.
 
-Vulnerability reports are handled via [`SECURITY.md`](../../SECURITY.md).
+Vulnerability reports are handled via [`SECURITY.md`](../../../SECURITY.md).
 
 ## 1 — Scope
 
@@ -163,7 +163,7 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Element / attribute count caps | configurable per-document and per-element | [`../core/code.md`](../core/code.md) |
 | Payload-size cap | per-allocation budget on binary decoders | [`../core/data-bin.md`](../core/data-bin.md) |
 | Varint validation | overlong / truncated varints rejected | [`../core/data-bin.md`](../core/data-bin.md) |
-| External-entity rejection | DOCTYPE parsed but inert; no entity expansion | [`../core/grammar.ebnf`](../core/grammar.ebnf) |
+| External-entity rejection | DOCTYPE parsed but inert; no entity expansion | [`../core/grammar.ebnf`](../formal/grammar.ebnf) |
 | XXE / billion-laughs immunity | follows from external-entity rejection | (by-construction) |
 | Include-resolution scoping | path-only, caller-supplied root, depth cap, absolute-path refusal | [`../core/code.md`](../core/code.md) §13 |
 | UTF-8 validation | invalid UTF-8 in any input is an error | [`../core/abi.md`](../core/abi.md) |
@@ -203,7 +203,7 @@ An adopter deploying CX makes these assumptions; the threat model is written ass
 
 ## 8 — Reporting a vulnerability
 
-See [`SECURITY.md`](../../SECURITY.md). Coordinated disclosure with a 7-day window after a fix lands.
+See [`SECURITY.md`](../../../SECURITY.md). Coordinated disclosure with a 7-day window after a fix lands.
 
 ## 9 — Out-of-scope vulnerability classes
 

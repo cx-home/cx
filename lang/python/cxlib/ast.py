@@ -297,7 +297,7 @@ class IteratorNode:
         # `cx_iterator_pull` C ABI export, replace this memo-only walk
         # with a chunked pull loop. v0.8.0 W3f scope is the wire-format
         # round-trip + Iterator type surface; lazy traversal lands once
-        # the C ABI is designed (ADR pending).
+        # the C ABI is designed (spec design pending).
         yield from self._memo
 
     def materialize(self) -> list:
@@ -601,7 +601,7 @@ class Document:
 
         Example::
 
-            doc.select_all('//user[@active=true]')
+            doc.select_all('//user[= $_@active true]')
 
         Returns a Python list of Element objects, parsed from the
         evaluator's CX-format output. Non-element results (scalars,
@@ -632,8 +632,8 @@ class Document:
 
         Example::
 
-            doc.modify('//user[@active=false]', '[delete]')
-            doc.modify('//user[@id=1]/@name',   '[set "Alicia"]')
+            doc.modify('//user[= $_@active false]', '[delete]')
+            doc.modify('//user[= $_@id 1]/@name',   '[set "Alicia"]')
             doc.modify('//widget',              '[rename component]')
 
         spec/code.md §7.

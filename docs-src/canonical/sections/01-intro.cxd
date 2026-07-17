@@ -13,7 +13,7 @@
          deployment — there is one shape, and you write everything in it."""]
 
     [example lang=cx
-      """[hello :greeting 'world']"""]
+      """[hello greeting='world']"""]
 
     [body
       """That is a complete CX document. It is also a complete CX program when
@@ -30,18 +30,18 @@
       """[# 1. Data: a small document
          #]
          [users
-           [user :id 1 :email 'ada@example.com' :active true]
-           [user :id 2 :email 'grace@example.com' :active false]
-           [user :id 3 :email 'linus@example.com' :active true]]
+           [user id=1 email='ada@example.com' active=true]
+           [user id=2 email='grace@example.com' active=false]
+           [user id=3 email='linus@example.com' active=true]]
 
          [# 2. Code: select active users with CXPath
          #]
-         [?for [in $u //user[@active=true]] [yield
-           [active-user :email $u@email]]]
+         [?for [in $u //user[= $_@active true]] [yield
+           [active-user email=$u@email]]]
 
          [# 3. Pure-functional update: mark one user verified
          #]
-         [?modify $doc //user[@id=1]/@status :set 'verified']"""]
+         [?modify $doc //user[= $_@id 1]/@status [set 'verified']]"""]
 
     [body
       """Three forms, one language. No string concatenation; no AST mismatch
@@ -126,33 +126,21 @@
          away (ecosystem maturity, library breadth) is the honest accounting in
          [[comparison]]."""]
 
-    [table columns=(language, tier, why)
-      [row language='CX' tier='Reference'
-           why='One grammar production; every construct is the same [head …] form. No statement/expression split, no infix, no privileged keyword — even special forms obey the one rule.']
-      [row language='Lisp-1 (Scheme)' tier='Near-reference'
-           why='Homoiconic S-expressions; single namespace (more uniform than Lisp-2). Loses only because quote, lambda and if are privileged special forms — CX folds even those into the one rule.']
-      [row language='Scala' tier='High (uniform model)'
-           why='Everything is an expression; functions are objects; operators are methods; uniform access. Diluted by a large sugary surface — implicits/givens, two dialects.']
-      [row language='Ruby' tier='High (uniform model)'
-           why='Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars).']
-      [row language='V' tier='Moderate'
-           why='Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split.']
-      [row language='Kotlin' tier='Moderate'
-           why='Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop.']
-      [row language='Python' tier='Moderate'
-           why='Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, lambda is crippled.']
-      [row language='Swift' tier='Moderate'
-           why='Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders.']
-      [row language='Rust' tier='Low–moderate'
-           why='Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal.']
-      [row language='C#' tier='Low'
-           why='Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide.']
-      [row language='Java' tier='Low'
-           why='The classic wart — primitives vs objects — plus special-cased arrays, no operator overloading, erasure generics, statement-heavy ceremony.']
-      [row language='Go' tier='Low'
-           why='Simple but not orthogonal — magic built-ins user code cannot replicate (make, append, len, cap, delete), special slice/map/channel semantics, retrofitted generics, error-by-convention.']
-      [row language='TypeScript / JavaScript' tier='Lowest'
-           why='Most accreted — this-rebinding, hoisting, prototype vs class, == vs ===; TypeScript layers an entire erased second language over the runtime.']]
+    [table
+      [tr [th 'language'] [th 'tier'] [th 'why']]
+      [tr [td 'CX'] [td 'Reference'] [td 'One grammar production; every construct is the same [head …] form. No statement/expression split, no infix, no privileged keyword — even special forms obey the one rule.']]
+      [tr [td 'Lisp-1 (Scheme)'] [td 'Near-reference'] [td 'Homoiconic S-expressions; single namespace (more uniform than Lisp-2). Loses only because quote, lambda and if are privileged special forms — CX folds even those into the one rule.']]
+      [tr [td 'Scala'] [td 'High (uniform model)'] [td 'Everything is an expression; functions are objects; operators are methods; uniform access. Diluted by a large sugary surface — implicits/givens, two dialects.']]
+      [tr [td 'Ruby'] [td 'High (uniform model)'] [td 'Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars).']]
+      [tr [td 'V'] [td 'Moderate'] [td 'Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split.']]
+      [tr [td 'Kotlin'] [td 'Moderate'] [td 'Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop.']]
+      [tr [td 'Python'] [td 'Moderate'] [td 'Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, lambda is crippled.']]
+      [tr [td 'Swift'] [td 'Moderate'] [td 'Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders.']]
+      [tr [td 'Rust'] [td 'Low–moderate'] [td 'Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal.']]
+      [tr [td 'C#'] [td 'Low'] [td 'Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide.']]
+      [tr [td 'Java'] [td 'Low'] [td 'The classic wart — primitives vs objects — plus special-cased arrays, no operator overloading, erasure generics, statement-heavy ceremony.']]
+      [tr [td 'Go'] [td 'Low'] [td 'Simple but not orthogonal — magic built-ins user code cannot replicate (make, append, len, cap, delete), special slice/map/channel semantics, retrofitted generics, error-by-convention.']]
+      [tr [td 'TypeScript / JavaScript'] [td 'Lowest'] [td 'Most accreted — this-rebinding, hoisting, prototype vs class, == vs ===; TypeScript layers an entire erased second language over the runtime.']]]
 
     [note
       """**Two distinctions drive the ranking.** *Simplicity vs

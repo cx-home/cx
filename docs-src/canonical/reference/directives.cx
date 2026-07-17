@@ -116,7 +116,7 @@
 [directive-doc name='?let' category="Core — local binding" spec="§8"
   [sig """[?let [= $x EXPR]… BODY] -> result"""]
   [summary """Local binding: bind one or more names in a lexical scope and evaluate the body; bindings may nest."""]
-  [example [code """[?let [= $a 10] [?let [= $b 32] [+ $a $b]]]"""] [expect """42"""]]
+  [example [code """[?let [= $a 10] [= $b 32] [+ $a $b]]"""] [expect """42"""]]
 ]
 
 [directive-doc name='?fn' category="Core — function literal" spec="§8"
@@ -293,7 +293,7 @@ B"""] [expect """50"""]]
 
 [directive-doc name='?timeout' category="Resilience" spec="§10.2"
   [sig """[?timeout DURATION BODY] -> result"""]
-  [summary """Resilience: bound BODY by a wall-clock duration; exceeding it yields a timeout error."""]
+  [summary """Resilience: bound BODY by a duration; on elapse yields a timeout error (CXER0141). Enforced against LOGICAL time — `[?sleep DUR mock]` advances the clock and trips it; a real wall-clock-blocking body is NOT interrupted (real-time cancellation requires the production scheduler)."""]
   [example [code """[?timeout 1s fast]"""] [expect """fast"""]]
 ]
 
@@ -320,7 +320,7 @@ B"""] [expect """50"""]]
 
 [directive-doc name='?bulkhead' category="Resilience" spec="§10.2"
   [sig """[?bulkhead max-concurrent=N queue=Q BODY] -> result"""]
-  [summary """Resilience: cap concurrent executions at `max-concurrent` with a bounded queue; saturation yields a bulkhead error."""]
+  [summary """Resilience (EXPERIMENTAL): cap concurrent executions at `max-concurrent`; saturation yields CXER0152. Immediate-reject works, but the bounded `queue`/backpressure engages ONLY under the cooperative scheduler (`[?test-concurrent]`) and the slot cap is not reliably enforced under real thread contention. Not the `[par]` bounding mechanism (#94 — `[par N]` owns width); for production load-shedding prefer `[?rate-limit]` or a buffered `[?channel]`."""]
   [example [code """[?bulkhead max-concurrent=4 queue=0 ran]"""] [expect """ran"""]]
 ]
 
@@ -329,14 +329,14 @@ B"""] [expect """50"""]]
   [summary """Services: stand up an HTTP service from declarative [resource] routes; evaluates to a service handle."""]
   [example [code """[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
                 [resource [get "/quick"]
-                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]"""] [expect """[terminated name=svc-020 reason=graceful]"""]]
+                   [response status=200 body="done"]]]] [= $_ [?stop $svc]] [?wait-for service=$svc]]"""] [expect """[terminated name=svc-020 reason=graceful]"""]]
 ]
 
 [directive-doc name='?service-handle' category="Services" spec="§10.3"
   [sig """[?service-handle name=NAME] -> handle"""]
   [summary """Services: look up a running service by name to obtain its handle."""]
   [example [code """[?let [= $_ [?http-service on=http port=0 name="svc-021"
-              [resource [get "/"] [response status=200 body="ok"]]]] [?let [= $h [?service-handle name="svc-021"]] [?let [= $_ [?stop $h]] [terminated name="svc-021" reason="graceful"]]]]"""] [expect """[terminated name=svc-021 reason=graceful]"""]]
+              [resource [get "/"] [response status=200 body="ok"]]]] [= $h [?service-handle name="svc-021"]] [= $_ [?stop $h]] [terminated name="svc-021" reason="graceful"]]"""] [expect """[terminated name=svc-021 reason=graceful]"""]]
 ]
 
 [directive-doc name='?http-client' category="Clients" spec="§10.3"
@@ -354,31 +354,31 @@ B"""] [expect """50"""]]
 [directive-doc name='?worker-handle' category="Concurrency" spec="§10.4"
   [sig """[?worker-handle name=NAME] -> handle"""]
   [summary """Concurrency: look up a running worker by name to obtain its handle."""]
-  [example [code """[?let [= $_ [?worker name="w4" [body lookupable]]] [?let [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]]"""] [expect """lookupable"""]]
+  [example [code """[?let [= $_ [?worker name="w4" [body lookupable]]] [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]"""] [expect """lookupable"""]]
 ]
 
 [directive-doc name='?channel' category="Concurrency" spec="§10.4"
   [sig """[?channel name=NAME buffer=N] -> channel"""]
   [summary """Concurrency: create a named channel with a bounded buffer."""]
-  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]"""] [expect """'hello'"""]]
+  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]"""] [expect """'hello'"""]]
 ]
 
 [directive-doc name='?send' category="Concurrency" spec="§10.4"
   [sig """[?send VALUE to=CHANNEL] -> ()"""]
   [summary """Concurrency: send a value into a channel, blocking when the buffer is full."""]
-  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]"""] [expect """'hello'"""]]
+  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]"""] [expect """'hello'"""]]
 ]
 
 [directive-doc name='?receive' category="Concurrency" spec="§10.4"
   [sig """[?receive from=CHANNEL] -> value"""]
   [summary """Concurrency: receive the next value from a channel, blocking when empty."""]
-  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [?let [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]]"""] [expect """'hello'"""]]
+  [example [code """[?let [= $ch [?channel name="c1" buffer=1]] [= $_ [?send "hello" to=$ch]] [?receive from=$ch]]"""] [expect """'hello'"""]]
 ]
 
 [directive-doc name='?try-send' category="Concurrency" spec="§10.4"
   [sig """[?try-send VALUE to=CHANNEL timeout=…] -> () | err"""]
   [summary """Concurrency: send with a timeout; yields a send-timeout error instead of blocking indefinitely."""]
-  [example [code """[?let [= $ch [?channel name="c5" buffer=1]] [?let [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]]"""] [expect """[err code=cx-err:CXER0201 message='send timed out']"""]]
+  [example [code """[?let [= $ch [?channel name="c5" buffer=1]] [= $_ [?send "first" to=$ch]] [?try-send "second" to=$ch timeout=50ms]]"""] [expect """[err code=cx-err:CXER0201 message='send timed out']"""]]
 ]
 
 [directive-doc name='?try-receive' category="Concurrency" spec="§10.4"
@@ -390,15 +390,15 @@ B"""] [expect """50"""]]
 [directive-doc name='?close' category="Concurrency" spec="§10.4"
   [sig """[?close CHANNEL] -> ()"""]
   [summary """Concurrency: close a channel; drained receives on a closed channel yield a channel-closed error."""]
-  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [?let [= $_ [?send "a" to=$ch]] [?let [= $_ [?close $ch]] [?let [= $first [?receive from=$ch]] [?let [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]]]]]"""] [expect """([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])"""]]
+  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]"""] [expect """([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])"""]]
 ]
 
 [directive-doc name='?select' category="Concurrency" spec="§10.4"
   [sig """[?select [case [from CH $m] …]… [case [timeout D] …]?] -> arm"""]
   [summary """Concurrency: wait on multiple channel operations and run the arm of the first that is ready; an optional [timeout] arm bounds the wait."""]
-  [example [code """[?let [= $a [?channel name="sa" buffer=1]] [?let [= $b [?channel name="sb" buffer=1]] [?let [= $_ [?send "from-a" to=$a]] [?select
-                 [case [from $a $msg] [picked ch="a" value=$msg]]
-                 [case [from $b $msg] [picked ch="b" value=$msg]]]]]]"""] [expect """[picked ch=a value=from-a]"""]]
+  [example [code """[?let [= $a [?channel name="sa" buffer=1]] [= $b [?channel name="sb" buffer=1]] [= $_ [?send "from-a" to=$a]] [?select
+[case [from $a $msg] [picked ch="a" value=$msg]]
+[case [from $b $msg] [picked ch="b" value=$msg]]]]"""] [expect """[picked ch=a value=from-a]"""]]
 ]
 
 [directive-doc name='?stop' category="Lifecycle" spec="§10.3, §10.4"
@@ -406,7 +406,7 @@ B"""] [expect """50"""]]
   [summary """Lifecycle: request graceful shutdown of a service or worker."""]
   [example [code """[?let [= $svc [?http-service on=http port=0 name="svc-020" grace-period=5s
                 [resource [get "/quick"]
-                   [response status=200 body="done"]]]] [?let [= $_ [?stop $svc]] [?wait-for service=$svc]]]"""] [expect """[terminated name=svc-020 reason=graceful]"""]]
+                   [response status=200 body="done"]]]] [= $_ [?stop $svc]] [?wait-for service=$svc]]"""] [expect """[terminated name=svc-020 reason=graceful]"""]]
 ]
 
 [directive-doc name='?wait-for' category="Lifecycle" spec="§10.3, §10.4"
@@ -430,35 +430,35 @@ B"""] [expect """50"""]]
 [directive-doc name='?await-all' category="Async" spec="§10.5"
   [sig """[?await-all (F…)] -> sequence"""]
   [summary """Async: await every future and yield their values as a sequence; any non-done future surfaces an error."""]
-  [example [code """[?let [= $a [?async 1]] [?let [= $b [?async 2]] [?let [= $c [?async 3]] [?await-all ($a, $b, $c)]]]]"""] [expect """(1, 2, 3)"""]]
+  [example [code """[?let [= $a [?async 1]] [= $b [?async 2]] [= $c [?async 3]] [?await-all ($a, $b, $c)]]"""] [expect """(1, 2, 3)"""]]
 ]
 
 [directive-doc name='?await-any' category="Async" spec="§10.5"
   [sig """[?await-any (F…)] -> value"""]
   [summary """Async: yield the first future to succeed, skipping failed ones."""]
-  [example [code """[?let [= $bad [?async [err code='bad' message='bad']]] [?let [= $good [?async good]] [?await-any ($bad, $good)]]]"""] [expect """good"""]]
+  [example [code """[?let [= $bad [?async [err code='bad' message='bad']]] [= $good [?async good]] [?await-any ($bad, $good)]]"""] [expect """good"""]]
 ]
 
 [directive-doc name='?await-race' category="Async" spec="§10.5"
   [sig """[?await-race (F…)] -> value"""]
   [summary """Async: yield the first future to settle and cancel the losers."""]
-  [example [code """[?let [= $fast [?async fast]] [?let [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [?let [= $winner [?await-race ($fast, $slow)]] [?let [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]]]]"""] [expect """[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]"""]]
+  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]"""] [expect """[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]"""]]
 ]
 
 [directive-doc name='?cancel' category="Async" spec="§10.5"
   [sig """[?cancel FUTURE] -> ()"""]
   [summary """Async: request cancellation of a future; a cancelled await yields a cancellation error."""]
-  [example [code """[?let [= $f [?async [?sleep 10s mock]]] [?let [= $_ [?cancel $f]] [?await $f]]]"""] [expect """[err code=cx-err:CXER0260 message='operation cancelled']"""]]
+  [example [code """[?let [= $f [?async [?sleep 10s mock]]] [= $_ [?cancel $f]] [?await $f]]"""] [expect """[err code=cx-err:CXER0260 message='operation cancelled']"""]]
 ]
 
 [directive-doc name='?check-cancel' category="Async" spec="§10.5"
   [sig """[?check-cancel] -> ()"""]
   [summary """Async: cooperative cancellation point — surfaces a cancellation error if the surrounding future was cancelled."""]
   [example [code """[?let [= $f [?async [?check-cancel]]]
-  [?let [= $_ [?cancel $f]]
-    [?match [?await $f]
-      [case [err @code='cx-err:CXER0260'] [cancelled]]
-      [else [other]]]]]"""] [expect """[cancelled]"""]]
+  [= $_ [?cancel $f]]
+  [?match [?await $f]
+    [case [err @code='cx-err:CXER0260'] [cancelled]]
+    [else [other]]]]"""] [expect """[cancelled]"""]]
 ]
 
 [directive-doc name='?sleep' category="Async" spec="§10.5"

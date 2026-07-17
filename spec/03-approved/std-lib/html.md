@@ -31,7 +31,7 @@ The driver is XSS sanitization for inbound email. [`cx-stdlib/email`](email.md)'
 ```cx
 [?let [= $raw  [$email:html-body $msg]]
       [= $safe [$html:sanitize $raw]]
-  ...]
+  $safe]
 ```
 
 Boundary against [`cx-stdlib/strings`](strings.md): `[$strings:escape-html]` / `[$strings:unescape-html]` are character-level entity codecs; `cx-stdlib/html` is the document-level parse/sanitize/serialize layer above them.
@@ -47,14 +47,14 @@ Boundary against [`cx-stdlib/strings`](strings.md): `[$strings:escape-html]` / `
 `[$html:parse]` returns an ordinary CXDM element tree: HTML elements become CXDM elements, attributes become CXDM attributes, character data becomes text nodes. The full CX query/transform surface applies:
 
 ```cx
-; query with CXPath
+# query with CXPath
 [?let [= $tree  [$html:parse $raw]]
       [= $links $tree//a/@href]
-  ...]
+  $links]
 
-; transform with [?modify]
-[?modify [$html:parse $raw]
-  [?for [img @src=$s] [yield [img src=[proxy-url $s]]]]]
+# transform with [?modify]: rewrite every img src through the proxy
+[?modify [$html:parse $raw] //img
+  [set-attr src [$proxy-url $_@src]]]
 ```
 
 `parse-fragment` returns a `[sequence element]` of the fragment's top-level nodes with no implied document wrapper.

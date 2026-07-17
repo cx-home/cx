@@ -53,7 +53,15 @@
 # ─── 1. Whitespace & comments (skipped; never reach the parser) ────────────────
 [L1]  S            ::= (#x20 | #x09 | #x0D | #x0A)+     /* §3.2 space tab CR LF */
 [L2]  LineComment  ::= '#' [^#x0A]* (#x0A | EOF)        /* §3.3, [30b] */
-[L3]  BlockComment ::= '[;' (Char* - (Char* ']' Char*)) ']'  /* §3.3, [30] */
+[L3]  BlockComment ::= '[;' CommentBody ']'             /* §3.3, [30]; #312 */
+[L3a] CommentBody  ::= ( (Char - ('[' | ']')) | '[' CommentBody ']' )*
+#  BRACKETS IN COMMENT PROSE BALANCE (#312 decision, 2026-07-10): the comment
+#  ends at the ']' that returns the bracket depth to zero, so prose may quote
+#  CX forms verbatim — `[; see [?let] and [$store:put-doc] ]` is ONE comment.
+#  Consequence: a lone unbalanced '[' swallows to EOF (unterminated comment,
+#  a parse error) and a lone ']' ends the comment early; prose that needs an
+#  unbalanced bracket belongs in a '#' line comment [L2]. Both reading modes
+#  implement this identically (pinned by comment_bracket_balance_test.v).
 #  NOTE  `[# … #]` is NOT a comment — it is RawText / CDATA [31]. Do not
 #        confuse the two; this exact slip lived in the old lexer's header.
 
@@ -169,6 +177,17 @@
 #  the minimum but are re-emitted as-is; a line shorter than the minimum is fully
 #  left-trimmed. The closing delimiter is found by MAXIMAL MUNCH: a run of 4+ `'`
 #  ends the literal at the LAST three, so `''''…` embeds one literal `'`.
+[L31a] RawTripleQuoted ::= 'r' ( "'''" (Char* - (Char* "'''" Char*)) "'''"
+                              | '"""' (Char* - (Char* '"""' Char*)) '"""' )
+#  #93: an `r` IMMEDIATELY before the opening triple (`r'''…'''` / `r"""…"""`)
+#  makes the literal RAW — content is VERBATIM with NO dedent (the [L31]
+#  common-indent strip is SKIPPED), so leading-whitespace-significant blocks
+#  (indented code, tab-aligned text) survive byte-exact — the authoring half of
+#  in-CX surgical edits ([?str] / io:edit-file). Escapes are still not processed
+#  (raw triple is verbatim, like [L31]). The `r` is a raw-string prefix ONLY
+#  immediately before a triple quote; a bare `r`, or `r` before a single quote /
+#  name char, is an ordinary Name [L10a]. (Recognised in PROGRAM string position;
+#  data-reader support is a planned consistency follow-up.)
 [L32] EscapeSeq    ::= '\\' ( "'" | '"' | '\\' | 'n' | 'r' | 't'
                             | 'u' HexDigit{4}
                             | 'U' HexDigit{8} )                  /* [11]/§3.7 */
@@ -186,10 +205,21 @@
 #  Unicode scalar (the §0 valid-UTF-8 mandate + the CX⇄XML bijection forbid it).
 
 # ─── 6. Atom literal ─────────────────────────────────────────────────────────────
-[L40] Atom ::= ':' Ident                               /* [122b], §3.6 */
+[L40] Atom ::= ':' Ident ('.' Ident)*                  /* [122b], §3.6 */
+#  DOTTED SEGMENTS (#397, owner ruling 2026-07-13): a single interior '.'
+#  joins ident segments into one hierarchical atom name (`:order.placed`,
+#  `:billing.invoice.paid`) — the event-bus topic-namespace shape (bus.md
+#  §2.2 builds trailing-`.*` prefix-glob matching on it) and the standard
+#  keyword form in CX's nearest kin (Clojure `:a.b`). Segments are BYTE-
+#  ADJACENT (no whitespace around the dot — the same adjacency discipline
+#  as the QName fold, [L11]); no leading/trailing dot, no `..`. The dot has
+#  NO structural semantics at the atom level: `:a.b` is one opaque interned
+#  name, equal only to itself. PROGRAM mode's fold MUST equal DATA mode's
+#  scannerless in-token scan (is_atom_name), per the [L11] lockstep rule.
 #  `:true` `:false` `:null` are FORBIDDEN in atom position → CXER0100
-#  (they would lure readers into reading them as the bool/null). No other
-#  names are reserved as atoms. Atoms render as `:NAME`, never `:"NAME"`.
+#  (they would lure readers into reading them as the bool/null; a dotted
+#  name never collides). No other names are reserved as atoms. Atoms render
+#  as `:NAME`, never `:"NAME"`.
 #  An atom is an interned symbolic constant (≈ Clojure keyword / Erlang atom),
 #  type-strict (`:ok ≠ "ok"`), NOT ordered (no `<`; cxdm §5.5), NOT a map key.
 #  USE for match/case discriminants + small CLOSED tag sets (`:ok` `:prod`);
@@ -335,6 +365,10 @@
 #             `[items::string 1 2 3]`   → string "1 2 3"     (overrides int[])
 #             `[items::string 1, 2, 3]` → string "1, 2, 3"   (commas literal)
 #             `[n::int 1 2 3]`          → CXER0290 (body is not one int)
+#         A hex token (`0x…`) under `::decimal` / `::bigint` is a coercion
+#         error (cx-err:CXER0109) in BOTH readings — decimal and bigint are
+#         base-10 value types; hex there is a mistake, never stored verbatim
+#         (#466 ruling; `::bytes` is the verbatim home for hex payloads).
 #       • `::T[]` (ARRAY type) → the body is an ARRAY of T; items split on
 #         commas, or on whitespace when there are none; each coerced to T.
 #             `[list::string[] a b c]`   → string[] ["a","b","c"]

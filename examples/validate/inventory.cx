@@ -1,0 +1,9 @@
+# inventory.cx — a small data document that VALIDATES against inventory.cxs.
+# Try:  cx validate examples/validate/inventory.cx --schema=examples/validate/inventory.cxs
+
+[inventory site=main-warehouse
+  [item sku=CX-1001 name='Anchor bolt M8' qty=250 status=stocked]
+  [; status omitted — the schema's [default stocked] covers it ]
+  [item sku=CX-1002 name='Hex nut M8' qty=800]
+  [item sku=CX-2040 name='Torque wrench' qty=3 status=low]
+]

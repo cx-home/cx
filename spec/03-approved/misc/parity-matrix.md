@@ -80,7 +80,7 @@ in scope.
 
 ## 3 — Output parity (load-bearing)
 
-For each fixture under [`conformance/`](../../conformance/), every
+For each fixture under [`conformance/`](../../../conformance/), every
 active binding produces output bytes that compare equal to the V
 reference's output, byte-for-byte. CI gates on byte-equality across
 all four bindings. There are zero allowed-divergence exceptions; no
@@ -191,6 +191,6 @@ restored.
   registry.
 - [`misc/bindings.md`](bindings.md) — Layer-1 16-method canonical
   surface.
-- [`conformance/`](../../conformance/) — fixture files.
+- [`conformance/`](../../../conformance/) — fixture files.
 - Each binding's `cxlib/README.md` — per-binding API reference and
   implementation-strategy declaration.

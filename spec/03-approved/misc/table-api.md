@@ -8,7 +8,7 @@ consistent across all bindings within unavoidable host-language naming
 differences.
 
 `:table` is a CX text construct (per
-[`core/grammar.ebnf`](../core/grammar.ebnf)) and a binary container
+[`core/grammar.ebnf`](../formal/grammar.ebnf)) and a binary container
 (per [`core/data-bin.md §3.10`](../core/data-bin.md)). It represents
 row-oriented typed tabular data with declared column kinds. Every
 binding's `loads` returns a `Table` instance — not a list of dicts —
@@ -385,11 +385,20 @@ Deferred to future minor revisions:
 
 - **Mutation API.** `Table.with_row(...)`, `Table.with_column(...)`
   returning a new `Table`. Useful but not blocking.
-- **Column-typed scan.** Analogous to SQL `SELECT WHERE`; deferred to
-  a query API alongside CXPath enhancements.
-- **Sort, group, join.** Out of scope; bindings users wanting
-  analytical operations should convert to their host data-frame
-  library via the `to_*` adapters.
+- **Column-typed scan.** ~~Deferred to a query API alongside CXPath
+  enhancements.~~ **Delivered in-language (#404):** a `:table`-bearing
+  element atomizes to its row sequence — one ordered map per row, the
+  same row shape as §2 — so `[?for [in $r $t] [where …] [yield …]]`
+  is the scan surface and `$t[*, "name"]` / `$t[2, *]` / label ranges
+  are the projection surface (see [`core/code.md`](../core/code.md)
+  §6.6 D22/D13 and §7 "Table sources"). CXPath deliberately does not
+  navigate into rows. A *bindings-side* scan API remains out of scope
+  (hosts use the `to_*` adapters).
+- **Sort, group, join.** Out of scope for the bindings API; bindings
+  users wanting analytical operations should convert to their host
+  data-frame library via the `to_*` adapters. (In-language, `[?for]`
+  `[order-by]` / `[group-by]` over the row sequence covers sort/group —
+  `core/code.md` §7.)
 - **Streaming table reads / writes.** `Table` is a materialised value;
   very large tables use the handle-based streaming-table API
   (`cx_table_reader_*` / `cx_table_writer_*`) per

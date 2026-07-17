@@ -10,13 +10,13 @@ cx_hash / cx_eq) and propagates it through every binding.
 
 > **TL;DR for end users:** integer types now round-trip correctly through
 > `loads()` / `dumps()` and `02134` is now a string. See
-> [`MIGRATION.md`](MIGRATION.md) for both BREAKING changes and the v3.4
+> `MIGRATION.md` (since retired) for both BREAKING changes and the v3.4
 > opt-in additions.
 
 > **TL;DR for binding maintainers:** the audit closes 5 systemic
 > shortcuts via new C ABI symbols. ~3970 LOC of duplicated CXPath code
 > deleted across the 9 in-tree bindings. If you maintain a third-party
-> binding, follow the per-binding checklist in [`MIGRATION.md`](MIGRATION.md) §4.
+> binding, follow the per-binding checklist in `MIGRATION.md` (since retired) §4.
 
 ---
 
@@ -113,7 +113,7 @@ during validation.
 Source like `[zip 02134]` parses as a string in v3.4 (was `int 2134` in
 v3.3, with the leading zero silently dropped). Affects ZIP codes,
 zero-padded IDs, area codes. Detection regex and migration in
-[`MIGRATION.md`](MIGRATION.md) §1.
+`MIGRATION.md` (since retired) §1.
 
 ### BREAKING: `loads()` / `dumps()` preserve integer / float distinction
 
@@ -129,7 +129,7 @@ loads(dumps({"port": 8080}))["port"] # 8080.0 (float — wrong)
 loads(dumps({"port": 8080}))["port"] # 8080 (int — correct)
 ```
 
-Per-binding type tables in [`MIGRATION.md`](MIGRATION.md) §2.
+Per-binding type tables in `MIGRATION.md` (since retired) §2.
 
 ### NEW: canonical-form tooling (`fmt` / `canonical` / `hash` / `eq`)
 
@@ -187,7 +187,7 @@ the 2026-05 binding audit.
 - logfmt mode: top-level `key=value` documents.
 - Triple-quoted strings: `'''multi-line content'''`.
 
-All of the above are documented in [`MIGRATION.md`](MIGRATION.md) §3.
+All of the above are documented in `MIGRATION.md` (since retired) §3.
 
 ---
 
@@ -203,7 +203,7 @@ All of the above are documented in [`MIGRATION.md`](MIGRATION.md) §3.
  `dumps()` return type-fidelity-preserving values now (integers stay
  integer); only type-strict assertions in user code may need updates.
 - **Source documents**: one BREAKING grammar change (leading-zero
- integers); see [`MIGRATION.md`](MIGRATION.md) §1.
+ integers); see `MIGRATION.md` (since retired) §1.
 
 ---
 

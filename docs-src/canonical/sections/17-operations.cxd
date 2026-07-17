@@ -1,0 +1,222 @@
+[# Section 17 — operations: running CX in production. Process model,
+   the store service daemon, deployment artifacts, environment knobs,
+   GC posture, logging. Sources: docs/dev/*.md (runtime-verified),
+   tooling/cxstore/, vcx/cmd dispatch, and the live binary — every
+   command and output on this page was run before it landed here
+   (issue #425 coverage gap). #]
+
+[section id=operations n=17 title='Operations'
+
+  [intro
+    """CX in production is deliberately boring: a static binary, a
+       foreground process, explicit capability grants (see
+       [[capabilities]]), the host OS as the supervisor, and a small
+       set of environment knobs. This section covers the process
+       model, the store service daemon and its deployment artifacts,
+       the environment variables that matter, the collector at a
+       glance, and logging — with pointers into the deeper
+       runtime-verified operator docs under `docs/dev/` in the
+       repository."""]
+
+  [child id=ops-process n=17.1 title='Process model'
+    [body
+      """Every CX process — a one-shot program, an HTTP service, the
+         store daemon, a XAP host — runs in the **foreground** and owns
+         its lifecycle. There is no built-in daemonizer and no bespoke
+         supervision machinery, by explicit project decision:"""]
+    [list
+      [item """**The port is the only mutex.** A serving process that
+              cannot bind fails fatally and loudly — it never
+              half-runs. At most one instance per port, arbitrated by
+              the kernel; replacing a running instance is an explicit
+              stop-then-start, never a silent takeover."""]
+      [item """**A crash is a bug to root-cause, not respawn over.**
+              Development and attended operation run unsupervised.
+              Unattended operation delegates restarts to the OS
+              supervisor — systemd on Linux, launchd on macOS — which
+              is also where restart policy, resource limits, and
+              journaling belong."""]
+      [item """**Clean shutdown on SIGTERM.** Long-running processes
+              stop accepting, drain in-flight work, flush, and exit 0.
+              `kill -TERM` is the normal stop verb everywhere."""]
+      [item """**Bounded serving.** HTTP serving separates reactors
+              (socket owners) from a bounded executor pool running
+              handlers; overflow answers 503 rather than freezing the
+              accept plane. Pool sizes are deploy-time environment
+              config (subsection on environment variables below)."""]]
+    [body
+      """The deployment process model is described operator-first in
+         `docs/dev/xap-quickstart.md` (the XAP host) and
+         `docs/dev/store-service.md` (the store daemon); both are
+         runtime-verified documents in the repository."""]]
+
+  [child id=ops-store-daemon n=17.2 title='The store service daemon'
+    [body
+      """The one daemon the platform ships is the CX Store service:
+         `cx store-serve` runs a multi-threaded content-addressed
+         store server over HTTP (the CSRP protocol), configured by a
+         CX document and gated by the ordinary capability flags —
+         serving binds a socket, so it needs `--allow-net`:"""]
+    [example lang=sh
+      """$ cx store-serve --config /etc/cxstore/cxstore.service.cx --allow-net"""]
+    [body """The config is itself CX data — this is a complete minimal
+            config serving one in-memory store on loopback:"""]
+    [example lang=cx
+      """[cxstore-service
+  [bind addr="127.0.0.1:18761"]
+  [stores [store name="docs" url="mem://docs"]]]"""]
+    [body
+      """On startup the daemon states exactly what it is doing —
+         including an honest warning when you have not configured
+         auth:"""]
+    [output
+      """cx store-serve: listening on tcp://127.0.0.1:18761 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no providers configured, anonymous full access (configure [auth …] for production)"""]
+    [body
+      """Liveness and readiness are plain HTTP endpoints, and the
+         binary doubles as its own probe (`cx store-health` exits 0
+         iff the daemon reports accepting — this is what the Docker
+         HEALTHCHECK and load balancers call):"""]
+    [example lang=sh
+      """$ curl -s http://127.0.0.1:18761/cx-store/v1/health
+[health [status "ok"]]
+$ curl -s http://127.0.0.1:18761/cx-store/v1/ready
+[ready [accepting true] [draining false]]
+$ cx store-health --url http://127.0.0.1:18761/cx-store/v1/ready && echo ready
+ready"""]
+    [body """Lifecycle, in signals:"""]
+    [table
+      [tr [th 'signal'] [th 'effect']]
+      [tr [td 'SIGTERM / SIGINT'] [td 'stop accepting, drain in-flight requests, checkpoint every mounted store, exit 0']]
+      [tr [td 'SIGHUP'] [td 'reload the hot config (auth, limits, observability, timeouts, TLS identity) without dropping connections — systemd ExecReload']]]
+    [body
+      """Two operator verbs round out the surface: `cx store-token`
+         mints a cryptographically-random bearer token and prints the
+         ready-to-paste `[auth …]` config stanza (the secret is shown
+         once on stderr and never stored), and `cx store-rotate-kek`
+         re-wraps an encrypted store under a new key-encryption key,
+         resumable and fail-closed. Auth providers, RBAC, TLS,
+         observability (metrics, tracing, JSON logs), DoS fairness,
+         and the gRPC listener are covered end-to-end in
+         `docs/dev/store-service.md`, `docs/dev/store-management.md`,
+         and `docs/dev/store-security.md`."""]]
+
+  [child id=ops-artifacts n=17.3 title='Deployment artifacts'
+    [body
+      """Reference deployment artifacts live in `tooling/cxstore/` in
+         the repository — use them as the template rather than
+         hand-rolling:"""]
+    [list
+      [item """**systemd unit** (`cxstore.service`) — `Type=notify`:
+              the daemon signals `READY=1` only after the store is
+              open and the listener is bound, so ordering and
+              readiness are real, and it answers `WatchdogSec` pings.
+              Install the unit, place the config at
+              `/etc/cxstore/cxstore.service.cx`, then
+              `systemctl enable --now cxstore`."""]
+      [item """**Dockerfile** — a minimal `debian:stable-slim` image:
+              copy in the static `cx` binary and the config; the
+              image HEALTHCHECK runs `cx store-health` against
+              `/cx-store/v1/ready`. One binary, one config file — the
+              whole deployment surface."""]
+      [item """**Sample config** (`cxstore.service.cx`) and a README
+              with a copy-paste loopback smoke test."""]]
+    [body
+      """Building the artifact itself: `make build-vcx` produces the
+         optimized binary at `vcx/target/cx`, and `make install-cli`
+         installs it to the prefix. There is nothing else to ship — a
+         CX deployment is the binary, your `.cx` files, and the
+         capability flags in the unit file. The binary self-describes:
+         `cx --version` reports version, commit, build date, and the
+         compiled collector."""]]
+
+  [child id=ops-env n=17.4 title='Environment variables'
+    [body
+      """The honest current set of deploy-relevant knobs, from the
+         engine source. All are optional; the defaults are the
+         recommendation unless you have measured otherwise:"""]
+    [table
+      [tr [th 'variable'] [th 'default'] [th 'meaning']]
+      [tr [td 'CX_HTTP_N'] [td 'min(4, cores)'] [td 'HTTP reactor (socket-owner) count. An integer is honored as-is; `max` means one per core. Fan-out past 4 rarely helps — the default scales from laptop to server.']]
+      [tr [td 'CX_HTTP_EXEC'] [td '16'] [td 'HTTP executor threads running handlers — deliberately above the reactor count so a handler parked on an upstream call never freezes the serve plane.']]
+      [tr [td 'CX_HTTP_QUEUE'] [td '1024'] [td 'Pending-job queue depth; overflow answers 503.']]
+      [tr [td 'CX_WORKER_THREADS'] [td '(on)'] [td 'Set to 0 to force [?worker] bodies onto the synchronous path — a diagnostics/bisection escape hatch only; it is not spec-conforming for workers that must overlap.']]
+      [tr [td 'CX_REGISTRY'] [td '(unset)'] [td 'Store URL binding the feature registry for `pkg:` module references; unset, a `pkg:` resolution fails closed (CXER4889).']]
+      [tr [td 'CX_STORE_KEK_<id>'] [td '(unset)'] [td 'Key-encryption-key material for encrypted stores, injected by id — key material never lives in config files.']]
+      [tr [td 'VGC_MEMLIMIT_MB'] [td '2048'] [td 'Soft heap limit: the GC pacer is clamped here so collection engages well before the hard ceiling (the GOMEMLIMIT analog). Multi-GB deployments raise it deliberately.']]
+      [tr [td 'VGC_MAX_ARENAS'] [td 'RAM-derived'] [td 'Hard heap ceiling in 64 MB arenas. The default sits where further growth would be swap death; hitting it dies loudly with forensics instead of a much-later OS kill. Override in either direction — lower to fence a process in, raise past RAM for deliberate overcommit.']]
+      [tr [td 'VGC_GCTRACE'] [td '0'] [td 'Set to 1 for a per-collection trace line on stderr — permanent observability, one integer test per cycle when off.']]
+      [tr [td 'VGC_HEADROOM_MB'] [td '64'] [td 'Ceiling for the adaptive pacer headroom. Rarely needed; measured throughput-equivalent well below the old thread-scaled values.']]
+      [tr [td 'VGC_NEXT_GC_MB'] [td '(adaptive)'] [td 'Pins the pacer headroom to a fixed size — a testing/diagnostics knob (soundness gates run it at 4 to force frequent collections).']]]
+    [body """`VGC_GCTRACE=1` output against an allocation-heavy
+            program, verified live:"""]
+    [output
+      """[gc 0] marked=31MB goal=62MB headroom=16384KB pause=5660us arenas=1 spans=1477 pool=0KB trimmed=0KB threads=1
+[gc 1] marked=62MB goal=125MB headroom=32768KB pause=25188us arenas=2 spans=5509 pool=4680KB trimmed=0KB threads=1
+[gc 2] marked=123MB goal=246MB headroom=65536KB pause=64069us arenas=3 spans=13070 pool=0KB trimmed=0KB threads=1"""]]
+
+  [child id=ops-gc n=17.5 title='Garbage collection at a glance'
+    [body
+      """The collector is a build-time property of the binary, and the
+         binary tells you which one it carries:"""]
+    [output
+      """$ cx --version
+cx vX.Y.Z
+  commit   <short-sha>
+  built    <timestamp>
+  gc       e — Perceus RC front line + precise STW vgc backstop"""]
+    [body
+      """Mode `e` — the shipped default — is a two-layer design:
+         precise reference counting (Perceus) reclaims most values
+         immediately as the front line, and a precise stop-the-world
+         tracing collector (vgc) backstops cycles and shared
+         structures. Operationally that means: allocation-heavy
+         programs pace themselves adaptively (collections start small
+         and early, growing toward the soft limit), long-running
+         services hold a steady RSS rather than ratcheting, and an
+         out-of-memory at the hard arena ceiling is **loud** — a
+         diagnostic dump at the wall, not a silent OOM-kill later.
+         The three knobs that matter in production are
+         `VGC_MEMLIMIT_MB` (pacing target), `VGC_MAX_ARENAS` (hard
+         wall), and `VGC_GCTRACE` (observability) — see the table
+         above. There is nothing to tune on day one."""]]
+
+  [child id=ops-logging n=17.6 title='Logging and journaling'
+    [body
+      """Structured logging is a bundled module, not an external
+         dependency. Leveled emits write to the active sink (stderr
+         by default) and return null; `[$log:configure]` sets the
+         minimum level, sink, and format process-wide:"""]
+    [example lang=cx
+      """[?lib 'cx-stdlib/log']
+[$log:configure {level: :warn}]
+[$log:info 'not shown']
+[$log:warn 'disk nearly full']"""]
+    [output
+      """warn disk nearly full"""]
+    [body
+      """Sinks include stderr, stdout, file (with size/time rotation),
+         and syslog; formats include text, JSON-lines, and logfmt,
+         with multi-sink fan-out — the full configuration surface is
+         on the `log` module page in the Standard library section of
+         this guide and in the module spec. Under systemd, logging to
+         stderr and letting journald own retention is the intended
+         default posture."""]
+    [body
+      """For audit-grade history there is `journal` — an append-only,
+         hash-chained, tenant-partitioned event log over a store
+         backend, with deterministic fold-to-state, replay, dry-run,
+         verification, and signed snapshots. It is the persistence
+         spine of the XAP runtime and usable standalone; see the
+         `journal` module page in the Standard library section. The
+         store daemon additionally exposes service-side observability
+         (request metrics, optional OTel tracing, JSON access logs) —
+         configured in the service config, documented in
+         `docs/dev/store-service.md`."""]
+    [note
+      """Going deeper: `docs/dev/README.md` is the operator reading
+         order for the whole platform — store embedded tier
+         through service tier, registries, and the XAP host. Where a
+         capability is designed but not yet shipped, those pages say
+         so explicitly; this guide section only teaches what the
+         shipped binary was observed to do."""]]
+]

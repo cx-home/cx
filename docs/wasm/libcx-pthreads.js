@@ -6332,6 +6332,20 @@ function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
   }
 }
 
+function __munmap_js(addr, len, prot, flags, fd, offset) {
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(32, 0, 1, addr, len, prot, flags, fd, offset);
+  offset = bigintToI53Checked(offset);
+  try {
+    var stream = SYSCALLS.getStreamFromFD(fd);
+    if (prot & 2) {
+      SYSCALLS.doMsync(addr, stream, len, flags, offset);
+    }
+  } catch (e) {
+    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+    return -e.errno;
+  }
+}
+
 var __tzset_js = (timezone, daylight, std_name, dst_name) => {
   // TODO: Use (malleable) environment variables instead of system settings.
   var currentYear = (new Date).getFullYear();
@@ -6539,7 +6553,7 @@ var getEnvStrings = () => {
 };
 
 function _environ_get(__environ, environ_buf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(32, 0, 1, __environ, environ_buf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(33, 0, 1, __environ, environ_buf);
   var bufSize = 0;
   var envp = 0;
   for (var string of getEnvStrings()) {
@@ -6552,7 +6566,7 @@ function _environ_get(__environ, environ_buf) {
 }
 
 function _environ_sizes_get(penviron_count, penviron_buf_size) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(33, 0, 1, penviron_count, penviron_buf_size);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(34, 0, 1, penviron_count, penviron_buf_size);
   var strings = getEnvStrings();
   (growMemViews(), HEAPU32)[((penviron_count) >> 2)] = strings.length;
   var bufSize = 0;
@@ -6564,7 +6578,7 @@ function _environ_sizes_get(penviron_count, penviron_buf_size) {
 }
 
 function _fd_close(fd) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(34, 0, 1, fd);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(35, 0, 1, fd);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     FS.close(stream);
@@ -6576,7 +6590,7 @@ function _fd_close(fd) {
 }
 
 function _fd_fdstat_get(fd, pbuf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(35, 0, 1, fd, pbuf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(36, 0, 1, fd, pbuf);
   try {
     var rightsBase = 0;
     var rightsInheriting = 0;
@@ -6617,7 +6631,7 @@ function _fd_fdstat_get(fd, pbuf) {
 };
 
 function _fd_read(fd, iov, iovcnt, pnum) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(36, 0, 1, fd, iov, iovcnt, pnum);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(37, 0, 1, fd, iov, iovcnt, pnum);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     var num = doReadv(stream, iov, iovcnt);
@@ -6630,7 +6644,7 @@ function _fd_read(fd, iov, iovcnt, pnum) {
 }
 
 function _fd_seek(fd, offset, whence, newOffset) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(37, 0, 1, fd, offset, whence, newOffset);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(38, 0, 1, fd, offset, whence, newOffset);
   offset = bigintToI53Checked(offset);
   try {
     if (isNaN(offset)) return 22;
@@ -6667,7 +6681,7 @@ function _fd_seek(fd, offset, whence, newOffset) {
 };
 
 function _fd_write(fd, iov, iovcnt, pnum) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(38, 0, 1, fd, iov, iovcnt, pnum);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(39, 0, 1, fd, iov, iovcnt, pnum);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     var num = doWritev(stream, iov, iovcnt);
@@ -6680,7 +6694,7 @@ function _fd_write(fd, iov, iovcnt, pnum) {
 }
 
 function _getaddrinfo(node, service, hint, out) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(39, 0, 1, node, service, hint, out);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(40, 0, 1, node, service, hint, out);
   // Note getaddrinfo currently only returns a single addrinfo with ai_next defaulting to NULL. When NULL
   // hints are specified or ai_family set to AF_UNSPEC or ai_socktype or ai_protocol set to 0 then we
   // really should provide a linked list of suitable addrinfo values.
@@ -7421,7 +7435,7 @@ unexportedSymbols.forEach(unexportedRuntimeSymbol);
 // either synchronously or asynchronously from other threads in postMessage()d
 // or internally queued events. This way a pthread in a Worker can synchronously
 // access e.g. the DOM on the main thread.
-var proxiedFunctionTable = [ _proc_exit, exitOnMainThread, pthreadCreateProxied, ___syscall_accept4, ___syscall_bind, ___syscall_chdir, ___syscall_chmod, ___syscall_connect, ___syscall_dup3, ___syscall_faccessat, ___syscall_fcntl64, ___syscall_fstat64, ___syscall_getcwd, ___syscall_getdents64, ___syscall_ioctl, ___syscall_listen, ___syscall_lstat64, ___syscall_mkdirat, ___syscall_newfstatat, ___syscall_openat, ___syscall_pipe2, ___syscall_poll, ___syscall_readlinkat, ___syscall_recvfrom, ___syscall_renameat, ___syscall_rmdir, ___syscall_sendto, ___syscall_socket, ___syscall_stat64, ___syscall_symlinkat, ___syscall_unlinkat, __mmap_js, _environ_get, _environ_sizes_get, _fd_close, _fd_fdstat_get, _fd_read, _fd_seek, _fd_write, _getaddrinfo ];
+var proxiedFunctionTable = [ _proc_exit, exitOnMainThread, pthreadCreateProxied, ___syscall_accept4, ___syscall_bind, ___syscall_chdir, ___syscall_chmod, ___syscall_connect, ___syscall_dup3, ___syscall_faccessat, ___syscall_fcntl64, ___syscall_fstat64, ___syscall_getcwd, ___syscall_getdents64, ___syscall_ioctl, ___syscall_listen, ___syscall_lstat64, ___syscall_mkdirat, ___syscall_newfstatat, ___syscall_openat, ___syscall_pipe2, ___syscall_poll, ___syscall_readlinkat, ___syscall_recvfrom, ___syscall_renameat, ___syscall_rmdir, ___syscall_sendto, ___syscall_socket, ___syscall_stat64, ___syscall_symlinkat, ___syscall_unlinkat, __mmap_js, __munmap_js, _environ_get, _environ_sizes_get, _fd_close, _fd_fdstat_get, _fd_read, _fd_seek, _fd_write, _getaddrinfo ];
 
 function checkIncomingModuleAPI() {
   ignoredModuleProp("fetchSettings");
@@ -7434,6 +7448,12 @@ function checkIncomingModuleAPI() {
 }
 
 // Imports from the Wasm binary.
+var _emscripten_stack_get_base = makeInvalidEarlyAccess("_emscripten_stack_get_base");
+
+var _emscripten_stack_get_end = makeInvalidEarlyAccess("_emscripten_stack_get_end");
+
+var _emscripten_stack_get_free = makeInvalidEarlyAccess("_emscripten_stack_get_free");
+
 var _malloc = Module["_malloc"] = makeInvalidEarlyAccess("_malloc");
 
 var _free = Module["_free"] = makeInvalidEarlyAccess("_free");
@@ -7504,10 +7524,6 @@ var ___set_thread_state = makeInvalidEarlyAccess("___set_thread_state");
 
 var __emscripten_thread_crashed = makeInvalidEarlyAccess("__emscripten_thread_crashed");
 
-var _emscripten_stack_get_end = makeInvalidEarlyAccess("_emscripten_stack_get_end");
-
-var _emscripten_stack_get_base = makeInvalidEarlyAccess("_emscripten_stack_get_base");
-
 var _htonl = makeInvalidEarlyAccess("_htonl");
 
 var _htons = makeInvalidEarlyAccess("_htons");
@@ -7528,8 +7544,6 @@ var _emscripten_stack_init = makeInvalidEarlyAccess("_emscripten_stack_init");
 
 var _emscripten_stack_set_limits = makeInvalidEarlyAccess("_emscripten_stack_set_limits");
 
-var _emscripten_stack_get_free = makeInvalidEarlyAccess("_emscripten_stack_get_free");
-
 var __emscripten_stack_restore = makeInvalidEarlyAccess("__emscripten_stack_restore");
 
 var __emscripten_stack_alloc = makeInvalidEarlyAccess("__emscripten_stack_alloc");
@@ -7548,6 +7562,8 @@ var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
 
 var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
 
+var dynCall_i = makeInvalidEarlyAccess("dynCall_i");
+
 var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
 
 var dynCall_ii = makeInvalidEarlyAccess("dynCall_ii");
@@ -7557,6 +7573,10 @@ var dynCall_iiiii = makeInvalidEarlyAccess("dynCall_iiiii");
 var dynCall_iiiiii = makeInvalidEarlyAccess("dynCall_iiiiii");
 
 var dynCall_viiiiiii = makeInvalidEarlyAccess("dynCall_viiiiiii");
+
+var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
+
+var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
 
 var dynCall_jiji = makeInvalidEarlyAccess("dynCall_jiji");
 
@@ -7575,6 +7595,9 @@ var __indirect_function_table = makeInvalidEarlyAccess("__indirect_function_tabl
 var wasmTable = makeInvalidEarlyAccess("wasmTable");
 
 function assignWasmExports(wasmExports) {
+  assert(typeof wasmExports["emscripten_stack_get_base"] != "undefined", "missing Wasm export: emscripten_stack_get_base");
+  assert(typeof wasmExports["emscripten_stack_get_end"] != "undefined", "missing Wasm export: emscripten_stack_get_end");
+  assert(typeof wasmExports["emscripten_stack_get_free"] != "undefined", "missing Wasm export: emscripten_stack_get_free");
   assert(typeof wasmExports["malloc"] != "undefined", "missing Wasm export: malloc");
   assert(typeof wasmExports["free"] != "undefined", "missing Wasm export: free");
   assert(typeof wasmExports["fflush"] != "undefined", "missing Wasm export: fflush");
@@ -7610,8 +7633,6 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["_emscripten_thread_init"] != "undefined", "missing Wasm export: _emscripten_thread_init");
   assert(typeof wasmExports["__set_thread_state"] != "undefined", "missing Wasm export: __set_thread_state");
   assert(typeof wasmExports["_emscripten_thread_crashed"] != "undefined", "missing Wasm export: _emscripten_thread_crashed");
-  assert(typeof wasmExports["emscripten_stack_get_end"] != "undefined", "missing Wasm export: emscripten_stack_get_end");
-  assert(typeof wasmExports["emscripten_stack_get_base"] != "undefined", "missing Wasm export: emscripten_stack_get_base");
   assert(typeof wasmExports["htonl"] != "undefined", "missing Wasm export: htonl");
   assert(typeof wasmExports["htons"] != "undefined", "missing Wasm export: htons");
   assert(typeof wasmExports["ntohs"] != "undefined", "missing Wasm export: ntohs");
@@ -7622,7 +7643,6 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["_emscripten_check_mailbox"] != "undefined", "missing Wasm export: _emscripten_check_mailbox");
   assert(typeof wasmExports["emscripten_stack_init"] != "undefined", "missing Wasm export: emscripten_stack_init");
   assert(typeof wasmExports["emscripten_stack_set_limits"] != "undefined", "missing Wasm export: emscripten_stack_set_limits");
-  assert(typeof wasmExports["emscripten_stack_get_free"] != "undefined", "missing Wasm export: emscripten_stack_get_free");
   assert(typeof wasmExports["_emscripten_stack_restore"] != "undefined", "missing Wasm export: _emscripten_stack_restore");
   assert(typeof wasmExports["_emscripten_stack_alloc"] != "undefined", "missing Wasm export: _emscripten_stack_alloc");
   assert(typeof wasmExports["emscripten_stack_get_current"] != "undefined", "missing Wasm export: emscripten_stack_get_current");
@@ -7632,11 +7652,14 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["dynCall_vi"] != "undefined", "missing Wasm export: dynCall_vi");
   assert(typeof wasmExports["dynCall_viii"] != "undefined", "missing Wasm export: dynCall_viii");
   assert(typeof wasmExports["dynCall_v"] != "undefined", "missing Wasm export: dynCall_v");
+  assert(typeof wasmExports["dynCall_i"] != "undefined", "missing Wasm export: dynCall_i");
   assert(typeof wasmExports["dynCall_iiii"] != "undefined", "missing Wasm export: dynCall_iiii");
   assert(typeof wasmExports["dynCall_ii"] != "undefined", "missing Wasm export: dynCall_ii");
   assert(typeof wasmExports["dynCall_iiiii"] != "undefined", "missing Wasm export: dynCall_iiiii");
   assert(typeof wasmExports["dynCall_iiiiii"] != "undefined", "missing Wasm export: dynCall_iiiiii");
   assert(typeof wasmExports["dynCall_viiiiiii"] != "undefined", "missing Wasm export: dynCall_viiiiiii");
+  assert(typeof wasmExports["dynCall_viiii"] != "undefined", "missing Wasm export: dynCall_viiii");
+  assert(typeof wasmExports["dynCall_viiiii"] != "undefined", "missing Wasm export: dynCall_viiiii");
   assert(typeof wasmExports["dynCall_jiji"] != "undefined", "missing Wasm export: dynCall_jiji");
   assert(typeof wasmExports["dynCall_iidiiii"] != "undefined", "missing Wasm export: dynCall_iidiiii");
   assert(typeof wasmExports["asyncify_start_unwind"] != "undefined", "missing Wasm export: asyncify_start_unwind");
@@ -7644,6 +7667,9 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["asyncify_start_rewind"] != "undefined", "missing Wasm export: asyncify_start_rewind");
   assert(typeof wasmExports["asyncify_stop_rewind"] != "undefined", "missing Wasm export: asyncify_stop_rewind");
   assert(typeof wasmExports["__indirect_function_table"] != "undefined", "missing Wasm export: __indirect_function_table");
+  _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
+  _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
+  _emscripten_stack_get_free = wasmExports["emscripten_stack_get_free"];
   _malloc = Module["_malloc"] = createExportWrapper("malloc", 1);
   _free = Module["_free"] = createExportWrapper("free", 1);
   _fflush = createExportWrapper("fflush", 1);
@@ -7679,8 +7705,6 @@ function assignWasmExports(wasmExports) {
   __emscripten_thread_init = createExportWrapper("_emscripten_thread_init", 6);
   ___set_thread_state = createExportWrapper("__set_thread_state", 4);
   __emscripten_thread_crashed = createExportWrapper("_emscripten_thread_crashed", 0);
-  _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
-  _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
   _htonl = createExportWrapper("htonl", 1);
   _htons = createExportWrapper("htons", 1);
   _ntohs = createExportWrapper("ntohs", 1);
@@ -7691,7 +7715,6 @@ function assignWasmExports(wasmExports) {
   __emscripten_check_mailbox = createExportWrapper("_emscripten_check_mailbox", 0);
   _emscripten_stack_init = wasmExports["emscripten_stack_init"];
   _emscripten_stack_set_limits = wasmExports["emscripten_stack_set_limits"];
-  _emscripten_stack_get_free = wasmExports["emscripten_stack_get_free"];
   __emscripten_stack_restore = wasmExports["_emscripten_stack_restore"];
   __emscripten_stack_alloc = wasmExports["_emscripten_stack_alloc"];
   _emscripten_stack_get_current = wasmExports["emscripten_stack_get_current"];
@@ -7701,11 +7724,14 @@ function assignWasmExports(wasmExports) {
   dynCall_vi = dynCalls["vi"] = createExportWrapper("dynCall_vi", 2);
   dynCall_viii = dynCalls["viii"] = createExportWrapper("dynCall_viii", 4);
   dynCall_v = dynCalls["v"] = createExportWrapper("dynCall_v", 1);
+  dynCall_i = dynCalls["i"] = createExportWrapper("dynCall_i", 1);
   dynCall_iiii = dynCalls["iiii"] = createExportWrapper("dynCall_iiii", 4);
   dynCall_ii = dynCalls["ii"] = createExportWrapper("dynCall_ii", 2);
   dynCall_iiiii = dynCalls["iiiii"] = createExportWrapper("dynCall_iiiii", 5);
   dynCall_iiiiii = dynCalls["iiiiii"] = createExportWrapper("dynCall_iiiiii", 6);
   dynCall_viiiiiii = dynCalls["viiiiiii"] = createExportWrapper("dynCall_viiiiiii", 8);
+  dynCall_viiii = dynCalls["viiii"] = createExportWrapper("dynCall_viiii", 5);
+  dynCall_viiiii = dynCalls["viiiii"] = createExportWrapper("dynCall_viiiii", 6);
   dynCall_jiji = dynCalls["jiji"] = createExportWrapper("dynCall_jiji", 4);
   dynCall_iidiiii = dynCalls["iidiiii"] = createExportWrapper("dynCall_iidiiii", 7);
   _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
@@ -7760,6 +7786,7 @@ function assignWasmImports() {
     /** @export */ _emscripten_thread_set_strongref: __emscripten_thread_set_strongref,
     /** @export */ _localtime_js: __localtime_js,
     /** @export */ _mmap_js: __mmap_js,
+    /** @export */ _munmap_js: __munmap_js,
     /** @export */ _tzset_js: __tzset_js,
     /** @export */ clock_time_get: _clock_time_get,
     /** @export */ emscripten_check_blocking_allowed: _emscripten_check_blocking_allowed,

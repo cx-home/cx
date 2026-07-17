@@ -1,0 +1,82 @@
+================================================================================
+Element meta: anchor definition and merge reference
+================================================================================
+
+[defaults &def timeout=30]
+[production *def host=prod.example.com]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (text)
+    (anchor_ref)
+    (text)
+    (attribute
+      (attr_name)
+      (attr_value
+        (number))))
+  (element
+    (tag_name)
+    (merge_ref)
+    (text)
+    (attribute
+      (attr_name)
+      (attr_value
+        (unquoted_value)))))
+
+================================================================================
+Glued type annotation on the element head, including ::period
+================================================================================
+
+[span::period p1]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (type_annotation)
+    (text)
+    (word)))
+
+================================================================================
+Dotted atoms and the terminal .* prefix-glob are single tokens
+================================================================================
+
+[e :order.placed :order.*]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (text)
+    (atom_literal)
+    (text)
+    (atom_literal)))
+
+================================================================================
+Block content with pipes and a nested element
+================================================================================
+
+[note [| plain |pipe| and [b bold] tail |]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (block_content
+      (block_body
+        (block_text)
+        (block_pipe)
+        (block_text)
+        (block_pipe)
+        (block_text)
+        (element
+          (tag_name)
+          (text)
+          (word))
+        (block_text)))))

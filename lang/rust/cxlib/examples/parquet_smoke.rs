@@ -6,7 +6,7 @@
 use std::fs;
 
 fn main() -> Result<(), String> {
-    let src = "[points :table[id:int score:int]\n  1 91\n  2 88\n  3 73\n]";
+    let src = "[points [table[id::int score::int]]\n  1 91\n  2 88\n  3 73\n]";
     let framed = cxlib::streaming_table::to_data_bin_chunked(src)?;
     println!("framed: {} bytes", framed.len());
 

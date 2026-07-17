@@ -133,7 +133,7 @@ Spawn `argv`, optionally feed stdin, run to completion, capture stdout/stderr, a
 - `close` — release the handle: close any open stdio handles and reap the child. Does **not** kill a still-running child (detaches). Idempotent. Makes the handle `[?with-open]`-compatible.
 
 ```cx
-[?with-open [$spawn ["tail" "-f" "/var/log/app.log"]] $p
+[?with-open [$spawn ["tail", "-f", "/var/log/app.log"]] $p
   [?for [in $line [$line-iter [$stdout $p]]]
     [where [$contains $line "ERROR"]]
     [yield $line]]]
@@ -218,7 +218,7 @@ Delivering a signal to an already-exited child is a no-op. Delivering to a close
 Pass `$new-process-group=true` to `run` / `spawn` / a pipeline stage to make the child the leader of a fresh process group. The child and every descendant share one process-group id and can be signaled as a unit:
 
 ```cx
-[?with-open ($p [$spawn ["./serve.sh"] new-process-group=true])
+[?with-open [$spawn ["./serve.sh"] new-process-group=true] $p
   [$kill-group $p :term]]
 ```
 

@@ -2,6 +2,11 @@ NVIM_SITE    := $(HOME)/.local/share/nvim/site
 PARSER_DIR   := $(NVIM_SITE)/parser
 QUERY_DIR    := $(NVIM_SITE)/queries/cx
 FTPLUGIN_DIR := $(NVIM_SITE)/ftplugin
+INDENT_DIR   := $(NVIM_SITE)/indent
+
+# macOS: build the parser universal (arm64 + x86_64) — Rosetta Neovims
+# abort loading a single-arch .so of the other architecture (#420).
+DARWIN_ARCHES := $(if $(filter Darwin,$(shell uname -s)),-arch arm64 -arch x86_64,)
 
 .PHONY: build build-artifacts install-nvim
 
@@ -21,7 +26,7 @@ TS_ABI := 14
 # grammar; `cc -shared` produces a loadable module on both macOS and Linux.)
 build:
 	tree-sitter generate --abi $(TS_ABI)
-	cc -shared -fPIC -I src -o /tmp/cx.so src/parser.c
+	cc -shared -fPIC $(DARWIN_ARCHES) -I src -o /tmp/cx.so src/parser.c
 
 # Refresh the committed prebuilt parser libs at ABI 14 (run after a grammar
 # change, then commit). The .dylib uses the same cc path. The wasm is built for
@@ -33,9 +38,10 @@ build-artifacts:
 	cc -shared -fPIC -I src -o cx.dylib src/parser.c
 
 install-nvim: build
-	mkdir -p $(PARSER_DIR) $(QUERY_DIR) $(FTPLUGIN_DIR)
+	mkdir -p $(PARSER_DIR) $(QUERY_DIR) $(FTPLUGIN_DIR) $(INDENT_DIR)
 	cp /tmp/cx.so $(PARSER_DIR)/cx.so
 	cp queries/cx/highlights.scm $(QUERY_DIR)/highlights.scm
 	cp queries/cx/injections.scm  $(QUERY_DIR)/injections.scm
 	cp ../neovim/ftplugin/cx.vim $(FTPLUGIN_DIR)/cx.vim
-	@echo "cx parser, queries, and ftplugin installed. Restart Neovim."
+	cp ../neovim/indent/cx.vim $(INDENT_DIR)/cx.vim
+	@echo "cx parser, queries, ftplugin, and indent installed. Restart Neovim."

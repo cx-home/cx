@@ -1,23 +1,25 @@
 # CX
 
-[![Version](https://img.shields.io/badge/version-v0.12.0-blue.svg)](#status)
+[![Version](https://img.shields.io/badge/version-v0.13.0-blue.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
 
 > **One concise syntax for data *and* code.** Configs, structured documents,
 > tabular data, queries, transforms, and the programs that tie them together —
-> one tree of `[...]` forms that round-trips losslessly through XML, JSON,
-> YAML, TOML, and CSV.
+> one tree of `[...]` forms with typed, spec-defined conversions to and from
+> XML, JSON, YAML, TOML, and CSV — including fully lossless XML, JSON, and
+> YAML lanes.
 >
 > **Agentic-ready.** Programs are CX values; data is CX values. Humans and AI
 > agents read, write, and run the same artifacts through the same parser, the
 > same AST, the same tree shape.
 
 CX is a homoiconic data language. Read it like XML, type it like TOML, query
-it like XPath, program it like Lisp. As a format, CX round-trips losslessly
-through JSON, YAML, TOML, XML, and CSV, so you can adopt it incrementally
-without rewriting existing pipelines.
+it like XPath, program it like Lisp. As a format, CX converts to and from
+JSON, YAML, TOML, XML, and CSV with spec-defined semantics
+([`spec/03-approved/core/conversions.md`](spec/03-approved/core/conversions.md)),
+so you can adopt it incrementally without rewriting existing pipelines.
 
 ```cx
 [service name=auth port=8443 tls=true
@@ -40,10 +42,28 @@ product, not "a format plus a separate language."
 
 ## Compared to
 
-**Data formats** — CX subsumes JSON, YAML, TOML, and XML round-trip, and adds
-typed scalars, native tables, and a bracketed directive form. The lossless
-conversion contract is real: every CX document can be emitted in any of the
-five target formats and parsed back without information loss.
+**Data formats** — CX converts to and from JSON, YAML, TOML, XML, and
+CSV/TSV/PSV, and adds typed scalars, native tables, and a bracketed directive
+form. The conversion contract, exactly as the spec
+([`conversions.md`](spec/03-approved/core/conversions.md)) states it:
+
+- **XML** — lossless round-trip, working on the shipped CLI today
+  (`cx --to=xml --lossless … | cx --from=xml` recovers the original document;
+  type metadata travels as `cx:` namespace attributes/carriers, `[table]`
+  blocks as `cx:cols`/`cx:row`).
+- **JSON / YAML** — typed conversions both ways, and a full lossless mode on
+  the shipped CLI: `cx --to=json --lossless … | cx --from=json` (same for
+  yaml) recovers an element document byte-identically. Structure rides the
+  reserved `$tag` envelope; value types ride a `cx:type` sidecar + per-item
+  carriers in JSON and native `!!cx:T` tags in YAML.
+- **TOML** — typed idiomatic conversion both ways. TOML's grammar has no
+  extension point for type tags, so the spec defines no lossless mode for
+  it; round through CX or XML when you need full fidelity.
+- **CSV / TSV / PSV** — well-defined and typed (auto-typing with per-column
+  narrowing), deliberately **not** lossless (conversions.md §8): delimited
+  files carry no hierarchy, comments, or type metadata.
+- In the other direction, any JSON / YAML / TOML document converts to CX and
+  back without loss within that format's expressive range.
 
 | | JSON | YAML | TOML | XML | CX |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -62,7 +82,7 @@ data is programs; one syntax substrate, one universal container.
 |---|:---:|:---:|:---:|:---:|
 | Homoiconic substrate | S-expressions | EDN | S-expressions | CX trees |
 | Data is code | ✓ | ✓ | ✓ | ✓ |
-| Format-interop with non-Lisp world | weak | partial (EDN ↔ JSON) | weak | lossless to JSON/YAML/TOML/XML/CSV |
+| Format-interop with non-Lisp world | weak | partial (EDN ↔ JSON) | weak | typed conversions to/from XML/JSON/YAML/TOML/CSV (XML/JSON/YAML lossless) |
 | Schema language | external | spec / malli | contracts | built-in |
 | Named element / attribute model | — | — | — | ✓ |
 
@@ -72,12 +92,37 @@ transforms, then services. Same syntax all the way.
 
 ## Install
 
-```sh
-# macOS / Linux — single statically-linked binary, no runtime deps
-curl -sSL https://cx-home.io/install | sh
+**Prebuilt binary** — download the tarball for your platform from the
+[latest GitHub release](https://github.com/cx-home/cx/releases/latest)
+(currently `cx-darwin-arm64.tar.gz` for macOS on Apple silicon; it contains
+the `cx` CLI plus `libcx.dylib` and `cx.h` for embedders), then put `cx` on
+your `PATH`:
 
-# Or build from source
-git clone https://github.com/cx-home/cx && cd cx && make build && make test
+```sh
+tar -xzf cx-darwin-arm64.tar.gz
+sudo install -m 755 cx /usr/local/bin/cx
+cx --version
+```
+
+**Build from source** — needs `make`, a C compiler, and git. The patched V
+toolchain CX compiles with is vendored as a submodule, so clone with
+`--recursive`:
+
+```sh
+git clone --recursive https://github.com/cx-home/cx
+cd cx
+make -C third_party/v   # one-time: build the vendored V toolchain
+make build-vcx          # libcx + the cx CLI (staged at vcx/target/cx)
+make promote-cli        # verify + install the CLI to /usr/local/bin
+cx --version
+```
+
+**One-line install** — once `cxhome.org`'s DNS is live, the hosted installer
+downloads the latest release for your platform, verifies its SHA-256, and
+installs to `~/.local` (override with `PREFIX=`):
+
+```sh
+curl -sSL https://cxhome.org/install | sh
 ```
 
 V users — the native V binding lives in its own
@@ -103,9 +148,48 @@ interactive playground — lives at:
 **→ [cx-home.github.io/cx](https://cx-home.github.io/cx/)**
 
 It is the canonical user-facing surface; this README is the one-screen intro.
-Reading offline? Open [`docs/guide/index.html`](docs/guide/index.html) in a
-browser — the guide is a static bundle and works under `file://` with no
-server.
+Reading offline? The guide is generated build output: run `make guide` first,
+then open `docs/guide/index.html` in a browser — it is a static bundle and
+works under `file://` with no server.
+
+## Platform
+
+The language core is one consumption mode; the repo also carries a platform
+tier, integrating on the current release line:
+
+- **XAP** — the application/feature-distribution layer: features are sealed,
+  signed CX artifacts served to clients over the XAP/XSP protocols. Spec:
+  [`spec/03-approved/xap/xap.md`](spec/03-approved/xap/xap.md); hands-on
+  intro: [`docs/dev/xap-quickstart.md`](docs/dev/xap-quickstart.md).
+- **cx store** — a content-addressed multimodel store, embeddable in-process
+  ([`docs/dev/store-embedded.md`](docs/dev/store-embedded.md)) across mem /
+  file / sqlite / s3 substrates. Stdlib surface:
+  [`spec/03-approved/std-lib/store.md`](spec/03-approved/std-lib/store.md).
+- **store-serve** — the store's single-node service tier: a daemon with auth,
+  observability, and the CSRP/gRPC remote protocols
+  ([`docs/dev/store-service.md`](docs/dev/store-service.md)).
+
+## Operations
+
+Running CX in anger is documented in the developer-onboarding set at
+[`docs/dev/`](docs/dev/README.md) — deploy artifacts and service operation
+([`docs/dev/store-service.md`](docs/dev/store-service.md)), store management
+and recovery ([`docs/dev/store-management.md`](docs/dev/store-management.md)),
+security posture ([`docs/dev/store-security.md`](docs/dev/store-security.md)),
+and registry setup/consumption for distributing features
+([`docs/dev/registry-setup.md`](docs/dev/registry-setup.md)).
+
+## Embedding libcx
+
+CX ships as an embeddable C library: `make install` installs `libcx`, the
+[`include/cx.h`](include/cx.h) header, and a pkg-config file (generated from
+[`cx.pc.in`](cx.pc.in)) so `pkg-config --cflags --libs cx` works from any C
+consumer. The versioned C ABI contract — symbols, capability bits,
+memory/threading rules — is
+[`spec/03-approved/core/abi.md`](spec/03-approved/core/abi.md), and every
+language binding under [`lang/`](lang/) is a worked example of embedding it.
+(Note: `examples/embedding_test.cx` is about embedding *foreign text in CX
+documents*, not about embedding libcx.)
 
 ## Status
 
@@ -118,9 +202,10 @@ What's in each release — new surface, fixes, and any migration notes — lives
 the latest of those is the authoritative release surface. Full language and
 stdlib reference is on the [docs site](https://cx-home.github.io/cx/).
 
-Formal security review, fuzz-testing, and the multi-core performance work are
-still ahead — so pin a tested version and apply normal pre-1.0 caution, as the
-disclaimer above says.
+A formal external security review and the multi-core performance work are
+still ahead (in-repo fuzz harnesses exist — see
+[`SECURITY.md`](SECURITY.md) — but no third-party audit yet), so pin a tested
+version and apply normal pre-1.0 caution, as the disclaimer above says.
 
 ## Contributing
 

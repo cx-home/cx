@@ -9,8 +9,8 @@ args    = ["lsp"]
 [[language]]
 name              = "cx"
 scope             = "source.cx"
-file-types        = ["cx", "cxs", "cxl"]
-roots             = [".git", "cx.yaml", "cxlint.yaml"]
+file-types        = ["cx", "cxd", "cxs"]
+roots             = [".git", ".cxlint.cx"]
 language-servers  = ["cx"]
 indent            = { tab-width = 2, unit = "  " }
 auto-format       = true

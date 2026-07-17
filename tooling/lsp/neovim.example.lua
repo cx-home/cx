@@ -1,6 +1,7 @@
 -- Neovim: cx language server registration via the built-in `vim.lsp`
--- client. Tested on Neovim 0.10+. Requires `cx` on PATH (override with
--- $CX_BIN if installed elsewhere).
+-- client. Requires Neovim 0.11+ (`vim.lsp.completion.get` below is
+-- 0.11-only) and `cx` on PATH (override with $CX_BIN if installed
+-- elsewhere).
 --
 -- Drop into ~/.config/nvim/lua/cx.lua and `require('cx').setup()` from
 -- init.lua, or paste inline.
@@ -15,8 +16,8 @@ function M.setup(opts)
   vim.filetype.add({
     extension = {
       cx = 'cx',
+      cxd = 'cx',
       cxs = 'cx',
-      cxl = 'cx',
     },
   })
 
@@ -29,7 +30,7 @@ function M.setup(opts)
         name = 'cx',
         cmd = vim.list_extend({ cx_bin }, server_args),
         root_dir = vim.fs.dirname(
-          vim.fs.find({ '.git', 'cx.yaml', 'cxlint.yaml' }, { upward = true })[1]
+          vim.fs.find({ '.git', '.cxlint.cx' }, { upward = true })[1]
         ) or vim.fn.getcwd(),
         on_attach = function(client, bufnr)
           local kmap = function(mode, lhs, rhs, desc)

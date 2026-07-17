@@ -8,7 +8,7 @@ for `.cx` files. The language server is built into the `cx` binary —
 
 **Highlighting architecture.** `cx lsp` semanticTokens are
 the source of truth for directive interiors — the full
-40-directive registry per spec/code.md §4.1, including the structured
+directive registry per spec/code.md §4.1, including the structured
 additions `[?def]` / `[?lib]` / `[?const]` (code.md §12.2 / code.md §12.1/§12.3),
 multi-arm `[?match]` with `[case]` / `[when]` / `[where]` / `[else]`
 clause-children (code.md §8.2), `[?modify]` with the eleven action
@@ -37,16 +37,29 @@ cd tooling/tree-sitter-cx
 make install-nvim
 ```
 
-This compiles the grammar and copies the parser + query files to
-`~/.local/share/nvim/site/`. Re-run after any grammar change.
+This compiles the grammar (pinned at ABI 14) and installs into
+`~/.local/share/nvim/site/`:
+
+| File | Installed to |
+| --- | --- |
+| parser | `~/.local/share/nvim/site/parser/cx.so` |
+| highlight/injection queries | `~/.local/share/nvim/site/queries/cx/*.scm` |
+| ftplugin (brackets, comments) | `~/.local/share/nvim/site/ftplugin/cx.vim` |
+| indent | `~/.local/share/nvim/site/indent/cx.vim` |
+
+Re-run after any grammar change.
 
 ---
 
 ## 2 — Install the Neovim plugin
 
-Copy [`cx.lua`](cx.lua) into your Neovim plugin directory:
+`tooling/neovim/` is **not** consumable as a plugin-manager plugin root
+(there is no `lua/` module layout or `plugin/` directory to point
+lazy.nvim / packer at the repo). Install by copying the files to the
+paths below:
 
-**lazy.nvim / LazyVim:**
+**lazy.nvim / LazyVim** — copy the plugin spec into your plugins
+directory (it returns a lazy.nvim spec table):
 ```sh
 cp tooling/neovim/cx.lua ~/.config/nvim/lua/plugins/cx.lua
 ```
@@ -120,6 +133,29 @@ Useful as a minimal config when the binary isn't available yet.
 ```sh
 cp -r tooling/neovim/syntax   ~/.config/nvim/
 cp -r tooling/neovim/ftdetect ~/.config/nvim/
+cp -r tooling/neovim/ftplugin ~/.config/nvim/
+cp -r tooling/neovim/indent   ~/.config/nvim/
+```
+
+---
+
+## Folding without the LSP
+
+With the LSP attached, folding comes from `foldingRange` (every
+multi-line `[...]`). Without it, use one of:
+
+**Tree-sitter folds** (parser installed via `make install-nvim`):
+```lua
+vim.opt.foldmethod = 'expr'
+vim.opt.foldexpr   = 'v:lua.vim.treesitter.foldexpr()'
+vim.opt.foldlevel  = 99   -- open all folds by default
+```
+
+**Pure-Vim indent folds** (no parser needed; pairs with the bundled
+indent file, since CX indentation tracks bracket depth):
+```vim
+setlocal foldmethod=indent
+setlocal foldlevel=99
 ```
 
 ---

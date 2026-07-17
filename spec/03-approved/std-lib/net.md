@@ -82,14 +82,14 @@ closeable contract (`on-close="net/close"`, `code.md` §8.10.7): `[?with-open]`-
   remote=[addr host="93.184.216.34" port=443 family="ipv4"]
   secure=true alpn="h2" on-close="net/close"]
 [listener fd=6 transport="tcp" state="listening" backlog=128
-  local=([addr host="127.0.0.1" port=8080 family="ipv4"]    ; multi-address bind →
-         [addr host="::1" port=8080 family="ipv6"])           ; local is a sequence (§3.7/H6)
+  local=([addr host="127.0.0.1" port=8080 family="ipv4"],   # multi-address bind →
+         [addr host="::1" port=8080 family="ipv6"])           # local is a sequence (§3.7/H6)
   surface-accept-errors=false on-close="net/close"]
 [socket fd=9 transport="udp" state="bound"
   local=[addr host="0.0.0.0" port=9000 family="ipv4"] on-close="net/close"]
-[listener fd=11 transport="dtls" state="listening"          ; DTLS server listener (§3.6a, H1)
+[listener fd=11 transport="dtls" state="listening"          # DTLS server listener (§3.6a, H1)
   local=[addr host="0.0.0.0" port=8443 family="ipv4"] on-close="net/close"]
-[socket fd=12 transport="dtls" state="open" secure=true     ; per-peer DTLS socket from accept
+[socket fd=12 transport="dtls" state="open" secure=true     # per-peer DTLS socket from accept
   local=[addr host="10.0.0.4" port=8443 family="ipv4"]
   remote=[addr host="203.0.113.7" port=51000 family="ipv4"] on-close="net/close"]
 ```

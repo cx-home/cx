@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -105,10 +110,11 @@
    against an inline [schema [field …] …], returning [ok $value] on success or an
    inspectable [invalid [violation …] …] report on failure — failure is data the
    caller iterates, never a thrown error. The vocabulary covers scalar constraints
-   (type, pattern, min / max, min-length / max-length, enum, required / optional)
-   and structural keywords (strict, nested schema=, extends=, validate-with=), with
-   patterns matched under RE2. This is the data-record sibling of the document-tree
-   validator in spec/core/schema.md, sharing one scalar-constraint vocabulary.</p>
+   (type, pattern, min / max, min-length / max-length, required / optional) plus
+   the structural child elements [enum …], nested [schema …], [extends $Base] and
+   the keywords strict= / validate-with=, with patterns matched under RE2. This is
+   the data-record sibling of the document-tree validator in spec/core/schema.md,
+   sharing one scalar-constraint vocabulary.</p>
   
     <section id="fn-validate-validate-shape" class="fn">
       <h3>validate:validate-shape</h3>
@@ -198,7 +204,7 @@
 [$validate:violation-paths
   [$validate:validate-shape
     [rec [address [zip "abc"]]]
-    [schema [field name="address" type="element" schema=[schema
+    [schema [field name="address" type="element" [schema
       [field name="zip" type="string" pattern="^\\d{5}(-\\d{4})?$"]]]]]]</code>
           </pre>
           <pre class="sample-output">

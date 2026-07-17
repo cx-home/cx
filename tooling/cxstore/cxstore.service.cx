@@ -1,0 +1,14 @@
+[; Sample cxstore service config (spec/02-working/cxstore_service_tier_phase2.md, Appendix A).
+   Loaded by: cx store-serve --config /etc/cxstore/cxstore.service.cx ;]
+[cxstore-service
+  [bind addr="0.0.0.0:8443"]
+  [; TLS recommended in production; omit for localhost/sidecar plaintext ;]
+  [; [tls cert="/etc/cxstore/tls.crt" key="/etc/cxstore/tls.key"] ;]
+  [stores
+    [store name="docs" url="file:///var/lib/cxstore/docs"]]
+  [auth
+    [; auth providers are enforced by the authZ sub-area; recognized here ;]
+    [static]]
+  [observability
+    [log format="cx"]]
+  [workers query-pool=8]]

@@ -140,10 +140,10 @@ authz models four kinds of value, all homoiconic CX data (built as literals, no
 opaque handles):
 
 ```cx
-[principal dana [tenant acme] [kind :human]]            ; the authority origin (N-TRUST-1)
+[principal dana [tenant acme] [kind :human]]            # the authority origin (N-TRUST-1)
 [capability refund-duplicate [reads /orders] [emits [do :refund-duplicate]]]
-[delegation d-recon-77 …]                               ; scoped/attenuating/time-bounded/revocable
-[delegation g-pay-001 [mode :guardian] [gate …] …]      ; a guardian grant = a gated delegation
+[delegation d-recon-77 …]                               # scoped/attenuating/time-bounded/revocable
+[delegation g-pay-001 [mode :guardian] [gate …] …]      # a guardian grant = a gated delegation
 ```
 
 - A **principal** is the authority origin — an authenticated subject, human or
@@ -177,10 +177,10 @@ A standard scoped delegation reuses the [`xap.md`](xap.md) §22.2 shape exactly:
   [tenant acme]
   [from [principal dana]] [to [agent ops-agent-1]]
   [capabilities [refund-duplicate]]
-  [over /orders[?[= @/charge-state "erroring"]]]      ; the CXPath slice it is scoped to
-  [attenuates d-dana-ops] [until $t0+1h] [revocable true]
-  [assurance :t1]                                     ; signing tier (§2.7, §10.9); default :t1 for delegations
-  [issued-as "throttle:reconcile→auto"]]              ; the control dial issued this (§9.3)
+  [over /orders[= $_@charge-state "erroring"]]      # the CXPath slice it is scoped to
+  [attenuates d-dana-ops] [until [+ $t0 1h]] [revocable true]
+  [assurance :t1]                                     # signing tier (§2.7, §10.9); default :t1 for delegations
+  [issued-as "throttle:reconcile→auto"]]              # the control dial issued this (§9.3)
 ```
 
 A **guardian grant** reuses the [`xap.md`](xap.md) §22.4 shape exactly — a
@@ -193,11 +193,11 @@ minimal `[action …]`, a `[route …]`, mandatory `[audit :required]`, and
   [tenant acme] [mode :guardian]
   [from [principal acme-admin]] [to [agent ops-agent-1]]
   [capabilities [pause-payment-gateway]]
-  [gate [all [incapacity [no-ack-within "10m" [of :escalation]]]   ; ≥1 incapacity predicate (well-formedness)
-             [state      [gt /metrics/charge-error-rate 0.15]]]]    ; state predicate — only ANDed in
-  [action [do :pause-payment-gateway]]                              ; minimal, pinned
+  [gate [all [incapacity [no-ack-within "10m" [of :escalation]]]   # ≥1 incapacity predicate (well-formedness)
+             [state      [gt /metrics/charge-error-rate 0.15]]]]    # state predicate — only ANDed in
+  [action [do :pause-payment-gateway]]                              # minimal, pinned
   [route [page sam dana]] [audit :required]
-  [assurance :t1]                                                   ; guardian = T1 minimum; T2 if irreversible (§2.7)
+  [assurance :t1]                                                   # guardian = T1 minimum; T2 if irreversible (§2.7)
   [dormant-until-gate true]]
 ```
 
@@ -258,9 +258,9 @@ analogous to a non-2xx HTTP status being a value, not an `[err]`
 ([`http.md`](http.md) §2.4):
 
 ```cx
-[permit [delegation d-recon-77] [via [d-dana-ops d-recon-77]]   ; the authority chain that granted it
+[permit [delegation d-recon-77] [via [d-dana-ops d-recon-77]]   # the authority chain that granted it
   [tier :t1]]
-[deny   [code cx-err:CXER4700]                                  ; E_AUTHZ_UNAUTHORIZED — carried as DATA
+[deny   [code cx-err:CXER4700]                                  # E_AUTHZ_UNAUTHORIZED — carried as DATA
   [reason :no-grant] [actor [agent x]] [capability refund-duplicate]
   [slice /orders/9] [tenant acme]]
 ```
@@ -710,8 +710,8 @@ Canonical call form is `[$authz:VERB …]` (`[head …]`); this module uses no i
 [?with-open [$authz:store {tenant: 'acme'}] $az
   [$authz:delegate $az
     [delegation d-recon-77 [tenant acme] [from [principal dana]] [to [agent ops-agent-1]]
-      [capabilities [refund-duplicate]] [over /orders[?[= @/charge-state "erroring"]]]
-      [attenuates d-dana-ops] [until $t0+1h] [revocable true]]]]
+      [capabilities [refund-duplicate]] [over /orders[= $_@charge-state "erroring"]]
+      [attenuates d-dana-ops] [until [+ $t0 1h]] [revocable true]]]]
 ```
 
 The **bus PEP** calls `check` before committing every intent ([`xap.md`](xap.md)
@@ -722,10 +722,10 @@ record the `[deny]` + route per `[err]`-as-value":
 ```cx
 [?match [$authz:check $az [authz-request [actor $a] [capability $cap]
                             [slice $slice] [tenant acme]]]
-  [case [permit @via=$v] [$bus:commit $intent]]                  ; a VALUE — permit
-  [case [deny @reason=:tier-unmet] [$session:step-up $a]]        ; a VALUE — deny (step up)
-  [case [deny $d] [$journal:append [audit-deny $d]]]             ; a VALUE — deny (record)
-  [case [err @code=$c] [err code=$c]]]                           ; a genuine FAULT — re-raise
+  [case [permit @via=$v] [$bus:commit $intent]]                  # a VALUE — permit
+  [case [deny @reason=:tier-unmet] [$session:step-up $a]]        # a VALUE — deny (step up)
+  [case [deny $d] [$journal:append [audit-deny $d]]]             # a VALUE — deny (record)
+  [case [err @code=$c] [err code=$c]]]                           # a genuine FAULT — re-raise
 ```
 
 - **Decision handling is `[?match]` on shape**, never `[?try]` (SAP §2): a `[deny]`

@@ -123,9 +123,54 @@
         },
         {
           "type": "SYMBOL",
+          "name": "interpolation"
+        },
+        {
+          "type": "SYMBOL",
           "name": "unknown_directive"
         }
       ]
+    },
+    "interpolation": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_interp_open"
+          },
+          "named": true,
+          "value": "directive_head"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "directive_body"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "_interp_open": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 5,
+        "content": {
+          "type": "STRING",
+          "value": "[?="
+        }
+      }
     },
     "unknown_directive": {
       "type": "SEQ",
@@ -2358,6 +2403,10 @@
                   },
                   {
                     "type": "STRING",
+                    "value": "period"
+                  },
+                  {
+                    "type": "STRING",
                     "value": "instant"
                   },
                   {
@@ -2408,6 +2457,18 @@
           {
             "type": "PATTERN",
             "value": "[a-zA-Z_][a-zA-Z0-9._-]*"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ".*"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         ]
       }
@@ -2962,7 +3023,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PREC",
-        "value": 1,
+        "value": 2,
         "content": {
           "type": "SEQ",
           "members": [

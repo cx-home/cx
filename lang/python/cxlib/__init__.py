@@ -19,8 +19,9 @@ from .cx import (
     toml_to_data_bin_schema_driven,
     csv_to_data_bin_schema_driven, tsv_to_data_bin_schema_driven,
     psv_to_data_bin_schema_driven, from_data_bin_schema_driven,
-    eval_code, eval_code_streaming,
+    eval_code, eval_code_streaming, eval_code_caps,
 )
+from .store import StoreClient
 from .binary import ast_bin as to_ast_bin
 from .streaming_table import TableReader, TableWriter
 from .table import Table

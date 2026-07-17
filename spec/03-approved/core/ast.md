@@ -177,7 +177,8 @@ SystemLiteral and PubidLiteral are always single-quoted in CX output.
  "bodyRef": "u-1", // body-position `@name` IDREF per cxdm.md §4.2; omitted if absent
  "dataType": "string[]", // omitted if absent — from TypeAnnotation
  "attrs": [], // Attribute[] — omitted if empty
- "items": [] // Node[] — omitted if empty
+ "items": [], // Node[] — omitted if empty
+ "table": {} // TableData projection — only on `[table[…]]`-block elements
 }
 ```
 
@@ -195,6 +196,59 @@ explicitly ([`ast-bin.md` §4.1](ast-bin.md) Element payload `id` and
 
 `dataType` carries the TypeAnnotation value (`::int`, `::string[]`, etc.) when present.
 Emitters MUST always store the canonical long form (`int`, not `i`; `string[]`, not `s[]`).
+
+**`table` — the TableData projection.** An element that carries a
+`[table[…]]` block (grammar [29]) stores its payload in the pooled
+TableData field, NOT in `items` — the AST-JSON projection carries it as a
+`table` object and MUST NOT drop it:
+
+```json
+{
+ "type": "Element", "name": "users", "dataType": "table",
+ "table": {
+  "cols": [
+   {"name": "name", "dataType": "string"},
+   {"name": "age", "dataType": "int"},
+   {"name": "note"}
+  ],
+  "rows": [
+   ["alice", 30, "admin"],
+   ["bob", 25, null]
+  ]
+ }
+}
+```
+
+- `cols` — the declared columns in header order. `dataType` carries the
+  column's declared type name verbatim in canonical long form (`int`, not
+  `i`); it is **omitted** for an undeclared (string-default) column,
+  mirroring the canonical CX header where an untyped column is the bare
+  name. This is the JSON image of the XML lane's `cx:cols` sidecar
+  ([`conversions.md` §2.1](conversions.md)).
+- `rows` — one JSON array per data row, cells in column order. Scalar
+  cells use JSON-native values (string / number / boolean / `null`; JSON
+  is typed, so the int/float/bool/string/null distinction round-trips
+  without a carrier — the analogue of the XML lane's
+  bare-where-recoverable rule). Collection cells use the standard
+  SequenceNode / ArrayNode / MapNode encodings defined below — a cell is
+  a JSON **object** exactly when it is a collection, so scalar and
+  collection cells never collide.
+- A header-only table has `"rows": []`. When `table` is present the
+  redundant empty `items` array is suppressed (a table-block element has
+  no body items).
+- Importers MUST reconstruct the TableData payload from this shape (the
+  projection round-trips: CX → AST-JSON → CX is the identity on
+  table-bearing documents). A `table` value that is not an object, a row
+  that is not an array, or a collection cell that is not a
+  Sequence/Array/Map node object is a shape error — never silently
+  dropped.
+
+**Binary codec hook.** On the ast_bin wire the same payload rides as a
+table record (tag `0x17`, format version 9, capability bit 40) in the
+first child slot of the Element — see [`ast-bin.md` §4.8](ast-bin.md).
+The in-memory `from_chunked` provenance flag (set by the data_bin
+chunked reader) is carried on NEITHER wire shape; decoded tables
+restore `false`.
 
 **Namespace fields (in-memory, not currently in JSON wire shape).** Per
 [`cxdm.md` §3](cxdm.md), every Element carries two additional fields
@@ -441,8 +495,8 @@ inferred-type array: non-string tokens → that type; any string token
 Auto-typed scalar: `[age 30]` → `<age>30</age>`
 Explicit scalar: `[age::int 30]` → `<age cx:type="int">30</age>`
 Discrete typed list (no-comma): `[scores 10 20 30]` → `<scores><cx:int>10</cx:int><cx:int>20</cx:int><cx:int>30</cx:int></scores>`
-Comma array: `[tags web, prod]` → `<tags><cx:arr><item>web</item><item>prod</item></cx:arr></tags>`
-Explicit array: `[tags::string[] a b]` → `<tags cx:type="string[]"><item>a</item>...</tags>`
+Comma array: `[tags web, prod]` → `<tags><cx:arr><cx:item>web</cx:item><cx:item>prod</cx:item></cx:arr></tags>`
+Explicit array: `[tags::string[] a b]` → `<tags cx:type="string[]"><cx:item>a</cx:item>...</tags>`
 
 ---
 
@@ -531,7 +585,7 @@ accepted (CX stores refs without requiring an entity declaration).
 
 ```json
 {"type": "Interpolation", "expr": "@name"}
-{"type": "Interpolation", "expr": "//service[@port=8080]/@host"}
+{"type": "Interpolation", "expr": "//service[= $_@port 8080]/@host"}
 ```
 
 CX: `[?=EXPR]` (grammar [58])
@@ -932,7 +986,7 @@ Every CX source file parses to a `Program` whose body is a single
 header sequence of `LibNode`, `DefNode`, and `ConstNode` declarations
 preceding the body. Gate 3 ([`code.md` §11.4.1](code.md))
 enforces consistency between this section, the EBNF productions
-[120]–[129] and [149]–[158] in [`grammar.ebnf`](grammar.ebnf),
+[120]–[129] and [149]–[158] in [`grammar.ebnf`](../formal/grammar.ebnf),
 and the directive registry in [`code.md` §4.1](code.md).
 
 ### Program
@@ -1264,7 +1318,7 @@ nullable form.
 }
 ```
 
-CX: `//user[@active=true]` / `/root/item` / `user/email` (grammar [130]–[131a])
+CX: `//user[= $_@active true]` / `/root/item` / `user/email` (grammar [130]–[131a])
 
 A first-class Path value. Evaluation produces a `cx.Sequence`
 of matching nodes. The `leading` field encodes the opening token:
@@ -1315,13 +1369,14 @@ evaluated with the current step's matched node as the context item (grammar
 - Any other result: boolean coercion via Effective Boolean Value (EBV) per
  [`cxdm.md` §6](cxdm.md) — the node is kept iff EBV is `true`.
 
-Attribute tests (`[@attr = val]`) are the common predicate form; they
-desugar to a comparison `ProgramExpr` that evaluates the attribute named
-`attr` against `val` per grammar [133]. Comparison uses value-comparison
+Attribute comparisons (`[= $_@attr val]`) are the common predicate form —
+a comparison `ProgramExpr` that evaluates the attribute named
+`attr` against `val` (prefix form per [`code.md` §5.5.2](code.md); the
+former infix attribute-test sugar, grammar [133], is retired). Comparison uses value-comparison
 semantics only — no keyword synonyms; multi-valued operands raise
 `CXER0103`.
 
-**JSON example** — `//user[@active=true]/email`:
+**JSON example** — `//user[= $_@active true]/email`:
 
 ```json
 {
@@ -1391,7 +1446,7 @@ for the `$x/name` (single child step, no predicate) form and
 **Round-trip note:** canonical emit uses the terse `$name/step/...` form. The structured homoiconic form `[?path [binding name] [steps ...]]` is accepted on parse but never auto-emitted.
 
 **Cross-references:**
-- Grammar productions [130]–[135]: [`grammar.ebnf`](grammar.ebnf)
+- Grammar productions [130]–[135]: [`grammar.ebnf`](../formal/grammar.ebnf)
 - CXPath surface and desugar table: [`code.md` §5.5](code.md)
 
 ### PathNode
@@ -1413,16 +1468,16 @@ for the `$x/name` (single child step, no predicate) form and
  }
  ],
  "predicates": [ /* ProgramExpr — trailing top-level predicates (rare) */ ],
- "source": "//user[@active=true]/email",
+ "source": "//user[= $_@active true]/email",
  "loc": {"line": 12, "col": 3}
 }
 ```
 
-CX: `//user[@active=true]` / `/root/item` / `user/email` / `$u/name`
+CX: `//user[= $_@active true]` / `/root/item` / `user/email` / `$u/name`
 (grammar [130]–[135])
 
 First-class Path value kind ratified by
-D1: `//user[@active=true]`
+D1: `//user[= $_@active true]`
 parses to `cx.PathNode { steps: […] }`, evaluates to a `cx.Sequence`
 of matching nodes, and round-trips as the terse `//`-form
 D6. The same node kind covers both rooted paths (grammar [130]) and
@@ -1454,7 +1509,8 @@ file-wide convention.
  the bound identifier (without the `$` sigil) from a `(bind $name)`
  peer-annotation per grammar [160a] (`null` / omitted when absent;
  reserved `_` rejected at parse time with `CXER0232`), and the step's
- `predicates` (grammar [132]). For `form = "binding"` the step list is
+ `predicates` (grammar [159] PredicateExpr — the [132] enumeration is
+ retired). For `form = "binding"` the step list is
  non-empty per grammar [135]; bare `$x` with no steps remains a
  `ProgramBinding` per the §`ProgramBinding` rule above.
 - `predicates` — trailing top-level predicates on the whole path
@@ -1485,8 +1541,8 @@ top-level `predicates` list compare equal under the same recursive
 rule. Hashing follows the same field set in canonical order. The
 `source` and `loc` fields are advisory and do **not** participate in
 equality or hashing — two PathNodes parsed from differently-formatted
-source text (e.g. `//user[@active = true]` vs
-`//user[@active=true]`) compare equal. This matches the round-trip
+source text (e.g. `//user[ = $_@active true ]` vs
+`//user[= $_@active true]`) compare equal. This matches the round-trip
 contract in
 form regardless of source whitespace).
 
@@ -1529,7 +1585,7 @@ summary at the end of this file.
 
 **Cross-references**
 
-- Grammar productions [130]–[135]: [`grammar.ebnf`](grammar.ebnf)
+- Grammar productions [130]–[135]: [`grammar.ebnf`](../formal/grammar.ebnf)
 - CXPath surface + desugar table: [`code.md` §5.5](code.md)
 - Wire-format binary codec tag: `ast-bin.md` — tag `0x13`, v8 version byte, cap-bit 36 (Phase 1.7)
 
@@ -1606,7 +1662,7 @@ version byte **v8**, gated on capability bit **36**. Wire payload per
 }
 ```
 
-CX: `[?modify $doc //user[@id=1] [set "Alice"] [set-attr class "lead"] [delete] ...]`
+CX: `[?modify $doc //user[= $_@id 1] [set "Alice"] [set-attr class "lead"] [delete] ...]`
 (grammar [141]–[148]).
 
 First-class pure-functional update directive. Returns a new document
@@ -1694,7 +1750,7 @@ only AST shape.
 | DefNode | Extended | [?def name [scope public] (params) body] | n/a |
 | ConstNode | Extended | [?const [lazy] NAME expr] | n/a |
 | TypeExprNode | Extended | string \| Person \| [or T1 T2] \| [sequence T] | n/a |
-| PathNode | Extended | //user[@active=true] / $u/name / $u//item | n/a |
+| PathNode | Extended | //user[= $_@active true] / $u/name / $u//item | n/a |
 | MatchNode | Extended | [?match $x [case ...] [when ...] [else ...]] | n/a |
 | ModifyNode | Extended | [?modify $doc //focus [set EXPR] [delete] ...] | n/a |
 

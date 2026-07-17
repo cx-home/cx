@@ -6,8 +6,8 @@
 //! to the existing `cxlib` foundation:
 //!
 //! * `cx_code_eval` / `cx_code_diagram` / `cx_code_tree` are exposed at
-//!   the crate root (see `lib.rs`). The names mirror the C ABI per ADR
-//!   0032 D5 so Layer-1 conformance fixtures (`conformance/binding_api.txt`)
+//!   the crate root (see `lib.rs`). The names mirror the C ABI per
+//!   `spec/bindings.md` so Layer-1 conformance fixtures (`conformance/binding_api.txt`)
 //!   bind against shared vocabulary.
 //! * `Doc` and `Node` below are the canonical Layer-1 façades — thin
 //!   wrappers over the existing `cxlib::ast::Document` + `Element` types
@@ -126,8 +126,8 @@ impl Node {
 
 /// Layer-1 Doc façade per `spec/bindings.md §2.1`. Holds the canonical
 /// CX bytes plus a parsed [`ast::Document`]. Methods that return a new
-/// `Doc` do NOT mutate the receiver (pure-functional contract — ADR
-/// 0030 §D2).
+/// `Doc` do NOT mutate the receiver (pure-functional contract per
+/// `spec/bindings.md §2.1`).
 #[derive(Debug, Clone)]
 pub struct Doc {
     bytes: Vec<u8>,
@@ -180,8 +180,8 @@ impl Doc {
     }
 
     /// Method 5 — `Doc.eval(code) -> Result<String>`. Evaluates a CX
-    /// program against this Doc. Wraps `cx_code_eval` (per ADR
-    /// 0032 D5). The default output target is `"text"`; for richer
+    /// program against this Doc. Wraps `cx_code_eval` (per
+    /// `spec/bindings.md`). The default output target is `"text"`; for richer
     /// targets call `eval_with_target(...)`.
     pub fn eval(&self, code: &str) -> Result<String, String> {
         cx::cx_code_eval(&self.doc.to_cx(), code, "")
@@ -251,7 +251,7 @@ impl Doc {
     // Both pass the canonical CX bytes through `cx_code_diagram` /
     // `cx_code_tree`. Kept on Doc for ergonomic parity with `.eval()`.
     // Not counted in the 16-method surface — code-projection is a
-    // separate ADR carve-out.
+    // separate spec carve-out.
 
     /// Mermaid diagram of this Doc's source (cap bit 31).
     pub fn diagram(&self) -> Result<String, String> {

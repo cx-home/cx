@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -127,7 +132,7 @@
          (init / thread registration / feature query), **canonical-form
          transcoding** (parse / serialize / hash / equals),
          **evaluation** (the `cx_code_eval*` family — see
-         <span class="xref-unresolved">[[evaluation]]</span>), and **structural accessors** (root,
+         <a class="xref" href="#evaluation">evaluation</a>), and **structural accessors** (root,
          children, attributes, body, kind). Every Layer-1 method
          on a binding maps to one of these families.</p>
         <section id="lifecycle">
@@ -294,14 +299,49 @@
            exception/Result, and calls `cx_error_release(err)` to
            free the message buffer.</p>
             <table>
-              
-                <row code-range="CXER0001-CXER0099" family="Parse / lexical" host-mapping="Python ParseError; Rust cxlib::Error::Parse; Go cxlib.ParseError; V error string"/>
-                <row code-range="CXER0100-CXER0199" family="Validation / type / canonical" host-mapping="Python ValidationError; Rust cxlib::Error::Validation; Go cxlib.ValidationError"/>
-                <row code-range="CXER0140-CXER0149" family="Resource limits (depth / time / size)" host-mapping="Python ResourceError; Rust cxlib::Error::Limit; Go cxlib.LimitError"/>
-                <row code-range="CXER0200-CXER0299" family="Evaluation (code / CXPath)" host-mapping="Python EvalError; Rust cxlib::Error::Eval; Go cxlib.EvalError"/>
-                <row code-range="CXER0300-CXER0399" family="I/O / include / network" host-mapping="Python IOError subclass; Rust cxlib::Error::Io; Go cxlib.IOError"/>
-                <row code-range="CXLW0001-CXLW0099" family="Lint / warning (not error)" host-mapping="Python warnings.warn; Rust log::warn!; Go cxlib.Warning"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code-range</th>
+                    <th>family</th>
+                    <th>host-mapping</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0001-CXER0099</td>
+                    <td>Parse / lexical</td>
+                    <td>Python ParseError; Rust cxlib::Error::Parse; Go cxlib.ParseError; V error string</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0100-CXER0199</td>
+                    <td>Validation / type / canonical</td>
+                    <td>Python ValidationError; Rust cxlib::Error::Validation; Go cxlib.ValidationError</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0140-CXER0149</td>
+                    <td>Resource limits (depth / time / size)</td>
+                    <td>Python ResourceError; Rust cxlib::Error::Limit; Go cxlib.LimitError</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0200-CXER0299</td>
+                    <td>Evaluation (code / CXPath)</td>
+                    <td>Python EvalError; Rust cxlib::Error::Eval; Go cxlib.EvalError</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0300-CXER0399</td>
+                    <td>I/O / include / network</td>
+                    <td>Python IOError subclass; Rust cxlib::Error::Io; Go cxlib.IOError</td>
+                  </tr>
+                  <tr>
+                    <td>CXLW0001-CXLW0099</td>
+                    <td>Lint / warning (not error)</td>
+                    <td>Python warnings.warn; Rust log::warn!; Go cxlib.Warning</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>Full error-code registry is in
            [`spec/errors.md`](../../spec/errors.md). The code is
@@ -326,24 +366,116 @@
          conformance harness validates by hashing each result and
          comparing per-binding.</p>
         <table>
-          
-            <row method="parse(bytes)" returns="Doc" description="Parse canonical CX bytes" c-abi="cx_parse"/>
-            <row method="Doc.bytes()" returns="bytes" description="Serialize Doc to canonical CX" c-abi="cx_doc_bytes"/>
-            <row method="Doc.hash()" returns="string" description="SHA-256 of canonical bytes (hex)" c-abi="cx_doc_hash"/>
-            <row method="Doc.equals(other)" returns="bool" description="Canonical-bytes equality" c-abi="cx_doc_equals"/>
-            <row method="Doc.eval(code)" returns="Value" description="Evaluate CX code against doc" c-abi="cx_code_eval"/>
-            <row method="Doc.select_all(cxpath)" returns="[Node]" description="CXPath path-value (all matches)" c-abi="cx_code_eval (find pattern)"/>
-            <row method="Doc.select(cxpath)" returns="Node?" description="First match of select_all" c-abi="cx_code_eval (find pattern)"/>
-            <row method="Doc.modify(focus, action)" returns="Doc" description="Pure-functional update" c-abi="cx_modify"/>
-            <row method="Doc.find_all(name)" returns="[Node]" description="Name-only convenience" c-abi="cx_code_eval (find pattern)"/>
-            <row method="Doc.root()" returns="Node" description="Root element" c-abi="cx_doc_root"/>
-            <row method="Node.name()" returns="string" description="Element name" c-abi="cx_node_name"/>
-            <row method="Node.attr(name)" returns="Value?" description="Attribute value" c-abi="cx_node_attr"/>
-            <row method="Node.attrs()" returns="Map" description="All attributes (preserves order)" c-abi="cx_node_attrs"/>
-            <row method="Node.children()" returns="[Node]" description="Direct children" c-abi="cx_node_children"/>
-            <row method="Node.body()" returns="Value" description="Element body value" c-abi="cx_node_body"/>
-            <row method="Node.kind()" returns="string" description="Item-kind tag (element / scalar:int / …)" c-abi="cx_node_kind"/>
-          
+          <thead>
+            
+              <tr>
+                <th>method</th>
+                <th>returns</th>
+                <th>description</th>
+                <th>c-abi</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>parse(bytes)</td>
+                <td>Doc</td>
+                <td>Parse canonical CX bytes</td>
+                <td>cx_parse</td>
+              </tr>
+              <tr>
+                <td>Doc.bytes()</td>
+                <td>bytes</td>
+                <td>Serialize Doc to canonical CX</td>
+                <td>cx_doc_bytes</td>
+              </tr>
+              <tr>
+                <td>Doc.hash()</td>
+                <td>string</td>
+                <td>SHA-256 of canonical bytes (hex)</td>
+                <td>cx_doc_hash</td>
+              </tr>
+              <tr>
+                <td>Doc.equals(other)</td>
+                <td>bool</td>
+                <td>Canonical-bytes equality</td>
+                <td>cx_doc_equals</td>
+              </tr>
+              <tr>
+                <td>Doc.eval(code)</td>
+                <td>Value</td>
+                <td>Evaluate CX code against doc</td>
+                <td>cx_code_eval</td>
+              </tr>
+              <tr>
+                <td>Doc.select_all(cxpath)</td>
+                <td>[Node]</td>
+                <td>CXPath path-value (all matches)</td>
+                <td>cx_code_eval (find pattern)</td>
+              </tr>
+              <tr>
+                <td>Doc.select(cxpath)</td>
+                <td>Node?</td>
+                <td>First match of select_all</td>
+                <td>cx_code_eval (find pattern)</td>
+              </tr>
+              <tr>
+                <td>Doc.modify(focus, action)</td>
+                <td>Doc</td>
+                <td>Pure-functional update</td>
+                <td>cx_modify</td>
+              </tr>
+              <tr>
+                <td>Doc.find_all(name)</td>
+                <td>[Node]</td>
+                <td>Name-only convenience</td>
+                <td>cx_code_eval (find pattern)</td>
+              </tr>
+              <tr>
+                <td>Doc.root()</td>
+                <td>Node</td>
+                <td>Root element</td>
+                <td>cx_doc_root</td>
+              </tr>
+              <tr>
+                <td>Node.name()</td>
+                <td>string</td>
+                <td>Element name</td>
+                <td>cx_node_name</td>
+              </tr>
+              <tr>
+                <td>Node.attr(name)</td>
+                <td>Value?</td>
+                <td>Attribute value</td>
+                <td>cx_node_attr</td>
+              </tr>
+              <tr>
+                <td>Node.attrs()</td>
+                <td>Map</td>
+                <td>All attributes (preserves order)</td>
+                <td>cx_node_attrs</td>
+              </tr>
+              <tr>
+                <td>Node.children()</td>
+                <td>[Node]</td>
+                <td>Direct children</td>
+                <td>cx_node_children</td>
+              </tr>
+              <tr>
+                <td>Node.body()</td>
+                <td>Value</td>
+                <td>Element body value</td>
+                <td>cx_node_body</td>
+              </tr>
+              <tr>
+                <td>Node.kind()</td>
+                <td>string</td>
+                <td>Item-kind tag (element / scalar:int / …)</td>
+                <td>cx_node_kind</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**CXPath is the selector vocabulary** across every Layer-1
          selection method. The path string is parsed and evaluated by
@@ -601,38 +733,202 @@
          follows. The leftmost column lists the CX type tag; each
          subsequent column gives the host's primary representation.</p>
         <table>
-          
-            <row cx-type=":int" v="i64" python="int" go="int64" rust="i64"/>
-            <row cx-type=":i8" v="i8" python="int" go="int8" rust="i8"/>
-            <row cx-type=":i16" v="i16" python="int" go="int16" rust="i16"/>
-            <row cx-type=":i32" v="i32" python="int" go="int32" rust="i32"/>
-            <row cx-type=":i64" v="i64" python="int" go="int64" rust="i64"/>
-            <row cx-type=":u8" v="u8" python="int" go="uint8" rust="u8"/>
-            <row cx-type=":u16" v="u16" python="int" go="uint16" rust="u16"/>
-            <row cx-type=":u32" v="u32" python="int" go="uint32" rust="u32"/>
-            <row cx-type=":u64" v="u64" python="int" go="uint64" rust="u64"/>
-            <row cx-type=":float" v="f64" python="float" go="float64" rust="f64"/>
-            <row cx-type=":f32" v="f32" python="float" go="float32" rust="f32"/>
-            <row cx-type=":f64" v="f64" python="float" go="float64" rust="f64"/>
-            <row cx-type=":string" v="string" python="str" go="string" rust="String / &amp;str"/>
-            <row cx-type=":bool" v="bool" python="bool" go="bool" rust="bool"/>
-            <row cx-type=":date" v="time.Date" python="datetime.date" go="time.Time" rust="chrono::NaiveDate"/>
-            <row cx-type=":datetime" v="time.Time" python="datetime.datetime (aware)" go="time.Time" rust="chrono::DateTime&lt;FixedOffset>"/>
-            <row cx-type=":bytes" v="[]u8" python="bytes" go="[]byte" rust="Vec&lt;u8>"/>
-            <row cx-type=":null" v="?T (none)" python="None" go="nil" rust="Option::None"/>
-          
+          <thead>
+            
+              <tr>
+                <th>cx-type</th>
+                <th>v</th>
+                <th>python</th>
+                <th>go</th>
+                <th>rust</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>:int</td>
+                <td>i64</td>
+                <td>int</td>
+                <td>int64</td>
+                <td>i64</td>
+              </tr>
+              <tr>
+                <td>:i8</td>
+                <td>i8</td>
+                <td>int</td>
+                <td>int8</td>
+                <td>i8</td>
+              </tr>
+              <tr>
+                <td>:i16</td>
+                <td>i16</td>
+                <td>int</td>
+                <td>int16</td>
+                <td>i16</td>
+              </tr>
+              <tr>
+                <td>:i32</td>
+                <td>i32</td>
+                <td>int</td>
+                <td>int32</td>
+                <td>i32</td>
+              </tr>
+              <tr>
+                <td>:i64</td>
+                <td>i64</td>
+                <td>int</td>
+                <td>int64</td>
+                <td>i64</td>
+              </tr>
+              <tr>
+                <td>:u8</td>
+                <td>u8</td>
+                <td>int</td>
+                <td>uint8</td>
+                <td>u8</td>
+              </tr>
+              <tr>
+                <td>:u16</td>
+                <td>u16</td>
+                <td>int</td>
+                <td>uint16</td>
+                <td>u16</td>
+              </tr>
+              <tr>
+                <td>:u32</td>
+                <td>u32</td>
+                <td>int</td>
+                <td>uint32</td>
+                <td>u32</td>
+              </tr>
+              <tr>
+                <td>:u64</td>
+                <td>u64</td>
+                <td>int</td>
+                <td>uint64</td>
+                <td>u64</td>
+              </tr>
+              <tr>
+                <td>:float</td>
+                <td>f64</td>
+                <td>float</td>
+                <td>float64</td>
+                <td>f64</td>
+              </tr>
+              <tr>
+                <td>:f32</td>
+                <td>f32</td>
+                <td>float</td>
+                <td>float32</td>
+                <td>f32</td>
+              </tr>
+              <tr>
+                <td>:f64</td>
+                <td>f64</td>
+                <td>float</td>
+                <td>float64</td>
+                <td>f64</td>
+              </tr>
+              <tr>
+                <td>:string</td>
+                <td>string</td>
+                <td>str</td>
+                <td>string</td>
+                <td>String / &amp;str</td>
+              </tr>
+              <tr>
+                <td>:bool</td>
+                <td>bool</td>
+                <td>bool</td>
+                <td>bool</td>
+                <td>bool</td>
+              </tr>
+              <tr>
+                <td>:date</td>
+                <td>time.Date</td>
+                <td>datetime.date</td>
+                <td>time.Time</td>
+                <td>chrono::NaiveDate</td>
+              </tr>
+              <tr>
+                <td>:datetime</td>
+                <td>time.Time</td>
+                <td>datetime.datetime (aware)</td>
+                <td>time.Time</td>
+                <td>chrono::DateTime&lt;FixedOffset&gt;</td>
+              </tr>
+              <tr>
+                <td>:bytes</td>
+                <td>[]u8</td>
+                <td>bytes</td>
+                <td>[]byte</td>
+                <td>Vec&lt;u8&gt;</td>
+              </tr>
+              <tr>
+                <td>:null</td>
+                <td>?T (none)</td>
+                <td>None</td>
+                <td>nil</td>
+                <td>Option::None</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Container kinds.** Sequences, arrays, and maps (see
          <a class="xref" href="data-language.html#collections">collections</a>) map to host containers preserving the
          container-vs-atom distinction (cxdm §2.0).</p>
         <table>
-          
-            <row cx-container="sequence" v="[]Value" python="list[Value]" go="[]Value" rust="Vec&lt;Value>"/>
-            <row cx-container="array" v="Array" python="list (nested)" go="[]interface{}" rust="Array (Vec&lt;Value> newtype)"/>
-            <row cx-container="map" v="map[ScalarKey]Value" python="dict[ScalarKey, Value]" go="map[interface{}]Value" rust="HashMap&lt;ScalarKey, Value>"/>
-            <row cx-container="table" v="Table" python="cxlib.Table" go="cxlib.Table" rust="cxlib::Table"/>
-            <row cx-container="element" v="Element" python="Element" go="Element" rust="Element"/>
-          
+          <thead>
+            
+              <tr>
+                <th>cx-container</th>
+                <th>v</th>
+                <th>python</th>
+                <th>go</th>
+                <th>rust</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>sequence</td>
+                <td>[]Value</td>
+                <td>list[Value]</td>
+                <td>[]Value</td>
+                <td>Vec&lt;Value&gt;</td>
+              </tr>
+              <tr>
+                <td>array</td>
+                <td>Array</td>
+                <td>list (nested)</td>
+                <td>[]interface{}</td>
+                <td>Array (Vec&lt;Value&gt; newtype)</td>
+              </tr>
+              <tr>
+                <td>map</td>
+                <td>map[ScalarKey]Value</td>
+                <td>dict[ScalarKey, Value]</td>
+                <td>map[interface{}]Value</td>
+                <td>HashMap&lt;ScalarKey, Value&gt;</td>
+              </tr>
+              <tr>
+                <td>table</td>
+                <td>Table</td>
+                <td>cxlib.Table</td>
+                <td>cxlib.Table</td>
+                <td>cxlib::Table</td>
+              </tr>
+              <tr>
+                <td>element</td>
+                <td>Element</td>
+                <td>Element</td>
+                <td>Element</td>
+                <td>Element</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Overflow and edge cases.** Host languages have different
          numeric ranges than CX. The conformance rule: **on
@@ -862,18 +1158,69 @@
         <p>**Selected capability bits** (full registry in
          [`spec/abi.md`](../../spec/abi.md) §3):</p>
         <table>
-          
-            <row bit="0" mask="0x1" feature="ast-bin v3 (always set)" cx:attr-types="mask=string"/>
-            <row bit="1" mask="0x2" feature="Schema-driven data-bin encoding" cx:attr-types="mask=string"/>
-            <row bit="5" mask="0x20" feature=":bytes scalar wire support" cx:attr-types="mask=string"/>
-            <row bit="15" mask="0x8000" feature="Arrow C Data Interface bridge" cx:attr-types="mask=string"/>
-            <row bit="16" mask="0x10000" feature="Parquet read/write bridge" cx:attr-types="mask=string"/>
-            <row bit="17" mask="0x20000" feature="CXCol chunked columnar streaming" cx:attr-types="mask=string"/>
-            <row bit="26" mask="0x4000000" feature="Thread-init handshake (cx_init / cx_thread_register)" cx:attr-types="mask=string"/>
-            <row bit="28" mask="0x10000000" feature="cx_code_eval family — unified evaluator entry" cx:attr-types="mask=string"/>
-            <row bit="29" mask="0x20000000" feature="Code-to-diagram (cx_code_diagram)" cx:attr-types="mask=string"/>
-            <row bit="30" mask="0x40000000" feature="Code-eval with interactive-tree result (cx_code_eval_tree)" cx:attr-types="mask=string"/>
-          
+          <thead>
+            
+              <tr>
+                <th>bit</th>
+                <th>mask</th>
+                <th>feature</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>0</td>
+                <td>0x1</td>
+                <td>ast-bin v3 (always set)</td>
+              </tr>
+              <tr>
+                <td>1</td>
+                <td>0x2</td>
+                <td>Schema-driven data-bin encoding</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>0x20</td>
+                <td>:bytes scalar wire support</td>
+              </tr>
+              <tr>
+                <td>15</td>
+                <td>0x8000</td>
+                <td>Arrow C Data Interface bridge</td>
+              </tr>
+              <tr>
+                <td>16</td>
+                <td>0x10000</td>
+                <td>Parquet read/write bridge</td>
+              </tr>
+              <tr>
+                <td>17</td>
+                <td>0x20000</td>
+                <td>CXCol chunked columnar streaming</td>
+              </tr>
+              <tr>
+                <td>26</td>
+                <td>0x4000000</td>
+                <td>Thread-init handshake (cx_init / cx_thread_register)</td>
+              </tr>
+              <tr>
+                <td>28</td>
+                <td>0x10000000</td>
+                <td>cx_code_eval family — unified evaluator entry</td>
+              </tr>
+              <tr>
+                <td>29</td>
+                <td>0x20000000</td>
+                <td>Code-to-diagram (cx_code_diagram)</td>
+              </tr>
+              <tr>
+                <td>30</td>
+                <td>0x40000000</td>
+                <td>Code-eval with interactive-tree result (cx_code_eval_tree)</td>
+              </tr>
+            
+          </tbody>
         </table>
         <pre>
           <code class="language-python">import cxlib as cx

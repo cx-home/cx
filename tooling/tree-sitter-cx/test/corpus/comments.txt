@@ -1,0 +1,75 @@
+================================================================================
+Block comment terminates at its closing bracket
+================================================================================
+
+[; a comment ]
+[after ok]
+
+--------------------------------------------------------------------------------
+
+(document
+  (comment_element
+    (comment_raw))
+  (element
+    name: (tag_name)
+    (text)
+    (word)))
+
+================================================================================
+Nested brackets balance inside a block comment (#312)
+================================================================================
+
+[; see [?let] and [nested [deep]] ]
+[after ok]
+
+--------------------------------------------------------------------------------
+
+(document
+  (comment_element
+    (comment_raw)
+    (comment_bracket
+      (comment_raw))
+    (comment_raw)
+    (comment_bracket
+      (comment_raw)
+      (comment_bracket
+        (comment_raw)))
+    (comment_raw))
+  (element
+    name: (tag_name)
+    (text)
+    (word)))
+
+================================================================================
+Line comment vs glued #id declaration
+================================================================================
+
+# a line comment
+[user #u1 name=Alice]
+
+--------------------------------------------------------------------------------
+
+(document
+  (line_comment)
+  (element
+    name: (tag_name)
+    (id_decl)
+    (text)
+    (attribute
+      name: (attr_name)
+      value: (attr_value
+        (unquoted_value)))))
+
+================================================================================
+Raw text [# ... #] is CDATA, not a heading or comment
+================================================================================
+
+[json [# {"a": 1, "b": [2, 3]} #]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    name: (tag_name)
+    (raw_text
+      (raw_content))))

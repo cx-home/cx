@@ -158,8 +158,8 @@ omitted.
 
 # glob: convert every CSV in a directory
 [?for [in $f [$io:glob 'data/*.csv']]
-  [$io:write-file [$path:with-extension $f 'json']
-    [$json:emit [$csv:parse [$io:read-file $f]]]]]
+  [yield [$io:write-file [$path:with-extension $f 'json']
+    [$json:emit [$csv:parse [$io:read-file $f]]]]]]
 
 # the sugar
 [$convert [$io:read-file 'doc.md'] :from markdown :to xml]
@@ -169,5 +169,5 @@ omitted.
 # `[; … ]` comment + the root) is a transparent multi-root carrier, navigated
 # with the descendant axis `//` (a direct step on the carrier raises CXER0001).
 [?let [= $doc [$cx:parse [$io:read-file 'feature.cxd']]]
-  [$doc//feature/@name]]   # // works for both shapes; `$doc@name` also works single-root
+  $doc//feature/@name]   # // works for both shapes; `$doc@name` also works single-root
 ```

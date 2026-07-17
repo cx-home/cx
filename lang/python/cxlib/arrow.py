@@ -20,7 +20,7 @@ Usage:
     import cxlib.arrow as cxa
 
     framed = cxlib.to_data_bin_chunked(
-        '[points :table[name:string score:int] alice 91 bob 88]')
+        '[points [table[name::string score::int]] alice 91 bob 88]')
     reader = cxa.export(framed)        # pyarrow.RecordBatchReader
     table = reader.read_all()          # pyarrow.Table
 

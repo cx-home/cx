@@ -6,27 +6,35 @@ Protocol spec](https://microsoft.github.io/language-server-protocol/).
 
 ## Capabilities
 
+The table below mirrors the `initialize` response exactly —
+[`tests/check_capabilities.py`](tests/check_capabilities.py) drives a
+live `cx lsp` over stdio and fails when the server and this table
+disagree (`python3 tooling/lsp/tests/check_capabilities.py [/path/to/cx]`).
+
 | Feature                              | Status |
 | ------------------------------------ | ------ |
-| `textDocument/didOpen`               | ✅     |
-| `textDocument/didChange` (full sync) | ✅     |
-| `textDocument/didClose`              | ✅     |
+| `textDocument/didOpen` / `didChange` (full sync) / `didClose` | ✅ |
 | `textDocument/publishDiagnostics`    | ✅     |
 | `textDocument/hover`                 | ✅     |
 | `textDocument/completion`            | ✅     |
 | `textDocument/semanticTokens/full`   | ✅     |
 | `textDocument/formatting`            | ✅     |
 | `textDocument/definition`            | ✅ (#id) |
+| `textDocument/documentSymbol` (nested outline) | ✅ |
+| `textDocument/foldingRange` (bracket-balanced) | ✅ |
+| `textDocument/selectionRange` (innermost-out chain) | ✅ |
+| `textDocument/references` (`#id` / `@id` uses) | ✅ |
+| `textDocument/prepareRename` + `rename` (cross-document `#id`) | ✅ |
 | `textDocument/codeLens` (§4.1 directive CodeLens) | ✅ |
 | `textDocument/signatureHelp`         | ✅     |
-| `textDocument/codeAction`            | ✅     |
-| `textDocument/rename`                | ✅     |
+| `textDocument/codeAction` (advertised; returns a well-formed empty list — recipes pending) | 🚧 |
+| `textDocument/inlayHint` (advertised; returns a well-formed empty list — populated hints pending) | 🚧 |
 
 ## Diagnostic + completion surface
 
-Four diagnostic codes (`CXLS001`–`CXLS004`), a CXPath hover provider, and
-a path-context completion provider are implemented. Codes and protocol slots are
-contracted in
+Seven diagnostic codes (`CXLS001`–`CXLS007`), a CXPath hover provider, and
+a path-context completion provider are implemented (`CXLS008` is reserved,
+not yet implemented). Codes and protocol slots are contracted in
 [`diagnostics.md`](diagnostics.md).
 
 ## Editor integration

@@ -269,12 +269,29 @@ mut:
 	col_formats   []string
 }
 
+// #307: the registry lock is REFERENCE-typed, initialized in the module
+// init() below — a VALUE-typed zeroed sync.Mutex global is NOT a usable
+// pthread mutex on Darwin (PTHREAD_MUTEX_INITIALIZER is not all-zeros):
+// .@lock() provided NO mutual exclusion at all (and since the #307 sync
+// hardening it panics loudly with EINVAL instead). Same latent class as the
+// SSE registry locks (#303) and cx_disp_mu (#275).
 __global (
 	g_export_states map[u64]&ExportState
 	g_live_arrays   map[u64]&LiveArrayBuffers
 	g_next_token    = u64(1)
-	g_registry_mu   sync.Mutex
+	g_registry_mu   &sync.Mutex
 )
+
+// init makes the token registry usable before any thread can exist: the
+// lock must be a real initialized mutex (see the __global note above); the
+// maps are initialized explicitly under the same once-before-any-thread
+// discipline (the pattern stdlib_codec.v's init() uses for cx_disp_mu and
+// the SSE registries).
+fn init() {
+	g_registry_mu = sync.new_mutex()
+	g_export_states = map[u64]&ExportState{}
+	g_live_arrays = map[u64]&LiveArrayBuffers{}
+}
 
 fn registry_register_export(s &ExportState) u64 {
 	g_registry_mu.@lock()

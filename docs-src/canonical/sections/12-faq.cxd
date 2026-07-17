@@ -99,18 +99,19 @@
         """The two-form distinction is by design — see the body
            discussion at [[attributes]]."""]]
 
-    [child id=faq-count-container title='Why does `count(arr)` error but `count(seq)` work?'
+    [child id=faq-count-container title='What is the difference between `[…]` and `(…)` collections?'
       [body
-        """`count()` operates on a sequence. An array (`[…]`) is a
-           single container Item, not a sequence; counting an
-           array gives you 1 (the container). To count the
-           elements *inside* an array, unwrap it with `items()`
-           or `flatten()`:"""]
+        """A sequence (`(…)`) is the flat iteration shape — every CX
+           value is a sequence, and directives iterate them. An
+           array (`[…]`) is a container Item that **preserves
+           nesting**: `[[1, 2], [3, 4]]` is two items (two inner
+           arrays), not four. `[$count]` counts the top-level items
+           of either:"""]
       [example lang=cx
-        """[?let [= $arr [1, 2, 3]]
-           [$count $arr]                [# → 1 (one container)        #]
-           [$count [$items $arr]]       [# → 3 (three sequence items) #]
-           [$count (1, 2, 3)]]          [# → 3 (direct sequence)      #]"""]
+        """[?let [= $flat   (1, 2, 3)]
+               [= $nested [[1, 2], [3, 4]]]
+           ([$count $flat], [$count $nested])]"""]
+      [output """(3, 2)"""]
       [body
         """The distinction is the **container vs atom** principle in
            [`spec/cxdm.md`](../../spec/cxdm.md) §2.0. See
@@ -128,8 +129,8 @@
            blocker."""]
       [example lang=shell
         """[# Reproduce on both platforms and bisect                   #]
-           cx canon doc.cx | shasum -a 256
-           cx fmt doc.cx | cx canon | shasum -a 256
+           cx canonical doc.cx | shasum -a 256
+           cx fmt doc.cx | cx canonical | shasum -a 256
            [# Both should produce identical hex output on every host. #]"""]
       [note
         """File a bug at https://github.com/cx-home/cx/issues with
@@ -174,12 +175,14 @@
            you wrote in `[?find]` form can be expressed as `[?for]`
            over a pattern, or — more directly — as a CXPath
            expression. See [[from-v07x]] for the migration table."""]
-      [example lang=cx
+      [; check=none — migration panel: the first form deliberately shows
+         the RETIRED [?find] spelling, which the current parser rejects. ]
+      [example lang=cx check=none
         """[# v0.7.x — old form (retired)                              #] # version-literal-ok
            [?find [user @active=true $u] :yield $u]
 
            [# v0.8.0 — CXPath form (preferred)                         #] # version-literal-ok
-           //user[@active=true]
+           //user[= $_@active true]
 
            [# v0.8.0 — equivalent pattern form                         #] # version-literal-ok
            [?for [user @active=true $u] [yield $u]]"""]]
@@ -191,12 +194,13 @@
            result, the first one that matches wins, and `[else …]` is
            the catch-all."""]
       [example lang=cx
-        """[?for [in $n //*] [yield
+        """[doc [prose 'text'] [code 'x = 1'] [img src='logo.svg']]
+           [?for [in $n //doc/*] [yield
              [?match $n
-               [case [prose $p]    [p $p]]
-               [case [code $c]     [pre $c]]
-               [case [img &src=$s] [figure src=$s]]
-               [else               ()]]]]"""]]
+               [case [prose $p]   [p $p]]
+               [case [code $c]    [pre $c]]
+               [case [img src=$s] [figure src=$s]]
+               [else              ()]]]]"""]]
 
     [child id=faq-update-value title='How do I update a value?'
       [body
@@ -204,7 +208,8 @@
            focus, and an action; it returns a new document. There is
            no in-place mutation in CX — see the next question."""]
       [example lang=cx
-        """[?modify $doc //user[@id=1]/@email [set 'ada@anthropic.com']]
+        """[users [user id=1 email='ada@example.com']]
+           [?modify $doc //user[= $_@id 1]/@email [set 'ada@cx.dev']]
 
            [# Eleven actions: [set …] / [delete] / [using …] / [rename …] #]
            [# [set-attr …] / [delete-attr …] / [append …] / [prepend …]   #]
@@ -221,17 +226,17 @@
            so `[?modify]` is O(log n) in the document size for a
            single-focus update. See [[pure-updates]]."""]]
 
-    [child id=faq-pipeline-implicit-bind title='What does `$1` mean in a pipeline?'
+    [child id=faq-pipeline-implicit-bind title='What does `_` mean in a pipeline stage?'
       [body
-        """In a `|` pipeline, `$1` is the implicit positional binding
-           for the previous stage's output. The pipeline form
-           `expr1 | expr2 | expr3` desugars to
-           `[?pipe expr1 expr2 expr3]`, and each stage after the
-           first sees the previous stage's value as `$1`."""]
+        """`_` is the partial-application hole: a `[?pipe]` stage
+           that carries a single `_` receives the threaded value at
+           that position. A stage with no hole receives the value
+           appended as its final positional argument, so these are
+           equivalent:"""]
       [example lang=cx
-        """[# These are equivalent                                     #]
-           //user[@active=true] | count($1)
-           [?pipe //user[@active=true]  count($1)]"""]]]
+        """[users [user active=true] [user active=false]]
+           ([?pipe //user[= $_@active true] [$count]],
+            [?pipe //user[= $_@active true] [$count _]])"""]]]
 
   [child id=faq-bindings n=12.4 title='Bindings'
 

@@ -287,13 +287,16 @@ func (t *Table) ToCx() string {
 		if t.types[i] == "" {
 			headerParts[i] = name
 		} else {
-			headerParts[i] = name + ":" + t.types[i]
+			// v0.8.0 table columns use the glued double-colon type
+			// annotation (`name::int`); single `:` is the namespace
+			// qualifier (grammar [26]/[29]).
+			headerParts[i] = name + "::" + t.types[i]
 		}
 	}
 	var b strings.Builder
-	b.WriteString("[_ :table[")
+	b.WriteString("[_ [table[")
 	b.WriteString(strings.Join(headerParts, " "))
-	b.WriteString("]\n")
+	b.WriteString("]]\n")
 	for _, row := range t.rows {
 		b.WriteString("  ")
 		for j, v := range row {

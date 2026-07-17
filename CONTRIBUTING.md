@@ -8,9 +8,10 @@ This file covers dev setup, the test matrix, the audit-driven coding
 rules every PR is held to, and the commit / PR conventions.
 
 For the format itself, start with the docs site
-([`docs/guide/index.html`](docs/guide/index.html) locally, or
-[cx-home.github.io/cx](https://cx-home.github.io/cx/) online). For the
-formal contracts, see [`spec/`](spec/).
+([cx-home.github.io/cx](https://cx-home.github.io/cx/) online; locally,
+run `make guide` and open `docs/guide/index.html` — the guide is
+generated build output). For the formal contracts, see
+[`spec/03-approved/`](spec/03-approved/).
 
 ---
 
@@ -18,25 +19,33 @@ formal contracts, see [`spec/`](spec/).
 
 ### Prerequisites
 
-- [V](https://vlang.io) 0.5.1+ — the V toolchain. CX's core is
- implemented in V; everything else links against the compiled
- `libcx`.
-- A C compiler (clang on macOS, gcc/clang on Linux).
+- A C compiler (clang on macOS, gcc/clang on Linux) and `make`.
+- The **patched V toolchain**, vendored as the `third_party/v` git
+ submodule — clone with `--recursive` (or run
+ `git submodule update --init --recursive` in an existing checkout)
+ and build it once with `make -C third_party/v`. CX's core is
+ implemented in V, and the vendored fork carries patches the build
+ relies on (macOS hardened-runtime / `-prod` fixes, the picoev
+ shared-listener support the HTTP multi-reactor needs). Every `make`
+ recipe prefers `third_party/v/v`; a system V from
+ [vlang.io](https://vlang.io) is only a degraded fallback (`-prod`
+ is silently dropped and GC patches are absent).
 - For each language binding you intend to test, the corresponding
  toolchain. v0.8.0 Tier-1 bindings: Python 3.10+, Go 1.21+,
  Rust 1.75+. (TypeScript / Java / C# / Kotlin / Swift / Ruby are
  archived under `lang/_archived/` for v0.8.0; restoration is
  post-tag.)
 
-[devbox](https://www.jetpack.io/devbox) optionally pins all of the
+[devbox](https://www.jetify.com/devbox) optionally pins all of the
 above; `devbox shell` drops you into an environment with the right
 versions. It's optional — system installs work fine.
 
 ### First build
 
 ```sh
-git clone https://github.com/cx-home/cx
+git clone --recursive https://github.com/cx-home/cx
 cd cx
+make -C third_party/v # one-time: build the vendored patched V toolchain
 make build # compile V core into libcx + build every binding
 make promote-cli # install the `cx` CLI to /usr/local/bin
 cx --version
@@ -80,12 +89,37 @@ Fast loop when you're modifying one binding — typically 5–30 seconds.
 ### Conformance
 
 The conformance suite is a corpus of CX inputs and expected outputs
-across the 6 supported formats (CX, JSON, YAML, TOML, XML, Markdown).
+across the supported conversion surfaces: the 5 data formats (CX,
+XML, JSON, YAML, TOML), the delimited family (CSV / TSV / PSV /
+arbitrary single-char), and the Markdown codec.
 It runs against the V implementation; bindings inherit conformance
 because they are thin wrappers around `libcx`.
 
 If you change the grammar, the conversion logic, or anything format-
 adjacent, `make conform` must pass before you push.
+
+### Bare / out-of-tree checkouts and lane skips
+
+Many `vcx/tests/` lanes (the http/net/xap/store service lanes) exec the
+built CLI at `vcx/target/cx`. The one setup step a fresh checkout needs
+before invoking `v test` directly is:
+
+```sh
+make build-vcx-dev
+```
+
+`make test-vcx-suite` performs that build for you. A lane whose
+environment prerequisite is absent — the unbuilt binary, an opt-in
+external service such as `CX_TEST_S3_ENDPOINT`/`CX_TEST_FTP_URL`/
+`CX_TEST_SFTP_URL`, or a missing host tool like `openssl` — **self-skips
+with a named reason instead of failing**, so a bare checkout never reads
+as a wall of phantom regressions. Whole-lane skips are recorded in
+`vcx/target/test-skips.log` and `make test-vcx-suite` prints the
+skipped-with-reason digest after the run (they are counted separately,
+never as failures). Plain `v test` suppresses the output of passing
+lanes; use `v -stats test …` to see `SKIP` lines inline. The binary
+path is resolved relative to the source tree, so lanes behave the same
+from any invocation directory.
 
 ---
 
@@ -94,7 +128,7 @@ adjacent, `make conform` must pass before you push.
 CX has a small number of normative rules from the
 2026-05 binding audit. Conformance to
 them is a release gate. The full text is in
-[`spec/governance.md`](spec/governance.md). The most important rule:
+[`spec/03-approved/process/governance.md`](spec/03-approved/process/governance.md). The most important rule:
 
 ### The native-implementation rule (no roundtrips on hot paths)
 
@@ -115,23 +149,23 @@ In practice: when you add a new public function in a binding,
  bytes (binary AST, binary data, or a handle), and
 - you decode those bytes once. No second parser, no JSON detour.
 
-The C ABI surface is documented in [`spec/abi.md`](spec/abi.md). If
+The C ABI surface is documented in [`spec/03-approved/core/abi.md`](spec/03-approved/core/abi.md). If
 you need an operation without a binary-bytes symbol yet, the right
 move is to add one at the V core, not to chain two text converters
 in the binding.
 
 ### Other release gates
 
-- **Parity matrix** ([`spec/governance.md` §2](spec/governance.md)) —
+- **Parity matrix** ([`spec/03-approved/process/governance.md` §2](spec/03-approved/process/governance.md)) —
  every public function exists with consistent signatures across all
  Tier-1 bindings (V / Python / Go / Rust as of v0.8.0). New API
  additions touch every Tier-1 binding in the same PR series; see
- [`spec/bindings.md`](spec/bindings.md) for the two-layer contract.
+ [`spec/03-approved/misc/bindings.md`](spec/03-approved/misc/bindings.md) for the two-layer contract.
 - **Strategy declaration** (§3) — each binding's README declares
  which implementation strategy it uses. Updates here travel with
  the code change.
 - **Performance SLA** (§6) — `cx_to_data_bin` and friends have
- documented budgets in `spec/governance.md`.
+ documented budgets in `spec/03-approved/process/governance.md`.
 
 ---
 
@@ -167,7 +201,7 @@ finding or implements a spec section, name it.
 - If you added a new public function: every binding has it, with the
  strategy declared.
 - If you added a new C ABI symbol: it's documented in
- [`spec/abi.md`](spec/abi.md) with input/output framing.
+ [`spec/03-approved/core/abi.md`](spec/03-approved/core/abi.md) with input/output framing.
 
 ---
 

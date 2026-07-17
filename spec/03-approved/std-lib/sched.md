@@ -6,8 +6,8 @@
 
 **Status:** Current
 
-Lifted out of the http SSE/streaming amendment
-([`stdlib_http_streaming_amendment.md`](stdlib_http_streaming_amendment.md)) so http
+Lifted out of the http SSE/streaming surface ([`http.md`](http.md) §3.6 — the
+former `stdlib_http_streaming_amendment.md`, since folded into `http.md`) so http
 stays HTTP-only: the timer surface is **not** http-specific (a timer touches no
 network), so it is its **own module** rather than a fourth http verb family. It rides
 the **same picoev event loop** http's server leg uses (§9), but is a separate
@@ -22,7 +22,7 @@ lifecycle timeouts, and the demo's controllable clock (xap_demos.md). XAP's
 
 | Dependency | What sched relies on |
 |---|---|
-| `cx-stdlib/time` — `::duration`, `::datetime`, `[recurrence …]` | every relative scheduling verb takes a `::duration`; `at` takes a tz-aware `::datetime`; `recur` consumes a `[recurrence …]` value and re-arms via `[$time:next-occurrence $rule $after]` (COUNT/UNTIL honored); `cron` parses a cron string via `time` into a `[recurrence …]`. The recurrence type + occurrence functions + cron parsing are defined in [`stdlib_time_recurrence_amendment.md`](stdlib_time_recurrence_amendment.md). sched does **no** date/calendar arithmetic — it composes `time`. |
+| `cx-stdlib/time` — `::duration`, `::datetime`, `[recurrence …]` | every relative scheduling verb takes a `::duration`; `at` takes a tz-aware `::datetime`; `recur` consumes a `[recurrence …]` value and re-arms via `[$time:next-occurrence $rule $after]` (COUNT/UNTIL honored); `cron` parses a cron string via `time` into a `[recurrence …]`. The recurrence type + occurrence functions + cron parsing are defined in [`time.md`](time.md) §3.10 (the former `stdlib_time_recurrence_amendment.md`, since folded into `time.md`). sched does **no** date/calendar arithmetic — it composes `time`. |
 | `cx-stdlib/journal` — durable timers | the `durable` opt (§3.2) persists timer **intent + schedule** to a caller-supplied `[journal]` (`[$journal:append …]`, [`journal.md`](journal.md) §3.2); `[$sched:restore]` folds the journal to re-arm pending timers on startup. sched composes journal's append/fold — it adds no persistence mechanism of its own. |
 | `code.md` §9.1.2 — **four-channel model** | a fired callback's raw effect without a grant rides the **failure channel** (`CXER0271`); a `timer-state` read of a present handle is a **value**; sched never returns `null` for absence. |
 | SAP §2 — **`[?try]`/`[catch]` retirement** | timer faults are handled with `[?match]` / `[?else]` only; this spec never uses `[?try]`. Canonical call form is `[$sched:after …]` (`[head …]`), never an infix. |
@@ -52,11 +52,11 @@ missed while the process was down or the test clock fast-forwarded, and — unde
 
 | Concern | Owner |
 |---|---|
-| recurrence-rule / cron **grammar** + occurrence math (RRULE-style, COUNT/UNTIL, cron field parsing) | `cx-stdlib/time` ([`stdlib_time_recurrence_amendment.md`](stdlib_time_recurrence_amendment.md)) — sched *consumes* `[recurrence …]` + `[$time:next-occurrence]`, it does not parse them |
+| recurrence-rule / cron **grammar** + occurrence math (RRULE-style, COUNT/UNTIL, cron field parsing) | `cx-stdlib/time` ([`time.md`](time.md) §3.10) — sched *consumes* `[recurrence …]` + `[$time:next-occurrence]`, it does not parse them |
 | date / calendar / timezone arithmetic | `cx-stdlib/time` (sched takes its `::duration` / `::datetime`) |
 | the persistence backend / hash-chain for durable timers | `cx-stdlib/journal` over `store` ([`journal.md`](journal.md)) — sched *appends intent* to a caller-supplied journal; it adds no store of its own |
 | the event loop / sockets / held-open fds | the picoev backend (`cx-stdlib/http` §9) — sched is surface, not runtime |
-| SSE / streaming responses | `cx-stdlib/http` SSE amendment ([`stdlib_http_streaming_amendment.md`](stdlib_http_streaming_amendment.md)) |
+| SSE / streaming responses | `cx-stdlib/http` SSE/streaming surface ([`http.md`](http.md) §3.6) |
 
 (cron / absolute-calendar schedules and durable / cross-process timers were out of
 scope in revision 1; **both are now in scope** — see §3.1 (`at`/`recur`/`cron`) and
@@ -84,7 +84,7 @@ appends to a journal); state reads are **pure**.
 A `[timer]` is a homoiconic CX value that is also a **cancelable handle** (SAP §5.1):
 
 ```cx
-[timer state="armed" on-close="sched/close"]          ; fires after its duration, unless canceled
+[timer state="armed" on-close="sched/close"]          # fires after its duration, unless canceled
 ```
 
 `state` ∈ `"armed" | "fired" | "canceled"` (a recurring `every` timer stays
@@ -235,7 +235,7 @@ selected by the harness (§3.3); production code never touches it.
 
 Signature notation matches [`http.md`](http.md) §3. `::duration` /
 `::datetime` are `cx-stdlib/time` types; `::recurrence` is a `[recurrence …]` value
-([`stdlib_time_recurrence_amendment.md`](stdlib_time_recurrence_amendment.md)); `$ev`
+([`time.md`](time.md) §3.10); `$ev`
 is the callable-or-channel fire value (§2.1); `::element` is a `[timer]` (or, for
 `restore`, a `[journal]`) handle.
 
@@ -426,18 +426,18 @@ Canonical call form is `[$sched:VERB …]` (`[head …]`); never `[?try]` — ha
 faulted callback by shape (`[?match]` / `[?else]`, SAP §2).
 
 ```cx
-[?with-open [$sched:after "10m" $on-window-elapsed {name: 'no-ack'}] $t        ; arm a 10-minute window
+[?with-open [$sched:after "10m" $on-window-elapsed {name: 'no-ack'}] $t        # arm a 10-minute window
   [?match [$bus:await-ack :escalation]
-    [case [ack] [$sched:cancel $t]]                                             ; human acked → cancel (false-by-presence)
-    [case $_ $_]]]                                                              ; window fires; [?with-open] cancels on exit
+    [case [ack] [$sched:cancel $t]]                                             # human acked → cancel (false-by-presence)
+    [case $_ $_]]]                                                              # window fires; [?with-open] cancels on exit
 
-; durable incapacity window — survives a worker recycle (xap.md §22.8)
-[$sched:after "10m" $post-window-elapsed {name: 'no-ack' durable: $jr}]        ; intent persisted to journal $jr
-; … on the replacement worker, at startup:
-[?let $rep [$sched:restore $jr {'no-ack': $post-window-elapsed} {}]]           ; re-arms with remaining time
-[$report-orphans [meta-of $rep :orphaned]]                                     ; any unbound persisted timers surfaced, not dropped
+# durable incapacity window — survives a worker recycle (xap.md §22.8)
+[$sched:after "10m" $post-window-elapsed {name: 'no-ack' durable: $jr}]        # intent persisted to journal $jr
+# … on the replacement worker, at startup:
+[?let [= $rep [$sched:restore $jr {'no-ack': $post-window-elapsed} {}]]      # re-arms with remaining time
+  [$report-orphans [meta-of $rep :orphaned]]]                                  # any unbound persisted timers surfaced, not dropped
 
-; nightly compaction at 02:00 local, catching up at most once if the box was asleep
+# nightly compaction at 02:00 local, catching up at most once if the box was asleep
 [$sched:cron "0 2 * * *" $compact {name: 'compact' on-missed: :coalesce}]
 ```
 
@@ -455,13 +455,14 @@ faulted callback by shape (`[?match]` / `[?else]`, SAP §2).
 - **`cx-stdlib/time`** — `at` takes a `time` `::datetime`; `recur` consumes a `time`
   `[recurrence …]`; `cron` calls `[$time:parse-cron]` → `[recurrence …]` then re-arms
   via `[$time:next-occurrence]` honoring COUNT/UNTIL. All calendar/tz/cron grammar is
-  `time`'s ([`stdlib_time_recurrence_amendment.md`](stdlib_time_recurrence_amendment.md)).
+  `time`'s ([`time.md`](time.md) §3.10).
 - **`cx-stdlib/journal`** — the `durable` opt appends `[sched-intent …]` entries via
   `[$journal:append]`; `restore` folds them (`[$journal:fold]`) to re-arm pending
   timers ([`journal.md`](journal.md)). sched composes journal-over-`store`;
   it adds no persistence mechanism.
 - **`cx-stdlib/http` SSE leg** — the auto-`keep-alive` heartbeat
-  ([`stdlib_http_streaming_amendment.md`](stdlib_http_streaming_amendment.md) §1.2) is
+  ([`http.md`](http.md) §3.6 — the former `stdlib_http_streaming_amendment.md` §1.2,
+  since folded into `http.md`) is
   a low-priority `every` on the same picoev loop.
 - **Resilience (§10.2)** — a `[?timeout]` wrapping a scheduling op cancels
   cooperatively → core `CXER0260` (§4.4); `[?with-open]` cancels an armed timer on
@@ -643,9 +644,10 @@ core `CXER0260`.
       contract, orthogonality-guard home).
 - [ ] **`cx-stdlib/time` must be available** (hard dependency — `::duration`,
       `::datetime`, `[recurrence …]` + `[$time:next-occurrence]` / `[$time:parse-cron]`):
-      graduate sched **after or with** [`stdlib_time_recurrence_amendment.md`](stdlib_time_recurrence_amendment.md)
-      so `recur`/`cron` resolve. If that amendment is not yet graduated, `recur`/`cron`
-      are gated out and only `after`/`at`/`every` ship.
+      graduate sched **after or with** the `time` recurrence surface ([`time.md`](time.md)
+      §3.10 — the former `stdlib_time_recurrence_amendment.md`, since folded into
+      `time.md`) so `recur`/`cron` resolve. If that surface is not yet graduated,
+      `recur`/`cron` are gated out and only `after`/`at`/`every` ship.
 - [ ] **`cx-stdlib/journal` must be available** for the `durable`/`restore` surface
       (hard dependency — `[$journal:append]` / `[$journal:fold]`): graduate sched
       **after or with** [`journal.md`](journal.md). If journal is not yet

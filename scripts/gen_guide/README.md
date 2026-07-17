@@ -124,6 +124,23 @@ starter examples are mirrored from `scripts/gen_guide/playground/`. The
 sidebar's `Playground →` link is page-relative so the guide is portable as a
 directory tree (opens under `file://`).
 
+**Wasm ⇄ examples coupling invariant:** the wasm bundle and
+`playground.examples.js` must always be of the same syntax era — the examples
+run inside that wasm engine, so a wasm rebuilt on newer engine sources with
+stale examples (or vice versa) breaks the playground silently. The coupling is
+structural, not procedural:
+
+- `make guide-wasm` rebuilds the wasm **and** regenerates
+  `playground.examples.js` (via `make playground-examples-regen` →
+  `gen_examples.py`, which CLI-audits every entry against the current binary)
+  in the same invocation, then renders the guide — the render always stages
+  after both. There is no target that rebuilds the wasm without the examples.
+- `make verify-playground-examples` (top-level Makefile, in `TEST_TARGETS`
+  next to `guide-check`) runs `gen_examples.py --check`: it fails when any
+  example no longer runs clean on the current binary **or** when the
+  checked-in `playground.examples.js` differs from a fresh render — stale
+  examples can't ship silently.
+
 ## Open follow-ups
 
 - **Triple-quote `\"` escape semantics + render bijection.** A few code

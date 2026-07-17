@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a class="active" href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -111,10 +116,10 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="ticks" buffer=4]]
-[?let [= $t [$sched:after [$time:duration-m 10] $ch]]
-[?let [= $s0 [$sched:timer-state $t]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
-[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]]]]</code>
+[= $t [$sched:after [$time:duration-m 10] $ch]]
+[= $s0 [$sched:timer-state $t]]
+[= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
+[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
@@ -131,10 +136,10 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
-[?let [= $t [$sched:at [$time:datetime 1970 1 1 0 10 0] $ch]]
-[?let [= $s0 [$sched:timer-state $t]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
-[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]]]]</code>
+[= $t [$sched:at [$time:datetime 1970 1 1 0 10 0] $ch]]
+[= $s0 [$sched:timer-state $t]]
+[= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
+[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
@@ -151,14 +156,14 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=16]]
-[?let [= $t [$sched:every [$time:duration-m 1] $ch]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-m 5]]]
-[?let [= $a [?receive from=$ch]]
-[?let [= $b [?receive from=$ch]]
-[?let [= $c [?receive from=$ch]]
-[?let [= $d [?receive from=$ch]]
-[?let [= $e [?receive from=$ch]]
-[seq [$sched:timer-state $t] $a $b $c $d $e]]]]]]]]]</code>
+[= $t [$sched:every [$time:duration-m 1] $ch]]
+[= $_ [$sched:test-clock-advance [$time:duration-m 5]]]
+[= $a [?receive from=$ch]]
+[= $b [?receive from=$ch]]
+[= $c [?receive from=$ch]]
+[= $d [?receive from=$ch]]
+[= $e [?receive from=$ch]]
+[seq [$sched:timer-state $t] $a $b $c $d $e]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'armed' [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1]]</code>
@@ -175,13 +180,13 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=16]]
-[?let [= $r [$time:recurrence :daily '1970-01-01T00:00:00Z' 'UTC' {count: 3}]]
-[?let [= $t [$sched:recur $r $ch {on-missed: :fire-all}]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-d 10]]]
-[?let [= $a [?receive from=$ch]]
-[?let [= $b [?receive from=$ch]]
-[?let [= $c [?receive from=$ch]]
-[seq [$sched:timer-state $t] $a $b $c]]]]]]]]</code>
+[= $r [$time:recurrence :daily '1970-01-01T00:00:00Z' 'UTC' {count: 3}]]
+[= $t [$sched:recur $r $ch {on-missed: :fire-all}]]
+[= $_ [$sched:test-clock-advance [$time:duration-d 10]]]
+[= $a [?receive from=$ch]]
+[= $b [?receive from=$ch]]
+[= $c [?receive from=$ch]]
+[seq [$sched:timer-state $t] $a $b $c]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'fired' [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1]]</code>
@@ -198,9 +203,9 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
-[?let [= $t [$sched:cron "0 0 * * *" $ch]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-d 1]]]
-[seq [$sched:timer-state $t] [?receive from=$ch]]]]]</code>
+[= $t [$sched:cron "0 0 * * *" $ch]]
+[= $_ [$sched:test-clock-advance [$time:duration-d 1]]]
+[seq [$sched:timer-state $t] [?receive from=$ch]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'armed' [tick timer=timer-1]]</code>
@@ -217,10 +222,10 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
-[?let [= $t [$sched:after [$time:duration-m 10] $ch]]
-[?let [= $c [$sched:cancel $t]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
-[seq $c [$sched:timer-state $t]]]]]]</code>
+[= $t [$sched:after [$time:duration-m 10] $ch]]
+[= $c [$sched:cancel $t]]
+[= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
+[seq $c [$sched:timer-state $t]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq true 'canceled']</code>
@@ -237,10 +242,10 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="ticks" buffer=4]]
-[?let [= $t [$sched:after [$time:duration-m 10] $ch]]
-[?let [= $s0 [$sched:timer-state $t]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
-[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]]]]</code>
+[= $t [$sched:after [$time:duration-m 10] $ch]]
+[= $s0 [$sched:timer-state $t]]
+[= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
+[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
@@ -258,9 +263,9 @@
 [?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
-[?let [= $jr [$journal:open "mem://sched" "tenant"]]
-[?let [= $t [$sched:after [$time:duration-m 10] $ch {name: 'win' durable: $jr}]]
-[$sched:restore $jr {'win': $ch}]]]]</code>
+[= $jr [$journal:open "mem://sched" "tenant"]]
+[= $t [$sched:after [$time:duration-m 10] $ch {name: 'win' durable: $jr}]]
+[$sched:restore $jr {'win': $ch}]]</code>
           </pre>
           <pre class="sample-output">
             <code>[restore-report rearmed=1 skipped=0 orphaned=0]</code>
@@ -277,10 +282,10 @@
             <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="ticks" buffer=4]]
-[?let [= $t [$sched:after [$time:duration-m 10] $ch]]
-[?let [= $s0 [$sched:timer-state $t]]
-[?let [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
-[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]]]]</code>
+[= $t [$sched:after [$time:duration-m 10] $ch]]
+[= $s0 [$sched:timer-state $t]]
+[= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
+[seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
           </pre>
           <pre class="sample-output">
             <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>

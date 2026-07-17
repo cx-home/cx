@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -180,16 +185,9 @@
       <h2>boolean</h2>
       
         <p>The `true` / `false` scalar kind. Bare `true` and `false`
-         are reserved tokens. The bool sigils `+name` and `-name` are
-         attribute shortcuts (`name=true` and `name=false`). See
+         are reserved tokens; booleans are ordinary `name=value`
+         attributes — there is no shorthand sigil form. See
          <a class="xref" href="data-language.html#booleans">booleans</a> and <a class="xref" href="data-language.html#bool">bool</a>.</p>
-      
-    </section>
-    <section id="g-bool-sigil">
-      <h2>bool sigil (+ / -)</h2>
-      
-        <p>Attribute shortcuts: `[el +active]` is `[el active=true]`,
-         `[el -active]` is `[el active=false]`. See <a class="xref" href="data-language.html#bool">bool</a>.</p>
       
     </section>
     <section id="g-bytes">
@@ -668,7 +666,7 @@
       
         <p>The reserved literal denoting the absence of a value.
          Distinct from missing (an attribute that is not present at
-         all). Its EBV is false. See <span class="xref-unresolved">[[null]]</span>.</p>
+         all). Its EBV is false. See <a class="xref" href="data-language.html#null">null</a>.</p>
       
     </section>
     <section id="g-nfc">
@@ -769,7 +767,7 @@
       
         <p>Three string forms: single-quoted `'…'` (escapes
          supported), double-quoted `"…"` (same), and triple-quoted
-         `'''…'''` or `…"""`<cx:seq><item>multiline</item><item>whitespace-preserving</item><item>no escape needed for the other quote characters</item></cx:seq>. See <cx:arr><item><strings/></item></cx:arr>."""</p>
+         `'''…'''` or `…"""`<cx:seq><cx:item>multiline</cx:item><cx:item>whitespace-preserving</cx:item><cx:item>no escape needed for the other quote characters</cx:item></cx:seq>. See <cx:arr><cx:item><strings/></cx:item></cx:arr>."""</p>
       
     </section>
     <section id="g-regex">
@@ -844,7 +842,7 @@
       
         <p>A leading punctuation character that prefixes an
          identifier and changes its interpretation: `&amp;` (anchor),
-         `*` (merge), `#` (id), `:` (type tag), `+`/`-` (bool),
+         `*` (merge), `#` (id), `:` (type tag),
          `$` (binding variable), `?` (directive). See <a class="xref" href="data-language.html#sigils">sigils</a>.</p>
       
     </section>
@@ -878,7 +876,7 @@
     <section id="g-strict-canonical">
       <h2>strict canonical</h2>
       
-        <p>The form produced by `cx canon` — strips comments,
+        <p>The form produced by `cx canonical` — strips comments,
          re-sorts attributes lexicographically, normalises quote
          choice, normalises whitespace, NFC-normalises identifiers
          and strings. Hash input. See <a class="xref" href="identity.html#canon-lossless-strict">canon-lossless-strict</a>.</p>
@@ -989,7 +987,7 @@
          `libcx-pthreads.{js,wasm}` (real OS threads via
          SharedArrayBuffer — requires HTTP with COOP/COEP
          headers). The playground auto-selects based on
-         `crossOriginIsolated`. See <span class="xref-unresolved">[[g-playground]]</span> and
+         `crossOriginIsolated`. See <a class="xref" href="#g-playground">g-playground</a> and
          <a class="xref" href="concepts.html#wasm-story">wasm-story</a>.</p>
       
     </section>

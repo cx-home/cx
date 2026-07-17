@@ -99,7 +99,7 @@ verbs (`open`/`append`/`read`/`replay`/`verify`/`snapshot`/`fold-from`/`compact`
 ### §2.1. The journal handle, ownership, and the tenant partition
 
 ```cx
-[journal tenant="acme" state="open" head-seq=147 head-hash="b3:9f…"   ; a journal — over a store backend
+[journal tenant="acme" state="open" head-seq=147 head-hash="b3:9f…"   # a journal — over a store backend
   on-close="journal/close"]
 ```
 
@@ -177,13 +177,13 @@ attribution shape of [`xap.md`](xap.md) §22.6 exactly** — every event carries
 `:actor` + `:authority` + `:tenant` — and adds the chain coordinates:
 
 ```cx
-[entry seq=147 tenant="acme" stream="principal:dana"   ; seq is per-stream (§2.1.1)
-  actor="agent:ops-agent-1"            ; the emitting party (opaque to journal — §2.6)
-  authority="d-recon-77"               ; the authority basis (a delegation/grant id — opaque)
-  ts="2026-06-06T18:22:04.119Z"        ; commit timestamp (assigned at append — §4.3)
-  prev-hash="b3:8c1a…"                 ; content hash of entry seq=146 (the chain link)
-  hash="b3:9f04…"                      ; content hash of THIS entry (over its canonical bytes)
-  [event [do :refund-duplicate [order "o-5521"]]]]   ; the payload — any CX value (§2.3)
+[entry seq=147 tenant="acme" stream="principal:dana"   # seq is per-stream (§2.1.1)
+  actor="agent:ops-agent-1"            # the emitting party (opaque to journal — §2.6)
+  authority="d-recon-77"               # the authority basis (a delegation/grant id — opaque)
+  ts="2026-06-06T18:22:04.119Z"        # commit timestamp (assigned at append — §4.3)
+  prev-hash="b3:8c1a…"                 # content hash of entry seq=146 (the chain link)
+  hash="b3:9f04…"                      # content hash of THIS entry (over its canonical bytes)
+  [event [do :refund-duplicate [order "o-5521"]]]]   # the payload — any CX value (§2.3)
 ```
 
 Fields:
@@ -306,12 +306,12 @@ no surface edits, deletes, or reorders a committed entry in the live chain.
 
   ```cx
   [snapshot tenant="acme" at-seq=147
-    anchor-hash="b3:9f04…"          ; = entry seq=147's hash (the chain anchor — §2.2)
-    hash-algo="sha256"              ; the chain algo this snapshot is anchored against
-    sig-algo="ed25519"              ; crypto signing algo (§4.8) — non-repudiation of the artifact
-    signature="b3:7c21…"            ; crypto signature over (canonical state-bytes + at-seq + anchor-hash)
+    anchor-hash="b3:9f04…"          # = entry seq=147's hash (the chain anchor — §2.2)
+    hash-algo="sha256"              # the chain algo this snapshot is anchored against
+    sig-algo="ed25519"              # crypto signing algo (§4.8) — non-repudiation of the artifact
+    signature="b3:7c21…"            # crypto signature over (canonical state-bytes + at-seq + anchor-hash)
     ts="2026-06-06T18:40:00.000Z"
-    [state …]]                       ; the projected state value at seq=147 — the fold output
+    [state …]]                       # the projected state value at seq=147 — the fold output
   ```
 
   A snapshot is **`(state-at-seq-N, N, hash-of-entry-N, signature)`** — a *projection
@@ -539,7 +539,7 @@ genesis. It returns a **present `[verification …]` value** (§2.5):
 
 ```cx
 [verification valid=true  checked-from=1 checked-to=147 head-hash="b3:9f04…"]
-[verification valid=false checked-from=1 first-bad-seq=88 reason=:hash-mismatch]   ; a FINDING
+[verification valid=false checked-from=1 first-bad-seq=88 reason=:hash-mismatch]   # a FINDING
 ```
 
 `reason` ∈ `:hash-mismatch` (re-hash ≠ stored `hash`) | `:link-broken`
@@ -790,7 +790,7 @@ is **the capability the underlying `store` backend requires** — journal adds n
 A denial raises `cx-err:CXER0271 E_CAP_DENIED` at the **store effect point**, naming
 the missing grant + resource (store §9 verbatim):
 `[err code=cx-err:CXER0271 capability=write resource='file:///var/xap/acme']`. CLI:
-`cx run --allow-write=/var/xap FILE`. **Cancellation + revocation** follow store / SAP
+`cx FILE --allow-write=/var/xap`. **Cancellation + revocation** follow store / SAP
 §5.2: a cancelled `replay`/`fold`/`verify`/`snapshot`/`compact` at a cancellation point
 reports the core `CXER0260`; a raw store effect after cancel hits `CXER0271`;
 `[?with-open]` close runs under restored caps. journal introduces **no journal-specific
@@ -809,12 +809,12 @@ Canonical call form is `[$journal:VERB …]` (`[head …]`); journal uses no inf
 `xap`, not journal:
 
 ```cx
-; xap drives this — journal supplies only the append + fold steps:
+# xap drives this — journal supplies only the append + fold steps:
 [$xap:on :order-received [?def [$ev]
-  [?let committed [$journal:append $j [event $ev]
-                    {actor: $actor authority: $auth}]]      ; 1. append (journal)
-  [$bus:emit $b :order-committed $committed]])              ; 2. dispatch in commit order (bus)
-; the synchronous, ordered, log-coupled wiring is the xap composition rule — NOT here.
+  [?let [= $committed [$journal:append $j [event $ev]
+                        {actor: $actor authority: $auth}]]  # 1. append (journal)
+    [$bus:emit $b :order-committed $committed]]]]           # 2. dispatch in commit order (bus)
+# the synchronous, ordered, log-coupled wiring is the xap composition rule — NOT here.
 ```
 
 Handle outcomes by **shape**, not `[?try]` — a committed entry / a finding is a value
@@ -822,12 +822,12 @@ Handle outcomes by **shape**, not `[?try]` — a committed entry / a finding is 
 
 ```cx
 [?match [$journal:append $j [event $ev] {actor: $a authority: $au}]
-  [case [err @code='cx-err:CXER4604'] [$retry-after-rebase $j $ev]]   ; stale tail → re-read + retry
-  [case [err @code=$c] [err code=$c]]                                  ; re-raise other faults
-  [case [entry @seq=$s] $s]]                                           ; a VALUE — the committed seq
+  [case [err @code='cx-err:CXER4604'] [$retry-after-rebase $j $ev]]   # stale tail → re-read + retry
+  [case [err @code=$c] [err code=$c]]                                  # re-raise other faults
+  [case [entry @seq=$s] $s]]                                           # a VALUE — the committed seq
 
 [?match [$journal:verify $j {}]
-  [case [verification @valid=false] [$alert :tamper-detected]]         ; a FINDING (value)
+  [case [verification @valid=false] [$alert :tamper-detected]]         # a FINDING (value)
   [case [verification @valid=true]  :ok]]
 ```
 
@@ -984,7 +984,7 @@ propagates as-is; the journal-specific *absent-key* and *bad-signature* cases ma
 
 | journal surface | Building block | Notes |
 |---|---|---|
-| `open` / `attach` | `store.open` / a passed `[store]` handle | tenant-rooted namespace via store aliases/layout ([`store.md`](../std-lib/store.md) §3.9/§4); read the head alias to populate `head-seq`/`head-hash` |
+| `open` / `attach` | `store.open` / a passed `[store]` handle | tenant-rooted namespace via store aliases/layout ([`store.md`](../std-lib/store.md), alias surface §6.2 / identity §4); read the head alias to populate `head-seq`/`head-hash` |
 | `append` | `hash.<algo>` + `hash.format-hex` over canonical bytes; `store.put-doc`; advance the `head` alias | per-journal commit lock for linearization (§2.1); `prev-hash = head-hash`; `expect-prev-seq` check under the lock (§3.2); CAS the head alias for the optimistic path |
 | `read` / `slice` / `since` | `store.get-doc` by per-seq alias/key, or `store.iter-docs` over the partition in `seq` order | a `seq → hash` index (a store alias per `seq`, or a packed segment) keeps `read` O(1); absence = empty node-set, not `null` (§2.5) |
 | `query` | `store.query $cxpath` scoped to the tenant partition | reuses store's CXPath query engine ([`store.md`](../std-lib/store.md) §6); confined to one tenant by the partition (§4.1) |

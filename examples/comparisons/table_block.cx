@@ -1,11 +1,11 @@
-# table_block.cx — typed tabular rows inside a document.
+# table_block.cx — typed tabular rows inside a document, [table[…]] block form.
 # Try:  cx --csv table_block.cx
 #       cx table info table_block.cx
 #       cx table dump table_block.cx --to=cx
 
-[orders :table[id:int customer total:decimal status]
-  1001 alice  29.99  shipped
-  1002 bob    149.50 pending
-  1003 carol  8.75   shipped
-  1004 dave   1024.0 cancelled
+[orders [table[id::int customer::string total::decimal status::string]]
+  1001 alice  29.99   shipped
+  1002 bob    149.50  pending
+  1003 carol  8.75    shipped
+  1004 dave   1024.0  cancelled
 ]

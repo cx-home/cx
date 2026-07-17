@@ -78,7 +78,7 @@ For chunked input that does not fit in memory:
       [= $h1 [$hash:hasher-update $h0 $chunk1]]
       [= $h2 [$hash:hasher-update $h1 $chunk2]]
       [= $digest [$hash:hasher-finalize $h2]]
-  ...]
+  $digest]
 ```
 
 `algo` is `"sha256"` / `"sha384"` / `"sha512"` / `"blake3"`. The streaming hasher is observably pure — `hasher-update` returns a new value; the input hasher is unchanged from the caller's view; the same sequence of updates over the same data produces the same digest. Implementations MAY use interior mutability not observable to callers.

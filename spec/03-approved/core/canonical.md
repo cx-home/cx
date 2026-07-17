@@ -82,6 +82,27 @@ Inf, duplicate keys, integer overflow for the declared type, or other
 spec-defined errors has no canonical form — canonicalization fails with an
 error. See `../misc/parity-matrix.md` §Error policies.
 
+### 1.4 Identity tiers
+
+Content-addressed identity is two-tier; both tiers are first-class.
+
+- **Tier 1 — data identity.** The strict canonical bytes (§1.2). This is the
+  universal content-address: `cx hash`, signing, dedup, and equality all key on it.
+  Strict canonicalization is type-driven — unordered constructs normalize
+  (map keys, §2.11.1), ordered constructs are preserved (sequences/arrays §2.11.1,
+  element attributes and children §2.1), and presentation is discarded (§2.8–2.9,
+  §2.6–2.7). Tier-1 is always computed and is the storage/round-trip identity.
+
+- **Tier 2 — code identity.** A *further* normalized identity for content-addressed
+  CX code: binder-alpha-normalized, comment-insensitive, and
+  dependency-resolved-by-hash, so semantically equal definitions collide regardless
+  of bound-variable names or formatting. Tier-2 is an **additional** key, computed
+  only in an opt-in code namespace, never conflated with Tier-1. Its normalization
+  is defined normatively by [`code-identity.md`](code-identity.md); this section
+  reserves the tier and its non-conflation guarantee.
+
+Attribute order is **never** a normalization axis in either tier (§2.1).
+
 ---
 
 ## 2 — Text CX canonical (lossless)
@@ -124,7 +145,7 @@ when they avoid escaping a `'`. Triple-quoting is reserved for multiline values.
 
 | Aspect | Rule |
 |---|---|
-| Bare strings | Used when value is BareChar-eligible (no whitespace, `[`, `]`, `=`, `'`, `"`) AND does not match an auto-typing literal (number, bool, null, date, datetime, hex). |
+| Bare strings | Used when value is BareChar-eligible (no whitespace, `[`, `]`, `=`, `'`, `"`) AND does not match an auto-typing literal — the lexicon's full auto-typing set: number (including underscore-grouped and over-i64 bigint forms), bool, null, date, datetime, duration, period, atom, hex. A string whose bare image would re-parse as any typed scalar quotes, in every position (element body, attribute value, collection item, map value). |
 | Single-quoted | `'...'` — the default form when quoting is required (value contains whitespace/special chars, or matches an auto-typing literal). |
 | Double-quoted | `"..."` — used when the value contains a `'` but no `"`, so the apostrophe need not be escaped (e.g. `"can't"`). A value that is only a `'` is `"'"`. |
 | Both `'` and `"` | Single-quoted with `\'` escape (the `"` needs no escape inside `'...'`) — the disambiguating tiebreak. |
@@ -194,7 +215,7 @@ exists.
 
 | Aspect | Rule |
 |---|---|
-| Form | Glued double-colon, long names only: `name::T` where `T` is any TypeName per [`grammar.ebnf` [26a]](grammar.ebnf) (the 9 semantic kinds plus storage-precision refinements `decimal`, `bigint`, `i8..i64`, `u8..u64`, `f16/f32/f64`, `duration`, `instant`). |
+| Form | Glued double-colon, long names only: `name::T` where `T` is any TypeName per [`grammar.ebnf` [26a]](../formal/grammar.ebnf) (the 9 semantic kinds plus storage-precision refinements `decimal`, `bigint`, `i8..i64`, `u8..u64`, `f16/f32/f64`, `duration`, `instant`). |
 | Array marker | `::string[]`, `::int[]`, etc. The bare `::[]` (inferred array) is canonicalized to its concrete form: emitter resolves the inferred type and emits the explicit annotation. |
 | Position | Glued to the element-head / attribute / param name (`name::T`). |
 
@@ -342,6 +363,12 @@ nested (do not flatten).
 Bare-name keys (`{name: 'a'}`) sort as their equivalent string keys
 (`{'name': 'a'}` — `name` is a string §D4).
 
+This canonical map-key ordering is **normative for content-addressed
+identity**: a content-addressed store hashes a map's entries in this order, so
+two maps with the same entries written in any source order address to the same
+object (order-normalized dedup). Sequences and Arrays remain order-significant
+(§2.1) — their item order is part of their identity.
+
 ### 2.11.2 Trailing commas
 
 | Aspect | Rule |
@@ -460,17 +487,15 @@ no canonical alternative spelling.
 
 #### 2.12.5 Predicate emit rules
 
-Each predicate in a step's `predicates` array emits as `[BODY]`
-where BODY is the predicate's canonical-rendered expression. +:
-the renderer matches the PredicateExpr AST against the recognised
-atomic templates and emits the terse form when the match succeeds;
-otherwise it emits the general form. The recognised atomic
-templates are authoritatively listed in
-existence / attribute absence / attribute compare / integer
-positional / bare-function-call / `count(*) > N`-shape) — this
-section references that table by reference and does not re-spec it.
-A canonical renderer MUST agree with the
-bit-for-bit on every recognised template.
+Each predicate in a step's `predicates` array emits as written
+(code.md §5.5.2): the notation atoms (attribute existence / absence /
+integer positional / step existence) keep their atom spellings, a
+general body emits as its canonical prefix form with FUSED brackets
+(the predicate's brackets are the form's brackets — never `[[…]]`),
+and there is NO template-preferring rewrite in either direction —
+the former terse-form re-emit rule was retired with the grammar
+[132]–[134] predicate sublanguage. A canonical renderer MUST
+round-trip every predicate bit-for-bit.
 
 Top-level (whole-path) predicates from the PathNode's
 `predicates` array (rare; see [`ast.md` PathNode](ast.md))
@@ -520,8 +545,8 @@ and `loc` are emit-excluded **and** equality-excluded).
 | `form=binding`, `binding="u"`, step `(child, email, [])` | `$u/email` | Binding form (§2.12.2); `child` axis omitted; bare-name node-test. |
 | `form=absolute`, steps `[(child, root, []), (child, item, [PredicateExpr matching atomic INT 3])]` | `/root/item[3]` | Absolute lead (§2.12.2); positional atomic template. |
 | `form=descendant`, step `(attribute, name, [])` | `//@name` | Attribute axis terse form (§2.12.3) is `@name`; the leading `//` then prefixes it. |
-| `form=descendant`, step `(child, user, [PredicateExpr non-atomic: `$_@active and $_@verified`])` | `//user[$_@active and $_@verified]` | General predicate form (no atomic template match. Whitespace inside the predicate body follows the body's own canonical rules (this section governs only the PathNode-level whitespace policy). |
-| `form=binding`, `binding="t"`, steps `[(child, member, [PredicateExpr `$_@role = "lead"`])]` with `[bind ...]` clause-child on the outer step | `$t/member[$_@role = "lead"]` | Binding lead; `[bind ...]` clause-children attached to a step emit, and the canonical renderer prefers `@role = "lead"` terse form when the AST matches the AttrTest template — implementations MUST check the AST shape, not the surface. |
+| `form=descendant`, step `(child, user, [PredicateExpr non-atomic: `[and $_@active $_@verified]`])` | `//user[and $_@active $_@verified]` | General predicate form (no atomic template match. Whitespace inside the predicate body follows the body's own canonical rules (this section governs only the PathNode-level whitespace policy). |
+| `form=binding`, `binding="t"`, steps `[(child, member, [PredicateExpr `[= $_@role "lead"]`])]` with `[bind ...]` clause-child on the outer step | `$t/member[= $_@role "lead"]` | Binding lead; `[bind ...]` clause-children attached to a step emit; an AttrTest-template AST emits the prefix comparison form (`= $_@role "lead"` fused into the predicate brackets, [`code.md` §5.5.2](code.md) — the infix terse form is retired, grammar [132]–[134]) — implementations MUST check the AST shape, not the surface. |
 
 The seventh and eighth examples show the general-form fall-through. The third example shows
 the canonical-desugaring collapse the renderer is required to
@@ -532,7 +557,7 @@ perform.
 - [`ast.md` PathNode](ast.md) — struct field definitions the
  renderer consumes (`form`, `binding`, `steps[].axis`,
  `steps[].node_test`, `steps[].predicates`, `predicates`).
-- [`grammar.ebnf` productions [130]–[135]](grammar.ebnf) —
+- [`grammar.ebnf` productions [130]–[135]](../formal/grammar.ebnf) —
  the surface forms canonical emit must produce.
 - Atomic-predicate desugaring + canonical-render template table.
 - §11.4 — content-hash contract PathNode inherits.

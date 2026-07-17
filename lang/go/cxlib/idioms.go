@@ -7,8 +7,8 @@
 //
 // The Go idioms surfaced here mirror `spec/bindings.md §3.2`:
 //
-//   * **Builder filter chains** — `doc.Filter("user").Where("@active=true").Get("/@email")`
-//     desugars to `doc.SelectAll("//user[@active=true]/@email")`.
+//   * **Builder filter chains** — `doc.Filter("user").Where("= $_@active true").Get("/@email")`
+//     desugars to `doc.SelectAll("//user[= $_@active true]/@email")`.
 //   * **Pythonic-like Doc methods** — `Doc.Eval` / `Doc.Diagram` /
 //     `Doc.Tree` are already on Layer-1; Layer-2 adds the chainable
 //     filter builder + a `Select(path)` convenience returning
@@ -34,8 +34,8 @@ import (
 // Desugaring rules (per `spec/bindings.md §3.2`):
 //
 //	doc.Filter("user")                          ⇒ doc.SelectAll("//user")
-//	doc.Filter("user").Where("@active=true")    ⇒ doc.SelectAll("//user[@active=true]")
-//	doc.Filter("user").Where(...).Get("/@email")⇒ doc.SelectAll("//user[@active=true]/@email")
+//	doc.Filter("user").Where("= $_@active true") ⇒ doc.SelectAll("//user[= $_@active true]")
+//	doc.Filter("user").Where(...).Get("/@email") ⇒ doc.SelectAll("//user[= $_@active true]/@email")
 //	doc.Filter("user").First()                  ⇒ doc.Select("//user")
 //	doc.Filter("user").All()                    ⇒ doc.SelectAll("//user")
 //
@@ -120,9 +120,9 @@ func (d Doc) MustSelect(cxpath string) *CodeNode {
 // Supported ops + arg shapes:
 //
 //	Explain("filter", "user")                          → doc.SelectAll("//user")
-//	Explain("filter+where", "user", "@active=true")    → doc.SelectAll("//user[@active=true]")
-//	Explain("filter+where+get", "user", "@active=true", "/@email")
-//	                                                    → doc.SelectAll("//user[@active=true]/@email")
+//	Explain("filter+where", "user", "= $_@active true") → doc.SelectAll("//user[= $_@active true]")
+//	Explain("filter+where+get", "user", "= $_@active true", "/@email")
+//	                                                    → doc.SelectAll("//user[= $_@active true]/@email")
 //	Explain("filter+first", "user")                    → doc.Select("//user")
 //	Explain("must_select_all", "//user")               → doc.SelectAll("//user")  (panics on err)
 //	Explain("must_select", "//user")                   → doc.Select("//user")     (panics on err)

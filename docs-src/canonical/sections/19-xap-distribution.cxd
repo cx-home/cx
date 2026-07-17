@@ -1,0 +1,394 @@
+[# Section 19 — XAP feature distribution (the v0.13.0 headline; version-literal-ok). What a
+   feature is, authoring, publishing to a registry, consuming by pin,
+   entitlements, and the honest marketplace status. Spec home: the
+   feature distribution & market spec
+   (spec/03-approved/xap/xap_feature_distribution_market.md); developer
+   docs: docs/dev/{features-*,registry-*,marketplace}.md
+   (runtime-verified). Every command and output on this page was run
+   against the branch-head binary — including the pkg pipeline against
+   the live xap-marine registry (issue #425 coverage gap: XAP feature
+   distribution). #]
+
+[section id=xap-distribution n=19 title='XAP feature distribution'
+
+  [intro
+    """The headline of the 0.13 release is that XAP features became a
+       **distribution unit**: sealed, signed, published, discovered,
+       verified, installed, and entitled — end to end, on machinery the
+       platform already had. Distribution introduces no archive format,
+       no transport, and no trust primitive of its own: a package is a
+       sealed subtree in a content-addressed store ([[store]]), a
+       registry is a store, a version is an alias, and trust is the
+       Tier-1 content hash plus a publisher-DID signature. The
+       normative model is the feature distribution & market spec
+       (`spec/03-approved/xap/xap_feature_distribution_market.md`); the
+       task-oriented developer set is `docs/dev/` (`features-authoring`,
+       `features-consuming`, `registry-setup`, `registry-consuming`,
+       `marketplace`, `client-and-views`). This section walks the
+       staircase and is explicit about which steps are shipped and
+       which are specified-but-not-yet-built."""]
+
+  [child id=dist-what n=19.1 title='The unit — what a feature is'
+    [body
+      """A **feature** is the XAP composition unit and the platform's
+         commercial unit — the thing you author, version, sell, and
+         install. It is a grammar (verbs, nouns, rules — compiled from
+         requirements) plus the implementation module that travels with
+         it; behavior ships **inside the package**, never in the
+         serving process. Not everything is a feature, though — the
+         sealing and signing machinery is content-agnostic, and the
+         package `kind` decides only which gate runs at install:"""]
+    [table
+      [tr [th 'kind'] [th 'unit'] [th 'install gate']]
+      [tr [td 'feature'] [td 'the XAP composition unit: grammar + impl + fixtures'] [td 'verify + compose-gate + needs consent']]
+      [tr [td 'library'] [td 'plain CX code — no grammar, no governance surface'] [td 'verify + module-surface check (declared defs present, Tier-2 identities match)']]
+      [tr [td 'client'] [td 'a medium materializer app (a separate project)'] [td 'verify + client-spec validation']]]
+    [body
+      """Two dependency planes, never blurred: on the **grammar plane**
+         a feature `uses` a feature (composition — changes what a
+         principal can *say*); on the **code plane** any package
+         `requires` a library (implementation, hash-pinned — changes
+         what the code *calls*). A library never `uses` a feature, and
+         by invariant N-DIST-2 a library carries **no authority**: it
+         executes under the requiring feature's grants and can neither
+         hold nor request capabilities of its own. Enabled features
+         compose into one grammar with conflicts caught as values at
+         compose time, and the composed grammar hashes
+         deterministically — two deployments with the same pins have
+         bit-identical grammars:"""]
+    [example lang=cx
+      """[?lib 'cx-xap' :as xap]
+[?let [= $chart
+         [feature name=chart
+           [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
+           [verbs [verb name=highlight effect=arrange [intent [do :highlight]] [reads viewport]]]
+           [requirements [requirement kind=functional as=user traces=highlight
+             [want 'to mark a spot'] [so 'I can find it']]]]]
+      [= $strikes
+         [feature name=strikes
+           [nouns [noun name=strike [field name=pos type=geo-point] [field name=at type=instant]]]
+           [verbs [verb name=list-strikes effect=observe [intent [do :list-strikes]] [reads strike]]]
+           [requirements [requirement kind=functional as=user traces=list-strikes
+             [want 'to see strikes'] [so 'I avoid them']]]]]
+      [= $g [$xap:compose $chart $strikes]]
+  ([$count $g//verb], [$xap:resolve $g 'highlight' {}], [$xap:grammar-hash $g])]"""]
+    [output
+      """(2, 'chart/highlight', 'f5727e413d19b7b1bc75af362fe525d4f286ec4cfbec3877b677a44d4adc760e')"""]
+    [note
+      """The whole distribution staircase is a **function surface** —
+         `[$xap:compose]`, `[$xap:pkg-tree]` / `pkg-seal` / `pkg-sign` /
+         `pkg-publish` / `pkg-fetch` / `pkg-verify` / `pkg-install` /
+         `pkg-requires-closure` / `pkg-catalog`, and
+         `[$xap:license-issue]` / `license-verify` — all shipped in the
+         bundled `cx-xap` module (no install). A `cx pkg` CLI verb
+         family (e.g. `cx pkg graph`) is named in the spec but not in
+         the shipped binary yet; drive the staircase from CX programs
+         today."""]]
+
+  [child id=dist-authoring n=19.2 title='Authoring — spec plus contract module'
+    [body
+      """A feature is authored as a `*.feature.cxd` document validated
+         by a schema — requirements are the source, the grammar is the
+         compiled output, and a requirement's acceptance criteria are
+         its conformance fixtures. The skeleton (the full-size real
+         reference is `xap-marine/features/own-ship/`):"""]
+    [; check=none — a *.feature.cxd is a DATA document consumed by the
+       feature toolchain (cx validate --schema=feature.cxs), not a
+       runnable program: its intent-template $placeholders ($text) are
+       tokens the DATA reading keeps verbatim, but the snippet gate's
+       program run would treat them as unbound bindings feeding an
+       attribute (CXER0100 under the §6.4.1 scalar-only attr rule). ]
+    [example lang=cx check=none
+      """[feature name=notes version='0.1.0'
+  [summary 'A shared notebook']
+  [nouns [noun name=note [field name=text type=string]]]
+  [verbs
+    [verb name=list-notes effect=observe scope=local consequence=none
+      [intent [do :list-notes]] [reads note]]
+    [verb name=add-note effect=act scope=shared consequence=reversible
+      [intent [do :add-note text=$text]] [writes note]]]
+  [governance [grant verb=add-note to=member]]
+  [requirements
+    [requirement kind=functional as=member traces=add-note
+      [want 'to jot a note'] [so 'the crew sees it']]]]"""]
+    [body
+      """Every verb carries an **effect signature** — `effect`
+         (observe · act · arrange) × `scope` × `consequence` — which is
+         what the runtime gates scale on: observe is ungated, act meets
+         the authorization check, and consequence scales the gate.
+         Validation is real tooling, run as you author (verified
+         against the live marine feature and schema):"""]
+    [example lang=sh
+      """$ cx validate features/own-ship/own-ship.feature.cxd --schema=schemas/feature.cxs"""]
+    [body
+      """The behavior half is the **contract module** — a plain CX
+         module exporting the conventional surface the deployment host
+         calls: `readout` (always; serves the feature's surface data),
+         `apply` (iff the grammar has a non-observe verb; called after
+         the policy check admits the intent), and optionally
+         `simulate`. A minimal complete module:"""]
+    [example lang=cx
+      """[?def readout scope=public impure ($store $t)
+  [readout title='Notes' [kv k='count' v='0']]]
+[?def apply scope=public impure ($verb $intent $store)
+  [?if [= $verb 'notes/add-note']
+    [then $verb]
+    [else [refused reason='no apply for this verb']]]]"""]
+    [body
+      """`apply` may refuse on domain policy by returning
+         `[refused reason=…]` — the policy layer admitted the *verb*,
+         the feature refused the *values*; two layers, both visible.
+         `scope=public` is what a module exports, and the package
+         manifest's `exports` block must list exactly that contract
+         surface — projected from the code at publish and re-verified
+         at install, both ways. Authoring depth (frames and keys for
+         cross-feature joins, the swappable source-gateway stack,
+         composite features) is `docs/dev/features-authoring.md`."""]]
+
+  [child id=dist-registry n=19.3 title='Publishing — a git repo is a registry'
+    [body
+      """A registry is just a CX store holding sealed packages,
+         manifests, and an alias index — so a git repository containing
+         a `file://` store **is a complete registry**, with
+         publish-by-PR, history as audit, and repo permissions as
+         publish permissions. The publish pipeline is
+         `author → validate → seal → sign → publish`, and the whole
+         publisher side runs against any store:"""]
+    [; check=none — the pipeline needs --allow-random for the
+       publisher keypair; under the grant-free docs-example gate the
+       denial cascades into non-0271 pkg errors (CXER4880/4886). Run
+       verified live 2026-07-15 with --allow-random; output pinned
+       below. ]
+    [example lang=cx check=none
+      """[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-stdlib/crypto' :as crypto]
+[?lib 'cx-stdlib/did' :as did]
+[?let [= $reg [$store:open 'mem://']]
+      [= $kp [$crypto:ed25519-keypair]]
+      [= $pub [$did:key-create $kp@public]]
+      [= $tree [$xap:pkg-tree ([entry path='geo-utils.cx' '[?def id scope=public ($x) $x]'])]]
+      [= $draft [?element 'package'
+                  [?attr 'name' 'geo-utils'] [?attr 'version' '0.1.0'] [?attr 'kind' 'library']
+                  [?element 'publisher' [?attr 'did' $pub]]
+                  [?element 'exports' [?element 'def' [?attr 'name' 'geo-utils/id']]]]]
+      [= $sealed [$xap:pkg-seal $reg $tree $draft]]
+      [= $signed [$xap:pkg-sign [$store:get-doc $reg $sealed@manifest] $kp@private]]
+      [= $mh [$store:put-doc $reg $signed]]
+      [= $pubr [$xap:pkg-publish $reg 'geo-utils' '0.1.0' $mh]]
+      [= $v [$xap:pkg-verify $reg 'geo-utils@0.1.0']]
+  ($pubr@alias, $v@status, $v@kind)]"""]
+    [output
+      """$ cx publish.cx --allow-random
+('geo-utils@0.1.0', 'ok', 'library')"""]
+    [list
+      [item """**pkg-tree** seals the directory as one canonical
+              content document — entries sorted by path, byte-stable, so
+              its store hash *is* the package's Tier-1 identity
+              (traversal and duplicate paths are rejected,
+              `CXER4880`)."""]
+      [item """**pkg-seal** validates the manifest draft kind-aware (a
+              `needs` block on a library is rejected — libraries carry
+              no authority) and stores the manifest beside the tree."""]
+      [item """**pkg-sign** fills the detached ed25519 signature over
+              the Tier-1 hash. Signing is possession; verification is
+              trust — the key-to-DID binding is checked at verify
+              time."""]
+      [item """**pkg-publish** points the `name@version` alias at the
+              manifest. **Released aliases are immutable**: re-pointing
+              raises `CXER4887`; re-publishing the identical hash is
+              idempotent."""]
+      [item """**pkg-verify** re-runs the full fail-closed chain
+              (re-hash, signature, required credentials); nothing stages
+              on failure."""]]
+    [body
+      """Sign from day one, even internally — it costs nothing, and it
+         makes every later growth stage a **re-host, never a
+         re-package**: the live instance is `xap-marine/registry/`
+         (stage 1, sealed+signed packages in a git repo), the same
+         store served over the store daemon is stage 2 (consumers
+         switch the URI scheme, nothing else), and the market of the
+         last subsection wraps stage 2. Hashes and signatures never
+         change across stages, and a re-hosted package keeps its
+         original publisher's signature — trust is per-package, never
+         per-registry. Manifest projection, key management, and the
+         make-target workflow are `docs/dev/registry-setup.md`."""]]
+
+  [child id=dist-consuming n=19.4 title='Consuming — verify, install, pin'
+    [body
+      """The consumer pipeline is `discover → acquire → verify →
+         gate → consent → enable`, fail-closed at every stage, and
+         every check is offline-verifiable — a vendored mirror is as
+         good as the origin. Discovery and verification against a
+         registry store (this exact program, pointed at the live
+         xap-marine registry, was run for this page — status `ok`, kind
+         `feature`, one catalog hit):"""]
+    [example lang=cx
+      """[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/store' :as store]
+[?let [= $reg [$store:open-opts 'file:///path/to/xap-marine/registry/store'
+                                [map read-only='true']]]
+      [= $v [$xap:pkg-verify $reg 'own-ship@0.1.1']]
+      [= $cat [$xap:pkg-catalog $reg {term: 'nmea'}]]
+  ($v@status, $v@kind, [$count $cat//package])]"""]
+    [output
+      """('ok', 'feature', 1)"""]
+    [body
+      """Install takes your `[xap …]` deployment document and returns
+         it with the package **pinned by hash** and its `requires`
+         closure resolved beneath it — the deployment doc *is* the
+         lockfile, spanning both dependency planes. In one in-memory
+         program (publish a library, then install it into an empty
+         deployment):"""]
+    [; check=none — same --allow-random dependency as the publish
+       pipeline above (the keypair); verified live 2026-07-15, output
+       pinned below. ]
+    [example lang=cx check=none
+      """[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/store' :as store]
+[?let [= $reg [publish geo-utils@0.1.0 as in the previous subsection]]
+      [= $xap0 [xap name=my-app version='0.0.1' [features]]]
+      [= $done [$xap:pkg-install $xap0 $reg 'geo-utils@0.1.0']]
+  [$count $done//library]]"""]
+    [output
+      """$ cx install.cx --allow-random
+1"""]
+    [body
+      """Loading pinned library code at runtime is the fourth `[?lib]`
+         reference form — `pkg:` — resolved through the registry bound
+         by the `CX_REGISTRY` environment variable (a store URL), with
+         the full verification chain re-run on **every** load; there is
+         no trust-the-registry mode. Verified against the live marine
+         registry:"""]
+    [; check=none — needs a bound CX_REGISTRY plus read/env grants;
+       with no registry the load fails CXER4889 by design (output of
+       the fail-closed lane pinned in the table below). Verified live
+       2026-07-15 against the xap-marine registry: '3.3 m/s'. ]
+    [example lang=cx check=none
+      """[?lib 'pkg:marine-common@0.2.0' :as mc]
+[$mc:fmt-speed 6.4 'm/s']"""]
+    [output
+      """$ CX_REGISTRY=file:///path/to/xap-marine/registry/store cx speed.cx --allow-read --allow-env
+'3.3 m/s'"""]
+    [body
+      """A `pkg:NAME@VERSION#MANIFEST-HASH` reference pins past the
+         alias table entirely. The failure lanes are values, each
+         naming its cause:"""]
+    [table
+      [tr [th 'lane'] [th 'error']]
+      [tr [td 'no registry bound (CX_REGISTRY unset)'] [td 'CXER4889 — fails closed, never a guess']]
+      [tr [td 'name or version absent'] [td 'CXER4886']]
+      [tr [td '#hash pin does not match the resolved manifest'] [td 'CXER4888']]
+      [tr [td 'tampered tree (re-hash mismatch)'] [td 'CXER4881']]]
+    [body
+      """Version discipline: a version is an **alias — a name for a
+         hash**; the hash is the truth. An update is a new hash and an
+         explicit re-pin; a rollback is re-pinning the previous hash.
+         Vendoring is first-class for offline installs: clone the
+         registry store locally and verification proceeds identically
+         with no network. Distinct from all of this, the older
+         `cx lock` mechanism pins `https://` module fetches in a
+         `cx.lock` file (the lockfile spec,
+         `spec/03-approved/core/lockfile.md`) — verified live:
+         `cx lock` writes bundled modules as `resolved="bundled:…"`
+         entries and `cx lock --check` exits 1 on drift, printing
+         expected vs actual; SRI integrity for `https://` entries is
+         recorded resolved-only today (the binary says so in a
+         warning), so treat `pkg:` + the pinned deployment doc as the
+         XAP-era system and `cx.lock` as the module-fetch pin."""]]
+
+  [child id=dist-entitlements n=19.5 title='Entitlements and identity'
+    [body
+      """Commercial models ride the trust machinery rather than adding
+         a DRM subsystem: **a license is a verifiable credential** — an
+         attenuating delegation from the publisher to a principal — and
+         the entitlement check is an ordinary policy check. Issue and
+         verify, offline:"""]
+    [example lang=cx
+      """[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/crypto' :as crypto]
+[?lib 'cx-stdlib/did' :as did]
+[?let [= $kp [$crypto:ed25519-keypair]]
+      [= $publisher [$did:key-create $kp@public]]
+      [= $vc [$xap:license-issue $publisher $kp@private 'principal:alice'
+               {package: 'own-ship', versions: '0.x', kind: 'perpetual'}]]
+      [= $v [$xap:license-verify $vc 'own-ship' '0.1.1' {now: '2026-07-15T00:00:00Z'}]]
+  $v@status]"""]
+    [output
+      """$ cx license.cx --allow-random
+'ok'"""]
+    [body
+      """Every pricing shape is an attenuation of the issued
+         credential: perpetual (no expiry, a version range — a new
+         major is a new purchase), subscription (short-lived VCs
+         re-issued on a cadence plus a declared grace window — the
+         certificate-renewal pattern, no revocation polling), per-seat
+         (an org credential delegable into at most N principal-bound
+         sub-credentials — the delegation chain is the count), metered
+         (the consuming XAP's hash-chained journal is the
+         non-repudiable meter), and trial (a time-boxed gratis VC —
+         free is not a special case). The subscription grace window,
+         verified — a deployment mid-passage keeps working offline past
+         expiry, inside the declared grace:"""]
+    [example lang=cx
+      """[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/crypto' :as crypto]
+[?lib 'cx-stdlib/did' :as did]
+[?let [= $kp [$crypto:ed25519-keypair]]
+      [= $publisher [$did:key-create $kp@public]]
+      [= $vc [$xap:license-issue $publisher $kp@private 'principal:vessel-1'
+               {package: 'weather', versions: '*', kind: 'subscription',
+                expires: '2026-08-01T00:00:00Z', grace-until: '2026-08-15T00:00:00Z'}]]
+      [= $v [$xap:license-verify $vc 'weather' '0.1.0' {now: '2026-08-07T00:00:00Z'}]]
+  $v@status]"""]
+    [output
+      """$ cx grace.cx --allow-random
+'grace'"""]
+    [body
+      """**Price is a market property, never a package property** — the
+         manifest carries license-terms only, so the same signed
+         artifact can be paid in one market and free in another.
+         `pkg-install` takes the entitlement as an option, verified
+         fail-closed as part of the trust chain, and a consuming XAP
+         can set `require-entitlement` as its install policy. Identity
+         underneath is DID-first end to end: publishers sign as DIDs,
+         principals hold DIDs, delegations are VCs — and since the
+         host-auth work landed, a deployment document can carry a
+         `[host-auth]` block so the deployment host itself
+         authenticates attaching clients with the XSP mutual-auth
+         handshake and per-request proofs (the XAP identity model spec,
+         `spec/02-working/xap_identity_model.md`, and the trust-model
+         part of the XAP spec)."""]]
+
+  [child id=dist-market n=19.6 title='The marketplace — today versus specified'
+    [body
+      """The market model: there is **no central market**. A market is
+         itself a XAP whose features are catalog, entitlement, and
+         distribution; N markets compose into one discovery surface
+         exactly as N XAPs compose into one experience. Honest status
+         as of this release:"""]
+    [table
+      [tr [th 'piece'] [th 'status']]
+      [tr [td 'packaging, signing, publish, verify, install, pkg: loading, deployment host'] [td 'implemented']]
+      [tr [td 'stage-1 git registry, stage-2 served registry, catalog/discovery'] [td 'implemented — live in xap-marine']]
+      [tr [td 'entitlement machinery: license-issue/verify, all pricing shapes, install policy'] [td 'implemented (engine + conformance)']]
+      [tr [td 'the market as a running product (hosted catalog XAP, storefront, onboarding)'] [td 'specified, not yet implemented']]
+      [tr [td 'the commerce feature + payment rails (card, invoicing, app-store, crypto)'] [td 'specified, not yet implemented (staged phase P3 of the distribution spec)']]
+      [tr [td 'yank / revocation attestation flow end to end'] [td 'attestation VC machinery shipped; composer surfacing awaits the market — specified, not yet implemented']]
+      [tr [td 'multi-market federation on one surface'] [td 'specified; fixture-proven as data, no runtime surface']]]
+    [body
+      """What that means in practice today: you can run a complete,
+         trustworthy distribution system for one trust domain — publish
+         sealed, signed packages to a git registry, serve it over the
+         store daemon, discover with `pkg-catalog`, install by pin, and
+         gate installs on entitlement credentials in any pricing shape
+         (for example an internal paid tier). What you cannot do yet:
+         point a customer at a hosted market, take a card payment, or
+         run the yank/refund attestation flows — all specified in the
+         feature distribution & market spec, staged behind its market
+         and commerce phases. Revocation, when it lands, is
+         **attestations published at the market, never remote
+         reach-in**: a running XAP is untouched; its composer surfaces
+         the warning. The full today-versus-specified detail is
+         `docs/dev/marketplace.md`."""]]
+]

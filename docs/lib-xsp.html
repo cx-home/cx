@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -115,6 +120,71 @@
     <section id="fn-xsp-decode-all" class="fn">
       <h3>xsp:decode-all</h3>
       <p class="fn-sig"><code>[$xsp:decode-all]  -> element</code>  —  Decode a buffer of concatenated frames into a [frames …] element whose children are the parsed [frame …] elements, with any trailing partial frame as a [remainder …] child.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-hello" class="fn">
+      <h3>xsp:auth-hello</h3>
+      <p class="fn-sig"><code>[$xsp:auth-hello]  -> element</code>  —  Build the XSP-AUTH M1 hello from injected randomness (nonce, ephemeral X25519 public key), the dialed endpoint, and an optional initiator DID (absent = anonymous).</p>
+      
+    </section>
+    <section id="fn-xsp-auth-challenge" class="fn">
+      <h3>xsp:auth-challenge</h3>
+      <p class="fn-sig"><code>[$xsp:auth-challenge]  -> element</code>  —  Responder side: validate M1 and build M2, signing the role-pinned transcript with the responder's Ed25519 seed — there is no anonymous responder.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-prove" class="fn">
+      <h3>xsp:auth-prove</h3>
+      <p class="fn-sig"><code>[$xsp:auth-prove]  -> element</code>  —  Initiator side: verify M2 (selected version, channel-binding equality, responder transcript signature), derive the key schedule, and build M3 with the key-confirmation tag, the attach request, and — when a DID is claimed — the initiator transcript signature.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-confirm" class="fn">
+      <h3>xsp:auth-confirm</h3>
+      <p class="fn-sig"><code>[$xsp:auth-confirm]  -> element</code>  —  Responder side: verify M3 (initiator tag; transcript signature when a DID is claimed; anonymous refused under require-mutual), then build M4 carrying the responder key-confirmation tag and the attach result session.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-finish" class="fn">
+      <h3>xsp:auth-finish</h3>
+      <p class="fn-sig"><code>[$xsp:auth-finish]  -> element</code>  —  Initiator side: verify M4's responder key-confirmation tag and return the [xsp-auth-established …] report with the responder DID, channel id, and bound session.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-transcript" class="fn">
+      <h3>xsp:auth-transcript</h3>
+      <p class="fn-sig"><code>[$xsp:auth-transcript]  -> element</code>  —  Assemble the signed transcript element — M1 verbatim plus M2 with its [sig] child stripped — the exact subject of both handshake signatures.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-keys" class="fn">
+      <h3>xsp:auth-keys</h3>
+      <p class="fn-sig"><code>[$xsp:auth-keys]  -> element</code>  —  Derive the HKDF key schedule (confirmation tags, per-direction proof keys, channel id) from the ephemeral X25519 shared secret salted by both nonces; both sides derive identical values.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-verify" class="fn">
+      <h3>xsp:auth-verify</h3>
+      <p class="fn-sig"><code>[$xsp:auth-verify]  -> bool</code>  —  Low-level transcript-signature check for one role; the initiator role additionally covers the responder's signature (transcript closure).</p>
+      
+    </section>
+    <section id="fn-xsp-auth-rotate" class="fn">
+      <h3>xsp:auth-rotate</h3>
+      <p class="fn-sig"><code>[$xsp:auth-rotate]  -> element</code>  —  Produce a §6.3 rotation continuity proof: the outgoing key signs the incoming DID bound to the prior channel id, attesting the new key's holder held the old.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-rotate-verify" class="fn">
+      <h3>xsp:auth-rotate-verify</h3>
+      <p class="fn-sig"><code>[$xsp:auth-rotate-verify]  -> bool</code>  —  Verify a rotation continuity proof against the outgoing key (offline-recovered from a did:key/did:peer old DID, or supplied for did:web).</p>
+      
+    </section>
+    <section id="fn-xsp-auth-frame-check" class="fn">
+      <h3>xsp:auth-frame-check</h3>
+      <p class="fn-sig"><code>[$xsp:auth-frame-check]  -> string</code>  —  Enforce the §4.8 post-handshake binding: an empty-principal frame inherits the session principal; a non-empty principal must equal it or the frame is rejected — the rule that makes the XSP principal field a checked label, never an identity source.</p>
+      
+    </section>
+    <section id="fn-xsp-auth-proof" class="fn">
+      <h3>xsp:auth-proof</h3>
+      <p class="fn-sig"><code>[$xsp:auth-proof]  -> bytes</code>  —  Compute the per-request possession proof for request/response transports: HMAC(key, counter-be8 concatenated with sha256(frame-bytes)).</p>
+      
+    </section>
+    <section id="fn-xsp-auth-proof-verify" class="fn">
+      <h3>xsp:auth-proof-verify</h3>
+      <p class="fn-sig"><code>[$xsp:auth-proof-verify]  -> bool</code>  —  Verify a per-request possession proof in constant time; a counter below 1 never verifies.</p>
       
     </section>
   

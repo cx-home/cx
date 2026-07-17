@@ -2,10 +2,14 @@
 
 ## Supported versions
 
-CX is **pre-1.0**. Only the latest released minor version (0.7.x at
-time of writing; v0.8.0 in development on `v0.8.0-dev`) receives
-security fixes. There has been no formal security review or
-fuzz-testing infrastructure yet — see the
+CX is **pre-1.0**. Only the latest released minor series — currently
+**0.13.x**, per the repo-root [`VERSION`](VERSION) file, which is the
+single source of truth for the release version — receives security
+fixes. Integration for the next minor happens on its `release/X.Y.0`
+branch (currently `release/0.13.0`); pre-release branches receive
+fixes as part of normal development, not as security backports.
+
+There has been no external security audit yet — see the
 [Status section in `README.md`](README.md#status) for the full caveat.
 
 ## Reporting a vulnerability
@@ -49,12 +53,31 @@ Out of scope:
 - Vulnerabilities in third-party libraries our bindings link against
  — report to the upstream library.
 
+## Fuzz testing
+
+The repo carries an in-tree fuzz harness:
+`scripts/fuzz_cx.py` drives the parser and the
+published C ABI with random byte sequences, malformed CX text,
+oversized inputs, and known parser edge cases, asserting on crashes
+(SIGSEGV / SIGBUS / SIGABRT), a memory-leak proxy, and
+catastrophic-time regressions. Crash findings land in
+`vcx/fuzz/crashes/` (a gitignored runtime-artifact directory) and are
+fixed with accompanying regression fixtures.
+
+A GitHub Actions fuzz job wraps the same harness with a 1-hour budget,
+but it is currently manual-dispatch only — there is no scheduled or
+OSS-Fuzz-style *continuous* fuzzing campaign running.
+
 ## Known gaps
 
-- No fuzz-testing infrastructure yet.
-- No formal threat model.
+- No *continuous* fuzzing (the harness above is run manually /
+  on-demand).
 - No security audit by an external party.
 
-These are tracked in the release process §6.
+The project threat model — trust boundaries, hardening claims, and
+the assumed deployment model — is
+[`spec/03-approved/process/threat-model.md`](spec/03-approved/process/threat-model.md).
+Remaining gaps are tracked in the release process
+([`spec/03-approved/process/release-process.md`](spec/03-approved/process/release-process.md)).
 Treat CX as appropriate for prototypes and internal tools — not for
 parsing adversarial input on a public-facing endpoint.

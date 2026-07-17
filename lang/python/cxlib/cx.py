@@ -5,6 +5,9 @@ Locates libcx.dylib / libcx.so relative to this file. The primary library
 is the V implementation in vcx/target/. All public functions return Python
 str or raise RuntimeError on parse failure.
 """
+
+from __future__ import annotations
+
 import ctypes
 import os
 import pathlib
@@ -289,6 +292,18 @@ _lib.cx_code_eval_with_len.argtypes = [
     ctypes.POINTER(ctypes.c_char_p),  # err_out
 ]
 
+# cx_code_eval_caps (include/cx.h, capability bit 38): the capability-aware
+# member of the eval family. ADDITIVE — the non-caps entry points run under the
+# empty (pure-only) default; this one grants a host-supplied set, deny-by-default.
+_lib.cx_code_eval_caps.restype  = ctypes.c_char_p
+_lib.cx_code_eval_caps.argtypes = [
+    ctypes.c_char_p,                  # input  (nullable when empty)
+    ctypes.c_char_p,                  # program
+    ctypes.c_char_p,                  # output_target (nullable; '' → 'text')
+    ctypes.c_char_p,                  # caps  (nullable/'' → empty; 'all'/'*' → full)
+    ctypes.POINTER(ctypes.c_char_p),  # err_out
+]
+
 # cx_code_write_cb (include/cx.h): int (*)(const char*, size_t, void*).
 _CX_PROGRAM_WRITE_CB = ctypes.CFUNCTYPE(
     ctypes.c_int,                     # return: 0 ok, non-zero aborts
@@ -329,6 +344,38 @@ def eval_code(input_cx: str, program: str, output_target: str = "") -> str:
         in_b, len(in_b),
         prog_b, len(prog_b),
         target_b,
+        ctypes.byref(err),
+    )
+    if out is None:
+        msg = err.value.decode() if err.value else "unknown error"
+        raise RuntimeError(msg)
+    return out.decode()
+
+
+def eval_code_caps(input_cx: str, program: str, caps: str,
+                   output_target: str = "") -> str:
+    """Evaluate a CX program under an explicit capability grant.
+
+    `caps` is a deny-by-default grant spec (security.md): '' ⇒ pure-only
+    (the spec default), 'all'/'*' ⇒ full grant, otherwise a comma/space
+    separated list such as 'net', 'read,write', or the forward-compatible
+    resource form 'net:host:443' (the ABI currently enforces the bare
+    capability; per-resource scoping is a tracked follow-up). The grant is
+    reset to empty after the call, so it never leaks into a later evaluation.
+
+    Used by the CSRP client wrappers (cxlib.store) to run the cx-store://
+    backend with `net` granted and nothing else.
+    """
+    in_b = input_cx.encode() if input_cx else b""
+    prog_b = program.encode()
+    caps_b = caps.encode() if caps else b""
+    target_b = output_target.encode() if output_target else b""
+    err = ctypes.c_char_p(None)
+    out = _lib.cx_code_eval_caps(
+        in_b,
+        prog_b,
+        target_b,
+        caps_b,
         ctypes.byref(err),
     )
     if out is None:

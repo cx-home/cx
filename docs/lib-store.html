@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a class="active" href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -109,7 +114,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]</code>
           </pre>
           <pre class="sample-output">
             <code>[doc [item 'hello']]</code>
@@ -139,7 +144,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]</code>
           </pre>
           <pre class="sample-output">
             <code>[doc [item 'hello']]</code>
@@ -154,7 +159,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $a [$store:put-doc $s [user name=al]]] [?let [= $b [$store:put-doc-stream $s [user name=al]]] [= $a $b]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $a [$store:put-doc $s [user name=al]]] [= $b [$store:put-doc-stream $s [user name=al]]] [= $a $b]]</code>
           </pre>
           <pre class="sample-output">
             <code>true</code>
@@ -169,10 +174,55 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]</code>
           </pre>
           <pre class="sample-output">
             <code>[doc [item 'hello']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-put-doc-text" class="fn">
+      <h3>store:put-doc-text</h3>
+      <p class="fn-sig"><code>[$store:put-doc-text]  -> string</code>  —  Store a document given as canonical/parseable TEXT (vs put-doc's node); canonicalizes so the hash and dedup match put-doc of the same doc. The text-body half of the CSRP server path.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $a [$store:put-doc-text $s "[doc [v 1]]"]] [$count [$store:list-docs $s]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-get-doc-text" class="fn">
+      <h3>store:get-doc-text</h3>
+      <p class="fn-sig"><code>[$store:get-doc-text]  -> [or string [sequence string]]</code>  —  Return the stored canonical TEXT for a hash (vs get-doc's node), or absence (empty) on a miss — never null, never an err. The text-body half of the CSRP server path.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [$count [$store:get-doc-text $s "0000000000000000000000000000000000000000000000000000000000000000"]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-csrp-handle" class="fn">
+      <h3>store:csrp-handle</h3>
+      <p class="fn-sig"><code>[$store:csrp-handle]  -> any</code>  —  CSRP reference-server per-request handler: read one request off an http exchange, route it to the local embedded store, write the cxd-text response. The accept loop stays a CX program; this does one request/response cycle. net-gated.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[$store:csrp-handle [exchange state=open url='tcp://0.0.0.0:8080'] [$store:open "mem://"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
           </pre>
         </div>
       
@@ -184,7 +234,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h1 [$store:put-doc $s [doc [item "hello"]]]] [?let [= $h2 [$store:put-doc $s [doc [item "hello"]]]] [$store:list-docs $s]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-doc $s [doc [item "hello"]]]] [= $h2 [$store:put-doc $s [doc [item "hello"]]]] [$store:list-docs $s]]</code>
           </pre>
           <pre class="sample-output">
             <code>('01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9')</code>
@@ -199,7 +249,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:iter-docs $s]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:iter-docs $s]]</code>
           </pre>
           <pre class="sample-output">
             <code>([entry hash='01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9' [doc [item 'hello']]])</code>
@@ -214,7 +264,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [root [user name=al]]]] [$count [$store:query $s "//user"]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [root [user name=al]]]] [$count [$store:query $s "//user"]]]</code>
           </pre>
           <pre class="sample-output">
             <code>1</code>
@@ -224,15 +274,45 @@
     </section>
     <section id="fn-store-modify-doc" class="fn">
       <h3>store:modify-doc</h3>
-      <p class="fn-sig"><code>[$store:modify-doc]  -> string</code>  —  Apply an action to the doc at a hash and store the result as a new doc, returning its hash.</p>
+      <p class="fn-sig"><code>[$store:modify-doc]  -> string</code>  —  Apply a [?modify] action (set-attr, remove, append, rename, [using FN], ... with optional select=) to the doc at a hash and store the result as a new doc, returning its hash; [using FN] runs the lambda client-side per selected node.</p>
       
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $h2 [$store:modify-doc $s $h [set-attr name=v value="x"]]] [= $h $h2]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $h2 [$store:modify-doc $s $h [set-attr name=v value="x"]]] [= $h $h2]]</code>
           </pre>
           <pre class="sample-output">
             <code>false</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-put-def" class="fn">
+      <h3>store:put-def</h3>
+      <p class="fn-sig"><code>[$store:put-def]  -> string</code>  —  Store CX code (a [?def] source) by its Tier-2 code identity and return the hash; alpha-equivalent definitions store once.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [$eq [$store:get-def $s [$store:put-def $s '[?def f ($x) $x]']] '[?def f ($x) $x]']]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-get-def" class="fn">
+      <h3>store:get-def</h3>
+      <p class="fn-sig"><code>[$store:get-def]  -> [or string [sequence string]]</code>  —  Return the stored CX code source for a Tier-2 code hash, or absence (empty) on a miss.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-def $s '[?def f ($x) $x]']] [= $h2 [$store:put-def $s '[?def f ($y) $y]']] [$eq $h1 $h2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
           </pre>
         </div>
       
@@ -259,7 +339,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:exists $s $h]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:exists $s $h]]</code>
           </pre>
           <pre class="sample-output">
             <code>true</code>
@@ -289,7 +369,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $c [$store:close $s]] [$store:list-docs $s]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $c [$store:close $s]] [$store:list-docs $s]]</code>
           </pre>
           <pre class="sample-output">
             <code>cx-err:CXER1130</code>
@@ -304,7 +384,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]</code>
           </pre>
           <pre class="sample-output">
             <code>'01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9'</code>
@@ -319,7 +399,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]</code>
           </pre>
           <pre class="sample-output">
             <code>'01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9'</code>
@@ -334,7 +414,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:list-aliases $s]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $a [$store:set-alias $s "latest" $h]] [$store:list-aliases $s]]</code>
           </pre>
           <pre class="sample-output">
             <code>([alias name=latest hash='01699895b66541c3d480d15af00e3ef54bbc723378919018101dc57bed4b00f9'])</code>
@@ -349,7 +429,7 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $s [$store:open "mem://"]] [?let [= $h [$store:put-doc $s [doc [item "hello"]]]] [?let [= $a [$store:set-alias $s "latest" $h]] [$store:delete-alias $s "latest"]]]]</code>
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $a [$store:set-alias $s "latest" $h]] [$store:delete-alias $s "latest"]]</code>
           </pre>
           <pre class="sample-output">
             <code>true</code>
@@ -364,10 +444,220 @@
         <div class="example">
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/store']
-[?let [= $a [$store:open "mem://"]] [?let [= $h [$store:put-doc $a [doc [item "hello"]]]] [?let [= $b [$store:open "mem://"]] [$store:migrate $a $b]]]]</code>
+[?let [= $a [$store:open "mem://"]] [= $h [$store:put-doc $a [doc [item "hello"]]]] [= $b [$store:open "mem://"]] [$store:migrate $a $b]]</code>
           </pre>
           <pre class="sample-output">
             <code>[migration-report doc-count=1 hashes-verified=1 bytes-written=20]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-clone" class="fn">
+      <h3>store:clone</h3>
+      <p class="fn-sig"><code>[$store:clone]  -> element</code>  —  Copy every reachable object and doc-ref from a source Store into an EMPTY destination (errors if the destination already holds docs); transfers only objects the destination is missing — the object-identity clone over the wire.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $a [$store:open "mem://"]] [= $h [$store:put-doc $a [doc [item "hello"]]]] [= $b [$store:open "mem://"]] [= $r [$store:clone $a $b]] [$store:get-doc $b $h]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [item 'hello']]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-push" class="fn">
+      <h3>store:push</h3>
+      <p class="fn-sig"><code>[$store:push]  -> element</code>  —  Send the local Store's objects the remote is missing, then advance the remote's refs (have->put-missing->set-ref); content-addressed and idempotent. Works embedded<->embedded and embedded<->daemon.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $l [$store:open "mem://"]] [= $h [$store:put-doc $l [doc [v 1]]]] [= $rm [$store:open "mem://"]] [= $r [$store:push $l $rm]] [$store:get-doc $rm $h]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [v 1]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-pull" class="fn">
+      <h3>store:pull</h3>
+      <p class="fn-sig"><code>[$store:pull]  -> element</code>  —  Bring the remote's objects the local Store is missing, plus its refs, into the local Store (refs->have->get-missing). For a content-addressed store pull and fetch coincide (no working tree, immutable doc-refs).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $rm [$store:open "mem://"]] [= $h [$store:put-doc $rm [doc [v 2]]]] [= $l [$store:open "mem://"]] [= $r [$store:pull $l $rm]] [$store:get-doc $l $h]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [v 2]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-fetch" class="fn">
+      <h3>store:fetch</h3>
+      <p class="fn-sig"><code>[$store:fetch]  -> element</code>  —  Bring the remote's objects and refs into the local Store without merging (see pull on the pull/fetch equivalence for a content-addressed store).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $rm [$store:open "mem://"]] [= $h [$store:put-doc $rm [doc [v 3]]]] [= $l [$store:open "mem://"]] [= $r [$store:fetch $l $rm]] [$store:get-doc $l $h]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[doc [v 3]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-status" class="fn">
+      <h3>store:status</h3>
+      <p class="fn-sig"><code>[$store:status]  -> element</code>  —  A snapshot of the Store's heads + object economy: docs (heads), distinct objects, the logical/distinct dedup ratio, and unflushed refs (a remote mount reports the head count only — object economy lives server-side).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [v 1]]]] [$store:status $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[status backend=mem docs=1 objects=5 logical=5 distinct=5 unflushed=1]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-mounts" class="fn">
+      <h3>store:mounts</h3>
+      <p class="fn-sig"><code>[$store:mounts]  -> element</code>  —  Enumerate the stores a store-serve daemon serves — name, backend, capability flags — tenant-filtered, with admin RBAC enforced server-side (CSRP daemon-level op). Inherently service-tier: it needs a cx-store:// handle, and on a local handle it raises CXER1709 (a local handle IS its only store; there is no daemon to enumerate).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [$store:mounts $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1709</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-config-reload" class="fn">
+      <h3>store:config-reload</h3>
+      <p class="fn-sig"><code>[$store:config-reload]  -> element</code>  —  Trigger a store-serve daemon's runtime config reload: the daemon re-reads its OWN config source (nothing rides the wire) and answers [config-reload applied=... generation=... changed=...], or refuses with CXER1711/CXER1712 verbatim; admin RBAC enforced server-side. Daemon-level like mounts — a local handle raises CXER1709 (there is no daemon config to reload).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [$store:config-reload $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1709</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-log" class="fn">
+      <h3>store:log</h3>
+      <p class="fn-sig"><code>[$store:log]  -> [sequence element]</code>  —  The ref-log: each held doc-ref is one epoch in insertion order (store-key -> doc-root). Old roots persist as objects, so this is the Store's linear history without a separate commit DAG.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [v 1]]]] [$count [$store:log $s]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-gc" class="fn">
+      <h3>store:gc</h3>
+      <p class="fn-sig"><code>[$store:gc]  -> element</code>  —  Reclaim objects no live doc-ref reaches AND make the result durable (per-substrate compaction); gc = prune + flush. A content-addressed object stays live while ANY ref reaches it, so a shared subtree survives another doc's delete.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $a [$store:put-doc $s [doc [item "x"]]]] [= $b [$store:put-doc $s [doc [item "y"]]]] [= $d [$store:delete-doc $s $a]] [$store:gc $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[gc-result reclaimed=4 objects=5]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-prune" class="fn">
+      <h3>store:prune</h3>
+      <p class="fn-sig"><code>[$store:prune]  -> element</code>  —  Reclaim objects no live doc-ref reaches (the subset of gc that drops unreachable objects without rewriting durable storage).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $a [$store:put-doc $s [doc [item "x"]]]] [= $b [$store:put-doc $s [doc [item "y"]]]] [= $d [$store:delete-doc $s $a]] [$store:prune $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[prune-result reclaimed=4 objects=5]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-rotate-kek" class="fn">
+      <h3>store:rotate-kek</h3>
+      <p class="fn-sig"><code>[$store:rotate-kek]  -> element</code>  —  Re-wrap every at-rest envelope's data key from its recorded KEK to a new tenant key (KEK rotation, store.md §9.1): payloads and content addresses untouched, atomic per object, resumable (already-current envelopes skip), fail-closed (an envelope unwrapping under neither key aborts CXER1142). Only meaningful on an encrypted store — a plaintext store raises CXER1141.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [$store:rotate-kek $s "tenant-b"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1141</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-diff" class="fn">
+      <h3>store:diff</h3>
+      <p class="fn-sig"><code>[$store:diff]  -> element</code>  —  The structural diff of two stored docs BY HASH: identical subtrees share a hash and are skipped in O(1), so the cost is O(changed), not O(size). Returns [diff [change path=... kind=modified|added|removed] ...]; an empty [diff] means identical. Read-only (the plumbing a future structural merge builds on).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $a [$store:put-doc $s [order [id 1] [amt 100]]]] [= $b [$store:put-doc $s [order [id 1] [amt 200]]]] [$store:diff $s $a $b]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[diff [change path='/order/amt/[0]' kind=modified]]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-branch" class="fn">
+      <h3>store:branch</h3>
+      <p class="fn-sig"><code>[$store:branch]  -> element</code>  —  Point a mutable named ref at a doc (branches/tags ARE git refs over the alias layer). Refuses to MOVE an existing branch that points elsewhere (CXER1114, the CAS-safe non-fast-forward reject); creating a new branch or re-pointing to its current target succeeds.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [v 1]]]] [= $br [$store:branch $s "main" $h]] [= [$store:get-alias $s "main"] $h]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-branch-force" class="fn">
+      <h3>store:branch-force</h3>
+      <p class="fn-sig"><code>[$store:branch-force]  -> element</code>  —  Move a named ref to a target UNCONDITIONALLY (the --force that skips the CAS check branch enforces).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-doc $s [doc [v 1]]]] [= $h2 [$store:put-doc $s [doc [v 2]]]] [= $b1 [$store:branch $s "main" $h1]] [= $b2 [$store:branch-force $s "main" $h2]] [= [$store:get-alias $s "main"] $h2]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
           </pre>
         </div>
       

@@ -93,10 +93,59 @@ PROGRAM evaluates to itself. The reference CLI implements this fallback so that
 `cx doc.cx` and `cx doc.cx --json|--to=…` on a prose/markup data document
 produce output byte-identical to `cx --from=cx --to=…  doc.cx`. A resource that
 parses as neither a program nor data surfaces the original program parse error.
+
+The fallback exists for markup/prose with no program intent; it MUST NOT mask
+a broken program. When the program-parse failure shows **program intent**, the
+host MUST surface the original program diagnostic and fail (non-zero exit)
+instead of falling back. Three failure classes show program intent:
+
+1. rejection of an unknown or retired `[?name]` directive — the head is
+   directive syntax, so the resource asked to be a program;
+2. a syntax error after the parser committed to a recognized program
+   construct (e.g. an infix comparison inside a recognized `[where …]`
+   clause) — the surrounding form proves program intent; and
+3. a resource whose **data reading** carries a registered program directive —
+   an eval-directive node or processing-instruction node whose name is in the
+   closed program-directive registry (`ProgramDirName` in the grammar). Such a
+   resource is program-SHAPED: whatever made the program reading fail
+   (including a lexer error raised before any directive was reached), silently
+   echoing it back as data would report success (exit 0) for a program that
+   never evaluated.
+
+The program-shape test in class 3 is performed on the data reading, so it is
+string-aware by construction: a directive mentioned inside quoted text parses
+as text content, not as a directive node. Prose documents *about* directives
+therefore keep the fallback, as do data documents whose only `[?…]` forms are
+`[?cx …]` config directives or foreign processing instructions (e.g.
+`[?xml-stylesheet …]` from an XML ingest).
 (A future program reader that gives the lexer/parser an element-body free-text
 mode would make the fallback unobservable — the program reading would simply
 accept the prose directly. The fallback is the host-level guarantee in the
 interim.)
+
+**Implicit `$doc` selection (one-source homoiconic programs).** A host MAY
+supply a separate data input alongside the program; when it does, that input
+is bound as `$doc` (and `$input`) before evaluation, and the program's own
+roots never rebind it — the caller-supplied input WINS over any in-document
+data root. (The reference CLI spells this separate data input `--data=FILE|-`,
+on both the bare run surface and its `cx eval` alias — the argv contract is
+normative in [`misc/cli.md`](../misc/cli.md).) When NO separate data input is
+supplied, the implicit
+`$doc` binds to the value of the program's first **data root** — the first
+top-level form, in source order, that is an element literal (the program
+surface of the data reading's element production). Program-directive roots
+(`[?lib …]`, `[?def …]`, and every other `[?name …]` form, known or future)
+are skipped wherever they sit — before, between, or after the data roots: a
+directive's status value (e.g. `[?lib]`'s `[result status=ok …]` import
+status) is program-internal and MUST NOT become the implicit `$doc`. When
+the resource carries no data root, `$doc` is unbound — reading `$doc`, or
+using a construct that requires the implicit document (a `[?for]` pattern
+generator's document-wide search, or a document-rooted CXPath expression —
+the `//`- and `/`-anchored PathExpr forms), raises `cx-err:CXER0001` rather
+than silently matching nothing. (This is the XPath XPDY0002 "context item
+undefined" condition mapped onto the CX error surface; a **bound** `$doc`
+whose query merely matches nothing still yields the empty node-set —
+absence, not an error.)
 
 ---
 
@@ -112,7 +161,7 @@ Grouping uses `(…)`.
 
 ### §2.2 Code examples
 
-Code blocks tagged `cx` are CX source — either inert data or executable programs (CX is homoiconic; the same syntax covers both). Code blocks tagged `out_text` are expected textual output. Examples in this document are also fixtures in [`conformance/code.txt`](../conformance/code.txt) — the fixture identifier appears in a trailing comment when relevant.
+Code blocks tagged `cx` are CX source — either inert data or executable programs (CX is homoiconic; the same syntax covers both). Code blocks tagged `out_text` are expected textual output. Examples in this document are also fixtures in [`conformance/code.cxd`](../../../conformance/code.cxd) — the fixture identifier appears in a trailing comment when relevant.
 
 ### §2.3 Normative keywords
 
@@ -135,7 +184,7 @@ identifier / QName token, string literals + the escape set, number / keyword /
 date / datetime scalar tokens, the atom token, the glued `::T` type annotation,
 structural sigils, the body-value (scalar / array) auto-typing rule, collection
 literals, and the `[` element-vs-array disambiguation — is defined ONCE,
-normatively, in [`lexicon.ebnf`](lexicon.ebnf). For every token shape and the
+normatively, in [`lexicon.ebnf`](../formal/lexicon.ebnf). For every token shape and the
 auto-typing rule, `lexicon.ebnf` is authoritative; §3.5–§3.7 below record only
 the reserved-name registries and the evaluation-bearing points that are this
 file's domain.
@@ -168,21 +217,16 @@ The reserved-NAME vocabulary below is this file's domain (the per-directive
 registry in §4.1 is canonical); `lexicon.ebnf` defers to it.
 
 Reserved directive names (the `?` form) — the closed set locked by
-§4.1: `?match`, `?for`, `?for-array`, `?for-map`, `?let`,
-`?fn`, `?def`, `?if`, `?try`, `?pipe`, `?modify`, `?map`, `?reduce`,
-`?retry`, `?timeout`, `?circuit-breaker`, `?fallback`, `?rate-limit`,
-`?bulkhead`, `?with-open`, `?with-scope`, `?lib`, `?const`,
-`?http-service`, `?service-handle`, `?http-client`, `?worker`, `?worker-handle`,
-`?channel`, `?send`, `?receive`, `?try-send`, `?try-receive`, `?close`,
-`?select`, `?stop`, `?wait-for`, `?async`, `?await`, `?await-all`,
-`?await-any`, `?await-race`, `?cancel`, `?check-cancel`, `?sleep`,
-plus the iterator combinator family (`?filter`, `?take`, `?drop`,
-`?zip`, `?enumerate`, `?chunks`, `?concat`, `?chain`, `?cycle`,
-`?scan`, `?flatten`, `?partition`, `?group-by`, `?to-sequence`,
-`?to-array`, `?to-map`, `?view`, `?views`), the error-hook /
-capability / secret family (`?with-error-hook`, `?with-caps`,
-`?secret`, `?reveal`), and the compile-time string-interpolation
-directive `?str`.
+§4.1 is exactly the set of rows in the §4.1 registry table below.
+That table is the sole normative enumeration; prose lists of
+directive names anywhere in this file are illustrative, never
+exhaustive. The registry spans the core structural and control-flow
+directives, the dynamic-construction family (§6.4.2–§6.4.4), the
+iterator combinator family, the resilience family, the concurrency
+family, the error-hook / capability / secret family, the
+inert-metadata annotation `?meta` (§4.2), and the compile-time
+string-interpolation directive `?str`. (`?try` is not in the
+registry — removed per §8.8; its former enumeration here was stale.)
 
 Reserved clause-head names (the `[name …]` form inside a directive
 body) per the per-directive registry in §4.1: `in`, `where`, `yield`,
@@ -281,12 +325,15 @@ productions added during implementation). The summary below
 shows the language at-a-glance.
 
 ```ebnf
-expr = literal | binding | path | call | pattern | directive
+expr = literal | binding | path | call | opform | pattern | directive
 binding = '$' Ident
 path = binding ( '/' Ident | '@' Ident | '.' Ident )*
 call = '[' '$' Ident arg* ']' [ '?' | '!' ]   (* head-dispatch; arg = expr | '_' (partial-app hole) *)
-        (* built-ins are pre-bound $-names called the same way; the paren form
-           Ident '(' … ')' is admitted ONLY as a predicate FunctionCall (XPath parity) *)
+        (* built-ins are pre-bound $-names called the same way; there is NO
+           paren-call form anywhere — Ident '(' … ')' is a parse error in every
+           position, CXPath predicate bodies included *)
+opform = '[' op expr* ']' (* closed reserved-operator set, bare head — §6.5 *)
+op = '+'|'-'|'*'|'/'|'='|'!='|'<'|'<='|'>'|'>='|'~'|'and'|'or'|'not'|'cast'|'union'|'intersect'|'except'
 pattern = '[' patternHead patternAttrs patternBody? ']'
 patternHead = ('**' | '*' | TypeGuard | Ident) [ binding ]
 TypeGuard = ':' Ident (* e.g. :User *)
@@ -302,7 +349,7 @@ clause = '[' ClauseHead expr* ']' (* named structured arg *)
 attribute = AttrName '=' expr (* scalar modifier *)
 bareword = AttrName (* no-arg flag *)
 literal = StringLit | NumberLit | BoolLit | AtomLit | CxLiteral
-AtomLit = ':' Ident (* :NAME, §3.6, *)
+AtomLit = ':' Ident ('.' Ident)* (* :NAME / dotted :a.b, §3.6; lexicon [L40] is the sole home *)
 CxLiteral = '[' (* CX-data per grammar.ebnf §… *) ']'
 relop = '=' | '!=' | '<' | '<=' | '>' | '>='
 ```
@@ -689,22 +736,22 @@ CXPath path values and the `[?for]` directive:
 |---|---|
 | `//user` | Path value — evaluates to matching nodes |
 | `[?for [user $u] [yield $u]]` | Pattern-generator form (§7.5) |
-| `//user[@active=true]` | Predicate in path |
+| `//user[= $_@active true]` | Predicate in path |
 | `[?for [user [email $e]] [yield $e]]` | Nested pattern |
 
 A **Path** is a first-class value kind (sixth kind per `cxdm.md` §2.8).
-`//user[@active=true]` parses to `cx.PathNode { steps: […] }`. Evaluation
+`//user[= $_@active true]` parses to `cx.PathNode { steps: […] }`. Evaluation
 produces a `Sequence` of matching nodes. Round-trips in canonical emit as
-the terse `//` form. Grammar: `grammar.ebnf` [130]–[135].
+the terse `//` form. Grammar: `grammar.ebnf` [130]–[131], [135], [159].
 
 #### §5.5.1 CXPath semantics and desugar table
 
 | Path form | Equivalent `[?for]` | Notes |
 |---|---|---|
 | `//name` | `[?for [name $n] [yield $n]]` | Descendant element by name |
-| `//name[@a=v]` | `[?for [name @a=v $n] [yield $n]]` | With attribute predicate |
+| `//name[= $_@a v]` | `[?for [name @a=v $n] [yield $n]]` | With attribute predicate |
 | `//name/child` | `[?for [name [child $c]] [yield $c]]` | Child step |
-| `count(//name)` | `count([?for [name $n] [yield $n]])` | Aggregation |
+| `[$count //name]` | `[$count [?for [name $n] [yield $n]]]` | Aggregation |
 | `//name` in `[?if]` | truthy iff sequence non-empty | EBV per `cxdm.md` §6 |
 
 CXPath aligns with XPath 3.1 on path syntax (axes, name tests,
@@ -736,24 +783,43 @@ candidate `c_i` (i = 1..N):
 5. Compute `EBV(r)`.
 6. Keep `c_i` in the output iff `EBV(r) = true`.
 
-**Atomic-predicate sugar.** The atomic predicate forms
-enumerated in `grammar.ebnf` [132a] (`AttrTest`, `INT`,
-`FunctionCall`, `BooleanExpr`, `InstanceOf`, `CastAs`, `SequenceOp`)
-are parse-time sugar over the general PredicateExpr. The desugaring
-table:
+**Homoiconic predicate bodies — the XPath-parity sublanguage is
+retired.** A predicate body is CX code. The former parse-time sugar —
+infix comparisons (`@a=v` and `!=`/`<`/`<=`/`>`/`>=`), paren function
+calls (`count(*)`, `contains(...)`), infix `and`/`or`, `instance of` /
+`cast as`, infix `union`/`intersect`/`except`, and `||` — is a parse
+error (`cx-err:CXER0100`) inside predicate bodies exactly as at every
+other expression position. No tombstone, no dual-accept (grammar.ebnf
+[132]–[134] retirement note). Built-ins are invoked head-dispatch
+(`[$count $_/*]`, `[$contains $_@name "x"]`); the set operators are
+the reserved prefix heads `[union A B]` / `[intersect A B]` /
+`[except A B]` (§6.5), valid in every expression position; `||` is
+the `[$concat …]` builtin.
 
-| Source form | Desugars to |
+**Fused brackets.** When the body is a form, the predicate's own
+brackets serve as the form's brackets — one bracket pair, never
+`[[…]]` (grammar [159a]/[159b]). An operator form fuses as
+`//user[= $_@id 991]`; a head-dispatch call fuses as
+`//user[$flagged $_]`; a directive fuses as `//user[?match $_ …]`.
+Nested subexpressions inside a fused body are ordinary
+fully-bracketed forms:
+
+```cx
+//order[and [= $_@status :open] [> $_@total 100]]
+```
+
+**Notation atoms.** Four operator-free atoms are path notation with
+defined semantics — NOT rewrite sugar; the renderer never converts
+between an atom and its general-form equivalent in either direction:
+
+| Atom | Keeps the candidate iff |
 |---|---|
-| `[@name]` | `[exists($_@name)]` |
-| `[@!name]` | `[not(exists($_@name))]` |
-| `[@name=V]` (any of `=`/`!=`/`<`/`<=`/`>`/`>=`) | `[$_@name <op> V]` |
-| `[N]` (positive integer literal) | `[$_position = N]` |
-| `[count(*) > N]` (and any bare `*` inside a predicate body) | `[count($_/*) > N]` |
-| `[fn(args)]` | `[fn(args)]` (no rewrite — the call already runs in `$_`-context) |
+| `[N]` (positive integer literal) | `$_position` = N |
+| `[@name]` | `[$exists $_@name]` |
+| `[@!name]` | `[not [$exists $_@name]]` |
+| `[name]` / `[axis::name]` | `[$exists $_/name]` / `[$exists $_/axis::name]` |
 
-The canonical renderer re-emits the terse atomic form on round-trip
-when the AST matches one of these templates; otherwise it emits the
-general `[expr]` form.
+The canonical renderer emits every predicate exactly as written.
 
 **Scope rule.** `$_` rebinds at every enclosing PredicateExpr per
 standard lexical scoping; the innermost predicate's `$_` shadows
@@ -770,7 +836,7 @@ PathExpr. `(bind $_)` is rejected with `CXER0232`
 (E_RESERVED_BIND_NAME). Worked example:
 
 ```cx
-//team (bind $t) / member[ $_@role = "lead" and count($t/member) >= 3 ]
+//team (bind $t) / member[and [= $_@role "lead"] [>= [$count $t/member] 3]]
 ```
 
 **Purity.** Every PredicateExpr body MUST be **pure**.
@@ -786,7 +852,7 @@ predicate is provably pure under the purity-inference rules.
 [?for [user @active=true [email $e]] [yield $e]]
 
 # path value in aggregation
-count(//user[@active=true])
+[$count //user[= $_@active true]]
 
 # path value in [?if] truthiness gate
 [?if //admin [then [admin-panel]] [else []]]
@@ -831,7 +897,7 @@ Bindings support full CXPath step syntax (grammar [135]):
 | `$x/axis::name` | Explicit axis traversal (any axis from [131a]) |
 | `$x/name[pred]` | Child filtered by predicate |
 | `$x/name[pred]/more` | Chained path after predicate |
-| `$x@attr` | Attribute named `attr` (value as string) |
+| `$x@attr` | Attribute named `attr` (typed value — `cxdm.md` §2.4) |
 | `$x.key` | Map-key access (when `$x` is a decoded map) |
 
 Paths chain left-to-right:
@@ -855,14 +921,17 @@ that inner value rather than the wrapping element. So for
 the read counterpart of the simplest-adequate field model (a labeled field
 is a plain child; reading it returns its content). Node-set queries — any
 path with a predicate, a descendant/wildcard/parent axis, or multiple
-matching children (`$doc/user[@active=true]/name`) — are unaffected and
+matching children (`$doc/user[= $_@active true]/name`) — are unaffected and
 return elements per the table above.
 
 **Terminal attribute unwrap.** The same simple-field-accessor rule extends
 to a path whose prefix is a pure `/name` child chain (no predicates) and
 whose final step is an attribute step `@attr`: when it resolves to a single
 focus carrying a single matching attribute, the read yields the attribute's
-**value as a string scalar** per the `$x@attr` table entry — so for
+**typed value scalar** per the `$x@attr` table entry (`cxdm.md` §2.4: the
+`@name` axis produces the attribute's typed value — an atom-typed attribute
+reads back as the atom, `kind=:active` → `:active`, never the string
+`'active'`, since atoms and strings never coerce, `cxdm.md` §5.1) — so for
 `[users [user name=Alice]]`, `$doc/user@name` reads `Alice` (not the
 node `[name "Alice"]`). Node-set attribute queries — any predicate step, or
 multiple matching foci (`$doc/item/@q`) — instead return the attribute axis
@@ -912,14 +981,16 @@ errors:
 [$load-config]! # panic on err
 ```
 
-The general CX function-call surface is exclusively `[$fn args]` —
-the homoiconic head-dispatch form. The paren-call form `name(args)`
-is **not** a general CX function-call surface; it is reserved for the
-CXPath/XPath syntactic-parity context: built-in XPath functions
-(`count(*)`, `last()`, `position()`, `contains(...)`) MAY appear in
-that paren form inside CXPath predicate bodies only (per
-`grammar.ebnf` [132b] FunctionCall). At every other expression
-position, `[$fn args]` is the only accepted form.
+The CX function-call surface is exclusively `[$fn args]` — the
+homoiconic head-dispatch form, at every expression position
+**including CXPath predicate bodies**. The paren-call form
+`name(args)` does not exist anywhere in the language: the former
+XPath-syntactic-parity carve-out (`count(*)`, `last()`, `position()`,
+`contains(...)` inside predicates) is retired, and a paren-call is a
+parse error (`cx-err:CXER0100`). The XPath positional functions are
+subsumed by the reserved predicate bindings `$_position` / `$_last`
+(§5.5.2) and the head-dispatch built-ins (`[$count $_/*]`,
+`[$contains $s $sub]`).
 
 ### §6.3a Partial application — argument holes
 
@@ -944,9 +1015,9 @@ Rules (one each):
   is the bare token `_`, distinct from the reserved context binding
   `$_` (which is never written as a bare `_`).
 
-`_` holes use the homoiconic `[$fn …]` surface — the only general
-function-call surface (§6.3). The paren-call form `name(args)` is
-XPath-built-in-only (predicate bodies, `[132b]`) and admits no holes.
+`_` holes use the homoiconic `[$fn …]` surface — the only
+function-call surface (§6.3); there is no paren-call form anywhere
+in the language.
 
 ### §6.4 Pipelines
 
@@ -1029,7 +1100,7 @@ One uniform mechanism produces a **computed name** in every name
 position — element, attribute, map key — plus the `[?modify]` operators.
 All `[head …]`; no parens.
 
-```cx
+```text
 [?element NAME-EXPR  attr=VALUE …  ITEM …]   # computed element name
 [?attr    NAME-EXPR  VALUE]                   # computed attribute (attr position only)
 [?entry   KEY-EXPR   VALUE]                   # computed map entry (inside {…} only)
@@ -1146,7 +1217,7 @@ existing eval sandbox isolation (§6.4.4), not gensym renaming.
 
 ### §6.4.4 Tree eval
 
-```cx
+```text
 [?eval TREE]
 [?eval TREE [context MAP]]
 [?eval TREE [context MAP] [opts {"max-depth": 16}]]
@@ -1228,7 +1299,7 @@ fixture; every ❌ → an error-path fixture.
 | Position \ EXPR yields | scalar | element/map (1 node) | sequence | `()` | Path/Iterator |
 |---|---|---|---|---|---|
 | `[?unquote E]` in body | ✅ | ✅ | ❌ CXER0237 (use splice) | — slot removed | — realize-first |
-| `[?unquote E]` in attr-value | ✅ | ✅ stringifies | ❌ CXER0237 | — empty value | — realize-first |
+| `[?unquote E]` in attr-value | ✅ | ❌ CXER0100 (attrs are scalar-only, §6.4.1) | ❌ CXER0237 | ❌ CXER0100 (no silent `attr=''`) | — realize-first |
 | `[?splice E]` in body/sequence | ✅ (1-elem) | ✅ (1-elem) | ✅ each in order | — nothing grafted | — realize then splice |
 | `[?splice E]` in attr-value/name | ❌ CXER0100 | ❌ CXER0100 | ❌ CXER0100 | ❌ CXER0100 | ❌ CXER0100 |
 
@@ -1266,14 +1337,13 @@ sigil); a user binding / closure named `meta-of` shadows it.
   [meta-of $p]]          # ⇒ {source: 'census', unit: :years}  — $p is still 331
 ```
 
-There is **no paren-call surface for built-ins** in general expression
-position (homoiconic invariant — every form is `[head …]`). The
-`name(args)` paren form is admitted **only** as XPath-parity
-`FunctionCall` inside CXPath predicate bodies (§6.3, grammar [132b]),
-e.g. `[case //user[count(@roles) > 1]]`. The whitespace bracket form
-`[name a b]` is **always** element construction (a data element named
-`name`), even when `name` matches a built-in — so `[first "a"]`
-constructs an element named `first`; the built-in is `[$first "a"]`.
+There is **no paren-call surface for built-ins** anywhere (homoiconic
+invariant — every form is `[head …]`), CXPath predicate bodies
+included: `[case //user[> [$count $_@roles] 1]]`. The whitespace
+bracket form `[name a b]` is **always** element construction (a data
+element named `name`), even when `name` matches a built-in — so
+`[first "a"]` constructs an element named `first`; the built-in is
+`[$first "a"]`.
 
 The signature notation `name(args)` used in the tables below documents
 **arity and argument shape only — it is not the call syntax**; the call
@@ -1287,7 +1357,7 @@ other `[head …]` is data-element construction:
 | Head form | Examples | Meaning |
 |---|---|---|
 | **Named built-in** — `[$name …]` | `[$upper $s]`, `[$count $xs]`, `[$concat "a" "b"]`, `[$substring $s 2 3]` | The `$`-sigil head-dispatch call (§6.3). A **word-named** built-in is reachable ONLY via `[$name …]`; the bare form `[name …]` is data-element construction (a data element named `name`), even when `name` matches a built-in. |
-| **Symbolic / reserved operator head** — bare `[op …]` | `[+ $a $b]`, `[- $a $b]`, `[* $a $b]`, `[/ $a $b]`, `[= $x V]`, `[!= …]`, `[< …]`, `[<= …]`, `[> $x 100]`, `[>= $u@age 18]`, `[and P Q]`, `[or P Q]`, `[not P]`, `[cast $v :int]` | A **closed set of reserved operator tokens** admitted **bare** as expression forms — they are NOT data elements and do NOT take a `$` sigil. The set is: arithmetic `+ - * /`; comparison `= != < <= > >=` (grammar [126e] `ProgramRelOp`); logical `and or not`; and `cast` (the one type-tag operator, P6 below). |
+| **Symbolic / reserved operator head** — bare `[op …]` | `[+ $a $b]`, `[- $a $b]`, `[* $a $b]`, `[/ $a $b]`, `[= $x V]`, `[!= …]`, `[< …]`, `[<= …]`, `[> $x 100]`, `[>= $u@age 18]`, `[~ $a $b]`, `[and P Q]`, `[or P Q]`, `[not P]`, `[cast $v :int]`, `[union $a $b]`, `[intersect $a $b]`, `[except $a $b]` | A **closed set of reserved operator tokens** admitted **bare** as expression forms — they are NOT data elements and do NOT take a `$` sigil. The set is: arithmetic `+ - * /`; comparison `= != < <= > >=` (grammar [126e] `ProgramRelOp`) plus the graded-similarity cognate `~` (std-lib/similar.md — 2-or-3-ary, element-valued); logical `and or not`; `cast` (the one type-tag operator, P6 below); and the set/sequence combinators `union intersect except` (formerly CXPath-predicate-only infix — now reserved prefix heads valid in every expression position; grammar [125f]/[125g]). |
 
 The distinction is **lexical**: a symbolic or reserved-keyword operator
 token is never a valid data-element name, so `[> $x 100]` is
@@ -1305,10 +1375,10 @@ of any `[head …]`, apply these in order:
 1. **Head begins with `?`** → a **directive** (`[?for …]`, `[?let …]`); see
    the reserved directive-name list in §3.5 / registry §4.1.
 2. **Head is in the closed reserved-operator set** → **bare**, no `$`:
-   the symbolic operators `+ - * / = != < <= > >= ` and the four
-   reserved operator *words* **`and` `or` `not` `cast`**. (This is the
-   complete set — §6.5 above and grammar [126e]. Nothing else is a bare
-   operator.)
+   the symbolic operators `+ - * / = != < <= > >= ` and the seven
+   reserved operator *words* **`and` `or` `not` `cast` `union`
+   `intersect` `except`**. (This is the complete set — §6.5 above and
+   grammar [125g]/[126e]. Nothing else is a bare operator.)
 3. **Head is a reserved clause-head and the form sits directly inside a
    directive body** → **bare** (`[yield …]`, `[where …]`, `[set-attr …]`,
    `[mock]`, …); see the reserved clause-head list in §3.5.
@@ -1341,6 +1411,10 @@ each folds over its FULL operand list:
 | `and` / `or` | ≥ 1 | EBV-fold, short-circuit left→right |
 | `not` | 1 | EBV negation |
 | `= != < <= > >=` | 2 | **binary**; chained comparison is NOT n-ary |
+| `~` | 2–3 | **graded** cognate of `=` (std-lib/similar.md): `[~ a b]` scores with the default similarity predicate, `[~ a b $pred]` with a supplied one. Result is a `[similar score=… band=…]` **element** (not a boolean) — truthy in a boolean position iff `band=:match`; a null/absent operand resolves to the **absence channel** (unknown ≠ different) |
+| `union` | ≥ 2 | left-fold sequence union — items of all operands, structural-duplicate-free (`eq`), first-occurrence order preserved |
+| `intersect` | ≥ 2 | left-fold — items of the FIRST operand (first-occurrence order, deduplicated) present (`eq`) in EVERY other operand |
+| `except` | ≥ 2 | left-fold — items of the FIRST operand (first-occurrence order, deduplicated) present (`eq`) in NO other operand |
 
 **Arity is enforced.** Once a reserved operator head is recognized,
 invoking it with the wrong number of operands raises `cx-err:CXER0100` —
@@ -1370,6 +1444,24 @@ skips non-numerics, AND applies XPath `fn:number` string-leniency —
 distinct and do NOT overlap: `+ - * /` are scalar folds; `$sum` / `$max`
 / `$min` / `$avg` are sequence aggregates.
 
+**Ordered comparison — numeric-strict.** The ordered comparisons
+`< <= > >=` admit exactly what bare arithmetic admits: each operand MUST
+be a single numeric (`int`/`float`) scalar, OR a single node that
+**atomizes** to one (mixed int/float promotes: `[> 30 25.5]` evaluates).
+EVERY other operand kind — a **string** (no silent lexicographic
+ordering; convert explicitly with `[cast $s :int]` / `[cast $s :float]`),
+a bool, an atom, a `date`/`datetime`/`duration`/`period` scalar (calendar
+ordering is the time module's surface — `[$time:is-before]` /
+`[$time:is-after]` — not bare `<`), an element/map/array, or a
+multi-item sequence / node-set — raises `cx-err:CXER0100` naming the
+operator and the offending operand kind. Per the reserved-operator rule
+above it is **never a data element** and never silently skipped. The
+single carve-out is **absence**: an ordered comparison with an absent
+operand (`[> () 5]`) is `false` — never satisfied, never an error (the
+same absence rule as `=`/`!=`). Equality `=`/`!=` is DIFFERENT by design
+and unchanged: cross-kind structural equality **evaluates** — `[= '30'
+30]` is `false`, `[!= '30' 30]` is `true` — no coercion, no error (§5.2).
+
 Where a built-in operates on "a sequence", the argument may be a
 top-level program sequence (a marker `__cxl_seq__` element), the
 implicit document (an unnamed element wrapper), or a single
@@ -1385,7 +1477,7 @@ unless the entry says otherwise.
 |---|---|---|
 | `count(seq)` / `length(seq)` | 1 | Integer count of items in `seq`; non-sequence scalar yields 1. |
 | `empty(seq)` | 1 | Boolean — true iff `count(seq) == 0`. |
-| `exists(seq)` | 1 | Boolean — true iff `count(seq) > 0`. Inverse of `empty(seq)`. The canonical existence test for predicates: `[@name]` and `[axis::name]` desugar to `[exists($_@name)]` / `[exists($_/axis::name)]` . Scalar argument yields true (treated as 1-item sequence). |
+| `exists(seq)` | 1 | Boolean — true iff `count(seq) > 0`. Inverse of `empty(seq)`. The canonical existence test for predicates: the notation atoms `[@name]` / `[axis::name]` are defined by `[$exists $_@name]` / `[$exists $_/axis::name]` (§5.5.2). Scalar argument yields true (treated as 1-item sequence). |
 | `first(seq)` | 1 | First item of `seq`; scalar input passes through unchanged. |
 | `last(seq)` | 1 | Last item of `seq`; scalar input passes through unchanged. |
 | `head(seq)` | 1 | Synonym for `first` (XQuery `fn:head` parity). |
@@ -1465,7 +1557,7 @@ single-sequence form.)
 
 | Built-in | Arity | Semantics |
 |---|---|---|
-| `not(x)` | 1 | Boolean negation of `x` under the standard truthiness rule (booleans → negate; integers → `x == 0`; strings → empty; sequences/elements → no items and no attrs). |
+| `not(x)` | 1 | Boolean negation of `x` under the EBV table in `cxdm.md` (booleans → negate; integers → `x == 0`; floats → `x == 0.0` (ints and floats share the numeric rule; NaN never arises — CX floats are finite-only); strings → empty; sequences → no items, a singleton reading as its one item; arrays/maps → empty; a present element or other node → always truthy, regardless of contents — presence, not emptiness). An Iterator operand has **no EBV** and raises the catchable `cx-err:CXER0100` — force the stream explicitly and test the realized value (cxdm.md EBV table). |
 | `and(a, b, …)` | ≥ 1 | Boolean — true iff every argument is truthy. Short-circuit: argument evaluation order is left-to-right. |
 | `or(a, b, …)` | ≥ 1 | Boolean — true iff at least one argument is truthy. Short-circuit: left-to-right. |
 | `eq(a, b)` | 2 | Structural equality. Two scalars are equal iff same kind and same value. Two elements are equal iff same name, attribute count, child count, and structurally-equal children + attribute values. |
@@ -1496,7 +1588,7 @@ was deliberately not adopted (locked 2026-05-23 — see ).
 | Form | Notes |
 |---|---|
 | `[cast value :type-tag]` | Canonical user-facing form (e.g. `[cast $p :int]`, `[cast "42" :int]`). `cast` is a **reserved operator head** — the one built-in with dedicated element-head syntax (it takes a `:type-tag` atom) — not a plain data element. |
-| `cast(value, :type-tag)` | **Signature notation only** — documents arity/arguments (§6.5); NOT a call surface. The paren form is admitted only as a predicate FunctionCall (§6.3, grammar [132b]), never in general expression position. |
+| `cast(value, :type-tag)` | **Signature notation only** — documents arity/arguments (§6.5); NOT a call surface. There is no paren-call form anywhere in the language (§6.3). |
 
 **Target kinds:** `:int`, `:float`, `:string`, `:bool`, `:atom`.
 
@@ -1572,7 +1664,7 @@ module-load.
 | Numeric | `sum`, `max`, `min`, `avg`, `abs`, `floor`, `ceiling`, `round`, `mod`, `div`, `idiv` |
 | Logical | `not`, `and`, `or`, `eq` |
 | Node-accessor | `name`, `local-name`, `string` |
-| Type-test / cast | `cast` (builtin — §6.5 P6), `instance of` (operator), `cast as` (operator), `exists` |
+| Type-test / cast | `cast` (reserved operator head — §6.5 P6), `exists` (the retired infix `instance of` / `cast as` operators are parse errors; kind tests use `::` type annotations and `[cast …]`) |
 | EBV / identity | EBV operator (implicit in `[?if]`, `[when …]` arms, predicates); identity hash; atom-equality |
 | Path / CXPath | CXPath evaluation over a frozen input document (the document is read-only from the predicate's perspective; the path itself is a value
 
@@ -1650,7 +1742,8 @@ cancellation (§10.5.4) and needs an explicit `[?check-cancel]` point.
 A `$binding[SliceAxes]` postfix selects a sub-sequence of the
 binding's value. The binding must be Sequence-typed (or atomizable
 to Sequence via the standard host-boundary force-materialise rule —
-Iterator and Array sources work transparently).
+Iterator and Array sources work transparently, and a `:table`-bearing
+element atomizes to its **row sequence** per D22 below).
 
 **Surface forms:**
 
@@ -1701,12 +1794,35 @@ Iterator and Array sources work transparently).
  Maps have no positional axis, so this is rejected rather than
  silently iterating entries in arbitrary order.
 
+**Table sequence view (D22, #404).** A **`:table`-bearing element** (an
+element carrying a `[table[…]]` block, grammar [29]) atomizes to its
+**row sequence** wherever a surface takes the sequence view of a value:
+slice receivers in this section, `[?for]` generator sources (§7.2), and
+the §6.5 sequence built-ins (`$count`, `$first`, `$sum` over a column
+slice, …). Each row materialises as an **ordered Map** — one entry per
+declared column, in declaration order, keyed by column name — with cell
+values as their typed scalars (an `age::int` cell is an `int`, so
+`[where [> $r.age 26]]` needs no conversion) and collection-typed cells
+as their Array / Map / Sequence items. This is the same row shape the
+bindings' Table API (`misc/table-api.md` §2: "each row is an ordered
+map") and `[$csv:parse]` (`std-lib/csv.md`) produce — one record story
+platform-wide. The sequence view is a **read projection only**: element
+identity, construction, serialization, canonical bytes, EBV (truthy by
+presence), and equality are unchanged. **CXPath does NOT navigate into
+table rows** — rows are not CXDM children (`$t//row` is `()` and
+`[$count $t/*]` is `0`, by design): comprehensions and slices are the
+query surface for tabular values; CXPath is the query surface for
+element trees.
+
 **Column-label slicing (D13).** The second axis of a multi-axis slice
 may carry **string-valued** bounds — a *column label* rather than a
 positional index — when the receiver's rows are column-addressable
 (attributed-row elements such as `[row name="A" email="a@x"]`, whose
-columns are their attributes in declaration order, or a Table API
-value).
+columns are their attributes in declaration order; **table rows**,
+whose columns are the declared `[table[…]]` header in declaration
+order (D22); or **Map rows** — `{k: v, …}` records such as
+`[$csv:parse]` rows — whose columns are their entries in entry
+order).
 
 ```cx
 $t[*, "name"] # the "name" column from every row
@@ -1716,7 +1832,9 @@ $t[1:2, "name":"email"] # cols name..email (inclusive) for rows 1-2
 - Single label → each row's matching column value. An attributed row
  resolves the label against its attributes (attribute-first); when a
  row carries no attributes the label falls back to a child element of
- that name.
+ that name. A **table row / Map row** (D22) resolves the label against
+ its entries and yields the entry's **value** (the typed cell, not a
+ wrapper element).
 - Label-range `"lo":"hi"` resolves both labels to column positions in
  the row's ordered column list and slices **inclusively** between
  them (D5 convention); a reversed range yields `` (D20).
@@ -1725,6 +1843,11 @@ $t[1:2, "name":"email"] # cols name..email (inclusive) for rows 1-2
  `cx-err:CXER0100: column-label slice requires a table or attributed-row source`.
  An unknown label in a *range* endpoint is a shape error (CXER0100);
  an unknown *single* label yields `` (a missing column).
+- A **positional** (integer) second axis against a table/Map row is
+ the OQ2 rejection (`slice on map requires positional sequence`) —
+ columns are addressed by **label**; the full axis `*` yields the
+ whole row map (`$t[2, *]` → row 2 as an ordered Map, equal to
+ `$t[2]`).
 
 **View opt-in (D8).** `[?view EXPR]` flips a slice's result from copy
 (the default) to a zero-copy **view**; `[?views BLOCK]` is the scoped
@@ -1810,7 +1933,9 @@ Iterators are produced by:
  / `[?zip]` / `[?enumerate]` / `[?take]` / `[?drop]` / `[?chain]` / `[?concat]` / `[?chunks]` / `[?cycle]`
  / `[?scan]` / `[?flatten]` / `[?partition]` / `[?group-by]` — see `stdlib.md` for the full
  catalogue. `[?concat]` flattens a sequence-of-sequences one level; `[?chain]` is its
- end-to-end alias.
+ end-to-end alias. An err-valued `[?filter]` / `[?partition]` predicate result
+ short-circuits the whole combinator and is its result — §9.2 implicit operand
+ propagation, uniform with the `[?for]` `[where …]` clause (§7.2).
 - Explicit lift of a Sequence to an Iterator (a `to-iterator` directive
  is **planned, not yet in the §4.1 registry** — tracked post-W3)
 
@@ -1908,6 +2033,42 @@ operators transform the yielded sequence:
  **MUST** be paired with `[par]`. Using `[ordered]` without `[par]`
  raises `cx-err:CXER0100` at parse time.
 
+**Table sources (D22, #404).** A generator source whose value is a
+`:table`-bearing element iterates the table's **row sequence** (§6.6
+D22): `[in $r $t]` binds `$r` to one **ordered Map per row** — entries
+keyed by the declared column names, in declaration order, cell values
+as their typed scalars (collection cells as their Items). Guards and
+yields access cells with map-key notation (`$r.age`), and because
+cells carry their declared column types, `[where [> $r.age 26]]`
+compares numerically with no conversion step. Row order is the
+table's declaration order; an empty table (header, zero rows)
+contributes zero iterations. `[?for]` over table rows composes with
+every clause in this section (`[where]`, `[order-by]`, `[group-by]`,
+`[limit]`, `[par]`, …) — this, plus D13/D22 slicing, **is** the
+in-language query surface for tabular values (CXPath does not
+navigate into rows; §6.6 D22).
+
+```cx
+[; $t holds [users [table[name::string age::int]] alice 30  bob 25] ;]
+[?for [in $r $t] [where [> $r.age 26]] [yield $r.name]]
+[; → ('alice') ;]
+```
+
+**Err-valued guards and predicates propagate (normative).** A `[where …]`
+guard or `[takewhile P]` / `[dropwhile P]` predicate that evaluates to an
+`[err]` value is never EBV-coerced (an err element would read truthy — a
+present element always does): it short-circuits the whole comprehension, and that `[err]`
+is the comprehension's result — per §9.2 implicit operand propagation,
+uniformly with operators, calls, and the `[?if]` condition (§8.4). This
+holds identically under `[par]` (§7.3; the earliest-item err wins, matching
+sequential first-failure order) and `[stream]` (§7.4; items already emitted
+stay emitted — the err terminates the remaining stream). A predicate that
+should *tolerate* err-producing probes over heterogeneous items must handle
+the err explicitly (e.g. `[?fallback … [recover-with false]]` or an
+absence-returning lookup). Rationale: err→skip semantics silently filter
+everything out under a broken predicate — the exact failure class §9.2
+exists to prevent (#348).
+
 **`$_position` in yield bodies.** Inside the yield
 clause body, the reserved sigil `$_position` resolves to the
 1-based index of the item being **emitted** — the OUTPUT position.
@@ -1942,21 +2103,47 @@ per-item shaping.
 
 ### §7.3 Parallel evaluation (`[par]`)
 
-`[par]` parallelizes the outermost generator. Cardinality MUST be
-known finite. Output order is unspecified unless `[ordered]` is also
-present. Errors raised during parallel evaluation are collected and
-yielded in input order; the optional `[fail-fast]` clause (grammar
-`[129r]`) reverts to short-circuit-on-first-`[err]` behavior. Without
-`[par]`, `[fail-fast]` is a no-op (sequential evaluation already
-short-circuits).
+`[par]` parallelizes the outermost generator across a **bounded worker pool**
+of at most W workers (#94): `[par]` = default `W = min(4, ncpu)`, `[par N]` =
+`W = N` (N ≥ 1), `[par max]` = `W = ncpu`. An `N < 1` / non-integer / non-`max`
+token is a parse error (`cx-err:CXER0100`); an explicit `N > 64×ncpu` is the
+fail-loud sanity cap (`cx-err:CXER0153`), never silently clamped. The inner
+generators of a multi-source comprehension run sequentially within each worker —
+only the outermost loop is parallel. Cardinality MUST be known finite. Output
+order is unspecified unless `[ordered]` is also present (which reassembles source
+order). `take` / `drop` / `limit` are applied to the assembled result.
+Order-dependent shapes — `takewhile` / `dropwhile`, a `$_position` reference, or
+a streaming/`Iterator` generator source — evaluate **sequentially** (the bound
+is on the parallel path only; correctness is preserved). Errors raised during
+parallel evaluation surface the earliest-input-index failure; the optional
+`[fail-fast]` clause (grammar `[129r]`) reverts to short-circuit-on-first-`[err]`
+behavior. Without `[par]`, `[fail-fast]` is a no-op (sequential evaluation
+already short-circuits).
+
+**Degree of concurrency — one spelling (#95).** "How many at once" has a single
+canonical surface: **`[par N]` / `[par max]`** (default `min(4, ncpu)`, fail-loud
+`CXER0153` cap). The other concurrency constructs are deliberately *not* given a
+redundant width:
+- **`[?worker]` / `[?async]`** are **single-task** primitives (one named task /
+  one future), not pools — there is no "how many at once" on a single task. To
+  run a bounded number of tasks concurrently, compose them under `[par N]` —
+  e.g. `[?for [in $t $tasks] [yield [run $t]] [par N]]` or
+  `[?map $tasks [using …] [par N]]`. The pool/degree lives in `[par N]`.
+- **`[?channel buffer=N]`** is a **queue depth** (how many items may sit
+  enqueued), a genuinely different quantity from worker count — left as `buffer=`.
+- **HTTP listener workers** stay the **`CX_HTTP_N`** env var (#97), *not* source
+  syntax: worker count there is deploy-time ops config (SO_REUSEPORT fds, accept
+  fairness), intentionally excluded from the in-source degree spelling.
 
 **Purity is the parallelization license (normative note).** A `pure`
 computation (§6.5.1) is **safe to evaluate in parallel and to reorder** — by the
 effect-totality lemma it has no capability effect and no shared mutable state, so
 there are **no effect races**. The accurate keystone: *pure functions compose
 (`cx-stdlib/fp`) and are provably effect-free (§6.5.1), hence free of effect-races
-under parallel evaluation.* `cx lsp` emits `CXLS005` (hint) when a `[par]` body
-calls an `impure` builtin without a `[?bulkhead]` wrap or explicit ordering.
+under parallel evaluation.* (`[par]` runs a **bounded** worker pool — `[par N]`
+/ `[par max]`, default `min(4, ncpu)` — so an impure body's fan-out is capped by
+the width, not unbounded; the retired `CXLS005` "wrap in `[?bulkhead]`" hint no
+longer applies, #94.)
 **Caveats (do not overclaim):** purity does **not** give *free cancellation* — a
 pure CPU loop does not observe cooperative cancellation (§10.5.4) and needs an
 explicit `[?check-cancel]` point; nor does it give retry/replay idempotence in
@@ -2035,14 +2222,14 @@ branches and `[?let]` bodies). The body MAY perform capability-gated
 effects; the accumulator is carried as a parameter:
 
 ```cx
-; unbounded effect loop (the device-reader case): O(1) stack, no growth
+# unbounded effect loop (the device-reader case): O(1) stack, no growth
 [?def read-loop ($conn)
  [?let [= $chunk [read $conn 4096]]
   [?if [eof? $chunk]
    [then ()]
    [else [?do [publish $store $chunk] [read-loop $conn]]]]]]
 
-; bounded count with a carried accumulator
+# bounded count with a carried accumulator
 [?def count-up ($n $acc)
  [?if [= $n 0] [then $acc] [else [count-up [- $n 1] [+ $acc 1]]]]]
 ```
@@ -2061,11 +2248,11 @@ included), and the result is sunk without buffering — an O(1) live set
 even over an unbounded generator with a `[take …]`/`[takewhile …]` bound:
 
 ```cx
-; effect-for-each, streaming, O(1) live set at top level
+# effect-for-each, streaming, O(1) live set at top level
 [?for [in $x $events] [yield [emit $x]]]
 
-; over a generator, bounded
-[?for [in $line [$iterate next-line $start]] [takewhile [some? $line]]
+# over a generator, bounded
+[?for [in $line [$iterate next-line $start]] [takewhile [!= $line null]]
  [yield [log $line]]]
 ```
 
@@ -2190,8 +2377,7 @@ clause-head as `[?for]` — one guard keyword across all constructs.
 # multi-shape dispatch
 [?match $node
  [case [prose $p] [p $p]]
- [case [code $c] [pre $c]]
- [else ]]
+ [case [code $c] [pre $c]]]
 
 # scalar dispatch
 [?match $status
@@ -2230,7 +2416,22 @@ Evaluates `cond` to a boolean (per [`cxdm.md` §6](cxdm.md) EBV).
 On truthy, yields `thenExpr`. On falsy, yields `elseExpr` if present,
 otherwise yields the empty sequence.
 
-**Errors:** `cx-err:CXER0100` for non-coercible `cond`.
+An `[err]` condition is never EBV-coerced: it short-circuits the
+conditional and is its result, per §9.2 implicit operand propagation
+(an err element would otherwise read truthy — a present element always
+does). To
+*branch on* an err instead of propagating it, dispatch with `[?match]`
+(whose scrutinee slot is the §9.2-exempt boundary, §8.2) or recover
+with `[?else]` / `[?fallback]`.
+
+**Errors:** `cx-err:CXER0100` for non-coercible `cond`;
+`cx-err:CXER0001` for a body child (after `cond`) that is not a
+`[then …]` / `[else …]` clause. The body is **fail-closed**: a bare
+positional branch expression (`[?if C 'a' 'b']`) and a typo'd clause
+name (`[?if C [thn 'a']]`) are each rejected loudly, naming the
+offending child — never a silent `()` (which would be
+indistinguishable from a legitimate falsy-with-no-else outcome).
+This mirrors `[?let]`'s rejection of a malformed binding clause.
 
 ### §8.5 `[?let]` — local binding
 
@@ -2348,7 +2549,7 @@ same mechanism as `case`/`when`/`else` in `[?match]`). The vocabulary is
 ```cx
 [?pipe $order
   validate
-  [tap [$log:info "validated" {id: _/@id}]]   # _ = the value; logs its id, order flows on
+  [tap [$log:info "validated" {id: $_@id}]]   # $_ = the value; logs its id, order flows on
   charge-card
   ship]
 ```
@@ -2442,9 +2643,9 @@ for `[using …]` evaluators that fail to produce a value
 
 **Pipeline composition** (multi-step updates, §6.4):
 ```cx
-$doc
- | [?modify //user/@status [set "active"]]
- | [?modify //user[@banned=true] [delete]]
+[?pipe $doc
+  [?modify //user/@status [set "active"]]
+  [?modify //user[= $_@banned true] [delete]]]
 ```
 
 **Errors:**
@@ -2496,7 +2697,7 @@ Applies `fn` to each item in `xs`, returning a sequence of results.
 
 **Visualization (§10.1.2):** sequential form renders as a single chained arrow `xs → fn → out`; `[par]` form renders as parallel branches with merge node; `[par] [ordered]` adds an order-preservation-buffer node before merge.
 
-**Bounded concurrency:** default `[par]` is unbounded (one spawned worker per input). To cap fan-out, wrap the `[using …]` body in `[?bulkhead max-concurrent=K]` — see §10.2.6 for the composition recipe. `cx lsp` emits `CXLS005` (hint) when `[par]` is used without a `[?bulkhead]` wrap.
+**Bounded concurrency (#94):** `[par]` owns its width — `[par]` runs a bounded pool of `min(4, ncpu)` workers by default, `[par N]` caps it at `N` (N ≥ 1), `[par max]` at `ncpu`. An `N < 1` / non-integer / non-`max` token is a parse error (`cx-err:CXER0100`); an explicit `N > 64×ncpu` is the fail-loud sanity cap (`cx-err:CXER0153`), never silently clamped. (`[?bulkhead]` is no longer the concurrency-bounding mechanism — it is demoted to an experimental resilience primitive; the old `CXLS005` "wrap in bulkhead" hint is retired.)
 
 ### §8.10.6 `[?reduce]` — sequential / parallel reduce
 
@@ -2536,7 +2737,7 @@ Folds `xs` into a single value by repeatedly applying the binary `fn` starting f
 
 **Visualization (§10.1.2):** sequential form renders as a chained `($acc, $x) → acc'` box sequence; `[par]` form renders as a tree-split reduction with pairwise combine nodes.
 
-**Bounded concurrency:** default `[par]` is unbounded (one spawned worker per input chunk). To cap fan-out, wrap the `[using …]` body in `[?bulkhead max-concurrent=K]` — see §10.2.6 for the composition recipe. `cx lsp` emits `CXLS005` (hint) when `[par]` is used without a `[?bulkhead]` wrap.
+**Bounded concurrency (#94):** `[par]` owns its width — `[par]` chunks into `min(4, ncpu)` workers by default, `[par N]` into `N` (N ≥ 1), `[par max]` into `ncpu`. An `N < 1` / non-integer / non-`max` token is a parse error (`cx-err:CXER0100`); an explicit `N > 64×ncpu` is the fail-loud sanity cap (`cx-err:CXER0153`), never silently clamped. (`[?bulkhead]` is no longer the concurrency-bounding mechanism — it is demoted to an experimental resilience primitive; the old `CXLS005` "wrap in bulkhead" hint is retired.)
 
 ### §8.10.7 `[?with-open]` — scoped-resource RAII
 
@@ -2585,10 +2786,10 @@ single-binding `[?with-open]`s, sugared flat — opens are left-to-right,
 closes are **LIFO**. There is no parallel-open form.
 
 ```cx
-[?with-open (io/open "/var/log/app.log" "r") $f
- [?for [in $line (io/line-iter $f)]
- [where [$strings:contains $line ERROR]]
- [yield (json/parse $line)]]]
+[?with-open [$io:open "/var/log/app.log" "r"] $f
+ [?for [in $line [$io:line-iter $f]]
+ [where [$strings:contains $line "ERROR"]]
+ [yield [$json:parse $line]]]]
 ```
 
 **Guaranteed close:** when the body's scope exits — for
@@ -2656,10 +2857,10 @@ resource, `[?with-scope]` restores by popping a dynamic context.
 - `body+` (required, trailing positional): one or more `ProgramExpr`s evaluated in order; the **last** expression's value is the directive's result. An empty body raises `cx-err:CXER0100` at parse.
 
 ```cx
-[?with-scope {request-id "abc123" user-id 42}
- [log/info "processing started"] ; carries request-id + user-id
- [?http-client ...]
- [log/info "processing done"]] ; same fields, no re-passing
+[?with-scope {request-id: "abc123" user-id: 42}
+ [$log:info "processing started"] # carries request-id + user-id
+ [?http-client target=$url method="get"]
+ [$log:info "processing done"]] # same fields, no re-passing
 ```
 
 **Dynamic extent, not lexical:** the active context is
@@ -2725,35 +2926,33 @@ in §10. This section's reference is for completeness only.
 `[?str]` is the **compile-time** string-interpolation directive: it
 takes a single string literal and produces a `string` by substituting
 each `{…}` **interpolation hole** with the rendered value of the
-binding-path expression inside it. It is the scope-aware companion to
+expression inside it. It is the scope-aware companion to
 the runtime `cx-stdlib/strings` `format` function — `[?str]` resolves
 `$`-bindings in the **enclosing lexical environment** at evaluation
 time and is type-checked against them, whereas `format` substitutes a
 template loaded at runtime (`spec/std-lib/strings.md` §8).
 
-**Hole body — binding-paths only.** What is admitted inside `{…}` is a
-CXPath binding-path expression (`ProgramBinding` / `ProgramPath`,
-`grammar.ebnf [124]`): a bare `$binding`, a path navigation
-(`$x/child`), or a filtered query (`$x//y[@pred]`). Full program
-calls inside a hole are **not** currently in scope — bind first, then
-interpolate:
-
-```
-[?let [= $upper [$strings:upper $name]]
-  [?str "Hello {$upper}"]]
-```
+**Hole body — any expression (#66).** What is admitted inside `{…}` is
+**any program expression**: a bare `$binding`, a path navigation
+(`$x/child`), a filtered query (`$x//y[@pred]`), arithmetic
+(`{[+ $a $b]}`), or a call (`{[$strings:upper $name]}`). The hole is
+re-parsed through the program parser and evaluated in the enclosing
+scope; the *result* must be a scalar (see Rendering). (The earlier
+binding-paths-only restriction is lifted — `[?str "up={[$strings:upper $name]}"]`
+now works directly, no intermediate `[?let]` needed. One limit: a hole
+cannot contain a literal `}`, since the template scan stops at the first
+`}` — wrap such cases in a bound value.)
 
 **Rendering.** Each hole's value is rendered to text the same way a
 scalar renders in canonical emit (`canonical.md`): a `string` is its
 characters, other scalars their canonical lexical form. A hole whose
 expression resolves to a non-scalar (element / sequence / map) raises
-`cx-err:CXER0100` at parse time when statically determinable, else the
-directive's evaluation raises it. A `$`-binding not in scope is the
+`cx-err:CXER0100` at evaluation. A `$`-binding not in scope is the
 ordinary unbound-binding error.
 
 **Literal braces.** `{{` and `}}` denote literal `{` and `}` in the
 template text. An unbalanced `{`/`}`, an empty hole `{}`, or a hole
-body that is not a binding-path (e.g. a call) is a malformed directive
+body that fails to parse as an expression is a malformed directive
 shape and raises `cx-err:CXER0100` (PARSE_ERROR) at parse time.
 
 `[?str]` introduces no new `CXER` code of its own; it requires no
@@ -2993,7 +3192,14 @@ operand. This holds **uniformly** for every operand-consuming form: a
 head-dispatch call `[$fn … [err …] …]` AND an operator-element `[= a [err …]]`,
 `[+ [err …] 1]`, `[< [err …] 0]`, `[and [err …] x]` alike. The first err-valued
 operand short-circuits the form and is yielded as its result (left-to-right),
-rather than being compared, atomized, or coerced. To *inspect* an err instead of
+rather than being compared, atomized, or coerced. **Guard and predicate slots
+are operand-consuming forms** and follow the same rule (#348): the `[?if]`
+condition (§8.4), `[?match]` `[when …]` conditions and case-level `[where …]`
+guards (§8.2), `[?filter]` / `[?partition]` predicate results (incl. the
+head-dispatch `[$filter]` twin, §6.3), and the `[?for]` `[where …]` /
+`[takewhile …]` / `[dropwhile …]` clauses (§7.2) — an err-valued guard is
+never EBV-coerced or skip-coerced; it short-circuits the whole form and is
+its result. To *inspect* an err instead of
 propagating it — read its `@code`, compare it, branch on it — pass it to
 `[?match]` (whose scrutinee slot is a §9.2-exempt boundary, §8.2), `[?else]`, or
 `[?fallback]`, or bind it first (`[?let [= $e EXPR] …]`) and use path navigation,
@@ -3126,8 +3332,9 @@ code (CXER0260 — CANCELLED). The range is split: Cancellation
 narrows to CXER0260..CXER0269 (with 9 reserved codes for future
 cancellation-related growth at CXER0261..CXER0269), and a new host-
 capability / runtime-environment range claims CXER0270..CXER0279, of which
-CXER0270 (WALL_SLEEP_UNSUPPORTED_IN_HOST) and CXER0271 (E_CAP_DENIED,
-`security.md`) are allocated. No existing wire code is renumbered.
+CXER0270 (WALL_SLEEP_UNSUPPORTED_IN_HOST), CXER0271 (E_CAP_DENIED,
+`security.md`), and CXER0272 (E_STACK_EXHAUSTED — the evaluator's native-stack
+headroom guard; see §9.5) are allocated. No existing wire code is renumbered.
 
 **Range amendment — Futures + retired include range.** The
 original Futures allocation (CXER0240–CXER0259) used only two codes
@@ -3200,6 +3407,7 @@ symbolic names used in §§5–10 error tables and their wire codes.
 | CANCELLED | `cx-err:CXER0260` | Async | Operation observed cancellation |
 | WALL_SLEEP_UNSUPPORTED_IN_HOST | `cx-err:CXER0270` | Host capability | Bare `[?sleep]` in wasm host without `_cx_wasm_set_wall_sleep(true)` opt-in |
 | E_CAP_DENIED | `cx-err:CXER0271` | Host capability | Operation requires a capability absent from the active set (`security.md` §4); carries `capability=` + `resource=` |
+| E_STACK_EXHAUSTED | `cx-err:CXER0272` | Host capability | Non-tail evaluation recursion neared the current thread's native-stack limit; the evaluator raises this catchable value-form err (recoverable per §9.1) with headroom to spare instead of ever crashing. Tail calls are trampolined and never trigger it; rewrite the hot recursion tail-recursively, iterate with `[?for]`/`[?reduce]`, or raise the host stack limit |
 | RENDER_FAILED | `cx-err:CXER0280` | Visualization | Renderer could not produce output |
 | UNRENDERABLE_DIRECTIVE | `cx-err:CXER0281` | Visualization | Directive shape outside §10.1.2 locked render rules |
 | E_DEF_NOT_TOP_LEVEL | `cx-err:CXER0204` | Module system | `[?def]` written inside an expression / function body |
@@ -3568,6 +3776,15 @@ implementation **MUST** issue `[?cancel]` to `BODY` (cooperative per
 evaluated if present; otherwise
 `[err code=cx-err:CXER0141 elapsed=DURATION]`.
 
+> **Implementation status (honest, #96):** the deadline is enforced against
+> **logical time** — a `[?sleep DUR mock]` in `BODY` advances the clock and trips
+> the timeout. A body that blocks on **real wall-clock** time (a bare
+> `[?sleep DUR]`, a blocking syscall) is **not** interrupted today: it runs to
+> completion and its value is returned even past DURATION, because real-time
+> cooperative cancellation requires the production scheduler (§10.5.4), which is
+> not yet wired on the default eval path. Do not rely on `[?timeout]` as a
+> production deadline against real-time-blocking work until that lands.
+
 #### §10.2.3 `[?circuit-breaker]`
 
 ```
@@ -3647,20 +3864,24 @@ Bounds concurrent invocations. If `max-concurrent` permits are in
 use and the `queue` is full, returns `[err code=cx-err:CXER0152
 max=INT]`. Queued requests wait FIFO for an available concurrency permit.
 
-**Composition with `[?map [par]]` / `[?reduce [par]]`.** Default
-`[par]` spawns one worker per input item (unbounded fan-out). To
-bound concurrency, wrap the `[using …]` body in `[?bulkhead]`:
+> **EXPERIMENTAL — implementation status (honest, #96).** Only the
+> immediate-reject path is production-real (`CXER0152` when saturated). The two
+> distinctive features are not: (1) the bounded `queue=`/backpressure (FIFO
+> wait-for-slot) engages **only under the cooperative scheduler**
+> (`[?test-concurrent]`); in ordinary eval and the real `spawn`/reactor paths a
+> saturated bulkhead immediately rejects, it does not queue. (2) the slot
+> acquire is a non-atomic read-modify-write, so the cap is **not reliably
+> enforced under real thread contention** (a shared named bulkhead across
+> parallel workers can exceed `max-concurrent` via lost updates). For production
+> load-shedding prefer `[?rate-limit]` (§10.2.5) or a buffered `[?channel]`.
 
-```cx
-[?map xs [using [?fn ($x) [?bulkhead max-concurrent=8 [$process $x]]]]
- [par]]
-```
-
-Multiple parallel workers at the same source-text `[?bulkhead]`
-share its in-flight + queue state per §10.2.7 — the bulkhead caps
-total concurrency across all workers, not per-worker. See D14 + §8.10.5 (`[?map]`) and §8.10.6 (`[?reduce]`). `cx lsp` emits
-`CXLS005` (hint) when `[?map [par]]` / `[?reduce [par]]` has no
-`[?bulkhead]` wrap.
+**Not the `[par]` bounding mechanism (#94).** `[par]` now owns its width as a
+bounded worker pool — `[par N]` / `[par max]`, default `min(4, ncpu)` — so a
+`[using …]` body no longer needs a `[?bulkhead]` wrap to cap fan-out, and the
+old `CXLS005` "wrap in bulkhead" lint is retired. A same-source-text
+`[?bulkhead]` shared across parallel workers still shares its in-flight + queue
+state per §10.2.7 (subject to the contention caveat above). See §8.10.5
+(`[?map]`) and §8.10.6 (`[?reduce]`).
 
 #### §10.2.7 Common parameters
 
@@ -4009,9 +4230,9 @@ with a future value:
 
 ```cx
 [future id=ID state=STATE created=INSTANT
- value=VALUE ; present when state = done
- [cause [err ...]] ; present when state = failed
- cancel-reason=STRING] ; present when state = cancelled
+ value=VALUE # present when state = done
+ [cause [err ...]] # present when state = failed
+ cancel-reason=STRING] # present when state = cancelled
 ```
 
 Future state machine:
@@ -4245,7 +4466,7 @@ principle).
 
 ### §11.1 Conformance suite
 
-The CX code conformance suite is [`conformance/code.txt`](../conformance/code.txt).
+The CX code conformance suite is [`conformance/code.cxd`](../../../conformance/code.cxd).
 Every directive, every parameter, and every error code in this
 specification MUST have at least one fixture exercising it. Every
 example in this spec MUST be a fixture.
@@ -5061,7 +5282,7 @@ benefit from archive packaging).
 When the runtime ships, extraction defaults to **on disk**, with
 opt-in **in-memory** mode via the per-import modifier
 `[?lib 'foo' in-memory]` or the global flag
-`cx run --in-memory ...`.
+`cx FILE --in-memory ...`.
 
 #### §12.4.3 Manifest — `cx.pkg`
 

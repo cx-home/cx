@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a class="active" href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -128,10 +133,10 @@
     <section id="tp-3">
       <h2>3. Read an attribute — @name</h2>
       
-        <p>`@name` is a path expression for the attribute named `name`. Prints "Margherita".</p>
+        <p>`@name` after a path step selects the attribute named `name`. Prints "Margherita".</p>
         <pre>
           <code class="language-cx">[pizza name=Margherita]
-         @name</code>
+         //pizza/@name</code>
         </pre>
       
     </section>
@@ -148,30 +153,33 @@
     <section id="tp-5">
       <h2>5. Inside body text</h2>
       
-        <p>A directive sits inside text. The rest stays as written.</p>
+        <p>A `[?str]` template drops a computed value into text. The rest stays as written.</p>
         <pre>
           <code class="language-cx">[pizza name=Margherita]
-         [receipt Thanks for ordering @name!]</code>
+         [?let [= $p [$first //pizza]]
+           [receipt [?str 'Thanks for ordering {$p@name}!']]]</code>
         </pre>
       
     </section>
     <section id="tp-6">
       <h2>6. Inside an attribute value</h2>
       
-        <p>Path expressions evaluate in attribute-value position via `[?str …]`. One mechanism, two positions.</p>
+        <p>Expressions evaluate in attribute-value position via `[?str …]`. One mechanism, two positions.</p>
         <pre>
           <code class="language-cx">[user id=42 name=Joe]
-         [a href=[?str "/u/{@id}/profile"] View [?str "{@name}'s profile"]]</code>
+         [?let [= $u [$first //user]]
+           [a href=[?str '/u/{$u@id}/profile'] [?str "View {$u@name}'s profile"]]]</code>
         </pre>
       
     </section>
     <section id="tp-7">
-      <h2>7. Several on one line</h2>
+      <h2>7. Several holes in one template</h2>
       
-        <p>Each expression evaluates independently.</p>
+        <p>A template can carry any number of holes.</p>
         <pre>
           <code class="language-cx">[pizza name=Margherita price=12]
-         [line @name — @price€]</code>
+         [?let [= $p [$first //pizza]]
+           [line [?str '{$p@name} — {$p@price}€']]]</code>
         </pre>
       
     </section>
@@ -221,17 +229,17 @@
         <p>Walks siblings to the right of the matched node.</p>
         <pre>
           <code class="language-cx">[row [cell n=1] [cell n=2] [cell n=3]]
-         [?for [in $x //cell[@n=1]/following-sibling::*] [yield [?str "{$x/@n};"]]]</code>
+         [?for [in $x //cell[= $_@n 1]/following-sibling::*] [yield [?str "{$x/@n};"]]]</code>
         </pre>
       
     </section>
     <section id="tp-13">
       <h2>13. Predicate filter — [@attr=value]</h2>
       
-        <p>Brackets inside path expressions are predicates, not new elements.</p>
+        <p>Brackets inside path expressions are predicates — prefix code over the context node `$_`.</p>
         <pre>
           <code class="language-cx">[menu [pizza name=Margherita] [pizza name=Hawaiian]]
-         //pizza[@name='Hawaiian']/@name</code>
+         //pizza[= $_@name 'Hawaiian']/@name</code>
         </pre>
       
     </section>
@@ -241,17 +249,17 @@
         <p>Wrap a value in a call form to apply a function.</p>
         <pre>
           <code class="language-cx">[pizza name=margherita]
-         [$upper @name]</code>
+         [?let [= $p [$first //pizza]] [$upper $p@name]]</code>
         </pre>
       
     </section>
     <section id="tp-15">
       <h2>15. Default — fall back when missing</h2>
       
-        <p>Graceful fallback; no exception.</p>
+        <p>`[?else EXPR DEFAULT]` yields EXPR unless it is absent (or an error) — graceful fallback, no exception.</p>
         <pre>
           <code class="language-cx">[pizza name=Mystery]
-         [$default @price 0]</code>
+         [?else //pizza/@price 0]</code>
         </pre>
       
     </section>
@@ -261,7 +269,9 @@
         <p>Inside-out: trim, then upper.</p>
         <pre>
           <code class="language-cx">[pizza name='  margherita  ']
-         [$upper [$trim @name]]</code>
+         [?lib 'cx-stdlib/strings']
+         [?let [= $p [$first //pizza]]
+           [$upper [$strings:trim [$string $p@name]]]]</code>
         </pre>
       
     </section>
@@ -271,16 +281,17 @@
         <p>Counts characters. Prints 10.</p>
         <pre>
           <code class="language-cx">[pizza name=Margherita]
-         [$string-length @name]</code>
+         [?let [= $p [$first //pizza]] [$string-length $p@name]]</code>
         </pre>
       
     </section>
     <section id="tp-18">
       <h2>18. Today's date</h2>
       
-        <p>`time/now`, `time/now-dt`, `time/now-time` from the `cx-stdlib/time` module.</p>
+        <p>`[$time:now]` and `[$time:today]` from the `cx-stdlib/time` module (clock capability — grant `--allow-clock`).</p>
         <pre>
-          <code class="language-cx">[time/now-date]</code>
+          <code class="language-cx">[?lib 'cx-stdlib/time']
+[$time:today]</code>
         </pre>
       
     </section>
@@ -290,7 +301,9 @@
         <p>Same result as composed filters, read top-down instead of inside-out.</p>
         <pre>
           <code class="language-cx">[pizza name='  margherita  ']
-         [?pipe @name [$trim _] [$upper _]]</code>
+         [?lib 'cx-stdlib/strings']
+         [?let [= $p [$first //pizza]]
+           [?pipe [$string $p@name] [$strings:trim] [$upper]]]</code>
         </pre>
       
     </section>
@@ -300,7 +313,8 @@
         <p>Reads as "take name, then lower it". The value threads through each bare stage; `_` is the threaded value.</p>
         <pre>
           <code class="language-cx">[pizza name=MARGHERITA]
-         [?pipe @name [$lower _]]</code>
+         [?let [= $p [$first //pizza]]
+           [?pipe $p@name [$lower]]]</code>
         </pre>
       
     </section>
@@ -310,7 +324,8 @@
         <p>Join strings with `[$concat …]`.</p>
         <pre>
           <code class="language-cx">[user first=Ada last=Lovelace]
-         [$concat @first ' ' @last]</code>
+         [?let [= $u [$first //user]]
+           [$concat $u@first ' ' $u@last]]</code>
         </pre>
       
     </section>
@@ -329,7 +344,8 @@
         <p>Three clauses: condition, [then …], [else …].</p>
         <pre>
           <code class="language-cx">[pizza stock=0]
-         [?if [> @stock 0] [then in stock] [else out of stock]]</code>
+         [?let [= $p [$first //pizza]]
+           [?if [> $p@stock 0] [then 'in stock'] [else 'out of stock']]]</code>
         </pre>
       
     </section>
@@ -339,7 +355,8 @@
         <p>Same semantics, named clause children read clearly.</p>
         <pre>
           <code class="language-cx">[pizza stock=5]
-         [?if [> @stock 0] [then in stock] [else out of stock]]</code>
+         [?let [= $p [$first //pizza]]
+           [?if [> $p@stock 0] [then 'in stock'] [else 'out of stock']]]</code>
         </pre>
       
     </section>
@@ -349,7 +366,8 @@
         <p>A false condition yields the empty sequence — `[else …]` is optional.</p>
         <pre>
           <code class="language-cx">[pizza featured=true]
-         [?if @featured [then ★ featured!]]</code>
+         [?let [= $p [$first //pizza]]
+           [?if $p@featured [then '★ featured!']]]</code>
         </pre>
       
     </section>
@@ -369,11 +387,12 @@
         <p>Use multi-arm `[?match]` with predicate-only `[when …]` clauses.</p>
         <pre>
           <code class="language-cx">[pizza stock=2]
-         [?match
-           [when [> @stock 100] plenty]
-           [when [> @stock 10]  some]
-           [when [> @stock 0]   last few]
-           [else                sold out]]</code>
+         [?let [= $p [$first //pizza]]
+           [?match
+             [when [> $p@stock 100] 'plenty']
+             [when [> $p@stock 10]  'some']
+             [when [> $p@stock 0]   'last few']
+             [else                  'sold out']]]</code>
         </pre>
       
     </section>
@@ -383,7 +402,7 @@
         <p>The `[in $v SRC]` clause introduces the loop variable and source.</p>
         <pre>
           <code class="language-cx">[pizza [topping cheese] [topping basil] [topping oil]]
-         [?for [in $t //topping] [yield [?str "{$t/@name};"]]]</code>
+         [?for [in $t //topping] [yield [?str '{[$text $t]};']]]</code>
         </pre>
       
     </section>
@@ -393,7 +412,7 @@
         <p>Drop the variable to bind `$_` automatically for each iteration.</p>
         <pre>
           <code class="language-cx">[pizza [topping cheese] [topping basil] [topping oil]]
-         [?for [in //topping] [yield [?str "{$_/@name};"]]]</code>
+         [?for [in //topping] [yield [?str '{[$text $_]};']]]</code>
         </pre>
       
     </section>
@@ -413,7 +432,7 @@
         <pre>
           <code class="language-cx">[shop [pizza name=Margherita [topping cheese] [topping basil]]]
          [?for [in $p //pizza] [yield
-           [grp [?str "{$p/@name}: "] [?for [in $t $p/topping] [yield [?str "{$t/@name},"]]]]]]</code>
+           [grp [?str "{$p/@name}: "] [?for [in $t $p/topping] [yield [?str '{[$text $t]},']]]]]]</code>
         </pre>
       
     </section>
@@ -443,8 +462,9 @@
         <p>Compute tax once, use it where the binding is in scope.</p>
         <pre>
           <code class="language-cx">[pizza price=12]
-         [?let [= $tax [* @price 0.22]]
-           [?str "Total: {[+ @price $tax]}€"]]</code>
+         [?let [= $p   [$first //pizza]]
+               [= $tax [* $p@price 0.22]]
+           [?str "Total: {[+ $p@price $tax]}€"]]</code>
         </pre>
       
     </section>
@@ -454,7 +474,9 @@
         <p>Pipelines and let-bindings compose naturally.</p>
         <pre>
           <code class="language-cx">[pizza name='  margherita  ']
-         [?let [= $clean [?pipe @name [$trim _] [$upper _]]]
+         [?lib 'cx-stdlib/strings']
+         [?let [= $p [$first //pizza]]
+               [= $clean [?pipe [$string $p@name] [$strings:trim] [$upper]]]
            [?str "Welcome, {$clean}!"]]</code>
         </pre>
       
@@ -462,11 +484,10 @@
     <section id="tp-36">
       <h2>36. Define a template fragment</h2>
       
-        <p>`[?def name () BODY]` — zero-arg function definition. Call as `[$greet]`.</p>
+        <p>`[?def name () BODY]` — zero-arg function definition. Call as `[$slogan]`.</p>
         <pre>
-          <code class="language-cx">[?def greet () [?str "Hello {@name}!"]]
-         [pizza name=Pepe]
-         [$greet]</code>
+          <code class="language-cx">[?def slogan () [?str 'Hand-tossed since 1987']]
+         [$slogan]</code>
         </pre>
       
     </section>
@@ -517,9 +538,9 @@
       
         <p>`[?cx output-target=html]` switches the evaluator into context-aware escaping. No XSS from the menu.</p>
         <pre>
-          <code class="language-cx">[pizza name='<script>alert(1)</script>']
-         [?cx output-target=html]
-         @name</code>
+          <code class="language-cx">[?cx output-target=html]
+         [pizza name='<script>alert(1)</script>']
+         //pizza/@name</code>
         </pre>
       
     </section>
@@ -530,94 +551,102 @@
         <pre>
           <code class="language-cx">[?cx output-target=text]
          [pizza name='<b>Margherita</b>']
-         @name</code>
+         //pizza/@name</code>
         </pre>
       
     </section>
     <section id="tp-43">
-      <h2>43. Activate a module</h2>
+      <h2>43. Load a module</h2>
       
-        <p>Modules expose new directive namespaces (`cx:`, `log:`, …) once activated. Module-qualified calls use `[prefix/fn args]`.</p>
+        <p>`[?lib]` loads a bundled stdlib module; module-qualified calls use `[$prefix:fn args]`.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx]
-         [cx/canonical [cx/parse '[a   x=1  ]']]</code>
+          <code class="language-cx">[?lib 'cx-stdlib/cx']
+         [?lib 'cx-stdlib/format']
+         [$format:canonical [$cx:parse '[a   x=1  ]']]</code>
         </pre>
       
     </section>
     <section id="tp-44">
-      <h2>44. cx/parse — read CX from a string</h2>
+      <h2>44. [$cx:parse] — read CX from a string</h2>
       
         <p>CX reads its own syntax as data. Code is data.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx]
-         [cx/parse '[pizza name=Margherita]']</code>
+          <code class="language-cx">[?lib 'cx-stdlib/cx']
+         [$cx:parse '[pizza name=Margherita]']</code>
         </pre>
       
     </section>
     <section id="tp-45">
-      <h2>45. cx/serialize — emit a value back to text</h2>
+      <h2>45. [$cx:emit] — emit a value back to text</h2>
       
-        <p>Round-trip: parse then serialize. Prints `[a x=1 y=2]`.</p>
+        <p>Round-trip: parse then emit. Prints `[a x=1 y=2]`.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx]
-         [cx/serialize [cx/parse '[a x=1 y=2]']]</code>
+          <code class="language-cx">[?lib 'cx-stdlib/cx']
+         [$cx:emit [$cx:parse '[a x=1 y=2]']]</code>
         </pre>
       
     </section>
     <section id="tp-46">
-      <h2>46. cx/canonical — normalize</h2>
+      <h2>46. [$format:canonical] — normalize</h2>
       
         <p>Whitespace and attribute order canonicalized; idempotent.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx]
-         [cx/canonical [cx/parse '[a   x=1   y=2]']]</code>
+          <code class="language-cx">[?lib 'cx-stdlib/cx']
+         [?lib 'cx-stdlib/format']
+         [$format:canonical [$cx:parse '[a   x=1   y=2]']]</code>
         </pre>
       
     </section>
     <section id="tp-47">
-      <h2>47. cx/hash — content digest</h2>
+      <h2>47. Content digest — hash the canonical form</h2>
       
-        <p>Stable hash over the canonical form. Same input always yields the same hash, in every binding.</p>
+        <p>Stable digest over the canonical bytes. Same input always yields the same hash, in every binding.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx]
-         [cx/hash [cx/parse '[pizza name=Margherita]']]</code>
+          <code class="language-cx">[?lib 'cx-stdlib/cx']
+         [?lib 'cx-stdlib/format']
+         [?lib 'cx-stdlib/hash']
+         [$hash:sha256-hex [$format:canonical [$cx:parse '[pizza name=Margherita]']]]</code>
         </pre>
       
     </section>
     <section id="tp-48">
-      <h2>48. cx/merge — three-policy semantic merge</h2>
+      <h2>48. Override — pure-functional update as merge</h2>
       
-        <p>Two trees combined by element identity. Coupon's `price=10` overrides the order's.</p>
+        <p>Two trees combined with `[?modify]`. The coupon's `price=10` overrides the order's; the original order is unchanged.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx]
-         [order [pizza name=Margherita price=12]]
-         [coupon [pizza price=10]]
-         [cx/merge //order //coupon]</code>
+          <code class="language-cx">[order [pizza name=Margherita price=12]]
+         [coupon price=10]
+         [?let [= $order [$first //order]]
+               [= $coupon [$first //coupon]]
+           [?modify $order //pizza/@price [set $coupon@price]]]</code>
         </pre>
       
     </section>
     <section id="tp-49">
       <h2>49. Structured logging</h2>
       
-        <p>`[log/level msg fields]` emits a structured event. Second arg is a map of fields.</p>
+        <p>`[$log:LEVEL msg fields=…]` emits a structured event; `fields=` is a map.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=log log-level=info]
-         [log/info 'sale' {pizza: 'Margherita', price: 12}]
-         [log/debug 'suppressed at info level']</code>
+          <code class="language-cx">[?lib 'cx-stdlib/log']
+         [$log:info 'sale' fields={pizza: 'Margherita', price: 12}]
+         [$log:debug 'suppressed at the default level']</code>
         </pre>
       
     </section>
     <section id="tp-50">
       <h2>50. The whole kitchen</h2>
       
-        <p>Module activation, HTML-safe escaping, function definition, structured logging, semantic merge, iteration. Six lines; the whole arc.</p>
+        <p>Module loading, function definition, structured logging, pure-functional override, iteration. A handful of lines; the whole arc.</p>
         <pre>
-          <code class="language-cx">[?cx use-module=cx output-target=html log-level=info]
+          <code class="language-cx">[order [pizza name=Margherita price=12]]
+         [coupon price=10]
+         [?lib 'cx-stdlib/log']
          [?def line ($p) [li [?str "{$p/@name} — {$p/@price}€"]]]
-         [order [pizza name='<b>Margherita</b>' price=12]]
-         [coupon [pizza price=10]]
-         [log/info 'rendering receipt']
-         [ul [?for [in $p [cx/merge //order //coupon]/pizza] [yield [$line $p]]]]</code>
+         [?let [= $order [$first //order]]
+               [= $coupon [$first //coupon]]
+               [= $final [?modify $order //pizza/@price [set $coupon@price]]]
+           ([$log:info 'rendering receipt'],
+            [ul [?for [in $p $final/pizza] [yield [$line $p]]]])]</code>
         </pre>
       
     </section>

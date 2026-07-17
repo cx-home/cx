@@ -466,12 +466,12 @@ func TestV08_Layer2_Filter(t *testing.T) {
 
 func TestV08_Layer2_FilterWhereGet(t *testing.T) {
 	doc, _ := ParseDoc([]byte(v08TestDoc))
-	got, err := doc.Filter("user").Where("@active=true").All()
+	got, err := doc.Filter("user").Where("= $_@active true").All()
 	if err != nil {
 		t.Fatalf("Filter.Where.All: %v", err)
 	}
 	if len(got) != 1 {
-		t.Fatalf("Filter user [@active=true]: got %d, want 1", len(got))
+		t.Fatalf("Filter user [= $_@active true]: got %d, want 1", len(got))
 	}
 	if got[0].Attr("name") != "Alice" {
 		t.Fatalf("filter returned wrong user: %v", got[0].Attr("name"))
@@ -485,8 +485,8 @@ func TestV08_Layer2_Explain(t *testing.T) {
 		want string
 	}{
 		{"filter", []string{"user"}, `doc.SelectAll("//user")`},
-		{"filter+where", []string{"user", "@active=true"}, `doc.SelectAll("//user[@active=true]")`},
-		{"filter+where+get", []string{"user", "@active=true", "/@email"}, `doc.SelectAll("//user[@active=true]/@email")`},
+		{"filter+where", []string{"user", "= $_@active true"}, `doc.SelectAll("//user[= $_@active true]")`},
+		{"filter+where+get", []string{"user", "= $_@active true", "/@email"}, `doc.SelectAll("//user[= $_@active true]/@email")`},
 		{"filter+first", []string{"user"}, `doc.Select("//user")`},
 		{"must_select_all", []string{"//user"}, `doc.SelectAll("//user")`},
 		{"must_select", []string{"//user"}, `doc.Select("//user")`},

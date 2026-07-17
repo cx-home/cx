@@ -187,7 +187,7 @@ src = """\
 doc = cxlib.parse(src)
 first = doc.select('//service')
 print(f'first service: {first.attr("name")}')
-for svc in doc.select_all('//service[@active=true]'):
+for svc in doc.select_all('//service[= $_@active true]'):
     print(f'active: {svc.attr("name")}')
 
 section('Document API: transform (immutable update)')
@@ -200,5 +200,5 @@ def activate(el):
     el.set_attr('active', True)
     return el
 all_active = doc.transform_all('//service', activate)
-active_count = len(all_active.select_all('//service[@active=true]'))
+active_count = len(all_active.select_all('//service[= $_@active true]'))
 print(f'active services after transform_all: {active_count}')

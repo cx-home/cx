@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -134,21 +139,21 @@
               
             </ul>
             <pre>
-              <code class="language-cx">[# Source — author-friendly form (mixed quoting, sigil sugar) #]
+              <code class="language-cx">[# Source — author-friendly form (loose layout, mixed quoting) #]
            [user
-             email='ada@example.com'
+             email="ada@example.com"
              id=42
-             +active]
+             active=true]
 
            [# cx fmt output — presentation normalized, comments preserved #]
-           [user id=42 email='ada@example.com' active=true]</code>
+           [user email='ada@example.com' id=42 active=true]</code>
             </pre>
           
         </section>
         <section id="canonical-strict">
-          <h3>Strict canonical (cx canon / cx hash)</h3>
+          <h3>Strict canonical (cx canonical / cx hash)</h3>
           
-            <p>Strict canonical (`cx canon`) reduces input to
+            <p>Strict canonical (`cx canonical`) reduces input to
            **data-equivalence form**. Strips comments, expands anchors
            and aliases, resolves merges, removes presentation-only
            directives, normalizes date offsets to UTC. Two CX documents
@@ -173,9 +178,9 @@
              [# regrettably noisy comment #]
              email='ada@example.com'
              id=42
-             +active]
+             active=true]
 
-           [# cx canon output — comments stripped, attributes sorted #]
+           [# cx canonical output — comments stripped, attributes sorted #]
            [user active=true email='ada@example.com' id=42]</code>
             </pre>
             <p>The strict-canonical bytes are what the SHA-256 hash is
@@ -194,7 +199,7 @@
          [`spec/canonical.md §5`](../../spec/canonical.md) and
          [`spec/conversions.md §4`](../../spec/conversions.md).</p>
         <pre>
-          <code class="language-cx">[user id=42 email='ada@example.com' +active
+          <code class="language-cx">[user id=42 email='ada@example.com' active=true
               [roles ('admin', 'editor')]]</code>
         </pre>
         <pre>
@@ -211,20 +216,30 @@
          of pure-element content become nested objects keyed by child
          element name; sequences become arrays; scalars map directly.</p>
         <section id="json-mixed-content">
-          <h3>Mixed content via _cx_prose</h3>
+          <h3>Mixed content and the lossless $tag envelope</h3>
           
             <p>Mixed content — text interleaved with inline elements — has
-           no native JSON form. The projection emits a reserved
-           `_cx_prose` key containing an ordered list of runs.</p>
+           no native JSON form. The **default** projection is lossy: the
+           text runs concatenate under a reserved `"_"` key and the
+           inline elements become sibling keys, so run order is not
+           recoverable. Under `--lossless`, an element instead emits as
+           the reserved `$tag` **envelope**
+           ([`spec/conversions.md §2.2.1`](../../spec/conversions.md)):
+           `$children` is an ordered array of runs, so mixed content
+           survives exactly.</p>
             <pre>
               <code class="language-cx">[para 'The function ' [code 'parse'] ' returns a value.']</code>
             </pre>
             <pre>
-              <code class="language-json">{ "para": { "_cx_prose": ["The function ", {"code": "parse"}, " returns a value."] } }</code>
+              <code class="language-json">{ "$tag": "para", "$children": ["The function ", {"$tag": "code", "$children": ["parse"]}, " returns a value."] }</code>
             </pre>
-            <p>JSON → CX reverses this: a `_cx_prose` key reconstructs the
-           mixed-content body in order. Round-trip is byte-identical
-           against `cx canon` output.</p>
+            <p>JSON → CX reverses this unconditionally: a `$tag` envelope
+           reconstructs the element with its body in order. The
+           round-trip is byte-identical against `cx canonical` output
+           (`cx eq` accepts the recovered document); the envelope also
+           carries attributes (`$attrs` + `$attr-types`), element
+           metadata (`$anchor` / `$merge` / `$id` / `$type`), and
+           `[table]` payloads (`$cols` / `$rows`).</p>
           
         </section>
         <section id="json-namespaces">
@@ -242,16 +257,19 @@
           <h3>Number precision and BigInt</h3>
           
             <p>JSON numbers are IEEE-754 doubles per RFC 8259, with
-           ambiguous integer support beyond `2^53-1`. CX exports
-           integers ≤ `2^53-1` as JSON numbers; larger integers and
-           explicit `:bigint` scalars export as JSON strings with a
-           `_cx_type: "int"` envelope. Sized variants (`:i32`, `:u64`)
-           round-trip via the envelope: `{"_cx_type": "u64", "value":
-           "12345678901234567890"}`.</p>
-            <p>Floats with `nan` / `inf` / `-inf` are not legal JSON values.
-           CX projects these as `null` by default (lossy) or as
-           `{"_cx_special": "nan"}` envelopes when `--profile strict`
-           is set.</p>
+           ambiguous integer support beyond `2^53-1`. CX exports int64
+           integers as JSON numbers; `bigint` scalars export as JSON
+           strings, with the type recovered in lossless mode via the
+           `cx:type` sidecar (map positions) or the per-item
+           `{"cx:bigint": "…"}` carrier (array positions) — see
+           [`spec/conversions.md §0.2`](../../spec/conversions.md).
+           Sized variants (`::i32`, `::u64`) keep their native number
+           image; the width name rides the envelope's `$type` /
+           `$attr-types` in lossless mode.</p>
+            <p>Floats with `nan` / `inf` / `-inf` are not reachable from
+           pure CX arithmetic (CX floats are finite-only); at the FFI
+           boundary the JSON module's `nan-handling` option controls
+           `null` / string / error behavior.</p>
           
         </section>
         <section id="json-null">
@@ -270,23 +288,26 @@
       <h2>YAML projection</h2>
       
         <p>YAML follows the JSON projection but uses YAML's mapping and
-         sequence syntax. Anchors and merge keys (`&lt;&lt;:`) project to CX's
-         `&amp;` / `*` sigils.</p>
+         sequence syntax — including the lossless `$tag` envelope, which
+         is the same encoding in both lanes
+         ([`spec/conversions.md §2.3.1`](../../spec/conversions.md)):
+         CX anchors and merges ride the envelope's `$anchor` / `$merge`
+         keys in lossless mode.</p>
         <pre>
           <code class="language-cx">[defaults &server-base host='localhost' tls=true]
-         [service-a *server-base port=8001]
-         [service-b *server-base port=8002]</code>
+         [service-a *server-base port=8001]</code>
         </pre>
         <pre>
-          <code class="language-yaml">defaults: &base
-           host: localhost
-           tls: true
-         service-a:
-           <<: *base
-           port: 8001
-         service-b:
-           <<: *base
-           port: 8002</code>
+          <code class="language-yaml">$doc:
+           - $tag: defaults
+             $anchor: server-base
+             $attrs:
+               host: localhost
+               tls: true
+           - $tag: service-a
+             $merge: server-base
+             $attrs:
+               port: 8001</code>
         </pre>
         <p>YAML's loose schema (untyped scalars, multiple ways to spell
          the same value) is normalized on input: `yes`/`true`/`True`
@@ -319,10 +340,14 @@
         <section id="yaml-anchors">
           <h3>Anchors and aliases</h3>
           
-            <p>YAML anchors (`&amp;name`) and aliases (`*name`) map to CX's
-           `&amp;` and `*` sigils directly. Anchor scope is the parsing
-           document. Cycles in alias references raise CXER0101 on
-           parse (matches the CX behavior on `*` merge cycles).</p>
+            <p>YAML-native anchors (`&amp;name`) and aliases (`*name`) are
+           resolved (expanded) on YAML → CX parse — the data content is
+           preserved, the anchor/alias structure is not
+           ([`spec/conversions.md §5.1`](../../spec/conversions.md)).
+           In the other direction, CX anchors and merges are dropped by
+           the default YAML emit and carried by the lossless envelope's
+           `$anchor` / `$merge` keys, which the importer reconstructs —
+           so a `--lossless` round-trip preserves them.</p>
           
         </section>
       
@@ -332,7 +357,7 @@
       
         <p>TOML's table syntax (`[server]`) projects to CX elements; nested
          tables (`[server.tls]`) project to nested elements; arrays of
-         tables (`<span class="xref-unresolved">[[users]]</span>`) project to repeated child elements. Per
+         tables (`&#91;&#91;users]]`) project to repeated child elements. Per
          [`spec/conversions.md §6`](../../spec/conversions.md).</p>
         <pre>
           <code class="language-toml">[server]
@@ -342,17 +367,17 @@
          [server.tls]
          cert = "site.pem"
 
-         <span class="xref-unresolved">[[users]]</span>
+         &#91;&#91;users]]
          id = 1
          email = "ada@example.com"
 
-         <span class="xref-unresolved">[[users]]</span>
+         &#91;&#91;users]]
          id = 2
          email = "grace@example.com" </code>
         </pre>
         <pre>
           <code class="language-cx">[config
-           [server host='localhost' +tls
+           [server host='localhost' tls=true
              [tls cert='site.pem']]
            [users
              [user id=1 email='ada@example.com']
@@ -372,9 +397,9 @@
         <section id="toml-array-of-tables">
           <h3>Array of tables</h3>
           
-            <p>`<span class="xref-unresolved">[[users]]</span>` repeated produces an array. CX preserves order
+            <p>`&#91;&#91;users]]` repeated produces an array. CX preserves order
            and emits as repeated child elements with the same name.
-           CX → TOML emits `<span class="xref-unresolved">[[name]]</span>` for any sibling group of N≥2
+           CX → TOML emits `&#91;&#91;name]]` for any sibling group of N≥2
            identically-named child elements; one-of-a-kind children
            use the dotted-key form.</p>
           
@@ -638,26 +663,76 @@
          that all the others share. The CX↔surface bridge applies a
          deterministic encoding per surface:</p>
         <table>
-          
-            <row surface="CX (canonical)" wire="0x&lt;hex>" notes="hex digits, even count; default" cx:attr-types="wire=string"/>
-            <row surface="CX (literal)" wire="base64('…') or hex('…')" notes="constructor builtins on input"/>
-            <row surface="data-bin" wire="length-prefixed raw" notes="no encoding overhead"/>
-            <row surface="ast-bin" wire="length-prefixed raw" notes="same as data-bin"/>
-            <row surface="JSON" wire="{&quot;_cx_bytes&quot;: &quot;base64...&quot;}" notes="envelope; JSON has no native bytes"/>
-            <row surface="YAML" wire="!!binary base64..." notes="native YAML 1.2 binary tag"/>
-            <row surface="XML" wire="&lt;![CDATA[base64...]]>" notes="CDATA-wrapped base64; xsi:type=&quot;xs:base64Binary&quot; attribute optional"/>
-            <row surface="TOML" wire="[col :bytes \&quot;hex...\&quot;]" notes="TOML has no binary type; encoded as a string with the :bytes type tag preserved via envelope"/>
-            <row surface="Markdown" wire="`![data](data:application/octet-stream;base64,...)`" notes="data URI inside MD link form"/>
-            <row surface="CSV / TSV" wire="base64(...)" notes="base64 string in the cell; deserializer needs schema to know it is bytes"/>
-            <row surface="CXCol / Parquet" wire="binary column type" notes="native; zero-copy through the Arrow bridge"/>
-          
+          <thead>
+            
+              <tr>
+                <th>surface</th>
+                <th>wire form</th>
+                <th>notes</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CX (canonical)</td>
+                <td>0x&lt;hex&gt;</td>
+                <td>hex digits, even count; the only literal form</td>
+              </tr>
+              <tr>
+                <td>data-bin</td>
+                <td>length-prefixed raw</td>
+                <td>no encoding overhead</td>
+              </tr>
+              <tr>
+                <td>ast-bin</td>
+                <td>length-prefixed raw</td>
+                <td>same as data-bin</td>
+              </tr>
+              <tr>
+                <td>JSON</td>
+                <td>string (base64)</td>
+                <td>lossless adds the cx:type sidecar; JSON has no native bytes</td>
+              </tr>
+              <tr>
+                <td>YAML</td>
+                <td>string with !!binary tag</td>
+                <td>YAML 1.2 binary tag</td>
+              </tr>
+              <tr>
+                <td>XML</td>
+                <td>text; cx:type="bytes" when lossless</td>
+                <td>hex text content</td>
+              </tr>
+              <tr>
+                <td>TOML</td>
+                <td>string (base64)</td>
+                <td>TOML has no binary type</td>
+              </tr>
+              <tr>
+                <td>Markdown</td>
+                <td>text (base64)</td>
+                <td>plain text form</td>
+              </tr>
+              <tr>
+                <td>CSV / TSV</td>
+                <td>base64 string in the cell</td>
+                <td>deserializer needs schema to know it is bytes</td>
+              </tr>
+              <tr>
+                <td>CXCol / Parquet</td>
+                <td>binary column type</td>
+                <td>native; zero-copy through the Arrow bridge</td>
+              </tr>
+            
+          </tbody>
         </table>
-        <p>All non-native bytes encodings (envelope, CDATA, data URI)
-         are explicitly identifiable by the host reader. Schema-driven
-         emit (with a `.cxs` schema declaring the column as `:bytes`)
-         strips envelope wrappers — the reader knows from the schema
-         that base64 means bytes. Tag-driven emit (no schema) keeps the
-         envelopes.</p>
+        <p>The table states the conversions contract, and the shipped
+         lanes match it: JSON / TOML / Markdown emit base64, YAML emits
+         `!!binary`, and the lossless JSON lane recovers the bytes type
+         via the `cx:type` sidecar / `{"cx:bytes": …}` carrier
+         (#458 closed the lane wiring; #475 added the array-position
+         carrier).</p>
       
     </section>
     <section id="roundtrip">
@@ -683,17 +758,134 @@
          equality (or documented-divergence) per format.</p>
         <p>**Lossiness matrix** (per [`spec/conversions.md §9`](../../spec/conversions.md)):</p>
         <table>
-          
-            <row from="CX" cx="lossless" xml="lossless‡" json="envelope◊" yaml="envelope◊" toml="envelope◊" md="lossy" csv="lossy§" jsonl="per-record" cxcol="table-only"/>
-            <row from="XML" cx="lossless" xml="lossless" json="envelope◊" yaml="envelope◊" toml="envelope◊" md="lossy" csv="lossy§" jsonl="per-record" cxcol="table-only"/>
-            <row from="JSON" cx="adds struct" xml="adds struct" json="lossless¶" yaml="lossless¶" toml="lossless¶" md="lossy" csv="lossy§" jsonl="lossless if 1-per-line" cxcol="table-only"/>
-            <row from="YAML" cx="lossy*" xml="lossy*" json="lossless¶" yaml="lossless¶" toml="lossless¶" md="lossy" csv="lossy§" jsonl="per-doc" cxcol="table-only"/>
-            <row from="TOML" cx="lossless**" xml="lossless**" json="lossless¶" yaml="lossless¶" toml="lossless¶" md="lossy" csv="lossy§" jsonl="1-doc" cxcol="table-only"/>
-            <row from="MD" cx="lossy" xml="lossy" json="lossy" yaml="lossy" toml="lossy" md="lossless" csv="lossy§" jsonl="1-doc" cxcol="lossy"/>
-            <row from="CSV / TSV" cx="lossy§" xml="lossy§" json="lossy§" yaml="lossy§" toml="lossy§" md="lossy§" csv="lossless" jsonl="lossless via :table" cxcol="lossless"/>
-            <row from="JSONL" cx="1-doc-per-rec" xml="1-doc-per-rec" json="lossy (concat)" yaml="lossless" toml="lossless if homogeneous" md="lossy" csv="lossless if flat" jsonl="lossless" cxcol="lossless if flat"/>
-            <row from="CXCol / Parquet" cx=":table form" xml=":table form" json="per-row" yaml="per-row" toml="lossy" md="lossy" csv="lossless" jsonl="per-row" cxcol="lossless"/>
-          
+          <thead>
+            
+              <tr>
+                <th>from \ to</th>
+                <th>CX</th>
+                <th>XML</th>
+                <th>JSON</th>
+                <th>YAML</th>
+                <th>TOML</th>
+                <th>MD</th>
+                <th>CSV</th>
+                <th>JSONL</th>
+                <th>CXCol/Parquet</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CX</td>
+                <td>lossless</td>
+                <td>lossless‡</td>
+                <td>lossless▣</td>
+                <td>lossless▣</td>
+                <td>lossy◊</td>
+                <td>lossy</td>
+                <td>lossy§</td>
+                <td>per-record</td>
+                <td>table-only</td>
+              </tr>
+              <tr>
+                <td>XML</td>
+                <td>lossless</td>
+                <td>lossless</td>
+                <td>lossless▣</td>
+                <td>lossless▣</td>
+                <td>lossy◊</td>
+                <td>lossy</td>
+                <td>lossy§</td>
+                <td>per-record</td>
+                <td>table-only</td>
+              </tr>
+              <tr>
+                <td>JSON</td>
+                <td>adds struct</td>
+                <td>adds struct</td>
+                <td>lossless¶</td>
+                <td>lossless¶</td>
+                <td>lossless¶</td>
+                <td>lossy</td>
+                <td>lossy§</td>
+                <td>lossless if 1-per-line</td>
+                <td>table-only</td>
+              </tr>
+              <tr>
+                <td>YAML</td>
+                <td>lossy*</td>
+                <td>lossy*</td>
+                <td>lossless¶</td>
+                <td>lossless¶</td>
+                <td>lossless¶</td>
+                <td>lossy</td>
+                <td>lossy§</td>
+                <td>per-doc</td>
+                <td>table-only</td>
+              </tr>
+              <tr>
+                <td>TOML</td>
+                <td>lossless**</td>
+                <td>lossless**</td>
+                <td>lossless¶</td>
+                <td>lossless¶</td>
+                <td>lossless¶</td>
+                <td>lossy</td>
+                <td>lossy§</td>
+                <td>1-doc</td>
+                <td>table-only</td>
+              </tr>
+              <tr>
+                <td>MD</td>
+                <td>lossy</td>
+                <td>lossy</td>
+                <td>lossy</td>
+                <td>lossy</td>
+                <td>lossy</td>
+                <td>lossless</td>
+                <td>lossy§</td>
+                <td>1-doc</td>
+                <td>lossy</td>
+              </tr>
+              <tr>
+                <td>CSV / TSV</td>
+                <td>lossy§</td>
+                <td>lossy§</td>
+                <td>lossy§</td>
+                <td>lossy§</td>
+                <td>lossy§</td>
+                <td>lossy§</td>
+                <td>lossless</td>
+                <td>lossless via :table</td>
+                <td>lossless</td>
+              </tr>
+              <tr>
+                <td>JSONL</td>
+                <td>1-doc-per-rec</td>
+                <td>1-doc-per-rec</td>
+                <td>lossy (concat)</td>
+                <td>lossless</td>
+                <td>lossless if homogeneous</td>
+                <td>lossy</td>
+                <td>lossless if flat</td>
+                <td>lossless</td>
+                <td>lossless if flat</td>
+              </tr>
+              <tr>
+                <td>CXCol / Parquet</td>
+                <td>:table form</td>
+                <td>:table form</td>
+                <td>per-row</td>
+                <td>per-row</td>
+                <td>lossy</td>
+                <td>lossy</td>
+                <td>lossless</td>
+                <td>per-row</td>
+                <td>lossless</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Legend:**</p>
         <ul>
@@ -704,12 +896,19 @@
               `cx:` namespace attributes.</li>
             <li>**¶** — lossless within the expressive range of that
               format.</li>
-            <li>**◊** — CX → JSON/YAML/TOML with CXDM container Items
-              (Array, Map, Sequence-as-Item): non-string Map keys are
-              coerced to strings on JSON emit (lossy); Sequence-vs-Array
-              distinction preserved on JSON (both have native forms),
-              lost on YAML/TOML/MD (none distinguish flat sequences
-              from nested arrays).</li>
+            <li>**▣** — lossless under `--lossless`: the `$tag`
+              structure envelope + value carriers
+              ([`spec/conversions.md §2.2.1 / §2.3.1`](../../spec/conversions.md))
+              recover element documents byte-identically
+              (strict-canonical eq). The default (idiomatic) lane keeps
+              the ◊ losses. Program directives are outside every
+              lane's lossless domain.</li>
+            <li>**◊** — CX → JSON/YAML/TOML default lane with CXDM
+              container Items (Array, Map, Sequence-as-Item):
+              non-string Map keys are coerced to strings on emit
+              (lossy); the Sequence-vs-Array distinction is lost
+              (in lossless mode both recover, via the `cx:key-type`
+              sidecar and the `cx:seq` carrier).</li>
             <li>**§** — Delimited (CSV/TSV/PSV) is well-defined but lossy:
               type metadata is lost on emit; comments, anchors,
               multi-document, mixed content, and PIs are stripped or

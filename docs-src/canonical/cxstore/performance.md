@@ -61,7 +61,7 @@ For queries with **high selectivity** (matches are small fraction of corpus), Se
 
 **Aggregate throughput:** Service multi-node sustains ~100 K–1 M point lookups/sec with proper caching and shard count.
 
-### (Q2) Indexed query (`//user[@active=true]`)
+### (Q2) Indexed query (`//user[= $_@active true]`)
 
 Requires Phase 1's secondary indexes (pack-backed Embedded, or Service running pack-backed Embedded internally).
 

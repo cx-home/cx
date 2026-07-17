@@ -106,7 +106,7 @@ fn doc_method_07_select_first_match() {
 #[test]
 fn doc_method_08_modify_returns_new_doc() {
     let doc = Doc::from_str(USERS_SRC).expect("parse");
-    let new_doc = doc.modify("//user[@active=false]", "[delete]").expect("modify");
+    let new_doc = doc.modify("//user[= $_@active false]", "[delete]").expect("modify");
     // Pure-functional contract — receiver is unchanged.
     let orig_users = doc.select_all("//user").expect("orig select_all");
     assert_eq!(orig_users.len(), 3);

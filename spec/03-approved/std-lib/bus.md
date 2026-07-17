@@ -74,9 +74,9 @@ are the handlers' own (§2.3, §5). The bus **introduces no new capability**.
 ### §2.1. The `[bus]` handle, subscriptions, and concurrency
 
 ```cx
-[bus state="open" dispatching=false on-close="bus/close"]   ; an in-process bus instance
+[bus state="open" dispatching=false on-close="bus/close"]   # an in-process bus instance
 
-[subscription id="s-7" topic=":order.placed"               ; one (pattern, handler) registration
+[subscription id="s-7" topic=":order.placed"               # one (pattern, handler) registration
   state="active" on-close="bus/off"]
 ```
 
@@ -113,9 +113,9 @@ A **message** is any CX element value. XAP's canonical message is an intent —
 composition of its **head** and its leading **atom** argument (the `[do …]` verb):
 
 ```cx
-[do :order-placed [order id="42"]]      ; head = do,   topic = :order-placed
-[metric :cpu val=0.91]                   ; head = metric, topic = :cpu
-[order-card-rerender id="42"]            ; head = order-card-rerender (no atom) → topic = the head name
+[do :order.placed [order id="42"]]      # head = do,   topic = :order.placed
+[metric :cpu val=0.91]                   # head = metric, topic = :cpu
+[order-card-rerender id="42"]            # head = order-card-rerender (no atom) → topic = the head name
 ```
 
 A **pattern** selects messages by topic and/or shape. Three pattern forms, in
@@ -123,7 +123,7 @@ ascending power, all **pure** to evaluate:
 
 | Pattern form | Example | Matches |
 |---|---|---|
-| **topic atom** | `:order-placed` | messages whose topic equals the atom; a trailing `-` is a **prefix-glob** (`:order-` matches `:order-placed`, `:order-cancelled`) |
+| **topic atom** | `:order.placed` | messages whose topic equals the atom; a trailing `-` is a **prefix-glob** (`:order-` matches `:order.placed`, `:order-cancelled`) |
 | **head name** | `'metric'` (string) | messages whose **head** equals the name, any arguments |
 | **predicate fn** | `[?fn ($m) [= $m/do :refund]]` | an **arity-1 boolean callable** over the message value (returns true to match); full structural power via CXPath inside the function body |
 
@@ -131,10 +131,10 @@ ascending power, all **pure** to evaluate:
 > section did not parse and are corrected here to the realized surface (same
 > precedent as `net` `addr->string` → `addr-to-string`): (1) the prefix-glob is
 > a **trailing `-`** (`:order-`), not `:order.*` — `*` is not an atom `NameChar`
-> ([`grammar.ebnf`](../core/../03-approved/formal/grammar.ebnf) [6a]), so a
+> ([`grammar.ebnf`](../formal/grammar.ebnf) [6a]), so a
 > dotted-star glob is unlexable; (2) the structural pattern is an **arity-1
 > boolean `[?fn …]`**, not a bare `[?[= …] …]` predicate literal (which is not a
-> grammar production). Topics are dash-separated atoms (`:order-placed`); a `.`
+> grammar production). Topics are dash-separated atoms (`:order.placed`); a `.`
 > is a legal `NameChar` but the module's convention is `-`.
 
 Glob and the predicate fn are the **only** wildcard/structural mechanisms; there
@@ -269,8 +269,8 @@ cascade — it is **inspected**, not caught:
 
 ```cx
 [dispatch delivered=3 topic=:order.placed depth=2 events=4
-  [fired [subscription id="s-1"] [subscription id="s-4"] [subscription id="s-9"]]   ; in fire order
-  [faults]]                                                                          ; empty unless on-fault=:collect
+  [fired [subscription id="s-1"] [subscription id="s-4"] [subscription id="s-9"]]   # in fire order
+  [faults]]                                                                          # empty unless on-fault=:collect
 ```
 
 - `delivered` — count of handlers that fired for `$msg` itself (its snapshot).
@@ -413,12 +413,12 @@ is a value, a handler fault under `:halt` is `[err]`:
 
 ```cx
 [?with-open [$bus:bus] $b
-  [?with-open [$bus:on $b :order.placed [?fn [$m] [$store:put 'orders' $m]]] $s1
-    [?with-open [$bus:on $b [?[= /do :order.placed]] [?fn [$m] [$bus:emit $b [do :notify $m]]]] $s2
+  [?with-open [$bus:on $b :order.placed [?fn ($m) [$store:put 'orders' $m]]] $s1
+    [?with-open [$bus:on $b [?fn ($m) [= $m/do :order.placed]] [?fn ($m) [$bus:emit $b [do :notify $m]]]] $s2
       [?match [$bus:emit $b [do :order.placed [order id="42"]]]
-        [case [err @code='cx-err:CXER4663'] [$log:warn 'cascade limit']]   ; fault
-        [case [dispatch @delivered=0] [$log:info 'no subscribers']]        ; a VALUE (0 fired)
-        [case $d $d]])]]]                                                   ; normal dispatch value
+        [case [err @code='cx-err:CXER4663'] [$log:warn 'cascade limit']]   # fault
+        [case [dispatch @delivered=0] [$log:info 'no subscribers']]        # a VALUE (0 fired)
+        [case $d $d]]]]]                                                   # normal dispatch value
 ```
 
 - **The XAP serialized cascade ([`xap.md`](xap.md) §14)** is built **on top of**

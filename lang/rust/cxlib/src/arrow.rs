@@ -236,7 +236,9 @@ pub fn to_ipc(payload: &[u8]) -> Result<Vec<u8>, String> {
 /// would contain) to framed CXCol chunked-table bytes.
 pub fn from_ipc(ipc_bytes: &[u8]) -> Result<Vec<u8>, String> {
     use arrow::ipc::reader::StreamReader;
-    let cursor = std::io::Cursor::new(ipc_bytes);
+    // import_to_data_bin moves the reader into an FFI_ArrowArrayStream,
+    // which demands 'static — so the cursor must own its bytes.
+    let cursor = std::io::Cursor::new(ipc_bytes.to_vec());
     let reader = StreamReader::try_new(cursor, None)
         .map_err(|e| format!("from_ipc: reader init: {e}"))?;
     import_to_data_bin(reader)

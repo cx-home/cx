@@ -96,7 +96,7 @@ match (or none). The string is parsed and evaluated by libcx, so
 semantics are identical across bindings.
 
 ```
-doc.select_all("//user[@active=true]/@email")
+doc.select_all("//user[= $_@active true]/@email")
 doc.select("//config/server")
 ```
 
@@ -333,7 +333,7 @@ with each other or with threads still reading the original.
 ```v
 // V — parallel transforms over the same source document
 results := parallels.map(regions, fn(region string) cxlib.Document {
-    return doc.modify('//service[@region=${region}]',
+    return doc.modify('//service[= $_@region ${region}]',
         cx.set_attr('active', true))
 })
 ```

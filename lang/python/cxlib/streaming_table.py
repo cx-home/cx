@@ -13,7 +13,7 @@ one Attribute per column (name = column name, value = type-name).
 
 Usage (in-memory round-trip):
 
-    framed = cxlib.to_data_bin_chunked('[points :table[a:int b:int] 1 2]')
+    framed = cxlib.to_data_bin_chunked('[points [table[a::int b::int]] 1 2]')
     with cxlib.TableReader(framed) as r:
         schema = r.schema()
         groups = list(r)

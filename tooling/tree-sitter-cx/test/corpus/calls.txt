@@ -1,0 +1,74 @@
+================================================================================
+Word-named builtin call
+================================================================================
+
+[doc [$upper hello]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (call
+      (call_head)
+      (text)
+      (word))))
+
+================================================================================
+Module-member call head [$prefix:local ...]
+================================================================================
+
+[doc [$str:upper hello]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (call
+      (call_head)
+      (text)
+      (word))))
+
+================================================================================
+[?let] body balances nested calls and homoiconic predicates
+================================================================================
+
+[?let [= $n [$count //user[= $_@active true]]] [result $n]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (unknown_directive
+    (directive_head)
+    (directive_body
+      (predicate_expr
+        (predicate_chunk)
+        (predicate_chunk)
+        (predicate_expr
+          (predicate_chunk)
+          (predicate_chunk)
+          (predicate_expr
+            (predicate_chunk)
+            (reserved_binding)
+            (predicate_chunk))))
+      (predicate_expr
+        (predicate_chunk)
+        (predicate_chunk)))))
+
+================================================================================
+Call with a slash-led value_path argument
+================================================================================
+
+[doc [$count //user]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (call
+      (call_head)
+      (value_path
+        (path_step
+          (node_test))))))

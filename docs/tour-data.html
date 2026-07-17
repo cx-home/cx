@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a class="active" href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -174,9 +179,9 @@
     <section id="td-8">
       <h2>8. Boolean sigil shorthand</h2>
       
-        <p>`+name` means `name=true`; `-name` means `name=false`. Compact form for many booleans.</p>
+        <p>Booleans are ordinary attributes — `name=true` / `name=false`; the bare tokens auto-type as bool.</p>
         <pre>
-          <code class="language-cx">[pizza +vegan -nuts -gluten]</code>
+          <code class="language-cx">[pizza vegan=true nuts=false gluten=false]</code>
         </pre>
       
     </section>
@@ -304,16 +309,16 @@
       
     </section>
     <section id="td-22">
-      <h2>22. Block content [| … ]</h2>
+      <h2>22. Block content [| … |]</h2>
       
-        <p>Like a text body, but indentation and newlines are kept verbatim. Unlike triple-quoted, inner elements such as `[em best]` are still real markup.</p>
+        <p>Like a text body, but indentation and newlines are kept verbatim; the block closes with `|]`. Unlike triple-quoted, inner elements such as `[em best]` are still real markup.</p>
         <pre>
           <code class="language-cx">[poem [|
            Roses are red,
              violets are blue,
            the [em best] pizza
              is waiting for you.
-         ]]</code>
+         |]]</code>
         </pre>
       
     </section>
@@ -451,9 +456,11 @@
     <section id="td-36">
       <h2>36. Sequence (a, b, c) — flat list</h2>
       
-        <p>Reads: attribute `toppings`, value is the sequence of three strings.</p>
+        <p>Reads: element `toppings`, body is the sequence of three strings.
+       Collections live in a child element's body — attributes hold a single
+       scalar, never a collection.</p>
         <pre>
-          <code class="language-cx">[pizza toppings=(cheese, basil, oil)]</code>
+          <code class="language-cx">[pizza [toppings (cheese, basil, oil)]]</code>
         </pre>
       
     </section>
@@ -462,7 +469,7 @@
       
         <p>Arrays preserve structure; sequences flatten. Use arrays when nesting matters.</p>
         <pre>
-          <code class="language-cx">[grid cells=[1, 2, 3]]</code>
+          <code class="language-cx">[grid [cells [1, 2, 3]]]</code>
         </pre>
       
     </section>
@@ -471,18 +478,19 @@
       
         <p>A matrix is just an array of arrays.</p>
         <pre>
-          <code class="language-cx">[board cells=[[1, 0, 1],
-                       [0, 1, 0],
-                       [1, 0, 1]]]</code>
+          <code class="language-cx">[board
+           [cells &#91;&#91;1, 0, 1],
+                   [0, 1, 0],
+                   [1, 0, 1]]]]</code>
         </pre>
       
     </section>
     <section id="td-39">
       <h2>39. Map {k: v} — named key to value</h2>
       
-        <p>Reads: attribute `prices`, value is a map with three entries.</p>
+        <p>Reads: element `prices`, body is a map with three entries.</p>
         <pre>
-          <code class="language-cx">[pizza prices={small: 9, medium: 12, large: 15}]</code>
+          <code class="language-cx">[pizza [prices {small: 9, medium: 12, large: 15}]]</code>
         </pre>
       
     </section>
@@ -512,29 +520,29 @@
     <section id="td-42">
       <h2>42. Explicit type annotation</h2>
       
-        <p>Colon-type after the name pins the body's type, overriding auto-typing.</p>
+        <p>A glued `::T` ascription on the name pins the body's type, overriding auto-typing.</p>
         <pre>
-          <code class="language-cx">[count :int 42]
-         [ratio :decimal 3.14159]</code>
+          <code class="language-cx">[count::int 42]
+         [ratio::decimal 3.14159]</code>
         </pre>
       
     </section>
     <section id="td-43">
       <h2>43. Typed array as body</h2>
       
-        <p>`:int[]` for typed; `:[]` for inferred (string array here).</p>
+        <p>`::int[]` for typed; `::[]` for inferred (string array here).</p>
         <pre>
-          <code class="language-cx">[oven-temps :int[] 220 240 260 480]
-         [tags :[] cheap fast tasty]</code>
+          <code class="language-cx">[oven-temps ::int[] 220 240 260 480]
+         [tags ::[] cheap fast tasty]</code>
         </pre>
       
     </section>
     <section id="td-44">
       <h2>44. Plain table — header plus rows</h2>
       
-        <p>The `:table` form declares column names in brackets. Each line below is a row.</p>
+        <p>The `[table[…]]` block declares column names once. Each line below is a row.</p>
         <pre>
-          <code class="language-cx">[menu :table[name size price]
+          <code class="language-cx">[menu [table[name size price]]
            Margherita medium 12
            Hawaiian   large  14
            Diavola    medium 13]</code>
@@ -546,7 +554,7 @@
       
         <p>Each column can carry a colon-type. Cells parse accordingly.</p>
         <pre>
-          <code class="language-cx">[orders :table[item:string qty:int paid:bool when:date]
+          <code class="language-cx">[orders [table[item::string qty::int paid::bool when::date]]
            Margherita 2 true  2026-05-09
            Hawaiian   1 false 2026-05-09]</code>
         </pre>
@@ -557,7 +565,7 @@
       
         <p>Quote cells with spaces. `null` is a real null in the cell.</p>
         <pre>
-          <code class="language-cx">[shifts :table[cook hours:int notes]
+          <code class="language-cx">[shifts [table[cook hours::int notes]]
            Pepe       8 morning
            Maria      6 'closing crew'
            'Jean-Luc' 4 null]</code>
@@ -590,7 +598,7 @@
         <p>Tabular ingredients, prose steps with inline markup, multi-line notes — all in one document, one syntax.</p>
         <pre>
           <code class="language-cx">[recipe name=Margherita serves=2
-           [ingredients :table[item amount:string]
+           [ingredients [table[item amount::string]]
              flour      300g
              water      200ml
              yeast      2g
@@ -611,23 +619,22 @@
     <section id="td-50">
       <h2>50. The whole shop</h2>
       
-        <p>XML decl, anchor, sigil flags, line comment, block comment, typed table, merged child, map and sequence attribute values, triple-quoted text. One syntax, everywhere.</p>
+        <p>XML decl, anchor, block comments, typed table, merged child, map and sequence children, triple-quoted text. One syntax, everywhere.</p>
         <pre>
           <code class="language-cx">[?xml version=1.0 encoding=UTF-8]
-         [shop &flagship name='New Haven' port=8080 +open
-           # opening hours
+         [shop &flagship name='New Haven' port=8080 open=true
+           [; opening hours ]
            [hours mon-fri=11-22 sat=12-23 sun=closed]
            [; menu reviewed 2026-05-01 ]
-           [menu :table[name:string size price:decimal vegan:bool]
+           [menu [table[name::string size price::decimal vegan::bool]]
              Margherita medium 12.00 true
              Hawaiian   large  14.00 false
              Diavola    medium 13.00 false]
-           [staff [cook &lead name=Pepe shift=morning +founder]
-                  [cook *lead name=Maria shift=closing -founder]]
-           [contact
-             address='123 Forno Lane'
-             coords={lat: 40.8518, lon: 14.2681}
-             phones=('+39 555 0101', '+39 555 0102')]
+           [staff [cook &lead name=Pepe shift=morning founder=true]
+                  [cook *lead name=Maria shift=closing founder=false]]
+           [contact address='123 Forno Lane'
+             [coords {lat: 40.8518, lon: 14.2681}]
+             [phones ('+39 555 0101', '+39 555 0102')]]
            [tagline '''
              Hand-tossed since 1987.
              Still tossing.

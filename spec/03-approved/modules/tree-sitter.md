@@ -108,7 +108,7 @@ See [`spec/process/threat-model.md`](../process/threat-model.md) for the documen
 [?lib 'tree-sitter']
 [?lib 'cx:io']
 [?const $py-tree [tree-sitter:parse-to-cx "python" [io:read-file "app.py"]]]
-[?for [in $call [?= //call[@function="execute"]]]
+[?for [in $call [?= //call[= $_@function "execute"]]]
   [yield [?= ./arguments/string-literal/@text]]]
 ```
 

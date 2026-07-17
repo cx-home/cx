@@ -22,7 +22,7 @@
 (program_binding) @variable
 
 ; ── Path argument  //step  inside a call/operator (e.g. [$count //user]) ──────
-(value_path) @keyword.operator.path
+(value_path) @keyword.operator
 
 ; ── Declaration / doctype  [!…]  (lexicon [L83] structural opener) ────────────
 (decl) @keyword.directive
@@ -73,6 +73,10 @@
 ; Color only the head so body children keep their own captures.
 (unknown_directive (directive_head) @keyword.directive)
 
+; `[?=…]` value interpolation (grammar.ebnf [58]) — head colors as a directive;
+; the opaque CXPath body highlights via its own path/predicate captures.
+(interpolation (directive_head) @keyword.directive)
+
 ; Structured directive openings — the opening token (`[?match`, `[?modify`,
 ; `[?def`, `[?lib`, `[?const`, including the trailing whitespace) colors
 ; identically to the legacy directive tag.
@@ -83,37 +87,37 @@
 (const_directive)  @keyword.directive
 
 ; ── CXPath structure inside directive bodies (code.md §5.5 + §5.5.2) ───────────
-(path_expr) @keyword.operator.path
-(axis_specifier) @keyword.other.axis
-(node_test) @entity.name.tag
+(path_expr) @keyword.operator
+(axis_specifier) @keyword
+(node_test) @tag
 
 ; ── Reserved bindings $_ / $_position / $_last (code.md §5.5.2) ──────────────
 (reserved_binding) @variable.builtin
 
 ; ── `(bind $name)` path-step annotation (grammar.ebnf [160a], code.md §5.5.2) ──
-(bind_annot "bind" @keyword.other.modifier)
+(bind_annot "bind" @keyword.modifier)
 (bind_annot name: (bind_name) @variable)
 
 ; ── Clause-child heads (case/when/else/where/yield + modify actions + returns/
 ;    throws/only). Every structured clause opens with `[head ` aliased to
 ;    `clause_head` (grammar.ebnf [129i], [138]-[140], [142], [151b], [152b]). ─
-(clause_head) @keyword.other.clause
+(clause_head) @keyword
 
 ; ── Match arms (code.md §8.2, grammar.ebnf [137]-[140]) ────────────────────────
-(match_arm) @keyword.other.case
+(match_arm) @keyword
 
 ; ── Modify actions (code.md §8.10, grammar.ebnf [142]-[148e]) ──────────────────
-(modify_action) @keyword.other.modify-action
+(modify_action) @keyword
 
 ; ── Def / Const / Lib modifiers (code.md §12.2 + §12.1/§12.3) ──────────────────
 ; bare `pure` / `impure` / `lazy` / `in-memory` barewords + `scope=` attribute.
-(modifier_keyword) @keyword.other.modifier
+(modifier_keyword) @keyword.modifier
 (scope_attr (attr_name) @property)
 (scope_attr (attr_value) @constant.builtin)
 
 ; ── [expr] general predicate (code.md §5.5.2, grammar.ebnf [159]) ──────────────
 (predicate_expr) @punctuation.bracket
-(predicate_chunk) @variable.other.cxpath.predicate
+(predicate_chunk) @variable
 
 ; ── Directive name (e.g. function name in [?def NAME …]) ─────────────────────
 (directive_name) @function

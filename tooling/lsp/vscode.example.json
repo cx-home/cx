@@ -5,11 +5,12 @@
       "command": "cx",
       "args": ["lsp"],
       "filetypes": ["cx"],
-      "rootPatterns": [".git/", "cx.yaml", "cxlint.yaml"]
+      "rootPatterns": [".git/", ".cxlint.cx"]
     }
   },
   "files.associations": {
     "*.cx": "cx",
+    "*.cxd": "cx",
     "*.cxs": "cx"
   }
 }

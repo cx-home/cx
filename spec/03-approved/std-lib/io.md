@@ -196,6 +196,32 @@ Returns a lazy iterator over file lines. Memory-bounded regardless of file size.
 
 `kind` is `:shared` (multiple readers) or `:exclusive` (one writer). Advisory on POSIX (`flock`); mandatory on Windows. Best-effort across NFS / FAT / etc.
 
+### §3.10. Continuous filesystem watch
+
+```
+[?def watch       scope=public impure [returns element] ($path::string) ...]
+[?def watch-next  scope=public impure [returns element] ($handle::element $timeout::int -1) ...]
+[?def watch-close scope=public impure [returns null]    ($handle::element) ...]
+```
+
+`watch` begins a **recursive** filesystem watch over the directory `path` and returns an opaque watch handle (`[watch handle=N path=…]`). It is a real OS notification primitive — `inotify` on Linux, **FSEvents** on macOS — never a polling loop. `path` must be an existing directory (else `CXER3401` / `CXER3404`).
+
+`watch-next` **blocks** until the next change under the tree and returns a change element:
+
+```
+[change path="/abs/path" op=created]      [change path="/abs/path" op=modified]
+[change path="/abs/path" op=deleted]       [change op=overflow]
+```
+
+- `op` is one of `created`, `modified`, `deleted`, or `overflow`. Paths are absolute.
+- The optional `timeout` (milliseconds) bounds the wait: on expiry `watch-next` returns the **absence channel** (the empty sequence — §9.1.2 of `code.md`, caught by `[?else]`), NOT a `null`. This lets a watcher poll an external shutdown flag between waits without busy-spinning. Omitted / negative `timeout` blocks indefinitely.
+- **`[change op=overflow]`** is surfaced when the OS event queue overflows (`inotify` `IN_Q_OVERFLOW`) or coalesces under load (FSEvents `kFSEventStreamEventFlagMustScanSubDirs`). It carries no path; its contract is *"events were dropped — rescan the tree"*. A consumer that ignores overflow can silently drift out of sync, so it must respond with a full re-scan.
+- A closed watch (see `watch-close`) makes a parked or subsequent `watch-next` return absence.
+
+`watch-close` tears down the OS watch and **unblocks** any `watch-next` currently parked on the handle in another task (self-pipe on Linux; run-loop stop on macOS). It is idempotent — closing an already-closed or unknown handle is a no-op and never raises `CXER3409`.
+
+`op` classification is best-effort and existence-anchored: a path that no longer exists is reported `deleted`, a freshly-appearing path `created`, an in-place change `modified`. Exactly-once `op` precision is not guaranteed (an editor's save may surface as several events); the recipe pattern (`examples/cxstore/dir-sync/watch.cx`) is therefore **idempotent re-ingest per change** plus **full re-scan on overflow**, which is correct under any coalescing.
+
 ## §4. Edge cases and policy
 
 ### §4.1. Encoding
@@ -243,6 +269,7 @@ These guards are not a security boundary; they prevent the single most common ca
 | `CXER3409` | `E_IO_HANDLE_CLOSED` | Operation on already-closed handle (NOT raised by idempotent `close` of an already-closed handle) |
 | `CXER3410` | `E_IO_ATOMIC_UNSUPPORTED` | `atomic=true` requested but the platform / filesystem cannot guarantee an atomic whole-file replace (§4.2) |
 | `CXER3411` | `E_IO_REFUSED_ROOT_DELETE` | `remove-tree` resolved to a filesystem / drive root or the running volume's root ancestor (§4.6) |
+| `CXER3412` | `E_IO_UNSUPPORTED` | `watch` on a platform with no filesystem-notification facility (§3.10) |
 
 ## §6. Conformance fixtures
 
@@ -262,18 +289,19 @@ Under `conformance/stdlib/io.cxd`:
 - `temp-file` returns open handle; auto-deletes on close.
 - Read-protected file raises `CXER3402` on open.
 - Binary file via `read-file` raises `CXER3400`.
+- `watch` / `watch-next` raise `cx-err:CXER0271` under the no-capability runner (`watch-close` propagates the nested `watch`'s denial). The granted, effectful behavior — a real change is reported by `watch-next`; a timeout returns absence; `watch-close` unblocks a parked `watch-next` — is proven behaviorally in `vcx/code/io_watch_test.v` (white-box, gated by `make test-vcx-code`) since it requires live filesystem effects and threads.
 
 ## §7. Capabilities
 
 Effectful functions in `cx-stdlib/io` run under deny-by-default capabilities ([`spec/core/security.md`](../core/security.md) §2): the effect point checks the active set and raises `cx-err:CXER0271` (E_CAP_DENIED, naming the missing capability and resource) when the grant is absent. Pure functions (in-memory transforms, parsing, formatting) require no capability.
 
-`open` and `open-with-opts` require the capability matching the requested access: read mode (`"r"`) needs `read`; write or append mode (`"w"`, `"a"`) needs `write`. `close` requires no capability — it only releases an already-granted handle.
+`open` and `open-with-opts` require the capability matching the requested access: read mode (`"r"`) needs `read`; write or append mode (`"w"`, `"a"`) needs `write`. `close` requires no capability — it only releases an already-granted handle. `watch` and `watch-next` are read-path observers and require `read`; `watch-close` — like `close` — requires no capability.
 
 | Capability | Functions |
 |---|---|
-| `read` | `open` (read mode), `read-all`, `read-all-bytes`, `read-bytes`, `read-file`, `read-file-bytes`, `read-file-lines`, `read-line`, `line-iter`, `stat`, `exists`, `is-directory`, `is-file`, `is-symlink`, `is-eof`, `list-dir`, `glob`, `glob-iter`, `walk`, `readlink`, `size`, `created-time`, `modified-time`, `tell`, `seek`, `system-temp-dir`, `temp-dir` |
+| `read` | `open` (read mode), `read-all`, `read-all-bytes`, `read-bytes`, `read-file`, `read-file-bytes`, `read-file-lines`, `read-line`, `line-iter`, `stat`, `exists`, `is-directory`, `is-file`, `is-symlink`, `is-eof`, `list-dir`, `glob`, `glob-iter`, `walk`, `readlink`, `size`, `created-time`, `modified-time`, `tell`, `seek`, `system-temp-dir`, `temp-dir`, `watch`, `watch-next` |
 | `write` | `open` (write/append mode), `open-with-opts`, `write-bytes`, `write-file`, `write-file-bytes`, `write-file-lines`, `write-line`, `write-string`, `append-file`, `append-file-bytes`, `make-dir`, `make-dirs`, `remove`, `remove-dir`, `remove-tree`, `rename`, `copy`, `copy-tree`, `symlink`, `lock`, `unlock`, `flush`, `temp-file` |
-| (none) | `close` |
+| (none) | `close`, `watch-close` |
 
 ## §8. Cross-references
 

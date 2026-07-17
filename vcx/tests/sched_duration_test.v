@@ -1,6 +1,7 @@
 module main
 
 import os
+import testenv
 
 // sched_duration_test.v — sched after/at/every/recur must accept the
 // spec-mandated ::duration argument (sched.md §3): both the duration literal
@@ -9,11 +10,7 @@ import os
 // passed an int via [$time:duration-m N]).
 
 fn cx_binary() string {
-	abs := os.real_path('vcx/target/cx')
-	if !os.is_file(abs) {
-		panic('vcx/target/cx not found at ${abs} — run `make build-vcx` first')
-	}
-	return abs
+	return testenv.cx_bin()
 }
 
 fn run_prog(src string) string {

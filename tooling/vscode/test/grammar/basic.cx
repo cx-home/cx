@@ -1,0 +1,113 @@
+# SYNTAX TEST "source.cx" "CX grammar scope assertions (#422)"
+
+[report [?if true [then yes] [else no]]]
+#^^^^^^ entity.name.tag.cx
+#        ^ punctuation.section.eval-directive.begin.cx
+#         ^^ keyword.control.eval-directive.cx
+#            ^^^^ constant.language.boolean.cx
+#                  ^^^^ keyword.operator.clause.cx
+#                             ^^^^ keyword.operator.clause.cx
+
+[$math:abs -3]
+#^^^^^^^^^ entity.name.function.module.cx
+#          ^^ constant.numeric.integer.cx
+
+[?element $n [?attr count 3] one]
+# ^^^^^^^ keyword.control.eval-directive.cx
+#         ^^ variable.other.program-binding.cx
+#              ^^^^ keyword.control.eval-directive.cx
+
+[?quote [x [?unquote [+ 1 2]] [?splice (1, 2)]]]
+# ^^^^^ keyword.control.eval-directive.cx
+#        ^ entity.name.tag.cx
+#            ^^^^^^^ keyword.control.eval-directive.cx
+#                     ^ keyword.operator.head.cx
+#                               ^^^^^^ keyword.control.eval-directive.cx
+
+[?meta {note: probe} [y 1]]
+# ^^^^ keyword.control.eval-directive.cx
+
+[nums 1_000_000 .5 1. 1e5 +8080 -2.5e-3]
+#     ^^^^^^^^^ constant.numeric.integer.cx
+#               ^^ constant.numeric.float.cx
+#                  ^^ constant.numeric.float.cx
+#                     ^^^ constant.numeric.float.cx
+#                         ^^^^^ constant.numeric.integer.cx
+#                               ^^^^^^^ constant.numeric.float.cx
+
+[not-numbers 0o17 0b101 042]
+#            ^^^^ - constant.numeric.integer.cx
+#                 ^^^^^ - constant.numeric.integer.cx
+#                       ^^^ - constant.numeric.integer.cx
+
+[temporal 2024-01-15 1h30m 1y2mo -45m]
+#         ^^^^^^^^^^ constant.other.date.cx
+#                    ^^^^^ constant.other.duration.cx
+#                          ^^^^^ constant.other.period.cx
+#                                ^^^^ constant.other.duration.cx
+
+[dt 2024-01-15T10:30:00 2024-01-15T10:30:00.123Z 2024-01-15T10:30:00+05:30]
+#   ^^^^^^^^^^^^^^^^^^^ constant.other.datetime.cx
+#                       ^^^^^^^^^^^^^^^^^^^^^^^^ constant.other.datetime.cx
+#                                                ^^^^^^^^^^^^^^^^^^^^^^^^^ constant.other.datetime.cx
+
+[atoms :ok :order.placed :order.* :true]
+#      ^^^ constant.other.atom.cx
+#          ^^^^^^^^^^^^^ constant.other.atom.cx
+#                        ^^^^^^^^ constant.other.atom.cx
+#                                 ^^^^^ invalid.illegal.atom.reserved.cx
+
+[s1 '''verbatim block''']
+#      ^^^^^^^^^^^^^^ string.quoted.triple.cx
+
+[s2 """double triple"""]
+#      ^^^^^^^^^^^^^ string.quoted.triple.cx
+
+[s3 r'''raw stuff''']
+#       ^^^^^^^^^ string.quoted.triple.raw.cx
+
+[user #u1 [name Alice]]
+#     ^^^ constant.cxpath.id.cx
+#          ^^^^ entity.name.tag.cx
+
+[?for [in $x $d//user[= $_@active true]] [yield $x]]
+# ^^^ keyword.control.eval-directive.cx
+#      ^^ keyword.operator.clause.cx
+#            ^^ variable.other.program-binding.cx
+#              ^^ keyword.operator.path.descendant.cx
+#                     ^ keyword.operator.let-binding.cx
+#                       ^^ variable.language.context-item.cx
+#                         ^^^^^^^ entity.other.attribute-name.cxpath.cx
+#                                         ^^^^^ keyword.operator.clause.cx
+
+[?if [>= [$count $d/member] 3] [then big] [else small]]
+#     ^^ keyword.operator.head.cx
+
+[?if $a!=$b x y]
+#      ^^ - keyword.operator.token.cx
+
+[?if $a||$b x y]
+#      ^^ - keyword.operator.token.cx
+
+[user [name Alice] #u1 trailing words]
+#                  ^^^^^^^^^^^^^^^^^^ comment.line.number-sign.cx
+
+]
+
+[cfg [srv port=1]]
+# <- punctuation.section.brackets.cx
+#    ^ punctuation.section.brackets.cx
+#               ^^ punctuation.section.brackets.cx
+
+[?let [= $x 1] $x]
+# <- punctuation.section.eval-directive.begin.cx punctuation.section.brackets.cx
+#     ^ punctuation.section.brackets.cx
+#      ^ keyword.operator.let-binding.cx
+#            ^ punctuation.section.brackets.cx
+#                ^ punctuation.section.eval-directive.end.cx punctuation.section.brackets.cx
+
+[?modify $d //x [set 1]]
+# ^^^^^^ - punctuation.section.brackets.cx
+# ^^^^^^ keyword.control.eval-directive.cx
+#               ^ punctuation.section.brackets.cx
+#                ^^^ keyword.control.modify.cx

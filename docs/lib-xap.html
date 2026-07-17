@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -114,6 +119,26 @@
       <p class="fn-sig"><code>[$xap:component]  -> element</code>  —  Construct a named component — the typed state/intent/view triple — as pure data.</p>
       
     </section>
+    <section id="fn-xap-compose" class="fn">
+      <h3>xap:compose</h3>
+      <p class="fn-sig"><code>[$xap:compose]  -> element</code>  —  Compose n feature grammars into ONE grammar document — or reject with every W1-W6 conflict (CXER4870); zero arguments yield the empty grammar (the identity).</p>
+      
+    </section>
+    <section id="fn-xap-compose-report" class="fn">
+      <h3>xap:compose-report</h3>
+      <p class="fn-sig"><code>[$xap:compose-report]  -> element</code>  —  The never-raising tooling face of the compose gate — [compose-report ok=bool [conflict ...]*]; agrees with compose: it raises iff this reports ok=false.</p>
+      
+    </section>
+    <section id="fn-xap-resolve" class="fn">
+      <h3>xap:resolve</h3>
+      <p class="fn-sig"><code>[$xap:resolve]  -> string</code>  —  Resolve a bare or qualified verb term against a composed grammar (rho) — qualified wins, context narrows, ambiguity is CXER4871 with candidates, unknown is CXER4872.</p>
+      
+    </section>
+    <section id="fn-xap-grammar-hash" class="fn">
+      <h3>xap:grammar-hash</h3>
+      <p class="fn-sig"><code>[$xap:grammar-hash]  -> string</code>  —  The Tier-1 content hash of a composed grammar under canonical form — the structural-equality oracle and the distribution supply-chain witness.</p>
+      
+    </section>
     <section id="fn-xap-surface" class="fn">
       <h3>xap:surface</h3>
       <p class="fn-sig"><code>[$xap:surface]  -> element</code>  —  Construct a named surface — a composition of placed panels — as pure data.</p>
@@ -131,7 +156,7 @@
     </section>
     <section id="fn-xap-run" class="fn">
       <h3>xap:run</h3>
-      <p class="fn-sig"><code>[$xap:run]  -> element</code>  —  Wire a single-tenant runtime and register its components, surfaces, and handlers.</p>
+      <p class="fn-sig"><code>[$xap:run]  -> element</code>  —  Wire a single-tenant runtime and register its components, surfaces, and handlers; {grammar: G} pins a composed grammar as the control vocabulary, switching on emit-side resolution and constituent-set PEP evaluation.</p>
       
     </section>
     <section id="fn-xap-serve" class="fn">
@@ -139,9 +164,19 @@
       <p class="fn-sig"><code>[$xap:serve]  -> element</code>  —  Run a runtime over a real socket by bootstrapping the [?http-service] engine.</p>
       
     </section>
+    <section id="fn-xap-host-push" class="fn">
+      <h3>xap:host-push</h3>
+      <p class="fn-sig"><code>[$xap:host-push]  -> element</code>  —  Push one hosted feature's fresh contract readout to every /stream subscriber as its named SSE event — the same frame an admitted act pushes. For deployment workers whose changes bypass the intent path (source ingest, simulation ticks).</p>
+      
+    </section>
+    <section id="fn-xap-host" class="fn">
+      <h3>xap:host</h3>
+      <p class="fn-sig"><code>[$xap:host]  -> element</code>  —  Boot a complete XAP from its deployment document (distribution spec, deployment host): acquire every pinned feature from the CX_REGISTRY-bound store (fail closed on pin or verification mismatch), compose the grammar (the W-gate at load), attach it to a runtime, translate the roles ladder + spec governance + agent capabilities into dials, load each feature's runtime-contract module from its verified tree, and serve the standard surface (/grammar /features /surface /surface/{f} /intent /stream). opts: url (required), store (required — the working store), tenant, block, routes (adapter path->closure map), resolve-actor (intent->actor closure). A XAP with no custom transport is zero server code.</p>
+      
+    </section>
     <section id="fn-xap-emit" class="fn">
       <h3>xap:emit</h3>
-      <p class="fn-sig"><code>[$xap:emit]  -> element</code>  —  Run the committed cascade for one intent — PEP check, journal append, ordered dispatch.</p>
+      <p class="fn-sig"><code>[$xap:emit]  -> element</code>  —  Run the committed cascade for one intent — PEP check, journal append, ordered dispatch. With a grammar attached, the term resolves through rho first (the committed event is qualified) and a derived verb is admitted by its transitive leaf constituent grants, never the wrapper's name.</p>
       
     </section>
     <section id="fn-xap-on" class="fn">
@@ -164,6 +199,61 @@
       <p class="fn-sig"><code>[$xap:coord-read]  -> element</code>  —  Read the latest frame from a transient coordination channel — the latest-wins value off the journal and PEP cascade.</p>
       
     </section>
+    <section id="fn-xap-pkg-tree" class="fn">
+      <h3>xap:pkg-tree</h3>
+      <p class="fn-sig"><code>[$xap:pkg-tree]  -> element</code>  —  Build the canonical package content document from [entry path=... CONTENT] elements — sorted by path, byte-stable, so its store hash is the package's Tier-1 hash.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-seal" class="fn">
+      <h3>xap:pkg-seal</h3>
+      <p class="fn-sig"><code>[$xap:pkg-seal]  -> element</code>  —  Store a package content tree, pin its Tier-1 hash into the manifest, and store the manifest beside it (the tag-object pattern) — returns [sealed hash=... manifest=...].</p>
+      
+    </section>
+    <section id="fn-xap-pkg-sign" class="fn">
+      <h3>xap:pkg-sign</h3>
+      <p class="fn-sig"><code>[$xap:pkg-sign]  -> element</code>  —  Fill the manifest's detached [signature]: ed25519 by a publisher-DID key over the sealed Tier-1 hash.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-publish" class="fn">
+      <h3>xap:pkg-publish</h3>
+      <p class="fn-sig"><code>[$xap:pkg-publish]  -> element</code>  —  Set the name@version alias to a signed manifest's hash; released aliases are immutable — re-pointing is rejected, a new artifact is a new version.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-fetch" class="fn">
+      <h3>xap:pkg-fetch</h3>
+      <p class="fn-sig"><code>[$xap:pkg-fetch]  -> element</code>  —  Resolve a Tier-1 hash or name@version alias to its manifest document; aliases only discover hashes, trust never rests on one.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-verify" class="fn">
+      <h3>xap:pkg-verify</h3>
+      <p class="fn-sig"><code>[$xap:pkg-verify]  -> element</code>  —  The fail-closed trust chain: content re-hashes to the pinned Tier-1 hash, the signature verifies against the publisher DID, and every supplied attestation VC verifies — nothing stages on failure.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-install" class="fn">
+      <h3>xap:pkg-install</h3>
+      <p class="fn-sig"><code>[$xap:pkg-install]  -> element</code>  —  The consumer pipeline: fetch, verify, per-kind gate (features meet the one W1-W6 compose gate, libraries the exports-surface check, clients the client-spec check), consent-as-grants of exactly the needs set, and enable — returning the updated hash-pinned deployment document.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-requires-closure" class="fn">
+      <h3>xap:pkg-requires-closure</h3>
+      <p class="fn-sig"><code>[$xap:pkg-requires-closure]  -> element</code>  —  Resolve the code-plane requires closure transitively into sorted hash-pinned [pin] entries — the reproducible lockfile view spanning both dependency planes.</p>
+      
+    </section>
+    <section id="fn-xap-pkg-catalog" class="fn">
+      <h3>xap:pkg-catalog</h3>
+      <p class="fn-sig"><code>[$xap:pkg-catalog]  -> element</code>  —  Discover published packages on any store — local (alias table) or served over cx-store:// (CXPath query pushdown, server-side) — as a sorted [catalog [package ...]] with grammar/exports summaries; opts filter by term, name, or version. Trust never rests on discovery: install re-verifies the fetched artifact.</p>
+      
+    </section>
+    <section id="fn-xap-license-issue" class="fn">
+      <h3>xap:license-issue</h3>
+      <p class="fn-sig"><code>[$xap:license-issue]  -> element</code>  —  Issue an entitlement VC — an attenuating delegation granting enable of a package (or bundle member set), shaped by the terms: version range, expiry + grace window (subscription), seats and per-seat sub-issuance (the delegation chain is the count), members (bundle). Every commercial model is a shape of this one credential.</p>
+      
+    </section>
+    <section id="fn-xap-license-verify" class="fn">
+      <h3>xap:license-verify</h3>
+      <p class="fn-sig"><code>[$xap:license-verify]  -> element</code>  —  The enable-time entitlement check: the VC verifies (window plus subscription grace), the coverage holds for package@version (direct or bundle membership), and a seat credential's chain attenuates correctly — offline-capable, journal-recordable, a PEP check rather than a DRM subsystem.</p>
+      
+    </section>
     <section id="fn-xap-dial" class="fn">
       <h3>xap:dial</h3>
       <p class="fn-sig"><code>[$xap:dial]  -> element</code>  —  Set the operational-control mode at a scope by issuing a scoped authz delegation.</p>
@@ -176,7 +266,7 @@
     </section>
     <section id="fn-xap-why-allowed" class="fn">
       <h3>xap:why-allowed</h3>
-      <p class="fn-sig"><code>[$xap:why-allowed]  -> element</code>  —  Explain why an actor can or cannot emit a given intent — a query over the authority model.</p>
+      <p class="fn-sig"><code>[$xap:why-allowed]  -> element</code>  —  Explain why an actor can or cannot emit a given intent — a query over the authority model. With a grammar attached, a derived verb is answered over its transitive leaf constituent grant set — allowed only when every constituent decision permits.</p>
       
     </section>
   

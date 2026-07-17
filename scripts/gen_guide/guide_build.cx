@@ -30,11 +30,25 @@
 [?lib 'cx-stdlib/json']
 [?lib 'cx-stdlib/re']
 [?lib 'cx-stdlib/fp']
+[?lib 'cx-stdlib/env']
 
 [# ── string helpers ──────────────────────────────────────────────────── #]
 
 [# cat: join string parts with no separator. #]
 [?def cat scope=public ($parts) [$strings:join $parts '']]
+
+[# parse-or-die: read + parse a source file; a parse failure names the
+   file on stderr and exits 1. A failed section must never be silently
+   dropped from the site (issue #425: 10 of 16 pages vanished with
+   rc=0 while [$cx:parse]'s [err] value quietly navigated to ()). #]
+[?def parse-or-die scope=public impure ($f)
+  [?let [= $d [$cx:parse [$io:read-file $f]]]
+    [?match $d
+      [case [err $e]
+        ([$io:write-line [$env:stderr]
+           [$cat ('guide_build: PARSE FAILED — ', $f, ' — ', $e@message)]],
+         [$env:exit 1])]
+      [else $d]]]]
 
 [# slug-of: '…/sections/02-data-language.cxd' → 'data-language'
    (basename, strip NN- prefix + .cxd). #]
@@ -61,7 +75,11 @@
    subsections (h2…h6 by depth). Prose blocks (intro/body/note) are RETAGGED
    in place with [?modify … [rename …]] so mixed inline content survives.
    Children emit into their container's body via [?for]/[yield] — the empty
-   <>/</> sequence wrappers are stripped by post-body. #]
+   <>/</> sequence wrappers are stripped by post-body.
+   Tables are authored as [table [tr [th …]…] [tr [td …]…]…] (attrs are
+   scalar-only — D2/E211 — so header labels and cells are child elements,
+   never a columns=(…) attribute). Rows whose cells are [th] go to <thead>,
+   the rest to <tbody>, so the style.css thead/tbody rules apply. #]
 [?def heading scope=public ($depth $title)
   [?if [<= $depth 2] [then [h2 $title]]
     [else [?if [= $depth 3] [then [h3 $title]]
@@ -78,7 +96,11 @@
       [ul [?for [in $i $c/*] [yield
         [?match $i [case [item] [?modify $i //item [rename li]]] [else ()]]]]]]
     [case [table]
-      [table [?for [in $r $c/*] [yield $r]]]]
+      [table
+        [thead [?for [in $r $c/tr] [yield
+          [?if [$empty $r/th] [then ()] [else $r]]]]]
+        [tbody [?for [in $r $c/tr] [yield
+          [?if [$empty $r/th] [then $r] [else ()]]]]]]]
     [case [child]
       [section id=$c@id
         [$heading $depth $c@title]
@@ -171,6 +193,22 @@
    on its own page drops to a bare #fragment. Unknown [[name]] tokens become
    a visible <span class="xref-unresolved">. #]
 
+[# escape-code-xrefs: HTML-entity-escape '[[' inside <code>…</code> spans
+   so literal double brackets in code samples (TOML [[array-of-tables]],
+   xref syntax shown as syntax) are never treated as cross-references. #]
+[?def escape-code-xrefs scope=public impure ($h)
+  [?let [= $i [$strings:find $h '<code']]
+    [?if [< $i 0] [then $h]
+      [else
+        [?let [= $head [$strings:slice $h 0 $i]]
+              [= $rest [$strings:slice $h $i [$strings:length $h]]]
+              [= $end  [$strings:find $rest '</code>']]
+          [?if [< $end 0] [then $h]
+            [else [$cat (
+              $head,
+              [$strings:replace [$strings:slice $rest 0 [+ $end 7]] '[[' '&#91;&#91;'],
+              [$escape-code-xrefs [$strings:slice $rest [+ $end 7] [$strings:length $rest]]])]]]]]]]]
+
 [# anchor-href: target href for one reference, given the current page slug. #]
 [?def anchor-href scope=public ($cur $slug $frag $name)
   [?let [= $base [?if [= $slug $cur] [then ''] [else [$cat ($slug, '.html')]]]]
@@ -188,7 +226,9 @@
 [?def resolve-anchors scope=public impure ($body $cur $sec $chl)
   [$re:replace [$re:compile '\[\[[a-z][a-z0-9-]*\]\]']
     [$fp:fold $chl
-      [$fp:fold $sec $body [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
+      [$fp:fold $sec
+        [$strings:replace [$escape-code-xrefs $body] '`[[' '`&#91;&#91;']
+        [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
       [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
     '<span class="xref-unresolved">$0</span>']]
 
@@ -249,10 +289,10 @@
 [?def load-metas scope=public impure ($src)
   [?for [in $f [$io:glob [$cat ($src, '/sections/*.cxd')]]] [yield
     [?if [>= [$strings:find $f '16-libraries'] 0] [then ()] [else
-      [?let [= $d [$cx:parse [$io:read-file $f]]]
+      [?let [= $d [$parse-or-die $f]]
             [= $s $d//section]
         [?if [$empty $s] [then ()] [else
-          [m group='Guide' n=$s@n slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
+          [m group='Guide' n=$s@n id=$s@id slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
 
 [# ── Standard-library projection ──────────────────────────────────────────
    Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
@@ -304,7 +344,7 @@
 [# render-module: stdlib/<m>.cx → the module page body (HTML fragment). #]
 [?def render-module scope=public impure ($f)
   [?let [= $m [$stdlib-slug $f]]
-        [= $d [$cx:parse [$io:read-file $f]]]
+        [= $d [$parse-or-die $f]]
         [= $fns $d//fn-doc]
     [$post-body [$xml:emit
       [section id=[$cat ('lib-', $m)]
@@ -316,7 +356,7 @@
 
 [# landing-row / render-landing: the Standard-library landing (module index). #]
 [?def landing-row scope=public impure ($f)
-  [?let [= $m [$stdlib-slug $f]] [= $d [$cx:parse [$io:read-file $f]]]
+  [?let [= $m [$stdlib-slug $f]] [= $d [$parse-or-die $f]]
     [li [a href=[$cat ('lib-', $m, '.html')] $m]
         [$cat ('  —  ', [$first-sentence [$module-scope $d]])]]]]
 [?def render-landing scope=public impure ($files)
@@ -369,7 +409,7 @@
 [# render-directive: reference/directives.cx → the directive-reference page
    body (HTML fragment). Mirrors render-module. #]
 [?def render-directive scope=public impure ($f)
-  [?let [= $d [$cx:parse [$io:read-file $f]]]
+  [?let [= $d [$parse-or-die $f]]
         [= $dds $d//directive-doc]
     [$post-body [$xml:emit
       [section id=directives
@@ -386,7 +426,7 @@
 
 [# render-syntax: reference/syntax.cx → the core-syntax page body. #]
 [?def render-syntax scope=public impure ($f)
-  [?let [= $d [$cx:parse [$io:read-file $f]]]
+  [?let [= $d [$parse-or-die $f]]
         [= $sds $d//syntax-doc]
     [$post-body [$xml:emit
       [section id=syntax
@@ -460,12 +500,15 @@
       [h3 'Agent-parity']
       [p 'Agents are first-class peers. They emit the same intents as humans and are gated by the same authz dial — a delegation you can attenuate, time-bound, or revoke. Surfaces are medium-agnostic, so the same capability renders for a terminal, a browser, or an agent.']
       [h3 'Using it']
-      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. '
-         [code 'cx xap init <dir>'] ' scaffolds a project. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
+      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
       [h3 'The demo ladder']
       [ul [?for [in $d [$xap-demos]] [yield [$xap-ladder-item $d]]]]]]]]
 
-[# ── main: render every section page ─────────────────────────────────── #]
+[# ── main: render every section page ───────────────────────────────────
+   Cross-reference anchors are derived from the section files themselves
+   (their [section id=] and nested [child id=]s) — the manifest is a
+   descriptive outline and is NOT consulted, so anchors can never go
+   stale against it. #]
 [?let
   [= $src 'docs-src/canonical']
   [= $gen 'scripts/gen_guide']
@@ -473,12 +516,12 @@
   [= $metas [$load-metas $src]]
   [= $libfiles [$io:glob 'stdlib/*.cx']]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
-  [= $man [$cx:parse [$io:read-file [$cat ($src, '/manifest.cxd')]]]]
-  [= $sec-ancs [?for [in $s $man//section] [yield
-    [anc name=$s@id slug=[$slug-of $s@file] frag='']]]]
-  [= $child-ancs [$fp:flat-map $man//section [?fn ($s)
-    [?for [in $c $s//child] [yield
-      [anc name=$c@id slug=[$slug-of $s@file] frag=$c@id]]]]]]
+  [= $sec-ancs [?for [in $m $metas] [yield
+    [anc name=$m@id slug=$m@slug frag='']]]]
+  [= $child-ancs [$fp:flat-map $metas [?fn ($m)
+    [?let [= $d [$parse-or-die $m@srcpath]]
+      [?for [in $c $d//child] [yield
+        [anc name=$c@id slug=$m@slug frag=$c@id]]]]]]]
   (
     [$io:make-dirs [$cat ($out, '/assets')]],
     [$io:make-dirs [$cat ($out, '/highlight')]],
@@ -506,7 +549,7 @@
     [$io:write-file [$cat ($out, '/about.html')]
       [$wrap-page 'About' 'about' $metas $libfiles [$io:read-file [$cat ($src, '/about.html')]]]],
     [?for [in $m $metas] [yield
-      [?let [= $doc [$cx:parse [$io:read-file $m@srcpath]]]
+      [?let [= $doc [$parse-or-die $m@srcpath]]
             [= $raw [$render-doc $doc]]
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
             [= $page [$wrap-page $m@title $m@slug $metas $libfiles $body]]

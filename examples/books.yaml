@@ -1,15 +1,29 @@
-library:
-  book:
-  - author: J.R.R. Tolkien
-    available: true
-    title: The Hobbit
+books:
+  - title: The Hobbit
+    author: J.R.R. Tolkien
     year: 1937
-  - author: Frank Herbert
-    available: false
-    title: Dune
-    year: 1965
-  - author: William Gibson
+    isbn: 978-0547928227
     available: true
-    title: Neuromancer
+  - title: Dune
+    author: Frank Herbert
+    year: 1965
+    isbn: 978-0441172719
+    available: false
+  - title: Neuromancer
+    author: William Gibson
     year: 1984
-
+    isbn: 978-0441569595
+    available: true
+  - title: Snow Crash
+    author: Neal Stephenson
+    year: 1992
+    isbn: 978-0553380958
+    available: true
+  - title: The Diamond Age
+    author: Neal Stephenson
+    year: 1995
+    isbn: 978-0553380965
+    available: true
+shelf:
+  id: sci-fi-classics
+  tags: "hugo,nebula,canon"

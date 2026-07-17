@@ -13,28 +13,28 @@ comprehensions, Go filter chains, Rust iterator combinators).
 
 ## Headline
 
-- **CXPath as first-class value kind** ([`spec/code.md`](spec/code.md))
+- **CXPath as first-class value kind** ([`spec/03-approved/core/code.md`](spec/03-approved/core/code.md))
   — `//user[@active=true]/@email` is an expression; usable directly
   in `[?for]`, `[?if]`, `[?match]`, `[?modify]`, and binding `select_all`.
   All 12 XPath 3.1 axes; value-comparison semantics on sigils
   `= != < <= > >=`; no keyword-comparison synonyms (sigils only).
-- **Multi-arm `[?match]`** ([`spec/code.md`](spec/code.md))
+- **Multi-arm `[?match]`** ([`spec/03-approved/core/code.md`](spec/03-approved/core/code.md))
   — `:case PAT :yield E` / `:when PRED :yield E` / `:else :yield E`.
   Scalar literal patterns. `_` wildcard. First-match-wins, top-down.
   CXER0100 still flags the single-arm-with-no-match for back-compat.
-- **`[?modify]` directive** ([`spec/code.md`](spec/code.md))
+- **`[?modify]` directive** ([`spec/03-approved/core/code.md`](spec/03-approved/core/code.md))
   — pure-functional updates via CXPath focus + action vocabulary.
   Eleven actions: `:set`, `:delete`, `:using`, `:rename`,
   `:set-attr`, `:delete-attr`, `:append`, `:prepend`,
   `:insert-before`, `:insert-after`, `:replace`. Pipeline-composable
   via `|`. Structural sharing — < 1 KB new heap per matched node on
   a 10 MB document.
-- **Two-layer bindings** ([`spec/bindings.md`](spec/bindings.md)) —
+- **Two-layer bindings** ([`spec/03-approved/misc/bindings.md`](spec/03-approved/misc/bindings.md)) —
   Layer 1: 16 canonical methods, identical across V/Python/Go/Rust,
   conformance-validated byte-for-byte. Layer 2: host idiom packs
   (`cxlib.idioms` in Python, `cxlib/idioms` in Go, `cxlib::idioms`
   in Rust) desugaring to Layer 1.
-- **Binding set narrowed** to V/Python/Go/Rust ([backlog `d-2026-05-22-03`](docs-src/canonical/backlog.cxd)).
+- **Binding set narrowed** to V/Python/Go/Rust (backlog `d-2026-05-22-03`).
   TypeScript / Java / C# / Ruby / Kotlin / Swift archived to
   `lang/_archived/`. Restoration is opt-in once the Layer-1 surface
   stabilizes.
@@ -55,7 +55,7 @@ comprehensions, Go filter chains, Rust iterator combinators).
 ## Carried from v0.7.6 (released as part of v0.8.0)
 
 The v0.7.6 design pass landed substantively on `v0.7.6-dev` but was
-never tagged ([backlog `d-2026-05-22-04`](docs-src/canonical/backlog.cxd)).
+never tagged (backlog `d-2026-05-22-04`).
 Its deliverables ship in v0.8.0:
 
 - §11 capabilities: services, concurrency primitives, async, visualization.
@@ -88,7 +88,7 @@ been applied across the codebase as part of this release.
 
 ## Layer 1 — the 16 canonical methods
 
-Per [`spec/bindings.md §2.1`](spec/bindings.md), every supported
+Per [`spec/03-approved/misc/bindings.md` §2.1](spec/03-approved/misc/bindings.md), every supported
 binding (V/Python/Go/Rust) exposes the same 16 methods with identical
 semantics:
 
@@ -132,13 +132,13 @@ Layer-1 parity is conformance-validated via
 
 The v0.8.0 design pass synthesized feedback from the v0.7.6 review
 window. Key contributors per the backlog:
-[`d-2026-05-22-01`](docs-src/canonical/backlog.cxd) (brand),
-[`d-2026-05-22-11`](docs-src/canonical/backlog.cxd) (ADR format),
-[`d-2026-05-22-12`](docs-src/canonical/backlog.cxd) (sigils only),
-[`d-2026-05-22-13`](docs-src/canonical/backlog.cxd) (ADR length discipline).
+`d-2026-05-22-01` (brand),
+`d-2026-05-22-11` (ADR format),
+`d-2026-05-22-12` (sigils only),
+`d-2026-05-22-13` (ADR length discipline).
 
 ## Verification
 
-Every gate in [`spec/v0_8_0_status.md`](spec/v0_8_0_status.md) §11.6
+Every gate in `spec/v0_8_0_status.md` (retired with the spec-tree reorg) §11.6
 is ✅ at tag time. The gate evidence bundle (`v0.8.0-gate-evidence.tar.gz`)
 is attached to the GitHub release.

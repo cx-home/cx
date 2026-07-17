@@ -1,0 +1,27 @@
+[; ingest.cx — walk a directory tree and load it into a content-addressed store,  ]
+[; naming each file by its relative path (set-alias). Idempotent: re-running       ]
+[; re-puts identical content to the same hash (a no-op) and rewrites the alias.    ]
+[; Point $store:open at any writable backend (file:// / remote         ]
+[; cx-store(+grpc)://).                                                            ]
+[;                                                                                 ]
+[; BOTH data and code are ingested (#128-A):                                       ]
+[;   .cxd DATA  -> put-doc-text  (content hash; subtree-dedup on cxpack)           ]
+[;   .cx  CODE  -> put-def       (Tier-2 code identity; alpha-variants dedup)      ]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/store' :as store]
+[?let
+  [= $c [$store:open "file://./out-store"]]
+  [ingested
+    [?for [in $e [$io:walk "sample"]]
+      [yield
+        [?if [and $e@is-file [$str-ends-with $e@path ".cxd"]]
+          [then
+            [?let [= $h [$store:put-doc-text $c [$io:read-file $e@path]]]
+              [stored kind=data path=$e@path hash=$h
+                [aliased [$store:set-alias $c $e@path $h]]]]]
+          [else
+            [?if [and $e@is-file [$str-ends-with $e@path ".cx"]]
+              [then
+                [?let [= $h [$store:put-def $c [$io:read-file $e@path]]]
+                  [stored kind=code path=$e@path hash=$h
+                    [aliased [$store:set-alias $c $e@path $h]]]]]]]]]]]]

@@ -15,7 +15,7 @@ Normative reference for the `cx-stdlib/log` sub-package.
 
 `cx-stdlib/log` provides structured logging: leveled emit, arbitrary structured fields, configurable sinks (single or multi-sink fan-out with optional async / rotation / sampling), and dynamic contextual scopes via the [`[?with-scope]`](../core/code.md) language directive (§2.3). Each log event is a record of `[level $atom message $string timestamp $datetime fields $map]`.
 
-Distinct from `cx-stdlib/test` (assertion failures, not log events), `cx-stdlib/prof/trace` (perf events), and `[?print]` / `[$io:write-line]` (unstructured writes).
+Distinct from `cx-stdlib/test` (assertion failures, not log events), `cx-stdlib/prof/trace` (perf events), and `[$io:write-line]` (unstructured writes).
 
 ## §2. Conceptual model
 
@@ -36,7 +36,7 @@ Minimum level configurable via `[$log:configure]` (default `:info`).
 Every log call accepts an optional `fields` map (named parameter, default `{}`, §3.1):
 
 ```cx
-[$log:info "user created" fields={user-id 1234 email "alice@example.com" duration-ms 12.5}]
+[$log:info "user created" fields={user-id: 1234 email: "alice@example.com" duration-ms: 12.5}]
 ```
 
 JSON sinks emit fields as JSON object; text sinks as `key=value` pairs.
@@ -46,7 +46,7 @@ JSON sinks emit fields as JSON object; text sinks as `key=value` pairs.
 A **scope** is a thread/coroutine-local dynamic context that adds fields automatically to every log call within its dynamic extent. Scopes are established by the [`[?with-scope]`](../core/code.md) language directive (core §8.10.8), not a `cx-stdlib/log` function — establishing a dynamic context with guaranteed restore-on-exit is control flow, so it is a directive. `cx-stdlib/log` is its consumer: each `[$log:*]` call reads the active context and merges it **under** the call's own `fields` (call-site wins for shared keys).
 
 ```cx
-[?with-scope {request-id "abc123" user-id 42}
+[?with-scope {request-id: "abc123" user-id: 42}
   [$log:info "processing started"]
   [?http-client target=$url method="get"]
   [$log:info "processing done"]]
@@ -117,11 +117,11 @@ The flat `sink` / `format` / `file-path` keys configure exactly one sink (equiva
 
 ```cx
 [$log:configure {
-  level=:debug
-  sinks=[
-    {sink="stderr" format="text"       level=:info}
-    {sink="file"   format="json-lines" file-path="/var/log/app.jsonl"
-     rotation={by=:size max-bytes=10485760 max-files=5}}]}]
+  level: :debug
+  sinks: [
+    {sink: "stderr" format: "text"       level: :info},
+    {sink: "file"   format: "json-lines" file-path: "/var/log/app.jsonl"
+     rotation: {by: :size max-bytes: 10485760 max-files: 5}}]}]
 ```
 
 `sinks` and the flat `sink` are mutually exclusive — both present raises `CXER2403`.
@@ -168,7 +168,7 @@ True if `level` would produce output at some sink. The internal level check shor
 
 ```cx
 [?if [$log:is-enabled :debug]
-  [$log:debug "snapshot" fields={state=[expensive-snapshot $world]}]]
+  [$log:debug "snapshot" fields={state: [expensive-snapshot $world]}]]
 ```
 
 ## §4. Edge cases and policy
@@ -204,7 +204,7 @@ The internal level check short-circuits before formatting fields, so guarding a 
 
 Under `conformance/stdlib/log.cxd`:
 
-- Level filter: `[$log:configure {level=:warn}]` then `[$log:info "m"]` no output; `[$log:warn "m"]` produces output.
+- Level filter: `[$log:configure {level: :warn}]` then `[$log:info "m"]` no output; `[$log:warn "m"]` produces output.
 - JSON-lines: `format="json-lines"` produces parseable JSON per line.
 - logfmt: `format="logfmt"` produces `key=value`.
 - Fieldless vs `fields`: `[$log:info "m"]` empty fields; `[$log:info "m" fields={a=1}]` attaches `a=1`.

@@ -170,6 +170,10 @@
           "named": true
         },
         {
+          "type": "interpolation",
+          "named": true
+        },
+        {
           "type": "lib_directive",
           "named": true
         },
@@ -274,6 +278,10 @@
         },
         {
           "type": "if_directive",
+          "named": true
+        },
+        {
+          "type": "interpolation",
           "named": true
         },
         {
@@ -603,6 +611,10 @@
           "named": true
         },
         {
+          "type": "interpolation",
+          "named": true
+        },
+        {
           "type": "lib_directive",
           "named": true
         },
@@ -640,6 +652,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "directive_head",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "directive_name",
@@ -709,6 +726,10 @@
         },
         {
           "type": "if_directive",
+          "named": true
+        },
+        {
+          "type": "interpolation",
           "named": true
         },
         {
@@ -843,6 +864,10 @@
         },
         {
           "type": "if_directive",
+          "named": true
+        },
+        {
+          "type": "interpolation",
           "named": true
         },
         {
@@ -1001,6 +1026,25 @@
         },
         {
           "type": "then_clause",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "interpolation",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "directive_body",
+          "named": true
+        },
+        {
+          "type": "directive_head",
           "named": true
         }
       ]
@@ -1295,6 +1339,10 @@
         },
         {
           "type": "if_directive",
+          "named": true
+        },
+        {
+          "type": "interpolation",
           "named": true
         },
         {
@@ -1710,6 +1758,10 @@
     "named": false
   },
   {
+    "type": "[?=",
+    "named": false
+  },
+  {
     "type": "]",
     "named": false
   },
@@ -1755,10 +1807,6 @@
   },
   {
     "type": "decl",
-    "named": true
-  },
-  {
-    "type": "directive_head",
     "named": true
   },
   {

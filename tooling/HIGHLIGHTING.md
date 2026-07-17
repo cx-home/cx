@@ -24,9 +24,9 @@ whose theme doesn't.
 
 | System | Capture/scope for `[` `]` | De-emphasis mechanism |
 |---|---|---|
-| tree-sitter (`tooling/tree-sitter-cx/queries/highlights.scm`) | `@punctuation.bracket` | Editor theme colors `@punctuation.bracket` dimmer (Neovim: `hl-@punctuation.bracket`) |
-| VS Code TextMate (`tooling/vscode/syntaxes/cx.tmLanguage.json`) | `punctuation.section.brackets.cx` | Theme rule or user `editor.tokenColorCustomizations` |
-| Neovim regex syntax (`tooling/neovim/syntax/cx.vim`) | `cxBracket` group | `:highlight` link to a dim group (`Comment`-level fg, NOT italic) |
+| tree-sitter (`tooling/tree-sitter-cx/queries/cx/highlights.scm`) | `@punctuation.bracket` (element `[` / `]` + predicate brackets) | Editor theme colors `@punctuation.bracket` dimmer (Neovim: `hl-@punctuation.bracket`) |
+| VS Code TextMate (`tooling/vscode/syntaxes/cx.tmLanguage.json`, canonical; `tooling/syntax/` is a synced copy) | `punctuation.section.brackets.cx` on element `[` / `]`, directive `[?` / `]`, clause-child / match-arm / modify-action / let-clause / operator-form `[` / `]`, and `[?=` interpolation delimiters. Embedded-language wrapper delimiters keep their `punctuation.definition.tag.*` scopes (already punctuation-classed, so punctuation-dimming themes catch them too). | Theme rule or user `editor.tokenColorCustomizations` |
+| Neovim regex syntax (`tooling/neovim/syntax/cx.vim`) | `cxBracket` group — element `[` and `]`, plus the closing `]` of call / operator / directive regions. The openers `[$name` / `[op` / `[?name` stay glued to their head groups (`cxCallHead` / `cxOperatorHead` / `cxPIHead`): a Vim region's `matchgroup` colors the whole start match, and the head-loud coloring is the design intent anyway. | `:highlight` link (`cxBracket` links to `@punctuation.bracket` on Neovim, `Delimiter` elsewhere); dim per the guideline below |
 
 ### Recommended user overrides
 
@@ -41,9 +41,11 @@ VS Code (`settings.json`):
 }
 ```
 
-Neovim (init.lua):
+Neovim (init.lua — `cxBracket` covers the regex-syntax highlighter,
+`@punctuation.bracket` covers tree-sitter):
 
 ```lua
+vim.api.nvim_set_hl(0, "cxBracket", { fg = "#ab9434" })
 vim.api.nvim_set_hl(0, "@punctuation.bracket.cx", { fg = "#ab9434" })
 ```
 
@@ -64,8 +66,16 @@ themselves one shade dimmer:
 
 ### Status / follow-ups
 
-- [ ] Audit the three grammars: brackets must be captured under the scopes
-      above everywhere (not lumped into a generic source scope).
+- [x] Audit the three grammars: brackets are captured under the scopes above
+      (#423, 2026-07-14). tree-sitter already had `@punctuation.bracket`;
+      the VS Code tmLanguage gained `punctuation.section.brackets.cx` on the
+      element / directive / clause / operator / interpolation delimiters
+      (scope-asserted in `tooling/vscode/test/grammar/basic.cx`, suite green);
+      cx.vim gained the `cxBracket` group (headless-nvim verified). Two
+      documented partial spots: TextMate embedded-language wrapper delimiters
+      keep `punctuation.definition.tag.*` (still punctuation-classed), and the
+      Vim regex highlighter keeps `[$name` / `[op` / `[?name` openers glued to
+      their head groups (region `matchgroup` colors the whole start match).
 - [ ] Apply the approved defaults wherever we ship colors (web demo
       highlighters, playground, any bundled theme) — approved 2026-06-02.
 - [ ] Consider shipping the dim values as defaults in the bundled VS Code

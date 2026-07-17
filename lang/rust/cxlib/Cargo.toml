@@ -1,6 +1,6 @@
 [package]
 name = "cxlib"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 description = "CX format library — thin wrapper around libcx"
 
@@ -15,7 +15,7 @@ serde_json = "1"
 # Apache Arrow C-Data interop — opt-in via `--features arrow` so the default
 # build stays light. Mirrors Python's `pip install cxlib[arrow]` and Go's
 # `-tags arrow` patterns. Pulls in `libcx_arrow` at link time (see build.rs).
-arrow = { version = "53", optional = true, default-features = false, features = ["ffi"] }
+arrow = { version = "53", optional = true, default-features = false, features = ["ffi", "ipc"] }
 # Parquet bridge (X-row / v0.7.0). Same major as the `arrow` crate.
 # Opt-in via `--features parquet` (implies arrow).
 parquet = { version = "53", optional = true, default-features = false, features = ["arrow", "snap"] }

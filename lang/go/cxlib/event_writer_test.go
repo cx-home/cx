@@ -2,6 +2,7 @@ package cxlib
 
 import (
 	"encoding/binary"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -289,10 +290,33 @@ func TestEventWriterChunkedTableCx(t *testing.T) {
 		t.Fatalf("close: %v", err)
 	}
 	s := string(out)
-	for _, want := range []string{":table", "alice", "91"} {
-		if !strings.Contains(s, want) {
-			t.Fatalf("missing %q in output: %q", want, s)
-		}
+	// #509: the writer must emit the CURRENT `[table[…]]` clause-child
+	// form (the retired `:table[` opener is unparseable), and the text
+	// must round-trip through the binding's own parse entry — a
+	// structural assertion, not a substring pin.
+	if !strings.Contains(s, "[table[") {
+		t.Fatalf("missing [table[ opener in output: %q", s)
+	}
+	tbl, err := TableFromCx(s)
+	if err != nil {
+		t.Fatalf("emitted CX does not re-parse: %v\noutput: %q", err, s)
+	}
+	if tbl.RowCount() != 2 {
+		t.Fatalf("re-parsed row count = %d; want 2", tbl.RowCount())
+	}
+	name0, err := tbl.CellByName(0, "name")
+	if err != nil {
+		t.Fatalf("re-parsed table missing 'name' column: %v", err)
+	}
+	if name0 != "alice" {
+		t.Fatalf("re-parsed cell (0, name) = %v; want alice", name0)
+	}
+	score0, err := tbl.CellByName(0, "score")
+	if err != nil {
+		t.Fatalf("re-parsed table missing 'score' column: %v", err)
+	}
+	if fmt.Sprintf("%v", score0) != "91" {
+		t.Fatalf("re-parsed cell (0, score) = %v; want 91", score0)
 	}
 }
 

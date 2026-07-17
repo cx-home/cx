@@ -184,13 +184,14 @@
            binding extracts the code, classifies into a host
            exception/Result, and calls `cx_error_release(err)` to
            free the message buffer."""]
-      [table columns=(code-range, family, host-mapping)
-        [row code-range='CXER0001-CXER0099' family='Parse / lexical' host-mapping='Python ParseError; Rust cxlib::Error::Parse; Go cxlib.ParseError; V error string']
-        [row code-range='CXER0100-CXER0199' family='Validation / type / canonical' host-mapping='Python ValidationError; Rust cxlib::Error::Validation; Go cxlib.ValidationError']
-        [row code-range='CXER0140-CXER0149' family='Resource limits (depth / time / size)' host-mapping='Python ResourceError; Rust cxlib::Error::Limit; Go cxlib.LimitError']
-        [row code-range='CXER0200-CXER0299' family='Evaluation (code / CXPath)' host-mapping='Python EvalError; Rust cxlib::Error::Eval; Go cxlib.EvalError']
-        [row code-range='CXER0300-CXER0399' family='I/O / include / network' host-mapping='Python IOError subclass; Rust cxlib::Error::Io; Go cxlib.IOError']
-        [row code-range='CXLW0001-CXLW0099' family='Lint / warning (not error)' host-mapping='Python warnings.warn; Rust log::warn!; Go cxlib.Warning']]
+      [table
+        [tr [th 'code-range'] [th 'family'] [th 'host-mapping']]
+        [tr [td 'CXER0001-CXER0099'] [td 'Parse / lexical'] [td 'Python ParseError; Rust cxlib::Error::Parse; Go cxlib.ParseError; V error string']]
+        [tr [td 'CXER0100-CXER0199'] [td 'Validation / type / canonical'] [td 'Python ValidationError; Rust cxlib::Error::Validation; Go cxlib.ValidationError']]
+        [tr [td 'CXER0140-CXER0149'] [td 'Resource limits (depth / time / size)'] [td 'Python ResourceError; Rust cxlib::Error::Limit; Go cxlib.LimitError']]
+        [tr [td 'CXER0200-CXER0299'] [td 'Evaluation (code / CXPath)'] [td 'Python EvalError; Rust cxlib::Error::Eval; Go cxlib.EvalError']]
+        [tr [td 'CXER0300-CXER0399'] [td 'I/O / include / network'] [td 'Python IOError subclass; Rust cxlib::Error::Io; Go cxlib.IOError']]
+        [tr [td 'CXLW0001-CXLW0099'] [td 'Lint / warning (not error)'] [td 'Python warnings.warn; Rust log::warn!; Go cxlib.Warning']]]
       [body
         """Full error-code registry is in
            [`spec/errors.md`](../../spec/errors.md). The code is
@@ -213,23 +214,24 @@
          conformance harness validates by hashing each result and
          comparing per-binding."""]
 
-    [table columns=(method, returns, description, c-abi)
-      [row method='parse(bytes)' returns='Doc' description='Parse canonical CX bytes' c-abi='cx_parse']
-      [row method='Doc.bytes()' returns='bytes' description='Serialize Doc to canonical CX' c-abi='cx_doc_bytes']
-      [row method='Doc.hash()' returns='string' description='SHA-256 of canonical bytes (hex)' c-abi='cx_doc_hash']
-      [row method='Doc.equals(other)' returns='bool' description='Canonical-bytes equality' c-abi='cx_doc_equals']
-      [row method='Doc.eval(code)' returns='Value' description='Evaluate CX code against doc' c-abi='cx_code_eval']
-      [row method='Doc.select_all(cxpath)' returns='[Node]' description='CXPath path-value (all matches)' c-abi='cx_code_eval (find pattern)']
-      [row method='Doc.select(cxpath)' returns='Node?' description='First match of select_all' c-abi='cx_code_eval (find pattern)']
-      [row method='Doc.modify(focus, action)' returns='Doc' description='Pure-functional update' c-abi='cx_modify']
-      [row method='Doc.find_all(name)' returns='[Node]' description='Name-only convenience' c-abi='cx_code_eval (find pattern)']
-      [row method='Doc.root()' returns='Node' description='Root element' c-abi='cx_doc_root']
-      [row method='Node.name()' returns='string' description='Element name' c-abi='cx_node_name']
-      [row method='Node.attr(name)' returns='Value?' description='Attribute value' c-abi='cx_node_attr']
-      [row method='Node.attrs()' returns='Map' description='All attributes (preserves order)' c-abi='cx_node_attrs']
-      [row method='Node.children()' returns='[Node]' description='Direct children' c-abi='cx_node_children']
-      [row method='Node.body()' returns='Value' description='Element body value' c-abi='cx_node_body']
-      [row method='Node.kind()' returns='string' description='Item-kind tag (element / scalar:int / …)' c-abi='cx_node_kind']]
+    [table
+      [tr [th 'method'] [th 'returns'] [th 'description'] [th 'c-abi']]
+      [tr [td 'parse(bytes)'] [td 'Doc'] [td 'Parse canonical CX bytes'] [td 'cx_parse']]
+      [tr [td 'Doc.bytes()'] [td 'bytes'] [td 'Serialize Doc to canonical CX'] [td 'cx_doc_bytes']]
+      [tr [td 'Doc.hash()'] [td 'string'] [td 'SHA-256 of canonical bytes (hex)'] [td 'cx_doc_hash']]
+      [tr [td 'Doc.equals(other)'] [td 'bool'] [td 'Canonical-bytes equality'] [td 'cx_doc_equals']]
+      [tr [td 'Doc.eval(code)'] [td 'Value'] [td 'Evaluate CX code against doc'] [td 'cx_code_eval']]
+      [tr [td 'Doc.select_all(cxpath)'] [td '[Node]'] [td 'CXPath path-value (all matches)'] [td 'cx_code_eval (find pattern)']]
+      [tr [td 'Doc.select(cxpath)'] [td 'Node?'] [td 'First match of select_all'] [td 'cx_code_eval (find pattern)']]
+      [tr [td 'Doc.modify(focus, action)'] [td 'Doc'] [td 'Pure-functional update'] [td 'cx_modify']]
+      [tr [td 'Doc.find_all(name)'] [td '[Node]'] [td 'Name-only convenience'] [td 'cx_code_eval (find pattern)']]
+      [tr [td 'Doc.root()'] [td 'Node'] [td 'Root element'] [td 'cx_doc_root']]
+      [tr [td 'Node.name()'] [td 'string'] [td 'Element name'] [td 'cx_node_name']]
+      [tr [td 'Node.attr(name)'] [td 'Value?'] [td 'Attribute value'] [td 'cx_node_attr']]
+      [tr [td 'Node.attrs()'] [td 'Map'] [td 'All attributes (preserves order)'] [td 'cx_node_attrs']]
+      [tr [td 'Node.children()'] [td '[Node]'] [td 'Direct children'] [td 'cx_node_children']]
+      [tr [td 'Node.body()'] [td 'Value'] [td 'Element body value'] [td 'cx_node_body']]
+      [tr [td 'Node.kind()'] [td 'string'] [td 'Item-kind tag (element / scalar:int / …)'] [td 'cx_node_kind']]]
 
     [body
       """**CXPath is the selector vocabulary** across every Layer-1
@@ -484,37 +486,39 @@
          follows. The leftmost column lists the CX type tag; each
          subsequent column gives the host's primary representation."""]
 
-    [table columns=(cx-type, v, python, go, rust)
-      [row cx-type=':int' v='i64' python='int' go='int64' rust='i64']
-      [row cx-type=':i8' v='i8' python='int' go='int8' rust='i8']
-      [row cx-type=':i16' v='i16' python='int' go='int16' rust='i16']
-      [row cx-type=':i32' v='i32' python='int' go='int32' rust='i32']
-      [row cx-type=':i64' v='i64' python='int' go='int64' rust='i64']
-      [row cx-type=':u8' v='u8' python='int' go='uint8' rust='u8']
-      [row cx-type=':u16' v='u16' python='int' go='uint16' rust='u16']
-      [row cx-type=':u32' v='u32' python='int' go='uint32' rust='u32']
-      [row cx-type=':u64' v='u64' python='int' go='uint64' rust='u64']
-      [row cx-type=':float' v='f64' python='float' go='float64' rust='f64']
-      [row cx-type=':f32' v='f32' python='float' go='float32' rust='f32']
-      [row cx-type=':f64' v='f64' python='float' go='float64' rust='f64']
-      [row cx-type=':string' v='string' python='str' go='string' rust='String / &str']
-      [row cx-type=':bool' v='bool' python='bool' go='bool' rust='bool']
-      [row cx-type=':date' v='time.Date' python='datetime.date' go='time.Time' rust='chrono::NaiveDate']
-      [row cx-type=':datetime' v='time.Time' python='datetime.datetime (aware)' go='time.Time' rust='chrono::DateTime<FixedOffset>']
-      [row cx-type=':bytes' v='[]u8' python='bytes' go='[]byte' rust='Vec<u8>']
-      [row cx-type=':null' v='?T (none)' python='None' go='nil' rust='Option::None']]
+    [table
+      [tr [th 'cx-type'] [th 'v'] [th 'python'] [th 'go'] [th 'rust']]
+      [tr [td ':int'] [td 'i64'] [td 'int'] [td 'int64'] [td 'i64']]
+      [tr [td ':i8'] [td 'i8'] [td 'int'] [td 'int8'] [td 'i8']]
+      [tr [td ':i16'] [td 'i16'] [td 'int'] [td 'int16'] [td 'i16']]
+      [tr [td ':i32'] [td 'i32'] [td 'int'] [td 'int32'] [td 'i32']]
+      [tr [td ':i64'] [td 'i64'] [td 'int'] [td 'int64'] [td 'i64']]
+      [tr [td ':u8'] [td 'u8'] [td 'int'] [td 'uint8'] [td 'u8']]
+      [tr [td ':u16'] [td 'u16'] [td 'int'] [td 'uint16'] [td 'u16']]
+      [tr [td ':u32'] [td 'u32'] [td 'int'] [td 'uint32'] [td 'u32']]
+      [tr [td ':u64'] [td 'u64'] [td 'int'] [td 'uint64'] [td 'u64']]
+      [tr [td ':float'] [td 'f64'] [td 'float'] [td 'float64'] [td 'f64']]
+      [tr [td ':f32'] [td 'f32'] [td 'float'] [td 'float32'] [td 'f32']]
+      [tr [td ':f64'] [td 'f64'] [td 'float'] [td 'float64'] [td 'f64']]
+      [tr [td ':string'] [td 'string'] [td 'str'] [td 'string'] [td 'String / &str']]
+      [tr [td ':bool'] [td 'bool'] [td 'bool'] [td 'bool'] [td 'bool']]
+      [tr [td ':date'] [td 'time.Date'] [td 'datetime.date'] [td 'time.Time'] [td 'chrono::NaiveDate']]
+      [tr [td ':datetime'] [td 'time.Time'] [td 'datetime.datetime (aware)'] [td 'time.Time'] [td 'chrono::DateTime<FixedOffset>']]
+      [tr [td ':bytes'] [td '[]u8'] [td 'bytes'] [td '[]byte'] [td 'Vec<u8>']]
+      [tr [td ':null'] [td '?T (none)'] [td 'None'] [td 'nil'] [td 'Option::None']]]
 
     [body
       """**Container kinds.** Sequences, arrays, and maps (see
          [[collections]]) map to host containers preserving the
          container-vs-atom distinction (cxdm §2.0)."""]
 
-    [table columns=(cx-container, v, python, go, rust)
-      [row cx-container='sequence' v='[]Value' python='list[Value]' go='[]Value' rust='Vec<Value>']
-      [row cx-container='array' v='Array' python='list (nested)' go='[]interface{}' rust='Array (Vec<Value> newtype)']
-      [row cx-container='map' v='map[ScalarKey]Value' python='dict[ScalarKey, Value]' go='map[interface{}]Value' rust='HashMap<ScalarKey, Value>']
-      [row cx-container='table' v='Table' python='cxlib.Table' go='cxlib.Table' rust='cxlib::Table']
-      [row cx-container='element' v='Element' python='Element' go='Element' rust='Element']]
+    [table
+      [tr [th 'cx-container'] [th 'v'] [th 'python'] [th 'go'] [th 'rust']]
+      [tr [td 'sequence'] [td '[]Value'] [td 'list[Value]'] [td '[]Value'] [td 'Vec<Value>']]
+      [tr [td 'array'] [td 'Array'] [td 'list (nested)'] [td '[]interface{}'] [td 'Array (Vec<Value> newtype)']]
+      [tr [td 'map'] [td 'map[ScalarKey]Value'] [td 'dict[ScalarKey, Value]'] [td 'map[interface{}]Value'] [td 'HashMap<ScalarKey, Value>']]
+      [tr [td 'table'] [td 'Table'] [td 'cxlib.Table'] [td 'cxlib.Table'] [td 'cxlib::Table']]
+      [tr [td 'element'] [td 'Element'] [td 'Element'] [td 'Element'] [td 'Element']]]
 
     [body
       """**Overflow and edge cases.** Host languages have different
@@ -738,17 +742,18 @@
     [body
       """**Selected capability bits** (full registry in
          [`spec/abi.md`](../../spec/abi.md) §3):"""]
-    [table columns=(bit, mask, feature)
-      [row bit=0 mask='0x1' feature='ast-bin v3 (always set)']
-      [row bit=1 mask='0x2' feature='Schema-driven data-bin encoding']
-      [row bit=5 mask='0x20' feature=':bytes scalar wire support']
-      [row bit=15 mask='0x8000' feature='Arrow C Data Interface bridge']
-      [row bit=16 mask='0x10000' feature='Parquet read/write bridge']
-      [row bit=17 mask='0x20000' feature='CXCol chunked columnar streaming']
-      [row bit=26 mask='0x4000000' feature='Thread-init handshake (cx_init / cx_thread_register)']
-      [row bit=28 mask='0x10000000' feature='cx_code_eval family — unified evaluator entry']
-      [row bit=29 mask='0x20000000' feature='Code-to-diagram (cx_code_diagram)']
-      [row bit=30 mask='0x40000000' feature='Code-eval with interactive-tree result (cx_code_eval_tree)']]
+    [table
+      [tr [th 'bit'] [th 'mask'] [th 'feature']]
+      [tr [td '0'] [td '0x1'] [td 'ast-bin v3 (always set)']]
+      [tr [td '1'] [td '0x2'] [td 'Schema-driven data-bin encoding']]
+      [tr [td '5'] [td '0x20'] [td ':bytes scalar wire support']]
+      [tr [td '15'] [td '0x8000'] [td 'Arrow C Data Interface bridge']]
+      [tr [td '16'] [td '0x10000'] [td 'Parquet read/write bridge']]
+      [tr [td '17'] [td '0x20000'] [td 'CXCol chunked columnar streaming']]
+      [tr [td '26'] [td '0x4000000'] [td 'Thread-init handshake (cx_init / cx_thread_register)']]
+      [tr [td '28'] [td '0x10000000'] [td 'cx_code_eval family — unified evaluator entry']]
+      [tr [td '29'] [td '0x20000000'] [td 'Code-to-diagram (cx_code_diagram)']]
+      [tr [td '30'] [td '0x40000000'] [td 'Code-eval with interactive-tree result (cx_code_eval_tree)']]]
 
     [example lang=python
       """import cxlib as cx

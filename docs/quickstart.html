@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -110,38 +115,23 @@
       <h2>Install</h2>
       
         <p>CX ships as a single statically-linked binary `cx` plus a
-         shared library `libcx` for host-language bindings. Pick one
-         install path:</p>
-        <p>**Homebrew (macOS, Linux).** The fastest route on a developer
-         laptop:</p>
-        <pre>
-          <code class="language-shell">brew install cx-lang/cx/cx
-         cx --version</code>
-        </pre>
-        <p>**Manual download.** Prebuilt binaries are published on the
-         GitHub Releases page. **Today only macOS (Apple Silicon) ships a
-         prebuilt binary** — Linux, macOS Intel, and Windows build from
-         source (see §0.10) until the project's CI runners are restored.
-         Download the archive, extract, and put `cx` on your `PATH`:</p>
-        <pre>
-          <code class="language-shell">curl -L https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz | tar xz
-         sudo mv cx /usr/local/bin/
-         cx --version</code>
-        </pre>
+         shared library `libcx` for host-language bindings. Today the
+         supported install path is a build from source:</p>
         <p>**Build from source.** The reference build uses devbox to pin
          the V toolchain and Python version. From a fresh clone of the
          repository:</p>
         <pre>
-          <code class="language-shell">devbox run -- make build
+          <code class="language-shell">git clone https://github.com/cx-home/cx
+         cd cx
+         devbox run -- make build
          devbox run -- make install   [# installs to ~/.local/bin     #]
          cx --version</code>
         </pre>
-        <p>**Docker.** No host install required; useful for CI or quick
-         experimentation:</p>
-        <pre>
-          <code class="language-shell">docker run --rm -i ghcr.io/cx-lang/cx:latest cx --version
-         echo '[hello name="world"]' | docker run --rm -i ghcr.io/cx-lang/cx:latest cx</code>
-        </pre>
+        <p>**Packaged installs** — a Homebrew tap, prebuilt release
+         tarballs, and a Docker image — are planned but not published
+         yet; distribution is being decided in the tracker. Until then,
+         every platform builds from source (per-platform notes in
+         §0.10).</p>
         <p class="note">If `cx --version` prints a version line, you are ready.
          If you see `command not found`, your `PATH` does not include
          the install location — see <a class="xref" href="faq.html">faq</a> for recovery steps.</p>
@@ -151,7 +141,7 @@
       <h2>Hello, CX</h2>
       
         <p>Every interactive CX session starts the same way: pipe a CX
-         literal into `cx eval` and see what comes out.</p>
+         literal into the `cx` binary and see what comes out.</p>
         <pre>
           <code class="language-shell">echo '[hello greeting="world"]' | cx</code>
         </pre>
@@ -192,7 +182,7 @@
          as a syntax check):</p>
         <pre>
           <code class="language-shell">cx fmt users.cx              [# pretty-print, lossless       #]
-         cx canon users.cx            [# strict canonical bytes        #]</code>
+         cx canonical users.cx        [# strict canonical bytes        #]</code>
         </pre>
         <p>**Hash it** — the SHA-256 of the strict canonical bytes is
          the document's identity (see <a class="xref" href="identity.html#hash">hash</a>):</p>
@@ -239,21 +229,28 @@
         <p>CXPath is the universal selector — for reading, for
          iteration, for update focus. Same vocabulary everywhere. The
          simplest query asks: "which users are active?"</p>
+        <p>A CX program is just another document, so the quickest CLI
+         query appends one to your data and runs the result — the
+         program's `//` paths resolve against the document that
+         precedes it:</p>
         <pre>
-          <code class="language-shell">cx --xpath '//user[@active=true]/@email' users.cx</code>
+          <code class="language-shell">echo '[?for [in $u //user[= $_@active true]] [yield $u@email]]' \
+           | cat users.cx - | cx</code>
         </pre>
-        <pre>
-          <code class="language-cx">('ada@example.com', 'linus@example.com')</code>
-        </pre>
-        <p>Read that as: "from anywhere in the document (`//`), find a
-         `user` element with `@active=true`, then take its `@email`
-         attribute." If you have written XPath, the alignment is
+        <p>Read the predicate as: "from anywhere in the document (`//`),
+         find a `user` element whose `@active` attribute equals `true`,
+         then take its `@email` attribute." Predicates are ordinary
+         prefix CX code over the context node `$_` — `[= $_@active
+         true]`. If you have written XPath, the alignment is
          deliberate — see
          [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)
          for what carries over and what does not.</p>
         <p>The same path drives iteration in a program:</p>
         <pre>
-          <code class="language-cx">[?for [in $u //user[@active=true]] [yield
+          <code class="language-cx">[users
+           [user email='ada@example.com' active=true]
+           [user email='bob@example.com' active=false]]
+         [?for [in $u //user[= $_@active true]] [yield
            [active-user email=$u@email]]]</code>
         </pre>
       
@@ -305,7 +302,7 @@
 
          doc = cxlib.parse_file('users.cx')
          print(doc.hash())                       [# stable SHA-256    #]
-         actives = doc.eval('//user[@active=true]/@email')
+         actives = doc.eval('//user[= $_@active true]/@email')
          for email in actives:
              print(email)</code>
         </pre>
@@ -314,14 +311,14 @@
           <code class="language-v">import cx
          doc := cx.parse_file('users.cx') or { panic(err) }
          println(doc.hash())
-         println(doc.eval('//user[@active=true]/@email'))</code>
+         println(doc.eval('//user[= $_@active true]/@email'))</code>
         </pre>
         <p>**Go:**</p>
         <pre>
-          <code class="language-go">import "github.com/cx-lang/cx-go"
+          <code class="language-go">import "github.com/cx-home/cx-go"
          doc, _ := cx.ParseFile("users.cx")
          fmt.Println(doc.Hash())
-         res, _ := doc.Eval("//user[@active=true]/@email")
+         res, _ := doc.Eval("//user[= $_@active true]/@email")
          fmt.Println(res)</code>
         </pre>
         <p>**Rust:**</p>
@@ -329,7 +326,7 @@
           <code class="language-rust">use cxlib::Doc;
          let doc = Doc::parse_file("users.cx")?;
          println!("{}", doc.hash());
-         let res = doc.eval("//user[@active=true]/@email")?;
+         let res = doc.eval("//user[= $_@active true]/@email")?;
          println!("{}", res);</code>
         </pre>
         <p class="note">All four bindings call into the same compiled `libcx`; hash
@@ -373,8 +370,9 @@
         </ul>
         <p class="note">The community lives at https://github.com/cx-home/cx — file
          bugs, browse RFCs, and read the spec under `spec/*.md`. The
-         playground at https://cx-lang.org/playground lets you try
-         CX from a browser with no install.</p>
+         guide ships an in-browser playground (`make guide` renders it
+         to `docs/guide/playground.html`) that runs CX with no
+         install.</p>
       
     </section>
     <section id="install-detail">
@@ -387,36 +385,33 @@
         <section id="install-status">
           <h3>Release status</h3>
           
-            <p>The install paths below either build from source or fetch a
-           tagged release. **Prebuilt binaries currently cover macOS
-           (Apple Silicon) only**; Linux, macOS Intel, and Windows build
-           from source with `devbox run -- make build` until the
-           project's CI runners are restored. Production users should
-           pin to a tag.</p>
+            <p>Every platform currently builds from source with
+           `devbox run -- make build`; prebuilt binaries, a Homebrew
+           tap, and a Docker image are planned but not published yet.
+           Production users should pin to a release tag.</p>
           
         </section>
         <section id="install-macos">
           <h3>macOS</h3>
           
             <pre>
-              <code class="language-shell">brew install cx-lang/tap/cx</code>
+              <code class="language-shell">git clone https://github.com/cx-home/cx && cd cx
+           devbox run -- make build && devbox run -- make install</code>
             </pre>
-            <p>The tap drops a universal binary on Apple Silicon and
-           Intel; arm64 and x86_64 ship in the same bottle.</p>
+            <p>Builds native on Apple Silicon and Intel. A Homebrew tap is
+           planned but not published yet.</p>
           
         </section>
         <section id="install-linux">
           <h3>Linux</h3>
           
-            <p>Homebrew works on Linux too. A static binary tarball from
-           the GitHub Releases page works on any glibc-based distro —
-           though the prebuilt Linux tarball is not published yet (CI
-           runners offline); build from source with
-           `devbox run -- make build` in the meantime.</p>
+            <p>Build from source with `devbox run -- make build`; the
+           result is a static binary that runs on any glibc-based
+           distro. A prebuilt Linux tarball on the GitHub Releases
+           page is planned but not published yet.</p>
             <pre>
-              <code class="language-shell">brew install cx-lang/tap/cx
-           curl -L https://github.com/cx-home/cx/releases/latest/download/cx-linux-x86_64.tar.gz \\
-             | tar xz -C /usr/local/bin</code>
+              <code class="language-shell">git clone https://github.com/cx-home/cx && cd cx
+           devbox run -- make build && devbox run -- make install</code>
             </pre>
           
         </section>
@@ -424,9 +419,9 @@
           <h3>Windows</h3>
           
             <p>A static `cx.exe` is planned per release on
-           github.com/cx-home/cx/releases, but is not published yet (CI
-           runners offline, and the V toolchain's Windows support is
-           still on the roadmap — see <a class="xref" href="faq.html">faq</a>); build from source in the
+           github.com/cx-home/cx/releases, but is not published yet
+           (the V toolchain's Windows support is still on the
+           roadmap — see <a class="xref" href="faq.html">faq</a>); build from source in the
            meantime. Drop the binary on PATH; no installer, no
            dependencies.</p>
           
@@ -531,13 +526,13 @@
         <section id="tut-4">
           <h3>Types</h3>
           
-            <p>CX auto-types most values; for the rest, a colon-type
-           annotation pins the value or body type. Sized variants
+            <p>CX auto-types most values; for the rest, a glued `::T`
+           ascription pins the value or body type. Sized variants
            carry range constraints that validate at parse time.</p>
             <pre>
-              <code class="language-cx">[port :u16 8080]</code>
+              <code class="language-cx">[port::u16 8080]</code>
             </pre>
-            <p class="note">**Exercises.** Try setting `:u16` to `70000` and observe the error. Compare `[n 12]` vs `[n :decimal 12]` in `cx --ast`.</p>
+            <p class="note">**Exercises.** Try setting the `::u16` value to `70000` and observe the error. Compare `[n 12]` vs `[n::decimal 12]` in `cx --ast`.</p>
           
         </section>
         <section id="tut-5">
@@ -585,17 +580,18 @@
             <p>Three first-class collection shapes. Sequence with
            parens flattens; array with square brackets preserves
            nesting; map with braces gives named key-to-value
-           entries.</p>
+           entries. Collections live in an element body —
+           attributes hold a single scalar, never a collection.</p>
             <pre>
-              <code class="language-cx">[pizza toppings=(cheese, basil, oil)]
-           [pizza prices={small: 9, medium: 12, large: 15}]</code>
+              <code class="language-cx">[pizza [toppings (cheese, basil, oil)]]
+           [pizza [prices {small: 9, medium: 12, large: 15}]]</code>
             </pre>
           
         </section>
         <section id="tut-9">
           <h3>Typed tables</h3>
           
-            <p>A colon-table block declares column names and types.
+            <p>A `[table[…]]` block declares column names and types.
            Each non-blank line below is a row; cells parse against
            the declared column types. Round-trips to CSV with
            types preserved via the header row. In the binary
@@ -603,7 +599,7 @@
            to 10 times smaller than equivalent element-per-row
            encoding.</p>
             <pre>
-              <code class="language-cx">[orders :table[item:string qty:u32 paid:bool when:date]
+              <code class="language-cx">[orders [table[item::string qty::u32 paid::bool when::date]]
              Margherita 2 true  2026-05-09
              Hawaiian   1 false 2026-05-09]</code>
             </pre>
@@ -615,8 +611,8 @@
             <p>A single CX file can hold multiple top-level documents
            separated by three dashes on a line by themselves.
            Same separator as YAML; each side parses as an
-           independent document. `cx parse` iterates them; `cx
-           --json` emits an array.</p>
+           independent document, and `cx --json` emits the file as
+           an array of documents.</p>
           
         </section>
         <section id="tut-11">
@@ -626,7 +622,7 @@
            TOML, or Markdown. Each dialect captures the subset of
            the data model it can represent.</p>
             <pre>
-              <code class="language-shell">cx parse pizza.cx --to=yaml</code>
+              <code class="language-shell">cx --yaml pizza.cx</code>
             </pre>
           
         </section>
@@ -636,9 +632,10 @@
             <p>CX code is CX that does things. A directive is an
            element whose name starts with `?`. Directives parse
            as regular CX and evaluate against the surrounding
-           tree when `cx eval` runs the document.</p>
+           tree when `cx` runs the document.</p>
             <pre>
-              <code class="language-cx">[h1 //page/@title]</code>
+              <code class="language-cx">[page title='Menu — New Haven']
+         [h1 //page/@title]</code>
             </pre>
           
         </section>
@@ -646,10 +643,13 @@
           <h3>Path expressions (CXPath)</h3>
           
             <p>CXPath is the query language inside CX code. Paths
-           separated by `/`; predicates in `[…]`; axes for
-           navigation by relationship.</p>
+           separated by `/`; predicates in `[…]` are prefix CX code
+           over the context node `$_`; axes navigate by
+           relationship.</p>
             <pre>
-              <code class="language-cx">//pizza[@price > 10]</code>
+              <code class="language-cx">[menu [pizza name=Margherita price=12]
+               [pizza name=Marinara price=9]]
+         //pizza[> $_@price 10]</code>
             </pre>
           
         </section>
@@ -659,17 +659,19 @@
             <p>`[?let]` binds a name once and reuses it. `[?for]`
            iterates a path expression result.</p>
             <pre>
-              <code class="language-cx">[?let [= $tax 0.22] [* @price [+ 1 $tax]]]</code>
+              <code class="language-cx">[?let [= $tax 0.22] [= $price 12] [* $price [+ 1 $tax]]]</code>
             </pre>
           
         </section>
         <section id="tut-15">
           <h3>Filters</h3>
           
-            <p>Filter directives transform values. Compose with pipes
-           or nest them.</p>
+            <p>Filter functions transform values. Compose them with
+           `[?pipe]` — bare stages, threaded left to right — or nest
+           them.</p>
             <pre>
-              <code class="language-cx">[?pipe @name [$trim _] [$upper _]]</code>
+              <code class="language-cx">[?lib 'cx-stdlib/strings']
+[?pipe '  margherita  ' [$strings:trim] [$strings:upper]]</code>
             </pre>
           
         </section>
@@ -684,8 +686,8 @@
         <section id="tut-17">
           <h3>Named templates</h3>
           
-            <p>`[?def]` defines a reusable fragment. `[?use]` invokes
-           it; parameterised templates take positional args.</p>
+            <p>`[?def]` defines a reusable fragment; call it like any
+           other function — `[$line …]` — with positional args.</p>
             <pre>
               <code class="language-cx">[?def line ($item) [tr [td $item/@name] [td $item/@qty]]]</code>
             </pre>

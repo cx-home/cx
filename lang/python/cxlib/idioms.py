@@ -17,8 +17,8 @@ Examples
     doc = Doc.parse(open("users.cx", "rb").read())
 
     # Subscript with CXPath — desugars to Layer-1 `select_all`.
-    active = doc["//user[@active=true]"]
-    # ≡ doc.select_all("//user[@active=true]")
+    active = doc["//user[= $_@active true]"]
+    # ≡ doc.select_all("//user[= $_@active true]")
 
     # Division-operator iterator — desugars to `select_all`.
     for email in doc / "//user/@email":
@@ -27,8 +27,8 @@ Examples
 
     # Subscript-assignment desugars to `modify` + Set.
     new_doc = doc.clone()
-    new_doc["//user[@id=1]/@name"] = "Alice"
-    # ≡ new_doc = new_doc.modify("//user[@id=1]/@name", '[set "Alice"]')
+    new_doc["//user[= $_@id 1]/@name"] = "Alice"
+    # ≡ new_doc = new_doc.modify("//user[= $_@id 1]/@name", '[set "Alice"]')
 
     # `explain(...)` returns the desugaring for any Layer-2 expression.
     explain(doc / "//user") == 'doc.select_all("//user")'

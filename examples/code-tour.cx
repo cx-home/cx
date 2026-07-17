@@ -23,9 +23,8 @@
    one [tour …] element at the end; [?lib] / [?def] / [?const] are
    module-top-level directives (§12) and are declared up here.
 
-   Run:
-     cx examples/code-tour.cx
-   Or against the sample document (document-driven sections light up):
+   Run (the sample document binds as $doc — document-driven sections
+   need it; without --data the document-rooted queries raise loudly):
      cx examples/code-tour.cx --data=examples/code-tour.input.cx #]
 
 [# ─── Module imports — [?lib] (§12.1) ───
@@ -169,11 +168,11 @@
 
   [section title='modify — [set] on a single attribute'
     [?let [= $doc [db [user id=1 name='ada'] [user id=2 name='bob']]]
-      [?modify $doc //user[@id=1]/@name [set "Alice"]]]]
+      [?modify $doc //user[= $_@id 1]/@name [set "Alice"]]]]
 
   [section title='modify — [delete] with a predicate'
     [?let [= $doc [db [user id=1] [user id=2 banned=true]]]
-      [?modify $doc //user[@banned=true] [delete]]]]
+      [?modify $doc //user[= $_@banned true] [delete]]]]
 
   [section title='modify — [using] a [?fn] lambda'
     [?let [= $doc [db [user id=1 name='ada'] [user id=2 name='bob']]]
@@ -186,8 +185,8 @@
                       [section id='intro' [para "Hello."]]]]
       [?pipe $doc
         [?modify _ //user/@status [set "verified"]]
-        [?modify _ //user[@banned=true] [delete]]
-        [?modify _ //section[@id="intro"] [append [para "Added."]]]]]]
+        [?modify _ //user[= $_@banned true] [delete]]
+        [?modify _ //section[= $_@id "intro"] [append [para "Added."]]]]]]
 
   [# ─── §10. CXPath value kind (§5.5) ─── #]
 
@@ -207,30 +206,32 @@
 
   [# ─── §11. [expr] general predicate + $_ context (§5.5.2) ─── #]
 
-  [section title='[expr] — atomic-predicate sugar (terse form)'
-    [# Terse  [@active=true]  desugars to the general PredicateExpr
-       ($_@active = true). Both forms are equivalent at parse time. #]
-    //user[@active=true]]
+  [section title='[expr] — homoiconic predicate body (fused brackets)'
+    [# A predicate body is CX code: the predicate brackets ARE the
+       form brackets (one pair, never [[…]]). $_ is the candidate
+       node; the operator-free notation atoms [N] / [@name] /
+       [@!name] / [name] are the only terse forms (§5.5.2). #]
+    //user[= $_@active true]]
 
-  [section title='[expr] — general predicate with $_ context binding'
-    [# Inside any predicate, $_ is the candidate node.
-       Use the general form when sugar can't express the test. #]
-    //user[$_@active and $_@verified]]
+  [section title='[expr] — fused connective over the $_ context'
+    [# Nested subexpressions inside a fused body are ordinary
+       fully-bracketed forms. #]
+    //user[and [$exists $_@active] [$exists $_@verified]]]
 
   [section title='[expr] — nested predicate, $_ shadows innermost'
     [# Outer $_ is each team; inner $_ rebinds to each member. #]
-    //team[count($_/member[$_/role = "lead"]) >= 1]]
+    //team[>= [$count $_/member[= $_/role "lead"]] 1]]
 
   [section title='[expr] — $_position / $_last (1-based)'
     [examples
-      [first-p   //section/p[$_position = 1]]
-      [last-p    //section/p[$_position = $_last]]
-      [rows-2-to-10 //row[$_position >= 2 and $_position <= 10]]]]
+      [first-p   //section/p[1]]
+      [last-p    //section/p[= $_position $_last]]
+      [rows-2-to-10 //row[and [>= $_position 2] [<= $_position 10]]]]]
 
   [section title='[expr] — outer-scope reference across steps'
     [# $t carries the team into the member test after $_ has moved on.
        The step-annotation spelling of the same query is
-       //team (bind $t) / member[$_/role = "lead" and count($t/member) >= 3]
+       //team (bind $t) / member[and [= $_/role "lead"] [>= [$count $t/member] 3]]
        (§5.5.2); the two-generator [?for] below is the grounded form. #]
     [?for [in $t //team]
       [in $m $t/member]
@@ -277,34 +278,34 @@
                     [resource [get "/ping"]
                       [response status=200 [body "pong"]]]]]
           [= $client [?http-client target="cx-test://ping"]]
-      [?let [= $reply [$get $client "/ping"]]
-        ([?stop $svc], $reply)]]]
+      [= $reply [$get $client "/ping"]]
+      ([?stop $svc], $reply)]]
 
   [# ─── §16. Concurrency (§10.4) ─── #]
 
   [section title='channel + worker pattern'
     [?let [= $work [?channel name=work buffer=16]]
-      [?let [= $producer [?worker name="producer"
+      [= $producer [?worker name="producer"
                            [?for [in $i [$range 1 10]] [yield [?send $i to=$work]]]]]
-            [= $consumer [?worker name="consumer"
+          [= $consumer [?worker name="consumer"
                            [?for [in $i [$range 1 10]]
-                             [yield [processed [?receive from=$work]]]]]]
-        [joined produced=[$count [?wait-for worker=$producer]]
-                consumed=[$count [?wait-for worker=$consumer]]]]]]
+                           [yield [processed [?receive from=$work]]]]]]
+      [joined produced=[$count [?wait-for worker=$producer]]
+              consumed=[$count [?wait-for worker=$consumer]]]]]
 
   [section title='select — first ready case wins'
     [?let [= $inbox [?channel name=inbox buffer=4]]
-      [?let [= $sent [?send "hi" to=$inbox]]
-        [?select
-          [case [from $inbox $msg] [got $msg]]
-          [case [timeout 50ms] [no-message]]]]]]
+      [= $sent [?send "hi" to=$inbox]]
+      [?select
+        [case [from $inbox $msg] [got $msg]]
+        [case [timeout 50ms] [no-message]]]]]
 
   [# ─── §17. Async + await (§10.5) ─── #]
 
   [section title='async + await-all'
     [?let [= $f1 [?async [fetched src='a']]]
-      [?let [= $f2 [?async [fetched src='b']]]
-        [?let [= $f3 [?async [fetched src='c']]]
-          [gathered [?await-all ($f1, $f2, $f3)]]]]]]
+      [= $f2 [?async [fetched src='b']]]
+      [= $f3 [?async [fetched src='c']]]
+      [gathered [?await-all ($f1, $f2, $f3)]]]]
 
 ]

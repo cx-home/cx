@@ -411,7 +411,7 @@ class **S** (stateless) per §1.5.1; caller frees the return with
 `cx_free` per §1.4.
 
 `cx_to_ast` emits the AST-JSON projection per
-[`vcx/cx/emitter_json.v`](../vcx/cx/emitter_json.v); `cx_ast_to_cx`
+[`vcx/cx/emitter_json.v`](../../../vcx/cx/emitter_json.v); `cx_ast_to_cx`
 parses that projection and re-emits canonical CX text. The pair is the
 text-only AST-projection complement to the binary `cx_to_ast_bin` /
 `cx_ast_bin_to_cx` family of §2.3.
@@ -542,7 +542,7 @@ The standalone CXPath C ABI (`cx_select` / `cx_select_all`, audit
 finding **CB-5**) is retired. CXPath path-value expressions
 now evaluate through `cx_code_eval` (§2.16.1) — bindings call the
 unified evaluator with the path expression as the `program` argument
-(e.g. `//user[@active=true]/@email`). Layer-1 binding wrappers
+(e.g. `//user[= $_@active true]/@email`). Layer-1 binding wrappers
 (`Doc.select` / `Doc.select_all`, see
 [`misc/bindings.md §2.1`](../misc/bindings.md)) are retained and route
 through `cx_code_eval` internally. Capability bit 8 (the former
@@ -1020,7 +1020,7 @@ char* cx_code_eval_streaming
  `mermaid` (Phase-4-gated — currently return `CXER0001:output
  target '<t>' requires the reference renderer ; not yet
  implemented`). `json` emits the AST-JSON shape per
- [`vcx/cx/emitter_json.v`](../vcx/cx/emitter_json.v); `yaml` and
+ [`vcx/cx/emitter_json.v`](../../../vcx/cx/emitter_json.v); `yaml` and
  `xml` route through the canonical `cx.emit_yaml` / `cx.emit_xml`
  emitters after wrapping the result in a `cx.Document`; `csv` /
  `tsv` emit one header line plus one row per record when the
@@ -1341,7 +1341,8 @@ features the loaded library does not implement.
 | 37 | 0x2000000000 | Iterator wire format — IteratorNode AST kind (tag `0x16`, `ast-bin.md`). Wire payload carries `source_kind` (`IteratorSourceKind` ordinal: `iter_range` / `iter_map` / `iter_filter` / `iter_take` / `iter_drop` / `iter_concat` / `iter_zip` / `iter_enumerate` / `iter_chunks` / `iter_cycle` / `iter_scan` / `iter_flatten` / `iter_partition` / `iter_group_by`). Runtime-derived `memo` and `exhausted` are NOT carried; decoders restore a fresh iterator that re-evaluates from source on first pull. Decoders without bit 37 MUST raise CXER0100 on tag `0x16`. Independent of bit 36. |
 | 38 | 0x4000000000 | Capability-based security — deny-by-default capability set per `core/security.md`. `cx_code_eval*` accept a capability-set parameter (default empty ⇒ pure-only); a denied effect raises `cx-err:CXER0271` (E_CAP_DENIED). The `[?with-caps]` narrowing directive is gated by this bit. |
 | 39 | 0x8000000000 | Debugging — local + remote debug surface per `misc/debug.md` (breakpoints, stepping, `eval`-in-frame, DAP adapter, record-replay). Off by default; remote attach requires a token. |
-| 40-63 | reserved | (set to 0) |
+| 40 | 0x10000000000 | Element table record wire format (ast_bin v9) — the pooled `[table[…]]` payload rides the binary AST wire as a table record (tag `0x17`, `ast-bin.md §4.8`): columns (name + canonical long type, empty = string-default) and rows of cells, scalar cells as `0x03 Scalar` (int/float/bool/null/string), collection cells via the existing `0x0F`/`0x10`/`0x11` encodings. Version byte 9 is emitted only when a table payload is present (additive: table-free documents keep their previous envelope byte-for-byte). The runtime `from_chunked` provenance flag is NOT carried. Decoders without bit 40 MUST reject version-9 buffers; decoders MUST reject `0x17` outside the first child slot of an Element or in a < v9 envelope. Independent of bits 36 / 37. |
+| 41-63 | reserved | (set to 0) |
 
 ---
 
@@ -1359,7 +1360,7 @@ requirements but enforced via the perf-regression suite (see
 | `cx_events_next` per event | < 1 µs | | |
 
 (Selection is covered by `cx_code_eval` with a CXPath path expression
-(e.g. `//user[@active=true]`); the gate-15 performance budget in
+(e.g. `//user[= $_@active true]`); the gate-15 performance budget in
 `code.md` §11.4.4 applies.)
 
 Measured on Apple M-class or x86_64 ≥3 GHz. CI tracks regressions
@@ -1458,7 +1459,7 @@ Recommended migration for binding maintainers:
  JSON-bridge with `cx_to_data_bin` / `cx_from_data_bin`.
 3. **Adopt the CX-code evaluator surface.** CXPath expressions evaluate
  via the `cx_code_eval*` family (§2.16.1) — e.g.
- `//user[@active=true]` (CXPath value-kind expression per grammar [130]).
+ `//user[= $_@active true]` (CXPath value-kind expression per grammar [130]).
 4. **Adopt streaming.** Replace buffering `Stream` with handle-based
  iteration over `cx_events_next`.
 5. **Adopt new types and syntax.** Surface `[table[ … ]`,

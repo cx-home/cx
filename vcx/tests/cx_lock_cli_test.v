@@ -1,6 +1,7 @@
 module main
 
 import os
+import testenv
 import cx
 
 // Phase 2.18 — `cx lock` CLI subcommand tests.
@@ -23,7 +24,7 @@ import cx
 //   - spec/lockfile.md §3 + §4 (format + module entries).
 
 fn cx_bin() string {
-	return os.join_path(@VMODROOT, 'target', 'cx')
+	return testenv.cx_bin()
 }
 
 fn tmp_project_dir(label string) string {

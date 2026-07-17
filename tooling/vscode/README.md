@@ -2,13 +2,13 @@
 
 Syntax highlighting + LSP (diagnostics, hover, completion, goto,
 references, rename, formatting, outline, folding, smart selection,
-signature help) + snippets for `.cx` / `.cxs` / `.cx` files.
+signature help) + snippets for `.cx` / `.cxd` / `.cxs` files.
 
 ## Highlights
 
-- **CXPath as a value kind** (code.md §5.5) — `//user[@active=true]`
-  highlights as a path; `name`, `count`, `matches`, etc. read as
-  XPath 3.1 functions; the 13 standard axes (`ancestor::`,
+- **CXPath as a value kind** (code.md §5.5) —
+  `//user[= $_@active true]` highlights as a path with a prefix-form
+  predicate; the 12 standard axes (`ancestor::`,
   `descendant-or-self::`, etc.) are first-class.
 - **Multi-arm `[?match]`** (code.md §8.2) — `[case PATTERN [where G]?
   BODY]`, `[when G BODY]`, `[else BODY]` clause-children tokenise as
@@ -18,10 +18,11 @@ signature help) + snippets for `.cx` / `.cxs` / `.cx` files.
   `[set-attr]`, `[delete-attr]`, `[append]`, `[prepend]`,
   `[insert-before]`, `[insert-after]`, `[replace]`) all colour as
   control keywords.
-- **Atom literals** (code.md §3.6) — `:ok` / `:not-found` /
-  `:running` highlight as `constant.other.atom`. Reserved names
+- **Atom literals** (lexicon [L40]) — `:ok` / `:not-found` /
+  `:order.placed` / `:order.*` (dotted segments + the terminal `.*`
+  prefix-glob) highlight as `constant.other.atom`. Reserved names
   `:true` / `:false` / `:null` highlight as
-  `constant.language.reserved` so the lex-time rejection is
+  `invalid.illegal.atom.reserved` so the lex-time rejection is
   visually obvious.
 - **`[?def]` module functions** (code.md §12.2) — `scope=public`,
   `[returns T]`, bare `pure` / `impure` modifiers, and per-parameter
@@ -36,14 +37,16 @@ signature help) + snippets for `.cx` / `.cxs` / `.cx` files.
 
 ## Requirements
 
-- VS Code ≥ 1.75
+- VS Code ≥ 1.82
 - `cx` binary on `$PATH` (or configure `cx.serverPath`)
 
-Install `cx`:
+Install `cx` by building it from source at the repo root (see
+[`tooling/README.md`](../README.md)):
 
 ```sh
-brew install cx-home/tap/cx                              # macOS / Linuxbrew
-cargo install --git https://github.com/cx-home/cx cx-cli # from source
+make build-vcx                     # produces vcx/target/cx
+export PATH="$PWD/vcx/target:$PATH"
+cx --version
 ```
 
 ## What you get
@@ -92,7 +95,10 @@ cargo install --git https://github.com/cx-home/cx cx-cli # from source
 | `cx.serverPath` | `"cx"` | Binary to run for the language server |
 | `cx.serverArgs` | `["lsp"]` | Arguments passed to the binary |
 | `cx.trace.server` | `"off"` | LSP-protocol tracing (`off` / `messages` / `verbose`) |
-| `cx.formatOnSave` | `false` | Run `cx fmt` on save |
+
+Format-on-save needs no CX-specific knob — enable the built-in
+`editor.formatOnSave`; the language server's formatting provider
+(which wraps `cx fmt`) handles the rest.
 
 ## Commands
 
@@ -101,21 +107,24 @@ cargo install --git https://github.com/cx-home/cx cx-cli # from source
 | `CX: Restart Language Server` | Reload after editing settings |
 | `CX: Show Server Version` | Confirm which `cx` is running |
 
-## Build
+## Build & package
+
+Packaging is local via `npm run package` (there is no publishing
+automation):
 
 ```sh
 cd tooling/vscode
-npm install
-npm run build
+npm ci               # needs node >= 18.13
+npm run compile      # typecheck (tsc --noEmit) + esbuild bundle
 npm run package      # produces cx-language-<version>.vsix
 code --install-extension cx-language-<version>.vsix
 ```
 
-The build is intentionally vendored-free — the only dependency that
-ships in the `.vsix` is `vscode-languageclient` (the LSP-client glue).
-The language server itself is the `cx` binary, installed separately.
+The extension is bundled with esbuild — `out/extension.js` is
+self-contained (the `vscode-languageclient` LSP glue is compiled in;
+only the `vscode` API module stays external), so the `.vsix` carries
+no `node_modules`. The language server itself is the `cx` binary,
+installed separately.
 
-## Marketplace publication
-
-This package is set up for publication under the `cx-home` publisher
-ID. Per-tag publication runs from the release workflow.
+`npm run test:grammar` runs the TextMate-grammar scope assertions in
+`test/grammar/` (vscode-tmgrammar-test).

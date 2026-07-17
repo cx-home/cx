@@ -154,11 +154,11 @@ True iff every character matches the class. Empty string → true (vacuous). Uni
 Template uses `{}` placeholders for positional args and `{name}` for named args. A single optional **type char** may follow a colon — `{name:type}`. No width, precision, alignment, fill, sign, or grouping specifiers are currently supported.
 
 ```cx
-[$strings:format "Hello, {}! You have {} messages." ["Alice" 5]]
-  → "Hello, Alice! You have 5 messages."
+[$strings:format "Hello, {}! You have {} messages." ["Alice", 5]]
+  # → "Hello, Alice! You have 5 messages."
 
-[$strings:format "Hex: {value:x}" {value 255}]
-  → "Hex: ff"
+[$strings:format "Hex: {value:x}" {value: 255}]
+  # → "Hex: ff"
 ```
 
 Full format-spec grammar:

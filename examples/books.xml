@@ -1,20 +1,18 @@
-<library>
-  <book>
-    <title>The Hobbit</title>
-    <author>J.R.R. Tolkien</author>
-    <year cx:type="int">1937</year>
-    <available>true</available>
-  </book>
-  <book>
-    <title>Dune</title>
-    <author>Frank Herbert</author>
-    <year cx:type="int">1965</year>
-    <available>false</available>
-  </book>
-  <book>
-    <title>Neuromancer</title>
-    <author>William Gibson</author>
-    <year cx:type="int">1984</year>
-    <available>true</available>
-  </book>
-</library>
+<!--Library catalogue as a [table[…]] block — typed columns declared once,-->
+<!--rows as positional values. Column-major in binary form (5–10× smaller-->
+<!--than element-per-row for large datasets); row-major in CX text for-->
+<!--human reading.-->
+<!---->
+<!--Try:  cx table info examples/books.cx-->
+<!--      cx --csv examples/books.cx-->
+<!--      cx examples/books.cx > /tmp/books.out.cx && cx eq examples/books.cx /tmp/books.out.cx-->
+<!-- ISBNs stay strings even though the leading digit makes them look numeric -->
+<books cx:type="table" cx:cols="title::string author::string year::int isbn::string available::bool">
+  <cx:row><cx:cell>The Hobbit</cx:cell><cx:cell>J.R.R. Tolkien</cx:cell><cx:cell>1937</cx:cell><cx:cell>978-0547928227</cx:cell><cx:cell>true</cx:cell></cx:row>
+  <cx:row><cx:cell>Dune</cx:cell><cx:cell>Frank Herbert</cx:cell><cx:cell>1965</cx:cell><cx:cell>978-0441172719</cx:cell><cx:cell>false</cx:cell></cx:row>
+  <cx:row><cx:cell>Neuromancer</cx:cell><cx:cell>William Gibson</cx:cell><cx:cell>1984</cx:cell><cx:cell>978-0441569595</cx:cell><cx:cell>true</cx:cell></cx:row>
+  <cx:row><cx:cell>Snow Crash</cx:cell><cx:cell>Neal Stephenson</cx:cell><cx:cell>1992</cx:cell><cx:cell>978-0553380958</cx:cell><cx:cell>true</cx:cell></cx:row>
+  <cx:row><cx:cell>The Diamond Age</cx:cell><cx:cell>Neal Stephenson</cx:cell><cx:cell>1995</cx:cell><cx:cell>978-0553380965</cx:cell><cx:cell>true</cx:cell></cx:row>
+</books>
+<!-- ad-hoc per-shelf tagging stays in element form, not the table -->
+<shelf id="sci-fi-classics" tags="hugo,nebula,canon"/>

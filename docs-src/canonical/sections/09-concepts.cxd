@@ -64,23 +64,21 @@
               the data language does, which is what makes "ship code
               alongside data over the wire" trivial."""]]
 
-    [example lang=cx
-      """[# A program — examined as data:                              #]
-         $code = //program
+    [example lang=sh
+      """# A program IS a document — the same tools apply unchanged.
+         $ cat prog.cx
+         [?for [in $x (1, 2)] [yield [n $x]]]
 
-         [# Count directives in a CX program:                          #]
-         count($code//*[starts-with(name(), '?')])
+         # Examine the program as data: its AST is ordinary JSON.
+         $ cx --ast prog.cx
+         {"type":"Document","elements":[{"type":"EvalDirective","name":"for", …}]}
 
-         [# Find every CXPath literal in the program:                  #]
-         $code//*[kind()='path']
+         # Identity works on code exactly as on data — a cache key:
+         $ cx hash prog.cx
+         4c3aec212e8174d1…
 
-         [# Hash the canonical bytes of a program — cache key:         #]
-         cx-hash(cx-canon($code))
-
-         [# Transform every [?for] in a program — rename a binding:    #]
-         [?modify //*[name()='?for']
-           [using [?fn ($f)
-             [?modify $f [rename old-name to=new-name]]]]]"""]
+         # Reformat-stable: cx fmt output hashes identically.
+         $ cx fmt prog.cx | cx hash /dev/stdin"""]
 
     [body
       """**The reader is the AST builder.** Where most languages have a
@@ -122,16 +120,17 @@
          layer. Each range is reserved per-spec; the full table is in
          [`spec/code.md`](../../spec/code.md) §9.4."""]
 
-    [table columns=(range, owner)
-      [row range='CXER0000–CXER0099' owner='Parser / lexer']
-      [row range='CXER0100–CXER0299' owner='CX code language (eval)']
-      [row range='CXER0300–CXER0399' owner='Schema validator']
-      [row range='CXER0400–CXER0499' owner='Conversion / projection']
-      [row range='CXER0500–CXER0599' owner='Services + clients']
-      [row range='CXER0600–CXER0699' owner='Workers + channels']
-      [row range='CXER0700–CXER0799' owner='Async + cancellation']
-      [row range='CXER0800–CXER0899' owner='I/O + filesystem']
-      [row range='CXER0900–CXER0999' owner='Binding / ABI errors']]
+    [table
+      [tr [th 'range'] [th 'owner']]
+      [tr [td 'CXER0000–CXER0099'] [td 'Parser / lexer']]
+      [tr [td 'CXER0100–CXER0299'] [td 'CX code language (eval)']]
+      [tr [td 'CXER0300–CXER0399'] [td 'Schema validator']]
+      [tr [td 'CXER0400–CXER0499'] [td 'Conversion / projection']]
+      [tr [td 'CXER0500–CXER0599'] [td 'Services + clients']]
+      [tr [td 'CXER0600–CXER0699'] [td 'Workers + channels']]
+      [tr [td 'CXER0700–CXER0799'] [td 'Async + cancellation']]
+      [tr [td 'CXER0800–CXER0899'] [td 'I/O + filesystem']]
+      [tr [td 'CXER0900–CXER0999'] [td 'Binding / ABI errors']]]
 
     [body
       """**Propagation operators.** Two postfix sigils control how
@@ -175,11 +174,12 @@
          on a payload field:"""]
 
     [example lang=cx
-      """[?match $result
-         [case [err @url=$u status=404] [missing $u]]
-         [case [err @url=$u status=503] [retry-later $u]]
-         [case [err @url=$u] [permanent-failure $u]]
-         [else                                  $result]]"""]
+      """[?let [= $result [err url='https://api.example.com/users/9' status=404]]
+         [?match $result
+           [case [err @url=$u status=404] [missing $u]]
+           [case [err @url=$u status=503] [retry-later $u]]
+           [case [err @url=$u]            [permanent-failure $u]]
+           [else                          $result]]]"""]
 
     [body
       """**Compose with resilience directives.** `[?retry]`,
@@ -226,7 +226,7 @@
          For a tree of depth `d` with `N` matched nodes, the new heap
          cost is `O(d × N)`, not `O(size-of-tree)`."""]
 
-    [example lang=cx
+    [example lang=text
       """[# Before modify:                                              #]
          input doc:                    output doc (after :set on root/foo/@bar):
 
@@ -263,29 +263,33 @@
          the lens operations from Haskell's `lens` library and
          Clojure's `assoc-in` / `update-in`:"""]
 
-    [table columns=(action, lens-equivalent)
-      [row action='[set …]'         lens-equivalent='assoc / set']
-      [row action='[using …]'       lens-equivalent='update / over']
-      [row action='[delete]'        lens-equivalent='dissoc']
-      [row action='[append …]'      lens-equivalent='conj / over (++)']
-      [row action='[prepend …]'     lens-equivalent='cons / over (:)']
-      [row action='[insert …]'      lens-equivalent='insertAt']
-      [row action='[rename …]'      lens-equivalent='renameKey']
-      [row action='[replace …]'     lens-equivalent='set (whole node)']
-      [row action='[set-attr …]'    lens-equivalent='assoc-attr']
-      [row action='[delete-attr …]' lens-equivalent='dissoc-attr']
-      [row action='[wrap …]'        lens-equivalent='wrap / under']]
+    [table
+      [tr [th 'action'] [th 'lens-equivalent']]
+      [tr [td '[set …]'] [td 'assoc / set']]
+      [tr [td '[using …]'] [td 'update / over']]
+      [tr [td '[delete]'] [td 'dissoc']]
+      [tr [td '[append …]'] [td 'conj / over (++)']]
+      [tr [td '[prepend …]'] [td 'cons / over (:)']]
+      [tr [td '[insert …]'] [td 'insertAt']]
+      [tr [td '[rename …]'] [td 'renameKey']]
+      [tr [td '[replace …]'] [td 'set (whole node)']]
+      [tr [td '[set-attr …]'] [td 'assoc-attr']]
+      [tr [td '[delete-attr …]'] [td 'dissoc-attr']]
+      [tr [td '[wrap …]'] [td 'wrap / under']]]
 
     [example lang=cx
       """[# Real-world example: update every active user's last-seen
-            timestamp atomically. Original $db is unchanged.           #]
-         [?let [= $db' [?modify $db
-                  //user[@active=true]/@last-seen
-                  [set [$now]]]]
-           $db']
+            timestamp atomically. The original $db is unchanged.       #]
+         [db [user active=true  last-seen='2026-01-01T00:00:00Z']
+             [user active=false last-seen='2025-12-01T00:00:00Z']]
+         [?let [= $db [$first //db]]
+               [= $updated [?modify $db
+                             //user[= $_@active true]/@last-seen
+                             [set '2026-07-14T00:00:00Z']]]
+           $updated]
 
-         [# $db and $db' share every inactive user's storage; only the
-            spine + the modified attribute leaves are new allocations. #]"""]
+         [# $db and $updated share every inactive user's storage; only
+            the spine + the modified attribute leaves are new.         #]"""]
 
     [body
       """**Identity invariant.** The input document is observably
@@ -317,19 +321,21 @@
     [intro
       """Large CX documents — log streams, JSON exports, telemetry
          dumps, multi-GB sensor traces — can be evaluated incrementally.
-         The `stream=true` modifier on `[?for]` tells the evaluator to use a
+         The `[stream]` clause on `[?for]` tells the evaluator to use a
          stream-aware parser and apply the body row-by-row instead of
          materializing the full tree. The streaming spec is
          [`spec/streaming.md`](../../spec/streaming.md)."""]
 
     [example lang=cx
-      """[# Process a 100 GB log file, count errors per service.
-            Resident memory: ~32 KiB parser scratch + per-event
-            allocation. The full file never lands in RAM.              #]
-         [?for [in $row //logs/entry] stream=true
+      """[# Stream over the entries — bounded resident memory: the
+            iteration applies the body row-by-row instead of holding
+            the whole selection.                                       #]
+         [logs [entry level='error' service='api']
+               [entry level='info'  service='api']
+               [entry level='error' service='db']]
+         [?for [in $row //logs/entry] [stream]
            [where [= $row@level 'error']]
-           [yield $row@service]
-           [group-by service-name count=true]]"""]
+           [yield $row@service]]"""]
 
     [body
       """**Event model.** The streaming parser emits a sequence of 14
@@ -404,7 +410,7 @@
          walking the previous 99. Streaming is for **forward
          passes** with bounded look-ahead; if your computation needs
          random access, parse the whole doc into a tree. The
-         `stream=true` modifier is a hint, and the evaluator may
+         `[stream]` clause is a hint, and the evaluator may
          materialize a subtree internally if your `:where` predicate
          requires it."""]]
 
@@ -412,27 +418,25 @@
     [intro
       """Because every value is immutable and every error is a value,
          CX gets parallelism almost for free. Every parallel-capable
-         directive composes via the `par=true` flag — `[?for]` for
+         directive composes via the `[par]` clause — `[?for]` for
          comprehensions, `[?map]` for higher-order map, `[?reduce]`
          for associative folds; the async and channel surfaces (see
          [[concurrency-model]]) cover the long-running and message-
          passing cases. There is no user-level lock primitive —
-         there is no shared mutable state to protect. `par=true` is
+         there is no shared mutable state to protect. `[par]` is
          unordered-by-default for speed; opt into source-order
-         preservation with `:par :ordered`."""]
+         preservation by adding `[ordered]`."""]
 
     [example lang=cx
-      """[# Embarrassingly parallel — par=true on [?for]                #]
-         [?for [in $r //request] par=true [yield [$process $r]]]
+      """[# Embarrassingly parallel — [par] on [?for]                   #]
+         [site [request 'r1'] [request 'r2']]
+         [?for [in $r //request] [par] [yield [got [$text $r]]]]
 
-         [# Higher-order map over a sequence of URLs                    #]
-         [?map //url [using $fetch-and-extract] par=true]
+         [# Higher-order map — add [ordered] to preserve source order   #]
+         [?map (1, 2, 3, 4) [using [?fn ($x) [* $x $x]]] [par] [ordered]]
 
-         [# Reduce — associative parallel fold                          #]
-         [?reduce //order/amount [using [?fn ($a $b) [+ $a $b]]] [init 0] par=true]
-
-         [# Source-order output preservation (slight overhead)          #]
-         [?map //user [using $enrich] par=true ordered=true]"""]
+         [# Reduce — associative parallel fold                           #]
+         [?reduce (1, 2, 3) [using [?fn ($a $b) [+ $a $b]]] [init 0] [par]]"""]
     [note
       """**Status.** The `[using FN]` clause-child form is the sole
          accepted shape for `[?map]`/`[?reduce]`/`[?par-map]`; there is
@@ -452,7 +456,7 @@
          are also safe because the input is not mutated."""]
 
     [body
-      """**Determinism.** `par=true` does not guarantee execution order,
+      """**Determinism.** `[par]` does not guarantee execution order,
          but it does guarantee the **result** is order-independent —
          the evaluator only parallelizes over comprehensions whose
          body is pure (every CX body is pure unless it crosses a
@@ -462,16 +466,16 @@
          user-supplied function for `[?reduce :par]`)."""]
 
     [body
-      """**Worker pool model.** Under the hood, `par=true` dispatches into
+      """**Worker pool model.** Under the hood, `[par]` dispatches into
          a bounded worker pool sized to the host's CPU count by
          default. The pool is per-process, not per-call — multiple
-         concurrent `par=true` invocations share the same pool, capped at
+         concurrent `[par]` invocations share the same pool, capped at
          `CX_PAR_WORKERS` (default `num_cpus`). For workloads that
          need a smaller pool (resource-constrained, embedded), set the
          env var or pass `:max-concurrent` to the directive."""]
 
     [body
-      """**Cancellation across `par=true`.** If one parallel iteration
+      """**Cancellation across `[par]`.** If one parallel iteration
          errors and the surrounding expression short-circuits on that
          `[err]` (via `?` propagation or a recovering `[?match]`),
          in-flight iterations are cooperatively cancelled. Each iteration polls
@@ -482,12 +486,12 @@
          every other cooperative-cancellation system."""]
 
     [body
-      """**When `par=true` doesn't help.** Tiny iterations (sub-microsecond
+      """**When `[par]` doesn't help.** Tiny iterations (sub-microsecond
          body) lose to the dispatch overhead. The evaluator's heuristic
          is to skip parallel dispatch when the input sequence has
          fewer than 32 items or when the body is detectably trivial
          (single CXPath step, single attribute access). For
-         pathological cases, `par=true` accepts `:min-batch=N` to force
+         pathological cases, `[par]` is planned to accept a batching hint to force
          the threshold."""]]
 
   [child id=security n=9.6 title='Security model and untrusted-input handling'
@@ -502,10 +506,11 @@
     [body
       """**Deployment shapes.** The threat model defines three:"""]
 
-    [table columns=(shape, source, hardening)
-      [row shape='A — Trusted inputs'      source='Operator-authored files / internal data exchange' hardening='Default config is sufficient']
-      [row shape='B — Semi-trusted inputs' source='PRs, CI artifacts, third-party config'           hardening='Pin libcx version + apply resource limits']
-      [row shape='C — Untrusted inputs'    source='Webhook bodies, public uploads, network payloads' hardening='--profile untrusted + process isolation + monitoring']]
+    [table
+      [tr [th 'shape'] [th 'source'] [th 'hardening']]
+      [tr [td 'A — Trusted inputs'] [td 'Operator-authored files / internal data exchange'] [td 'Default config is sufficient']]
+      [tr [td 'B — Semi-trusted inputs'] [td 'PRs, CI artifacts, third-party config'] [td 'Pin libcx version + apply resource limits']]
+      [tr [td 'C — Untrusted inputs'] [td 'Webhook bodies, public uploads, network payloads'] [td '--profile untrusted + process isolation + monitoring']]]
 
     [body
       """**Untrusted-input checklist.** If a CX document comes from an
@@ -546,11 +551,12 @@
          profile enables only `include-local`. See [[includes]] for
          the four bits and the env-var overrides."""]
 
-    [table columns=(capability, what-it-allows, default)
-      [row capability='include-local'    what-it-allows='Reads under the including document directory tree' default='enabled']
-      [row capability='include-absolute' what-it-allows='Reads anywhere on the host filesystem'               default='disabled']
-      [row capability='include-network'  what-it-allows='HTTPS URLs as include paths'                          default='disabled']
-      [row capability='external-entity'  what-it-allows='XML external entity references (&foo;)'               default='disabled']]
+    [table
+      [tr [th 'capability'] [th 'what-it-allows'] [th 'default']]
+      [tr [td 'include-local'] [td 'Reads under the including document directory tree'] [td 'enabled']]
+      [tr [td 'include-absolute'] [td 'Reads anywhere on the host filesystem'] [td 'disabled']]
+      [tr [td 'include-network'] [td 'HTTPS URLs as include paths'] [td 'disabled']]
+      [tr [td 'external-entity'] [td 'XML external entity references (&foo;)'] [td 'disabled']]]
 
     [body
       """**Entity-expansion attacks (billion laughs).** The classic
@@ -568,17 +574,18 @@
          enforced unconditionally; they are not advisory. The full
          table:"""]
 
-    [table columns=('limit' 'default' 'env var' 'error')
-      [row limit='Max document depth (nested brackets)' default=512 var=CX_MAX_DEPTH error=CXER0142]
-      [row limit='Max attributes per element' default=1024 var=CX_MAX_ATTRS error=CXER0143]
-      [row limit='Max body byte length per element' default='256 MiB' var=CX_MAX_BODY error=CXER0144]
-      [row limit='Max include depth' default=16 var=CX_INCLUDE_MAX_DEPTH error=CXER0141]
-      [row limit='Max entity expansion' default='10000 chars' var=CX_MAX_ENTITY_EXPAND error=CXER0145]
-      [row limit='Max recursion depth' default=1024 var=CX_MAX_RECURSE error=CXER0146]
-      [row limit='Max parse time per document' default='30 s' var=CX_MAX_PARSE_TIME error=CXER0147]
-      [row limit='Max canonical-form size' default='1 GiB' var=CX_MAX_CANON error=CXER0148]
-      [row limit='Max function-call recursion' default=256 var=CX_MAX_CALL_DEPTH error=CXER0010]
-      [row limit='Max materialized sequence length' default='1,000,000' var=CX_MAX_SEQ_LEN error=CXER0011]]
+    [table
+      [tr [th 'limit'] [th 'default'] [th 'env var'] [th 'error']]
+      [tr [td 'Max document depth (nested brackets)'] [td '512'] [td 'CX_MAX_DEPTH'] [td 'CXER0142']]
+      [tr [td 'Max attributes per element'] [td '1024'] [td 'CX_MAX_ATTRS'] [td 'CXER0143']]
+      [tr [td 'Max body byte length per element'] [td '256 MiB'] [td 'CX_MAX_BODY'] [td 'CXER0144']]
+      [tr [td 'Max include depth'] [td '16'] [td 'CX_INCLUDE_MAX_DEPTH'] [td 'CXER0141']]
+      [tr [td 'Max entity expansion'] [td '10000 chars'] [td 'CX_MAX_ENTITY_EXPAND'] [td 'CXER0145']]
+      [tr [td 'Max recursion depth'] [td '1024'] [td 'CX_MAX_RECURSE'] [td 'CXER0146']]
+      [tr [td 'Max parse time per document'] [td '30 s'] [td 'CX_MAX_PARSE_TIME'] [td 'CXER0147']]
+      [tr [td 'Max canonical-form size'] [td '1 GiB'] [td 'CX_MAX_CANON'] [td 'CXER0148']]
+      [tr [td 'Max function-call recursion'] [td '256'] [td 'CX_MAX_CALL_DEPTH'] [td 'CXER0010']]
+      [tr [td 'Max materialized sequence length'] [td '1,000,000'] [td 'CX_MAX_SEQ_LEN'] [td 'CXER0011']]]
 
     [body
       """**Hardening already in place (per threat-model §5).**"""]
@@ -667,13 +674,14 @@
       """**Throughput by operation.** Order-of-magnitude on a modern
          laptop (M2 Pro, libcx `-prod`, single-thread):"""]
 
-    [table columns=(operation, 1KB, 1MB, 100MB)
-      [row operation='cx_to_ast_bin (parse)'   '1KB'='< 50 us' '1MB'='< 30 ms' '100MB'='< 3 s']
-      [row operation='cx_to_data_bin (binary)' '1KB'='< 50 us' '1MB'='< 30 ms' '100MB'='< 3 s']
-      [row operation='cx_to_json (project)'    '1KB'='< 100 us' '1MB'='< 60 ms' '100MB'='< 6 s']
-      [row operation='cx_events_next per event' '1KB'='< 1 us'  '1MB'='—'       '100MB'='—']
-      [row operation='cx_select (CXPath)'      '1KB'='< 10 us' '1MB'='< 60 ms' '100MB'='< 6 s']
-      [row operation='cx_hash (SHA-256 canon)' '1KB'='< 50 us' '1MB'='< 25 ms' '100MB'='< 2.5 s']]
+    [table
+      [tr [th 'operation'] [th '1KB'] [th '1MB'] [th '100MB']]
+      [tr [td 'cx_to_ast_bin (parse)'] [td '< 50 us'] [td '< 30 ms'] [td '< 3 s']]
+      [tr [td 'cx_to_data_bin (binary)'] [td '< 50 us'] [td '< 30 ms'] [td '< 3 s']]
+      [tr [td 'cx_to_json (project)'] [td '< 100 us'] [td '< 60 ms'] [td '< 6 s']]
+      [tr [td 'cx_events_next per event'] [td '< 1 us'] [td '—'] [td '—']]
+      [tr [td 'cx_select (CXPath)'] [td '< 10 us'] [td '< 60 ms'] [td '< 6 s']]
+      [tr [td 'cx_hash (SHA-256 canon)'] [td '< 50 us'] [td '< 25 ms'] [td '< 2.5 s']]]
 
     [body
       """**Streaming evaluator.** Sustained **353 MB/s** on a
@@ -722,15 +730,16 @@
     [body
       """**Throughput per format.** Roughly, on a parse:"""]
 
-    [table columns=(format, throughput, notes)
-      [row format='CX (text)'     throughput='~250 MB/s'  notes='Buffered; native parser']
-      [row format='CX (binary, ast_bin v6)' throughput='~600 MB/s' notes='No tokenizing; direct varint decode']
-      [row format='CX (binary, data_bin)'   throughput='~800 MB/s' notes='Schema-driven; field tags omitted']
-      [row format='CXCol (chunked table)'   throughput='~1.2 GB/s' notes='Columnar; predicate pushdown']
-      [row format='JSON (cx_from_json)' throughput='~400 MB/s' notes='Less validation, weaker types']
-      [row format='YAML (cx_from_yaml)' throughput='~80 MB/s'  notes='Indentation parsing is slow']
-      [row format='XML (cx_from_xml)'   throughput='~180 MB/s' notes='Entity handling overhead']
-      [row format='Streaming JSON-shape' throughput='~353 MB/s' notes='gate 15; vs ~440 MB/s native JSON']]
+    [table
+      [tr [th 'format'] [th 'throughput'] [th 'notes']]
+      [tr [td 'CX (text)'] [td '~250 MB/s'] [td 'Buffered; native parser']]
+      [tr [td 'CX (binary, ast_bin v6)'] [td '~600 MB/s'] [td 'No tokenizing; direct varint decode']]
+      [tr [td 'CX (binary, data_bin)'] [td '~800 MB/s'] [td 'Schema-driven; field tags omitted']]
+      [tr [td 'CXCol (chunked table)'] [td '~1.2 GB/s'] [td 'Columnar; predicate pushdown']]
+      [tr [td 'JSON (cx_from_json)'] [td '~400 MB/s'] [td 'Less validation, weaker types']]
+      [tr [td 'YAML (cx_from_yaml)'] [td '~80 MB/s'] [td 'Indentation parsing is slow']]
+      [tr [td 'XML (cx_from_xml)'] [td '~180 MB/s'] [td 'Entity handling overhead']]
+      [tr [td 'Streaming JSON-shape'] [td '~353 MB/s'] [td 'gate 15; vs ~440 MB/s native JSON']]]
 
     [body
       """**When CX wins over JSON.**"""]
@@ -832,23 +841,24 @@
          get a new bit; the old bits keep their meanings forever.
          The bit map (as currently defined):"""]
 
-    [table columns=(bit, hex, capability)
-      [row bit=0  hex='0x00000001' capability='ABI v1 conversion symbols']
-      [row bit=1  hex='0x00000002' capability='Binary AST (cx_to_ast_bin)']
-      [row bit=8  hex='0x00000100' capability='CXPath C ABI']
-      [row bit=9  hex='0x00000200' capability='Real streaming (cx_events_open/next/close)']
-      [row bit=21 hex='0x00200000' capability='CXCol chunked-table format']
-      [row bit=23 hex='0x00800000' capability='Apache Arrow C-Data interop']
-      [row bit=24 hex='0x01000000' capability='Schema-driven encoding']
-      [row bit=25 hex='0x02000000' capability='Schema validator (RE2-linear regex)']
-      [row bit=26 hex='0x04000000' capability='Thread-init handshake']
-      [row bit=27 hex='0x08000000' capability='Streaming-write API']
-      [row bit=28 hex='0x10000000' capability='CX code evaluator (cx_code_eval)']
-      [row bit=29 hex='0x20000000' capability='Collection literals + CXDM v1.1']
-      [row bit=30 hex='0x40000000' capability='Parameterized templates + ?fn']
-      [row bit=31 hex='0x80000000' capability='CX program diagram renderer (cx_code_diagram)']
-      [row bit=32 hex='0x100000000' capability='CX data-tree viz (browser, AST-JSON contract)']
-      [row bit='33-63' hex='reserved' capability='Allocated as features land']]
+    [table
+      [tr [th 'bit'] [th 'hex'] [th 'capability']]
+      [tr [td '0'] [td '0x00000001'] [td 'ABI v1 conversion symbols']]
+      [tr [td '1'] [td '0x00000002'] [td 'Binary AST (cx_to_ast_bin)']]
+      [tr [td '8'] [td '0x00000100'] [td 'CXPath C ABI']]
+      [tr [td '9'] [td '0x00000200'] [td 'Real streaming (cx_events_open/next/close)']]
+      [tr [td '21'] [td '0x00200000'] [td 'CXCol chunked-table format']]
+      [tr [td '23'] [td '0x00800000'] [td 'Apache Arrow C-Data interop']]
+      [tr [td '24'] [td '0x01000000'] [td 'Schema-driven encoding']]
+      [tr [td '25'] [td '0x02000000'] [td 'Schema validator (RE2-linear regex)']]
+      [tr [td '26'] [td '0x04000000'] [td 'Thread-init handshake']]
+      [tr [td '27'] [td '0x08000000'] [td 'Streaming-write API']]
+      [tr [td '28'] [td '0x10000000'] [td 'CX code evaluator (cx_code_eval)']]
+      [tr [td '29'] [td '0x20000000'] [td 'Collection literals + CXDM v1.1']]
+      [tr [td '30'] [td '0x40000000'] [td 'Parameterized templates + ?fn']]
+      [tr [td '31'] [td '0x80000000'] [td 'CX program diagram renderer (cx_code_diagram)']]
+      [tr [td '32'] [td '0x100000000'] [td 'CX data-tree viz (browser, AST-JSON contract)']]
+      [tr [td '33-63'] [td 'reserved'] [td 'Allocated as features land']]]
 
     [body
       """**Bit allocation policy.** A new capability bit is allocated
@@ -1006,10 +1016,11 @@
          compositional layers from
          [`spec/code.md`](../../spec/code.md):"""]
 
-    [table columns=(layer, directives, what-it-models)
-      [row layer='Async'     directives='[?async] [?await] [?await-all] [?await-any] [?await-race] [?cancel] [?check-cancel] [?sleep]' what-it-models='Lightweight futures + cancellation']
-      [row layer='Workers'   directives='[?worker] [?worker-handle] [?channel] [?send] [?try-send] [?receive] [?try-receive] [?close] [?select] [?stop]' what-it-models='CSP-style workers + bounded channels']
-      [row layer='Services'  directives='[?service] [?service-handle] [?http-client] [?stop]' what-it-models='HTTP services + clients with resilience']]
+    [table
+      [tr [th 'layer'] [th 'directives'] [th 'what-it-models']]
+      [tr [td 'Async'] [td '[?async] [?await] [?await-all] [?await-any] [?await-race] [?cancel] [?check-cancel] [?sleep]'] [td 'Lightweight futures + cancellation']]
+      [tr [td 'Workers'] [td '[?worker] [?worker-handle] [?channel] [?send] [?try-send] [?receive] [?try-receive] [?close] [?select] [?stop]'] [td 'CSP-style workers + bounded channels']]
+      [tr [td 'Services'] [td '[?service] [?service-handle] [?http-client] [?stop]'] [td 'HTTP services + clients with resilience']]]
 
     [example lang=cx
       """[# Spawn three workers, each fetching one URL; collect
@@ -1157,23 +1168,24 @@
          hand-written JavaScript wrapper exposes the wasm C ABI as
          a clean JS API. Sixteen methods:"""]
 
-    [table columns=(method, what-it-does)
-      [row method='loads(text)'           what-it-does='Parse CX text → Doc handle']
-      [row method='dumps(doc)'            what-it-does='Doc → CX text (formatted)']
-      [row method='toJson(doc)'           what-it-does='Doc → JSON string']
-      [row method='fromJson(json)'        what-it-does='JSON → Doc handle']
-      [row method='toCanon(doc)'          what-it-does='Doc → canonical CX bytes']
-      [row method='hash(doc)'             what-it-does='SHA-256 of canonical bytes (hex)']
-      [row method='equals(d1, d2)'        what-it-does='Value-level equality (hash compare)']
-      [row method='evalCode(doc, code)'   what-it-does='Run a CX code program against doc; return result Doc']
-      [row method='evalCodeStreaming(doc, code, onChunk)' what-it-does='Streaming eval; chunks delivered to JS callback']
-      [row method='diagram(doc)'          what-it-does='Render a CX program as Mermaid sequence diagram (text)']
-      [row method='select(doc, path)'     what-it-does='CXPath select → result Doc']
-      [row method='validate(doc, schema)' what-it-does='Validate doc against .cxs schema; return errors []']
-      [row method='version()'             what-it-does='libcx version triple (major, minor, patch)']
-      [row method='features()'            what-it-does='cap-bit hex string']
-      [row method='free(doc)'             what-it-does='Release a Doc handle (explicit, since JS lacks finalisers in some runtimes)']
-      [row method='module()'              what-it-does='Raw wasm Module for embedding-specific extensions']]
+    [table
+      [tr [th 'method'] [th 'what-it-does']]
+      [tr [td 'loads(text)'] [td 'Parse CX text → Doc handle']]
+      [tr [td 'dumps(doc)'] [td 'Doc → CX text (formatted)']]
+      [tr [td 'toJson(doc)'] [td 'Doc → JSON string']]
+      [tr [td 'fromJson(json)'] [td 'JSON → Doc handle']]
+      [tr [td 'toCanon(doc)'] [td 'Doc → canonical CX bytes']]
+      [tr [td 'hash(doc)'] [td 'SHA-256 of canonical bytes (hex)']]
+      [tr [td 'equals(d1, d2)'] [td 'Value-level equality (hash compare)']]
+      [tr [td 'evalCode(doc, code)'] [td 'Run a CX code program against doc; return result Doc']]
+      [tr [td 'evalCodeStreaming(doc, code, onChunk)'] [td 'Streaming eval; chunks delivered to JS callback']]
+      [tr [td 'diagram(doc)'] [td 'Render a CX program as Mermaid sequence diagram (text)']]
+      [tr [td 'select(doc, path)'] [td 'CXPath select → result Doc']]
+      [tr [td 'validate(doc, schema)'] [td 'Validate doc against .cxs schema; return errors []']]
+      [tr [td 'version()'] [td 'libcx version triple (major, minor, patch)']]
+      [tr [td 'features()'] [td 'cap-bit hex string']]
+      [tr [td 'free(doc)'] [td 'Release a Doc handle (explicit, since JS lacks finalisers in some runtimes)']]
+      [tr [td 'module()'] [td 'Raw wasm Module for embedding-specific extensions']]]
 
     [body
       """**The `<cx-diagram>` web component.** A custom element that
@@ -1191,7 +1203,7 @@
 
          <!-- Or inline: -->
          <cx-diagram>
-           [?for [in $order //order] par=true
+           [?for [in $order //order] [par]
              [yield [?service-handle name='billing'
                       [process $order]]]]
          </cx-diagram>"""]
@@ -1258,7 +1270,7 @@
          the performance target.** Bundling CX into a browser carries
          unavoidable overhead — Asyncify instrumentation (so wall-clock
          `[?sleep]` can yield through the JS event loop without
-         freezing the UI), pthreads runtime (so `par=true` runs real OS
+         freezing the UI), pthreads runtime (so `[par]` runs real OS
          threads), single-file base64 inlining or separate-file
          fetching, and the wasm format itself. Production CX
          deployments use the native CLI (~5MB), the language bindings
@@ -1275,7 +1287,7 @@
 
     [list
       [item """**Static via GitHub Pages (HTTPS).** Single-threaded
-              ASYNCIFY build. `par=true` examples produce correct output
+              ASYNCIFY build. `[par]` examples produce correct output
               but run sequentially. No cross-origin isolation possible
               on Pages (no custom headers); same constraint as
               file://."""]
@@ -1289,7 +1301,7 @@
               `Cross-Origin-Opener-Policy: same-origin` +
               `Cross-Origin-Embedder-Policy: require-corp` on every
               response. SharedArrayBuffer becomes available →
-              pthreads-enabled libcx-pthreads.wasm loads → `par=true`
+              pthreads-enabled libcx-pthreads.wasm loads → `[par]`
               uses real OS threads. The playground's adaptive banner
               tells you which mode you're in."""]]
 
@@ -1381,7 +1393,7 @@
 
     [body
       """**Canonical form.** Every CX value has a unique strict-
-         canonical byte sequence. `cx canon` emits it; `cx hash`
+         canonical byte sequence. `cx canonical` emits it; `cx hash`
          hashes it (SHA-256); `cx eq` compares two values by
          hashing both and comparing the hashes. The canonical-form
          rules are normative and binding-independent:"""]
@@ -1404,11 +1416,11 @@
               for identifier names."""]]
 
     [body
-      """**Same input → byte-identical output.** Two `cx canon`
+      """**Same input → byte-identical output.** Two `cx canonical`
          invocations on the same CX value produce the same bytes:"""]
 
     [list
-      [item """**Across runs.** Re-running `cx canon doc.cx` on the
+      [item """**Across runs.** Re-running `cx canonical doc.cx` on the
               same machine, with the same libcx version, gives byte-
               identical output. Tested by every conformance run."""]
       [item """**Across machines.** Same canonical bytes on
@@ -1509,7 +1521,7 @@
          carve-outs:"""]
 
     [list
-      [item """**`par=true` execution order.** Per [[parallelism]],
+      [item """**`[par]` execution order.** Per [[parallelism]],
               parallel iterations may complete in any order. The
               *result* is order-independent (the recombination is
               associative); the per-iteration timings are not."""]
@@ -1560,15 +1572,16 @@
          starts with **no capabilities**; the operator grants
          specific ones via `--cap` flags:"""]
 
-    [table columns=(capability, flag, what-it-grants)
-      [row capability='Filesystem-local include' flag='--cap include-local' what-it-grants='`[?cx include path=...]` for paths under the document directory tree']
-      [row capability='Filesystem-absolute include' flag='--cap include-absolute' what-it-grants='`[?cx include path=...]` for paths anywhere on the host']
-      [row capability='Network include' flag='--cap include-network' what-it-grants='`[?cx include path=https://...]` for HTTPS URLs']
-      [row capability='External entity' flag='--cap external-entity' what-it-grants='XML external entity references']
-      [row capability='HTTP client' flag='--cap http-client' what-it-grants='`[?http-client]` directive can be constructed and used']
-      [row capability='Worker spawn' flag='--cap worker' what-it-grants='`[?worker]` can spawn concurrent OS threads']
-      [row capability='Service mint' flag='--cap service' what-it-grants='`[?service]` can bind a network port']
-      [row capability='Mutable channels' flag='--cap channel' what-it-grants='`[?channel]` / `[?send]` / `[?receive]` for cross-thread state']]
+    [table
+      [tr [th 'capability'] [th 'flag'] [th 'what-it-grants']]
+      [tr [td 'Filesystem-local include'] [td '--cap include-local'] [td '`[?cx include path=...]` for paths under the document directory tree']]
+      [tr [td 'Filesystem-absolute include'] [td '--cap include-absolute'] [td '`[?cx include path=...]` for paths anywhere on the host']]
+      [tr [td 'Network include'] [td '--cap include-network'] [td '`[?cx include path=https://...]` for HTTPS URLs']]
+      [tr [td 'External entity'] [td '--cap external-entity'] [td 'XML external entity references']]
+      [tr [td 'HTTP client'] [td '--cap http-client'] [td '`[?http-client]` directive can be constructed and used']]
+      [tr [td 'Worker spawn'] [td '--cap worker'] [td '`[?worker]` can spawn concurrent OS threads']]
+      [tr [td 'Service mint'] [td '--cap service'] [td '`[?service]` can bind a network port']]
+      [tr [td 'Mutable channels'] [td '--cap channel'] [td '`[?channel]` / `[?send]` / `[?receive]` for cross-thread state']]]
 
     [body
       """**What untrusted code CAN do (no capabilities granted).**
@@ -1646,12 +1659,13 @@
          the program itself evaluates a runtime-supplied source
          string — five mitigations apply:"""]
 
-    [table columns=(mitigation, error, defends-against)
-      [row mitigation='M1: requires [?cx allow-eval=true]'    error='CXER0041' defends-against='Accidental exposure — silent weaponization']
-      [row mitigation='M2: incompatible with [?cx pure-only]' error='CXER0042' defends-against='Defense-in-depth — pure-only blocks side effects']
-      [row mitigation='M3: sandboxed CXLEnv — context-map only' error='no code, visibility check' defends-against='Information disclosure / capability escalation']
-      [row mitigation='M4: module pass-through is narrowing'  error='CXER0043' defends-against='Module enumeration / privilege escalation']
-      [row mitigation='M5: recursion-depth cap (default 8)'   error='CXER0044' defends-against='Stack-exhaustion DoS via recursive cx:eval']]
+    [table
+      [tr [th 'mitigation'] [th 'error'] [th 'defends-against']]
+      [tr [td 'M1: requires [?cx allow-eval=true]'] [td 'CXER0041'] [td 'Accidental exposure — silent weaponization']]
+      [tr [td 'M2: incompatible with [?cx pure-only]'] [td 'CXER0042'] [td 'Defense-in-depth — pure-only blocks side effects']]
+      [tr [td 'M3: sandboxed [?eval] environment — context-map only'] [td 'no code, visibility check'] [td 'Information disclosure / capability escalation']]
+      [tr [td 'M4: module pass-through is narrowing'] [td 'CXER0043'] [td 'Module enumeration / privilege escalation']]
+      [tr [td 'M5: recursion-depth cap (default 8)'] [td 'CXER0044'] [td 'Stack-exhaustion DoS via recursive cx:eval']]]
 
     [body
       """**Recommended deployment patterns for untrusted-eval
@@ -1815,11 +1829,14 @@
            exposes a mutating Node accessor. The C ABI has no
            `cx_node_set_attribute` and never will."""]
       [example lang=cx
-        """[?let [= $before-hash [$doc/hash]]
-             [?let [= $modified [?modify $doc //user/@status [set "verified"]]]
-               [?let [= $after-hash [$doc/hash]]
-                 [identity-check
-                   equal=[= $before-hash $after-hash]]]]]"""]]
+        """[?lib 'cx-stdlib/format']
+           [?lib 'cx-stdlib/hash']
+           [db [user status='new']]
+           [?let [= $doc [$first //db]]
+                 [= $before-hash [$hash:sha256 [$format:canonical $doc]]]
+                 [= $modified [?modify $doc //user/@status [set 'verified']]]
+                 [= $after-hash [$hash:sha256 [$format:canonical $doc]]]
+             [identity-check equal=[= $before-hash $after-hash]]]"""]]
 
     [child id=ss-concurrent n=9.14.5 title='Concurrent reads are free'
       [body

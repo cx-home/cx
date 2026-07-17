@@ -188,6 +188,18 @@ A reader opens the file, reads the last 8 bytes, seeks to `file_size - 8 - foote
 
 ---
 
+## Seal & crash recovery
+
+The footer + 8-byte footer-length suffix is the **commit point**: a pack with a valid `footer_crc32` and a resolvable footer-length is *sealed* and immutable. Recovery rules (normative; align with [`object_model.md`](object_model.md) §6 and Appendix A.7):
+
+- **Torn footer / invalid footer-length:** the pack is treated as **unsealed**. A reader recovers it by scanning entries forward from offset 64, advancing by `entry_length`, stopping at the first entry whose `entry_length` overruns the file or whose `doc_hash` ≠ SHA-256(payload), and truncating there.
+- **Unsealed packs remain usable:** every entry self-verifies via `doc_hash`, so all entries in the valid prefix stay addressable; they are merely absent from the (unbuilt) footer index until the pack is re-sealed or folded into a new pack by compaction.
+- **Torn entry tail** is indistinguishable from "end of valid prefix" and handled by the same forward-scan truncation. A crash mid-append loses only the partial trailing entry, never earlier data.
+
+This makes a torn pack no worse than a torn single entry, satisfying the append-only crash-safety floor.
+
+---
+
 ## Sizing notes
 
 | Quantity | Example |

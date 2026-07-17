@@ -90,7 +90,7 @@ class TestLayer1Doc(unittest.TestCase):
     # Method 5 — Doc.eval(code) -> Value
     def test_eval_returns_text(self):
         d = Doc.parse(HELLO_SRC)
-        out = d.eval("[?for $i :in (1,2,3) :yield $i]", "text")
+        out = d.eval("[?for [in $i (1,2,3)] [yield $i]]", "text")
         self.assertIn("1", out)
         self.assertIn("3", out)
 
@@ -117,7 +117,7 @@ class TestLayer1Doc(unittest.TestCase):
     # Method 8 — Doc.modify(focus, action) -> Doc
     def test_modify_returns_new_doc(self):
         d = Doc.parse(USERS_SRC)
-        new_d = d.modify("//user[@active=false]", "[delete]")
+        new_d = d.modify("//user[= $_@active false]", "[delete]")
         # Receiver is unchanged (pure-functional contract).
         self.assertEqual(len(d.select_all("//user")), 3)
         # New Doc has the inactive user removed.
@@ -269,8 +269,8 @@ class TestCodeEvalAlias(unittest.TestCase):
     — the v0.8.0 C ABI symbol name."""
 
     def test_alias_returns_eval_output(self):
-        out_via_alias = cxlib.cx_code_eval(HELLO_SRC, "[?for $i :in (1,2) :yield $i]", "text")
-        out_via_legacy = cxlib.eval_code(HELLO_SRC, "[?for $i :in (1,2) :yield $i]", "text")
+        out_via_alias = cxlib.cx_code_eval(HELLO_SRC, "[?for [in $i (1,2)] [yield $i]]", "text")
+        out_via_legacy = cxlib.eval_code(HELLO_SRC, "[?for [in $i (1,2)] [yield $i]]", "text")
         self.assertEqual(out_via_alias, out_via_legacy)
 
 

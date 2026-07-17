@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -109,7 +114,7 @@
          for output, a query language for selection, or a config dialect for
          deployment — there is one shape, and you write everything in it.</p>
         <pre>
-          <code class="language-cx">[hello :greeting 'world']</code>
+          <code class="language-cx">[hello greeting='world']</code>
         </pre>
         <p>That is a complete CX document. It is also a complete CX program when
          passed to the evaluator — it evaluates to itself. CX is **homoiconic**:
@@ -122,18 +127,18 @@
           <code class="language-cx">[# 1. Data: a small document
          #]
          [users
-           [user :id 1 :email 'ada@example.com' :active true]
-           [user :id 2 :email 'grace@example.com' :active false]
-           [user :id 3 :email 'linus@example.com' :active true]]
+           [user id=1 email='ada@example.com' active=true]
+           [user id=2 email='grace@example.com' active=false]
+           [user id=3 email='linus@example.com' active=true]]
 
          [# 2. Code: select active users with CXPath
          #]
-         [?for [in $u //user[@active=true]] [yield
-           [active-user :email $u@email]]]
+         [?for [in $u //user[= $_@active true]] [yield
+           [active-user email=$u@email]]]
 
          [# 3. Pure-functional update: mark one user verified
          #]
-         [?modify $doc //user[@id=1]/@status :set 'verified']</code>
+         [?modify $doc //user[= $_@id 1]/@status [set 'verified']]</code>
         </pre>
         <p>Three forms, one language. No string concatenation; no AST mismatch
          between selectors and templates; no separate type system for queries.
@@ -200,21 +205,84 @@
          away (ecosystem maturity, library breadth) is the honest accounting in
          <a class="xref" href="comparison.html">comparison</a>.</p>
         <table>
-          
-            <row language="CX" tier="Reference" why="One grammar production; every construct is the same [head …] form. No statement/expression split, no infix, no privileged keyword — even special forms obey the one rule."/>
-            <row language="Lisp-1 (Scheme)" tier="Near-reference" why="Homoiconic S-expressions; single namespace (more uniform than Lisp-2). Loses only because quote, lambda and if are privileged special forms — CX folds even those into the one rule."/>
-            <row language="Scala" tier="High (uniform model)" why="Everything is an expression; functions are objects; operators are methods; uniform access. Diluted by a large sugary surface — implicits/givens, two dialects."/>
-            <row language="Ruby" tier="High (uniform model)" why="Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars)."/>
-            <row language="V" tier="Moderate" why="Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split."/>
-            <row language="Kotlin" tier="Moderate" why="Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop."/>
-            <row language="Python" tier="Moderate" why="Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, lambda is crippled."/>
-            <row language="Swift" tier="Moderate" why="Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders."/>
-            <row language="Rust" tier="Low–moderate" why="Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal."/>
-            <row language="C#" tier="Low" why="Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide."/>
-            <row language="Java" tier="Low" why="The classic wart — primitives vs objects — plus special-cased arrays, no operator overloading, erasure generics, statement-heavy ceremony."/>
-            <row language="Go" tier="Low" why="Simple but not orthogonal — magic built-ins user code cannot replicate (make, append, len, cap, delete), special slice/map/channel semantics, retrofitted generics, error-by-convention."/>
-            <row language="TypeScript / JavaScript" tier="Lowest" why="Most accreted — this-rebinding, hoisting, prototype vs class, == vs ===; TypeScript layers an entire erased second language over the runtime."/>
-          
+          <thead>
+            
+              <tr>
+                <th>language</th>
+                <th>tier</th>
+                <th>why</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CX</td>
+                <td>Reference</td>
+                <td>One grammar production; every construct is the same [head …] form. No statement/expression split, no infix, no privileged keyword — even special forms obey the one rule.</td>
+              </tr>
+              <tr>
+                <td>Lisp-1 (Scheme)</td>
+                <td>Near-reference</td>
+                <td>Homoiconic S-expressions; single namespace (more uniform than Lisp-2). Loses only because quote, lambda and if are privileged special forms — CX folds even those into the one rule.</td>
+              </tr>
+              <tr>
+                <td>Scala</td>
+                <td>High (uniform model)</td>
+                <td>Everything is an expression; functions are objects; operators are methods; uniform access. Diluted by a large sugary surface — implicits/givens, two dialects.</td>
+              </tr>
+              <tr>
+                <td>Ruby</td>
+                <td>High (uniform model)</td>
+                <td>Smalltalk lineage — everything is an object, everything a message send, operators are methods. Uniform core, non-uniform surface (blocks vs procs vs lambdas, many sugars).</td>
+              </tr>
+              <tr>
+                <td>V</td>
+                <td>Moderate</td>
+                <td>Deliberately minimal, one canonical way to do things. Orthogonality by austerity; still carries privileged built-ins and a partial statement/expression split.</td>
+              </tr>
+              <tr>
+                <td>Kotlin</td>
+                <td>Moderate</td>
+                <td>Expression-oriented (if, when, try are expressions); operators by convention. Primitives-as-objects is a JVM fiction; much surface exists for Java interop.</td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>Moderate</td>
+                <td>Real uniformity via the dunder protocol; but a hard statement/expression wall — def, class and import are statements, lambda is crippled.</td>
+              </tr>
+              <tr>
+                <td>Swift</td>
+                <td>Moderate</td>
+                <td>Genuine protocol-oriented uniformity, but a special-case-dense surface — optionals, guard, defer, property wrappers, result builders.</td>
+              </tr>
+              <tr>
+                <td>Rust</td>
+                <td>Low–moderate</td>
+                <td>Expression-oriented core, but a federation of subsystems with their own rules — ownership, lifetimes, traits plus coherence, a separate macro grammar, async, unsafe. Powerful is not orthogonal.</td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>Low</td>
+                <td>Multi-paradigm, accreted over many versions — LINQ, async, properties, events, pattern matching each a distinct syntax. Statement/expression divide.</td>
+              </tr>
+              <tr>
+                <td>Java</td>
+                <td>Low</td>
+                <td>The classic wart — primitives vs objects — plus special-cased arrays, no operator overloading, erasure generics, statement-heavy ceremony.</td>
+              </tr>
+              <tr>
+                <td>Go</td>
+                <td>Low</td>
+                <td>Simple but not orthogonal — magic built-ins user code cannot replicate (make, append, len, cap, delete), special slice/map/channel semantics, retrofitted generics, error-by-convention.</td>
+              </tr>
+              <tr>
+                <td>TypeScript / JavaScript</td>
+                <td>Lowest</td>
+                <td>Most accreted — this-rebinding, hoisting, prototype vs class, == vs ===; TypeScript layers an entire erased second language over the runtime.</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p class="note">**Two distinctions drive the ranking.** *Simplicity vs
          orthogonality*: Go and V are simple, but Go is not orthogonal — its
@@ -271,7 +339,7 @@
         <p>**Conventions used throughout.** Code blocks marked `:lang cx` are
          literal CX (data or code; the same shape). Code blocks marked
          `:lang python`, `:lang go`, `:lang rust`, `:lang v` are host-language
-         binding code. Cross-references to other sections use `<a class="xref" href="data-language.html#anchor">anchor</a>`.
+         binding code. Cross-references to other sections use `&#91;&#91;anchor]]`.
          References to spec documents use ordinary markdown links.</p>
         <p class="note">The normative grammar lives in
          [`spec/grammar.ebnf`](../../spec/grammar.ebnf); the directive

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operations — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a class="active" href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="operations">
+  <h1>Operations</h1>
+  
+    <p>CX in production is deliberately boring: a static binary, a
+       foreground process, explicit capability grants (see
+       <a class="xref" href="capabilities.html">capabilities</a>), the host OS as the supervisor, and a small
+       set of environment knobs. This section covers the process
+       model, the store service daemon and its deployment artifacts,
+       the environment variables that matter, the collector at a
+       glance, and logging — with pointers into the deeper
+       runtime-verified operator docs under `docs/dev/` in the
+       repository.</p>
+    <section id="ops-process">
+      <h2>Process model</h2>
+      
+        <p>Every CX process — a one-shot program, an HTTP service, the
+         store daemon, a XAP host — runs in the **foreground** and owns
+         its lifecycle. There is no built-in daemonizer and no bespoke
+         supervision machinery, by explicit project decision:</p>
+        <ul>
+          
+            <li>**The port is the only mutex.** A serving process that
+              cannot bind fails fatally and loudly — it never
+              half-runs. At most one instance per port, arbitrated by
+              the kernel; replacing a running instance is an explicit
+              stop-then-start, never a silent takeover.</li>
+            <li>**A crash is a bug to root-cause, not respawn over.**
+              Development and attended operation run unsupervised.
+              Unattended operation delegates restarts to the OS
+              supervisor — systemd on Linux, launchd on macOS — which
+              is also where restart policy, resource limits, and
+              journaling belong.</li>
+            <li>**Clean shutdown on SIGTERM.** Long-running processes
+              stop accepting, drain in-flight work, flush, and exit 0.
+              `kill -TERM` is the normal stop verb everywhere.</li>
+            <li>**Bounded serving.** HTTP serving separates reactors
+              (socket owners) from a bounded executor pool running
+              handlers; overflow answers 503 rather than freezing the
+              accept plane. Pool sizes are deploy-time environment
+              config (subsection on environment variables below).</li>
+          
+        </ul>
+        <p>The deployment process model is described operator-first in
+         `docs/dev/xap-quickstart.md` (the XAP host) and
+         `docs/dev/store-service.md` (the store daemon); both are
+         runtime-verified documents in the repository.</p>
+      
+    </section>
+    <section id="ops-store-daemon">
+      <h2>The store service daemon</h2>
+      
+        <p>The one daemon the platform ships is the CX Store service:
+         `cx store-serve` runs a multi-threaded content-addressed
+         store server over HTTP (the CSRP protocol), configured by a
+         CX document and gated by the ordinary capability flags —
+         serving binds a socket, so it needs `--allow-net`:</p>
+        <pre>
+          <code class="language-sh">$ cx store-serve --config /etc/cxstore/cxstore.service.cx --allow-net</code>
+        </pre>
+        <p>The config is itself CX data — this is a complete minimal
+            config serving one in-memory store on loopback:</p>
+        <pre>
+          <code class="language-cx">[cxstore-service
+  [bind addr="127.0.0.1:18761"]
+  [stores [store name="docs" url="mem://docs"]]]</code>
+        </pre>
+        <p>On startup the daemon states exactly what it is doing —
+         including an honest warning when you have not configured
+         auth:</p>
+        <pre class="sample-output">
+          <code>cx store-serve: listening on tcp://127.0.0.1:18761 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no providers configured, anonymous full access (configure [auth …] for production)</code>
+        </pre>
+        <p>Liveness and readiness are plain HTTP endpoints, and the
+         binary doubles as its own probe (`cx store-health` exits 0
+         iff the daemon reports accepting — this is what the Docker
+         HEALTHCHECK and load balancers call):</p>
+        <pre>
+          <code class="language-sh">$ curl -s http://127.0.0.1:18761/cx-store/v1/health
+[health [status "ok"]]
+$ curl -s http://127.0.0.1:18761/cx-store/v1/ready
+[ready [accepting true] [draining false]]
+$ cx store-health --url http://127.0.0.1:18761/cx-store/v1/ready && echo ready
+ready</code>
+        </pre>
+        <p>Lifecycle, in signals:</p>
+        <table>
+          <thead>
+            
+              <tr>
+                <th>signal</th>
+                <th>effect</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SIGTERM / SIGINT</td>
+                <td>stop accepting, drain in-flight requests, checkpoint every mounted store, exit 0</td>
+              </tr>
+              <tr>
+                <td>SIGHUP</td>
+                <td>reload the hot config (auth, limits, observability, timeouts, TLS identity) without dropping connections — systemd ExecReload</td>
+              </tr>
+            
+          </tbody>
+        </table>
+        <p>Two operator verbs round out the surface: `cx store-token`
+         mints a cryptographically-random bearer token and prints the
+         ready-to-paste `[auth …]` config stanza (the secret is shown
+         once on stderr and never stored), and `cx store-rotate-kek`
+         re-wraps an encrypted store under a new key-encryption key,
+         resumable and fail-closed. Auth providers, RBAC, TLS,
+         observability (metrics, tracing, JSON logs), DoS fairness,
+         and the gRPC listener are covered end-to-end in
+         `docs/dev/store-service.md`, `docs/dev/store-management.md`,
+         and `docs/dev/store-security.md`.</p>
+      
+    </section>
+    <section id="ops-artifacts">
+      <h2>Deployment artifacts</h2>
+      
+        <p>Reference deployment artifacts live in `tooling/cxstore/` in
+         the repository — use them as the template rather than
+         hand-rolling:</p>
+        <ul>
+          
+            <li>**systemd unit** (`cxstore.service`) — `Type=notify`:
+              the daemon signals `READY=1` only after the store is
+              open and the listener is bound, so ordering and
+              readiness are real, and it answers `WatchdogSec` pings.
+              Install the unit, place the config at
+              `/etc/cxstore/cxstore.service.cx`, then
+              `systemctl enable --now cxstore`.</li>
+            <li>**Dockerfile** — a minimal `debian:stable-slim` image:
+              copy in the static `cx` binary and the config; the
+              image HEALTHCHECK runs `cx store-health` against
+              `/cx-store/v1/ready`. One binary, one config file — the
+              whole deployment surface.</li>
+            <li>**Sample config** (`cxstore.service.cx`) and a README
+              with a copy-paste loopback smoke test.</li>
+          
+        </ul>
+        <p>Building the artifact itself: `make build-vcx` produces the
+         optimized binary at `vcx/target/cx`, and `make install-cli`
+         installs it to the prefix. There is nothing else to ship — a
+         CX deployment is the binary, your `.cx` files, and the
+         capability flags in the unit file. The binary self-describes:
+         `cx --version` reports version, commit, build date, and the
+         compiled collector.</p>
+      
+    </section>
+    <section id="ops-env">
+      <h2>Environment variables</h2>
+      
+        <p>The honest current set of deploy-relevant knobs, from the
+         engine source. All are optional; the defaults are the
+         recommendation unless you have measured otherwise:</p>
+        <table>
+          <thead>
+            
+              <tr>
+                <th>variable</th>
+                <th>default</th>
+                <th>meaning</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CX_HTTP_N</td>
+                <td>min(4, cores)</td>
+                <td>HTTP reactor (socket-owner) count. An integer is honored as-is; `max` means one per core. Fan-out past 4 rarely helps — the default scales from laptop to server.</td>
+              </tr>
+              <tr>
+                <td>CX_HTTP_EXEC</td>
+                <td>16</td>
+                <td>HTTP executor threads running handlers — deliberately above the reactor count so a handler parked on an upstream call never freezes the serve plane.</td>
+              </tr>
+              <tr>
+                <td>CX_HTTP_QUEUE</td>
+                <td>1024</td>
+                <td>Pending-job queue depth; overflow answers 503.</td>
+              </tr>
+              <tr>
+                <td>CX_WORKER_THREADS</td>
+                <td>(on)</td>
+                <td>Set to 0 to force [?worker] bodies onto the synchronous path — a diagnostics/bisection escape hatch only; it is not spec-conforming for workers that must overlap.</td>
+              </tr>
+              <tr>
+                <td>CX_REGISTRY</td>
+                <td>(unset)</td>
+                <td>Store URL binding the feature registry for `pkg:` module references; unset, a `pkg:` resolution fails closed (CXER4889).</td>
+              </tr>
+              <tr>
+                <td>CX_STORE_KEK_&lt;id&gt;</td>
+                <td>(unset)</td>
+                <td>Key-encryption-key material for encrypted stores, injected by id — key material never lives in config files.</td>
+              </tr>
+              <tr>
+                <td>VGC_MEMLIMIT_MB</td>
+                <td>2048</td>
+                <td>Soft heap limit: the GC pacer is clamped here so collection engages well before the hard ceiling (the GOMEMLIMIT analog). Multi-GB deployments raise it deliberately.</td>
+              </tr>
+              <tr>
+                <td>VGC_MAX_ARENAS</td>
+                <td>RAM-derived</td>
+                <td>Hard heap ceiling in 64 MB arenas. The default sits where further growth would be swap death; hitting it dies loudly with forensics instead of a much-later OS kill. Override in either direction — lower to fence a process in, raise past RAM for deliberate overcommit.</td>
+              </tr>
+              <tr>
+                <td>VGC_GCTRACE</td>
+                <td>0</td>
+                <td>Set to 1 for a per-collection trace line on stderr — permanent observability, one integer test per cycle when off.</td>
+              </tr>
+              <tr>
+                <td>VGC_HEADROOM_MB</td>
+                <td>64</td>
+                <td>Ceiling for the adaptive pacer headroom. Rarely needed; measured throughput-equivalent well below the old thread-scaled values.</td>
+              </tr>
+              <tr>
+                <td>VGC_NEXT_GC_MB</td>
+                <td>(adaptive)</td>
+                <td>Pins the pacer headroom to a fixed size — a testing/diagnostics knob (soundness gates run it at 4 to force frequent collections).</td>
+              </tr>
+            
+          </tbody>
+        </table>
+        <p>`VGC_GCTRACE=1` output against an allocation-heavy
+            program, verified live:</p>
+        <pre class="sample-output">
+          <code>[gc 0] marked=31MB goal=62MB headroom=16384KB pause=5660us arenas=1 spans=1477 pool=0KB trimmed=0KB threads=1
+[gc 1] marked=62MB goal=125MB headroom=32768KB pause=25188us arenas=2 spans=5509 pool=4680KB trimmed=0KB threads=1
+[gc 2] marked=123MB goal=246MB headroom=65536KB pause=64069us arenas=3 spans=13070 pool=0KB trimmed=0KB threads=1</code>
+        </pre>
+      
+    </section>
+    <section id="ops-gc">
+      <h2>Garbage collection at a glance</h2>
+      
+        <p>The collector is a build-time property of the binary, and the
+         binary tells you which one it carries:</p>
+        <pre class="sample-output">
+          <code>$ cx --version
+cx vX.Y.Z
+  commit   <short-sha>
+  built    <timestamp>
+  gc       e — Perceus RC front line + precise STW vgc backstop</code>
+        </pre>
+        <p>Mode `e` — the shipped default — is a two-layer design:
+         precise reference counting (Perceus) reclaims most values
+         immediately as the front line, and a precise stop-the-world
+         tracing collector (vgc) backstops cycles and shared
+         structures. Operationally that means: allocation-heavy
+         programs pace themselves adaptively (collections start small
+         and early, growing toward the soft limit), long-running
+         services hold a steady RSS rather than ratcheting, and an
+         out-of-memory at the hard arena ceiling is **loud** — a
+         diagnostic dump at the wall, not a silent OOM-kill later.
+         The three knobs that matter in production are
+         `VGC_MEMLIMIT_MB` (pacing target), `VGC_MAX_ARENAS` (hard
+         wall), and `VGC_GCTRACE` (observability) — see the table
+         above. There is nothing to tune on day one.</p>
+      
+    </section>
+    <section id="ops-logging">
+      <h2>Logging and journaling</h2>
+      
+        <p>Structured logging is a bundled module, not an external
+         dependency. Leveled emits write to the active sink (stderr
+         by default) and return null; `[$log:configure]` sets the
+         minimum level, sink, and format process-wide:</p>
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/log']
+[$log:configure {level: :warn}]
+[$log:info 'not shown']
+[$log:warn 'disk nearly full']</code>
+        </pre>
+        <pre class="sample-output">
+          <code>warn disk nearly full</code>
+        </pre>
+        <p>Sinks include stderr, stdout, file (with size/time rotation),
+         and syslog; formats include text, JSON-lines, and logfmt,
+         with multi-sink fan-out — the full configuration surface is
+         on the `log` module page in the Standard library section of
+         this guide and in the module spec. Under systemd, logging to
+         stderr and letting journald own retention is the intended
+         default posture.</p>
+        <p>For audit-grade history there is `journal` — an append-only,
+         hash-chained, tenant-partitioned event log over a store
+         backend, with deterministic fold-to-state, replay, dry-run,
+         verification, and signed snapshots. It is the persistence
+         spine of the XAP runtime and usable standalone; see the
+         `journal` module page in the Standard library section. The
+         store daemon additionally exposes service-side observability
+         (request metrics, optional OTel tracing, JSON access logs) —
+         configured in the service config, documented in
+         `docs/dev/store-service.md`.</p>
+        <p class="note">Going deeper: `docs/dev/README.md` is the operator reading
+         order for the whole platform — store embedded tier
+         through service tier, registries, and the XAP host. Where a
+         capability is designed but not yet shipped, those pages say
+         so explicitly; this guide section only teaches what the
+         shipped binary was observed to do.</p>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

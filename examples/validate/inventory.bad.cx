@@ -1,0 +1,12 @@
+# inventory.bad.cx — deliberately FAILS validation against inventory.cxs
+# with three distinct diagnostic classes (see README.md for exact output):
+#   S005 — qty declared :int, given the string 'lots'
+#   S007 — status 'misplaced' outside [enum stocked low discontinued]
+#   S002 — required attribute sku missing
+# Try:  cx validate examples/validate/inventory.bad.cx --schema=examples/validate/inventory.cxs
+
+[inventory site=main-warehouse
+  [item sku=CX-1001 name='Anchor bolt M8' qty=lots status=stocked]
+  [item sku=CX-2040 name='Torque wrench' qty=3 status=misplaced]
+  [item name='Mystery part' qty=1]
+]

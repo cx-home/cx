@@ -213,7 +213,7 @@
                 row group) closes the stream."""]]
       [body
         """The 2²⁰ (1,048,576) rows per group is the canonical chunk
-           size — `cx canon` enforces it on a CXCol input, and writers
+           size — `cx canonical` enforces it on a CXCol input, and writers
            targeting cross-system hash invariance should use it.
            Different chunk sizes produce valid CXCol files but with
            different SHA-256 hashes."""]]
@@ -623,18 +623,19 @@
          Directives that consume the stream see one row group at a time
          and never materialize the full table."""]
 
-    [example lang=cx
-      """[# Filter a 100GB CXCol file — never loads it whole.
-         The [?for] consumes one row group at a time; [?yield] emits
-         a new CXCol stream downstream. Memory is bounded by the
-         largest row group, not the table size. #]
-         [?for [in $row [?cx-read 'big.cxcol']]
-           [where [> $row/@amount 1000]]
-           [yield [transaction id=$row/@id amount=$row/@amount]]]"""]
+    [body
+      """Today the consumer surface for CXCol streams is the CLI and
+         the Table API (`cx table info` / `dump` / `load`, and the
+         host-language bindings' table methods):"""]
+
+    [example lang=shell
+      """cx table info big.cxcol          [# column spec, row count, size #]
+         cx table dump big.cxcol --to=cx  [# stream to CX text            #]"""]
 
     [body
-      """The directive-level view: any directive that takes a CXPath
-         iterator works on a CXCol stream. `[?for]` / `[?modify]` /
+      """The design direction (not yet shipped as CX-code surface): any
+         directive that takes a CXPath iterator participates in a CXCol
+         stream. `[?for]` / `[?modify]` /
          `[?map]` / `[?reduce]` (see [[code]]) all participate.
          Bounded memory is preserved end-to-end: a pipeline of N stages
          holds N row groups in flight, not N × row-count."""]

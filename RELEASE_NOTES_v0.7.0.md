@@ -3,8 +3,7 @@
 # Branch: v0.7.0-dev (merged → main)
 
 The single-cut release that takes the cx evaluator from the CX programs 1.0
-floor (v0.6.0) to **XQuery 4.0 / XPath 4.0 parity**. Per
-[ADR 0022](spec/decisions/0022-cx-is-one-language-v0_7_0-scope.md),
+floor (v0.6.0) to **XQuery 4.0 / XPath 4.0 parity**. CX is one language, so
 the originally-staged "CX programs 3.1 → CX programs 4.0" trajectory is collapsed
 into one tag.
 
@@ -35,7 +34,7 @@ into one tag.
   `examples/htmx/` (click-to-edit, active-search, click-to-load,
   inline-validation, modal-dialog) demonstrate the cx-as-template
   pattern.
-- **Parquet bridges** in Python, Go, and Rust per ADR 0015 D11's
+- **Parquet bridges** in Python, Go, and Rust, honoring the
   no-Parquet-in-libcx policy.
 
 ## Breaking changes

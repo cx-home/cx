@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -156,71 +161,235 @@
         <p>**Core constructs (11).** Built into the evaluator;
          everything else composes from these:</p>
         <table>
-          
-            <row directive="[?match]" purpose="Pattern dispatch — single-arm assertion or multi-arm first-match (see <a class="xref" href="#match">match</a>)"/>
-            <row directive="[?modify]" purpose="Pure-functional update — apply an action at every CXPath focus (see <a class="xref" href="#modify">modify</a>)"/>
-            <row directive="[?for]" purpose="Iteration / comprehension over a CXPath, pattern, or sequence (see <a class="xref" href="#for">for</a>)"/>
-            <row directive="[?let]" purpose="Local binding scoped to a body (see <a class="xref" href="#let">let</a>)"/>
-            <row directive="[?fn]" purpose="Anonymous function literal — body of $bindings → expression"/>
-            <row directive="[?def]" purpose="Named top-level definition (function or value)"/>
-            <row directive="[?if]" purpose="Boolean branch with EBV condition (see <a class="xref" href="#if">if</a> + <span class="xref-unresolved">[[ebv]]</span>)"/>
-            <row directive="[?else]" purpose="Value-or-default coalesce — recover on [err] or absence (getOrElse; see <a class="xref" href="#errors">errors</a>)"/>
-            <row directive="[?pipe]" purpose="Pipeline — canonical form of the `|` operator (see <a class="xref" href="#pipe">pipe</a>)"/>
-            <row directive="[?map]" purpose="Map a closure over a sequence (sequential by default; par=true enables parallel evaluation, ordered=true preserves source order)"/>
-            <row directive="[?reduce]" purpose="Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; par=true requires associativity)"/>
-          
+          <thead>
+            
+              <tr>
+                <th>directive</th>
+                <th>purpose</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>[?match]</td>
+                <td>Pattern dispatch — single-arm assertion or multi-arm first-match (see <a class="xref" href="#match">match</a>)</td>
+              </tr>
+              <tr>
+                <td>[?modify]</td>
+                <td>Pure-functional update — apply an action at every CXPath focus (see <a class="xref" href="#modify">modify</a>)</td>
+              </tr>
+              <tr>
+                <td>[?for]</td>
+                <td>Iteration / comprehension over a CXPath, pattern, or sequence (see <a class="xref" href="#for">for</a>)</td>
+              </tr>
+              <tr>
+                <td>[?let]</td>
+                <td>Local binding scoped to a body (see <a class="xref" href="#let">let</a>)</td>
+              </tr>
+              <tr>
+                <td>[?fn]</td>
+                <td>Anonymous function literal — body of $bindings → expression</td>
+              </tr>
+              <tr>
+                <td>[?def]</td>
+                <td>Named top-level definition (function or value)</td>
+              </tr>
+              <tr>
+                <td>[?if]</td>
+                <td>Boolean branch with EBV condition (see <a class="xref" href="#if">if</a> + <a class="xref" href="#ebv">ebv</a>)</td>
+              </tr>
+              <tr>
+                <td>[?else]</td>
+                <td>Value-or-default coalesce — recover on [err] or absence (getOrElse; see <a class="xref" href="#errors">errors</a>)</td>
+              </tr>
+              <tr>
+                <td>[?pipe]</td>
+                <td>Pipeline — canonical form of the `|` operator (see <a class="xref" href="#pipe">pipe</a>)</td>
+              </tr>
+              <tr>
+                <td>[?map]</td>
+                <td>Map a closure over a sequence (sequential by default; par=true enables parallel evaluation, ordered=true preserves source order)</td>
+              </tr>
+              <tr>
+                <td>[?reduce]</td>
+                <td>Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; par=true requires associativity)</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Resilience (6).** Wrap an inner expression with a
          failure-handling policy. See <a class="xref" href="#resilience">resilience</a> for the parameter
          tables:</p>
         <table>
-          
-            <row directive="[?retry]" purpose="Re-run on failure with backoff + jitter; bounded by max="/>
-            <row directive="[?timeout]" purpose="Bound execution time; cancel + return [on-timeout …] on expiry"/>
-            <row directive="[?circuit-breaker]" purpose="Open after threshold-exceeded failures in a rolling window"/>
-            <row directive="[?fallback]" purpose="Run [recover-with …] secondary if primary returns [err …] ($err bound in the recovery)"/>
-            <row directive="[?rate-limit]" purpose="Token-bucket cap — max= calls per per= duration"/>
-            <row directive="[?bulkhead]" purpose="Bound max-concurrent= in-flight; optional [queue …]"/>
-          
+          <thead>
+            
+              <tr>
+                <th>directive</th>
+                <th>purpose</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>[?retry]</td>
+                <td>Re-run on failure with backoff + jitter; bounded by max=</td>
+              </tr>
+              <tr>
+                <td>[?timeout]</td>
+                <td>Bound execution time; cancel + return [on-timeout …] on expiry</td>
+              </tr>
+              <tr>
+                <td>[?circuit-breaker]</td>
+                <td>Open after threshold-exceeded failures in a rolling window</td>
+              </tr>
+              <tr>
+                <td>[?fallback]</td>
+                <td>Run [recover-with …] secondary if primary returns [err …] ($err bound in the recovery)</td>
+              </tr>
+              <tr>
+                <td>[?rate-limit]</td>
+                <td>Token-bucket cap — max= calls per per= duration</td>
+              </tr>
+              <tr>
+                <td>[?bulkhead]</td>
+                <td>Bound max-concurrent= in-flight; optional [queue …]</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Services + clients (3).** HTTP service definition + client
          construction. See <a class="xref" href="#services">services</a>:</p>
         <table>
-          
-            <row directive="[?service]" purpose="Declare an HTTP service with resource handlers; returns a handle"/>
-            <row directive="[?service-handle]" purpose="Look up an existing service by :name"/>
-            <row directive="[?http-client]" purpose="Construct an HTTP client (optionally wrapped in resilience)"/>
-          
+          <thead>
+            
+              <tr>
+                <th>directive</th>
+                <th>purpose</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>[?service]</td>
+                <td>Declare an HTTP service with resource handlers; returns a handle</td>
+              </tr>
+              <tr>
+                <td>[?service-handle]</td>
+                <td>Look up an existing service by :name</td>
+              </tr>
+              <tr>
+                <td>[?http-client]</td>
+                <td>Construct an HTTP client (optionally wrapped in resilience)</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Concurrency (10).** Workers + channels + selection. See
          <a class="xref" href="#workers">workers</a>:</p>
         <table>
-          
-            <row directive="[?worker]" purpose="Spawn a worker; concurrent with siblings in the enclosing scope"/>
-            <row directive="[?worker-handle]" purpose="Look up an existing worker by :name"/>
-            <row directive="[?channel]" purpose="Create a FIFO channel with :buffer of given size"/>
-            <row directive="[?send]" purpose="Blocking send to a channel; returns [ok] or CHANNEL_CLOSED"/>
-            <row directive="[?try-send]" purpose="Send with :timeout — SEND_TIMEOUT if buffer stays full"/>
-            <row directive="[?receive]" purpose="Blocking receive — returns next value or CHANNEL_CLOSED"/>
-            <row directive="[?try-receive]" purpose="Receive with :timeout — RECV_TIMEOUT if empty"/>
-            <row directive="[?close]" purpose="Close a channel; second close raises CHANNEL_ALREADY_CLOSED"/>
-            <row directive="[?select]" purpose="Multi-way receive — first ready case wins (uniform-random on ties)"/>
-            <row directive="[?stop]" purpose="Initiate graceful shutdown on a service or worker handle"/>
-          
+          <thead>
+            
+              <tr>
+                <th>directive</th>
+                <th>purpose</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>[?worker]</td>
+                <td>Spawn a worker; concurrent with siblings in the enclosing scope</td>
+              </tr>
+              <tr>
+                <td>[?worker-handle]</td>
+                <td>Look up an existing worker by :name</td>
+              </tr>
+              <tr>
+                <td>[?channel]</td>
+                <td>Create a FIFO channel with :buffer of given size</td>
+              </tr>
+              <tr>
+                <td>[?send]</td>
+                <td>Blocking send to a channel; returns [ok] or CHANNEL_CLOSED</td>
+              </tr>
+              <tr>
+                <td>[?try-send]</td>
+                <td>Send with :timeout — SEND_TIMEOUT if buffer stays full</td>
+              </tr>
+              <tr>
+                <td>[?receive]</td>
+                <td>Blocking receive — returns next value or CHANNEL_CLOSED</td>
+              </tr>
+              <tr>
+                <td>[?try-receive]</td>
+                <td>Receive with :timeout — RECV_TIMEOUT if empty</td>
+              </tr>
+              <tr>
+                <td>[?close]</td>
+                <td>Close a channel; second close raises CHANNEL_ALREADY_CLOSED</td>
+              </tr>
+              <tr>
+                <td>[?select]</td>
+                <td>Multi-way receive — first ready case wins (uniform-random on ties)</td>
+              </tr>
+              <tr>
+                <td>[?stop]</td>
+                <td>Initiate graceful shutdown on a service or worker handle</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Async (8).** Futures + barriers + cancellation. See
          <a class="xref" href="#async">async</a>:</p>
         <table>
-          
-            <row directive="[?async]" purpose="Evaluate EXPR asynchronously; return a future immediately"/>
-            <row directive="[?await]" purpose="Block until a future is terminal; return value or [err]"/>
-            <row directive="[?await-all]" purpose="Join N futures — all-or-error barrier"/>
-            <row directive="[?await-any]" purpose="Yield first to terminate; others continue running"/>
-            <row directive="[?await-race]" purpose="Yield first to terminate; cancel the rest"/>
-            <row directive="[?cancel]" purpose="Request cooperative cancellation on a future/worker handle"/>
-            <row directive="[?check-cancel]" purpose="Polling cancellation point inside a CPU-bound loop"/>
-            <row directive="[?sleep]" purpose="Cancellable sleep for DURATION"/>
-          
+          <thead>
+            
+              <tr>
+                <th>directive</th>
+                <th>purpose</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>[?async]</td>
+                <td>Evaluate EXPR asynchronously; return a future immediately</td>
+              </tr>
+              <tr>
+                <td>[?await]</td>
+                <td>Block until a future is terminal; return value or [err]</td>
+              </tr>
+              <tr>
+                <td>[?await-all]</td>
+                <td>Join N futures — all-or-error barrier</td>
+              </tr>
+              <tr>
+                <td>[?await-any]</td>
+                <td>Yield first to terminate; others continue running</td>
+              </tr>
+              <tr>
+                <td>[?await-race]</td>
+                <td>Yield first to terminate; cancel the rest</td>
+              </tr>
+              <tr>
+                <td>[?cancel]</td>
+                <td>Request cooperative cancellation on a future/worker handle</td>
+              </tr>
+              <tr>
+                <td>[?check-cancel]</td>
+                <td>Polling cancellation point inside a CPU-bound loop</td>
+              </tr>
+              <tr>
+                <td>[?sleep]</td>
+                <td>Cancellable sleep for DURATION</td>
+              </tr>
+            
+          </tbody>
         </table>
         <p>**Lifecycle (2 shared).** `[?stop]` (above) and
          `[?wait-for]` — block until a service or worker terminates,
@@ -254,7 +423,7 @@
         <p>The simplest CXPath is the descendant search:</p>
         <pre>
           <code class="language-cx">//user                       [# every user, anywhere in doc      #]
-         //user[@active=true]         [# every active user                #]
+         //user[= $_@active true]     [# every active user                #]
          //user/@email                [# scalar attribute values          #]
          //section[1]                 [# first section (1-indexed)        #]
          //section[h2]                [# section that has an h2 child     #]</code>
@@ -262,10 +431,11 @@
         <p>The grammar is the XPath 3.1 **selection core**, lifted into
          CX with one comparison operator family:</p>
         <pre>
-          <code class="language-cx">PathExpr   ::= '//' StepList | '/' StepList | StepList
+          <code class="language-text">PathExpr   ::= '//' StepList | '/' StepList | StepList
          Step       ::= ( Axis '::' )? NodeTest Predicate*
          Predicate  ::= '[' PredExpr ']'
-         PredExpr   ::= AttrTest | INT | FunctionCall | BooleanExpr</code>
+         PredExpr   ::= INT | AttrTest | StepTest | ScalarLiteral
+                      | BindingOrPath | FusedPrefixForm</code>
         </pre>
         <section id="cxpath-axes">
           <h3>The twelve axes</h3>
@@ -273,20 +443,79 @@
             <p>CXPath supports twelve axes. The default axis is `child`,
            so `name` ≡ `child::name`. The full set:</p>
             <table>
-              
-                <row axis="child" direction="down" what-it-selects="Direct children of context node (default axis)"/>
-                <row axis="descendant" direction="down" what-it-selects="Children, grandchildren, deeper — excludes self"/>
-                <row axis="descendant-or-self" direction="down" what-it-selects="`descendant` plus the context node itself"/>
-                <row axis="parent" direction="up" what-it-selects="The unique parent of context (or empty at root)"/>
-                <row axis="ancestor" direction="up" what-it-selects="Parent, grandparent, up to root — excludes self"/>
-                <row axis="ancestor-or-self" direction="up" what-it-selects="`ancestor` plus the context node itself"/>
-                <row axis="following-sibling" direction="lateral" what-it-selects="Later siblings with same parent"/>
-                <row axis="preceding-sibling" direction="lateral" what-it-selects="Earlier siblings with same parent"/>
-                <row axis="following" direction="document" what-it-selects="Every node after context in document order (excluding descendants)"/>
-                <row axis="preceding" direction="document" what-it-selects="Every node before context in document order (excluding ancestors)"/>
-                <row axis="self" direction="self" what-it-selects="Context node itself — useful for predicate filters"/>
-                <row axis="attribute" direction="attr" what-it-selects="Attributes of context — shorthand is `@name`"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>axis</th>
+                    <th>direction</th>
+                    <th>what-it-selects</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>child</td>
+                    <td>down</td>
+                    <td>Direct children of context node (default axis)</td>
+                  </tr>
+                  <tr>
+                    <td>descendant</td>
+                    <td>down</td>
+                    <td>Children, grandchildren, deeper — excludes self</td>
+                  </tr>
+                  <tr>
+                    <td>descendant-or-self</td>
+                    <td>down</td>
+                    <td>`descendant` plus the context node itself</td>
+                  </tr>
+                  <tr>
+                    <td>parent</td>
+                    <td>up</td>
+                    <td>The unique parent of context (or empty at root)</td>
+                  </tr>
+                  <tr>
+                    <td>ancestor</td>
+                    <td>up</td>
+                    <td>Parent, grandparent, up to root — excludes self</td>
+                  </tr>
+                  <tr>
+                    <td>ancestor-or-self</td>
+                    <td>up</td>
+                    <td>`ancestor` plus the context node itself</td>
+                  </tr>
+                  <tr>
+                    <td>following-sibling</td>
+                    <td>lateral</td>
+                    <td>Later siblings with same parent</td>
+                  </tr>
+                  <tr>
+                    <td>preceding-sibling</td>
+                    <td>lateral</td>
+                    <td>Earlier siblings with same parent</td>
+                  </tr>
+                  <tr>
+                    <td>following</td>
+                    <td>document</td>
+                    <td>Every node after context in document order (excluding descendants)</td>
+                  </tr>
+                  <tr>
+                    <td>preceding</td>
+                    <td>document</td>
+                    <td>Every node before context in document order (excluding ancestors)</td>
+                  </tr>
+                  <tr>
+                    <td>self</td>
+                    <td>self</td>
+                    <td>Context node itself — useful for predicate filters</td>
+                  </tr>
+                  <tr>
+                    <td>attribute</td>
+                    <td>attr</td>
+                    <td>Attributes of context — shorthand is `@name`</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
               <code class="language-cx">[# Common axis idioms                                              #]
@@ -295,49 +524,54 @@
            //user/following-sibling::user             [# later peer users      #]
            //tr/parent::table                         [# tables containing tr  #]
            //h2/preceding-sibling::*[1]               [# immediate prior sib   #]
-           //user[self::admin]                        [# only-if-admin filter  #]
+           //user[= $_@role 'admin']                  [# only-if-admin filter  #]
            //user/attribute::email                    [# == //user/@email      #]</code>
             </pre>
-            <p>All twelve axes are reachable from any binding too — `$u`
-           plus an axis-qualified step navigates from that value:
-           `$u/ancestor::section` walks upward from `$u`. See
-           <a class="xref" href="bindings.html">bindings</a>.</p>
+            <p>Axis-qualified steps apply to document-anchored paths.
+           From a **binding**, the child / descendant / attribute
+           steps work directly (`$u/name`, `$u//item`, `$u@email`);
+           axis-qualified steps on a binding (`$u/ancestor::…`) are
+           not yet supported — anchor the path at the document and
+           filter instead. See <a class="xref" href="bindings.html">bindings</a>.</p>
           
         </section>
         <section id="cxpath-predicates">
           <h3>Predicates — positional, attribute, function, composite</h3>
           
-            <p>A predicate is `[...]` after a step. CXPath recognises four
-           predicate shapes; mixed forms compose:</p>
+            <p>A predicate is `[...]` after a step. The predicate body is
+           **prefix CX code over the context node `$_`** — plus a
+           small set of atomic shorthands. The admitted shapes:</p>
             <ul>
               
                 <li>**Positional** — `INT` selects the Nth match
                 (1-indexed). `//section[1]` is the first section.
-                Negative positions are NOT supported; use
-                `[last()]` for the last.</li>
-                <li>**Attribute** — `@name`, `@name=value`,
-                `@name!=value`, `@name&lt;value` etc. Tests an
-                attribute's value. Sigil shortcut: `[+active]`
-                ≡ `[@active=true]`, `[-banned]` ≡ `[@banned=false]`.</li>
-                <li>**Function** — any boolean-returning builtin or
-                user-defined function: `[contains(@name, 'Ada')]`,
-                `[starts-with(@email, 'a')]`, `[count(*) &gt; 0]`.</li>
-                <li>**Composite** — boolean combinations with `and` /
-                `or` / `not`: `[@active=true and @region='EU']`,
-                `[@status='ok' or @status='warn']`.</li>
+                Negative positions are NOT supported; `[$_last]`
+                selects the last, `[= $_position N]` the Nth.</li>
+                <li>**Attribute test** — `[@name]` (attribute present)
+                and `[@!name]` (attribute absent). Value comparisons
+                are prefix forms: `[= $_@name V]`, `[!= …]`,
+                `[&lt; …]` etc.</li>
+                <li>**Step-existence** — a bare child name: `[h2]`
+                keeps elements that have an `h2` child.</li>
+                <li>**Prefix expression** — any prefix CX form over
+                `$_`: comparisons (`[= $_@id 42]`), boolean
+                combinators (`[and …]` / `[or …]` / `[not …]`), and
+                function calls (`[$strings:contains $_@email
+                '@example.com']`).</li>
               
             </ul>
             <pre>
               <code class="language-cx">//user[1]                              [# first user                #]
-           //user[@id=42]                         [# attr equality             #]
-           //user[+active]                        [# sigil shorthand           #]
-           //user[contains(@email, '@example.com')]
-           //user[@age >= 18 and @country='US']
-           //section[h2 and p]                    [# has both h2 and p children#]</code>
+           //user[= $_@id 42]                     [# attr equality             #]
+           //user[@active]                        [# attr present              #]
+           //user[$strings:contains $_@email '@example.com']
+           //user[and [>= $_@age 18] [= $_@country 'US']]
+           //section[h2]                          [# has an h2 child           #]
+           //section[and [$count $_/h2] [$count $_/p]]</code>
             </pre>
-            <p>Predicates chain: `//user[@active=true][1]` is the first
-           active user — the second predicate filters the result of
-           the first. The order matters.</p>
+            <p>Predicates chain: `//user[= $_@active true][1]` is the
+           first active user — the second predicate filters the
+           result of the first. The order matters.</p>
           
         </section>
         <section id="cxpath-comparison">
@@ -353,14 +587,15 @@
            *any* `x` equals 1 — a common gotcha when the path
            silently returns multiple nodes. In CX, the path must
            return a single value, or the comparison raises. To
-           express "any equals", use the explicit builtin:
-           `some(//x, fn($v){ $v = 1 })`.</p>
+           express "any equals", filter the sequence itself:
+           `[$exists //x[= $_ 1]]`.</p>
             <pre>
-              <code class="language-cx">//user[@age = 42]              [# single attr → ok               #]
-           //section[count(p) > 3]        [# both sides single → ok         #]
-           //user[@email = 'ada@…']       [# single string equality         #]
-           [# //user[@tags = 'admin']     # raises if @tags is multi-valued #]
-           //user[some(@tags, fn($t){ $t = 'admin' })]</code>
+              <code class="language-cx">//user[= $_@age 42]              [# single attr → ok             #]
+           //section[> [$count $_/p] 3]     [# both sides single → ok       #]
+           //user[= $_@email 'ada@example.com']
+           [# a multi-valued operand raises — filter the sequence
+              instead of comparing it wholesale #]
+           [$exists //user/tag[= $_ 'admin']]</code>
             </pre>
           
         </section>
@@ -370,20 +605,22 @@
             <p>A CXPath rooted at a binding navigates from that value
            instead of from the document root:</p>
             <pre>
-              <code class="language-cx">$u/name                  [# direct child element               #]
-           $u/*                     [# all direct children                #]
-           $u//item                 [# descendant                         #]
-           $u/ancestor::section     [# explicit axis                      #]
-           $u@active                [# attribute access (shorthand)       #]
-           $u/@active               [# attribute access (full)            #]
-           $u.region                [# map-key access (when $u is a map)  #]</code>
+              <code class="language-cx">[# $u/name — direct child · $u/* — all children ·
+            $u//item — descendant · $u@active — attribute (shorthand) ·
+            $u/@active — attribute (full axis form)                    #]
+           [?let [= $u [user active=true region='EU'
+                        [name 'Ada'] [item 1] [item 2]]]
+             ($u/name, $u/*, $u//item, $u@active, $u/@active)]</code>
             </pre>
             <p>The path operators that work on bindings are the same
            operators that work on the implicit document — one
            vocabulary. The leading `//` form is anchored at the
            **document root**, regardless of context; `$u//x` is
            anchored at `$u`. Use `//x` to escape upward when you
-           already have a binding.</p>
+           already have a binding. Axis-qualified steps
+           (`ancestor::` etc.) are document-path syntax and are not
+           yet supported on a binding; map-key access on a map-valued
+           binding uses `[$map:get $m 'key']`.</p>
           
         </section>
         <section id="cxpath-context">
@@ -392,14 +629,14 @@
             <p>CXPath is a value kind. Every construct that takes "a
            selector" accepts a CXPath value:</p>
             <pre>
-              <code class="language-cx">[?for [in $u //user[@active=true]] [yield [$render $u]]]
+              <code class="language-cx">[?for [in $u //user[= $_@active true]] [yield [$render $u]]]
            [?if //admin [then [admin-panel]] [else ()]]
-           [?match $n [case //prose [yield [p $n]]]]
+           [?match $n [case //prose [p $n]] [else ()]]
            [?let [= $cfg //meta/@config] [$render $cfg]]
            [?modify $doc //user/@status [set 'verified']]
-           [$count //user[@active=true]]</code>
+           [$count //user[= $_@active true]]</code>
             </pre>
-            <p>The same path expression — `//user[@active=true]` —
+            <p>The same path expression — `//user[= $_@active true]` —
            appears as a `[?for]` generator, as an `[?if]` condition,
            as a `[?match]` arm, as a `[?let]` initializer, as a
            `[?modify]` focus, and as a builtin argument. This is the
@@ -438,11 +675,12 @@
                 CX moves binding into the `[?for]` / `[?let]`
                 directive surface; predicates take expressions but
                 not binding clauses. Use the surrounding directive.</li>
-                <li>**No XPath functions in head position** — bare
-                `count(//user)` parses at expression top-level (a
-                builtin call) but not inside a path step;
-                `[count(*) &gt; 0]` works because it is a predicate
-                expression.</li>
+                <li>**No paren-calls anywhere** — XPath's `count(//user)`
+                spelling does not exist; every call is the
+                head-dispatch form `[$count //user]`, in predicates
+                too (`[&gt; [$count $_/*] 0]`). `position()` / `last()`
+                are the reserved predicate bindings `$_position` /
+                `$_last`.</li>
               
             </ul>
             <p class="note">The full XPath 3.1 alignment table — what is adopted, what
@@ -516,15 +754,19 @@
             <p>A CXPath value used as a pattern matches if the
            candidate value is in the path's result sequence:</p>
             <pre>
-              <code class="language-cx">[?match $node
-           [case //heading [h2 $node]]
-           [case //prose   [p $node]]
-           [else           $node]]</code>
+              <code class="language-cx">[doc [heading 'Title'] [prose 'Body.']]
+           [?let [= $node [$first //heading]]
+             [?match $node
+               [case //heading [h2 [$text $node]]]
+               [case //prose   [p  [$text $node]]]
+               [else           $node]]]</code>
             </pre>
             <p>In a `[?for]` body, the same CXPath as the generator
            selects directly:</p>
             <pre>
-              <code class="language-cx">[?for [in $u //user[@active=true]] [yield $u@email]]</code>
+              <code class="language-cx">[users [user email='ada@ex.com' active=true]
+                [user email='bob@ex.com' active=false]]
+           [?for [in $u //user[= $_@active true]] [yield $u@email]]</code>
             </pre>
             <p>CXPath patterns and element-shape patterns compose in
            the same arm list — `[?match]` can dispatch on a mix of
@@ -541,19 +783,20 @@
                 element and binds it. `[section * $body]` matches
                 any section and binds the body wildcard slot.</li>
                 <li>**`**` — recursive descent.** `[**]` matches any
-                element at this position or deeper. Combined with
-                a name: `[**user]` matches any `user` anywhere in
-                the body.</li>
+                element at this position or deeper. Wrapping an
+                inner pattern — `[** [user $u]]` — matches a `user`
+                anywhere in the body and binds it.</li>
                 <li>**`_` — anything, no bind.** `_` matches any value
                 (including non-elements) without binding it. The
                 idiomatic catch-all in `[?match]`.</li>
               
             </ul>
             <pre>
-              <code class="language-cx">[?match $node
-           [case [section * $body] [$process-section $body]]
-           [case [**code $c]       [$highlight $c]]
-           [case _                 $node]]</code>
+              <code class="language-cx">[?let [= $node [section [h2 'T'] [code 'x = 1']]]
+             [?match $node
+               [case [section * $body] [matched-section]]
+               [case [** [code $c]]    [highlighted $c]]
+               [case _                 $node]]]</code>
             </pre>
           
         </section>
@@ -563,11 +806,11 @@
             <p>`$name` (lowercase, leading `$`) is a binding hole. It
            appears in attribute-value position
            (`[user email=$e]`), in body position (`[user $u]`),
-           and in destructuring-let position
-           (`[?let [user @id=1 $admin] = …]`).</p>
+           and in a destructuring `[?for]` generator
+           (`[?for [in [user $u] /users/user] …]`).</p>
             <p>A bind hole always succeeds at its position; the
            bind value depends on what the surrounding pattern
-           dictates (see <span class="xref-unresolved">[[pattern-element-shape]]</span>). Naming
+           dictates (see <a class="xref" href="#pattern-element-shape">pattern-element-shape</a>). Naming
            collisions inside one arm raise `CXER0100`
            (PARSE_ERROR) — `[user @id=$x @name=$x]` would require
            the values be equal, which the current spec does not
@@ -577,19 +820,19 @@
         <section id="pattern-type-guards">
           <h3>Type-guard heads</h3>
           
-            <p>A type guard `:TypeName` at element-head position
+            <p>A type guard `:TypeName` at **pattern-head position**
            narrows by schema-typed shape:</p>
             <pre>
-              <code class="language-cx">[# Match only elements with declared schema type ServerConfig    #]
+              <code class="language-cx">[# Match only elements whose schema type is ServerConfig #]
            [?match $cfg
-             [case [* :ServerConfig $c] [$validate-server $c]]
-             [case [* :ClientConfig $c] [$validate-client $c]]
+             [case [:ServerConfig $c] [$validate-server $c]]
+             [case [:ClientConfig $c] [$validate-client $c]]
              [else [result status=err code='CXER0103' reason='unknown config']]]</code>
             </pre>
             <p>Type-guard resolution is by the document's schema
-           binding (see <a class="xref" href="data-language.html#schema">schema</a> in the data section). When no
-           schema is in scope the guard fails by default; pair
-           with schema-on-validate (`[?cx schema='…']`) for
+           binding (see <a class="xref" href="data-language.html#schema">schema</a> in the data section); with no
+           schema in scope type guards are rejected at program
+           load. Pair with schema binding (`[?cx schema='…']`) for
            type-driven dispatch.</p>
           
         </section>
@@ -603,8 +846,10 @@
          `$name`. They are immutable — there is no rebinding (per
          CX's pure-functional discipline).</p>
         <pre>
-          <code class="language-cx">[?let [= $admins //user[@role='admin']]
-            [?for [in $a $admins] [yield $a@email]]]</code>
+          <code class="language-cx">[users [user role='admin' email='root@example.com']
+              [user role='user'  email='ada@example.com']]
+         [?let [= $admins //user[= $_@role 'admin']]
+           [?for [in $a $admins] [yield $a@email]]]</code>
         </pre>
         <p>A binding's value is whatever expression produced it:
          a sequence, a scalar, an element, an array, a map, an
@@ -612,7 +857,7 @@
          is a sequence (per the sequence-flat principle); single
          values are sequences of one.</p>
         <p>**Navigation from a binding** uses CXPath syntax (see
-         <span class="xref-unresolved">[[cxpath-bindings]]</span>). The path operators that work on
+         <a class="xref" href="#cxpath-bindings">cxpath-bindings</a>). The path operators that work on
          bindings are the same operators that work on the implicit
          document — one vocabulary. `$u/email` is a child step;
          `$u@email` is the attribute shorthand; `$u/@email` is the
@@ -642,32 +887,39 @@
            generator — the `[?find]` replacement), or any expression
            that evaluates to a sequence.</p>
             <pre>
-              <code class="language-cx">[# CXPath generator                                           #]
+              <code class="language-cx">[site
+             [user id=1 email='ada@example.com'   age=36 active=true]
+             [user id=2 email='grace@example.com' age=17 active=false]
+             [post author=1 [title 'Notes']]
+             [request 'r1'] [request 'r2']
+             [logs [row 'a'] [row 'b']]]
+
+           [# CXPath generator                                           #]
            [?for [in $u //user] [yield $u@email]]
 
            [# Pattern generator (the `[?find]` replacement)              #]
            [?for [user @active=true $u] [yield $u@email]]
 
            [# Filter with [where …]                                      #]
-           [?for [in $u //user] [where [>= $u@age 18]] [yield $u]]
+           [?for [in $u //user] [where [>= $u@age 18]] [yield $u@id]]
 
            [# Multiple generators (Cartesian, in declared order)         #]
            [?for [in $u //user]
-                 [in $p //post[@author=$u@id]]
-                 [yield [tuple $u $p]]]
+                 [in $p //post[= $_@author $u@id]]
+                 [yield [pair user=$u@id post=[$text $p/title]]]]
 
            [# Parallel evaluation                                        #]
-           [?for [in $r //request] par=true [yield [$process $r]]]
+           [?for [in $r //request] [par] [yield [got [$text $r]]]]
 
            [# Streaming over large input                                 #]
-           [?for [in $row //logs/row] stream=true [yield [$extract $row]]]</code>
+           [?for [in $row //logs/row] [stream] [yield [$text $row]]]</code>
             </pre>
-            <p>`par=true` and `stream=true` are evaluation modifiers — same
-           surface, different scheduler. `par=true` distributes
-           iterations across worker threads (preserving output
-           order). `stream=true` couples the generator to a streaming
-           input source so that the iteration runs in bounded
-           memory regardless of input size. Full semantics in
+            <p>`[par]` and `[stream]` are evaluation-modifier clauses —
+           same surface, different scheduler. `[par]` distributes
+           iterations across worker threads (add `[ordered]` to
+           preserve source order). `[stream]` couples the generator
+           to a streaming input source so that the iteration runs in
+           bounded memory regardless of input size. Full semantics in
            [`spec/code.md`](../../spec/code.md) §7.</p>
             <p>**Multiple `[where …]` clauses** AND together; **multiple
            `[yield …]` clauses** concatenate (per the sequence-flat
@@ -686,31 +938,34 @@
            the shape:</p>
             <pre>
               <code class="language-cx">[# Destructures $result as [ok V] or raises CXER0100 #]
-           [?match $result [ok $v] [yield [$render $v]]]</code>
+           [?let [= $result [ok 42]]
+             [?match $result [ok $v] [yield [rendered $v]]]]</code>
             </pre>
             <p>**Multi-arm form** — first-match-wins across `[case …]` /
            `[when …]` / `[else …]` clauses. Arms may mix element-shape
            patterns, scalar literals, CXPath paths, wildcards,
            and predicate-only `[when …]` clauses:</p>
             <pre>
-              <code class="language-cx">[?match $node
-           [case [prose $p]   [p $p]]
-           [case [code $c]    [pre $c]]
-           [case //heading    [h2 $node]]
-           [case 'separator'  [hr]]
-           [case _            ()]]
+              <code class="language-cx">[?let [= $node [code 'x = 1']]
+             [?match $node
+               [case [prose $p]   [p $p]]
+               [case [code $c]    [pre $c]]
+               [case 'separator'  [hr]]
+               [else              ()]]]
 
            [# SQL Searched-CASE — predicate-only mode (no scrutinee)     #]
-           [?match
-             [when [> $x 100]   :big]
-             [when [> $y 50]    :medium]
-             [else              :small]]
+           [?let [= $x 120] [= $y 10]
+             [?match
+               [when [> $x 100]   :big]
+               [when [> $y 50]    :medium]
+               [else              :small]]]
 
            [# Guards on case arms — [where …] filters even on a match    #]
-           [?match $req
-             [case [http-get $u] [where [$allowed $u]] [route $u]]
-             [case [http-get $u]                       [403 forbidden]]
-             [else                                     [400 bad-request]]]</code>
+           [?let [= $req [http-get '/admin']]
+             [?match $req
+               [case [http-get $u] [where [= $u '/admin']] [route $u]]
+               [case [http-get $u]                         [status 403]]
+               [else                                       [status 400]]]]</code>
             </pre>
             <p>**Arm semantics:**</p>
             <ul>
@@ -751,11 +1006,14 @@
           
             <p>`[?if cond [then E1] [else E2]]` is the explicit boolean
            branch. The condition is evaluated with the EBV
-           (Effective Boolean Value) rule — see <span class="xref-unresolved">[[ebv]]</span> below.</p>
+           (Effective Boolean Value) rule — see <a class="xref" href="#ebv">ebv</a> below.</p>
             <pre>
-              <code class="language-cx">[?if //admin [then [admin-panel]] [else [user-panel]]]
-           [?if [>= $age 18] [then :adult] [else :minor]]
-           [?if @debug [then [$debug-trace]] [else ()]]</code>
+              <code class="language-cx">[site [admin 'root'] [config debug=false]]
+           [?if //admin [then [admin-panel]] [else [user-panel]]]
+           [?let [= $age 36]
+             [?if [>= $age 18] [then :adult] [else :minor]]]
+           [?let [= $cfg [$first //config]]
+             [?if $cfg@debug [then [debug-trace]] [else ()]]]</code>
             </pre>
             <p>For multi-way conditionals prefer `[?match]` multi-arm
            (see <a class="xref" href="#match">match</a>). `[?if]` stays separate from `[?match]`
@@ -765,8 +1023,8 @@
            equality / pattern match).</p>
             <p>**The `[else …]` clause is optional.** When omitted, an
            untrue condition yields `()` (the empty sequence). Many
-           CX idioms exploit this — `[?if @hidden [then ()] [else
-           [$render ...]]]` reads as "render unless hidden".</p>
+           CX idioms exploit this — `[?if $n@hidden [then ()] [else
+           [$render $n]]]` reads as "render unless hidden".</p>
             <section id="ebv">
               <h4>EBV — the Effective Boolean Value rule</h4>
               
@@ -813,18 +1071,14 @@
             <p>`[?let]` introduces a local binding. The bound name is
            in scope inside the body that follows.</p>
             <pre>
-              <code class="language-cx">[?let [= $config //meta/@config]
-             [$render $config]]
+              <code class="language-cx">[meta host='api.example.com' port='8443']
 
-           [# Multiple bindings — sequential, each sees the prior  #]
-           [?let [= $base //meta/@host]
-                 [= $port //meta/@port]
+           [# Multiple bindings — flat, sequential, each sees the prior #]
+           [?let [= $meta [$first //meta]]
+                 [= $base [$string $meta@host]]
+                 [= $port [$string $meta@port]]
                  [= $url  [$concat 'https://' $base ':' $port]]
-                 [http-client target=$url]]
-
-           [# Destructuring let — pattern in binding position      #]
-           [?let [= [user @id=1 $admin] //user[@id=1]]
-             $admin@email]</code>
+             [endpoint target=$url]]</code>
             </pre>
             <p>`[?let]` is the only way to give an expression a name
            currently — there is no `def` inside a function body,
@@ -843,26 +1097,76 @@
            is unchanged (pure-functional).</p>
             <p>The **eleven action slots** are:</p>
             <table>
-              
-                <row action="[set V]" description="Replace matched value, element body, or attribute value with V"/>
-                <row action="[delete]" description="Remove matched node from its parent body (or attribute from element)"/>
-                <row action="[using F]" description="Apply function F to each match; F receives the match, returns the replacement"/>
-                <row action="[rename N]" description="Rename matched element (preserves attrs + body)"/>
-                <row action="[set-attr N V]" description="Add new attribute N=V, or overwrite if N already present"/>
-                <row action="[delete-attr N]" description="Remove attribute N from matched element"/>
-                <row action="[append V]" description="Add child V at end of matched body"/>
-                <row action="[prepend V]" description="Add child V at start of matched body"/>
-                <row action="[insert-before V]" description="Insert V as a sibling immediately before each match"/>
-                <row action="[insert-after V]" description="Insert V as a sibling immediately after each match"/>
-                <row action="[replace V]" description="Replace entire matched node (including its surrounding placement) with V"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>action</th>
+                    <th>description</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>[set V]</td>
+                    <td>Replace matched value, element body, or attribute value with V</td>
+                  </tr>
+                  <tr>
+                    <td>[delete]</td>
+                    <td>Remove matched node from its parent body (or attribute from element)</td>
+                  </tr>
+                  <tr>
+                    <td>[using F]</td>
+                    <td>Apply function F to each match; F receives the match, returns the replacement</td>
+                  </tr>
+                  <tr>
+                    <td>[rename N]</td>
+                    <td>Rename matched element (preserves attrs + body)</td>
+                  </tr>
+                  <tr>
+                    <td>[set-attr N V]</td>
+                    <td>Add new attribute N=V, or overwrite if N already present</td>
+                  </tr>
+                  <tr>
+                    <td>[delete-attr N]</td>
+                    <td>Remove attribute N from matched element</td>
+                  </tr>
+                  <tr>
+                    <td>[append V]</td>
+                    <td>Add child V at end of matched body</td>
+                  </tr>
+                  <tr>
+                    <td>[prepend V]</td>
+                    <td>Add child V at start of matched body</td>
+                  </tr>
+                  <tr>
+                    <td>[insert-before V]</td>
+                    <td>Insert V as a sibling immediately before each match</td>
+                  </tr>
+                  <tr>
+                    <td>[insert-after V]</td>
+                    <td>Insert V as a sibling immediately after each match</td>
+                  </tr>
+                  <tr>
+                    <td>[replace V]</td>
+                    <td>Replace entire matched node (including its surrounding placement) with V</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
-              <code class="language-cx">[# Scalar attribute update                                    #]
-           [?modify $doc //user[@id=1]/@name [set 'Alice']]
+              <code class="language-cx">[doc
+             [user id=1 name='Ada' active=true]
+             [user id=2 name='Bob' active=false banned=true]
+             [section id='intro' [para 'Hi.']]
+             [list [item 'a']]
+             [h2 'T'] [code 'x'] [price 10.0] [para 'p'] [deprecated 'old']]
+
+           [# Scalar attribute update                                    #]
+           [?modify $doc //user[= $_@id 1]/@name [set 'Alice']]
 
            [# Delete matching nodes                                      #]
-           [?modify $doc //user[@active=false] [delete]]
+           [?modify $doc //user[= $_@active false] [delete]]
 
            [# Transform with [using …]                                   #]
            [?modify $doc //price [using [?fn ($p) [* $p 1.1]]]]
@@ -875,7 +1179,7 @@
            [?modify $doc //user [delete-attr legacy-id]]
 
            [# Append + prepend children                                  #]
-           [?modify $doc //section[@id='intro'] [append [para 'Added.']]]
+           [?modify $doc //section[= $_@id 'intro'] [append [para 'Added.']]]
            [?modify $doc //list [prepend [item 'header item']]]
 
            [# Insert siblings                                            #]
@@ -885,10 +1189,10 @@
            [# Whole-node replace                                         #]
            [?modify $doc //deprecated [replace ()]]
 
-           [# Multi-step pipeline composition (see <a class="xref" href="#pipe">pipe</a>)             #]
+           [# Multi-step pipeline composition (see &#91;&#91;pipe]])             #]
            [?pipe $doc
              [?modify //user/@status [set 'verified']]
-             [?modify //user[@banned=true] [delete]]
+             [?modify //user[= $_@banned true] [delete]]
              [?modify //user [set-attr last-audit '2026-05-22']]]</code>
             </pre>
             <p>**Pure-functional — structural sharing.** `[?modify]`
@@ -908,7 +1212,7 @@
            where `//x` matches no nodes returns `$doc` unchanged
            — same canonical bytes, same SHA-256. `[?modify $doc
            //x [delete]]` where every `//x` is removed returns a
-           value with `count(//x) = 0`. Round-trip through
+           value where `[$count //x]` is 0. Round-trip through
            ast-bin / data-bin / JSON preserves the post-modify
            shape exactly.</p>
             <p class="note">**Status.** `[?modify]` is fully spec'd.
@@ -927,10 +1231,13 @@
            user-defined functions into readable top-to-bottom
            data flow.</p>
             <pre>
-              <code class="language-cx">[?pipe //user[@active=true]
-           [$filter-by-region _ 'EU']
-           [$sort-by _ @last-login]
-           [$take _ 10]]</code>
+              <code class="language-cx">[shop [user active=true age=30]
+               [user active=true age=20]
+               [user active=false age=40]]
+           [?pipe //user[= $_@active true]
+             [?fn ($us) [?for [in $u $us] [yield $u@age]]]
+             [$reverse]
+             [$nth _ 1]]</code>
             </pre>
             <p>**Stages are bare transforms.** `[?pipe SRC STAGE …]`
            evaluates `SRC`, then supplies the value to each `STAGE`
@@ -955,9 +1262,10 @@
            For a per-item transform, thread a `[?fn]` lambda that
            runs the comprehension:</p>
             <pre>
-              <code class="language-cx">[?pipe //user
-           [?fn ($us) [?for [in $u $us] [yield [$decorate $u]]]]
-           [$sort-by _ @name]]</code>
+              <code class="language-cx">[users [user name=ada] [user name=bob]]
+           [?pipe //user
+           [?fn ($us) [?for [in $u $us] [yield [decorated name=$u@name]]]]
+           [$count]]</code>
             </pre>
             <p>**`[tap f]` — observe without diverting (§8.9.2).** A
            `[tap f]` stage applies `f` to the current value for its
@@ -989,12 +1297,15 @@
          subsections below organize the ~80 names by category.</p>
         <p>**Invocation.** Every call uses the
          bracket head-dispatch form: `[$name args…]` for the
-         $-bound surface, or `[prefix/name args…]` for
-         module-qualified calls. The legacy paren form
-         `name(args)` is being retired. The whitespace-separated
-         element form `[name a b]` without a leading `$` is
-         **always** element construction; write `[$count //user]`
-         (call) versus `[count //user]` (data element).</p>
+         built-in surface, or `[$module:name args…]` for
+         stdlib-module calls. There is **no paren-call form** —
+         `name(args)` is a parse error everywhere. The
+         whitespace-separated element form `[name a b]` without a
+         leading `$` is **always** element construction; write
+         `[$count //user]` (call) versus `[count //user]` (data
+         element). The `name(args)` spelling in the tables below is
+         arity notation (mirroring the spec), not invocation
+         syntax.</p>
         <section id="sequence-builtins">
           <h3>Sequence built-ins</h3>
           
@@ -1003,39 +1314,108 @@
            non-sequence value (treated as a 1-element
            sequence).</p>
             <table>
-              
-                <row builtin="count(seq)" arity="1" semantics="Integer count; scalar input yields 1; alias: length(seq)" cx:attr-types="arity=string"/>
-                <row builtin="length(seq)" arity="1" semantics="Synonym for count" cx:attr-types="arity=string"/>
-                <row builtin="empty(seq)" arity="1" semantics="Boolean — true iff count(seq) == 0" cx:attr-types="arity=string"/>
-                <row builtin="exists(seq)" arity="1" semantics="Boolean — true iff count(seq) > 0; opposite of empty" cx:attr-types="arity=string"/>
-                <row builtin="first(seq)" arity="1" semantics="First item; scalar passes through; XQuery fn:head parity" cx:attr-types="arity=string"/>
-                <row builtin="last(seq)" arity="1" semantics="Last item; scalar passes through" cx:attr-types="arity=string"/>
-                <row builtin="head(seq)" arity="1" semantics="Synonym for first" cx:attr-types="arity=string"/>
-                <row builtin="tail(seq)" arity="1" semantics="All items except first; scalar yields ()" cx:attr-types="arity=string"/>
-                <row builtin="reverse(seq)" arity="1" semantics="Items in reverse order; scalar passes through" cx:attr-types="arity=string"/>
-                <row builtin="distinct(seq)" arity="1" semantics="Items with structural duplicates removed; first-occurrence order" cx:attr-types="arity=string"/>
-                <row builtin="union(a, b)" arity="2" semantics="Concatenate then dedupe — set union by structural equality" cx:attr-types="arity=string"/>
-                <row builtin="intersect(a, b)" arity="2" semantics="Items present in both; structural-equality test" cx:attr-types="arity=string"/>
-                <row builtin="except(a, b)" arity="2" semantics="Items in a but not in b" cx:attr-types="arity=string"/>
-                <row builtin="flatten(seq)" arity="1" semantics="Flatten one level — Sequence-of-Array → Sequence-of-items" cx:attr-types="arity=string"/>
-                <row builtin="nth(seq, n)" arity="2" semantics="1-indexed item access; out-of-range raises CXER0100" cx:attr-types="arity=string"/>
-                <row builtin="position(seq, item)" arity="2" semantics="1-based index of first structural match; zero if absent" cx:attr-types="arity=string"/>
-                <row builtin="range(start, end)" arity="2" semantics="Inclusive integer sequence [start..end]; empty if end&lt;start" cx:attr-types="arity=string"/>
-                <row builtin="identity(x)" arity="1" semantics="Returns x unchanged — for pipe stages and shape testing" cx:attr-types="arity=string"/>
-                <row builtin="sort-by(seq, key)" arity="2" semantics="Sort seq by key — key is a function or attribute reference" cx:attr-types="arity=string"/>
-                <row builtin="group-by(seq, key)" arity="2" semantics="Partition seq into groups keyed by key; yields a Map" cx:attr-types="arity=string"/>
-                <row builtin="take(seq, n)" arity="2" semantics="First n items; idempotent if n >= count(seq)" cx:attr-types="arity=string"/>
-                <row builtin="drop(seq, n)" arity="2" semantics="All items after the first n; empty if n >= count(seq)" cx:attr-types="arity=string"/>
-                <row builtin="some(seq, pred)" arity="2" semantics="Boolean — true iff any item satisfies pred" cx:attr-types="arity=string"/>
-                <row builtin="every(seq, pred)" arity="2" semantics="Boolean — true iff all items satisfy pred (vacuous true)" cx:attr-types="arity=string"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>builtin</th>
+                    <th>arity</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>count(seq) / length(seq)</td>
+                    <td>1</td>
+                    <td>Integer count; scalar input yields 1</td>
+                  </tr>
+                  <tr>
+                    <td>empty(seq)</td>
+                    <td>1</td>
+                    <td>Boolean — true iff count(seq) == 0</td>
+                  </tr>
+                  <tr>
+                    <td>exists(seq)</td>
+                    <td>1</td>
+                    <td>Boolean — true iff count(seq) &gt; 0; opposite of empty</td>
+                  </tr>
+                  <tr>
+                    <td>first(seq)</td>
+                    <td>1</td>
+                    <td>First item; scalar passes through; XQuery fn:head parity</td>
+                  </tr>
+                  <tr>
+                    <td>last(seq)</td>
+                    <td>1</td>
+                    <td>Last item; scalar passes through</td>
+                  </tr>
+                  <tr>
+                    <td>head(seq)</td>
+                    <td>1</td>
+                    <td>Synonym for first</td>
+                  </tr>
+                  <tr>
+                    <td>tail(seq)</td>
+                    <td>1</td>
+                    <td>All items except first; scalar yields ()</td>
+                  </tr>
+                  <tr>
+                    <td>reverse(seq)</td>
+                    <td>1</td>
+                    <td>Items in reverse order; scalar passes through</td>
+                  </tr>
+                  <tr>
+                    <td>distinct(seq)</td>
+                    <td>1</td>
+                    <td>Items with structural duplicates removed; first-occurrence order</td>
+                  </tr>
+                  <tr>
+                    <td>nth(seq, n)</td>
+                    <td>2</td>
+                    <td>1-indexed item access; out-of-range raises CXER0100</td>
+                  </tr>
+                  <tr>
+                    <td>position(seq, item)</td>
+                    <td>2</td>
+                    <td>1-based index of first structural match; zero if absent</td>
+                  </tr>
+                  <tr>
+                    <td>range(lo, hi, step?)</td>
+                    <td>2-3</td>
+                    <td>Arithmetic progression, inclusive bound; [$range lo *] is a lazy open iterator</td>
+                  </tr>
+                  <tr>
+                    <td>iterate(f, seed)</td>
+                    <td>2</td>
+                    <td>Lazy infinite iterator: seed, f(seed), f(f(seed)), …</td>
+                  </tr>
+                  <tr>
+                    <td>unfold(f, seed)</td>
+                    <td>2</td>
+                    <td>Anamorphism: f(state) yields () to stop or [value, next-state] to emit</td>
+                  </tr>
+                  <tr>
+                    <td>identity(x)</td>
+                    <td>1</td>
+                    <td>Returns x unchanged — for pipe stages and shape testing</td>
+                  </tr>
+                
+              </tbody>
             </table>
+            <p>Set combinators are **reserved operator heads**, not
+           `[$…]` builtins: `[union A B]`, `[intersect A B]`,
+           `[except A B]`. Slicing / windowing / ordering /
+           grouping are directives and comprehension clauses:
+           `[?take]`, `[?drop]`, `[?filter]`, `[?flatten]`,
+           `[order-by …]`, `[group-by …]` (see <a class="xref" href="#for">for</a>).</p>
             <pre>
-              <code class="language-cx">[$count //user[@active=true]]
-           [$sort-by //user @last-login]
-           [$distinct //tag]
-           [?pipe [$range 1 100] [$take _ 10]]
-           [$some //user [?fn ($u) [= $u@role 'admin']]]</code>
+              <code class="language-cx">[site [user active=true] [user active=false]
+                 [tag 'a'] [tag 'b'] [tag 'a']]
+           ([$count //user[= $_@active true]],
+            [$distinct [?for [in $t //tag] [yield [$text $t]]]],
+            [?take 3 [$range 1 100]],
+            [union (1, 2) (2, 3)])</code>
             </pre>
           
         </section>
@@ -1047,34 +1427,83 @@
            arguments raise `CXER0100` unless documented
            otherwise.</p>
             <table>
-              
-                <row builtin="upper(s)" arity="1" semantics="Unicode upper-cased copy of s; alias: upcase" cx:attr-types="arity=string"/>
-                <row builtin="lower(s)" arity="1" semantics="Unicode lower-cased copy of s; alias: lowcase" cx:attr-types="arity=string"/>
-                <row builtin="trim(s)" arity="1" semantics="Whitespace stripped from both ends" cx:attr-types="arity=string"/>
-                <row builtin="concat(s1, s2, …)" arity="≥1" semantics="String concatenation; non-string scalars stringified"/>
-                <row builtin="contains(s, sub)" arity="2" semantics="Boolean substring test; empty sub yields true" cx:attr-types="arity=string"/>
-                <row builtin="starts-with(s, prefix)" arity="2" semantics="Boolean prefix test; empty prefix yields true" cx:attr-types="arity=string"/>
-                <row builtin="ends-with(s, suffix)" arity="2" semantics="Boolean suffix test; empty suffix yields true" cx:attr-types="arity=string"/>
-                <row builtin="substring(s, start, len?)" arity="2–3" semantics="1-indexed substring; positions clamp; never raises"/>
-                <row builtin="substring-before(s, sub)" arity="2" semantics="Prefix of s before first occurrence of sub" cx:attr-types="arity=string"/>
-                <row builtin="substring-after(s, sub)" arity="2" semantics="Suffix of s after first occurrence of sub" cx:attr-types="arity=string"/>
-                <row builtin="string-length(s)" arity="1" semantics="Integer count of Unicode codepoints (NOT bytes)" cx:attr-types="arity=string"/>
-                <row builtin="string-join(seq, sep)" arity="2" semantics="Join sequence of strings with separator" cx:attr-types="arity=string"/>
-                <row builtin="tokenize(s, sep)" arity="2" semantics="Split s on sep (regex); yields sequence of strings" cx:attr-types="arity=string"/>
-                <row builtin="split(s, sep)" arity="2" semantics="Synonym for tokenize with a literal (non-regex) separator" cx:attr-types="arity=string"/>
-                <row builtin="replace(s, find, repl)" arity="3" semantics="Replace all occurrences of find with repl" cx:attr-types="arity=string"/>
-                <row builtin="matches(s, regex)" arity="2" semantics="Boolean regex test (RE2 semantics)" cx:attr-types="arity=string"/>
-                <row builtin="normalize-space(s)" arity="1" semantics="Strip leading/trailing + collapse internal whitespace" cx:attr-types="arity=string"/>
-                <row builtin="format(template, args)" arity="2" semantics="Format string with positional args (e.g. {0}, {1})" cx:attr-types="arity=string"/>
-                <row builtin="text(elem)" arity="1" semantics="Body text of elem as string; concatenates text children" cx:attr-types="arity=string"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>builtin</th>
+                    <th>arity</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>upper(s)</td>
+                    <td>1</td>
+                    <td>Unicode upper-cased copy of s</td>
+                  </tr>
+                  <tr>
+                    <td>lower(s)</td>
+                    <td>1</td>
+                    <td>Unicode lower-cased copy of s</td>
+                  </tr>
+                  <tr>
+                    <td>contains(s, sub)</td>
+                    <td>2</td>
+                    <td>Boolean substring test; empty sub yields true</td>
+                  </tr>
+                  <tr>
+                    <td>starts-with(s, prefix)</td>
+                    <td>2</td>
+                    <td>Boolean prefix test; empty prefix yields true</td>
+                  </tr>
+                  <tr>
+                    <td>ends-with(s, suffix)</td>
+                    <td>2</td>
+                    <td>Boolean suffix test; empty suffix yields true</td>
+                  </tr>
+                  <tr>
+                    <td>substring(s, start, len?)</td>
+                    <td>2-3</td>
+                    <td>1-indexed substring; positions clamp; never raises</td>
+                  </tr>
+                  <tr>
+                    <td>string-length(s)</td>
+                    <td>1</td>
+                    <td>Integer count of Unicode codepoints (NOT bytes)</td>
+                  </tr>
+                  <tr>
+                    <td>normalize-space(s)</td>
+                    <td>1</td>
+                    <td>Strip leading/trailing + collapse internal whitespace</td>
+                  </tr>
+                  <tr>
+                    <td>concat(s1, s2, …)</td>
+                    <td>≥1</td>
+                    <td>String concatenation; non-string scalars stringified</td>
+                  </tr>
+                  <tr>
+                    <td>text(elem)</td>
+                    <td>1</td>
+                    <td>Body text of elem as string; concatenates text children</td>
+                  </tr>
+                
+              </tbody>
             </table>
+            <p>The wider string toolkit — trim, split/join, replace,
+           case-folding variants, padding — is the
+           `cx-stdlib/strings` module (`[?lib 'cx-stdlib/strings']`,
+           then `[$strings:trim …]`, `[$strings:split …]`,
+           `[$strings:join …]`, `[$strings:replace …]`). Regular
+           expressions are `cx-stdlib/re`. See the Standard-library pages.</p>
             <pre>
-              <code class="language-cx">[$upper 'hello world']                     [# → 'HELLO WORLD'  #]
-           [$contains @email '@example.com']
-           [$string-join (//user/@name) ', ']
-           [$tokenize 'a,b,c' ',']                    [# → ('a', 'b', 'c') #]
-           [$replace $body 'foo' 'bar']</code>
+              <code class="language-cx">[?lib 'cx-stdlib/strings']
+           ([$upper 'hello world'],
+            [$contains 'ada@example.com' '@example.com'],
+            [$strings:join ('a', 'b', 'c') ', '],
+            [$strings:split 'a,b,c' ','],
+            [$strings:replace 'foofoo' 'foo' 'bar'])</code>
             </pre>
           
         </section>
@@ -1086,31 +1515,89 @@
            `floor`/`ceiling`/`round`/`abs` operate on a single
            value.</p>
             <table>
-              
-                <row builtin="sum(seq)" arity="1" semantics="Sum of numeric scalars; empty yields int 0; any float → float result" cx:attr-types="arity=string"/>
-                <row builtin="min(seq)" arity="1" semantics="Minimum numeric; empty yields int 0" cx:attr-types="arity=string"/>
-                <row builtin="max(seq)" arity="1" semantics="Maximum numeric; empty yields int 0" cx:attr-types="arity=string"/>
-                <row builtin="avg(seq)" arity="1" semantics="Arithmetic mean as float; empty yields float 0.0" cx:attr-types="arity=string"/>
-                <row builtin="abs(x)" arity="1" semantics="Absolute value; preserves int/float kind" cx:attr-types="arity=string"/>
-                <row builtin="floor(x)" arity="1" semantics="Largest integer ≤ x; int passes through" cx:attr-types="arity=string"/>
-                <row builtin="ceiling(x)" arity="1" semantics="Smallest integer ≥ x; int passes through" cx:attr-types="arity=string"/>
-                <row builtin="round(x)" arity="1" semantics="Half-away-from-zero rounding (XPath fn:round)" cx:attr-types="arity=string"/>
-                <row builtin="mod(a, b)" arity="2" semantics="Modulo; sign follows dividend (C-style truncation)" cx:attr-types="arity=string"/>
-                <row builtin="pow(b, e)" arity="2" semantics="b raised to e; integer^integer stays int when possible" cx:attr-types="arity=string"/>
-                <row builtin="range(start, end)" arity="2" semantics="See sequence-builtins — duplicated here for discoverability" cx:attr-types="arity=string"/>
-                <row builtin="to-int(v)" arity="1" semantics="Coerce v to int; non-coercible raises CXER0103" cx:attr-types="arity=string"/>
-                <row builtin="to-float(v)" arity="1" semantics="Coerce v to float; non-coercible raises CXER0103" cx:attr-types="arity=string"/>
-                <row builtin="to-string(v)" arity="1" semantics="Coerce v to canonical string form" cx:attr-types="arity=string"/>
-                <row builtin="is-nan(x)" arity="1" semantics="Boolean — true iff x is the float NaN value" cx:attr-types="arity=string"/>
-                <row builtin="is-finite(x)" arity="1" semantics="Boolean — true iff x is finite (not nan/inf/-inf)" cx:attr-types="arity=string"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>builtin</th>
+                    <th>arity</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>sum(seq)</td>
+                    <td>1</td>
+                    <td>Sum of numeric scalars; empty yields int 0; any float → float result</td>
+                  </tr>
+                  <tr>
+                    <td>min(seq)</td>
+                    <td>1</td>
+                    <td>Minimum numeric; empty yields int 0</td>
+                  </tr>
+                  <tr>
+                    <td>max(seq)</td>
+                    <td>1</td>
+                    <td>Maximum numeric; empty yields int 0</td>
+                  </tr>
+                  <tr>
+                    <td>avg(seq)</td>
+                    <td>1</td>
+                    <td>Arithmetic mean as float; empty yields float 0.0</td>
+                  </tr>
+                  <tr>
+                    <td>abs(x)</td>
+                    <td>1</td>
+                    <td>Absolute value; preserves int/float kind</td>
+                  </tr>
+                  <tr>
+                    <td>floor(x)</td>
+                    <td>1</td>
+                    <td>Largest integer ≤ x; int passes through</td>
+                  </tr>
+                  <tr>
+                    <td>ceiling(x)</td>
+                    <td>1</td>
+                    <td>Smallest integer ≥ x; int passes through</td>
+                  </tr>
+                  <tr>
+                    <td>round(x)</td>
+                    <td>1</td>
+                    <td>Half-away-from-zero rounding (XPath fn:round)</td>
+                  </tr>
+                  <tr>
+                    <td>mod(a, b)</td>
+                    <td>2</td>
+                    <td>Remainder; sign follows dividend; b=0 raises CXER0101</td>
+                  </tr>
+                  <tr>
+                    <td>div(a, b)</td>
+                    <td>2</td>
+                    <td>True division if either is float; integer division if both int</td>
+                  </tr>
+                  <tr>
+                    <td>idiv(a, b)</td>
+                    <td>2</td>
+                    <td>Integer (truncating) division regardless of operand kinds</td>
+                  </tr>
+                
+              </tbody>
             </table>
+            <p>Type coercion is the single explicit `cast` operator —
+           `[cast '42' :int]`, `[cast 3 :float]`, `[cast 42
+           :string]` — there is no `to-int` / `to-float` family.
+           CX floats are **finite-only**: `NaN` and `±Inf` never
+           arise (an operation that would produce one raises
+           `CXER0101`), so there is nothing to test with an
+           `is-nan`. Exponentiation is `[$math:pow]` in
+           `cx-stdlib/math`.</p>
             <pre>
-              <code class="language-cx">[$sum //order/@amount]
-           [$avg //user/@age]
-           [$round 3.7]                               [# → 4              #]
-           [$pow 2 10]                                [# → 1024           #]
-           [$mod 17 5]                                [# → 2              #]</code>
+              <code class="language-cx">[orders [order amount=10] [order amount=32]]
+           ([$sum [?for [in $o //order] [yield $o@amount]]],
+            [$round 3.7],
+            [$mod 17 5],
+            [cast '42' :int])</code>
             </pre>
           
         </section>
@@ -1121,25 +1608,52 @@
            short-circuit; `not` is total over any EBV-typed
            argument.</p>
             <table>
-              
-                <row builtin="not(v)" arity="1" semantics="Boolean negation under EBV (cxdm §4.6)" cx:attr-types="arity=string"/>
-                <row builtin="boolean(v)" arity="1" semantics="Coerce v to bool under EBV — explicit EBV evaluation" cx:attr-types="arity=string"/>
-                <row builtin="exists(v)" arity="1" semantics="Boolean — true iff v is non-empty (count > 0)" cx:attr-types="arity=string"/>
-                <row builtin="empty(v)" arity="1" semantics="Boolean — true iff v is the empty sequence" cx:attr-types="arity=string"/>
-                <row builtin="and(a, b, …)" arity="≥1" semantics="Boolean — true iff all args truthy; short-circuit L→R"/>
-                <row builtin="or(a, b, …)" arity="≥1" semantics="Boolean — true iff any arg truthy; short-circuit L→R"/>
-                <row builtin="xor(a, b)" arity="2" semantics="Boolean — true iff exactly one of a, b is truthy" cx:attr-types="arity=string"/>
-                <row builtin="if(c, t, e)" arity="3" semantics="Expression form of [?if] — c with EBV selects t or e" cx:attr-types="arity=string"/>
-                <row builtin="eq(a, b)" arity="2" semantics="Structural equality — types, values, attributes, children all match" cx:attr-types="arity=string"/>
-                <row builtin="ne(a, b)" arity="2" semantics="Structural inequality — convenience for not(eq(a, b))" cx:attr-types="arity=string"/>
-                <row builtin="instance-of(v, type)" arity="2" semantics="Boolean — true iff v has the given type (scalar kind or schema type)" cx:attr-types="arity=string"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>builtin</th>
+                    <th>arity</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>not(v)</td>
+                    <td>1</td>
+                    <td>Boolean negation under EBV (cxdm §6); an Iterator operand raises — force it first</td>
+                  </tr>
+                  <tr>
+                    <td>and(a, b, …)</td>
+                    <td>≥1</td>
+                    <td>Boolean — true iff all args truthy; short-circuit L→R; bare operator head</td>
+                  </tr>
+                  <tr>
+                    <td>or(a, b, …)</td>
+                    <td>≥1</td>
+                    <td>Boolean — true iff any arg truthy; short-circuit L→R; bare operator head</td>
+                  </tr>
+                  <tr>
+                    <td>eq(a, b)</td>
+                    <td>2</td>
+                    <td>Structural equality — types, values, attributes, children all match</td>
+                  </tr>
+                
+              </tbody>
             </table>
+            <p>`and` / `or` / `not` are bare operator heads
+           (`[and P Q]`, no `$` sigil); `eq` is the structural
+           equality the `=` operator also uses. There is no
+           `xor` / `if()` / `instance-of` builtin — branch with
+           `[?if]`, and test types by schema validation or
+           `[?match]` shape dispatch.</p>
             <pre>
-              <code class="language-cx">[$if @active 'green' 'gray']
-           [and @verified @active [not @banned]]
-           [$exists //error]                          [# any errors at all? #]
-           [$instance-of @port ::u16]</code>
+              <code class="language-cx">[site [user verified=true active=true banned=false] [error 'e1']]
+           [?let [= $u [$first //user]]
+             ([and $u@verified $u@active [not $u@banned]],
+              [$exists //error],
+              [eq [a 1] [a 1]])]</code>
             </pre>
           
         </section>
@@ -1150,30 +1664,55 @@
            properties. Script-level equivalents of the Layer-1
            binding methods (see <a class="xref" href="bindings.html#layer-1">layer-1</a>).</p>
             <table>
-              
-                <row builtin="name(elem)" arity="1" semantics="Element name as a string; non-element raises CXER0100" cx:attr-types="arity=string"/>
-                <row builtin="local-name(elem)" arity="1" semantics="Element name without namespace prefix" cx:attr-types="arity=string"/>
-                <row builtin="namespace-uri(elem)" arity="1" semantics="URI of the namespace bound to the element prefix, or empty string" cx:attr-types="arity=string"/>
-                <row builtin="kind(elem)" arity="1" semantics="Element / scalar / array / map / sequence — the cxdm Item kind" cx:attr-types="arity=string"/>
-                <row builtin="node-kind(elem)" arity="1" semantics="Synonym for kind — XPath fn:node-kind parity" cx:attr-types="arity=string"/>
-                <row builtin="attrs(elem)" arity="1" semantics="Map of attributes as {name: value} pairs" cx:attr-types="arity=string"/>
-                <row builtin="children(elem)" arity="1" semantics="Sequence of direct child elements (excludes scalar/text)" cx:attr-types="arity=string"/>
-                <row builtin="body(elem)" arity="1" semantics="Body content of elem — scalars, elements, mixed; preserves order" cx:attr-types="arity=string"/>
-                <row builtin="parent(elem)" arity="1" semantics="Direct parent, or empty sequence if elem is root" cx:attr-types="arity=string"/>
-                <row builtin="root(elem)" arity="1" semantics="Topmost ancestor — root of the containing document" cx:attr-types="arity=string"/>
-                <row builtin="id(name)" arity="1" semantics="Resolve an id-sigil reference to its target element" cx:attr-types="arity=string"/>
-                <row builtin="idref(elem)" arity="1" semantics="Inverse of id — elements referring to elem via id-sigil" cx:attr-types="arity=string"/>
-                <row builtin="position()" arity="0" semantics="Inside a predicate: 1-based position of context within its sequence" cx:attr-types="arity=string"/>
-                <row builtin="last()" arity="0" semantics="Inside a predicate: total count of items in the context sequence" cx:attr-types="arity=string"/>
-                <row builtin="current()" arity="0" semantics="The current context node — inside nested paths" cx:attr-types="arity=string"/>
-                <row builtin="document-uri(elem)" arity="1" semantics="URI of the document containing elem (file path or stream id)" cx:attr-types="arity=string"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>builtin</th>
+                    <th>arity</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>name(elem)</td>
+                    <td>1</td>
+                    <td>Element name as a string (including any namespace prefix); non-element raises CXER0100</td>
+                  </tr>
+                  <tr>
+                    <td>local-name(elem)</td>
+                    <td>1</td>
+                    <td>Element name without namespace prefix</td>
+                  </tr>
+                  <tr>
+                    <td>string(value)</td>
+                    <td>1</td>
+                    <td>A scalar's canonical text, or an element/attribute's text content</td>
+                  </tr>
+                  <tr>
+                    <td>text(elem)</td>
+                    <td>1</td>
+                    <td>Body text of elem; concatenates text children (string builtin, listed for discoverability)</td>
+                  </tr>
+                
+              </tbody>
             </table>
+            <p>Structural navigation is CXPath, not accessor calls:
+           children are `$e/*`, the parent is
+           `//x/parent::*` (document-anchored), attributes are
+           `$e@name`. Inside a predicate the reserved bindings
+           `$_position` and `$_last` replace XPath's
+           `position()` / `last()` — there are no zero-arity
+           accessor calls.</p>
             <pre>
-              <code class="language-cx">[$name //section[1]]                       [# → 'section'      #]
-           [$kind $v]                                 [# → :scalar/:elem  #]
-           [$children //user[1]]                      [# → seq of children#]
-           //*[position() = last()]                   [# last child match #]</code>
+              <code class="language-cx">[# name → 'section' · string → 'one' · [$_last] → the last
+            section · [= $_position 1] → the first                    #]
+           [doc [section 'one'] [section 'two']]
+           ([$name [$first //section]],
+            [$string [$first //section]],
+            //section[$_last],
+            //section[= $_position 1])</code>
             </pre>
           
         </section>
@@ -1229,73 +1768,312 @@
            subsection is the developer-facing summary.</p>
             <p>**Pattern / parse — CXER010x:**</p>
             <table>
-              
-                <row code="CXER0100" symbolic="PARSE_ERROR" meaning="Pattern syntax invalid; directive name not in registry; arity mismatch" recovery="Fix source — this is author error, not runtime"/>
-                <row code="CXER0101" symbolic="ANCHOR_ERROR" meaning="Duplicate &amp;anchor; cyclic *merge; unresolved *name" recovery="Author error — flagged at parse time"/>
-                <row code="CXER0102" symbolic="DUPLICATE_KEY" meaning="Map literal with duplicate key" recovery="Author error"/>
-                <row code="CXER0103" symbolic="TYPE_ERROR" meaning="Value-comparison on multi-valued operand; sized-overflow; type-coerce failure" recovery="[?match] [case [err code=&quot;CXER0103&quot;] …]; explicit coercion via to-int/to-float"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0100</td>
+                    <td>PARSE_ERROR</td>
+                    <td>Pattern syntax invalid; directive name not in registry; arity mismatch</td>
+                    <td>Fix source — this is author error, not runtime</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0101</td>
+                    <td>ANCHOR_ERROR</td>
+                    <td>Duplicate &amp;anchor; cyclic *merge; unresolved *name</td>
+                    <td>Author error — flagged at parse time</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0102</td>
+                    <td>DUPLICATE_KEY</td>
+                    <td>Map literal with duplicate key</td>
+                    <td>Author error</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0103</td>
+                    <td>TYPE_ERROR</td>
+                    <td>Value-comparison on multi-valued operand; sized-overflow; type-coerce failure</td>
+                    <td>[?match] [case [err code="CXER0103"] …]; explicit coercion via to-int/to-float</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Resilience — CXER014x / CXER015x:**</p>
             <table>
-              
-                <row code="CXER0140" symbolic="RETRY_EXHAUSTED" meaning="[?retry] reached max= attempts without success" recovery="[?match] [case [err code=&quot;CXER0140&quot;] …]; tune max= / backoff="/>
-                <row code="CXER0141" symbolic="TIMEOUT" meaning="[?timeout] DURATION elapsed" recovery="[on-timeout EXPR] or [?match] [case [err code=&quot;CXER0141&quot;] …]"/>
-                <row code="CXER0150" symbolic="BREAKER_OPEN" meaning="[?circuit-breaker] tripped; rejecting calls" recovery="Wait :reset DURATION; fallback path"/>
-                <row code="CXER0151" symbolic="RATE_LIMITED" meaning="[?rate-limit] tokens exhausted" recovery="Honor :retry-after slot in the err; back off"/>
-                <row code="CXER0152" symbolic="BULKHEAD_FULL" meaning="[?bulkhead] max-concurrent= + queue= exhausted" recovery="Backpressure caller; reduce concurrency"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0140</td>
+                    <td>RETRY_EXHAUSTED</td>
+                    <td>[?retry] reached max= attempts without success</td>
+                    <td>[?match] [case [err code="CXER0140"] …]; tune max= / backoff=</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0141</td>
+                    <td>TIMEOUT</td>
+                    <td>[?timeout] DURATION elapsed</td>
+                    <td>[on-timeout EXPR] or [?match] [case [err code="CXER0141"] …]</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0150</td>
+                    <td>BREAKER_OPEN</td>
+                    <td>[?circuit-breaker] tripped; rejecting calls</td>
+                    <td>Wait :reset DURATION; fallback path</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0151</td>
+                    <td>RATE_LIMITED</td>
+                    <td>[?rate-limit] tokens exhausted</td>
+                    <td>Honor :retry-after slot in the err; back off</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0152</td>
+                    <td>BULKHEAD_FULL</td>
+                    <td>[?bulkhead] max-concurrent= + queue= exhausted</td>
+                    <td>Backpressure caller; reduce concurrency</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Services — CXER016x:**</p>
             <table>
-              
-                <row code="CXER0160" symbolic="BAD_REQUEST" meaning="HTTP 400 — malformed body or path-param parse failure" recovery="Return [response status=400 body=err] to client"/>
-                <row code="CXER0161" symbolic="UNAUTHORIZED" meaning="HTTP 401 — :auth returned err" recovery="Return 401; client re-authenticates"/>
-                <row code="CXER0162" symbolic="NOT_FOUND" meaning="HTTP 404 — no resource matched path + method" recovery="Return 404; client checks URL"/>
-                <row code="CXER0163" symbolic="REQUEST_TIMEOUT" meaning="HTTP 408 — :read-timeout exceeded" recovery="Retry with backoff; reduce request size"/>
-                <row code="CXER0164" symbolic="PAYLOAD_TOO_LARGE" meaning="HTTP 413 — body > max-body-bytes=" recovery="Chunk upload; increase max-body-bytes= if appropriate"/>
-                <row code="CXER0165" symbolic="INTERNAL_ERROR" meaning="HTTP 500 — unhandled err in resource body" recovery="Recover the body with [?match]/[?fallback]; log and return generic 500 to client"/>
-                <row code="CXER0166" symbolic="SHUTTING_DOWN" meaning="HTTP 503 — service in shutdown drain" recovery="Client retries elsewhere; do not retry same instance"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0160</td>
+                    <td>BAD_REQUEST</td>
+                    <td>HTTP 400 — malformed body or path-param parse failure</td>
+                    <td>Return [response status=400 [body $err]] to client</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0161</td>
+                    <td>UNAUTHORIZED</td>
+                    <td>HTTP 401 — :auth returned err</td>
+                    <td>Return 401; client re-authenticates</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0162</td>
+                    <td>NOT_FOUND</td>
+                    <td>HTTP 404 — no resource matched path + method</td>
+                    <td>Return 404; client checks URL</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0163</td>
+                    <td>REQUEST_TIMEOUT</td>
+                    <td>HTTP 408 — :read-timeout exceeded</td>
+                    <td>Retry with backoff; reduce request size</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0164</td>
+                    <td>PAYLOAD_TOO_LARGE</td>
+                    <td>HTTP 413 — body &gt; max-body-bytes=</td>
+                    <td>Chunk upload; increase max-body-bytes= if appropriate</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0165</td>
+                    <td>INTERNAL_ERROR</td>
+                    <td>HTTP 500 — unhandled err in resource body</td>
+                    <td>Recover the body with [?match]/[?fallback]; log and return generic 500 to client</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0166</td>
+                    <td>SHUTTING_DOWN</td>
+                    <td>HTTP 503 — service in shutdown drain</td>
+                    <td>Client retries elsewhere; do not retry same instance</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Client — CXER018x:**</p>
             <table>
-              
-                <row code="CXER0180" symbolic="CONNECTION_REFUSED" meaning="TCP connect failure" recovery="Retry with backoff; check :target URL"/>
-                <row code="CXER0181" symbolic="TLS_HANDSHAKE_FAILED" meaning="TLS negotiation failed" recovery="Check :tls config; cert validity; retry"/>
-                <row code="CXER0182" symbolic="INVALID_RESPONSE" meaning="Server response could not be parsed" recovery="Log raw response; report upstream issue"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0180</td>
+                    <td>CONNECTION_REFUSED</td>
+                    <td>TCP connect failure</td>
+                    <td>Retry with backoff; check :target URL</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0181</td>
+                    <td>TLS_HANDSHAKE_FAILED</td>
+                    <td>TLS negotiation failed</td>
+                    <td>Check :tls config; cert validity; retry</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0182</td>
+                    <td>INVALID_RESPONSE</td>
+                    <td>Server response could not be parsed</td>
+                    <td>Log raw response; report upstream issue</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Concurrency — CXER020x / CXER022x:**</p>
             <table>
-              
-                <row code="CXER0200" symbolic="CHANNEL_CLOSED" meaning="Receive from drained-closed channel; send to closed channel" recovery="Treat as normal stream-end; [?match] on err code"/>
-                <row code="CXER0201" symbolic="SEND_TIMEOUT" meaning="[?try-send] buffer-full timeout" recovery="Drop, queue elsewhere, or back off"/>
-                <row code="CXER0202" symbolic="RECV_TIMEOUT" meaning="[?try-receive] empty timeout" recovery="Poll again; abandon work if pattern persists"/>
-                <row code="CXER0203" symbolic="CHANNEL_ALREADY_CLOSED" meaning="Second [?close] on same channel" recovery="Idempotent close idiom — [?else [?close $ch] ()]"/>
-                <row code="CXER0220" symbolic="WORKER_PANIC" meaning="Worker body raised unhandled err" recovery="Inspect cause= attribute; restart worker or supervisor pattern"/>
-                <row code="CXER0221" symbolic="WORKER_CANCELLED" meaning="Worker terminated via [?cancel]" recovery="Expected on graceful shutdown; clean up resources"/>
-                <row code="CXER0222" symbolic="WORKER_NOT_FOUND" meaning="[?worker-handle] lookup miss" recovery="Use [?worker-handle :name N :optional true] or check exists"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0200</td>
+                    <td>CHANNEL_CLOSED</td>
+                    <td>Receive from drained-closed channel; send to closed channel</td>
+                    <td>Treat as normal stream-end; [?match] on err code</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0201</td>
+                    <td>SEND_TIMEOUT</td>
+                    <td>[?try-send] buffer-full timeout</td>
+                    <td>Drop, queue elsewhere, or back off</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0202</td>
+                    <td>RECV_TIMEOUT</td>
+                    <td>[?try-receive] empty timeout</td>
+                    <td>Poll again; abandon work if pattern persists</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0203</td>
+                    <td>CHANNEL_ALREADY_CLOSED</td>
+                    <td>Second [?close] on same channel</td>
+                    <td>Idempotent close idiom — [?else [?close $ch] ()]</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0220</td>
+                    <td>WORKER_PANIC</td>
+                    <td>Worker body raised unhandled err</td>
+                    <td>Inspect cause= attribute; restart worker or supervisor pattern</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0221</td>
+                    <td>WORKER_CANCELLED</td>
+                    <td>Worker terminated via [?cancel]</td>
+                    <td>Expected on graceful shutdown; clean up resources</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0222</td>
+                    <td>WORKER_NOT_FOUND</td>
+                    <td>[?worker-handle] lookup miss</td>
+                    <td>Use [?worker-handle :name N :optional true] or check exists</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Async — CXER024x / CXER026x:**</p>
             <table>
-              
-                <row code="CXER0240" symbolic="AWAIT_ALL_FAILED" meaning="[?await-all] saw ≥ 1 non-done future" recovery="Inspect :causes slot — sequence of [err …] per failed future"/>
-                <row code="CXER0241" symbolic="AWAIT_TIMEOUT" meaning="[?await $f :timeout] deadline expired (future itself still running)" recovery="Tune :timeout; abandon or [?cancel $f]"/>
-                <row code="CXER0260" symbolic="CANCELLED" meaning="Operation observed cooperative cancellation" recovery="Expected; clean up; do not retry"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0240</td>
+                    <td>AWAIT_ALL_FAILED</td>
+                    <td>[?await-all] saw ≥ 1 non-done future</td>
+                    <td>Inspect :causes slot — sequence of [err …] per failed future</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0241</td>
+                    <td>AWAIT_TIMEOUT</td>
+                    <td>[?await $f :timeout] deadline expired (future itself still running)</td>
+                    <td>Tune :timeout; abandon or [?cancel $f]</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0260</td>
+                    <td>CANCELLED</td>
+                    <td>Operation observed cooperative cancellation</td>
+                    <td>Expected; clean up; do not retry</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Visualization — CXER028x:**</p>
             <table>
-              
-                <row code="CXER0280" symbolic="RENDER_FAILED" meaning="Sequence-diagram renderer could not produce output" recovery="Check directive shape; report renderer version + program"/>
-                <row code="CXER0281" symbolic="UNRENDERABLE_DIRECTIVE" meaning="Directive shape outside §10.1.2 locked render rules" recovery="Adjust source; renderer is conservative on purpose"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>code</th>
+                    <th>symbolic</th>
+                    <th>meaning</th>
+                    <th>recovery</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CXER0280</td>
+                    <td>RENDER_FAILED</td>
+                    <td>Sequence-diagram renderer could not produce output</td>
+                    <td>Check directive shape; report renderer version + program</td>
+                  </tr>
+                  <tr>
+                    <td>CXER0281</td>
+                    <td>UNRENDERABLE_DIRECTIVE</td>
+                    <td>Directive shape outside §10.1.2 locked render rules</td>
+                    <td>Adjust source; renderer is conservative on purpose</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>The CXER0000–0099 range is reserved for data-language
            errors (parse, validate, canonicalize); see
-           <span class="xref-unresolved">[[data-errors]]</span> in the data section. CXER0300+ is
+           <a class="xref" href="data-language.html#limits">limits</a> in the data section. CXER0300+ is
            reserved for future subsystems.</p>
           
         </section>
@@ -1313,13 +2091,13 @@
         <section id="services">
           <h3>Services and clients</h3>
           
-            <p>`[?service]` declares a named HTTP service with
+            <p>`[?http-service]` declares a named HTTP service with
            resource handlers. `[?http-client]` is its client
            side. Resources handle requests and return
            responses; the bodies are ordinary CX code.</p>
             <p>**Service definition:**</p>
             <pre>
-              <code class="language-cx">[?service on=http port=8080 name='users'
+              <code class="language-cx">[?http-service on=http port=8080 name='users'
            read-timeout=30s
            write-timeout=30s
            max-body-bytes=10485760            [# 10 MiB                  #]
@@ -1328,12 +2106,12 @@
 
            [resource method=GET path='/users/:id'
              [?let [= $u //user[@id=$request/path-params/id]]
-               [response status=200 body=$u]]]
+               [response status=200 [body $u]]]]
 
            [resource method=POST path='/users'
              consumes=application/cx
              [?let [= $body $request/body]
-               [response status=201 body=[$create-user $body]]]]]</code>
+               [response status=201 [body [$create-user $body]]]]]]</code>
             </pre>
             <p>**Resource parameters.** Each `[resource]` declares
            `method=METHOD path=PATH`, optional `produces=` /
@@ -1345,31 +2123,30 @@
             <p>**Request and response shapes:**</p>
             <pre>
               <code class="language-cx">[request method='GET' path='/users/42'
-                   path-params={id: 42}
-                   query-params={…}
-                   headers=([header name='Accept' value='application/cx'])
-                   body=$body]
+             [path-params [id 42]]
+             [query-params]
+             [headers [header name='Accept' value='application/cx']]
+             [body]]
 
            [response status=200
-                     headers=(…)
-                     body=$body]</code>
+             [headers [header name='Content-Type' value='application/cx']]
+             [body [user id=42]]]</code>
             </pre>
-            <p>**Lifecycle.** `[?service]` returns a handle.
-           `[?service-handle :name N]` looks up an existing
+            <p>**Lifecycle.** `[?http-service]` returns a handle.
+           `[?service-handle name=N]` looks up an existing
            service. `[?stop $handle]` initiates graceful
            shutdown — drains in-flight requests for up to
-           `:grace-period`, then force-closes; new requests
+           `grace-period=`, then force-closes; new requests
            during drain receive HTTP 503 (`CXER0166`).
-           `[?wait-for :service $handle]` blocks until
-           termination. Process SIGTERM / SIGINT also triggers
-           graceful shutdown.</p>
-            <p>**HTTP client.** `[?http-client :target URL …]`
+           Process SIGTERM / SIGINT also triggers graceful
+           shutdown.</p>
+            <p>**HTTP client.** `[?http-client target=URL …]`
            returns a client value; operations pipe through
            it:</p>
             <pre>
               <code class="language-cx">[?let [= $c [?http-client target='https://api.example.com'
                                     timeout=30s
-                                    resilience=([?retry max=3])]]
+                                    [resilience [?retry max=3]]]]
              [?pipe $c [$get _ '/users/42']]]</code>
             </pre>
             <p>**Status.** Services are a stable surface;
@@ -1388,13 +2165,19 @@
            `[?receive]` move values across. `[?select]` is the
            multi-way receive.</p>
             <pre>
+              <code class="language-cx">[?let [= $ch    [?channel name='jobs' buffer=8]]
+              [= $sent1 [?send 1 to=$ch]]
+              [= $sent2 [?send 2 to=$ch]]
+           ([?receive from=$ch], [?receive from=$ch])]</code>
+            </pre>
+            <pre>
               <code class="language-cx">[?let [= $ch [?channel name='jobs' buffer=100]]
-               [?worker name='producer'
-                 [?for [in $i [$range 1 100]]
-                       [yield [?send $i to=$ch]]]]
-               [?worker name='consumer'
-                 [?for [in $msg [$range 1 100]]
-                       [yield [$process [?receive from=$ch]]]]]]</code>
+             ([?worker name='producer'
+                [body [?for [in $i [$range 1 100]]
+                        [yield [?send $i to=$ch]]]]],
+              [?worker name='consumer'
+                [body [?for [in $i [$range 1 100]]
+                        [yield [$process [?receive from=$ch]]]]]])]</code>
             </pre>
             <p>**Channel semantics.** `[?channel :buffer N]` has
            a bounded FIFO buffer. `:buffer 0` is synchronous
@@ -1429,24 +2212,27 @@
             <p>**Worker observability.** Workers are
            handle-addressable:</p>
             <pre>
-              <code class="language-cx">[?let [= $w [?worker name='sync-job' [$sync-database]]]
-               [?wait-for worker=$w]                   [# block until done #]
-               [?cancel worker=$w]                     [# cooperative      #]
-               [?check-cancel]                         [# polling point    #]]</code>
+              <code class="language-cx">[?let [= $w [?worker name='sync-job' [body [$sync-database]]]]
+             ([?wait-for worker=$w],                  [# block until done #]
+              [?cancel worker=$w],                    [# cooperative      #]
+              [?check-cancel])]                       [# polling point    #]</code>
             </pre>
             <p>**Select — multi-way receive.** Evaluates all
            `[case …]` clauses concurrently; proceeds with the
            first ready. Uniform-random selection on
            simultaneous readiness:</p>
             <pre>
-              <code class="language-cx">[?select
-           [case [from $jobs   $job [$handle-job $job]]]
-           [case [from $signal $sig [$handle-signal $sig]]]
-           [case [timeout 5s        [$heartbeat]]]]</code>
+              <code class="language-cx">[?let [= $jobs   [?channel name='jobs' buffer=1]]
+              [= $signal [?channel name='sig'  buffer=1]]
+              [= $sent   [?send 42 to=$jobs]]
+           [?select
+             [case [from $jobs $job]   [handled $job]]
+             [case [from $signal $sig] [signalled $sig]]
+             [case [timeout 5s]        [heartbeat]]]]</code>
             </pre>
             <p class="note">**Shape.** `[?select]` clauses are clause-children:
-           `[case [from CH $msg HANDLER]]` for a receive and
-           `[case [timeout DURATION HANDLER]]` for a deadline. The
+           `[case [from CH $msg] HANDLER]` for a receive and
+           `[case [timeout DURATION] HANDLER]` for a deadline. The
            spec/core/code.md §10.4.7 registry holds the
            authoritative shape. The v0.7.x `:case [:from CH $msg H]` [; version-literal-ok ]
            colon-slot form is retired — there is no dual-accept.</p>
@@ -1458,10 +2244,10 @@
             <p>`[?async EXPR]` evaluates EXPR in a new async
            context and returns a future immediately:</p>
             <pre>
-              <code class="language-cx">[?let [= $f1 [?async [$fetch $url1]]]
-                [= $f2 [?async [$fetch $url2]]]
-                [= $f3 [?async [$fetch $url3]]]
-                [?await-all $f1 $f2 $f3]]</code>
+              <code class="language-cx">[?let [= $f1 [?async [+ 1 1]]]
+              [= $f2 [?async [* 2 2]]]
+              [= $f3 [?async [$upper 'go']]]
+           [?await-all $f1 $f2 $f3]]</code>
             </pre>
             <p>**Future state machine.** Futures progress through
            `pending → running → done` / `failed` /
@@ -1473,15 +2259,15 @@
                 <li>`[?await $f]` — block until terminal; return
                 value on done, propagate err on failed,
                 CANCELLED on cancelled.</li>
-                <li>`[?await $f :timeout DURATION]` — add a hard
+                <li>`[?await $f timeout=DURATION]` — add a hard
                 deadline; on expiry return `CXER0241`
                 (AWAIT_TIMEOUT). The future continues running
-                — `:timeout` bounds the caller's wait, not the
+                — `timeout=` bounds the caller's wait, not the
                 future itself.</li>
                 <li>`[?await-all FUTURES]` — block until all
                 terminal. If all done, yield sequence of
                 values. If any failed/cancelled, yield
-                `CXER0240` with `:causes` slot containing
+                `CXER0240` with a `[causes …]` child carrying
                 every non-done cause in input order.</li>
                 <li>`[?await-any FUTURES]` — yield first to
                 terminate. Other futures continue running;
@@ -1514,10 +2300,11 @@
            normally, or `CXER0260` (CANCELLED) if
            cancellation is pending.</p>
             <pre>
-              <code class="language-cx">[?def cancellable-compute ($n)
+              <code class="language-cx">[?def cancellable-compute impure ($n)
              [?for [in $i [$range 1 $n]]
                [where [= [?check-cancel] [ok]]]
-               [yield [$expensive-op $i]]]]</code>
+               [yield [* $i $i]]]]
+           [$cancellable-compute 4]</code>
             </pre>
             <p>**Composition with resilience.** `[?async]`
            composes with every resilience directive.
@@ -1544,7 +2331,7 @@
         <p>**Common error shape.** Every resilience directive
          on terminal failure emits a structured `[err …]`
          per the §10.2.7 error-code matrix (see
-         <span class="xref-unresolved">[[error-registry]]</span>).</p>
+         <a class="xref" href="#error-registry">error-registry</a>).</p>
         <section id="retry">
           <h3>[?retry] — bounded re-run with backoff</h3>
           
@@ -1553,14 +2340,49 @@
            `backoff=` / `delay=` / `jitter=`. Terminal
            failure raises `CXER0140` (RETRY_EXHAUSTED).</p>
             <table>
-              
-                <row parameter="max=INT" default="(required)" semantics="Maximum attempts; must be > 0"/>
-                <row parameter="backoff=STRATEGY" default="exponential" semantics="constant / linear / exponential / fibonacci"/>
-                <row parameter="delay=DURATION" default="100ms" semantics="Base delay; combined with backoff formula"/>
-                <row parameter="jitter=MODE" default="equal" semantics="none / full / equal / decorrelated"/>
-                <row parameter="[on PREDICATE]" default="[?fn ($e) true]" semantics="Per-err filter; retry iff truthy"/>
-                <row parameter="body (positional)" default="(required)" semantics="Inner expression to retry"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>parameter</th>
+                    <th>default</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>max=INT</td>
+                    <td>(required)</td>
+                    <td>Maximum attempts; must be &gt; 0</td>
+                  </tr>
+                  <tr>
+                    <td>backoff=STRATEGY</td>
+                    <td>exponential</td>
+                    <td>constant / linear / exponential / fibonacci</td>
+                  </tr>
+                  <tr>
+                    <td>delay=DURATION</td>
+                    <td>100ms</td>
+                    <td>Base delay; combined with backoff formula</td>
+                  </tr>
+                  <tr>
+                    <td>jitter=MODE</td>
+                    <td>equal</td>
+                    <td>none / full / equal / decorrelated</td>
+                  </tr>
+                  <tr>
+                    <td>[on PREDICATE]</td>
+                    <td>[?fn ($e) true]</td>
+                    <td>Per-err filter; retry iff truthy</td>
+                  </tr>
+                  <tr>
+                    <td>body (positional)</td>
+                    <td>(required)</td>
+                    <td>Inner expression to retry</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <p>**Backoff formulas** (delay for attempt N, N ≥ 1):
            `constant` = `delay=`; `linear` = `delay × N`;
@@ -1586,11 +2408,34 @@
            `[result status=err code='cx-err:CXER0141'
            elapsed=DURATION]`.</p>
             <table>
-              
-                <row parameter="DURATION (positional)" default="(required)" semantics="Hard deadline; e.g. 5s, 250ms"/>
-                <row parameter="body (positional)" default="(required)" semantics="Inner expression with cooperative cancel points"/>
-                <row parameter="[on-timeout EXPR]" default="(none)" semantics="Fallback expression on expiry; otherwise raises CXER0141"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>parameter</th>
+                    <th>default</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>DURATION (positional)</td>
+                    <td>(required)</td>
+                    <td>Hard deadline; e.g. 5s, 250ms</td>
+                  </tr>
+                  <tr>
+                    <td>body (positional)</td>
+                    <td>(required)</td>
+                    <td>Inner expression with cooperative cancel points</td>
+                  </tr>
+                  <tr>
+                    <td>[on-timeout EXPR]</td>
+                    <td>(none)</td>
+                    <td>Fallback expression on expiry; otherwise raises CXER0141</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
               <code class="language-cx">[?timeout 5s
@@ -1617,14 +2462,49 @@
               
             </ul>
             <table>
-              
-                <row parameter="threshold=RATIO" default="(required)" semantics="Failure ratio 0.0–1.0 to trip breaker"/>
-                <row parameter="window=DURATION" default="(required)" semantics="Rolling-window length for sampling"/>
-                <row parameter="reset=DURATION" default="(required)" semantics="Half-open delay after trip"/>
-                <row parameter="min-samples=INT" default="10" semantics="Minimum sample count before threshold check" cx:attr-types="default=string"/>
-                <row parameter="name=STR" default="(lexical position)" semantics="State-identity key for cross-position sharing"/>
-                <row parameter="body (positional)" default="(required)" semantics="Inner expression"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>parameter</th>
+                    <th>default</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>threshold=RATIO</td>
+                    <td>(required)</td>
+                    <td>Failure ratio 0.0–1.0 to trip breaker</td>
+                  </tr>
+                  <tr>
+                    <td>window=DURATION</td>
+                    <td>(required)</td>
+                    <td>Rolling-window length for sampling</td>
+                  </tr>
+                  <tr>
+                    <td>reset=DURATION</td>
+                    <td>(required)</td>
+                    <td>Half-open delay after trip</td>
+                  </tr>
+                  <tr>
+                    <td>min-samples=INT</td>
+                    <td>10</td>
+                    <td>Minimum sample count before threshold check</td>
+                  </tr>
+                  <tr>
+                    <td>name=STR</td>
+                    <td>(lexical position)</td>
+                    <td>State-identity key for cross-position sharing</td>
+                  </tr>
+                  <tr>
+                    <td>body (positional)</td>
+                    <td>(required)</td>
+                    <td>Inner expression</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
               <code class="language-cx">[?circuit-breaker
@@ -1641,10 +2521,29 @@
            and return its value (which may itself be `[err]`
            — `[?fallback]` does not wrap that case).</p>
             <table>
-              
-                <row parameter="body (positional)" default="(required)" semantics="First expression tried (primary)"/>
-                <row parameter="[recover-with SECONDARY]" default="(required)" semantics="Fallback expression evaluated only on primary err"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>parameter</th>
+                    <th>default</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>body (positional)</td>
+                    <td>(required)</td>
+                    <td>First expression tried (primary)</td>
+                  </tr>
+                  <tr>
+                    <td>[recover-with SECONDARY]</td>
+                    <td>(required)</td>
+                    <td>Fallback expression evaluated only on primary err</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
               <code class="language-cx">[?fallback
@@ -1667,12 +2566,39 @@
            (RATE_LIMITED) with a `retry-after=DURATION`
            attribute — the time until the next token frees.</p>
             <table>
-              
-                <row parameter="max=INT" default="(required)" semantics="Tokens per window; must be > 0"/>
-                <row parameter="per=DURATION" default="(required)" semantics="Refill window"/>
-                <row parameter="name=STR" default="(lexical position)" semantics="State-identity key"/>
-                <row parameter="body (positional)" default="(required)" semantics="Inner expression"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>parameter</th>
+                    <th>default</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>max=INT</td>
+                    <td>(required)</td>
+                    <td>Tokens per window; must be &gt; 0</td>
+                  </tr>
+                  <tr>
+                    <td>per=DURATION</td>
+                    <td>(required)</td>
+                    <td>Refill window</td>
+                  </tr>
+                  <tr>
+                    <td>name=STR</td>
+                    <td>(lexical position)</td>
+                    <td>State-identity key</td>
+                  </tr>
+                  <tr>
+                    <td>body (positional)</td>
+                    <td>(required)</td>
+                    <td>Inner expression</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
               <code class="language-cx">[?rate-limit max=100 per=1s name='github-api'
@@ -1688,12 +2614,39 @@
            returns `CXER0152` (BULKHEAD_FULL). Queued
            requests wait FIFO for a free slot.</p>
             <table>
-              
-                <row parameter="max-concurrent=INT" default="(required)" semantics="In-flight cap; must be > 0"/>
-                <row parameter="queue=INT" default="0" semantics="Wait-queue depth; 0 = no queue, fail-fast on full" cx:attr-types="default=string"/>
-                <row parameter="name=STR" default="(lexical position)" semantics="State-identity key"/>
-                <row parameter="body (positional)" default="(required)" semantics="Inner expression"/>
-              
+              <thead>
+                
+                  <tr>
+                    <th>parameter</th>
+                    <th>default</th>
+                    <th>semantics</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>max-concurrent=INT</td>
+                    <td>(required)</td>
+                    <td>In-flight cap; must be &gt; 0</td>
+                  </tr>
+                  <tr>
+                    <td>queue=INT</td>
+                    <td>0</td>
+                    <td>Wait-queue depth; 0 = no queue, fail-fast on full</td>
+                  </tr>
+                  <tr>
+                    <td>name=STR</td>
+                    <td>(lexical position)</td>
+                    <td>State-identity key</td>
+                  </tr>
+                  <tr>
+                    <td>body (positional)</td>
+                    <td>(required)</td>
+                    <td>Inner expression</td>
+                  </tr>
+                
+              </tbody>
             </table>
             <pre>
               <code class="language-cx">[?bulkhead max-concurrent=10 queue=50 name='db-pool'
@@ -1754,11 +2707,11 @@
            values, and compose with each other through their slot
            bodies.</p>
             <pre>
-              <code class="language-cx">EXPR                                     # bare expression evaluates
-           [?for [in $x PATH] [yield BODY]]         # iterate
-           [?if COND [then THEN] [else ELSE]]       # branch
-           [?let [= $x EXPR] BODY]                  # bind a name
-           [?def name ($a $b) BODY]                 # define a function</code>
+              <code class="language-text">EXPR                                     [; bare expression evaluates ]
+           [?for [in $x PATH] [yield BODY]]         [; iterate ]
+           [?if COND [then THEN] [else ELSE]]       [; branch ]
+           [?let [= $x EXPR] BODY]                  [; bind a name ]
+           [?def name ($a $b) BODY]                 [; define a function ]</code>
             </pre>
           
         </section>
@@ -1774,7 +2727,11 @@
            default) and binds for each match; `[?match]` tests a
            single value (multi-arm dispatch).</p>
             <pre>
-              <code class="language-cx">[?for [user [name $n]] [yield $n]]
+              <code class="language-cx">[shop
+             [user [name 'Ada']]
+             [item active=true 'i1']
+             [pizza [name 'Margherita'] [price 12]]]
+           [?for [user [name $n]] [yield $n]]
            [?for [item @active=true $i] [yield $i]]
            [?for [pizza [name $n] [price $p]]
                  [yield [hit name=$n price=$p]]]</code>
@@ -1791,8 +2748,8 @@
            directive composes them.</p>
             <pre>
               <code class="language-cx">[?for [in $x (1, 2, 3)] [where [> $x 1]] [yield [* $x $x]]]
-           [?let [= $a 10] [?let [= $b 32] [+ $a $b]]]
-           [?pipe (1, 2, 3, 4) count]</code>
+           [?let [= $a 10] [= $b 32] [+ $a $b]]
+           [?pipe (1, 2, 3, 4) [$count]]</code>
             </pre>
             <section id="comprehensions-future-surface">
               <h4>Future surface — ranges, slices, Iterator</h4>
@@ -1860,38 +2817,35 @@
           <h3>Quick reference</h3>
           
             <pre>
-              <code class="language-cx"># Every user in the document.
+              <code class="language-cx">[; Every user in the document. ]
            //user
 
-           # Every user whose @active attribute equals true.
-           //user[@active=true]
+           [; Every user whose @active attribute equals true. ]
+           //user[= $_@active true]
 
-           # Email addresses of every active user.
-           //user[@active=true]/@email
+           [; Email addresses of every active user. ]
+           //user[= $_@active true]/@email
 
-           # The third user in document order.
+           [; The third user in document order. ]
            //user[3]
 
-           # Anything two levels deep under root.
+           [; Anything two levels deep under root. ]
            /*/*
 
-           # Every sibling that follows the first user.
+           [; Every sibling that follows the first user. ]
            //user[1]/following-sibling::user
 
-           # Every ancestor element of a [para] node.
+           [; Every ancestor element of a [para] node. ]
            //para/ancestor::*
 
-           # General predicate — explicit $_ context binding.
-           //user[$_@age >= 18 and $_@active]
+           [; General predicate — prefix code over the $_ context binding. ]
+           //user[and [>= $_@age 18] $_@active]
 
-           # Cross-step :bind — name the outer focus, reference from inner predicate.
-           //team :bind t / member[$_@role = "lead" and count($t/member) >= 3]
-
-           # Range and sequence ops — XPath 3.1 idioms.
+           [; Range and set combinators. ]
            [$range 1 10]
-           //a union //b
-           //x intersect //y
-           //all except //banned</code>
+           [union //a //b]
+           [intersect //x //y]
+           [except //all //banned]</code>
             </pre>
           
         </section>
@@ -1934,14 +2888,14 @@
         <section id="cxpath-predicates">
           <h3>General predicate + reserved bindings</h3>
           
-            <p>Predicates filter the step sequence. CX supports
-           the `[expr]` general predicate: every
-           predicate body is an arbitrary CX expression coerced
-           to a boolean via the Effective Boolean Value (EBV)
-           rule. Atomic forms — `[@name]`, `[@name=V]`, `[N]`,
-           `[fn(…)]` — remain available as parse-time sugar and
-           round-trip via canonical re-emit when the AST matches
-           a recognised template.</p>
+            <p>Predicates filter the step sequence. A predicate body
+           is prefix CX code coerced to a boolean via the
+           Effective Boolean Value (EBV) rule. The atomic
+           shorthands — `[@name]` / `[@!name]` (attribute
+           present / absent), `[N]` (position), a bare child name
+           (step-existence) — remain available and round-trip via
+           canonical re-emit. Value comparisons are always prefix:
+           `[= $_@name V]`.</p>
             <p>**Three reserved bindings** in scope inside every
            predicate body: `$_` (current candidate item, type
            matches the candidate kind), `$_position` (1-based int
@@ -1959,25 +2913,26 @@
           
         </section>
         <section id="cxpath-bind">
-          <h3>:bind peer-modifier</h3>
+          <h3>Cross-step reference — nested generators</h3>
           
-            <p>`:bind NAME` is a peer-modifier slot on a path step,
-           appearing between the NodeTest and any trailing
-           predicates. At most one `:bind` per step. The name
-           binds the step's focus value under the given
-           identifier, and the binding is visible in every
-           predicate enclosed by that step and in every
-           subsequent step of the same PathExpr.</p>
+            <p>To reference an **outer** step's focus from an inner
+           predicate ("leads of teams with at least three
+           members"), stack `[?for]` generators — each generator
+           names its focus, and every later clause sees the
+           earlier bindings:</p>
             <pre>
-              <code class="language-cx">//team :bind t / member[ $_@role = "lead" and count($t/member) >= 3 ]
-
-           # $t — the team the path is currently resolving
-           # $_ — the current member (rebinds at each predicate)</code>
+              <code class="language-cx">[org
+             [team [member role='lead' [name 'a']] [member [name 'b']] [member [name 'c']]]
+             [team [member role='lead' [name 'e']]]]
+           [?for [in $t //team]
+                 [in $m $t/member]
+                 [where [and [= $m@role 'lead'] [>= [$count $t/member] 3]]]
+             [yield $m/name]]</code>
             </pre>
-            <p class="note">`:bind _` is rejected with `CXER0232` (reserved bind
-           name). `:bind` participates in the closed
-           modifier-keyword set for the path-step
-           disambiguation rule.</p>
+            <p class="note">The grammar reserves a `:bind` path-step modifier
+           (grammar.ebnf [159]-[160]) for naming a step's focus
+           inline; the nested-generator form above is the
+           conformance-exercised idiom.</p>
           
         </section>
         <section id="cxpath-binding-surface">
@@ -1987,16 +2942,16 @@
            its Layer-1 surface — same selector, same bytes
            returned across the C ABI.</p>
             <pre>
-              <code class="language-python">emails = doc.select_all("//user[@active=true]/@email")</code>
+              <code class="language-python">emails = doc.select_all("//user[= $_@active true]/@email")</code>
             </pre>
             <pre>
-              <code class="language-go">emails, _ := doc.SelectAll("//user[@active=true]/@email")</code>
+              <code class="language-go">emails, _ := doc.SelectAll("//user[= $_@active true]/@email")</code>
             </pre>
             <pre>
-              <code class="language-rust">let emails = doc.select_all("//user[@active=true]/@email")?;</code>
+              <code class="language-rust">let emails = doc.select_all("//user[= $_@active true]/@email")?;</code>
             </pre>
             <pre>
-              <code class="language-v">emails := doc.select_all('//user[@active=true]/@email')!</code>
+              <code class="language-v">emails := doc.select_all('//user[= $_@active true]/@email')!</code>
             </pre>
           
         </section>
@@ -2056,10 +3011,11 @@
           <h3>Recovering with [?match]</h3>
           
             <pre>
-              <code class="language-cx">[?match [$read-file $path]
-             [case [err @code=$c] [where [= $c 'E906']] [file-missing]]
-             [case [err $e] [other-error code=$e/@code]]
-             [case $v $v]]</code>
+              <code class="language-cx">[?lib 'cx-stdlib/io']
+           [?match [$io:read-file '/no/such/file.cx']
+             [case [err @code=$c] [where [= $c 'cx-err:CXER0271']] [needs-capability]]
+             [case [err $e] [other-error code=$e@code]]
+             [else :ok]]</code>
             </pre>
           
         </section>

@@ -2,7 +2,7 @@
 
 **Status:** Current.
 **Normative reference for:** `[?lib]` module resolution per [`code.md` §12.1](code.md).
-**Authoritative formal grammar:** [`grammar.ebnf`](grammar.ebnf) productions [149]–[151] (`[?lib]` surface) plus the CX-data grammar (the lockfile itself is a CX-data document).
+**Authoritative formal grammar:** [`grammar.ebnf`](../formal/grammar.ebnf) productions [149]–[151] (`[?lib]` surface) plus the CX-data grammar (the lockfile itself is a CX-data document).
 
 ---
 

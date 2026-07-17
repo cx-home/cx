@@ -1,10 +1,10 @@
 # `cx-xap` — the XAP paradigm & orchestrator
 
 ```cx
-[module-meta name=xap tier=D status=new]
+[module-meta name=xap tier=D status=current]
 ```
 
-**Status:** **Approved — design-frozen** (graduated to `03-approved` 2026-06-09). The design is frozen here; the **empirical resolver-accuracy gate (§20/§26) remains OPEN**, along with the impl / §10 fixtures / governance + package registration items in §11 — graduating the text does **not** close the on-real-use gate. Runtime **incrementally implemented**. The XAP experience-layer paradigm (Part II) + the orchestrator module that composes the general-purpose modules (bus / journal / authz / session / sched + http / crypto / time). The `cx-xap` package is bundled (`[?lib 'cx-xap' :as xap]`) and the demo ladder (`spec/03-approved/xap/demos/` D1–D4) runs on it: the pure constructors, the cascade (`run`/`emit`/`state`), the dial (`dial`/`why-allowed`), the web `serve` leg (GET shell / POST cascade over the core picoev engine), **and the live `GET /events` SSE feed (§24): held-open, event-driven server push on each committed intent — implemented on the picoev engine, no longer bridge-deferred**. Deferred: the broader subsystem surface. Graduation to a fully frozen module is still gated on the empirical resolver-accuracy test (§20, §26).
+**Status:** **Current — design-frozen** (graduated to `03-approved` 2026-06-09; module-meta promoted `new` → `current` by owner ruling 2026-07-12, #363 item 3(a): approved cascade/PEP/journal semantics already ship against this text, so `new` misstated reality — the open §20/§26 empirical gate below is unchanged by the status promotion). The design is frozen here; the **empirical resolver-accuracy gate (§20/§26) remains OPEN**, along with the impl / §10 fixtures / governance + package registration items in §11 — graduating the text does **not** close the on-real-use gate. Runtime **incrementally implemented**. The XAP experience-layer paradigm (Part II) + the orchestrator module that composes the general-purpose modules (bus / journal / authz / session / sched + http / crypto / time). The `cx-xap` package is bundled (`[?lib 'cx-xap' :as xap]`) and the demo ladder (`spec/03-approved/xap/demos/` D1–D4) runs on it: the pure constructors, the cascade (`run`/`emit`/`state`), the dial (`dial`/`why-allowed`), the web `serve` leg (GET shell / POST cascade over the core picoev engine), **and the live `GET /events` SSE feed (§24): held-open, event-driven server push on each committed intent — implemented on the picoev engine, no longer bridge-deferred**. Deferred: the broader subsystem surface. Graduation to a fully frozen module is still gated on the empirical resolver-accuracy test (§20, §26).
 
 Normative reference (on graduation) for the `cx-xap` sub-package: the
 experience layer at the top of the CX web stack — component/surface/view-tree
@@ -125,7 +125,7 @@ One impure handle wraps a running XAP — its bus, its journal, its authz contex
 its session registry, and its registered handlers:
 
 ```cx
-[xap-runtime tenant="acme" state="running"          ; one tenant's wired bus+journal+authz+sessions
+[xap-runtime tenant="acme" state="running"          # one tenant's wired bus+journal+authz+sessions
   on-close="xap/close"]
 ```
 
@@ -267,11 +267,13 @@ state `slice` to a view tree (no journal, no network — the projection only).
 [?def state scope=public impure [returns element] ($runtime::element $cxpath::string) ...]
 ```
 
-`state` returns the **fold over the journal** (§14) projected
-by `$cxpath` — the server-authoritative slice *now* (the live truth a handoff
-brief reads from, §21.1). It delegates to `[$journal:fold …]`;
-xap holds no state of its own. Impure because it reads the live log; the result
-is a **present value** (empty node-set for an empty slice, never `null`).
+`state` returns the **snapshot-anchored fold over the journal** (§14, §14.4)
+projected by `$cxpath` — the server-authoritative slice *now* (the live truth a
+handoff brief reads from, §21.1). It delegates to `[$journal:fold …]`, which
+loads the latest snapshot anchor and folds only the tail since it; xap holds no
+state of its own. For a snapshot-only stream (§14.4) the fold degenerates to the
+loaded snapshot. Impure because it reads the live state; the result is a
+**present value** (empty node-set for an empty slice, never `null`).
 
 ### §3.4. Intent registration + the committed cascade (impure)
 
@@ -435,9 +437,11 @@ adds no path around the PEP.
 
 ### §4.3. State is a deterministic fold; reads are live and present (N-CORE-1)
 
-`[$xap:state]` is a pure-relative-to-the-log fold (§14) — same
-log ⇒ same state (replayable, dry-runnable, hashable). The result is a **present
-value** (empty node-set for an empty slice, never `null` — SAP §1). A handoff
+`[$xap:state]` is a pure-relative-to-the-log fold (§14, snapshot-anchored §14.4)
+— same log ⇒ same state (replayable, dry-runnable, hashable); the snapshot anchor
+is a content hash of the fold, so it never changes the result, only the read
+cost. The result is a **present value** (empty node-set for an empty slice, never
+`null` — SAP §1). A handoff
 brief's "current state" (§21.1) subscribes to its slice via the
 event-feed (§9), so it reflects truth, not stale memory.
 
@@ -485,11 +489,11 @@ value** (§2.4) — not a directive, not opaque code:
 
 ```cx
 [$xap:component order-card
-  {props {order ::ref  compact ::bool}                  ; typed inputs (slice-in)
-   bind /orders[?[= @/id $props/order]]                 ; CXPath state-slice it reads
-   emits [[do :open $_] [do :cancel $_]]                ; the controls it offers (intent-vocabulary-out)
-   view [?def [$o] …view-tree…]                         ; pure projection (view-tree-out)
-   working-panel :none}]                                ; :none = a plain view; or a [kind …] for the 5%
+  {props: {order: ::ref  compact: ::bool}               # typed inputs (slice-in)
+   bind: "/orders[= @/id $props/order]"                 # CXPath state-slice it reads
+   emits: ([do :open $_], [do :cancel $_])              # the controls it offers (intent-vocabulary-out)
+   view: [?fn ($o) [panel [heading $o/title]]]          # pure projection (view-tree-out)
+   working-panel: :none}]                               # :none = a plain view; or a [kind …] for the 5%
 ```
 
 - **`props`** — typed inputs (the §5 typed triple's input arm).
@@ -955,14 +959,37 @@ Consequences, all already load-bearing elsewhere in this spec:
 
 ---
 
-## §14. Core — server-authoritative, event-sourced, synchronous serialized bus
+## §14. Core — server-authoritative, snapshot-anchored event-sourcing, synchronous serialized bus
 
-**State lives server-side as a fold over append-only, hash-chained event
-streams** (the authority). This is the substrate the agent-preview and audit
-stories require: each stream is **deterministic → replayable, dry-runnable,
-hashable**. A **stream** is the unit of ordering and contention — an *aggregate*
-(typically a principal, an entity, or a workspace, §14.2); within a XAP the
-streams partition the tenant's state.
+**State lives server-side in two composing representations: content-addressed
+_snapshots_ (the materialized state) and an append-only, hash-chained _intent
+journal_ (the ordering + audit authority).** These are the two primitives cx
+already ships — `cx-stdlib/store` (snapshots — [`store.md`](../std-lib/store.md))
+and `cx-stdlib/journal` (the log — [`journal.md`](../std-lib/journal.md)) — and
+§14 composes them the way git does (content-addressed trees **plus** a
+hash-chained commit history): a snapshot is the fast whole-state load and the
+**anchor**; the journal is the authority for the *intents between states* that
+the agent-preview and audit stories require.
+
+**The journal is required** for any stream whose state carries one of these
+stories — and most XAP state does:
+
+| Story | Why it needs the log | §refs |
+|---|---|---|
+| Replay / determinism | rebuild + alternate projections from intents | §4.3, §14.3 |
+| Dry-run / agent-preview | speculative fold without committing | §3.4 (`opts.dry-run`), §21.1 |
+| Intent-level audit / `why-allowed` | who/what/why per change, not just *what* | §4.5, §22 |
+| Per-stream conflict (`expect-prev-seq`) | first-commit-wins, no lost update | §4.1, §14.2 |
+
+For such a stream the **snapshot is an anchor**: a read loads the latest snapshot
+and folds **only the tail** appended since it — never from genesis (§14.2). A
+stream that needs **none** of those four stories MAY persist **snapshot-only** (a
+new whole-state snapshot + a moved `current` alias on each change) — a conformant
+**degenerate case**, trading exactly those four capabilities away for that
+stream. Each *journal-kept* stream is therefore **deterministic → replayable,
+dry-runnable, hashable**. A **stream** is the unit of ordering and contention —
+an *aggregate* (typically a principal, an entity, or a workspace, §14.2); within
+a XAP the streams partition the tenant's state.
 
 The bus is **pub/sub** — everything is a message; zero or many subscribers
 respond — but committed through a **synchronous serialized cascade**:
@@ -1109,6 +1136,36 @@ the §14.2 partition** (fall back to the single-stream-per-tenant reading until
 fixed). This battery is a **graduation prerequisite** for any operations work that
 assumes the partition (§28.3 D1).
 
+### §14.4. Snapshot/journal composition — anchoring, checkpointing, conformance
+
+The two representations meet at the **anchor**. A journal-kept stream checkpoints
+a content-addressed snapshot of its folded state on a stream-local policy (a
+`seq` threshold and/or an interval); the snapshot records the `seq` it anchors.
+A `[$xap:state]` read (§3.3) loads the latest such snapshot and folds **only the
+events with a higher `seq`** — bounding read cost to the post-anchor tail, never
+fold-from-genesis. Anchoring is the journal's mechanism
+([`journal.md`](../std-lib/journal.md) §2.1.1, "snapshot-anchored tenant
+integrity"); xap **composes** it and does not define a parallel one.
+
+The §2.1 cascade is unchanged: the **journal append remains the commit point**
+(it assigns commit order, §14, N-CORE-1). Snapshot capture is a **derived
+side-effect of a commit, not a second commit point** — it is idempotent (keyed by
+content hash) and an anchor failure degrades to a longer tail-fold, never to lost
+or reordered state. The `current` alias a snapshot-only stream moves is itself a
+zero-length-tail anchor: the degenerate case is the same machinery with the log
+turned off.
+
+**Conformance.** A **snapshot-only** XAP is conformant **iff** none of its state
+needs the four §14 stories (replay, dry-run/preview, intent audit, per-stream
+conflict). The `cx-xap-sample/stock-watcher` demo is exactly such a case — whole
+"current readings" persisted via `store` `put-doc` + a `current` alias — so it is
+a **valid minimal XAP**, *not* the reference for the event-dependent stories: it
+exercises none of them by construction. Any XAP that surfaces dry-run/preview,
+answers `why-allowed`, or resolves per-stream conflict **MUST** keep the journal
+for the streams carrying that state (the table above is normative). The demo
+ladder's event-dependent guarantees are exercised by the journal-backed D1–D4
+demos and the §14.3 battery, not by the snapshot-only sample.
+
 ---
 
 ## §15. Representation — hypermedia default + content negotiation
@@ -1209,7 +1266,7 @@ ladder (§16). Concretely:
 
 - The XAP answers **data** requests: the surface (or a feature's read-model) as
   `application/cx` / an XSP frame with a `data-bin` payload (the native binding,
-  [`xsp.md`](../../02-working/xsp.md)). It serves **no** HTML and knows nothing
+  [`xsp.md`](xsp.md)). It serves **no** HTML and knows nothing
   of panes, windows, or CSS.
 - A **client app** attaches over the shell, materializes the surface into its
   medium, and owns all medium-specific concerns (layout, windowing, resize,
@@ -1253,11 +1310,11 @@ directive:
 
 ```cx
 [$xap:component order-card
-  [props {order ::ref  compact ::bool}]              ; typed inputs
-  [bind /orders[?[= @/id $props/order]]]             ; CXPath state-slice it reads
-  [emits [[do :open $_] [do :cancel $_]]]            ; the controls it offers
-  [view [?def [$o] …view-tree…]]                     ; pure projection
-  [working-panel :none]]                             ; :none = a plain view; or a [kind …] for the 5%
+  [props {order ::ref  compact ::bool}]              # typed inputs
+  [bind /orders[= @/id $props/order]]             # CXPath state-slice it reads
+  [emits [[do :open $_] [do :cancel $_]]]            # the controls it offers
+  [view [?def [$o] …view-tree…]]                     # pure projection
+  [working-panel :none]]                             # :none = a plain view; or a [kind …] for the 5%
 ```
 
 A placed instance of a component **is a panel** on a surface. Composition is
@@ -1277,7 +1334,7 @@ live, scoped). A working panel is declared in the view tree and bound to a state
 by CXPath:
 
 ```cx
-[working-panel :kind retry-timeline [bind /charges[?[in @/order $live-orders]]]]
+[working-panel :kind retry-timeline [bind /charges[in @/order $live-orders]]]
 ```
 
 The working panel subscribes to a **scoped** event-feed for its slice, applies
@@ -1786,9 +1843,9 @@ than you hold → no privilege escalation), **time-bounded, revocable**:
   [tenant acme]
   [from [principal dana]] [to [agent ops-agent-1]]
   [capabilities [refund-duplicate]]
-  [over /orders[?[= @/charge-state "erroring"]]]
+  [over /orders[= @/charge-state "erroring"]]
   [attenuates d-dana-ops] [until $t0+1h] [revocable true]
-  [issued-as "throttle:reconcile→auto"]]              ; the control dial issued this
+  [issued-as "throttle:reconcile→auto"]]              # the control dial issued this
 ```
 
 **Agent pools sub-delegate, attenuating.** An "agent" is often an **agent
@@ -1819,7 +1876,7 @@ gate:
   [capabilities [pause-payment-gateway]]
   [gate [all [incapacity [no-ack-within "10m" [of :escalation]]]
              [state      [gt /metrics/charge-error-rate 0.15]]]]
-  [action [do :pause-payment-gateway]]                ; minimal, pinned
+  [action [do :pause-payment-gateway]]                # minimal, pinned
   [route [page sam dana]] [audit :required]
   [dormant-until-gate true]]
 ```
@@ -2462,8 +2519,8 @@ earlier. A payment webhook starts erroring and double-charging.
 
 1. **Context event** — error rate crosses threshold → `charge-error-spike`
    appended (E1). *(§14)*
-2. **Resolver composes a surface** bound to `/orders[?[= @/charge-state
-   "erroring"]]`, surfaced **peripheral** to Dana, with a recorded `:reason`
+2. **Resolver composes a surface** bound to `/orders[= @/charge-state
+   "erroring"]`, surfaced **peripheral** to Dana, with a recorded `:reason`
    (E2). *(§19, audit)*
 3. **Content negotiation** — Dana's browser gets HTML; Ops-Agent gets the
    view-tree value, same `[do …]` controls. *(§15)*
@@ -2629,12 +2686,12 @@ N-CLIENT-1).
 
 ```cx
 [$xap:component greeting
-  {props {name ::string}}                              ; typed input — the triple's slice-in arm
-  [view [?def [$p] [panel [text [$concat "Hello, " $p/name "."]]]]]]   ; pure projection
+  {props: {name: ::string}                             # typed input — the triple's slice-in arm
+   view: [?fn ($p) [panel [text [$concat "Hello, " $p/name "."]]]]}]   # pure projection
 
-; one-shot CLI client: bind the prop, render the surface to the terminal, exit
-[$print [$xap:render [surface [greeting {name "Ada"}]] {accept "application/cx"}]]
-;        ^ the CLI renderer turns the view-tree value into terminal lines (no server, no feed)
+# one-shot CLI client: bind the prop, render the surface to the terminal, exit
+[$print [$xap:render [surface [greeting {name: "Ada"}]] {accept: "application/cx"}]]
+#        ^ the CLI renderer turns the view-tree value into terminal lines (no server, no feed)
 ```
 
 **Demonstrates:** the component's `props` + `view` arms + surface composition + CLI
@@ -2653,17 +2710,17 @@ any of it — §28.1).
 
 ```cx
 [$xap:component guestbook
-  [bind /guestbook]                                    ; the slice this panel reads (CXPath)
-  [emits [[do :sign [name $_]]]]                        ; the one control
-  [view [?def [$gs]
-          [panel
-            [list [?for [$g $gs] [item $g/name]]]
-            [control :sign [label "Sign"] [input :name]]]]]]
+  {bind: "/guestbook"                                  # the slice this panel reads (CXPath)
+   emits: ([do :sign [name $_]])                       # the one control
+   view: [?fn ($gs)
+           [panel
+             [list [?for [in $g $gs] [yield [item $g/name]]]]
+             [control :sign [label "Sign"] [input :name]]]]}]
 
-[$xap:on [do :sign [name $n]]                            ; cascade: PEP → append → fold → re-render
-  [$journal:append /guestbook {name $n}]]
+[$xap:on [do :sign [name $n]]                            # cascade: PEP → append → fold → re-render
+  [$journal:append "/guestbook" {name: $n}]]
 
-[$xap:run {components [guestbook]}]                      ; one runtime; CLI + TUI attach as peers (§16)
+[$xap:run {components: (guestbook)}]                     # one runtime; CLI + TUI attach as peers (§16)
 ```
 
 **Demonstrates:** the full intent loop; **server-authoritative state as a journal
@@ -2682,8 +2739,8 @@ bridge until the streaming amendment lands, §24). Same capability, same intents
 new medium.
 
 ```cx
-[$xap:serve "https://localhost:8443" {surfaces [guestbook]}]   ; bootstraps [?http-service] / [$http:serve]
-;  web client: htmx over the HTTP shell + SSE feed; CLI + TUI still on the in-process bus
+[$xap:serve "https://localhost:8443" {surfaces: (guestbook)}]  # bootstraps [?http-service] / [$http:serve]
+#  web client: htmx over the HTTP shell + SSE feed; CLI + TUI still on the in-process bus
 ```
 
 **Demonstrates:** content-negotiated render (§5) — the *same* surface as HTML for
@@ -2700,8 +2757,8 @@ web). It emits the **same** `[do :sign …]` intents (agent-parity, §15); the
 the dial off the floor and the agent curates within bounds.
 
 ```cx
-; the agent attaches in its own session; the dial issues a scoped, attenuating delegation
-[$xap:dial $rt [scope :guestbook] [setting :semi-auto]]   ; = [$authz:delegate …] (R1 sub-delegation)
+# the agent attaches in its own session; the dial issues a scoped, attenuating delegation
+[$xap:dial $rt [scope :guestbook] [setting :semi-auto]]   # = [$authz:delegate …] (R1 sub-delegation)
 ```
 
 **Demonstrates:** human + agent are **peers on one intent surface** (N-CLIENT-1);

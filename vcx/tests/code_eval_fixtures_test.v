@@ -17,8 +17,17 @@ import math
 // fixture's out_text / out_multiset / out_err (whitespace-normalised).
 
 fn fixture_path_eval() string {
-	return os.real_path(os.join_path(os.dir(@FILE), '..', '..',
-		'conformance', 'code.cxd'))
+	return os.real_path(os.join_path(os.dir(@FILE), '..', '..', 'conformance', 'code.cxd'))
+}
+
+// Fixture code reads repo files by repo-root-relative path (xap-dist's
+// registry/store, packages/nmea0183/…, market/*.feature.cxd), so the repo
+// root is pinned as the process CWD once for the whole file — the same
+// [?lib]-resolution contract test_package_fixtures states. Without this the
+// eight path-consuming xap-dist cases fail from any other invoking CWD (#377).
+fn testsuite_begin() {
+	root := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
+	os.chdir(root) or { panic('cannot chdir to repo root ${root}: ${err}') }
 }
 
 struct ParsedFixture {
@@ -26,12 +35,12 @@ struct ParsedFixture {
 	in_cx        string
 	in_code      string
 	out_text     string
-	out_multiset string  // comma-separated multiset matcher for :par-unordered fixtures
+	out_multiset string // comma-separated multiset matcher for :par-unordered fixtures
 	out_err      string
-	gate         string  // per-case gate toggle: enforced|advisory|pending|skip ('' = unset)
-	grant        string  // Effort B least-privilege grant: space-separated capability list ('' = host default)
-	tol          f64     // relative float tolerance for out_text match (0 = exact)
-	level        string  // family label: core|resilience|async|visualization|…
+	gate         string   // per-case gate toggle: enforced|advisory|pending|skip ('' = unset)
+	grant        string   // Effort B least-privilege grant: space-separated capability list ('' = host default)
+	tol          f64      // relative float tolerance for out_text match (0 = exact)
+	level        string   // family label: core|resilience|async|visualization|…
 	tags         []string // case tags (e.g. 'strict-mode' enables --strict typing)
 }
 
@@ -119,7 +128,7 @@ fn render_value(n cx.Node) string {
 					// like a date must quote — handled by cx_autotypes
 					// below.)
 					if n.data_type == cx.ScalarType.date_type
-					   || n.data_type == cx.ScalarType.datetime_type {
+						|| n.data_type == cx.ScalarType.datetime_type {
 						return v
 					}
 					// Duration literals are stored as strings tagged
@@ -130,10 +139,18 @@ fn render_value(n cx.Node) string {
 					}
 					return quote_if_needed(v)
 				}
-				i64    { return v.str() }
-				f64    { return v.str() }
-				bool   { return v.str() }
-				cx.NullValue { return 'null' }
+				i64 {
+					return v.str()
+				}
+				f64 {
+					return v.str()
+				}
+				bool {
+					return v.str()
+				}
+				cx.NullValue {
+					return 'null'
+				}
 			}
 		}
 		cx.Element {
@@ -149,7 +166,7 @@ fn render_value(n cx.Node) string {
 			if n.name == '__cx_seq__' {
 				mut parts := []string{}
 				for it in n.items {
-					parts << render_value(it)
+					parts << render_seq_item_value(it)
 				}
 				return '(${parts.join(', ')})'
 			}
@@ -157,7 +174,7 @@ fn render_value(n cx.Node) string {
 			if n.name == '__cx_arr__' {
 				mut parts := []string{}
 				for it in n.items {
-					parts << render_value(it)
+					parts << render_seq_item_value(it)
 				}
 				return '[${parts.join(', ')}]'
 			}
@@ -170,8 +187,10 @@ fn render_value(n cx.Node) string {
 				for it in n.items {
 					if it is cx.Element {
 						val_str := if it.items.len > 0 {
-							render_value(it.items[0])
-						} else { '' }
+							render_seq_item_value(it.items[0])
+						} else {
+							''
+						}
 						parts << '${it.name}: ${val_str}'
 					}
 				}
@@ -192,10 +211,18 @@ fn render_value(n cx.Node) string {
 							s += quote_if_needed(av)
 						}
 					}
-					i64    { s += av.str() }
-					f64    { s += av.str() }
-					bool   { s += av.str() }
-					cx.NullValue { s += 'null' }
+					i64 {
+						s += av.str()
+					}
+					f64 {
+						s += av.str()
+					}
+					bool {
+						s += av.str()
+					}
+					cx.NullValue {
+						s += 'null'
+					}
 				}
 			}
 			for it in n.items {
@@ -203,7 +230,9 @@ fn render_value(n cx.Node) string {
 					label := it.name[slot_prefix.len..]
 					body := if it.items.len > 0 {
 						render_body_value(it.items[0])
-					} else { '' }
+					} else {
+						''
+					}
 					s += ' :${label} ${body}'
 				} else {
 					s += ' ' + render_body_value(it)
@@ -212,9 +241,15 @@ fn render_value(n cx.Node) string {
 			s += ']'
 			return s
 		}
-		cx.SequenceNode { return cx.cx_emit_sequence_inline(n, true) }
-		cx.ArrayNode    { return cx.cx_emit_array_inline(n, true) }
-		cx.MapNode      { return cx.cx_emit_map_inline(n, true) }
+		cx.SequenceNode {
+			return cx.cx_emit_sequence_inline(n, true)
+		}
+		cx.ArrayNode {
+			return cx.cx_emit_array_inline(n, true)
+		}
+		cx.MapNode {
+			return cx.cx_emit_map_inline(n, true)
+		}
 		cx.IteratorNode {
 			// materialize the iterator's memo at the
 			// host (test renderer) boundary. Force-pull via
@@ -235,6 +270,27 @@ fn render_value(n cx.Node) string {
 			return '<${n}>'
 		}
 	}
+}
+
+// render_seq_item_value renders one item of a rendered collection literal.
+// Mirrors the production renderer's `render_seq_item` (vcx/code/render.v,
+// #438): the bare `name==''` multi-value/absence wrapper renders in item
+// position per cxdm §2 — a singleton wrapper IS its item; the empty and
+// multi-item shapes render as a paren sequence (`()` / `(a, b)`), never as
+// the top-level newline-joined (empty-string) form, so an empty item
+// between commas has one spelling and the emitted text re-parses.
+fn render_seq_item_value(n cx.Node) string {
+	if n is cx.Element && n.name == '' {
+		if n.items.len == 1 {
+			return render_seq_item_value(n.items[0])
+		}
+		mut parts := []string{}
+		for it in n.items {
+			parts << render_seq_item_value(it)
+		}
+		return '(${parts.join(', ')})'
+	}
+	return render_value(n)
 }
 
 // render_body_value renders a child node of an Element body. Mirrors
@@ -296,8 +352,8 @@ fn needs_quotes(s string) bool {
 		// emitter renders comma-bearing scalars bare, e.g. a close-order
 		// log `inner,outer`; sequence-item ambiguity is a known
 		// round-trip nuance, not a quoting trigger.)
-		if c == ` ` || c == `\t` || c == `\n` || c == `[` || c == `]`
-		   || c == `=` || c == `'` || c == `"` {
+		if c == ` ` || c == `\t` || c == `\n` || c == `[` || c == `]` || c == `=` || c == `'`
+			|| c == `"` {
 			return true
 		}
 	}
@@ -335,7 +391,10 @@ fn cx_autotypes(s string) bool {
 	mut all_digit := true
 	for j in i .. s.len {
 		c := s[j]
-		if !(c >= `0` && c <= `9`) { all_digit = false break }
+		if !(c >= `0` && c <= `9`) {
+			all_digit = false
+			break
+		}
 	}
 	if all_digit { return true }
 	if s.contains('.') {
@@ -343,8 +402,16 @@ fn cx_autotypes(s string) bool {
 		mut ok := true
 		for j in i .. s.len {
 			c := s[j]
-			if c == `.` { if seen_dot { ok = false break } seen_dot = true }
-			else if !(c >= `0` && c <= `9`) { ok = false break }
+			if c == `.` {
+				if seen_dot {
+					ok = false
+					break
+				}
+				seen_dot = true
+			} else if !(c >= `0` && c <= `9`) {
+				ok = false
+				break
+			}
 		}
 		if ok && seen_dot { return true }
 	}
@@ -362,7 +429,8 @@ fn looks_like_duration(s string) bool {
 	for suf in ['us', 'ms', 's', 'm', 'h'] {
 		if s.ends_with(suf) {
 			prefix := s[..s.len - suf.len]
-			if prefix.len == 0 { continue }
+			if prefix.len == 0 { continue
+			 }
 			mut all_digit := true
 			for c in prefix {
 				if !(c >= `0` && c <= `9`) {
@@ -375,7 +443,6 @@ fn looks_like_duration(s string) bool {
 	}
 	return false
 }
-
 
 // quote_only_diff reports whether `got` and `exp` differ ONLY by string-
 // quoting (the render_value→render_canonical convention shift): strip every
@@ -415,13 +482,15 @@ fn test_all_code_fixtures_evaluate() {
 	mut adv_ids := map[string]bool{}
 	mut pending := []string{}
 	for f in all {
-		if f.in_code.trim_space() == '' { continue } // section/header rows carry no program
+		if f.in_code.trim_space() == '' { continue
+		 } // section/header rows carry no program
 		// `level=visualization` fixtures are RENDER-spec, not eval: their
 		// out-text is the structure recovered by rendering to a diagram and
 		// reverse-parsing it (§11.6 gate 9), not an evaluation result. They are
 		// validated by code_diagram_roundtrip_test.v (mermaid/svg/png round-trip).
 		// Evaluating them here is the wrong harness — skip.
-		if f.level == 'visualization' { continue }
+		if f.level == 'visualization' { continue
+		 }
 		// Per-case `gate=pending`: a fixture explicitly deferred with a
 		// documented reason (e.g. an unbuilt tier-3 surface, or a test of
 		// an internal-only invariant unreachable from conformant user
@@ -466,12 +535,14 @@ fn test_all_code_fixtures_evaluate() {
 			code.caps_set_all()
 		}
 		prog := cx.parse_program(f.in_code) or {
-			if f.out_err != '' { continue } // legitimately expects a parse-time error
+			if f.out_err != '' { continue
+			 } // legitimately expects a parse-time error
 			failures << '${f.id}: parse: ${err}'
 			continue
 		}
 		result := code.eval(prog.body, mut env) or {
-			if f.out_err != '' { continue } // legitimately expects an eval-time error
+			if f.out_err != '' { continue
+			 } // legitimately expects an eval-time error
 			failures << '${f.id}: eval: ${err}'
 			continue
 		}
@@ -739,6 +810,98 @@ fn test_stdlib_module_fixtures() {
 	if !bless {
 		assert enforced.len == 0
 	}
+}
+
+// test_package_fixtures runs every package's OWN acceptance corpus —
+// packages/<name>/<name>.test.cxd (distribution spec §1: "acceptance fixtures
+// (requirements are the tests)") — through the same engine as the stdlib
+// corpus. Package fixtures import their code via a repo-root-relative
+// [?lib './packages/<name>/…'] path, so this test pins the repo root as the
+// process CWD (the [?lib] resolution contract for `cx <file>` run from the
+// root). Gate policy comes from the 'packages' suite in conformance/gates.cxd,
+// keyed by package directory name; absent = enforced (deny-by-default).
+// Runs clean (ran == 0) before any package exists.
+fn test_package_fixtures() {
+	root := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
+	dir := os.join_path(root, 'packages')
+	entries := os.ls(dir) or { return }
+	os.chdir(root) or { return }
+	mut files := []string{}
+	for e in entries {
+		p := os.join_path(dir, e, '${e}.test.cxd')
+		if os.exists(p) {
+			files << p
+		}
+	}
+	files.sort()
+	mut ran := 0
+	mut failures := []string{}
+	module_gate := load_gate_policy('packages')
+	mut adv_ids := map[string]bool{}
+	for path in files {
+		pkg := os.base(os.dir(path))
+		fixtures := parse_fixtures_in(path)
+		for f in fixtures {
+			eff_gate := if f.gate != '' { f.gate } else { module_gate[pkg] }
+			if eff_gate == 'skip' || eff_gate == 'pending' {
+				continue
+			}
+			ran++
+			adv_ids['${pkg}/${f.id}'] = eff_gate == 'advisory'
+			mut env := code.new_env()
+			if f.grant != '' {
+				code.caps_set_list(f.grant.split_any(' \t,').filter(it != ''))
+			} else if f.out_err.contains('CXER0271') {
+				code.caps_set_empty()
+			} else {
+				code.caps_set_all()
+			}
+			prog := cx.parse_program(f.in_code) or {
+				// a parse failure is NEVER an expected outcome for a package
+				// fixture — even err cases must parse (the xap-compose M0
+				// lesson: parse-as-pass masks authoring defects).
+				failures << '${pkg}/${f.id}: parse: ${err}'
+				continue
+			}
+			result := code.eval(prog.body, mut env) or {
+				if f.out_err != '' {
+					continue
+				}
+				failures << '${pkg}/${f.id}: eval: ${err}'
+				continue
+			}
+			if f.out_err != '' {
+				if !code.render_canonical(result).contains(f.out_err) {
+					failures << '${pkg}/${f.id}: expected ${f.out_err}, got ${code.render_canonical(result)}'
+				}
+				continue
+			}
+			rendered := code.render_canonical(result).trim_space()
+			expected := f.out_text.trim_space()
+			if !same_shape(rendered, expected) {
+				failures << '${pkg}/${f.id}: mismatch\n  got:      ${rendered}\n  expected: ${expected}'
+			}
+		}
+	}
+	mut enforced := []string{}
+	mut advisory := []string{}
+	for fl in failures {
+		if adv_ids[fl.all_before(': ')] {
+			advisory << fl
+		} else {
+			enforced << fl
+		}
+	}
+	if advisory.len > 0 {
+		println('${advisory.len} advisory package fixture failure(s) of ${ran} — frontier, reported not blocking.')
+	}
+	if enforced.len > 0 {
+		println('${enforced.len} ENFORCED package fixture failure(s) of ${ran}:')
+		for fl in enforced {
+			println('  ${fl}')
+		}
+	}
+	assert enforced.len == 0
 }
 
 // same_shape compares two render outputs ignoring whitespace

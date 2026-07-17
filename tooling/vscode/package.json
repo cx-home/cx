@@ -1,16 +1,16 @@
 {
   "name": "cx-language",
   "displayName": "CX Language",
-  "description": "Syntax highlighting, LSP, snippets, and formatting for CX (.cx / .cxs) — the structured data + code language. Surface covers CXPath as a first-class value kind, multi-arm [?match], pure-functional [?modify], atom literals (:NAME), [?def] module functions, [?const] constants, and [?lib] module loading.",
-  "version": "0.12.0",
+  "description": "Syntax highlighting, LSP, snippets, and formatting for CX (.cx / .cxd / .cxs) — the structured data + code language. Surface covers CXPath as a first-class value kind, multi-arm [?match], pure-functional [?modify], atom literals (:NAME), [?def] module functions, [?const] constants, and [?lib] module loading.",
+  "version": "0.13.0",
   "publisher": "cx-home",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cx-home/cx.git"
+    "url": "https://github.com/cx-home/cx-private.git"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.82.0"
   },
   "categories": [
     "Programming Languages",
@@ -116,11 +116,6 @@
           "enum": ["off", "messages", "verbose"],
           "default": "off",
           "description": "Traces communication between VS Code and the cx language server."
-        },
-        "cx.formatOnSave": {
-          "type": "boolean",
-          "default": false,
-          "description": "Run `cx fmt` on save (delegates to the language server's formatting capability)."
         }
       }
     },
@@ -136,15 +131,21 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build",
-    "build": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "package": "vsce package --no-dependencies --allow-missing-repository"
+    "vscode:prepublish": "npm run compile",
+    "compile": "npm run typecheck && npm run bundle",
+    "typecheck": "tsc -p ./ --noEmit",
+    "bundle": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --target=node18 --sourcemap --watch",
+    "test:grammar": "vscode-tmgrammar-test -g syntaxes/cx.tmLanguage.json \"test/grammar/*.cx\"",
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/vscode": "^1.75.0",
-    "typescript": "^5.0.0"
+    "@types/vscode": "^1.82.0",
+    "@vscode/vsce": "^2.32.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.0.0",
+    "vscode-tmgrammar-test": "^0.1.3"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.0"

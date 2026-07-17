@@ -24,9 +24,11 @@ Two sibling validators cover two distinct shapes; pick by what you are validatin
 
 ### §1.2. Relationship to `spec/core/schema.md`
 
-The two validators are **siblings**, sharing **one scalar-constraint vocabulary** spelled identically: `pattern=`, `min=`, `max=`, `min-length=`, `max-length=`, `required=`, `optional=`, `type="string"|"int"|…`, `enum=[v …]`. A `pattern=` on a `[field …]` here and a `pattern=` on a `[body …]` in `.cxs` mean the same thing and apply the same RE2 full-match semantics.
+The two validators are **siblings**, sharing **one scalar-constraint vocabulary** spelled identically: `pattern=`, `min=`, `max=`, `min-length=`, `max-length=`, `required=`, `optional=`, `type="string"|"int"|…`, and the `[enum v …]` child element. A `pattern=` on a `[field …]` here and a `pattern=` on a `[body …]` in `.cxs` mean the same thing and apply the same RE2 full-match semantics.
 
-Structural keywords differ because the *thing being validated* differs. `validate-with=` (§3.6) and `extends=` (§3.7) are **record-validator extensions** owned by this document.
+**Attributes are strictly scalar** (code.md §6.4.1; D2): every structured piece of schema vocabulary — the enum member set, a nested schema, a base-schema reference — is a **child element** of its `[field …]` / `[schema …]`, never an attribute. The retired attr spellings (`enum=[v …]`, `schema=[schema …]`, `extends=$Base`) fail loud: a collection-valued attr is `cx-err:CXER0100` at construction; a scalar-carried old keyword is a malformed schema (`CXER1603`) with a migration hint.
+
+Structural keywords differ because the *thing being validated* differs. `validate-with=` (§3.6) and `[extends …]` (§3.7) are **record-validator extensions** owned by this document.
 
 ## §2. Conceptual model
 
@@ -90,7 +92,7 @@ Each violation carries:
 | `MIN_LENGTH_VIOLATION` | String/sequence shorter than `min-length=` |
 | `MAX_LENGTH_VIOLATION` | String/sequence longer than `max-length=` |
 | `REQUIRED_MISSING` | Required field absent |
-| `ENUM_MISMATCH` | Value not in `enum=` set |
+| `ENUM_MISMATCH` | Value not in the `[enum …]` member set |
 | `SCHEMA_NOT_FOUND` | Named schema reference doesn't resolve |
 | `UNKNOWN_FIELD` | `strict=true` schema sees extra fields |
 | `NESTED_VIOLATION` | Nested-element validation produced its own violations (path is the parent path) |
@@ -151,20 +153,22 @@ Project the `path=` and `message=` field of each violation.
 
 ### §3.5. Record-schema vocabulary
 
+Scalar keywords are attributes; structured vocabulary is a **child element** (attributes are strictly scalar, §1.2):
+
 | Keyword | Position | Evaluated as |
 |---|---|---|
 | `type="T"` | `[field …]` | match value's CXDM kind against `T` (§4.5) |
 | `pattern=RE` | `[field …]` | RE2 full-match on string value (§4.4) |
 | `min=` / `max=` | `[field …]` | numeric bounds |
 | `min-length=` / `max-length=` | `[field …]` | string/sequence length bounds |
-| `enum=[v …]` | `[field …]` | membership test |
+| `[enum v …]` child | `[field …]` | membership test — members are the child's items (`[enum "red" "green" "blue"]`) |
 | `required=` (default) / `optional=true` | `[field …]` | presence policy (§4.2) |
-| `schema=[schema …]` | `[field type="element"]` | nested validation (§4.3) |
+| `[schema …]` child | `[field type="element"]` | nested validation (§4.3) |
 | `strict=true` | `[schema …]` | reject undeclared fields (§4.1) |
 | `validate-with=FN` | `[field …]` **or** `[schema …]` | custom validator (§3.6) |
-| `extends=$BaseSchema` | `[schema …]` | field-set inheritance (§3.7); value reference (`$`-bound or inline `[schema …]`) |
+| `[extends $BaseSchema]` child | `[schema …]` | field-set inheritance (§3.7); the child's single item is the base-schema **value** (`$`-bound or inline `[schema …]`) |
 
-The scalar constraints are the vocabulary shared with [`spec/core/schema.md`](../core/schema.md) (§1.2). `validate-with=` and `extends=` are record-validator extensions.
+The scalar constraints are the vocabulary shared with [`spec/core/schema.md`](../core/schema.md) (§1.2). `validate-with=` and `[extends …]` are record-validator extensions.
 
 ### §3.6. Custom validators — `validate-with=FN`
 
@@ -192,21 +196,21 @@ The scalar constraints are the vocabulary shared with [`spec/core/schema.md`](..
 
 Field-level validators run **after** the field's declarative constraints (skipped if the field already failed). Record-level validators run **last**, after all per-field validation.
 
-### §3.7. Schema composition — `extends=`
+### §3.7. Schema composition — `[extends …]`
 
-`[schema extends=$BaseSchema [field …] …]` includes all of `$BaseSchema`'s fields plus the inline ones. A child field whose `name=` equals a base field's `name=` **replaces** the base declaration wholesale. `extends=` takes a **value reference** to the base schema: a `$`-bound name (`extends=$BASE`, the idiomatic way to reference a bound `[?const]`/`[?let]` schema value) or an inline `extends=[schema …]`. A bare word (`extends=Base`, no `$`) is a literal symbol — not a value reference — and resolves to no base schema (`CXER1603`).
+`[schema [extends $BaseSchema] [field …] …]` includes all of `$BaseSchema`'s fields plus the inline ones. A child field whose `name=` equals a base field's `name=` **replaces** the base declaration wholesale. The `[extends …]` child's **single item** is a **value reference** to the base schema: a `$`-bound name (`[extends $BASE]`, the idiomatic way to reference a bound `[?const]`/`[?let]` schema value) or an inline `[extends [schema …]]`. A bare word (`[extends Base]`, no `$`) is a literal symbol — not a value reference — and resolves to no base schema (`CXER1603`).
 
 ```cx
 [?const BASE_ENTITY_SCHEMA [schema
   [field name="id"         type="string"   pattern="[0-9a-f-]{36}"]
   [field name="created-at" type="datetime"]]]
 
-[?const CONTACT_SCHEMA [schema extends=$BASE_ENTITY_SCHEMA
+[?const CONTACT_SCHEMA [schema [extends $BASE_ENTITY_SCHEMA]
   [field name="email" type="string" pattern=".+@.+\..+"]
   [field name="phone" type="string" optional=true]]]
 ```
 
-A record-level `validate-with=` on the base **also fires** under extension (both run). Cycles in an `extends=` chain are malformed (`CXER1603`).
+A record-level `validate-with=` on the base **also fires** under extension (both run). Cycles in an `[extends …]` chain are malformed (`CXER1603`). The retired `extends=` attr spelling is a malformed schema (`CXER1603`) with a migration hint (§1.2).
 
 Intersection / union composition are deferred (§7); record-level `validate-with=` covers many use cases.
 
@@ -232,14 +236,16 @@ Missing optional fields produce no violation.
 
 ### §4.3. Nested schemas
 
-`type="element"` with a `schema=` child enables nested validation:
+`type="element"` with a `[schema …]` child enables nested validation:
 
 ```cx
-[field name="address" type="element" schema=[schema
+[field name="address" type="element" [schema
   [field name="street" type="string"]
   [field name="city"   type="string"]
   [field name="zip"    type="string" pattern="^\d{5}(-\d{4})?$"]]]
 ```
+
+The retired `schema=` attr spelling is a malformed schema (`CXER1603`) with a migration hint (§1.2).
 
 Nested violations propagate up with their `path=` CXPath extended by the nesting step (`/address/zip`). The propagated path remains a well-formed CXPath, directly consumable by `select` / `[?modify]`.
 
@@ -289,10 +295,10 @@ For "any integral number, including `3.0`", use `type="number"` plus a `validate
 - **Ordering**: field-level validators run after declarative constraints (skipped if already failed); record-level runs last.
 - **Return-to-violation mapping**: `true` / `[ok]` / empty sequence → no violation. `false` → one `CUSTOM_VIOLATION` at the field's CXPath (record-level: `/`). A returned `[violation …]` is surfaced verbatim with `path=` back-filled if omitted.
 
-### §4.7. `extends=` semantics
+### §4.7. `[extends …]` semantics
 
-- **Base resolution**: `extends=` takes a value reference — `extends=$BASE` (the evaluator substitutes the bound schema value in the user's env) or an inline `extends=[schema …]`. A bare word (no `$`) is a literal symbol carrying no schema → `CXER1603`.
-- **Merge**: child's effective field set is base's fields plus child's inline fields, resolved at schema-evaluation time.
+- **Base resolution**: the `[extends …]` child's single item is a value reference — `[extends $BASE]` (the evaluator substitutes the bound schema value in the user's env) or an inline `[extends [schema …]]`. A bare word (no `$`) is a literal symbol carrying no schema → `CXER1603`.
+- **Merge**: child's effective field set is base's fields plus child's inline fields, resolved at schema-evaluation time. The `[extends …]` child is consumed by the merge (it is not a field).
 - **Override by name**: child field with matching `name=` replaces the base declaration wholesale.
 - **Schema-root keywords**: `strict=` and child-level `validate-with=` apply to the merged set; base-level `validate-with=` also fires.
 - Single-inheritance; cycles malformed (`CXER1603`).
@@ -304,8 +310,8 @@ For "any integral number, including `3.0`", use `type="number"` plus a `validate
 | `CXER1600` | `E_VALIDATE_SCHEMA_NOT_FOUND` | `validate-against` with unregistered `$schema-ref` |
 | `CXER1601` | `E_VALIDATE_TYPE_UNKNOWN` | Schema declares a `type=` not in §4.5 |
 | `CXER1602` | `E_VALIDATE_PATTERN_INVALID` | Schema declares a `pattern=` that doesn't compile under RE2 |
-| `CXER1603` | `E_VALIDATE_SCHEMA_MALFORMED` | Schema structure invalid (bad shape, impure `validate-with=`, `extends=` cycle) |
-| `CXER1604` | `E_VALIDATE_ENUM_INVALID` | `enum=` value is non-comparable |
+| `CXER1603` | `E_VALIDATE_SCHEMA_MALFORMED` | Schema structure invalid (bad shape, impure `validate-with=`, `[extends …]` cycle, retired `enum=`/`schema=`/`extends=` attr spelling) |
+| `CXER1604` | `E_VALIDATE_ENUM_INVALID` | An `[enum …]` member is non-comparable |
 | `CXER1605` | `E_VALIDATE_NESTED_DEPTH` | Nested-schema recursion exceeds implementation-defined limit (≥ 64) |
 
 **Minimum nesting depth.** Implementations MUST accept at least 64 levels of nested-schema recursion in `validate` / `validate-shape` without raising `CXER1605`. An implementation MAY raise `CXER1605` only beyond an implementation-defined limit, and that limit MUST be ≥ 64. Consequently, `CXER1605` is guaranteed observable only at nesting depths exceeding 64; at depths ≤ 64 a conforming implementation never raises it.
@@ -321,6 +327,7 @@ Under `conformance/stdlib/validate.cxd`:
 - **Required vs optional**: missing required → `REQUIRED_MISSING`; missing optional → no violation.
 - **Strict vs lax**: unknown field → `UNKNOWN_FIELD` under `strict=true`; ignored otherwise.
 - **Nested schema**: violations bubble up with extended paths.
+- **Retired attr spellings**: a collection-valued `enum=[…]` → `CXER0100` at construction; scalar-carried `enum=` / `schema=` / `extends=` → `CXER1603` with a migration hint.
 - **Multi-violation**: value with two distinct violations produces both.
 - **Named schema**: `register-schema` + `validate-against`; unregistered name → `CXER1600`.
 - **Composition helpers**: `errors-of` / `violation-paths` / `violation-messages` projections.
@@ -328,13 +335,13 @@ Under `conformance/stdlib/validate.cxd`:
 - **Type widening (§4.5.1)**: `type="float"` accepts int; `type="int"` rejects `3.0`; `type="number"` + `validate-with=` integral-check accepts `3` and `3.0`, rejects `3.7`.
 - **Field-level `validate-with=`**: `false` → `CUSTOM_VIOLATION` at field path; returned `[violation …]` surfaced verbatim with path back-filled; impure validator → `CXER1603`.
 - **Record-level `validate-with=`**: cross-field rule produces `CUSTOM_VIOLATION`; ok value produces none.
-- **`extends=`**: child validates base + own fields; override replaces base; cycle → `CXER1603`; base record-level `validate-with=` still fires.
+- **`[extends …]`**: child validates base + own fields; override replaces base; cycle → `CXER1603`; base record-level `validate-with=` still fires.
 
 ## §7. Open follow-ups
 
 - **Declarative `returns=SchemaRef` on `[?def]`** — integrates with the type checker; future amendment to the function-definition surface.
 - **Schema-as-data registration directive `[?schema-register]`** — `validate-against` resolves through a named-schema registry; the registration directive specified in a future amendment.
-- **Schema composition — intersection / union** — single-inheritance `extends=` ships currently; intersection / union deferred. Record-level `validate-with=` covers many use cases.
+- **Schema composition — intersection / union** — single-inheritance `[extends …]` ships currently; intersection / union deferred. Record-level `validate-with=` covers many use cases.
 - **Convergence with `spec/core/schema.md`** — opportunistic; not a blocker.
 - **Per-language error message localization** — current messages are English; future `format-violations` with `locale=` localizes.
 

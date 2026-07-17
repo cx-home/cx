@@ -1,6 +1,7 @@
 module main
 
 import os
+import testenv
 
 // Pass-2 D-A1 — CLI default action is the PROGRAM reading.
 //
@@ -14,7 +15,7 @@ import os
 // These tests drive the compiled `cx` binary as a subprocess.
 
 fn cx_bin() string {
-	return os.join_path(@VMODROOT, 'target', 'cx')
+	return testenv.cx_bin()
 }
 
 fn tmp_file(label string, content string) string {

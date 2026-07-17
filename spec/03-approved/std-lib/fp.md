@@ -113,7 +113,7 @@ function for a combinator on a head tag. The built-in instances (`sequence`,
 `result`) are pre-registered; a user registers an arm for a tag `T` by providing
 `map`/`flat-map` (and optionally `fold`/`traverse`) bound to `T`. Because an
 instance is a CX document, the registry is **CXPath-queryable**
-(`//instance[@class='Monad']`) — a tool or the model can check coherence
+(`//instance[= $_@class 'Monad']`) — a tool or the model can check coherence
 structurally and reason over the laws as data (the homoiconic moat, the same as
 errors-as-queryable-documents). Resolution is by §1.2 precedence; a tag with a
 `map` arm but no `flat-map` arm is a Functor but not a Monad (a `flat-map` on it

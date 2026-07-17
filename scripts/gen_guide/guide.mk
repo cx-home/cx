@@ -40,7 +40,10 @@ endif
         guide-wasm \
         guide-diff \
         guide-clean \
-        guide-check
+        guide-check \
+        guide-snippets-check \
+        check-retired-surface \
+        playground-examples-regen
 
 ## guide        Build docs/guide/ from docs-src/canonical/. The "Standard
 ##                                   library" / "Reference" pages are projected
@@ -57,10 +60,56 @@ guide: $(GUIDE_CX_DEP)
 	@$(GUIDE_CX_BIN) $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
-## guide-wasm    Rebuild the playground wasm, then render the guide. Use when
+## guide-snippets-check  Docs-example gate (#425): run every
+##                                   [example lang=cx] snippet in
+##                                   docs-src/canonical/sections/*.cxd against
+##                                   the built binary (no capability grants;
+##                                   [example … check=none] opts a
+##                                   deliberately-illustrative fragment out).
+##                                   Nonzero exit on any failing snippet or any
+##                                   unparseable section file.
+guide-snippets-check: $(GUIDE_CX_DEP)
+	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) $(GUIDE_GEN)/snippet_check.cx \
+	  --allow-read --allow-write --allow-subprocess --allow-env
+	@$(GUIDE_GEN)/check_retired_surface.sh
+
+## check-retired-surface  Companion scan to the snippet gate: rejects
+##                                   retired forms that PARSE as something
+##                                   else (`:table[`, spaced `:T` body
+##                                   annotations, `:T[]` arrays) and so slip
+##                                   through a parse-only gate. Waive a
+##                                   deliberate retired-form panel with a
+##                                   `retired-ok` marker on the line.
+.PHONY: check-retired-surface
+check-retired-surface:
+	@$(GUIDE_GEN)/check_retired_surface.sh
+
+## playground-examples-regen  Regenerate + re-audit
+##                                   scripts/gen_guide/playground/
+##                                   playground.examples.js from its generator
+##                                   (gen_examples.py: every entry CLI-audited
+##                                   against the current binary, then the file
+##                                   is rewritten). Run after any engine/syntax
+##                                   change the playground must reflect.
+playground-examples-regen: $(GUIDE_CX_DEP)
+	@python3 $(GUIDE_GEN)/playground/gen_examples.py
+
+## guide-wasm    Rebuild the playground wasm AND regenerate the playground
+##                                   examples, then render the guide. Use when
 ##                                   the cx engine changed and the in-browser
 ##                                   playground must reflect it.
-guide-wasm: build-playground-wasm-for-guide guide
+##
+## COUPLING INVARIANT: the shipped wasm bundle (dist/wasm/*, staged to
+## docs/guide/wasm/) and playground.examples.js (staged to
+## docs/guide/playground/) must always be of the same syntax era — the
+## examples run inside that wasm engine. So the wasm is never rebuilt
+## without regenerating the examples in the same invocation; `guide` runs
+## from the recipe (not the prerequisite list) so the render always stages
+## AFTER both, even under `make -j`. Drift between the generator and the
+## checked-in examples.js is gated by `make verify-playground-examples`
+## (top-level Makefile, in TEST_TARGETS next to guide-check).
+guide-wasm: build-playground-wasm-for-guide playground-examples-regen
+	@$(MAKE) --no-print-directory guide
 
 ## guide-check  Gate the co-located stdlib docs against drift
 ##                                   (presence parity, purity agreement,
@@ -135,7 +184,12 @@ guide-http: guide
 
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
+## Honors GUIDE_SKIP_CX_BUILD=1 (reuse the existing binary), same as `guide`.
+ifeq ($(GUIDE_SKIP_CX_BUILD),)
 guide-diff: build-vcx
+else
+guide-diff:
+endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
 	 $(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null; \

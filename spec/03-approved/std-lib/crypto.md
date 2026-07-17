@@ -92,7 +92,7 @@ The digest is baked into the name for single-shot calls where the digest is know
       [= $h1  [$crypto:hmac-update $h0 $chunk1]]
       [= $h2  [$crypto:hmac-update $h1 $chunk2]]
       [= $mac [$crypto:hmac-finalize $h2]]
-  ...]
+  $mac]
 ```
 
 ### §3.3. keyed-BLAKE3

@@ -1,6 +1,11 @@
 # `cx-stdlib/vc` — verifiable credentials
 
-**Status:** Approved (post-initial addition per [std-lib/README.md](README.md) §3.2). Tier D — trust.
+```cx
+[module-meta name=vc tier=D status=current
+  [standard ref='W3C VC Data Model 2.0' title='Verifiable Credentials']]
+```
+
+**Status:** Current (owner ruling 2026-07-12, #363 item 2(a) — graduated from Approved; same catalogue-linkage lag as [`did`](did.md)). Tier D — trust.
 
 Normative reference for the `cx-stdlib/vc` module: **issue, verify, present, and revoke verifiable credentials**. Per [xap.md](../xap/xap.md) **R9**, a verifiable credential **is** a *portable, signed, attenuating [§22.2](../xap/xap.md) delegation* — the decentralized way to carry authority between DIDs without a shared central IdP. `vc` is the authority-carrying counterpart to [`did`](did.md) (identity).
 
@@ -24,19 +29,19 @@ A VC is **not a new trust primitive** (R9). The authority it carries is exactly 
 
 ```cx
 [vc id="urn:uuid:…"
-  [issuer "did:key:z6Mk…"]              ; the DID that signed this credential
-  [subject "did:key:z6Mk…"]            ; the DID the credential is about (the holder)
+  [issuer "did:key:z6Mk…"]              # the DID that signed this credential
+  [subject "did:key:z6Mk…"]            # the DID the credential is about (the holder)
   [issued-at 2026-06-16T12:00:00Z]
   [expires   2026-06-16T13:00:00Z]
   [claim
-    [delegation d-recon-77             ; the §22.2 authority being conveyed
+    [delegation d-recon-77             # the §22.2 authority being conveyed
       [tenant acme]
       [from [principal "did:key:z6Mk…issuer"]] [to [principal "did:key:z6Mk…subject"]]
       [capabilities [refund-duplicate]]
       [over /orders] [attenuates d-dana-ops] [revocable true]]]
   [proof type=Ed25519Signature2020
     [verification-method "did:key:z6Mk…issuer#z6Mk…issuer"]
-    [signature "z<base58btc>"]]]        ; Ed25519 sig over the canonical credential-sans-proof
+    [signature "z<base58btc>"]]]        # Ed25519 sig over the canonical credential-sans-proof
 ```
 
 The `claim` carries a verbatim §22.2 `[delegation …]`. `from`/`to` principals are DIDs; the PEP consumes the delegation inside a *verified* VC identically to a locally-issued one — so DID/VC changes the *authority basis transport*, not the enforcement (R9).
@@ -46,40 +51,40 @@ The `claim` carries a verbatim §22.2 `[delegation …]`. `from`/`to` principals
 ```cx
 [?lib 'cx-stdlib/vc']
 
-; ── issue ──────────────────────────────────────────────────────────────────
-; Sign a credential conveying `claim` (a §22.2 [delegation …]) from `issuer-did`
-; to `subject-did`. The issuer's 32-byte Ed25519 seed signs the canonical
-; credential-sans-proof. Deterministic given inputs ⇒ pure.
+# ── issue ──────────────────────────────────────────────────────────────────
+# Sign a credential conveying `claim` (a §22.2 [delegation …]) from `issuer-did`
+# to `subject-did`. The issuer's 32-byte Ed25519 seed signs the canonical
+# credential-sans-proof. Deterministic given inputs ⇒ pure.
 [?def issue   scope=public pure   [returns element]
   ($issuer-did::string $issuer-key::bytes $subject-did::string $claim::element $opts::map {})
   [$vc-issue $issuer-did $issuer-key $subject-did $claim $opts]]
 
-; ── verify ─────────────────────────────────────────────────────────────────
-; Verify signature + validity window + non-revocation. Returns a
-; [vc-verification status=… …] report (never throws on an invalid VC).
-;   status ∈ valid | bad-signature | expired | not-yet-valid | revoked | malformed
-; `now` anchors the validity-window check. `opts.revoked` is the set of revoked
-; VC ids (a fold of revoke events — §5); offline-clean for a did:key issuer.
+# ── verify ─────────────────────────────────────────────────────────────────
+# Verify signature + validity window + non-revocation. Returns a
+# [vc-verification status=… …] report (never throws on an invalid VC).
+#   status ∈ valid | bad-signature | expired | not-yet-valid | revoked | malformed
+# `now` anchors the validity-window check. `opts.revoked` is the set of revoked
+# VC ids (a fold of revoke events — §5); offline-clean for a did:key issuer.
 [?def verify  scope=public pure   [returns element] ($vc::element $now::datetime $opts::map {})
   [$vc-verify $vc $now $opts]]
 
-; valid? — convenience boolean over verify.
+# valid? — convenience boolean over verify.
 [?def valid?  scope=public pure   [returns bool]    ($vc::element $now::datetime $opts::map {})
   [$vc-valid $vc $now $opts]]
 
-; ── present ────────────────────────────────────────────────────────────────
-; Package a VC for transport to a verifier, optionally binding it to a holder
-; proof over a verifier-supplied challenge (proof-of-possession). v1 returns a
-; [vp …] wrapper; without a holder key it is a passthrough envelope.
+# ── present ────────────────────────────────────────────────────────────────
+# Package a VC for transport to a verifier, optionally binding it to a holder
+# proof over a verifier-supplied challenge (proof-of-possession). v1 returns a
+# [vp …] wrapper; without a holder key it is a passthrough envelope.
 [?def present scope=public pure   [returns element] ($vc::element $opts::map {})
   [$vc-present $vc $opts]]
 
-; ── revoke ─────────────────────────────────────────────────────────────────
-; Append a revoke event for a VC id to a journal (§5). Impure — it writes.
+# ── revoke ─────────────────────────────────────────────────────────────────
+# Append a revoke event for a VC id to a journal (§5). Impure — it writes.
 [?def revoke  scope=public impure [returns element] ($journal::element $vc-id::string $opts::map {})
   [$vc-revoke $journal $vc-id $opts]]
 
-; revoked-set — fold a journal's revoke events into the id set verify consults.
+# revoked-set — fold a journal's revoke events into the id set verify consults.
 [?def revoked-set scope=public impure [returns element] ($journal::element)
   [$vc-revoked-set $journal]]
 ```

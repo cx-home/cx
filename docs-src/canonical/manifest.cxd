@@ -306,7 +306,7 @@
     [child n=10.5 id=extend-contribute title='Extend and contribute'
       [child n=10.5.1 id=file-bug             title='Filing an issue']
       [child n=10.5.2 id=add-fixture          title='Adding a conformance fixture']
-      [child n=10.5.3 id=propose-adr          title='Proposing a design change']
+      [child n=10.5.3 id=propose-change          title='Proposing a design change']
       [child n=10.5.4 id=ship-binding         title='Shipping a new binding']
       [child n=10.5.5 id=debug-investigate    title='Debugging an implementation']
       [child n=10.5.6 id=memory-update        title='Updating the project memory']]]
@@ -320,6 +320,37 @@
      migrated from docs-src/content/tour/ during Phase B. #]
   [section n=14 id=tour-data      file='14-tour-data.cxd']
   [section n=15 id=tour-programs  file='15-tour-programs.cxd']
+
+  [# operational topics — the issue #425 coverage gaps. #]
+  [section n=16 id=capabilities file='16-capabilities.cxd'
+    [child n=16.1 id=caps-model     title='Deny-by-default']
+    [child n=16.2 id=caps-grants    title='The grant list']
+    [child n=16.3 id=caps-net       title='Scoping the network grant']
+    [child n=16.4 id=caps-allow-all title='The --allow-all opt-out']
+    [child n=16.5 id=caps-narrowing title='Narrowing with [?with-caps]']
+    [child n=16.6 id=caps-errors    title='Denials are values']]
+  [section n=17 id=operations file='17-operations.cxd'
+    [child n=17.1 id=ops-process      title='Process model']
+    [child n=17.2 id=ops-store-daemon title='The store service daemon']
+    [child n=17.3 id=ops-artifacts    title='Deployment artifacts']
+    [child n=17.4 id=ops-env          title='Environment variables']
+    [child n=17.5 id=ops-gc           title='Garbage collection at a glance']
+    [child n=17.6 id=ops-logging      title='Logging and journaling']]
+  [section n=18 id=store file='18-store.cxd'
+    [child n=18.1 id=store-model      title='Content addressing and identity']
+    [child n=18.2 id=store-embedded   title='The embedded workflow']
+    [child n=18.3 id=store-porcelain  title='Porcelain — introspect, branch, replicate']
+    [child n=18.4 id=store-service    title='The service tier — cx store-serve']
+    [child n=18.5 id=store-transports title='Transports — CSRP and gRPC']
+    [child n=18.6 id=store-security   title='Security and encryption at rest']
+    [child n=18.7 id=store-console    title='The management console']]
+  [section n=19 id=xap-distribution file='19-xap-distribution.cxd'
+    [child n=19.1 id=dist-what         title='The unit — what a feature is']
+    [child n=19.2 id=dist-authoring    title='Authoring — spec plus contract module']
+    [child n=19.3 id=dist-registry     title='Publishing — a git repo is a registry']
+    [child n=19.4 id=dist-consuming    title='Consuming — verify, install, pin']
+    [child n=19.5 id=dist-entitlements title='Entitlements and identity']
+    [child n=19.6 id=dist-market       title='The marketplace — today versus specified']]
 
   [# The "Standard library" area (libraries.html + lib-<m>.html) and the
      "XAP" area are NOT manifest sections: guide_build.cx projects them

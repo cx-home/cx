@@ -7,7 +7,7 @@ transport bindings; multiplexing/backpressure/heartbeat/reconnect-resume and the
 WebSocket/WebTransport bindings are scoped here but deferred to follow-ups.
 
 > XSP is **not** XAP. XAP is the experience paradigm (the cascade, surfaces,
-> trust — [`xap.md`](../03-approved/xap/xap.md)). **XSP is the streaming wire
+> trust — [`xap.md`](xap.md)). **XSP is the streaming wire
 > protocol that carries XAP**: a self-describing frame + transport bindings.
 > Layering: net → http → directives → xap; XSP is the framed transport beneath
 > XAP's semantics.
@@ -24,7 +24,7 @@ length-delimited framing primitive); the *meaning* of the `type` enum and the
 `principal` DID is XAP's. For v1 both live in the one `xsp` module — the frame
 codec is generic enough to reuse, and a premature split would add a layer with
 no second consumer yet. The payload is opaque bytes; the canonical encoding is
-**CX `data-bin`** (we dogfood our own binary codec, [`codec.md`](../03-approved/core/codec.md)).
+**CX `data-bin`** (we dogfood our own binary codec, [`codec.md`](../core/codec.md)).
 
 ## §2. The frame — self-describing, self-delimiting
 
@@ -134,7 +134,7 @@ change above the transport adapter.
 ## §6. Cross-references
 
 - Issue #31 (this RFC); #26 (did/vc — the `principal` field's identity).
-- [`xap.md`](../03-approved/xap/xap.md) §16 (clients), §22.1 (identity/DID),
+- [`xap.md`](xap.md) §16 (clients), §22.1 (identity/DID),
   §23 (web client), §24 (SSE/streaming prerequisite).
-- [`core/codec.md`](../03-approved/core/codec.md) — the `data-bin` payload codec.
-- [`std-lib/did.md`](../03-approved/std-lib/did.md), [`std-lib/http.md`](../03-approved/std-lib/http.md).
+- [`core/codec.md`](../core/codec.md) — the `data-bin` payload codec.
+- [`std-lib/did.md`](../std-lib/did.md), [`std-lib/http.md`](../std-lib/http.md).

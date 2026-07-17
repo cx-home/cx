@@ -1,18 +1,24 @@
-<server>
-  <host>localhost</host>
-  <port cx:type="int">8080</port>
-  <debug>false</debug>
-  <workers cx:type="int">4</workers>
-  <allowed_origins cx:type="string[]"><item>https://example.com</item><item>https://app.example.com</item></allowed_origins>
+<!-- Server / database / logging configuration.
+   Showcases v3.4 idioms: sized numeric types, boolean sigils,
+   numeric underscores, line comments, leading-zero strings. -->
+<server host="0.0.0.0" tls="true" debug="false">
+  <!--+tls → tls=true; -debug → debug=false-->
+  <port cx:type="u16">8080</port>
+  <!--sized: u16 covers 0..65535-->
+  <workers cx:type="u8">4</workers>
+  <max_request_bytes cx:type="u32">1048576</max_request_bytes>
+  <!--1 MiB — underscores aid readability-->
+  <allowed_origins cx:type="string[]"><cx:item>https://example.com</cx:item><cx:item>https://app.example.com</cx:item></allowed_origins>
 </server>
-<database>
-  <host>localhost</host>
-  <port cx:type="int">5432</port>
-  <name>myapp</name>
-  <pool_size cx:type="int">10</pool_size>
-  <ssl>false</ssl>
+<database host="localhost" name="myapp" ssl="false">
+  <port cx:type="u16">5432</port>
+  <pool_size cx:type="u16">10</pool_size>
+  <statement_timeout_ms cx:type="u32">30000</statement_timeout_ms>
 </database>
 <logging>
   <level>info</level>
   <file>/var/log/app.log</file>
+  <!-- v3.4: a leading-zero token stays a string, never an octal-looking int -->
+  <rotate_at_hour>03</rotate_at_hour>
+  <!--the literal string "03", not int 3-->
 </logging>

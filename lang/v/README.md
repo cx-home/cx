@@ -103,7 +103,7 @@ fn main() {
     println(out)
 
     // Public Table API — 17-member surface
-    src := '[users :table[name age:int]
+    src := '[users [table[name age::int]]
       alice 30
       bob   25
     ]'

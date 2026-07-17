@@ -1,14 +1,14 @@
 // CX VS Code extension.
 //
-// Activation: any `.cx` / `.cxs` file open. The extension spawns
+// Activation: any `.cx` / `.cxd` / `.cxs` file open. The extension spawns
 // `<cx.serverPath> <cx.serverArgs>` (default `cx lsp`) and wires it as the
 // language server via vscode-languageclient. The server speaks JSON-RPC
 // 2.0 over stdio with LSP Content-Length framing.
 //
-// We don't ship a server binary in the .vsix — users install `cx` via
-// `brew install cx-home/tap/cx` (or build from source). If `cx` isn't
-// on $PATH, the extension surfaces a one-time install hint and stays
-// dormant.
+// We don't ship a server binary in the .vsix — users build `cx` from
+// source (`make build-vcx` at the repo root; see tooling/README.md). If
+// `cx` isn't on $PATH, the extension surfaces a one-time install hint
+// and stays dormant.
 
 import { workspace, window, commands, ExtensionContext } from 'vscode';
 import {
@@ -44,7 +44,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       { scheme: 'file', language: 'cx' },
     ],
     synchronize: {
-      fileEvents: workspace.createFileSystemWatcher('**/*.{cx,cxs,cxl}'),
+      fileEvents: workspace.createFileSystemWatcher('**/*.{cx,cxd,cxs}'),
     },
     initializationOptions: {
       traceServer: trace,
@@ -63,7 +63,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
   } catch (err) {
     window.showWarningMessage(
       `CX: failed to start language server (${serverPath} ${serverArgs.join(' ')}). ` +
-      `Install with \`brew install cx-home/tap/cx\` or set \`cx.serverPath\` in settings.`,
+      `Build \`cx\` from source (\`make build-vcx\`, see tooling/README.md) ` +
+      `or set \`cx.serverPath\` in settings.`,
     );
     return;
   }

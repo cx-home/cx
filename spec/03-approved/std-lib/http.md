@@ -93,14 +93,14 @@ Message construction and introspection are **pure** and capability-free.
 Three impure handle kinds wrap net resources plus HTTP config:
 
 ```cx
-[http-client base-url="https://api.example.com" state="open"      ; client — connection POOL
+[http-client base-url="https://api.example.com" state="open"      # client — connection POOL
   follow-redirects=true max-redirects=10 on-close="http/close"]
 
-[http-server url="tcp://0.0.0.0:8080" state="listening"           ; server — over a net listener
+[http-server url="tcp://0.0.0.0:8080" state="listening"           # server — over a net listener
   on-close="http/close"]
 
-[exchange state="open" on-close="http/close"                      ; one server-side request/response turn
-  [request method="GET" path="/users/42" ...]]                    ;   pins ONE keep-alive connection
+[exchange state="open" on-close="http/close"                      # one server-side request/response turn
+  [request method="GET" path="/users/42" ...]]                    #   pins ONE keep-alive connection
 ```
 
 Ownership model (this is the load-bearing concurrency contract):
@@ -136,7 +136,7 @@ Ownership model (this is the load-bearing concurrency contract):
 ```cx
 [response status=200
   [headers [header name="Content-Type" value="application/json"]]
-  [body $bytes]]                                   ; [body] optional (§2.5)
+  [body $bytes]]                                   # [body] optional (§2.5)
 ```
 
 `[request]` is a **documented superset** of the locked `code.md` §10.3.3 shape, not
@@ -532,7 +532,7 @@ top (§6).
 A streaming response keeps the connection fd **registered and held open** and writes the body incrementally, rather than materializing one `[response]`. Both halves share **one pure `[event]` value** (so what the server writes parses back equal on the client — the symmetry invariant, fixtures §10):
 
 ```cx
-[event id="42" event="order-updated" data="…" retry=3000]   ; all attrs optional; multi-line data splits on \n
+[event id="42" event="order-updated" data="…" retry=3000]   # all attrs optional; multi-line data splits on \n
 ```
 
 **Server push.** `[$http:sse $exchange {…}]` promotes an open `[exchange]` to a streaming response — it writes the SSE status line + managed headers (200, `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, chunked), marks the exchange `"responded"` (a `respond`/second `sse` after → `CXER4541`), and returns a **single-owner** `[sse-stream]` write handle (closeable, `on-close="http/close"`; non-owner use → `CXER4516`).
@@ -556,7 +556,7 @@ The `sse`/`send-event` surface above promotes **one** `[exchange]` on the serial
 [?def sse-publish scope=public impure [returns int] ($topic::string $event::element) ...]
 ```
 
-- **Subscribe.** A handler **promotes its connection to a live feed by RETURNING** `[sse-subscribe topic="<name>" [event …]?]` (instead of a `[response]`). The server writes the SSE prelude, holds the connection open (exempt from the idle timeout), and joins the fd to the string-keyed **topic**. The optional single `[event …]` child is written as the **initial frame** (a malformed initial event → `500`; an empty/missing `topic` → `500`). The handler returns immediately — the connection stays open as a subscriber.
+- **Subscribe.** A handler **promotes its connection to a live feed by RETURNING** `[sse-subscribe topic="<name>" [event …]?]` (instead of a `[response]`). The server writes the SSE prelude, holds the connection open (exempt from the idle timeout), and joins the fd to the string-keyed **topic**. The optional single `[event …]` child is written as the **initial frame** (a malformed initial event → `500`; an empty/missing `topic` → `500`). The handler returns immediately — the connection stays open as a subscriber. **The prelude/initial frame is a readiness acknowledgment**: writing it and joining the topic are atomic with respect to `sse-publish`, so once a client has received bytes of its feed, every subsequent publish to that topic reaches (and counts) this subscriber — a client never observes its own ack yet misses a later event.
 - **Publish.** `[$http:sse-publish "<topic>" [event …]]` frames the `[event]` once (same pure codec, so `CXER4539`/`CXER4531` apply) and writes it to **every** connection currently subscribed to `<topic>`, returning the **count delivered**. It is callable from **any** handler on **any** worker thread; a subscriber whose write fails (peer gone) is dropped from the topic. Writing to the subscriber sockets is a net effect (capability `net`, `CXER0271` when ungranted).
 - **Cleanup is synchronous.** When a subscriber connection closes, its fd is removed from every topic before the socket is reused, so a concurrent `sse-publish` can never write to a stale fd.
 - **No producer loop.** Pushes are **event-driven** — emitted by whichever request mutates state (e.g. a `POST /commit` handler calls `sse-publish`), not by a loop holding one exchange. This is what makes it concurrent where a `send-event` loop on a single `accept-iter` exchange is not.
@@ -565,8 +565,8 @@ The `sse`/`send-event` surface above promotes **one** `[exchange]` on the serial
 [?def handler impure ($req)
   [?let [= $p [$text $req@path]]
     [?if [= $p "/events"]
-      [then [sse-subscribe topic="prices" [event data="ready"]]]   ; this connection joins "prices"
-      [else [?let [= $n [$http:sse-publish "prices" [event data="42"]]]   ; fan out to all subscribers
+      [then [sse-subscribe topic="prices" [event data="ready"]]]   # this connection joins "prices"
+      [else [?let [= $n [$http:sse-publish "prices" [event data="42"]]]   # fan out to all subscribers
               [response status=200 [body "pushed"]]]]]]]
 [$http:serve "tcp://0.0.0.0:8080" $handler {}]
 ```
@@ -749,7 +749,7 @@ explicit `:443` needed in the URL).
 A denial raises `cx-err:CXER0271 E_CAP_DENIED` naming the missing grant + resource
 (net's effect point):
 `[err code=cx-err:CXER0271 capability=net resource='api.example.com:443']`. CLI:
-`cx run --allow-net=api.example.com:443 FILE`. **Cancellation + revocation** follow
+`cx FILE --allow-net=api.example.com:443`. **Cancellation + revocation** follow
 net §5 / SAP §5.2: a cancelled request at a cancellation point reports `CXER0260`;
 a raw effect after cancel hits `CXER0271`; `[?with-open]` close runs under restored
 caps.
@@ -773,10 +773,10 @@ Handle outcomes by **shape**, not `[?try]` — a non-2xx is a value (§2.4), a f
 
 ```cx
 [?match [$http:get 'https://api.example.com/users/42' {}]
-  [case [err @code='cx-err:CXER4527'] [$log:warn 'redirect loop']]   ; fault
-  [case [err @code=$c] [err code=$c]]                                ; re-raise
-  [case [response @status=404] [$log:info 'not found']]              ; a VALUE (404)
-  [case $resp $resp]]                                                ; 2xx / other status
+  [case [err @code='cx-err:CXER4527'] [$log:warn 'redirect loop']]   # fault
+  [case [err @code=$c] [err code=$c]]                                # re-raise
+  [case [response @status=404] [$log:info 'not found']]              # a VALUE (404)
+  [case $resp $resp]]                                                # 2xx / other status
 ```
 
 - **Resilience (§10.2)** wraps http calls: `[?timeout]` → `CXER0260`/`CXER0141`;

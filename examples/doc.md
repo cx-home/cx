@@ -1,20 +1,23 @@
 ---
 title: CX Language Guide
 author: Erik
+version: 0.8.0
 ---
 
 # CX Language Guide
 
-CX is a **structured** markup language with *clean* bracket syntax.
-It exports to XML, JSON, YAML, TOML, and **Markdown**.
+CX is a **structured** markup language with *clean* bracket syntax. It exports to XML, JSON, YAML, and TOML.
 
 ## Quick Start
 
 Install and build:
 
 ```bash
-git clone https://github.com/example/cx
-make build
+
+git clone https://github.com/cx-home/cx
+make build              # builds libcx + every binding
+make promote-cli        # install the cx CLI
+
 ```
 
 Then try `cx --help` to see all options.
@@ -23,33 +26,29 @@ Then try `cx --help` to see all options.
 
 ### Inline Formatting
 
-Supports **bold**, *italic*, ~~strikethrough~~, ~subscript~, ^superscript^, and `inline code`.
+Supports **bold**, *italic*, ***bold italic***, ~~strikethrough~~, ~subscript~, ^superscript^, <u>underline</u>, and `inline code`.
 
 ### Lists
 
 - Clean bracket syntax
-- Typed attributes on any element
+- Typed attributes on any element — sized types like ::u16 / ::f64
 - Multiple output formats
-
-### Ordered Steps
-
-1. Clone the repository
-2. Run make build
-3. Run the tests
+- Boolean attributes: tls=true / debug=false
 
 ### Links
 
-See the [full documentation](https://example.com/docs) for details.
-
----
+See the [full documentation](https://cxhome.org/docs) for details.
 
 ### Tables
 
-| Format | Input | Output |
-|--------|-------|--------|
-| CX     | yes   | yes    |
-| XML    | yes   | yes    |
-| JSON   | yes   | yes    |
-| YAML   | yes   | yes    |
-| TOML   | yes   | yes    |
-| MD     | yes   | yes    |
+| format | input | output |
+| --- | --- | --- |
+| CX | true | true |
+| XML | true | true |
+| JSON | true | true |
+| YAML | true | true |
+| TOML | true | true |
+
+## Images
+
+![CX structure diagram](diagram.png)

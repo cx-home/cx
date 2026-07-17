@@ -18,8 +18,14 @@ silent! lua vim.treesitter.start(0, 'cx')
 " Twin-highlight + `%`-jump for all three CX bracket kinds.
 setlocal matchpairs=(:),{:},[:]
 
+" Comment wiring (grammar.ebnf [30b]): `#` line comments. commentstring drives
+" commenting plugins / native `gc`; comments=b:# gives sensible auto-wrap and
+" `o`/`O` continuation for `# ` blocks.
+setlocal commentstring=#\ %s
+setlocal comments=b:#
+
 " matchit (`%` jumping) — CX uses the same delimiters; the square-bracket pair
 " is the workhorse. (matchit reads b:match_words; harmless if matchit is off.)
 let b:match_words = '\[:\],{:},(:)'
 
-let b:undo_ftplugin = 'setlocal matchpairs< | unlet! b:match_words b:did_ftplugin_cx'
+let b:undo_ftplugin = 'setlocal matchpairs< commentstring< comments< | unlet! b:match_words b:did_ftplugin_cx'

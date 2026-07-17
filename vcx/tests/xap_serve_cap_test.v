@@ -1,6 +1,7 @@
 module main
 
 import os
+import testenv
 import time
 
 // xap_serve_cap_test.v — [$xap:serve] MUST gate `net` before binding
@@ -9,11 +10,7 @@ import time
 // Red against the pre-fix build (which bound a real socket with no grant).
 
 fn cx_binary() string {
-	abs := os.real_path('vcx/target/cx')
-	if !os.is_file(abs) {
-		panic('vcx/target/cx not found at ${abs} — run `make build-vcx` first')
-	}
-	return abs
+	return testenv.cx_bin()
 }
 
 fn test_xap_serve_requires_net_grant() {

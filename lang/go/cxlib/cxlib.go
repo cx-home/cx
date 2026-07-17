@@ -592,6 +592,35 @@ func EvalCode(input, program, outputTarget string) (string, error) {
 	return s, nil
 }
 
+// EvalCodeCaps is the capability-aware EvalCode: it evaluates `program` under an
+// explicit grant spec `caps` (deny-by-default; "" = pure-only, "all"/"*" = full,
+// else a comma/space list such as "net" or "net:host:443" — host-scoped). The
+// grant applies only to this call. Wraps the C ABI cx_code_eval_caps (cap bit 38).
+func EvalCodeCaps(input, program, caps, outputTarget string) (string, error) {
+	defer cxThread()()
+	cin := C.CString(input)
+	defer C.free(unsafe.Pointer(cin))
+	cprog := C.CString(program)
+	defer C.free(unsafe.Pointer(cprog))
+	ctgt := C.CString(outputTarget)
+	defer C.free(unsafe.Pointer(ctgt))
+	ccaps := C.CString(caps)
+	defer C.free(unsafe.Pointer(ccaps))
+	var ep *C.char
+	out := C.cx_code_eval_caps(cin, cprog, ctgt, ccaps, &ep)
+	if out == nil {
+		if ep != nil {
+			m := C.GoString(ep)
+			C.cx_free(ep)
+			return "", fmt.Errorf("%s", m)
+		}
+		return "", fmt.Errorf("cx_code_eval_caps: unknown error")
+	}
+	s := C.GoString(out)
+	C.cx_free(out)
+	return s, nil
+}
+
 // EvalCodeStreaming evaluates a CX program with pull-based
 // incremental output. `onChunk` is invoked with each output chunk;
 // returning a non-nil error aborts evaluation cleanly. Concatenating

@@ -1,7 +1,7 @@
 # CX Debugging (local + remote)
 
 **Status:** Current. The CX debug surface (local + remote). The host
-bindings are specified in their owning files: the `cx run --debug…` / `cx dap` /
+bindings are specified in their owning files: the `cx FILE --debug…` / `cx dap` /
 `cx debug attach`/`replay` subcommands in `cli.md` §2.3/§3.7, and the
 debug-capability bit (39) in `abi.md`. Integrations reference the capability
 model (`../core/security.md`), the error pipeline (`../core/code.md` §9.6), and
@@ -14,8 +14,8 @@ Debugging lets a client **pause** a running CX evaluation, **inspect** its state
 process / CLI) or **remotely** (attach over a network to a running runtime).
 
 - **Opt-in.** Debug support is a build/run capability, off by default (no
-  production overhead). Enabled via `cx run --debug` (local) or
-  `cx run --debug-listen=ADDR` (remote). Advertised by an ABI capability bit
+  production overhead). Enabled via `cx FILE --debug` (local) or
+  `cx FILE --debug-listen=ADDR` (remote). Advertised by an ABI capability bit
   (`abi.md`); a runtime without it rejects debug attach.
 - **Security (remote).** Remote debug exposes arbitrary in-process expression
   evaluation — it is a privileged capability. Therefore: **off by default**;
@@ -56,7 +56,7 @@ profiles render it:
 ```
 [frame fn=validate-user pos='orders.cx:42'
   [bindings [= $u [user id=991]] [= $threshold 5]]
-  [focus //user[@id=991]]]
+  [focus //user[= $_@id 991]]]
 [stopped reason=breakpoint [frame …] …]
 ```
 A debugger UI, a test harness, or a CX program can consume these directly.
@@ -99,8 +99,8 @@ presents the token, gets a session; detach resumes the program.
 ## §6 CLI
 | Command | Purpose |
 |---|---|
-| `cx run --debug FILE` | run with a local debug session (CLI stepper) |
-| `cx run --debug-listen=ADDR --debug-token=… FILE` | run + accept remote attach |
+| `cx FILE --debug` | run with a local debug session (CLI stepper) |
+| `cx FILE --debug-listen=ADDR --debug-token=…` | run + accept remote attach |
 | `cx dap` | DAP adapter on stdio (editor integration) |
 | `cx debug attach ADDR --token=…` | CLI client: attach to a remote runtime |
 

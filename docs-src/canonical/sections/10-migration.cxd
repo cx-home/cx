@@ -18,24 +18,26 @@
          layer ("CX is data and code") was renamed immediately on
          d-2026-05-22-01; the internal rename cascades through:"""]
 
-    [table columns=(was, is)
-      [row was='cx_program_eval' is='cx_code_eval']
-      [row was='vcx/programs/' is='vcx/code/']
-      [row was='spec/programs.md' is='spec/code.md']
-      [row was='conformance/programs.txt' is='conformance/code.txt']
-      [row was='_cx_program_diagram (wasm)' is='_cx_code_diagram (wasm)']
-      [row was='--- in_cxl (fixture marker)' is='--- in_code (fixture marker)']]
+    [table
+      [tr [th 'was'] [th 'is']]
+      [tr [td 'cx_program_eval'] [td 'cx_code_eval']]
+      [tr [td 'vcx/programs/'] [td 'vcx/code/']]
+      [tr [td 'spec/programs.md'] [td 'spec/code.md']]
+      [tr [td 'conformance/programs.txt'] [td 'conformance/code.txt']]
+      [tr [td '_cx_program_diagram (wasm)'] [td '_cx_code_diagram (wasm)']]
+      [tr [td '--- in_cxl (fixture marker)'] [td '--- in_code (fixture marker)']]]
 
     [body
       """**`[?find]` is retired.** `[?find]` was always sugar for
          `[?for]` over a pattern. The migration is one of two
          forms:"""]
 
-    [table columns=(was, is)
-      [row was='[?find [user $u] :yield $u]' is='//user  or  [?for [user $u] [yield $u]]']
-      [row was='[?find [user @active=true $u] :yield $u]' is='//user[@active=true]']
-      [row was='[?find [user [email $e]] :yield $e]' is='//user/email']
-      [row was='count([?find [user @active=true $u] :yield $u])' is='[$count //user[@active=true]]']]
+    [table
+      [tr [th 'was'] [th 'is']]
+      [tr [td '[?find [user $u] :yield $u]'] [td '//user  or  [?for [user $u] [yield $u]]']]
+      [tr [td '[?find [user @active=true $u] :yield $u]'] [td '//user[@active=true]']]
+      [tr [td '[?find [user [email $e]] :yield $e]'] [td '//user/email']]
+      [tr [td 'count([?find [user @active=true $u] :yield $u])'] [td '[$count //user[@active=true]]']]]
 
     [body
       """**CXPath is now a value kind.** A path expression like `//user`
@@ -51,7 +53,9 @@
          wildcard, and `[where …]` guards. The 2-arg form (single arm,
          raises `CXER0100` on miss) is preserved unchanged."""]
 
-    [example lang=cx
+    [; check=none — migration panel: the first half deliberately shows
+       the RETIRED v0.7.x slot form, which the current parser rejects. ]
+    [example lang=cx check=none
       """[# v0.7.x — nested if chain (legacy slot form)                 #]
          [?if (name($n) = 'prose') :then [p $n]
               :else [?if (name($n) = 'code') :then [pre $n]
@@ -154,28 +158,18 @@
       """Surfaces removed or renamed across v0.7.x → v0.8.0, with their
          replacement."""]
 
-    [table columns=(retired, replacement, source)
-      [row retired='[?find]' replacement='[?for] over pattern, or CXPath //name'
-        source='CXPath value-kind alignment']
-      [row retired='[- comment -]' replacement='[; comment ]'
-        source='lexer consolidation']
-      [row retired=':contains predicate hack' replacement='ancestor:: axis'
-        source='CXPath value-kind alignment']
-      [row retired=':direct modifier hack' replacement='following-sibling:: axis'
-        source='CXPath value-kind alignment']
-      [row retired='XPath general-comparison =' replacement='value-comparison only'
-        source='CXPath value-kind alignment']
-      [row retired='cx_program_eval (C ABI)' replacement='cx_code_eval'
-        source='programs → code rename']
-      [row retired='in_cxl (fixture marker)' replacement='in_code'
-        source='programs → code rename']
-      [row retired='cxl-* playground starter ids' replacement='code-* starter ids'
-        source='Phase 7.3']
-      [row retired='TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'
-        replacement='archived under lang/_archived/'
-        source='d-2026-05-22-03']
-      [row retired='Layer-1-only flat binding surface' replacement='Layer 1 + Layer 2'
-        source='d-2026-05-22-07']]
+    [table
+      [tr [th 'retired'] [th 'replacement'] [th 'source']]
+      [tr [td '[?find]'] [td '[?for] over pattern, or CXPath //name'] [td 'CXPath value-kind alignment']]
+      [tr [td '[- comment -]'] [td '[; comment ]'] [td 'lexer consolidation']]
+      [tr [td ':contains predicate hack'] [td 'ancestor:: axis'] [td 'CXPath value-kind alignment']]
+      [tr [td ':direct modifier hack'] [td 'following-sibling:: axis'] [td 'CXPath value-kind alignment']]
+      [tr [td 'XPath general-comparison ='] [td 'value-comparison only'] [td 'CXPath value-kind alignment']]
+      [tr [td 'cx_program_eval (C ABI)'] [td 'cx_code_eval'] [td 'programs → code rename']]
+      [tr [td 'in_cxl (fixture marker)'] [td 'in_code'] [td 'programs → code rename']]
+      [tr [td 'cxl-* playground starter ids'] [td 'code-* starter ids'] [td 'Phase 7.3']]
+      [tr [td 'TypeScript / Java / C# / Ruby / Kotlin / Swift bindings'] [td 'archived under lang/_archived/'] [td 'd-2026-05-22-03']]
+      [tr [td 'Layer-1-only flat binding surface'] [td 'Layer 1 + Layer 2'] [td 'd-2026-05-22-07']]]
 
     [note
       """**Archived bindings are not deleted.** Files move to
@@ -228,7 +222,7 @@
                 doesn't handle it — that's the bug; file it. If runner
                 green, your fixture is now a regression gate."""]]]
 
-    [child id=propose-adr n=10.5.3 title='Proposing a design change'
+    [child id=propose-change n=10.5.3 title='Proposing a design change'
       [body
         """CX changes that affect the spec / ABI / surface are made by
            editing the spec — the spec is the single source of truth.

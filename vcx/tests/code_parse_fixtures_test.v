@@ -27,27 +27,32 @@ import os
 // spec/v0_8_0_status.md for the open list. Listing them here keeps the
 // regression gate honest while the items are open.
 const expected_parse_failures = [
+	// #466 attribute ascription: attributes are scalar-only (D2), so an
+	// array annotation `name::T[]=…` in attribute position is a PARSE
+	// rejection (CXER0100) in both readings — a grounded negative,
+	// enforced via the eval runner's out_err path.
+	'program-attr-ascription-007-array-type-err',
 	// SAP errors/effects/fp migration: infix `|` is RETIRED (code.md §6.4/§8.9);
 	// `5 | [$add1]` is now a parse error (CXER0100) — a grounded negative, so it
 	// legitimately fails to parse and is enforced via the eval runner's out_err
 	// path.
-	'sap-pipe-03-infix-removed',
+	'program-sap-pipe-03-infix-removed',
 	// SAP C3c: [?try]/[catch]/[on-error] are RETIRED (code.md §8.8 tombstone /
 	// §9.3); both negatives pin the CXER0100 rejection and are enforced via
 	// the eval runner's out_err path.
-	'sap-try-01-removed-negative',
-	'sap-try-02-on-error-removed-negative',
+	'program-sap-try-01-removed-negative',
+	'program-sap-try-02-on-error-removed-negative',
 	// Generator-family reshape (C-gen-1): infix range `to`/`by` is RETIRED;
 	// ranges are the prefix builtin [$range lo hi step?]. These negatives pin
 	// the CXER0100 parse rejection (enforced via the eval runner's out_err path).
-	'gen-no-infix-001-to',
-	'gen-no-infix-002-by',
-	'gen-no-infix-003-to-star',
+	'program-gen-no-infix-001-to',
+	'program-gen-no-infix-002-by',
+	'program-gen-no-infix-003-to-star',
 	// Open-end `*` is legal ONLY as range's hi argument ([125d/e]); in any other
 	// position it is a parse error (enforced via the eval runner's out_err path).
-	'gen-range-illegal-001-star-lo',
-	'gen-range-illegal-002-star-stride',
-	'gen-range-illegal-003-star-general-arg',
+	'program-gen-range-illegal-001-star-lo',
+	'program-gen-range-illegal-002-star-stride',
+	'program-gen-range-illegal-003-star-general-arg',
 	// v0.8.0 atom semantic features pending Phase 2 V impl:
 	// - 006: reserved-name (`:true`/`:false`/`:null`) lex-time rejection
 	// not yet implemented; lexer accepts the token
@@ -55,6 +60,10 @@ const expected_parse_failures = [
 	// (003/004/005 atom-equality fixtures now parse cleanly after the
 	// `[= :a :b]` homoiconic-comparison reshape — removed from this list.)
 	'program-atom-006-reserved-true-parse-error',
+	// #397 dotted atoms: a DETACHED dot (whitespace either side) is not a
+	// segment continuation — `:order . placed` rejects at parse time with
+	// CXER0100 (enforced via the eval runner's out_err path).
+	'program-atom-018-detached-dot-not-a-continuation',
 	// program-map-005 verifies that removed [?par-map] raises
 	// CXER0100 at parse time (unknown directive). program-map-004 and
 	// program-reduce-003 also raise CXER0100 but at eval time (the slot
@@ -66,10 +75,9 @@ const expected_parse_failures = [
 	// time with CXER0100.
 	'program-with-open-005-empty-body-parse-error',
 	'program-with-scope-005-empty-body-parse-error',
-	// [?str] holes are binding-paths only — a call hole `{[$f 1]}` and a
-	// non-path hole `{1 to 3}` are malformed at parse time (CXER0100).
-	'program-str-004-call-hole-rejected',
-	'program-str-005-non-path-hole-rejected',
+	// (#66: [?str] holes now accept full expressions — the former call-hole /
+	// non-path-hole parse-rejection fixtures are retired; a computed hole parses
+	// and evaluates, a non-scalar hole errors at EVAL, not parse.)
 	// D21 step-of-zero: a slice axis with a LITERAL `0` step now rejects at
 	// PARSE time (CXER0100), converging the impl to the formal contract
 	// (grammar.ebnf GR-SLICE-STEP-ZERO) and D21's stated parse-time intent.
@@ -77,6 +85,24 @@ const expected_parse_failures = [
 	// accepts a parse-time CXER0100); a COMPUTED zero step keeps the eval-time
 	// D21 check. See vcx/tests/slice_step_zero_test.v.
 	'program-slice-013-step-zero',
+	// #421: an unknown `[?name]` head stays fail-closed (CXER0100,
+	// unknown_directive program intent — code.md §1.3 class 1). The `[?cx …]`
+	// PI/config namespace is the carve-out (grammar [34]/[59a]: NOT a §4.1
+	// directive) and parses via the node_lit DATA↔PROGRAM seam; this negative
+	// pins that the carve-out did not loosen the registry for other heads.
+	'program-cx-pi-004-unknown-directive-fails-closed',
+	// #478: a DYNAMIC attribute value on a `[table[…]]` element literal
+	// rejects at PARSE time (CXER0100 — the tabular form is data-only and
+	// rides the data-reader seam, which cannot carry `$x`). Grounded
+	// negative, enforced via the eval runner's out_err path.
+	'program-table-478-002-attrs-dynamic-err',
+	// #484: a headless glued `[table[` opener (anonymous table — grammar
+	// [50]'s tabular alternative requires a Name) rejects at PARSE time
+	// (CXER0100) in BOTH readings: the program lane delegates the span to
+	// the data reader, which raises the outside-ElementMeta-position
+	// error. Grounded negative, enforced via the eval runner's out_err
+	// path.
+	'program-table-484-002-misplaced-opener-err',
 ]
 
 // v0.8.0 fixtures whose parser support is gated on Phase 2 V impl.

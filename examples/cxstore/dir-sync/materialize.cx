@@ -1,0 +1,21 @@
+[; materialize.cx — the reverse of ingest: walk the store's aliases and write    ]
+[; each entry back out to a directory tree under ./restored, recreating the       ]
+[; named paths. Routes by extension, symmetric with ingest: .cx code entries are  ]
+[; read with get-def, everything else (data) with get-doc-text.                   ]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/store' :as store]
+[?let
+  [= $c [$store:open "file://./out-store"]]
+  [restored
+    [?for [in $a [$store:list-aliases $c]]
+      [yield
+        [?let [= $dest [$path-join "restored" $a@name]]
+          [?if [$str-ends-with $a@name ".cx"]
+            [then
+              [wrote kind=code dest=$dest
+                [mkdir [$io:make-dirs [$path-dirname $dest]]]
+                [bytes [$io:write-file $dest [$store:get-def $c $a@hash]]]]]
+            [else
+              [wrote kind=data dest=$dest
+                [mkdir [$io:make-dirs [$path-dirname $dest]]]
+                [bytes [$io:write-file $dest [$store:get-doc-text $c $a@hash]]]]]]]]]]]

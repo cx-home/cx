@@ -1,0 +1,14 @@
+[?lib 'cx-stdlib/store' :as store]
+[?let
+  [= $c   [$store:open "cx-store+http://127.0.0.1:18901/teststore/"]]
+  [= $doc [note id="n1"
+            [title "Greetings there"]
+            [body "hello-from-other-runtime"]
+            [tags [tag "demo"] [tag "csrp"]]]]
+  [= $h   [$store:put-doc $c $doc]]
+  [= $got [$store:get-doc $c $h]]
+  [= $n   [$count [$store:list-docs $c]]]
+  [result [hash $h]
+    [count $n]
+    [got $got]
+    [titles [$store:query $c "//title"]]]]

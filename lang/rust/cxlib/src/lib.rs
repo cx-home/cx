@@ -7,6 +7,7 @@ pub mod event_writer;
 pub mod fixtures;
 pub mod idioms;
 pub mod schema_driven;
+pub mod store;
 pub mod stream;
 pub mod streaming_table;
 pub mod validate;
@@ -16,6 +17,9 @@ pub mod table;
 // per spec/bindings.md (Rust uses snake_case + free functions at the
 // crate root for the Layer-1 primitives).
 pub use atom::{Atom, is_atom, atom_name};
+// #197: the structured CX error type, flat at the crate root for parity with the
+// Python/Go bindings' CxError.
+pub use store::{CxError, StoreClient};
 
 #[cfg(feature = "arrow")]
 pub mod arrow;
@@ -66,6 +70,14 @@ extern "C" {
         input: *const c_char,        input_len: usize,
         program: *const c_char,      program_len: usize,
         output_target: *const c_char,
+        err_out: *mut *mut c_char,
+    ) -> *mut c_char;
+    // capability-aware member (capability bit 38); NUL-terminated args.
+    fn cx_code_eval_caps(
+        input: *const c_char,
+        program: *const c_char,
+        output_target: *const c_char,
+        caps: *const c_char,
         err_out: *mut *mut c_char,
     ) -> *mut c_char;
     fn cx_code_eval_streaming(
@@ -693,6 +705,33 @@ pub fn eval_code(input: &str, program: &str, output_target: &str) -> Result<Stri
     if out.is_null() {
         if err_ptr.is_null() {
             return Err("cx_code_eval: unknown error".to_owned());
+        }
+        let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
+        unsafe { cx_free(err_ptr) };
+        return Err(msg);
+    }
+    let s = unsafe { CStr::from_ptr(out).to_string_lossy().into_owned() };
+    unsafe { cx_free(out) };
+    Ok(s)
+}
+
+/// Evaluate a CX program under an explicit capability grant (deny-by-default:
+/// "" = pure-only, "all"/"*" = full, else a comma/space list such as "net" or
+/// "net:host:443" — host-scoped). The grant applies only to this call. Wraps the
+/// capability-aware `cx_code_eval_caps` ABI symbol (capability bit 38).
+pub fn eval_code_caps(input: &str, program: &str, caps: &str, output_target: &str) -> Result<String, String> {
+    ensure_thread();
+    let ci = CString::new(input).map_err(|e| e.to_string())?;
+    let cp = CString::new(program).map_err(|e| e.to_string())?;
+    let ct = CString::new(output_target).map_err(|e| e.to_string())?;
+    let cc = CString::new(caps).map_err(|e| e.to_string())?;
+    let mut err_ptr: *mut c_char = ptr::null_mut();
+    let out = unsafe {
+        cx_code_eval_caps(ci.as_ptr(), cp.as_ptr(), ct.as_ptr(), cc.as_ptr(), &mut err_ptr)
+    };
+    if out.is_null() {
+        if err_ptr.is_null() {
+            return Err("cx_code_eval_caps: unknown error".to_owned());
         }
         let msg = unsafe { CStr::from_ptr(err_ptr).to_string_lossy().into_owned() };
         unsafe { cx_free(err_ptr) };

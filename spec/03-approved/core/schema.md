@@ -245,7 +245,7 @@ schema explicitly constrains them.
 
 ```cx
 [elem <name> <clauses>*]
-[elem <name>::<type-name> <clauses>*]    ; named-type reference
+[elem <name>::<type-name> <clauses>*]    # named-type reference
 ```
 
 Declares a child element on the type being defined. The element's
@@ -770,7 +770,7 @@ schema validating documents that include other documents
 
 ## 17 — References
 
-- [`grammar.ebnf`](grammar.ebnf) — `[?cx schema=...]` directive reservation.
+- [`grammar.ebnf`](../formal/grammar.ebnf) — `[?cx schema=...]` directive reservation.
 - [`abi.md`](abi.md) — C ABI conventions; `cx_validate` lands per
  these conventions.
 - [`code.md` §9.5](code.md) — error-code wire-code map; schema codes

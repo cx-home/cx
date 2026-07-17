@@ -1,0 +1,5 @@
+[cxstore-service
+  [bind addr="127.0.0.1:18910"]
+  [grpc enabled=true addr="127.0.0.1:18911"]
+  [stores
+    [store name="docs" url="mem://grpc-example"]]]

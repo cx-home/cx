@@ -1,0 +1,47 @@
+# Public CI for github.com/cx-home/cx — OWNED BY cx-private.
+#
+# Source of truth: cx-private scripts/public/github/workflows/ci.yml,
+# installed into the public repo's .github/ by scripts/publish.sh on every
+# publish (cx-private #505). Do not edit in the public repo — the next
+# publish overwrites .github/ wholesale.
+#
+# Uses ONLY curated-public-Makefile targets (scripts/public/Makefile.public:
+# build / test, where test = build-dev + conform + the V suite). The prior
+# public workflows were stale private copies calling make build-vcx /
+# test-<lang> / build-lib-arrow and unpublished scripts — every run was red
+# or vacuous. The toolchain is the third_party/v submodule pinned by the
+# publish (#491): no floating toolchain clones here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies (re2)
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update -q && sudo apt-get install -y -q libre2-dev
+          else
+            brew install re2
+          fi
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: make test

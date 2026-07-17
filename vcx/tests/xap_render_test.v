@@ -1,6 +1,7 @@
 module main
 
 import os
+import testenv
 import time
 
 // xap_render_test.v — the SINGLE render path (xap.md §2.5/§13.2): the served
@@ -9,11 +10,7 @@ import time
 // and asserts both media reflect the view over the live fold.
 
 fn cx_binary() string {
-	abs := os.real_path('vcx/target/cx')
-	if !os.is_file(abs) {
-		panic('vcx/target/cx not found at ${abs} — run `make build-vcx` first')
-	}
-	return abs
+	return testenv.cx_bin()
 }
 
 fn curl(args string) string {

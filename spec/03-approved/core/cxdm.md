@@ -147,7 +147,7 @@ storage precision: `decimal` and `bigint` (encode as `int` /
 by the canonical ISO 8601 form). These are surface-layer storage
 hints, not new semantic kinds — equality, EBV, and coercion rules
 in this document operate on the nine kinds. See
-[`grammar.ebnf` [26a]](grammar.ebnf) for the complete TypeName set.
+[`grammar.ebnf` [26a]](../formal/grammar.ebnf) for the complete TypeName set.
 
 ### 2.4 Attributes
 
@@ -169,7 +169,7 @@ structure (does not flatten).
 
 | Property        | Value |
 |---|---|
-| Surface         | `[a, b, c]` per [`core/grammar.ebnf`](grammar.ebnf). |
+| Surface         | `[a, b, c]` per [`core/grammar.ebnf`](../formal/grammar.ebnf). |
 | Order           | Preserved. |
 | Item types      | Any CXDM Item. |
 | Nesting         | Preserved: `[[1,2],[3,4]]` is a 2-Item Array of 2-Item Arrays. |
@@ -187,7 +187,7 @@ A Map is an unordered, finite collection of (key, value) pairs.
 
 | Property         | Value |
 |---|---|
-| Surface          | `{k: v, k: v, …}` per [`core/grammar.ebnf`](grammar.ebnf). |
+| Surface          | `{k: v, k: v, …}` per [`core/grammar.ebnf`](../formal/grammar.ebnf). |
 | Key types        | `bool`, `int`, `float`, `string`, `date`, `datetime`, `bytes`. |
 | `null` key       | Not permitted (parse error). |
 | `atom` key       | Not permitted. |
@@ -342,7 +342,7 @@ from CXPath (positional).
 
 A `#name` token immediately after the element name (and after any
 `AnchorDef` / `MergeRef`) declares the element's syntactic ID. The
-meta-order per [`grammar.ebnf`](grammar.ebnf) [51] is:
+meta-order per [`grammar.ebnf`](../formal/grammar.ebnf) [51] is:
 
 ```
 AnchorDef? MergeRef? IdDecl? TypeAnnotation? Attribute*
@@ -358,6 +358,7 @@ not contain `:`.
 position is a reference:
 
 ```cx
+[user #u-1 name=alice]
 [reviewer assigned-to=@u-1]
 ```
 
@@ -370,6 +371,7 @@ reference node — an Element named `ref` whose body is exactly one
 bare `@name` token:
 
 ```cx
+[section #section-3 [title Rationale]]
 [para See [ref @section-3] for the rationale.]
 ```
 
@@ -409,7 +411,7 @@ locations reported.
 //[#u-1]              ; any element with that ID, anywhere
 ```
 
-Distinct from `[@id="u-1"]` (attribute-equality on a user-data attribute
+Distinct from `[= $_@id "u-1"]` (attribute-equality on a user-data attribute
 named `id`).
 
 ---
@@ -491,6 +493,13 @@ Value's truthiness is:
 6. Sequence of length 1 containing a Sequence-as-Item → EBV applied
    recursively to the wrapped Sequence.
 7. Sequence of length > 1 → true.
+8. An **Iterator** (bare, or as the single item) has **no EBV**: it
+   raises the catchable `cx-err:CXER0100`. EBV never forces a lazy
+   stream — an Iterator may be unbounded or effectful (network-backed
+   sources would block or perform I/O inside a condition). Force it
+   explicitly (`[take N …]`, `count`, a `[?for]` bound) and test the
+   realized value; the finite `[$range lo hi]` is an eager Sequence
+   (§2.5) and follows the ordinary sequence rules.
 
 Containers follow the empty-is-falsy convention shared by Python
 lists/dicts and JSON-template engines.

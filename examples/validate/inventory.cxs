@@ -1,0 +1,20 @@
+# inventory.cxs — schema for the [inventory] documents in this directory.
+# Surface: spec/03-approved/core/schema.md.
+#
+# Try:  cx validate examples/validate/inventory.cx     --schema=examples/validate/inventory.cxs   # exit 0
+#       cx validate examples/validate/inventory.bad.cx --schema=examples/validate/inventory.cxs   # exit 1, 3 diagnostics
+
+[?cx schema-of inventory]      # the document element this schema targets
+[?cx schema-mode strict]       # closed vocabulary: only declared names admitted
+
+[inventory
+  [attr site::string [req]]    # required, typed attribute
+  [elem item [card "1..*"]]]   # at least one [item] child
+
+[item
+  [attr sku::string [req]]
+  [attr name::string [req]]
+  [attr qty::int [req]]        # declared :int — a string value is S005
+  # optional; omitted → 'stocked' (inserted by --apply-defaults);
+  # any value outside the enum is S007
+  [attr status::string [default stocked] [enum stocked low discontinued]]]

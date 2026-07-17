@@ -205,9 +205,17 @@ class TestEventWriterChunkedTable(unittest.TestCase):
             w.end_doc()
             out = w.close_get_bytes()
         s = out.decode()
-        self.assertIn(':table', s)
-        self.assertIn('alice', s)
-        self.assertIn('91', s)
+        # #509: the writer must emit the CURRENT `[table[…]]` clause-child
+        # form (the retired `:table[` opener is unparseable), and the text
+        # must round-trip through the binding's own parse entry — a
+        # structural assertion, not a substring pin.
+        self.assertIn('[table[', s)
+        tbl = cxlib.Table.from_cx(s)
+        self.assertEqual(tbl.row_count, 2)
+        self.assertEqual(tbl.row(0)['name'], 'alice')
+        self.assertEqual(tbl.row(0)['score'], 91)
+        self.assertEqual(tbl.row(1)['name'], 'bob')
+        self.assertEqual(tbl.row(1)['score'], 88)
 
     def test_chunked_table_w009_on_xml(self):
         w = cxlib.EventWriter('xml')

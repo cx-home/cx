@@ -4,7 +4,7 @@ Covers (Iterator wire format, tag 0x16, cap bit 37)
  (Iterator value kind, single-use, identity
 equality). W3f scope: synthetic IteratorNode round-trip via ast_bin
 encoder/decoder. True lazy-pull via a C ABI `cx_iterator_pull` export
-lands in a follow-on ADR; this milestone covers wire transport +
+lands in a follow-on spec change; this milestone covers wire transport +
 binding-side Iterator type surface.
 
 The W3c renderer (V core) materialises iterators at the host emit

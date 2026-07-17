@@ -212,7 +212,7 @@ class Table:
     # ── Conversion (5) ───────────────────────────────────────────────────────
 
     def to_cx(self) -> str:
-        """Canonical CX text — the `:table` block form
+        """Canonical CX text — the `[table[…]]` block form
         + spec/canonical.md §2.11.
         """
         header_parts = []
@@ -220,9 +220,12 @@ class Table:
             if type_name == "":
                 header_parts.append(name)
             else:
-                header_parts.append(f"{name}:{type_name}")
+                # v0.8.0 table columns use the glued double-colon type
+                # annotation (`name::int`); single `:` is the namespace
+                # qualifier (grammar [26]/[29]).
+                header_parts.append(f"{name}::{type_name}")
         header = " ".join(header_parts)
-        lines = [f"[_ :table[{header}]"]
+        lines = [f"[_ [table[{header}]]"]
         for row in self._rows:
             cells = [_format_cx_cell(v) for v in row]
             lines.append("  " + " ".join(cells))

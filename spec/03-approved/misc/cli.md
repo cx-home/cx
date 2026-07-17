@@ -2,156 +2,209 @@
 
 **Status:** Current
 
-The CX CLI (`cx`) is the user-facing wrapper over libcx. Every
-subcommand delegates to a libcx ABI symbol (per
-[`core/abi.md`](../core/abi.md)) and adds CLI-only concerns: file I/O,
-argv parsing, exit-code mapping, and diagnostic rendering. This spec
-is normative for the argv grammar, exit codes, environment variables,
-and stdout / stderr framing.
+The CX CLI (`cx`) is the one user-facing binary over the V core — the
+same parser, canonicalizer, and evaluator that back `libcx` (per
+[`core/abi.md`](../core/abi.md)) and every host-language binding. The
+CLI adds only CLI concerns: argv parsing, file I/O, exit-code mapping,
+and diagnostic rendering. This spec is normative for the argv grammar,
+exit codes, and stdout / stderr framing.
 
-The CLI is the single user-facing tool across all platforms; binding-
-specific REPLs and scripts SHOULD shell out to `cx` rather than
-re-implement subcommand behaviour, so that exit codes and diagnostic
-formatting stay uniform.
+The CLI is the single user-facing tool across all platforms;
+binding-specific REPLs and scripts SHOULD shell out to `cx` rather
+than re-implement subcommand behaviour, so that exit codes and
+diagnostic formatting stay uniform.
+
+Subcommand dispatch, the `cx --help` catalogue, and every
+per-subcommand `--help` body are generated from ONE registry
+(`vcx/cmd/main.v`, the `SubcommandSpec` table): a subcommand cannot
+exist without being documented, and help can never drift from
+dispatch.
 
 ---
 
 ## 1 — Global invocation
 
 ```
-cx [GLOBAL OPTIONS] SUBCOMMAND [SUBCOMMAND OPTIONS] [POSITIONAL ARGS]
+cx FILE.cx [RUN FLAGS]          # run a CX resource (the default action, §3.7)
+cx - [RUN FLAGS]                # run a program from stdin (a pipe into bare
+                                # `cx` with no FILE also evaluates stdin)
+cx -e 'PROGRAM' [RUN FLAGS]     # run an inline program (also --expression)
+cx --from=FMT [CONVERT FLAGS]   # convert a data document (the data reading)
+cx SUBCOMMAND [ARGS]            # one of the subcommands in §2
 ```
 
-Global options are recognised before the subcommand token; per-
-subcommand options are recognised after it. A bare `cx` (no
-subcommand) prints help and exits 2 (usage error).
+The bare surface (no subcommand token) has two readings, selected by
+the flags — the **run** surface (the program reading, §3.7) and the
+**convert** surface (the data reading; an explicit `--from=…`, a
+structural projection, `--compact`, or `--lossless` selects it). A
+bare `cx` with no input and a TTY on stdin prints usage and exits
+non-zero.
+
+Unknown flags anywhere on the bare surface are a **hard usage error**
+(exit 2) naming the flag — never a silent no-op (§3.7). Subcommands
+likewise reject argv they do not understand with exit 2.
 
 ### 1.1 Global options
 
 | Option | Meaning |
 |---|---|
-| `--help` / `-h` | Print help for the global / subcommand invocation; exit 0. |
-| `--version` / `-V` | Print `cx M.N.P`, the libcx version, and `cx_abi_version`; exit 0. |
-| `--no-color` | Disable ANSI color in diagnostics. |
-| `--quiet` / `-q` | Suppress informational messages on stderr; errors still go to stderr. |
-| `--strict` | Promote warnings (per-subcommand) to errors; non-zero exit on any. |
-| `--verbose` / `-v` | (At most once.) Emit detail-level diagnostics to stderr. |
+| `--help` / `-h` | Print help; exit 0. Uniform on every surface: `cx --help` prints the catalogue, `cx SUBCOMMAND --help` (or `-h`) prints that subcommand's usage. |
+| `--version` / `-v` | Print expanded version / build info (version, commit, build date, GC model, V-fork gitlink); exit 0. Also available as the `cx version` verb — a registry subcommand, so the bare word can never fall through to the run surface and evaluate a `./VERSION` file on a case-insensitive filesystem. |
 
 ### 1.2 Exit codes
 
 | Code | Meaning |
 |---|---|
 | `0` | Success. |
-| `1` | Generic error (parse failure, runtime error, I/O error). |
-| `2` | Usage error (bad argv, missing required arg, unknown subcommand). |
-| `3` | Diff detected (only for `cx diff` and `cx eq` — non-zero means inputs differ). |
-| `4` | Lint findings (only for `cx lint --strict` — non-zero means diagnostics emitted). |
-| `5` | Schema-validation failure (only for `cx validate` — non-zero means invalid). |
-| `64` | Internal error (panic, assertion). Includes [`core/code.md §9.5`](../core/code.md) wire codes when applicable. |
+| `1` | Error (parse failure, runtime error, I/O error) — or the subcommand's **meaningful negative**: `cx eq` / `cx diff` inputs differ, `cx lint` / `cx validate` findings at or above the `--fail-on` threshold, `cx select` empty match set, `cx lock --check` drift. |
+| `2` | Usage error (bad argv, unknown flag, missing required argument, unknown subcommand). Some inspection subcommands also map unreadable input to 2. |
 
-Exit codes `0–9` are reserved for CX-defined semantics. Codes `≥ 64`
-follow `sysexits.h` conventions for OS-level errors. Bindings that
-embed `cx` programmatically SHOULD map exit codes to their host's
+Exit codes `0–9` are reserved for CX-defined semantics. Bindings that
+embed `cx` programmatically SHOULD map non-zero exits to their host's
 exception hierarchy and never silently collapse a non-zero exit into
-zero.
+zero. Which of `1` / `2` a given subcommand emits for which condition
+is normative per subcommand in §3 and summarised in §5.
 
 ### 1.3 Environment variables
 
+The CLI itself is flag-driven; the few environment variables it
+consults belong to specific subsystems:
+
 | Variable | Effect |
 |---|---|
-| `CX_NO_COLOR` | Equivalent to `--no-color`. Also respects `NO_COLOR` per https://no-color.org/. |
-| `CX_INCLUDE_ROOT` | Sets the include-resolution root (per [`core/code.md §13`](../core/code.md)). |
-| `CX_CONFIG` | Path to a `cx.lock`-style config (per [`core/lockfile.md`](../core/lockfile.md)). Default: `./cx.lock`. |
-| `CX_QUIET` | Equivalent to `--quiet`. |
-| `CX_STRICT` | Equivalent to `--strict`. |
+| `CX_WORKER_THREADS` | Worker-pool sizing for the concurrency directives ([`core/code.md`](../core/code.md) §10.4). |
+| `CX_STORE_KEK_<ID>` | Key-encryption keys for `cx store-rotate-kek` (§2.6). |
+| `CX_ARROW_LIB` | Path to `libcx_arrow` for `cx table` Parquet / Arrow I/O. |
 
-Command-line flags override the corresponding environment variables.
+Command-line flags always override environment variables.
 
 ---
 
 ## 2 — Subcommand registry
 
+The full dispatch surface — every verb below answers
+`cx <verb> --help` with its usage. The tables group the registry by
+concern; the registry itself (one table in `vcx/cmd/main.v`) is the
+single source of truth.
+
 ### 2.1 Parse, format, canonical, lint, validate
 
-| Subcommand | Wraps | Effect |
-|---|---|---|
-| `cx parse FILE [-f FORMAT]` | `cx_to_ast_bin` (or `cx_<fmt>_to_ast_bin`) | Parse to AST; emit `ast_bin` to stdout. |
-| `cx fmt FILE` | `cx_fmt` | Lossless canonical (per [`core/canonical.md §2`](../core/canonical.md)). Emit to stdout; `-i` / `--in-place` rewrites the file atomically. |
-| `cx canonical FILE` | `cx_canonical` | Strict canonical (per [`core/canonical.md §3`](../core/canonical.md)). Emit to stdout. |
-| `cx hash FILE` | `cx_hash` | SHA-256 of strict-canonical bytes. Emit hex to stdout, single line + LF. |
-| `cx eq A B` | `cx_eq` | Exit 0 if `A` and `B` are semantically equal, exit 3 if they differ. |
-| `cx diff A B` | `cx_diff` ([`core/abi.md §2.17`](../core/abi.md)) | Structured semantic diff. Emit a CX-formatted diff document to stdout; exit 3 on non-empty diff. |
-| `cx lint FILE [--ruleset RULES.cxs]` | `cx_lint` ([`core/abi.md §2.18`](../core/abi.md)) | Run lint rules. Emit diagnostics to stdout. `--strict` exits 4 on any finding. |
-| `cx validate FILE --schema SCHEMA.cxs` | `cx_validate` | Schema validation. Emit diagnostics to stdout; exit 5 on violation. |
+| Subcommand | Effect |
+|---|---|
+| `cx fmt [FILE]` | Lossless canonical formatter (per [`core/canonical.md`](../core/canonical.md), lossless canonical): preserves comments / anchors, normalizes whitespace and quoting. Also hosts the parser-based migration sweeps (`--migrate-predicates`, `--collapse-lets`). |
+| `cx canonical [FILE]` | Strict canonical text (per [`core/canonical.md`](../core/canonical.md), strict canonical): strips presentation; output is data-equivalent. |
+| `cx hash [FILE]` | SHA-256 hex of the strict-canonical bytes — the content address of the document. |
+| `cx eq A B` | Exit 0 iff `strict-canonical(A) == strict-canonical(B)`; exit 1 if they differ. |
+| `cx diff [FLAGS] A B` | Semantic diff over the strict-canonical forms; exit 1 on a non-empty diff (§3.4). |
+| `cx lint [FLAGS] [FILE]` | Style + correctness warnings; exit 1 at/above `--fail-on` (§3.5). |
+| `cx validate FILE --schema=SCHEMA.cxs [FLAGS]` | Schema validation per [`core/schema.md`](../core/schema.md); exit 1 at/above `--fail-on` (§3.6). |
 
-### 2.2 Conversion
+`FILE` is optional where bracketed — those subcommands read stdin when
+it is absent (§4).
 
-| Subcommand | Wraps | Effect |
-|---|---|---|
-| `cx to-FORMAT FILE` | `cx_to_<format>` family | Emit converted output to stdout. Formats: `cx`, `xml`, `json`, `yaml`, `toml`, `md`, `csv`, `tsv`, `psv`. |
-| `cx from-FORMAT FILE` | `cx_<format>_to_ast_bin` then `cx_ast_bin_to_cx` | Equivalent to `cx parse FILE -f FORMAT` followed by a re-emit to CX text. |
+### 2.2 Conversion (the bare convert surface)
 
-Format names are the same set used by [`core/conversions.md`](../core/conversions.md);
-unknown formats exit 2 (usage error). The `cx to-cx` form is the
-identity transform — it round-trips through the parser and re-emits.
+Conversion is a bare-surface flag set, not a subcommand family:
+
+```
+cx --from=FMT [--to=FMT] [--compact] [--lossless] [--include-root=DIR] [FILE]
+cx --ast|--cx|--xml|--json|--yaml|--toml|--md|--csv|--tsv|--psv|--cxcol [FILE]
+```
+
+- `--from` / `--to` name any codec in the registry
+  ([`core/codec.md`](../core/codec.md)); the accepted text-format set
+  is `cx xml json yaml toml md csv tsv psv`, and an unknown name exits
+  non-zero with the registry error (never silently folds to `cx`).
+- Non-CX input files auto-detect their format from the extension
+  (`.xml` / `.json` / `.yaml` / `.yml` / `.toml` / `.md`) and stay on
+  the convert surface.
+- The projection shorthands (`--json` etc.) pick the output form of a
+  single input; `--ast` emits the AST JSON, `--cxcol` the binary
+  columnar form (§4).
+- `--lossless` requests type-preserving output per
+  [`core/conversions.md`](../core/conversions.md) §0.2 and is accepted
+  only by lanes whose emitter implements a lossless image (`cx`,
+  `xml`, `json`, `yaml` — read from the codec registry's capability
+  flag); every other lane rejects the flag loudly (exit 2).
+- `--include-root=DIR` resolves `[?cx include=…]` directives against
+  `DIR` before conversion (include resolution is opt-in per
+  [`core/code.md`](../core/code.md) §13).
 
 ### 2.3 Code evaluation
 
-| Subcommand | Wraps | Effect |
-|---|---|---|
-| `cx eval EXPR` | `cx_code_eval` | Evaluate a CX-code expression string; emit the result to stdout. |
-| `cx run FILE [-- ARG...]` | `cx_code_eval_streaming` | Run a CX-code program; trailing positional args after `--` become `$args` in scope. |
-| `cx select FILE PATH` | `cx_code_eval` (with a CXPath path-value expression) | CXPath query; emit matches as a Sequence per [`core/cxdm.md`](../core/cxdm.md). |
-| `cx dap` | — | Debug Adapter Protocol server on stdio for editors ([`debug.md`](debug.md)). |
-| `cx debug attach ADDR --token=…` | — | Attach to a runtime started with `--debug-listen` ([`debug.md`](debug.md)). |
-| `cx debug replay TAPE.cx` | — | Replay a recorded debug tape ([`debug.md`](debug.md) §6a). |
+| Surface | Effect |
+|---|---|
+| `cx FILE.cx [--data=INPUT] [FLAGS]` | The **default action** (the run surface, §3.7): parse and evaluate the resource per [`core/code.md`](../core/code.md) §1.3. A pure-data document evaluates to itself. |
+| `cx eval PROGRAM.cx [--data=INPUT] [FLAGS]` | Documented alias of the default action (prefer the plain `cx FILE.cx` spelling). Adds the inline forms `-e 'PROGRAM'` / `-d 'INPUT'` and `--target=FMT`. |
+| `cx select 'PATH' [FILE]` | CXPath query over a document; matches print in canonical CX (§3.8). |
+
+The debug surface (`cx dap`, `cx debug attach`, `cx debug replay`) is
+specified in [`debug.md`](debug.md) but is **not yet shipped** — the
+verbs are not in the registry and dispatch as usage errors until that
+spec's implementation lands.
 
 The retired narrow CXPath ABI (`cx_select` / `cx_select_all`, see
 [`core/abi.md §2.7`](../core/abi.md)) is NOT re-exposed by the CLI;
-`cx select` routes through `cx_code_eval` with a path-value
-expression and inherits its semantics.
+`cx select` evaluates a CXPath value expression through the one
+program evaluator and inherits its semantics (§3.8).
 
-### 2.4 Schema and introspection
+### 2.4 Inspection and visualisation
 
-| Subcommand | Wraps | Effect |
-|---|---|---|
-| `cx features` | `cx_features` | Emit the capability bitmask (hex) and named features, one per line. |
-| `cx version` | `cx_version`, `cx_abi_version` | Emit `cx M.N.P`, libcx version, `cx_abi_version`. Equivalent to `cx --version`. |
+| Subcommand | Effect |
+|---|---|
+| `cx diagram PROGRAM.cx [--format=mermaid\|svg\|png] [-o OUT]` | Render a CX program as a diagram; every format embeds the source bytes, so the diagram reverse-parses to the same AST. |
+| `cx code-diagram [FILE\|-] [--level=min\|compact\|full]` | Mermaid emitter: flowchart for code sources, erDiagram for data sources. |
+| `cx code-tree [FILE\|-]` | Tree View JSON rendering of a CX source. |
+| `cx demo` | Self-contained showcase (no file I/O, no network, < 1 s). |
+| `cx scaffold KIND` | Typed, commented skeleton on stdout (`config` / `data` / `doc` / `log` / `table`). |
+| `cx version` | Version / build info — identical output to `-v` / `--version` (§1.1). |
 
 ### 2.5 Tabular
 
-| Subcommand | Wraps | Effect |
-|---|---|---|
-| `cx table-info FILE` | `cx_table_reader_open` + `cx_table_reader_schema` | Inspect a CXCol table — column names, types, row count, chunk count. Emit a CX-formatted summary. |
-| `cx table-rows FILE [--from N] [--limit M]` | `cx_table_reader_*` family | Stream table rows to stdout in CSV form. `--from` / `--limit` slice the row stream without materialising the whole table. |
+| Subcommand | Effect |
+|---|---|
+| `cx table info FILE` | Column / row counts, types, byte size of a `[table[…]]` block. |
+| `cx table dump FILE [--to=cx\|parquet\|arrow] [--output=FILE]` | Export a table block. |
+| `cx table load FILE [--from=cx\|parquet\|arrow] [--to=cx] [--output=FILE]` | Import to a table block. |
+
+`FILE` may be omitted to read stdin. Parquet / Arrow I/O requires
+`libcx_arrow` (built with `-d cx_arrow_files`; located via
+`CX_ARROW_LIB`).
+
+### 2.6 Project and service
+
+| Subcommand | Effect |
+|---|---|
+| `cx lock [FLAGS] [FILE...]` | Generate / verify `cx.lock` from `[?lib]` directives (per [`core/lockfile.md`](../core/lockfile.md)); `--check` exits 1 on drift. |
+| `cx lsp [--verbose]` | The CX language server on stdio. |
+| `cx store-serve --config PATH [--allow-*]` | Run the CX store service daemon. |
+| `cx store-health --url READY_URL` | Store readiness probe; exit 0 iff accepting. |
+| `cx store-token --id NAME [FLAGS]` | Mint a store bearer token + config stanza. |
+| `cx store-rotate-kek --url URL --encrypt-key-id OLD --new-key-id NEW` | Rotate a store key-encryption key. |
 
 ---
 
 ## 3 — Subcommand details
 
-This section adds normative detail for subcommands whose flag set or
+This section adds normative detail for surfaces whose flag set or
 exit semantics need more than the registry tables in §2.
 
 ### 3.1 `cx fmt`
 
-- `-i` / `--in-place` rewrites `FILE` atomically: writes the formatted
-  bytes to a sibling tempfile, `fsync`s it, then renames over `FILE`.
-- Without `-i`, formatted bytes go to stdout.
-- `--profile=NAME` selects a formatting profile ([`../core/formatting.md`](../core/formatting.md));
-  default `canonical`.
-- Multiple positional `FILE` arguments are allowed with `-i`; each is
-  rewritten independently. A failure on one file does not roll back
-  earlier successful rewrites — the exit code reflects whether ANY
-  file failed.
+- Formatted bytes go to stdout; rewriting a file is explicit
+  redirection (`cx fmt f.cx > f.fmt.cx && mv f.fmt.cx f.cx`).
+- Lossless canonical applies: comments, anchors, and authorial
+  structure are preserved; whitespace and quoting are normalised.
+- The migration sweeps (`--migrate-predicates`, `--collapse-lets`) are
+  parser-based (never regex) and fail-closed per file; `-w` writes
+  changed files in place and is required for multiple `FILE`s.
 
 ### 3.2 `cx canonical`
 
-- Strict canonical (per [`core/canonical.md §3`](../core/canonical.md))
-  applies: no comments, single representation per value, sorted
-  attribute order.
-- No `-i` flag; canonical-form rewrite is a destructive operation that
-  drops comments, so explicit redirection (`cx canonical f.cx > f.cx`)
-  is required.
+- Strict canonical applies: no comments, single representation per
+  value, sorted attribute order.
+- No in-place mode; canonical-form rewrite is a destructive operation
+  that drops comments, so explicit redirection is required.
 
 ### 3.3 `cx hash`
 
@@ -164,111 +217,155 @@ exit semantics need more than the registry tables in §2.
 
 - Both compare strict-canonical forms — semantic equality, not
   byte-for-byte source equality.
-- `cx eq` is silent on equal inputs (exit 0) and silent on differing
-  inputs (exit 3); use `cx diff` when you need to see WHAT changed.
-- `cx diff` emits a CX-formatted structured diff document; the shape
-  is normative per `cx_diff` ([`core/abi.md §2.17`](../core/abi.md)).
-- `--format=text` (default) emits the structured CX document;
-  `--format=summary` emits a one-line per change human-readable list
-  to stdout; the structured-document shape is the contract, summary
-  output is informational and not stable across patch versions.
+- `cx eq` is silent: exit 0 on equal inputs, exit 1 on differing
+  inputs, exit 2 on error; use `cx diff` when you need to see WHAT
+  changed.
+- `cx diff` flags: `--format=unified|json|summary` (default
+  `unified`), `--no-color`, `--color[=always|never|auto]` (default
+  `auto`: color on a TTY only). Exit 0 on an empty diff, 1 on a
+  non-empty diff, 2 on error.
+- The unified rendering is human-oriented; the `json` rendering is the
+  stable machine shape.
 
 ### 3.5 `cx lint`
 
-- Default ruleset covers `L001–L007` (built-in rules registered in
-  [`core/code.md §9.5`](../core/code.md)). Reserved codes `L008–L020`
-  are not yet allocated.
-- `--ruleset RULES.cxs` loads a custom rule document; codes outside
-  `L001–L020` are accepted in custom rulesets and surfaced verbatim.
-- `--strict` promotes any lint finding (default severity `warning`) to
-  an error; exit 4 if any finding emitted, exit 0 otherwise.
-- Without `--strict`, `cx lint` always exits 0 even with findings;
-  consumers detect findings by parsing the diagnostic stream.
+- Flags: `--format=text|json|summary` (default `text`),
+  `--fail-on=info|warn|error|none` (default `error`),
+  `--disable=ID1,ID2`, `--only=ID`, `--config=PATH` / `--no-config`.
+- When neither `--config` nor `--no-config` is given, the nearest
+  `.cxlint.cx` (walking up from the input file's directory, or the
+  cwd for stdin) is auto-discovered and merged into the active
+  options.
+- Exit 0 when no finding is at/above the `--fail-on` threshold, 1
+  when any is, 2 on error. `--fail-on=none` always exits 0.
 
 ### 3.6 `cx validate`
 
-- `--schema SCHEMA.cxs` is required. Multiple `--schema` flags are
-  allowed; the document must validate against every schema (logical
-  AND).
-- Exit 5 on any S001–S020 violation; the violating CXER-equivalent
-  schema codes (`S001`–`S020`, see [`core/schema.md`](../core/schema.md))
-  are emitted as structured diagnostics on stdout.
-- Schema codes use the `S` prefix and live in their own namespace
-  separate from the `CXER` numeric range.
+- `--schema=SCHEMA.cxs` is required.
+- Flags: `--fail-on=info|warn|error|none` (default `error`),
+  `--mode=open|strict|closed` (overrides the schema-mode directive),
+  `--apply-defaults` (insert schema-default attribute values).
+- Exit 0 when no diagnostic is at/above `--fail-on`, 1 when any is,
+  2 on I/O / schema-load failure. Schema semantics and codes are
+  normative in [`core/schema.md`](../core/schema.md).
 
-### 3.7 `cx run`
+### 3.7 The run surface (bare `cx`)
 
-- The CX-code program FILE is loaded via `cx_code_eval_streaming`;
-  module imports follow [`core/code.md §12`](../core/code.md) and
-  `CX_CONFIG` / `cx.lock` per §1.3.
-- Positional args after `--` are exposed inside the program as `$args`
-  (a Sequence of strings) per [`core/code.md §13`](../core/code.md).
-- The program's final value (or explicit return from `[?return …]`)
-  is rendered to stdout in strict-canonical form. If the program
-  emits to stdout directly via `[?print]` / stdlib `io/write-line`,
-  those writes are interleaved.
-- Runtime errors map to exit 1; the wire code (`CXERnnnn`) is
-  reported on stderr.
-- **Capabilities** (deny-by-default, [`../core/security.md`](../core/security.md)):
-  `--allow-read=PATH`, `--allow-write=PATH`, `--allow-net=HOST:PORT`,
-  `--allow-env=NAME`, `--allow-run=EXE`, and `--allow-all` (explicit opt-out).
-  With no `--allow-*` the capability set is empty (pure-only); a denied effect
+The **default action**: `cx FILE.cx` (or `cx -`, `cx -e 'PROGRAM'`, or
+a pipe into bare `cx`) selects the **program reading** of
+[`core/code.md`](../core/code.md) §1.3 — parse and evaluate. A
+pure-data resource evaluates to itself, and the §1.3 data-reading
+fallback (with its program-intent guards) applies. `cx eval` is the
+documented alias of this action.
+
+- **Separate data input — `--data=FILE|-`.** The caller MAY supply a
+  data document alongside the program. The input is loaded via the
+  **data reading** (respecting `--include-root` when given) and bound
+  as `$doc` (and `$input`) before evaluation. Per `core/code.md` §1.3,
+  the caller-supplied input **wins**: the program's own data roots
+  never rebind `$doc`. Without `--data`, the implicit-`$doc` selection
+  of §1.3 applies (first data root, else `$doc` unbound). `--data=-`
+  reads the input document from stdin; combining that with a
+  program also arriving on stdin is a usage error (exit 2). A missing
+  or unreadable `--data` file is a loud error (exit 1) — never a
+  silent no-op.
+- `--data` belongs to the run surface only: combining it with the
+  convert surface (an explicit `--from=…`, an auto-detected non-CX
+  input, a structural projection such as `--ast` / `--toml` / `--md` /
+  `--psv` / `--cxcol`, `--compact`, or `--lossless`) is a usage error
+  (exit 2).
+- **Result rendering:** the program's final value is rendered to
+  stdout in canonical CX by default; `--xml` / `--json` / `--yaml` /
+  `--csv` / `--tsv` render the RESULT in that format (they do not
+  reroute to the convert surface).
+- **Unknown flags are hard errors.** Any flag the run surface does not
+  recognise — including a misspelled `--allow-*` grant — exits 2 with
+  a diagnostic naming the flag and pointing at `cx --help`. A flag
+  that requires a value (`--data`, `--from`, `--to`,
+  `--include-root`) given without one is the same usage error. The
+  pre-#415 behaviour (silently ignoring unknown flags, exit 0) was a
+  defect; nothing on the surface may swallow argv.
+- Extra positional arguments (a second FILE, or a FILE alongside
+  `-e` / `-`) are usage errors (exit 2).
+- **Capabilities** (deny-by-default,
+  [`core/security.md`](../core/security.md)): `--allow-read`,
+  `--allow-write`, `--allow-net[=HOST[:PORT]]`, `--allow-env`,
+  `--allow-clock`, `--allow-random`, `--allow-subprocess`,
+  `--allow-eval`, `--allow-secret-reveal`, and `--allow-all` (the
+  explicit opt-out). Only the `net` grant takes a scope argument
+  today; a bare `--allow-net` additionally denies private ranges
+  (override with a literal-IP scope or `--allow-all`). With no
+  `--allow-*` the capability set is empty (pure-only); a denied effect
   raises `cx-err:CXER0271`, naming the grant to add.
-- **Debugging** ([`debug.md`](debug.md)): `--debug` runs a local stepper;
-  `--debug-listen=ADDR --debug-token=TOKEN` accepts a remote attach (token
-  required; binds `127.0.0.1` unless `ADDR` is external).
+- `--include-root=DIR` resolves `[?cx include=…]` in the program (and
+  in the `--data` input) before evaluation.
+- Runtime errors map to exit 1; the wire code (`CXERnnnn`) is reported
+  on stderr.
 
 ### 3.8 `cx select`
 
-- `PATH` is a CXPath expression per [`core/code.md §5.5`](../core/code.md).
-- Matches are emitted as a Sequence in document order; an empty match
-  set emits an empty Sequence and exits 0.
-- `--require-match` (optional) causes exit 3 if the match set is
-  empty; useful in scripts that treat "no match" as a failure case.
+```
+cx select 'PATH' [FILE]
+```
+
+CXPath query over one document — a pure read; the subcommand is
+capability-neutral (it accepts no `--allow-*` flags and needs none).
+
+- `PATH` is a single CXPath value expression per
+  [`core/code.md §5.5`](../core/code.md): `$doc`-anchored
+  (`$doc/user@name`), document-rooted (`/users/user`), or descendant
+  (`//user[= $_@role 'admin']`). The input document is bound as `$doc`
+  (and `$input`); no other binding is in scope. An argument that is
+  not a path expression is a usage error (exit 2).
+- The document is read from `FILE`, or from stdin when `FILE` is `-`
+  or absent, via the **data reading**.
+- **Output:** matches print to stdout one per line, in document order,
+  in canonical CX. Attribute-axis matches materialize as
+  `[name value]` fields; a single-focus plain child-chain attribute
+  read prints the attribute's typed scalar value (the `core/code.md`
+  §6.2 terminal-attribute unwrap — in canonical CX, so strings print
+  quoted). An empty match set prints nothing.
+- **Exit codes:** 0 when at least one node matched; 1 when the match
+  set is empty; 2 on error (usage, unreadable input, document or path
+  parse error).
 
 ---
 
 ## 4 — Streams and framing
 
-- All subcommands read input from `FILE` (positional) or from stdin if
-  `FILE` is `-`.
+- Subcommands that take an optional `FILE` read stdin when it is
+  absent or `-`.
 - All subcommands emit primary output to stdout; diagnostics go to
   stderr.
-- Binary outputs (`cx_to_ast_bin`, `cx_to_data_bin`, `cx_to_events_bin`,
-  etc.) write the raw `[u32 LE size][payload]` framing per
-  [`core/abi.md §1.3`](../core/abi.md). They are NOT base64-encoded.
+- The binary projection (`--cxcol`) writes the raw
+  `[u32 LE size][payload]` framing per
+  [`core/abi.md §1.3`](../core/abi.md); it is NOT base64-encoded.
 - Text outputs write LF-terminated lines per
   [`core/canonical.md §2.2`](../core/canonical.md). The final line
   ends in LF.
-- `--quiet` suppresses stderr informational messages; stderr is empty
-  on success when `--quiet` is set, so scripts MAY tee stderr without
-  filtering for success-cases.
 
 ---
 
 ## 5 — Exit-code matrix (reference)
 
-The table below summarises which exit codes each subcommand may emit.
-Blank cells indicate "subcommand never emits this code". Codes `1`
-and `2` are emitted by every subcommand and are not repeated.
+The table below summarises the meaningful exits per surface. Code `2`
+(usage error) is available on every surface and is not repeated.
 
-| Subcommand          | 0           | 3                  | 4              | 5       |
-|---|---|---|---|---|
-| `cx parse`          | parsed      | —                  | —              | —       |
-| `cx fmt`            | formatted   | —                  | —              | —       |
-| `cx canonical`      | canonical   | —                  | —              | —       |
-| `cx hash`           | hashed      | —                  | —              | —       |
-| `cx eq`             | equal       | differ             | —              | —       |
-| `cx diff`           | empty diff  | non-empty diff     | —              | —       |
-| `cx lint`           | no findings (or non-strict) | — | findings (`--strict`) | — |
-| `cx validate`       | valid       | —                  | —              | invalid |
-| `cx to-FORMAT`      | converted   | —                  | —              | —       |
-| `cx eval`           | ok          | —                  | —              | —       |
-| `cx run`            | program ok  | —                  | —              | —       |
-| `cx select`         | found       | empty + `--require-match` | —        | —       |
-| `cx features`       | always      | —                  | —              | —       |
-| `cx table-info`     | inspected   | —                  | —              | —       |
-| `cx table-rows`     | streamed    | —                  | —              | —       |
+| Surface | 0 | 1 |
+|---|---|---|
+| run surface (bare `cx` / `cx eval`) | program ok | parse / runtime / I-O error |
+| convert surface (`--from` / projections) | converted | parse / convert error |
+| `cx fmt` | formatted | parse error |
+| `cx canonical` | canonical | parse error |
+| `cx hash` | hashed | parse error |
+| `cx eq` | equal | differ |
+| `cx diff` | empty diff | non-empty diff |
+| `cx lint` | no findings ≥ `--fail-on` | findings ≥ `--fail-on` |
+| `cx validate` | valid | diagnostics ≥ `--fail-on` |
+| `cx select` | ≥ 1 match | empty match set |
+| `cx table` | ok | error |
+| `cx lock` | generated / clean | `--check` drift |
+| `cx store-health` | accepting | not accepting |
 
 ---
 
@@ -281,19 +378,20 @@ and `2` are emitted by every subcommand and are not repeated.
   allocated above the `0–9` reserved CX range or in the `sysexits.h`
   `≥ 64` range.
 - Error-message text is NOT stable across patch versions; consumers
-  should parse exit codes and structured stderr (when `--quiet` is
-  set, stderr is empty on success). The error-code stability policy
-  is normative in [`process/governance.md §9.5a`](../process/governance.md).
+  should parse exit codes, not stderr text. The error-code stability
+  policy is normative in
+  [`process/governance.md §9.5a`](../process/governance.md).
 
 ---
 
 ## 7 — Cross-references
 
-- [`core/abi.md`](../core/abi.md) — every subcommand's underlying C ABI symbol.
+- [`core/abi.md`](../core/abi.md) — the C ABI the same engine exports to bindings.
 - [`core/canonical.md`](../core/canonical.md) — `cx fmt` and `cx canonical` semantics.
-- [`core/code.md`](../core/code.md) — `cx eval`, `cx run`, `cx select` semantics; CXER wire codes.
-- [`core/conversions.md`](../core/conversions.md) — formats accepted by `cx to-FORMAT` / `cx from-FORMAT`.
-- [`core/schema.md`](../core/schema.md) — `cx validate` schema semantics; `S001–S020` codes.
+- [`core/code.md`](../core/code.md) — the run surface's program reading, `$doc` binding, CXPath (`cx select`) semantics; CXER wire codes.
+- [`core/conversions.md`](../core/conversions.md) / [`core/codec.md`](../core/codec.md) — formats accepted by the convert surface.
+- [`core/schema.md`](../core/schema.md) — `cx validate` schema semantics.
+- [`core/security.md`](../core/security.md) — the capability model behind `--allow-*`.
+- [`debug.md`](debug.md) — the specified (not yet shipped) debug surface.
 - [`misc/api.md`](api.md) — library-level equivalents (`Doc.hash`, `Doc.diff`, `Doc.lint`, `Doc.modify`).
-- [`misc/bindings.md`](bindings.md) — wire-format negotiation for HTTP / IPC contexts.
 - [`process/governance.md §9`](../process/governance.md) — versioning policy; error-code stability.

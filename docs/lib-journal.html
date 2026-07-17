@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -127,12 +132,12 @@
             <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?let [= $s [$store:open "mem://r"]]
-[?let [= $j1 [$journal:attach $s "acme"]]
-[?let [= $a [$journal:append $j1 [a 1] {actor: "u" authority: "g"}]]
-[?let [= $b [$journal:append $j1 [b 2] {actor: "u" authority: "g"}]]
-[?let [= $c [$journal:close $j1]]
-[?let [= $j2 [$journal:attach $s "acme"]]
-  [$journal:verify $j2]]]]]]]</code>
+[= $j1 [$journal:attach $s "acme"]]
+[= $a [$journal:append $j1 [a 1] {actor: "u" authority: "g"}]]
+[= $b [$journal:append $j1 [b 2] {actor: "u" authority: "g"}]]
+[= $c [$journal:close $j1]]
+[= $j2 [$journal:attach $s "acme"]]
+  [$journal:verify $j2]]</code>
           </pre>
           <pre class="sample-output">
             <code>[verification valid=true checked-from=1 checked-to=2 head-hash='sha256:2bcb8230b14039e30cc935fb9af79aa4047d317167b0e6edb95e674a82b7e8c2']</code>
@@ -148,8 +153,8 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $x [$journal:close $j]]
-  [$journal:append $j [a] {actor: "u" authority: "g"}]]]</code>
+[= $x [$journal:close $j]]
+  [$journal:append $j [a] {actor: "u" authority: "g"}]]</code>
           </pre>
           <pre class="sample-output">
             <code>cx-err:CXER4612</code>
@@ -181,9 +186,9 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b 2] {actor: "u" authority: "g"}]]
-  [$journal:read $j 2]]]]</code>
+[= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b 2] {actor: "u" authority: "g"}]]
+  [$journal:read $j 2]]</code>
           </pre>
           <pre class="sample-output">
             <code>[entry seq=2 tenant=acme actor=u authority=g ts='epoch:00:00:02' prev-hash=sha256:f0d42b6c75733de803ac02bb66eecf005add595cadca2f7151f1c682ecb440d0 hash='sha256:2bcb8230b14039e30cc935fb9af79aa4047d317167b0e6edb95e674a82b7e8c2' [event [b 2]]]</code>
@@ -199,10 +204,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-  [$journal:slice $j 2 3]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+  [$journal:slice $j 2 3]]</code>
           </pre>
           <pre class="sample-output">
             <code>([entry seq=2 tenant=acme actor=u authority=g ts='epoch:00:00:02' prev-hash='sha256:117af1f326b2d1ee4d4b56b66b3fa13dabfbc55045e4cc57740c7c5f026f163d' hash='sha256:9cd1fca3841e0ea3f6db09fc032c901cd1f9b84a7089ebb90c82753c06ef56aa' [event [b]]], [entry seq=3 tenant=acme actor=u authority=g ts='epoch:00:00:03' prev-hash='sha256:9cd1fca3841e0ea3f6db09fc032c901cd1f9b84a7089ebb90c82753c06ef56aa' hash='sha256:6c29ae866f4b35ead2bc4de4bb388382d1c4542ec46828c568a0d63f60117c43' [event [c]]])</code>
@@ -218,9 +223,9 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-  [$journal:since $j 2]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+  [$journal:since $j 2]]</code>
           </pre>
           <pre class="sample-output">
             <code>([entry seq=2 tenant=acme actor=u authority=g ts='epoch:00:00:02' prev-hash='sha256:117af1f326b2d1ee4d4b56b66b3fa13dabfbc55045e4cc57740c7c5f026f163d' hash='sha256:9cd1fca3841e0ea3f6db09fc032c901cd1f9b84a7089ebb90c82753c06ef56aa' [event [b]]])</code>
@@ -236,9 +241,9 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [do :refund] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [note "hi"] {actor: "u" authority: "g"}]]
-  [$journal:query $j "/event/do"]]]]</code>
+[= $e1 [$journal:append $j [do :refund] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [note "hi"] {actor: "u" authority: "g"}]]
+  [$journal:query $j "/event/do"]]</code>
           </pre>
           <pre class="sample-output">
             <code>([entry seq=1 tenant=acme actor=u authority=g ts='epoch:00:00:01' prev-hash=b3:GENESIS hash=sha256:fcd34ab5565c2823273d24922fe5e7b53d3ffe02fd62695a99b214d409933c30 [event [do :refund]]])</code>
@@ -270,10 +275,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $a [$journal:append $j [x 1] {actor: "u" authority: "g" stream: "s1"}]]
-[?let [= $b [$journal:append $j [x 2] {actor: "u" authority: "g" stream: "s1"}]]
-[?let [= $c [$journal:append $j [y 1] {actor: "u" authority: "g" stream: "s2"}]]
-  [$journal:streams $j]]]]]</code>
+[= $a [$journal:append $j [x 1] {actor: "u" authority: "g" stream: "s1"}]]
+[= $b [$journal:append $j [x 2] {actor: "u" authority: "g" stream: "s1"}]]
+[= $c [$journal:append $j [y 1] {actor: "u" authority: "g" stream: "s2"}]]
+  [$journal:streams $j]]</code>
           </pre>
           <pre class="sample-output">
             <code>('s1', 's2')</code>
@@ -289,10 +294,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-  [$journal:fold $j [?fn ($a $e) [+ $a 1]] 0]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+  [$journal:fold $j [?fn ($a $e) [+ $a 1]] 0]]</code>
           </pre>
           <pre class="sample-output">
             <code>3</code>
@@ -308,10 +313,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-  [$journal:fold-slice $j [?fn ($a $e) [+ $a 1]] 0 2 3]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+  [$journal:fold-slice $j [?fn ($a $e) [+ $a 1]] 0 2 3]]</code>
           </pre>
           <pre class="sample-output">
             <code>2</code>
@@ -327,10 +332,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $es [$journal:since $j 1]]
-  [$journal:fold-value $es [?fn ($a $e) [+ $a 10]] 0]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $es [$journal:since $j 1]]
+  [$journal:fold-value $es [?fn ($a $e) [+ $a 10]] 0]]</code>
           </pre>
           <pre class="sample-output">
             <code>20</code>
@@ -346,10 +351,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-  [$journal:replay $j [?fn ($a $e) [+ $a 1]] 0 {at-seq: 2}]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+  [$journal:replay $j [?fn ($a $e) [+ $a 1]] 0 {at-seq: 2}]]</code>
           </pre>
           <pre class="sample-output">
             <code>2</code>
@@ -365,8 +370,8 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-  [$journal:dry-run $j [b] {actor: "u" authority: "g"} [?fn ($a $e) [+ $a 1]] 0]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+  [$journal:dry-run $j [b] {actor: "u" authority: "g"} [?fn ($a $e) [+ $a 1]] 0]]</code>
           </pre>
           <pre class="sample-output">
             <code>[dry-run [state 2] [entry seq=2 tenant=acme actor=u authority=g ts='epoch:00:00:02' prev-hash='sha256:117af1f326b2d1ee4d4b56b66b3fa13dabfbc55045e4cc57740c7c5f026f163d' hash='sha256:9cd1fca3841e0ea3f6db09fc032c901cd1f9b84a7089ebb90c82753c06ef56aa' [event [b]]]]</code>
@@ -382,9 +387,9 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-  [$journal:verify $j {}]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+  [$journal:verify $j {}]]</code>
           </pre>
           <pre class="sample-output">
             <code>[verification valid=true checked-from=1 checked-to=2 head-hash='sha256:9cd1fca3841e0ea3f6db09fc032c901cd1f9b84a7089ebb90c82753c06ef56aa']</code>
@@ -400,10 +405,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-  [$journal:verify-slice $j 2 3]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+  [$journal:verify-slice $j 2 3]]</code>
           </pre>
           <pre class="sample-output">
             <code>[verification valid=true checked-from=2 checked-to=3 head-hash='sha256:6c29ae866f4b35ead2bc4de4bb388382d1c4542ec46828c568a0d63f60117c43']</code>
@@ -419,8 +424,8 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-  [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {sign: "false"}]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+  [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {sign: "false"}]]</code>
           </pre>
           <pre class="sample-output">
             <code>[snapshot tenant=acme at-seq=1 anchor-hash='sha256:117af1f326b2d1ee4d4b56b66b3fa13dabfbc55045e4cc57740c7c5f026f163d' hash-algo=sha256 sig-algo=none [state 1]]</code>
@@ -436,9 +441,9 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $bad [snapshot tenant=acme at-seq=1 anchor-hash="sha256:deadbeef" hash-algo=sha256 sig-algo=none [state 99]]]
-  [$journal:snapshot-verify $j $bad]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $bad [snapshot tenant=acme at-seq=1 anchor-hash="sha256:deadbeef" hash-algo=sha256 sig-algo=none [state 99]]]
+  [$journal:snapshot-verify $j $bad]]</code>
           </pre>
           <pre class="sample-output">
             <code>[snapshot-verification valid=false at-seq=1 reason=':anchor-mismatch']</code>
@@ -454,13 +459,13 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-[?let [= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {sign: "false" at-seq: 1}]]
-[?let [= $full [$journal:fold $j [?fn ($a $e) [+ $a 1]] 0]]
-[?let [= $fast [$journal:fold-from $j $snap [?fn ($a $e) [+ $a 1]]]]
-  [equiv full=$full fast=$fast]]]]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+[= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {sign: "false" at-seq: 1}]]
+[= $full [$journal:fold $j [?fn ($a $e) [+ $a 1]] 0]]
+[= $fast [$journal:fold-from $j $snap [?fn ($a $e) [+ $a 1]]]]
+  [equiv full=$full fast=$fast]]</code>
           </pre>
           <pre class="sample-output">
             <code>[equiv full=3 fast=3]</code>
@@ -476,10 +481,10 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {signing-key: "0101010101010101010101010101010101010101010101010101010101010101" at-seq: 2}]]
-  [$journal:retain $j {keep-after-seq: 2 snapshot: $snap}]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {signing-key: "0101010101010101010101010101010101010101010101010101010101010101" at-seq: 2}]]
+  [$journal:retain $j {keep-after-seq: 2 snapshot: $snap}]]</code>
           </pre>
           <pre class="sample-output">
             <code>[retention boundary=2 covered-by-seq=2]</code>
@@ -495,13 +500,13 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://src" "acme"]]
-[?let [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
-[?let [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
-[?let [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
-[?let [= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {signing-key: "0101010101010101010101010101010101010101010101010101010101010101" at-seq: 2}]]
-[?let [= $ret [$journal:retain $j {keep-after-seq: 2 snapshot: $snap}]]
-[?let [= $seg [$journal:compact $j {retention: $ret target: "mem://seg"}]]
-  [$journal:verify $j {}]]]]]]]]</code>
+[= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
+[= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
+[= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
+[= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {signing-key: "0101010101010101010101010101010101010101010101010101010101010101" at-seq: 2}]]
+[= $ret [$journal:retain $j {keep-after-seq: 2 snapshot: $snap}]]
+[= $seg [$journal:compact $j {retention: $ret target: "mem://seg"}]]
+  [$journal:verify $j {}]]</code>
           </pre>
           <pre class="sample-output">
             <code>[verification valid=true checked-from=1 checked-to=3 head-hash='sha256:6c29ae866f4b35ead2bc4de4bb388382d1c4542ec46828c568a0d63f60117c43']</code>

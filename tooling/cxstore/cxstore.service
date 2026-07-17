@@ -1,0 +1,14 @@
+[Unit]
+Description=CXStore content-addressed store service (single-node)
+After=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/cx store-serve --config /etc/cxstore/cxstore.service.cx --allow-net
+WatchdogSec=30
+Restart=on-failure
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

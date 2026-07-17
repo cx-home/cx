@@ -1,6 +1,7 @@
 package cxlib
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -130,11 +131,52 @@ func TestTableToCx(t *testing.T) {
 	tbl, _ := NewTable(
 		[]string{"name", "age"},
 		[]string{"", "int"},
-		[][]any{{"alice", int64(30)}},
+		[][]any{{"alice", int64(30)}, {"bob", int64(25)}},
 	)
 	out := tbl.ToCx()
 	if !strings.Contains(out, "alice 30") {
 		t.Errorf("ToCx missing 'alice 30': %s", out)
+	}
+	// #509: ToCx must emit the CURRENT `[table[…]]` clause-child form
+	// with glued `::` column types — the retired `:table[` opener with
+	// single-colon types is unparseable by the live grammar.
+	if !strings.Contains(out, "[table[name age::int]]") {
+		t.Errorf("ToCx missing current [table[name age::int]] header: %s", out)
+	}
+}
+
+// TestTableToCxRoundTrip re-parses the emitted text through the
+// binding's own parse entry (TableFromCx → libcx) — a structural
+// assertion that the emit is legal under the live grammar, not a
+// substring pin (#509).
+func TestTableToCxRoundTrip(t *testing.T) {
+	tbl, _ := NewTable(
+		[]string{"name", "age"},
+		[]string{"", "int"},
+		[][]any{{"alice", int64(30)}, {"bob", int64(25)}},
+	)
+	back, err := TableFromCx(tbl.ToCx())
+	if err != nil {
+		t.Fatalf("ToCx output does not re-parse: %v\noutput: %s", err, tbl.ToCx())
+	}
+	if back.RowCount() != 2 || back.ColCount() != 2 {
+		t.Fatalf("round-trip shape = %dx%d; want 2x2",
+			back.RowCount(), back.ColCount())
+	}
+	for i, want := range []map[string]string{
+		{"name": "alice", "age": "30"},
+		{"name": "bob", "age": "25"},
+	} {
+		for col, val := range want {
+			got, err := back.CellByName(i, col)
+			if err != nil {
+				t.Fatalf("round-trip missing column %q: %v", col, err)
+			}
+			if fmt.Sprintf("%v", got) != val {
+				t.Errorf("round-trip cell (%d, %s) = %v; want %s",
+					i, col, got, val)
+			}
+		}
 	}
 }
 

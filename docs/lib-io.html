@@ -38,6 +38,10 @@
     <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
   </ul></section>
   <section><h4>Reference</h4><ul>
     <li><a href="directives.html">Directives</a></li>
@@ -78,6 +82,7 @@
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
     <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
     <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
     <li><a href="lib-test.html">test</a></li>
@@ -155,6 +160,21 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:write-file "/tmp/out.txt" "hello"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-io-edit-file" class="fn">
+      <h3>io:edit-file</h3>
+      <p class="fn-sig"><code>[$io:edit-file]  -> null</code>  —  Surgical in-place file edit: read, replace `from` with `to` (it MUST occur exactly once, else [err cx-err:CXER2903] and no write), and write back. The in-CX equivalent of the harness Edit tool — needs both read and write capabilities.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/io']
+[$io:edit-file "/tmp/out.txt" "old" "new"]</code>
           </pre>
           <pre class="sample-output">
             <code>cx-err:CXER0271</code>
@@ -847,6 +867,51 @@
           <pre>
             <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:unlock [$io:open "/tmp/out.txt" "w"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-io-watch" class="fn">
+      <h3>io:watch</h3>
+      <p class="fn-sig"><code>[$io:watch]  -> element</code>  —  Start a recursive OS filesystem watch (inotify / FSEvents) on a directory and return a watch handle. Real continuous notification, not polling.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/io']
+[$io:watch "/tmp/project"]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-io-watch-next" class="fn">
+      <h3>io:watch-next</h3>
+      <p class="fn-sig"><code>[$io:watch-next]  -> element</code>  —  Block until the next change under a watch handle and return [change path=… op=created|modified|deleted]. With an optional timeout (ms) returns absence on expiry. An [change op=overflow] means the OS dropped events under load — rescan the tree.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/io']
+[$io:watch-next [$io:watch "/tmp/project"] 1000]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER0271</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-io-watch-close" class="fn">
+      <h3>io:watch-close</h3>
+      <p class="fn-sig"><code>[$io:watch-close]  -> null</code>  —  Tear down a watch handle and unblock any watch-next currently parked on it. Idempotent.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/io']
+[$io:watch-close [$io:watch "/tmp/project"]]</code>
           </pre>
           <pre class="sample-output">
             <code>cx-err:CXER0271</code>
