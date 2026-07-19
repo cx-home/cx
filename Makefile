@@ -799,6 +799,15 @@ test-vcx-summary:
 # A/B against the prior collector. Only the FORK `$(V)` implements `-gc e`; the
 # bare-`v` lang/v reference paths below stay on the upstream default.
 CX_GC ?= -gc e
+# Default DB engines (#520) — mirrors vcx/Makefile CX_ENGINES: the shipped
+# artifact carries sqlite + redis, so the test gate compiles the suite with the
+# same gates. This makes the $if-gated engine tests (vcx/code/sql_test.v,
+# redis lanes) and the engine-dependent conformance fixtures
+# (conformance/stdlib/db.cxd success/denial lanes) actually run — the gate
+# tests the BEHAVIOR the artifact ships. Override CX_ENGINES='' to gate an
+# engine-free build (then db.cxd's engine lanes are expected red; see the
+# fixture doc-comment).
+CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
 # `v test dir/` compiles EACH `*_test.v` as its own standalone executable, and
 # with no cache every one recompiles the whole graph (builtin + os + all vcx
 # modules) from scratch — the dominant cost is the per-file clang subprocess.
@@ -828,10 +837,10 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 
 test-vcx-suite: build-vcx-dev
 	@rm -f $(CX_SKIP_LOG)
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/tests/; st=$$?; \
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/; st=$$?; \
 	if [ $$st -ne 0 ]; then \
 	  echo "──── suite failed under -j; serial retry of the known real-socket contention lanes ────"; \
-	  if $(V) -cc cc $(CX_GC) $(CX_CACHE) test $(SUITE_SERIAL_RETRY); then \
+	  if $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(SUITE_SERIAL_RETRY); then \
 	    echo "──── contention lanes green serially; treating the -j failure as load flake ────"; st=0; \
 	  fi; \
 	fi; \
@@ -848,7 +857,7 @@ test-vcx-suite: build-vcx-dev
 # the same default -gc e memory model as test-vcx-suite).
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/code/
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/
 
 # White-box unit tests for the `cxstore` module (vcx/cxstore/*_test.v) — the
 # content-addressed object store internals (pack/seqtree/bloom/index/gc/reflog/
@@ -872,7 +881,7 @@ test-vcx-cxstore: build-vcx-dev
 # cmd suite had NO gate consumer (#448 wired it in).
 .PHONY: test-vcx-cmd
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/cmd/
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
