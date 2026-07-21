@@ -46,10 +46,10 @@
          the fixtures are the normative reference where this guide
          and the binary disagree."""]
 
-    [child id=cli-overview n=8.1.1 title='Subcommand catalogue'
+    [child id=cli-overview n=8.1.1 title='Subcommand catalog'
       [body
         """The full shipped set. `cx --help` lists every subcommand —
-           the catalogue and the dispatch are generated from one
+           the catalog and the dispatch are generated from one
            table in `vcx/cmd/main.v`, so they cannot drift — and
            every subcommand answers `cx <subcommand> --help` with
            its own usage:"""]
@@ -197,7 +197,7 @@
     [child id=cli-lint n=8.1.7 title='cx lint'
       [body
         """Style + correctness warnings. See [[lint]] for the rule
-           catalogue. Flags: `--format=text|json|summary` (default
+           catalog. Flags: `--format=text|json|summary` (default
            `text`), `--fail-on=info|warn|error|none` (default
            `error`), `--disable=ID1,ID2` to suppress checks,
            `--only=ID` to run one."""]
@@ -441,7 +441,7 @@
       [list
         [item """**CXER\\*** — runtime / parse errors from the V core.
                 See [`spec/cx_native_error_codes.md`](../../spec/cx_native_error_codes.md)
-                for the full catalogue."""]
+                for the full catalog."""]
         [item """**CX-L\\*** — lint findings from `cx_lint` (see
                 [[lint]]); same codes the CLI emits."""]
         [item """**CXLS\\*** — LSP-only static-analysis diagnostics
@@ -653,7 +653,7 @@
          two never overlap — if a check has a safe auto-fix, it
          belongs to `cx fmt`."""]
 
-    [child id=lint-catalogue n=8.5.1 title='Rule catalogue'
+    [child id=lint-catalog n=8.5.1 title='Rule catalog'
       [body
         """Five lint checks are currently shipped:"""]
 

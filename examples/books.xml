@@ -1,4 +1,4 @@
-<!--Library catalogue as a [table[…]] block — typed columns declared once,-->
+<!--Library catalog as a [table[…]] block — typed columns declared once,-->
 <!--rows as positional values. Column-major in binary form (5–10× smaller-->
 <!--than element-per-row for large datasets); row-major in CX text for-->
 <!--human reading.-->

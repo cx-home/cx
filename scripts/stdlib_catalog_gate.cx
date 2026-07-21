@@ -1,8 +1,8 @@
-# scripts/stdlib_catalogue_gate.cx -- stdlib catalogue drift gate.
+# scripts/stdlib_catalog_gate.cx -- stdlib catalog drift gate.
 #
 # Eat-our-own-dog-food: this gate is written entirely in CX and runs
 # under `cx eval`. It verifies ONE invariant about the standard-library
-# catalogue, whose single source of truth is the [module-meta ...] block
+# catalog, whose single source of truth is the [module-meta ...] block
 # fenced near the top of each spec under spec/03-approved/std-lib/*.md:
 #
 #     SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
@@ -36,8 +36,8 @@
 #
 # Capabilities: glob / read-file need `read`; write-line needs `write`;
 # the env standard streams + exit are ambient (never gated, env.md §7).
-# Run via:  vcx/target/cx eval scripts/stdlib_catalogue_gate.cx --allow-all
-# (or:      make stdlib-catalogue-gate)
+# Run via:  vcx/target/cx eval scripts/stdlib_catalog_gate.cx --allow-all
+# (or:      make stdlib-catalog-gate)
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -116,7 +116,7 @@
                           # PASS: write a one-line OK to stdout, exit 0.
                           [then
                             [?let [= $_ok [$io:write-line [$env:stdout]
-                                [$concat "stdlib-catalogue-gate OK -- "
+                                [$concat "stdlib-catalog-gate OK -- "
                                   [$count $spec-set]
                                   " specced (status=current) modules, all implemented via bundle and/or dispatch; no orphans."]]]
                               [$env:exit 0]]]

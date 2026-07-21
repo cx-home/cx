@@ -281,7 +281,7 @@ install-hooks:
 # purity agreement, and that every [fn-doc] example is backed verbatim by
 # the module's conformance corpus (conformance/stdlib/<m>.cxd, run green by
 # `make test-vcx-suite`). Nonzero exit on drift propagates through make.
-# Module-set parity is owned by `make stdlib-catalogue-gate`.
+# Module-set parity is owned by `make stdlib-catalog-gate`.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
 .PHONY: guide-check
 guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
@@ -308,7 +308,7 @@ directive-docs-check: build-vcx
 verify-playground-examples: build-vcx
 	@python3 scripts/gen_guide/playground/gen_examples.py --check
 
-# stdlib catalogue drift gate — verifies the single invariant
+# stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
 # is implemented (stdlib/*.cx bundle and/or a *_stdlib_builtin entry in
@@ -316,10 +316,10 @@ verify-playground-examples: build-vcx
 # without a current spec. The gate is itself written in CX (dog-food) and
 # run by `cx eval`; its nonzero exit on drift propagates through make.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
-.PHONY: stdlib-catalogue-gate
-stdlib-catalogue-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
-stdlib-catalogue-gate: build-vcx
-	@"$(CX_BIN)" eval scripts/stdlib_catalogue_gate.cx --allow-all
+.PHONY: stdlib-catalog-gate
+stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+stdlib-catalog-gate: build-vcx
+	@"$(CX_BIN)" eval scripts/stdlib_catalog_gate.cx --allow-all
 
 # Format-companion regeneration (#424) — the derived companions under
 # examples/ (books.*, config.*, doc.md, comparisons/table_block.csv) are
