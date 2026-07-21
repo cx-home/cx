@@ -92,7 +92,7 @@
          `:f32` / `:f64` / `:f16` (floats), `:bool`, `:string`,
          `:bytes`, `:date`, `:datetime`, `:decimal(precision, scale)`,
          `:bigint`, plus collection columns (`arr[T]`, `map[K, V]`,
-         `seq[T]`). The full type catalogue with byte
+         `seq[T]`). The full type catalog with byte
          encodings is in [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
          §3.10 + [`spec/misc/type-mapping.md`](../../spec/misc/type-mapping.md)."""]
 
