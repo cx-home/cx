@@ -1,7 +1,7 @@
 # P0 acceptance — immediate #14 relief via Boehm tuning
 
 **Scope.** P0 of the V-runtime memory-management plan
-(`spec/02-working/v_runtime_memory_management.md` §6): the *immediate, fork-local*
+(`spec/03-approved/process/v_runtime_memory_management.md` §6): the *immediate, fork-local*
 mitigation for cx-private #14 (`[?map [par]]` slower than serial). P0 is **partial
 relief by design** — it tunes the existing Boehm GC; it does not remove the
 fundamental alloc-lock. The real alloc-heavy fix is P1 (Perceus) / P3 (precise

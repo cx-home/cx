@@ -1,6 +1,6 @@
 # V runtime memory management — RC-first hybrid (long-term architecture)
 
-**Status:** 02-working (promoted 2026-06-11; architecture E endorsed by the user — only the user graduates it to 03-approved)
+**Status:** **03-approved** (graduated by owner ruling 2026-07-22; architecture E — endorsed by the user 2026-06-11 — is the default shipped GC on every build target)
 
 **Scope:** This is a spec for the **V host runtime** (`third_party/v`), not for the
 CX language. CX inherits V's memory behaviour; CX's parallel constructs

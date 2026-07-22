@@ -1,6 +1,6 @@
 # P3 — minimal STW mark-region collector: build plan + live baseline
 
-Spec: `spec/02-working/v_runtime_memory_management.md` §4.3, §5.3 (resolved → (c)),
+Spec: `spec/03-approved/process/v_runtime_memory_management.md` §4.3, §5.3 (resolved → (c)),
 §6 Phase 3, §7 gates. Design: `MINIMAL-COLLECTOR-DESIGN.md`. This file tracks the
 *build* (the multi-week work) — its baseline, the wall, and the diagnostic plan.
 

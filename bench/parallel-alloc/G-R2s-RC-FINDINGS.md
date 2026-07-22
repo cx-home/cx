@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-11 · **Box:** 12-core M-series (8 perf + 4 eff), darwin/arm64 ·
 **Bench:** `bench/parallel-alloc/rc_scaling.c` (binary gitignored) ·
-**Spec:** `spec/02-working/v_runtime_memory_management.md` §5.1, §7.2 (G-R2s)
+**Spec:** `spec/03-approved/process/v_runtime_memory_management.md` §5.1, §7.2 (G-R2s)
 
 ## Question (§5.1)
 

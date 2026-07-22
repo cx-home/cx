@@ -20,7 +20,7 @@ you must document. Otherwise drive all phases below to done, gating at each.
 
 ## Read first (orient before touching code)
 - Memory topic `project_v_runtime_memory_mgmt_spec` — the "NEXT SESSION" block +
-  the PHASE 2 (2c) concurrent-mark note (this task), and `spec/02-working/v_runtime_memory_management.md` §7.
+  the PHASE 2 (2c) concurrent-mark note (this task), and `spec/03-approved/process/v_runtime_memory_management.md` §7.
 - `bench/parallel-alloc/{B16,B17}-FINDINGS.md` — why this is needed: B17 fixed the
   cx interpreter's per-call over-allocation (the bulk of #14), leaving a residual
   ~1.15× `[par]` gap that is the genuine STW-mark-of-concurrent-live-set cost.
