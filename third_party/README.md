@@ -75,3 +75,16 @@ If **no** checkout anywhere still has the commit, the Bucket-1 patches must be
 re-applied on top of a V revision the remote does have, pushed to
 `cx-home/v-cx-patches`, and this pin (gitlink + table above) updated to the new
 SHA.
+
+## `third_party/re2` — vendored RE2 (regex engine)
+
+Pinned to **2023-03-01**, the last pre-abseil release (later releases drag
+the full abseil dylib closure — ~60 libraries — which made the shipped
+darwin binary non-self-contained; #520 field evidence, fixed by #573). The
+`vcx/Makefile` `re2-static` target builds `obj/libre2.a` in-tree with re2's
+own plain Makefile, and `vcx/cx/regex_re2.v` links the archive statically —
+no system re2 package on any platform, full source determinism. The shim
+(`vcx/deps/re2_shim/`) uses only the stable compile/match/replace RE2 API,
+which is identical across this pin and later releases; moving the pin is a
+build-system change, not an API change. BSD-3 license — `LICENSE-re2.txt`
+ships in every release tarball.

@@ -2,3 +2,6 @@
 	path = third_party/v
 	url = https://github.com/cx-home/v.git
 	branch = cx-home/v-cx-patches
+[submodule "third_party/re2"]
+	path = third_party/re2
+	url = https://github.com/google/re2.git

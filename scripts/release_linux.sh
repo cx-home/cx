@@ -13,9 +13,9 @@
 #   dist/cx-<tag>-linux-<arch>.tar.gz      (nested internal artifact)
 #
 # The build runs in ubuntu-22.04 (the same base as .github/workflows/
-# release.yml) with the same dep set: build-essential + libre2-dev (regex
-# shim) + libsqlite3-dev (the CX_ENGINES default carries -d cx_db_sqlite,
-# which links -lsqlite3). The container clones NOTHING: the checkout is
+# release.yml) with the same dep set: build-essential + libsqlite3-dev (the
+# CX_ENGINES default carries -d cx_db_sqlite, which links -lsqlite3). RE2
+# is vendored (third_party/re2, #573) and builds in-tree. The checkout is
 # bind-mounted read-only and copied inside, so the artifact is built from
 # exactly this tree (submodules included) without dirtying the host's
 # vcx/target.
@@ -78,7 +78,7 @@ build_one() {
     ubuntu:22.04 bash -euc '
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
-      apt-get install -y -qq build-essential libre2-dev libsqlite3-dev git make >/dev/null
+      apt-get install -y -qq build-essential libsqlite3-dev git make >/dev/null
       # Lean copy: only what the build consumes (the full checkout is ~13 GB
       # with .git/bindings/build outputs — copying it fills the Docker VM).
       # stdlib/ and x/ are $embed_file-ed into the binary; third_party/v is
@@ -87,6 +87,7 @@ build_one() {
       tar cf - \
         --exclude=vcx/target \
         --exclude=third_party/v/v \
+        --exclude=third_party/re2/obj \
         Makefile VERSION cx.pc.in include vcx stdlib x third_party scripts \
         | tar xf - -C /build
       cd /build
@@ -99,8 +100,9 @@ build_one() {
       T=linux-'"$arch"'
       mkdir -p "/tmp/$T"
       cp vcx/target/cx vcx/target/libcx.so include/cx.h "/tmp/$T/"
+      cp third_party/re2/LICENSE "/tmp/$T/LICENSE-re2.txt"
       ( cd /tmp && tar czf "/out/cx-'"$TAG"'-$T.tar.gz" "$T/" )
-      ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so )
+      ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
     '
   ( cd dist/public && shasum -a 256 "$pub" ) || true
