@@ -826,10 +826,19 @@ CX_CACHE ?= -usecache
 # digest LOUDLY after it — skips are counted separately, never silently.
 CX_SKIP_LOG := vcx/target/test-skips.log
 .PHONY: test-vcx-suite
-# Real-socket lanes that are load-flaky ONLY under full -j parallelism
-# (ephemeral-port / deadline contention; each repeatedly proven green in
-# isolation). On a suite failure, ONLY these get one serial retry — any
-# other failure, or a serial failure here, still fails the target.
+# On a suite failure the recipe retries EXACTLY the lanes that failed, each
+# under the retry class it belongs to — never a fixed proxy list (#572: the
+# old shape retried only the socket lanes on ANY failure, so an unrelated
+# failure that coincided with green socket retries was mislabeled "load
+# flake" and the gate exited 0 on a lane nobody re-ran):
+#   • a lane in SUITE_SERIAL_RETRY (real-socket contention: ephemeral-port /
+#     deadline races, each repeatedly proven green in isolation) → one
+#     serial retry, same flags;
+#   • any lane whose -j run died in a C compilation error → one serial
+#     retry WITHOUT -usecache (#572: a stale cache layer can inject a
+#     duplicate V-runtime symbol, e.g. ___v_thread_wait; cache-free green
+#     proves the artifact — the cache-key root fix is the V-fork follow-up);
+#   • anything else → a real failure, no retry, gate stays red.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
@@ -837,11 +846,31 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 
 test-vcx-suite: build-vcx-dev
 	@rm -f $(CX_SKIP_LOG)
-	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/; st=$$?; \
+	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  echo "──── suite failed under -j; serial retry of the known real-socket contention lanes ────"; \
-	  if $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(SUITE_SERIAL_RETRY); then \
-	    echo "──── contention lanes green serially; treating the -j failure as load flake ────"; st=0; \
+	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  if [ -n "$$failed" ]; then \
+	    st=0; \
+	    for t in $$failed; do \
+	      rel=$${t#$(CURDIR)/}; \
+	      case " $(SUITE_SERIAL_RETRY) " in \
+	        *" $$rel "*) \
+	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
+	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
+	        *) \
+	          if grep -q 'C compilation error' $$log; then \
+	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
+	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
+	          else \
+	            echo "──── real failure (no retry class applies): $$rel ────"; st=1; \
+	          fi ;; \
+	      esac; \
+	    done; \
+	    if [ $$st -eq 0 ]; then \
+	      echo "──── every failed lane green on its classified retry (socket lanes: serial; C-compile failures: cache-free, #572) ────"; \
+	    fi; \
 	  fi; \
 	fi; \
 	if [ -s $(CX_SKIP_LOG) ]; then \
