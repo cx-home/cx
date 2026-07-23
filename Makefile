@@ -1106,6 +1106,14 @@ build-vscode:
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
+# #608 — xap/fabric throughput harness (CX-native scenarios + shell
+# orchestration). Emits a canonical [bench-report …] to
+# vcx/target/bench-report.cx; gates nothing. BENCH_K scales the run.
+.PHONY: bench-xap
+bench-xap: BENCH_K ?= 500
+bench-xap: build-vcx-dev
+	@bench/xap/run.sh $(BENCH_K)
+
 bench: build-vcx
 	$(PYTHON) bench_report.py
 
