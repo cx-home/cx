@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -444,6 +444,16 @@ check-no-infix-range:
 .PHONY: check-no-cxl-token
 check-no-cxl-token:
 	@python3 scripts/check_no_cxl_token.py
+
+# ── NO-CONSUMER-TERMS gate — downstream-consumer identity (names, products,
+# business-domain vocabulary) must never appear in tracked content: the public
+# release repos are CUT from this one, so anything here flows into them. The
+# denylist lives in the script; extend it the day a new consumer engagement
+# begins. Standing owner ruling 2026-07-24: all artifacts speak CX-generic
+# workload language (users / tracked entities / events / deployments).
+.PHONY: check-no-consumer-terms
+check-no-consumer-terms:
+	@bash scripts/check_no_consumer_terms.sh
 
 # ── VERSION-CONSISTENCY gate — the repo-root VERSION file is the single source
 # of truth for the release version. Every static manifest must equal it and the
