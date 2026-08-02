@@ -13,7 +13,19 @@ version, library version).
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- **Module-imported code evaluates identically to program-context code**
+  (#646): derived evaluation frames (`[?let]` / `[?loop]` / `[?for]` /
+  match backtracking) dropped the lexical-position fields, so a `[?fn]`
+  created under one inside a module def captured the *importing program's*
+  scope instead of the module's defining scope. Symptoms fixed: dollar-form
+  sibling calls in deferred closures raised `no callable`, bare-form sibling
+  calls silently self-evaluated to data elements, and `[?str]`
+  interpolations surfaced masked CXER0100 non-scalar-hole errors — all only
+  under `[?lib]` import. The §12.2 nested-def guard (CXER0204) now also
+  reaches through derived frames.
+- `fabric-serve` added to the bash/zsh/fish shell completions (drift gate).
 
 ## [0.13.0] — 2026-07-16
 
