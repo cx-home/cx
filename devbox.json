@@ -1,13 +1,21 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.1/.schema/devbox.schema.json",
-  "packages": [
-    "rustup@latest",
-    "python@3.12",
-    "jq@latest",
-    "hyperfine@latest",
-    "git@latest",
-    "lazygit@latest"
-  ],
+  "packages": {
+    "rustup":    "latest",
+    "python":    "3.12",
+    "jq":        "latest",
+    "hyperfine": "latest",
+    "git":       "latest",
+    "lazygit":   "latest",
+    "sqlite": {
+      "version": "latest",
+      "outputs": ["out", "dev"]
+    }
+  },
+  "env": {
+    "CPATH":        "$PWD/.devbox/nix/profile/default/include",
+    "LIBRARY_PATH": "$PWD/.devbox/nix/profile/default/lib"
+  },
   "shell": {
     "init_hook": [
       "rustup toolchain install stable --no-self-update 2>/dev/null || true",
