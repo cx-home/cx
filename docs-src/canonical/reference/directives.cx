@@ -468,7 +468,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?check-cancel' category="Async" spec="§10.5"
   [sig """[?check-cancel] -> ()"""]
   [summary """Async: cooperative cancellation point — surfaces a cancellation error if the surrounding future was cancelled."""]
-  [example [code """[?let [= $f [?async [?check-cancel]]]
+  [example [code """[?let [= $f [?async [?let [= $_ [?sleep 10s mock]] [?check-cancel]]]]
   [= $_ [?cancel $f]]
   [?match [?await $f]
     [case [err @code='cx-err:CXER0260'] [cancelled]]
