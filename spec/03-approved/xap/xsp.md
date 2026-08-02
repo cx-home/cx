@@ -2,9 +2,11 @@
 
 **Status:** Current (graduated to `03-approved` from `02-working`; the `cx-stdlib/xsp`
 frame codec is shipped + conformance-tested). Resolves the **frame layer** of issue
-**#31** (RFC: XAP Stream Protocol). Defines the self-describing XSP frame and its v1
-transport bindings; multiplexing/backpressure/heartbeat/reconnect-resume and the
-WebSocket/WebTransport bindings are scoped here but deferred to follow-ups.
+**#31** (RFC: XAP Stream Protocol). Defines the self-describing XSP frame, its v1
+transport bindings, and — since the #560 adoption (2026-07-22) — the **§5 session
+layer** (heartbeat/liveness, credit flow control, reconnect-resume), implemented on
+fabric's served tier. Multiplexing beyond per-stream credit and the
+WebSocket/WebTransport bindings remain deferred (§5.4).
 
 > XSP is **not** XAP. XAP is the experience paradigm (the cascade, surfaces,
 > trust — [`xap.md`](xap.md)). **XSP is the streaming wire
@@ -33,7 +35,7 @@ One frame, **network byte order (big-endian)**:
 ```
  offset  size   field          notes
  0       1      version        0x01 (XSP/1) — self-describing; future versions add fields
- 1       1      type           1 request · 2 event · 3 reply · 4 cancel · 5 ping · 6 pong · 7 error
+ 1       1      type           1 request · 2 event · 3 reply · 4 cancel · 5 ping · 6 pong · 7 error · 8 credit (§5.2, negotiated-only)
  2       8      stream-id      u64 — logical multiplexing of many exchanges over one connection
  10      1      flags          bit0 payload-binary (1=CX data-bin, 0=UTF-8 text)
                                bit1 end-of-stream (last frame for this stream-id)
@@ -58,7 +60,11 @@ One frame, **network byte order (big-endian)**:
 - **`principal`** references the DID (#26 / xap.md §22.1). Identity is
   **orthogonal to transport**: the frame names *who*, verification (proof of key
   control, `did/verify-control`) and authorization (VCs ↔ §22.2 capabilities)
-  are separate handshake/PEP concerns, not in the frame.
+  are separate handshake/PEP concerns, not in the frame. Those concerns are
+  normative in the graduated
+  [identity model](xap_identity_model.md) — the XSP-AUTH handshake (its §4)
+  proves the principal; the field itself stays an attribution/routing label
+  (N-IDENT-1), and an unproven principal is anonymous (N-IDENT-2).
 - **`payload`** is opaque bytes. Binary payloads are **CX `data-bin`** (a CX
   value round-trips losslessly); text payloads are UTF-8 (for text-only
   transports / human-readable streams).
@@ -120,21 +126,131 @@ message); it remains the correct **v1 web binding** until the WebSocket binding
 lands, at which point the *same frames* switch carriers with no client logic
 change above the transport adapter.
 
-## §5. Deferred (scoped, not yet specified)
+## §5. Session layer — heartbeat, flow control, reconnect-resume
 
-- **Multiplexing** beyond the `stream-id` field (per-stream flow/ordering).
-- **Backpressure / flow control** (credit-based windows).
-- **Heartbeat / liveness** (`ping`/`pong` cadence + timeout).
-- **Reconnect-resume** (per-stream sequence numbers + replay-from-offset; ties
-  to the journal fold, xap.md §16/§22.6).
-- **WebSocket & WebTransport bindings**.
+**Status:** normative as of the #560 adoption (owner directive 2026-07-22 —
+spec + implementation in one campaign; fabric's served tier is the driving
+consumer and the reference implementation). The v1 frame (§2) is UNCHANGED:
+every §5 mechanism rides existing fields, application-level negotiation, and
+one new negotiated-only frame type. A §5-unaware v1 peer interoperates
+untouched — it simply never negotiates the features.
+
+### §5.0. Feature negotiation (post-attach session query)
+
+Session features are negotiated on the attached channel, AFTER the
+application attach handshake (for fabric: the XSP-AUTH M1/M3 exchange on
+stream 0, identity model §4 — whose M4 confirm shape belongs to the
+graduated identity model and is never extended by this layer). The client
+sends a `session` query; the server answers:
+
+```cx
+[fabric-session features="heartbeat credit resume publish-batch" liveness-ms=30000
+                pending-window=64 request-timeout-ms=30000]
+```
+
+- `features` — space-separated tokens the server speaks. A client MUST NOT
+  send a `credit` frame (§5.2) to a server that did not advertise `credit`,
+  nor a `publish-batch` verb (fabric.md §13, #607) to one that did not
+  advertise `publish-batch` (the client's batch lane falls back to
+  pipelined single publishes); a client that never asks gets the pre-§5
+  posture unchanged. Unknown tokens are ignored (forward-compatible).
+- A server that does not know the query refuses it as an unknown verb; the
+  client tolerates the refusal and behaves as a pre-§5 peer.
+- This negotiation is why the frame `type` space can grow without a version
+  bump: a type is only ever sent to a peer that advertised the feature
+  carrying it. An un-negotiated `credit` byte at a pre-§5 peer is rejected
+  loudly (`CXER-XSP-TYPE`), never misparsed.
+
+### §5.1. Heartbeat / liveness
+
+- Either side MAY send `ping` (type 5) at any time; the receiver MUST answer
+  `pong` (type 6) echoing the `stream-id` and payload verbatim (opaque
+  echo — usable for RTT or sequence probes).
+- **Any inbound frame refreshes the peer's liveness window** — ping is the
+  *idle* keepalive, not a required cadence when traffic flows.
+- The server advertises its window as `liveness-ms` (§5.0; default 30000).
+  A client SHOULD send `ping` once it has been write-idle for **half** the
+  window (the reference client heartbeats from its receive drain loop — the
+  parked standby consumer keeps its assignment). A peer silent past the
+  window is DEAD: the server tears down its session state (fabric: the
+  §19.3 group assignment fails over; the successor resumes per §5.3).
+- Liveness is per-connection, judged on inbound frames only — no clock
+  exchange, no skew sensitivity.
+
+### §5.2. Flow control — credit windows
+
+Per-stream, credit-based, receiver-driven:
+
+- At subscription time the receiver MAY declare a **window** W
+  (fabric: `[subscribe … window=W]`, clamped to the server's configured
+  `pending-window` ceiling for group subscriptions). Undeclared keeps the
+  server default (group subs: the pending-window; observe subs: unbounded —
+  the pre-§5 replay contract).
+- The sender decrements one credit per pushed `event` frame; **at zero it
+  MUST stop pushing** on that stream. Control frames (`ping`/`pong`/
+  `error`/`credit`) never consume credit.
+- Replenishment, two equivalent forms:
+  1. **Application acknowledgment** — a cumulative ack through sequence S
+     (fabric `[ack …]`, §19.5) frees every credit at-or-below S. This is
+     the durable-plane norm: the window IS the pushed-unacked tail.
+  2. **`credit` frame (type 8, negotiated)** — `[frame type=credit
+     stream=SUB [payload N]]` grants N additional credits (payload = a
+     data-bin integer ≥ 1; the stream-id is the subscription id events
+     ride). This serves flows with no application ack: a windowed
+     observe-mode subscription's receiver auto-credits as it consumes (the
+     reference client grants one credit per entry handed to the
+     application, so the balance tracks real consumption, never the socket
+     buffer).
+- A slow consumer therefore never blocks a publisher and never causes
+  unbounded buffering: on the durable plane the LOG is the buffer — at
+  window exhaustion the sender stops pushing and the consumer catches up by
+  offset (§5.3 replay is the same mechanism); on the transient plane
+  latest-wins makes drop-oldest inherent (a starved subscriber observes
+  fewer intermediates — by construction, not policy).
+
+### §5.3. Reconnect-resume
+
+Resume is **application-anchored, transport-stateless**: the transport
+buffers nothing across connections; the durable log is the resume source
+(the xap.md §16/§22.6 tie — the journal fold IS the state).
+
+- Durable `event` frames carry the stream's **journal sequence** in the
+  payload envelope (fabric: `[entry seq=N …]`); the seq is the resume
+  token. Sequences are per-stream, strictly increasing, assigned by the
+  single sequencer at publish (fabric §10).
+- On reconnect the client re-runs the attach handshake (identity is
+  re-proven — resume NEVER bypasses XSP-AUTH), then re-subscribes with a
+  cursor: `[subscribe … from=N]` replays from sequence N (inclusive).
+- **Group subscriptions resume implicitly**: the committed offset (§19.5
+  cumulative ack) is durable server-side state, so a bare re-subscribe
+  resumes at committed+1 and the redelivery window is exactly the
+  uncommitted tail — at-least-once by construction, no visibility-timeout
+  machinery. `from=` on a group subscription is REFUSED: a client-supplied
+  cursor could skip uncommitted events for the whole group (data loss) or
+  silently rewind it; both are operator actions, not client whims.
+- **Observe-mode (non-group) subscriptions resume explicitly**: the client
+  tracks the last seq it processed and re-subscribes `from=last+1`. A
+  client that kept nothing starts wherever it chooses — the server holds no
+  per-observer state.
+- Transient channels do not resume: latest-wins re-read after re-attach is
+  the defined semantics.
+
+### §5.4. Still deferred (scoped)
+
+- **Multiplexing** beyond `stream-id` + per-stream credit (priority /
+  weighted scheduling across streams).
+- **WebSocket & WebTransport bindings** (§4 — the same frames switch
+  carriers unchanged).
 - **Cross-runtime VC revocation propagation** (vc.md §5 3b) rides the same
   server↔server channel once defined.
 
 ## §6. Cross-references
 
 - Issue #31 (this RFC); #26 (did/vc — the `principal` field's identity).
+- [`xap_identity_model.md`](xap_identity_model.md) — the identity model
+  (graduated #116/#519): XSP-AUTH mutual handshake over stream 0, channel
+  binding, per-request proofs, N-IDENT-1…4.
 - [`xap.md`](xap.md) §16 (clients), §22.1 (identity/DID),
-  §23 (web client), §24 (SSE/streaming prerequisite).
+  §23 (web client), §24 (SSE/streaming prerequisite), §26 (N-IDENT-1…4).
 - [`core/codec.md`](../core/codec.md) — the `data-bin` payload codec.
 - [`std-lib/did.md`](../std-lib/did.md), [`std-lib/http.md`](../std-lib/http.md).

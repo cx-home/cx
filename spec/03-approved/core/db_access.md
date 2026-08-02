@@ -56,11 +56,14 @@ they want, not by statement class.
 ```
 
 Unlike the SQL verbs, the redis verbs **do not exist** on a build without
-`-d cx_db_redis`: dispatch is compile-time gated, so `[$redis-open …]` on a
-default build fails name resolution —
+`-d cx_db_redis`: dispatch is compile-time gated, so `[$redis-open …]` on an
+engine-free build fails name resolution —
 `[err code=user-undefined message='no callable "redis-open"']`. **[verified]**
 This asymmetry (SQL verbs always resolve, redis verbs conditionally exist) is
-shipped behavior, recorded here as-is.
+shipped behavior, recorded here as-is. Since the **default build carries
+`-d cx_db_redis`** (#520, §2), the redis verbs resolve on the shipped
+artifact; the no-callable lane applies to engine-free override builds
+(`CX_ENGINES=''`) and wasm.
 
 Redis is deliberately **one generic command verb**, not a fixed subset:
 `[$redis-cmd HANDLE WORD+]` passes the words verbatim as a RESP command, so
@@ -84,29 +87,54 @@ connected server accepts). There is no command allowlist; authority is the
 
 ## §2. Build gates and engine matrix
 
-Engines are opt-in build flags so the default (and wasm) build links **no**
-database client library — verified historically via `otool` (no `libsqlite3`,
-no `libpq` on the default build). Adding an engine never touches the neutral
-`sql.v` layer; each engine is one gated file implementing the `SqlConn` trait
+Engines are compile-time build flags. Since #520 the **default build carries
+sqlite + redis** (`vcx/Makefile` `CX_ENGINES ?= -d cx_db_sqlite
+-d cx_db_redis` — threaded through the shipped `lib`/`cli` targets, the dev
+targets, the `-prod` strictness checker, and every test-gate compile, so the
+gate tests what the artifact ships): sqlite adds only binding code and
+dynamic-links the **system** `libsqlite3` (macOS: SDK-provided; Linux:
+`libsqlite3-dev` at build time), redis is a pure-V RESP client linking
+nothing — measured cost **+155 KB (+2.1 %)** on the stripped CLI, verified
+via `otool` (the only new load command is `/usr/lib/libsqlite3.dylib`).
+postgres/mysql stay opt-in because they add runtime library dependencies
+(`libpq` / `libmysqlclient`) the installer base can't assume. The **wasm**
+build and any `CX_ENGINES=''` override build remain engine-free and link no
+database client library (the historical default posture, still verifiable
+via `otool`). Adding an engine never touches the neutral `sql.v` layer; each
+engine is one gated file implementing the `SqlConn` trait
 (`run(stmt, params) -> {cols, rows, changes, last_rowid}` + `shutdown`).
 
-| Engine | Build gate | URL scheme(s) | Links | Capability at open | Status |
-|---|---|---|---|---|---|
-| sqlite | `-d cx_db_sqlite` | `sqlite://` | `libsqlite3` | `write` | **[verified]** live (this spec's evidence run) |
-| postgres | `-d cx_db_pg` | `postgres://`, `postgresql://` | `libpq` | `net` | **[inferred]** from source; live-verified at merge time (external-engines milestone) |
-| mysql | `-d cx_db_mysql` | `mysql://` | `libmysqlclient` | `net` | **[inferred]** from source; live-verified at merge time |
-| redis | `-d cx_db_redis` | `redis://` (`rediss://` accepted, see §4.4) | none (pure-V RESP client) | `net` | **[verified]** live (this spec's evidence run) |
+| Engine | Build gate | Default artifact | URL scheme(s) | Links | Capability at open | Status |
+|---|---|---|---|---|---|---|
+| sqlite | `-d cx_db_sqlite` | **yes** (#520) | `sqlite://` | system `libsqlite3` (dynamic) | `write` | **[verified]** live (this spec's evidence run) |
+| postgres | `-d cx_db_pg` | no — opt-in | `postgres://`, `postgresql://` | `libpq` | `net` | **[inferred]** from source; live-verified at merge time (external-engines milestone) |
+| mysql | `-d cx_db_mysql` | no — opt-in | `mysql://` | `libmysqlclient` | `net` | **[inferred]** from source; live-verified at merge time |
+| redis | `-d cx_db_redis` | **yes** (#520) | `redis://` (`rediss://` accepted, see §4.4) | none (pure-V RESP client) | `net` | **[verified]** live (this spec's evidence run) |
 
 Note the postgres gate is **`cx_db_pg`**, not `cx_db_postgres` (issue #294's
 prose used the longer name; the flag in the build is `cx_db_pg`).
+
+Opt-in engines build shipped-shape (#520 threaded `CX_DFLAGS` through the
+production targets):
+
+```
+make -C vcx build CX_DFLAGS='-d cx_db_pg'          # + postgres (needs libpq)
+make -C vcx build CX_DFLAGS='-d cx_db_pg -d cx_db_mysql'
+```
+
+Every binary reports its compiled-in engine set in `cx -v`
+(`engines  sqlite redis`), probed from the same `$if` gates that select the
+engine at `sql-open` — capability is discoverable without tripping
+`CXER1100`.
 
 Implementation anchors: `vcx/code/sql.v` (neutral layer),
 `vcx/code/sql_sqlite_d_cx_db_sqlite.v`, `vcx/code/sql_pg_d_cx_db_pg.v`,
 `vcx/code/sql_mysql_d_cx_db_mysql.v`, `vcx/code/redis_d_cx_db_redis.v`.
 
-Verb availability per build:
+Verb availability per build (the **default build** is the sqlite + redis
+column pair; "engine-free" = `CX_ENGINES=''` override or wasm):
 
-| Verb | Engine-less build | Any `-d cx_db_{sqlite,pg,mysql}` build | `-d cx_db_redis` build |
+| Verb | Engine-free build | Any `-d cx_db_{sqlite,pg,mysql}` build | `-d cx_db_redis` build |
 |---|---|---|---|
 | `sql-open` | resolves; `CXER1100` no-engine error | resolves; opens matching scheme | resolves; `CXER1100` unless a SQL gate is also present |
 | `sql-exec` / `sql-query` / `sql-close` | resolve; behave per §3/§6 | same | same |
@@ -267,11 +295,16 @@ engine-less builds.
 ### §7.1 Parameters
 
 Every argument after the SQL string is a bind parameter. Parameters are
-**string scalars only**: a non-string scalar (int, float, bool) or an element
-in parameter position silently binds as the **empty string** — `[$sql-query
-$db 'SELECT ? AS a' 7]` yields `[a '']`, not `[a '7']`. **[verified]** Write
-`'7'`. (Shipped behavior recorded honestly; candidate tightening: `CXER0100`
-on non-string parameters — spec-first change here if adopted.)
+**string scalars only**, and the boundary is **strict** (owner ruling
+2026-07-21, #524): a non-string scalar (int, float, bool), an element, or
+absence in parameter position raises `cx-err:CXER0100` (`E_OPERAND_KIND`)
+**naming the parameter** — `[$sql-query $db 'SELECT ? AS a' 7]` is a
+CXER0100 telling you parameter 1 is not a string scalar; write `'7'` or
+convert explicitly (`[$concat '' $v]`). The pre-ruling behavior (silent
+bind as `''`) was a recorded silent-wrong-answer and is retired — same
+doctrine as the type-strict operators (code.md §6.5): everything crosses
+the SQL boundary as text (§1.3), and the conversion is the author's,
+stated in the program.
 
 Placeholder syntax is **engine-native**:
 
@@ -332,8 +365,10 @@ path); supplying params to a statement without holes is engine-defined.
 
 ## §8. Redis command surface and RESP mapping
 
-`redis-cmd` sends `WORD+` verbatim (each word a string scalar; non-string
-words degrade to `''` as in §7.1) and maps the RESP reply recursively:
+`redis-cmd` sends `WORD+` verbatim (each word a string scalar; a
+non-string word raises `cx-err:CXER0100` naming the word — the same #524
+strict boundary as the §7.1 bind parameters) and maps the RESP reply
+recursively:
 
 | RESP reply | CX value | Example **[verified]** |
 |---|---|---|
@@ -447,13 +482,19 @@ test was built with. So the corpus splits by build-dependence:
   idempotent-null `sql-close`. These were verified to produce **identical**
   output on an engine-less build and a `-d cx_db_sqlite -d cx_db_redis` build,
   and the suite's detection power was proven red/green before landing.
-- **Build-dependent lanes → NOT fixtured** (they would be always-red on some
-  build): engine success paths, the `CXER0271`-vs-`CXER1100` open outcome,
-  every redis verb (existence itself is gated). These live in `$if`-gated V
-  tests — `vcx/code/sql_test.v` (in-memory sqlite exec/query matrix, compiled
-  to a no-op without the flag) is the pattern; engine files with live-server
-  needs (pg/mysql/redis) follow the store backends' env-gated live-test
-  precedent.
+- **Default-engine lanes → fixtured since #520** (`db.cxd` 010+): the gate
+  compiles the suite with the default `CX_ENGINES`, so the sqlite success
+  lifecycle, `sql-exec` result shape, §7.1 param binding (string success +
+  non-string→`''`), the malformed-empty-path `CXER1101`, the now-deterministic
+  `CXER0271` open denial, and the redis offline guard sweep (arity, operand,
+  unknown-handle, denial) run as enforced fixtures. An engine-free override
+  build (`CX_ENGINES=''`) is expected red on these lanes — a non-default
+  configuration, like a `CX_GC` override.
+- **Opt-in-engine lanes → NOT fixtured** (they would be always-red on the
+  default build): pg/mysql paths, and redis success lanes (live server).
+  These live in `$if`-gated V tests — `vcx/code/sql_test.v` (in-memory sqlite
+  exec/query matrix) is the pattern; engine files with live-server needs
+  (pg/mysql/redis) follow the store backends' env-gated live-test precedent.
 - **Live evidence for this spec** (recorded 2026-07-10, worktree build
   `-d cx_db_sqlite -d cx_db_redis` + engine-less installed build): sqlite
   full lifecycle (open/create/insert-with-params/query/close), NULL→`''`,
@@ -466,6 +507,7 @@ test was built with. So the corpus splits by build-dependence:
   parquet/arrow honest-error lanes.
 
 The SQL-verb arity lane (`CXER0108`, §6) is fixtured in `db.cxd`
-(`db-006..db-009`); the redis arity guards are implemented identically but
-cannot be fixtured (verb existence itself is build-gated) — they were
-live-verified on the gated build alongside the sweep (#305).
+(`db-006..db-009`); the redis arity guards are fixtured in `db.cxd`
+(`db-016+`) since the default build carries `-d cx_db_redis` (#520) — they
+had previously been live-verified only, on the gated build alongside the
+sweep (#305).

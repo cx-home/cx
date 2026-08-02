@@ -30,6 +30,7 @@ complete -c cx -f -n '__fish_use_subcommand' -a store-serve -d 'Run the CSRP sto
 complete -c cx -f -n '__fish_use_subcommand' -a store-health -d 'Readiness probe for the store service'
 complete -c cx -f -n '__fish_use_subcommand' -a store-token -d 'Mint a store-service auth token'
 complete -c cx -f -n '__fish_use_subcommand' -a store-rotate-kek -d 'Rotate the store key-encryption key'
+complete -c cx -f -n '__fish_use_subcommand' -a fabric-serve -d 'Run the fabric event-stream daemon'
 complete -c cx -f -n '__fish_use_subcommand' -a lsp -d 'Run cx Language Server over stdio'
 
 # Top-level (no subcommand) conversion / evaluation flags — vcx/cmd/main.v.
@@ -53,8 +54,8 @@ complete -c cx -f -n '__fish_use_subcommand' -l data -r -d 'separate data input,
 complete -c cx -f -n '__fish_use_subcommand' -s e -l expression -r -d 'inline program expression'
 complete -c cx -f -n '__fish_use_subcommand' -s v -l version -d 'print version'
 
-# Capability grants (security.md §3) — top-level program reading + eval + store-serve.
-for sub in '__fish_use_subcommand' '__fish_seen_subcommand_from eval' '__fish_seen_subcommand_from store-serve'
+# Capability grants (security.md §3) — top-level program reading + eval + store-serve + fabric-serve.
+for sub in '__fish_use_subcommand' '__fish_seen_subcommand_from eval' '__fish_seen_subcommand_from store-serve' '__fish_seen_subcommand_from fabric-serve'
     complete -c cx -f -n "$sub" -l allow-all -d 'grant all capabilities'
     complete -c cx -f -n "$sub" -l allow-read -d 'grant filesystem read'
     complete -c cx -f -n "$sub" -l allow-write -d 'grant filesystem write'
@@ -125,6 +126,11 @@ complete -c cx -f -n '__fish_seen_subcommand_from lock' -l output -r -d 'lockfil
 
 # store-serve flags (capability grants added above)
 complete -c cx -n '__fish_seen_subcommand_from store-serve' -l config -r -d 'service config (cxstore.service.cx)'
+complete -c cx -f -n '__fish_seen_subcommand_from store-serve' -l exit-on-stdin-eof -d 'drain gracefully on stdin EOF (spawner tether)'
+
+# fabric-serve flags (capability grants added above)
+complete -c cx -n '__fish_seen_subcommand_from fabric-serve' -l config -r -d 'fabric service config'
+complete -c cx -f -n '__fish_seen_subcommand_from fabric-serve' -l exit-on-stdin-eof -d 'drain gracefully on stdin EOF (spawner tether)'
 
 # store-health flags
 complete -c cx -f -n '__fish_seen_subcommand_from store-health' -l url -r -d 'ready-probe URL'

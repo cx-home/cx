@@ -357,7 +357,7 @@
          `[host-auth]` block so the deployment host itself
          authenticates attaching clients with the XSP mutual-auth
          handshake and per-request proofs (the XAP identity model spec,
-         `spec/02-working/xap_identity_model.md`, and the trust-model
+         `spec/03-approved/xap/xap_identity_model.md`, and the trust-model
          part of the XAP spec)."""]]
 
   [child id=dist-market n=19.6 title='The marketplace — today versus specified'

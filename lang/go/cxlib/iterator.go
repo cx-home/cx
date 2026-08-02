@@ -13,7 +13,7 @@ import (
 	"fmt"
 )
 
-// IteratorSourceKind catalogues which generator backs an IteratorNode.
+// IteratorSourceKind catalogs which generator backs an IteratorNode.
 // Ordinals MUST mirror `vcx/cx/ast.v` `IteratorSourceKind`.
 // Future kinds (`iter_file`, `iter_channel`) extend the
 // table additively; v0.8.0 producers MUST emit only ordinals 0..16

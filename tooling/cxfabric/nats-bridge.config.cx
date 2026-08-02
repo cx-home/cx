@@ -1,0 +1,19 @@
+[; sample config for nats-bridge.cx — see the header there for the full
+   contract. Credentials ride env vars (token-env / pass-env), never this
+   file. In-route subjects must be unique. ]
+[nats-bridge
+  [fabric url="xsp://127.0.0.1:4300" tenant="acme"
+          did="did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw"
+          seed-env="CX_BRIDGE_SEED"
+          responder="did:key:z6MkiaMbhXHNA4eJVCCj8dbzKzTgYDKf6crKgHVHid1F1WCT"]
+  [nats url="tcp://127.0.0.1:4222"]
+  [routes
+    [; NATS → fabric: legacy producers keep publishing to their subjects;
+       each message lands on the mapped stream as canonical CX ]
+    [in subject="legacy.orders.>" stream="orders"]
+    [; fabric → NATS: legacy consumers keep their subscriptions; events
+       render per fmt and PUB to the subject (body="entry" opts into the
+       full attributed envelope); the group's offset commits only after
+       the server's PONG confirms the batch ]
+    [out stream="orders" pattern=":order.*" group="nats-out"
+         subject="cx.orders" fmt="cx" body="event"]]]

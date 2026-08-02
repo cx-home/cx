@@ -434,6 +434,67 @@ served (`404 CXER1709`) — there is no daemon config to reload. gRPC
 parity: the `Reload` method routes through the same pipeline and carries
 the same `cx-err-code` trailer on refusal (§6.1).
 
+### 3.14 `POST /cx-store/v1/aliases` · `POST /cx-store/v1/aliases-set` *(alias remoting)*
+
+The **mutable-pointer layer over the wire**: a client's `get-alias` /
+`list-aliases` / `set-alias` on a `cx-store://` handle resolve against the
+mount's **authoritative alias table** — one authority, so target-presence
+enforcement, gc pinning, and the durable alias records apply on the daemon
+exactly as for an in-process `set-alias`. This supersedes the earlier
+blanket "CSRP carries no alias verbs" refusal *for CSRP handles only*: the
+original concern (a remote miss indistinguishable from absence — the
+silent-empty lie) is answered by **explicit per-name presence** in the
+response, never assumed by the client. Byte-source remotes (`http(s)`,
+`ftp(s)`, `sftp` document sources) still refuse alias ops with
+`404 CXER1709` — there is no service to ask.
+
+**`aliases`** (permission: `read`) resolves named entries and/or lists the
+table:
+
+```
+[aliases [k name="users"] [k name="head"]]        → 200
+[aliases-result [a name="users" hash="<store-key>" present="true"]
+                [a name="head" present="false"]]
+
+[aliases all="true"]                              → 200, every present entry
+```
+
+A name the daemon does not hold answers `present="false"` — a
+**server-asserted absence** the client surfaces as the absence channel
+`()`, exactly like a local miss. The client never fabricates an empty
+result from a transport failure: a non-2xx surfaces as the transport /
+auth error, distinct from absence.
+
+**`aliases-set`** (permission: `write`) applies alias writes through the
+same arm as a local `set-alias`:
+
+```
+[aliases-set [a name="users" hash="<store-key>"]]                → 200 [aliases-set-result set="1"]
+[aliases-set [a name="head" hash="<k2>" expect="<k1>"]]          → 200 (CAS advance)
+[aliases-set [a name="head" hash="<k1>" expect=""]]              → 409 CXER1704 (exists)
+```
+
+- Every target `hash` must already be present on the daemon (a data doc or
+  a `code:`-namespace def) — a missing target is `404 CXER1721`
+  (`E_CSRP_NOT_FOUND`, the wire alias of the local `CXER1121` this same
+  refusal raises in-process). Aliases can never dangle, remote or local.
+- An optional per-record `expect="<store-key>"` makes the write a
+  **compare-and-set**: it applies only if the alias currently resolves to
+  `expect` (`expect=""` ⇒ the alias must not exist yet). Semantics mirror
+  `refs-set` (#218): **validate-then-apply, all-or-nothing** across the
+  records of one request, under the store's op lock; a mismatch is
+  `409 CXER1704` and nothing is applied. This is the conflict-safe pointer
+  advance a remote journal head rides. Records without `expect` keep
+  last-writer-wins (the local single-writer contract of §6.2).
+- A read-only mount refuses with `400` carrying the local read-only code,
+  matching the other write-shaped ops.
+
+**Deliberately not carried**: `delete-alias` (no wire consumer; deletion
+stays a daemon-local operation and the client refuses with `404 CXER1709`
+rather than mutating dead client-side state). gRPC parity: `Aliases` /
+`AliasesSet` ride the same object-wire body shape through the same route
+(§6.1).
+
 ## 4 — Error mapping
 
 CSRP errors reuse client-side `cx-stdlib/store` codes (CXER1100-1132)

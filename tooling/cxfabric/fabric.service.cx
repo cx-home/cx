@@ -1,0 +1,25 @@
+[; Sample cx-fabric served-tier config (spec/02-working/fabric.md §13/§19.6).
+   Loaded by: cx fabric-serve --config /etc/cxfabric/fabric.service.cx ;]
+[fabric-service
+  [bind addr="0.0.0.0:8447"]
+  [health addr="127.0.0.1:8448"]
+  [; TLS recommended in production; omit for localhost/sidecar plaintext ;]
+  [; [tls cert="/etc/cxfabric/tls.crt" key="/etc/cxfabric/tls.key"] ;]
+  [; the daemon's responder identity: the seed env var must re-derive the
+     declared DID or boot refuses (N-IDENT-2) ;]
+  [identity did="did:key:REPLACE-WITH-YOUR-HOST-DID" seed-env="CX_FABRIC_SEED"]
+  [; mutual = anonymous attach refused; mode="floor" floor="dev" admits
+     anonymous peers as the floor principal (grant it via [anonymous …]) ;]
+  [policy mode="mutual"]
+  [; pending-window: pushed-unacked events per grouped subscription (§19.2);
+     liveness-ms: the §19.3 heartbeat-or-deadline failover window;
+     request-timeout-ms: the §12.1 pending-call expiry (an unanswered
+     request-reply call fails loudly to its requester past this) ;]
+  [limits pending-window=64 liveness-ms=30000 request-timeout-ms=30000]
+  [fabrics
+    [fabric name="main" store="file:///var/lib/cxfabric/main" tenant="acme"]]
+  [principals
+    [principal did="did:key:REPLACE-WITH-A-CLIENT-DID"
+      [grant action="publish" scope="*"]
+      [grant action="consume" scope="*"]
+      [grant action="observe" scope="*"]]]]

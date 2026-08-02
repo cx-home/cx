@@ -201,7 +201,16 @@ remote-backed store `[using FN]` degrades to get → transform → put and yield
 the identical content address a local store would. Aliases are the one
 mutable surface (last-write-wins, single-writer); `get-alias` returns the
 **absence** channel (empty sequence `()`), never `null` (the no-conflation guard,
-[`code.md §9.1.2.1`](../core/code.md)). `migrate` copies every doc + alias
+[`code.md §9.1.2.1`](../core/code.md)). On a `cx-store://` handle the alias
+family resolves against the daemon's **authoritative** table over the wire
+(the remote-protocol spec's alias-remoting ops): `get-alias`/`list-aliases`
+carry explicit per-name presence — a miss is a *server-asserted* absence
+`()`, never a client-side guess — and `set-alias` applies daemon-side with
+the same target-must-exist `CXER1121` refusal as a local write.
+`delete-alias` is not carried on the wire and refuses (`CXER1709`); on
+byte-source remotes (`http(s)`/`ftp(s)`/`sftp`) every alias op refuses with
+`CXER1709` — there is no service to ask, and a fabricated local answer
+would lie. `migrate` copies every doc + alias
 preserving content-hash IDs (lossless across any axes); a source reconstruct
 failure is a hard `CXER1120`, never a silent skip. `capabilities` returns
 `[read write list backend url compression encoding …]`; closed-Store ops raise
@@ -219,6 +228,7 @@ Over the object plumbing `have`/`get`/`put`/`refs`, the sound porcelain set:
 [?def status       scope=public impure [returns element] ($store::element) ...]
 [?def mounts       scope=public impure [returns element] ($store::element) ...]
 [?def config-reload scope=public impure [returns element] ($store::element) ...]
+[?def verify       scope=public impure [returns element] ($store::element) ...]
 [?def log          scope=public impure [returns [sequence element]] ($store::element) ...]
 [?def gc           scope=public impure [returns element] ($store::element) ...]
 [?def prune        scope=public impure [returns element] ($store::element) ...]
@@ -241,6 +251,29 @@ Over the object plumbing `have`/`get`/`put`/`refs`, the sound porcelain set:
   ahead/behind). **`log`** is the linear ref-log (epoch-ordered). **`gc`** =
   compaction + mark-live; **`prune`** reclaims the unreachable subset (a shared
   subtree survives another doc's delete).
+- **`verify`** is the **whole-graph integrity pass**: every live doc must
+  reconstruct from the object graph, or it raises `CXER1120` naming the first
+  offending store-hash. It answers `[verification valid=true docs=N objects=M]`.
+  This check used to run **inline on every open** of an object-graph store —
+  `O(live set)` work that made boot scale with lifetime volume. Under
+  demand-paged loading (below) it is available on demand or from a background
+  task instead, and per-object integrity is unchanged: every paged read
+  self-verifies its hash, so corruption refuses **loudly at first touch**,
+  never as a silent wrong doc. On the flat document model it refuses
+  (`CXER1709`) rather than answering a hollow `valid=true` — that model's
+  per-read hash check *is* its verification.
+
+**Demand-paged object load (the default).** Opening an object-graph store
+populates only the **refs layer** — the manifest replay: doc-roots, the doc
+order, and aliases — and objects resolve on **first touch** through the
+composite getter (live sink → page cache → durable substrate), which caches
+what it pages so a second touch is memory-speed. So open no longer reads the
+whole live set, and resident memory tracks the **working set** rather than
+lifetime volume. The page cache is deliberately separate from the write sink:
+the sink's order is the flush watermark, so a paged-in read can never be
+mistaken for a new object and re-persisted. `[opts eager="true"]` restores the
+old behavior (whole-graph load + inline reconstruction) for a caller that
+wants that check at open.
 - **`rotate-kek`** re-wraps every at-rest envelope's data key under a new tenant
   KEK (§9, *KEK rotation*). Like `gc`/`prune` it is a maintenance verb on an open
   **local encrypted** handle only: encryption is a local at-rest concern and CSRP

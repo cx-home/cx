@@ -291,8 +291,17 @@ fn write_pack_entries(path string, keys [][]u8, blobs [][]u8, compress bool, fil
 
 	mut f := os.create(path)!
 	f.write(buf)!
+	// #624: durable-on-return — flush the stdio buffer to the kernel and
+	// fsync to media before reporting the pack written. A journal receipt
+	// implies durability; without the fsync a power loss after the ack could
+	// drop an acked entry (process kill alone never could — the page cache
+	// survives it — but the contract is power-loss durability).
+	f.flush()
+	C.fsync(f.fd)
 	f.close()
 }
+
+fn C.fsync(fd int) int
 
 // ── reader ────────────────────────────────────────────────────────────
 
@@ -370,6 +379,12 @@ fn parse_pack(data []u8) !PackReader {
 		return error('cxstore: footer crc mismatch')
 	}
 	count := read_u32(footer, 0)
+	// #624: the index record area must FIT the footer — a corrupt count would
+	// otherwise send reads past the buffer (a V bounds panic at best, never a
+	// typed refusal). 44 bytes per record: 32 hash + 8 offset + 4 length.
+	if i64(4) + i64(count) * 44 > i64(footer.len) {
+		return error('cxstore: pack index count ${count} exceeds footer (corrupt/truncated pack)')
+	}
 	// Parse the membership filter (sits after the index records in the footer).
 	// `filter_kind` (the formerly-reserved bloom_seed slot) selects the kind: a
 	// kind-0 pack carries a Bloom, kind-1 an xor8 — the bytes blob, the k slot,
@@ -457,10 +472,16 @@ pub fn (r &PackReader) hashes() [][]u8 {
 }
 
 fn (r &PackReader) entry_payload(off int) ?[]u8 {
+	// #624: the offset comes from an index record — validate it against the
+	// buffer before ANY read, so a corrupt index yields a typed miss (the
+	// caller's integrity error), never an out-of-bounds access.
+	if off < 0 || off + 44 > r.data.len {
+		return none
+	}
 	flags := r.data[off + 5]
 	plen := int(read_u32(r.data, off + 40))
 	start := off + 44
-	if start + plen > r.data.len {
+	if plen < 0 || start + plen > r.data.len {
 		return none
 	}
 	stored := r.data[start..start + plen]

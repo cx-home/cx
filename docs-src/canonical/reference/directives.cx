@@ -147,6 +147,20 @@
 B"""] [expect """50"""]]
 ]
 
+[directive-doc name='?do' category="Core — evaluate-for-effect sequencing" spec="§8.14"
+  [sig """[?do E …] -> null"""]
+  [summary """Evaluate-for-effect sequencing: one or more expressions evaluate in order with values discarded; the first [err …] result propagates immediately, and success yields null (a present unit, never absence)."""]
+  [example [code """[?do 1 2 3]"""] [expect """null"""]]
+]
+
+[directive-doc name='?loop' category="Core — condition-driven loop (explicit exits)" spec="§8.15"
+  [sig """[?loop [= $x INIT]… BODY] with [break V?] / [continue V…?] -> value of [break]"""]
+  [summary """Condition-driven loop as anonymous trampolined tail recursion: [continue …] rebinds the declared bindings positionally for the next pass, [break …] exits with the loop's value, and any other tail value raises CXER0100 (all-explicit exits)."""]
+  [example [code """[?loop [= $i 1] [= $acc 0]
+  [?if [> $i 5] [then [break $acc]]
+    [else [continue [+ $i 1] [+ $acc $i]]]]]"""] [expect """15"""]]
+]
+
 [directive-doc name='?if' category="Core — conditional" spec="§8"
   [sig """[?if COND [then …] [else …]] -> branch"""]
   [summary """Conditional: evaluate COND for its effective boolean value and take the [then] or [else] branch."""]
@@ -454,7 +468,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?check-cancel' category="Async" spec="§10.5"
   [sig """[?check-cancel] -> ()"""]
   [summary """Async: cooperative cancellation point — surfaces a cancellation error if the surrounding future was cancelled."""]
-  [example [code """[?let [= $f [?async [?check-cancel]]]
+  [example [code """[?let [= $f [?async [?let [= $_ [?sleep 10s mock]] [?check-cancel]]]]
   [= $_ [?cancel $f]]
   [?match [?await $f]
     [case [err @code='cx-err:CXER0260'] [cancelled]]

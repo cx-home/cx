@@ -85,24 +85,35 @@ build-dev: re2-shim lib-dev cli-dev
 
 # ── RE2 shim (Phase 7.74c-schema-validator-v-core) ───────────────────────────
 # Compiles the C++ wrapper at vcx/deps/re2_shim/re2_shim.cc into a
-# static archive that libcx + cli link against. RE2 itself is a system
-# dep (Homebrew `re2` on macOS, `libre2-dev` on Debian/Ubuntu);
-# submodule-pinned RE2 source ships post-tag for full
-# determinism. See spec/abi.md §3 capability bit 25 +
-# spec/schema.md §7 for the centralisation rationale.
+# static archive that libcx + cli link against. RE2 itself is VENDORED
+# (#573): third_party/re2, submodule-pinned to the last pre-abseil
+# release (2023-03-01) and built as a static archive in-tree — so the
+# shipped binaries carry no system-re2 dependency (the Homebrew re2
+# dylib drags ~60 abseil dylibs; bare runners aborted at dyld until
+# `brew install re2`) and the build is fully source-deterministic.
+# The shim uses only the stable compile/match/replace RE2 API, which is
+# identical across that pin and later releases. See spec/abi.md §3
+# capability bit 25 + spec/schema.md §7 for the centralisation
+# rationale; BSD-3 license text ships with the release tarballs.
 
 RE2_SHIM_SRC := deps/re2_shim/re2_shim.cc
 RE2_SHIM_LIB := $(TARGET)/libcx_re2_shim.a
+RE2_VENDOR   := $(CURDIR)/../third_party/re2
+RE2_STATIC   := $(RE2_VENDOR)/obj/libre2.a
+RE2_INC      := -I$(RE2_VENDOR)
 
-ifeq ($(UNAME_S), Darwin)
-  RE2_INC := -I/opt/homebrew/include
-else
-  RE2_INC := -I/usr/include
-endif
+.PHONY: re2-static
+re2-static: $(RE2_STATIC)
+
+$(RE2_STATIC):
+	# -fPIC: the archive links into libcx.so — Linux refuses non-PIC
+	# objects in a shared library ("dangerous relocation"); macOS is
+	# PIC-by-default so the flag is explicit-but-harmless there.
+	$(MAKE) -C $(RE2_VENDOR) CXXFLAGS="-O3 -g -fPIC" obj/libre2.a
 
 re2-shim: $(RE2_SHIM_LIB)
 
-$(RE2_SHIM_LIB): $(RE2_SHIM_SRC) deps/re2_shim/re2_shim.h | $(TARGET)
+$(RE2_SHIM_LIB): $(RE2_SHIM_SRC) deps/re2_shim/re2_shim.h $(RE2_STATIC) | $(TARGET)
 	c++ -std=c++17 -O2 -fPIC $(RE2_INC) -Ideps/re2_shim -c $(RE2_SHIM_SRC) -o $(TARGET)/cx_re2_shim.o
 	ar rcs $(RE2_SHIM_LIB) $(TARGET)/cx_re2_shim.o
 
@@ -131,13 +142,24 @@ endif
 # build output — they're benign (unused stub params, signed-shift notices) and
 # drown the real signal. Override with `make VQUIET= …` to see them.
 VQUIET ?= -n -w
+# Default DB engines (#520): every shipped-shape build carries sqlite + redis.
+# sqlite adds only V's binding code — the library stays a dynamic link to the
+# system libsqlite3 (macOS: SDK header + /usr/lib dylib; Linux: libsqlite3-dev
+# at build time, libsqlite3 at run time); redis is a pure-V RESP client linking
+# nothing. Measured cost on the stripped CLI: +155 KB (+2.1%). pg/mysql stay
+# opt-in via CX_DFLAGS ('-d cx_db_pg' → libpq, '-d cx_db_mysql' →
+# libmysqlclient) because they add runtime library deps the installer base
+# can't assume. Override CX_ENGINES='' for an engine-free build (size audits,
+# constrained targets); the wasm path (scripts/wasm/) never passes this
+# variable, so wasm stays engine-free. `cx -v` reports the compiled-in set.
+CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
 # Build target = vcx/code/. The code module imports cx, so every
 # cx_* export from vcx/cx/cabi.v ships in the same libcx — plus the
 # v0.8.0 cx_code_eval* family exported from vcx/code/cabi.v
 # (Phase 3.11). Building from vcx/cx/ in isolation would leave the
 # code-eval family out of the shared library.
 lib: re2-shim $(TARGET)
-	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) code/
+	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) code/
 	$(STRIP) $(LIB)
 
 # Unoptimised build for local development (faster compile, debuggable).
@@ -146,12 +168,13 @@ lib: re2-shim $(TARGET)
 # builds already force clang; the dev builds must opt in explicitly.
 # CX_DFLAGS — extra `-d` build flags for opt-in, gated backends that link an
 # external library the default build must NOT pull in (e.g. `-d cx_sftp` →
-# libssh2 for store sftp://, #106; same shape as the `-d cx_db_*` SQL engines).
-# Default empty, so the standard build links nothing extra. Example:
-#   make -C vcx build-dev CX_DFLAGS='-d cx_sftp'
+# libssh2 for store sftp://, #106; `-d cx_db_pg` → libpq). Default empty, so
+# the standard build links nothing beyond the CX_ENGINES defaults above.
+# Works on the shipped-shape targets too (#520):
+#   make -C vcx build CX_DFLAGS='-d cx_db_pg'
 CX_DFLAGS ?=
 lib-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) -shared -o $(LIB) code/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -shared -o $(LIB) code/
 
 # -prod strictness gate (#338): run the V *checker* with the same -prod flags
 # `lib` compiles with. -prod enables strict map-index checks (`or {}` required
@@ -162,7 +185,7 @@ lib-dev: re2-shim $(TARGET)
 # empty when third_party/v is absent (the documented fallback keeps *builds*
 # working); the checker needs no patched runtime, so the gate must still bite.
 check-prod:
-	$(V) $(VQUIET) -prod $(CX_GC) -check -shared code/
+	$(V) $(VQUIET) -prod $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -check -shared code/
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per
 # spec/abi.md §2.11). Separate from libcx; bindings dlopen
@@ -240,12 +263,12 @@ CX_GC_NAME    := $(lastword $(CX_GC))
 VERSION_DEFINES := -d cx_version=$(CX_VERSION) -d cx_commit=$(CX_COMMIT) -d cx_build_date=$(CX_BUILD_DATE) -d cx_gc=$(CX_GC_NAME) -d cx_vfork=$(CX_VFORK)
 
 cli: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
 	$(STRIP) $(CLI)
 
 # CLI binary — unoptimised dev build (faster compile, debuggable, unstripped)
 cli-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(VERSION_DEFINES) $(CX_DFLAGS) -o $(CLI) cmd/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(VERSION_DEFINES) $(CX_DFLAGS) -o $(CLI) cmd/
 
 # ── Conformance ───────────────────────────────────────────────────────────────
 

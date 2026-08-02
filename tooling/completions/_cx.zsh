@@ -37,6 +37,7 @@ _cx() {
     'store-health:Readiness probe against a running store service'
     'store-token:Mint a store-service auth token'
     'store-rotate-kek:Rotate the store key-encryption key'
+    'fabric-serve:Run the fabric event-stream daemon'
     'lsp:Run the cx Language Server over stdio (JSON-RPC 2.0)'
   )
   # Capability grants (security.md §3): deny-by-default; --allow-all opts out.
@@ -184,11 +185,18 @@ _cx() {
     store-serve)
       _arguments \
         '--config=[service config (cxstore.service.cx)]:file:_files -g "*.cx"' \
+        '--exit-on-stdin-eof[drain gracefully when stdin reaches EOF (spawner tether)]' \
         "${allow_flags[@]}"
       ;;
     store-health)
       _arguments \
         '--url=[ready-probe URL of the running daemon]:url:'
+      ;;
+    fabric-serve)
+      _arguments \
+        '--config=[fabric service config]:file:_files -g "*.cx"' \
+        '--exit-on-stdin-eof[drain gracefully when stdin reaches EOF (spawner tether)]' \
+        "${allow_flags[@]}"
       ;;
     store-token)
       _arguments \

@@ -5,7 +5,7 @@
   [standard ref='W3C VC Data Model 2.0' title='Verifiable Credentials']]
 ```
 
-**Status:** Current (owner ruling 2026-07-12, #363 item 2(a) — graduated from Approved; same catalogue-linkage lag as [`did`](did.md)). Tier D — trust.
+**Status:** Current (owner ruling 2026-07-12, #363 item 2(a) — graduated from Approved; same catalog-linkage lag as [`did`](did.md)). Tier D — trust.
 
 Normative reference for the `cx-stdlib/vc` module: **issue, verify, present, and revoke verifiable credentials**. Per [xap.md](../xap/xap.md) **R9**, a verifiable credential **is** a *portable, signed, attenuating [§22.2](../xap/xap.md) delegation* — the decentralized way to carry authority between DIDs without a shared central IdP. `vc` is the authority-carrying counterpart to [`did`](did.md) (identity).
 
@@ -91,7 +91,7 @@ The `claim` carries a verbatim §22.2 `[delegation …]`. `from`/`to` principals
 
 ## §4. Canonicalization & proof
 
-The signed bytes are `render_canonical(credential-without-the-proof-child)` (the lossless, deterministic CX canonical form — [core/code.md](../core/code.md)). `issue` removes any existing `proof`, canonicalizes, signs with `[$crypto:ed25519-sign]`, and attaches the `[proof …]` with the signature base58btc-encoded (`z`-multibase). `verify` reconstructs the identical bytes (strip `proof`, canonicalize), recovers the issuer's Ed25519 key from `verification-method`/`issuer` via [`did`](did.md) (`key-of` for did:key; `resolve` for did:web), and checks the signature with `[$crypto:ed25519-verify]`. Proof type: `Ed25519Signature2020`.
+The signed bytes are `render_canonical(credential-without-the-proof-child)` (the lossless, deterministic CX canonical form — [core/canonical.md](../core/canonical.md)). `issue` removes any existing `proof`, canonicalizes, signs with `[$crypto:ed25519-sign]`, and attaches the `[proof …]` with the signature base58btc-encoded (`z`-multibase). `verify` reconstructs the identical bytes (strip `proof`, canonicalize), recovers the issuer's Ed25519 key from `verification-method`/`issuer` via [`did`](did.md) (`key-of` for did:key; `resolve` for did:web), and checks the signature with `[$crypto:ed25519-verify]`. Proof type: `Ed25519Signature2020`.
 
 ## §5. Revocation (decision #3)
 

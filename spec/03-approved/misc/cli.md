@@ -14,7 +14,7 @@ binding-specific REPLs and scripts SHOULD shell out to `cx` rather
 than re-implement subcommand behaviour, so that exit codes and
 diagnostic formatting stay uniform.
 
-Subcommand dispatch, the `cx --help` catalogue, and every
+Subcommand dispatch, the `cx --help` catalog, and every
 per-subcommand `--help` body are generated from ONE registry
 (`vcx/cmd/main.v`, the `SubcommandSpec` table): a subcommand cannot
 exist without being documented, and help can never drift from
@@ -48,7 +48,7 @@ likewise reject argv they do not understand with exit 2.
 
 | Option | Meaning |
 |---|---|
-| `--help` / `-h` | Print help; exit 0. Uniform on every surface: `cx --help` prints the catalogue, `cx SUBCOMMAND --help` (or `-h`) prints that subcommand's usage. |
+| `--help` / `-h` | Print help; exit 0. Uniform on every surface: `cx --help` prints the catalog, `cx SUBCOMMAND --help` (or `-h`) prints that subcommand's usage. |
 | `--version` / `-v` | Print expanded version / build info (version, commit, build date, GC model, V-fork gitlink); exit 0. Also available as the `cx version` verb — a registry subcommand, so the bare word can never fall through to the run surface and evaluate a `./VERSION` file on a case-insensitive filesystem. |
 
 ### 1.2 Exit codes

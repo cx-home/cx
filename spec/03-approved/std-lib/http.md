@@ -156,6 +156,16 @@ not `url=`; violating this → `cx-err:CXER4539 E_HTTP_ARG_INVALID`. This extens
 declared here as the module's addition to the §10.3.3 schema (the directive layer
 adopts it on the graduation refactor, §6).
 
+**Query strings (receive side).** On every server-received `[request]` — the
+exchange lane, the module `[$http:serve]` handler lane, the `[?http-service]`
+directive lane, and any host built on them — the request-target's query string is
+parsed into the `[query-params]` child: one `[<name> "<value>"]` element per
+`k=v` pair, in wire order, with names and values percent-decoded (`+` decodes to
+space) — the receive-side twin of `[$url:query-encode]`. A valueless pair
+(`?flag`) carries the empty string; no query → an empty `[query-params]`. The
+`path=` attribute never carries the query — routing matches on the bare path. A
+handler reads `$request/query-params/<name>` (terminal labeled-field unwrap).
+
 **Method shape — one representation.** A method is an **uppercase string**
 (`"GET"`, `"POST"`, custom `"PURGE"`) everywhere: the `method=` attribute value and
 the `request` generic's first argument. Atoms (`:get`) are **not** used for methods.

@@ -374,7 +374,7 @@ fn test_full_corpus_data_differential() {
 	//     render_canonical drops the quotes on the cx side — the map-value
 	//     string-quoting gap), conv-010 ([hash::bytes 0x…]: the program
 	//     reading coerces the hex payload to its decimal int text). All four
-	//     are catalogued engine divergences for the cxparse unification
+	//     are cataloged engine divergences for the cxparse unification
 	//     backlog, not regressions of this wave.
 	// Rebased over #467/#443 (base 608→616): total 616→627, agree 491→494,
 	// diverge 9→13, cx_only 81→85.
@@ -467,9 +467,16 @@ fn test_full_corpus_data_differential() {
 	// (`[m {'$tag': weird}]`) renders identically in both engines:
 	// diverge 19→18, agree 541→542; total unchanged. The #475
 	// paragraph above records the divergence this closes.
+	// #587 movement (total 679→680): the new code.cxd
+	// program-descendant-seq-roundtrip-004 in-cx row
+	// (`[w ([item n=1], [item n=2], [item n=3])]` — a paren-sequence
+	// element body) parses+renders identically in both engines: agree +1.
+	// #646 movement (total 680→684): the four module-scope-through-frames
+	// regression fixtures each carry a trivial `[doc]` in-cx row, all
+	// parsing+rendering identically in both engines: agree +4.
 	baseline := {
-		'total':       679
-		'agree':       542
+		'total':       684
+		'agree':       547
 		'diverge':     18
 		'cx_only':     74
 		'code_only':   1

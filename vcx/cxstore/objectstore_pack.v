@@ -51,7 +51,31 @@ mut:
 	flushed     map[string]bool // hex(key) of objects already durable in some pack
 	pending     []KeyedPayload  // objects staged since the last flush_segment
 	pending_set map[string]bool // hex(key) of staged objects (dedup within a flush)
-	seg_count   int             // next segment-pack number; reset to 0 on compaction
+	// segs — the live segment packs in ascending numeric order, each with its
+	// object count. Drives the #603 size-tiered fold (merge a segment into its
+	// predecessor when the predecessor is no larger AND the pair is within 2×
+	// — see fold_plan), which keeps a store of N objects at ~log(N) segment
+	// files with each object re-folded O(log N) times total. #617: folds run
+	// OFF the flush turn (fold_plan/fold_perform/fold_commit below), so a fold
+	// can commit AFTER newer segments were appended — segment indices may
+	// carry gaps, hence explicit (idx, size) pairs instead of a positional
+	// array.
+	segs []SegInfo
+	// next_seg — monotonic next segment-pack number; reset to 0 only by
+	// compaction (never reused after a fold frees an index, so an in-flight
+	// fold can never collide with a fresh segment file).
+	next_seg int
+	// gen — bumped on every whole-set reset (write_compacted*/load_objects).
+	// A fold planned under an older generation abandons at commit: its source
+	// segments no longer exist (or belong to a different loaded state).
+	gen u64
+}
+
+// SegInfo — one live segment pack: its numeric file index and object count.
+pub struct SegInfo {
+pub:
+	idx  int
+	size int
 }
 
 // open_pack_object_backend opens a pack-backed object store rooted at `dir`. The
@@ -75,8 +99,8 @@ pub fn open_pack_object_backend_keyed(dir string) &PackObjectBackend {
 }
 
 // seg_name is the filename of segment N (zero-padded so a lexical sort of the
-// directory listing is also numeric order up to 9999 — compaction at 16 keeps
-// the live count far below that).
+// directory listing is also numeric order up to 9999 — the #603 size-tiered
+// fold keeps the live count at ~log2(objects), far below that).
 fn (b &PackObjectBackend) seg_name(n int) string {
 	mut s := n.str()
 	for s.len < 4 {
@@ -247,38 +271,261 @@ pub fn (b &PackObjectBackend) pending_count() int {
 	return b.pending.len
 }
 
-// segment_count — current next-segment number (= number of segment packs since
-// the last compaction).
+// segment_count — the number the NEXT segment pack will be written under
+// (monotonic since the last compaction; NOT the live file count once folds
+// have retired segments — see live_segments).
 pub fn (b &PackObjectBackend) segment_count() int {
-	return b.seg_count
+	return b.next_seg
 }
 
-// should_compact — true once enough segment packs have accrued to fold them back.
+// live_segments — how many segment packs currently exist on disk.
+pub fn (b &PackObjectBackend) live_segments() int {
+	return b.segs.len
+}
+
+// should_compact — true once enough segment packs have accrued to fold them
+// back. With the #603 size-tiered segment fold keeping the live count at
+// ~log2(objects), this fires only when tiering alone cannot contain growth —
+// full compaction (an O(live) rewrite) is otherwise driven by the refs layer's
+// garbage heuristic, never by routine appends. #617: never fires while folds
+// are PENDING — a backlog from deferred (background) folding will shrink the
+// count on its own; only a genuine 16-tier tower (invariant satisfied and
+// still ≥ the threshold) compacts.
 pub fn (b &PackObjectBackend) should_compact() bool {
-	return b.seg_count >= pack_compact_segments
+	if b.fold_pending() {
+		return false
+	}
+	return b.segs.len >= pack_compact_segments
 }
 
 // flush_segment writes everything staged since the last flush as one new segment
 // pack and marks those objects durable. Written BEFORE the refs layer records
 // them, so a crash between the two leaves unreferenced objects (reclaimed at
 // compaction), never a dangling ref. No-op when nothing is staged.
+//
+// #617: flush_segment does NOT fold — the #603 size-tiered fold is amortization
+// work, not durability, and folding a large tier inline put a 69–720ms tail on
+// a live publisher's receipt. The CALLER drives folds after the flush: either
+// synchronously via fold_drain (single-threaded stores) or asynchronously via
+// fold_plan / fold_perform / fold_commit (perform runs with no store lock held).
 pub fn (mut b PackObjectBackend) flush_segment() ! {
 	if b.pending.len == 0 {
 		return
 	}
 	os.mkdir_all(b.dir)!
-	seg := os.join_path(b.dir, b.seg_name(b.seg_count))
+	seg := os.join_path(b.dir, b.seg_name(b.next_seg))
+	// #624: never expose a torn pack at a segment's final name — a kill
+	// mid-write must leave either no segment or a whole one. Write to a temp
+	// sibling (fsynced inside the pack writer) and install by atomic rename;
+	// a stray .tmp from a crash is invisible to discovery (the name filter
+	// requires the .cxpack suffix) and is overwritten by the next flush.
+	tmp := seg + '.tmp'
 	if b.keyed {
-		write_pack_keyed(seg, b.pending)!
+		write_pack_keyed(tmp, b.pending)!
 	} else {
-		write_pack(seg, b.pending.map(it.blob))!
+		write_pack(tmp, b.pending.map(it.blob))!
+	}
+	os.mv(tmp, seg) or {
+		os.rm(tmp) or {}
+		return error('cxstore: segment install rename failed: ${err.msg()}')
 	}
 	for p in b.pending {
 		b.flushed[p.key.hex()] = true
 	}
-	b.seg_count++
+	b.segs << SegInfo{
+		idx:  b.next_seg
+		size: b.pending.len
+	}
+	b.next_seg++
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
+}
+
+// ── #603/#617 size-tiered segment folding ─────────────────────────────────────
+//
+// The fold merges two adjacent segment packs into one (at the lower index) — an
+// OBJECT-layer fold: no reachability walk, no manifest rewrite, no main-pack
+// touch; cost is O(the two segments), which the size-tier invariant keeps
+// geometric. It is split into three primitives so the EXPENSIVE part (reading
+// two packs, writing + fsyncing the merged one) can run without the store's
+// op-lock held (#617 — off the publish turn), while the state transitions stay
+// serialized:
+//
+//   fold_plan    (lock held)  — pick the pair, snapshot paths + generation
+//   fold_perform (NO lock)    — pure file I/O; touches no backend state; the
+//                               source segments are immutable once written and
+//                               only ever removed under the lock
+//   fold_commit  (lock held)  — install by atomic rename iff the generation
+//                               still matches; otherwise abandon (a compaction
+//                               or reload reset the segment set meanwhile)
+//
+// Crash-safe at every step: the merged pack lands at a temp sibling first, and
+// a crash before the newer segment's removal leaves its objects present in
+// BOTH packs — content-addressed load dedups them, and the next fold
+// re-collapses the pair.
+
+// FoldPlan — a scheduled merge of two adjacent segment packs, pinned to the
+// backend generation it was planned under.
+pub struct FoldPlan {
+pub:
+	gen     u64
+	lo_idx  int
+	hi_idx  int
+	lo_path string
+	hi_path string
+	tmp     string
+	keyed   bool
+}
+
+// fold_plan picks the next due fold: the SMALLEST pair of segments — any two,
+// not necessarily neighbors; segments are content-addressed object sets with
+// no ordering semantics — whose sizes are within a factor of two of each
+// other, or none when every pair is more lopsided than that.
+//
+// The pairing rule is what keeps folding amortized regardless of arrival
+// order (#617): every fold grows each copied object's segment by ≥1.5×
+// (merged = a+b with a ≤ b ≤ 2a ⇒ merged ≥ 1.5b), so any object is copied
+// O(log N) times total. Bare positional carry (`prev <= cur` on neighbors)
+// broke both ways under deferred folding: it licensed O(big) rewrites for
+// O(1) gains when a small segment sat below a huge newer merge (measured:
+// ~10k-object folds absorbing ~65 each, every batch), and with a ratio guard
+// alone the small tiers STRANDED behind big neighbors until the count hit the
+// full-compaction backstop on a live flush turn. Size-sorted pairing lets the
+// small tiers of a mixed flow (per-event flushes interleaved with batch
+// segments) ladder up geometrically among themselves until they earn a merge
+// with the big tier — the live count stays ~log(N) with no compaction debt.
+pub fn (b &PackObjectBackend) fold_plan() ?FoldPlan {
+	if b.segs.len < 2 {
+		return none
+	}
+	mut by_size := b.segs.clone()
+	by_size.sort(a.size < b.size)
+	for j in 0 .. by_size.len - 1 {
+		if by_size[j].size * 2 >= by_size[j + 1].size {
+			mut lo := by_size[j].idx
+			mut hi := by_size[j + 1].idx
+			if lo > hi {
+				lo, hi = hi, lo
+			}
+			lo_path := os.join_path(b.dir, b.seg_name(lo))
+			return FoldPlan{
+				gen:     b.gen
+				lo_idx:  lo
+				hi_idx:  hi
+				lo_path: lo_path
+				hi_path: os.join_path(b.dir, b.seg_name(hi))
+				// distinct from flush_segment's '.tmp' — a fold must never
+				// collide with a fresh segment landing at the same index
+				// after a compaction reset abandons this plan.
+				tmp:   lo_path + '.fold-tmp'
+				keyed: b.keyed
+			}
+		}
+	}
+	return none
+}
+
+// fold_pending — true when at least one fold is due (the tier invariant is
+// violated somewhere).
+pub fn (b &PackObjectBackend) fold_pending() bool {
+	if _ := b.fold_plan() {
+		return true
+	}
+	return false
+}
+
+// generation — the backend's current segment-set generation (see FoldPlan.gen).
+pub fn (b &PackObjectBackend) generation() u64 {
+	return b.gen
+}
+
+// fold_perform executes a planned fold's file I/O: read both source packs,
+// dedup by key, write the merged pack (fsynced) to the plan's temp path.
+// Deliberately a FREE FUNCTION touching no backend state, so it is safe to run
+// with no store lock held: the source segments are immutable once written and
+// are only removed under the lock (by fold_commit or a compaction — after
+// which fold_commit abandons this plan by generation). Returns the merged
+// object count for fold_commit's bookkeeping.
+pub fn fold_perform(plan FoldPlan) !int {
+	mut entries := []KeyedPayload{}
+	mut seen := map[string]bool{}
+	for pp in [plan.lo_path, plan.hi_path] {
+		reader := open_pack(pp) or {
+			return error('cxpack segment ${pp} unreadable during fold: ${err.msg()}')
+		}
+		for h in reader.hashes() {
+			hx := h.hex()
+			if hx in seen {
+				continue
+			}
+			payload := reader.get(h) or {
+				reader.close()
+				return error('cxpack ${pp}: object ${hx} unreadable during fold')
+			}
+			seen[hx] = true
+			entries << KeyedPayload{
+				key:  h.clone()
+				blob: payload
+			}
+		}
+		reader.close()
+	}
+	if plan.keyed {
+		write_pack_keyed(plan.tmp, entries)!
+	} else {
+		write_pack(plan.tmp, entries.map(it.blob))!
+	}
+	return entries.len
+}
+
+// fold_commit installs a performed fold: atomic rename of the merged pack over
+// the lower-indexed segment, removal of the higher one, and the segs
+// bookkeeping. Returns false (abandoning the merged temp) when the plan's
+// generation no longer matches — a compaction or reload replaced the whole
+// segment set while the I/O ran, so the plan's sources are gone or belong to
+// a different state. The both-present re-check is belt-and-braces: with one
+// fold driver at a time and appends only ever appending, a same-generation
+// plan's segments are still live.
+pub fn (mut b PackObjectBackend) fold_commit(plan FoldPlan, merged int) !bool {
+	if plan.gen != b.gen {
+		os.rm(plan.tmp) or {}
+		return false
+	}
+	mut lo_pos := -1
+	mut hi_pos := -1
+	for i, s in b.segs {
+		if s.idx == plan.lo_idx {
+			lo_pos = i
+		} else if s.idx == plan.hi_idx {
+			hi_pos = i
+		}
+	}
+	if lo_pos < 0 || hi_pos < 0 {
+		os.rm(plan.tmp) or {}
+		return false
+	}
+	os.mv(plan.tmp, plan.lo_path) or {
+		os.rm(plan.tmp) or {}
+		return error('cxpack segment fold rename failed: ${err.msg()}')
+	}
+	os.rm(plan.hi_path) or {} // tolerated: duplicates dedup on load, next fold re-collapses
+	b.segs[lo_pos] = SegInfo{
+		idx:  plan.lo_idx
+		size: merged
+	}
+	b.segs.delete(hi_pos)
+	return true
+}
+
+// fold_drain runs every due fold to completion synchronously — the inline
+// driver for single-threaded stores (no op-lock to coordinate a worker with),
+// producing exactly the pre-#617 cascade.
+pub fn (mut b PackObjectBackend) fold_drain() ! {
+	for {
+		plan := b.fold_plan() or { return }
+		merged := fold_perform(plan)!
+		b.fold_commit(plan, merged)!
+	}
 }
 
 // write_compacted folds the given live objects into a single `store.cxpack`,
@@ -302,15 +549,17 @@ pub fn (mut b PackObjectBackend) write_compacted(payloads [][]u8) ! {
 		os.rm(tmp) or {}
 		return error('compacted pack rename failed: ${err.msg()}')
 	}
-	for n in 0 .. b.seg_count {
-		os.rm(os.join_path(b.dir, b.seg_name(n))) or {}
+	for s in b.segs {
+		os.rm(os.join_path(b.dir, b.seg_name(s.idx))) or {}
 	}
 	mut fl := map[string]bool{}
 	for p in payloads {
 		fl[object_name(p).hex()] = true
 	}
 	b.flushed = fl.move()
-	b.seg_count = 0
+	b.segs = []
+	b.next_seg = 0
+	b.gen++ // segment set replaced — abandon any in-flight fold plan
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
 }
@@ -347,15 +596,17 @@ pub fn (mut b PackObjectBackend) write_compacted_keyed(entries []KeyedPayload) !
 		os.rm(tmp) or {}
 		return error('compacted pack rename failed: ${err.msg()}')
 	}
-	for n in 0 .. b.seg_count {
-		os.rm(os.join_path(b.dir, b.seg_name(n))) or {}
+	for s in b.segs {
+		os.rm(os.join_path(b.dir, b.seg_name(s.idx))) or {}
 	}
 	mut fl := map[string]bool{}
 	for e in entries {
 		fl[e.key.hex()] = true
 	}
 	b.flushed = fl.move()
-	b.seg_count = 0
+	b.segs = []
+	b.next_seg = 0
+	b.gen++ // segment set replaced — abandon any in-flight fold plan
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
 }
@@ -372,6 +623,8 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 	paths, max_seg := b.discover_packs()
 	mut out := map[string][]u8{}
 	mut fl := map[string]bool{}
+	compacted := os.join_path(b.dir, pack_compacted_name)
+	mut segs := []SegInfo{}
 	for pp in paths {
 		reader := open_pack(pp) or { return error('cxpack pack ${pp} unreadable: ${err.msg()}') }
 		// #229 mode↔format check: a keyed (v2/encrypted) pack opened by a
@@ -386,6 +639,7 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 			reader.close()
 			return error('cxpack pack ${pp} is not keyed (plaintext at rest) — encrypt-key-id was given for an unencrypted store; encryption cannot be enabled on existing data in place')
 		}
+		mut n := 0
 		for h in reader.hashes() {
 			payload := reader.get(h) or {
 				reader.close()
@@ -394,12 +648,79 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 			hx := h.hex()
 			out[hx] = payload
 			fl[hx] = true
+			n++
 		}
 		reader.close()
+		if pp != compacted {
+			segs << SegInfo{
+				idx:  pack_seg_index(os.file_name(pp))
+				size: n
+			}
+		}
 	}
 	b.flushed = fl.move()
-	b.seg_count = max_seg + 1
+	b.next_seg = max_seg + 1
+	// #603: per-segment object counts feed the size-tiered fold. Discovery is
+	// numeric-ordered, so `segs` is ascending by file index (gaps from #617
+	// deferred folds included); duplicate objects across a crash-interrupted
+	// fold pair are already deduped in `out`, and the next fold re-collapses.
+	b.segs = segs
+	b.gen++ // fresh segment set — abandon any in-flight fold plan
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
 	return out
+}
+
+// seed_index primes the backend's durability state from the pack INDEXES
+// alone — the hash list of every pack, never a payload byte (#637). It is
+// what a demand-paged open needs: `flushed` (so a put skips an object
+// already durable), `next_seg` (so a new segment never overwrites one on
+// disk), the per-segment counts the size-tiered fold reads, and the
+// generation. Cost is O(objects) index entries rather than O(bytes), and
+// nothing is materialized into memory.
+//
+// The same keyed↔plaintext mode check load_objects performs applies here: a
+// mode mismatch is a HARD error at open, never a silently mixed store.
+pub fn (mut b PackObjectBackend) seed_index() ! {
+	// A background fold (#617) deletes segment packs AFTER writing the folded
+	// pack, so a segment can legitimately vanish between discovery and open.
+	// Re-discover once and rescan; a path still listed and still unreadable on
+	// the second pass is genuine corruption and fails hard.
+	b.seed_index_scan() or { return b.seed_index_scan() }
+}
+
+fn (mut b PackObjectBackend) seed_index_scan() ! {
+	paths, max_seg := b.discover_packs()
+	mut fl := map[string]bool{}
+	compacted := os.join_path(b.dir, pack_compacted_name)
+	mut segs := []SegInfo{}
+	for pp in paths {
+		reader := open_pack(pp) or { return error('cxpack pack ${pp} unreadable: ${err.msg()}') }
+		if reader.keyed && !b.keyed {
+			reader.close()
+			return error('cxpack pack ${pp} is keyed (encrypted at rest) — reopen the store with its encrypt-key-id')
+		}
+		if !reader.keyed && b.keyed {
+			reader.close()
+			return error('cxpack pack ${pp} is not keyed (plaintext at rest) — encrypt-key-id was given for an unencrypted store; encryption cannot be enabled on existing data in place')
+		}
+		mut n := 0
+		for h in reader.hashes() {
+			fl[h.hex()] = true
+			n++
+		}
+		reader.close()
+		if pp != compacted {
+			segs << SegInfo{
+				idx:  pack_seg_index(os.file_name(pp))
+				size: n
+			}
+		}
+	}
+	b.flushed = fl.move()
+	b.next_seg = max_seg + 1
+	b.segs = segs
+	b.gen++
+	b.pending = []KeyedPayload{}
+	b.pending_set = map[string]bool{}
 }

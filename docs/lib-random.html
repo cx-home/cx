@@ -57,6 +57,7 @@
     <li><a href="lib-did.html">did</a></li>
     <li><a href="lib-email.html">email</a></li>
     <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
@@ -658,6 +659,261 @@
           </pre>
           <pre class="sample-output">
             <code>(7510639304993616975, 2940605065665682376, 9074821957992740550)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-new" class="fn">
+      <h3>random:new</h3>
+      <p class="fn-sig"><code>[$random:new]  -> element</code>  —  Create a stateful generator handle seeded with s; gen-* draws advance its private stream in place.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-int [$random:new 42]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7510639304993616975</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-free" class="fn">
+      <h3>random:free</h3>
+      <p class="fn-sig"><code>[$random:free]  -> null</code>  —  Release a generator handle; later draws on it refuse with E_RANDOM_HANDLE_INVALID.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[?let [= $g [$random:new 7]] [= $f [$random:free $g]] [$random:gen-int $g]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER1906</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-int" class="fn">
+      <h3>random:gen-int</h3>
+      <p class="fn-sig"><code>[$random:gen-int]  -> int</code>  —  Draw a uniform 63-bit non-negative integer from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-int [$random:new 42]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>7510639304993616975</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-float" class="fn">
+      <h3>random:gen-float</h3>
+      <p class="fn-sig"><code>[$random:gen-float]  -> float</code>  —  Draw a uniform float in 0.0 to 1.0 from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-float [$random:new 42]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0.8143051451229099</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-bool" class="fn">
+      <h3>random:gen-bool</h3>
+      <p class="fn-sig"><code>[$random:gen-bool]  -> bool</code>  —  Draw a uniform boolean from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-bool [$random:new 42]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>true</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-int-range" class="fn">
+      <h3>random:gen-int-range</h3>
+      <p class="fn-sig"><code>[$random:gen-int-range]  -> int</code>  —  Draw a uniform integer in lo..hi inclusive from a generator handle (rejection-sampled, no modulo bias).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-int-range [$random:new 7] 9 9]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>9</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-float-range" class="fn">
+      <h3>random:gen-float-range</h3>
+      <p class="fn-sig"><code>[$random:gen-float-range]  -> float</code>  —  Draw a uniform float in lo (inclusive) to hi (exclusive) from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-float-range [$random:new 7] 2.5 2.5]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>2.5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-shuffle" class="fn">
+      <h3>random:gen-shuffle</h3>
+      <p class="fn-sig"><code>[$random:gen-shuffle]  -> [sequence any]</code>  —  Fisher-Yates shuffle drawn from a generator handle; returns a new sequence.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-shuffle [$random:new 42] (1, 2, 3, 4, 5)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(4, 3, 1, 5, 2)</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-choose" class="fn">
+      <h3>random:gen-choose</h3>
+      <p class="fn-sig"><code>[$random:gen-choose]  -> any</code>  —  Choose one element uniformly from a sequence, drawn from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-choose [$random:new 3] ("solo")]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'solo'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-sample" class="fn">
+      <h3>random:gen-sample</h3>
+      <p class="fn-sig"><code>[$random:gen-sample]  -> [sequence any]</code>  —  Uniform without-replacement sample of size n, drawn from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-sample [$random:new 1] (1, 2, 3) 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>()</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-gaussian" class="fn">
+      <h3>random:gen-gaussian</h3>
+      <p class="fn-sig"><code>[$random:gen-gaussian]  -> float</code>  —  Draw a normal(mean, stddev) sample from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-gaussian [$random:new 1] 5.0 0.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5.0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-exponential" class="fn">
+      <h3>random:gen-exponential</h3>
+      <p class="fn-sig"><code>[$random:gen-exponential]  -> float</code>  —  Draw an exponential(lambda) sample from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-exponential [$random:new 42] 1.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1.683650517646569</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-poisson" class="fn">
+      <h3>random:gen-poisson</h3>
+      <p class="fn-sig"><code>[$random:gen-poisson]  -> int</code>  —  Draw a Poisson(lambda) sample from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-poisson [$random:new 42] 4.0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>6</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-choose-weighted" class="fn">
+      <h3>random:gen-choose-weighted</h3>
+      <p class="fn-sig"><code>[$random:gen-choose-weighted]  -> any</code>  —  Choose one element with probability proportional to its weight, drawn from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-choose-weighted [$random:new 5] ("a", "b") (0.0, 1.0)]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'b'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-sample-weighted" class="fn">
+      <h3>random:gen-sample-weighted</h3>
+      <p class="fn-sig"><code>[$random:gen-sample-weighted]  -> [sequence any]</code>  —  Weighted without-replacement sample of size n, drawn from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-sample-weighted [$random:new 5] ("a", "b") (1.0, 1.0) 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>()</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-floats" class="fn">
+      <h3>random:gen-floats</h3>
+      <p class="fn-sig"><code>[$random:gen-floats]  -> [sequence float]</code>  —  Generate a sequence of n uniform floats from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-floats [$random:new 1] 0]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>()</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-random-gen-ints" class="fn">
+      <h3>random:gen-ints</h3>
+      <p class="fn-sig"><code>[$random:gen-ints]  -> [sequence int]</code>  —  Generate a sequence of n uniform 63-bit integers from a generator handle.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/random']
+[$random:gen-ints [$random:new 42] 1]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>(7510639304993616975)</code>
           </pre>
         </div>
       

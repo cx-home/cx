@@ -57,6 +57,7 @@
     <li><a href="lib-did.html">did</a></li>
     <li><a href="lib-email.html">email</a></li>
     <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
@@ -468,6 +469,42 @@ B</code>
           </pre>
           <pre class="sample-output">
             <code>50</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-do" class="fn">
+      <h3>
+        <code>?do</code>
+      </h3>
+      <p class="fn-sig"><code>[?do E …] -> null</code>  —  Evaluate-for-effect sequencing: one or more expressions evaluate in order with values discarded; the first [err …] result propagates immediately, and success yields null (a present unit, never absence).</p>
+      <p class="note">Core — evaluate-for-effect sequencing  ·  §8.14</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?do 1 2 3]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>null</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="dir-loop" class="fn">
+      <h3>
+        <code>?loop</code>
+      </h3>
+      <p class="fn-sig"><code>[?loop [= $x INIT]… BODY] with [break V?] / [continue V…?] -> value of [break]</code>  —  Condition-driven loop as anonymous trampolined tail recursion: [continue …] rebinds the declared bindings positionally for the next pass, [break …] exits with the loop's value, and any other tail value raises CXER0100 (all-explicit exits).</p>
+      <p class="note">Core — condition-driven loop (explicit exits)  ·  §8.15</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?loop [= $i 1] [= $acc 0]
+  [?if [> $i 5] [then [break $acc]]
+    [else [continue [+ $i 1] [+ $acc $i]]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>15</code>
           </pre>
         </div>
       
@@ -1324,7 +1361,7 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $f [?async [?check-cancel]]]
+            <code class="language-cx">[?let [= $f [?async [?let [= $_ [?sleep 10s mock]] [?check-cancel]]]]
   [= $_ [?cancel $f]]
   [?match [?await $f]
     [case [err @code='cx-err:CXER0260'] [cancelled]]

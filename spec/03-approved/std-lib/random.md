@@ -24,12 +24,13 @@ The two are clearly separated in the API surface — PRNG output cannot accident
 
 ## §2. Generator state
 
-The module exposes both **explicit-state** and **process-global** generators:
+The module exposes three generator forms:
 
-- **Process-global PRNG** — implicit state shared across all callers in the process. Seeded from system entropy at module load; user may re-seed via `[$random:seed]`. **Impure.**
+- **Implicit PRNG — one stream PER THREAD.** Each OS thread (the main thread, every `[?worker]`, every reactor) owns its own implicit stream, entropy-seeded at that thread's first draw (thread-id-mixed, so two threads first-drawing in the same tick still diverge). `[$random:seed]` re-seeds the **calling thread's** stream, so seed-then-draw is deterministic within a thread — and concurrent threads never race or perturb each other's sequences. **Impure.** (Cross-thread reproducible pipelines use the explicit or handle forms.)
 - **Explicit-state generator** — `[$random:from-seed $seed]` returns a `[generator …]` element carrying its own state. **Pure given the generator value.**
+- **Stateful generator handle (§3.7)** — `[$random:new $seed]` returns an `[rng handle=N]` whose `gen-*` draws mutate registry-held state: the imperative twin of the explicit mirrors, for code that wants a private deterministic stream without threading `[result …]` pairs. **Impure.**
 
-Explicit-state generators are the testable / reproducible path; process-global is the convenient default.
+Explicit-state generators and handles are the reproducible paths; the per-thread implicit stream is the convenient default.
 
 ## §3. Public function surface
 
@@ -144,6 +145,41 @@ Crypto-random does not support seeding. Determinism is incompatible with cryptog
 - `n >= 0` required; `n == 0` returns the empty sequence; `n < 0` → `CXER1905`.
 - `-with` mirrors return `[result $value $next-generator]` with the full `n`-value state advance.
 
+### §3.7. Stateful generator handles (impure)
+
+```
+[?def new                 scope=public impure [returns element]        ($s::int) ...]
+[?def free                scope=public impure [returns null]           ($g::element) ...]
+[?def gen-int             scope=public impure [returns int]            ($g::element) ...]
+[?def gen-float           scope=public impure [returns float]          ($g::element) ...]
+[?def gen-bool            scope=public impure [returns bool]           ($g::element) ...]
+[?def gen-int-range       scope=public impure [returns int]            ($g::element $lo::int $hi::int) ...]
+[?def gen-float-range     scope=public impure [returns float]          ($g::element $lo::float $hi::float) ...]
+[?def gen-shuffle         scope=public impure [returns [sequence any]] ($g::element $xs::[sequence any]) ...]
+[?def gen-choose          scope=public impure [returns any]            ($g::element $xs::[sequence any]) ...]
+[?def gen-sample          scope=public impure [returns [sequence any]] ($g::element $xs::[sequence any] $n::int) ...]
+[?def gen-gaussian        scope=public impure [returns float]          ($g::element $mean::float $stddev::float) ...]
+[?def gen-exponential     scope=public impure [returns float]          ($g::element $lambda::float) ...]
+[?def gen-poisson         scope=public impure [returns int]            ($g::element $lambda::float) ...]
+[?def gen-choose-weighted scope=public impure [returns any]            ($g::element $xs::[sequence any] $weights::[sequence float]) ...]
+[?def gen-sample-weighted scope=public impure [returns [sequence any]] ($g::element $xs::[sequence any] $weights::[sequence float] $n::int) ...]
+[?def gen-floats          scope=public impure [returns [sequence float]] ($g::element $n::int) ...]
+[?def gen-ints            scope=public impure [returns [sequence int]]   ($g::element $n::int) ...]
+```
+
+`[$random:new $s]` returns an `[rng handle=N]` handle over registry-held xoshiro
+state seeded with `$s`. Every `gen-*` draw advances that state in place under a
+per-handle lock: safe under concurrent callers, serialized in arrival order
+(deterministic ordering under concurrency is the caller's to arrange — one
+consumer per handle — or use the §3.2 pure mirrors). `free` releases the handle;
+draws on a freed/unknown handle raise `CXER1906`.
+
+**Parity invariant (extends §3.2's).** Every implicit-stream op has exactly one
+handle twin here, named `gen-<name>` with `$g::element` leading; it computes the
+identical value the implicit form would compute from an equivalent state —
+`[$random:new $s]` followed by `gen-*` draws yields the same sequence as
+`[$random:seed $s]` followed by the matching implicit draws on one thread.
+
 ## §4. Algorithm specifics
 
 ### §4.1. PRNG algorithm — xoshiro256++ (pinned)
@@ -171,6 +207,7 @@ System CSPRNG. Implementation: Linux `getrandom(2)`; macOS `getentropy(2)`; Wind
 | `CXER1903` | `E_RANDOM_SAMPLE_TOO_LARGE` | `sample` / `sample-weighted` with `n` too large |
 | `CXER1904` | `E_RANDOM_WEIGHTS_MISMATCH` | weighted op with `length(weights) != length(xs)` |
 | `CXER1905` | `E_RANDOM_DISTRIBUTION_PARAM` | invalid distribution parameter (negative stddev, non-positive lambda, negative weight, all-zero weights, negative `n`), or an invalid byte-count argument to `crypto-bytes` / `crypto-hex` / `crypto-base64-url` / `crypto-token-urlsafe` (e.g. negative `n`) |
+| `CXER1906` | `E_RANDOM_HANDLE_INVALID` | a `gen-*` draw or `free` on a value that is not a live `[rng]` handle |
 
 ## §6. Conformance fixtures
 

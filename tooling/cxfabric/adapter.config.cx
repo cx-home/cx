@@ -1,0 +1,24 @@
+[; Sample cx-fabric webhook-adapter config (spec/02-working/fabric.md
+   §14/§19.7; see webhook-adapter.cx beside this file).
+   Run: cx webhook-adapter.cx --data=adapter.config.cx \
+          --allow-net=… --allow-env ;]
+[webhook-adapter
+  [; the upstream fabric daemon; did+seed-env = this adapter's identity
+     (grant it publish on the webhook streams, observe for SSE fan-out,
+     consume for push groups); responder pins the daemon DID ;]
+  [fabric url="xsp://127.0.0.1:8447" tenant="acme"
+          did="did:key:REPLACE-WITH-ADAPTER-DID" seed-env="CX_ADAPTER_SEED"
+          responder="did:key:REPLACE-WITH-DAEMON-DID"]
+  [; the HTTP door; token-env arms a bearer check on every route ;]
+  [http addr="127.0.0.1:8090" token-env="CX_ADAPTER_TOKEN"]
+  [routes
+    [; POST /hooks/orders with a CX or JSON body → publish
+       [hook route="orders-in" [payload …]] onto stream "orders" ;]
+    [webhook name="orders-in" path="/hooks/orders" stream="orders"]
+    [; GET /sse/orders → live SSE feed of matching entries (canonical CX
+       data frames; fmt="json" for JSON) ;]
+    [sse path="/sse/orders" stream="orders" pattern=":order.*"]
+    [; background push: entries POST to the callback in [batch …] bodies;
+       cumulative ack only after a 2xx (at-least-once) ;]
+    [push url="http://127.0.0.1:9091/callback" stream="orders"
+          group="push-1" pattern=":order.*"]]]

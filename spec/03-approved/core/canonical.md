@@ -276,12 +276,43 @@ The implementation runs as a post-pass in `cx_text_canonical`
 **Strict canonical:** all anchor structure expanded.
 
 - Each AliasElement is replaced by a deep copy of the anchored element's
- resolved content (same as the Resolved AST step in `ast.md`).
+ resolved content (same as the Resolved AST step in `ast.md`). The anchored
+ element's own internal aliases/merges expand first, so the copy is fully
+ resolved.
 - Each MergeRef is replaced by inlining the merged attributes and items into
  the host element, with host-element values overriding merged values per the
  grammar's merge semantics.
 - AnchorDef nodes are removed.
 - The result is a tree with no `&`, `*`, or `[*]` references.
+
+The expansion is deterministic — the strict form is the store's Tier-1
+content-address (#82), so two conformant implementations must produce
+identical bytes. The following rules pin the points the bullets above leave
+implicit (graduated from the strict-canonical anchor-resolution working note,
+owner ruling 2026-07-22):
+
+1. **Merge attribute order.** The merged (anchor) attributes in anchor order
+   form the base; a host attribute whose name collides REPLACES the merged
+   value in place (anchor position retained); a host-only attribute is
+   appended after, in host order.
+   `[defaults &def timeout=30 retries=3]` + `[production *def host=prod retries=5]`
+   → `[production timeout=30 retries=5 host=prod]`.
+2. **Merge item order.** The anchor's resolved items first, then the host's
+   resolved items. (Items are unkeyed, so there is no by-name override.)
+3. **Dangling alias** (`[*name]` with no `&name`): a HARD error — no resolved
+   AST exists, so the document has no canonical form (§1.3).
+4. **Dangling merge** (`*name` with no `&name`): a NO-OP — the merge ref is
+   dropped and nothing is inlined; the host stands alone. Matches the
+   warn-level lint L003 (`abi.md`), which classifies a merge to a nonexistent
+   anchor as recoverable rather than fatal.
+5. **Cyclic reference** (an anchor that resolves through itself, via alias or
+   merge): a HARD error (no finite resolved form).
+6. **Duplicate anchor name**: the first definition in document order wins
+   (deterministic regardless of resolution order).
+
+Conformance: `identity.cxd` id-032…id-036, `extended.cxd` 018/019
+(`out-canonical` sections), plus the anchor-resolution and store-identity
+unit/integration suites.
 
 ### 2.9 Comments, directives, processing instructions
 

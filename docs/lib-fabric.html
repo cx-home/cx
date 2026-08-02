@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fabric — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Guide</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+  <section><h4>Standard library</h4><ul>
+    <li><a href="libraries.html">Overview</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a class="active" href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+  </ul></section>
+  <section><h4>XAP</h4><ul>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+</aside>
+<main>
+<section id="lib-fabric">
+  <h1>fabric</h1>
+  <p class="lede">Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. The durable plane rides journal — publish appends an attributed event to a named stream (per-stream total order, hash-chained), subscribe/receive is a batched pull filtered by the bus pattern vocabulary, and ack commits a consumer group's offset cumulatively as store data, giving at-least-once delivery with redelivery of the uncommitted tail; a group may carry a redelivery policy (max-deliveries + dlq) that dead-letters a poison head-of-tail event to an ordinary stream and unblocks the group. The transient plane is latest-wins in-process channels — no history, no replay, no ack — and carries the request-reply call convention: respond registers an arity-1 callable answering a channel (sticky-exclusive), request is a blocking deadline-bounded call, serve pumps a remote responder. fabric introduces no capability of its own; persistence authority is the underlying journal/store's.</p>
+  
+    <section id="fn-fabric-open" class="fn">
+      <h3>fabric:open</h3>
+      <p class="fn-sig"><code>[$fabric:open]  -> element</code>  —  Open a fabric, returning a [fabric] handle — dual-form: a [journal] element composes the embedded tier over it (the journal stays caller-owned); an xsp://host:port URL string dials a fabric-serve daemon and attaches via XSP-AUTH (opts.tenant required; opts.did+seed = the proven identity, absent = anonymous; net-gated at the dial).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  $f@state]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'open'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-close" class="fn">
+      <h3>fabric:close</h3>
+      <p class="fn-sig"><code>[$fabric:close]  -> null</code>  —  Close the fabric: cancel subscriptions, drop transient channels — idempotent; the journal is untouched.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $c [$fabric:close $f]]
+  [$fabric:read $f "acme/coord/map"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER4921</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-publish" class="fn">
+      <h3>fabric:publish</h3>
+      <p class="fn-sig"><code>[$fabric:publish]  -> element</code>  —  Append an attributed event to a named durable stream, returning a [receipt seq=N stream=…] — the journal append is the sequencing.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:publish $f "orders" [do :order.placed] {actor: "u" authority: "g"}]]
+  $r@seq]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-subscribe" class="fn">
+      <h3>fabric:subscribe</h3>
+      <p class="fn-sig"><code>[$fabric:subscribe]  -> element</code>  —  Register a pull subscription on a durable stream — pattern-filtered; with opts.group it resumes from the group's committed offset. Group subscriptions may declare a redelivery policy (opts.max-deliveries + opts.dlq, together or not at all): the policy persists as group state, later group subscriptions inherit it, a conflicting redeclaration refuses, and a head-of-tail event redelivered past the limit is published to the dlq stream as a [dead-letter] envelope and auto-committed past — the group unblocks, the original entry stays in the source journal.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:publish $f "orders" [do :order.placed] {actor: "u" authority: "g"}]]
+  [= $s [$fabric:subscribe $f "orders" :order.*]]
+  [$count [$fabric:receive $s]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-observe" class="fn">
+      <h3>fabric:observe</h3>
+      <p class="fn-sig"><code>[$fabric:observe]  -> element</code>  —  Register a read-only subscription — receive works, ack refuses (the wire-tap shape; no offsets, no group).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:publish $f "orders" [do :order.placed] {actor: "u" authority: "g"}]]
+  [= $s [$fabric:observe $f "orders" :order.placed]]
+  [$fabric:ack $s 1]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>cx-err:CXER4922</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-receive" class="fn">
+      <h3>fabric:receive</h3>
+      <p class="fn-sig"><code>[$fabric:receive]  -> [sequence element]</code>  —  Batched pull: return the pattern-matching [entry] elements committed since the cursor (up to opts.max), advancing the cursor — never blocks; empty node-set when nothing.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:publish $f "orders" [do :order.placed] {actor: "u" authority: "g"}]]
+  [= $s [$fabric:subscribe $f "orders" "do"]]
+  [$count [$fabric:receive $s]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>1</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-ack" class="fn">
+      <h3>fabric:ack</h3>
+      <p class="fn-sig"><code>[$fabric:ack]  -> null</code>  —  Commit the group's offset cumulatively through seq, persisted as store data — a later group subscription resumes past it; the uncommitted tail redelivers.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:publish $f "orders" [do :order.placed] {actor: "u" authority: "g"}]]
+  [= $s1 [$fabric:subscribe $f "orders" :order.placed {group: "g1"}]]
+  [= $e1 [$fabric:receive $s1]]
+  [= $a [$fabric:ack $s1 1]]
+  [= $s2 [$fabric:subscribe $f "orders" :order.placed {group: "g1"}]]
+  [$count [$fabric:receive $s2]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-emit" class="fn">
+      <h3>fabric:emit</h3>
+      <p class="fn-sig"><code>[$fabric:emit]  -> null</code>  —  Publish a value on a transient channel — latest-wins, no history, no replay, out of the durable audit.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $e1 [$fabric:emit $f "acme/coord/map" [viewport zoom=12]]]
+  [= $e2 [$fabric:emit $f "acme/coord/map" [viewport zoom=13]]]
+  [$fabric:read $f "acme/coord/map"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[viewport zoom=13]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-read" class="fn">
+      <h3>fabric:read</h3>
+      <p class="fn-sig"><code>[$fabric:read]  -> any</code>  —  Read a transient channel's latest value — the empty node-set when the channel was never published (absence, never null).</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $e [$fabric:emit $f "acme/coord/map" [viewport zoom=12]]]
+  [$fabric:read $f "acme/coord/map"]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[viewport zoom=12]</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-respond" class="fn">
+      <h3>fabric:respond</h3>
+      <p class="fn-sig"><code>[$fabric:respond]  -> element</code>  —  Register an arity-1 callable answering a request-reply channel, returning a [fabric-responder …] — sticky-exclusive per channel (a second respond while the holder lives refuses); the callable never travels: on the remote tier only the registration crosses the wire and the serve pump applies it here.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:respond $f "acme/svc/echo" [?fn ($v) $v]]]
+  $r@channel]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>'acme/svc/echo'</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-request" class="fn">
+      <h3>fabric:request</h3>
+      <p class="fn-sig"><code>[$fabric:request]  -> any</code>  —  Blocking request-reply call on a channel: the reply is the responder callable's return value; a responder err (raised or returned) travels verbatim; no live responder refuses immediately; opts.deadline bounds the remote wait (ms, default 10000). Embedded requests are answered synchronously at the call site.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:respond $f "acme/svc/sum" [?fn ($v) [+ $v/a $v/b]]]]
+  [$fabric:request $f "acme/svc/sum" [args [a 2] [b 3]]]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>5</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-fabric-serve" class="fn">
+      <h3>fabric:serve</h3>
+      <p class="fn-sig"><code>[$fabric:serve]  -> int</code>  —  The remote responder's pump (pull is the primitive): drain pushed request frames, apply the registered callable, send the replies — returns the count of calls answered (opts: deadline ms, max). Embedded calls are answered at the request site, so the embedded pump reports 0 by construction.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/journal']
+[?lib 'cx-fabric' :as fabric]
+[?let [= $j [$journal:open "mem://t" "acme"]]
+  [= $f [$fabric:open $j]]
+  [= $r [$fabric:respond $f "acme/svc/echo" [?fn ($v) $v]]]
+  [$fabric:serve $r]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>0</code>
+          </pre>
+        </div>
+      
+    </section>
+  
+</section>
+</main>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

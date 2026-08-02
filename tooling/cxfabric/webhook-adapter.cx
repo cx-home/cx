@@ -1,0 +1,228 @@
+[; webhook-adapter.cx — the cx-fabric HTTP/SSE webhook adapter (#531 P3;
+   spec/02-working/fabric.md §14/§19.7): an ORDINARY fabric client at the
+   edge — pure cx over stdlib http — translating the universal HTTP
+   protocols onto fabric streams. No core seam: everything here rides the
+   same [$fabric:*] surface any consumer uses.
+
+     webhook-in    POST <route path>  → [$fabric:publish]  → 200 [receipt …]
+     SSE out       GET  <route path>  → live SSE feed of matching entries
+     webhook push  background pump    → POST entry batches to a callback URL,
+                                        cumulative ack AFTER a 2xx (at-least-
+                                        once: an unacked tail redelivers, and
+                                        the daemon's pending window
+                                        backpressures a dead callback rather
+                                        than buffering unboundedly)
+
+   Ingress is where the enterprise's mess stops (§14): a webhook body
+   becomes CANONICAL CX at the boundary — application/json converts to its
+   map element, everything else parses as CX — and publishes VERBATIM as
+   the event (the route selects the stream; subscribers' topic-atom
+   patterns match the event's own atom, so no wrapper hides it). Egress
+   frames are canonical CX text (SSE data / POST bodies), or JSON with
+   fmt="json" on the route.
+
+   Config (the --data document; see adapter.config.cx beside this file):
+     [webhook-adapter
+       [fabric url="xsp://…" tenant="…" did="…"? seed-env="…"? responder="…"?]
+       [http addr="127.0.0.1:8090" token-env="CX_ADAPTER_TOKEN"?]
+       [routes
+         [webhook name="…" path="/hooks/…" stream="…"]
+         [sse path="/sse/…" stream="…" pattern=":a.*" fmt="cx"?]
+         [push url="http://…" stream="…" group="…" pattern=":a.*" fmt="cx"?]]]
+
+   Run (deny-by-default capabilities):
+     cx webhook-adapter.cx --data=adapter.config.cx \
+        --allow-net=<daemon> --allow-net=<listen> [--allow-net=<callback>] \
+        --allow-env
+
+   Auth posture (§19.7 → the store-serve provider set, static-token first):
+   [http token-env=…] arms a bearer check on EVERY route — requests must
+   carry `Authorization: Bearer <token>`; without the key the door is open
+   (dev posture, exactly like an [auth]-less store-serve). ]
+
+[?lib 'cx-fabric' :as fabric]
+[?lib 'cx-stdlib/http' :as http]
+[?lib 'cx-stdlib/env' :as env]
+[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-stdlib/format' :as format]
+[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-stdlib/strings' :as str]
+[?lib 'cx-stdlib/fp' :as fp]
+
+[; entry/value → wire text per the route's fmt (canonical cx default) ]
+[?def render-entry scope=public pure ($fmt $e)
+  [?if [= $fmt 'json'] [then [$json:emit $e]] [else [$format:canonical $e]]]]
+
+[; highest seq= across received entries (they arrive ascending; fold is the
+   order-independent belt) ]
+[?def max-seq scope=public pure ($entries)
+  [$fp:fold $entries 0 [?fn ($acc $e)
+    [?let [= $s [$cast [$concat '' $e@seq] :int]]
+      [?if [> $s $acc] [then $s] [else $acc]]]]]]
+
+[; the serve handler, closed over the adapter state. The reactor evaluates
+   handler closures against the program env chain: program [?def]s, [?lib]
+   aliases, captured bindings, and handler-local closures all resolve
+   (pinned by http_serve_module_test — the #537/#538 reports from this
+   adapter's first cut do not reproduce). ]
+[?def make-handler scope=public impure ($f $token $cfg)
+  [?fn ($req)
+    [?let
+      [= $path   [$concat '' $req@path]]
+      [= $method [$concat '' $req@method]]
+      [; responses are constructed INLINE at each site BY DESIGN: every
+         response body here carries an [err …]-shaped payload, and §9.2
+         implicit err-operand propagation would short-circuit a
+         resp(status, payload) helper call, yielding the payload instead
+         of the response envelope. ]
+      [= $hdr-of [?fn ($name)
+        [?else [$first [?for [in $h $req/headers/header]
+                 [where [= [$str:lower [$concat '' $h@name]] $name]]
+                 [yield [$concat '' $h@value]]]] '']]]
+      [= $authed [?if [= $token ''] [then true]
+                   [else [= [$hdr-of 'authorization'] [$concat 'Bearer ' $token]]]]]
+      [?if [not $authed]
+        [then [?element 'response' [?attr 'status' 401]
+                [?element 'body' [$format:canonical [?element 'err'
+                  [?attr 'code' 'cx-err:CXER0271']
+                  [?attr 'message' 'E_ADAPTER_DENIED: this door requires Authorization: Bearer <token>']]]]]]
+        [else [?let
+          [; route matching — [where] with handler-local comparands.
+             Routes path from $cfg directly: a $first-rebound intermediate
+             ($routes = [$first $cfg/routes]) keeps sequence shape and its
+             child steps resolve empty. ]
+          [= $hook [$first [?for [in $r $cfg/routes/webhook]
+                     [where [= $r@path $path]] [yield $r]]]]
+          [= $sse  [$first [?for [in $r $cfg/routes/sse]
+                     [where [= $r@path $path]] [yield $r]]]]
+          [; presence tests are EBV (truthy-by-presence; absence is falsy —
+             $count on a single-match binding reports the inner shape) ]
+          [?if [and [= $method 'POST'] $hook]
+            [then [; webhook-in → publish: the body becomes canonical CX at
+                    the boundary; unparseable input is a 400, never a drop. ]
+              [?let
+                [= $body  [$text $req/body]]
+                [= $ctype [$str:lower [$hdr-of 'content-type']]]
+                [; the payload publishes VERBATIM as the event — the route
+                   already selects the stream, and subscribers' topic-atom
+                   patterns match the event's own atom (bus §2.2); a wrapper
+                   element would hide it. JSON converts to its map element. ]
+                [= $payload [?if [$str:contains $ctype 'json']
+                              [then [; a JSON body converts to its map — an
+                                      event must be an ELEMENT, so it rides
+                                      wrapped (head-name 'json' patterns
+                                      match it); a parse err passes through ]
+                                [?let [= $jp [$json:parse $body]]
+                                  [?match $jp
+                                    [case [err $e] $jp]
+                                    [case $v [?element 'json' $v]]]]]
+                              [else [?let [= $pd [$cx:parse $body]]
+                                     [$first $pd//*]]]]]
+                [?match $payload
+                  [case [err $e]
+                    [?element 'response' [?attr 'status' 400]
+                      [?element 'body' [$format:canonical $e]]]]
+                  [case $p
+                    [?match [$fabric:publish $f [$concat '' $hook@stream] $p {}]
+                      [case [err $e2]
+                        [?element 'response' [?attr 'status' 502]
+                          [?element 'body' [$format:canonical $e2]]]]
+                      [case $receipt
+                        [?element 'response' [?attr 'status' 200]
+                          [?element 'body' [$format:canonical $receipt]]]]]]]]]
+            [else [?if [and [= $method 'GET'] $sse]
+              [then [; SSE out: this connection joins the route-path topic;
+                      the pump fans matching entries out to it. ]
+                [?element 'sse-subscribe' [?attr 'topic' $path]
+                  [?element 'event' [?attr 'data' 'ready']]]]
+              [else [?element 'response' [?attr 'status' 404]
+                      [?element 'body' [$format:canonical [?element 'err'
+                        [?attr 'code' 'cx-err:CXER4926']
+                        [?attr 'message' 'E_ADAPTER_ROUTE: no route at this path']]]]]]]]]]]]]]]
+
+[; one pump pass over the SSE lanes: receive → sse-publish to the topic ]
+[?def pump-sse scope=public impure ($lanebox)
+  [?for [in $lane $lanebox//lane]
+    [yield [?let [= $entries [$fabric:receive [$first $lane/fabric-sub] {max: 32, deadline: 200}]]
+      [?for [in $e $entries]
+        [yield [$http:sse-publish [$concat '' $lane@topic]
+                 [?element 'event'
+                   [?attr 'data' [render-entry [$concat '' $lane@fmt] $e]]]]]]]]]]
+
+[; one pump pass over the push lanes: receive → POST batch → ack on 2xx.
+   A non-2xx (or transport fault) acks NOTHING — the uncommitted tail
+   redelivers (at-least-once) and the daemon's window backpressures. ]
+[?def pump-push scope=public impure ($lanebox)
+  [?for [in $lane $lanebox//lane]
+    [yield [?let [= $entries [$fabric:receive [$first $lane/fabric-sub] {max: 16, deadline: 200}]]
+      [?if [> [$count $entries] 0]
+        [then [?let
+          [; an inline [?element] constructor is a valid def-call argument
+             (#540 fixed); binding the batch first just keeps the call short ]
+          [= $batch [?element 'batch' [?for [in $e $entries] [yield $e]]]]
+          [= $bodytext [render-entry [$concat '' $lane@fmt] $batch]]
+          [= $resp [?else [$http:post [$concat '' $lane@url] $bodytext {}] [?element 'response' [?attr 'status' 0]]]]
+          [= $status [$cast [$concat '' [?else $resp@status 0]] :int]]
+          [?if [and [>= $status 200] [< $status 300]]
+            [then [$fabric:ack [$first $lane/fabric-sub] [max-seq $entries]]]
+            [else null]]]]
+        [else null]]]]]]
+
+[; the forever-pump ([?loop], #550; the serve engine handles HTTP
+   concurrently — this fiber is the fabric→egress producer). Lane results
+   are deliberately UNOBSERVED (not [?do]): a per-lane fault must not kill
+   the pump — the unacked tail redelivers (at-least-once). ]
+[?def pump scope=public impure ($sse-box $push-box)
+  [?loop
+    [?let
+      [= $a [pump-sse $sse-box]]
+      [= $b [pump-push $push-box]]
+      [continue]]]]
+
+[; ── wiring ──────────────────────────────────────────────────────────────── ]
+[?let
+  [; --data binds the config ROOT ELEMENT as $doc; the // axis finds it
+     regardless of nesting ]
+  [= $cfg     [$first $doc//webhook-adapter]]
+  [= $furl    [$concat '' $cfg/fabric@url]]
+  [= $tenant  [$concat '' $cfg/fabric@tenant]]
+  [; optional attrs ?else-coalesce BEFORE coercion — an absent attribute is
+     the absence channel, never a bare call argument ]
+  [= $did     [$concat '' [?else $cfg/fabric@did '']]]
+  [= $seedenv [$concat '' [?else $cfg/fabric@seed-env '']]]
+  [= $resp    [$concat '' [?else $cfg/fabric@responder '']]]
+  [= $f [?if [= $did '']
+          [then [$fabric:open $furl {tenant: $tenant}]]
+          [else [?if [= $resp '']
+            [then [$fabric:open $furl {tenant: $tenant, did: $did,
+                                       seed: [$bytes:from-hex [$env:var $seedenv]]}]]
+            [else [$fabric:open $furl {tenant: $tenant, did: $did,
+                                       seed: [$bytes:from-hex [$env:var $seedenv]],
+                                       responder: $resp}]]]]]]
+  [= $token [?let [= $te [$concat '' [?else $cfg/http@token-env '']]]
+              [?if [= $te ''] [then ''] [else [$env:var $te]]]]]
+  [; SSE lanes observe (read-only fan-out, no offsets); push lanes join a
+     consumer group (cumulative ack after delivery). Patterns come from the
+     config as canonical text (pattern=":order.*"). Lanes ride in a BOX
+     element — a bare sequence argument would splat across the callee's
+     positional params. ]
+  [= $sse-box [?element 'lanes' [?for [in $r $cfg/routes/sse]
+    [yield [?element 'lane'
+      [?attr 'topic' [$concat '' $r@path]]
+      [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
+      [$fabric:observe $f [$concat '' $r@stream]
+        [$first [$cx:parse [$concat '' $r@pattern]]]]]]]]]
+  [= $push-box [?element 'lanes' [?for [in $r $cfg/routes/push]
+    [yield [?element 'lane'
+      [?attr 'url' [$concat '' $r@url]]
+      [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
+      [$fabric:subscribe $f [$concat '' $r@stream]
+        [$first [$cx:parse [$concat '' $r@pattern]]]
+        {group: [$concat '' $r@group]}]]]]]]
+  [; serve returns immediately (block=false default; the reactor owns its
+     own threads); the MAIN fiber is the fabric→egress pump — the fabric
+     handle serializes wire turns internally, so reactor handlers publishing
+     while the pump receives interleave safely. ]
+  [= $srv [$http:serve [$concat 'tcp://' [$concat '' $cfg/http@addr]]
+            [make-handler $f $token $cfg] {}]]
+  [pump $sse-box $push-box]]

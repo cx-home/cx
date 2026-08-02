@@ -14,8 +14,8 @@ _cx_subcmds() {
   # `diagram` renders the program as a diagram; `code-diagram`/`code-tree`
   # render the program AST; `lock` manages the dependency lockfile;
   # `store-*` are the CSRP store-service verbs (serve / health probe /
-  # token mint / KEK rotation).
-  echo "fmt canonical hash eq diff lint validate table demo scaffold eval version select diagram code-diagram code-tree lock store-serve store-health store-token store-rotate-kek lsp"
+  # token mint / KEK rotation); `fabric-serve` is the fabric daemon.
+  echo "fmt canonical hash eq diff lint validate table demo scaffold eval version select diagram code-diagram code-tree lock store-serve store-health store-token store-rotate-kek fabric-serve lsp"
 }
 
 _cx_table_verbs() {
@@ -191,7 +191,15 @@ _cx_complete() {
     store-serve)
       case "$cur" in
         --*)
-          COMPREPLY=( $(compgen -W "--config= $(_cx_allow_flags)" -- "$cur") )
+          COMPREPLY=( $(compgen -W "--config= --exit-on-stdin-eof $(_cx_allow_flags)" -- "$cur") )
+          return 0
+          ;;
+      esac
+      ;;
+    fabric-serve)
+      case "$cur" in
+        --*)
+          COMPREPLY=( $(compgen -W "--config= --exit-on-stdin-eof $(_cx_allow_flags)" -- "$cur") )
           return 0
           ;;
       esac

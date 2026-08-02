@@ -123,19 +123,20 @@ ascending power, all **pure** to evaluate:
 
 | Pattern form | Example | Matches |
 |---|---|---|
-| **topic atom** | `:order.placed` | messages whose topic equals the atom; a trailing `-` is a **prefix-glob** (`:order-` matches `:order.placed`, `:order-cancelled`) |
+| **topic atom** | `:order.placed` | messages whose topic equals the atom; a terminal `.*` segment is a **prefix-glob** (`:order.*` matches `:order`, `:order.placed`, `:order.cancelled`) |
 | **head name** | `'metric'` (string) | messages whose **head** equals the name, any arguments |
 | **predicate fn** | `[?fn ($m) [= $m/do :refund]]` | an **arity-1 boolean callable** over the message value (returns true to match); full structural power via CXPath inside the function body |
 
-> **Grammar adaptation (impl-reconciled).** Two earlier-draft forms in this
-> section did not parse and are corrected here to the realized surface (same
-> precedent as `net` `addr->string` → `addr-to-string`): (1) the prefix-glob is
-> a **trailing `-`** (`:order-`), not `:order.*` — `*` is not an atom `NameChar`
-> ([`grammar.ebnf`](../formal/grammar.ebnf) [6a]), so a
-> dotted-star glob is unlexable; (2) the structural pattern is an **arity-1
-> boolean `[?fn …]`**, not a bare `[?[= …] …]` predicate literal (which is not a
-> grammar production). Topics are dash-separated atoms (`:order.placed`); a `.`
-> is a legal `NameChar` but the module's convention is `-`.
+> **Grammar reconciliation (updated for the #397 dotted-atom ruling,
+> 2026-07-13; doc alignment 2026-07-20).** The prefix-glob is the spec-native
+> **terminal `.*` segment** (`:order.*`): the #397 owner ruling extended the
+> atom lexicon ([L40]) to dotted segments plus an optional terminal `.*` glob
+> segment, and the shipped matcher (`bus_compile_pattern`) accepts exactly
+> that spelling — the earlier trailing-`-` workaround for the pre-ruling atom
+> grammar is **retired** (cutover, no dual accept: a trailing-`-` atom is an
+> ordinary exact topic). The structural pattern remains an **arity-1 boolean
+> `[?fn …]`**, not a bare predicate literal. Topics are dotted atoms
+> (`:order.placed`).
 
 Glob and the predicate fn are the **only** wildcard/structural mechanisms; there
 is no regex. The matcher is a **pure** function (`match`, §3.4) — given a message

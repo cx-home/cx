@@ -76,6 +76,23 @@ pub fn persist_objects(mut b ObjectBackend, sink ObjectSink) ! {
 	}
 }
 
+// persist_objects_from stages only the sink TAIL past `from` (#603): the
+// sink's objects map is insertion-ordered, so a durability watermark makes
+// the per-mutation flush O(delta) instead of re-walking every object the
+// store has ever held. Returns the sink length the caller records as the
+// new watermark ONCE the segment lands durably (advance-after-flush keeps
+// the self-healing property: a failed flush re-stages the same tail).
+pub fn persist_objects_from(mut b ObjectBackend, sink ObjectSink, from int) !int {
+	mut i := 0
+	for _, payload in sink.objects {
+		if i >= from {
+			b.put_object(payload)!
+		}
+		i++
+	}
+	return sink.objects.len
+}
+
 // ── ObjectSink as an in-memory ObjectBackend ──────────────────────────────────
 // (so the in-process graph is just the in-memory backend; uniform with the rest.)
 

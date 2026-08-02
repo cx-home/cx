@@ -113,7 +113,7 @@ signature, summary, and verified example.
 module, presence parity (`[?def]` ⇄ `[fn-doc]`), purity agreement, and that each
 example is backed verbatim by `conformance/stdlib/<m>.cxd` (the corpus run green
 by `make test-vcx-suite`). Wired into `TEST_TARGETS`. Module-set parity is owned by
-`make stdlib-catalogue-gate`.
+`make stdlib-catalog-gate`.
 
 ## Playground page
 

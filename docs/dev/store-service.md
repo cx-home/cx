@@ -4,7 +4,7 @@
 multi-threaded daemon serving the **same** API, wire format, and
 content-addressing as the embedded store — it adds the operational layer,
 no storage smarts. Governing specs: the CXStore service-tier spec
-(`spec/02-working/cxstore_service_tier_phase2.md`) and the permanent wire
+(`spec/03-approved/misc/cxstore_service_tier_phase2.md`) and the permanent wire
 protocol, the CXStore remote protocol spec (CSRP,
 `spec/03-approved/misc/cxstore-remote-protocol.md`). Deploy artifacts live in
 `tooling/cxstore/` (README, `cxstore.service` systemd unit, `Dockerfile`,

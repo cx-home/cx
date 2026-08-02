@@ -118,9 +118,25 @@ XAP's server generic and a feature's deployment a data change:
 
 | Export | Required | Called |
 |---|---|---|
-| `readout ($store $t)` | **always** (every feature projects a read-model) | serves `GET /surface/<feature>`; feeds the push channel's change digest |
+| `readout ($store $t)` · `readout ($store $t $actor)` | **always** (every feature projects a read-model) | serves `GET /surface/<feature>`; feeds the push channel's change digest |
 | `apply ($verb $intent $store)` | iff the feature's grammar declares any non-`observe` verb | **after** the runtime PEP admits the emit (§8.2 of the composition spec) — `$verb` is the qualified name ρ resolved; the committed journal event precedes the call |
 | `simulate ($store $t $params)` | optional | the host's sim tick when the deployment runs a source in simulated mode; `$params` = the spec's `[simulation]` params overlaid with current config |
+
+**The actor-aware readout (per-principal lens).** A feature whose read-model
+carries a per-principal confidentiality boundary declares the three-parameter
+form: `$actor` is **exactly the request's resolved identity** — on an
+auth-enabled host the proven §4.12 principal (the same value an admitted
+intent commits as `actor=`), and the empty string on an auth-off host or an
+unauthenticated `[public]` route. The feature composes its lens **as data**:
+scoping happens where the fold happens, and the wire carries only what that
+principal may see — client-side filtering of a full read-model is not a
+control, and the two-parameter form remains the identity-blind contract for
+features with no such boundary (arity selects the behavior; existing
+two-parameter features are untouched). The **push channel renders lensed
+readouts with the anonymous actor**: an SSE frame fans out to every `/stream`
+subscriber, so the broadcast carries the feature's public subset only, and a
+lensed client treats the named event as a change *signal* — it re-fetches
+`GET /surface/<feature>` under its own possession proof for its view.
 
 Everything else a feature carries stays **spec data, not code**: seeds, `[config]`
 settings, `[devices]`, `[simulation]` parameters, `[source]` stacks, governance —

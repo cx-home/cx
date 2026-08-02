@@ -238,15 +238,115 @@ construction**. `serve` runs that runtime over a real socket by bootstrapping th
 | Key | Default | Meaning |
 |---|---|---|
 | `tenant` | — | the tenant this runtime partitions (§22.6); required |
-| `journal` | new `store`-backed | the `[$journal:open …]` handle (or its opts) the runtime folds over ([`journal.md`](../std-lib/journal.md)) |
+| `journal` | in-process | the durable journal binding the runtime commits to and folds over (§3.1.1): a `{url: …, stream: …}` map (plus client opts for an `xsp://` fabric), a `[$journal:open …]` handle, or a `[$fabric:open …]` handle |
 | `authz` | new context | the `[$authz:context …]` (principals + grant store) the PEP resolves against ([`authz.md`](../std-lib/authz.md)) |
 | `sessions` | new registry | the `[$session:registry …]` handle ([`session.md`](../std-lib/session.md)) |
 | `components` | `[]` | components registered at start (`[$xap:component …]` values, §4.2) |
 | `surfaces` | `[]` | named surfaces (`[$xap:surface …]` values, §4.3) |
 | `handlers` | `[]` | intent handlers (`[$xap:on …]` registrations, §4.5) |
 | `resolver` | `:scripted` | the resolver impl (§20) — `:scripted` (default), a `[component]`-emitting closure, or an external LLM resolver handle |
+| `sources` | `[]` | event-source bindings (§3.1.2): fabric subscriptions the **runtime** owns, each driving received entries into the cascade as a mapped verb |
+| `log-reduce` | absent | fold-side compaction for the runtime's in-process LOG (#606 — the same `{window: N, fn: <pure reducer>}` mechanism as a component's §5 `reduce`, applied to `rt.log`): readers of the log (governance folds included) observe the summary + the most-recent `window` events. **Absent = unbounded, today's behavior** — capping the log changes what governance folds observe, so it is always the deployment's explicit, declared choice |
 
-### §3.2. Data constructors (pure)
+#### §3.1.1. The durable journal binding (normative)
+
+Absent a `journal` binding, the runtime keeps its committed intents in an
+in-process log (the dev/demo mode — process exit loses history, no external
+observer). **With a binding, the bound stream IS the runtime's journal**: the
+cascade's commit is the durable append, and the fold is a fold over that
+stream — the journal is the hand-off between components (the S-invariant
+this key exists for).
+
+- **Binding shapes.** `{url: "<journal-or-fabric url>", stream: "<name>"}`
+  (stream defaults to `"acts"`) — an `xsp://`/`xsps://` url attaches the
+  fabric served tier with the map's remaining keys as the client opts
+  (`tenant`/`did`/`seed`/…, [`fabric.md`](fabric.md) §12); any other url is a
+  `[$journal:open]` target. A live `[$journal:open …]` or `[$fabric:open …]`
+  handle binds directly (default stream applies).
+- **Commit order.** PEP decision → durable append → in-process fold, and
+  **nothing folds when the append doesn't land** — a commit that isn't
+  durable didn't happen. The bound sibling's own refusal propagates **as-is**
+  (N-IMPL-1: e.g. the journal's no-anonymous-appends attribution invariant,
+  or a fabric grant denial — so an anonymous `emit` on a bound runtime
+  refuses rather than silently staying local); an append *fault* (the write
+  path unavailable) surfaces `cx-err:CXER4860 E_XAP_CASCADE_FAULT`. Both
+  commit lanes (in-process `emit`, the web bridge's `POST /intent/<verb>`)
+  ride this one path; application code never double-records authority.
+- **The committed value.** Every commit appends the uniform envelope
+  `[event actor=<PEP-resolved actor> <qualified intent>]` (the `actor`
+  attribute is omitted for an anonymous emit — the envelope head stays
+  `event`, so `"event"` is the stream's total pattern). Over a direct
+  journal handle, the append's attribution is the PEP-resolved
+  `{actor, authority}`. Over a fabric session, the transport's **proven
+  session principal is the attribution** (the §4.8 no-claimed-attribution
+  rule — a claimed actor ≠ session principal refuses) and the PEP actor
+  rides in the envelope: transport attribution and cascade attribution are
+  distinct facts, both auditable.
+- **Boot replay.** `run` with a binding **re-folds the bound stream before
+  returning** (an observe-replay from the start — never a group offset:
+  the fold is in-memory, so every boot replays in full). Replayed events
+  fold state exactly as commits do, with **no PEP re-check and no
+  re-append** — they were committed facts already. Restart = re-fold.
+- **Fold checkpoints (optional — #595).** `checkpoint: "<store url>"` in
+  the binding map (with `checkpoint-every: N`, default 256) persists the
+  fold as a derived document every N committed events:
+  `[checkpoint stream=… seq=N [slice bind=… <records…>] …]`,
+  alias-addressed as `xap-checkpoint-<tenant>-<stream>`. Boot then loads
+  the checkpoint, seeds the fold, and replays **only the suffix**
+  (observe from `seq+1`) — O(suffix) restarts instead of O(history). A
+  checkpoint is **derived state, never authority**: the stream stays the
+  source of truth; a missing, unreadable, or unparseable checkpoint falls
+  back to full replay, and a failed checkpoint write never fails the
+  commit it trails (best-effort persist, loud on stderr). The persist runs
+  **off the commit path** (#604): the cadence point snapshots the fold and
+  dispatches; at most one persist is in flight per runtime (a cadence
+  point that finds one running retries at the next), and the
+  put-doc-then-alias write order means the alias always names a
+  *complete* checkpoint — a process that exits immediately after a
+  cadence point may simply leave the previous checkpoint standing (the
+  next boot replays a longer suffix; correctness is untouched). The
+  in-process log restarts at the checkpoint's seq — pre-checkpoint
+  history lives on the stream.
+- `close` releases the binding's handle (idempotent, §3.1).
+
+#### §3.1.2. Event-source bindings (normative)
+
+Without a source binding, a running xap's folds are driven only by
+in-process `emit` and the web bridge — every downstream worker repeats the
+same fabric-subscribe → receive → emit pump with per-app offset/ack
+semantics. `sources` moves that pump into the runtime:
+
+```cx
+[$xap:run {tenant: "acme"
+           sources: [{fabric: "xsp://127.0.0.1:8447", stream: "evidence",
+                      group: "xap-worker", verb: :evidence,
+                      did: …, seed: …}]}]
+```
+
+- **Binding shape.** Each source is a map: `fabric` (an `xsp://`/`xsps://`
+  url with the map's remaining keys as client opts, any journal url, or a
+  live `[$fabric:open …]` handle), `stream`, `verb` (the cascade verb the
+  entries enter as; **required**), `group` (consumer-group name — offsets
+  commit server-side/store-side, delivery is at-least-once), optional
+  `pattern` (bus pattern; default matches the whole stream) and `actor`
+  (the committing actor for ingested intents; default = the entry's
+  proven actor).
+- **The runtime owns the subscription**: group offsets, batched pull
+  (backpressure = the pull cadence), and **ack after fold** — an entry is
+  acknowledged only once its cascade commit landed, so a crash between
+  receive and fold redelivers (at-least-once, the group contract).
+- **Each received entry enters the cascade as the mapped verb**: the
+  intent is `[do :<verb> <published event>]`, committed through the SAME
+  PEP → (bound journal, §3.1.1) → fold path as any emit — panels stay
+  folds-of-events with no side channel, and a journal-bound runtime's
+  ingested commits are themselves durable acts. A PEP denial (or a §3.1.1
+  append refusal) **skips and acknowledges** the entry — deny-by-default
+  must not wedge the group — and records a `[source-denied …]` event in
+  the runtime's log (auditable, never silent).
+- **Live media follow ingest**: a served runtime pushes the re-rendered
+  surface to its `GET /events` subscribers on every ingested commit —
+  and, for the same reason, on every in-process `emit` — not only on web
+  intents (§24).
 
 ```
 [?def component scope=public pure [returns element] ($name::string $opts::map) ...]
@@ -260,6 +360,31 @@ data values (§2.4). `component` builds the §5 typed triple; `surface` composes
 placed `panel`s (CXPath-scoped nesting); `panel` places a registered component
 into a surface; `fold` evaluates a component's pure `[view …]` projection over a
 state `slice` to a view tree (no journal, no network — the projection only).
+
+**Context-affinity declaration (owner ruling 2026-07-21, #535).** The §19
+"capability = component triple + context-affinity metadata" surface is the
+`affinity` component option — declared ON the component, colocated and
+versioned with the capability it describes (no parallel rules registry to
+drift):
+
+```cx
+[$xap:component 'order-list' {
+  bind: '/orders', view: $v, emits: ([do :order.review]),
+  affinity: ([affinity when="context[= $_@focus 'orders']" class=:orders.triage rank=1],
+             [affinity when="context[deadline]"            class=:orders.urgent])}]
+```
+
+- `when` — a CXPath predicate evaluated against the `[context …]` projection
+  (§19); a match makes the component a **candidate** ("the inverse of
+  routing"). Required, non-empty.
+- `class` — the §20.1 context-class atom the trust ramp scores against.
+  Required: the ramp fold keys on capability × context-class.
+- `rank` — static tie-break among co-matching candidates (lower first;
+  default = declaration order).
+
+A component may declare multiple `[affinity]` clauses (one per context-class).
+A malformed clause (missing `when`/`class`) refuses at declaration with
+`CXER4852` — never a silently inert rule.
 
 ### §3.3. State (impure read over the journal)
 
@@ -324,6 +449,20 @@ view tree round-trips losslessly (the agent reads exactly what the HTML leg
 renders from). HTML escaping/sanitization is delegated wholly to `html`
 (§0); xap supplies no markup.
 
+**View failure is loud (normative).** A registered component whose `view:`
+callable fails at render time — it raises, it returns an `[err]` value, or it
+returns a view-tree with an `[err]` value embedded anywhere in it (a failed
+projection hole wrapped by data construction; the medium serializers would
+otherwise drop the node silently) — surfaces `cx-err:CXER4863
+E_XAP_VIEW_FAILED` naming the component and carrying the view's own error as
+`cause`. The failure is **never** folded into the
+absence channel: a served page whose shell mounts the failing surface refuses
+with the view's error, **not** with the unknown-surface refusal (that refusal
+remains reserved for a mount naming no registered component with a view); the
+`application/cx` leg returns the `[err]` value itself under the transport's
+failure mapping. Reporting a render-time view failure as an unregistered
+component inverts the diagnosis and is a conformance violation.
+
 ### §3.6. The resolver / Radar hook (impure)
 
 ```
@@ -344,6 +483,60 @@ defines the **interface + trust-ramp/attention-tier hooks**, not the judgment.
 §20.2 stakes gate; `opts.dry-run=true` runs the resolver on *predicted* events for
 anticipatory speculative composition (§19, §20) without
 committing.
+
+**Landed contract (#535, owner rulings 2026-07-21).** One head, two
+shape-dispatched contracts: a composed `[grammar …]` first argument is the §8.1
+ρ term resolution (unchanged); an `[xap-runtime …]` handle first is this entry.
+The **entry owns the governance for every resolver kind** (§4.5 — the resolver
+only *proposes*): proposal validation, the required `reason=` on the proposed
+surface, §20.2 tier demotion (`:foreground` caps at T2 foreground-propose;
+default T3; a resolver proposal never seizes the foreground), the journaled
+`[resolved via= tier= outcome= reason= …]` decision event, and the **granted**
+tier stamped on the returned surface (the renderer's placement input). A
+resolver closure applies as `($context $opts)` and returns an
+`[xap-surface … reason=…]` proposal (stamp via `[$xap:surface name panels
+{reason: …}]`) or the absence channel.
+
+**`resolver-default` (the deterministic §26 baseline).** Pure: `$rules` in —
+the collected `[affinity …]` declarations (§3.2) — scripted resolver out. The
+returned resolver, and the runtime's `:scripted` default over the registered
+components' declarations, evaluates deterministically:
+
+1. **filter** — candidates whose `when` CXPath matches the `[context …]`;
+2. **gate** — each candidate's §20.1 ramp level for (capability ×
+   context-class) must reach **2 (peripheral-suggest)** for inclusion, **3**
+   for a T2 placement. The level is the spec'd deterministic fold over the
+   journaled surfacing outcomes, with the §20.1 **manual pin as an override
+   grant** read from the dial (§21.3 — one mechanism): a delegation at scope
+   `ramp/<component>/<class>` (or `ramp/<component>`) whose `[setting
+   level=N]` pins the level. New capabilities start at level 0 (summon-only):
+   a fresh system surfaces nothing unsolicited — §20.1's conservative posture
+   by construction;
+3. **rank** — declared `rank`, then declaration order;
+4. **compose** — the surviving candidates become one `[xap-surface …]` (one
+   panel per component) with a **generated deterministic reason** naming each
+   candidate's matched class, `when`, and ramp level. Nothing matches or
+   survives → the absence channel.
+
+**Surfacing-response recording (#553, owner-directed 2026-07-21).** The
+fold's second input is live. `[?def resolve-respond scope=public impure
+[returns null] ($runtime::element $surface $response)]` journals the
+principal's response to a surfacing — the closed §20.1 vocabulary
+`:acted-on` / `:glanced-dismissed` / `:ignored` / `:suppressed` — as a
+`[resolution-response surface=… response=…]` event. Composed `[resolved …]`
+decisions carry machine-readable `[candidate component=… class=…]` children
+(relocated off the proposal — calibration metadata, not render content; a
+closure resolver MAY stamp its own for the same attribution), and the fold
+joins responses to the most recent prior decision for that surface, scoring
+asymmetrically per §20.1: two consecutive `acted-on`s per level step (slow
+to gain, cap 3); a dismissal drops a level and any response resets the
+streak (fast to lose); `suppressed` sticks at level 0 until a later
+`acted-on` or a pin. The **organic bootstrap** for a fresh capability —
+level 0 with no history — is `opts.summon`: `[$xap:resolve $rt $ctx
+{summon: 'component'}]` composes the named capability regardless of ramp or
+`when`-match (level 0 *is* summon-only — the principal asked), and its
+surfacing then accumulates the responses that promote it. A dial pin
+continues to override the fold outright.
 
 ### §3.7. The dial / RACI surface — thin authz wrappers (impure)
 
@@ -508,6 +701,24 @@ value** (§2.4) — not a directive, not opaque code:
   `[kind …]` for an interactive **working panel** (the 5 %, §18) declaring one of the v1 kinds (`data-grid`, `board`, `canvas/graph`,
   `chart-with-brushing`, `inline-editor`) with its `(read-model,
   control-vocabulary)` contract (§18.1), or the generic mount.
+- **`reduce`** *(optional — fold-side compaction, owner ruling 2026-07-23,
+  #606)* — `{window: N, fn: <pure reducer>}`. Declared **on the component**
+  (colocated and versioned with the capability whose slice it compacts —
+  the #535 affinity precedent). When the component's bind slice exceeds
+  `window` detail records, the OLDEST records are evicted **through the
+  reducer** into the slice's single **summary record**:
+  `fn(summary-or-absence, evicted-record) → summary'` — a pure fold, the
+  reducer owns the summary's shape (its first application seeds it via its
+  own absence handling). Every read of the slice — `state`, the view's
+  slice argument, `render` — sees **the summary record (when one exists)
+  followed by the most-recent `window` detail records**: views observe
+  summaries + recent detail, never a silent truncation. Keyed reads
+  (detail routes) filter detail records only. **Absent `reduce`, the fold
+  is complete and unbounded — today's behavior, unchanged** (opt-in, no
+  silent change). The §3.1.1 checkpoint persists the compacted fold
+  (summary + detail per slice), so restart reconstructs exactly what
+  views observe; the journal stream remains the complete history — the
+  authority is never compacted, only the derived fold.
 
 A placed instance is a **panel** (`[$xap:panel order-card {order: $id}]`); a
 composition of panels is a **surface** (`[$xap:surface …]`). A panel **has
@@ -601,7 +812,7 @@ governance registry ([`governance.md`](../process/governance.md) §9.6) — the 
 free block above `cx-stdlib/http`'s `CXER4525–4543` (the `4544–4849` gap is left
 unallocated for net/http growth + the bus/journal/authz/session siblings, which
 claim their own bands at their graduations). This revision uses
-`CXER4850–CXER4862`. All values use `cx-err:` notation; symbolic↔wire is 1:1
+`CXER4850–CXER4863`. All values use `cx-err:` notation; symbolic↔wire is 1:1
 (governance invariant). **Cancellation is the core `CXER0260`, not an xap code**
 (§6).
 
@@ -620,6 +831,7 @@ claim their own bands at their graduations). This revision uses
 | `cx-err:CXER4860` | `E_XAP_CASCADE_FAULT` | journal write failure or PEP unavailable mid-cascade — a genuine fault, not a rejection (§2.3) |
 | `cx-err:CXER4861` | `E_XAP_TENANT_VIOLATION` | a cross-tenant slice/grant reference (the hard partition, §22.6) |
 | `cx-err:CXER4862` | `E_XAP_FEDERATION_VIOLATION` | a cross-**XAP** data reference *other than* via a delegated intent — e.g. a `state`/`fold` reaching into another XAP's journal (the data partition, §22.6.1; cross-XAP effects MUST be delegated intents, not direct reads) |
+| `cx-err:CXER4863` | `E_XAP_VIEW_FAILED` | a registered component's `view:` callable raised or returned an `[err]` value at render time; the err names the component and carries the view's own error as `cause` — never folded into the absence channel or misreported as an unregistered component (§3.5) |
 
 **Shared/core/sibling codes xap surfaces (not in its band):** `cx-err:CXER0271`
 (effect-capability denial from http/io/process — `serve`/`init`, §6, **not**
@@ -895,6 +1107,13 @@ screen-thing.
 | **Augmenting feature** | *descriptive, not a class:* a feature whose `view` reads another feature's **read-model** (durable, §19.1 Tier 1) and/or subscribes to its **coordination channel** (ephemeral, Tier 2). Overlay = arrangement:`overlaid` × coupling:`linked`; when it derives nouns it is a **composite feature** (`joined`). |
 | **linked-durable / linked-ephemeral** | the two durability classes of `linked` coupling (§19.1): *durable* = settled state via the read-model (journaled/auditable); *ephemeral* = continuous interaction via the coordination channel (transient/out-of-audit). |
 | **XAP interface** | the contact-layer artifact, when it must be distinguished from the felt experience. (XAP : interface :: UX : GUI.) |
+| **Proof of control** | the fresh, channel-bound demonstration that a party holds a DID's private key — the XSP-AUTH handshake's product; the only thing that authenticates (N-IDENT-1). See the [identity model](xap_identity_model.md) §2, §4. |
+| **XSP-AUTH** | the SIGMA-style four-message mutual handshake (hello / challenge / prove / confirm) over XSP stream 0 that yields proof of control both ways ([identity model](xap_identity_model.md) §4). |
+| **Channel binding** | folding the transport channel's identity into the handshake transcript so a proof cannot be replayed onto a different channel ([identity model](xap_identity_model.md) §4.6). |
+| **Anonymous floor** | the deployment-configured maximum authority an unproven (anonymous) initiator can receive — possibly nothing (N-IDENT-2; [identity model](xap_identity_model.md) §4.7). |
+| **Session selector** | the attach-time choice of which session a client binds to: `mirror` (default), `new [name]`, `id`, `name` — the #24 multiplicity surface ([identity model](xap_identity_model.md) §4.9–§4.11; [`session.md`](../std-lib/session.md)). |
+| **Delegated mirror** | *(spec-staged)* observe-only attachment to another principal's session under an `observe-session` grant ([identity model](xap_identity_model.md) §4.9). |
+| **Provenance attestation** | the signed record binding a committed intent to the proof-of-control that authenticated its emitter at commit time (N-IDENT-3; [identity model](xap_identity_model.md) §7). |
 
 **eXperience leads** (the medium — the UX/DX/CX family); **Agent in the middle**
 (subordinate but indispensable — the Radar); **Principal in charge** (the
@@ -2151,6 +2370,28 @@ event-feed, radar updates, working panel slice-events, and out-of-band swaps. Tr
 bidirectional WebSocket is required only for collaborative-editing CRDT (the
 thickest §16 tier), which is out of scope for v1.
 
+**Changed-panel delta frames (normative — #609, owner ruling 2026-07-23).**
+`GET /events` pushes the full `[surface …]` value per commit (the baseline
+contract, unchanged). A subscriber MAY opt into commit-derived deltas with
+`GET /events?delta=1`:
+
+- the **initial frame stays the full surface** — it is the subscriber's
+  resync baseline and its high-water mark;
+- every subsequent frame is
+  `[surface-delta seq=N [panel-frame name=… <panel view-tree>]…]`,
+  carrying **only** the panels whose bind slices changed past the
+  subscriber's mark (the cascade knows what changed — every commit names
+  its bind — so deltas are derived from commits, never byte-diffed);
+- semantics are last-write-wins panel replacement: apply each
+  `panel-frame` over the panel of that name; a client that loses track
+  simply reconnects (a fresh initial full frame is the resync — no patch
+  versioning protocol exists or is needed);
+- a delta subscriber MUST tolerate an occasional full `[surface …]` frame
+  (treat it as a resync) — auxiliary push paths may emit them;
+- a view that fails at render is **omitted** from delta frames — the full
+  lanes (`GET /`, `/surface`, plain `/events`) surface `E_XAP_VIEW_FAILED`
+  loudly (§3.5); deltas only ever carry renderable panels.
+
 ---
 
 ## §25. Implementation — thin CX stdlib modules, not a framework
@@ -2289,6 +2530,24 @@ predicates, capabilities, assurance tiers) extends *without* disturbing them.
   with ops agents, are one paradigm). Growth is composition along dimensions —
   capabilities, dial, media/clients, federation, scale, deployment (§28.4) —
   never a second stack.
+- **N-IDENT-1** — proof before principal: no session binds to a DID principal
+  without verified fresh proof of control, bound to the channel or handshake;
+  the XSP `principal` field is an attribution/routing label, never an
+  authentication input ([identity model](xap_identity_model.md) §0, §2).
+- **N-IDENT-2** — mutuality at trust boundaries (§22.6.1): the responder always
+  proves its DID; an unproven initiator is anonymous and receives at most the
+  deployment's anonymous floor. No configuration treats an unproven DID as
+  authenticated ([identity model](xap_identity_model.md) §0, §4.7).
+- **N-IDENT-3** — point-in-time attribution: attribution binds to the key
+  material proven at commit time; rotation, deactivation, and resolver-state
+  changes act forward only — journaled history is never re-attributed,
+  invalidated, or orphaned ([identity model](xap_identity_model.md) §0, §6).
+- **N-IDENT-4** — authority is per session: the individual basis (local grants
+  **plus** the VCs verified on that session) is clamped by every envelope —
+  `effective = individual ∩ ⋂envelopes` (§22.10); a VC can never confer
+  authority an envelope forbids. Concurrent sessions of one principal MAY hold
+  different authority bases; authority never attaches to a connection, client,
+  or bare DID string ([identity model](xap_identity_model.md) §0, §5).
 
 ---
 

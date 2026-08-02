@@ -15,6 +15,165 @@ version, library version).
 
 Nothing yet.
 
+## [0.14.0] — 2026-08-02
+
+The **eventing + endurance** release. v0.13.0 made CX consumable; v0.14.0
+makes a CX deployment survive its own success. Two arcs dominate: **cx
+fabric** graduates from a design note to a served platform tier — durable
+and transient event planes over XSP, with DLQ, request–reply, consumer
+groups, failover, and a NATS bridge — and the **journal + store grow a
+lifecycle**: rotation, tiered retention, cold archive with chain anchors,
+and demand-paged loading, so cost tracks the *working set* rather than
+lifetime volume. Between them sits a sustained performance campaign that
+moved remote ingest from ~16 events/s to ~660, and a fail-loud sweep that
+closed a family of silent-wrong-answer defects in the evaluator.
+
+No breaking changes.
+
+### Added — cx fabric, the eventing platform
+
+- **fabric v1** (#518, #531): durable + transient event planes over XSP —
+  embedded core, served tier (`cx fabric-serve`), XAP coordination, and a
+  webhook adapter. A durable fabric stream *is* a journal stream, so
+  ordering, hashing, and verification come from the journal contract
+  rather than a parallel implementation.
+- **Delivery conventions** — DLQ + redelivery policy (#543), request–reply
+  over XSP request/reply frames (#544), and a **NATS bridge** mapping
+  subjects ↔ streams/channels for legacy seams (#547).
+- **XSP §5 adopted** (#560, #519): heartbeat, credit-based flow control,
+  and reconnect-resume; `xsp.md` graduated to `03-approved`.
+- **Multi-event publish** (#607): one wire turn, one receipt per batch.
+- **Journal rotation** (#640) — `journal-rotate` / `[rotate keep-n=N]`:
+  seal every stream at its own boundary, move the hot window to a fresh
+  store, and record each sealed predecessor in a walkable **segment
+  index**. Copy-then-swap, so a crash mid-rotation leaves the live chain
+  intact; the swap *is* the eviction.
+- **Tiered retention** (#636) — `[retention sweep-ms=… [stream name=…
+  hot=N archive=… hold=…]]`: per-stream hot windows swept automatically,
+  sealed-segment cold archive, **chain anchors retained whether a segment
+  is archived or dropped** (nothing is silently lost), and a legal hold
+  that suspends archival and truncation.
+- **Alias remoting over CSRP** (#645): `aliases` / `aliases-set` with
+  explicit per-name presence — a miss is a *server-asserted* absence, not
+  a guess — plus an optional compare-and-set for conflict-safe pointer
+  advances. Byte-source remotes keep the honest refusal.
+- **The journal rides a served store** (#644, #655): a fabric mount can
+  point at `cx-store://`, completing the self-hosted topology.
+
+### Added — XAP
+
+- **Actor-aware feature readouts** (#647): `readout($store, $t, $actor)`
+  receives the request's resolved principal, so a per-principal lens folds
+  server-side instead of shipping a full read-model to every client.
+- **Event-source binding + durable cascade commits** (#582, #583): a XAP
+  runtime can drive folds from a fabric subscription or journal tail, and
+  its acts are externally observable rather than in-process only.
+- **Serve surface**: parameterized panel routes (#578), configurable mount
+  and cascade routes (#567, #570), SSE **changed-panel** frames derived
+  from commits (#609), and the §3.6 context→composition resolver entry
+  (#535).
+- **Surfacing-response recording** (#553) — the ramp fold's second input.
+
+### Added — language & stdlib
+
+- **`[?loop]` with `[break]` / `[continue]`, and `[?do]`** (#550): the
+  condition-driven loop and evaluate-for-effect sequencing, with
+  all-explicit exits (a branch that forgets its exit word is a
+  diagnostic, never a silent wrong answer).
+- **`%` as modulo** (#598), joining the arithmetic family.
+- **Per-thread PRNG streams + instantiable generators** (#625) —
+  `[$random:new]`, `gen-*`: `[?worker]` threads no longer race a
+  process-global RNG.
+- **`CX-L007`** (#610): aggregation over a simple field accessor now warns
+  with the sanctioned idioms — the §6.2 count-composition trap,
+  machine-caught.
+- **`[$store:verify]`** (#637): the whole-graph integrity pass as an
+  explicit, on-demand operation.
+- **HTTP query strings** reach `GET` handlers (#627).
+
+### Performance
+
+- **Remote journal-bound ingest: ~16 → ~660 events/s.** The arc runs
+  through pipelined batch appends (#593), coalesced SSE pushes + a render
+  cache (#594), fold checkpoints with suffix replay (#595), server-side
+  per-event write elimination (#614), receive/push cadence (#617), and
+  finally the delivery pump leaving the sequencer lock (#642) — which
+  lifted the publish leg to the receive ceiling (**663/s** measured at
+  K=2000, ~1.9× the post-#617 steady state).
+- **Journal appends are O(delta) in store size** (#603): delta-scan
+  bookkeeping + size-tiered segment folds; the daemon no longer saturates
+  at idle on routine deadline polls.
+- **Fold-side compaction** (#606) and **checkpoint persist off the commit
+  path** (#604) bound in-memory fold growth and remove the periodic
+  O(state) latency spike.
+- **Demand-paged store load** (#637): opening an object-graph store
+  populates only the refs layer; objects page in on first touch through a
+  self-verifying getter. Measured on a 40,000-doc store: **0 objects
+  resident at open vs 200,001** eagerly.
+- **`bench/xap`** (#608): a CX-native throughput harness (ingest rate,
+  commit latency, render cost, boot replay) with a locked scenario ladder
+  in `SIZING.md`, now carrying a `hot=` window column as the primary cost
+  dial.
+
+### Fixed — fail-loud (silent wrong answers)
+
+- **Module-imported code evaluates identically to program-context code**
+  (#646): derived evaluation frames (`[?let]` / `[?loop]` / `[?for]` /
+  match backtracking) dropped the lexical-position fields, so a `[?fn]`
+  created under one inside a module def captured the *importing program's*
+  scope. Dollar-form sibling calls raised `no callable`, bare-form calls
+  silently self-evaluated to data elements, and `[?str]` interpolations
+  surfaced masked CXER0100 errors — all only under `[?lib]` import.
+- **`$first` returned the whole collection** for `$filter` results (#529);
+  **err values vanished** in unobserved `[?let]` bindings (#530);
+  **absence in call position** misdiagnosed as `no callable` (#536);
+  **`[?for] [where]` calls never matched** (#537); **`[?element]` as a
+  call argument arrived as absence** (#540); **`[?async]` never ran
+  without `[?await]`** despite §10.5.1 specifying eager spawn (#541).
+- **`$cx:emit` emitted unescaped single quotes** inside single-quoted attr
+  values, so output re-parsed wrong or not at all (#563); **CXPath over an
+  `[err …]` yielded zero matches**, turning parse failures into silent
+  empties (#565); a **parsed MapNode was unnavigable** (#618).
+- **Store integrity**: `put-doc` of an element tree failed to round-trip
+  (#564); collection kind flipped across put/get (#566); replayed record
+  scalars lost string typing (#620).
+
+### Fixed — durability & concurrency
+
+- **Crash consistency** (#624): the journal store corrupted on unclean
+  shutdown, then SIGBUS'd or refused on reopen. Two-pass replay with a
+  structural torn-tail discard; 0/40 corrupt across a kill-at-any-point
+  harness.
+- **Shared same-root store handles** (#628): two writable in-process opens
+  of one root collided on segment numbering — they now share the live
+  handle or refuse loudly.
+- **SEGFAULT in `store_cxpack_load`** when a source pump re-opened a
+  `file://` journal already open in-process (#613, with the underlying
+  fork-side GC fix).
+
+### Fixed — toolchain, build, packaging
+
+- **Public mirror builds from a clean clone** (#491, #504): the V
+  bootstrap and fork makefiles no longer float on remote HEADs.
+- **Self-contained darwin artifact** (#573): RE2 vendored and linked
+  statically, dropping the Homebrew/abseil dylib chain.
+- **WSL2 source build** (#643): root-caused to an uninitialized submodule
+  plus a stale fork branch; the patch branch now tracks the pin.
+- **Bindings**: the retired `:table[` opener purged from Go/Rust/Python
+  (#509); Rust `arrow`/`parquet` features compile (#511); six Python test
+  files wired into a Makefile lane (#512).
+- **Test harness**: daemon-spawning tests tether their daemon's lifetime
+  to the spawner (#648), and the in-module suite gained the same
+  classified-retry contract as the black-box suite.
+
+### Notes
+
+- The **CX partition** (#516) — ring extraction per use case — remains the
+  next release's headline and is unchanged, deliberately design-gated.
+- The hosted `https://cxhome.org/install` one-liner is still blocked on
+  GitHub Pages certificate issuance (#508); install from the release
+  artifacts or from source.
+
 ## [0.13.0] — 2026-07-16
 
 The **platform + consumption** release: the cx store grows a

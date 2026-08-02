@@ -236,7 +236,8 @@ body) per the per-directive registry in §4.1: `in`, `where`, `yield`,
 `throws`, `using`, `init`, `through`, `recover-with`, `set`, `delete`,
 `rename`, `set-attr`, `delete-attr`, `append`, `prepend`,
 `insert-before`, `insert-after`, `replace`, `only`, `bind`, `=`
-(let-binding clause).
+(let-binding and loop-binding clause), `break`, `continue` (`[?loop]`
+body tail position, §8.15).
 
 Reserved attribute names (the `name=value` form inside a directive
 body) per §4.1: `scope`, `version`, `in-memory`, `lazy`, `max`,
@@ -333,7 +334,7 @@ call = '[' '$' Ident arg* ']' [ '?' | '!' ]   (* head-dispatch; arg = expr | '_'
            paren-call form anywhere — Ident '(' … ')' is a parse error in every
            position, CXPath predicate bodies included *)
 opform = '[' op expr* ']' (* closed reserved-operator set, bare head — §6.5 *)
-op = '+'|'-'|'*'|'/'|'='|'!='|'<'|'<='|'>'|'>='|'~'|'and'|'or'|'not'|'cast'|'union'|'intersect'|'except'
+op = '+'|'-'|'*'|'/'|'%'|'='|'!='|'<'|'<='|'>'|'>='|'~'|'and'|'or'|'not'|'cast'|'union'|'intersect'|'except'
 pattern = '[' patternHead patternAttrs patternBody? ']'
 patternHead = ('**' | '*' | TypeGuard | Ident) [ binding ]
 TypeGuard = ':' Ident (* e.g. :User *)
@@ -400,6 +401,8 @@ Adding or removing a directive requires a governance amendment per
 | `[?const]` | §12.3 | Module — module-level constant |
 | `[?if]` | §8 | Core — conditional |
 | `[?else]` | §8.13 | Core — value-or-default coalesce (`getOrElse`; on err + absence) |
+| `[?do]` | §8.14 | Core — evaluate-for-effect sequencing (values discarded; first `[err]` propagates; yields `null`) |
+| `[?loop]` | §8.15 | Core — condition-driven loop; `[break]`/`[continue]` clause-heads, all-explicit exits |
 | `[?pipe]` | §6.4, §8.9 | Core — pipeline (prefix-only; bare stages; `[tap]`) |
 | `[?map]` | §8 | Core — map (sequential or `[par]`) |
 | `[?reduce]` | §8 | Core — reduce / fold (sequential or `[par]`) |
@@ -919,10 +922,29 @@ that step selects exactly one child holding a single item: the read yields
 that inner value rather than the wrapping element. So for
 `[result [value 42] …]`, `$r/value` reads `42` (not `[value 42]`). This is
 the read counterpart of the simplest-adequate field model (a labeled field
-is a plain child; reading it returns its content). Node-set queries — any
-path with a predicate, a descendant/wildcard/parent axis, or multiple
-matching children (`$doc/user[= $_@active true]/name`) — are unaffected and
-return elements per the table above.
+is a plain child; reading it returns its content), and it is **uniform
+over content kinds**: the inner value may itself be an element — for
+`[box [life [evidence …]]]`, `$b/life` reads the `[evidence …]` element.
+This is the platform's field-read idiom (`$response/body`,
+`$r/next-generator`, `$task/status`, …) and is load-bearing throughout the
+standard library. Node-set queries — any path with a predicate, a
+descendant/wildcard/parent axis, or multiple matching children
+(`$doc/user[= $_@active true]/name`) — are unaffected and return elements
+per the table above.
+
+**Composition with aggregation (normative — owner ruling 2026-07-23,
+#584).** Because a simple field accessor yields the field's *content*,
+aggregating over it aggregates the content: `[$count $x/field]` over a
+field holding one element reports **that element's own arity** (3 for the
+`[life [evidence [id…] [kind…] [val…]]]` example above), 0 for an empty
+field, and N for an N-item field. This is the deliberate consequence of
+the field model, not a defect — a field read answers "what is in the
+field", never "how many children matched". Code that wants
+**match-counting** must use a node-set form, which never unwraps: the
+descendant axis (`[$count $b//life]` = 1), a wildcard read over the parent
+(`[$count $b/*]` = 1), or a predicate step. Aggregation-sensitive folds
+that accumulate element-valued records (the receive→fold pattern) should
+count matches, not field contents.
 
 **Terminal attribute unwrap.** The same simple-field-accessor rule extends
 to a path whose prefix is a pure `/name` child chain (no predicates) and
@@ -959,6 +981,23 @@ that is the optional-read contract, not data loss. A *required* read (missing �
 `[err]`) would be a distinct, explicitly-marked operator (out of scope here, noted
 so the absence/failure line stays clean). Scoped to read/navigation steps;
 predicates/axes follow the same node-set rule.
+
+**Navigating an err value does NOT propagate the err (normative — loud
+callout).** Path navigation is the sanctioned err-*inspection* lane (the
+errors-as-data-vs-control-flow boundary, "Errors are values, uniformly"):
+`$e@code`, `$e/@message`, `$e/cause`, `$e/errors` read the err's own
+structure, so a bound err behaves as the data element it is. The flip side
+is deliberate and worth stating loudly: a query that does not match the
+err's own shape — `$doc//row` when `$doc` holds a failed `[$cx:parse]`
+result — yields the **empty node-set**, exactly as it would over any other
+element with no matching descendants. A program that binds a fallible
+producer to `$doc` and only ever runs content queries over it will read a
+parse failure as "successfully empty". Guard the *binding*, not the query:
+test the producer with `[?match]` / `[?else]` / `[?fallback]` at the bind
+site (or propagate with postfix `?` on the producing call) before
+navigating. This is not silent error swallowing — it is the documented
+inspection boundary; the err is still the bound value and still reports
+itself anywhere it is used as an operand.
 
 Grammar: `grammar.ebnf` [135] BindingPath.
 
@@ -1357,7 +1396,7 @@ other `[head …]` is data-element construction:
 | Head form | Examples | Meaning |
 |---|---|---|
 | **Named built-in** — `[$name …]` | `[$upper $s]`, `[$count $xs]`, `[$concat "a" "b"]`, `[$substring $s 2 3]` | The `$`-sigil head-dispatch call (§6.3). A **word-named** built-in is reachable ONLY via `[$name …]`; the bare form `[name …]` is data-element construction (a data element named `name`), even when `name` matches a built-in. |
-| **Symbolic / reserved operator head** — bare `[op …]` | `[+ $a $b]`, `[- $a $b]`, `[* $a $b]`, `[/ $a $b]`, `[= $x V]`, `[!= …]`, `[< …]`, `[<= …]`, `[> $x 100]`, `[>= $u@age 18]`, `[~ $a $b]`, `[and P Q]`, `[or P Q]`, `[not P]`, `[cast $v :int]`, `[union $a $b]`, `[intersect $a $b]`, `[except $a $b]` | A **closed set of reserved operator tokens** admitted **bare** as expression forms — they are NOT data elements and do NOT take a `$` sigil. The set is: arithmetic `+ - * /`; comparison `= != < <= > >=` (grammar [126e] `ProgramRelOp`) plus the graded-similarity cognate `~` (std-lib/similar.md — 2-or-3-ary, element-valued); logical `and or not`; `cast` (the one type-tag operator, P6 below); and the set/sequence combinators `union intersect except` (formerly CXPath-predicate-only infix — now reserved prefix heads valid in every expression position; grammar [125f]/[125g]). |
+| **Symbolic / reserved operator head** — bare `[op …]` | `[+ $a $b]`, `[- $a $b]`, `[* $a $b]`, `[/ $a $b]`, `[= $x V]`, `[!= …]`, `[< …]`, `[<= …]`, `[> $x 100]`, `[>= $u@age 18]`, `[~ $a $b]`, `[and P Q]`, `[or P Q]`, `[not P]`, `[cast $v :int]`, `[union $a $b]`, `[intersect $a $b]`, `[except $a $b]` | A **closed set of reserved operator tokens** admitted **bare** as expression forms — they are NOT data elements and do NOT take a `$` sigil. The set is: arithmetic `+ - * / %`; comparison `= != < <= > >=` (grammar [126e] `ProgramRelOp`) plus the graded-similarity cognate `~` (std-lib/similar.md — 2-or-3-ary, element-valued); logical `and or not`; `cast` (the one type-tag operator, P6 below); and the set/sequence combinators `union intersect except` (formerly CXPath-predicate-only infix — now reserved prefix heads valid in every expression position; grammar [125f]/[125g]). |
 
 The distinction is **lexical**: a symbolic or reserved-keyword operator
 token is never a valid data-element name, so `[> $x 100]` is
@@ -1408,6 +1447,7 @@ each folds over its FULL operand list:
 | `*` | ≥ 1 | product (`[* 2 3 4]` = 24); unary = the operand |
 | `-` | ≥ 1 | **unary** = negate (`[- 5]` = −5); **n-ary** = left-fold subtract (`[- 10 3 2]` = (10−3)−2 = 5) |
 | `/` | ≥ 1 | **unary** = reciprocal as float (`[/ 4]` = 0.25); **n-ary** = left-fold divide (`[/ 100 5 2]` = 10); divide-by-zero raises `cx-err:CXER0101` (E_ARITH_DIVIDE_ZERO), as for `[$div]` |
+| `%` | 2 | **binary** modulo, an exact alias of the `mod` builtin (#598): remainder with sign of dividend (XPath 3.1 §3.5, `[% -7 3]` = −1); int iff both operands int; divide-by-zero raises `cx-err:CXER0101` |
 | `and` / `or` | ≥ 1 | EBV-fold, short-circuit left→right |
 | `not` | 1 | EBV negation |
 | `= != < <= > >=` | 2 | **binary**; chained comparison is NOT n-ary |
@@ -1932,7 +1972,7 @@ Iterators are produced by:
 - Combinator directives `[?map]` / `[?filter]` / `[?reduce]` (terminal — materializes to scalar)
  / `[?zip]` / `[?enumerate]` / `[?take]` / `[?drop]` / `[?chain]` / `[?concat]` / `[?chunks]` / `[?cycle]`
  / `[?scan]` / `[?flatten]` / `[?partition]` / `[?group-by]` — see `stdlib.md` for the full
- catalogue. `[?concat]` flattens a sequence-of-sequences one level; `[?chain]` is its
+ catalog. `[?concat]` flattens a sequence-of-sequences one level; `[?chain]` is its
  end-to-end alias. An err-valued `[?filter]` / `[?partition]` predicate result
  short-circuits the whole combinator and is its result — §9.2 implicit operand
  propagation, uniform with the `[?for]` `[where …]` clause (§7.2).
@@ -2285,7 +2325,7 @@ meaning) is worth more than a more-powerful single construct.
 
 ## §8. Directives reference
 
-This section catalogues every directive with its parameters,
+This section catalogs every directive with its parameters,
 semantics, and error matrix. Core directives are complete here; §11
 integration directives reference the design doc until normative
 treatment lands as part of release-gate work.
@@ -2998,6 +3038,78 @@ from `EXPR` is *captured* as the value to coalesce, not auto-propagated.
 ```
 
 `[?else]` introduces no new `CXER` code; it requires no capability.
+
+### §8.14 `[?do]` — evaluate for effect (owner ruling 2026-07-21, #550)
+
+```
+[?do E …]
+```
+
+The blessed **evaluate-for-effect sequencing form** (resolves the #530
+fail-loud gap). One-or-more expressions evaluate **in order**; their values
+are **discarded** — except the first `[err …]` result, which **propagates
+immediately** per §9.2 instead of vanishing in an unobserved dummy `[?let]`
+binding (the pre-`[?do]` idiom `[= $_x EFFECT]` silently swallowed a failed
+effect's evidence). Success yields **`null`** — a present unit (§9.1.2.1 role
+2b), never absence (absence would read as "nothing happened"; something
+did).
+
+```cx
+[?do [$fabric:publish $f 'orders' $ev {}]
+     [$fabric:ack $sub $seq]]        # a failed publish STOPS the sequence and
+                                     # propagates; the ack never runs
+```
+
+`[?do]` is not a loop and carries no control flow beyond ordering; it
+composes inside `[?loop]` bodies (§8.15) exactly as anywhere else. No new
+`CXER` code; no capability (the body's effects carry their own gates).
+
+### §8.15 `[?loop]` — condition-driven loop with explicit exits (owner ruling 2026-07-21, #550)
+
+```
+[?loop [= $x INIT]… BODY]
+  [break V?]          ; exit — the loop's value is V (bare [break] → null)
+  [continue V…?]      ; repeat — rebind the declared bindings positionally
+```
+
+THE condition-driven loop: **anonymous trampolined tail recursion** with
+declared state. `[?for]` (§8.3) remains the data comprehension; `[?loop]`
+covers unknown-trip-count, condition- and effect-driven iteration — the
+territory that previously forced a named tail-recursive `[?def]` with
+threaded params and marker returns. Semantics are exactly the tail call the
+form desugars to: **no mutation** — `[continue V…]` rebinds the declared
+loop bindings for the next pass (arity-checked: all of them positionally,
+or a bare `[continue]` for unchanged state); the engine drives the passes
+in O(1) native stack (the #60 trampoline's guarantee without its
+boilerplate).
+
+**All-explicit tail contract (normative).** Each pass's body value MUST be
+a `[break …]` or `[continue …]` element — `break`/`continue` are reserved
+clause-heads in `[?loop]` body tail position (§3.5). Any other tail value
+raises `cx-err:CXER0100` ("loop body must end in [break …] or
+[continue …]"). The implicit exit of Clojure's `loop/recur` (any non-recur
+value silently becomes the result) is **deliberately rejected**: a branch
+that forgets its exit word is a diagnostic, never a silent wrong answer. A
+`[break]` with multiple values yields them as a sequence. An `[err …]` tail
+value propagates as itself — the §9.2 failure channel outranks the tail
+contract. `[?while COND BODY]` is **not admitted** (a second, weaker form —
+stateless by construction under immutable bindings — for zero new power;
+the stateless world-observing pump is the zero-binding `[?loop]`).
+
+```cx
+[?loop [= $i 1] [= $acc 0]
+  [?if [> $i 5] [then [break $acc]]
+    [else [continue [+ $i 1] [+ $acc $i]]]]]      # ⇒ 15
+
+[?loop [= $tries 50]                              # bounded drain
+  [?if [<= $tries 0] [then [break [?element "err" [?attr "reason" "drain-budget"]]]]
+    [else [?let [= $r [step-in $sock]]
+      [?if [= $r 'pong'] [then [break [?element 'pong']]]
+        [else [continue [- $tries 1]]]]]]]]
+```
+
+No new `CXER` code (`CXER0100` covers the contract violations); no
+capability.
 
 ---
 

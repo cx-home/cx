@@ -2,7 +2,7 @@
   "name": "cx-language",
   "displayName": "CX Language",
   "description": "Syntax highlighting, LSP, snippets, and formatting for CX (.cx / .cxd / .cxs) — the structured data + code language. Surface covers CXPath as a first-class value kind, multi-arm [?match], pure-functional [?modify], atom literals (:NAME), [?def] module functions, [?const] constants, and [?lib] module loading.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "publisher": "cx-home",
   "license": "Apache-2.0",
   "repository": {

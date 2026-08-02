@@ -897,7 +897,7 @@
  `lo 'to' hi ('by' step)?` is retired — no tombstone, no dual-accept. */
 
 [125f] OperatorForm ::= '[' OpHead (S ProgramArg)* S? ']'
-[125g] OpHead ::= '+' | '-' | '*' | '/'
+[125g] OpHead ::= '+' | '-' | '*' | '/' | '%'
  | '=' | '!=' | '<' | '<=' | '>' | '>=' | '~'
  | 'and' | 'or' | 'not' | 'cast'
  | 'union' | 'intersect' | 'except'
@@ -1051,6 +1051,7 @@
  | 'element' | 'attr' | 'entry' | 'name'
  | 'quote' | 'unquote' | 'splice' | 'eval'
  | 'meta'
+ | 'do' | 'loop'
  /* Closed directive name set. Current additions: 'modify'; 'with-open';
     'with-scope'; 'for-array' / 'for-map'; the iterator combinator stdlib —
     'filter' / 'take' / 'drop' / 'zip' / 'enumerate' / 'chunks' / 'concat' /
@@ -1153,6 +1154,23 @@
     capability → CXER0271, pure-reaches → CXER0233, lib non-widen → CXER4113,
     shared depth counter (default 8) → CXER4114. A non-evaluable tree node →
     CXER0238. Specialisation of ProgramDirective [127], ProgramDirName='eval'. */
+
+[127aa] DoDirective
+ ::= '[?' 'do' (S ProgramExpr)+ S? ']'
+ /* Evaluate-for-effect sequencing (code.md §8.14; #550). Expressions
+    evaluate in order; values discarded; the first [err …] result
+    propagates (§9.2); success yields null (present unit). Specialisation
+    of ProgramDirective [127], ProgramDirName='do'. */
+
+[127ab] LoopDirective
+ ::= '[?' 'loop' (S LetBindingClause)* S ProgramExpr S? ']'
+ /* Condition-driven loop (code.md §8.15; #550): the [?let] binding-clause
+    shape ([= $x INIT]…) then one body expression. The body's tail value
+    MUST be a [break ProgramExpr?] or [continue ProgramExpr*] element
+    (reserved clause-heads in this position, §3.5) — anything else raises
+    CXER0100 (all-explicit exits). [continue V…] rebinds the declared
+    bindings positionally (all or none); driven in O(1) native stack.
+    Specialisation of ProgramDirective [127], ProgramDirName='loop'. */
 
 [166]  WithErrorHook   ::= '[?' 'with-error-hook' (S ErrorHookClause)+ S ProgramExpr S? ']'
 [166a] ErrorHookClause ::= ObserveClause | EnrichClause | ReportClause

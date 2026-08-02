@@ -2,7 +2,7 @@
 
 `cx store-serve` runs the single-node CXStore service: a multi-threaded CSRP
 daemon over the Phase-1 embedded store. See
-`spec/02-working/cxstore_service_tier_phase2.md` for the full design.
+`spec/03-approved/misc/cxstore_service_tier_phase2.md` for the full design.
 
 ## Run
 

@@ -1,0 +1,320 @@
+[; nats-bridge.cx — the cx-fabric NATS bridge adapter (#547;
+   spec/02-working/fabric.md §14/§18): an ORDINARY fabric client at the
+   edge — pure cx over cx-stdlib/net — translating NATS subjects onto
+   fabric streams for the legacy-migration seam (pbengine retired NATS
+   behind a transport port; this bridge lets NATS-side producers and
+   consumers interop while the estate migrates). No core seam: everything
+   here rides the same [$fabric:*] surface any consumer uses.
+
+     NATS → fabric   SUB per [in …] route → each MSG becomes canonical CX
+                     at the boundary → [$fabric:publish] to the route's
+                     stream. Delivery inherits core-NATS semantics up to
+                     the bridge (fire-and-forget); a FAILED publish ends
+                     the session loudly (reconnect + NATS redelivery is
+                     the operator's story) — never a silent drop.
+     fabric → NATS   durable group subscribe per [out …] route → batched
+                     receive → PUB each rendered entry → PING, and the
+                     cumulative ack commits only after the server's PONG
+                     (the round-trip proves the server processed the
+                     preceding PUBs; at-least-once, like the webhook push
+                     lanes' ack-after-2xx).
+
+   Protocol subset spoken (client side of the NATS text protocol):
+   INFO / CONNECT / PING / PONG / SUB / PUB / MSG / +OK / -ERR. Reply-to
+   subjects are ignored (NATS request-reply is not bridged in v1 — the
+   fabric-native call convention is §12.1). TLS-required servers are not
+   supported in v1 (dial is plain tcp://).
+
+   Config (the --data document; see nats-bridge.config.cx beside this file):
+     [nats-bridge
+       [fabric url="xsp://…" tenant="…" did="…"? seed-env="…"? responder="…"?]
+       [nats url="tcp://127.0.0.1:4222" token-env="…"? user="…"? pass-env="…"?]
+       [routes
+         [in  subject="legacy.orders.>" stream="orders"]
+         [out stream="orders" pattern=":order.*" group="nats-out"
+              subject="cx.orders" fmt="cx"? body="event"?]]]
+     Out-route body: "event" (default) PUBs just the event — the shape a
+     legacy consumer expects; "entry" PUBs the full attributed journal
+     envelope (seq/actor/hash provenance, webhook-push parity).
+     In-route subjects must be unique (the subject's position numbers its
+     subscription id). Credentials ride env vars, never the config file;
+     values containing double quotes are not escaped in v1.
+
+   Run (deny-by-default capabilities):
+     cx nats-bridge.cx --data=nats-bridge.config.cx \
+        --allow-net=<daemon> --allow-net=<nats-server> --allow-env ]
+
+[?lib 'cx-fabric' :as fabric]
+[?lib 'cx-stdlib/net' :as net]
+[?lib 'cx-stdlib/env' :as env]
+[?lib 'cx-stdlib/bytes' :as bytes]
+[?lib 'cx-stdlib/format' :as format]
+[?lib 'cx-stdlib/json' :as json]
+[?lib 'cx-stdlib/strings' :as str]
+[?lib 'cx-stdlib/fp' :as fp]
+
+[; entry/value → wire text per the route's fmt (canonical cx default) ]
+[?def render-entry scope=public pure ($fmt $e)
+  [?if [= $fmt 'json'] [then [$json:emit $e]] [else [$format:canonical $e]]]]
+
+[; highest seq= across received entries (they arrive ascending; fold is the
+   order-independent belt) ]
+[?def max-seq scope=public pure ($entries)
+  [$fp:fold $entries 0 [?fn ($acc $e)
+    [?let [= $s [$cast [$concat '' $e@seq] :int]]
+      [?if [> $s $acc] [then $s] [else $acc]]]]]]
+
+[; foreign payload → canonical CX at the boundary (§14), webhook parity:
+   JSON converts to its map element (wrapped — an event must be an ELEMENT,
+   and head-name 'json' patterns match it); CX-parseable text publishes its
+   first element verbatim; anything else rides a [nats-raw] wrapper carrying
+   the text — lossless, never a drop. ]
+[?def to-event scope=public pure ($subject $text)
+  [?let [= $j [$json:parse $text]]
+    [?match $j
+      [case [err $e]
+        [?let
+          [= $pd [?else [$cx:parse $text] ()]]
+          [= $el [?else [$first $pd//*] ()]]
+          [?if $el [then $el]
+            [else [?element 'nats-raw' [?attr 'subject' $subject] $text]]]]]
+      [case $v [?element 'json' $v]]]]]
+
+[; ── NATS wire helpers ─────────────────────────────────────────────────── ]
+
+[; PUB with a byte-counted payload. The socket's line-terminator is crlf
+   (set at connect), so write-line frames per the protocol; the count is
+   BYTES of the UTF-8 text, not codepoints. ]
+[?def nats-pub scope=public impure ($sock $subject $text)
+  [?let
+    [= $len [$bytes:length [$bytes:from-string-utf8 $text]]]
+    [= $w1 [$net:write-line $sock [$concat 'PUB ' $subject ' ' $len]]]
+    [= $w2 [$net:write-string $sock $text]]
+    [$net:write-line $sock '']]]
+
+[; announced-size payload + its trailing CRLF. The payload follows its MSG
+   header immediately, so the read-deadline is a hang guard, not a pacing
+   concern; a short read under a lapsed deadline surfaces as the CRLF read
+   failing on the next frame (session ends, reconnect recovers). ]
+[?def nats-read-payload scope=public impure ($sock $n)
+  [?let
+    [= $b [?if [> $n 0] [then [$net:read-exact $sock $n]]
+             [else [$bytes:from-string-utf8 '']]]]
+    [= $crlf [$net:read-exact $sock 2]]
+    [$bytes:to-string-utf8-lossy $b]]]
+
+[; MSG sid → its in-lane's stream; a sid with no lane (late unsubscribed
+   route) drops the message with a null (nothing to publish onto). A failed
+   publish RETURNS the err — the session treats it as fatal (loud, never a
+   silent drop). ]
+[?def handle-msg scope=public impure ($f $inbox $sid $subject $text)
+  [?let
+    [= $lane [$first [?for [in $l $inbox//lane]
+               [where [= [$concat '' $l@sid] $sid]] [yield $l]]]]
+    [?if $lane
+      [then [$fabric:publish $f [$concat '' $lane@stream]
+              [to-event $subject $text] {}]]
+      [else null]]]]
+
+[; read + dispatch ONE inbound protocol op. Returns a marker string —
+   'msg' (handled + published), 'pong', 'quiet' (read-deadline lapse; the
+   socket has nothing for us right now), 'other' (PING answered, +OK/INFO
+   skipped) — or an [err …] element for -ERR, socket death, or a failed
+   ingress publish. ]
+[?def step-in scope=public impure ($sock $f $inbox)
+  [?let [= $line [$net:read-line $sock]]
+    [?match $line
+      [case [err $e]
+        [?if [= [$concat '' [?else $line@code '']] 'cx-err:CXER4507']
+          [then 'quiet'] [else $line]]]
+      [case $l
+        [?if [= $l 'PONG'] [then 'pong']
+        [else [?if [= $l 'PING']
+          [then [?let [= $z [$net:write-line $sock 'PONG']] 'other']]
+        [else [?if [or [= $l '+OK'] [$str:starts-with $l 'INFO ']]
+          [then 'other']
+        [else [?if [$str:starts-with $l '-ERR']
+          [then [?element 'err' [?attr 'code' 'cx-err:CXER4926']
+                  [?attr 'message' [$concat 'E_NATS_SERVER: ' $l]]]]
+        [else [?if [$str:starts-with $l 'MSG ']
+          [then [?let
+            [; MSG <subject> <sid> [reply-to] <#bytes> — reply-to ignored ]
+            [= $parts [$str:split $l ' ']]
+            [= $n [$count $parts]]
+            [= $subject [$nth $parts 2]]
+            [= $sid [$nth $parts 3]]
+            [= $size [$cast [$nth $parts $n] :int]]
+            [= $text [nats-read-payload $sock $size]]
+            [= $pub [handle-msg $f $inbox $sid $subject $text]]
+            [?match $pub
+              [case [err $e2] $pub]
+              [case $ok 'msg']]]]
+          [else 'other']]]]]]]]]]]]]]
+
+[; drain inbound until quiet (or the per-pass budget spends) so a NATS
+   flood cannot starve the egress lanes ]
+[?def pump-in scope=public impure ($sock $f $inbox $limit)
+  [?loop [= $left $limit]
+    [?if [<= $left 0] [then [break null]]
+      [else [?let [= $r [step-in $sock $f $inbox]]
+        [?match $r
+          [case [err $e] [break $r]]
+          [case $v [?if [= $v 'quiet'] [then [break null]]
+                     [else [continue [- $left 1]]]]]]]]]]]
+
+[; read until the server's PONG, still dispatching interleaved traffic
+   (MSGs keep publishing, PINGs keep being answered) — the ack barrier and
+   the handshake both wait here. Budget-bounded: each 'quiet' costs one
+   read-deadline, so tries*deadline caps the wait. ]
+[?def drain-until-pong scope=public impure ($sock $f $inbox $tries)
+  [?loop [= $left $tries]
+    [?if [<= $left 0]
+      [then [break [?element 'err' [?attr 'code' 'cx-err:CXER4926']
+              [?attr 'message' 'E_NATS_PONG: no PONG within the drain budget']]]]
+      [else [?let [= $r [step-in $sock $f $inbox]]
+        [?match $r
+          [case [err $e] [break $r]]
+          [case $v [?if [= $v 'pong'] [then [break [?element 'pong']]]
+                     [else [continue [- $left 1]]]]]]]]]]]
+
+[; one pump pass over the out lanes: receive → PUB each → PING → ack on
+   PONG. A failed PONG barrier acks NOTHING — the uncommitted tail
+   redelivers (at-least-once) and the daemon's window backpressures.
+   body="event" (default) ships just the event — legacy NATS consumers
+   don't know fabric [entry …] envelopes; body="entry" opts into the full
+   attributed envelope (provenance parity with the webhook push lanes). ]
+[?def pump-out scope=public impure ($sock $f $inbox $outbox)
+  [?for [in $lane $outbox//lane]
+    [yield [?let [= $entries [$fabric:receive [$first $lane/fabric-sub] {max: 16, deadline: 200}]]
+      [?if [> [$count $entries] 0]
+        [then [?let
+          [= $subj [$concat '' $lane@subject]]
+          [= $fmt  [$concat '' $lane@fmt]]
+          [= $whole [= [$concat '' $lane@body] 'entry']]
+          [; $e/event DEREFS to the event's single element child — no [$first],
+             which would dig one level further and yield the child's own head ]
+          [= $pubs [?for [in $e $entries]
+            [yield [nats-pub $sock $subj [render-entry $fmt
+              [?if $whole [then $e] [else $e/event]]]]]]]
+          [= $z [$net:write-line $sock 'PING']]
+          [= $pong [drain-until-pong $sock $f $inbox 50]]
+          [?match $pong
+            [case [err $e] $pong]
+            [case $p [$fabric:ack [$first $lane/fabric-sub] [max-seq $entries]]]]]]
+        [else null]]]]]]
+
+[; true iff any item of $xs is an [err …] element (the sequence rides in
+   as a wrapper, so no §9.2 operand propagation fires on the way in) ]
+[?def any-err scope=public pure ($xs)
+  [$exists [?for [in $x $xs]
+    [where [?match $x [case [err $e] true] [case $o false]]]
+    [yield $x]]]]
+
+[; the per-connection loop: alternate ingress drain and egress pumps until
+   the socket dies or a lane faults; the caller reconnects. ]
+[?def session-loop scope=public impure ($sock $f $inbox $outbox)
+  [?loop
+    [?let
+      [= $a [pump-in $sock $f $inbox 64]]
+      [= $b [pump-out $sock $f $inbox $outbox]]
+      [= $a-err [?match $a [case [err $e] true] [case $o false]]]
+      [?if [or $a-err [any-err $b] [$net:is-eof $sock]]
+        [then [break [?element 'session-ended']]]
+        [else [continue]]]]]]
+
+[; dial + INFO/CONNECT/PING/PONG handshake. Returns the socket, or the
+   [err …] that ended the attempt. ]
+[?def nats-connect scope=public impure ($ncfg)
+  [?let
+    [= $url  [$concat '' $ncfg@url]]
+    [= $sock [$net:dial-tcp $url {read-deadline: 5000, nodelay: true}]]
+    [?match $sock
+      [case [err $e] $sock]
+      [case $s [?let
+        [= $z1 [$net:set-opt $s {line-terminator: 'crlf'}]]
+        [= $info [$net:read-line $s]]
+        [= $tokenenv [$concat '' [?else $ncfg@token-env '']]]
+        [= $user     [$concat '' [?else $ncfg@user '']]]
+        [= $passenv  [$concat '' [?else $ncfg@pass-env '']]]
+        [= $auth [?if [not [= $tokenenv '']]
+                   [then [$concat ', "auth_token": "' [$env:var $tokenenv] '"']]
+                   [else [?if [not [= $user '']]
+                     [then [$concat ', "user": "' $user '", "pass": "' [$env:var $passenv] '"']]
+                     [else '']]]]]
+        [; the handshake writes sequence via [?do] — a failed write FAILS
+           the attempt now instead of surfacing later as a PONG timeout ]
+        [= $hs [?do [$net:write-line $s [$concat 'CONNECT {"verbose": false, "pedantic": false, "lang": "cx", "name": "cx-nats-bridge"' $auth '}']]
+                    [$net:write-line $s 'PING']]]
+        [?match $hs
+          [case [err $e2] $hs]
+          [case $k [?let
+            [= $pong [drain-until-pong $s [?element 'no-fabric'] [?element 'lanes'] 8]]
+            [?match $pong
+              [case [err $e3] $pong]
+              [case $p $s]]]]]]]]]]
+
+[; one connection's lifetime: connect, SUB the in-routes, tighten the read
+   deadline to the pump cadence, loop until the session ends. ]
+[?def run-session scope=public impure ($cfg $f $outbox)
+  [?let
+    [= $sock [nats-connect [$first $cfg/nats]]]
+    [?match $sock
+      [case [err $e] [?element 'connect-failed']]
+      [case $s [?let
+        [= $subjects [?for [in $r $cfg/routes/in] [yield [$concat '' $r@subject]]]]
+        [= $inbox [?element 'lanes' [?for [in $r $cfg/routes/in]
+          [yield [?element 'lane'
+            [?attr 'sid' [$concat 'in-' [$position $subjects [$concat '' $r@subject]]]]
+            [?attr 'subject' [$concat '' $r@subject]]
+            [?attr 'stream' [$concat '' $r@stream]]]]]]]
+        [= $subs [?for [in $lane $inbox//lane]
+          [yield [$net:write-line $s [$concat 'SUB ' [$concat '' $lane@subject] ' ' [$concat '' $lane@sid]]]]]]
+        [= $z [$net:set-deadline $s {read: 200}]]
+        [= $ended [session-loop $s $f $inbox $outbox]]
+        [= $zc [?else [$net:close $s] null]]
+        $ended]]]]]
+
+[; the forever loop: (re)connect with a 1s backoff; fabric subscriptions
+   (and their offsets) live OUTSIDE the NATS connection, so a reconnect
+   resumes egress exactly at the committed offset. ]
+[?def main-loop scope=public impure ($cfg $f $outbox)
+  [?loop
+    [; $r deliberately UNOBSERVED (not [?do]): a session ending in an err
+       is exactly the reconnect case — resilience means loop, not abort ]
+    [?let
+      [= $r [run-session $cfg $f $outbox]]
+      [= $z [?sleep 1s]]
+      [continue]]]]
+
+[; ── wiring ──────────────────────────────────────────────────────────────── ]
+[?let
+  [; --data binds the config ROOT ELEMENT as $doc; the // axis finds it
+     regardless of nesting ]
+  [= $cfg     [$first $doc//nats-bridge]]
+  [= $furl    [$concat '' $cfg/fabric@url]]
+  [= $tenant  [$concat '' $cfg/fabric@tenant]]
+  [; optional attrs ?else-coalesce BEFORE coercion — an absent attribute is
+     the absence channel ]
+  [= $did     [$concat '' [?else $cfg/fabric@did '']]]
+  [= $seedenv [$concat '' [?else $cfg/fabric@seed-env '']]]
+  [= $resp    [$concat '' [?else $cfg/fabric@responder '']]]
+  [= $f [?if [= $did '']
+          [then [$fabric:open $furl {tenant: $tenant}]]
+          [else [?if [= $resp '']
+            [then [$fabric:open $furl {tenant: $tenant, did: $did,
+                                       seed: [$bytes:from-hex [$env:var $seedenv]]}]]
+            [else [$fabric:open $furl {tenant: $tenant, did: $did,
+                                       seed: [$bytes:from-hex [$env:var $seedenv]],
+                                       responder: $resp}]]]]]]
+  [; out lanes join a consumer group (cumulative ack after the PONG
+     barrier). Lanes ride in a BOX element — a bare sequence argument would
+     splat across the callee's positional params. ]
+  [= $outbox [?element 'lanes' [?for [in $r $cfg/routes/out]
+    [yield [?element 'lane'
+      [?attr 'subject' [$concat '' $r@subject]]
+      [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
+      [?attr 'body' [$concat '' [?else $r@body 'event']]]
+      [$fabric:subscribe $f [$concat '' $r@stream]
+        [$first [$cx:parse [$concat '' $r@pattern]]]
+        {group: [$concat '' $r@group]}]]]]]]
+  [main-loop $cfg $f $outbox]]

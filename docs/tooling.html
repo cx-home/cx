@@ -57,6 +57,7 @@
     <li><a href="lib-did.html">did</a></li>
     <li><a href="lib-email.html">email</a></li>
     <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
@@ -140,10 +141,10 @@
          the fixtures are the normative reference where this guide
          and the binary disagree.</p>
         <section id="cli-overview">
-          <h3>Subcommand catalogue</h3>
+          <h3>Subcommand catalog</h3>
           
             <p>The full shipped set. `cx --help` lists every subcommand —
-           the catalogue and the dispatch are generated from one
+           the catalog and the dispatch are generated from one
            table in `vcx/cmd/main.v`, so they cannot drift — and
            every subcommand answers `cx &lt;subcommand&gt; --help` with
            its own usage:</p>
@@ -385,7 +386,7 @@
           <h3>cx lint</h3>
           
             <p>Style + correctness warnings. See <a class="xref" href="#lint">lint</a> for the rule
-           catalogue. Flags: `--format=text|json|summary` (default
+           catalog. Flags: `--format=text|json|summary` (default
            `text`), `--fail-on=info|warn|error|none` (default
            `error`), `--disable=ID1,ID2` to suppress checks,
            `--only=ID` to run one.</p>
@@ -722,7 +723,7 @@
               
                 <li>**CXER\\*** — runtime / parse errors from the V core.
                 See [`spec/cx_native_error_codes.md`](../../spec/cx_native_error_codes.md)
-                for the full catalogue.</li>
+                for the full catalog.</li>
                 <li>**CX-L\\*** — lint findings from `cx_lint` (see
                 <a class="xref" href="#lint">lint</a>); same codes the CLI emits.</li>
                 <li>**CXLS\\*** — LSP-only static-analysis diagnostics
@@ -1024,8 +1025,8 @@
          *warns* about issues that need human judgement to fix. The
          two never overlap — if a check has a safe auto-fix, it
          belongs to `cx fmt`.</p>
-        <section id="lint-catalogue">
-          <h3>Rule catalogue</h3>
+        <section id="lint-catalog">
+          <h3>Rule catalog</h3>
           
             <p>Five lint checks are currently shipped:</p>
             <table>

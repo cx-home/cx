@@ -57,6 +57,7 @@
     <li><a href="lib-did.html">did</a></li>
     <li><a href="lib-email.html">email</a></li>
     <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
@@ -553,6 +554,21 @@
           </pre>
           <pre class="sample-output">
             <code>cx-err:CXER1709</code>
+          </pre>
+        </div>
+      
+    </section>
+    <section id="fn-store-verify" class="fn">
+      <h3>store:verify</h3>
+      <p class="fn-sig"><code>[$store:verify]  -> element</code>  —  Whole-graph integrity pass: every live doc must reconstruct from the object graph, or it raises CXER1120 naming the first offending store-key. This is the check that used to run inline on EVERY open of an object-graph store; under demand-paged loading it runs on demand (or from a background task) instead, while per-object integrity is unchanged — every paged read self-verifies its hash, so corruption refuses loudly at first touch. Refuses on the flat document model, whose per-read hash check IS its verification.</p>
+      
+        <div class="example">
+          <pre>
+            <code class="language-cx">[?lib 'cx-stdlib/store']
+[?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "x"]]]] [$store:verify $s]]</code>
+          </pre>
+          <pre class="sample-output">
+            <code>[verification valid=true docs=1 objects=5]</code>
           </pre>
         </div>
       

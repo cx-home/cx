@@ -209,10 +209,15 @@ fn sap_concurrency_raii_and_cancel_revokes_caps() {
     let raii = eval_code("", "[?with-open [?async [+ 21 21]] $f [?await $f]]", "text").unwrap();
     assert_eq!(raii, "42");
     // §10.5.7.2 cancel-revokes-caps: a cancelled task hitting a cancellation
-    // point reports CXER0260 (cancel-check ▷ cap-check precedence).
+    // point reports CXER0260 (cancel-check ▷ cap-check precedence). The body
+    // parks on a MOCK sleep (a cancellation point) so [?cancel] lands
+    // deterministically — under eager [?async] (#541) a trivial body completes
+    // before the cancel and the await legitimately yields its value (the
+    // pre-#541 lazy-start ordering this test used to rely on is gone). Mirrors
+    // conformance program-async-004-await-cancelled.
     let cancel = eval_code(
         "",
-        "[?let [= $f [?async [?check-cancel]]] [?let [= $_ [?cancel $f]] [?match [?await $f] [case [err @code='cx-err:CXER0260'] [cancelled]] [else [other]]]]]",
+        "[?let [= $f [?async [?let [= $_ [?sleep 10s mock]] never]]] [?let [= $_ [?cancel $f]] [?match [?await $f] [case [err @code='cx-err:CXER0260'] [cancelled]] [else [other]]]]]",
         "text",
     )
     .unwrap();

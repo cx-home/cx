@@ -66,27 +66,36 @@ is: **`http` (transport) + `crypto` (token verify) → `session` (this spec) →
 
 | Surface | Home | Role |
 |---|---|---|
-| **`cx-stdlib/session` module** (this spec) | `[?lib 'cx-stdlib/session']` | establishes & resolves the `(principal, tenant)` session; the **two attach transports** (Bearer §2.2, cookie §2.8) + **CSRF** defense (§2.9); the mirrored-attach lifecycle |
+| **`cx-stdlib/session` module** (this spec) | `[?lib 'cx-stdlib/session']` | establishes & resolves the `(principal, tenant)` session; the attach paths (Bearer §2.2, cookie §2.8, `attach-did` / `attach-xsp` §2.10) + **CSRF** defense (§2.9); the mirrored-attach lifecycle + attach selectors (§2.10) |
 | `[$crypto:jwt-verify …]` | [`crypto.md`](crypto.md) §3.10 | verifies the token; emits a claim-set |
 | `[$authz:check …]` | [`authz.md`](authz.md) | reads the session's principal/tenant; decides intents |
 
-**Two attach transports, one session model (decision — v1).** A `(principal, tenant)`
-session is established by a verified IdP token (§2.2), but the *transport* that carries
-the proof-of-session on subsequent requests is client-shaped:
+**One session model, several attach paths (amended at the identity-model G3,
+2026-07-18 — the original v1 decision said "two attach transports").** A
+`(principal, tenant)` session is established by one of three verifications —
+a **verified IdP token** (§2.2), a **verified DID proof** (`attach-did`,
+[`did.md`](did.md) §7), or a **completed XSP-AUTH handshake** (`attach-xsp`,
+[identity model](../xap/xap_identity_model.md) §4) — and the *transport* that
+carries the proof-of-session on subsequent requests is client-shaped:
 
 - **Bearer** (§2.2) — for **agents, channels, and service clients** that hold a token
   and send it in `Authorization: Bearer …` on every request. No ambient credential, so
   **no CSRF surface** (§2.9).
-- **Cookie session** (§2.8, NEW this revision) — for **browser human clients** (the
+- **Cookie session** (§2.8) — for **browser human clients** (the
   HUMAN principal of [`xap.md`](xap.md) §16 attaches via a browser). On attach, session
   issues an **`HttpOnly; Secure; SameSite` cookie carrying an opaque server-issued
   session id** (never the raw token); subsequent requests resolve via the cookie.
   Because the cookie is an **ambient credential the browser attaches automatically**,
   this transport **requires CSRF protection** (§2.9) on state-changing intents.
+- **XSP channel** (§2.10) — for **DID-proven peers on a live XSP stream**: the
+  session binds to the handshake-proven channel, and subsequent requests carry
+  **per-request proofs** derived from the handshake keys ([identity model](../xap/xap_identity_model.md)
+  §4.8). No ambient credential; no CSRF surface.
 
-Both transports converge on the **same** `[session]` model (§2.1) and the **same**
-`(principal, tenant)` binding — they are two doors into one session, and a human's
-browser (cookie) and their agent (Bearer) mirror-attach to it (§2.7).
+All paths converge on the **same** `[session]` model (§2.1) and the **same**
+`(principal, tenant)` binding — they are doors into one session, and a human's
+browser (cookie), their agent (Bearer), and a DID-proven peer (XSP) can
+mirror-attach to it (§2.7, §2.10).
 
 Out of scope (and where it lives instead):
 
@@ -174,6 +183,14 @@ session **iff the token verifies**. The hard rule:
 
 So the trust chain is: **IdP signs → `crypto` verifies → `session` maps & binds →
 `authz` authorizes**. session is exactly the third link and nothing more.
+
+*(Scope note, identity-model G3: this section is the IdP-token path. The DID
+paths establish the same session by **proof of control** instead of a token —
+`attach-did` verifies a one-shot DID proof ([`did.md`](did.md) §7) and
+`attach-xsp` consumes a completed XSP-AUTH handshake ([identity
+model](../xap/xap_identity_model.md) §4.9) — with the identical mapping and
+lifecycle from §2.3 on. N-SESSION-1 holds unchanged: session performs no
+cryptography on any path; it acts only on a verification result.)*
 
 A token that fails verification (bad signature, expired, wrong `aud`/`iss`,
 malformed) surfaces as a **failure** (`CXER4801`, §2.6), carrying the underlying
@@ -429,6 +446,38 @@ is bound to the **session**, so it is naturally tenant-scoped and dies with the 
 session id** on a privilege change (§2.8.4 — a rotated session gets a fresh CSRF token),
 and invalidated on `detach`/expiry (it lives in the session state, so it dies with it).
 It is **not** retained across sessions.
+
+### §2.10. DID attach paths, attach selectors & session multiplicity (identity-model G3; closes #24)
+
+The [identity model](../xap/xap_identity_model.md) is normative for this
+surface; this section catalogs it as part of session's public contract.
+
+**DID attach paths.** `attach-did` establishes a session from a verified
+one-shot DID proof ([`did.md`](did.md) §7); `attach-xsp` establishes (or
+selects, below) a session from a completed XSP-AUTH handshake, binding the
+proven DID as the principal (identity model §4.9). Both paths reuse the §2.3
+mapping, the §2.4–§2.7 lifecycle, and the §6 authz hand-off unchanged.
+
+**Attach selectors (the #24 multiplicity surface).** An attach names which
+session it binds to (identity model §4.9–§4.11):
+
+| Selector | Meaning |
+|---|---|
+| `mirror` *(default)* | join the principal's existing session as another client (§2.7) |
+| `new [name=…]?` | mint an **independent session** for the same `(principal, tenant)` — its own client set, composition, context, and **authority basis** (N-IDENT-4); `name` is unique per `(principal, tenant)` |
+| `id` | bind to an explicit session id |
+| `name` | bind to a previously named session |
+
+A selector that would **rebind an established session to a different
+principal is refused** (`CXER4805` semantics — a fault, never a silent
+rebind). `list` enumerates a principal's live sessions; `by-name` resolves a
+named one.
+
+**VC presentation.** `present-vc` compiles a verified credential's
+delegations into **this session's** authority basis (identity model §5) —
+subject-bound, tenant-guarded, clamped by every envelope, consumed by the
+unchanged `authz` PEP as ordinary delegation records. Session stores no
+credential; it stores the compiled records' provenance.
 
 ## §3. Public function surface
 

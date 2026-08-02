@@ -57,6 +57,7 @@
     <li><a href="lib-did.html">did</a></li>
     <li><a href="lib-email.html">email</a></li>
     <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
@@ -131,12 +132,22 @@
     </section>
     <section id="fn-xap-resolve" class="fn">
       <h3>xap:resolve</h3>
-      <p class="fn-sig"><code>[$xap:resolve]  -> string</code>  —  Resolve a bare or qualified verb term against a composed grammar (rho) — qualified wins, context narrows, ambiguity is CXER4871 with candidates, unknown is CXER4872.</p>
+      <p class="fn-sig"><code>[$xap:resolve]  -> string | element | absence</code>  —  One head, two shape-dispatched contracts. With a composed [grammar ...] first: rho term resolution (grammar, term, context?) -> string — qualified wins, context narrows, ambiguity is CXER4871 with candidates, unknown is CXER4872 (pure, no journal). With an [xap-runtime ...] handle first: the context->composition entry (runtime, context, opts?) — applies the runtime's configured resolver ({resolver: ...} at run time; :scripted default, or a CX closure applied as ($context $opts) returning an [xap-surface ...] proposal carrying reason=..., or the absence channel), demotes the requested opts.tier per the attention gate (a proposal never seizes the foreground; :foreground caps at foreground-propose), journals the decision as a [resolved ...] event with :reason, and returns the composed surface or absence when nothing meets threshold.</p>
       
     </section>
     <section id="fn-xap-grammar-hash" class="fn">
       <h3>xap:grammar-hash</h3>
       <p class="fn-sig"><code>[$xap:grammar-hash]  -> string</code>  —  The Tier-1 content hash of a composed grammar under canonical form — the structural-equality oracle and the distribution supply-chain witness.</p>
+      
+    </section>
+    <section id="fn-xap-resolve-respond" class="fn">
+      <h3>xap:resolve-respond</h3>
+      <p class="fn-sig"><code>[$xap:resolve-respond]  -> null</code>  —  Record the principal's response to a surfacing (xap.md §20.1) — the ramp fold's second input: (runtime, surface-name, response) with response one of :acted-on / :glanced-dismissed / :ignored / :suppressed. Journals a [resolution-response ...] event; the fold attributes it to the (component x class) candidates of the most recent [resolved ...] decision for that surface and scores asymmetrically — two consecutive acted-ons per level step (slow to gain), a dismissal drops a level and any response resets the streak (fast to lose), suppressed sticks at level 0 until a later acted-on or a dial pin. The organic bootstrap for a fresh capability is a summon ([$xap:resolve $rt $ctx {summon: 'component'}] — level 0's own semantics) whose surfacing then accumulates responses.</p>
+      
+    </section>
+    <section id="fn-xap-resolver-default" class="fn">
+      <h3>xap:resolver-default</h3>
+      <p class="fn-sig"><code>[$xap:resolver-default]  -> element</code>  —  Build the deterministic scripted resolver from explicit affinity rules ([affinity component=... when=<CXPath> class=<atom> rank=<int>?] ...) — validated now, malformed rules refuse. Returns a [scripted-resolver ...] value that [$xap:run {resolver: ...}] accepts; resolve then runs the fold: when-filter against the [context ...] projection, ramp-level gate per capability x context-class (level >=2 to surface, >=3 for a T2 placement; pins ride the dial as delegations at scope 'ramp/<component>/<class>' with [setting level=N]; unpinned capabilities start at 0 = summon-only), declared rank, and one composed [xap-surface ...] with a generated auditable reason — or the absence channel. The runtime's bare :scripted default runs the same fold over the components' own §3.2 affinity declarations.</p>
       
     </section>
     <section id="fn-xap-surface" class="fn">

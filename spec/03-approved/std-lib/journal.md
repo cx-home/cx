@@ -767,6 +767,47 @@ left byte-for-byte intact**; `compact` is a read-original/write-new copy, so:
 Compaction therefore *bounds* replay cost (start from the seam, not genesis) **without**
 any in-place mutation — the copy-forward discipline is what makes that sound.
 
+### §4.11. Rotation — sealing the hot window (the composed operation)
+
+`rotate` (§3.7) is the **segmentation + eviction** operation deployments actually
+run: it composes §4.9 and §4.10 — cover, validate, copy — and adds the two things a
+long-lived deployment needs beyond a single compaction.
+
+```
+[$journal:rotate $j {streams: 'all', keep-n: 10000, target: 'file://…-g2',
+                     signing-key: <seed hex>, carry: ('fabric/acme/',)}]
+  ⇒ [rotated streams=N sealed=M segments=T target='…' [journal …]]
+```
+
+- **The cover** is caller-supplied (`snapshot:`) or a minimal **rotation cover** built
+  and signed here from `signing-key` — a `[rotation-cover]` state at the boundary
+  with the chain's anchor. §4.9 is unchanged: no valid signed cover, no sealing.
+- **`streams: 'all'`** seals the whole tenant journal — the default chain plus every
+  named stream, each at its **own** boundary (`head_s − keep-n`, floored at 0). A
+  stream whose boundary floors at 0 is copied **whole** (nothing sealed, no cover
+  needed): a rotation must never let a stream fall out of the hot window merely
+  because it is quiet. The target opens **once** and every stream compacts into that
+  one instance.
+- **The segment index** (`cx-journal/segments/<tenant>`, written in the *target*)
+  records each sealed predecessor — `to` (the boundary), `anchor` (the seam hash),
+  `store` (the predecessor's URL, **userinfo-redacted**) — **appended to the
+  predecessors the source already carried**. A chain of rotations therefore stays
+  walkable from the newest hot store alone, which is what makes cold history
+  discoverable without a registry.
+- **`carry:`** names alias-name prefixes whose entries ride into the new store.
+  Consumer state living beside the chain (a fabric mount's group offsets, policies,
+  and delivery records) **must** travel: a rotation that left it behind would
+  silently reset every consumer group.
+- Rotation is **copy-then-swap**: the source journal and store are never mutated, so
+  a crash mid-rotation leaves the live chain intact and the operation is simply
+  retried against a fresh target. **Eviction is the swap** — the caller repoints at
+  the returned journal and closes the old handle; per-operation cost then tracks the
+  hot window rather than lifetime volume.
+
+The *policy* question — when to rotate, what window each stream keeps, where sealed
+segments are archived and for how long — is deliberately **not** here: rotation is
+the mechanism a retention policy drives.
+
 ## §5. Capability integration
 
 Gated by **`store`'s existing capability model** ([`store.md`](../std-lib/store.md) §9,
@@ -784,6 +825,7 @@ is **the capability the underlying `store` backend requires** — journal adds n
 | `snapshot` / `fold-from` / `snapshot-verify` | `read` (to fold the chain) + `crypto` signing key for `snapshot` (§4.8) | the backend resource; `mem://` → none. Signing uses `crypto`'s key/cap posture — **no new journal cap** |
 | `retain` | `read` (verify the covering snapshot) | the backend resource; records a policy, deletes nothing |
 | `compact` | `read` (source) + `write`/`net` (the `opts.target`/`opts.archive` namespaces) | source + target/archive backend resources; `mem://` → none |
+| `rotate` | `read` (source) + `write`/`net` (the `opts.target` namespace) — the composed §4.11 operation inherits `retain`'s + `compact`'s caps, adding none | source + target backend resources; `mem://` → none |
 | `head` / `fold-value` / `dry-run` (the in-memory step) | — | **pure** (§4.6) — operate on materialized values / cached head |
 | `close` | — | release only |
 
@@ -995,6 +1037,7 @@ propagates as-is; the journal-specific *absent-key* and *bad-signature* cases ma
 | `snapshot-verify` / `fold-from` | `hash.equals(anchor, live-hash-at-seq)` + `crypto.verify(sig)`; then `fold-value (since at-seq+1)` onto `state` | `snapshot-verify` returns a finding (value); `fold-from` raises `CXER4615`/`CXER4613` on a divergent/forged cover before folding the tail (§3.7) |
 | `retain` | compute boundary `B` from the policy; `snapshot-verify` the cover; assert `B ≤ cover.at-seq` | returns a `[retention …]` value; deletes nothing; uncovered → `CXER4616` (§4.9) |
 | `compact` | `store.put-doc` the seam `[snapshot]` + copy retained tail **verbatim** to `opts.target`; optionally `store` move `1..B` to `opts.archive` | copy-forward; source untouched (§4.10); new segment is a valid chain anchored at the seam; collision → `CXER4600` |
+| `rotate` | `retain` (per stream, own boundary) → `compact` into ONE target → write the segment index (`cx-journal/segments/<tenant>`) + carry the named alias prefixes | copy-then-swap: source untouched; returns `[rotated … [journal …]]` (the new hot); unsigned cover → `CXER4614`; nothing-to-seal → `CXER4610` (§4.11) |
 
 The chain link uses **`hash.sha256` by default** ([`hash.md`](../std-lib/hash.md) §3.1)
 — `blake3` is available and is the faster choice for a hot append path; the algo is a

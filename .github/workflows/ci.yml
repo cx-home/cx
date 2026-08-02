@@ -32,12 +32,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies (re2)
+      - name: Install dependencies (sqlite headers; RE2 is vendored)
         run: |
+          # libsqlite3-dev: the default build carries the sqlite DB engine
+          # (vcx/Makefile CX_ENGINES). macOS needs nothing extra — sqlite3.h
+          # ships with the SDK and /usr/lib provides the dylib. RE2 is a
+          # pinned submodule (third_party/re2) built + statically linked
+          # in-tree, so no system re2 package is needed on any OS.
           if [ "$RUNNER_OS" = "Linux" ]; then
-            sudo apt-get update -q && sudo apt-get install -y -q libre2-dev
-          else
-            brew install re2
+            sudo apt-get update -q && sudo apt-get install -y -q libsqlite3-dev
           fi
 
       - name: Build

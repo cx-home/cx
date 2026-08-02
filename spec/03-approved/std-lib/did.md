@@ -5,7 +5,7 @@
   [standard ref='W3C DID Core 1.0' title='Decentralized Identifiers']]
 ```
 
-**Status:** Current (owner ruling 2026-07-12, #363 item 1(a) — graduated from Approved; the module ships and the spec was already normative, only the catalogue linkage lagged). Tier D — trust.
+**Status:** Current (owner ruling 2026-07-12, #363 item 1(a) — graduated from Approved; the module ships and the spec was already normative, only the catalog linkage lagged). Tier D — trust.
 
 Normative reference for the `cx-stdlib/did` module: create, parse, resolve, and prove control of **W3C Decentralized Identifiers (DIDs)**. A DID is a globally-unique, self-sovereign, cryptographically-verifiable identifier — the **decentralized** identity source named in [xap.md](../xap/xap.md) §22.1 (an external identity source is "an IdP (OIDC/SAML) **or** a DID resolver"), and the concrete realization of **R9**: *a DID identifies a principal*.
 
@@ -30,8 +30,12 @@ Per **R9**, DID is a *decentralized authority-basis transport*, **not a new trus
 |---|---|---|---|---|
 | **`did:key`** | `did:key:z<mb>` | **self-describing** — the public key IS the identifier; the DID Document is synthesized **offline** | none | clients (web/TUI/native), agents, offline/marine, the universal default |
 | **`did:web`** | `did:web:<domain>[:<path>]` | HTTPS GET of `https://<domain>/.well-known/did.json` (or `/<path>/did.json`) | yes | **org/domain-anchored** identity; peer-XAP federation; human-meaningful trust |
+| **`did:peer:0`** (identity-model G3) | `did:peer:0z<mb>` | **self-describing** — numalgo-0 wraps the same key material as `did:key`; synthesized **offline** ([identity model](../xap/xap_identity_model.md) §1) | none | pairwise peer identity in XSP-AUTH handshakes; interop with did:peer ecosystems |
 
-`did:key` is the universal client + offline path. `did:web` adds an HTTPS **resolver seam** for domain-anchored org identity and server↔server federation — it is the *only* method that touches the network, and only at `resolve` time.
+`did:key` (and `did:peer:0`, its numalgo-0 sibling) is the universal client +
+offline path. `did:web` adds an HTTPS **resolver seam** for domain-anchored org
+identity and server↔server federation — it is the *only* method that touches
+the network, and only at `resolve` time.
 
 ### §2.1. `did:key` encoding (normative)
 
@@ -111,7 +115,14 @@ All bodies bottom out in the `did-*` native primitives (see `vcx/code/stdlib_did
   [assertion-method "did:key:z6Mk…#z6Mk…"]]
 ```
 
-For `did:key` every field is derived from the identifier itself (no I/O). For `did:web` the document is the parsed `did.json`, validated to contain at least one Ed25519 verification method whose `controller` matches the DID.
+For `did:key` (and `did:peer:0`) every field is derived from the identifier itself (no I/O). For `did:web` the document is the parsed `did.json`, validated to contain at least one Ed25519 verification method whose `controller` matches the DID.
+
+**`XAPStreamEndpoint` service entry (identity-model G3; spec-staged).** A DID
+Document MAY carry a `[service]` child of type `XAPStreamEndpoint` advertising
+where the subject accepts XSP streams ([identity model](../xap/xap_identity_model.md)
+§2.3 — the discovery seam). *Staged:* the shape is normative in the identity
+model, but no resolver or consumer ships yet; a document without it loses
+nothing today.
 
 ## §5. `did:web` resolution
 
@@ -131,7 +142,11 @@ For `did:key` every field is derived from the identifier itself (no I/O). For `d
   availability/latency optimization only — it never changes the trust decision
   (the cached verification key is still checked against a fresh challenge), and
   a short TTL bounds staleness given `did:web` has no revocation ledger
-  (revocation is expressed via short-lived credentials, not document edits). The
+  (*authority* revocation is expressed via short-lived credentials, not
+  document edits; *identity* lifecycle — routine key rotation via overlap
+  documents, deactivation via tombstone — does edit the document and acts
+  forward-only, N-IDENT-3; [identity model](../xap/xap_identity_model.md)
+  §6.3–§6.5). The
   TTL is implementation-configured; `did:key` is offline and never cached. The
   CSRP service tier uses such a cache (shared with its OIDC JWKS cache).
 
@@ -165,7 +180,7 @@ Attach handshake (realized — [`session/attach-did`](session.md)):
 | Code | When |
 |---|---|
 | `CXER-DID-MALFORMED` | not a `did:<method>:<id>` string |
-| `CXER-DID-METHOD-UNSUPPORTED` | method is not `key` or `web` (v1) |
+| `CXER-DID-METHOD-UNSUPPORTED` | method is not `key`, `web`, or `peer` numalgo-0 (identity-model G3; was "`key` or `web`" in v1) |
 | `CXER-DID-NOT-SELF-DESCRIBING` | `document`/`verify-control`/`key-of` called on a method that needs network resolution (e.g. `did:web`) — use `resolve` |
 | `CXER-DID-DOC-MISMATCH` | resolved `did:web` document `id` ≠ the requested DID |
 | `CXER-DID-KEY-UNSUPPORTED` | key type is not Ed25519 (v1) |
