@@ -894,9 +894,43 @@ test-vcx-suite: build-vcx-dev
 # reach. `v test` only runs the directory it is given, so vcx/tests/ does not pull
 # these in; this dedicated target wires the in-module suite into the gate (under
 # the same default -gc e memory model as test-vcx-suite).
+#
+# Same classified-retry contract as test-vcx-suite (#648: this target had NO
+# retry class, so a live-socket lane flaking under -j parallel load failed the
+# umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
+# isolation, is the proven case).
+CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
+                     vcx/code/store_grpc_live_test.v
+
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/
+	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
+	if [ $$st -ne 0 ]; then \
+	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  if [ -n "$$failed" ]; then \
+	    st=0; \
+	    for t in $$failed; do \
+	      rel=$${t#$(CURDIR)/}; \
+	      case " $(CODE_SERIAL_RETRY) " in \
+	        *" $$rel "*) \
+	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
+	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
+	        *) \
+	          if grep -q 'C compilation error' $$log; then \
+	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
+	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
+	          else \
+	            echo "──── real failure (no retry class applies): $$rel ────"; st=1; \
+	          fi ;; \
+	      esac; \
+	    done; \
+	    if [ $$st -eq 0 ]; then \
+	      echo "──── every failed lane green on its classified retry (socket lanes: serial; C-compile failures: cache-free, #572) ────"; \
+	    fi; \
+	  fi; \
+	fi; exit $$st
 
 # White-box unit tests for the `cxstore` module (vcx/cxstore/*_test.v) — the
 # content-addressed object store internals (pack/seqtree/bloom/index/gc/reflog/
