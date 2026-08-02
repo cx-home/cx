@@ -23,7 +23,7 @@
 #
 # Module-set parity (the bundle vs the status=current spec set, incl. the
 # bundled-but-separately-specced `xap`) is owned by a separate gate,
-# `make stdlib-catalogue-gate` (SPEC == BUNDLE union DISPATCH); it is not
+# `make stdlib-catalog-gate` (SPEC == BUNDLE union DISPATCH); it is not
 # re-checked here.
 #
 # Why example-backing rather than "examples ARE the fixtures": the per-

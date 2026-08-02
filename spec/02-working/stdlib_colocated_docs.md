@@ -118,7 +118,7 @@ prose is derived FROM it (by a human or a one-time pass), not the reverse.
 
 Module-set parity (bundle vs. the status=current spec set, including the
 bundled-but-separately-specced `xap`) stays with the existing
-`make stdlib-catalogue-gate` (SPEC == BUNDLE ∪ DISPATCH); `guide-check` does not
+`make stdlib-catalog-gate` (SPEC == BUNDLE ∪ DISPATCH); `guide-check` does not
 duplicate it.
 
 ### §4.1 Decision — examples↔fixtures: pin docs to the corpus (NOT "examples ARE the fixtures")

@@ -27,22 +27,27 @@ docker run --rm \
     # wrk (load generator) — required for the HTTP churn stressor. Try apt; fall back
     # to building from source is avoided (network) — apt over the container bridge.
     apt-get update -qq >/dev/null 2>&1 || true
-    # wrk/nc/zsh for the gate; libre2-dev/libssh2 + g++ for the cx native link deps
-    # (cx/regex_re2.v -> -lre2 -lstdc++ + the re2 C++ shim; #pkgconfig libssh2).
-    apt-get install -y -qq wrk netcat-openbsd procps zsh libre2-dev libssh2-1-dev pkg-config g++ >/dev/null 2>&1 || \
-      apt-get install -y -qq wrk netcat-traditional procps zsh libre2-dev libssh2-1-dev pkg-config g++ >/dev/null 2>&1 || true
+    # wrk/nc/zsh for the gate; libssh2 + g++ for the cx native link deps (RE2
+    # is vendored — third_party/re2, built in-tree; #pkgconfig libssh2).
+    apt-get install -y -qq wrk netcat-openbsd procps zsh libssh2-1-dev pkg-config g++ >/dev/null 2>&1 || \
+      apt-get install -y -qq wrk netcat-traditional procps zsh libssh2-1-dev pkg-config g++ >/dev/null 2>&1 || true
     command -v wrk >/dev/null 2>&1 || { echo "[docker-gate] ABORT: wrk unavailable"; exit 2; }
     command -v nc  >/dev/null 2>&1 || { echo "[docker-gate] ABORT: nc unavailable";  exit 2; }
     command -v zsh >/dev/null 2>&1 || { echo "[docker-gate] ABORT: zsh unavailable";  exit 2; }
     command -v c++ >/dev/null 2>&1 || { echo "[docker-gate] ABORT: c++ unavailable";  exit 2; }
-    ls /usr/include/re2/re2.h >/dev/null 2>&1 || { echo "[docker-gate] ABORT: libre2-dev unavailable"; exit 2; }
+    ls third_party/re2/re2/re2.h >/dev/null 2>&1 || { echo "[docker-gate] ABORT: vendored re2 submodule missing (git submodule update --init third_party/re2)"; exit 2; }
 
-    # Build the RE2 C++ shim archive for LINUX into vcx/target (where cx/regex_re2.v
-    # links it via -L @VMODROOT/target -lcx_re2_shim). This OVERWRITES the macOS-arch
-    # archive in the mounted tree; the caller rebuilds the macOS one after the run.
+    # Build the vendored RE2 static archive + the C++ shim for LINUX (where
+    # cx/regex_re2.v links them via @VMODROOT paths). Both OVERWRITE the
+    # macOS-arch artifacts in the mounted tree (third_party/re2/obj + the
+    # vcx/target shim archive); the caller rebuilds the macOS ones after the
+    # run — same caveat the shim step always carried.
+    cd /work/third_party/re2
+    make clean >/dev/null 2>&1 || rm -rf obj
+    make -j"$(nproc)" obj/libre2.a
     cd /work/vcx
     mkdir -p target
-    c++ -std=c++17 -O2 -fPIC -I/usr/include -Ideps/re2_shim -c deps/re2_shim/re2_shim.cc -o /tmp/cx_re2_shim.o
+    c++ -std=c++17 -O2 -fPIC -I/work/third_party/re2 -Ideps/re2_shim -c deps/re2_shim/re2_shim.cc -o /tmp/cx_re2_shim.o
     ar rcs target/libcx_re2_shim.a /tmp/cx_re2_shim.o
 
     export TMPDIR=/tmp/vbuild ; mkdir -p "$TMPDIR"

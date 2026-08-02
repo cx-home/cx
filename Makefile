@@ -281,7 +281,7 @@ install-hooks:
 # purity agreement, and that every [fn-doc] example is backed verbatim by
 # the module's conformance corpus (conformance/stdlib/<m>.cxd, run green by
 # `make test-vcx-suite`). Nonzero exit on drift propagates through make.
-# Module-set parity is owned by `make stdlib-catalogue-gate`.
+# Module-set parity is owned by `make stdlib-catalog-gate`.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
 .PHONY: guide-check
 guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
@@ -308,7 +308,7 @@ directive-docs-check: build-vcx
 verify-playground-examples: build-vcx
 	@python3 scripts/gen_guide/playground/gen_examples.py --check
 
-# stdlib catalogue drift gate — verifies the single invariant
+# stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
 # is implemented (stdlib/*.cx bundle and/or a *_stdlib_builtin entry in
@@ -316,10 +316,10 @@ verify-playground-examples: build-vcx
 # without a current spec. The gate is itself written in CX (dog-food) and
 # run by `cx eval`; its nonzero exit on drift propagates through make.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
-.PHONY: stdlib-catalogue-gate
-stdlib-catalogue-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
-stdlib-catalogue-gate: build-vcx
-	@"$(CX_BIN)" eval scripts/stdlib_catalogue_gate.cx --allow-all
+.PHONY: stdlib-catalog-gate
+stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+stdlib-catalog-gate: build-vcx
+	@"$(CX_BIN)" eval scripts/stdlib_catalog_gate.cx --allow-all
 
 # Format-companion regeneration (#424) — the derived companions under
 # examples/ (books.*, config.*, doc.md, comparisons/table_block.csv) are
@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -444,6 +444,16 @@ check-no-infix-range:
 .PHONY: check-no-cxl-token
 check-no-cxl-token:
 	@python3 scripts/check_no_cxl_token.py
+
+# ── NO-CONSUMER-TERMS gate — downstream-consumer identity (names, products,
+# business-domain vocabulary) must never appear in tracked content: the public
+# release repos are CUT from this one, so anything here flows into them. The
+# denylist lives in the script; extend it the day a new consumer engagement
+# begins. Standing owner ruling 2026-07-24: all artifacts speak CX-generic
+# workload language (users / tracked entities / events / deployments).
+.PHONY: check-no-consumer-terms
+check-no-consumer-terms:
+	@bash scripts/check_no_consumer_terms.sh
 
 # ── VERSION-CONSISTENCY gate — the repo-root VERSION file is the single source
 # of truth for the release version. Every static manifest must equal it and the
@@ -799,6 +809,15 @@ test-vcx-summary:
 # A/B against the prior collector. Only the FORK `$(V)` implements `-gc e`; the
 # bare-`v` lang/v reference paths below stay on the upstream default.
 CX_GC ?= -gc e
+# Default DB engines (#520) — mirrors vcx/Makefile CX_ENGINES: the shipped
+# artifact carries sqlite + redis, so the test gate compiles the suite with the
+# same gates. This makes the $if-gated engine tests (vcx/code/sql_test.v,
+# redis lanes) and the engine-dependent conformance fixtures
+# (conformance/stdlib/db.cxd success/denial lanes) actually run — the gate
+# tests the BEHAVIOR the artifact ships. Override CX_ENGINES='' to gate an
+# engine-free build (then db.cxd's engine lanes are expected red; see the
+# fixture doc-comment).
+CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
 # `v test dir/` compiles EACH `*_test.v` as its own standalone executable, and
 # with no cache every one recompiles the whole graph (builtin + os + all vcx
 # modules) from scratch — the dominant cost is the per-file clang subprocess.
@@ -817,10 +836,19 @@ CX_CACHE ?= -usecache
 # digest LOUDLY after it — skips are counted separately, never silently.
 CX_SKIP_LOG := vcx/target/test-skips.log
 .PHONY: test-vcx-suite
-# Real-socket lanes that are load-flaky ONLY under full -j parallelism
-# (ephemeral-port / deadline contention; each repeatedly proven green in
-# isolation). On a suite failure, ONLY these get one serial retry — any
-# other failure, or a serial failure here, still fails the target.
+# On a suite failure the recipe retries EXACTLY the lanes that failed, each
+# under the retry class it belongs to — never a fixed proxy list (#572: the
+# old shape retried only the socket lanes on ANY failure, so an unrelated
+# failure that coincided with green socket retries was mislabeled "load
+# flake" and the gate exited 0 on a lane nobody re-ran):
+#   • a lane in SUITE_SERIAL_RETRY (real-socket contention: ephemeral-port /
+#     deadline races, each repeatedly proven green in isolation) → one
+#     serial retry, same flags;
+#   • any lane whose -j run died in a C compilation error → one serial
+#     retry WITHOUT -usecache (#572: a stale cache layer can inject a
+#     duplicate V-runtime symbol, e.g. ___v_thread_wait; cache-free green
+#     proves the artifact — the cache-key root fix is the V-fork follow-up);
+#   • anything else → a real failure, no retry, gate stays red.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
@@ -828,11 +856,31 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 
 test-vcx-suite: build-vcx-dev
 	@rm -f $(CX_SKIP_LOG)
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/tests/; st=$$?; \
+	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  echo "──── suite failed under -j; serial retry of the known real-socket contention lanes ────"; \
-	  if $(V) -cc cc $(CX_GC) $(CX_CACHE) test $(SUITE_SERIAL_RETRY); then \
-	    echo "──── contention lanes green serially; treating the -j failure as load flake ────"; st=0; \
+	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  if [ -n "$$failed" ]; then \
+	    st=0; \
+	    for t in $$failed; do \
+	      rel=$${t#$(CURDIR)/}; \
+	      case " $(SUITE_SERIAL_RETRY) " in \
+	        *" $$rel "*) \
+	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
+	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
+	        *) \
+	          if grep -q 'C compilation error' $$log; then \
+	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
+	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
+	          else \
+	            echo "──── real failure (no retry class applies): $$rel ────"; st=1; \
+	          fi ;; \
+	      esac; \
+	    done; \
+	    if [ $$st -eq 0 ]; then \
+	      echo "──── every failed lane green on its classified retry (socket lanes: serial; C-compile failures: cache-free, #572) ────"; \
+	    fi; \
 	  fi; \
 	fi; \
 	if [ -s $(CX_SKIP_LOG) ]; then \
@@ -846,9 +894,43 @@ test-vcx-suite: build-vcx-dev
 # reach. `v test` only runs the directory it is given, so vcx/tests/ does not pull
 # these in; this dedicated target wires the in-module suite into the gate (under
 # the same default -gc e memory model as test-vcx-suite).
+#
+# Same classified-retry contract as test-vcx-suite (#648: this target had NO
+# retry class, so a live-socket lane flaking under -j parallel load failed the
+# umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
+# isolation, is the proven case).
+CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
+                     vcx/code/store_grpc_live_test.v
+
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/code/
+	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
+	if [ $$st -ne 0 ]; then \
+	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  if [ -n "$$failed" ]; then \
+	    st=0; \
+	    for t in $$failed; do \
+	      rel=$${t#$(CURDIR)/}; \
+	      case " $(CODE_SERIAL_RETRY) " in \
+	        *" $$rel "*) \
+	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
+	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
+	        *) \
+	          if grep -q 'C compilation error' $$log; then \
+	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
+	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
+	          else \
+	            echo "──── real failure (no retry class applies): $$rel ────"; st=1; \
+	          fi ;; \
+	      esac; \
+	    done; \
+	    if [ $$st -eq 0 ]; then \
+	      echo "──── every failed lane green on its classified retry (socket lanes: serial; C-compile failures: cache-free, #572) ────"; \
+	    fi; \
+	  fi; \
+	fi; exit $$st
 
 # White-box unit tests for the `cxstore` module (vcx/cxstore/*_test.v) — the
 # content-addressed object store internals (pack/seqtree/bloom/index/gc/reflog/
@@ -872,7 +954,7 @@ test-vcx-cxstore: build-vcx-dev
 # cmd suite had NO gate consumer (#448 wired it in).
 .PHONY: test-vcx-cmd
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_CACHE) test vcx/cmd/
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
@@ -1067,6 +1149,14 @@ build-vscode:
 	cd tooling/vscode && npm ci --silent && npm run package
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
+
+# #608 — xap/fabric throughput harness (CX-native scenarios + shell
+# orchestration). Emits a canonical [bench-report …] to
+# vcx/target/bench-report.cx; gates nothing. BENCH_K scales the run.
+.PHONY: bench-xap
+bench-xap: BENCH_K ?= 500
+bench-xap: build-vcx-dev
+	@bench/xap/run.sh $(BENCH_K)
 
 bench: build-vcx
 	$(PYTHON) bench_report.py

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+#
+# scripts/release_linux.sh — build the LINUX release tarball(s) from this
+# checkout via Docker (#520: the GitHub org cannot allocate Actions runners,
+# so releases are cut locally on macOS — which left the public mirror with
+# only cx-darwin-arm64.tar.gz; downstream (pbengine) needs cx-linux-arm64
+# for containerized/appliance deployment and CI-on-Linux).
+#
+# Produces, per platform:
+#   dist/public/cx-linux-<arch>.tar.gz     (flat: cx, cx.h, libcx.so — the
+#                                           stable public name the quickstart
+#                                           curl resolves)
+#   dist/cx-<tag>-linux-<arch>.tar.gz      (nested internal artifact)
+#
+# The build runs in ubuntu-22.04 (the same base as .github/workflows/
+# release.yml) with the same dep set: build-essential + libsqlite3-dev (the
+# CX_ENGINES default carries -d cx_db_sqlite, which links -lsqlite3). RE2
+# is vendored (third_party/re2, #573) and builds in-tree. The checkout is
+# bind-mounted read-only and copied inside, so the artifact is built from
+# exactly this tree (submodules included) without dirtying the host's
+# vcx/target.
+#
+# Usage:
+#   scripts/release_linux.sh vX.Y.Z            # linux-arm64 (native on Apple Silicon)
+#   scripts/release_linux.sh --amd64 vX.Y.Z    # + linux-x86_64 (qemu emulation; slow)
+#   scripts/release_linux.sh --dev vX.Y.Z      # dev-shape build (fast; lane validation only)
+#
+# Docker-on-this-machine note: pulls hang behind the credsStore=desktop
+# helper; this script exports the documented bypass (anonymous auths config
+# + explicit Desktop socket) automatically when the default config would
+# hang. Read-only docker calls are unaffected.
+
+set -euo pipefail
+
+AMD64=0
+DEV=0
+TAG=""
+for arg in "$@"; do
+  case "$arg" in
+    --amd64) AMD64=1 ;;
+    --dev)   DEV=1 ;;
+    -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
+    v[0-9]*) TAG="$arg" ;;
+    *) echo "Unknown arg: $arg" >&2; exit 2 ;;
+  esac
+done
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+[ -z "$TAG" ] && TAG="v$(tr -d '[:space:]' < VERSION)"
+
+# credsStore=desktop hangs every pull on this machine — use the anonymous
+# bypass config when the user config would invoke the helper.
+if grep -q '"credsStore"' "$HOME/.docker/config.json" 2>/dev/null; then
+  export DOCKER_HOST="${DOCKER_HOST:-unix://$HOME/.docker/run/docker.sock}"
+  export DOCKER_CONFIG="${DOCKER_CONFIG:-/tmp/cx-docker-anon}"
+  mkdir -p "$DOCKER_CONFIG"
+  [ -f "$DOCKER_CONFIG/config.json" ] || printf '{"auths":{"https://index.docker.io/v1/":{}}}\n' > "$DOCKER_CONFIG/config.json"
+fi
+
+BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
+SDE="$(git log -1 --format=%ct)"
+# Version stamps: the container copy carries no .git (lean copy), so derive
+# the commit + V-fork pins on the host and hand them to make (command-line
+# make vars override the := shell derivations and propagate to sub-makes).
+CX_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+CX_VFORK="$(git -C third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+build_one() {
+  local platform="$1" arch="$2"
+  local pub="cx-linux-${arch}.tar.gz"
+  local nested="cx-${TAG}-linux-${arch}.tar.gz"
+  echo "== linux-${arch} (${platform}, ${BUILD_TARGET}) =="
+  mkdir -p dist/public
+  docker run --rm --platform "$platform" \
+    -v "$ROOT:/src:ro" -v "$ROOT/dist:/out" \
+    -e SOURCE_DATE_EPOCH="$SDE" \
+    ubuntu:22.04 bash -euc '
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq build-essential libsqlite3-dev git make >/dev/null
+      # Lean copy: only what the build consumes (the full checkout is ~13 GB
+      # with .git/bindings/build outputs — copying it fills the Docker VM).
+      # stdlib/ and x/ are $embed_file-ed into the binary; third_party/v is
+      # the patched fork the build contract requires.
+      mkdir -p /build && cd /src
+      tar cf - \
+        --exclude=vcx/target \
+        --exclude=third_party/v/v \
+        --exclude=third_party/re2/obj \
+        Makefile VERSION cx.pc.in include vcx stdlib x third_party scripts \
+        | tar xf - -C /build
+      cd /build
+      git config --global --add safe.directory "*"
+      # local=1: build V from the vendored vc/tcc checkouts as-is — the
+      # copied tcc tree is on a detached HEAD, so the default network
+      # refresh (git pull --rebase) would fail; the fork pins both anyway.
+      make -C third_party/v local=1
+      make '"$BUILD_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"'
+      T=linux-'"$arch"'
+      mkdir -p "/tmp/$T"
+      cp vcx/target/cx vcx/target/libcx.so include/cx.h "/tmp/$T/"
+      cp third_party/re2/LICENSE "/tmp/$T/LICENSE-re2.txt"
+      ( cd /tmp && tar czf "/out/cx-'"$TAG"'-$T.tar.gz" "$T/" )
+      ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
+      echo "-- engines probe:"; "/tmp/$T/cx" -v || true
+    '
+  ( cd dist/public && shasum -a 256 "$pub" ) || true
+  echo "   → dist/public/${pub} + dist/${nested}"
+}
+
+build_one linux/arm64 arm64
+if [ "$AMD64" = 1 ]; then
+  build_one linux/amd64 x86_64
+fi
+
+echo
+echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-linux-*.tar.gz --clobber"
+echo "(and refresh dist/public/SHA256SUMS.txt to include the linux tarballs before uploading it)"
