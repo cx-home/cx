@@ -43,12 +43,16 @@ ROOT=${0:A:h:h}
 FIX=$ROOT/vcx/tests/soundness
 GCMODE=${CX_GC:-"-gc e"}
 PORT=9031
+# VFORK_ROOT: the patched-V fork tree the gate builds with and checks the oracle
+# in. Defaults to the shipping submodule; a fork-upgrade spike points it at the
+# candidate clone (#657) so the gate can arbitrate BEFORE the pin moves.
+VFORK_ROOT=${VFORK_ROOT:-$ROOT/third_party/v}
 
 # ANTI-HOLLOW CANARY (#145): the masking-proof oracle lives in the fork. If the fork
 # does not actually contain it, the -d vgc_passive define is a no-op and 0xbf1 can never
 # fire — the gate would PASS vacuously. Refuse to run in that state.
-if ! grep -q 'fn vgc_uaf_check_buf' $ROOT/third_party/v/vlib/builtin/vgc_d_vgc.c.v 2>/dev/null; then
-  echo "[gate] ABORT: fork (third_party/v) lacks the passive oracle (vgc_uaf_check_buf)."
+if ! grep -q 'fn vgc_uaf_check_buf' $VFORK_ROOT/vlib/builtin/vgc_d_vgc.c.v 2>/dev/null; then
+  echo "[gate] ABORT: fork ($VFORK_ROOT) lacks the passive oracle (vgc_uaf_check_buf)."
   echo "[gate] The -d vgc_passive build would be HOLLOW (0xbf1 can never match). Port the"
   echo "[gate] oracle into the shipping fork first (see #145). Refusing to run a vacuous gate."
   exit 2
@@ -69,7 +73,7 @@ BIN=${CX_SOUNDNESS_BIN:-}
 if [ -z "$BIN" ]; then
   BIN=$ROOT/vcx/target/cx_soundness_gate
   echo "[gate] building bf1 detector: $GCMODE -d vgc_passive -d vgc_nosweep"
-  ( cd $ROOT/vcx && ../third_party/v/v -n -w -cc cc ${=GCMODE} -d vgc_passive -d vgc_nosweep \
+  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} -d vgc_passive -d vgc_nosweep \
       -o target/cx_soundness_gate cmd/ ) || { echo "[gate] BUILD FAIL (detector)"; exit 2; }
 fi
 [ -x "$BIN" ] || { echo "[gate] no detector binary: $BIN"; exit 2; }
@@ -78,7 +82,7 @@ CRASHBIN=${CX_CRASH_BIN:-}
 if [ -z "$CRASHBIN" ]; then
   CRASHBIN=$ROOT/vcx/target/cx_crash_gate
   echo "[gate] building real-sweep crash binary: $GCMODE (no nosweep)"
-  ( cd $ROOT/vcx && ../third_party/v/v -n -w -cc cc ${=GCMODE} \
+  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} \
       -o target/cx_crash_gate cmd/ ) || { echo "[gate] BUILD FAIL (crash bin)"; exit 2; }
 fi
 [ -x "$CRASHBIN" ] || { echo "[gate] no crash binary: $CRASHBIN"; exit 2; }
@@ -199,7 +203,11 @@ done
 # the pacer tree; 1/6 frequency-matched on the pre-pacer tree).
 echo "[gate] building vthread-ret checksum stressor (plain ${GCMODE})"
 RETBIN=$(mktemp -d)/hot_ret
-VNOBUGREPORT=1 $ROOT/third_party/v/v ${=GCMODE} -o $RETBIN $ROOT/third_party/v/bench/parallel-alloc/hot_loop_rss/hot_loop_rss.v >/dev/null 2>&1 \
+# VFORK_V: the V compiler BINARY to build stressors with. Defaults to the fork
+# tree's ./v; the docker gate passes its container-built linux compiler here
+# (the mounted tree's ./v is a macOS Mach-O — exec-format error on linux).
+VFORK_V=${VFORK_V:-$VFORK_ROOT/v}
+VNOBUGREPORT=1 $VFORK_V ${=GCMODE} -o $RETBIN $VFORK_ROOT/bench/parallel-alloc/hot_loop_rss/hot_loop_rss.v >/dev/null 2>&1 \
   || { echo "[gate] ABORT: vthread-ret stressor build failed"; exit 2; }
 RET_EXPECT=298074064 # acc for 4 workers x 2,000,000 iterations (deterministic)
 ret_corrupt=0
