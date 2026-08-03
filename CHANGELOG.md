@@ -15,6 +15,57 @@ version, library version).
 
 Nothing yet.
 
+## [0.15.0] — 2026-08-03
+
+The **toolchain** release: the vendored V compiler moves from the 0.5.1-era
+base to **upstream V 0.5.2**, carrying the cx fork's full memory-management
+series forward — plus two sharp fixes surfaced by the upgrade's own
+validation battery. Thin by design and shipped fast: the upgrade is a
+foundation change worth isolating from feature work. No breaking changes.
+
+### Changed — V toolchain (V 0.5.2)
+
+- **`third_party/v` → upstream tag 0.5.2** (#657): the 79-patch fork series
+  rebased as 76 commits (evicted add-remove pairs flattened and proven
+  byte-identical first; usecache interface-index hunks superseded by
+  upstream's own fix). cx compiles with **zero source changes**. In-window
+  upstream wins include cgen sumtype/generic correctness fixes, `-usecache`
+  repairs, mbedtls TLS-handshake hardening, and array micro-perf.
+- **NEW fork patch — the vgc conservative-retention contract**: two upstream
+  array changes (delete-path zeroing of vacated slots; nil-data
+  zero-capacity arrays) each independently caused sweep-while-live
+  use-after-frees under the cx collector at high mutator counts — invisible
+  under Boehm, found by the concurrency-soundness gate at N=24 (132 oracle
+  catches + 13 crashes per 15 rounds pre-fix; zero after). Under `$if vgc`
+  vacated slots keep their bytes and empty arrays keep a real buffer; all of
+  upstream's perf work is kept. Upstream's closure-lifetime reclamation is
+  **kept on** — exonerated by the same gate once the real culprits fell.
+- The #613 uncollectable contract restored at upstream's relocated
+  closure-ctx allocation site; C-error telemetry (new in 0.5.2, phones
+  bugs.vlang.io) defaulted **off** — opt-in via `V_C_ERROR_BUG_REPORT=1`;
+  vc bootstrap pin regenerated and verified by a fresh-clone `make`.
+- Validation: soundness ladder N∈{1,4,8,16,24} on macOS + N=24 in the Linux
+  container — zero catches, zero crashes; full test battery + conformance
+  green; perf at parity. The soundness gates now take `VFORK_ROOT` /
+  `VFORK_SRC` / `VFORK_V`, so a candidate fork tree is arbitrated **before**
+  the pin moves.
+
+### Fixed
+
+- **Embedded journal-bound ingest restored to baseline** (#662): v0.14.0's
+  demand-paged store load routed every first object touch through the pack
+  backend's documented *cold* path — a directory scan plus a probe of every
+  pack, per call — collapsing embedded ingest 2881 → 91 events/s. Fixed
+  with an object-location index (hash → pack, filled where pack indexes
+  are already read, lazily repaired after folds) plus an MRU pack reader.
+  **91 → 2861 events/s**; remote path, commit latency, and checkpoint boot
+  unchanged; structural regression guard added.
+- **`[$http:sse-connect]` sends `opts.headers`** (#661): the subscription
+  GET was the one request shape that dropped caller headers, so the XSP
+  proof headers required by the identity model had nowhere to ride — a
+  CX-native client could not subscribe to an auth-enabled host at all.
+  Managed fields stay ignored-not-errored; CR/LF injection refused.
+
 ## [0.14.0] — 2026-08-02
 
 The **eventing + endurance** release. v0.13.0 made CX consumable; v0.14.0

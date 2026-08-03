@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cxlib"
-version = "0.14.0"
+version = "0.15.0"
 description = "CX format library — parse, stream, and convert CX/XML/JSON/YAML/TOML"
 readme = "cxlib/README.md"
 license = { text = "MIT" }

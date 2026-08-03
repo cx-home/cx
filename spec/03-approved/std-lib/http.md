@@ -591,7 +591,10 @@ The `sse`/`send-event` surface above promotes **one** `[exchange]` on the serial
 ```
 
 - `sse-events` yields parsed `[event]`s in arrival order (single-use — second walk `CXER0105`); heartbeat/comment frames are consumed silently; **clean end-of-stream is absence** (SAP §1 — not `null`, not `[err]`); a malformed wire frame → `CXER4551`. `source-open`/`last-event-id` are pure accessors (last-event-id absent → the absence channel).
-- `sse-connect` `opts` (plus the parent client keys): `last-event-id` (resume header), `reconnect` (`true`; auto-reconnect per the server `retry:` + last id), `max-reconnect` (`10`; beyond → `CXER4549`, never unbounded), `retry` (`3s` fallback backoff), `idle-timeout` (`0s` off; no event/heartbeat within it → `CXER4548`), `max-event-bytes` (`1 MiB`; over → `CXER4550`). `close` (the shared closeable verb) ends a stream/source — there is no separate `sse-close`/`sse-disconnect`.
+- `sse-connect` `opts` (plus the parent client keys — including `headers`, which are
+  sent on the subscription GET; managed fields per §4.6 plus `Accept` and
+  `Last-Event-ID`, which this verb owns, are ignored, and CR/LF in a name or value
+  is `CXER4531`): `last-event-id` (resume header), `reconnect` (`true`; auto-reconnect per the server `retry:` + last id), `max-reconnect` (`10`; beyond → `CXER4549`, never unbounded), `retry` (`3s` fallback backoff), `idle-timeout` (`0s` off; no event/heartbeat within it → `CXER4548`), `max-event-bytes` (`1 MiB`; over → `CXER4550`). `close` (the shared closeable verb) ends a stream/source — there is no separate `sse-close`/`sse-disconnect`.
 
 ## §4. Semantics & guarantees (soundness)
 

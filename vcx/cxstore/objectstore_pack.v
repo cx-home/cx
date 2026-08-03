@@ -51,6 +51,25 @@ mut:
 	flushed     map[string]bool // hex(key) of objects already durable in some pack
 	pending     []KeyedPayload  // objects staged since the last flush_segment
 	pending_set map[string]bool // hex(key) of staged objects (dedup within a flush)
+	// obj_where — hex(key) → pack path holding that object. The demand-paged
+	// getter (#637) made get_object a HOT first-touch path; without this index
+	// every page-in re-scanned the directory and probed every pack in turn
+	// (#662: superquadratic under per-event flushes — 33x ingest collapse).
+	// Filled wherever pack indexes are already being read (seed_index /
+	// load_objects) and on flush; entries staled by folds/compaction are
+	// repaired lazily by get_object's fallback scan — never trusted blindly.
+	obj_where map[string]string
+	// #662 MRU read cache: the last pack the getter opened, held open. A cold
+	// walk pages many objects out of the same few packs; open_pack re-reads
+	// (or re-maps) the WHOLE file, so per-touch opens dominated cold render
+	// and boot costs. One reader per backend; content addressing makes a
+	// stale reader (its pack folded away and unlinked underneath) correct-
+	// by-content — merely unrefreshed — so invalidation is by path change
+	// only, plus the whole-set resets (load_objects / seed_index). Store ops
+	// are serialized per MemStore (the op funnel), matching obj_where's
+	// single-writer assumption.
+	rd_path string
+	rd      PackReader
 	// segs — the live segment packs in ascending numeric order, each with its
 	// object count. Drives the #603 size-tiered fold (merge a segment into its
 	// predecessor when the predecessor is no larger AND the pair is within 2×
@@ -168,12 +187,54 @@ pub fn (b &PackObjectBackend) has_object(hash []u8) bool {
 // are read from the packs on disk. This is the cold path for the pack backend:
 // an open cxpack session keeps the live object graph in the in-memory sink, so
 // get_object is exercised mainly by integrity checks and remote/other backends.
+// cached_reader answers an open PackReader for `pp`, reusing the MRU reader
+// when the path matches and rotating it otherwise (#662). The receiver is a
+// read view; the cache is exactly that — a cache — so the in-place rotation
+// is safe under the store's serialized op funnel.
+fn (b &PackObjectBackend) cached_reader(pp string) ?&PackReader {
+	unsafe {
+		mut mb := &PackObjectBackend(b)
+		if mb.rd_path != pp {
+			if mb.rd_path != '' {
+				mb.rd.close()
+				mb.rd_path = ''
+			}
+			nr := open_pack(pp) or { return none }
+			mb.rd = nr
+			mb.rd_path = pp
+		}
+		return &mb.rd
+	}
+}
+
+// drop_cached_reader closes the MRU reader (whole-set resets and teardown).
+fn (mut b PackObjectBackend) drop_cached_reader() {
+	if b.rd_path != '' {
+		b.rd.close()
+		b.rd_path = ''
+	}
+}
+
 pub fn (b &PackObjectBackend) get_object(hash []u8) ?[]u8 {
 	hx := hash.hex()
 	if hx in b.pending_set {
 		for p in b.pending {
 			if compare_bytes(object_name(p.blob), hash) == 0 {
 				return p.blob
+			}
+		}
+	}
+	// Indexed fast path (#662): the RIGHT pack via the MRU reader — zero
+	// syscalls when consecutive touches hit the same pack. A stale entry
+	// (fold/compaction moved the object since it was recorded) falls through
+	// to the full scan below, which repairs it.
+	if pp := b.obj_where[hx] {
+		if reader := b.cached_reader(pp) {
+			if payload := reader.get(hash) {
+				if compare_bytes(object_name(payload), hash) != 0 {
+					return none
+				}
+				return payload
 			}
 		}
 	}
@@ -187,6 +248,14 @@ pub fn (b &PackObjectBackend) get_object(hash []u8) ?[]u8 {
 		reader.close()
 		if compare_bytes(object_name(payload), hash) != 0 {
 			return none
+		}
+		// Repair the location index for the next touch of this object (the
+		// receiver is a read view; the index is a cache, so the in-place
+		// write is safe — worst case a racing writer re-stales it and the
+		// next touch repairs again).
+		unsafe {
+			mut mb := &PackObjectBackend(b)
+			mb.obj_where[hx] = pp
 		}
 		return payload
 	}
@@ -207,6 +276,14 @@ pub fn (b &PackObjectBackend) get_object_raw(key []u8) ?[]u8 {
 			}
 		}
 	}
+	// Indexed fast path + lazy repair — same contract as get_object (#662).
+	if pp := b.obj_where[kx] {
+		if reader := b.cached_reader(pp) {
+			if payload := reader.get(key) {
+				return payload
+			}
+		}
+	}
 	paths, _ := b.discover_packs()
 	for pp in paths {
 		reader := open_pack(pp) or { continue }
@@ -215,6 +292,10 @@ pub fn (b &PackObjectBackend) get_object_raw(key []u8) ?[]u8 {
 			continue
 		}
 		reader.close()
+		unsafe {
+			mut mb := &PackObjectBackend(b)
+			mb.obj_where[kx] = pp
+		}
 		return payload
 	}
 	return none
@@ -261,6 +342,13 @@ pub fn (mut b PackObjectBackend) put_object_keyed(key []u8, blob []u8) ! {
 // object_count — distinct objects the backend holds (durable + staged).
 pub fn (b &PackObjectBackend) object_count() int {
 	return b.flushed.len + b.pending_set.len
+}
+
+// located_count — objects with a known pack location (#662 regression guard:
+// the demand-paged getter must never fall back to directory-scan-per-touch,
+// so every durable object gets an obj_where entry at seed/load/flush).
+pub fn (b &PackObjectBackend) located_count() int {
+	return b.obj_where.len
 }
 
 // ── Pack-specific durability operations (driven by the refs layer) ────────────
@@ -331,6 +419,7 @@ pub fn (mut b PackObjectBackend) flush_segment() ! {
 	}
 	for p in b.pending {
 		b.flushed[p.key.hex()] = true
+		b.obj_where[p.key.hex()] = seg
 	}
 	b.segs << SegInfo{
 		idx:  b.next_seg
@@ -623,6 +712,7 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 	paths, max_seg := b.discover_packs()
 	mut out := map[string][]u8{}
 	mut fl := map[string]bool{}
+	mut ow := map[string]string{}
 	compacted := os.join_path(b.dir, pack_compacted_name)
 	mut segs := []SegInfo{}
 	for pp in paths {
@@ -648,6 +738,7 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 			hx := h.hex()
 			out[hx] = payload
 			fl[hx] = true
+			ow[hx] = pp
 			n++
 		}
 		reader.close()
@@ -658,7 +749,9 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 			}
 		}
 	}
+	b.drop_cached_reader()
 	b.flushed = fl.move()
+	b.obj_where = ow.move()
 	b.next_seg = max_seg + 1
 	// #603: per-segment object counts feed the size-tiered fold. Discovery is
 	// numeric-ordered, so `segs` is ascending by file index (gaps from #617
@@ -692,6 +785,7 @@ pub fn (mut b PackObjectBackend) seed_index() ! {
 fn (mut b PackObjectBackend) seed_index_scan() ! {
 	paths, max_seg := b.discover_packs()
 	mut fl := map[string]bool{}
+	mut ow := map[string]string{}
 	compacted := os.join_path(b.dir, pack_compacted_name)
 	mut segs := []SegInfo{}
 	for pp in paths {
@@ -706,7 +800,9 @@ fn (mut b PackObjectBackend) seed_index_scan() ! {
 		}
 		mut n := 0
 		for h in reader.hashes() {
-			fl[h.hex()] = true
+			hx := h.hex()
+			fl[hx] = true
+			ow[hx] = pp
 			n++
 		}
 		reader.close()
@@ -717,7 +813,9 @@ fn (mut b PackObjectBackend) seed_index_scan() ! {
 			}
 		}
 	}
+	b.drop_cached_reader()
 	b.flushed = fl.move()
+	b.obj_where = ow.move()
 	b.next_seg = max_seg + 1
 	b.segs = segs
 	b.gen++
