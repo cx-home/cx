@@ -25,6 +25,7 @@ echo "[docker-gate] image=$IMAGE N=$NREACT rounds=$ROUNDS defines='$DEFINES'"
 docker run --rm \
   -v "$ROOT":/work \
   -v "$VFORK_SRC":/vfork \
+  -w /work \
   -e NREACT="$NREACT" -e ROUNDS="$ROUNDS" -e DEFINES="$DEFINES" \
   "$IMAGE" bash -euo pipefail -c '
     set -x
