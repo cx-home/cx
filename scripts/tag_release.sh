@@ -76,13 +76,20 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # -- Step 1: sanity ---------------------------------------------------
 
+# #666 topology: the release is cut ON its release branch — the bump becomes
+# the branch's FINAL commit and the tag lands on that bump commit, so the tag
+# IS the branch tip (and, after release.sh merges to main, reachable from main
+# as the merge's second parent). Branch name, tag, VERSION file, and artifact
+# all name one commit. vX.Y.Z (any Z) cuts from release/X.Y.0 — patch releases
+# ride the same branch.
 CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+EXPECT_BRANCH="release/${VERSION%.*}.0"
 if [[ $DRY_RUN -eq 0 ]]; then
-    if [[ "$CUR_BRANCH" != "main" ]]; then
-        fail "Not on main (currently on $CUR_BRANCH); refusing real tag."
+    if [[ "$CUR_BRANCH" != "$EXPECT_BRANCH" ]]; then
+        fail "Not on $EXPECT_BRANCH (currently on $CUR_BRANCH); v$VERSION cuts from its release branch (#666)."
     fi
 else
-    echo "[dry-run] current branch: $CUR_BRANCH  (real tag requires main)"
+    echo "[dry-run] current branch: $CUR_BRANCH  (real tag requires $EXPECT_BRANCH)"
 fi
 
 if ! git diff-index --quiet HEAD; then
