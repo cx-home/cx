@@ -13,6 +13,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IMAGE="${GATE_IMAGE:-arm64v8/gcc:latest}"    # NATIVE arm64 gcc (debian) — production parity
+# VFORK_SRC: host path of the patched-V tree to gate (must carry vc/ for the
+# in-container bootstrap). Defaults to the shipping submodule; a fork-upgrade
+# spike points it at the candidate clone (#657) BEFORE the pin moves.
+VFORK_SRC="${VFORK_SRC:-$ROOT/third_party/v}"
 NREACT="${SOUNDNESS_N:-24}"
 ROUNDS="${SOUNDNESS_ROUNDS:-15}"
 DEFINES="${GATE_DEFINES:-}"
@@ -20,6 +24,8 @@ DEFINES="${GATE_DEFINES:-}"
 echo "[docker-gate] image=$IMAGE N=$NREACT rounds=$ROUNDS defines='$DEFINES'"
 docker run --rm \
   -v "$ROOT":/work \
+  -v "$VFORK_SRC":/vfork \
+  -w /work \
   -e NREACT="$NREACT" -e ROUNDS="$ROUNDS" -e DEFINES="$DEFINES" \
   "$IMAGE" bash -euo pipefail -c '
     set -x
@@ -56,7 +62,7 @@ docker run --rm \
     # self-compiled compiler (v_lx) must live in the V root (/work/third_party/v)
     # next to vlib/ — NOT in /tmp. They are temp names (not the mounted macOS `v`)
     # and are removed at the end.
-    cd /work/third_party/v
+    cd /vfork
     rm -f ./v_boot ./v_lx
     cc -std=gnu11 -w -o ./v_boot vc/v.c -lm -lpthread
     ./v_boot -no-parallel -o ./v_lx cmd/v
@@ -64,22 +70,27 @@ docker run --rm \
 
     # Build the passive detector (+ optional fix defines) to a container-local path.
     cd /work/vcx
-    /work/third_party/v/v_lx -n -w -cc cc -gc e -d vgc_passive -d vgc_nosweep '"$DEFINES"' \
+    /vfork/v_lx -n -w -cc cc -gc e -d vgc_passive -d vgc_nosweep '"$DEFINES"' \
       -o /tmp/cx_soundness_gate_linux cmd/
     test -x /tmp/cx_soundness_gate_linux
     # Build the REAL-SWEEP crash binary too (the gate is two-build since the
     # 2026-07-01 hardening: bf1 oracle on the detector, crash counting on real
     # sweep). Without this the gate falls back to building it with the mounted
     # macOS `../third_party/v/v` -> "exec format error" and the docker gate dies.
-    /work/third_party/v/v_lx -n -w -cc cc -gc e '"$DEFINES"' \
+    /vfork/v_lx -n -w -cc cc -gc e '"$DEFINES"' \
       -o /tmp/cx_crash_gate_linux cmd/
     test -x /tmp/cx_crash_gate_linux
-    rm -f /work/third_party/v/v_boot /work/third_party/v/v_lx
 
     # Run the existing gate against the prebuilt linux binaries (zsh: the gate uses
-    # ${0:A:h:h} for ROOT, so it must run from /work under zsh).
+    # ${0:A:h:h} for ROOT, so it must run from /work under zsh). VFORK_V hands the
+    # gate the container-built linux compiler for its own stressor builds — the
+    # mounted tree'\''s ./v is a macOS Mach-O. v_boot/v_lx are removed AFTER.
     cd /work
     CX_SOUNDNESS_BIN=/tmp/cx_soundness_gate_linux CX_CRASH_BIN=/tmp/cx_crash_gate_linux \
+      VFORK_ROOT=/vfork VFORK_V=/vfork/v_lx \
       SOUNDNESS_N="$NREACT" \
       SOUNDNESS_ROUNDS="$ROUNDS" zsh /work/scripts/concurrency_soundness_gate.sh
+    st=$?
+    rm -f /vfork/v_boot /vfork/v_lx
+    exit $st
   '
