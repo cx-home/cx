@@ -80,13 +80,17 @@ docker run --rm \
     /vfork/v_lx -n -w -cc cc -gc e '"$DEFINES"' \
       -o /tmp/cx_crash_gate_linux cmd/
     test -x /tmp/cx_crash_gate_linux
-    rm -f /vfork/v_boot /vfork/v_lx
 
     # Run the existing gate against the prebuilt linux binaries (zsh: the gate uses
-    # ${0:A:h:h} for ROOT, so it must run from /work under zsh).
+    # ${0:A:h:h} for ROOT, so it must run from /work under zsh). VFORK_V hands the
+    # gate the container-built linux compiler for its own stressor builds — the
+    # mounted tree'\''s ./v is a macOS Mach-O. v_boot/v_lx are removed AFTER.
     cd /work
     CX_SOUNDNESS_BIN=/tmp/cx_soundness_gate_linux CX_CRASH_BIN=/tmp/cx_crash_gate_linux \
-      VFORK_ROOT=/vfork \
+      VFORK_ROOT=/vfork VFORK_V=/vfork/v_lx \
       SOUNDNESS_N="$NREACT" \
       SOUNDNESS_ROUNDS="$ROUNDS" zsh /work/scripts/concurrency_soundness_gate.sh
+    st=$?
+    rm -f /vfork/v_boot /vfork/v_lx
+    exit $st
   '

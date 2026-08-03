@@ -203,7 +203,11 @@ done
 # the pacer tree; 1/6 frequency-matched on the pre-pacer tree).
 echo "[gate] building vthread-ret checksum stressor (plain ${GCMODE})"
 RETBIN=$(mktemp -d)/hot_ret
-VNOBUGREPORT=1 $VFORK_ROOT/v ${=GCMODE} -o $RETBIN $VFORK_ROOT/bench/parallel-alloc/hot_loop_rss/hot_loop_rss.v >/dev/null 2>&1 \
+# VFORK_V: the V compiler BINARY to build stressors with. Defaults to the fork
+# tree's ./v; the docker gate passes its container-built linux compiler here
+# (the mounted tree's ./v is a macOS Mach-O — exec-format error on linux).
+VFORK_V=${VFORK_V:-$VFORK_ROOT/v}
+VNOBUGREPORT=1 $VFORK_V ${=GCMODE} -o $RETBIN $VFORK_ROOT/bench/parallel-alloc/hot_loop_rss/hot_loop_rss.v >/dev/null 2>&1 \
   || { echo "[gate] ABORT: vthread-ret stressor build failed"; exit 2; }
 RET_EXPECT=298074064 # acc for 4 workers x 2,000,000 iterations (deterministic)
 ret_corrupt=0
