@@ -31,7 +31,7 @@ existing building blocks rather than duplicating them.
 |---|---|---|---|
 | 0 | Pre-flight | on `main`, clean tree, `RELEASE_NOTES_<tag>.md` present, tag free, `devbox`/`gh`/public-repo clones ready — else abort | `release.sh` |
 | 1 | Gate | `make test` (the full version-agnostic `TEST_TARGETS`) + `make verify-doc-links` — **MUST** be green or the release aborts (no bump, no tag, no publish) | `tag_release.sh` under `devbox` |
-| 2 | Bump | `VERSION` + all manifests stamped, `check-version-consistency` verified | `bump_version.sh` |
+| 2 | Bump | `VERSION` + all manifests stamped, `check-version-consistency` verified, **bump committed before the build** so the artifact's stamped commit is the tag commit; the built binary's self-reported version+commit are then asserted clean (`-dirty` marks any tree that doesn't reproduce its stamp — #666) | `bump_version.sh` / `tag_release.sh` |
 | 3 | Build + package | `-prod` `cx`/`libcx`/`cx.h` for the maintainer platform → `cx-<tag>-<target>.tar.gz` + `cx-conformance-<tag>.zip` + `SHA256SUMS.txt` | `release.sh` |
 | 4 | Tag + push | annotated tag; `git push origin main && git push origin <tag>` | `tag_release.sh` / `release.sh` |
 | 5 | GitHub release | `gh release create <tag>` with `RELEASE_NOTES_<tag>.md` + the artifacts | `release.sh` |
