@@ -149,34 +149,53 @@ else
     python3 scripts/check_version_consistency.py || fail "version inconsistent after bump"
 fi
 
-# -- Step 3: rebuild --------------------------------------------------
+# -- Step 3: commit the bump, THEN rebuild (#666) ---------------------
+#
+# ORDER IS LOAD-BEARING: the build stamps CX_COMMIT from HEAD and CX_VERSION
+# from the VERSION file. Building while the bump sat uncommitted stamped the
+# NEW version against the PRE-bump commit — an artifact whose provenance
+# claim could not both be true (`cx version` said v0.15.0 @ a commit whose
+# VERSION file said 0.14.0), and rev-parse is silent about the dirty tree
+# that would have explained it. Committing first makes the stamped commit
+# the SAME commit the tag points at: the artifact reproduces from its tag.
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would run: make build-vcx"
+    echo "[dry-run] would commit version bump, then run: make build-vcx"
 else
+    note "committing version bump"
+    # Stage every file bump_version.sh just stamped. The tree was verified clean
+    # at the start of this script, so the only tracked modifications now are the
+    # version stamps — `git add -u` captures them all and CANNOT drift out of
+    # sync with bump_version.sh the way a hand-maintained file list does (that
+    # drift left vscode/package.json at the old version in a tagged commit).
+    git add -u 2>/dev/null || true
+    git commit -m "chore(release): bump version strings to $VERSION" || true
+
     note "rebuilding libcx + cli"
     make build-vcx
+
+    # Provenance gate (#666): the binary we just built must self-report
+    # exactly this version at exactly this (clean) commit — the check that
+    # would have caught the mis-stamp. `cx version` is the contract surface
+    # downstream BOMs pin on, so assert on its output, not on build inputs.
+    STAMP="$(vcx/target/cx version 2>/dev/null || vcx/target/cx -v)"
+    WANT_COMMIT="$(git rev-parse --short HEAD)"
+    echo "$STAMP" | grep -q "cx v$VERSION\$" \
+        || fail "provenance stamp: binary reports '$(echo "$STAMP" | head -1)', expected 'cx v$VERSION'"
+    echo "$STAMP" | grep -qE "commit[[:space:]]+$WANT_COMMIT\$" \
+        || fail "provenance stamp: binary's commit is not clean '$WANT_COMMIT' — got: $(echo "$STAMP" | grep commit)"
+    note "provenance stamp verified: cx v$VERSION @ $WANT_COMMIT (clean)"
 fi
 
 # -- Step 6: tag (skipped on dry-run) ---------------------------------
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would commit version bump + create signed tag $TAG"
+    echo "[dry-run] would create signed tag $TAG"
     echo "[dry-run] would print push instructions"
     echo
     echo "[dry-run] all checks passed — real tag would proceed cleanly."
     exit 0
 fi
-
-note "committing version bump"
-# Stage every file bump_version.sh just stamped. The tree was verified clean
-# at the start of this script and the build emits only gitignored artifacts, so
-# the only tracked modifications now are the version stamps — `git add -u`
-# captures them all and CANNOT drift out of sync with bump_version.sh the way a
-# hand-maintained file list does (that drift left vscode/package.json at the
-# old version in a tagged commit).
-git add -u 2>/dev/null || true
-git commit -m "chore(release): bump version strings to $VERSION" || true
 
 TAG_MSG="CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
 if git config --get user.signingkey >/dev/null 2>&1 && gpg --list-secret-keys >/dev/null 2>&1; then
