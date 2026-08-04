@@ -37,12 +37,22 @@ pattern="$(IFS='|'; echo "${TERMS[*]}")"
 
 # Tracked files only (a release cut ships tracked content); skip vendored
 # code, archives, and this gate itself (it must name the terms it bans).
+#
+# PATHSPEC FORM IS LOAD-BEARING: `:!_archive*` dies with git's
+# "Unimplemented pathspec magic '_'" (short-form magic parsing eats the
+# underscore), and the old `2>/dev/null || true` swallowed that fatal —
+# leaving the gate structurally HOLLOW: it reported OK on a tree full of
+# banned terms. Long-form `:(exclude)` pathspecs + loud error handling.
 hits="$(git grep -inE "$pattern" -- \
-	':!third_party' \
-	':!_archive*' \
-	':!_gate_evidence' \
-	':!scripts/check_no_consumer_terms.sh' \
-	2>/dev/null || true)"
+	':(exclude)third_party' \
+	':(exclude)_archive*' \
+	':(exclude)_gate_evidence' \
+	':(exclude)scripts/check_no_consumer_terms.sh')"
+grep_status=$?
+if [ "$grep_status" -gt 1 ]; then
+	echo "check-no-consumer-terms: FAIL — git grep errored (status $grep_status); refusing a vacuous pass"
+	exit 2
+fi
 
 if [ -n "$hits" ]; then
 	echo "check-no-consumer-terms: FAIL — downstream-consumer identity in tracked content:"
