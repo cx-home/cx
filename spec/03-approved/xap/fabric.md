@@ -17,7 +17,7 @@ reference), [`xsp.md`](xsp.md) +
 (transport + mutual DID auth), and the store-serve precedent
 (`cxstore_service_tier_phase2.md`) for the served tier. Multi-writer
 consensus is **deferred by owner decision** — #521. Downstream demand:
-pbengine (#518, `downstream:pbengine`).
+the first downstream adopter (#518).
 
 **Design goal (owner, 2026-07-20):** fabric is not internal plumbing — it is
 the **enterprise-reusable platform messaging component**: the thing a system
@@ -36,7 +36,7 @@ it lacks is a platform component that delivers events **between** processes,
 hosts, and organizations. Today the only options are polling `journal-since`
 over a remote store, or HTTP/SSE hand-wiring per application.
 
-Downstream systems that standardize on cx (pbengine is the first) need
+Downstream systems that standardize on cx need
 enterprise integration patterns — pub/sub across services, durable consumers
 with offsets, ephemeral coordination — and without a cx-native answer they
 would put a foreign broker (NATS, Kafka) on their truth path, losing
@@ -67,7 +67,7 @@ platform's *foundation*, not an aspiration).
 
 ## 3 — Broker-world mapping (NATS / JetStream / Kafka → cx)
 
-For anyone (pbengine included) explaining the migration:
+For any adopter explaining the migration:
 
 | Broker concept | cx realization |
 |---|---|
@@ -367,7 +367,7 @@ types exist for.
 - **Deliberately not in v1** (recorded, not rejected): the envelope +
   explicit-reply primitive (`receive` request envelopes, reply by handle —
   caller-controlled concurrency) can layer *under* the callable convention
-  if pbengine's duty cycle demands it; queue-grouped competing responders
+  if a deployment's duty cycle demands it; queue-grouped competing responders
   arrive the same way. The callable form is the call *convention* — the
   contract a caller programs against either way.
 
@@ -533,7 +533,7 @@ any edge service.
   — everything inward is canonical-form, capability-gated, hash-chain
   verifiable. The adapter is where the enterprise's mess stops.
 - **Planned adapters** (order set by demand, §18): **NATS bridge** (the
-  pbengine legacy path — subjects ↔ streams/channels), **HTTP/SSE webhook**
+  legacy-migration path — subjects ↔ streams/channels), **HTTP/SSE webhook**
   (the universal adapter: webhook-in → publish; subscription → SSE/webhook
   push), **Kafka bridge** (topic/partition ↔ stream; offset mapping),
   **MQTT** (IoT ingress), **AMQP 1.0** (legacy enterprise ESB seams).
@@ -580,10 +580,10 @@ bounded pending window (§19.1–.2). Exact signatures firm up in P0.
 
 ## 17 — Evidence & conformance plan (sketch)
 
-- **pbengine** retired NATS for bus + journal behind a transport port;
+- the first downstream adopter retired NATS for bus + journal behind a transport port;
   fabric is the port's target. Committed evidence (#518/#519 offers):
   worker-pool fan-out findings, durable-consumer cursor conventions,
-  conformance-fixture contributions (100s–1000s of simulated opportunity
+  conformance-fixture contributions (100s–1000s of simulated entity
   lifecycles before real traffic). Per the owner's 2026-07-20 pace ruling,
   the §19 decisions were made by design — field evidence **refines** them
   (batch sizing, window defaults) but never gates progress.
@@ -609,7 +609,7 @@ the scoping record):**
 
 **SOON — the enterprise-gap fills (named, scheduled, not vague):**
 - **first adapters** (§14): HTTP/SSE webhook **landed** (P3, §19.7); the
-  NATS bridge (pbengine's legacy seam) **landed** (#547, §19.7);
+  NATS bridge (the legacy-migration seam) **landed** (#547, §19.7);
   Kafka/MQTT/AMQP follow demand;
 - **DLQ + redelivery-policy conventions** — **landed** (#543, §9.1);
 - **request–reply call conventions** over `request`/`reply` frames —
@@ -633,7 +633,7 @@ the scoping record):**
    testable, wraps into any worker-pool shape). The served tier's XSP push
    *is* the event-driven form (frames arrive on the attached channel); a
    local callback-registration convenience can layer over either later
-   without a contract change. pbengine's worker-pool findings refine batch
+   without a contract change. downstream worker-pool findings refine batch
    sizing and defaults, not the shape.
 2. **Backpressure (xsp.md §5.2 — adopted, #560):** transient channels
    are latest-wins by construction — a slow subscriber simply observes
@@ -669,7 +669,7 @@ the scoping record):**
 7. **First adapter: HTTP/SSE webhook** (universal, zero foreign-protocol
    dependency, pure cx over stdlib http; webhook-in → publish, subscription
    → SSE stream / webhook push; auth posture = the store-serve provider set,
-   §13). The NATS bridge follows for pbengine's legacy seam (§18).
+   §13). The NATS bridge follows for the legacy-migration seam (§18).
    **Landed (P3, issue #531):** `tooling/cxfabric/webhook-adapter.cx` — an
    ordinary edge client on the REMOTE tier of the one client surface
    (`[$fabric:open "xsp://…"]` dial + XSP-AUTH attach + verbs over the
@@ -683,7 +683,7 @@ the scoping record):**
    the §19.2 window stops the push, and the uncommitted tail redelivers.
    The door is bearer-token first (the static-token posture).
    **Landed (SOON item, issue #547): the NATS bridge** —
-   `tooling/cxfabric/nats-bridge.cx`, the pbengine legacy seam (§14/§18),
+   `tooling/cxfabric/nats-bridge.cx`, the legacy-migration seam (§14/§18),
    again an ordinary edge client on the remote tier. It speaks the client
    subset of the NATS text protocol itself over `cx-stdlib/net`
    (INFO/CONNECT/PING/PONG/SUB/PUB/MSG — no NATS library, so the suite

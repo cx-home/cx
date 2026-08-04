@@ -1,7 +1,7 @@
 [; nats-bridge.cx — the cx-fabric NATS bridge adapter (#547;
    spec/02-working/fabric.md §14/§18): an ORDINARY fabric client at the
    edge — pure cx over cx-stdlib/net — translating NATS subjects onto
-   fabric streams for the legacy-migration seam (pbengine retired NATS
+   fabric streams for the legacy-migration seam (downstream systems retiring NATS
    behind a transport port; this bridge lets NATS-side producers and
    consumers interop while the estate migrates). No core seam: everything
    here rides the same [$fabric:*] surface any consumer uses.
