@@ -3,7 +3,7 @@
 # scripts/release_linux.sh — build the LINUX release tarball(s) from this
 # checkout via Docker (#520: the GitHub org cannot allocate Actions runners,
 # so releases are cut locally on macOS — which left the public mirror with
-# only cx-darwin-arm64.tar.gz; downstream (pbengine) needs cx-linux-arm64
+# only cx-darwin-arm64.tar.gz; downstream deployments need cx-linux-arm64
 # for containerized/appliance deployment and CI-on-Linux).
 #
 # Produces, per platform:
