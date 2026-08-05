@@ -125,7 +125,7 @@ corpus additions (sequencing behind a live consumer, not a scope cut).
 | G4 | **ast-bin.md: zero fixtures** (V-tests only) — a Ring-0 codec not runnable as a cross-binding gate. | `ast_bin_test.v` | **Pre-I2.** |
 | G5 | **data-bin byte assertions = 5 emit + 3 decode** for a format frozen at 1.0 (arrow/schema-driven families are round-trip-only, by declared Arrow-instability design). | census | **Pre-I1** (data-bin header/encoding may be touched by the epoch). |
 | G6 | **formatting.md: zero fixtures**; §1's normative purity invariant ("never changes the data") untested. | `fmt_lossless_test.v` only | **Pre-I3** (fmt is Ring 1; must be pinned before the Ring-1/2 split ships `cli`). |
-| G7 | **TOML: 4 emit fixtures, no import fixtures.** Verify first whether TOML import is a shipped surface (streaming already refuses TOML with W009); if import exists, fixture it pre-I2; if not, record emit-only as the contract. | census | **Pre-I2 + verification item** (audit continues). |
+| G7 | **TOML: 4 emit fixtures, no import fixtures.** VERIFIED 2026-08-05: TOML import IS a shipped surface (`parser_toml.v`, `--from=toml` works) — the import lane is fixtured pre-I2. | probe | **Pre-I2.** |
 | G8 | **XSP: no corpus at all** (no `xsp.cxd`; both xsp specs uncovered; xsp-auth.cxd covers the identity handshake only). Frames, credit, resumption, transient-channel semantics unpinned. | census | **Stream 4** corpus additions (the store-profile spec mandates them; parity gate needs them anyway). |
 | G9 | **debug.md: zero coverage anywhere**; the §6a tape is a versioned CX document — directly fixturable. | census | Ruled with deferral D-DBG (Q10). |
 | G10 | **lockfile.md Ring-0 surface unfixtured** (2 Ring-1 eval cases only; the lockfile is a CX document). | `code.cxd:6521,6536` | **Pre-I2.** |
@@ -154,10 +154,21 @@ carries a Ring-2 optional native dependency (runner imports `arrow`) — Q6.
 | D-MOD | **Found by this audit** (not in the mandate list): live HTTPS module fetch + on-disk cache "deferred per §12.4.2" (`module_loader.v` returns `MODULE_HTTPS_FETCH_DEFERRED`; pkg-url fetch resolves only via registry). | modules spec §12.4.2 | **Confirm** — sequencing behind the Ring-3 distribution/registry consumer (C4, #699); resolver shapes + SRI verification are already spec'd and fixtured, so the deferral is additive. |
 | D-ID | `identity.cxd` v0 self-deferrals: D6 cross-format ID round-trip, **D7 canonical-form ID renaming (canonical-bytes-affecting)**, D3 include-time ID merging, D1 `[ref @id]` body form. Provenance reference in the file is empty ("per )"). | identity.cxd:3–14 | **Adopt D7 into stream 12** (it changes frozen bytes — now or never); **confirm D6/D3/D1** as post-partition tracker issues; recover the elided provenance refs (mechanical audit fix, applies to include/lint suites too). |
 
-## §6. Structural rulings this audit needs (letters)
+## §6. Structural rulings — RULED
 
-Lettered questions Q1–Q12 accompany this draft on the campaign thread;
-rulings are recorded in the campaign decision log and folded back here.
+Letters 1–13 **all ruled (a) by the owner 2026-08-05** ("all
+recommendations accepted"): code.cxd splits by lane; `ring=` lives in the
+fixture data; the pair-case form + digest assertions are adopted (the
+code-identity.md §4 exception is retired); io/process/env are Ring-1
+local-effect packs with watch/serve surfaces split to Ring 2 (partition
+spec §2/§10 wording to be amended); http splits at its internal seam;
+data_bin_arrow fixtures are Ring 0 with a dlopen-gated, visibly-skipping
+lane; the §4 gap-disposition table is ratified as drafted; deferrals:
+D-C1 confirmed w/ streams-4/6 coherence mandate, D-DBG confirmed w/ the
+tape-completeness fixture mandate, D-T2X confirmed, D-XSP items 1–2
+confirmed + item 3 ADOPTED into stream 4, D-ID: D7 adopted into stream 12
++ D6/D3/D1 confirmed as post-partition tracker issues + provenance refs
+recovered, D-MOD confirmed. Recorded in the campaign decision log.
 
 ## §7. Continuous-audit work queue (this stream, ongoing)
 
