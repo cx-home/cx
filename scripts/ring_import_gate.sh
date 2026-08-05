@@ -15,36 +15,81 @@
 # (spec §7 byte-for-byte gate): vcx/cx is a strict sink. The import-edge audit
 # (partition_audit_vcx_imports.md) verified it holds today; this keeps it true.
 #
-# Exit: 0 = clean; 1 = a Ring-0 module imports an internal sibling.
+# Hardened per the adversarial audit (#722, findings M34/M35):
+#   M34 — the deny-set is DERIVED from the live sibling-dir set under vcx/
+#         (everything but cx itself), so a future sibling module can never
+#         escape by omission. The pre-repair static list already omitted two
+#         siblings (testenv, tests).
+#   M35 — `import` is not the only edge: `#flag` / `#include` lines can link
+#         Ring-0 objects against sibling-dir C artifacts. Every
+#         `@VMODROOT/<sibling>` reference in a #flag/#include is a violation,
+#         except the two acknowledged load-bearing RE2 edges from
+#         regex_re2.v (deps/re2_shim headers; the target/ shim lib), which
+#         are allowlisted BY FILE + PATH, not by pattern.
+#
+# Tests (*_test.v) may import anything — spec §3; recorded compliant (n30).
+#
+# Exit: 0 = clean; 1 = a Ring-0 module imports or links a sibling.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RING0_DIR="$ROOT/vcx/cx"
 
-# Internal (non-Ring-0) module names — the sibling dirs under vcx/. Any `import`
-# of one of these from inside vcx/cx is a ring violation. V stdlib imports
-# (os, strings, strconv, math, encoding.*, crypto.*, sync, time, net, ...) are
-# NOT in this set and are always allowed.
-INTERNAL_MODULES="code cxstore arrow transport bench fuzz tools deps cmd"
+# M34: internal (non-Ring-0) module names, derived from the live tree — every
+# sibling dir under vcx/ except cx itself. V stdlib imports (os, strings,
+# strconv, math, encoding.*, crypto.*, sync, time, net, ...) are never in
+# this set and are always allowed. `target` (build output) stays in the set:
+# nothing may import or link it from Ring 0 outside the allowlisted edge.
+INTERNAL_MODULES="$(cd "$ROOT/vcx" && find . -maxdepth 1 -mindepth 1 -type d ! -name cx | sed 's|^\./||' | LC_ALL=C sort | tr '\n' ' ')"
+
+# M35 allowlist: acknowledged load-bearing C edges, keyed "<file>:<sibling>".
+# regex_re2.v links the RE2 shim: headers under deps/re2_shim, lib under
+# target/. Anything else — including a NEW edge from regex_re2.v to another
+# sibling — fails.
+c_edge_allowed() { # $1=basename $2=sibling
+  case "$1:$2" in
+    regex_re2.v:deps|regex_re2.v:target) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 fail=0
+
 while IFS= read -r -d '' f; do
-  # Match `import <mod>` and `import <mod> as ...`, first path segment only.
+  base="$(basename "$f")"
+
+  # ── Lane 1: V import edges ────────────────────────────────────────────────
   while IFS= read -r line; do
     mod="$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+([A-Za-z_][A-Za-z0-9_]*).*/\1/')"
     for internal in $INTERNAL_MODULES; do
       if [ "$mod" = "$internal" ]; then
-        echo "RING-VIOLATION: Ring-0 module $(basename "$f") imports Ring-1+ module '$mod'"
+        echo "RING-VIOLATION: Ring-0 module $base imports Ring-1+ module '$mod'"
         echo "  → $f: $line"
         fail=1
       fi
     done
   done < <(grep -hE "^[[:space:]]*import[[:space:]]+" "$f" 2>/dev/null || true)
+
+  # ── Lane 2 (M35): C-level edges — #flag / #include into a sibling dir ────
+  while IFS= read -r line; do
+    for internal in $INTERNAL_MODULES; do
+      # @VMODROOT is vcx/ for modules under vcx; a reference into a sibling
+      # is @VMODROOT/<sibling>/... or @VMODROOT/<sibling> exactly.
+      if printf '%s\n' "$line" | grep -qE "@VMODROOT/${internal}(/|[[:space:]]|$)"; then
+        if c_edge_allowed "$base" "$internal"; then
+          continue
+        fi
+        echo "RING-VIOLATION: Ring-0 module $base carries a C edge into sibling '$internal'"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*#(flag|include)" "$f" 2>/dev/null || true)
 done < <(find "$RING0_DIR" -name '*.v' -not -name '*_test.v' -print0)
 
 if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — Ring-0 (vcx/cx) is not a strict sink."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 (vcx/cx) imports nothing internal (strict sink)."
+echo "ring_import_gate: OK — Ring-0 (vcx/cx) imports nothing internal and carries no unapproved C edges (strict sink; deny-set derived live: ${INTERNAL_MODULES% })"
 exit 0

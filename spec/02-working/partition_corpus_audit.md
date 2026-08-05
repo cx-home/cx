@@ -15,11 +15,15 @@ double as M5 substrate.
 
 ## §1. Corpus census and the ring discriminator
 
-The corpus lives at `conformance/`: 28 top-level suites (1605 cases),
-54 stdlib suites under `conformance/stdlib/` (2522 cases), the fixture
+The corpus lives at `conformance/`: 24 top-level suites (1605 cases),
+53 stdlib suites under `conformance/stdlib/` (2522 cases), the fixture
 schema `conformance/fixtures.cxs`, the gate-policy manifest
 `conformance/gates.cxd` (zero cases — policy, not fixtures), and module
-scaffolding under `conformance/fixtures/module/`.
+scaffolding under `conformance/fixtures/module/`. (Census figures
+re-verified 2026-08-05 by three independent methods — text scan,
+parsed-element count via `scripts/ring_query.cx`, per-file sum — after
+the adversarial audit flagged drift in the suite counts; 4127 total
+cases stands.)
 
 Ring tags are assigned by two independent, mechanical signals that agree:
 
@@ -33,7 +37,7 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 
 ## §2. Ring tagging (normative once approved)
 
-### Ring 0 — 20 families, ~493 cases (the extraction-gate corpus)
+### Ring 0 — 20 families, 493 cases + `binding_api.cxd`'s 17 Ring-0 cases (the extraction-gate corpus, 510 total; the `code.cxd` parse lane rides on top — see MIXED)
 
 | Family | Exercises | Cases |
 |---|---|---|
@@ -70,20 +74,32 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 - **`binding_api.cxd` (49 cases)** — Layer-1 Document API parity.
   parse/emit/canonical/hash/diff/validate calls are Ring 0; CXPath
   select/modify calls are Ring 1. Split per-case on the `call` line.
+  **Landed (I0):** 32 evaluation-dependent cases (eval / select /
+  select-all / modify chains, incl. the `spawn`-wrapped select) carry
+  `ring=1`; the remaining 17 (parse/bytes/hash/equals/find-all/
+  accessor) inherit the suite's `ring=0`.
 
-### Ring 1 — ~1605 cases
+### Ring 1 — 1969 doc-lane cases (+ the 989-case `code.cxd` eval lane)
 
-`xpath_31_parity.cxd` (23), `code_diagram.cxd` (51), `code.cxd` eval lane,
-and the pure/local stdlib families: bytes, crypto, csv, cx, format, fp, ft,
-geo, hash, html, i18n, json, jsonrpc, jsonschema, locale, log, math, mime,
-path, prof, random, re, sched, similar, strings, test, time, url, uuid,
-validate. Pending Q4/Q5: env, io, process, and the http client surface.
+`xpath_31_parity.cxd` (23), `code_diagram.cxd` (51), `binding_api.cxd`'s
+32 evaluation-dependent cases, and the pure/local stdlib families: bytes,
+crypto, csv, cx, format, fp, ft, geo, hash, html, i18n, json, jsonrpc,
+jsonschema, locale, log, math, mime, path, prof, random, re, sched,
+similar, strings, test, time, url, uuid, validate. Q4/Q5 resolved and
+landed: env, process, and io are Ring 1 (io's three watch cases
+io-105/106/107 carry `ring=2` per the partition's watch→Ring-2
+placement, cx_partition.md §2); the http CLIENT surface — 47 cases:
+response/request accessors, client construction, one-shot verbs,
+scheme/arg validation, `send`, and the SSE client (`sse-source` /
+`sse-connect` / `sse-events`) — carries `ring=1`.
 
-### Ring 2 — ~703 cases
+### Ring 2 — 659 doc-lane cases
 
-a2a, a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/tooling
-surface per Q5), journal, llm, mcp, mcp-server, net, run, session, store,
-xap-compose, xap-dist, xsp-auth.
+a2a, a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/
+tooling surface: serve/listen/accept/exchange/respond/stop + the SSE
+server side, the suite default), journal, llm, mcp, mcp-server, net,
+run, session, store, xap-compose, xap-dist, xsp-auth, plus io's three
+watch cases.
 
 ### Tagging mechanics (Q2)
 
@@ -93,8 +109,14 @@ precedent), admitted without schema break (`fixtures.cxs` is
 `schema-mode open`). The Ring-N lane is then a corpus query, never a
 maintained external list — the corpus is append-only (partition §8), so an
 external list would drift by construction. MIXED families tag at case/lane
-granularity: `code.cxd` tags `ring=0` with the eval lane elevating to 1;
-`binding_api.cxd` tags per-case.
+granularity: `binding_api.cxd` tags per-case; `code.cxd` tags `ring=0`
+with `eval-ring=1` on the suite header — the machine-readable lane
+discriminator, since the eval lane is defined by the CONSUMER (the two
+gates), not by any per-case property. **The corpus query is
+`scripts/ring_query.cx`** (env-var interface `RING`/`LANE`/`FORMAT`; run
+from the repo root): it implements the resolution order and the
+`eval-ring` lane semantics, and doubles as the tagging-completeness gate
+— any suite header without `ring=` is a hard failure (exit 2).
 
 ## §3. Coverage map — normative specs × corpus
 
