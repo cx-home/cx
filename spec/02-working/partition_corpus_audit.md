@@ -24,10 +24,11 @@ re-verified 2026-08-05 by three independent methods — text scan,
 parsed-element count via `scripts/ring_query.cx`, per-file sum — after
 the adversarial audit flagged drift in the suite counts; 4127 total
 cases stood at the audit date; the G1/G4 gap-closure families landed
-at I0 — `identity_hash.cxd` + `ast_bin.cxd` — and the pre-I1 pin
-additions (`operator_heads.cxd` 7, the idh-026 hole/string pair, the
-cx-094 quote-hash E210 pin) bring the append-only total to 4157:
-doc-lane R0=1528 / R1=1991 / R2=638.)
+at I0 — `identity_hash.cxd` + `ast_bin.cxd` — and the pre-I1 pin batch
+(`operator_heads.cxd` 7, the idh-026 hole/string pair, the cx-094
+quote-hash E210 pin, the store-code-003…008 Tier-2 pairs, the
+ch-008…011 data-bin goldens) brings the append-only total to 4167:
+doc-lane R0=1532 / R1=1991 / R2=644.)
 
 Ring tags are assigned by two independent, mechanical signals that agree:
 
@@ -41,7 +42,7 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 
 ## §2. Ring tagging (normative once approved)
 
-### Ring 0 — 22 families, 514 cases + `binding_api.cxd`'s 17 Ring-0 cases (the extraction-gate corpus, 531 total; the `code.cxd` parse lane rides on top — see MIXED)
+### Ring 0 — 23 families, 526 cases + `binding_api.cxd`'s 17 Ring-0 cases (the extraction-gate corpus, 543 total; the `code.cxd` parse lane rides on top — see MIXED)
 
 | Family | Exercises | Cases |
 |---|---|---|
@@ -56,12 +57,13 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 | `table.cxd` | table literal parse/emit/AST | 35 |
 | `include.cxd` | `[?cx include]` (parse-time) | 3 |
 | `schema_validate.cxd` | schema language + validation | 61 |
-| `data_bin_chunked/_compression/_schema_driven.cxd` | data-bin codec | 7/5/9 |
+| `data_bin_chunked/_compression/_schema_driven.cxd` | data-bin codec (chunked +4 G5 freeze-pins, pre-I1) | 11/5/9 |
 | `diff.cxd` | structural diff (two-operand `in-a`/`in-b` form) | 17 |
 | `lint.cxd` | CX-L001/003/004/005 | 17 |
 | `data_bin_arrow.cxd` | CXCol↔Arrow round-trip — see Q6 (runner imports `arrow`) | 14 |
-| `identity_hash.cxd` | Tier-1 content hash: blessed digests + pair equality (G1 closure, landed I0) | 15 |
+| `identity_hash.cxd` | Tier-1 content hash: blessed digests + pair equality (G1 closure, landed I0; +idh-026 pre-I1) | 16 |
 | `ast_bin.cxd` | binary-AST codec: golden bytes + round-trip (G4 closure, landed I0) | 6 |
+| `operator_heads.cxd` | the seven operator heads, pre-I1 pins (manifest row 8: five stringify, two reject — all flip at the epoch) | 7 |
 | `streaming_write.cxd` | streaming-write events, W001–W013 — see G12 (no V lane) | 17 |
 
 ### MIXED — split by lane, not by case
@@ -85,7 +87,7 @@ Ring tags are assigned by two independent, mechanical signals that agree:
   `ring=1`; the remaining 17 (parse/bytes/hash/equals/find-all/
   accessor) inherit the suite's `ring=0`.
 
-### Ring 1 — 1990 doc-lane cases (+ the 989-case `code.cxd` eval lane)
+### Ring 1 — 1991 doc-lane cases (+ the 989-case `code.cxd` eval lane)
 
 `xpath_31_parity.cxd` (23), `code_diagram.cxd` (51), `binding_api.cxd`'s
 32 evaluation-dependent cases, and the pure/local stdlib families: bytes,
@@ -104,7 +106,7 @@ response/request accessors, client construction, one-shot verbs,
 scheme/arg validation, `send`, and the SSE client (`sse-source` /
 `sse-connect` / `sse-events`) — carries `ring=1`.
 
-### Ring 2 — 638 doc-lane cases
+### Ring 2 — 644 doc-lane cases
 
 a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/
 tooling surface: serve/listen/accept/exchange/respond/stop + the SSE
