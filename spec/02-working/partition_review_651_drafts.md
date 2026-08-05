@@ -161,7 +161,12 @@ under session authority — conflicts with accepted §12).
 
 ---
 
-## §14 — "Turn the CX store into a semantic content graph"
+## §14 — RULED 2026-08-04 (L7a) and POSTED
+
+Verdict: https://github.com/cx-home/cx-private/issues/651#issuecomment-5186932918
+Environment identity = minimal + additive (runtime version, builtin-set
+identity, schema dialect), spec'd as a canonical CX value so axes extend
+additively. Draft below retained until Gate G-A.
 
 **Draft verdict: ACCEPT — as vocabulary + one new identity composition, not as
 new store machinery. The store already IS a content-addressed value graph;
@@ -225,6 +230,69 @@ demands (recommended — small, honest, cache-safe) /
 (b) maximal: include full host/platform fingerprint (safer invalidation, but
 caches rarely hit across upgrades and the fingerprint is hard to spec) /
 (c) defer computation identity entirely (store vocabulary only).
+
+---
+
+## Architecture boundaries — "strict layering model" (Layers 1–6)
+
+**Draft verdict: ACCEPT the principle, expressed as ring dependency contracts
+rather than a strict stack. One amendment: layering is a DAG constraint
+("may import ≤ my ring"), not required stacking — a Ring-2 component that
+depends only on Ring 0 is stronger than the contract demands, not a
+violation.**
+
+### Reconciliation table (doc Layers ↔ #516 Rings ↔ shipped code)
+
+| Doc layer | Ring | Shipped modules | Note |
+|---|---|---|---|
+| L1 value model | Ring 0 | `vcx/cx` (parser incl. program forms, CXDM, canonical, Tier-1/Tier-2 identity defs, data-bin, emitters, schema/validate, diff) | Already a strict sink (import audit). Grammar never forks (settled). |
+| L2 language/algebra | Ring 1 | evaluator, CXPath eval, directives, purity, quasiquote, fmt/lint/LSP + pure/data stdlib | Fused with L3 in `vcx/code` today. |
+| L3 execution/effects runtime | Ring 1 | caps enforcement, scheduler, effect points | Doc splits L2/L3; rings fuse them — one evaluator artifact. Consistency machinery is NOT here (it's journal/store = Ring 2). |
+| L4 semantic store | Ring 2 | `vcx/cxstore` engine + store verb surface + journal | Empirical correction to the doc: the store ENGINE depends only on Ring 0 (audit) — "store above runtime" is false in the strong sense. Engine-below, verbs-above. |
+| L5 XSP | Ring 2 (frame codec Ring 1 stdlib) | xsp/xsp-auth stdlib, fabric served tier, future store profile (§13) | Per §12/§13 rulings. |
+| L6 apps + adapters | Ring 2 edge + Ring 3 | XAP host, gRPC/HTTP adapters, web client; registries/marketplace/clients/bindings | Adapters project the model (§13 pattern proven by gRPC). |
+
+### Import contracts (the partition spec's normative core, feeding #516)
+
+- Ring 0 imports nothing internal (status quo, to be CI-gated).
+- Ring 1 imports Ring 0 only.
+- Ring 2 imports Rings 0–1 (components MAY import Ring 0 only — e.g. the
+  store engine stays evaluator-free).
+- Ring 3 imports Rings 0–2.
+- Protocol modules live in Ring 2; Rings 0/1 never import them.
+- `transport/` vendored modules and `arrow` are leaf siblings usable from
+  Ring 2 (arrow's cx dependency is one-way; cmd's dlopen pattern is the
+  precedent for optional linkage).
+
+### The one open cut: Ring 1 / Ring 2 inside `vcx/code` (letter L8)
+
+`vcx/code` fuses the evaluator + ~90 stdlib modules + store verbs + protocols
++ xap host. The audit shows this is THE extraction frontier. The cut line
+options:
+
+(a) **Effect-based (recommended):** Ring 1 = evaluator + stdlib modules whose
+builtins are pure or need only local caps (strings, math, fp, bytes, time,
+re, json/codec, validate, hash, …); Ring 2 = platform services (store verbs,
+journal, http/net serve, db drivers, fabric, xap, session/authz/did/vc,
+process/io). Rationale: matches the caps model (pure computation needs no
+capability), gives Ring 1 a small dependency surface (the audit shows the
+heavy externals — db, mbedtls, libssh2, C shims — all sit in service
+modules), and the capability categories give an objective membership test.
+(b) **Wire-based:** Ring 1 = everything in-process incl. http/net client
+verbs; Ring 2 = only servers/daemons. Simpler line, but Ring 1 inherits
+mbedtls + net stack — the data-format-plus-code adopter pays for TLS.
+(c) Defer the precise stdlib split to the partition spec (Phase 2) with (a)
+as the working assumption.
+
+### Business value
+
+The rings ARE the product strategy (#516): an adopter takes exactly the
+weight they need — data format alone (Ring 0: small binary, V-stdlib-only
+deps, no evaluator, safe on untrusted input), + code (Ring 1: still no
+network, no DB, no daemon), + platform (Ring 2) — with CI-enforced contracts
+guaranteeing the lower rings never grow upward dependencies. The
+counterfactual is today's single libcx: every adopter carries TLS, six DB
+drivers, and a protocol zoo to parse a config file.
 
 ---
 
