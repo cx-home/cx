@@ -75,11 +75,21 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    ledgered reds. NOTE (residual, unruled): whitespace-only NON-empty
    quoted strings (`[a ' ']`) still erase — same collision shape as W-6
    but entangled with XML-import layout text; needs its own ruling.
+8. Multi-doc addresses L30 (row 2, W-27): a legal multi-document CX file
+   HAS a canonical form and an address — per-document strict-canonical
+   fragments joined by the bare `\n---\n` line, one file-level trailing
+   LF (W-14). cx_text_canonical rides parse_stream (single-doc bytes
+   unchanged — same lexer, `---` only at top level); the per-document
+   pipeline is extracted as cx_canonical_doc_text, the single source of
+   pass order. §3.12.2 alignment: cx_data_bin_hash had DRIFTED (missing
+   datetime + annotation passes and the W-14 LF) — it now composes the
+   same helper, so data-bin and text lanes hash one logical document
+   identically (its digests were never pinned — invariance-only use).
+   Zero corpus movers; gates at the same ledgered reds.
 
 ## Row-2 warts remaining
 
 NFC names (owner ruled (a) 2026-08-05 — CX-owned generated tables from a
-pinned UCD, generator committed; implement at this row) · multi-doc
-addresses (L30, `\n---\n`) · CX-owned Ryū audit (L18, incl. W-3 NaN/±Inf
-loud rejection — `1e400` still emits `+inf.0` today) · whitespace-only
-string residual (see commit-7 note).
+pinned UCD, generator committed; implement at this row) · CX-owned Ryū
+audit (L18, incl. W-3 NaN/±Inf loud rejection — `1e400` still emits
+`+inf.0` today) · whitespace-only string residual (see commit-7 note).
