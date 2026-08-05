@@ -301,6 +301,110 @@ drivers, and a protocol zoo to parse a config file.
 
 ---
 
+## §1–§9, §15, Milestones — batch drafts (letters L9, L10 pending)
+
+### §1 One semantic identity per concept — ACCEPT (settled by §10)
+Content-only identity + E2 type identity + attachment lanes ARE this
+principle. "DB row / REST resource / SDK type as generated projections" =
+the conversions surface + edge-adapter pattern (layering ruling). No new
+work beyond E2/E4. Ring 0.
+
+### §2 Meaning independent of storage/transport — ACCEPT (shipped posture)
+Doc-identity is substrate/model/encoding-invariant (store.md §4); hash
+invariance across wire encodings (CSRP §2.2); placement-as-runtime-decision
+rides the query-shipping stream. Nothing to add beyond restating in E4.
+
+### §3 Queries as typed portable programs — ACCEPT (per the pre-campaign
+§3/§11 review comments, additive path (a))
+Planar `[?for]` fragment + source references + formal algebra semantics
+(equivalences, dependency extraction) + store-query accepting quoted planar
+comprehensions. E1 (ruled) supplies expression identity. One work stream —
+the largest single accepted item. Ring 1 representation / Ring 2 execution.
+
+### §4 Query = subscription = materialized view — ACCEPT (live-modes stream)
+`[?observe]` / `[?materialize]` / `[?changes-since]` wrap the SAME
+comprehension (per the §3/§11 addendum). Core runtime capability, not
+XAP-only — XAP views lower onto these. Requires §3's dependency extraction
+(incremental maintenance needs dependency structure). Semantic delta
+vocabulary shared with the XSP store profile. Business value: one expression
+feeds the one-time query, the dashboard, the replication filter, and the
+agent's context watch — today those are four systems.
+
+### §5 Commands express intent — ACCEPT (vocabulary additions)
+XAP already has the intent model (`[do …]`, capability-gated at the bus).
+The doc's ask generalizes it to the language: `[requires …]`,
+`[preconditions …]`, `[effects …]` clause-children on `[?def]` —
+grammar-consistent additive clauses (§3/§11 comment Part B.6). Rides one
+stream with §6.
+
+### §6 Effects as explicit values — ACCEPT as a design stream (letter L9)
+The largest genuinely-new semantic piece left. Today: effects happen at
+capability-gated effect points; purity is classified; there is no
+propose→inspect→commit model. The doc's effect proposals align with
+homoiconicity and pair with computation identity (deterministic dry-runs,
+agent action approval). Design question — scope of the model:
+- **L9(a) (recommended):** effect proposals as an OPT-IN evaluation mode for
+  command definitions and agent execution (a `[?def]` with `[effects …]`
+  contract can be run in propose mode; the runtime returns the proposal as a
+  value for authorize/simulate/commit). Direct effects stay the default —
+  no runtime rewrite, additive surface, agents get inspectability where it
+  matters.
+- **L9(b):** all effects become proposals platform-wide (two-phase runtime;
+  maximal auditability; rewrites every effect point and the §9.1.2 channel
+  model — enormous cost).
+- **L9(c):** defer.
+
+### §7 Consistency as expression semantics — ACCEPT NARROW (letter L10)
+The inventory confirmed: isolation vocabulary appears nowhere; what exists
+is per-stream committed-prefix reads, seq-as-authority, linearizable ref
+advancement, `at-seq`/`as-of` reads. The doc wants declared guarantees
+(eventual/causal/snapshot/serializable) with satisfy-or-reject semantics.
+- **L10(a) (recommended):** spec the vocabulary for what CX actually
+  guarantees (prefix-consistent stream reads, linearizable refs, as-of
+  snapshots) as declarable, checkable expression attributes with fail-loud
+  rejection of anything unsupported; DEFER the full isolation menu —
+  cross-stream serializable transactions contradict the journal's
+  no-cross-stream-order design and have no driving consumer.
+- **L10(b):** full menu including serializable cross-stream transactions.
+- **L10(c):** defer entirely (leave consistency implicit).
+
+### §8 Compositional authority — ACCEPT (already the model)
+Attenuable/delegable/time-bound/revocable capabilities over slices, decisions
+as values, guardian gates — shipped (authz §2–§5, xap §22). The doc's
+`[context …]` ≈ session authority basis + authz-request. Residuals already
+ruled: store's parallel auth stack dies (§13); `cap:`/`hash:` reference
+spelling rides the G-question. No new stream.
+
+### §9 Representation adapts to workload — ACCEPT (shipped posture)
+data-bin, streaming/chunked, page compression, columnar backend + Arrow,
+schema-driven encoding — all shipped; encoding negotiation exists in CSRP
+and rides the XSP store profile going forward. Residual: semantic-delta
+frames (shared with §4/§12 streams). Nothing else to add.
+
+### §15 XAP as reference application model — ACCEPT
+Matches the ruled direction: XAP consumes runtime primitives (live modes
+move to core per §4; observation/deltas/commands/authority live in the
+runtime + XSP). XAP surfaces/intents are already CX values. Ring 2.
+
+### Roadmap milestones — mapping to accepted streams
+- **M1 semantic core** → E1–E4 (§10) + `hash:`/`cap:` G-question + canonical
+  errors (already shipped, exceeds ask).
+- **M2 live expression runtime** → §3 planar-fragment stream + §4 live modes
+  (planning, dependency tracking, incremental eval, explain).
+- **M3 "XSP/2"** → REJECTED as a version rewrite; replaced by §12 additive
+  path + §13 store profile (same capabilities, no new protocol).
+- **M4 distributed store** → partially: replication/causal history/offline
+  sync/conflict-values DEFERRED pending a driving consumer; computation
+  cache + provenance graph ride §14; transactional ref advancement is
+  shipped.
+- **M5 proof implementation** → ACCEPT as the partition's validation
+  showcase: one domain through native client + XAP UI + agent + REST/SQL
+  adapters + offline replica — the "timely and marketable" deliverable that
+  demonstrates adapters project one model. Belongs in #516 planning as the
+  post-extraction proof.
+
+---
+
 ## Spec/impl divergences surfaced by the protocol inventory (follow-ups at G-A)
 
 1. cxstore-grpc.md .proto lists 8 RPCs; impl serves 19.
