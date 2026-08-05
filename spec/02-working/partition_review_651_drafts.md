@@ -161,6 +161,73 @@ under session authority — conflicts with accepted §12).
 
 ---
 
+## §14 — "Turn the CX store into a semantic content graph"
+
+**Draft verdict: ACCEPT — as vocabulary + one new identity composition, not as
+new store machinery. The store already IS a content-addressed value graph;
+homoiconicity means the doc's node-type list needs nothing new.**
+
+### Mapping
+
+The doc wants store nodes for values / schemas / functions / expressions /
+plans / results / modules / policies / capabilities / events / provenance /
+signed artifacts. Every one of those is a CX value, and the store already
+stores values by Tier-1 hash (docs + subtree object graph), code by Tier-2
+(put-def/get-def, opt-in namespace), events in journal streams, and
+provenance/authority artifacts as ordinary values. Schemas are already
+content-hash-referenced (schema.md §13.1). The staged universal-object-model
+spec (01-new) proposes exactly the cross-document dedup/identity properties
+the doc assumes. **No new node kinds, no graph database — the "semantic
+graph" is the composition of identities that already exist plus refs/aliases
+as the mutable edge layer.**
+
+### The genuinely new piece: computation identity
+
+Doc: `result-id = hash(function, inputs, environment, capabilities)`.
+Composes shipped identities: function = Tier-2; inputs = Tier-1; expression =
+E1 (§10 ruling); capabilities = canonical hash of the grant set (authority
+artifacts are values). The unresolved component is **environment identity** —
+what participates (runtime version? builtin set? schema dialect?) determines
+when caches invalidate. Purity classification (shipped) bounds what is
+cacheable: pure computations only, fail-loud otherwise.
+
+**Work stream:** one spec defining (1) the `[computation …]` record
+vocabulary and its identity, (2) environment identity, (3) cache semantics
+(deterministic result store keyed by computation hash; incremental
+recomputation = dependency-hash comparison, Merkle-style), (4) the store's
+role: computation records and results are ordinary stored values — no new
+store API beyond a naming convention/namespace.
+
+### Ring assignment
+
+Identity composition + vocabulary = Ring 0/1 (E1/Tier-2 are Ring 0-1;
+capability hashing rides authz values). Result cache + namespaces = Ring 2
+store. Import gate unchanged.
+
+### Business value
+
+Build-system semantics for data and agent work: a transformation run
+yesterday with the same function, inputs, and environment is provably the
+same result today — skip it, trust it, or audit it. Use cases: incremental
+pipelines that recompute only what changed (data-engineering cost collapses
+from full-rerun to delta); distributed memoization (any node can serve a
+result by hash, verifiable by re-hash); **verifiable agent actions** — an
+agent's claim "I ran F on X and got R" is checkable after the fact because F,
+X, R, and the authority it held are all content-addressed. That last one is
+the north-star case: no incumbent stack can make agent work reproducible and
+disputable as a platform property.
+
+### Letter L7 — environment identity scope
+
+(a) Start minimal and additive: environment = (language/runtime version,
+builtin-set identity, schema dialect version); extend later as evidence
+demands (recommended — small, honest, cache-safe) /
+(b) maximal: include full host/platform fingerprint (safer invalidation, but
+caches rarely hit across upgrades and the fingerprint is hard to spec) /
+(c) defer computation identity entirely (store vocabulary only).
+
+---
+
 ## Spec/impl divergences surfaced by the protocol inventory (follow-ups at G-A)
 
 1. cxstore-grpc.md .proto lists 8 RPCs; impl serves 19.
