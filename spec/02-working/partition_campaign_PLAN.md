@@ -120,6 +120,11 @@ issues (e.g. a query-algebra spec) belong to those issues and gate their own
 implementations later. (Owner may pull them into this campaign's gate; not
 assumed.)
 
+## Work-stream issue map (filed 2026-08-05)
+
+Streams 1–22 = #673–#694 (in order: 1→#673 … 22→#694) · hygiene batch =
+#695 · consumability C1–C4 = #696–#699. Every issue carries gate rule 4(b).
+
 ## Consumability track (ruled 2026-08-05: post-gate sequencing)
 
 Tooling/product streams that consume the partition's artifacts; sequenced
