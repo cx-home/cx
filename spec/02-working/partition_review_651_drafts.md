@@ -66,9 +66,35 @@ bump, re-do §5 — no capability the additive path can't deliver) /
 
 ---
 
-## §13 — "Fold CSRP into XSP"
+## §13 — "Fold CSRP into XSP" — RULED 2026-08-04: ACCEPT THE FOLD
 
-**Draft verdict: ACCEPT the destination, REJECT the fold-as-restructure.
+**Owner overruled the draft's permanent-adapter recommendation** ("XSP was to
+be the unified protocol with CSRP rolled in; nothing in production, so no
+migration issue"). Draft error acknowledged: migration conservatism doesn't
+apply pre-production, and the draft underweighted the decisive argument FOR
+the fold — the store today runs a second, parallel authority stack (bearer
+tokens + own RBAC/roles/tenant model, four auth providers) separate from the
+DID/capability model. Two authority models is exactly the drift the review
+exists to kill.
+
+**Ruled direction:**
+- XSP store profile = the store wire; it is also §12's second semantics
+  consumer, so the fold drives the generic-frame/profile spec split.
+- Internal consumers migrate pre-production: remote-store client,
+  journal-over-CSRP (#644), porcelain push/pull/clone, fabric cx-store://
+  mounts.
+- CSRP data plane RETIRES once the XSP store profile passes the same parity
+  gate gRPC passes today. No compat profile, no dual wire.
+- One authority model: store access under XSP-AUTH DID principals +
+  attenuable capabilities; a store grant is the same inspectable, revocable
+  CX value as an execution grant.
+- HTTP retains only protocol-neutral tooling surfaces: health/ready probes,
+  Prometheus /metrics, minimal pre-auth version/capabilities bootstrap.
+- gRPC stays an opt-in edge adapter over the XSP-native op layer.
+
+Original draft below retained for the record.
+
+**Superseded draft verdict: ACCEPT the destination, REJECT the fold-as-restructure.
 Amended direction: the store JOINS XSP (additively, when the query-shipping
 stream needs it); CSRP remains the permanent HTTP edge adapter over the same
 internal op layer. Nothing is demoted to "compatibility profile."**
