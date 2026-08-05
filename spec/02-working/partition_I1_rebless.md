@@ -219,8 +219,28 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    BYTE-IDENTICAL (the proven-untouched-kinds regression guard held).
    Zero new corpus movers beyond the ledgered 2b wave.
 
+17. NFC names (row 2, L23 second half — ROW 2 COMPLETE): names
+   normalize to Unicode NFC at parse in ALL THREE name lanes (data
+   intern_name_src, xml_read_name, program read_identifier — in step,
+   differential held); values NEVER normalize (NFD string values keep
+   their bytes and their distinct addresses). W-11: duplicate-map-key
+   comparison is NFC for string keys (stored keys keep authored bytes).
+   CX-OWNED tables generated from the PINNED UCD 16.0.0 (committed
+   sources at tools/ucd/16.0.0/ with sha256s; committed generator
+   tools/gen_nfc_tables.v → nfc_tables.v: 934 ccc / 2081 decomp / 961
+   comp pairs); Hangul algorithmic (UAX #15). Regenerating against a
+   newer UCD = an owner-ruled identity migration, like re-syncing Ryū.
+   ASCII names ride a zero-cost fast path. Pinned in
+   canonical_nfc_names_test.v (composition, Hangul LV/LVT, canonical
+   reordering, composition exclusions, name-vs-value split, dup-keys,
+   idempotence); commit-11's NFD placeholder pin re-blessed to the
+   convergence. Zero new corpus movers; gates at the ledgered reds.
+
 ## Row-2 warts remaining
 
-NFC name normalization ONLY (owner ruled (a) — CX-owned generated
-tables; owner ruled 1a on sourcing: I download the three UCD files
-with a pinned version; the last row-2 item).
+NONE — row 2 is COMPLETE (commits 1–11, 17). Remaining epoch work:
+row-1 defect tail (json all-decimal, streaming events, --strict
+value_matches_type, host mappings, table-cell decimal normalization,
+CXER3002 transcendental codes), rows 3, 4-7, 8-9 (oph/idh-026/cx-094
+pins flip), 10-15, then spec-edit maps + the ONE re-bless with the
+old→new mapping file + registry re-seal.
