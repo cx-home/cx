@@ -152,6 +152,19 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    ast-bin widening + M23 advisory window, json all-decimal/streaming/
    --strict/host mappings. Table CELLS with decimal columns still ride
    lenient coerce_scalar — normalize at the arithmetic commit.
+13. Row-1 value semantics (L40/L42): equality and ordering are
+   MATHEMATICAL across the exact family int/bigint/decimal — pure digit
+   comparison (cx/numeric_exact.v: cx_exact_num_cmp on the base-10
+   images; no f64 round-trip, so bigint ordering is exact beyond 2^53
+   and decimal scale digits never merge). `bigint 99 = int 99` and
+   `1.10::decimal = 1.1::decimal` are now true; decimal/bigint vs
+   STRING is ALWAYS false (the string arm said decimal "1.10" = string
+   "1.10"); decimal vs FLOAT stays unbridged — equality false,
+   ordering CXER0100 (L44: [cast] is the only bridge). nodes_equal +
+   the `<`-family both gained the exact branch; int×int keeps its
+   legacy path byte-for-byte. Pinned in
+   decimal_bigint_semantics_test.v; zero corpus movers, gates at the
+   ledgered reds.
 
 ## Row-2 warts remaining
 
