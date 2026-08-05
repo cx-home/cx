@@ -111,8 +111,25 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    its own type now). Zero corpus movers after the join-space rule
    (core-013/xml-009 entity fixtures pin the bare spelling and stay
    green); gates at the same ledgered reds.
+11. Unicode names L22 (W-9) + UTF-8 validity (L23 first half): both
+   engines widen to the grammar's [L10a]/[L10b] ranges IN STEP (data
+   lex_name + element-vs-array disambiguator; program-lexer ident
+   dispatch + continuation; xml_read_name — CX⇄XML stays bijective).
+   The codepoint predicates + UTF-8 decoder live in lexical.v — the
+   ranges are the grammar's own, no Unicode database involved. The
+   data parse entries (parse / parse_stream) validate UTF-8 up front:
+   truncation, bad continuation, overlongs, encoded surrogates, and
+   >U+10FFFF all refuse (CXER0100), so no invalid byte can reach a
+   name, value, or the canonical byte stream. Non-name codepoints
+   (`[© 1]`) keep routing to the array/text lane. Differential
+   unchanged (both engines moved together; namechar fork green).
+   OPEN half: NFC normalization of names (L23 second half) — BLOCKED
+   on the UCD source files (owner asked a/b on downloading them);
+   until it lands, NFC-vs-NFD spellings of one name are two names.
+   MUST land before the re-bless.
 
 ## Row-2 warts remaining
 
-NFC names ONLY (owner ruled (a) 2026-08-05 — CX-owned generated tables
-from a pinned UCD, generator committed; the last row-2 item).
+NFC name normalization ONLY (owner ruled (a) 2026-08-05 — CX-owned
+generated tables from a pinned UCD, generator committed; BLOCKED on
+the UCD-download a/b question; the last row-2 item).
