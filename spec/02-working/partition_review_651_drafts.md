@@ -8,7 +8,10 @@ CX-generic use cases, no downstream clients).
 
 ---
 
-## §10 — "Make the CX value the universal contract" (+ roadmap Milestone 1 "Semantic core")
+## §10 — RULED 2026-08-04 (L1a / L2a / L3a / L4a) and POSTED
+
+Verdict: https://github.com/cx-home/cx-private/issues/651#issuecomment-5186712253
+Draft retained below until Gate G-A, then this section collapses to the pointer.
 
 **Draft verdict: ACCEPT — as a consolidation spec plus four targeted extensions —
 with one first-principles amendment: identity stays content-only; the document's
