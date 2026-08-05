@@ -165,7 +165,7 @@ archival guarantee, §12 bindings story). Phase 3 drafted:
 `partition_impl_PLAN.md` — spec waves S0–S4 (all 22 stream specs inside the
 gate, dependency-ordered) + implementation phases I0–I6 (seams → identity
 epoch → Ring-0 extraction byte-for-byte → Ring 1/2 split → profiles →
-streams → M5 proof). Awaiting Gate G-C.
+streams → M5 proof). **GATE G-C PASSED 2026-08-05.** Execution order: spec waves S0–S4 (owner approval per spec), then implementation phases I0–I6.
 
 ## Decision log
 
