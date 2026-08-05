@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -522,6 +522,37 @@ check-no-adr-citations:
 .PHONY: check-no-stub-impl
 check-no-stub-impl:
 	@python3 scripts/check_no_stub_impl.py
+
+# ── RING IMPORT GATE (partition spec §3, phase I0) — the ring import contract,
+# enforced grep-level, zero-tolerance. Lands BEFORE any code moves so the seam
+# can never regress silently. As of I0 it gates the structurally-clean Ring-0
+# sink invariant (vcx/cx imports nothing internal — the §7 byte-for-byte
+# extraction precondition); the Ring-1/2 split inside vcx/code is gated at I3.
+.PHONY: ring-import-gate
+ring-import-gate:
+	@bash scripts/ring_import_gate.sh
+
+# ── GATES MANIFEST GATE (corpus audit G17) — validate conformance/gates.cxd:
+# it parses, every gate= value is in-enum, and every [module name=X] row
+# resolves (suite-aware) to a real fixture. Nothing else validated this policy
+# file, and it governs whether every OTHER fixture blocks its gate.
+.PHONY: gates-manifest-gate
+gates-manifest-gate:
+	@bash scripts/gates_manifest_gate.sh
+
+# ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
+# ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
+# LANE=doc|eval|both, FORMAT=summary|ids|count. `ring-tag-gate` is the
+# no-parameter run wired into TEST_TARGETS: it hard-fails (exit 2) when any
+# suite header lacks ring= — an untagged suite silently falls out of every
+# ring lane, which is exactly how C8's blanket-tag defect went unseen.
+.PHONY: ring-query ring-tag-gate
+ring-query: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ring-query:
+	@"$(CX_BIN)" scripts/ring_query.cx --allow-read --allow-env --allow-write
+ring-tag-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ring-tag-gate: build-vcx
+	@FORMAT=count "$(CX_BIN)" scripts/ring_query.cx --allow-read --allow-env --allow-write >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; lanes queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
 # (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and

@@ -15,11 +15,17 @@ double as M5 substrate.
 
 ## §1. Corpus census and the ring discriminator
 
-The corpus lives at `conformance/`: 28 top-level suites (1605 cases),
-54 stdlib suites under `conformance/stdlib/` (2522 cases), the fixture
+The corpus lives at `conformance/`: 26 top-level suites (1626 cases),
+53 stdlib suites under `conformance/stdlib/` (2522 cases), the fixture
 schema `conformance/fixtures.cxs`, the gate-policy manifest
 `conformance/gates.cxd` (zero cases — policy, not fixtures), and module
-scaffolding under `conformance/fixtures/module/`.
+scaffolding under `conformance/fixtures/module/`. (Census figures
+re-verified 2026-08-05 by three independent methods — text scan,
+parsed-element count via `scripts/ring_query.cx`, per-file sum — after
+the adversarial audit flagged drift in the suite counts; 4127 total
+cases stood at the audit date, and the G1/G4 gap-closure families
+landed at I0 — `identity_hash.cxd` 15 + `ast_bin.cxd` 6 — bring the
+append-only total to 4148.)
 
 Ring tags are assigned by two independent, mechanical signals that agree:
 
@@ -33,7 +39,7 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 
 ## §2. Ring tagging (normative once approved)
 
-### Ring 0 — 20 families, ~493 cases (the extraction-gate corpus)
+### Ring 0 — 22 families, 514 cases + `binding_api.cxd`'s 17 Ring-0 cases (the extraction-gate corpus, 531 total; the `code.cxd` parse lane rides on top — see MIXED)
 
 | Family | Exercises | Cases |
 |---|---|---|
@@ -52,6 +58,8 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 | `diff.cxd` | structural diff (two-operand `in-a`/`in-b` form) | 17 |
 | `lint.cxd` | CX-L001/003/004/005 | 17 |
 | `data_bin_arrow.cxd` | CXCol↔Arrow round-trip — see Q6 (runner imports `arrow`) | 14 |
+| `identity_hash.cxd` | Tier-1 content hash: blessed digests + pair equality (G1 closure, landed I0) | 15 |
+| `ast_bin.cxd` | binary-AST codec: golden bytes + round-trip (G4 closure, landed I0) | 6 |
 | `streaming_write.cxd` | streaming-write events, W001–W013 — see G12 (no V lane) | 17 |
 
 ### MIXED — split by lane, not by case
@@ -70,20 +78,38 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 - **`binding_api.cxd` (49 cases)** — Layer-1 Document API parity.
   parse/emit/canonical/hash/diff/validate calls are Ring 0; CXPath
   select/modify calls are Ring 1. Split per-case on the `call` line.
+  **Landed (I0):** 32 evaluation-dependent cases (eval / select /
+  select-all / modify chains, incl. the `spawn`-wrapped select) carry
+  `ring=1`; the remaining 17 (parse/bytes/hash/equals/find-all/
+  accessor) inherit the suite's `ring=0`.
 
-### Ring 1 — ~1605 cases
+### Ring 1 — 1990 doc-lane cases (+ the 989-case `code.cxd` eval lane)
 
-`xpath_31_parity.cxd` (23), `code_diagram.cxd` (51), `code.cxd` eval lane,
-and the pure/local stdlib families: bytes, crypto, csv, cx, format, fp, ft,
-geo, hash, html, i18n, json, jsonrpc, jsonschema, locale, log, math, mime,
-path, prof, random, re, sched, similar, strings, test, time, url, uuid,
-validate. Pending Q4/Q5: env, io, process, and the http client surface.
+`xpath_31_parity.cxd` (23), `code_diagram.cxd` (51), `binding_api.cxd`'s
+32 evaluation-dependent cases, and the pure/local stdlib families: bytes,
+crypto, csv, cx, format, fp, ft, geo, hash, html, i18n, json, jsonrpc,
+jsonschema, locale, log, math, mime, path, prof, random, re, sched,
+similar, strings, test, time, url, uuid, validate, **plus the x-tier
+Ring-1 packs run, mcp, a2a, llm (21 cases; RETAGGED 2026-08-05, audit
+M2: the agent-tool-projection stream's x-tier ring placement — Ring-1
+packs, mcp-server/a2a-xap staying Ring 2 — post-dates this audit's
+original Ring-2 placement and applied the partition's §10 membership
+test; its ruling wins and the four suite headers now carry `ring=1`)**. Q4/Q5 resolved and
+landed: env, process, and io are Ring 1 (io's three watch cases
+io-105/106/107 carry `ring=2` per the partition's watch→Ring-2
+placement, cx_partition.md §2); the http CLIENT surface — 47 cases:
+response/request accessors, client construction, one-shot verbs,
+scheme/arg validation, `send`, and the SSE client (`sse-source` /
+`sse-connect` / `sse-events`) — carries `ring=1`.
 
-### Ring 2 — ~703 cases
+### Ring 2 — 638 doc-lane cases
 
-a2a, a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/tooling
-surface per Q5), journal, llm, mcp, mcp-server, net, run, session, store,
-xap-compose, xap-dist, xsp-auth.
+a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/
+tooling surface: serve/listen/accept/exchange/respond/stop + the SSE
+server side, the suite default), journal, mcp-server, net,
+session, store, xap-compose, xap-dist, xsp-auth, plus io's three
+watch cases. (a2a, llm, mcp, run moved to Ring 1 per audit M2 — see
+above.)
 
 ### Tagging mechanics (Q2)
 
@@ -93,8 +119,14 @@ precedent), admitted without schema break (`fixtures.cxs` is
 `schema-mode open`). The Ring-N lane is then a corpus query, never a
 maintained external list — the corpus is append-only (partition §8), so an
 external list would drift by construction. MIXED families tag at case/lane
-granularity: `code.cxd` tags `ring=0` with the eval lane elevating to 1;
-`binding_api.cxd` tags per-case.
+granularity: `binding_api.cxd` tags per-case; `code.cxd` tags `ring=0`
+with `eval-ring=1` on the suite header — the machine-readable lane
+discriminator, since the eval lane is defined by the CONSUMER (the two
+gates), not by any per-case property. **The corpus query is
+`scripts/ring_query.cx`** (env-var interface `RING`/`LANE`/`FORMAT`; run
+from the repo root): it implements the resolution order and the
+`eval-ring` lane semantics, and doubles as the tagging-completeness gate
+— any suite header without `ring=` is a hard failure (exit 2).
 
 ## §3. Coverage map — normative specs × corpus
 
@@ -119,10 +151,10 @@ corpus additions (sequencing behind a live consumer, not a scope cut).
 
 | # | Gap | Evidence | Disposition (recommended) |
 |---|---|---|---|
-| G1 | **Tier-1 identity hash: ZERO corpus fixtures.** No `out-hash`/`expect-hash`/digest assertion in any of 4127 cases; §7's byte-for-byte gate names hashes but cannot be executed from the corpus. `data`-profile verbs `hash` and `eq` have no fixtures. (`stdlib/hash.cxd` is the Ring-1 `$hash:*` module, not this.) | census | **Pre-I1.** New `identity_hash.cxd` family: `out-hash` on single cases + pair cases per Q3. M5 commerce docs as substrate. |
+| G1 | **Tier-1 identity hash: ZERO corpus fixtures.** No `out-hash`/`expect-hash`/digest assertion in any of 4127 cases; §7's byte-for-byte gate names hashes but cannot be executed from the corpus. `data`-profile verbs `hash` and `eq` have no fixtures. (`stdlib/hash.cxd` is the Ring-1 `$hash:*` module, not this.) | census | **CLOSED at I0 (2026-08-05, C8 repair; promoted from pre-I1).** `identity_hash.cxd` landed: 5 blessed-digest singles + 10 pair cases (`out-hash-eq`), M5 commerce substrate; runner lanes `out_hash` + the pair form in `conformance_run.v`; wired as `conform-identity-hash` and into the runner's default set. The authoring pass surfaced and fixed a spec contradiction: `binding_api`-005/-101 asserted attr-order-insensitive equals/hash against canonical.md's never-normalize-attr-order rule. |
 | G2 | **Tier-2 pair-properties live only in V tests** — code-identity.md §4 says the single-input corpus "cannot express" them; corpus reach is 2 store-routed cases a Ring-0 artifact can't run. | `identity_tier2_*_test.v` (19 tests), `store.cxd:470,484` | **Pre-I1** via Q3 pair-case form. |
 | G3 | **`out-canonical` = 31 assertions** for the largest frozen surface (17 of them ID-adjacent in `identity.cxd`; general canonical-emit coverage ≈ 13). | census | **Pre-I1.** Canonical-emit family expansion authored WITH stream 12 (same rules, one pass): quote-shape selection, number forms, escaping, ordering, idiomatic-layer rules. |
-| G4 | **ast-bin.md: zero fixtures** (V-tests only) — a Ring-0 codec not runnable as a cross-binding gate. | `ast_bin_test.v` | **Pre-I2.** |
+| G4 | **ast-bin.md: zero fixtures** (V-tests only) — a Ring-0 codec not runnable as a cross-binding gate. | `ast_bin_test.v` | **CLOSED at I0 (2026-08-05, C8 repair; promoted from pre-I2).** `ast_bin.cxd` landed: 3 golden-bytes cases (v6 envelope, determinism asserted in-lane) + 3 round-trip cases incl. multi-doc and the v9 table envelope; runner lane `out_ast_bin_hex`; wired as `conform-ast-bin` and into the runner's default set. |
 | G5 | **data-bin byte assertions = 5 emit + 3 decode** for a format frozen at 1.0 (arrow/schema-driven families are round-trip-only, by declared Arrow-instability design). | census | **Pre-I1** (data-bin header/encoding may be touched by the epoch). |
 | G6 | **formatting.md: zero fixtures**; §1's normative purity invariant ("never changes the data") untested. | `fmt_lossless_test.v` only | **Pre-I3** (fmt is Ring 1; must be pinned before the Ring-1/2 split ships `cli`). |
 | G7 | **TOML: 4 emit fixtures, no import fixtures.** VERIFIED 2026-08-05: TOML import IS a shipped surface (`parser_toml.v`, `--from=toml` works) — the import lane is fixtured pre-I2. | probe | **Pre-I2.** |
@@ -152,7 +184,7 @@ carries a Ring-2 optional native dependency (runner imports `arrow`) — Q6.
 | D-XSP-b | WebSocket / WebTransport carriers | xsp.md §5.4, §4 | **Confirm** — same frames, carrier swap, no frame change. |
 | D-XSP-c | **Cross-runtime VC revocation propagation** — "rides the same server↔server channel once defined," and no such channel is specified anywhere. A revoked credential stays honored on peer runtimes indefinitely. | xsp.md §5.4; vc.md §5 3b | **Adopt into stream 4:** the XSP store-profile spec MUST define the server↔server channel and the revocation-propagation profile over it. This is a security hole in Ring 2's single authority model, not a feature gap. |
 | D-MOD | **Found by this audit** (not in the mandate list): live HTTPS module fetch + on-disk cache "deferred per §12.4.2" (`module_loader.v` returns `MODULE_HTTPS_FETCH_DEFERRED`; pkg-url fetch resolves only via registry). | modules spec §12.4.2 | **Confirm** — sequencing behind the Ring-3 distribution/registry consumer (C4, #699); resolver shapes + SRI verification are already spec'd and fixtured, so the deferral is additive. |
-| D-ID | `identity.cxd` v0 self-deferrals: D6 cross-format ID round-trip, **D7 canonical-form ID renaming (canonical-bytes-affecting)**, D3 include-time ID merging, D1 `[ref @id]` body form. Provenance reference in the file is empty ("per )"). | identity.cxd:3–14 | **Adopt D7 into stream 12** (it changes frozen bytes — now or never); **confirm D6/D3/D1** as post-partition tracker issues; recover the elided provenance refs (mechanical audit fix, applies to include/lint suites too). |
+| D-ID | `identity.cxd` v0 self-deferrals: D6 cross-format ID round-trip, **D7 canonical-form ID renaming (canonical-bytes-affecting)**, D3 include-time ID merging, D1 `[ref @id]` body form. Provenance reference in the file is empty ("per )"). | identity.cxd:3–14 | **D7 adoption RETRACTED 2026-08-05 (audit M9):** the "adopt D7 into stream 12" instruction had no receiving content in the stream-12 spec and was already stale when written — D7 SHIPPED as canonical.md §2.7b (see the §5 batch-status staleness note below); a live adoption instruction pointing at nothing would have confused I1 execution. **Confirm D6/D3/D1** as post-partition tracker issues; provenance refs RECOVERED at I0 (n27 pass — identity/lint/include headers repaired on the impl branch). |
 
 ## §6. Structural rulings — RULED
 
@@ -166,7 +198,9 @@ data_bin_arrow fixtures are Ring 0 with a dlopen-gated, visibly-skipping
 lane; the §4 gap-disposition table is ratified as drafted; deferrals:
 D-C1 confirmed w/ streams-4/6 coherence mandate, D-DBG confirmed w/ the
 tape-completeness fixture mandate, D-T2X confirmed, D-XSP items 1–2
-confirmed + item 3 ADOPTED into stream 4, D-ID: D7 adopted into stream 12
+confirmed + item 3 ADOPTED into stream 4, D-ID: ~~D7 adopted into stream
+12~~ (RETRACTED 2026-08-05, audit M9 — no receiving content; D7 already
+shipped as canonical.md §2.7b, per item 3 of the batch status below)
 + D6/D3/D1 confirmed as post-partition tracker issues + provenance refs
 recovered, D-MOD confirmed. Recorded in the campaign decision log.
 
@@ -182,8 +216,18 @@ recovered, D-MOD confirmed. Recorded in the campaign decision log.
    partially so. Recovery = repoint at cxdm.md §4 + reconcile claims;
    file edit applies at I0 with the ring-tagging pass (corpus files
    feed gate baselines).
-4. G16 grammar-production traceability map (with stream 13; stream 22
-   adds the rule→witness second axis via `rule=` beside `ring=`).
+4. G16 grammar-production traceability map — **SCOPED 2026-08-05 (I0).**
+   Inputs inventoried: 310 production ids (265 grammar.ebnf + 45
+   lexicon.ebnf) and 112 witness rows (`vcx/tests/formal/witnesses.txt`).
+   **The map is NOT mechanically derivable today:** witness ids are
+   symbolic rule FAMILIES (`LX-INT`, `GR-*`, `M-*`, `G-*`), not the
+   bracketed production ids (`[L20]`, `[55]`) — the correspondence is
+   judgment work, which is why it is authored WITH stream 13's grammar
+   review (a prefix-match script would manufacture false coverage
+   signal — declined per the honest-reporting posture). Stream 22 adds
+   the eval-rule→witness second axis via `rule=` beside `ring=`. The
+   G17 (`gates_manifest_gate.sh`) and G18 (`cxer_registry_report.sh`)
+   validators from this queue ARE landed at I0.
 5. Ring-tag application (`ring=` attributes) — lands at I0 with the gates.
 6. Fixture families added by later streams are ring-tagged on entry
    (append-only corpus discipline).

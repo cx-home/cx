@@ -35,6 +35,51 @@ TERMS=(
 
 pattern="$(IFS='|'; echo "${TERMS[*]}")"
 
+# ── --gh-metadata mode (audit C10; owner-authorized 2026-08-05) ──────────────
+# The tracked-file gate is structurally blind to GitHub METADATA — labels,
+# issue/PR bodies, and comments — which a future export tool might carry (the
+# same public-mirror reasoning as the tree gate). This mode scans all of it
+# via the bulk REST endpoints. It needs `gh` + network, so it is SCHEDULED /
+# on-demand, never wired into per-commit TEST_TARGETS:
+#
+#   scripts/check_no_consumer_terms.sh --gh-metadata
+#
+# Scope: every label name+description, every issue and PR body+title (the
+# /issues listing includes PRs), every issue comment, every PR review comment.
+if [ "${1:-}" = "--gh-metadata" ]; then
+	command -v gh >/dev/null || { echo "check-no-consumer-terms(gh): FAIL — gh CLI not available"; exit 2; }
+	repo="$(gh repo view --json nameWithOwner -q .nameWithOwner)" || { echo "check-no-consumer-terms(gh): FAIL — cannot resolve repo"; exit 2; }
+	fail=0
+	scan() { # $1=lane-name  $2=jq-projection  $3=endpoint
+		local out status
+		out="$(gh api "$3" --paginate -q "$2" 2>&1)"
+		status=$?
+		if [ $status -ne 0 ]; then
+			echo "check-no-consumer-terms(gh): FAIL — $1 fetch errored; refusing a vacuous pass"
+			echo "$out" | head -3
+			fail=2
+			return
+		fi
+		local hits
+		hits="$(printf '%s\n' "$out" | grep -inE "$pattern")"
+		if [ -n "$hits" ]; then
+			echo "check-no-consumer-terms(gh): FAIL — consumer-identifying terms in $1:"
+			echo "$hits" | head -20
+			fail=1
+		fi
+	}
+	scan "labels"             '.[] | "label \(.name) :: \(.description // "")"'                       "repos/$repo/labels"
+	scan "issue/PR bodies"    '.[] | "#\(.number) \(.title) :: \(.body // "" | gsub("\n"; " "))"'      "repos/$repo/issues?state=all"
+	scan "issue comments"     '.[] | "comment \(.id) (\(.html_url)) :: \(.body // "" | gsub("\n"; " "))"' "repos/$repo/issues/comments"
+	scan "PR review comments" '.[] | "review-comment \(.id) (\(.html_url)) :: \(.body // "" | gsub("\n"; " "))"' "repos/$repo/pulls/comments"
+	if [ "$fail" -ne 0 ]; then
+		echo "(policy: sanitize to CX-generic wording; edit the offending metadata in place)"
+		exit "$fail"
+	fi
+	echo "check-no-consumer-terms(gh): OK — no consumer-identifying terms in labels, issue/PR bodies, or comments"
+	exit 0
+fi
+
 # Tracked files only (a release cut ships tracked content); skip vendored
 # code, archives, and this gate itself (it must name the terms it bans).
 #
