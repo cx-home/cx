@@ -61,7 +61,19 @@ Layer 1–6 model determine where the #516 ring seams can legitimately cut.
 - Seam-first verdict order: §10, §12, §13, §14, layering — then §1–§9, §15,
   roadmap milestones.
 - Every verdict records: accept/reject/defer + rationale + **ring assignment**
-  (which ring owns it; what dependency contract accepting it implies).
+  (which ring owns it; what dependency contract accepting it implies) +
+  **business value case** (below).
+- **Business value case (owner directive 2026-08-04):** every ACCEPT must
+  state the tangible, material outcome — the capability a consumer gains that
+  they cannot approximate today — as concrete use cases and benefits. The bar
+  is *revolutionary territory, not incremental*: if the honest case for a
+  recommendation is "somewhat better than the status quo," that is evidence
+  for REJECT or DEFER, not for a softer accept. Named use cases must be
+  CX-generic (industry-recognizable workloads); **no specific downstream
+  clients may be mentioned** — the sanitization gate applies to this campaign's
+  documents and tracker comments exactly as it does everywhere else. A verdict
+  whose business case cannot be written without naming a downstream consumer
+  is not ready to be ruled.
 - The Layer 1–6 ↔ Ring 0–3 reconciliation is written as its own verdict, in a
   form liftable into the partition spec's boundary table.
 - Evidence gathered alongside: the vcx
@@ -112,6 +124,7 @@ assumed.)
 | 2026-08-04 | **Branch/merge model** as in Ground rules above (maintenance line stable; ONE campaign branch `design/651-516-partition` for all plan+spec work on both issues, superseding a briefly-created two-branch split the same day; implementation branches later cut off the campaign branch; merge target at gate time; hard spec-before-implementation gate). | This campaign. |
 | 2026-08-04 | **Verdict sequencing seam-first** (§10, §12, §13, §14, layering before §4–§8), each verdict carrying a ring assignment. | Phase 1 execution. |
 | 2026-08-04 | **Evaluation criteria codified** (section above): first principles; long-term health of CX + consumers; agent–principal symbiosis as north star; timely and marketable. Likely the last foundational pass before production downstream consumers — depth over speed. | Every verdict and G-decision in this campaign. |
+| 2026-08-04 | **Business value case required on every ACCEPT** (Phase 1 bullet above): tangible + material outcome, revolutionary-not-incremental bar, concrete CX-generic use cases and benefits; "somewhat better" is evidence for reject/defer. No specific downstream clients named, ever. | Every #651 verdict; carries into #516 G-decisions. |
 
 ## Known extraction risks — ANSWERED by the import audit (2026-08-04)
 
