@@ -22,6 +22,30 @@
    work and a phased implementation plan with gates, for BOTH issues, must be
    done before any implementation begins.
 
+## Evaluation criteria (owner directive 2026-08-04)
+
+This campaign is likely the last foundational pass on CX before production
+downstream consumers. Every verdict and G-decision is argued against these
+criteria, in this order:
+
+1. **First principles.** Argue from the problem and CX's own invariants
+   (homoiconic value model, canonical identity, fail-loud, single surface —
+   no dual-accept), never from incumbents' shapes or the reviewed document's
+   authority. The document is input, not precedent.
+2. **Long-term health of CX and its consumers.** A direction that helps this
+   release but constrains the platform's decade is wrong. Consumer experience
+   — one-command install, byte-stable identity, additive-only evolution — is
+   part of platform health, not packaging gloss.
+3. **Agent–principal symbiosis.** The north star: humans (principals) and
+   agents operate on one typed semantic surface, with authority explicit,
+   attenuable, and auditable (DID principals + capabilities, already live in
+   XAP's identity model). Each verdict weighs whether the direction
+   strengthens or muddies that symbiosis.
+4. **Timely and marketable.** The result must yield artifacts an adopter can
+   want *now* (the small data-format on-ramp) and a claim the market can
+   repeat. Design purity that cannot be shipped or explained fails this
+   criterion — as does marketability that borrows against criterion 2.
+
 ## Sequencing
 
 #651 runs first; #516's partition spec consumes its verdicts (plus #37's
@@ -87,6 +111,7 @@ assumed.)
 | 2026-08-04 | **Ring 0/1 seam = representation vs. interpretation.** The parser (full grammar including program forms), node kinds, canonical identity, codecs, emitters, diff, schema/validate sit in Ring 0; evaluation, purity, stdlib sit in Ring 1. The grammar is never forked — cxparse unification ("one engine") is the partition's foundation. Canonical hashes must be product-independent. The data product differentiates by link surface + data-only CLI verbs + an opt-in "data profile" validation (post-parse node-kind predicate, not a parser mode). | Partition spec boundary section; feeds #516 G-decision (c). |
 | 2026-08-04 | **Branch/merge model** as in Ground rules above (maintenance line stable; ONE campaign branch `design/651-516-partition` for all plan+spec work on both issues, superseding a briefly-created two-branch split the same day; implementation branches later cut off the campaign branch; merge target at gate time; hard spec-before-implementation gate). | This campaign. |
 | 2026-08-04 | **Verdict sequencing seam-first** (§10, §12, §13, §14, layering before §4–§8), each verdict carrying a ring assignment. | Phase 1 execution. |
+| 2026-08-04 | **Evaluation criteria codified** (section above): first principles; long-term health of CX + consumers; agent–principal symbiosis as north star; timely and marketable. Likely the last foundational pass before production downstream consumers — depth over speed. | Every verdict and G-decision in this campaign. |
 
 ## Known extraction risks (to be confirmed by the audit)
 
