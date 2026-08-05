@@ -45,7 +45,12 @@ unchanged until I2 completes.
 
 - **G-A** (passed 2026-08-04/05): verdicts + streams filed + G-decisions.
 - **G-B** (passed 2026-08-05): partition spec approved.
-- **Wave exits:** per-spec owner approvals, S0→S4.
+- **Wave exits:** per-spec owner approvals, S0→S4. **ALL FOUR WAVES
+  EXITED 2026-08-05** — 22 stream specs finalized under the standing
+  acceptance ruling (letters 1–189; decision log). Spec authoring
+  (Part A) is COMPLETE. Defect issues #701–#720 filed along the way,
+  each dispositioned to a phase (I0/I1/I2/I3/I5). **Implementation may
+  begin at I0.**
 - **G-C:** owner approval of this plan → implementation may begin at I0.
 - **Phase exits:** as tabled; every phase green on full corpus + import
   gates before the next begins.
