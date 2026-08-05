@@ -146,7 +146,7 @@ done
 
 # --- #57 FIELD SHAPE: DEFAULT-env multi-reactor serve + busy ALLOCATING MAIN thread ---
 # No CX_HTTP_N / CX_WORKER_THREADS overrides: this is the stock posture the field
-# workload (xap-marine) runs — reactors at the default fan-out plus the main thread
+# workload (the external reference instance) runs — reactors at the default fan-out plus the main thread
 # evaluating an allocation-heavy loop. Multi-mutator by default; previously uncovered.
 if command -v wrk >/dev/null 2>&1; then
   for r in $(seq 1 $ROUNDS); do
