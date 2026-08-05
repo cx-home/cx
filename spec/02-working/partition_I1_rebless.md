@@ -253,8 +253,29 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    map. Census unchanged at the ledgered reds; ROWS 1 AND 16 ARE
    COMPLETE.
 
+19. Row 3 core (stream 19, L31/L32/L35/L38): SELF-DESCRIBING addresses
+   — cx_text_hash / cx_text_hash_algo / cx_data_bin_hash return
+   `<multiformats-name>:<hex>` (sha2-256 default; the ONE registry in
+   hash_registry.v with codes/lengths/status); legacy `sha256`/`b3`
+   spellings fail loud (no dual-accept); bare hex REJECTED
+   (cx_parse_tagged_address, CXER0130-32); varint multihash bijection
+   (encode/decode, sha2-256=0x12 0x20…); Tier-2 composes
+   `code:sha2-256:<hex>` (namespace outermost); journal migrates to
+   registry names + the algo-neutral `genesis:` sentinel (L38);
+   store keys ride the tagged form automatically (put-doc =
+   cx_text_hash). Journal red class extends by 3 (spelling movers,
+   same re-bless class); canonical battery 8/8, identity lanes
+   unchanged. Shape validators migrated: store_is_doc_hash +
+   grpc_list_hashes ride cx_parse_tagged_address (the gRPC store plane
+   round-trips tagged addresses end-to-end); the service secret-hash
+   accepts `sha2-256:` only. V-test len-64 pins re-blessed to the
+   73-char tagged form. REMAINING row 3: verifier fail-closed sweeps
+   (#702 — VC type=, pkg-verify registry lookup), SRI registry
+   unification, XSP-AUTH suite field + HKDF /2/ bump, provenance
+   suite slot, pack u16 + data-bin 0x13.
+
 ## Remaining epoch work
 
-Rows 3 (self-describing addresses, stream 19), 4-7, 8-9 (oph/idh-026/
-cx-094 pins flip), 10-15, then spec-edit maps + the ONE re-bless with
-the old→new mapping file + registry re-seal.
+Row-3 tail (verifiers/SRI/XSP/provenance/pack — above), rows 4-7, 8-9
+(oph/idh-026/cx-094 pins flip), 10-15, then spec-edit maps + the ONE
+re-bless with the old→new mapping file + registry re-seal.
