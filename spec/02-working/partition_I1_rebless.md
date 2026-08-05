@@ -39,3 +39,12 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
 2. W-7/L20 UTC-Z datetime normalization (row 2) — instant identity.
 3. Datetime/date typing precedes the float arm (row 2 companion) — fractional
    temporals type correctly everywhere; closes the quoted-attr residual.
+4. W-19/L24 duplicate attrs incl. xmlns = parse error `cx-err:E214` (row 2) —
+   parse gate green, no corpus reliance. SPEC-EDIT OBLIGATION: E214 row into
+   cxdm.md's error table (rides the epoch's spec-edit-map execution).
+
+## Row-2 warts remaining
+
+redundant-annotation strip · quote tiebreak · NFC names (needs a Ring-0 NFC
+table decision) · multi-doc addresses · CX-owned Ryū audit · triquote-never-
+canonical check.
