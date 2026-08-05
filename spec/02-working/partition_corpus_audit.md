@@ -15,7 +15,7 @@ double as M5 substrate.
 
 ## §1. Corpus census and the ring discriminator
 
-The corpus lives at `conformance/`: 24 top-level suites (1605 cases),
+The corpus lives at `conformance/`: 26 top-level suites (1626 cases),
 53 stdlib suites under `conformance/stdlib/` (2522 cases), the fixture
 schema `conformance/fixtures.cxs`, the gate-policy manifest
 `conformance/gates.cxd` (zero cases — policy, not fixtures), and module
@@ -23,7 +23,9 @@ scaffolding under `conformance/fixtures/module/`. (Census figures
 re-verified 2026-08-05 by three independent methods — text scan,
 parsed-element count via `scripts/ring_query.cx`, per-file sum — after
 the adversarial audit flagged drift in the suite counts; 4127 total
-cases stands.)
+cases stood at the audit date, and the G1/G4 gap-closure families
+landed at I0 — `identity_hash.cxd` 15 + `ast_bin.cxd` 6 — bring the
+append-only total to 4148.)
 
 Ring tags are assigned by two independent, mechanical signals that agree:
 
@@ -37,7 +39,7 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 
 ## §2. Ring tagging (normative once approved)
 
-### Ring 0 — 20 families, 493 cases + `binding_api.cxd`'s 17 Ring-0 cases (the extraction-gate corpus, 510 total; the `code.cxd` parse lane rides on top — see MIXED)
+### Ring 0 — 22 families, 514 cases + `binding_api.cxd`'s 17 Ring-0 cases (the extraction-gate corpus, 531 total; the `code.cxd` parse lane rides on top — see MIXED)
 
 | Family | Exercises | Cases |
 |---|---|---|
@@ -56,6 +58,8 @@ Ring tags are assigned by two independent, mechanical signals that agree:
 | `diff.cxd` | structural diff (two-operand `in-a`/`in-b` form) | 17 |
 | `lint.cxd` | CX-L001/003/004/005 | 17 |
 | `data_bin_arrow.cxd` | CXCol↔Arrow round-trip — see Q6 (runner imports `arrow`) | 14 |
+| `identity_hash.cxd` | Tier-1 content hash: blessed digests + pair equality (G1 closure, landed I0) | 15 |
+| `ast_bin.cxd` | binary-AST codec: golden bytes + round-trip (G4 closure, landed I0) | 6 |
 | `streaming_write.cxd` | streaming-write events, W001–W013 — see G12 (no V lane) | 17 |
 
 ### MIXED — split by lane, not by case
@@ -141,10 +145,10 @@ corpus additions (sequencing behind a live consumer, not a scope cut).
 
 | # | Gap | Evidence | Disposition (recommended) |
 |---|---|---|---|
-| G1 | **Tier-1 identity hash: ZERO corpus fixtures.** No `out-hash`/`expect-hash`/digest assertion in any of 4127 cases; §7's byte-for-byte gate names hashes but cannot be executed from the corpus. `data`-profile verbs `hash` and `eq` have no fixtures. (`stdlib/hash.cxd` is the Ring-1 `$hash:*` module, not this.) | census | **Pre-I1.** New `identity_hash.cxd` family: `out-hash` on single cases + pair cases per Q3. M5 commerce docs as substrate. |
+| G1 | **Tier-1 identity hash: ZERO corpus fixtures.** No `out-hash`/`expect-hash`/digest assertion in any of 4127 cases; §7's byte-for-byte gate names hashes but cannot be executed from the corpus. `data`-profile verbs `hash` and `eq` have no fixtures. (`stdlib/hash.cxd` is the Ring-1 `$hash:*` module, not this.) | census | **CLOSED at I0 (2026-08-05, C8 repair; promoted from pre-I1).** `identity_hash.cxd` landed: 5 blessed-digest singles + 10 pair cases (`out-hash-eq`), M5 commerce substrate; runner lanes `out_hash` + the pair form in `conformance_run.v`; wired as `conform-identity-hash` and into the runner's default set. The authoring pass surfaced and fixed a spec contradiction: `binding_api`-005/-101 asserted attr-order-insensitive equals/hash against canonical.md's never-normalize-attr-order rule. |
 | G2 | **Tier-2 pair-properties live only in V tests** — code-identity.md §4 says the single-input corpus "cannot express" them; corpus reach is 2 store-routed cases a Ring-0 artifact can't run. | `identity_tier2_*_test.v` (19 tests), `store.cxd:470,484` | **Pre-I1** via Q3 pair-case form. |
 | G3 | **`out-canonical` = 31 assertions** for the largest frozen surface (17 of them ID-adjacent in `identity.cxd`; general canonical-emit coverage ≈ 13). | census | **Pre-I1.** Canonical-emit family expansion authored WITH stream 12 (same rules, one pass): quote-shape selection, number forms, escaping, ordering, idiomatic-layer rules. |
-| G4 | **ast-bin.md: zero fixtures** (V-tests only) — a Ring-0 codec not runnable as a cross-binding gate. | `ast_bin_test.v` | **Pre-I2.** |
+| G4 | **ast-bin.md: zero fixtures** (V-tests only) — a Ring-0 codec not runnable as a cross-binding gate. | `ast_bin_test.v` | **CLOSED at I0 (2026-08-05, C8 repair; promoted from pre-I2).** `ast_bin.cxd` landed: 3 golden-bytes cases (v6 envelope, determinism asserted in-lane) + 3 round-trip cases incl. multi-doc and the v9 table envelope; runner lane `out_ast_bin_hex`; wired as `conform-ast-bin` and into the runner's default set. |
 | G5 | **data-bin byte assertions = 5 emit + 3 decode** for a format frozen at 1.0 (arrow/schema-driven families are round-trip-only, by declared Arrow-instability design). | census | **Pre-I1** (data-bin header/encoding may be touched by the epoch). |
 | G6 | **formatting.md: zero fixtures**; §1's normative purity invariant ("never changes the data") untested. | `fmt_lossless_test.v` only | **Pre-I3** (fmt is Ring 1; must be pinned before the Ring-1/2 split ships `cli`). |
 | G7 | **TOML: 4 emit fixtures, no import fixtures.** VERIFIED 2026-08-05: TOML import IS a shipped surface (`parser_toml.v`, `--from=toml` works) — the import lane is fixtured pre-I2. | probe | **Pre-I2.** |
