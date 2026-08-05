@@ -86,10 +86,24 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    same helper, so data-bin and text lanes hash one logical document
    identically (its digests were never pinned — invariance-only use).
    Zero corpus movers; gates at the same ledgered reds.
+9. CX-owned Ryū L18 (row 2, W-14-float) + W-3: float bytes are Ring-0-
+   owned — ryu_f64.v vendors the shortest-digits core + pow5 tables from
+   the pinned V fork's strconv (MIT; FROZEN — never re-sync without an
+   identity migration) and renders §2.5 exactly: mandatory decimal
+   point, sci only when STRICTLY shorter (tie → fixed: `0.0001`),
+   `1.0e10` mantissa-dot form, bare lowercase exponent (`1.0e-7`, was
+   V's `1e-07`), `-0.0` distinct, subnormals exact. Spellings converge:
+   `1e10` ≡ `1.0e10` ≡ `10000000000.0` (one address). W-3: non-finite
+   floats have NO canonical form — reject_nonfinite_floats errors the
+   canonical/hash lane (§1.3), and `::float` coercion of an overflowing
+   literal fails loud at parse (CXER0109). Zero corpus movers (corpus
+   floats are all simple fixed forms); float-form pins live in
+   canonical_float_test.v.
 
 ## Row-2 warts remaining
 
 NFC names (owner ruled (a) 2026-08-05 — CX-owned generated tables from a
-pinned UCD, generator committed; implement at this row) · CX-owned Ryū
-audit (L18, incl. W-3 NaN/±Inf loud rejection — `1e400` still emits
-`+inf.0` today) · whitespace-only string residual (see commit-7 note).
+pinned UCD, generator committed; implement at this row) · whitespace-only
+string residual (owner ruled (a) 2026-08-05: preserve quoted
+whitespace-only strings; XML-import strips its layout whitespace at
+IMPORT — implement as the W-6 companion).
