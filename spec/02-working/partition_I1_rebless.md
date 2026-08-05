@@ -204,6 +204,20 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    transcendentals on decimal reject with the generic CXER0100
    signature message — the promised CXER3002-specific code rides the
    math re-bless commit.
+16. Row 16 (L46): data-bin wire tags 0x18 (bigint) / 0x28 (decimal) —
+   the kinds ride the wire as length-prefixed base-10 images and are
+   NEVER erased (narrowing-within-kind: an in-i64 bigint encodes 0x18,
+   not 0x13). Kind-aware projection (scalar_node_to_dataval /
+   attr_to_dataval replace the value-only lane at the four ScalarNode/
+   Attribute sites); decode restores the head ascription on scalar
+   bodies (the annotation-strip pass sheds it when redundant — the
+   existing fixpoint). ast-bin's table-cell kind set widens to include
+   decimal/bigint (images ride the string cell slot; the COLUMN type
+   carries the kind — full columnar fidelity is I5's lattice, the M23
+   advisory window as declared). cx_data_bin_hash now agrees with
+   cx_text_hash for decimal/bigint-bearing docs. ch-008…011 stayed
+   BYTE-IDENTICAL (the proven-untouched-kinds regression guard held).
+   Zero new corpus movers beyond the ledgered 2b wave.
 
 ## Row-2 warts remaining
 
