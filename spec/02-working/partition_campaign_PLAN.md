@@ -156,6 +156,12 @@ Adjacent (not gate-bound): #700 test-suite duration relief — maintenance-line
 tooling, immediate; per-ring gates land with the partition as the structural
 fix.
 
+## Phase 2 status
+
+Partition spec drafted: `spec/02-working/cx_partition.md` (all letters
+resolved — P1a lockstep versioning, P2a Windows tier-2). Awaiting Gate G-B
+(owner approval, user-only). Phase 3 (implementation plan) follows G-B.
+
 ## Decision log
 
 | Date | Decision | Where it binds |
