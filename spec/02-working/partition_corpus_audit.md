@@ -182,8 +182,18 @@ recovered, D-MOD confirmed. Recorded in the campaign decision log.
    partially so. Recovery = repoint at cxdm.md §4 + reconcile claims;
    file edit applies at I0 with the ring-tagging pass (corpus files
    feed gate baselines).
-4. G16 grammar-production traceability map (with stream 13; stream 22
-   adds the rule→witness second axis via `rule=` beside `ring=`).
+4. G16 grammar-production traceability map — **SCOPED 2026-08-05 (I0).**
+   Inputs inventoried: 310 production ids (265 grammar.ebnf + 45
+   lexicon.ebnf) and 112 witness rows (`vcx/tests/formal/witnesses.txt`).
+   **The map is NOT mechanically derivable today:** witness ids are
+   symbolic rule FAMILIES (`LX-INT`, `GR-*`, `M-*`, `G-*`), not the
+   bracketed production ids (`[L20]`, `[55]`) — the correspondence is
+   judgment work, which is why it is authored WITH stream 13's grammar
+   review (a prefix-match script would manufacture false coverage
+   signal — declined per the honest-reporting posture). Stream 22 adds
+   the eval-rule→witness second axis via `rule=` beside `ring=`. The
+   G17 (`gates_manifest_gate.sh`) and G18 (`cxer_registry_report.sh`)
+   validators from this queue ARE landed at I0.
 5. Ring-tag application (`ring=` attributes) — lands at I0 with the gates.
 6. Fixture families added by later streams are ring-tagged on entry
    (append-only corpus discipline).
