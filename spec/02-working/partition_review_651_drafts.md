@@ -301,7 +301,10 @@ drivers, and a protocol zoo to parse a config file.
 
 ---
 
-## §1–§9, §15, Milestones — batch drafts (letters L9, L10 pending)
+## §1–§9, §15, Milestones — RULED 2026-08-04 (L9a, L10a) and POSTED
+
+Verdict: https://github.com/cx-home/cx-private/issues/651#issuecomment-5187137263
+ALL SECTIONS OF THE REVIEW NOW RULED. Drafts below retained until G-A.
 
 ### §1 One semantic identity per concept — ACCEPT (settled by §10)
 Content-only identity + E2 type identity + attachment lanes ARE this
