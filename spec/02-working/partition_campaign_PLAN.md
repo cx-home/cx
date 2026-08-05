@@ -144,6 +144,18 @@ silently drops:
 - **Flags:** GitHub linguist registration (timing-bound on public usage);
   published benchmark page (marketing, harnesses exist).
 
+## Gate G-A: PASSED 2026-08-05
+
+All document sections ruled (tracker comments on #651); 22 spec streams +
+hygiene + consumability filed (#673–#699); G-decisions ruled on #516:
+**repo strategy = monorepo multi-artifact; Ring-0 tool = data-only verb
+subset; M5 proof domain = commerce/order-fulfillment** (one worked example
+across all stream specs). Phase 2 (partition spec) is open.
+
+Adjacent (not gate-bound): #700 test-suite duration relief — maintenance-line
+tooling, immediate; per-ring gates land with the partition as the structural
+fix.
+
 ## Decision log
 
 | Date | Decision | Where it binds |
