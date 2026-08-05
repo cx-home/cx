@@ -389,19 +389,20 @@ and is not duplicated here.
 
 | Range | Owner module / subsystem | Spec file |
 |---|---|---|
-| `CXER0001` | Generic-core panic (`CX_PANIC`, runtime `!`) | `spec/core/code.md` §9.2 / §9.4 |
+| `CXER0001–CXER0009` | Generic-core panic + core-internal failures (0001 = `CX_PANIC`, runtime `!`; 0003 = RE2 shim internal failure/OOM, shipped `vcx/cx/regex_re2.v`; rest reserved) | `spec/core/code.md` §9.2 / §9.4 |
 | `CXER0100–CXER0299` | CX language core (directive errors) | `spec/core/code.md` §9.4 |
-| `CXER1100–CXER1132` | `cx-stdlib/store` (sparse: 1100, 1101, 1110, 1120, 1121, 1130, 1131, 1132) | `spec/std-lib/store.md` §5 |
-| `CXER1200–CXER1204` | `cx-stdlib/ft` (full-text) | `spec/std-lib/ft.md` |
+| `CXER1100–CXER1149` | `cx-stdlib/store` (sparse: 1100, 1101, 1110, 1113–1116, 1120, 1121, 1130–1132, 1140–1143; 1144–1149 reserved for the erasure/compliance store surface — campaign stream 20) | `spec/std-lib/store.md` §13 |
+| `CXER1200–CXER1205` | `cx-stdlib/ft` (full-text) | `spec/std-lib/ft.md` |
 | `CXER1300–CXER1306` | `cx-stdlib/email` | `spec/std-lib/email.md` |
 | `CXER1400–CXER1403` | `cx-stdlib/url` | `spec/std-lib/url.md` |
 | `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/std-lib/csv.md` §5 |
 | `CXER1600–CXER1605` | `cx-stdlib/validate` | `spec/std-lib/validate.md` §6 |
-| `CXER1700–CXER1708` | CXStore Remote Protocol (CSRP) — `E_CSRP_*` only; distinct from `CXER11xx` `E_STORE_*` | `spec/misc/cxstore-remote-protocol.md` §3 |
+| `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/std-lib/jsonschema.md` |
+| `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*` only; distinct from `CXER11xx` `E_STORE_*` | `spec/misc/cxstore-remote-protocol.md` §3 |
 | `CXER1720` | CSRP integrity mismatch (`E_CSRP_INTEGRITY_MISMATCH`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1721` | CSRP not found (`E_CSRP_NOT_FOUND`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1800–CXER1801` | `cx-stdlib/uuid` | `spec/std-lib/uuid.md` |
-| `CXER1900–CXER1905` | `cx-stdlib/random` | `spec/std-lib/random.md` |
+| `CXER1900–CXER1906` | `cx-stdlib/random` | `spec/std-lib/random.md` |
 | `CXER2000–CXER2005` | `cx-stdlib/hash` | `spec/std-lib/hash.md` |
 | `CXER2100–CXER2103` | `cx-stdlib/prof` | `spec/std-lib/prof.md` |
 | `CXER2200–CXER2203` | `cx-stdlib/test` | `spec/std-lib/test.md` |
@@ -416,7 +417,8 @@ and is not duplicated here.
 | `CXER3100–CXER3106` | `cx-stdlib/json` | `spec/std-lib/json.md` |
 | `CXER3200–CXER3203` | `cx-stdlib/re` | `spec/std-lib/re.md` |
 | `CXER3300–CXER3349` | `cx-stdlib/time` (3300–3305 core; 3320–3349 recurrence rules, 3306–3319 reserved) | `spec/std-lib/time.md` |
-| `CXER3400–CXER3411` | `cx-stdlib/io` | `spec/std-lib/io.md` |
+| `CXER3400–CXER3412` | `cx-stdlib/io` | `spec/std-lib/io.md` |
+| `CXER3450–CXER3459` | `cx-stdlib/term` (3450–3451 shipped; rest reserved) | `spec/std-lib/term.md` |
 | `CXER3500–CXER3504` | `cx-stdlib/locale` | `spec/std-lib/locale.md` |
 | `CXER3600–CXER3605` | `cx-stdlib/geo` | `spec/std-lib/geo.md` |
 | `CXER3700–CXER3719` | `cx-stdlib/crypto` (3700–3707 core primitives, 3702 reserved; 3708–3719 JWT/JWKS verify) | `spec/std-lib/crypto.md` |
@@ -429,11 +431,15 @@ and is not duplicated here.
 | `CXER4400–CXER4409` | `cx-stdlib/fp` (functor/monad protocol; `CXER4400 E_NO_INSTANCE`) | `spec/std-lib/fp.md` |
 | `CXER4500–CXER4524` | `cx-stdlib/net` (L4 networking — `E_NET_*`; allocated above fp's 4400-band) | `spec/03-approved/std-lib/net.md` |
 | `CXER4525–CXER4589` | `cx-stdlib/http` (L7 HTTP/1.1 client + server — `E_HTTP_*`; allocated above net's 4500-band; 4544–4589 SSE/streaming) | `spec/03-approved/std-lib/http.md` |
-| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`) | `spec/03-approved/std-lib/journal.md` |
+| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`; sub-partitioned 2026-08-05: 4617–4639 reserved for the erasure/compliance journal surface — campaign stream 20; 4640–4649 reserved for schema/event evolution — campaign stream 21) | `spec/03-approved/std-lib/journal.md` |
 | `CXER4650–CXER4699` | `cx-stdlib/bus` (in-process pub/sub, ordered dispatch — `E_BUS_*`) | `spec/03-approved/std-lib/bus.md` |
 | `CXER4700–CXER4799` | `cx-stdlib/authz` (authorization / trust model — `E_AUTHZ_*`) | `spec/03-approved/std-lib/authz.md` |
 | `CXER4800–CXER4849` | `cx-stdlib/session` (`(principal, tenant)` sessions — `E_SESSION_*`) | `spec/03-approved/std-lib/session.md` |
+| `CXER4850–CXER4889` | `cx-xap` subsystem (`E_XAP_*`: xap host/runtime + compose surface 4850–4879; xap-dist 4880–4889). Registered 2026-08-05 — xap.md §8's original 4850–4949 proposal is amended in place: 4890–4949 yielded (see the similar island and fabric rows below; audit C5) | `spec/03-approved/xap/xap.md` §8 |
+| `CXER4900–CXER4901` | `cx-stdlib/similar` (island: shipped inside the pre-amendment xap proposal; regularized by the 2026-08-05 xap.md §8 yield — the 4900/4901 collision that triggered audit C5) | `spec/std-lib/similar.md` §7 |
+| `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/std-lib/fabric.md` |
 | `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/03-approved/std-lib/sched.md` |
+| `CXER5070–CXER5089` | live modes / incremental evaluation (campaign stream 3; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5; codes unshipped, band pre-registered per invariant "added here before being used") | `spec/02-working/live_modes.md` §2 |
 
 **Invariants:**
 
