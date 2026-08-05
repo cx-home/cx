@@ -20,6 +20,7 @@ ledger IS one. Updated per epoch commit.
 | `extended.cxd` ext-038 + ext-039 | L15/L17 (row 2): quoted canonical text escapes control bytes; triquote never emitted (body + AttValue pins) | re-bless both to the escaped single-quoted spelling |
 | `code.cxd` program-string-triplequote-001/003 | L15 render-lane escapes (render_canonical is identity-bearing — store put-doc rides it) | re-bless rendered spellings |
 | stdlib multiline-render pins ×18: `csv.cxd` ×11 (csv-008, 025–031, 033/034/037) + `json.cxd` 026–028 + `format.cxd` 009/010/012 + `cx.cxd` cx-060 | fixture results are multiline STRINGS; their rendered spelling now carries §2.4 `\n` escapes (values unchanged) | re-pin expected blocks to the escaped spelling |
+| `conversions.cxd` conv-006 | row 1 L43: a decimal MAP VALUE now carries its postfix ascription (`score: 3.14::decimal`) — the pre-epoch bare spelling silently re-imported as FLOAT (the defect stream 11 names) | re-pin to the ascribed spelling |
 
 ## Pins that FLIP at specific rows (stay red until that row, then re-bless)
 
@@ -128,8 +129,32 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    until it lands, NFC-vs-NFD spellings of one name are two names.
    MUST land before the re-bless.
 
+12. Row-1 invariant slice (stream 11, L39/L43/L45/L47): postfix value
+   ascription `value::T` in collection positions — map values, sequence/
+   array items, AND map keys (`{1.10::decimal: x}`; read_map_key keeps a
+   glued `::` in the key token). Typed carriers are STRICT (defect G):
+   decimal = fixed-point base-10 only (exponent form is scale-ambiguous
+   → CXER0109), bigint = base-10 integer, duration/period validate via
+   temporal_span_kind. §6 normalization at coerce: `+`/redundant leading
+   zeros strip, `.5` → `0.5`, negative zero → positive with scale kept,
+   trailing fraction zeros PRESERVED. Emit: decimal collection values/
+   keys always carry the postfix ascription; bigint carries it exactly
+   when ≤ i64 (annotation-iff-retyping, both attr + element lanes).
+   Ascribed non-key kinds reject as map keys. One corpus mover ledgered
+   (conv-006). OWNER RULINGS RECORDED: 2b — bare fixed-point fractions
+   become DECIMAL at I1 (floats = exponent form / ::float; float
+   canonical amends to exponent-always); 1a — I download the UCD files.
+   SEQUENCING: the 2b autotype flip lands WITH/AFTER decimal arithmetic
+   (evaluator still rejects decimal math — flipping first would break
+   every fraction computation). Remaining row-1 commits: value
+   semantics (equality/ordering), arithmetic+casts (L44, CXER3002
+   division), the 2b flip + idh-023, data-bin 0x18/0x28 (row 16) +
+   ast-bin widening + M23 advisory window, json all-decimal/streaming/
+   --strict/host mappings. Table CELLS with decimal columns still ride
+   lenient coerce_scalar — normalize at the arithmetic commit.
+
 ## Row-2 warts remaining
 
-NFC name normalization ONLY (owner ruled (a) 2026-08-05 — CX-owned
-generated tables from a pinned UCD, generator committed; BLOCKED on
-the UCD-download a/b question; the last row-2 item).
+NFC name normalization ONLY (owner ruled (a) — CX-owned generated
+tables; owner ruled 1a on sourcing: I download the three UCD files
+with a pinned version; the last row-2 item).
