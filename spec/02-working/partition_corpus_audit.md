@@ -172,10 +172,18 @@ recovered, D-MOD confirmed. Recorded in the campaign decision log.
 
 ## §7. Continuous-audit work queue (this stream, ongoing)
 
-1. G11 module-scaffolding verification (immediate).
-2. G7 TOML-import surface verification.
-3. Provenance-reference recovery (D-ID).
-4. G16 grammar-production traceability map (with stream 13).
+1. G11 module-scaffolding verification — **DONE** (resolved → #701).
+2. G7 TOML-import surface verification — **DONE** (import is shipped;
+   fixtures pre-I2).
+3. Provenance-reference recovery (D-ID) — **RESEARCHED, filed #709**:
+   the elided reference was ADR 0003 (drained by the no-ADR
+   sanitization); only ONE elision site exists (identity.cxd:8); the
+   block is also STALE — D7 is shipped (canonical.md §2.7b) and D1
+   partially so. Recovery = repoint at cxdm.md §4 + reconcile claims;
+   file edit applies at I0 with the ring-tagging pass (corpus files
+   feed gate baselines).
+4. G16 grammar-production traceability map (with stream 13; stream 22
+   adds the rule→witness second axis via `rule=` beside `ring=`).
 5. Ring-tag application (`ring=` attributes) — lands at I0 with the gates.
 6. Fixture families added by later streams are ring-tagged on entry
    (append-only corpus discipline).
