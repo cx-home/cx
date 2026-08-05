@@ -113,10 +113,15 @@ assumed.)
 | 2026-08-04 | **Verdict sequencing seam-first** (§10, §12, §13, §14, layering before §4–§8), each verdict carrying a ring assignment. | Phase 1 execution. |
 | 2026-08-04 | **Evaluation criteria codified** (section above): first principles; long-term health of CX + consumers; agent–principal symbiosis as north star; timely and marketable. Likely the last foundational pass before production downstream consumers — depth over speed. | Every verdict and G-decision in this campaign. |
 
-## Known extraction risks (to be confirmed by the audit)
+## Known extraction risks — ANSWERED by the import audit (2026-08-04)
 
-- `vcx/cx` stragglers that a minimal libcx-core may not want: `arrow_pub.v`
-  (Arrow), `regex_re2.v` (re2 dependency), GC shims, fixture loaders — each
-  needs a "load-bearing for canonical/validate, or relocatable?" call.
-- Confirm nothing in parse/canonicalize calls into `vcx/code` (the audit's
-  first question).
+See `partition_audit_vcx_imports.md` for the full evidence. Headlines:
+`vcx/cx` is a strict sink (zero internal imports; V stdlib only) — the Ring-0
+import seam already holds. re2 is load-bearing for Ring 0 (schema §7.1
+normative RE2; sole in-cx caller is schema_validate.v). arrow_pub.v carries no
+dependency edge. GC shims are build-gated and self-contained.
+fixture_loader.v is compiled into libcx unconditionally with zero production
+consumers — extraction cleanup. Dead module `cxstore/cxsqlite` + build debris
+found (cleanup issues to file). Layering finding: the store ENGINE (cxstore)
+depends only on cx; the store VERB surface lives in code — the extraction
+frontier is inside `code`, not around `cx`.
