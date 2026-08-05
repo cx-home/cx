@@ -22,6 +22,7 @@ ledger IS one. Updated per epoch commit.
 | stdlib multiline-render pins ×18: `csv.cxd` ×11 (csv-008, 025–031, 033/034/037) + `json.cxd` 026–028 + `format.cxd` 009/010/012 + `cx.cxd` cx-060 | fixture results are multiline STRINGS; their rendered spelling now carries §2.4 `\n` escapes (values unchanged) | re-pin expected blocks to the escaped spelling |
 | `conversions.cxd` conv-006 | row 1 L43: a decimal MAP VALUE now carries its postfix ascription (`score: 3.14::decimal`) — the pre-epoch bare spelling silently re-imported as FLOAT (the defect stream 11 names) | re-pin to the ascribed spelling |
 | `code.cxd` program-cast-unknown-kind | row 1 L44: the cast error hint now lists `:decimal`/`:bigint` in the supported-kind set | re-pin the message |
+| THE 2b WAVE (row 1, autotype flip): `identity_hash.cxd` idh-022 + idh-023 (THE pinned flip — attr scale now identity; bare −0.0 is a decimal and normalizes) · `extended.cxd` 003/016j/021/029/036 · `xml.cxd` 027 · `table.cxd` tab-007/tab-019 · `ast_bin.cxd` astb-003 · `yaml.cxd` 018 · `data_bin_arrow.cxd` arrow-002/013 · `math.cxd` ×39 · `random.cxd` ×23 · `prof.cxd` ×2 · `env.cxd` ×1 · `code.cxd` ×5 more (cast-truncate + typed-attr-float reads) | bare fixed-point fractions are DECIMALS (exact results replace float artifacts: 0.1+0.2 = 0.3); floats spell exponent-always (1.5 → 1.5e0 in ::float columns); stdlib ::float-typed params + transcendental inputs need exponent spellings | re-bless: exact results, exponent float spellings, re-spelled fixture inputs |
 
 ## Pins that FLIP at specific rows (stay red until that row, then re-bless)
 
@@ -186,6 +187,23 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    exponent-always; data-bin 0x18/0x28 (row 16) + ast-bin + M23
    advisory window; json all-decimal / streaming / --strict / host
    mappings; table-cell decimal normalization.
+15. THE 2b FLIP (row 1): bare fixed-point fractions are DECIMALS in
+   BOTH engines (try_autotype + try_autotype_bytes; program lexer's new
+   decimal_lit — differential HELD); exponent form / ::float = float;
+   float canonical is EXPONENT-ALWAYS incl. zeros (0.0e0 / -0.0e0) so
+   the kinds are lexically self-describing — one spelling, one kind,
+   one address. decimal/bigint join annotation-iff-retyping in all
+   three lanes (attr / element / collection — [a::decimal 1.50] sheds
+   its ascription, {p: 19.99} is a decimal map value bare). Evaluator
+   companions: EBV decimal/bigint zero falsy; abs keeps kind+scale,
+   floor/ceiling/round exact (int-if-fits else bigint); scalar_f64
+   config readers (thresholds/ranges) accept exact-family images;
+   assert-near reads decimals; the program render emits decimal BARE
+   (quoting flipped the kind). idh-023 fires exactly as pinned; the
+   wave is ledgered above (≈75 new intended movers). RESIDUAL (named):
+   transcendentals on decimal reject with the generic CXER0100
+   signature message — the promised CXER3002-specific code rides the
+   math re-bless commit.
 
 ## Row-2 warts remaining
 
