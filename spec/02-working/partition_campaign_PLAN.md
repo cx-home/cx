@@ -21,6 +21,11 @@
 4. **HARD GATE — no implementation before the paperwork is complete:** all spec
    work and a phased implementation plan with gates, for BOTH issues, must be
    done before any implementation begins.
+5. **NO UNAUTHORIZED DEFERRALS (owner directive 2026-08-04):** nothing is
+   deferred or partially scoped without express owner authorization. Every
+   deferral candidate surfaces as an explicit lettered question with
+   trade-offs — never as a clause inside an accepted verdict. Sequencing
+   behind a live consumer is allowed (standing rule); cutting scope is not.
 
 ## Evaluation criteria (owner directive 2026-08-04)
 
