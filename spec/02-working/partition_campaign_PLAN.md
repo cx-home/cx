@@ -156,11 +156,16 @@ Adjacent (not gate-bound): #700 test-suite duration relief — maintenance-line
 tooling, immediate; per-ring gates land with the partition as the structural
 fix.
 
-## Phase 2 status
+## Phase 2 status — GATE G-B PASSED 2026-08-05
 
-Partition spec drafted: `spec/02-working/cx_partition.md` (all letters
-resolved — P1a lockstep versioning, P2a Windows tier-2). Awaiting Gate G-B
-(owner approval, user-only). Phase 3 (implementation plan) follows G-B.
+Partition spec approved: `spec/02-working/cx_partition.md` (rings/packs/
+profiles, import contracts, artifacts + §5.1 repo-split policy, lockstep
+versioning, Windows tier-2, corpus contract, compatibility promise +
+archival guarantee, §12 bindings story). Phase 3 drafted:
+`partition_impl_PLAN.md` — spec waves S0–S4 (all 22 stream specs inside the
+gate, dependency-ordered) + implementation phases I0–I6 (seams → identity
+epoch → Ring-0 extraction byte-for-byte → Ring 1/2 split → profiles →
+streams → M5 proof). Awaiting Gate G-C.
 
 ## Decision log
 
