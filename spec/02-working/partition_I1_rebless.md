@@ -274,8 +274,24 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    unification, XSP-AUTH suite field + HKDF /2/ bump, provenance
    suite slot, pack u16 + data-bin 0x13.
 
+20. Row-3 tail (L35/L36/#702): the signature-suite registry lands
+   (suite_registry.v: ed25519 required+implemented; ecdsa-p256/rsa-2048
+   optional; ml-dsa-44/65/87, slh-dsa-128s, ed25519+ml-dsa-65 RESERVED)
+   with cx_suite_verify_gate as the fail-closed gate — journal
+   snapshot verification validates sig-algo (was ed25519-assumed), VC
+   verify READS the proof type (W3C Ed25519Signature2020 maps to the
+   registry key; unknown → 'unsupported-suite'), pkg-verify is a
+   registry lookup (was hardcoded equality). SRI unified against the
+   registry: the module loader accepts sha256/sha384/sha512/blake3
+   exactly like the stdlib lane. XSP-AUTH HKDF labels bump
+   xsp-auth/1/* → /2/* (the label IS the version handle; the suite
+   field changes what it covers). The provenance suite slot is an ATOM
+   (alg=:ed25519 — type-strict, closed-vocabulary). Census exactly at
+   the ledgered reds. REMAINING row 3: pack u16 multicodec slot +
+   data-bin 0x13 multihash schema-ref (additive binary slots).
+
 ## Remaining epoch work
 
-Row-3 tail (verifiers/SRI/XSP/provenance/pack — above), rows 4-7, 8-9
+Row-3 binary slots (pack u16 + data-bin 0x13), rows 4-7, 8-9
 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit maps + the ONE
 re-bless with the old→new mapping file + registry re-seal.
