@@ -17,6 +17,9 @@ ledger IS one. Updated per epoch commit.
 | `xap-dist.cxd` ×4 (pinned tree/manifest hashes) | package tree hashes are Tier-1 | **re-seal the committed `registry/`** (gtin@0.1.0 re-publishes under epoch bytes) + re-pin fixtures + `xap_registry_serve_real_test.v` consts |
 | `bus.cxd` bus-026 (hardcoded doc address) | store put-doc address moved | re-bless the literal |
 | `cx.cxd` ×8 incl. cx-010 | address literals + the serialize-vs-canonical LF seam | re-bless literals; **cx-010 fixture-semantics note:** `cx:serialize` is the FRAGMENT emitter (LF-less), `cx:canonical` is a complete POSIX text file (W-14) — the fixture's equality re-forms as `serialize + "\n" ≡ canonical` |
+| `extended.cxd` ext-038 + ext-039 | L15/L17 (row 2): quoted canonical text escapes control bytes; triquote never emitted (body + AttValue pins) | re-bless both to the escaped single-quoted spelling |
+| `code.cxd` program-string-triplequote-001/003 | L15 render-lane escapes (render_canonical is identity-bearing — store put-doc rides it) | re-bless rendered spellings |
+| stdlib multiline-render pins ×18: `csv.cxd` ×11 (csv-008, 025–031, 033/034/037) + `json.cxd` 026–028 + `format.cxd` 009/010/012 + `cx.cxd` cx-060 | fixture results are multiline STRINGS; their rendered spelling now carries §2.4 `\n` escapes (values unchanged) | re-pin expected blocks to the escaped spelling |
 
 ## Pins that FLIP at specific rows (stay red until that row, then re-bless)
 
@@ -48,8 +51,23 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    (cx_attr_scalar, D3), which is now LOCKED by the same fixture file.
    Kept: sized/decimal/bigint/duration/period, `::T[]`, empty bodies.
    Eval gate unchanged at the same 47 ledgered reds (zero new).
+6. Quote-lane rulings L15+L16+L17 (row 2, W-12/W-13/W-2): §2.4 escapes are
+   EMITTED (LF/CR/tab → `\n \r \t`, other C0 → `\u00xx` lowercase, DEL →
+   `\u007f`); both-quotes tiebreak = single-quoted `\'` in BOTH lanes
+   (cx_choose_quote_render now aliases cx_choose_quote); canonical NEVER
+   emits triquote — the verbatim-triquote body and AttValue branches are
+   gone; raw control bytes force quoting (cx_has_control_byte). Bijection
+   rule untouched (`'\d'` does not churn). New intended reds ledgered
+   above (ext-038/039, code triquote ×2, stdlib multiline renders ×18);
+   eval gate = those + the prior 47, zero unexplained.
 
 ## Row-2 warts remaining
 
-quote tiebreak · NFC names (needs a Ring-0 NFC table decision) · multi-doc
-addresses · CX-owned Ryū audit · triquote-never-canonical check.
+NFC names (needs a Ring-0 NFC table decision — lettered owner question
+before implementing) · multi-doc addresses (L30, `\n---\n`) · CX-owned Ryū
+audit (L18, incl. W-3 NaN/±Inf loud rejection — `1e400` still emits
+`+inf.0` today) · Tier-A mechanicals still unfixed (probed 2026-08-05):
+W-1 `#id` dropped on empty element (`[a #x1]` → `[a]`) · W-5 RawText
+stripped (`[a [#raw#]]` ≡ `[a]` collision) · W-6 empty string erased
+(`[a '']` ≡ `[a]` hash-collision confirmed) · W-10 BOM survives into
+canonical output.
