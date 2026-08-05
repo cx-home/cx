@@ -233,7 +233,12 @@ caches rarely hit across upgrades and the fingerprint is hard to spec) /
 
 ---
 
-## Architecture boundaries — "strict layering model" (Layers 1–6)
+## Architecture boundaries — RULED 2026-08-04 (L8a) and POSTED
+
+Verdict: https://github.com/cx-home/cx-private/issues/651#issuecomment-5187057899
+Rings = import contracts (DAG, not strict stack); packs = shippable stdlib
+units (caps + external deps declared, -d gate pattern); profiles = artifact
+compositions (minimal-embed / cli / platform). Draft below retained until G-A.
 
 **Draft verdict: ACCEPT the principle, expressed as ring dependency contracts
 rather than a strict stack. One amendment: layering is a DAG constraint
