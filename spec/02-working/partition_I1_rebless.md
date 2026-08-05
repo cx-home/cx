@@ -60,14 +60,26 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    rule untouched (`'\d'` does not churn). New intended reds ledgered
    above (ext-038/039, code triquote ×2, stdlib multiline renders ×18);
    eval gate = those + the prior 47, zero unexplained.
+7. Tier-A mechanicals W-1/W-5/W-6/W-10 (row 2): `#id` on an otherwise-
+   empty element survives emit (`[a #x1]` → `[a #id-1]`); RawText is
+   CONTENT — preserved in strict canonical (`[a [#raw#]]` ≢ `[a]`); the
+   EMPTY string is a value — `[a '']` emits `''` (needs-quote covers the
+   empty image; whitespace-only NON-empty runs still drop as XML-import
+   layout); leading BOM consumed at new_parser, mid-content BOM in bare
+   text = CXER0100, BOM inside quoted values stays content (L23 verbatim
+   values). Companion fix W-6 exposed: the lossless JSON/YAML envelope
+   dropped empty-string children (envelope_child_ll) — now crosses the
+   wire. `[n::string '']` strips its annotation again (body survives).
+   Zero corpus movers (W-28 coverage gap — pinned by V fixtures in
+   canonical_mechanical_warts_test.v instead); gates at the same
+   ledgered reds. NOTE (residual, unruled): whitespace-only NON-empty
+   quoted strings (`[a ' ']`) still erase — same collision shape as W-6
+   but entangled with XML-import layout text; needs its own ruling.
 
 ## Row-2 warts remaining
 
-NFC names (needs a Ring-0 NFC table decision — lettered owner question
-before implementing) · multi-doc addresses (L30, `\n---\n`) · CX-owned Ryū
-audit (L18, incl. W-3 NaN/±Inf loud rejection — `1e400` still emits
-`+inf.0` today) · Tier-A mechanicals still unfixed (probed 2026-08-05):
-W-1 `#id` dropped on empty element (`[a #x1]` → `[a]`) · W-5 RawText
-stripped (`[a [#raw#]]` ≡ `[a]` collision) · W-6 empty string erased
-(`[a '']` ≡ `[a]` hash-collision confirmed) · W-10 BOM survives into
-canonical output.
+NFC names (owner ruled (a) 2026-08-05 — CX-owned generated tables from a
+pinned UCD, generator committed; implement at this row) · multi-doc
+addresses (L30, `\n---\n`) · CX-owned Ryū audit (L18, incl. W-3 NaN/±Inf
+loud rejection — `1e400` still emits `+inf.0` today) · whitespace-only
+string residual (see commit-7 note).
