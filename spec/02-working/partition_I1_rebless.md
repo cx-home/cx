@@ -295,3 +295,36 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
 Row-3 binary slots (pack u16 + data-bin 0x13), rows 4-7, 8-9
 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit maps + the ONE
 re-bless with the old→new mapping file + registry re-seal.
+
+## Owner rulings 2026-08-05 (end-of-session batch)
+
+- **CXER codes ratified (1a):** CXER0130 (bare hex), CXER0131 (unknown
+  algo), CXER0132 (digest shape), CXER0135 (unsupported-suite) enter the
+  error-code registry as minted; the spec-edit maps register them.
+- **Re-bless execution (2a):** the ONE re-bless is EXECUTED by the
+  implementer; the owner reviews the old→new mapping file
+  (partition_I1_hash_mapping.md) and the full corpus diff in the PR.
+
+## Tooling / documentation alignment (epoch obligations)
+
+The partition ships with aligned tooling and docs — tracked here so the
+re-bless is not the finish line:
+
+1. **Normative specs** — the per-commit spec-edit obligations (each
+   ledger entry names its letters) execute as the spec-edit maps BEFORE
+   the re-bless.
+2. **Generated docs / guide / playground** — doc examples are
+   fixture-backed (make docs, guide-check, directive-docs-check,
+   playground gate), so they re-record immediately AFTER the re-bless;
+   the drift gates force this — run them and commit the regeneration.
+3. **Editor tooling surface** — tree-sitter-cx + LSP highlighting gain
+   the epoch's new lexemes: postfix `value::T` ascriptions in collection
+   positions, tagged `sha2-256:` addresses, exponent-only float
+   spellings, `genesis:` sentinel. check-tmlanguage-sync +
+   check-completions-drift gates verify.
+4. **Bindings parity (L48)** — Python/Go/Rust host mappings for the
+   promoted decimal/bigint kinds (Go exact-decimal lib, Rust bigdecimal,
+   Python decimal.Decimal/int); readiness-rubric rows flip
+   pending-until-I1 → done; binding-api parity gate re-runs.
+5. **CLI surfaces already aligned in-epoch:** cx hash/canonical output,
+   cx demo fixture, cx scaffold templates, cx store-token stanzas.
