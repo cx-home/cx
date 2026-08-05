@@ -21,6 +21,7 @@ ledger IS one. Updated per epoch commit.
 | `code.cxd` program-string-triplequote-001/003 | L15 render-lane escapes (render_canonical is identity-bearing — store put-doc rides it) | re-bless rendered spellings |
 | stdlib multiline-render pins ×18: `csv.cxd` ×11 (csv-008, 025–031, 033/034/037) + `json.cxd` 026–028 + `format.cxd` 009/010/012 + `cx.cxd` cx-060 | fixture results are multiline STRINGS; their rendered spelling now carries §2.4 `\n` escapes (values unchanged) | re-pin expected blocks to the escaped spelling |
 | `conversions.cxd` conv-006 | row 1 L43: a decimal MAP VALUE now carries its postfix ascription (`score: 3.14::decimal`) — the pre-epoch bare spelling silently re-imported as FLOAT (the defect stream 11 names) | re-pin to the ascribed spelling |
+| `code.cxd` program-cast-unknown-kind | row 1 L44: the cast error hint now lists `:decimal`/`:bigint` in the supported-kind set | re-pin the message |
 
 ## Pins that FLIP at specific rows (stay red until that row, then re-bless)
 
@@ -165,6 +166,26 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    legacy path byte-for-byte. Pinned in
    decimal_bigint_semantics_test.v; zero corpus movers, gates at the
    ledgered reds.
+14. Row-1 exact arithmetic + casts (L44): `+ − × ÷` route through Ring-0
+   digit arithmetic (numeric_exact.v: schoolbook add/sub/mul, big÷big
+   long division) whenever any operand is decimal/bigint — scale rules
+   max(s₁,s₂) for +/−, s₁+s₂ for × (trailing zeros preserved: 1.10−0.2
+   = 0.90); ÷ computes the EXACT quotient when it terminates (2·5-only
+   reduced denominator) and errors CXER3002 otherwise (a rounding
+   context is the only path to non-terminating division); div-by-zero
+   stays CXER0101; decimal⊕float = CXER0100 (unbridged); result kind =
+   decimal if any decimal operand or fractional result, else bigint
+   (bigint⊕int→bigint). mod/div/idiv builtins still reject the exact
+   family (unruled — unchanged). [cast] gains :decimal (string strict,
+   int/bigint embed, float → Ryū shortest digits as fixed-point via
+   cx_decimal_image_from_float) and :bigint (string strict, decimal
+   integral-only); decimal→int integral-only; decimal→float lossy-
+   allowed rides the existing string arm. One corpus mover ledgered
+   (program-cast-unknown-kind: the supported-kind hint grew).
+   REMAINING row-1: the 2b autotype flip + idh-023 + float-canonical-
+   exponent-always; data-bin 0x18/0x28 (row 16) + ast-bin + M23
+   advisory window; json all-decimal / streaming / --strict / host
+   mappings; table-cell decimal normalization.
 
 ## Row-2 warts remaining
 
