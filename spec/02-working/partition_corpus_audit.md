@@ -83,13 +83,18 @@ Ring tags are assigned by two independent, mechanical signals that agree:
   `ring=1`; the remaining 17 (parse/bytes/hash/equals/find-all/
   accessor) inherit the suite's `ring=0`.
 
-### Ring 1 — 1969 doc-lane cases (+ the 989-case `code.cxd` eval lane)
+### Ring 1 — 1990 doc-lane cases (+ the 989-case `code.cxd` eval lane)
 
 `xpath_31_parity.cxd` (23), `code_diagram.cxd` (51), `binding_api.cxd`'s
 32 evaluation-dependent cases, and the pure/local stdlib families: bytes,
 crypto, csv, cx, format, fp, ft, geo, hash, html, i18n, json, jsonrpc,
 jsonschema, locale, log, math, mime, path, prof, random, re, sched,
-similar, strings, test, time, url, uuid, validate. Q4/Q5 resolved and
+similar, strings, test, time, url, uuid, validate, **plus the x-tier
+Ring-1 packs run, mcp, a2a, llm (21 cases; RETAGGED 2026-08-05, audit
+M2: the agent-tool-projection stream's x-tier ring placement — Ring-1
+packs, mcp-server/a2a-xap staying Ring 2 — post-dates this audit's
+original Ring-2 placement and applied the partition's §10 membership
+test; its ruling wins and the four suite headers now carry `ring=1`)**. Q4/Q5 resolved and
 landed: env, process, and io are Ring 1 (io's three watch cases
 io-105/106/107 carry `ring=2` per the partition's watch→Ring-2
 placement, cx_partition.md §2); the http CLIENT surface — 47 cases:
@@ -97,13 +102,14 @@ response/request accessors, client construction, one-shot verbs,
 scheme/arg validation, `send`, and the SSE client (`sse-source` /
 `sse-connect` / `sse-events`) — carries `ring=1`.
 
-### Ring 2 — 659 doc-lane cases
+### Ring 2 — 638 doc-lane cases
 
-a2a, a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/
+a2a-xap, adjudicate, authz, bus, db, email, fabric, http (serve/
 tooling surface: serve/listen/accept/exchange/respond/stop + the SSE
-server side, the suite default), journal, llm, mcp, mcp-server, net,
-run, session, store, xap-compose, xap-dist, xsp-auth, plus io's three
-watch cases.
+server side, the suite default), journal, mcp-server, net,
+session, store, xap-compose, xap-dist, xsp-auth, plus io's three
+watch cases. (a2a, llm, mcp, run moved to Ring 1 per audit M2 — see
+above.)
 
 ### Tagging mechanics (Q2)
 
@@ -178,7 +184,7 @@ carries a Ring-2 optional native dependency (runner imports `arrow`) — Q6.
 | D-XSP-b | WebSocket / WebTransport carriers | xsp.md §5.4, §4 | **Confirm** — same frames, carrier swap, no frame change. |
 | D-XSP-c | **Cross-runtime VC revocation propagation** — "rides the same server↔server channel once defined," and no such channel is specified anywhere. A revoked credential stays honored on peer runtimes indefinitely. | xsp.md §5.4; vc.md §5 3b | **Adopt into stream 4:** the XSP store-profile spec MUST define the server↔server channel and the revocation-propagation profile over it. This is a security hole in Ring 2's single authority model, not a feature gap. |
 | D-MOD | **Found by this audit** (not in the mandate list): live HTTPS module fetch + on-disk cache "deferred per §12.4.2" (`module_loader.v` returns `MODULE_HTTPS_FETCH_DEFERRED`; pkg-url fetch resolves only via registry). | modules spec §12.4.2 | **Confirm** — sequencing behind the Ring-3 distribution/registry consumer (C4, #699); resolver shapes + SRI verification are already spec'd and fixtured, so the deferral is additive. |
-| D-ID | `identity.cxd` v0 self-deferrals: D6 cross-format ID round-trip, **D7 canonical-form ID renaming (canonical-bytes-affecting)**, D3 include-time ID merging, D1 `[ref @id]` body form. Provenance reference in the file is empty ("per )"). | identity.cxd:3–14 | **Adopt D7 into stream 12** (it changes frozen bytes — now or never); **confirm D6/D3/D1** as post-partition tracker issues; recover the elided provenance refs (mechanical audit fix, applies to include/lint suites too). |
+| D-ID | `identity.cxd` v0 self-deferrals: D6 cross-format ID round-trip, **D7 canonical-form ID renaming (canonical-bytes-affecting)**, D3 include-time ID merging, D1 `[ref @id]` body form. Provenance reference in the file is empty ("per )"). | identity.cxd:3–14 | **D7 adoption RETRACTED 2026-08-05 (audit M9):** the "adopt D7 into stream 12" instruction had no receiving content in the stream-12 spec and was already stale when written — D7 SHIPPED as canonical.md §2.7b (see the §5 batch-status staleness note below); a live adoption instruction pointing at nothing would have confused I1 execution. **Confirm D6/D3/D1** as post-partition tracker issues; provenance refs RECOVERED at I0 (n27 pass — identity/lint/include headers repaired on the impl branch). |
 
 ## §6. Structural rulings — RULED
 
@@ -192,7 +198,9 @@ data_bin_arrow fixtures are Ring 0 with a dlopen-gated, visibly-skipping
 lane; the §4 gap-disposition table is ratified as drafted; deferrals:
 D-C1 confirmed w/ streams-4/6 coherence mandate, D-DBG confirmed w/ the
 tape-completeness fixture mandate, D-T2X confirmed, D-XSP items 1–2
-confirmed + item 3 ADOPTED into stream 4, D-ID: D7 adopted into stream 12
+confirmed + item 3 ADOPTED into stream 4, D-ID: ~~D7 adopted into stream
+12~~ (RETRACTED 2026-08-05, audit M9 — no receiving content; D7 already
+shipped as canonical.md §2.7b, per item 3 of the batch status below)
 + D6/D3/D1 confirmed as post-partition tracker issues + provenance refs
 recovered, D-MOD confirmed. Recorded in the campaign decision log.
 
