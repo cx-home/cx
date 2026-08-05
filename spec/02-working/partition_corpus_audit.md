@@ -15,7 +15,7 @@ double as M5 substrate.
 
 ## §1. Corpus census and the ring discriminator
 
-The corpus lives at `conformance/`: 26 top-level suites (1626 cases),
+The corpus lives at `conformance/`: 27 top-level suites (1634 cases),
 53 stdlib suites under `conformance/stdlib/` (2522 cases), the fixture
 schema `conformance/fixtures.cxs`, the gate-policy manifest
 `conformance/gates.cxd` (zero cases — policy, not fixtures), and module
@@ -23,9 +23,11 @@ scaffolding under `conformance/fixtures/module/`. (Census figures
 re-verified 2026-08-05 by three independent methods — text scan,
 parsed-element count via `scripts/ring_query.cx`, per-file sum — after
 the adversarial audit flagged drift in the suite counts; 4127 total
-cases stood at the audit date, and the G1/G4 gap-closure families
-landed at I0 — `identity_hash.cxd` 15 + `ast_bin.cxd` 6 — bring the
-append-only total to 4148.)
+cases stood at the audit date; the G1/G4 gap-closure families landed
+at I0 — `identity_hash.cxd` + `ast_bin.cxd` — and the pre-I1 pin
+additions (`operator_heads.cxd` 7, the idh-026 hole/string pair, the
+cx-094 quote-hash E210 pin) bring the append-only total to 4157:
+doc-lane R0=1528 / R1=1991 / R2=638.)
 
 Ring tags are assigned by two independent, mechanical signals that agree:
 
