@@ -558,7 +558,7 @@ sync-tmlanguage:
 
 # Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
 # sign + alias a package directory into registry/store, then re-verify.
-#   CX_PKG_DIR=packages/nmea0183 CX_PKG_NAME=nmea0183 CX_PKG_VERSION=0.1.0 \
+#   CX_PKG_DIR=packages/gtin CX_PKG_NAME=gtin CX_PKG_VERSION=0.1.0 \
 #     make registry-publish
 .PHONY: registry-publish
 registry-publish: build-vcx-dev
