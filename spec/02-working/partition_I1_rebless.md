@@ -236,11 +236,25 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    idempotence); commit-11's NFD placeholder pin re-blessed to the
    convergence. Zero new corpus movers; gates at the ledgered reds.
 
-## Row-2 warts remaining
+18. Row-1 defect tail (stream 11 defect batch, #703): json
+   `all-decimal` is GENUINELY exact (cx_decimal_image_from_json_number
+   — JSON digits become a fixed-point decimal, no f64; the 17-digit
+   probe passes); streaming events emit decimal as a QUOTED string in
+   the JSON lane exactly like the batch emitter (defect B) and bigint
+   joins the known-scalar sets (events + validate §4.5);
+   value_matches_type's bigint/decimal predicates were UNSATISFIABLE
+   (checked i64/f64 on string-stored kinds — defect A) and now match
+   on the KIND; the lenient coerce_scalar decimal/bigint arms (table
+   cells, importers) normalize when the token conforms (verbatim
+   fallback keeps them infallible); transcendentals over the exact
+   family refuse with their OWN code — CXER3002 with the
+   [cast … :float] hint (math.md §4.4) at the $-call terminals. Host-
+   mapping corrections (L48) are SPEC EDITS — they ride the spec-edit
+   map. Census unchanged at the ledgered reds; ROWS 1 AND 16 ARE
+   COMPLETE.
 
-NONE — row 2 is COMPLETE (commits 1–11, 17). Remaining epoch work:
-row-1 defect tail (json all-decimal, streaming events, --strict
-value_matches_type, host mappings, table-cell decimal normalization,
-CXER3002 transcendental codes), rows 3, 4-7, 8-9 (oph/idh-026/cx-094
-pins flip), 10-15, then spec-edit maps + the ONE re-bless with the
-old→new mapping file + registry re-seal.
+## Remaining epoch work
+
+Rows 3 (self-describing addresses, stream 19), 4-7, 8-9 (oph/idh-026/
+cx-094 pins flip), 10-15, then spec-edit maps + the ONE re-bless with
+the old→new mapping file + registry re-seal.
