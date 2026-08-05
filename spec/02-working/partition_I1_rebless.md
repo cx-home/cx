@@ -99,11 +99,20 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    literal fails loud at parse (CXER0109). Zero corpus movers (corpus
    floats are all simple fixed forms); float-form pins live in
    canonical_float_test.v.
+10. Whitespace-only strings are VALUES (W-6 companion, owner-ruled (a)
+   2026-08-05): `[a ' ']` survives quoted — the emit-side whitespace
+   skip is gone; XML LAYOUT whitespace now strips at IMPORT
+   (xml_parser.v text flush), which is where layout exists. The
+   lossless envelope forwards every string child. One carve-out: a
+   single-space TextNode BETWEEN two siblings is the parser's
+   reconstructed join space (`[p &amp; &lt;]` round-trips it) — the
+   bare spelling is canonical; multi-space between siblings quotes.
+   `[n::string '  ']` strips its ascription (every string body carries
+   its own type now). Zero corpus movers after the join-space rule
+   (core-013/xml-009 entity fixtures pin the bare spelling and stay
+   green); gates at the same ledgered reds.
 
 ## Row-2 warts remaining
 
-NFC names (owner ruled (a) 2026-08-05 — CX-owned generated tables from a
-pinned UCD, generator committed; implement at this row) · whitespace-only
-string residual (owner ruled (a) 2026-08-05: preserve quoted
-whitespace-only strings; XML-import strips its layout whitespace at
-IMPORT — implement as the W-6 companion).
+NFC names ONLY (owner ruled (a) 2026-08-05 — CX-owned generated tables
+from a pinned UCD, generator committed; the last row-2 item).
