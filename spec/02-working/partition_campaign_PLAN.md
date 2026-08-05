@@ -120,6 +120,25 @@ issues (e.g. a query-algebra spec) belong to those issues and gate their own
 implementations later. (Owner may pull them into this campaign's gate; not
 assumed.)
 
+## Consumability track (ruled 2026-08-05: post-gate sequencing)
+
+Tooling/product streams that consume the partition's artifacts; sequenced
+AFTER the spec gate (they don't block G-A→G-C), tracked here so nothing
+silently drops:
+
+- **C1 — Browser playground:** Ring-0-only wasm target (sidesteps the
+  mbedtls/emcc blocker), shareable content-addressed snippets.
+- **C2 — Schema inference:** `cx schema infer` over JSON/CSV/XML corpora +
+  XSD→CX catalog (#288 promoted from Track 3).
+- **C3 — Model-facing docs pack:** llms.txt-style grammar summary, idiom
+  corpus, error→fix examples; compounds with stream 18.
+- **C4 — Package-manager distribution:** Ring 0 bindings on pip/npm/brew/
+  cargo; early Ring 3, pulled forward.
+- **Windows support tier:** express ruling at partition-spec time, beside the
+  build/release platform matrix (owner 2026-08-05).
+- **Flags:** GitHub linguist registration (timing-bound on public usage);
+  published benchmark page (marketing, harnesses exist).
+
 ## Decision log
 
 | Date | Decision | Where it binds |
