@@ -11,7 +11,7 @@ ledger IS one. Updated per epoch commit.
 | Class | Cause (manifest row) | Re-bless action |
 |---|---|---|
 | `identity_hash.cxd` singles idh-001…005 | W-14 LF (row 2) — every Tier-1 digest moved | re-bless digests; record old→new in the mapping file |
-| `operator_heads.cxd` oph-001…005 digests | W-14 LF now; row 8 will move them AGAIN (stringify → element) | re-bless ONCE, after row 8 lands |
+| ~~`operator_heads.cxd` oph-001…005 digests~~ | ~~W-14 LF now; row 8 will move them AGAIN (stringify → element)~~ | RETIRED at entry 27 — row 8 landed and this class re-blessed with it (10/10 green; the flip-at-row-8 instruction below discharged) |
 | `journal.cxd` ×27 + `sched.cxd` sched-022 | chain preimages ride canonical bytes (rows 2/10-12) | re-bless chains after the ts-form (#712) + detached-payload (#720) land, not before |
 | `store.cxd` ×6 (address literals) | store keys are Tier-1 canonical addresses | re-bless literals |
 | `xap-dist.cxd` ×4 (pinned tree/manifest hashes) | package tree hashes are Tier-1 | **re-seal the committed `registry/`** (gtin@0.1.0 re-publishes under epoch bytes) + re-pin fixtures + `xap_registry_serve_real_test.v` consts |
@@ -28,7 +28,7 @@ ledger IS one. Updated per epoch commit.
 
 - `idh-023` (decimal scale) → row 1 (L40 scale-preserving identity)
 - `idh-026` ($x vs '$x') + `cx-094` (quote-hash E210) → row 9 (quote lowering)
-- `oph-001…007` semantic flips → row 8 (operator-head lexer fix)
+- ~~`oph-001…007` semantic flips → row 8~~ FLIPPED + re-blessed at entry 27
 - `store-code-003…006` (Tier-2 collisions) → row 13 (participating-field set)
 - data-bin decimal/bigint goldens → rows 1+16 (0x18/0x28); ch-008…011 must stay
   BYTE-IDENTICAL (proven-untouched kinds) — if they move, that is a REGRESSION
@@ -476,11 +476,61 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    comment re-worded in-commit (text serialization is transparent —
    binding/return flow carries the annotation).
 
+27. Row 8 (stream 1, L80 / audit C4 — ROW 8 COMPLETE; the oph red
+   class RETIRES): all seven operator heads `+ - * / = < >` parse as
+   OPERATOR-NAMED ELEMENTS in the data lane when the single operator
+   char is DELIMITED (followed by whitespace or `]`). Three surgical
+   sites: peek_is_array_literal routes delimited `+ - / = <` to the
+   element side (glued spellings keep their old routes — `[-1, 2]`
+   negative-number array, `[+1, 2]` array normalization); the `*`
+   dispatch splits delimited (operator element) vs glued (alias
+   `[*n]`, unchanged); parse_element's head reader accepts the
+   delimited operator char as the name (`*` `>` used to die there
+   with "expected name"). Multi-char glyphs (`<=`) are NOT heads.
+   operator_heads.cxd re-blessed v1.0→v2.0 PER THE LEDGER'S
+   flip-at-row-8 instruction (the ONE re-bless for this class): the
+   five stringify pins flip to element form with fresh tagged
+   digests, the two reject pins gain their first addresses, plus
+   guard rows oph-008..010 (negative-number array, glued alias,
+   empty `[+]`) — 10/10 GREEN; the old→new digests ride the epoch
+   mapping file from the v1.0 blessing. Differential moved
+   deliberately 720→723 (both_reject −2 → cx_only for the two
+   ex-rejecting heads; oph-010 `[+]` is the first row where BOTH
+   readings accept an operator-headed input and DIVERGE — data:
+   element, program: evaluated arity-err value — the ruled
+   data/program mode fork, diverge 18→19). Census exactly 7 + 133.
+   FOUND IN PASSING: cx fmt mangles/drops BODY-position alias
+   references (pre-existing emit-lane defect, parse+canonical
+   correct) — filed #736, oph-009 pins the canonical lane.
+   OBLIGATIONS (map): grammar.ebnf gains the delimited-operator-head
+   production in [50]/name grammar; XML projection of operator-named
+   elements is UNRULED (they are not XML NCNames — flagged for the
+   spec-edit map to state the conversion behavior); tmLanguage/
+   tree-sitter data-element coloring of operator heads rides the
+   epoch tooling pass (ledger obligation 3).
+
 ## Remaining epoch work
 
-Rows 8-9 (operator-head lexer + quote lowering; oph/idh-026/cx-094
-pins flip), 10-15, then spec-edit maps + the ONE re-bless with the
+Row 9 (quote lowering + authorable hole form; idh-026/cx-094 pins
+flip), rows 10-15, then spec-edit maps + the ONE re-bless with the
 old→new mapping file + registry re-seal.
+
+**Row-9 scouting (recorded for the next cycle):** two halves. (A) The
+hole-surface collision MUST (L78 amendment): data-mode bare `$x` must
+canonicalize DIFFERENTLY from the string `'$x'` — today both collapse
+to one TextNode/one address (idh-026 pins hash-eq=true, flips to
+false). Needs a distinct hole representation in the data reading +
+needs-quote extended so $-leading STRINGS keep their quotes in
+canonical (bijection: bare `$x` = hole, quoted `'$x'` = string), BOTH
+engines in step. (B) Quote lowering: `[?quote …]` results serialize
+via the `cx:var`/`cx:expr` lift (vcx/code/dynamic_construction.v:260,
+:521 — mk_cx_node('cx:var', …) / mk_cx_expr) whose image dies on
+re-parse (E210 → CXER4100; cx-094 pins the death). At I1 the lowering
+emits plain authorable CX source (holes as `$x`, expressions per L78
+"annotations retained exactly where the bare spelling would re-type
+differently"), so quoted trees gain Tier-1 addresses (DEFINES — no
+address existed). The `cx:` lift remains emitter-internal for the XML
+projection only, never the identity substrate.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
