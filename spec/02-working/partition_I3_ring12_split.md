@@ -322,3 +322,102 @@ N3 on did/vc).
      **services_listener_init_globals** (seam G, rearranges with the
      module init at file-move time). Everything else is
      registry-mediated or relocated.
+
+7. **Seam H LANDED — the http client/serve split, and it pulled a NET
+   TRANSPORT CORE out with it (2026-08-06).** The crypto→http residual
+   is dissolved; the frontier census is clean (see below).
+
+   **The split was bigger than the file it names.** The one-shot client
+   core (pool/dial/exchange) was already Ring-1-clean — it dials V
+   `net`/`net.mbedtls` directly. But the SSE CLIENT rides the buffered
+   net handle table, and the corpus had already ruled SSE-client
+   ring=1 (the I0 C8 per-case repairs: http-066/072/073). Pushing the
+   SSE client to Ring 2 would have re-litigated that ruling AND gutted
+   the §4 cli-profile http-client pack (xap_identity_model §4.12 needs
+   an authenticating SSE client wherever the client pack ships). So
+   the net transport CORE became Ring-1 infrastructure:
+
+   - **NEW `net_core.v` (Ring 1)** — moved VERBATIM out of
+     stdlib_net.v: NetHandle/NetRegistry + the handle registry global,
+     register/lookup/mut_handle/handle_id/close_id (+ the SSE
+     stream-slot release hook it calls), set_read_deadline_id, the
+     §4.5 SSRF/DNS-rebinding guard (canonicalize/deny-set/spec-match/
+     override/ssrf_check), dial tcp/tls, the buffered stream reads
+     (read_line_buf/read_exact_buf/h_read/h_write/read-deadline
+     arming/NetReadKind), socket_element, the tls/ms opts readers, the
+     net error consts. stdlib_net.v keeps the RING-2 verb surface
+     ([$net:…] — all ring=2 by corpus), listen/accept (tcp/tls/udp/
+     dtls/unix), datagram + unix transports, resolve, sock-opts, and
+     listener TLS rotation.
+   - **NEW `stdlib_http_serve.v` (Ring 2)** — the serve half, moved
+     verbatim: listen/accept-iter/exchange-request/respond/stop arms
+     in a NEW `http_serve_stdlib_builtin` (registered via
+     ring2_register.v in http's old chain slot),
+     http_stdlib_builtin_env (http-serve) + http_serve_env, the
+     serializers (keep-alive + chunked + reason phrases), the ONE
+     query parser (#627 — all consumers are Ring 2), server handles,
+     exchange wrap/finalize, bind-URL validation, and the SSE SERVER
+     push half (sse/send-event/sse-publish/heartbeat/stream-open).
+   - **stdlib_http.v (Ring 1)** = the http-client pack: client/close,
+     introspection, one-shot verbs + request + send, the pool, the
+     shared SSE frame/parse codec (the symmetry invariant stays one
+     implementation), and the SSE client incl. the TWO WALKERS
+     (`iter_sse_events_walk(_streamed)`) moved BACK from
+     iter_walks_net_http.v — the [?for] sites dispatch them DIRECTLY
+     like iterate/unfold (a Ring-1 pack's walk does not ride the
+     Ring-2 registry; registration removed). Dispatcher renamed
+     `http_client_stdlib_builtin`, chained directly in
+     stdlib_dispatch.v after the registry probe (name sets disjoint ⇒
+     position behavior-neutral).
+   - **SSE stream counter**: stays Ring 1 beside net_core's close hook
+     (net_close_id releases the slot); the Ring-2 server increments
+     through NEW accessors http_sse_streams_at_cap /
+     http_sse_stream_opened — check-before-write order preserved
+     exactly (bound check early, increment only after the prelude
+     write succeeds).
+   - `store_null()` → `http_null()` in http_dial_conn (2 sites,
+     value-identical) — the client half's only store reference, gone.
+
+   **Frontier re-check found a const edge the entry-4 census
+   under-reported:** `stdlib_src_{store,journal,xap,fabric}` were
+   defined in their Ring-2 pack files but consumed by RING-1
+   stdlib_bundle.v (register_source / bundled_stdlib_source). Moved to
+   stdlib_bundle.v beside the other 38 embeds ($embed_file paths are
+   file-relative and unchanged — same directory). The embedded CX
+   surface is DATA in Ring 1; the packs' native primitives register
+   via ring2_register.v, and an artifact without them refuses at call
+   time. Re-enumeration (entry-4 method, scripted) now shows the
+   frontier = exactly the two dispositioned seam-G init residuals
+   (`ring2_register_all`, `services_listener_init_globals`) + method-
+   name noise on distinct receiver types. stdlib_codec.v's init()
+   comment now records the seam-H truth: the g_http_pool seeds STAY
+   Ring 1 (client pool); g_csrp_disco + listener globals move with G.
+
+   **Corpus:** http-067/068 (last-event-id present/absent) retagged
+   ring=1 with a provenance note — PURE accessors over the CLIENT
+   [sse-source]; the C8 repair tagged the equally-pure 066 but missed
+   this pair. Census: **R0=1564 (untouched), R1=2012 (+2),
+   R2=686 (−2)**; doc-lane total 4262 unchanged. The in-case `[; …]`
+   notes are inert to the fixture loader (sections are read by known
+   key only) and to the cxparse differential (in-cx doc count
+   unchanged; baseline holds at 741).
+
+   **Validation:** full `make test-vcx-suite` 240/241 + the one FAIL
+   (fabric_nats_bridge_test) green on the recipe's classified
+   cache-free retry (#572 stale-usecache class — expected after
+   moving code between files; also reproduced green standalone);
+   conform-fmt 12/12; ring-import-gate + gates-manifest-gate +
+   ring-tag-gate OK; extraction gate BOTH lanes byte-identical (1564
+   Ring-0 cases; ABI transcript 4498070 bytes, CLI 8978 pairs + 17
+   refusals); **libcx-abi-gate: 713-symbol surface identical to the
+   I3-cut baseline**.
+
+   **Move-time notes banked for the module move (next):** cmd/cli
+   carry 23 `code.<sym>` references to Ring-2 symbols (fabric_serve +
+   store daemon verbs) that retarget to the platform module; the
+   platform module's init() takes g_csrp_disco seeds +
+   services_listener_init_globals + ring2_register_all; code's init()
+   keeps json codec registration + g_http_pool seeds +
+   ring_registry_init; libcx builds over the platform module dir (it
+   imports code, pulling the full surface — ABI gate pins the 713);
+   cmd needs `import platform as _` so registration init runs.
