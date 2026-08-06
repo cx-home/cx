@@ -69,8 +69,8 @@
 
 [directive-doc name='?quote' category="Core — quasiquote (eager; two-color hygiene)" spec="§6.4.3"
   [sig """[?quote FORM] -> inert tree"""]
-  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` becomes `[cx:var 'x']` rather than dereferencing."""]
-  [example [code """[?quote [a $x]]"""] [expect """[a [cx:var 'x']]"""]]
+  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` stays an inert hole `$x` rather than dereferencing."""]
+  [example [code """[?quote [a $x]]"""] [expect """[a $x]"""]]
 ]
 
 [directive-doc name='?unquote' category="Core — quasiquote hole (single value)" spec="§6.4.3"
