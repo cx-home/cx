@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate check-code-spec-consistency
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate libcx-abi-gate check-code-spec-consistency
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -583,6 +583,27 @@ test-extraction-gate: build-vcx-dev
 	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
 	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance
+
+# ── LIBCX ABI GATE (I3, partition spec §8 freeze direction) — the split
+# changes module boundaries, never the export surface. Baseline captured at
+# the I3 branch cut (7a38b6a6, `nm -gU` over the dev-shape libcx): 713
+# exported symbols = 166 cx_* (the intentional ABI, incl. the two
+# cx_iowatch_* C→V callbacks) + vendored C statics (zstd/re2 shim). V does
+# NOT export module-mangled internals, so the full-list diff is stable
+# across module splits — any diff means the shipped surface moved.
+# Darwin-only for now: the baseline is per-platform (Mach-O vs ELF export
+# semantics differ); a Linux baseline joins if/when the linux lane runs
+# TEST_TARGETS (it builds only today).
+.PHONY: libcx-abi-gate
+libcx-abi-gate: build-vcx-dev
+ifeq ($(shell uname -s),Darwin)
+	@nm -gU $(LIBCX_ART) | awk '{print $$3}' | sort > vcx/target/libcx_exports_current.txt
+	@diff vcx/tests/runners/abi_gate/libcx_exports_baseline_darwin.txt vcx/target/libcx_exports_current.txt \
+	  && echo "libcx-abi-gate OK — export surface identical to the I3-cut baseline ($$(wc -l < vcx/target/libcx_exports_current.txt | tr -d ' ') symbols)" \
+	  || { echo "libcx-abi-gate FAILED — libcx export surface changed (diff above; baseline vcx/tests/runners/abi_gate/)"; exit 1; }
+else
+	@echo "libcx-abi-gate SKIP — no $(shell uname -s) baseline (Darwin-only; see comment)"
+endif
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
