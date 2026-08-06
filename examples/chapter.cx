@@ -2,7 +2,7 @@
    Demonstrates the namespace bearer pattern: xmlns: as an
    inherited attribute scoped to the declaring element and descendants. ]
 
-[chapter id=getting-started lang=en xmlns=https://cxhome.org/ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/
+[chapter id=getting-started lang=en xmlns=tag:cxhome.org,2026:ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/
   [title Getting Started with CX]
   [meta
     [; prefixed names resolve to the http://purl.org/dc URI at parse time ]

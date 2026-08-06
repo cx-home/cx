@@ -386,9 +386,43 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    (G-1..G-8, [59a] deletion, ModulePrefix opening, reserved-attr
    closure, MIME/extension registry) is SPEC-ONLY and rides the map.
 
+24. Row 5 (stream 15, L50/L51/L52 + #704 — ROW 5 COMPLETE): the CX
+   namespace URI is the RFC 4151 tag URI `tag:cxhome.org,2026:ns/cx`
+   (namespaces.v cx_namespace_uri + go/python/rust binding constants +
+   archived bindings + docs-src table + examples/chapter.cx's doc ns
+   migrated to the same scheme); both legacy https spellings are
+   RESERVED aliases recognized only to reject. ENFORCEMENT moves from
+   literal prefix to RESOLVED URI (#704 was fail-open): binding any
+   prefix or the default namespace to the CX URI in ANY spelling =
+   E213, and the reserved `cx` prefix may not be re-bound —
+   validate_reserved_ns_bindings runs at the tail of EVERY parse entry
+   (CX ×2, XML, AST-JSON, ast_bin, MD), and the program reading
+   enforces the SAME rule at the element-literal lane
+   (eval_construction_attrs → cx_check_reserved_ns_attrs, the one
+   shared core; the differential CAUGHT the program-lane gap before
+   the fix — both_reject +5 proves the two readings agree).
+   Dynamically-built elements are caught at the text/identity boundary
+   (cx_text_hash re-parses). ONE carve-out: `xmlns:cx="<tag URI>"` —
+   the C14N carrier declaration the XML image mandates on its root —
+   is accepted, and strict canonical STRIPS it
+   (canonicalize_element_ns), so declared/undeclared spellings share
+   one address. #704's canonical∘canonical non-idempotence dies with
+   the E213 rejection. Fixtures ns-017..023 (5 × E213 negatives incl.
+   both legacy spellings + default-ns + cx-rebind; carrier-decl
+   strip; namespaced idempotence pin) — namespaces.cxd 23/23 GREEN
+   (zero red: the corpus was already domain-free, so the URI flip
+   moved no pinned digest). Gate-coupled spec edits in-commit: cxdm
+   §3.4 row, ast.md, grammar.ebnf §namespace (URI + legacy + carve-out
+   language), parser-rules :11/:22, canonical.md §2.7a strip row.
+   Differential moved deliberately 713→720 (both_reject +5, cx_only +2
+   — the positives carry prefixed child names the program reading has
+   always rejected; diverge held 18). Census exactly 7 + 133. L52's
+   permanence inventory is prose for cx_partition.md §8 — rides the
+   spec-edit map.
+
 ## Remaining epoch work
 
-Rows 5-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit
+Rows 6-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit
 maps + the ONE re-bless with the old→new mapping file + registry
 re-seal.
 
