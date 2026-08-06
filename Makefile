@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -539,6 +539,40 @@ ring-import-gate:
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
+
+# ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
+# rule, executable: the extracted artifacts must match the monolith over the
+# full Ring-0-tagged corpus — outputs, canonical bytes, hashes, error codes.
+# Two lanes:
+#   ABI lane — vcx/tests/runners/extraction_gate/probe/ dlopens ONE artifact,
+#     feeds every Ring-0 case input through a fixed C-ABI battery (conversions
+#     matrix, canonical/hash/fmt/lint, ast-bin/data-bin/events + decoder
+#     round-trips, diff/eq pairs, schema validate, the streaming-write event
+#     interpreter) and emits a deterministic transcript; the transcript from
+#     libcx.dylib and the one from libcx-core.dylib must be BYTE-IDENTICAL
+#     (`cmp`). Errors are records too, so error-text identity is asserted.
+#     One artifact per process — the GC-carrying dylibs never co-load.
+#   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
+#     data-profile cx over the shared surface (verbs + EXPLICIT --from=
+#     convert; the bare-FILE run-vs-data reading is a ruled profile
+#     difference, spec §4) requiring stdout+stderr+rc identical, plus the
+#     17 monolith-verb profile refusals on the data binary (#426 discipline).
+# Dev-shape builds (same codegen semantics as -prod minus optimization);
+# the release cut re-runs this against the prod-shape artifacts.
+LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+.PHONY: test-extraction-gate
+test-extraction-gate: build-vcx-dev
+	@$(MAKE) -C vcx build-data-dev
+	@mkdir -p vcx/target/extraction_gate
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
+	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance > vcx/target/extraction_gate/transcript_monolith.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance > vcx/target/extraction_gate/transcript_core.txt
+	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
+	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
+	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
+	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
