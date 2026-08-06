@@ -1,10 +1,20 @@
 # I1 identity epoch — deliberate-red ledger + re-bless obligations
 
-**Status:** live working ledger on `impl/I1-identity-epoch`. Every entry is a
-fixture class that is RED ON PURPOSE mid-epoch (its pinned bytes moved by a
-manifest row) plus the obligations the final coordinated re-bless must
-discharge. Nothing here is a regression; anything red that is NOT in this
-ledger IS one. Updated per epoch commit.
+**Status: THE EPOCH IS CLOSED** (2026-08-06, commit ef80e409 — THE
+RE-BLESS). All 16 manifest rows landed; the spec-edit maps executed; the
+one coordinated re-bless regenerated every ledgered red class; the
+registry re-sealed; eval gate ZERO enforced, conform FULLY green, full
+suite green, differential at its final baseline. The deliberate-red
+table below is DISCHARGED — from this commit forward, ANY red is a
+plain regression. Pending: owner review of the PR
+(partition_I1_hash_mapping.md + the conformance/ diff, ruling 2a) and
+the entry-25 schema-mode decision. This file remains the epoch's
+historical record (entries 1-34).
+
+*(Original mid-epoch charter, kept for the record:)* live working
+ledger on `impl/I1-identity-epoch`. Every entry is a fixture class that
+is RED ON PURPOSE mid-epoch (its pinned bytes moved by a manifest row)
+plus the obligations the final coordinated re-bless must discharge.
 
 ## Red classes (verified intended, per triage)
 
