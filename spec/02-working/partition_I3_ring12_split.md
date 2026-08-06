@@ -164,3 +164,66 @@ N3 on did/vc).
    export semantics); a Linux baseline joins if the linux lane ever
    runs TEST_TARGETS (today it builds only) — noted in the target
    comment.
+
+3. **Pre-I3 corpus obligations G6 + G14 CLOSED (2026-08-06).**
+
+   **G6 — `conformance/fmt.cxd` (ring=1, 12 cases) + NEW runner
+   `vcx/tests/runners/fmt/fmt_conform.v` + `conform-fmt` lane** (vcx
+   Makefile aggregate + root `test-vcx` recipe — the ring-1 suite does
+   NOT ride the extraction battery, so it needed its own gate hook).
+   The runner enforces the formatting.md contract MECHANICALLY on
+   every positive case: byte-pinned output, §1 purity
+   (cx_text_canonical(fmt(x)) == cx_text_canonical(x)), §7
+   idempotence (fmt∘fmt = fmt); out-err cases pin the fail-closed
+   CXER0100 lane. Coverage: fixed point, whitespace/indent, blank-line
+   collapse, inline-short-element, quote-style preservation, [; …]
+   note + trailing-hash-comment (own-line) preservation,
+   scalars-as-written (1.50/007/offset-datetime), one-per-line wrap,
+   program-faithful [?let]/multi-form docs. SCOPE: pins the ONE
+   shipped profile (fmt_source's canonical layout); --profile surfaces
+   are spec-forthcoming and gain families when they land.
+   CORPUS-FORMAT LIMIT recorded in the suite doc: content containing
+   the raw-block terminator sequence cannot ride a .cxd raw section
+   (it closes the section), so hash-raw byte-exactness stays covered
+   by fmt_lossless_test.v.
+
+   **G14 — `conformance/stdlib/did.cxd` (ring=2, 25 cases) +
+   `conformance/stdlib/vc.cxd` (ring=2, 17 cases)**, auto-discovered
+   by the stdlib fixtures driver (no whitelist). Hermetic golden
+   material: fixed seeds 01..20 / 40..5f → pinned did:key values;
+   ed25519 determinism pins signatures byte-for-byte; mem:// journals
+   for the revocation fold. did: key-create/peer-create, parse
+   (key/web/peer + malformed), method, document (full did:key shape +
+   not-self-describing lanes), key-of (round-trip, peer, non-Ed25519
+   refusal), verify-control (pass / wrong signer / stale challenge),
+   resolve (offline did:key, unsupported method, did:web net-DENIAL).
+   vc: issue (full golden shape subject≠issuer + minimal), verify all
+   six statuses (valid/expired/not-yet-valid/bad-signature via literal
+   AND real-signature-tampered-claim/malformed/revoked), the
+   revocation fold end-to-end (revoke event, CXER4609 attribution
+   refusal, revoked-set, issue→revoke→verify), present passthrough,
+   issue negatives, revoked-list negative control.
+
+   **Findings → tracker (fixture-before-fix, both pinned as shipped):**
+   - **#739** — vc.md's `valid?` surface is UNREACHABLE: the lexicon
+     rejects `?` in the qualified call form (CXER0100); definition
+     side parses. Pin = vc-016.
+   - **#740** — did:resolve failure wraps the real cause (CXER0271
+     net denial) in a misleading CXER-DID-DOC-MISMATCH + message=panic
+     envelope. Pin = did-023.
+   - **Harness gotcha worth remembering:** the #707 three-way grant
+     policy scans OUT-ERR for CXER0271; a denial returned as an
+     [err …] VALUE (rc=0) in out-text still gets grant-all — did-023
+     initially hit the LIVE network from inside the fixture run.
+     Explicit least-privilege `grant="read"` is the pattern for
+     value-channel denial pins.
+   - .cxd sections are parsed as real CX (the differential corpus
+     parses suite files whole): section content must not contain the
+     raw-terminator sequence ANYWHERE, not just at line starts.
+
+   Validation: `make test-vcx-suite` green (did/vc fixtures enforced
+   in the 2600+ battery); `conform-fmt` 12/12; cxparse differential
+   UNCHANGED (stdlib in-cx [empty] docs don't move the baseline);
+   gates-manifest-gate + ring-tag-gate green; extraction gate green
+   (1564 Ring-0 cases, corpus census now R0=1564 R1=2010 R2=688 —
+   growth rides Rings 1/2 only).

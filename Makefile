@@ -876,6 +876,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 
 test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
 	$(MAKE) -C vcx conform-all
+	$(MAKE) -C vcx conform-fmt
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
