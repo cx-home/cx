@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate check-code-spec-consistency
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate libcx-abi-gate check-code-spec-consistency
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -583,6 +583,27 @@ test-extraction-gate: build-vcx-dev
 	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
 	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance
+
+# ── LIBCX ABI GATE (I3, partition spec §8 freeze direction) — the split
+# changes module boundaries, never the export surface. Baseline captured at
+# the I3 branch cut (7a38b6a6, `nm -gU` over the dev-shape libcx): 713
+# exported symbols = 166 cx_* (the intentional ABI, incl. the two
+# cx_iowatch_* C→V callbacks) + vendored C statics (zstd/re2 shim). V does
+# NOT export module-mangled internals, so the full-list diff is stable
+# across module splits — any diff means the shipped surface moved.
+# Darwin-only for now: the baseline is per-platform (Mach-O vs ELF export
+# semantics differ); a Linux baseline joins if/when the linux lane runs
+# TEST_TARGETS (it builds only today).
+.PHONY: libcx-abi-gate
+libcx-abi-gate: build-vcx-dev
+ifeq ($(shell uname -s),Darwin)
+	@nm -gU $(LIBCX_ART) | awk '{print $$3}' | sort > vcx/target/libcx_exports_current.txt
+	@diff vcx/tests/runners/abi_gate/libcx_exports_baseline_darwin.txt vcx/target/libcx_exports_current.txt \
+	  && echo "libcx-abi-gate OK — export surface identical to the I3-cut baseline ($$(wc -l < vcx/target/libcx_exports_current.txt | tr -d ' ') symbols)" \
+	  || { echo "libcx-abi-gate FAILED — libcx export surface changed (diff above; baseline vcx/tests/runners/abi_gate/)"; exit 1; }
+else
+	@echo "libcx-abi-gate SKIP — no $(shell uname -s) baseline (Darwin-only; see comment)"
+endif
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
@@ -855,6 +876,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 
 test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
 	$(MAKE) -C vcx conform-all
+	$(MAKE) -C vcx conform-fmt
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
@@ -974,15 +996,18 @@ test-vcx-suite: build-vcx-dev
 # retry class, so a live-socket lane flaking under -j parallel load failed the
 # umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
 # isolation, is the proven case).
-CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
-                     vcx/code/store_grpc_live_test.v \
-                     vcx/code/store_grpc_parity_test.v \
-                     vcx/code/store_lazy_load_test.v
+CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
+                     vcx/platform/store_grpc_live_test.v \
+                     vcx/platform/store_grpc_parity_test.v \
+                     vcx/platform/store_lazy_load_test.v
 
+# I3 module split (#651/#516): the in-module tests now live in TWO
+# modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
+# store/journal/grpc/service subjects moved). One lane runs both.
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
 	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
@@ -1065,7 +1090,7 @@ endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev
 	$(MAKE) -C vcx arrow-shim
-	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/code/store_columnar_test.v
+	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
 # The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3);
@@ -1084,7 +1109,7 @@ else
 endif
 .PHONY: test-vcx-sqlite
 test-vcx-sqlite: build-vcx-dev
-	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/code/store_sqlite_test.v vcx/code/store_sqlite_encryption_test.v vcx/code/store_concurrent_writer_test.v
+	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
