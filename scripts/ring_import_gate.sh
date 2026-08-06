@@ -91,5 +91,42 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — Ring-0 (vcx/cx) is not a strict sink."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 (vcx/cx) imports nothing internal and carries no unapproved C edges (strict sink; deny-set derived live: ${INTERNAL_MODULES% })"
+
+# ── I3 lane: the store ENGINE is evaluator-free (spec §2) ─────────────────────
+# vcx/cxstore sits in Ring 2 but MUST import Ring 0 only — "imports Ring 0
+# only, and MUST stay evaluator-free". The import-edge audit verified
+# cxstore -> [cx]; this locks it: any import of a sibling module other than
+# cx (code, arrow, transport, cli, platform, …) fails. V stdlib imports are
+# never in the derived deny-set. Same M35 C-edge rule, no allowlisted edges
+# (cxstore's sole C touch is <sys/mman.h>, not a sibling path).
+CXSTORE_DIR="$ROOT/vcx/cxstore"
+ENGINE_DENY="$(cd "$ROOT/vcx" && find . -maxdepth 1 -mindepth 1 -type d ! -name cx ! -name cxstore | sed 's|^\./||' | LC_ALL=C sort | tr '\n' ' ')"
+while IFS= read -r -d '' f; do
+  base="$(basename "$f")"
+  while IFS= read -r line; do
+    mod="$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+([A-Za-z_][A-Za-z0-9_]*).*/\1/')"
+    for internal in $ENGINE_DENY; do
+      if [ "$mod" = "$internal" ]; then
+        echo "RING-VIOLATION: store engine (cxstore) module $base imports '$mod' — the engine is Ring-0-only + evaluator-free (spec §2)"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*import[[:space:]]+" "$f" 2>/dev/null || true)
+  while IFS= read -r line; do
+    for internal in $ENGINE_DENY; do
+      if printf '%s\n' "$line" | grep -qE "@VMODROOT/${internal}(/|[[:space:]]|$)"; then
+        echo "RING-VIOLATION: store engine (cxstore) module $base carries a C edge into sibling '$internal'"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*#(flag|include)" "$f" 2>/dev/null || true)
+done < <(find "$CXSTORE_DIR" -name '*.v' -not -name '*_test.v' -print0)
+
+if [ "$fail" -ne 0 ]; then
+  echo "ring_import_gate: FAILED — see violations above."
+  exit 1
+fi
+echo "ring_import_gate: OK — Ring-0 (vcx/cx) strict sink (deny-set: ${INTERNAL_MODULES% }); store engine (vcx/cxstore) Ring-0-only + evaluator-free (deny-set: ${ENGINE_DENY% })"
 exit 0

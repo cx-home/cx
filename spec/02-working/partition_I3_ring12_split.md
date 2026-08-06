@@ -227,3 +227,50 @@ N3 on did/vc).
    gates-manifest-gate + ring-tag-gate green; extraction gate green
    (1564 Ring-0 cases, corpus census now R0=1564 R1=2010 R2=688 —
    growth rides Rings 1/2 only).
+
+4. **The Ring-1→Ring-2 frontier ENUMERATED mechanically + seam design
+   (2026-08-06).** Method: extract every top-level fn/type/const from
+   the 68 Ring-2 production files, intersect with all identifiers used
+   in the 76 Ring-1 files. Result: **65 frontier functions, 1 real
+   type edge, 0 const edges** (Journal/ListenerHandler/XapHost/Span
+   hits were comments or cx.Re2Span false positives). Clusters and
+   dispositions:
+
+   | Seam | Edges | Disposition |
+   |---|---|---|
+   | A. stdlib_dispatch.v chain | 17 `<mod>_stdlib_builtin` entries (store, sql, redis, email, net, http, bus, journal, fabric, session, authz, did, vc, xap, xap_dist, xsp, xsp_auth) | registry probe (LANDED, entry 5) |
+   | B. eval.v env chains | 6 `_env` entries + try_eval_serve_file; TWO pre-split compositions (main chain probes serve-file+store, closure-callback chain does not) | registry with shared/main lists preserving both memberships (LANDED, entry 5) |
+   | C. directive dispatch | 6 match arms (http-service, service-handle, stop, http-client, test-service-client, test-tls-config) + wait-for :service arm + dispatch_client_call ([http-client] postfix) | directive-handler map + two single-slot hooks |
+   | D/E. iterator walkers | `iter_{net_accept,http_accept,sse_events,net_line,net_chunk}_walk(_streamed)` — 10 fns dispatched on `cx.IteratorNode.source_kind` (Ring-0 enum); the 20 net_*/http_* helper calls live INSIDE these walkers | move the walkers to Ring 2 wholesale + a source_kind→walker registry; .iter_iterate/.iter_unfold stay direct |
+   | F. new_env resets | matcher.v calls session_reset_state + authz_reset_state (prof/sched resets are Ring 1, stay direct) | env-reset hook list |
+   | G. module init | stdlib_codec.v init() seeds g_csrp_disco*/g_http_pool* + services_listener_init_globals + (now) ring2_register_all | rearranges at file-move time; single-init-per-module constraint noted in place |
+   | H. crypto→http | crypto_jwks_fetch calls http_request_verb + http_body_text_impl (both CLIENT-side) | dissolves with the stdlib_http.v client/serve in-file split — http client is Ring 1 (§4 cli profile), so this edge is legal once the file splits |
+   | I. io→iowatch | io_stdlib_builtin probes iowatch_dispatch inline | iowatch registers env-free via the A registry (probe precedes io in the chain; names disjoint) |
+   | J. sched→journal | durable-timer persistence calls journal_stdlib_builtin BY NAME (3 sites) | call `ring2_stdlib_builtin('journal-…')` — registry-by-name; unregistered (embed) ⇒ the existing `or { return }` degrades persistence gracefully |
+   | K. ft→store | ft_search_store resolves Store handles via store_get_open/store_doc_text/store_decode_doc | relocate ft_search_store to the Ring-2 side; its verb name registers via A |
+   | L. identity→store | cx_code_store_put_def/get_def (MemStore — the one real type edge); consumers are Ring-2 xap_dist + tests | relocate both fns to the Ring-2 store side (they call Tier-2 hash helpers Ring-2→Ring-1, legal) |
+   | M. loader→xap_dist | module_loader resolves pkg: URLs via xap_pkg_module_source | single-slot pkg-source resolver hook; unset ⇒ pkg: unavailable (correct profile behavior) |
+
+   **Module naming decision:** the Ring-2 V module is `vcx/platform`
+   (spec §2 names Ring 2 "platform"; the §4 profile that ships it is
+   `platform`). Files move AFTER all seams are landed in-module and
+   green — the V compiler then becomes the frontier oracle for any
+   residual edge, and `code` retains zero compile-time references to
+   platform symbols.
+
+5. **Seams A+B LANDED (registry conversion, behavior-identical).**
+   NEW `ring_registry.v` (Ring 1): fn-typed chains
+   (`Ring2Builtin`, `Ring2BuiltinEnv`), @[has_globals] lists, register
+   + probe fns; the ordering argument (entries name-gated, pack
+   name-sets disjoint ⇒ collapsed probe position is
+   behavior-identical, original relative order preserved regardless)
+   written at the registry. NEW `ring2_register.v` (RING 2 — moves
+   verbatim into the platform module's init at split): registers all
+   17 env-free dispatchers (redis under its `$if cx_db_redis` pack
+   gate), the 5 shared env dispatchers, and the 2 main-only env
+   entries (serve-file, store). stdlib_dispatch.v chain: 17 direct
+   entries → one probe; eval.v main env chain: serve-file + 6 env
+   entries → one probe; try_stdlib_builtin_env: 5 entries → shared
+   probe. Registration called from the module init()
+   (stdlib_codec.v). Build green; full suite + gates at the seam
+   commit.
