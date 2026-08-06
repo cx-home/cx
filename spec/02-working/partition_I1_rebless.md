@@ -290,11 +290,40 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    the ledgered reds. REMAINING row 3: pack u16 multicodec slot +
    data-bin 0x13 multihash schema-ref (additive binary slots).
 
+21. Row-3 binary slots (L34 — ROW 3 COMPLETE): the .cxpack entry's
+   formerly-reserved u16 (entry offset 6) is the multicodec code of the
+   algorithm naming the 32-byte doc_hash slot (sha2-256 = 0x0012;
+   pack.v pack_hash_mh_code, pinned against THE ONE registry by
+   pack_multicodec_test.v). Readers FAIL CLOSED at open on any other
+   code — including the pre-epoch zero and registered-but-unimplemented
+   algos (blake3) — for both v1 self-verifying and v2 keyed packs; all
+   1.0 algos are 32-byte, non-32-byte digests require pack v3. The
+   committed registry packs (registry/store/store-000{0..3}.cxpack, 26
+   entries) were STAMPED IN PLACE 0→0x12: the slot is covered by no CRC
+   (entry CRC covers stored payload bytes only), so no hash, CRC, or
+   signature moved — the re-seal at re-bless rewrites them wholesale
+   anyway. data-bin schema-ref gains the ADDITIVE 0x13 multihash form
+   (uvarint code ‖ uvarint len ‖ digest; 0x10/0x11/0x12 unchanged):
+   SchemaRefForm.multihash in encoder/decoder/cabi (ref_form=3) +
+   conformance runner; decode fails closed on unregistered codes
+   (D005/CXER0131), registry-length contradictions (D005/CXER0132), and
+   non-sha2-256 algos it cannot recompute. Fixtures sd-010..012 (new,
+   green); cxparse differential baseline moved deliberately 706→707
+   (sd-010's in-cx row, agree +1, diverge held 18). Census exactly at
+   the ledgered reds (7 code.cxd + 133 stdlib). NOTE:
+   xap_registry_serve_real_test.v is red as part of the ledgered
+   xap-dist class (manifest addresses moved at commit 19; consts flip
+   at the registry re-seal) — the stamped packs OPEN cleanly (failure
+   is the address miss, not a pack refusal). SPEC-EDIT OBLIGATION:
+   data-bin.md §3.13.1 gains the 0x13 row; the pack-entry hash_code
+   field row rides store.md/pack-format alignment (docs-src
+   pack_format.md already updated in-commit).
+
 ## Remaining epoch work
 
-Row-3 binary slots (pack u16 + data-bin 0x13), rows 4-7, 8-9
-(oph/idh-026/cx-094 pins flip), 10-15, then spec-edit maps + the ONE
-re-bless with the old→new mapping file + registry re-seal.
+Rows 4-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit
+maps + the ONE re-bless with the old→new mapping file + registry
+re-seal.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
