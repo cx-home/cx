@@ -6,9 +6,14 @@ one coordinated re-bless regenerated every ledgered red class; the
 registry re-sealed; eval gate ZERO enforced, conform FULLY green, full
 suite green, differential at its final baseline. The deliberate-red
 table below is DISCHARGED — from this commit forward, ANY red is a
-plain regression. Pending: owner review of the PR
-(partition_I1_hash_mapping.md + the conformance/ diff, ruling 2a) and
-the entry-25 schema-mode decision. This file remains the epoch's
+plain regression. **OWNER RULINGS 2026-08-06: (1) the re-bless review
+is APPROVED (mapping file + corpus diff accepted, ruling 2a
+discharged); (2) entry-25 schema-mode ruled (a) — the directive strip
+stands at I1; mode-in-identity is resolved BEFORE I5's type-binding
+anchoring (either content-bearing-directive preservation under its own
+ruling, or schema-of/schema-mode moving into schema-document body
+data). The residual stays test-pinned
+(test_mode_does_not_survive_canonical_text_named_residual).** This file remains the epoch's
 historical record (entries 1-34).
 
 *(Original mid-epoch charter, kept for the record:)* live working
