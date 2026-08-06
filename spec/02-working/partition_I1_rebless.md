@@ -628,6 +628,32 @@ owner reviews the mapping file + corpus diff in the PR (ruling 2a).
    (3) Then: mapping file, registry re-seal, consts flip, zero-red
    verification, ONE final commit.
 
+34. THE RE-BLESS (endgame part 2 — THE EPOCH CLOSES, pending the final
+   suite audit): (1) the 44 float-intent math/random inputs re-spelled
+   to exponent form (fixed-string rewriter, exact literals) and their
+   exact outputs adopted; journal-055's forgery re-formed to a
+   valid-shaped tagged signature (tests SIGNATURE verification again —
+   CXER4613); env-044 re-spelled. (2) The conformance EBLESS landed
+   (13 mismatch sites hooked in conformance_run.v, section-aware
+   records; apply_epoch_blesses.v — the V applier) — 19 records
+   adopted, ALL mapping to ledgered classes (idh singles ×5, ext 2b +
+   triquote family, xml-027, tab ×2, astb-003, yaml-018); idh-022
+   (decimal −0 normalizes → true) and idh-023 (scale-preserving →
+   false) pair pins flipped BY HAND with rationale notes; arrow
+   expect-values re-spelled to exponent form. CONFORM FULLY GREEN.
+   (3) partition_I1_hash_mapping.md authored (representative old→new
+   per class + the corpus diff as the exhaustive record). (4) registry
+   RE-SEALED: nmea0183@0.1.0 re-published under epoch bytes (manifest
+   sha2-256:1032cf6a…, tree sha2-256:a5c6ee0d…; the ledger's earlier
+   "gtin" reference was the release-branch package — the impl branch
+   registry holds nmea0183); xap-dist pins re-adopted as REAL values;
+   xap_registry_serve_real_test.v consts flipped — THE TEST IS GREEN
+   (red since entry 19). (5) EVAL GATE: ZERO ENFORCED (was 7+133 all
+   epoch). Differential holds at its final baseline. The deliberate-red
+   ledger is EMPTY — every class in the red table above is discharged.
+   Residual named map item: the stream-13 G-1..G-8 spec-only formal
+   repair batch (grammar_lexicon_review.md §3).
+
 **Epoch-bless machinery design (scouted for the executing cycle):** the
 shipped CX_BLESS=1 mode is quote-only-diff gated — too narrow for the
 epoch. Build: (a) conformance_run.v — under CX_BLESS=epoch, at each
