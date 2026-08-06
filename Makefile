@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate check-code-spec-consistency
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -488,6 +488,16 @@ check-null-absence-conflation:
 check-effect-alignment: build-vcx
 	@$(V) -cc cc $(CX_GC) test vcx/tests/effect_alignment_test.v
 
+# ── check-code-spec-consistency (#707 item 4 / code.md §11.4.1 gates 1-3 +
+# the clean-room no-impl-anchor / no-dangling-decision checks). The tool
+# existed since v0.7.6 but was wired into NEITHER the Makefile NOR CI — its
+# gate 3 (registry↔grammar [127e] parity) had been silently dead since the
+# formal-files move and nobody noticed. Repaired + wired at I2. Gate 1 runs
+# on the code.md bounded-freedom register (BF-* ids), not a blanket token ban.
+.PHONY: check-code-spec-consistency
+check-code-spec-consistency:
+	@$(PYTHON) scripts/check_code_spec_consistency.py > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
+
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
 # show Tier 1 ONLY, and fp.md / the words "monad"/"functor"/"typeclass" never
@@ -539,6 +549,40 @@ ring-import-gate:
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
+
+# ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
+# rule, executable: the extracted artifacts must match the monolith over the
+# full Ring-0-tagged corpus — outputs, canonical bytes, hashes, error codes.
+# Two lanes:
+#   ABI lane — vcx/tests/runners/extraction_gate/probe/ dlopens ONE artifact,
+#     feeds every Ring-0 case input through a fixed C-ABI battery (conversions
+#     matrix, canonical/hash/fmt/lint, ast-bin/data-bin/events + decoder
+#     round-trips, diff/eq pairs, schema validate, the streaming-write event
+#     interpreter) and emits a deterministic transcript; the transcript from
+#     libcx.dylib and the one from libcx-core.dylib must be BYTE-IDENTICAL
+#     (`cmp`). Errors are records too, so error-text identity is asserted.
+#     One artifact per process — the GC-carrying dylibs never co-load.
+#   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
+#     data-profile cx over the shared surface (verbs + EXPLICIT --from=
+#     convert; the bare-FILE run-vs-data reading is a ruled profile
+#     difference, spec §4) requiring stdout+stderr+rc identical, plus the
+#     17 monolith-verb profile refusals on the data binary (#426 discipline).
+# Dev-shape builds (same codegen semantics as -prod minus optimization);
+# the release cut re-runs this against the prod-shape artifacts.
+LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+.PHONY: test-extraction-gate
+test-extraction-gate: build-vcx-dev
+	@$(MAKE) -C vcx build-data-dev
+	@mkdir -p vcx/target/extraction_gate
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
+	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance > vcx/target/extraction_gate/transcript_monolith.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance > vcx/target/extraction_gate/transcript_core.txt
+	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
+	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
+	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
+	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
@@ -809,7 +853,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore
+test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -932,6 +976,7 @@ test-vcx-suite: build-vcx-dev
 # isolation, is the proven case).
 CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
                      vcx/code/store_grpc_live_test.v \
+                     vcx/code/store_grpc_parity_test.v \
                      vcx/code/store_lazy_load_test.v
 
 .PHONY: test-vcx-code
@@ -970,14 +1015,27 @@ test-vcx-code: build-vcx-dev
 # test-vcx-code, `v test` only runs the directory it is given, so neither
 # vcx/tests/ nor vcx/code/ pulls these in; this dedicated target wires the
 # cxstore in-module suite into the gate (same default -gc e memory model).
-# Scoped to the top-level `*_test.v` glob (NOT the directory) so it excludes
-# the `cxsqlite/` subdir — that DB-engine backend test needs sqlite3.h +
-# `-d cx_db_sqlite` (the separate db-access milestone) and is not part of the
-# default build surface. The glob still picks up every cxstore module test
-# (V compiles the whole `cxstore` module behind the listed test files).
+# (The dead `cxsqlite/` subdir this glob used to dodge was deleted at I2 —
+# the live sqlite store backend is vcx/code/store_sqlite_d_cxstore_sqlite.v.)
 .PHONY: test-vcx-cxstore
 test-vcx-cxstore: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
+
+# White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
+# the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
+# moved out of shipped libcx at I2). These lanes ran NOWHERE before I2:
+# `v test` only runs the directory it is given, and no target named vcx/cx —
+# five in-module tests sat outside every gate (found wiring this lane).
+# Files are listed explicitly, not the directory glob:
+# vcx/cx/parser_multidoc_test.v is EXCLUDED — it segfaults under the shipped
+# `-gc e` model (module-internal-test-only RC double-free of the multi-doc
+# Document tree; production paths and external-linkage tests are green).
+# That exclusion is #737; delete the list and glob the directory when it
+# closes.
+.PHONY: test-vcx-cx
+test-vcx-cx: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) test vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
 # they assert on the cmd module's own constants (e.g. the `cx scaffold`
