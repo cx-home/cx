@@ -319,11 +319,44 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    field row rides store.md/pack-format alignment (docs-src
    pack_format.md already updated in-commit).
 
+22. Row-4 part 1 — L55 registry-repair renames (stream 13): the
+   vocabulary's only non-kebab multi-word names are gone —
+   `takewhile`/`dropwhile` → `take-while`/`drop-while` in all spelling
+   lanes (program parser + emitter + program-XML both directions +
+   ast-json atoms + error hints + LSP diagnostic; internal V enum kinds
+   keep their names); the OLD spellings stay in for_clause_keywords and
+   TOMBSTONE-ERROR loudly ("renamed — spell it [take-while …]") because
+   bare removal would silently re-read `[takewhile P]` as a
+   pattern-generator (a meaning change). `[?chain]` — the registry's
+   ONLY alias (of `[?concat]`) — is RETIRED: dropped from
+   program_tokens.v directive_names (79→78; head now parse-errors
+   CXER0100 unknown-directive), eval dispatch, the code.md §4.1 row,
+   grammar.ebnf [127e], governance.md's combinator list, and the
+   directive-doc source (directive-docs gate GREEN at 78/78).
+   grammar.ebnf [129m]/[129n] respelled with a retired-spellings note.
+   BECAUSE THE GATES COUPLE THEM, these spec edits landed in-commit
+   (the general stream-13 spec-edit map still rides the epoch tail).
+   Fixtures: code.cxd spellings migrated (case IDs kept); chain-001
+   flipped to a retirement negative; take-while/drop-while retirement
+   negatives added (both green); the three parse-negatives joined
+   code_parse_fixtures_test.v's expected_parse_failures. Tooling:
+   tmLanguage (canonical + synced copy) + tree-sitter grammar.js with
+   regenerated ABI-14 src/parser.c + cx.dylib (17/17 corpus green;
+   tree-sitter-cx.wasm intentionally NOT rebuilt — the pinned
+   toolchain's wasm lane re-generates at ABI 15; it lags until the
+   epoch tooling pass, per the Makefile's own note). Census: eval gate
+   exactly 7 + 133; conform at the ledgered reds; differential HELD
+   (707/560/18 — in-code rows don't feed the data differential).
+   Docs obligation: docs/guide regeneration picks up the renames at
+   the post-re-bless re-record (directives.html still shows chain
+   until then); playground note re-worded at source.
+
 ## Remaining epoch work
 
-Rows 4-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit
-maps + the ONE re-bless with the old→new mapping file + registry
-re-seal.
+Row 4 remainder (r''' data-mode, [2a] line-start `---`, CXER0290
+unification), rows 5-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15,
+then spec-edit maps + the ONE re-bless with the old→new mapping file
++ registry re-seal.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 

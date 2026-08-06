@@ -536,7 +536,7 @@ and `[?<Name>]` with `Name` outside the closed set raises
 `[?with-open]`, `[?with-scope]`, `[?str]`.
 
 **Iterator combinators.** `[?filter]`, `[?take]`, `[?drop]`,
-`[?zip]`, `[?enumerate]`, `[?chunks]`, `[?concat]`, `[?chain]`,
+`[?zip]`, `[?enumerate]`, `[?chunks]`, `[?concat]`,
 `[?cycle]`, `[?scan]`, `[?flatten]`, `[?partition]`, `[?group-by]`,
 `[?to-sequence]`, `[?to-array]`, `[?to-map]`, `[?view]`, `[?views]`.
 
