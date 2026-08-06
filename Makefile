@@ -809,7 +809,7 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore
+test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
 	$(MAKE) -C vcx conform-all
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -970,14 +970,27 @@ test-vcx-code: build-vcx-dev
 # test-vcx-code, `v test` only runs the directory it is given, so neither
 # vcx/tests/ nor vcx/code/ pulls these in; this dedicated target wires the
 # cxstore in-module suite into the gate (same default -gc e memory model).
-# Scoped to the top-level `*_test.v` glob (NOT the directory) so it excludes
-# the `cxsqlite/` subdir — that DB-engine backend test needs sqlite3.h +
-# `-d cx_db_sqlite` (the separate db-access milestone) and is not part of the
-# default build surface. The glob still picks up every cxstore module test
-# (V compiles the whole `cxstore` module behind the listed test files).
+# (The dead `cxsqlite/` subdir this glob used to dodge was deleted at I2 —
+# the live sqlite store backend is vcx/code/store_sqlite_d_cxstore_sqlite.v.)
 .PHONY: test-vcx-cxstore
 test-vcx-cxstore: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
+
+# White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
+# the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
+# moved out of shipped libcx at I2). These lanes ran NOWHERE before I2:
+# `v test` only runs the directory it is given, and no target named vcx/cx —
+# five in-module tests sat outside every gate (found wiring this lane).
+# Files are listed explicitly, not the directory glob:
+# vcx/cx/parser_multidoc_test.v is EXCLUDED — it segfaults under the shipped
+# `-gc e` model (module-internal-test-only RC double-free of the multi-doc
+# Document tree; production paths and external-linkage tests are green).
+# That exclusion is #737; delete the list and glob the directory when it
+# closes.
+.PHONY: test-vcx-cx
+test-vcx-cx: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) test vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
 # they assert on the cmd module's own constants (e.g. the `cx scaffold`
