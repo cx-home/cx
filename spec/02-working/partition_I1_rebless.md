@@ -530,7 +530,16 @@ emits plain authorable CX source (holes as `$x`, expressions per L78
 "annotations retained exactly where the bare spelling would re-type
 differently"), so quoted trees gain Tier-1 addresses (DEFINES — no
 address existed). The `cx:` lift remains emitter-internal for the XML
-projection only, never the identity substrate.
+projection only, never the identity substrate. PROBED: both `[total
+$x]` and `[total '$x']` parse to Text "$x" today (the quoted spelling
+UNQUOTES in canonical — the collision is value-level, not just
+spelling-level), so half A needs a distinguishable HOLE node in the
+data reading (a structural NODE kind like Alias — NOT a 12th scalar
+kind, which L60 makes a major-version event) + needs-quote extended so
+$-leading STRING images always keep quotes; the existing `cx:var` lift
+becomes the hole's XML projection. Both engines + canonical + emit +
+eval-inertness of holes in data docs; then half B's lowering emits
+holes as `$x`.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
