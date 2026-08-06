@@ -14,7 +14,7 @@ anchoring (either content-bearing-directive preservation under its own
 ruling, or schema-of/schema-mode moving into schema-document body
 data). The residual stays test-pinned
 (test_mode_does_not_survive_canonical_text_named_residual).** This file remains the epoch's
-historical record (entries 1-34).
+historical record (entries 1-34, plus the post-epoch entry 35).
 
 *(Original mid-epoch charter, kept for the record:)* live working
 ledger on `impl/I1-identity-epoch`. Every entry is a fixture class that
@@ -810,6 +810,31 @@ $-leading STRING images always keep quotes; the existing `cx:var` lift
 becomes the hole's XML projection. Both engines + canonical + emit +
 eval-inertness of holes in data docs; then half B's lowering emits
 holes as `$x`.
+
+35. POST-EPOCH ADOPTION AUDIT (2026-08-06, the obligation-2 pass —
+   after the exit-merge): the doc-regeneration gates surfaced 22
+   corpus cases whose epoch-blessed outputs were DEGRADED adoptions,
+   not reviewed movements — all one class: float-intent inputs missed
+   by entry 34's 44-input re-spell, so the 2b flip made their bare
+   fractions decimals and the bless adopted the degraded result
+   instead of a value. Tell-tales: blank `$r/value` out-text
+   (random-026/030/031/032/048), `no callable` fall-throughs
+   (random-070/071, prof-013), CXER3002/CXER0100/CXER3001 errs
+   adopted over value-intent case ids (math-021..025/027/028/030/034,
+   math-061/062 whose float filters left "empty sequence"), and ONE
+   silent value corruption (prof-014 count 3→0 — observes failed,
+   stats still answered). ALL 22 repaired: inputs re-spelled to
+   exponent form, pre-epoch value outputs restored (probe-verified
+   against the live binary — every value reproduces exactly);
+   prof-016/017/018 re-spelled for intent (outputs unchanged).
+   math-116 ADDED: the stdlib-dispatch transcendental-over-decimal
+   CXER3002 refusal keeps a deliberate corpus pin (the repairs
+   removed the accidental ones; the $sqrt-builtin lane was already
+   pinned in decimal_bigint_semantics_test.v). Rest of the movement
+   audit came back clean: geo/similar/net/locale/http/ft/adjudicate/
+   test corpora never moved; store/json/csv movements all map to
+   ledgered classes. Co-located [fn-doc] examples re-pinned to the
+   repaired corpus in the same pass (obligation 2).
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
