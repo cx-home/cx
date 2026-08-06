@@ -420,11 +420,45 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    permanence inventory is prose for cx_partition.md §8 — rides the
    spec-edit map.
 
+25. Row 6 (stream 1, E2/L82 — ROW 6 COMPLETE): the schema content-hash
+   basis is the strict CANONICAL TEXT bytes — schema_content_hash =
+   sha256(cx_text_canonical(schema_text)), so a schema's identity IS
+   its Tier-1 document identity (pinned: the 32 raw bytes in the
+   0x10/0x12 slots equal the digest inside the schema's tagged
+   address; schema_hash_basis_test.v). The former CXCol-encoding basis
+   and the #724 framing ambiguity die together. ZERO corpus movers:
+   the sd fixtures recompute hashes (byte-literals were deliberately
+   never pinned), so both encode and decode sides moved in step —
+   sd-006 formatting-invariance holds under the new basis (stronger:
+   canonical text normalizes MORE spellings). Census exactly 7 + 133;
+   differential unmoved (no new in-cx rows).
+   **NAMED CONFLICT for the owner (lettered; recommendation adopted
+   per the standing acceptance ruling):** strict canonical STRIPS
+   `[?cx …]` directives (longstanding, pre-epoch — row 2 un-stripped
+   RawText but kept CXDirective stripped), so `schema-of` and
+   `schema-mode` do NOT survive into the hashed bytes — two schemas
+   differing only in mode share one identity, contradicting E2's
+   "schema-mode rides in the hash as document bytes". Its
+   ANTI-PARAMETERIZATION intent (mode is never a separate policy
+   input) holds; the inclusion claim does not. No anchoring consumer
+   exists until I5 (type-binding is stream-16/I5 work), so no identity
+   hole is live at I1. Options: (a) accept the strip at I1, resolve
+   mode-in-identity BEFORE I5 anchoring — either by preserving
+   content-bearing directives in canonical (an identity change,
+   needs its own ruling) or by moving schema-of/schema-mode into
+   schema-document BODY data (schema.md surface change) — RECOMMENDED
+   and implemented; (b) preserve [?cx] directives in canonical now
+   (moves every directive-bearing doc's address mid-epoch, unruled);
+   (c) schema-specific canonicalization (violates one-primitive).
+   The residual is PINNED by
+   test_mode_does_not_survive_canonical_text_named_residual, so the
+   eventual resolution flips a test, never a silent behavior.
+
 ## Remaining epoch work
 
-Rows 6-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit
-maps + the ONE re-bless with the old→new mapping file + registry
-re-seal.
+Row 7 (Lane-1 __cx_meta__ fix, #708 witnesses), rows 8-9
+(oph/idh-026/cx-094 pins flip), 10-15, then spec-edit maps + the ONE
+re-bless with the old→new mapping file + registry re-seal.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
