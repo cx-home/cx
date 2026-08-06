@@ -596,6 +596,38 @@ make registry-publish), flip xap_registry_serve_real_test.v consts —
 then the eval gate goes to ZERO reds and conform goes fully green; the
 owner reviews the mapping file + corpus diff in the PR (ruling 2a).
 
+33. ENDGAME part 1 (spec maps + eval-lane re-bless — IN PROGRESS,
+   working tree at this entry): (a) the SPEC-EDIT MAPS batch landed
+   (commit b04bd52c, 17 files; residual: the stream-13 G-1..G-8
+   formal repair batch, spec-only, enumerated in
+   grammar_lexicon_review.md §3). (b) CX_BLESS=epoch landed in
+   code_eval_fixtures_test.v (both lanes, enforced-only, advisory
+   skipped) — 128 records adopted via the committed applier. (c) THE
+   AUDIT CAUGHT, per design: cx-010/011/012 re-formed per the ledger
+   note (serialize + "\n" ≡ canonical via [$concat], NOT the
+   mechanically-adopted false); jrn_append's RETURN now hydrates the
+   event child (reads/folds/appends present one shape); sap-O1-07
+   re-spelled 3.14→3.14e0 (float type-test keeps testing floats);
+   math/random/env dispatches REFUSE exact-family args with CXER3002 +
+   the cast hint instead of falling through to "no callable" (the
+   ledger's promised math re-bless commit — entry 15's residual
+   discharged; env-044 re-spelled). CODE.CXD IS AT ZERO ENFORCED.
+   REMAINING (next cycle, exact plan): (1) the 47 stdlib enforced =
+   the 2b input-re-spell set — math.cxd/random.cxd fixtures whose
+   in-code decimal literals must become float spellings (eN) because
+   their INTENT is float math (then re-run CX_BLESS=epoch to adopt
+   exact float outputs; fixtures that now correctly test DECIMALS keep
+   their adopted exact results); plus journal-055's forged-signature
+   fixture (make the forgery a valid-SHAPED tagged signature so it
+   tests signature verification, not tag parsing); xap-dist-037/038
+   await the registry re-seal. (2) The conformance-side EBLESS
+   machinery (conformance_run.v out_X sites + V applier per the
+   design below) for the ~30 conform reds (idh singles, ext-038/039,
+   xml-027, tab-007/019, astb-003, yaml-018, arrow-002/013, code
+   triquote ×2 — out-canonical/out-hash/out-xml/out-ast sections).
+   (3) Then: mapping file, registry re-seal, consts flip, zero-red
+   verification, ONE final commit.
+
 **Epoch-bless machinery design (scouted for the executing cycle):** the
 shipped CX_BLESS=1 mode is quote-only-diff gated — too narrow for the
 epoch. Build: (a) conformance_run.v — under CX_BLESS=epoch, at each
