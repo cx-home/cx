@@ -596,6 +596,34 @@ make registry-publish), flip xap_registry_serve_real_test.v consts —
 then the eval gate goes to ZERO reds and conform goes fully green; the
 owner reviews the mapping file + corpus diff in the PR (ruling 2a).
 
+**Epoch-bless machinery design (scouted for the executing cycle):** the
+shipped CX_BLESS=1 mode is quote-only-diff gated — too narrow for the
+epoch. Build: (a) conformance_run.v — under CX_BLESS=epoch, at each
+`failures << 'out_X mismatch'` site (out_cx / out_canonical / out_hash /
+out_ast / out_xml / out_json[_lossless] / out_yaml[_lossless] / out_toml
+/ out_md — NOT out_err, NOT out_hash_eq, which were re-pinned
+semantically with their rows), emit a section-aware record
+`<<<EBLESS file=X id=Y section=out-hash>>> got <<<ENDEBLESS>>>` to
+/tmp/cx_epoch_blesses.txt; (b) code_eval_fixtures_test.v — same mode
+emits every ENFORCED out-text mismatch in BOTH lanes (code.cxd +
+stdlib), skipping advisory; (c) a V applier (mirror apply_blesses.py's
+case-span logic, section-aware; V not python per the standing rule) that
+rewrites the named `[section [# … #]]` block in place. EXECUTION ORDER:
+(1) spec-edit maps batch commit FIRST (the standing maps-before-re-bless
+order); (2) journal-class re-bless MAY ride the general mechanism (its
+reds are ordinary out-text mismatches); (3) run all gates with
+CX_BLESS=epoch → apply → re-run WITHOUT bless → ZERO reds; (4) the git
+diff of conformance/ IS the corpus diff — derive the mapping file's
+representative old→new digest pairs from the out-hash hunks; (5)
+registry re-seal (make registry-publish, read registry/publish.cx
+first) AFTER the corpus re-bless; (6) flip
+xap_registry_serve_real_test.v consts from the re-published registry;
+(7) full suite: the ONLY acceptable non-green = known-flaky retry
+lanes. Every adopted output is REVIEWED against its ledgered cause —
+the ledger's red-class table is the checklist; anything the bless
+touches that is NOT in the table is a REGRESSION to investigate, not
+adopt.
+
 30. Row 11 (#720 / erasure L184, audit C1 — ROW 11 COMPLETE): DETACHED-
    PAYLOAD entries, one form, no dual-accept. The entry-canonical
    preimage replaces its payload body child with a `payload=` attribute
