@@ -509,13 +509,35 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    tree-sitter data-element coloring of operator heads rides the
    epoch tooling pass (ledger obligation 3).
 
+29. Row 10 (#712 / bitemporal L116 — ROW 10 COMPLETE) + row 12
+   disposition: the journal's DEFAULT synthetic ts is a REAL ISO-8601
+   UTC-Z instant — jrn_ts_for emits time.unix(seq) as
+   `1970-01-01T00:00:{seq}Z`-style datetimes (epoch-anchored,
+   deterministic, capability-free, monotonic; day boundaries ROLL the
+   DATE where the old `epoch:HH:MM:SS` spelling silently wrapped at
+   24h). opts.clock opt-in unchanged. Vectors + monotonicity + the
+   datetime-form assertion pinned in journal_ts_form_test.v (in-module,
+   exercising jrn_ts_for directly, incl. the 86400 rollover). Census
+   EXACTLY 7 + 133 — every fixture pinning the old `epoch:` spelling
+   (23 pins) was already inside the ledgered journal red class, which
+   re-blesses ONCE after rows 10-12 per the standing instruction.
+   keep-after-time (#712 item 2) is OWNER-RULED additive post-I1 —
+   not deferred here, dispositioned by the ruling. ROW 12 REQUIRES NO
+   IMPLEMENTATION: manifest class PINS — the entry/snapshot preimage
+   wrappers, field order, non-default-only stream binding, algo-tag
+   composition are ALREADY normative in journal.md (audit C1), and the
+   shipped bytes are what the spec now describes; the reserved
+   `fold-id?` slot is omitted-while-unset. Row 12's obligation rides
+   the journal-class re-bless verification (chains must verify under
+   the normative wrappers).
+
 ## Remaining epoch work
 
-Rows 10-15 (journal ts-form #712 row 10, detached payload #720 row 11,
-preimage wrappers row 12 PINS, Tier-2 participating-field set row 13 —
-store-code-003..006 pins flip, E1 totality refusals row 14 BEHAVIOR,
-CXER4604/1704 retirement row 15 BEHAVIOR), then spec-edit maps + the
-ONE re-bless with the old→new mapping file + registry re-seal.
+Row 11 (detached payload #720 — DEFINES, the erasure witness family),
+rows 13-15 (Tier-2 participating-field set — store-code-003..006 pins
+flip; E1 totality refusals BEHAVIOR; CXER4604/1704 retirement
+BEHAVIOR), then spec-edit maps + the ONE re-bless with the old→new
+mapping file + registry re-seal.
 
 28. Row 9 (stream 1, E1 L77-L81 + audit C4 — ROW 9 COMPLETE): the
    authorable variable HOLE + quote lowering. HoleNode joins the Node
