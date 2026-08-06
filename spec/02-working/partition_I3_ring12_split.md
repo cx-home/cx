@@ -1,6 +1,7 @@
 # I3 — Ring-1/2 split: working ledger
 
-**Status: OPEN** (2026-08-06). Branch `impl/I3-ring12-split` off
+**Status: EXIT GATE MET** (2026-08-06; entries 1-9 complete — exit
+battery green, see entry 9). Branch `impl/I3-ring12-split` off
 `design/651-516-partition` @ 7a38b6a6 (the I2 exit-merge).
 Phase row: `partition_impl_PLAN.md` Part B; this file is I3's working
 ledger, the successor to `partition_I2_extraction.md`.
@@ -421,3 +422,118 @@ N3 on did/vc).
    ring_registry_init; libcx builds over the platform module dir (it
    imports code, pulling the full surface — ABI gate pins the 713);
    cmd needs `import platform as _` so registration init runs.
+
+8. **THE MODULE MOVE LANDED — `vcx/platform` exists and the V compiler
+   proves the frontier (2026-08-06).** 67 Ring-2 production .v files +
+   the 2 iowatch .c files + (in a second sweep) 69 Ring-2-subject
+   in-module tests moved `vcx/code` → NEW module `vcx/platform`;
+   `module code` → `module platform`; bodies verbatim.
+
+   **Mechanics that made 70+ files tractable (banked for I4/I5):**
+   - Cross-module references resolve via SELECTIVE imports
+     (`import code { sym, Type, … }`) generated mechanically: tokens
+     of each file ∩ code's top-level symbols − platform's own. Fns and
+     types import cleanly; **V cannot selectively import CONSTS** —
+     those references were rewritten to qualified `code.<const>`
+     (~31 rewrites; V permits qualified access alongside a selective
+     import of the same module).
+   - ~160 Ring-1 internals pub-ified (the pub surface IS the frontier,
+     now compiler-checked): probe/registry fns, mk_err/cap_guard-class
+     helpers, net-core surface, plus struct FIELD visibility —
+     NetHandle/NetAddr/ForLimitState/HttpReqOpts/FtPipeline/
+     FtSearchOpts/TDateTime `pub mut:`/`pub:`, ProgramState.service_*,
+     MatchEnv.cow_bindings/clone_frame_sharing_closures, NetReadKind +
+     ModuleLoaderDirective(Kind) enums/structs.
+   - TOKENIZER GOTCHAS (both bit): (1) locale-dependent `sort` vs
+     `comm` silently drops mixed-case symbols — LC_ALL=C everywhere;
+     (2) symbols used ONLY inside '${…}' interpolations were stripped
+     with the string literal — the compiler caught every one
+     (render_canonical, err_summary, TDateTime fields).
+
+   **Seam G landed as `platform_init.v`:** g_csrp_disco seeds +
+   services_listener_init_globals + ring2_register_all moved out of
+   stdlib_codec.v's init(); code's init keeps json-codec registration,
+   the RING-1 g_http_pool seeds (seam H ruling), and
+   ring_registry_init. V runs code's init before platform's (import
+   order), so the registries are live before registration. An artifact
+   that never imports platform gets live-but-empty registries — every
+   ring-2 name falls through to the not-in-subset refusal: the §4
+   profile behavior BY CONSTRUCTION.
+
+   **The compiler is now the frontier oracle:** `v -check vcx/code`
+   compiles STANDALONE — zero Ring-2 references in the evaluator. libcx
+   builds over `platform/` (which imports code — full surface; the
+   iowatch C-callback exports ride along per N4): **libcx-abi-gate
+   green, 713 symbols identical.**
+
+   **Consumers retargeted:** cmd (27 `code.*`→`platform.*` refs across
+   fabric_serve/store_serve/store_rotate + `import platform as _` in
+   main.v); 81 vcx/tests+bench+fuzz files gained `import platform as _`
+   (pre-split engine parity — tests importing only code would silently
+   lose ring-2 registration); 2 tests retarget 4 platform-only syms
+   (sigv4/service-config); lang/v native binding imports platform
+   (full-engine surface preserved); publish_v.sh ships platform/ +
+   Makefile.cx-v `_modules/platform` symlink (two-hop soundness clone);
+   wasm build emits from platform/; check_no_stub_impl +
+   check_null_absence_conflation + check_xap_dist_absences +
+   check_no_blocking_todos scan/point at platform; root test-vcx-code
+   lane runs BOTH module dirs (CODE_SERIAL_RETRY paths updated);
+   columnar/sqlite dedicated test targets repointed. vcx/cmd_data and
+   vcx/cli confirmed platform-free (the data profile stays
+   cannot-execute).
+
+   **ring_import_gate EXTENDED to the full frontier (the I3 gate
+   contract):** Ring-1 lane — vcx/code may import `cx` ONLY (deny-set
+   derived M34-style, includes platform/cxstore/arrow/transport);
+   Ring-2 lane — vcx/platform within {cx, code, cxstore, arrow,
+   transport}. Same M35 C-edge rule in both lanes. Both
+   synthetic-verified (code→platform and platform→cli injections fail
+   the lane; green restored). The derived deny-sets picked up
+   `platform` in the Ring-0/cxstore lanes automatically.
+
+   **Validation:** vcx/code + vcx/platform compile clean;
+   test-vcx-code 82/82 (two first-run compile failures were
+   interpolation-blind import gaps, fixed + re-run green); ring-2
+   registration smoke ([$store:open 'mem://'] returns a live handle
+   through platform's init); extraction gate byte-identical BOTH lanes
+   (1564 cases, 8978 CLI pairs + 17 refusals); libcx-abi-gate 713
+   identical; binding parity gates 28.6+28.9 green; test-v (lang/v
+   conformance + surface + native atom) green; import gate green.
+   Full `make test` battery run at entry close (see entry 9).
+
+9. **EXIT BATTERY GREEN — the I3 plan-row contract is met
+   (2026-08-06).** Full `make test` (the complete TEST_TARGETS
+   umbrella: abi-c + python/rust/go bindings + test-vcx (suite 241 +
+   code lane 82 + conform + cxstore + fixtures) + every check-* gate +
+   guide/docs checks + ring-import-gate + gates-manifest-gate +
+   ring-tag-gate + test-extraction-gate + libcx-abi-gate +
+   check-code-spec-consistency) — **rc=0**. The only two FAILs were
+   the two standing classified-retry lanes, both green on their
+   classified retry: store_lazy_load_test (known real-socket
+   contention lane, serial retry — path updated to vcx/platform) and
+   fabric_nats_bridge_test (#572 stale-usecache class, cache-free
+   retry). test-binding-api-parity green in the same battery. Exit
+   gate per the plan row: **full corpus green ✓ import gates green
+   (now covering the full Ring-0/1/2 frontier) ✓ libcx ABI unchanged
+   (symbol diff empty, 713) ✓.**
+
+   **"Pack gates named per the profile table" — the disposition.** The
+   pack-gate mechanism after I3, named per pack:
+
+   | Pack (spec §4) | Gate | Kind |
+   |---|---|---|
+   | ALL Ring-2 packs (store verbs, journal, protocols, serve, xap/fabric, session/authz/did/vc, iowatch, DB driver surface) | `import platform` | module-import gate (NEW at I3): the artifact root either imports the platform module (its init registers every pack) or the names refuse not-in-subset |
+   | DB drivers | `-d cx_db_sqlite` / `-d cx_db_pg` / `-d cx_db_mysql` / `-d cx_db_redis` | build gate (file-suffix `_d_cx_db_*`), rides INSIDE platform |
+   | store sftp remote | `-d cx_sftp` | build gate inside platform |
+   | store columnar | `-d cxstore_columnar` (+ `-d cx_arrow_files`) | build gate inside platform |
+   | Ring-1 local-effect packs (io, env, process, time, random, log, term) + http-client pack | named HERE per the §4 table; the per-pack build gates get their live consumer at **I4's build matrix** (embed excludes local-effect packs; cli includes them + http client) | deliberately NOT invented at I3 — a `-d` flag no profile build consumes would be a dead seam (no-stubs rule) |
+
+   The data/embed/cli/platform BUILD matrix that consumes these gates
+   is I4's opening move (plan row I4: "Build matrix for
+   data/embed/cli/platform; per-ring gate lanes activate").
+
+   **Census at exit:** doc lane R0=1564, R1=2012, R2=686 (+ eval 991);
+   vcx/code = 78 prod .v files (Ring 1) + 13 in-module tests;
+   vcx/platform = 71 prod .v (incl. platform_init.v + ring2_register.v
+   + iter_walks_net_http.v + stdlib_http_serve.v) + 2 .c + 69
+   in-module tests. Deliberate-red ledger EMPTY, as opened.
