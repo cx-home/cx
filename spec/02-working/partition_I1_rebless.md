@@ -351,12 +351,46 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    the post-re-bless re-record (directives.html still shows chain
    until then); playground note re-worded at source.
 
+23. Row-4 part 2 (L57/L58 — ROW 4 COMPLETE): `r'''…'''` / `r"""…"""`
+   RAW strings are legal in DATA mode (one token grammar): the token
+   cursor classifies an `r` GLUED to a triple quote as .triple_span,
+   and one raw-aware reader (at_raw_triple / read_raw_triple_str,
+   riding the ONE shared scanner scan_triple_quoted_opt) serves every
+   value position — doc scalar, element body, self-delimiting items,
+   attr value (both read_attr_value lanes), collection/slot items,
+   table cells. Raw = verbatim (no dedent); canonical NEVER re-emits
+   triquote (L15/L17), so it is an input spelling only; bare `r` stays
+   text; map keys take no triple form (parity with plain triquote).
+   [2a] is a PINS row — the impl was ALREADY line-start-only for the
+   `---` separator; ext-055 pins it. CXER0290 UNIFICATION (L57): the
+   annotation-coercion error class ("token cannot coerce to ascribed
+   T" — [55] attr AND [L25d] body, both engines, incl. the #466
+   hex-under-decimal/bigint rows, #457 hex overflow rows, atom-name
+   rejections, temporal-span mismatches, ::float overflow, and row-1's
+   strict decimal/bigint carrier rejections) mints CXER0290
+   (E_CAST_FAILED — the same code as a failed [cast]), retiring
+   [55]'s CXER0109 citation (grammar.ebnf [55] + lexicon [L25d] hex
+   sentence edited in-commit — gate-coupled like entry 22). CXER0109's
+   remaining owners: E_SCOPE_NOT_MAP ([?with-scope], unchanged) and
+   canonical_float.v's non-finite-no-canonical-form rejection (W-3,
+   entry 9) — a TWO-OWNER RESIDUAL for the spec-edit map / G18 pass
+   to re-code or ratify. Fixtures: ext 050-054 (raw-triple family) +
+   ext-055 ([2a] witness) NEW and green; 12 CXER0109 pins re-pinned to
+   CXER0290 (ext 016-family ×5, code.cxd #457/#466 families ×7; the
+   with-scope 0109 pin untouched). Differential moved deliberately
+   707→713 (agree +5 raw-triple rows — both engines through the one
+   scanner; cx_only +1 bare-text witness; diverge held 18). Census
+   exactly 7 + 133. SPEC-EDIT OBLIGATIONS (map): code.md §2.4/string
+   sections gain the r-triple data-mode sentence; [L62] sigil-table
+   completion + `|` tombstone; the remaining stream-13 repair batch
+   (G-1..G-8, [59a] deletion, ModulePrefix opening, reserved-attr
+   closure, MIME/extension registry) is SPEC-ONLY and rides the map.
+
 ## Remaining epoch work
 
-Row 4 remainder (r''' data-mode, [2a] line-start `---`, CXER0290
-unification), rows 5-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15,
-then spec-edit maps + the ONE re-bless with the old→new mapping file
-+ registry re-seal.
+Rows 5-7, 8-9 (oph/idh-026/cx-094 pins flip), 10-15, then spec-edit
+maps + the ONE re-bless with the old→new mapping file + registry
+re-seal.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
