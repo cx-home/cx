@@ -558,11 +558,43 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    tokens enumerated, `#` separator, participating list + exclusions)
    into code-identity.md.
 
-## Remaining epoch work
+32. Rows 14 + 15 (BEHAVIOR — ROWS 14 AND 15 COMPLETE; every manifest
+   row is now IN). Row 14 (E1 totality, audit C4): identity
+   acquisition REFUSES the three value classes — closures were already
+   fail-closed (CXER4101, now pinned normative, cx-033); iterators
+   refuse with NEW CXER4117 E_CX_ITERATOR_NO_ADDRESS
+   (consumption-state identity; a bounded [$range lo hi] was NEVER an
+   iterator — it returns an eager Sequence and hashes normally, noted
+   in the fixture; cx-034 pins a genuine lazy [?take]-over-[$iterate]);
+   secret-bearing values refuse with NEW CXER4118
+   E_CX_SECRET_NO_ADDRESS (neither plaintext-oracle nor
+   redacted-collision addresses exist; cx-035). Both walks mirror
+   cx_mod_contains_closure at cx_mod_hash. Row 15 (audit M21):
+   CXER4604 and CXER1704 are RETIRED — optimistic-concurrency
+   conflicts unify on the ONE ref-conflict code CXER1114
+   (E_STORE_REF_CONFLICT): jrn_err_stale_tail flips; the CSRP 409
+   bodies emit CXER1114 (wire numeric 1114; gRPC frame map + client
+   map + wire-test expectations flipped); journal-042/063 stale-tail
+   pins re-pinned to CXER1114 (green). Census exactly 7 + 133 (stdlib
+   run 2531 — the three refusal pins green); conform 15 green files
+   at the ledgered classes; differential held. SPEC-EDIT OBLIGATIONS
+   (map): CXER4117/4118 rows into the module-cx 4100-4119 table;
+   CXER4604/1704 tombstones + the CXER1114 unification into
+   journal.md/store.md/governance §9.6 (the G18 registry).
 
-Rows 14-15 (E1 totality refusals BEHAVIOR; CXER4604/1704 retirement
-BEHAVIOR), then the journal-class re-bless, spec-edit maps + the ONE
-re-bless with the old→new mapping file + registry re-seal.
+## Remaining epoch work — THE ENDGAME
+
+All 16 manifest rows are IN. Remaining: (1) the journal-class re-bless
+(regenerate journal.cxd ×27-red details + sched-022 + the 3 spelling
+movers + the 23 `epoch:` ts pins — chains verify under the normative
+wrappers); (2) the spec-edit maps (every ledger entry lists its
+obligations — execute as ONE batch); (3) THE ONE COORDINATED RE-BLESS:
+regenerate ALL ledgered corpus reds, author
+spec/02-working/partition_I1_hash_mapping.md (old→new digest per class
++ the full corpus diff), re-seal registry/ (gtin@0.1.0 re-publishes via
+make registry-publish), flip xap_registry_serve_real_test.v consts —
+then the eval gate goes to ZERO reds and conform goes fully green; the
+owner reviews the mapping file + corpus diff in the PR (ruling 2a).
 
 30. Row 11 (#720 / erasure L184, audit C1 — ROW 11 COMPLETE): DETACHED-
    PAYLOAD entries, one form, no dual-accept. The entry-canonical
