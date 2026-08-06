@@ -454,11 +454,33 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    test_mode_does_not_survive_canonical_text_named_residual, so the
    eventual resolution flips a test, never a silent behavior.
 
+26. Row 7 (stream 1, L85 / #708 — ROW 7 COMPLETE): Lane 1's
+   identity-exclusion is TRUE in the implementation — the `[?meta]`
+   wrapper (`__cx_meta__`) is unwrapped at the codec-lane lowering
+   chokepoint (cx_mod_lower_value, the ONE place evaluator markers are
+   rewritten before the data-codec layer; code.md §4.2), so cx:hash /
+   cx:equal / cx:serialize of a meta-annotated value agree with the
+   bare value (probe-confirmed leak: the wrapper emitted as a literal
+   `[__cx_meta__ …]` element, splitting the digest on the exact bytes
+   that feed address-bound approvals). The display renderer already
+   unwrapped (three sites); this was the missing codec twin — put-doc
+   (render lane) and cx:serialize (codec lane) now agree. Witnesses
+   cx-030..032 (hash / serialize / equal pairs) NEW and green — zero
+   corpus movers (no digests of meta-annotated values were pinned; the
+   "re-bless" the spec anticipated is empty). Census exactly 7 + 133
+   (stdlib run count 2523→2526); differential unmoved (witnesses carry
+   [empty] in-cx). D5 unchanged: XML remains the one lossless [?meta]
+   target via `<cx:meta>`. SPEC-EDIT OBLIGATION (map): code.md §4.2
+   gains the lowering-chokepoint sentence naming meta among the
+   unwrapped markers; eval.v:437's "rides through serialization"
+   comment re-worded in-commit (text serialization is transparent —
+   binding/return flow carries the annotation).
+
 ## Remaining epoch work
 
-Row 7 (Lane-1 __cx_meta__ fix, #708 witnesses), rows 8-9
-(oph/idh-026/cx-094 pins flip), 10-15, then spec-edit maps + the ONE
-re-bless with the old→new mapping file + registry re-seal.
+Rows 8-9 (operator-head lexer + quote lowering; oph/idh-026/cx-094
+pins flip), 10-15, then spec-edit maps + the ONE re-bless with the
+old→new mapping file + registry re-seal.
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 
