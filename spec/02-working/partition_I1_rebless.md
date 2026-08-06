@@ -27,7 +27,7 @@ ledger IS one. Updated per epoch commit.
 ## Pins that FLIP at specific rows (stay red until that row, then re-bless)
 
 - `idh-023` (decimal scale) → row 1 (L40 scale-preserving identity)
-- `idh-026` ($x vs '$x') + `cx-094` (quote-hash E210) → row 9 (quote lowering)
+- ~~`idh-026` ($x vs '$x') + `cx-094` (quote-hash E210) → row 9~~ FLIPPED + re-blessed at entry 28
 - ~~`oph-001…007` semantic flips → row 8~~ FLIPPED + re-blessed at entry 27
 - `store-code-003…006` (Tier-2 collisions) → row 13 (participating-field set)
 - data-bin decimal/bigint goldens → rows 1+16 (0x18/0x28); ch-008…011 must stay
@@ -511,11 +511,53 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
 
 ## Remaining epoch work
 
-Row 9 (quote lowering + authorable hole form; idh-026/cx-094 pins
-flip), rows 10-15, then spec-edit maps + the ONE re-bless with the
-old→new mapping file + registry re-seal.
+Rows 10-15 (journal ts-form #712 row 10, detached payload #720 row 11,
+preimage wrappers row 12 PINS, Tier-2 participating-field set row 13 —
+store-code-003..006 pins flip, E1 totality refusals row 14 BEHAVIOR,
+CXER4604/1704 retirement row 15 BEHAVIOR), then spec-edit maps + the
+ONE re-bless with the old→new mapping file + registry re-seal.
 
-**Row-9 scouting (recorded for the next cycle):** two halves. (A) The
+28. Row 9 (stream 1, E1 L77-L81 + audit C4 — ROW 9 COMPLETE): the
+   authorable variable HOLE + quote lowering. HoleNode joins the Node
+   sum (structural kind like AliasNode — NOT a 12th scalar kind, per
+   L60): a bare DELIMITED `$name` token (simple name — `.`/`:`
+   continuations stay text) parses as a hole in element bodies AND
+   collection/slot items, in the [L25b] SELF-DELIMITING class
+   (body_is_typed_list admits it, so `[+ $x 2]` = hole + typed int 2
+   — required for lowered-image idempotence). Canonical spelling
+   `$name`; the STRING "$name" spells '$name' (cx_body_leading_sigil
+   gains `$` — $-leading body strings always quote; ZERO corpus
+   movers, the corpus had no delimited $-tokens outside verbatim
+   directive interiors). Emit joins holes as inline siblings
+   (cx_build_inline_body ' ' join; no value-space glue). Projections:
+   JSON ast {"type":"Hole"}; XML <cx:var/> (the lift stays
+   emitter-internal, L78); ast_bin additive tag 0x18 (node-tag space —
+   distinct from data-bin's 0x18 scalar tag); program render `$name`.
+   QUOTE LOWERING: program_node_to_data_q lowers a bare no-path
+   binding to HoleNode (the <cx:var> element image is gone);
+   data_to_program_node lowers HoleNode back to ProgramBinding
+   ([?eval] round-trips; eval-env visibility semantics UNCHANGED —
+   verified identical at HEAD). Quoted trees now serialize as plain
+   authorable CX text and HASH: expression identity IS the Tier-1
+   address of the lowered tree — probe-proven cx:hash(serialize(quote
+   [total $x])) == cx hash of the data doc `[total $x]` (L77/L81).
+   PINS FLIPPED per the flip-at-row-9 instruction: idh-026 hash-eq
+   true→false (the collision MUST holds); cx-094 out-err→the real
+   tagged digest; program-dc-bare-var-inert re-pinned [a [cx:var 'x']]
+   → [a $x]. Census exactly 7 + 133; differential HELD at 723 (zero
+   in-cx movement). RESIDUALS (named): mk_cx_expr (path-bearing
+   bindings + non-literal program constructs) still emits the
+   cx:expr hatch — those quoted trees remain unhashable (E210 →
+   CXER4100) pending an authorable expression form (L78 ruled only
+   VARIABLE holes; flagged for the spec-edit map); data-bin VALUE
+   carriage of holes is unruled (the DataVal projection drops
+   structural nodes — same class as XML operator-name projection).
+   SPEC-EDIT OBLIGATIONS (map): grammar/lexicon gain the hole
+   production ([L25b] self-delim membership + the `$` leading-sigil
+   quote rule); ast.md the HoleNode kind; ast-bin.md the 0x18 tag;
+   code.md §6.4.3 the lowering.
+
+**Row-9 scouting (superseded by entry 28; kept for the record):** two halves. (A) The
 hole-surface collision MUST (L78 amendment): data-mode bare `$x` must
 canonicalize DIFFERENTLY from the string `'$x'` — today both collapse
 to one TextNode/one address (idh-026 pins hash-eq=true, flips to
