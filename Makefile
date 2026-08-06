@@ -996,15 +996,18 @@ test-vcx-suite: build-vcx-dev
 # retry class, so a live-socket lane flaking under -j parallel load failed the
 # umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
 # isolation, is the proven case).
-CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
-                     vcx/code/store_grpc_live_test.v \
-                     vcx/code/store_grpc_parity_test.v \
-                     vcx/code/store_lazy_load_test.v
+CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
+                     vcx/platform/store_grpc_live_test.v \
+                     vcx/platform/store_grpc_parity_test.v \
+                     vcx/platform/store_lazy_load_test.v
 
+# I3 module split (#651/#516): the in-module tests now live in TWO
+# modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
+# store/journal/grpc/service subjects moved). One lane runs both.
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
 	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
@@ -1087,7 +1090,7 @@ endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev
 	$(MAKE) -C vcx arrow-shim
-	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/code/store_columnar_test.v
+	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
 # The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3);
@@ -1106,7 +1109,7 @@ else
 endif
 .PHONY: test-vcx-sqlite
 test-vcx-sqlite: build-vcx-dev
-	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/code/store_sqlite_test.v vcx/code/store_sqlite_encryption_test.v vcx/code/store_concurrent_writer_test.v
+	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical

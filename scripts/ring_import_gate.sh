@@ -128,5 +128,71 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — see violations above."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 (vcx/cx) strict sink (deny-set: ${INTERNAL_MODULES% }); store engine (vcx/cxstore) Ring-0-only + evaluator-free (deny-set: ${ENGINE_DENY% })"
+
+# ── I3 lanes: the Ring-1/2 frontier (spec §3; the vcx/platform split) ─────────
+# Ring 1 (vcx/code) MAY import Ring 0 only: of the internal siblings, `cx`
+# alone is allowed. In particular `platform`, `cxstore`, `arrow`, `transport`
+# are denied — the evaluator holds no compile-time reference to Ring 2 (the
+# I3 registry seams are what this locks). Same M35 C-edge rule; code's C
+# touches (cx_stack_guard.c / cx_pty.c / cx_term.c / cx_iowatch moved out at
+# I3) are same-dir relative includes, never @VMODROOT siblings.
+CODE_DIR="$ROOT/vcx/code"
+CODE_DENY="$(cd "$ROOT/vcx" && find . -maxdepth 1 -mindepth 1 -type d ! -name cx ! -name code | sed 's|^\./||' | LC_ALL=C sort | tr '\n' ' ')"
+while IFS= read -r -d '' f; do
+  base="$(basename "$f")"
+  while IFS= read -r line; do
+    mod="$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+([A-Za-z_][A-Za-z0-9_]*).*/\1/')"
+    for internal in $CODE_DENY; do
+      if [ "$mod" = "$internal" ]; then
+        echo "RING-VIOLATION: Ring-1 (code) module $base imports '$mod' — Ring 1 MAY import Ring 0 only (spec §3)"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*import[[:space:]]+" "$f" 2>/dev/null || true)
+  while IFS= read -r line; do
+    for internal in $CODE_DENY; do
+      if printf '%s\n' "$line" | grep -qE "@VMODROOT/${internal}(/|[[:space:]]|$)"; then
+        echo "RING-VIOLATION: Ring-1 (code) module $base carries a C edge into sibling '$internal'"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*#(flag|include)" "$f" 2>/dev/null || true)
+done < <(find "$CODE_DIR" -name '*.v' -not -name '*_test.v' -print0)
+
+# Ring 2 (vcx/platform) MAY import Rings 0-1 plus the leaf siblings the spec
+# names for Ring-2 consumption: cx, code, cxstore, arrow, transport. Everything
+# else internal (cli, cmd, cmd_data, fixtures, testenv, tools, bench, fuzz,
+# deps, target, tests, …) is denied. The same allowed set governs C edges.
+PLATFORM_DIR="$ROOT/vcx/platform"
+PLATFORM_DENY="$(cd "$ROOT/vcx" && find . -maxdepth 1 -mindepth 1 -type d ! -name cx ! -name code ! -name cxstore ! -name arrow ! -name transport ! -name platform | sed 's|^\./||' | LC_ALL=C sort | tr '\n' ' ')"
+while IFS= read -r -d '' f; do
+  base="$(basename "$f")"
+  while IFS= read -r line; do
+    mod="$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*import[[:space:]]+([A-Za-z_][A-Za-z0-9_]*).*/\1/')"
+    for internal in $PLATFORM_DENY; do
+      if [ "$mod" = "$internal" ]; then
+        echo "RING-VIOLATION: Ring-2 (platform) module $base imports '$mod' — Ring 2 MAY import cx/code/cxstore/arrow/transport only (spec §3)"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*import[[:space:]]+" "$f" 2>/dev/null || true)
+  while IFS= read -r line; do
+    for internal in $PLATFORM_DENY; do
+      if printf '%s\n' "$line" | grep -qE "@VMODROOT/${internal}(/|[[:space:]]|$)"; then
+        echo "RING-VIOLATION: Ring-2 (platform) module $base carries a C edge into sibling '$internal'"
+        echo "  → $f: $line"
+        fail=1
+      fi
+    done
+  done < <(grep -hE "^[[:space:]]*#(flag|include)" "$f" 2>/dev/null || true)
+done < <(find "$PLATFORM_DIR" -name '*.v' -not -name '*_test.v' -print0)
+
+if [ "$fail" -ne 0 ]; then
+  echo "ring_import_gate: FAILED — see violations above."
+  exit 1
+fi
+echo "ring_import_gate: OK — Ring-0 (vcx/cx) strict sink (deny-set: ${INTERNAL_MODULES% }); store engine (vcx/cxstore) Ring-0-only + evaluator-free (deny-set: ${ENGINE_DENY% }); Ring-1 (vcx/code) imports cx only (deny-set: ${CODE_DENY% }); Ring-2 (vcx/platform) within cx/code/cxstore/arrow/transport (deny-set: ${PLATFORM_DENY% })"
 exit 0
