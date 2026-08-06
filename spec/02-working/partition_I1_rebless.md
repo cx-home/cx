@@ -539,6 +539,26 @@ flip; E1 totality refusals BEHAVIOR; CXER4604/1704 retirement
 BEHAVIOR), then spec-edit maps + the ONE re-bless with the old→new
 mapping file + registry re-seal.
 
+**Row-11 implementation map (scouted; erasure_compliance.md §5/L184 +
+audit C1):** ONE entry form, no dual-accept — the `entry-canonical`
+preimage (stdlib_journal.v jrn_canonical_bytes:553, wrapper element +
+field order + non-default-only `stream` binding all UNCHANGED) replaces
+its payload BODY child (`items: [event]`) with a `payload=` ATTRIBUTE
+carrying the payload's own Tier-1 tagged address (an envelope field — a
+chain coordinate, not domain data). At append (jrn_append:1346): compute
+payload_addr = cx_text_hash(render_canonical(event)), persist the
+payload as its OWN store doc, and persist the entry WITHOUT embedded
+event bytes (else shredding the payload doc would not erase). Read path
+resolves payload docs by address to reconstruct the [event] view; verify
+covers the ADDRESS only — the fixture-before-fix family is
+verify-green-with-payloads-gone (append, delete payload docs, verify →
+all three checks PASS) plus an address-integrity negative (tamper the
+payload attr → hash mismatch). The three-way get-doc discriminator +
+envelope_open shredded-vs-tampered + the CXER 1143+ registry repair are
+ADDITIVE post-I1 (#720 items 1-3) — only the entry form is I1. The
+journal red class (27 + sched-022 + 3 + the 23 epoch: ts pins)
+re-blesses ONCE after this row lands.
+
 28. Row 9 (stream 1, E1 L77-L81 + audit C4 — ROW 9 COMPLETE): the
    authorable variable HOLE + quote lowering. HoleNode joins the Node
    sum (structural kind like AliasNode — NOT a 12th scalar kind, per
