@@ -163,7 +163,10 @@ N3 on did/vc).
    (exit 2), then restored. Darwin-only baseline (Mach-O vs ELF
    export semantics); a Linux baseline joins if the linux lane ever
    runs TEST_TARGETS (today it builds only) — noted in the target
-   comment.
+   comment. **OWNER RULED 2026-08-06 (session scorecard, 1a):**
+   Darwin-only STANDS until the linux lane runs TEST_TARGETS; the ELF
+   baseline is captured as part of THAT work, never before — an
+   unexercised baseline is a dead artifact (seam-without-consumer).
 
 3. **Pre-I3 corpus obligations G6 + G14 CLOSED (2026-08-06).**
 
