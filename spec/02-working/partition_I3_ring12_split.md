@@ -274,3 +274,48 @@ N3 on did/vc).
    probe. Registration called from the module init()
    (stdlib_codec.v). Build green; full suite + gates at the seam
    commit.
+
+6. **Seams C, D/E, F, I, J, K, L, M LANDED — the frontier is
+   registry-clean (65 → 2 dispositioned residuals).**
+   - **C (directives):** the six services match arms leave
+     eval_directive; the `else` probes `g_ring2_directives` before the
+     not-in-subset refusal (so an unregistered profile refuses exactly
+     as before). eval_test_tls_config gains a signature adapter.
+     wait-for :service and the [http-client] postfix dispatcher become
+     single-slot hooks; unregistered ⇒ explicit profile refusal /
+     fallthrough.
+   - **D/E (live-source walkers):** the ten
+     `iter_{net_accept,http_accept,sse_events,net_line,net_chunk}_walk(_streamed)`
+     fns move VERBATIM to NEW Ring-2 `iter_walks_net_http.v`; both
+     [?for] dispatch sites (buffered + streamed) collapse to one probe
+     of `g_ring2_iter_walks(_streamed)` keyed by
+     int(cx.IteratorSourceKind); .iter_iterate/.iter_unfold stay
+     direct. The walkers drive the Ring-1 yield pipeline
+     (gen_emit_item(_streamed), YieldSpec, ForLimitState, StreamCtx) —
+     Ring-2→Ring-1, legal.
+   - **F (resets):** new_env runs `ring2_run_env_resets()`; session +
+     authz register. prof/sched resets stay direct (Ring 1).
+   - **I (io watch):** iowatch_ring2_builtin registers on the env-free
+     chain and CARRIES THE READ-CAP GATE WITH IT (cap_guard on
+     io-watch/io-watch-next before any effect) — the registry probe
+     precedes the io pack, so leaving the gate in io_stdlib_builtin
+     would have BYPASSED it (caught in seam review; the io-105/106/107
+     denial fixtures pin it). watch-close needs no cap (io-107's
+     denial is the inner watch's).
+   - **J (sched→journal):** the three durable-timer persistence sites
+     call `ring2_stdlib_builtin('journal-…')` — registry-by-name;
+     unregistered degrades persistence via the existing or-arms.
+   - **K (ft):** ft_search_store moved to store_ft.v +
+     store_ft_ring2_builtin claims 'ft-search-store'.
+   - **L (identity storage):** cx_code_store_put_def/get_def moved to
+     store_objgraph.v (beside store_put_raw/doc_present/doc_text);
+     Tier-2 hashing stays in Ring-1 code_identity.v.
+   - **M (loader):** pkg: resolution probes `g_ring2_pkg_source`
+     (xap_pkg_module_source registered); unset ⇒ explicit
+     "requires the distribution engine (platform profile)" error.
+   - Residual frontier after this entry: **http_body_text_impl +
+     http_request_verb** (crypto→http CLIENT; dissolves at seam H, the
+     stdlib_http.v client/serve in-file split — client is Ring 1) and
+     **services_listener_init_globals** (seam G, rearranges with the
+     module init at file-move time). Everything else is
+     registry-mediated or relocated.
