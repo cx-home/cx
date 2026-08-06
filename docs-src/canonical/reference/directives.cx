@@ -233,12 +233,6 @@ B"""] [expect """50"""]]
   [example [code """[?concat (1, 2) (3, 4)]"""] [expect """(1, 2, 3, 4)"""]]
 ]
 
-[directive-doc name='?chain' category="Iterator stdlib — alias of `[?concat]`" spec="§8"
-  [sig """[?chain SRC…] -> iterator"""]
-  [summary """Iterator combinator: alias of [?concat] — concatenate sources end to end."""]
-  [example [code """[?chain (1, 2) (3, 4) (5, 6)]"""] [expect """(1, 2, 3, 4, 5, 6)"""]]
-]
-
 [directive-doc name='?cycle' category="Iterator stdlib — bounded repeat" spec="§8"
   [sig """[?cycle SRC max=N] -> iterator"""]
   [summary """Iterator combinator: repeat a source cyclically, bounded by `max`."""]

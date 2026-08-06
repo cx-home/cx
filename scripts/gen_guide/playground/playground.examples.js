@@ -1003,7 +1003,7 @@
     "142-set-union": {
       label: "[142] Set \u2014 union (concat + distinct)",
       input: "[?let [= $a (1, 2, 3, 4)] [?let [= $b (3, 4, 5, 6)] [distinct ((1, 2, 3, 4, 3, 4, 5, 6))]]]",
-      note:  "**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (Lazy `[?chain]` + `[?distinct]` combinators are a planned addition.)",
+      note:  "**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (A lazy `[?distinct]` combinator is a planned addition; `[?concat]` covers lazy concatenation.)",
       tags:  ["builtin", "distinct", "eq", "let"],
       runnable: true,
     },

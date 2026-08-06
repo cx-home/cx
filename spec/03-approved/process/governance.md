@@ -398,7 +398,7 @@ and is not duplicated here.
 | `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/std-lib/csv.md` §5 |
 | `CXER1600–CXER1605` | `cx-stdlib/validate` | `spec/std-lib/validate.md` §6 |
 | `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/std-lib/jsonschema.md` |
-| `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*` only; distinct from `CXER11xx` `E_STORE_*` | `spec/misc/cxstore-remote-protocol.md` §3 |
+| `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*` only; distinct from `CXER11xx` `E_STORE_*`. **`CXER1704` is a TOMBSTONE (I1 row 15 / audit M21): the modify-conflict 409 body carries `CXER1114 E_STORE_REF_CONFLICT` — one ref-conflict code everywhere; never reassigned** | `spec/misc/cxstore-remote-protocol.md` §3 |
 | `CXER1720` | CSRP integrity mismatch (`E_CSRP_INTEGRITY_MISMATCH`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1721` | CSRP not found (`E_CSRP_NOT_FOUND`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1800–CXER1801` | `cx-stdlib/uuid` | `spec/std-lib/uuid.md` |
@@ -431,7 +431,7 @@ and is not duplicated here.
 | `CXER4400–CXER4409` | `cx-stdlib/fp` (functor/monad protocol; `CXER4400 E_NO_INSTANCE`) | `spec/std-lib/fp.md` |
 | `CXER4500–CXER4524` | `cx-stdlib/net` (L4 networking — `E_NET_*`; allocated above fp's 4400-band) | `spec/03-approved/std-lib/net.md` |
 | `CXER4525–CXER4589` | `cx-stdlib/http` (L7 HTTP/1.1 client + server — `E_HTTP_*`; allocated above net's 4500-band; 4544–4589 SSE/streaming) | `spec/03-approved/std-lib/http.md` |
-| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`; sub-partitioned 2026-08-05: 4617–4639 reserved for the erasure/compliance journal surface — campaign stream 20; 4640–4649 reserved for schema/event evolution — campaign stream 21) | `spec/03-approved/std-lib/journal.md` |
+| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`; sub-partitioned 2026-08-05: 4617–4639 reserved for the erasure/compliance journal surface — campaign stream 20; 4640–4649 reserved for schema/event evolution — campaign stream 21). **`CXER4604` is a TOMBSTONE (I1 row 15 / audit M21): retired in favor of `CXER1114 E_STORE_REF_CONFLICT` — every optimistic-concurrency conflict unifies on the one ref-conflict code (the CSRP `CXER1704` retired with it); neither is ever reassigned** | `spec/03-approved/std-lib/journal.md` |
 | `CXER4650–CXER4699` | `cx-stdlib/bus` (in-process pub/sub, ordered dispatch — `E_BUS_*`) | `spec/03-approved/std-lib/bus.md` |
 | `CXER4700–CXER4799` | `cx-stdlib/authz` (authorization / trust model — `E_AUTHZ_*`) | `spec/03-approved/std-lib/authz.md` |
 | `CXER4800–CXER4849` | `cx-stdlib/session` (`(principal, tenant)` sessions — `E_SESSION_*`) | `spec/03-approved/std-lib/session.md` |
@@ -536,7 +536,7 @@ and `[?<Name>]` with `Name` outside the closed set raises
 `[?with-open]`, `[?with-scope]`, `[?str]`.
 
 **Iterator combinators.** `[?filter]`, `[?take]`, `[?drop]`,
-`[?zip]`, `[?enumerate]`, `[?chunks]`, `[?concat]`, `[?chain]`,
+`[?zip]`, `[?enumerate]`, `[?chunks]`, `[?concat]`,
 `[?cycle]`, `[?scan]`, `[?flatten]`, `[?partition]`, `[?group-by]`,
 `[?to-sequence]`, `[?to-array]`, `[?to-map]`, `[?view]`, `[?views]`.
 
