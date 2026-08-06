@@ -14,7 +14,7 @@ anchoring (either content-bearing-directive preservation under its own
 ruling, or schema-of/schema-mode moving into schema-document body
 data). The residual stays test-pinned
 (test_mode_does_not_survive_canonical_text_named_residual).** This file remains the epoch's
-historical record (entries 1-34, plus the post-epoch entry 35).
+historical record (entries 1-34, plus the post-epoch entries 35-36).
 
 *(Original mid-epoch charter, kept for the record:)* live working
 ledger on `impl/I1-identity-epoch`. Every entry is a fixture class that
@@ -835,6 +835,44 @@ holes as `$x`.
    test corpora never moved; store/json/csv movements all map to
    ledgered classes. Co-located [fn-doc] examples re-pinned to the
    repaired corpus in the same pass (obligation 2).
+
+36. POST-EPOCH DISCHARGE, THE CODE LANE (2026-08-06, the obligation-4
+   pass): the L48 bindings work surfaced that `make test-vcx-code` (the
+   vcx/code in-module white-box lane — NOT part of test-vcx-suite, the
+   per-commit discipline's target) was left RED at the epoch close:
+   11 files, all undischarged I1 fallout. Three classes, all repaired:
+   (1) ONE REAL WIRE DEFECT — the CSRP binary doc-pair/match frame
+   (store_csrp_wire.v) hex.decode'd the now-tagged store key into its
+   fixed 32-byte field, failed, and ZERO-PADDED silently: every
+   binding's store-client iter lane returned all-zeros hashes (Go,
+   Rust, and Python clients all caught it independently). The frame is
+   re-formed per the row-3 pack precedent: `[u16 hash_algo_code BE]
+   [u8 digest[32]]` (sha2-256 = 0x0012, THE ONE registry), writers
+   derive the code from the tagged address and fail CLOSED
+   (CXER0130/0131/0132 error frames) on unparseable input, readers
+   fail CLOSED on unregistered codes and reconstruct the tagged
+   spelling — bare hex never crosses the boundary in either direction.
+   cxstore-remote-protocol.md §3.2 re-specified in step; pinned by
+   store_csrp_wire_tagged_test.v (round-trip, multicodec byte,
+   bare-hex refusal, unknown-code refusal, blake3 reconstruction).
+   (2) STALE 64-HEX PINS — 12 `len == 64` assertions across the
+   binary-wire/CSRP/gRPC test files re-pinned to the tagged form
+   (73 / `sha2-256:` prefix), incl. the grpc round-trip helper whose
+   64-len guard silently skipped the GET leg. (3) STALE SPELLINGS —
+   `sha256:` secret-hash seeds in service/config-reload tests flipped
+   to the registry spelling; the #188 dual-accept test re-formed (the
+   legacy `sha256:` now PINNED AS REJECTED per entry 19); the retired
+   `takewhile` in worker_cancel_test re-spelled `take-while` (entry
+   22). Bindings parity itself (the obligation): Go rides
+   cockroachdb/apd v3 (shopspring FAILED the scale pin — "1.10"→"1.1")
+   + math/big.Int; Rust bigdecimal::BigDecimal (to_plain_string, the
+   Display-exponent trap confirmed) + num_bigint::BigInt; Python
+   decimal.Decimal (format 'f') + int — all three native CXCol codecs
+   carry 0x18/0x28 with fixed-point images, kind never erased; Go +
+   Python ast_bin readers gained the epoch's HoleNode tag and fail
+   loud on unknown tags (both silently desynced before); store-client
+   address regexes cut to tagged form. binding_api.cxd gains
+   111/112 (decimal/bigint emit + hash parity).
 
 ## Owner rulings 2026-08-05 (end-of-session batch)
 

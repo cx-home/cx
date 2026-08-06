@@ -931,7 +931,8 @@ test-vcx-suite: build-vcx-dev
 # umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
 # isolation, is the proven case).
 CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
-                     vcx/code/store_grpc_live_test.v
+                     vcx/code/store_grpc_live_test.v \
+                     vcx/code/store_lazy_load_test.v
 
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev

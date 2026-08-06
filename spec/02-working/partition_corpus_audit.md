@@ -214,8 +214,9 @@ recovered, D-MOD confirmed. Recorded in the campaign decision log.
 2. G7 TOML-import surface verification — **DONE** (import is shipped;
    fixtures pre-I2).
 3. Provenance-reference recovery (D-ID) — **RESEARCHED, filed #709**:
-   the elided reference was ADR 0003 (drained by the no-ADR
-   sanitization); only ONE elision site exists (identity.cxd:8); the
+   the elided reference was a drained legacy record (removed by the
+   spec-only-source-of-truth sanitization; #709 names it); only ONE
+   elision site exists (identity.cxd:8); the
    block is also STALE — D7 is shipped (canonical.md §2.7b) and D1
    partially so. Recovery = repoint at cxdm.md §4 + reconcile claims;
    file edit applies at I0 with the ring-tagging pass (corpus files
