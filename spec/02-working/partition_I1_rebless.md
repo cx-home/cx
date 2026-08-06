@@ -539,8 +539,36 @@ flip; E1 totality refusals BEHAVIOR; CXER4604/1704 retirement
 BEHAVIOR), then spec-edit maps + the ONE re-bless with the old→new
 mapping file + registry re-seal.
 
-**Row-11 implementation map (scouted; erasure_compliance.md §5/L184 +
-audit C1):** ONE entry form, no dual-accept — the `entry-canonical`
+30. Row 11 (#720 / erasure L184, audit C1 — ROW 11 COMPLETE): DETACHED-
+   PAYLOAD entries, one form, no dual-accept. The entry-canonical
+   preimage replaces its payload body child with a `payload=` attribute
+   carrying the payload's own Tier-1 tagged address (wrapper, field
+   order, non-default-only `stream` binding unchanged); append persists
+   the payload as its OWN store doc inside the same group-commit scope;
+   the PERSISTED entry carries only the address (embedding would defeat
+   lawful shredding); the READ surface re-hydrates the [event] child by
+   address (jrn_hydrate_entry at every read/fold/query chokepoint —
+   default + named streams, store-fallback lane, fold hydration
+   threaded); verify recomputes over the ADDRESS with no payload fetch —
+   THE MANDATE (verify green with payloads destroyed) is pinned in
+   journal_detached_payload_test.v (append → shred via store-delete-doc
+   → verify STILL valid → shredded entry reads event-less → siblings
+   hydrate → address-integrity negative: same envelope, different
+   payload address ⇒ different canonical bytes). Dry-run computes the
+   address WITHOUT persisting (byte-identical to the committed hash).
+   FOUND BY THE PINS: rotation copied entry docs but not payload docs —
+   jrn_copy_payload_doc now carries them in both compact loops (named +
+   default), and an already-shredded payload copies nothing (the shred
+   SURVIVES rotation, by design). Census exactly 7 + 133 (the journal
+   red class absorbs the form change); differential + conform held.
+   The three-way get-doc discriminator, envelope_open
+   shredded-vs-tampered, and the CXER 1143+ registry repair are
+   ADDITIVE post-I1 (#720 items 1-3). SPEC-EDIT OBLIGATION (map):
+   journal.md §2.2/§4.2 the detached entry form; store.md the payload-
+   doc lifecycle note. ALL FOUR MOVES-CLASS JOURNAL ROWS (2/10/11/12)
+   ARE NOW IN — the journal-class re-bless is UNBLOCKED.
+
+**Row-11 implementation map (scouted; superseded by entry 30):** ONE entry form, no dual-accept — the `entry-canonical`
 preimage (stdlib_journal.v jrn_canonical_bytes:553, wrapper element +
 field order + non-default-only `stream` binding all UNCHANGED) replaces
 its payload BODY child (`items: [event]`) with a `payload=` ATTRIBUTE
