@@ -29,7 +29,7 @@ ledger IS one. Updated per epoch commit.
 - `idh-023` (decimal scale) → row 1 (L40 scale-preserving identity)
 - ~~`idh-026` ($x vs '$x') + `cx-094` (quote-hash E210) → row 9~~ FLIPPED + re-blessed at entry 28
 - ~~`oph-001…007` semantic flips → row 8~~ FLIPPED + re-blessed at entry 27
-- `store-code-003…006` (Tier-2 collisions) → row 13 (participating-field set)
+- ~~`store-code-003…006` (Tier-2 collisions) → row 13~~ FLIPPED + re-blessed at entry 31
 - data-bin decimal/bigint goldens → rows 1+16 (0x18/0x28); ch-008…011 must stay
   BYTE-IDENTICAL (proven-untouched kinds) — if they move, that is a REGRESSION
 
@@ -531,13 +531,38 @@ plus the full corpus diff as the exhaustive record (the re-bless commit).
    the journal-class re-bless verification (chains must verify under
    the normative wrappers).
 
+31. Row 13 (L28 / audit C2 — ROW 13 COMPLETE): the Tier-2
+   participating-field set + the named-token stream. Signature fields
+   JOIN the hash in normalize_def_node: per-param shape tokens —
+   named-param NAMES (the shipped named spelling is the `=`-default
+   form; positional names stay alpha-normalized), the rest-kind flag
+   (W-23: `($a $b)` vs `($a *$b)` collided), default VALUES through
+   the SAME pipeline as body tokens (rule 5 — parse_program + emit,
+   never raw source) — and returns-type contributes its
+   STRICT-CANONICAL SOURCE TEXT bytes (rule 3: trimmed, internal ws
+   collapsed — the one deliberate source-text exception, so the I5
+   TypeExpr repair is identity-neutral). purity/scope stay OUT;
+   everything else is OUTSIDE Tier-2 (rule 4, closed list — pinned by
+   the [throws] excluded-clause invariant). W-22: ALL eleven V-enum-
+   ordinal emissions in the T2Emitter flip to NAMED variant tokens
+   (clean-room reproducible; enum reorder can never re-hash code
+   again). W-24 is a PINS spec-edit (the SCC separator stays the
+   shipped `#` byte; the map documents it). Pins: store-code-003..006
+   flipped collide→distinct (all green); 007/008 invariants HELD;
+   NEW 009 (named-param NAME distinct) + 010 ([throws] excluded —
+   same address) both green. Census exactly 7 + 133 (stdlib run
+   2526→2528); differential + conform held; Tier-2 V lanes green
+   (they pin properties, not literal digests). Persisted `code:`
+   re-hash rides the registry re-seal (rule 7 / M19). SPEC-EDIT
+   OBLIGATIONS (map): the L28 normal-form re-specification (named
+   tokens enumerated, `#` separator, participating list + exclusions)
+   into code-identity.md.
+
 ## Remaining epoch work
 
-Row 11 (detached payload #720 — DEFINES, the erasure witness family),
-rows 13-15 (Tier-2 participating-field set — store-code-003..006 pins
-flip; E1 totality refusals BEHAVIOR; CXER4604/1704 retirement
-BEHAVIOR), then spec-edit maps + the ONE re-bless with the old→new
-mapping file + registry re-seal.
+Rows 14-15 (E1 totality refusals BEHAVIOR; CXER4604/1704 retirement
+BEHAVIOR), then the journal-class re-bless, spec-edit maps + the ONE
+re-bless with the old→new mapping file + registry re-seal.
 
 30. Row 11 (#720 / erasure L184, audit C1 — ROW 11 COMPLETE): DETACHED-
    PAYLOAD entries, one form, no dual-accept. The entry-canonical
