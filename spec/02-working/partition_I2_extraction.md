@@ -1,10 +1,12 @@
 # I2 — Ring-0 extraction: working ledger
 
-**Status: OPEN** (2026-08-06, opened at the I1 exit — the identity epoch
-closed at ef80e409 and merged back to the campaign line; this file is
-I2's working ledger, the successor to `partition_I1_rebless.md`).
-Phase row: `partition_impl_PLAN.md` Part B. Branch:
-`impl/I2-ring0-extraction` off `design/651-516-partition`.
+**Status: EXITED** (2026-08-06 — opened and closed the same day; the
+byte-for-byte exit gate was met on the FIRST run of both lanes and held
+through the prod-shape rerun and the full phase-close gate battery; see
+work-log entry 8). Branch `impl/I2-ring0-extraction` off
+`design/651-516-partition`, merged back at exit.
+Phase row: `partition_impl_PLAN.md` Part B; this file is I2's working
+ledger, the successor to `partition_I1_rebless.md`.
 
 ## The phase (plan row, verbatim contract)
 
@@ -126,6 +128,25 @@ number.)
    (stream 22). **#707 stays open for ONE residual:** the lazy
    `CX_WORKER_THREADS=0` substrate conforms-or-retires at I5 (ruled
    register row; strangler rule forbids the behavior change here).
-8. **Phase close (this entry).** Full `make test` + 
-   `test-binding-api-parity` + prod-shape extraction gate run at close;
-   results recorded below.
+8. **Phase close — EXIT GATE MET (2026-08-06).**
+   - **Prod-shape extraction gate:** `-prod` libcx vs libcx-core ABI
+     transcripts BYTE-IDENTICAL over 1564 Ring-0 cases (post-G7/G10
+     census); CLI lane 8978 invocation pairs stdout+stderr+rc identical
+     + 17 profile refusals. (Dev-shape gate identical earlier at 1555.)
+   - **FULL `make test` GREEN** (exit 0, all TEST_TARGETS incl. the new
+     test-extraction-gate + check-code-spec-consistency lanes) and
+     **`test-binding-api-parity` GREEN 51/51** — the code lane the I1
+     close missed is explicitly in this close.
+   - Three reds surfaced and dispositioned on the way to green, none a
+     regression: (a) cxparse differential baseline 725→729 — the
+     designed deliberate-review path; lockfile.cxd's 4 data-only docs
+     land in cx_only, divergences unchanged (commit 063ad9c2);
+     (b) store_grpc_parity_test.v dial-failed under -j full-gate load,
+     green in isolation → joins CODE_SERIAL_RETRY, the #648 class;
+     (c) lang/v/conformance.v was the ONE fixture-loader consumer
+     outside vcx/ the rider sweep missed → re-pointed, test-v green.
+   - Strangler rule held: the monolith's dispatch and behavior are
+     unchanged (CLI-lane identity is the proof); the ring_import_gate
+     stayed green throughout (fixtures joined the derived deny-set).
+   - Entry-25 mode-in-identity residual remains parked BEFORE I5, per
+     the standing constraint — untouched here by design.
