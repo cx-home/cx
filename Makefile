@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate check-code-spec-consistency
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -487,6 +487,16 @@ check-null-absence-conflation:
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
 	@$(V) -cc cc $(CX_GC) test vcx/tests/effect_alignment_test.v
+
+# ── check-code-spec-consistency (#707 item 4 / code.md §11.4.1 gates 1-3 +
+# the clean-room no-impl-anchor / no-dangling-decision checks). The tool
+# existed since v0.7.6 but was wired into NEITHER the Makefile NOR CI — its
+# gate 3 (registry↔grammar [127e] parity) had been silently dead since the
+# formal-files move and nobody noticed. Repaired + wired at I2. Gate 1 runs
+# on the code.md bounded-freedom register (BF-* ids), not a blanket token ban.
+.PHONY: check-code-spec-consistency
+check-code-spec-consistency:
+	@$(PYTHON) scripts/check_code_spec_consistency.py > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
