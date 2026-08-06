@@ -391,6 +391,7 @@ and is not duplicated here.
 |---|---|---|
 | `CXER0001–CXER0009` | Generic-core panic + core-internal failures (0001 = `CX_PANIC`, runtime `!`; 0003 = RE2 shim internal failure/OOM, shipped `vcx/cx/regex_re2.v`; rest reserved) | `spec/core/code.md` §9.2 / §9.4 |
 | `CXER0100–CXER0299` | CX language core (directive errors) | `spec/core/code.md` §9.4 |
+| `CXERLEX-*` (named suffix, non-numeric) | Lexical-layer rejects defined by the formal token grammar. Shipped: `CXERLEX-CODEPOINT` (a `\u`/`\U` escape or `&#…;` char-ref decoding to a surrogate or > U+10FFFF — lexicon [L32] / grammar [67]); `CXERLEX-RANGE` (sized `iN`/`uN` ascribed value out of range — grammar [55] / lexicon [L25d]). Registered at I1 stream 13; the sub-namespace is append-only and owned by the formal files (invariants 1–4 apply to the suffix names) | `spec/03-approved/formal/lexicon.ebnf` |
 | `CXER1100–CXER1149` | `cx-stdlib/store` (sparse: 1100, 1101, 1110, 1113–1116, 1120, 1121, 1130–1132, 1140–1143; 1144–1149 reserved for the erasure/compliance store surface — campaign stream 20) | `spec/std-lib/store.md` §13 |
 | `CXER1200–CXER1205` | `cx-stdlib/ft` (full-text) | `spec/std-lib/ft.md` |
 | `CXER1300–CXER1306` | `cx-stdlib/email` | `spec/std-lib/email.md` |
