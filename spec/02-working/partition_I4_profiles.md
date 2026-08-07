@@ -1,6 +1,7 @@
 # I4 — profiles & installer: working ledger
 
-**Status: IN FLIGHT** (opened 2026-08-06). Branch
+**Status: EXIT GATE MET** (2026-08-06; entries 1-6 complete — exit
+battery green, see entry 6). Branch
 `impl/I4-profiles-installer` off `design/651-516-partition` @ 5c3b44dc
 (the I3 exit-merge). Phase row: `partition_impl_PLAN.md` Part B; this
 file is I4's working ledger, the successor to
@@ -274,3 +275,36 @@ installer one-command per profile.
    `scripts/release_linux.sh` builds the same matrix inside the
    ubuntu-22.04 container (PROFILES_TARGET, dev-shape aware).
    README quickstart + RELEASE_PROCESS.md updated.
+
+6. **EXIT BATTERY GREEN — the I4 plan-row contract is met
+   (2026-08-06).** Full `make test` (the complete TEST_TARGETS
+   umbrella incl. the NEW test-profile-gate) — **rc=0**. The only two
+   FAILs were the two standing classified-retry lanes, both green on
+   their classified retry (store_lazy_load_test — real-socket
+   contention, serial retry; fabric_nats_bridge_test — #572
+   stale-usecache class, cache-free retry) — the same pair as at the
+   I3 exit. In-battery verdicts: profile_gate[cli] 2833 graded /
+   profile_gate[embed] 2262 graded, 0 failures; extraction gate ABI
+   transcript byte-identical (4498070 bytes) + CLI lane 8978
+   invocation pairs + 17 refusals; libcx-abi-gate 713 IDENTICAL;
+   ring_import_gate green across all four lanes; binding parity
+   252/252; check-completions-drift repaired to read BOTH registry
+   halves (completions describe the DEFAULT platform-profile binary —
+   23 verbs); test-vcx-cmd lane pinned to the platform shape
+   (-d cx_platform — a bare cmd/ compile is now the cli profile).
+
+   **Exit gate per the plan row: each profile builds ✓ (prod matrix:
+   data 2.0 MB / embed 5.1 MB / cli 6.2 MB / libcx-core 2.9 MB vs the
+   ~13 MB platform binary) + passes its ring-tagged corpus ✓ (data =
+   the I2 extraction gate; cli/embed = the profile gate; platform =
+   the full battery); installer one-command per profile ✓
+   (CX_PROFILE= wiring live; the profile ASSETS publish with the next
+   release cut — until then CX_PROFILE=<lean> reports no-prebuilt,
+   the correct behavior for assets that do not yet exist).**
+
+   Deliberate-red ledger EMPTY, as opened. Standing constraints held:
+   extraction + ABI gates green throughout; no scope cuts. Rulings R1
+   (libcx re-cut → I5 stream 4) and R2-as-amended (nine-pack set by
+   dependency closure; prof/uuid/crypto-entropy/testkit residuals
+   runtime-cap-gated) stand posted for owner review under the
+   standing letter-acceptance ruling.
