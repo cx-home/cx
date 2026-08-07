@@ -183,6 +183,43 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   xsp_store_profile.md §5.3), confirmed not a registry band-overlap by
   the cxer-registry-gate.
 
+- R3.4 VERIFYING — the nine code-verified-but-regression-unguarded
+  behaviors (audit F-26), each now pinned:
+  (1) revocations-cursor resume — new peer-test lane: a fresh peer sub
+  from pos=0 replays the durable pos=1 revoke (the peer worker's own
+  resume path, on the wire). (2) feeds-die-with-connection — new
+  wire-regression lane: a tail sub dropped WITHOUT a cancel is reaped
+  on connection close and the daemon keeps serving (a fresh session
+  gets its live insert). (3) deleted-replay body-absence — STRENGTHENED
+  the existing resume assert: the retract under a bodies=true sub
+  carries no [body::bytes]. (4) alias-retract shape — pinned IN-PROCESS
+  (store_xsp_alias_retract_test.v): aliases-delete is not a wire verb,
+  so a local delete → the §5.3 formatter renders
+  [retract plane="aliases" name=… pos=…], distinct from advance;
+  no-op delete appends no act. (5) open-posture CXER5022 — new lane: a
+  pure-floor daemon (no grants) refuses a revocations feed with the
+  peer-token code regardless of posture. (6) PEP-before-token-gate
+  ordering — new peer-test lane: a session UNDER the enforcing posture
+  lacking the peer cap is denied by the PEP (CXER4700), NOT the token
+  gate (CXER5022); with the cap-holder/token-lacker lane (→5022) this
+  pins PEP-first. (7) peer wrong-DID pin — new two-daemon test
+  (test_store_xsp_peer_wrong_did_pin): B pins the WRONG did for origin
+  A; B logs the pin refusal naming A's real identity vs the wrong pin
+  and never folds — an impostor origin can inject no revocations
+  surface. (8) origin-folds-own-journal — new peer-test lane: a fresh
+  A-LOCAL session presenting the revoked credential is refused AT the
+  origin (CXER5021 revoked), so A enforces its own journal, not only
+  relays it. (9) rate retry-after ON THE XSP WIRE — new lane: a
+  presented [bounds [rate 1 :per "1h"]] exhausts after one read →
+  CXER4713 + retry-after (the profile-wire shape; the HTTP-429
+  Retry-After stays covered by store_wire_wave4_test). Non-vacuous:
+  several asserts failed on first run against the true wire shapes
+  (data-bin reply, admin-gated status, out-of-scope hash5) before
+  correction; the wrong-DID negative was rewritten from a
+  non-existent-string check to naming both dids. No production code
+  changed (behaviors were spec-correct, only unguarded); one V-test
+  helper file added.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -222,7 +259,7 @@ closes individually with its own evidence.
 | R3.1 | F-20 M3 malformed vp silently ignored | Fixture first: nested [vp] at M3 → expect CXER5021 loud refusal (spec §6.1 text is unambiguous). Then fix sx_m3_vp_text option-none path to refuse, matching the phase=present lane. | New test red→green; both M3 and phase=present lanes pinned. | AUTH-PENDING |
 | R3.2 | F-23 CXER5013/5016 (+5015) untested | Tests: attach to unknown/ambiguous mount → 5013; bad ::bytes image + ast_bin decode failure → 5016; an internal-fault lane for 5015 if constructible without mocks. | Each code has at least one wire-level test. | VERIFYING |
 | R3.3 | F-24 authority presentation-fault lanes untested | Wire tests through the profile listener: floor-cannot-present 5021; malformed-vp 5021 (rides R3.1); inert-root [presented compiled=0 inert=K]; cross-tenant CXER4805; wire CXER4703 escalation. | Each lane pinned over a real daemon. | VERIFYING |
-| R3.4 | F-26 code-verified, regression-unguarded behaviors | Tests: revocations-cursor resume; feeds-die-with-connection; deleted-replay body-absence (strengthen the weak assert); alias-retract shape; open-posture CXER5022; PEP-before-token-gate ordering; peer wrong-DID pin; origin-folds-own-journal; rate retry-after on the wire. | Each behavior pinned. | AUTH-PENDING |
+| R3.4 | F-26 code-verified, regression-unguarded behaviors | Tests: revocations-cursor resume; feeds-die-with-connection; deleted-replay body-absence (strengthen the weak assert); alias-retract shape; open-posture CXER5022; PEP-before-token-gate ordering; peer wrong-DID pin; origin-folds-own-journal; rate retry-after on the wire. | Each behavior pinned. | VERIFYING |
 | R3.5 | F-21 feed shape-acceptance quirks | Cutover posture (no dual-accept): multi-scalar [planes] refused loudly (or all scalars honored — whichever §5.2 says; if §5.2 is silent, this row escalates to a letter before code); name= on revocations cursor refused; stale comment corrected. | Off-spec inputs refuse loudly; tests pin. | AUTH-PENDING |
 | R3.6 | F-22 F3 re-advert direct-push missing | MAKE THE SPEC TRUE (register rule 3): implement the direct advert push from the config-reload verb handler alongside the sweeper watch; test pins immediate re-advert on the reloading listener. (Reverse option — truing §7a.1 to sweeper-only — would be a spec edit to match a shortfall; not proposed.) | Direct push implemented + pinned; sweeper lane unchanged. | AUTH-PENDING |
 | R3.7 | F-9 G18 --strict unwired | Wire scripts/cxer_registry_report.sh --strict into TEST_TARGETS (exits 0 today). Synthetic-violation check: an unregistered CXER in a probe branch fails it. | Gate in TEST_TARGETS; red-on-synthetic verified. | AUTH-PENDING |
