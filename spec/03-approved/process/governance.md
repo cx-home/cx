@@ -440,7 +440,7 @@ and is not duplicated here.
 | `CXER4900–CXER4901` | `cx-stdlib/similar` (island: shipped inside the pre-amendment xap proposal; regularized by the 2026-08-05 xap.md §8 yield — the 4900/4901 collision that triggered audit C5) | `spec/std-lib/similar.md` §7 |
 | `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/std-lib/fabric.md` |
 | `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/03-approved/std-lib/sched.md` |
-| `CXER5000–CXER5049` | XSP generic layer + store profile (campaign stream 4, L166; per-code rows LANDED with the W3 implementation per #717 — sub-block 5000–5009 = the generic frame/session layer, the numeric cutover of the retired symbolic `CXER-XSP-*` spellings; 5010–5018 = the store profile, 5019–5049 reserved for the W4/W5 rows; the CSRP `17xx` band is marked Reserved/retired at CSRP retirement, never reused) | `spec/02-working/xsp_store_profile.md` §4.2 |
+| `CXER5000–CXER5049` | XSP generic layer + store profile (campaign stream 4, L166; per-code rows LANDED with the W3 implementation per #717 — sub-block 5000–5009 = the generic frame/session layer, the numeric cutover of the retired symbolic `CXER-XSP-*` spellings; 5010–5021 = the store profile (5019–5021 landed with the W4 feed/authority implementation), 5022–5049 reserved for the W5 rows; the CSRP `17xx` band is marked Reserved/retired at CSRP retirement, never reused) | `spec/02-working/xsp_store_profile.md` §4.2 |
 | `CXER5070–CXER5089` | live modes / incremental evaluation (campaign stream 3; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5; codes unshipped, band pre-registered per invariant "added here before being used") | `spec/02-working/live_modes.md` §2 |
 
 **Invariants:**
