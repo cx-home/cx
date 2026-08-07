@@ -220,6 +220,22 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   changed (behaviors were spec-correct, only unguarded); one V-test
   helper file added.
 
+- R3.5 VERIFYING — feed shape-acceptance quirks (audit F-21), all
+  three, fixture-before-fix. §5.2 fixes [planes …] as ONE
+  space-separated scalar and CXER5019 already covers "malformed feed
+  subscribe", so the spec is NOT silent — no letter needed; register
+  rule 3 + no-dual-accept determine the answer. (1) multi-scalar
+  [planes "docs" "refs"] silently kept the last scalar → now refuses
+  CXER5019 (n_scalars > 1 guard); the single-scalar control still
+  honored; test RED first ([feed-sub] returned), green after. (2)
+  name= on a revocations cursor was accepted-and-ignored → now refuses
+  CXER5019 (the revocations plane is a single stream; name= is a
+  refs/aliases-only concept); test RED first, green after. (3) the
+  stale serve.v comment claiming the PEP maps an UNKNOWN verb to
+  `admin` corrected — unknown verbs are not in sx_verbs, so they skip
+  the PEP block and refuse by name (CXER5012). Impl conformed to spec
+  (register rule 3); no spec text changed.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -260,7 +276,7 @@ closes individually with its own evidence.
 | R3.2 | F-23 CXER5013/5016 (+5015) untested | Tests: attach to unknown/ambiguous mount → 5013; bad ::bytes image + ast_bin decode failure → 5016; an internal-fault lane for 5015 if constructible without mocks. | Each code has at least one wire-level test. | VERIFYING |
 | R3.3 | F-24 authority presentation-fault lanes untested | Wire tests through the profile listener: floor-cannot-present 5021; malformed-vp 5021 (rides R3.1); inert-root [presented compiled=0 inert=K]; cross-tenant CXER4805; wire CXER4703 escalation. | Each lane pinned over a real daemon. | VERIFYING |
 | R3.4 | F-26 code-verified, regression-unguarded behaviors | Tests: revocations-cursor resume; feeds-die-with-connection; deleted-replay body-absence (strengthen the weak assert); alias-retract shape; open-posture CXER5022; PEP-before-token-gate ordering; peer wrong-DID pin; origin-folds-own-journal; rate retry-after on the wire. | Each behavior pinned. | VERIFYING |
-| R3.5 | F-21 feed shape-acceptance quirks | Cutover posture (no dual-accept): multi-scalar [planes] refused loudly (or all scalars honored — whichever §5.2 says; if §5.2 is silent, this row escalates to a letter before code); name= on revocations cursor refused; stale comment corrected. | Off-spec inputs refuse loudly; tests pin. | AUTH-PENDING |
+| R3.5 | F-21 feed shape-acceptance quirks | Cutover posture (no dual-accept): multi-scalar [planes] refused loudly (or all scalars honored — whichever §5.2 says; if §5.2 is silent, this row escalates to a letter before code); name= on revocations cursor refused; stale comment corrected. | Off-spec inputs refuse loudly; tests pin. | VERIFYING |
 | R3.6 | F-22 F3 re-advert direct-push missing | MAKE THE SPEC TRUE (register rule 3): implement the direct advert push from the config-reload verb handler alongside the sweeper watch; test pins immediate re-advert on the reloading listener. (Reverse option — truing §7a.1 to sweeper-only — would be a spec edit to match a shortfall; not proposed.) | Direct push implemented + pinned; sweeper lane unchanged. | AUTH-PENDING |
 | R3.7 | F-9 G18 --strict unwired | Wire scripts/cxer_registry_report.sh --strict into TEST_TARGETS (exits 0 today). Synthetic-violation check: an unregistered CXER in a probe branch fails it. | Gate in TEST_TARGETS; red-on-synthetic verified. | AUTH-PENDING |
 | R3.8 | F-15 extraction-gate floor + 3 uncovered cases | Assert a case-count floor in the Make recipe (n_cases >= recorded); cover ch-005/cmp-005/sd-006 in a lane (probe sections or CLI); document the 5 md ABI-lane exclusions as intentional with the CLI-lane cross-reference. | Floor asserts; 3 cases compared somewhere; vacuous-pass probe fails. | VERIFYING |
