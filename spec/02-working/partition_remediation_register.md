@@ -56,6 +56,33 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   for execution (ruled 2026-08-07 second round); each row still closes
   individually on its acceptance criterion + independent verification.
 
+## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
+
+**2026-08-07:**
+- R3.7 VERIFYING — cxer-registry-gate in TEST_TARGETS (commit 7af29685);
+  green on tree, RED on synthetic unregistered CXER9871, green after
+  removal.
+- R3.9 VERIFYING — CX_BLESS=epoch disarmed (ce2bfc1e); verified three
+  ways: disarmed+env rc=1 loud refusal, disarmed-no-env rc=0, armed
+  (-d cx_epoch_bless)+env bless lane active.
+- R3.13 VERIFYING — three dated corrections landed in place (commit
+  after ce2bfc1e): I3 census 79, I2 proof-claim retracted, W5
+  "standing" label corrected.
+- R2.2 gate landed (f5cd18c3): blocking per-profile install
+  verification in release.sh (platform/data/embed/cli extract +
+  'profile  <name>' probe); published-asset end-to-end = issue #741;
+  row closes at the next cut with the tag named.
+- R4.1 VERIFYING — spec-freeze-gate (70f90258): TEST_TARGETS range
+  mode (f964c16a..HEAD) + .githooks/pre-commit --staged; verified:
+  range clean, --check-commit d7ca927b RED, impl-only green, staged
+  synthetic mixed RED then green under CX_RULED.
+- R2.1 re-verification lane GREEN (independent agent, build
+  7af29685): all 24 aa2a24c2 enforced cases PASS by direct execution
+  AND through the battery lane; all 12 d8d638b7 re-pinned V test files
+  OK first-try. Noted: prof-018 is skip-gated pre-existing
+  (CXER2103 unreachable from pure CX, documented in-file). Review
+  packet in preparation.
+
 ---
 
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
