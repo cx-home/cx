@@ -453,6 +453,129 @@ Ring-2 verbs; that is R1's whole argument).
    third ObjWireTransport impl, journal-over-profile, porcelain,
    fabric mounts, console, the gRPC adapter re-base).
 
+8. **W6 — consumers migrate LANDED (2026-08-07).** `cx-store://` IS the
+   store wire now.
+
+   **The client (store_xsp_client.v):** ONE persistent, tenant-bound
+   session per open handle — dial → XSP-AUTH M1–M4 through the shipped
+   `$xsp:auth-*` calculus (the peer worker's initiator shape),
+   anonymous-floor by default, mutual via open-opts `xsp-did` +
+   `xsp-seed-env` (the seed ALWAYS an env-var name; the URL carries NO
+   userinfo — the bearer-in-URL pattern does not carry over, refused at
+   parse). Idle sessions are ping-probed before reuse so a
+   liveness-swept connection re-establishes instead of surfacing a
+   spurious CXER1101; reconnect-once only when the request never left
+   (a write-failure), never after a sent request (a delete/CAS retry
+   would lie). Verbs ride text frames on fresh stream-ids;
+   list/iter/query subscribe UNBOUNDED (no window=) and collect events
+   to eos; errors cross VERBATIM ([err]/[deny] both — §4.1
+   transparency); only genuine transport faults synthesize CXER1101.
+   `XspObjWireTransport` = the THIRD ObjWireTransport impl: it adapts
+   RemoteObjectBackend's CSRP-shaped bodies (bare-hex `h="…"`) to the
+   profile's varint-multihash envelopes (`h::bytes=0x…`) and back, and
+   synthesizes the CSRP-identical statuses from the verbatim codes
+   (1114→409, 1121→404, 1131/[deny]→403, 1132/4713→429) so
+   store_objwire_err and the alias/ref callers classify identically
+   across all three transports. `get` answers the `[erased …]`
+   tombstone verbatim; `has()` counts erased ≠ present. Scheme map
+   (store.md §6.4 rider): bare `cx-store://` = the profile over TLS,
+   `cx-store+xsp://` = the cleartext dev sibling (port explicit — no
+   registered default); `cx-store+http/https` stay CSRP TRANSITIONAL
+   until the W7 retirement; all nine store_remote.v routers split
+   accordingly; `csrp_scheme()` (the service-tier gate) grows the xsp
+   tokens and its name retires at W7. No HTTP discovery for the
+   profile — the attach IS the negotiation.
+
+   **Journal (#644 / #718 item 7):** the journal consumer rides the
+   profile — entry docs as objects, head/entry pointers on the daemon's
+   authoritative alias table, cross-process rehydrate + chain
+   continuation live-tested (the stale-tail CAS lives daemon-side,
+   CXER1114 identity). journal.md §6.1 TRUED to the shipped mechanism:
+   v1 = the object-wire carriage over the profile; the daemon-side
+   VERB PUSHDOWN (folds/streamed reads as payload verbs) is recorded
+   as the profile's GROWTH PATH, explicitly NOT part of the stream-4
+   exit gate, its two open design points named (fn-as-data canonical
+   carriage is identity-adjacent; snapshot-signing key custody). The
+   prior §6.1 text described pushdown as if shipped — a spec with no
+   live consumer; trued under the standing acceptance ruling,
+   FLAGGED FOR REVIEW.
+
+   **gRPC re-base:** grpc_synth_req_m marks its requests
+   `pipeline="profile"`; svc_dispatch_data_op routes those to the NEW
+   store_profile_ops.v (svc_profile_data_op — the 16 data ops directly
+   over store_stdlib_builtin_inner, same validation order, wire bodies,
+   #628 op-lock discipline, and §4 status↔17xx remapping as
+   store_csrp_route's cxd lane). The duplication is DELIBERATE: at W7
+   the CSRP router files delete whole and this core remains; until then
+   the parity suites pin both cores byte-identical (zero test edits).
+   Auth/limiter/metrics/capabilities/mounts/config-reload stay the ONE
+   shared svc pipeline. Note for W7: store_service.v:~1291's
+   non-CSRP-path fallthrough into store_csrp_route needs attention when
+   the router deletes; grpc_synth_capabilities drops the pipeline attr
+   (harmless — resolved before data-op dispatch).
+
+   **Fabric:** the pong no-echo divergence (recorded at W3) FIXED —
+   pong echoes stream-id AND payload verbatim (§5.1 opaque echo, text
+   or binary), fixture strengthened. Fabric mounts were already 100%
+   XSP (the profile's template — nothing else to migrate).
+
+   **Discovery:** the server-level HTTP capabilities advert gains
+   `[xsp [addr …] [did …]]` when the profile listener is up (§8's
+   bootstrap direction) — the hook a management client uses to find
+   THE wire from the HTTP base it knows.
+
+   **Console (xap-store-console, external):** remote-store discovers
+   the advert and dials the profile (cx-store:// off https daemons,
+   cx-store+xsp:// off http; TRANSITIONAL CSRP fallback for
+   pre-profile daemons); add-credential gains the xsp-identity kind
+   (did= + seed-env= — seed by env reference, nothing sealed or
+   journaled); conform §13b (new) fully green: advert discovery,
+   anonymous seed over the profile, mutual attach, list/get/query
+   pushdown, no seed leakage. Toolchain-drift repairs to run at all:
+   sha256:→sha2-256: stanza tags, registry re-published in the
+   multihash pack format (console-connect@0.3.0, store-connect@0.3.0,
+   store-browse@0.2.1 — released aliases are immutable), retired infix
+   CXPath predicate cut over, browse-list's `($ld)` seq-literal wrap
+   dropped (attrs are scalar-only). The 19 remaining conform reds are
+   pre-existing 0.13-idiom drift on the static-daemon BEARER lanes
+   (sealed-secret round trip, fail-closed asserts, readout shapes) —
+   filed as xap-store-console#6, NOT caused by the migration.
+
+   **Web client (xap-marine-htmx-web-client, external):** off pre-/3
+   M1s — open() now offers `profiles "xap"` (features empty by design)
+   inside the signed transcript and VERIFIES the M4-confirmed
+   intersection carries xap before establishing. Proven end-to-end
+   through the shipped calculus (hello→challenge→prove→attach-xsp→
+   finish: confirmed profiles='xap'). The marine XAP host itself does
+   not boot under the 0.15 dev binary (its own repo drift — the
+   conform harness's "bus-error" retry loop) — that blocks the LIVE
+   client↔host lane, not the client change; the cross-repo drift
+   gate's 6 pre-existing reds are unchanged.
+
+   **W6 gotchas (recorded):** `[$store:open]` takes ONE arg — opts ride
+   `store-open-opts` with a `[map k=v]` element, and the opts allowlist
+   is explicit (new keys must be added there or they silently drop);
+   `$=` is not the equality builtin (`$eq`); `$first` over a
+   single-match node-set descends into the ELEMENT's children — pass
+   `$x/confirm` style paths to consumers (the corpus idiom), never
+   `[$first $x/confirm/*]`; store-get-doc-text over the objwire answers
+   the ABSENCE channel for a miss (never CXER1121 — pin error identity
+   via modify-of-absent instead); a V match-expression arm can
+   `return`, and getting a mut ref from an immutable-sourced pointer
+   is the `unsafe { &Type(ptr) }` cast at the CALL SITE (the fn-return
+   provenance still trips the checker).
+
+   **WAVE GATE MET:** full `make test` rc=0 (2026-08-07); the single
+   FAIL was the standing `-usecache` compile-artifact lane
+   (fabric_nats_bridge, R=0.000ms), green on the #572 sanctioned
+   cache-free retry — "every failed lane green on its classified
+   retry" per the battery's own verdict. Extraction gate: 1564 Ring-0
+   cases through BOTH libcx.dylib and libcx-core.dylib; ring_import_
+   gate + libcx-abi-gate (713 symbols, I3 baseline) green — the W6
+   client/profile-ops work touched no ring boundary and no ABI. NEXT =
+   W7 (the three-listener parity gate + the CSRP retirement
+   enumeration; #718 items 2/3 close in-gate).
+
 ## W3 entry note — the op-core seam (recorded before cutting code)
 
 The CSRP router (`store_csrp.v`) does HTTP framing, auth, and error
