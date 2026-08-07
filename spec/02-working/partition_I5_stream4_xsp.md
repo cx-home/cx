@@ -241,6 +241,68 @@ Ring-2 verbs; that is R1's whole argument).
    a §5.1 divergence in the fabric listener — a W6/W7 parity-adjacent
    cleanup, not touched here.
 
+5. **W4 IN PROGRESS (2026-08-07).** Spec surgery landed first
+   (be6356db): xsp_store_profile §5.1–§5.3 (the E3 lineage substrate —
+   ONE log read by the fixed `store:log` #708 AND the wire feed; the
+   HEAD-SET map form; `feed` gated by `store-feed`, body carriage by
+   `store-delta`; `:complete-ordered` declared + reported; retention =
+   process lifetime with the `:gapless`-class `CXER5020` refusal;
+   notification shapes with E3 positions; never-coalesced; per-frame
+   `redacted=K` carriage whose first producer is W5's shred) + §6.1
+   (the listener authority model) + §4.2 rows 5019–5021 + the 5018
+   re-scope; authz.md §2.2 `[bounds]` + §4.2 four-axis pin + §8
+   CXER4713; xsp.md §5.3 map cursor; governance band row.
+
+   **W4 rulings (verified long-term-best, recorded):** (1) enforcement
+   posture mirrors the daemon's `[auth]` rule — `[grants]` present ⇒
+   deny-by-default VC-compiled PEP, absent ⇒ the W3 open posture with
+   `CXER5018` re-scoped to open mode only (ONE posture rule across
+   listeners, and the W3 test lanes stay meaningful); (2) capability
+   grammar v1 = the four CSRP op-classes kept class-for-class (the W7
+   parity gate compares apples); (3) `spend` bounds are unsupported on
+   this surface at v1 and REJECT the presentation fail-closed
+   (`CXER5021`) — a bound that cannot be metered is never silently
+   void; (4) unrecognized-root chains compile to NOTHING (inert,
+   logged, `[presented compiled=N inert=K]`) while cross-tenant is a
+   FAULT — the identity model's §5.3 split, kept exactly; (5) feed
+   retention v1 = process lifetime + seed-at-open (a replay from the
+   empty cursor serves the corpus snapshot as inserts, honoring the
+   quartet's `changes-since(∅) ≡ [?for]`), with a boot token on the
+   head-set making "below the retention boundary" DETECTABLE
+   (`CXER5020`, never silent cross-boot divergence); durable lineage
+   rides W5 with the signed advert.
+
+   **Authz core LANDED (46c3b64e, fixtures authz-054…062 first):**
+   `[bounds]` parses/materializes verbatim (unknown conjunct =
+   unissuable CXER4711); attenuation now ⊆-checks FOUR axes at issue —
+   the WINDOW check was decision-time only against the identity
+   model's §5.2 chain rule (child until ≤ parent's; absent child until
+   INHERITS), bounds compare per-conjunct against the nearest
+   bounds-bearing ancestor (rate = capacity AND cross-multiplied
+   refill; incomparable spend = fail-closed) — both CXER4703; the
+   decision walks EVERY bounds-bearing link against `opts.meters`
+   readings (pure-PEP snapshot posture; absent reading = fresh meter —
+   meters RESTRICT, so no usage records = unspent budget, the inverse
+   of gate evidence); exhaustion denies `[deny [code CXER4713]
+   [reason :budget-exhausted] [conjunct :rate|:count]
+   [retry-after N]?]` with retry-after only where the meter
+   replenishes, and alternative chains with headroom still permit.
+   Full stdlib fixture battery green (2581+9).
+
+   **Remaining W4 (next):** the lineage substrate in MemStore (feed
+   log + seed-at-open + boot token; funnels: store_put_canonical/raw,
+   delete-doc, set/delete-alias, branch/branch-force, the two
+   listener refs-set sites via ONE store_ref_advance helper; cxpack/
+   graph rebuild writes are the SEED path, never live events) +
+   `store:log` re-read from the lineage (#708 — NOTE: the canonical
+   docs example 18-store.cxd pins the OLD live-refs-only count and
+   re-records to advance-event counts, and store.md §*/console table
+   sentences update in the same change) + listener feed verbs +
+   listener authority wiring (per-session AuthzStore seeded from
+   `[grants]`, VC presentation, per-verb PEP, meter debit at the op
+   lock) + `store-feed`/`store-delta` in the transcript offers + V
+   test lanes + G13 fixtures.
+
 ## W3 entry note — the op-core seam (recorded before cutting code)
 
 The CSRP router (`store_csrp.v`) does HTTP framing, auth, and error
