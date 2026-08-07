@@ -357,6 +357,102 @@ Ring-2 verbs; that is R1's whole argument).
    advert/erasure/peer — §7a/§7b; the feed mechanism is reused
    verbatim for revocation + shred propagation, no new machinery).
 
+7. **W5 — object advert, erasure, peer LANDED (2026-08-07).** Spec
+   surgery first (dced728f: §7.1 peer model, §7a.1 advert, §7b.1
+   erasure, §5.2/§5.3 revocations plane + [erase]/[revoke] shapes +
+   the redacted=K first producer, §6.1 peer class + the two-point
+   revocation enforcement, §4.1 erase row, §4.2 CXER5022), then one
+   implementation commit (ab57a9b0) + the marker-wins spec sharpening.
+
+   **Erasure (§7b.1):** `store_erase_doc_local` = the ONE doc-level
+   lawful-shred funnel — destroys the entry AND records the attributed
+   `[erased …]` tombstone in one act. The tombstone survives restart
+   AND compaction on every substrate: `E` manifest records whose
+   payload rides as one more content-addressed object (staged via the
+   sink like alias names, explicitly GC-rooted at cxpack compaction),
+   plus a file:// `E` index record with inline payload; ONE shared
+   replay (`store_replay_apply_erased`/`_clear_erased`) with the
+   supersede rule = replay order (a later `D` clears the tombstone —
+   the T re-put precedent; the erased_manifested mark drops at clear
+   so a RE-erase emits a fresh operative E). Idempotent (`deduped`),
+   convergent (erase-of-absent records the tombstone). Wire: `erase`
+   verb (delete-class, actor server-asserted); `get` answers the
+   tombstone VERBATIM; **the erased marker WINS over physical
+   presence** — `objects-get` answers `erased=true` and never the
+   bytes even while the root object awaits reclamation (anything else
+   leaks erased content), `objects-have` keeps it MISSING (a "have"
+   that cannot be fetched is a lie). Feed: `[erase plane="docs" …]` is
+   a DISTINCT act carrying its attribution (the shred-request AS
+   journal data — replicas execute their OWN shred; automation rides
+   stream 9), and a `bodies=true` replay of an erased insert carries
+   `redacted=1` — the visible-count rule's first producer (deleted
+   stays silent-bodyless; deletion is not redaction). `store:log`
+   shows `kind=erase` for free (one log).
+
+   **Advert (§7a.1):** `[store-advert generation= [head-set …]
+   [guarantees …] signer= sig-algo=":ed25519" sig=]` — ONE stream-0
+   event after M4, signed over `cx_text_canonical` of
+   `[store-advert-canonical …]` (the verifier recipe is `$cx:canonical`
+   — NOT `$cx:emit`, which is the pretty renderer; that distinction
+   cost one red run and is now pinned by xsp-022 + the stripped-token
+   negative xsp-023). Guarantee set v1 = the six origin-mount
+   consistency tokens. F3 = the sweeper's generation watch (hot-config
+   box `generation()`) re-advertises every established session on ANY
+   applied reload, cross-listener included; `capabilities` restates
+   generation + guarantees. ONE head-set builder serves advert and
+   feed-sub.
+
+   **Peer (§7.1):** the peer channel IS the feed's fourth plane —
+   `revocations` (subscribes ALONE; peer token offered only when
+   `[xsp [revocations journal=]]` designates one; deny-by-default
+   `peer` capability with NO open-mode exception — CXER5022; durable
+   journal-seq positions, boot-EXEMPT cursors; the reply reports
+   `[convergence feed-lag-ms=250 enforcement="next-pep-check"]`).
+   Journal head discovery PROBES the per-seq entry aliases (one read
+   path for anything that writes entries — the head alias's
+   `seq:hash` value is not a doc target and cannot cross the wire's
+   validated aliases-set anyway). Outbound: `[xsp [peers [peer url=
+   did= tenant=]]]` spawns one worker per peer — mutual XSP-AUTH
+   initiator under the daemon identity (the fabric-remote dial shape
+   over net_dial_*_real; operator config is the dial authority),
+   responder DID pinned, backoff retry (an offline peer is lag). ONE
+   revoked-set per server, folded from the local journal (sweeper
+   tick) and every peer subscription; TWO local enforcement points:
+   `vc-verify` gets `opts.revoked` at present time, and
+   `sx_pep_decide` REMOVES compiled-from-revoked delegations (the
+   per-session `vc_of` map) at the next check — sessions never torn
+   down, authority narrows (no reach-in, measured: ping green after
+   the deny). PEP-vs-token gate ordering ruled: under grants the PEP
+   decides FIRST (a session without the peer cap gets the verbatim
+   `[deny]`, never 5022); the transcript gate refuses 5022 for
+   cap-holding sessions missing the token, for non-designating
+   daemons, and for the open posture.
+
+   **Coverage:** store_erase_test.v (substrate: reopen + compaction
+   survival, supersede incl. re-erase-after-reput, absent-doc
+   convergence, file:// E roundtrip); serve-test W5 lanes (advert
+   signature verified through the REAL `$crypto:ed25519-verify`, F3
+   generation=1 re-advert, the full erase choreography, the object-
+   wire discriminator); test_store_xsp_peer = the G13
+   revocation-convergence PAIR live over two daemons. Fixtures
+   xsp-022/023. The one W5 scope note: the erase verb originates
+   shreds at the owning daemon — `$store:erase` local porcelain and
+   the erase-subject/SEK machinery are stream 20's (store.md §9 edit
+   map), which mounts UNDER the same funnel; the replica worker that
+   auto-applies erase acts is stream 9's (filed there as the joint
+   requirement); migrate/clone do not carry the erased map yet
+   (stream 20 revisits with the SEK cut).
+
+   **WAVE GATE MET:** full `make test` rc=0 (2026-08-07); the two
+   FAILs were both the standing `-usecache` compile-artifact lanes
+   (fabric_nats_bridge R=0.000ms; for_comp_closures_mem), each green
+   on the #572 sanctioned cache-free retry — the gate's own
+   classified-retry verdict. Extraction gate byte-identical (1564
+   Ring-0 cases / 8978 invocation pairs / 17 profile refusals). NEXT
+   = W6 (consumers migrate: the remote client's XSP transport as the
+   third ObjWireTransport impl, journal-over-profile, porcelain,
+   fabric mounts, console, the gRPC adapter re-base).
+
 ## W3 entry note — the op-core seam (recorded before cutting code)
 
 The CSRP router (`store_csrp.v`) does HTTP framing, auth, and error
