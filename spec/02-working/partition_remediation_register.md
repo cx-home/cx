@@ -80,8 +80,19 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   7af29685): all 24 aa2a24c2 enforced cases PASS by direct execution
   AND through the battery lane; all 12 d8d638b7 re-pinned V test files
   OK first-try. Noted: prof-018 is skip-gated pre-existing
-  (CXER2103 unreachable from pure CX, documented in-file). Review
-  packet in preparation.
+  (CXER2103 unreachable from pure CX, documented in-file).
+- R2.1 review packet DELIVERED —
+  partition_epoch_amendment_packet.md (uncommitted, awaiting owner
+  review): 20 restored-pre-epoch (byte-exact incl. the prof-014
+  3→0→3 corruption reversal), 19 genuinely-new (epoch-tracking pins),
+  7 input-re-spells. Owner-attention rows: the deliberate sha256:
+  accepted→REJECTED contract reversal (#188 no-dual-accept flip) and
+  the added math-116 pin. Awaiting owner sign-off per R2.1(a).
+- R3.1 VERIFYING (26326815) — M3 wrong-carriage presentation now
+  refuses CXER5021. Fixture-before-fix: serve lane G landed first,
+  FAILED live (frame type 3, state=attached — audit F-20 confirmed
+  behaving-wrong), green after sx_m3_vp_present + the refusal arm;
+  full xsp serve battery OK.
 
 ---
 
