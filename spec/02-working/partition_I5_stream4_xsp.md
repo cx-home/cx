@@ -173,6 +173,74 @@ Ring-2 verbs; that is R1's whole argument).
    Fable 5 after a mid-session model switch was caught and reverted
    (owner directive; the absolute model rule is now standing).
 
+4. **W3 — profile core LANDED (2026-08-07).** The listener is
+   `store_xsp_serve.v`: the third `cx store-serve` listener (opt-in
+   `[xsp enabled addr [identity] [policy] [limits]]` config section,
+   fabric-shaped identity validation, registered with the shutdown
+   watcher at birth — the #211 lesson), XSP-AUTH responder on stream 0
+   offering `profiles="store" features="credit"` INSIDE the transcript,
+   attach routing by M3 `[tenant]` = mount name (sole-store shorthand
+   kept), and every verb one text-canonical envelope over
+   **`store_stdlib_builtin_inner`** — the op-core seam, exactly as the
+   entry note predicted: no op pipeline was disentangled, only framed.
+   All 19 verbs + `session` serve (get put delete modify list iter query
+   objects-have/get/put refs refs-set aliases aliases-set capabilities
+   status gc mounts config-reload). `list`/`iter`/`query` are
+   credit-governed event streams on the REQUEST's stream-id (window=
+   declares, credit frames replenish, `cancel` → terminal
+   `[eos cancelled=true]`, empty set → bare `[eos count=0]`).
+
+   **Lanes made byte-precise (§4.1):** doc bodies = framed ast_bin
+   imaged as `[body::bytes 0x…]` (get/iter/put); doc addresses = tagged
+   text; object-wire addresses = varint-multihash bytes attrs
+   (`h::bytes=0x1220…`) — the crypto-agility bijection LIVE, fail-closed
+   on unregistered codes; `objects-put` verifies every claimed address
+   against the bytes (whole-batch refusal on one mismatch); `refs-set`
+   and `aliases-set` are validate-then-apply all-or-nothing with
+   `CXER1114` verbatim. **Error transparency:** op-layer faults ride
+   VERBATIM (`CXER1121`, `CXER1110`, `CXER46xx`); absence is DATA
+   (`present=false`); the profile's own rows are `CXER5010–5018`
+   (§4.2). The L166 numeric cutover landed with it: the five symbolic
+   `CXER-XSP-*` frame-codec codes are RETIRED into `CXER5000–5004`
+   (+ new `CXER5005 E_XSP_FLAGS`), registry rows in §4.2, governance
+   band row updated — #717 same-change discipline throughout.
+
+   **Two shipped codec defects caught by the G8 corpus at authoring:**
+   (1) a payload-less BINARY frame (encoded `[frame type=ping]`)
+   mis-refused as a data-bin parse failure — a zero-length payload is
+   now an empty `[payload]`, never a codec error (xsp-004 guards);
+   (2) the declared-length ceiling: a 17-byte header declaring a
+   4294967295-byte payload slipped past the truncation check through
+   int(u32) overflow and CRASHED the decoder on a negative allocation —
+   a remote-DoS-grade defect in every XSP listener; the length
+   arithmetic is i64 now (xsp-012 guards). Reserved flag bits 2–7 were
+   also silently IGNORED against §2's MUST — now rejected `CXER5005`
+   (xsp-006; the negotiation-enforceability rationale recorded in
+   xsp.md §2).
+
+   **Corpus:** `conformance/stdlib/xsp.cxd` (G8) — 20 cases, suite
+   `ring=2`: round-trips all 8 types, header edges (anonymous +
+   payload-less consumed=17, eos, reserved flags, ceiling), six error
+   lanes, decode-all remainders, the negotiation triple (accept =
+   canonical intersection / ignore = unknown token never lands /
+   refuse = forged EXTENSION refused by auth-finish — complements
+   xsp-auth-027's narrowing), §5.2 credit arithmetic as executable
+   spec, §5.3 cursor form. The group `from=` refusal was verified
+   already live-pinned (fabric_serve_test.v:1038); listener-side credit
+   ORDERING, cancel choreography, and everything socket-bound live in
+   `store_xsp_serve_test.v` — one boot, ~40 assertions, including THE
+   M5 property: a wire `put`'s address is byte-identical to the local
+   embedded put of the same doc, and a `get` body re-renders to text
+   that re-hashes to the address.
+
+   **Interim posture (recorded, not silent):** attach authenticates
+   (mutual default; `[policy mode=floor floor=…]` admits anonymous
+   under `floor:<name>`), and the daemon-level `mounts`/`config-reload`
+   require a DID-proven principal (`CXER5018`) until W4's VC-compiled
+   PEP owns authorization. Fabric's pong (payload not echoed) noted as
+   a §5.1 divergence in the fabric listener — a W6/W7 parity-adjacent
+   cleanup, not touched here.
+
 ## W3 entry note — the op-core seam (recorded before cutting code)
 
 The CSRP router (`store_csrp.v`) does HTTP framing, auth, and error
