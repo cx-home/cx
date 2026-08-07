@@ -108,7 +108,14 @@ membership (hash-affecting: which manifest rows; or additive: claimed
 loudly) before its I5 branch cuts. Streams 5/17/20/21 are the
 template; the eight silent specs — streams 2, 3, 4, 7, 9, 10, 18, 22 —
 gain theirs in the wave-S4 reconciliation pass; three of this audit's
-CRITICALs lived in silent streams, which is the point.
+CRITICALs lived in silent streams, which is the point. **DONE
+2026-08-06 (I5 open):** all eight specs carry their
+`Identity-epoch membership (audit C9)` section — every one ADDITIVE or
+output-only (stream 2 loudly names the ONE-walk/emitter byte-identity
+exit clause; stream 4 loudly names the R1 libcx ABI-baseline move as
+an ABI event, not identity; stream 10's row-15 retirement is confirmed
+landed at I1, journal.cxd journal-042 on CXER1114). No silent stream
+turned out hash-affecting — the I1 epoch stays the only one.
 
 ## Standing constraints
 
