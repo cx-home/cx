@@ -447,7 +447,11 @@ Ring-2 verbs; that is R1's whole argument).
    FAILs were both the standing `-usecache` compile-artifact lanes
    (fabric_nats_bridge R=0.000ms; for_comp_closures_mem), each green
    on the #572 sanctioned cache-free retry — the gate's own
-   classified-retry verdict. Extraction gate byte-identical (1564
+   classified-retry verdict. [CORRECTION 2026-08-07, register R3.13 /
+   audit F-29: "standing" was accurate only for fabric_nats_bridge
+   (recorded I3/I4 ledgers); for_comp_closures_mem has NO prior record
+   as a usecache lane — it passed the #572 sanctioned retry, but this
+   was its first recorded appearance, not a standing one.] Extraction gate byte-identical (1564
    Ring-0 cases / 8978 invocation pairs / 17 profile refusals). NEXT
    = W6 (consumers migrate: the remote client's XSP transport as the
    third ObjWireTransport impl, journal-over-profile, porcelain,

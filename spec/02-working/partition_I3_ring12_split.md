@@ -534,6 +534,9 @@ N3 on did/vc).
 
    **Census at exit:** doc lane R0=1564, R1=2012, R2=686 (+ eval 991);
    vcx/code = 78 prod .v files (Ring 1) + 13 in-module tests;
+   [CORRECTION 2026-08-07, register R3.13 / audit F-27: 79, not 78 —
+   144 at cut − 67 moved + 2 NEW Ring-1 files created during I3
+   (ring_registry.v, net_core.v); recount at merge 5c3b44dc]
    vcx/platform = 71 prod .v (incl. platform_init.v + ring2_register.v
    + iter_walks_net_http.v + stdlib_http_serve.v) + 2 .c + 69
    in-module tests. Deliberate-red ledger EMPTY, as opened.
