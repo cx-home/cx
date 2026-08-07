@@ -303,6 +303,60 @@ Ring-2 verbs; that is R1's whole argument).
    lock) + `store-feed`/`store-delta` in the transcript offers + V
    test lanes + G13 fixtures.
 
+6. **W4 — feeds + authority LANDED (2026-08-07).** Five implementation
+   commits on top of the entry-5 spec surgery: authz core (46c3b64e —
+   `[bounds]` + the FOUR ⊆-checked issue-time axes incl. the window
+   pin, `opts.meters` pure-PEP budget denies, CXER4713); the E3
+   lineage substrate (72909cdf — #708 CLOSED: ONE per-ref advance log
+   in MemStore behind the single-seam funnels + `store_ref_advance_local`,
+   seed-at-`store_register` compaction, `feed_boot` boundary token;
+   `store:log` = per-act rows with dense per-stream positions;
+   the canonical docs example re-recorded); the listener authority
+   model (8f6832dd — `[xsp [grants …]]` → per-session basis,
+   deny-by-default PEP with `[deny]` verbatim on the wire, VC
+   presentation M3/phase=present, per-session meters debited at the
+   verb commit point, CXER5018 re-scoped to open mode); the change
+   feed (this commit — server-level subscription registry over the
+   lineage, `[feed]` with head-set boot-token cursors, CXER5019/5020,
+   never-coalesced delivery, credit/cancel integration, cross-listener
+   sweeper wake, `store-feed`/`store-delta` in the transcript offers).
+
+   **TWO CARRIAGE FINDINGS (both spec'd §6.1/§5.1–§5.2 same-change):**
+   (1) a VC presentation MUST ride as a single-scalar TEXT field
+   (`[vp "<canonical [vp [vc …]…] text>"]`) — the nested-element form
+   is unsound twice over: M3 is transcript-signed and nested children
+   do not atomize (the W2 §4.4a trap), and data-bin is lossy on
+   element/attr duality so a `[vc …]` crossing it re-canonicalizes and
+   its SIGNATURE dies (L165's lossless-lane rule applies to signed
+   content). (2) Wire-crossing delegations use the `id="…"` ATTR form
+   — a leading bare id is mixed content and does not survive the text
+   round-trip (measured: `[delegation d-vc-1 …]` re-parses as
+   `[delegation 'd-vc-1 ' …]`, trailing space, bad-signature). Also
+   pinned: the head-set/`[from]` cursor carries the mount's `boot`
+   token, making "below the retention boundary" DETECTABLE (CXER5020)
+   instead of silently divergent across daemon restarts.
+
+   **Coverage:** test_store_xsp_authority (grants posture end-to-end:
+   class grants, floor read, deny-by-default, phase=present late
+   grant, `[bounds [count 2]]` → CXER4713 after exactly two permits,
+   subject-mismatch, spend fail-closed, M3-carried vp) + the feed
+   lanes in the W3 boot (un-negotiated 5012; rung/plane/cross-boot
+   typed refusals; cross-connection live tail; the never-coalesced
+   two-puts-two-frames discriminator; alias advance; window
+   starvation + credit resume; retract delivery; cancel eos; HEAD-SET
+   resume replay with bodies; live refs advance with dense per-name
+   pos + multihash root). Fixtures: authz-054…062 (escalation lanes
+   watched fail first), store-log-002/003, xsp-021 (map-cursor form).
+
+   **WAVE GATE MET:** full `make test` rc=0 (2026-08-07); the single
+   FAIL was the standing `-usecache` compile-artifact lane
+   (fabric_nats_bridge, R=0.000ms), green on the #572 sanctioned
+   cache-free retry. Interim CXER5018 retired into the PEP (open-mode
+   only now); the CSRP DidGrant table's operator intent carries over
+   as `[grants]` → ordinary delegations. NEXT = W5 (object
+   advert/erasure/peer — §7a/§7b; the feed mechanism is reused
+   verbatim for revocation + shred propagation, no new machinery).
+
 ## W3 entry note — the op-core seam (recorded before cutting code)
 
 The CSRP router (`store_csrp.v`) does HTTP framing, auth, and error
