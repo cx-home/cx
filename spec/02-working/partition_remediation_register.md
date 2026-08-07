@@ -93,8 +93,69 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   FAILED live (frame type 3, state=attached — audit F-20 confirmed
   behaving-wrong), green after sx_m3_vp_present + the refusal arm;
   full xsp serve battery OK.
+- R3.8 VERIFYING — extraction-gate F-15 repairs, all three limbs:
+  (1) case-count floor: probe + CLI gate take --min-cases; the Make
+  recipe passes EXTRACTION_GATE_FLOOR=1564; vacuous pass DEMONSTRATED
+  LIVE first (empty corpus → 1-byte transcripts → cmp rc=0), floor
+  refusal verified red (rc=1, empty corpus at floor 1564). (2) the
+  3 uncovered cases now compared through the ABI lane: ch-005 synth
+  lane (deterministic table synthesis mirroring the conformance
+  runner's HH3 rule; chunked encode + reader pass recorded as digests
+  — groups=2 at the 2^20 boundary in-transcript), cmp-005 fd lane
+  (col-spec + row-group via the in-memory reader, 101 groups through
+  cx_table_writer_open_fd, file digest + fd read-back group count),
+  sd-006 schema-pair lane (cx_hash on both schema texts + computed
+  equality — the schema content hash IS the Tier-1 canonical hash);
+  transcripts BYTE-IDENTICAL monolith vs core (4500316 bytes, 1564
+  cases). (3) the 5 md ABI-lane exclusions: now MECHANICAL — a
+  zero-record Ring-0 case must carry in_md (no md surface exists in
+  the C ABI; CLI lane covers via --from=md) or the probe hard-fails
+  listing it; red verified on a synthetic uncovered case.
+- R3.8 DISCOVERY → #742 (bug/area:v-runtime/prio:high) — routing
+  ch-005's 1M-row case through the ABI exposed that SHARED-LIBRARY
+  builds ran with the vgc collector DISABLED (V emitted vgc_init()
+  only in generated main() paths): unbounded embedder heap growth,
+  ~75x slower large ABI parses (20k-row parse 15.0s dylib vs 0.19s
+  binary), and — once enabled — a second latent defect
+  (vgc_data_segments scanned only image 0, so V __globals in the
+  dylib's own data segment were reclaimed → rand__deinit UAF at
+  exit). Fixed in the V fork (cgen _vinit_caller/_vno_main_init_caller
+  emit vgc_init; vgc_platform.h scans main image + the vgc-carrying
+  image via dladdr marker). New abi-gc-gate in TEST_TARGETS pins the
+  class: red before (no gc cycles; then rc=139 exit UAF), green after
+  on BOTH artifacts (16 cycles each, clean exit). 20k-row dylib parse
+  now 92ms. v0.15.0 shipped artifacts carry the defect — #742 tracks
+  the release-side verification. Fix class = V-runtime mem-mgmt
+  (standing: V-only, upstreamable); no cx spec text touched.
 
 ---
+
+- R3.2 VERIFYING — CXER5013/5016 wire lanes + a decoder crash fix the
+  lane surfaced. New test_store_xsp_mount_and_body_faults: 5013 on a
+  tenant-less M3 against a MULTI-mount daemon (ambiguous) and on a
+  [tenant] naming an unmounted store, with a named-mount positive
+  control; 5016 on a bodyless [put] and on a [body::bytes 0x…] whose
+  bytes are not decodable ast_bin; a valid put after both refusals
+  proves per-request fault isolation (sxt_boot_xsp gained a `stores`
+  param for the multi-mount daemon). FIXTURE-BEFORE-FIX surfaced a
+  REAL DEFECT: the 0xdeadbeef body (size 0xefbeadde, high bit set)
+  CRASHED the daemon thread — bin_to_doc/node_from_bin compared
+  `4 + int(size)` in signed 32-bit space, so a size ≥ 2^31 wrapped
+  negative, slipped the bounds guard, and panicked in the payload
+  slice: a hostile/corrupt framed body took the process down instead
+  of surfacing CXER5016. First serve-test run FAILED (V panic: no
+  reply on stream 32); fixed both header guards to u64 comparison,
+  green after. Added test_ast_bin_rejects_high_bit_size_no_panic
+  (unit-level, both entry points) so the crash class is pinned
+  independent of the daemon. This is a decode-hardening fix on ABI /
+  store entry points broadly, not just the xsp path — implementation
+  conforms to the spec's loud-refusal contract (register rule 3); no
+  spec text touched. CXER5015 internal-fault: NOT wire-constructible
+  without mocks — every store-op failure reachable from a well-formed
+  request surfaces as an err VALUE relayed verbatim (the 5015 arms
+  catch V-level errors from store_stdlib_builtin_inner that a valid
+  request cannot induce); recorded as an intentional coverage
+  boundary per the R3.2 row's "if constructible" clause.
 
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
@@ -133,13 +194,13 @@ closes individually with its own evidence.
 | Row | Finding | Work (fixture-before-fix) | Acceptance criterion | Status |
 |---|---|---|---|---|
 | R3.1 | F-20 M3 malformed vp silently ignored | Fixture first: nested [vp] at M3 → expect CXER5021 loud refusal (spec §6.1 text is unambiguous). Then fix sx_m3_vp_text option-none path to refuse, matching the phase=present lane. | New test red→green; both M3 and phase=present lanes pinned. | AUTH-PENDING |
-| R3.2 | F-23 CXER5013/5016 (+5015) untested | Tests: attach to unknown/ambiguous mount → 5013; bad ::bytes image + ast_bin decode failure → 5016; an internal-fault lane for 5015 if constructible without mocks. | Each code has at least one wire-level test. | AUTH-PENDING |
+| R3.2 | F-23 CXER5013/5016 (+5015) untested | Tests: attach to unknown/ambiguous mount → 5013; bad ::bytes image + ast_bin decode failure → 5016; an internal-fault lane for 5015 if constructible without mocks. | Each code has at least one wire-level test. | VERIFYING |
 | R3.3 | F-24 authority presentation-fault lanes untested | Wire tests through the profile listener: floor-cannot-present 5021; malformed-vp 5021 (rides R3.1); inert-root [presented compiled=0 inert=K]; cross-tenant CXER4805; wire CXER4703 escalation. | Each lane pinned over a real daemon. | AUTH-PENDING |
 | R3.4 | F-26 code-verified, regression-unguarded behaviors | Tests: revocations-cursor resume; feeds-die-with-connection; deleted-replay body-absence (strengthen the weak assert); alias-retract shape; open-posture CXER5022; PEP-before-token-gate ordering; peer wrong-DID pin; origin-folds-own-journal; rate retry-after on the wire. | Each behavior pinned. | AUTH-PENDING |
 | R3.5 | F-21 feed shape-acceptance quirks | Cutover posture (no dual-accept): multi-scalar [planes] refused loudly (or all scalars honored — whichever §5.2 says; if §5.2 is silent, this row escalates to a letter before code); name= on revocations cursor refused; stale comment corrected. | Off-spec inputs refuse loudly; tests pin. | AUTH-PENDING |
 | R3.6 | F-22 F3 re-advert direct-push missing | MAKE THE SPEC TRUE (register rule 3): implement the direct advert push from the config-reload verb handler alongside the sweeper watch; test pins immediate re-advert on the reloading listener. (Reverse option — truing §7a.1 to sweeper-only — would be a spec edit to match a shortfall; not proposed.) | Direct push implemented + pinned; sweeper lane unchanged. | AUTH-PENDING |
 | R3.7 | F-9 G18 --strict unwired | Wire scripts/cxer_registry_report.sh --strict into TEST_TARGETS (exits 0 today). Synthetic-violation check: an unregistered CXER in a probe branch fails it. | Gate in TEST_TARGETS; red-on-synthetic verified. | AUTH-PENDING |
-| R3.8 | F-15 extraction-gate floor + 3 uncovered cases | Assert a case-count floor in the Make recipe (n_cases >= recorded); cover ch-005/cmp-005/sd-006 in a lane (probe sections or CLI); document the 5 md ABI-lane exclusions as intentional with the CLI-lane cross-reference. | Floor asserts; 3 cases compared somewhere; vacuous-pass probe fails. | AUTH-PENDING |
+| R3.8 | F-15 extraction-gate floor + 3 uncovered cases | Assert a case-count floor in the Make recipe (n_cases >= recorded); cover ch-005/cmp-005/sd-006 in a lane (probe sections or CLI); document the 5 md ABI-lane exclusions as intentional with the CLI-lane cross-reference. | Floor asserts; 3 cases compared somewhere; vacuous-pass probe fails. | VERIFYING |
 | R3.9 | F-16 CX_BLESS=epoch armed | Disarm: epoch-bless paths refuse unless an explicit build-time flag (-d cx_epoch_bless) is set; normal builds cannot bulk-bless. | Env var alone no longer blesses; test pins refusal. | AUTH-PENDING |
 | R3.10 | F-17 ring-gate C-edge gaps | Widen the lane: relative ../<sibling> includes, @VMODROOT/../vcx/<sibling> forms, raw .c/.h scanning; narrow c_edge_allowed to the two exact known edges; add arrow/transport (and cmd_data/cli platform-free) lanes. Red-on-synthetic for each new class. | All probe bypasses from the audit now fail the gate. | AUTH-PENDING |
 | R3.11 | F-18 profile-binary corpus lanes | REVISED 2026-08-07: FULL graded corpus through the cli and embed BINARIES (the I2 data-profile precedent ran 8978 pairs through the binary — the sample idea was a scope reduction). If measured runtime is genuinely prohibitive for TEST_TARGETS, that measurement becomes a LETTER with numbers (options: full-in-CI / full-nightly+sample-in-gate), not a silently smaller lane. | Binary lanes graded on the full corpus (or an owner-ruled letter with measurements); synthetic probe proves failure possible. | AUTH-PENDING |

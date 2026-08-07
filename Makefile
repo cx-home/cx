@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -576,13 +576,22 @@ spec-freeze-gate:
 #     libcx.dylib and the one from libcx-core.dylib must be BYTE-IDENTICAL
 #     (`cmp`). Errors are records too, so error-text identity is asserted.
 #     One artifact per process — the GC-carrying dylibs never co-load.
+#     Vacuous-pass defense (audit F-15 / remediation R3.8): the probe
+#     enforces the case-count floor below AND refuses any zero-record
+#     Ring-0 case that is not an intentional exclusion. The only
+#     intentional exclusions are the md-input cases (no md surface in the
+#     C ABI) — the CLI lane covers those via --from=md.
 #   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
 #     data-profile cx over the shared surface (verbs + EXPLICIT --from=
 #     convert; the bare-FILE run-vs-data reading is a ruled profile
 #     difference, spec §4) requiring stdout+stderr+rc identical, plus the
 #     17 monolith-verb profile refusals on the data binary (#426 discipline).
+#     Same case-count floor.
 # Dev-shape builds (same codegen semantics as -prod minus optimization);
 # the release cut re-runs this against the prod-shape artifacts.
+# Floor = the Ring-0 census recorded at I2 (partition_I2_extraction.md);
+# raise it when Ring-0 cases are added, never lower it silently.
+EXTRACTION_GATE_FLOOR := 1564
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 .PHONY: test-extraction-gate
@@ -591,12 +600,27 @@ test-extraction-gate: build-vcx-dev
 	@mkdir -p vcx/target/extraction_gate
 	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
 	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
-	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance > vcx/target/extraction_gate/transcript_monolith.txt
-	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance > vcx/target/extraction_gate/transcript_core.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_monolith.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_core.txt
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
 	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
-	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance
+	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR)
+
+# ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
+# built with -gc e must actually COLLECT: V only emitted vgc_init() in
+# generated main() paths, so shared artifacts ran with gc_enabled=0 —
+# unbounded embedder heap growth + a degenerate empty-pool span scan
+# (~75x slower large parses through the ABI than in the cx binary).
+# The gate churns each artifact past the pacer goal under VGC_GCTRACE=1
+# and requires at least one gc cycle. Runs on both Ring artifacts.
+.PHONY: abi-gc-gate
+abi-gc-gate: build-vcx-dev
+	@$(MAKE) -C vcx build-data-dev
+	@mkdir -p vcx/target/extraction_gate
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
+	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_ART)
+	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_CORE_ART)
 
 # ── LIBCX ABI GATE (I3, partition spec §8 freeze direction) — the split
 # changes module boundaries, never the export surface. Baseline captured at
