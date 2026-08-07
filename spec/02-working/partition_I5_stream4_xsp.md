@@ -68,3 +68,34 @@ Ring-2 verbs; that is R1's whole argument).
    resolves before type-binding anchoring — a later stream); #707
    lazy-substrate (EV-ASYNC-SPAWN, stream 22's branch). Shipped-shape
    inventory recorded above.
+
+2. **W1 — spec surgery LANDED (2026-08-06).** The edit map executed:
+   xsp.md re-framed as the GENERIC frame + session layer with the new §6
+   profile model (profile = token set + verb vocabulary + error rows;
+   registry: XAP re-labeled, STORE pointed at the stream-4 spec); §5.0
+   split into transcript-covered semantic offers (surface 1, with the
+   `/3/` consequence stated) vs post-attach operational limits (surface
+   2, `rotate` now listed — #718 item 5); §2's type table de-XAP'd;
+   revocation-propagation deferral re-pointed at the profile's peer
+   channel. xap_identity_model.md: M1/M2 gain `[offers]`, M4 gains
+   `[confirmed]`, NEW §4.4a (selection = computed intersection,
+   M4-verified, `CXER-XSP-AUTH-STATE` on mismatch), §4.4 coverage list +
+   §8 downgrade item + properties table extended to vocabulary, §4.5
+   labels rewritten at `/3/` with the full `/1/→/2/→/3/` lineage note
+   (the §4.5 block still said `/1/` — it was never amended at I1's `/2/`
+   cut; divergence closed). store.md: wire axis row re-ruled (xsp
+   default, grpc, csrp transitional), NEW §6.4 (the profile as THE store
+   wire + the retirement enumeration). journal.md: NEW §6.1
+   journal-over-profile (the #644 gap — profile only, never spec'd for
+   CSRP). fabric.md §11 marked as the profile template (cross-ref).
+   Retirement amendments: cxstore-remote-protocol.md (RETIRING banner +
+   "permanent" struck), cxstore-grpc.md (canonical → the profile;
+   adapter re-bases), cxstore_service_tier_phase2.md (three sites incl.
+   the §3 auth-stack retirement note), store_management_console.md
+   (wire-transition note). governance §9.6: `CXER5000–5049` band
+   pre-registered (live-modes precedent; per-code rows ride W3 with the
+   implementation, #717 discipline; 5050–5069 = stream 9, 5070–5089 =
+   live modes — no collisions). Gates: verify-doc-blocks 317/0,
+   verify-doc-links all green, stdlib-catalog-gate green AFTER the
+   both-halves repair (separate commit — pre-existing silent break from
+   I3, gate now in TEST_TARGETS).
