@@ -148,11 +148,11 @@
       [= $gcr [$store:gc $s]]
   ($st@docs, $gcr@reclaimed, [$count [$store:log $s]])]"""]
     [output
-      """(1, 4, 1)"""]
+      """(1, 4, 3)"""]
     [table
       [tr [th 'verb'] [th 'what it does']]
       [tr [td 'status'] [td 'held docs, distinct objects, dedup ratio, unflushed refs']]
-      [tr [td 'log'] [td 'the linear ref-log — each held doc-ref is one insertion-ordered epoch']]
+      [tr [td 'log'] [td 'the linear ref-log in per-ref advance order — every insert, retract, and ref/alias advance is one recorded epoch (a delete is an act in the history, not a disappearance)']]
       [tr [td 'prune / gc'] [td 'reclaim objects no live ref reaches; gc adds durable compaction. A shared subtree survives the deletion of another doc — an object stays live while ANY ref reaches it']]
       [tr [td 'branch / branch-force'] [td 'point a mutable named ref at a doc; a non-fast-forward move is refused (CXER1114, CAS-safe) unless forced']]
       [tr [td 'diff'] [td 'structural diff by hash — identical subtrees are skipped, so cost is O(changed), not O(size)']]]
