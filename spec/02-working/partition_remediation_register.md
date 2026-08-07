@@ -22,6 +22,39 @@
 **Status legend:** OPEN-Q (awaiting owner ruling) · AUTH-PENDING (batch
 authorization question pending) · IN-WORK · VERIFYING · CLOSED.
 
+## Rulings log (authoritative; a row's Status defers to this log)
+
+**2026-08-07, owner:**
+- R1.1 **(b)** — full pushdown in stream 4 ("was never a question").
+- R1.2 **(a)** · R1.3 **(a)** · R1.4 **(a)** · R1.5 **(a)** — the four
+  carriage/scheme/erasure adjudications: shipped text stands AS RULED
+  TEXT with the probe evidence cited; ledger adjudication entries to be
+  recorded under these rulings.
+- R1.6 — owner challenged scope ("why do anything with CSRP — it's
+  being ripped out?"); resolved 2026-08-07: the 0x01/0x02 doc-frames
+  live in the CSRP wire codec + cxstore-remote-protocol.md §3.2, BOTH
+  scheduled for deletion/archival at the W7 retirement. Row collapses
+  to the record only: F-6 stays classified UNAUTHORIZED (concurrent
+  self-authorization) in the audit; no content adjudication (moot at
+  retirement); the fix stays in place interim (unwinding a
+  scheduled-for-deletion artifact re-breaks binding clients for
+  nothing). No spec/code action.
+- R2.1 **(a)** — packet + independent scoped re-verification of the
+  amended epoch families; sign-off rests on both.
+- R2.2 **(a)** — I4 exit ratified + tracker issue + BLOCKING per-profile
+  install-verification step in the release-cut process.
+- R2.3 **(a)** — minor process-breach class acknowledged, no unwind;
+  structural remedy = R4.1 + R4.2.
+- R2.4 **(a)** — stream-20 routing confirmed + interim fail-loud guard
+  R3.16.
+- R2.5 **(a)** — G13 fixture families = W7 scope over the COMPLETE
+  post-pushdown surface; §9/ledger overclaim corrected under this
+  ruling; W5 exit conditional.
+- R4.1 **(a)** — mechanical spec-freeze gate authorized.
+- R4.5 — awaiting explicit letter (arrived without one; no push until
+  confirmed).
+- Part 3 batch — question re-posed in plain language; awaiting (a)/(b).
+
 ---
 
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
