@@ -51,9 +51,10 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   post-pushdown surface; §9/ledger overclaim corrected under this
   ruling; W5 exit conditional.
 - R4.1 **(a)** — mechanical spec-freeze gate authorized.
-- R4.5 — awaiting explicit letter (arrived without one; no push until
-  confirmed).
-- Part 3 batch — question re-posed in plain language; awaiting (a)/(b).
+- R4.5 **(a)** — push authorized (ruled 2026-08-07 second round).
+- Part 3 batch **(a)** — all sixteen work rows (R3.1–R3.16) authorized
+  for execution (ruled 2026-08-07 second round); each row still closes
+  individually on its acceptance criterion + independent verification.
 
 ---
 
