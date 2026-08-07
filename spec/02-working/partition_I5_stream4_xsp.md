@@ -99,3 +99,89 @@ Ring-2 verbs; that is R1's whole argument).
    verify-doc-links all green, stdlib-catalog-gate green AFTER the
    both-halves repair (separate commit — pre-existing silent break from
    I3, gate now in TEST_TARGETS).
+
+   **Rider found and fixed (not scope creep — a broken gate):**
+   `stdlib-catalog-gate` read only `vcx/code/stdlib_dispatch.v`, but I3
+   moved every platform module's dispatch behind the seam-G registry
+   (`ring2_register.v`). The gate therefore reported redis/sql/xap_dist/
+   xsp_auth as unimplemented and http_client/ring2 as orphans — and sat
+   SILENT because the gate was never in `TEST_TARGETS`. Both halves are
+   now read (the same union rule I4 applied to `check-completions-drift`),
+   `http_client`/`http_serve` normalize to the `http` catalog module, the
+   `ring2` seam probe is excluded, and the gate JOINS `TEST_TARGETS` — a
+   gate outside the battery is a seam with no live consumer.
+
+3. **W2 — xsp-auth/3 LANDED (2026-08-06).** The labels bump (all five)
+   and §4.4a negotiation are live end to end.
+
+   **THE SHAPE FINDING (a real trap, caught by the corpus):** the first
+   implementation carried the token sets as a nested `[offers profiles=…
+   features=…]` child. That broke `xsp-auth-017`/`024` — the frame
+   round-trip cases. Reason: handshake fields are read attr-OR-child
+   because data-bin ATOMIZES single-scalar children to attributes, so a
+   fresh child-form message and a decoded attr-form message emit
+   identical bytes. A NESTED element does not atomize — it stays a child
+   and lands at a different byte position than the atomized siblings, so
+   the fresh and decoded forms signed DIFFERENT transcripts and the
+   responder signature failed. Fix: four flat single-scalar fields
+   (`offer-profiles`, `offer-features`, `confirmed-profiles`,
+   `confirmed-features`), which atomize like every other field. Verified
+   directly: `encode(M1) == encode(decode(encode(M1)))` byte-for-byte.
+   The spec (§4.4a) now states this as one of the two normative reasons
+   for the shape (the other: canonical sorted/dedup'd sets, because the
+   transcript signs bytes and two spellings of one set would be a signed-
+   aliasing surface). **Generalizable rule: any field added to an
+   XSP-AUTH message MUST be single-scalar.**
+
+   **Selection is COMPUTED, not asserted:** M4 states the per-field
+   intersection of the M1/M2 offers, and `auth-finish` recomputes it
+   from its own M1 + the received M2 and refuses on mismatch. So the
+   property holds against both threat directions — a MITM stripping a
+   token breaks the transcript signature, and a server (or MITM)
+   narrowing M4's stated set breaks the initiator's check. #718 item 1
+   is verified, not merely spec'd.
+
+   **Non-replayability, measured:** the same fixed vectors produce
+   different tag_i / tag_r / chan-id under `/3/` than the recorded `/2/`
+   values (`af9520ff…`/`29c84f43…`/`56fc3863…` → `0b09dbab…`/
+   `23633005…`/`8f1b273b…`). `xsp-auth-031` pins the inequality against
+   those recorded constants, so a regression that un-partitions the key
+   schedule fails loudly.
+
+   Consumers offer INSIDE the transcript (fabric remote client, fabric
+   daemon, xap host); the post-attach `[fabric-session]` advert now
+   restates the confirmed intersection (`FsConn.confirmed_features`) and
+   cannot extend it — which is what surfaced the `fabric_serve_test`
+   `publish-batch` assertion: its hand-built M1 offered nothing, so the
+   advert correctly withheld the feature. The test now offers the set it
+   asserts (both M1 builders, byte-identically — the transcript demands
+   it). Fixtures: 25 (intersection), 26 (strip breaks sig — THE #718
+   case), 27 (forged confirmed refused), 28 (offers required from /3 —
+   pre-/3 tolerance would restore the hole), 29 (non-canonical refused),
+   30 (frame round-trip survival — the regression guard for the shape
+   finding), 31 (/2 non-replay). Cases 008/014's hand-forged messages
+   gained well-formed offer fields so their own lanes (VERSION, CONFIRM)
+   stay the thing under test.
+
+   Green: `code_eval_fixtures` 2581 stdlib fixtures / 31 xsp-auth,
+   `fabric_serve_test`, `xap_host_auth_test`, verify-doc-blocks 317/0,
+   verify-doc-links, stdlib-catalog-gate. **Wave gate: full `make test`
+   rc=0 (2026-08-07, zero FAILs — even the two standing classified-retry
+   lanes were green first try); extraction gate byte-identical both
+   lanes (4498070-byte ABI transcript; 1564 Ring-0 cases / 8978
+   invocation pairs / 17 refusals).** All W2 work re-verified under
+   Fable 5 after a mid-session model switch was caught and reverted
+   (owner directive; the absolute model rule is now standing).
+
+## W3 entry note — the op-core seam (recorded before cutting code)
+
+The CSRP router (`store_csrp.v`) does HTTP framing, auth, and error
+mapping around calls to **`store_stdlib_builtin_inner(op, args)`** — the
+ops themselves are already behind one internal surface. So W3 does NOT
+have to disentangle an op pipeline: the profile listener decodes a verb
+envelope, calls the SAME inner surface, and encodes the reply. What is
+CSRP-specific is exactly what the profile replaces (bearer auth, HTTP
+status mapping, the `17xx` band). This is also why L167's parity gate is
+tractable: both listeners drive one op core, so op-for-op equivalence
+and error identity are properties of the framing layers, not of two
+independent implementations.
