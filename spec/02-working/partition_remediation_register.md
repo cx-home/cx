@@ -236,6 +236,22 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   the PEP block and refuse by name (CXER5012). Impl conformed to spec
   (register rule 3); no spec text changed.
 
+- R3.6 VERIFYING — F3 direct advert push (audit F-22) MADE THE SPEC
+  TRUE (register rule 3; never trued the spec down). §7a.1 mandates
+  the reload verb pushes the advert directly AND the sweeper watches
+  for other-listener reloads; only the sweeper was implemented. Added
+  sx_readvertise_locked(mut srv) to the config-reload verb handler
+  after the reply. Fixture-before-fix with a NON-TIMING discriminator:
+  the direct push enqueues the advert inside the reload handler, so a
+  ping sent right after the reload reply pongs AFTER the advert; a
+  sweeper-only impl pongs FIRST. Test RED first (got ftype=6 pong on
+  stream 201 before any advert), green after (advert stream-0
+  generation=1, then the pong). sx_readvertise_locked is idempotent on
+  srv.last_gen, so the direct push consumes the generation move and
+  the sweeper no-ops — no double advert; the sweeper code is untouched
+  and still covers CSRP/gRPC-listener reloads (existing F3 test still
+  green).
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -277,7 +293,7 @@ closes individually with its own evidence.
 | R3.3 | F-24 authority presentation-fault lanes untested | Wire tests through the profile listener: floor-cannot-present 5021; malformed-vp 5021 (rides R3.1); inert-root [presented compiled=0 inert=K]; cross-tenant CXER4805; wire CXER4703 escalation. | Each lane pinned over a real daemon. | VERIFYING |
 | R3.4 | F-26 code-verified, regression-unguarded behaviors | Tests: revocations-cursor resume; feeds-die-with-connection; deleted-replay body-absence (strengthen the weak assert); alias-retract shape; open-posture CXER5022; PEP-before-token-gate ordering; peer wrong-DID pin; origin-folds-own-journal; rate retry-after on the wire. | Each behavior pinned. | VERIFYING |
 | R3.5 | F-21 feed shape-acceptance quirks | Cutover posture (no dual-accept): multi-scalar [planes] refused loudly (or all scalars honored — whichever §5.2 says; if §5.2 is silent, this row escalates to a letter before code); name= on revocations cursor refused; stale comment corrected. | Off-spec inputs refuse loudly; tests pin. | VERIFYING |
-| R3.6 | F-22 F3 re-advert direct-push missing | MAKE THE SPEC TRUE (register rule 3): implement the direct advert push from the config-reload verb handler alongside the sweeper watch; test pins immediate re-advert on the reloading listener. (Reverse option — truing §7a.1 to sweeper-only — would be a spec edit to match a shortfall; not proposed.) | Direct push implemented + pinned; sweeper lane unchanged. | AUTH-PENDING |
+| R3.6 | F-22 F3 re-advert direct-push missing | MAKE THE SPEC TRUE (register rule 3): implement the direct advert push from the config-reload verb handler alongside the sweeper watch; test pins immediate re-advert on the reloading listener. (Reverse option — truing §7a.1 to sweeper-only — would be a spec edit to match a shortfall; not proposed.) | Direct push implemented + pinned; sweeper lane unchanged. | VERIFYING |
 | R3.7 | F-9 G18 --strict unwired | Wire scripts/cxer_registry_report.sh --strict into TEST_TARGETS (exits 0 today). Synthetic-violation check: an unregistered CXER in a probe branch fails it. | Gate in TEST_TARGETS; red-on-synthetic verified. | AUTH-PENDING |
 | R3.8 | F-15 extraction-gate floor + 3 uncovered cases | Assert a case-count floor in the Make recipe (n_cases >= recorded); cover ch-005/cmp-005/sd-006 in a lane (probe sections or CLI); document the 5 md ABI-lane exclusions as intentional with the CLI-lane cross-reference. | Floor asserts; 3 cases compared somewhere; vacuous-pass probe fails. | VERIFYING |
 | R3.9 | F-16 CX_BLESS=epoch armed | Disarm: epoch-bless paths refuse unless an explicit build-time flag (-d cx_epoch_bless) is set; normal builds cannot bulk-bless. | Env var alone no longer blesses; test pins refusal. | AUTH-PENDING |
