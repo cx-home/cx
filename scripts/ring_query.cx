@@ -8,7 +8,12 @@
 #
 # and the MIXED-suite lane discriminator: a suite whose header carries
 # `eval-ring=N` (today: conformance/code.cxd, ring=0 eval-ring=1)
-# contributes EVERY case a second time in the EVAL lane at ring N --
+# contributes EVERY case a second time in the EVAL lane -- per case at
+#
+#   eval-ring(case) = case@eval-ring -> case@ring -> suite@eval-ring
+#
+# (I4: code.cxd's svc family carries eval-ring=2 -- its programs need the
+# platform services substrate while the doc lane stays ring 0) -- and
 # the parse/document lane stays at the resolved `ring=`. This is the
 # machine-readable form of "the eval lane elevates to 1": the Ring-N
 # lane is a corpus QUERY, never a maintained external list (§2), and
@@ -101,13 +106,16 @@
                 [then $mod-block]
                 [else [$concat $mod-block "\n" $top-block]]]]]]
 
-          # Eval lane: only MIXED suites (eval-ring= on the header)
-          # have one; every case joins it at the declared ring.
+          # Eval lane: only MIXED suites (eval-ring= on the header) have
+          # one; each case joins it at case@eval-ring -> case@ring ->
+          # suite@eval-ring (I4 per-case override, fixtures.cxs).
           [= $eval-block
-            [?if [and [not [= $ering ""]]
-                      [or [= $ring-want ""] [= $ring-want $ering]]]
+            [?if [not [= $ering ""]]
               [then [$strings:join
-                [?for [in $c $t//case] [yield [$string $c@id]]] "\n"]]
+                [?for [in $c $t//case]
+                  [= $cer [$string [?else $c@eval-ring [?else $c@ring $ering]]]]
+                  [where [or [= $ring-want ""] [= $ring-want $cer]]]
+                  [yield [$string $c@id]]] "\n"]]
               [else ""]]]
 
           [yield [suite-report file=$f name=$sname ring=$sring

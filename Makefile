@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate libcx-abi-gate check-code-spec-consistency
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate libcx-abi-gate test-profile-gate check-code-spec-consistency
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -604,6 +604,34 @@ ifeq ($(shell uname -s),Darwin)
 else
 	@echo "libcx-abi-gate SKIP — no $(shell uname -s) baseline (Darwin-only; see comment)"
 endif
+
+# ── I4 PROFILE CORPUS GATE (#651/#516, spec §4/§7) — each §4 profile builds
+# and passes its ring-tagged corpus: the vcx recipe builds the full profile
+# matrix (data/embed/cli; platform = the default build) and runs the
+# profile_gate runner at the cli and embed engine compositions with binary
+# probes. The data profile's corpus clause is test-extraction-gate (I2).
+.PHONY: test-profile-gate
+test-profile-gate:
+	@$(MAKE) -C vcx test-profile-gate
+
+# ── PER-RING GATE LANES (#700 structural relief, activated at I4) — run the
+# lanes that cover the ring you touched instead of the full battery. Each
+# lane is a SUPERSET of the ones below it (a Ring-1 change can still break
+# Ring 0). These are inner-loop dev lanes; `make test` stays the merge gate.
+#   test-ring0 — Ring-0 surfaces: vcx/cx in-module tests, the byte-identity
+#                extraction gate, the libcx ABI freeze, the import/tag gates.
+#   test-ring1 — + the evaluator: code+platform in-module tests, the §4
+#                profile corpus gate (cli/embed compositions over the ring≤1
+#                eval corpus), fmt conformance, effect alignment.
+#   test-ring2 — + the platform battery: the full V suite (daemons, store,
+#                fabric, xap) + conform-all. Near `make test` scope minus
+#                the binding/doc/tooling gates.
+.PHONY: test-ring0 test-ring1 test-ring2
+test-ring0: test-vcx-cx test-extraction-gate libcx-abi-gate ring-import-gate ring-tag-gate gates-manifest-gate
+test-ring1: test-ring0 test-vcx-code test-profile-gate check-effect-alignment
+	@$(MAKE) -C vcx conform-fmt
+test-ring2: test-ring1 test-vcx-suite test-vcx-cxstore test-vcx-cmd
+	@$(MAKE) -C vcx conform-all
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
@@ -1068,8 +1096,11 @@ test-vcx-cx: build-vcx-dev
 # `v test` only runs the directory it is given, so without this target the
 # cmd suite had NO gate consumer (#448 wired it in).
 .PHONY: test-vcx-cmd
+# -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
+# the shipped binary's composition (I4; a bare cmd/ compile is the cli
+# profile, where CX_ENGINES would be inert).
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
+	@$(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
