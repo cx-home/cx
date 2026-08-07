@@ -157,6 +157,32 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   request cannot induce); recorded as an intentional coverage
   boundary per the R3.2 row's "if constructible" clause.
 
+- R3.3 VERIFYING — authority presentation-fault lanes, all five over a
+  real booted daemon through the profile listener
+  (test_store_xsp_authority_presentation_faults): (1) floor session
+  presents a well-formed vp → CXER5021 (§5.1 no principal to bind);
+  (2) post-attach [vp] carrying no [vc] → CXER5021 (post-attach sibling
+  of the R3.1 M3-carriage refusal); (3) chain rooted at an UNRECOGNIZED
+  did → [presented compiled=0 inert=1] AND the session survives (a
+  following verb still enforces PEP CXER4700, connection not torn) —
+  decoded the data-bin reply to assert the attrs (compiled=0 inert=1),
+  not a substring hack; (4) [tenant other] delegation → CXER4805
+  (§5.3 fault, never inert); (5) [attenuates <parent-not-held>] →
+  CXER4703 (§5.2 four-axis attenuation). Lanes are non-vacuous:
+  first runs FAILED on the inert reply shape (data-bin, not text
+  compiled=0) and on the survival probe (status needs admin) before
+  the asserts were corrected to the true wire behavior — each lane
+  demonstrably reaches the daemon and reads a real response. No code
+  change: the behaviors were already spec-correct, only wire-unguarded
+  (register rule 3 coverage row). Added sx_present_frame_vp (vp
+  expression under test control) + sx_decode_reply (decode a binary
+  reply's payload child to canonical for attr asserts). Note recorded:
+  CXER4805 is registered to session.md's 4800–4849 band
+  (E_SESSION_REBIND_REFUSED); the xsp cross-tenant fault reuses it by
+  "CXER4805 semantics" — spec-explicit (xap_identity_model.md §, 
+  xsp_store_profile.md §5.3), confirmed not a registry band-overlap by
+  the cxer-registry-gate.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -195,7 +221,7 @@ closes individually with its own evidence.
 |---|---|---|---|---|
 | R3.1 | F-20 M3 malformed vp silently ignored | Fixture first: nested [vp] at M3 → expect CXER5021 loud refusal (spec §6.1 text is unambiguous). Then fix sx_m3_vp_text option-none path to refuse, matching the phase=present lane. | New test red→green; both M3 and phase=present lanes pinned. | AUTH-PENDING |
 | R3.2 | F-23 CXER5013/5016 (+5015) untested | Tests: attach to unknown/ambiguous mount → 5013; bad ::bytes image + ast_bin decode failure → 5016; an internal-fault lane for 5015 if constructible without mocks. | Each code has at least one wire-level test. | VERIFYING |
-| R3.3 | F-24 authority presentation-fault lanes untested | Wire tests through the profile listener: floor-cannot-present 5021; malformed-vp 5021 (rides R3.1); inert-root [presented compiled=0 inert=K]; cross-tenant CXER4805; wire CXER4703 escalation. | Each lane pinned over a real daemon. | AUTH-PENDING |
+| R3.3 | F-24 authority presentation-fault lanes untested | Wire tests through the profile listener: floor-cannot-present 5021; malformed-vp 5021 (rides R3.1); inert-root [presented compiled=0 inert=K]; cross-tenant CXER4805; wire CXER4703 escalation. | Each lane pinned over a real daemon. | VERIFYING |
 | R3.4 | F-26 code-verified, regression-unguarded behaviors | Tests: revocations-cursor resume; feeds-die-with-connection; deleted-replay body-absence (strengthen the weak assert); alias-retract shape; open-posture CXER5022; PEP-before-token-gate ordering; peer wrong-DID pin; origin-folds-own-journal; rate retry-after on the wire. | Each behavior pinned. | AUTH-PENDING |
 | R3.5 | F-21 feed shape-acceptance quirks | Cutover posture (no dual-accept): multi-scalar [planes] refused loudly (or all scalars honored — whichever §5.2 says; if §5.2 is silent, this row escalates to a letter before code); name= on revocations cursor refused; stale comment corrected. | Off-spec inputs refuse loudly; tests pin. | AUTH-PENDING |
 | R3.6 | F-22 F3 re-advert direct-push missing | MAKE THE SPEC TRUE (register rule 3): implement the direct advert push from the config-reload verb handler alongside the sweeper watch; test pins immediate re-advert on the reloading listener. (Reverse option — truing §7a.1 to sweeper-only — would be a spec edit to match a shortfall; not proposed.) | Direct push implemented + pinned; sweeper lane unchanged. | AUTH-PENDING |
