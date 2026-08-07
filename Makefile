@@ -1096,8 +1096,11 @@ test-vcx-cx: build-vcx-dev
 # `v test` only runs the directory it is given, so without this target the
 # cmd suite had NO gate consumer (#448 wired it in).
 .PHONY: test-vcx-cmd
+# -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
+# the shipped binary's composition (I4; a bare cmd/ compile is the cli
+# profile, where CX_ENGINES would be inert).
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
+	@$(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
