@@ -56,6 +56,49 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   for execution (ruled 2026-08-07 second round); each row still closes
   individually on its acceptance criterion + independent verification.
 
+**2026-08-08, owner (post-R4.3 foundational rulings — supersede the P1
+letter and the R4.4 W7-parity plan):**
+- **F1 (a) — the one-object-kind principle + rename, RULED.** Documents
+  are the ONLY object kind in CX: everything is stored, shipped,
+  journaled, and signed as a document under its DOCUMENT IDENTITY
+  (hash of canonical bytes). COMPUTATION IDENTITY (hash of the
+  normalized program — "same function?") is a derived equivalence
+  relation: an index or a verification claim, NEVER an address, NEVER
+  a storage key of record, NEVER a wire carriage. The "Tier-1/Tier-2"
+  names are RETIRED repo-wide → "document identity" / "computation
+  identity" (prose-level rename; no wire, address, or epoch impact).
+  Root cause this cures: the campaign froze the code: address space
+  without a referent object form — because there never needed to BE
+  one; treating computation identity as an object identity was the
+  foundational wart (a special case for code, which is how
+  homoiconicity dies).
+- **F2 (a) — the spectrum audit, RULED.** Sweep every surface where
+  computation identity acts like an address or code is treated as a
+  special object kind (code: address surface, the code store keyed by
+  computation identity, registry/packs, [?lib] resolution, bindings,
+  the pushdown letters) → conforms/violates table to the owner BEFORE
+  any fix lands; violations are ripped out, no grandfathering.
+- **F3 (a) — pushdown re-posed, RULED (replaces letter P1 entirely).**
+  Fold/replay functions cross the wire as the def DOCUMENT(S), by
+  document address, over the existing object wire — plus a
+  computation-identity CLAIM the daemon recomputes and refuses on
+  mismatch. A dependency closure = more documents (a module IS one
+  document). No special function carriage exists. P1's three carriage
+  options are dead.
+- **R4.4 (a-revised) — CSRP dies NOW, RULED.** No three-listener parity
+  gate against the dead wire: the correctness oracle for the profile is
+  the LOCAL EMBEDDED ENGINE (byte-identical addresses, already
+  asserted) + the profile's own fixture families. The retirement
+  enumeration executes immediately: CSRP routers/codec/client arms,
+  store_authz.v, bearer surface, transitional cx-store+http(s) schemes,
+  17xx band → Reserved. Rationale recorded: CX has no external users;
+  every CSRP consumer was ours and migrated at W6; keeping a deprecated
+  wire as an oracle was big-installed-base migration machinery applied
+  against our own cutover-first standing rule.
+- Items 4 (compute budget) and 5 (snapshot signing) returned for
+  re-framing; 6 (epoch ratification) returned with the freeze-gate
+  question — answered in-session, decision pending.
+
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
 **2026-08-07:**
