@@ -650,3 +650,97 @@ These four are RECORD-ONLY adjudications (the text already shipped and
 was ruled to stand); no spec text changes under R1.2–R1.5. The process
 defect they represent is cured structurally by the R4.1 spec-freeze
 gate + the rulings-before-edits protocol (R4.2).
+
+## R1.1(b) — the verb-pushdown spec-first letters (POSED 2026-08-07, awaiting owner ruling)
+
+R1.1 ruled **(b)**: the daemon-side verb pushdown is IMPLEMENTED in
+stream 4 (not deferred). Two design points gate the cut and are OPEN
+until these letters rule (rulings-before-edits: §6.1 is NOT restored to
+its full pushdown contract, and NO pushdown code is written, until the
+owner rules). Both letters carry probe evidence, per the R1.1 mandate to
+answer the identity question WITH DATA.
+
+### Letter P1 — the wire form of a fn-as-data (fold `$fn` carriage)
+
+**The question.** When a fold/replay `$fn` crosses to be evaluated
+daemon-side, in what form does it travel, and how is its identity
+established, given that canonical forms are identity-bearing (a canonical
+fn carriage is identity-adjacent)?
+
+**Probe evidence (this session, vcx/code/code_identity.v +
+cx_text_canonical, recorded runnable):**
+- Tier-2 code identity is STABLE and alpha/name/comment/format-
+  invariant: `[?def f ($acc $e) [+ $acc $e/@amount]]` and a renamed,
+  reformatted, comment-bearing sibling hash IDENTICALLY
+  (`sha2-256:8257364117…`), and a distinct computation
+  (`[- $acc $e/@amount]`) gets a DISTINCT hash. So a fn HAS a stable,
+  clean-room-reproducible canonical identity — the Tier-2 hash
+  `code:sha2-256:<hex>` (code-identity.md).
+- The DATA canonicalizer is the WRONG carriage: `cx:canonical` over a
+  `[?def f ($acc $e) [+ $acc $e/@amount]]` returns
+  `[?def f ($acc $e ') ' [+ $acc '$e/@amount'])]` — it quotes the body
+  as data and mangles the parameter list; re-parsing it as a def FAILS
+  (`CXDEF_PARSE: expected parameter … got [`). This is the R1.2/R1.4
+  data-bin trap in its DATA-canonical variant: a program directive is
+  not data, so the data lane corrupts it.
+
+**Recommendation (P1-a):** the `$fn` crosses as its **program source
+text** carried in a single-scalar canonical-PROGRAM-text envelope field
+(the lossless-lane class R1.4 established for signed content — NEVER the
+data-bin lane, which mangles it). The daemon re-parses it AS A PROGRAM,
+computes its Tier-2 hash, purity-checks server-side (`CXER4611` exactly
+as locally, §3), and evaluates. **Identity is the Tier-2 hash, computed
+identically on both sides** — no NEW canonical form is introduced, so no
+identity fork. The client SHOULD additionally send the fn's Tier-2 hash
+alongside; the daemon recomputes and REFUSES on mismatch (a tamper /
+version-skew guard). For dedup, the fn MAY be pre-stored as a `code:`
+content object and referenced by its Tier-2 hash, but the primary
+carriage is the self-contained program source (the daemon can
+purity-check + evaluate with no prior store round-trip).
+- Alternative P1-b: carry ONLY the Tier-2 hash; require the fn
+  pre-stored as a `code:` object; daemon resolves it. Rejected as
+  primary: forces a store round-trip before any fold and fails closed
+  when the object is absent — but it is the natural dedup optimization
+  ON TOP of P1-a.
+- Alternative P1-c: carry ast_bin of the fn body. Rejected: re-introduces
+  the element-child atomization instability (R1.2/R1.4) on the identity-
+  bearing lane — the exact class this campaign is closing.
+
+### Letter P2 — snapshot-signing key custody
+
+**The question.** `snapshot`/`snapshot-verify` produce/verify a SIGNED
+checkpoint (§4.8) with a client key. Under daemon-side pushdown, who
+holds the signing key?
+
+**Evidence / constraint.** A client signing key crossing to the daemon
+is an absolute non-starter (it would let the daemon forge the client's
+non-repudiation). The signed snapshot's whole value is that it is the
+CLIENT's attestation over a chain state.
+
+**Recommendation (P2-a):** the **signing verbs stay client-side-eval**
+— `snapshot` (and any verb that signs) is NOT pushed down. The daemon
+serves the `fold-from` reconstruction state over the object wire
+(cheap — it is content-addressed); the client computes the checkpoint
+and signs LOCALLY. Pushdown covers the NON-SIGNING long reads/folds
+only: `read`/`slice`/`since`/`query`/`replay`/`fold`/`fold-slice`/
+`fold-value`/`dry-run`/`verify`/`verify-slice` (`verify` checks chain
+bytes — no key). This keeps the key-custody rule ABSOLUTE (no client
+signing key on the wire, ever) AND still delivers the pushdown win
+where it matters (folds over logs that dwarf their queries — the §6.1
+growth-path rationale). The applicability matrix (§7) marks
+`snapshot`/`snapshot-verify` remote as "client-eval over the served
+state", distinct from the pushed-down reads.
+- Alternative P2-b: the daemon signs snapshots with its OWN XSP-AUTH DID
+  key. Shifts non-repudiation from the client to the daemon — a
+  DIFFERENT security property, viable for daemon-authoritative
+  deployments but NOT a drop-in for the client-attestation contract.
+  Offered for the owner; not recommended as the default.
+
+**On ruling:** with P1 + P2 ruled, §6.1's "Growth path (recorded, NOT
+part of the exit gate)" paragraph is RESTORED to the full pushdown
+contract under the rulings (the d7ca927b truing reversed), the §7
+matrix annotated for the client-eval signing verbs, and the pushdown
+is implemented with per-verb fixtures joining the W7 parity/error-
+identity gate (op-for-op equivalence across client-eval vs pushed-down
+for every non-signing verb; identical Tier-2 hash + `CXER4611` on both
+sides). No §6.1 restoration or code lands before the rulings.
