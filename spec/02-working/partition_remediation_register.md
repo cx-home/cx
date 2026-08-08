@@ -806,3 +806,20 @@ gate's executable portion re-runs before resumption.
   store-serve + cx-store+xsp (runs green); guide §18 conformed (the
   "CSRP canonical, permanent" row was actively false). gRPC remains the
   integration edge for systems that cannot embed libcx.
+- **S4 CLOSED (2026-08-08, RULED: R4.4-a) — deprecation sweep.** The
+  false-normative-prose completions of the retirement: cxstore-remote-
+  protocol.md flipped Current→RETIRED (historical banner pointing at the
+  live wires; the "remains normative for the transitional listener"
+  claim was false once the listener was deleted; the 742-line body
+  preserved unedited as the removed-protocol record); governance
+  CXER1700-1712 row → RESERVED (retired, never reused; the op contracts
+  carried to the profile CXER50xx); store.md cross-ref marked retired;
+  conformance store-022 re-pointed to cx-store+xsp (was a retired-scheme
+  cap-deny); gates.cxd reason prose "loopback CSRP socket" →
+  "XSP-profile socket". Green: fixture lane, spec-freeze,
+  check-code-spec-consistency, cxer-registry, verify-doc-blocks.
+  DEFERRED (tracked, not false-prose): the generated
+  docs/guide/lib-store.html regen (a build artifact — `make docs` drops
+  the stale csrp-handle section; the SOURCE guide §18 is conformed).
+  S1-S4 COMPLETE; S5 (epoch ratification F6) + S6 (pushdown F3/F4/F5)
+  remain, owner-sequenced.
