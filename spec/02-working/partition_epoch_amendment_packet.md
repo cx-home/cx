@@ -295,7 +295,7 @@ classification):
 
 ### 2e. Non-assertion changes riding the same commit (for the owner's completeness; outside this packet's per-assertion scope)
 
-`vcx/code/store_csrp_wire.v` (the real wire defect fix: doc-frame re-formed to `[u16 hash_algo_code BE][digest32]`, fail-closed both directions), `vcx/cx/hash_registry.v`, `spec/03-approved/misc/cxstore-remote-protocol.md` §3.2 re-specification, `Makefile` (store_lazy_load joins CODE_SERIAL_RETRY), and ADR/version-literal hygiene edits in four working specs. The §3.2 spec edit is already adjudicated separately in the audit (spec-edit-during-implementation class); it is listed here only so this packet's coverage of d8d638b7 is total.
+`vcx/code/store_csrp_wire.v` (the real wire defect fix: doc-frame re-formed to `[u16 hash_algo_code BE][digest32]`, fail-closed both directions), `vcx/cx/hash_registry.v`, `spec/03-approved/misc/cxstore-remote-protocol.md` §3.2 re-specification, `Makefile` (store_lazy_load joins CODE_SERIAL_RETRY), and citation/version-literal hygiene edits (retired-record references genericized) in four working specs. The §3.2 spec edit is already adjudicated separately in the audit (spec-edit-during-implementation class); it is listed here only so this packet's coverage of d8d638b7 is total.
 
 ---
 

@@ -124,7 +124,7 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   image via dladdr marker). New abi-gc-gate in TEST_TARGETS pins the
   class: red before (no gc cycles; then rc=139 exit UAF), green after
   on BOTH artifacts (16 cycles each, clean exit). 20k-row dylib parse
-  now 92ms. v0.15.0 shipped artifacts carry the defect — #742 tracks
+  now 92ms. The v0.15.0 release artifacts carry the defect (genuine historical reference — version-literal-ok); #742 tracks
   the release-side verification. Fix class = V-runtime mem-mgmt
   (standing: V-only, upstreamable); no cx spec text touched.
 
