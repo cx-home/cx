@@ -414,6 +414,22 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   xap-marine-htmx-web-client#15. Both external claims hold; nothing
   the remediation touched regressed either repo.
 
+- R2.5 VERIFYING — the W5 wave-gate overclaim corrected under the
+  recorded ruling R2.5(a). Two edits, both carrying RULED: R2.5:
+  (1) xsp_store_profile.md §9 heading "G8 + G13 discharged" → "G8
+  discharged at W3; G13 scoped to the W7 parity gate", with the §9
+  body + §10 letter-172 note rewritten to say the G13 fixture families
+  are the W7 deliverable (built ONCE over the complete post-pushdown
+  surface, R1.1(b)), NOT discharged at W5 — what W5 delivered is the
+  revocation-convergence pair (test_store_xsp_peer), a live-socket
+  behavior that never was a G13 corpus fixture. (2) the ledger W5
+  done-when cell corrected from "G13 families green" to
+  "revocation-convergence pair green", with a dated correction note;
+  W5 exit stands CONDITIONAL on W7. The spec edit is authorized by
+  R2.5(a) (rulings-before-edits) and rides a spec-ONLY commit, so the
+  spec-freeze gate (which fires only on spec+impl together) does not
+  trigger; the RULED: R2.5 token is carried regardless.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -440,7 +456,7 @@ text/implementation is unwound per the ruling.
 | R2.2 | F-8 I4 installer exit-gate | (a) ratify the disclosed deferral AND make the closure MECHANICAL: I4 exit stands; tracker issue (sanitized, labeled) + the release-cut checklist/script gains a BLOCKING per-profile install-verification step (CX_PROFILE=<lean> must install from the cut artifacts or the release does not ship) — recommended (assets physically require a cut; a checklist gate is evidence, a tracker issue alone is intent); (b) reopen I4 exit until assets exist (blocks on a release cut by construction — performative). | Ruling recorded; issue filed; release gate step landed. | OPEN-Q |
 | R2.3 | F-10 I0 premature done-claims; F-11 I3 deferral-before-ruling; F-12 I2 in-ledger self-ruling; F-13 W5 post-hoc deferral; F-14 I4 R2 riding amendment | Owner ruling on the CLASS: (a) acknowledge as recorded process defects, no unwind (each converged/was cured; all are now impossible under the rulings-before-edits protocol + the R4.1 gate); (b) owner names specific items from this set for individual unwind/re-posing. | Ruling recorded; any named items get their own rows. | OPEN-Q |
 | R2.4 | F-13 specifically: migrate/clone erased-map → stream 20 | REVISED 2026-08-07: (a) confirm the stream-20 routing (it owns the SEK cut; stream 20 is INSIDE this campaign, so the campaign still delivers carriage) PLUS an interim fail-loud guard NOW (new row R3.16): migrate/clone of a store carrying erasure tombstones REFUSES loudly until stream-20 carriage lands — silent tombstone-dropping is the silent-partial anti-pattern and a lawful-erasure attribution loss — recommended; (b) pull full carriage into stream-4 remediation (duplicates stream-20's SEK design work). | Ruling recorded; R3.16 guard landed if (a). | OPEN-Q |
-| R2.5 | F-25 W5 wave-gate validity ("G13 families green" vs missing G13 fixtures) | (a) rule the G13 fixture items (op-for-op parity table, error-identity table, cross-encoding parity) = W7 parity-gate scope; §9 "discharged" + the W5 done-when text corrected UNDER THIS RULING; W5 exit stands conditional on W7 delivering them; (b) reopen W5's gate now: build the G13 fixture families as remediation before any W7 work. | Ruling recorded; if (a): text corrected under ruling + W7 plan row amended; if (b): fixtures built + green. | OPEN-Q |
+| R2.5 | F-25 W5 wave-gate validity ("G13 families green" vs missing G13 fixtures) | (a) rule the G13 fixture items (op-for-op parity table, error-identity table, cross-encoding parity) = W7 parity-gate scope; §9 "discharged" + the W5 done-when text corrected UNDER THIS RULING; W5 exit stands conditional on W7 delivering them; (b) reopen W5's gate now: build the G13 fixture families as remediation before any W7 work. | Ruling recorded; if (a): text corrected under ruling + W7 plan row amended; if (b): fixtures built + green. | VERIFYING |
 
 ## Part 3 — Defect and gap rows (spec already clear; authorization to execute)
 
