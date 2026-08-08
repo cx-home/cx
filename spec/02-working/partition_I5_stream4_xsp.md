@@ -744,3 +744,55 @@ is implemented with per-verb fixtures joining the W7 parity/error-
 identity gate (op-for-op equivalence across client-eval vs pushed-down
 for every non-signing verb; identical Tier-2 hash + `CXER4611` on both
 sides). No §6.1 restoration or code lands before the rulings.
+
+## CSRP retirement — demolition map (R4.4-a, ruled 2026-08-08; oracle = local engine, NOT a parity gate)
+
+Blast-radius survey done BEFORE cutting (2026-08-08). The retirement is
+NOT a `grep csrp | delete` — the `csrp_`-prefixed code splits into two
+populations that must be handled OPPOSITELY:
+
+**A. DELETE — the CSRP wire/router/auth (no non-CSRP, non-test consumer):**
+- `store_csrp.v` (router + 17xx remap), `store_csrp_binary_route.v`,
+  `store_csrp_client_bin.v`, `store_csrp_wire.v` — whole files.
+- `store_authz.v` WHOLE — its only non-test consumer is store_service.v's
+  HTTP bearer plane (`svc_authenticate`/`svc_authorize`/`new_key_cache`);
+  the profile uses XSP-AUTH (store_xsp_authority.v), never this.
+- The CSRP store router IN store_service.v: `store_csrp_route` dispatch
+  (lines ~1291, ~1557), bearer auth calls, the `[auth [bearer …]]` advert
+  arm. REDUCE store_service.v to: profile-op routing (svc_profile_data_op,
+  KEEP) + bootstrap HTTP = health/ready/metrics/capabilities ONLY.
+- Tests: store_csrp_test.v, store_csrp_conformance_test.v,
+  store_csrp_wire_tagged_test.v, store_binary_wire_test.v (+ any
+  bearer-plane assertions in store_service_test.v / store_wire_wave4_test.v
+  — triage per-assert, don't blind-delete).
+- Transitional `cx-store+http/https` schemes (store_remote.v csrp_scheme),
+  `[$store:csrp-handle]` (stdlib_store.v:2022), 17xx band → Reserved
+  (governance §9.6).
+
+**B. RELOCATE + RENAME — misnamed generic helpers the PROFILE depends on
+(deleting store_csrp.v would gut the profile):**
+- `csrp_attr` / `csrp_scalar` / `csrp_msg_esc` (defined in store_csrp.v)
+  are used by 10 profile/core files (store_profile_ops, store_xsp_serve
+  /feed/peer/advert/client, store_porcelain, store_reload,
+  store_remote_object, store_service). They are generic CX
+  attr/scalar/message-escape utilities with a wrong prefix. MOVE to a
+  neutral home (store_wire_util.v) and rename (wire_attr/wire_scalar/
+  wire_msg_esc) BEFORE deleting store_csrp.v. Same for
+  csrp_child_text/csrp_attr_of/csrp_child_scalar in store_csrp_client_bin.v
+  IF any survivor uses them (else they die with the file).
+
+**Sequencing — UNIFIED with the F2 computation-identity rip-out** (both
+touch store_service.v + store_objgraph.v + store_authz.v; touch each
+file ONCE). Final stage order set after the F2 spectrum-audit table
+lands. Each stage ends green on the store batteries + full `make test`.
+Provisional stages:
+  S1. Relocate+rename the generic helpers (B) — pure move, green.
+  S2. F2 rip-out: computation-identity-as-address → document objects +
+      index (store_objgraph.v code store, code: surface) per the audit
+      table.
+  S3. Delete the CSRP wire/router/auth (A); reduce store_service.v;
+      retire schemes/csrp-handle; reserve 17xx.
+  S4. Corpus + spec: drop CSRP conformance, deprecate the schemes in
+      store.md/governance, retire cxstore-remote-protocol.md §3.2.
+  S5. Epoch ratification (F6) once S2 settles the identity surface.
+  S6. Pushdown (F3 + F4 budget + F5 signing) on the clean foundation.
