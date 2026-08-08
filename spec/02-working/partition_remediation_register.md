@@ -685,3 +685,16 @@ gate's executable portion re-runs before resumption.
   dir-sync byte-exact round-trip is the acceptance fixture. Columnar
   (#744, uncompilable pre-existing) gains blob handling as part of
   that issue's fix, noted there.
+- **F1' ADDITIVE SURFACE LANDED (2026-08-08, RULED: F1').** put-blob/
+  get-blob across every live substrate: mem, pack manifest ('B' record),
+  flat index ('B'), object-per-key/sqlite/s3 (graph manifest 'B' with
+  rehash-verify at load), migrate carries blobs kind-preserving through
+  the verifying channel. Evidence, all committed and green BEFORE this
+  entry: conformance store-blob-001..004 (byte-exact greet-def round-trip
+  — the F1' acceptance program — no-canonicalization, dedup, absent →
+  CXER1121); store_blob_surface_test.v (pack + flat reopen persistence,
+  migrate, and a corrupted-record read REFUSING CXER1120); sqlite reopen
+  round-trip run live under -d cxstore_sqlite (whose build had been
+  broken since W5 — dup helper, fixed ec55e624); guide-check backing the
+  fn-docs; spec store.md §4 identity-rule split + verb/capability rows.
+  The rip-out re-execution is next.
