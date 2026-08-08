@@ -1209,9 +1209,15 @@ test-vcx-api: build-vcx
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
 
+# #743 INTERIM (documented, never silent): vgc's STW suspend signal is
+# SIGURG — the Go runtime's preemption signal — so a dylib collection
+# triggering inside a Go host can hang the ack-wait forever. Until #743
+# lands a collision-free suspend path, the Go lanes pin the pacer headroom
+# high (VGC_NEXT_GC_MB) so no collection triggers in these SHORT-LIVED test
+# processes — the pre-#742 effective behavior, scoped to this lane only.
 test-go: build-go
-	cd lang/go/cxlib && $(GO) test ./...
-	cd lang/go/conformance && $(GO) run .
+	cd lang/go/cxlib && VGC_NEXT_GC_MB=65536 $(GO) test ./...
+	cd lang/go/conformance && VGC_NEXT_GC_MB=65536 $(GO) run .
 
 test-go-api: build-go
 	cd lang/go/cxlib && $(GO) test ./...
