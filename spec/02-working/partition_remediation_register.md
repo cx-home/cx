@@ -632,3 +632,56 @@ process. The audit found their TECHNICAL claims sound where verifiable
 exceptions carried in rows R2.5 (W5 done-when) and R3.x (coverage). The
 R4.3 re-audit + full gate re-run is the compensating control: every wave
 gate's executable portion re-runs before resumption.
+
+**2026-08-08, owner (second adversarial audit — the S2 premise failure; ruled (b)):**
+- **AUDIT FINDING (self-audit, conducted at owner direction):** the S2
+  rip-out was built on an UNVERIFIED empirical premise. F1's "code is a
+  document, stored by document identity" was declared "empirically
+  proven" from unrepresentative round-trips (defs simple enough to
+  survive data-canonicalization); the F2 survey ASSERTED "the def's
+  canonical byte form is the missing referent" without executing the
+  round-trip; the shipped dir-sync example (a def with a string-literal
+  body) mangles through put-doc-text — data canonicalization is correct
+  for structured data and WRONG for code's concrete syntax. The old
+  put-def was not code-special identity storage; it was the store's
+  ONLY verbatim path, mis-keyed by computation identity. Same
+  premature-done-claim class as the original I0-I5 audit; the freeze
+  gate does not catch it (it gates authorization, not evidence).
+- **RULED (b): REVERT AND RE-DERIVE CLEAN.** The uncommitted destructive
+  rip-out discarded; the S2 additive commit 1b4fd26b REVERTED (b93c3cce)
+  — its re-expressed store-code-001 embedded the same unrepresentative-
+  test premise. Tree restored to S1 (ed2c7fa8 + revert).
+- **PROCESS RULE (adopted with (b), standing):** any ruling resting on
+  an empirical claim ("X holds") requires a COMMITTED test/probe proving
+  X BEFORE the ruling is recorded — evidence-before-ruling, the
+  empirical twin of rulings-before-edits. Applied immediately to the
+  re-derivation below.
+- **RE-DERIVATION PLAN (evidence first):** (1) committed probe battery:
+  representative def/document classes (simple, string-literal body,
+  comment-bearing, nested, module-of-defs) through every storage path
+  (put-doc-text, the object layer, raw file) recording byte-exact vs
+  normalized per path — the evidence table; (2) F1' letter POSED on that
+  evidence: documents split by identity rule into STRUCTURED (identity =
+  canonical bytes; normalization meaningful) and OPAQUE (identity = raw
+  bytes; code, images, plain text — byte-exact round-trip); code is an
+  OPAQUE document; the store needs a general verbatim surface (the
+  capability the put-def wart was masking); (3) owner rules F1'; (4) F2
+  re-run with executed checks; (5) the rip-out re-executed under the
+  corrected premise.
+- **F1' (a) — RULED (2026-08-08, on the committed evidence battery).**
+  Documents split by IDENTITY RULE: STRUCTURED (identity = hash of
+  canonical bytes; canonicalized round-trip is the contract) and OPAQUE
+  (identity = hash of RAW bytes; byte-exact round-trip; code, images,
+  plain text). Code is an OPAQUE document. The store gains the general
+  verbatim surface put-blob/get-blob (the capability the put-def wart
+  was masking); EVERY storage path verifies key == hash(raw bytes) on
+  load — the skip-verify class cannot return. A persisted record-kind
+  discriminator selecting WHICH hash rule verifies is principled under
+  F1' (part of the identity rule, self-verifying) — unlike the retired
+  'C' kind, whose key was not the hash of the stored bytes. Execution:
+  the verbatim surface lands additively first (spec+impl+fixtures,
+  RULED: F1'); the rip-out then re-executes (put-def/get-def retire,
+  legacy 'C' refuses loudly per A3, [$cx:computation-id] per A2);
+  dir-sync byte-exact round-trip is the acceptance fixture. Columnar
+  (#744, uncompilable pre-existing) gains blob handling as part of
+  that issue's fix, noted there.
