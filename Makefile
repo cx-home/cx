@@ -541,6 +541,7 @@ check-no-stub-impl:
 .PHONY: ring-import-gate
 ring-import-gate:
 	@bash scripts/ring_import_gate.sh
+	@bash scripts/ring_import_gate_selftest.sh
 
 # ── GATES MANIFEST GATE (corpus audit G17) — validate conformance/gates.cxd:
 # it parses, every gate= value is in-enum, and every [module name=X] row

@@ -252,6 +252,24 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   and still covers CSRP/gRPC-listener reloads (existing F3 test still
   green).
 
+- R3.10 VERIFYING — ring-gate C-edge widening (audit F-17). Rewrote
+  scripts/ring_import_gate.sh: hits_sibling now catches EVERY spelling
+  of a sibling reference — @VMODROOT/<sib>, @VMODROOT/../vcx/<sib>,
+  relative ../<sib>, and ../../vcx/<sib> — and the scan now covers raw
+  .c/.h sources (not just .v), closing the 3 audit probe bypasses. The
+  regex_re2.v allowlist is narrowed from whole-sibling-dir to the exact
+  edge PATHS (deps/re2_shim, target); arrow's own shim edge
+  (target/libcx_arrow_shim.a) is the one added exact edge. New lanes:
+  arrow + transport leaves (import cx only), and the platform-FREE
+  cli/cmd_data lanes (no Ring-2 import — the data/cli profiles must not
+  pull the daemon stack, §4). New scripts/ring_import_gate_selftest.sh
+  proves RED on all 9 violation classes (the 3 bypasses + import edge +
+  narrowed-allowlist + arrow-leaf + cli + cmd_data + code→platform),
+  green on the clean tree; wired into ring-import-gate in TEST_TARGETS.
+  Perf: the naive per-line×per-sibling×4-grep loop was 15.5s; a
+  single fast-path grep per line (detailed check only on a hit) brought
+  it to ~4.3s. Gate + selftest both green via `make ring-import-gate`.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -297,7 +315,7 @@ closes individually with its own evidence.
 | R3.7 | F-9 G18 --strict unwired | Wire scripts/cxer_registry_report.sh --strict into TEST_TARGETS (exits 0 today). Synthetic-violation check: an unregistered CXER in a probe branch fails it. | Gate in TEST_TARGETS; red-on-synthetic verified. | AUTH-PENDING |
 | R3.8 | F-15 extraction-gate floor + 3 uncovered cases | Assert a case-count floor in the Make recipe (n_cases >= recorded); cover ch-005/cmp-005/sd-006 in a lane (probe sections or CLI); document the 5 md ABI-lane exclusions as intentional with the CLI-lane cross-reference. | Floor asserts; 3 cases compared somewhere; vacuous-pass probe fails. | VERIFYING |
 | R3.9 | F-16 CX_BLESS=epoch armed | Disarm: epoch-bless paths refuse unless an explicit build-time flag (-d cx_epoch_bless) is set; normal builds cannot bulk-bless. | Env var alone no longer blesses; test pins refusal. | AUTH-PENDING |
-| R3.10 | F-17 ring-gate C-edge gaps | Widen the lane: relative ../<sibling> includes, @VMODROOT/../vcx/<sibling> forms, raw .c/.h scanning; narrow c_edge_allowed to the two exact known edges; add arrow/transport (and cmd_data/cli platform-free) lanes. Red-on-synthetic for each new class. | All probe bypasses from the audit now fail the gate. | AUTH-PENDING |
+| R3.10 | F-17 ring-gate C-edge gaps | Widen the lane: relative ../<sibling> includes, @VMODROOT/../vcx/<sibling> forms, raw .c/.h scanning; narrow c_edge_allowed to the two exact known edges; add arrow/transport (and cmd_data/cli platform-free) lanes. Red-on-synthetic for each new class. | All probe bypasses from the audit now fail the gate. | VERIFYING |
 | R3.11 | F-18 profile-binary corpus lanes | REVISED 2026-08-07: FULL graded corpus through the cli and embed BINARIES (the I2 data-profile precedent ran 8978 pairs through the binary — the sample idea was a scope reduction). If measured runtime is genuinely prohibitive for TEST_TARGETS, that measurement becomes a LETTER with numbers (options: full-in-CI / full-nightly+sample-in-gate), not a silently smaller lane. | Binary lanes graded on the full corpus (or an owner-ruled letter with measurements); synthetic probe proves failure possible. | AUTH-PENDING |
 | R3.12 | F-19 thrown-error auto-pass hole (inherited class) | Scope honestly: this is the historical #404-#407 class across THREE lanes now. Fixture-first repair in profile_gate.v + the two code_eval lanes: a thrown error only passes an out-err case when the code matches. Risk: may surface latent mismatches — each surfaced case triages as fixture-or-code under fixture-before-fix. Also: stop discarding cmodule_gate. | Thrown-vs-expected mismatch fails all three lanes; surfaced cases triaged. | AUTH-PENDING |
 | R3.13 | F-27 I3 census off-by-one; F-28 I2 proof-claim; F-29 "standing" label | Ledger corrections (process docs): each corrected in place with a dated correction note citing this register. | Corrections landed. | AUTH-PENDING |
