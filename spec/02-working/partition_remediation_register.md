@@ -95,9 +95,27 @@ letter and the R4.4 W7-parity plan):**
   every CSRP consumer was ours and migrated at W6; keeping a deprecated
   wire as an oracle was big-installed-base migration machinery applied
   against our own cutover-first standing rule.
-- Items 4 (compute budget) and 5 (snapshot signing) returned for
-  re-framing; 6 (epoch ratification) returned with the freeze-gate
-  question — answered in-session, decision pending.
+- **F4 (a) — daemon compute budget, RULED.** Not a separate letter: a
+  HARD REQUIREMENT of the pushdown build. Every daemon-side evaluation
+  runs under an operator-configured step limit + memory ceiling;
+  exceeding either is a loud TYPED refusal, never a daemon takedown.
+  Per-principal delegable budgets (a bounds conjunct) are a later
+  layer riding the existing authority model — not built now.
+- **F5 (b) — snapshot signing, RULED.** Client-signs is the default
+  semantic (the key NEVER travels; the daemon serves the state to
+  sign). The APPOINTED-SIGNER capability is specced in the same pass:
+  an org may delegate snapshot-signing to a designated signer
+  principal (e.g. HSM-backed) through the existing credential model —
+  one capability row, no new machinery; generalizes to threshold
+  signers later. snapshot-verify (public-key check) is pushdown-safe.
+  Daemon self-attestation: NOT specced; if ever wanted it is a
+  distinct, explicitly-named attestation type.
+- **F6 (b) — epoch ratification WAITS for the F2 rip-out.** Fix
+  everything first, then baseline once: the corrected identity corpus
+  is ratified in ONE pass after the F2 spectrum fixes land (undocumented
+  drift remains mechanically blocked meanwhile). The
+  partition_epoch_amendment_packet.md sign-off is deferred to that
+  moment, folded into the same ratification.
 
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
