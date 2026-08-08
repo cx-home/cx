@@ -328,6 +328,23 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   (b) build the fetch/SRI surface now (out of R3.12 scope);
   (c) delete the fixtures (loses the spec-first worklist).
 
+- R3.16 VERIFYING — interim erasure-carriage guard (rides R2.4(a)),
+  fixture-before-fix. RED first, proving the audit's concern LIVE:
+  store-migrate of a tombstone-bearing source returned
+  [migration-report doc-count=1 …] and store-clone [clone-result …] —
+  both silently DROPPED the E-record tombstones (lawful-erasure
+  attribution lost at the destination; a re-put of shredded content at
+  the copy would resurrect it with no record). New
+  store_erasure_transfer_guard in both verbs: a source with
+  src.erased.len > 0 refuses CXER1144
+  E_STORE_ERASURE_CARRIAGE_UNSUPPORTED — the FIRST code of the
+  1144–1149 store band RESERVED for the erasure/compliance surface
+  (governance §9.6 store row; stream 20 owns the band and removes the
+  guard when erased-map carriage lands — the guard comment names the
+  symbol for stream 20's removal). Tombstone-free control migrate
+  still succeeds; erase + porcelain batteries and the cxer-registry
+  gate green.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -379,7 +396,7 @@ closes individually with its own evidence.
 | R3.13 | F-27 I3 census off-by-one; F-28 I2 proof-claim; F-29 "standing" label | Ledger corrections (process docs): each corrected in place with a dated correction note citing this register. | Corrections landed. | AUTH-PENDING |
 | R3.14 | F-30 cosmetic spec/impl deltas | Each is a spec-vs-impl divergence → per register rule 3 the default is conform-the-impl: drop the extra request= attr from [erase-result] (or owner rules to spec it); move the G8 group-from refusal pin into the corpus; emit generation= as the spec'd attr (keep child during migration? NO — cutover rule: attr only). Any row where the owner prefers the impl's shape escalates to a letter. | Impl matches spec text exactly; pins updated. | AUTH-PENDING |
 | R3.15 | I5-s4 auditor's unverifiable externals | Verification pass in the two external repos (console conform §13b, web-client /3 lane) — re-run their gates, record results here. | Results recorded (green or filed). | AUTH-PENDING |
-| R3.16 | R2.4 interim guard | Until stream-20 erased-map carriage lands: store-migrate/store-clone of a source carrying erasure tombstones (E-records) refuse loudly (CXER code per store.md's refusal conventions; fixture-before-fix). Removed by stream 20 when carriage lands. | Refusal pinned by test; stream-20 row references removal. | AUTH-PENDING (rides R2.4(a)) |
+| R3.16 | R2.4 interim guard | Until stream-20 erased-map carriage lands: store-migrate/store-clone of a source carrying erasure tombstones (E-records) refuse loudly (CXER code per store.md's refusal conventions; fixture-before-fix). Removed by stream 20 when carriage lands. | Refusal pinned by test; stream-20 row references removal. | VERIFYING |
 
 ## Part 4 — Structural enforcement + resumption
 
