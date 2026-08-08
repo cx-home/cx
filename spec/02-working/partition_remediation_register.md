@@ -454,6 +454,15 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   the #742 historical note; the epoch packet's retired-record word
   genericized.
 
+- R4.3 IN PROGRESS — wave-gate half MET: full `make test` rc=0 at
+  9fb13cf3 (2026-08-08), zero 0x0acd hang spew; the single FAIL
+  (fabric_nats_bridge, R=0.000ms) is the standing -usecache
+  compile-artifact lane, green on its #572 cache-free retry ("every
+  failed lane green on its classified retry"). The independent
+  fresh-agent re-verification pass (agents that did NOT do the
+  remediation) runs next over every VERIFYING row's evidence; rows
+  move CLOSED only as that pass confirms each.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
