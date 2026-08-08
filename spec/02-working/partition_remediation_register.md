@@ -392,6 +392,28 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   (realize_unfold / the infinite-iterate refusal now applied per
   top-level value position). code_eval battery green after.
 
+- R3.15 VERIFYING — the two external-repo claims the auditor could
+  not reach, now verified against the current remediation build
+  (vcx/target/cx):
+  · xap-store-console conform (tools/conform.sh, CX=<this build>):
+  19 of 124 red — EXACTLY the recorded set (xap-store-console#6),
+  same classes (static-daemon bearer 401 round-trip, fail-closed
+  add-credential asserts, readout shapes); the §13b store-PROFILE
+  data-plane lane (the W6 migration claim) is GREEN. No NEW failure
+  from the remediation — the 19 are the console's own 0.13→0.15 idiom
+  drift, already tracked.
+  · xap-marine-htmx-web-client: `make validate` GREEN (client spec ⊢
+  schema); the /3 handshake claim verified — the client's M1 builds
+  [offer-profiles xap] INSIDE the signed hello transcript under the
+  current toolchain (the calculus surface names shifted to
+  challenge/confirm; the hand-rolled full 4-message replay needs the
+  responder nonce, so the shipped in-process W6 proof stands). The
+  cross-repo drift gate (`make check`) has 6 reds — feature-map +
+  one nmea alias-prefix — ORTHOGONAL to /3 (commit 669f823 touched
+  only tools/xap-auth.cx) and to the remediation; FILED as
+  xap-marine-htmx-web-client#15. Both external claims hold; nothing
+  the remediation touched regressed either repo.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -442,7 +464,7 @@ closes individually with its own evidence.
 | R3.12 | F-19 thrown-error auto-pass hole (inherited class) | Scope honestly: this is the historical #404-#407 class across THREE lanes now. Fixture-first repair in profile_gate.v + the two code_eval lanes: a thrown error only passes an out-err case when the code matches. Risk: may surface latent mismatches — each surfaced case triages as fixture-or-code under fixture-before-fix. Also: stop discarding cmodule_gate. | Thrown-vs-expected mismatch fails all three lanes; surfaced cases triaged. | VERIFYING |
 | R3.13 | F-27 I3 census off-by-one; F-28 I2 proof-claim; F-29 "standing" label | Ledger corrections (process docs): each corrected in place with a dated correction note citing this register. | Corrections landed. | AUTH-PENDING |
 | R3.14 | F-30 cosmetic spec/impl deltas | Each is a spec-vs-impl divergence → per register rule 3 the default is conform-the-impl: drop the extra request= attr from [erase-result] (or owner rules to spec it); move the G8 group-from refusal pin into the corpus; emit generation= as the spec'd attr (keep child during migration? NO — cutover rule: attr only). Any row where the owner prefers the impl's shape escalates to a letter. | Impl matches spec text exactly; pins updated. | VERIFYING |
-| R3.15 | I5-s4 auditor's unverifiable externals | Verification pass in the two external repos (console conform §13b, web-client /3 lane) — re-run their gates, record results here. | Results recorded (green or filed). | AUTH-PENDING |
+| R3.15 | I5-s4 auditor's unverifiable externals | Verification pass in the two external repos (console conform §13b, web-client /3 lane) — re-run their gates, record results here. | Results recorded (green or filed). | VERIFYING |
 | R3.16 | R2.4 interim guard | Until stream-20 erased-map carriage lands: store-migrate/store-clone of a source carrying erasure tombstones (E-records) refuse loudly (CXER code per store.md's refusal conventions; fixture-before-fix). Removed by stream 20 when carriage lands. | Refusal pinned by test; stream-20 row references removal. | VERIFYING |
 
 ## Part 4 — Structural enforcement + resumption
