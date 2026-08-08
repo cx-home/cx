@@ -270,6 +270,64 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   single fast-path grep per line (detailed check only on a hit) brought
   it to ~4.3s. Gate + selftest both green via `make ring-import-gate`.
 
+- R3.12 VERIFYING — thrown-error auto-pass closed in ALL affected
+  lanes (audit F-19, the inherited #404–#407 class), and the
+  discriminator surfaced 23 LATENT FALSE-GREENS, every one triaged
+  fixture-or-code:
+  · The fix: thrown_matches_out_err — a thrown parse/eval error
+  satisfies an out-err case only when its message carries the expected
+  CXER code; wired into the 3 code_eval_fixtures_test.v lanes AND
+  profile_gate.v (unit-pinned by
+  test_r312_thrown_error_must_match_out_err; the pkg lane's parse arm
+  was already strict; conformance_run.v already matched).
+  cmodule_gate no longer discarded (per-module tier honored in the
+  profile gate's code.cxd lane). Full battery + profile gate (cli AND
+  embed) + gates-manifest + ring-tag gates GREEN after triage.
+  · FIXTURE defects repaired (12): 8 map-syntax cases that never
+  parsed ({k=v} / {"k" v} → the canonical {k: v}; ft-007/009/010/013,
+  prof-004(+named opts per §12.2.4)/006/023/025); sched-033 surplus
+  bracket; session-037 surplus bracket; test-003 $label= → label=;
+  validate-023 [?io: → [$io: + the def declared impure so the §3.6
+  gate (not the D11 def-checker) is what refuses.
+  · IMPL conformed to spec'd error identities (register rule 3; each
+  spec cite verified): [?map]/[?reduce] using-not-closure CXER0001 →
+  CXER0106 (E_USING_NOT_CLOSURE, code.md registry); pfa hole-in-rest
+  CXER0261 → CXER0102 and over-application CXER0001 → CXER0102
+  (E_PARTIAL_APP §6.3a; 0261 was a mis-assignment into the
+  cancellation band, used nowhere else); [?lib] parse-shape failures
+  CXER0210 → CXER0212 (E_LIB_MALFORMED_DIRECTIVE) with the
+  CXLIB_INSECURE_TRANSPORT parse class mapped to its spec'd CXER0208
+  (the lib_parser-documented surface mapping, made true); unbound
+  $_position/$_last outside a predicate CXER0001 → CXER0231
+  (E_RESERVED_BINDING_USE).
+  · NEW spec conformance implemented: validate.md §3.6 "validate-with
+  MUST carry pure" — probed live: an impure-declared validator was
+  ACCEPTED ([ok …]) and its side effects would run; added
+  declared_impure to Closure (set from the [?def] purity annotation)
+  and a pre-invocation CXER1603 refusal in validate-shape.
+  · Lane-membership fix: sched-033 needs journal (Ring-2) — tagged
+  ring=2 matching its durable siblings sched-022/023 (standalone the
+  refusal is correct; in the ring≤1 cli composition journal is absent
+  and durable: <err> degraded silently — the gate now skips it there).
+  · Reachability records: validate-025 (CXER1605 validator depth >64)
+  is UNREACHABLE from literal input — the PARSER caps element nesting
+  at 64 first — skip-gated with the analysis in-file (the prof-018
+  pattern). module-subpath-private's out-err corrected 0216 → 0213
+  (its own tags said 0213; an unregistered subpath is an unknown
+  module — 0216 is post-resolution privacy, now genuinely covered by
+  program-def-visibility-private-unreachable REWORKED onto the
+  registered ./mixed-module.cx priv-c member).
+  · OWNER-ATTENTION (deferred-feature fixtures → gate=pending):
+  module-https-fetch-sri-mismatch-CXER0209,
+  module-https-fetch-unpinned-CXER0211,
+  module-lockfile-integrity-mismatch-CXER0209 test the Phase-2.14
+  HTTPS-fetch/SRI/lockfile-integrity surfaces whose emit-sites do NOT
+  exist (module_loader returns fetch-deferred CXER0210; recorded
+  pre-campaign). Marked gate=pending (never silent green). Options:
+  (a) pending until the Phase-2.14 graft lands — recommended;
+  (b) build the fetch/SRI surface now (out of R3.12 scope);
+  (c) delete the fixtures (loses the spec-first worklist).
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -317,7 +375,7 @@ closes individually with its own evidence.
 | R3.9 | F-16 CX_BLESS=epoch armed | Disarm: epoch-bless paths refuse unless an explicit build-time flag (-d cx_epoch_bless) is set; normal builds cannot bulk-bless. | Env var alone no longer blesses; test pins refusal. | AUTH-PENDING |
 | R3.10 | F-17 ring-gate C-edge gaps | Widen the lane: relative ../<sibling> includes, @VMODROOT/../vcx/<sibling> forms, raw .c/.h scanning; narrow c_edge_allowed to the two exact known edges; add arrow/transport (and cmd_data/cli platform-free) lanes. Red-on-synthetic for each new class. | All probe bypasses from the audit now fail the gate. | VERIFYING |
 | R3.11 | F-18 profile-binary corpus lanes | REVISED 2026-08-07: FULL graded corpus through the cli and embed BINARIES (the I2 data-profile precedent ran 8978 pairs through the binary — the sample idea was a scope reduction). If measured runtime is genuinely prohibitive for TEST_TARGETS, that measurement becomes a LETTER with numbers (options: full-in-CI / full-nightly+sample-in-gate), not a silently smaller lane. | Binary lanes graded on the full corpus (or an owner-ruled letter with measurements); synthetic probe proves failure possible. | AUTH-PENDING |
-| R3.12 | F-19 thrown-error auto-pass hole (inherited class) | Scope honestly: this is the historical #404-#407 class across THREE lanes now. Fixture-first repair in profile_gate.v + the two code_eval lanes: a thrown error only passes an out-err case when the code matches. Risk: may surface latent mismatches — each surfaced case triages as fixture-or-code under fixture-before-fix. Also: stop discarding cmodule_gate. | Thrown-vs-expected mismatch fails all three lanes; surfaced cases triaged. | AUTH-PENDING |
+| R3.12 | F-19 thrown-error auto-pass hole (inherited class) | Scope honestly: this is the historical #404-#407 class across THREE lanes now. Fixture-first repair in profile_gate.v + the two code_eval lanes: a thrown error only passes an out-err case when the code matches. Risk: may surface latent mismatches — each surfaced case triages as fixture-or-code under fixture-before-fix. Also: stop discarding cmodule_gate. | Thrown-vs-expected mismatch fails all three lanes; surfaced cases triaged. | VERIFYING |
 | R3.13 | F-27 I3 census off-by-one; F-28 I2 proof-claim; F-29 "standing" label | Ledger corrections (process docs): each corrected in place with a dated correction note citing this register. | Corrections landed. | AUTH-PENDING |
 | R3.14 | F-30 cosmetic spec/impl deltas | Each is a spec-vs-impl divergence → per register rule 3 the default is conform-the-impl: drop the extra request= attr from [erase-result] (or owner rules to spec it); move the G8 group-from refusal pin into the corpus; emit generation= as the spec'd attr (keep child during migration? NO — cutover rule: attr only). Any row where the owner prefers the impl's shape escalates to a letter. | Impl matches spec text exactly; pins updated. | AUTH-PENDING |
 | R3.15 | I5-s4 auditor's unverifiable externals | Verification pass in the two external repos (console conform §13b, web-client /3 lane) — re-run their gates, record results here. | Results recorded (green or filed). | AUTH-PENDING |
