@@ -796,3 +796,60 @@ Provisional stages:
       store.md/governance, retire cxstore-remote-protocol.md §3.2.
   S5. Epoch ratification (F6) once S2 settles the identity surface.
   S6. Pushdown (F3 + F4 budget + F5 signing) on the clean foundation.
+
+## Letter F1' — documents split by identity rule; the store's verbatim surface (POSED 2026-08-08, evidence-first)
+
+**Supersedes the F1 wording only where stated; poses the verbatim
+surface. Evidence = the COMMITTED battery
+`vcx/platform/store_verbatim_roundtrip_evidence_test.v` (green,
+landed BEFORE this letter per the evidence-before-ruling rule).**
+
+**What the evidence shows.**
+1. Structured cx data round-trips CANONICALIZED through
+   put-doc-text/get-doc-text — correct and required (the content
+   address is the hash of canonical bytes).
+2. A def simple enough to survive data-canonicalization round-trips —
+   the unrepresentative case the reverted S2 premise was declared on.
+3. The shipped dir-sync `greet` def (string-literal body) MANGLES
+   through the document path: data canonicalization rewrites code's
+   concrete syntax and the result no longer parses as the same
+   program. 4. The lossless formatter is not a verbatim substitute.
+5. (Standing, from the W5 wire fixtures) the OBJECT layer preserves
+   bytes exactly — objects-put/get round-trip content-addressed blobs
+   byte-for-byte; the retired put-def stored code through exactly that
+   raw-leaf machinery, mis-keyed by computation identity.
+
+**The amended principle (F1').** Documents are the only object kind —
+unchanged. Documents split by IDENTITY RULE:
+- **Structured documents** (cx data): identity = hash of CANONICAL
+  bytes; normalization is meaningful and the canonicalized round-trip
+  is the contract. Everything shipped today.
+- **Opaque documents** (CX code, images, plain text — anything whose
+  bytes ARE the content): identity = hash of the RAW bytes; the store
+  round-trips them BYTE-EXACT; no canonicalization ever applies.
+Code is an OPAQUE document. Computation identity remains a derived
+relation over opaque documents that parse as programs — an index or
+recompute-and-refuse claim, never an address (F1/A1 unchanged).
+
+**The surface (the capability the put-def wart was masking).** The
+store gains a general verbatim pair — `put-blob` / `get-blob`
+(working names): put returns the raw-bytes document identity
+(`sha2-256:` over the bytes as given); get returns the bytes exactly;
+`exists`/aliases/objects/migrate/clone/feed treat blob documents
+uniformly (they are ordinary content-addressed objects — the object
+layer already carries them). Every storage path verifies
+key == hash(raw bytes) on load — no skip-verify class returns. The
+dir-sync recipe ingests `.cx` (and any opaque file) via put-blob,
+`.cxd` structured data via put-doc-text; materialize is byte-exact
+for both.
+
+**Non-options, recorded:** storing code via put-doc-text (mangles);
+a fmt-canonical storage form (evidence pin 4; and it would mint a NEW
+identity-bearing canonical form — the R1.1 hazard); re-keying
+structured data to raw bytes (destroys canonical dedup + the epoch).
+
+**On ruling:** F2's re-run proceeds with executed checks; the rip-out
+re-executes on the corrected premise (put-def/get-def retire in favor
+of put-blob/get-blob + the pure [$cx:computation-id]); store.md +
+cx.md + corpus land under the ruling; dir-sync round-trip green
+byte-exact is the acceptance fixture.
