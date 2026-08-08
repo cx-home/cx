@@ -698,3 +698,25 @@ gate's executable portion re-runs before resumption.
   broken since W5 — dup helper, fixed ec55e624); guide-check backing the
   fn-docs; spec store.md §4 identity-rule split + verb/capability rows.
   The rip-out re-execution is next.
+- **S2 RIP-OUT RE-EXECUTED (2026-08-08, RULED: F1'+A2+A3+A4).** In order:
+  (B) [$cx:computation-id] + cx.md rows re-landed verbatim from the
+  reverted 1b4fd26b (that portion was sound); store-code-001 re-derived
+  under F1' — opaque carriage (put-blob), the string-literal-body
+  representative, identity preserved because the bytes are; 002..010
+  taken verbatim (pure pairs, truth values pinned). (C) put-def/get-def
+  verbs, cx_code_store_put_def/get_def, store_put_raw, and every code:
+  special-case removed; legacy records REFUSE LOUDLY on every substrate
+  (flat D-with-code:-key at store_read_index, graph 'C' arm, cxpack
+  manifest 'C' arm) — pinned by store_legacy_code_refusal_test.v (both
+  persisted formats, crafted on disk); A4: xap-dist exports identity=
+  recomputed via the pure relation, claim spelled computes-as: —
+  pinned by xap_dist_exports_identity_test.v (match, alpha-variant
+  match, mismatch refusal; the check previously had NO live consumer);
+  dir-sync example + store_dir_sync_test.v carry the ruled acceptance
+  fixture (restored greet.cx BYTE-IDENTICAL to source, sample re-pinned
+  to the single-quoted mangling-prone spelling); store.md/cx.md/
+  xap market spec/guide §18/store-embedded.md conformed;
+  code_identity_store_test.v + store_code_persist_test.v deleted.
+  Green: fixture battery, dir-sync acceptance, 7 store batteries,
+  refusal + exports pins, guide-check, verify-doc-blocks,
+  check-code-spec-consistency, -d cxstore_sqlite build.

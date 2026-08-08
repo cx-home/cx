@@ -40,23 +40,29 @@
     [output
       """(true, [order [id 1] [amt 100]])"""]
     [body
-      """`get-doc` re-hashes after decode, so a corrupted or tampered
-         object can never come back as a silently wrong document — an
-         integrity mismatch is the hard error `CXER1120`. Identity is
-         **two-tier** (the code-identity spec,
-         `spec/03-approved/core/code-identity.md`): Tier-1 is the
-         content hash of canonical bytes — the identity of *data* and
-         the trust anchor for everything in this section; Tier-2 is
-         code identity — `put-def`/`get-def` address CX *code* modulo
-         renaming, so alpha-equivalent definitions share one key:"""]
+      """`get-doc` re-hashes after decode, so a corrupted object can
+         never come back as a silently wrong document — an integrity
+         mismatch is the hard error `CXER1120`. Documents split by
+         **identity rule**: a *structured* document (cx data) is keyed
+         by the hash of its canonical bytes, and the canonicalized
+         round-trip above is the contract; an *opaque* document — CX
+         code, images, plain text, anything whose bytes ARE the
+         content — is keyed by the hash of its **raw bytes** via
+         `put-blob`, and `get-blob` returns those bytes exactly. Code's
+         "same function?" question is answered separately by the pure
+         `[$cx:computation-id]` claim — an index, never a storage
+         key — so alpha-equivalent definitions share one claim while
+         each spelling keeps its own byte-exact address:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
-      [= $k1 [$store:put-def $s '[?def double ($x) [* $x 2]]']]
-      [= $k2 [$store:put-def $s '[?def double ($n) [* $n 2]]']]
-  ([= $k1 $k2], [$store:get-def $s $k1])]"""]
+      [= $src '[?def double ($x) [* $x 2]]']
+      [= $back [$store:get-blob $s [$store:put-blob $s $src]]]
+  ([= $back $src],
+   [= [$cx:computation-id '[?def double ($x) [* $x 2]]']
+      [$cx:computation-id '[?def double ($n) [* $n 2]]']])]"""]
     [output
-      """(true, '[?def double ($x) [* $x 2]]')"""]
+      """(true, true)"""]
     [body
       """The substrate is chosen by the URL scheme at open time, and
          every effectful substrate is capability-gated deny-by-default
