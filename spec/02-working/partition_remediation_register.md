@@ -430,6 +430,30 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   spec-freeze gate (which fires only on spec+impl together) does not
   trigger; the RULED: R2.5 token is carried regardless.
 
+- WAVE-GATE NOTE (2026-08-08, full `make test` runs toward R4.3):
+  three defects surfaced BY the wave runs, all triaged:
+  (1) the R3.10 selftest raced parallel make (its synthetic probe
+  files in the live vcx/cx were compiled by concurrent build jobs,
+  failing cli-data-dev) — fixed: the selftest now probes an ISOLATED
+  fake tree via RING_GATE_ROOT, live tree kept read-only; all 9
+  classes still red-on-synthetic. (2) the R3.12 corpus repairs
+  orphaned two co-located stdlib fn-doc examples quoting the OLD
+  broken idioms (guide-check enforces example↔corpus backing) — docs
+  aligned; guide-check green (45 modules). (3) DISCOVERY → **#743**
+  (bug/area:v-runtime/prio:high): vgc's STW suspend signal is SIGURG —
+  the Go runtime's preemption signal — so a Go host that dlopens a
+  -gc e libcx can hang the collector's (deliberately unbounded)
+  ack-wait when a collection triggers mid-run; reachable only since
+  #742 enabled the dylib collector; observed flakily (1 of 3 full
+  runs, the test-go lane). Fix directions (signal change / darwin
+  mach-suspend path / build-time knob) + the documented interim
+  (VGC_NEXT_GC_MB pin on the go lane if it recurs as a blocker) are
+  in the issue; NOT improvised here — the STW machinery is
+  soundness-proven and changes need the vgc battery re-run.
+  Prose-gate hygiene from the same runs: version-literal-ok marker on
+  the #742 historical note; the epoch packet's retired-record word
+  genericized.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
