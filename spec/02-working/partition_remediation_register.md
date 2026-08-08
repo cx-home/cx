@@ -345,6 +345,25 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   still succeeds; erase + porcelain batteries and the cxer-registry
   gate green.
 
+- R3.14 VERIFYING — the three F-30 cosmetic spec/impl deltas conformed
+  (register rule 3, impl → spec; no spec text touched):
+  (1) [erase-result] extra request= attr DROPPED — the spec shape is
+  hash= erased= deduped=? only; the request attribution rides the
+  tombstone (get answers it) and the §5.3 feed act (both still
+  asserted); the serve-test pin now asserts !contains('request=').
+  (2) capabilities restates the advert's generation as the ATTR
+  (generation=N on the [capabilities] root), the advert's own
+  spelling — the former [generation N] child element is GONE (cutover,
+  no dual shape); pin updated to assert the attr AND the child's
+  absence. (3) G8 group-from refusal: NOT moved to the corpus — a
+  dated correction in ledger entry 4 records why (the refusal is a
+  live-listener, socket-bound behavior; xsp.cxd covers the
+  codec/calculus-expressible G8 items; faking an in-process case for a
+  wire behavior would be worse than the phrasing it fixes; the live
+  pin at fabric_serve_test.v:1038 stays authoritative). Full xsp serve
+  battery green after the conformances; no other lane emits either
+  shape (grep-verified across profile_ops/client/service/csrp).
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -394,7 +413,7 @@ closes individually with its own evidence.
 | R3.11 | F-18 profile-binary corpus lanes | REVISED 2026-08-07: FULL graded corpus through the cli and embed BINARIES (the I2 data-profile precedent ran 8978 pairs through the binary — the sample idea was a scope reduction). If measured runtime is genuinely prohibitive for TEST_TARGETS, that measurement becomes a LETTER with numbers (options: full-in-CI / full-nightly+sample-in-gate), not a silently smaller lane. | Binary lanes graded on the full corpus (or an owner-ruled letter with measurements); synthetic probe proves failure possible. | AUTH-PENDING |
 | R3.12 | F-19 thrown-error auto-pass hole (inherited class) | Scope honestly: this is the historical #404-#407 class across THREE lanes now. Fixture-first repair in profile_gate.v + the two code_eval lanes: a thrown error only passes an out-err case when the code matches. Risk: may surface latent mismatches — each surfaced case triages as fixture-or-code under fixture-before-fix. Also: stop discarding cmodule_gate. | Thrown-vs-expected mismatch fails all three lanes; surfaced cases triaged. | VERIFYING |
 | R3.13 | F-27 I3 census off-by-one; F-28 I2 proof-claim; F-29 "standing" label | Ledger corrections (process docs): each corrected in place with a dated correction note citing this register. | Corrections landed. | AUTH-PENDING |
-| R3.14 | F-30 cosmetic spec/impl deltas | Each is a spec-vs-impl divergence → per register rule 3 the default is conform-the-impl: drop the extra request= attr from [erase-result] (or owner rules to spec it); move the G8 group-from refusal pin into the corpus; emit generation= as the spec'd attr (keep child during migration? NO — cutover rule: attr only). Any row where the owner prefers the impl's shape escalates to a letter. | Impl matches spec text exactly; pins updated. | AUTH-PENDING |
+| R3.14 | F-30 cosmetic spec/impl deltas | Each is a spec-vs-impl divergence → per register rule 3 the default is conform-the-impl: drop the extra request= attr from [erase-result] (or owner rules to spec it); move the G8 group-from refusal pin into the corpus; emit generation= as the spec'd attr (keep child during migration? NO — cutover rule: attr only). Any row where the owner prefers the impl's shape escalates to a letter. | Impl matches spec text exactly; pins updated. | VERIFYING |
 | R3.15 | I5-s4 auditor's unverifiable externals | Verification pass in the two external repos (console conform §13b, web-client /3 lane) — re-run their gates, record results here. | Results recorded (green or filed). | AUTH-PENDING |
 | R3.16 | R2.4 interim guard | Until stream-20 erased-map carriage lands: store-migrate/store-clone of a source carrying erasure tombstones (E-records) refuse loudly (CXER code per store.md's refusal conventions; fixture-before-fix). Removed by stream 20 when carriage lands. | Refusal pinned by test; stream-20 row references removal. | VERIFYING |
 

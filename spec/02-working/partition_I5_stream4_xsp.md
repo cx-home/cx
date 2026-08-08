@@ -226,7 +226,14 @@ Ring-2 verbs; that is R1's whole argument).
    refuse = forged EXTENSION refused by auth-finish — complements
    xsp-auth-027's narrowing), §5.2 credit arithmetic as executable
    spec, §5.3 cursor form. The group `from=` refusal was verified
-   already live-pinned (fabric_serve_test.v:1038); listener-side credit
+   already live-pinned (fabric_serve_test.v:1038) — [CORRECTION
+   2026-08-07, R3.14/audit F-30: that pin's home is CORRECT and stays
+   there. The refusal is a live-listener behavior (a subscribe against
+   the daemon's group registry, socket-bound); the xsp.cxd corpus
+   family covers the codec/calculus-expressible G8 items only, so
+   "moving" this pin into the corpus would fake an in-process case for
+   a wire behavior. The original entry's phrasing implied corpus
+   coverage; this note records the true split.]; listener-side credit
    ORDERING, cancel choreography, and everything socket-bound live in
    `store_xsp_serve_test.v` — one boot, ~40 assertions, including THE
    M5 property: a wire `put`'s address is byte-identical to the local
