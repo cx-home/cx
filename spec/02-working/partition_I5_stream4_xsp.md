@@ -786,16 +786,25 @@ touch store_service.v + store_objgraph.v + store_authz.v; touch each
 file ONCE). Final stage order set after the F2 spectrum-audit table
 lands. Each stage ends green on the store batteries + full `make test`.
 Provisional stages:
-  S1. Relocate+rename the generic helpers (B) — pure move, green.
-  S2. F2 rip-out: computation-identity-as-address → document objects +
-      index (store_objgraph.v code store, code: surface) per the audit
-      table.
-  S3. Delete the CSRP wire/router/auth (A); reduce store_service.v;
-      retire schemes/csrp-handle; reserve 17xx.
-  S4. Corpus + spec: drop CSRP conformance, deprecate the schemes in
-      store.md/governance, retire cxstore-remote-protocol.md §3.2.
-  S5. Epoch ratification (F6) once S2 settles the identity surface.
-  S6. Pushdown (F3 + F4 budget + F5 signing) on the clean foundation.
+  S1. Relocate+rename the generic helpers (B) — pure move, green. DONE (ed2c7fa8).
+  S2. F2 rip-out: computation-identity-as-address → F1' opaque-document
+      surface (put-blob/get-blob), pure [$cx:computation-id] claim,
+      legacy code-record loud refusal. DONE (c42e8b15/ab463c35/7b328e7a/
+      a3e6588b).
+  S3. Delete the CSRP wire/router/authz (A); reduce store_service.v to
+      bootstrap-HTTP-only; retire schemes/csrp-handle/store-token;
+      per-call XSP-AUTH gRPC edge (G1a); bindings cut over to the
+      embedded XSP client (Python/Go/Rust). DONE (abaea9b9).
+  S4. Corpus + spec deprecation sweep: cxstore-remote-protocol.md →
+      RETIRED/historical, governance 17xx → Reserved, store-022 →
+      cx-store+xsp, gates prose. DONE (6f10e7e7).
+  S5. Epoch ratification (F6) — UNBLOCKED (S2 settled the identity
+      surface) but OWNER-GATED: partition_epoch_amendment_packet.md
+      sign-off is user-only (G3-class). Awaits owner.
+  S6. Pushdown (F3 generation-watch + F4 delegable budget + F5 snapshot
+      signing) on the clean foundation — the next IMPLEMENTATION phase;
+      owner-sequenced (rides the W7 parity/exit gate, now two-listener:
+      XSP profile + gRPC edge).
 
 ## Letter F1' — documents split by identity rule; the store's verbatim surface (POSED 2026-08-08, evidence-first)
 
