@@ -40,7 +40,11 @@
 # Exit: 0 = clean; 1 = a ring module imports or links outside its contract.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# RING_GATE_ROOT: the selftest points the gate at an ISOLATED fake tree —
+# synthetic violation files must never touch the live vcx/ (a probe file in
+# vcx/cx/ would be COMPILED by any concurrently-running build job; that race
+# broke test-extraction-gate under parallel make, 2026-08-07).
+ROOT="${RING_GATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 VCX="$ROOT/vcx"
 
 fail=0
