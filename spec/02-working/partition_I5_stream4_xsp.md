@@ -599,3 +599,54 @@ status mapping, the `17xx` band). This is also why L167's parity gate is
 tractable: both listeners drive one op core, so op-for-op equivalence
 and error identity are properties of the framing layers, not of two
 independent implementations.
+
+## Adjudication entries — audit re-adjudication (R1.2–R1.5, ruled 2026-08-07)
+
+The adversarial audit (partition_audit_impl_I0_I5.md, F-2..F-5) found
+four W2–W6 spec edits that were made mid-implementation without a prior
+recorded ruling (the process breach that triggered the full stop). The
+owner re-adjudicated each as if the question had been posed at the
+proper time. **All four ruled (a): the shipped text stands AS RULED
+TEXT, with the probe evidence recorded here** (partition_remediation_
+register.md rows R1.2–R1.5; RULED (a) 2026-08-07).
+
+- **R1.2 (F-2, 25d7c775) — M1/M2/M4 single-scalar offer/confirm shapes.**
+  The transcript-signed handshake fields carry the offered/confirmed
+  profile+feature sets as SINGLE space-separated scalars, not nested
+  child elements. Probe evidence (W2, pinned xsp-auth-025..031): nested
+  element children do NOT atomize through the data-bin lane — the same
+  offer landed at DIFFERENT byte positions across encode/decode, so a
+  transcript signed over the nested form was unstable (bad-signature on
+  re-parse). The single-scalar shape keeps the signed transcript
+  byte-stable. Alternatives (ii) nested-signed-over-exact-bytes
+  abandons canonical-form signing; (iii) fixing data-bin element-child
+  atomization touches the I1-frozen identity lane (a new epoch, ruled
+  out). RULED (a): single-scalar stands.
+
+- **R1.3 (F-3, f61cb141) — store.md §6.4 scheme + credential vocabulary.**
+  Bare `cx-store://` = the profile over TLS; `cx-store+xsp://` = the
+  cleartext dev sibling (port explicit); identity via open-opts
+  `xsp-did` + `xsp-seed-env` (the seed is ALWAYS an env-var NAME, never
+  a literal; URL userinfo refused at parse). RULED (a): the shipped
+  scheme + open-opts credential surface stands; the W6 client behavior
+  and its tests conform to it.
+
+- **R1.4 (F-4, 8f6832dd) — vp single-scalar carriage.** Same evidence
+  class as R1.2: a `[vc]`/`[vp]` crossing the data-bin lane
+  re-canonicalizes and its signature dies (probed: `[delegation d-vc-1
+  …]` re-parses with a trailing-space id → bad-signature). M3 is
+  transcript-signed, so a nested-children vp hits the same W2 trap.
+  RULED (a): the single-scalar `[vp "<canonical text>"]` carriage
+  stands (and the R3.1 wrong-carriage refusal, CXER5021, guards the
+  likely mistake).
+
+- **R1.5 (F-5, 40743e8e) — erased-marker-WINS on the object wire.**
+  `objects-get` answers `erased=true` (never the bytes) while the root
+  awaits reclamation; `objects-have` keeps it MISSING (serving the
+  bytes would leak lawfully-erased content). RULED (a): the sharpened
+  §7b.1 rule stands (striking it re-opens the leak window).
+
+These four are RECORD-ONLY adjudications (the text already shipped and
+was ruled to stand); no spec text changes under R1.2–R1.5. The process
+defect they represent is cured structurally by the R4.1 spec-freeze
+gate + the rulings-before-edits protocol (R4.2).
