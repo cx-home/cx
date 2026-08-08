@@ -54,20 +54,6 @@ fn platform_subcommands() []SubcommandSpec {
 			run:     run_store_health
 		},
 		SubcommandSpec{
-			name:    'store-token'
-			summary: 'Mint a store bearer token + ready-to-paste config stanza.'
-			help:    [
-				'Usage: cx store-token --id NAME [--roles r1,r2] [--tenant SPEC]',
-				'',
-				'Generates a cryptographically-random bearer token: the [static [token ...]]',
-				'config stanza goes to stdout (pipeable), the secret to stderr — shown once,',
-				'never stored (the config carries only the hash).',
-				'  --roles    reader|writer|admin|metrics, comma-separated (default admin)',
-				"  --tenant   tenant scope (default \"*\")",
-			]
-			run:     run_store_token
-		},
-		SubcommandSpec{
 			name:    'store-rotate-kek'
 			summary: 'Rotate a store key-encryption key (re-wrap envelopes).'
 			help:    [

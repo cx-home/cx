@@ -720,3 +720,89 @@ gate's executable portion re-runs before resumption.
   Green: fixture battery, dir-sync acceptance, 7 store batteries,
   refusal + exports pins, guide-check, verify-doc-blocks,
   check-code-spec-consistency, -d cxstore_sqlite build.
+
+**2026-08-08, owner (S3 premise correction — the gRPC edge's authentication; ruled G1/G2/G3):**
+- **FINDING (surfaced mid-S3, evidence-first):** the demolition map's
+  "store_authz.v: only non-test consumer is the HTTP bearer plane" was
+  textually true but functionally wrong — the gRPC edge authenticates
+  THROUGH that plane (store_grpc_serve.v feeds `authorization` metadata
+  into svc_handle_request), and cxstore-grpc.md §4 pins it normatively
+  ("the same authenticate → Principal → authorize path as CSRP").
+  Deleting the plane as mapped would have left the gRPC edge
+  unauthenticated. Work STOPPED for a ruling instead of silently
+  weakening or silently keeping.
+- **RULED (b): re-base the gRPC edge onto XSP-AUTH — ONE authority
+  calculus, now.** The owner rejected the keep-bearer-for-grpc interim
+  (expedience-bias class, same as the R1.1 correction): CX has no
+  external users, so the cutover is free now and breaking later.
+  Bearer/RBAC, store_authz.v, and the static/JWT/DID/OIDC provider
+  matrix retire everywhere.
+- **G1 (a) — per-call presentation.** The gRPC `authorization` metadata
+  carries the PROFILE's credential form: the delegation chain + an
+  ed25519 signature binding the presenting DID to THIS call (op, body
+  hash, timestamp, nonce), verified by the same delegation-compile +
+  capability-grammar + PEP path the profile uses (store_xsp_authority.v)
+  — no session state on the edge, no second implementation. Freshness
+  window + nonce replay cache bound re-execution.
+- **G2 (a) — [xsp [grants]] is the ONLY grant table.** The `[auth …]`
+  config block is a HARD config error naming the retirement
+  (cutover-first, no dual-accept). Operator intent = delegations, one
+  calculus (§6.1).
+- **G3 (a) — bootstrap HTTP = health/ready/metrics/capabilities ONLY.**
+  mounts/config-reload ride the profile admin ops; /metrics is
+  unauthenticated operator-plane (bind address is the operator's
+  control), posture stated in the spec. cxstore-grpc.md §4 rewritten
+  under these rulings (RULED: G1+G2+G3).
+- **S3 EXECUTED (2026-08-08, RULED: R4.4-a + G1a + G2a + G3a).** DELETED:
+  store_csrp.v, store_csrp_wire.v, store_csrp_binary_route.v,
+  store_csrp_client_bin.v, store_authz.v (bearer/RBAC + the
+  static/JWT/DID/OIDC provider matrix), the csrp-handle verb + def +
+  fn-doc + corpus case, `cx store-token`, and the CSRP-subject tests
+  (csrp, csrp-conformance, csrp-wire-tagged, binary-wire, authz×2,
+  keepalive, token, grpc-vs-csrp parity, discovery). RETIRED SCHEMES:
+  cx-store+http(s) refuse at open naming the live wires; csrp_scheme →
+  service_scheme (xsp+grpc only). REDUCED: store_service.v HTTP =
+  bootstrap-only (health/ready/metrics/capabilities; data/admin 404
+  CXER1709); [auth …] config = HARD error (G2a); data ops reach the
+  daemon ONLY as the gRPC edge's pipeline="profile" synth; mounts/
+  config-reload served under the edge gate; reload hot-sections drop
+  'auth'. BUILT (G1a): per-call XSP-AUTH for the gRPC edge —
+  store_grpc_call_auth.v (CxCall credential: ed25519 over the canonical
+  call binding did/at/nonce/path/body-sha256; freshness window + nonce
+  replay cache; optional [vp] chain compiled through sx_present_locked —
+  the SAME profile code path; posture mirrors §6.1: grants ⇒
+  deny-by-default, none ⇒ open with the admin mutual-gate analog);
+  client half signs from open-opts identity (xsp-did/xsp-seed-env,
+  shared with the profile client; grpc URL userinfo refused).
+  RE-HOSTED ONTO THE WIRE (owner course-correction mid-stage: THE store
+  wire is the XSP profile; gRPC is the integration edge — an earlier
+  grpc-by-default re-host was reverted): fabric journal mounts,
+  xap registry serve-real (§4.2 re-host now proven over cx-store+xsp),
+  remote-alias family — all live green over the profile. gRPC keeps
+  edge-subject tests only (call-auth battery: bind/replay/signer/
+  posture pins; dispatch; client; e2e; admin-edge shapes). Specs
+  conformed same-commit: cxstore-grpc.md §1/§2/§3/§4/§6 (per-call
+  XSP-AUTH normative; bearer gone), store.md §2 wire row + §6.2/§6.4
+  retirement note. Deferred to S4 as ruled: 17xx band renaming +
+  cxstore-remote-protocol.md retirement + corpus/spec deprecation
+  sweep (the 17xx codes remain live transport-independent op codes).
+  New pins: store_grpc_call_auth_test.v, url-userinfo redaction unit,
+  bootstrap-404, no-[auth]-advert, auth-section-rejected.
+- **S3 BINDINGS CUTOVER (owner course-correction #2 — "why can't xsp
+  speak s3?"):** the Go/Python/Rust StoreClient façades were already the
+  one-implementation shape (CX programs through cx_code_eval_caps — the
+  CORE client does the wire; no protocol re-implemented per language),
+  so the earlier bindings-need-gRPC-clients framing was WRONG twice
+  over: nothing needed a new wire client at all. Cut over in place:
+  accepted schemes = cx-store:// + cx-store+xsp:// (retired tokens
+  refuse with the live-wire pointer); bearer token param → XSP-AUTH
+  identity (did + seed-env mapping onto the core's open-opts; the seed
+  never rides a URL or a literal); explicit host:port demanded so the
+  net grant is always exact. Tests re-hosted onto a real store-serve
+  [xsp] daemon per language: CRUD+query+iter round trip, missing-hash,
+  retired-scheme refusal, and the XSP-AUTH deny/admit lane (mutual
+  daemon refuses anonymous; the granted DID round-trips) — 4/4 green in
+  each of Python, Go, Rust. The client-server example rewritten onto
+  store-serve + cx-store+xsp (runs green); guide §18 conformed (the
+  "CSRP canonical, permanent" row was actively false). gRPC remains the
+  integration edge for systems that cannot embed libcx.
