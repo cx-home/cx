@@ -364,6 +364,34 @@ authorization question pending) · IN-WORK · VERIFYING · CLOSED.
   battery green after the conformances; no other lane emits either
   shape (grep-verified across profile_ops/client/service/csrp).
 
+- R3.11 VERIFYING — the FULL graded corpus now runs through the
+  PROFILE BINARIES (audit F-18): profile_gate's --bin drives every
+  binary-expressible eval case through the real `cx <file>` run
+  surface — program → tmp file, in-cx doc → --data=FILE (code.md
+  §1.3), grants → --allow-<cap> / --allow-all / deny-by-default for
+  CXER0271 cases. Counts: 2804 cases through the cli binary + 2226
+  through embed; 16 binary-INEXPRESSIBLE cases counted AND reported in
+  the gate line, never silent (test-registry modules like
+  ./local-helpers.cx / github.com/example/* exist only in the
+  in-process #701 registry; 3 strict-mode cases — no --strict run
+  flag); 2 §1.3 data-fallback answers (a parse-error fixture whose
+  in-code IS valid data legitimately echoes as data on the bare run
+  surface — verified against the actual data conversion, and the
+  parse-error expectation stays graded in-process). Comparator honors
+  the documented #16 multi-form rendering (the run surface prints
+  every top-level result; the fixture pins the final value → tail-line
+  match, with the in-process lane still pinning the exact result).
+  RUNTIME MEASURED: 4m28s for BOTH compositions including builds —
+  affordable for TEST_TARGETS, so the full corpus stays in the gate
+  (no letter needed). Red-on-synthetic: the lane against the
+  data-profile binary fails rc=1 (thousands of [bin] failures + the
+  refusal probes). THE LANE CAUGHT A REAL BINARY-SURFACE DEFECT on
+  first run: a top-level [$unfold f seed] realized in-process but
+  errored through `cx <file>` — eval_top_level_each (the #16
+  multi-form path) lacked eval()'s generator finalize; conformed
+  (realize_unfold / the infinite-iterate refusal now applied per
+  top-level value position). code_eval battery green after.
+
 ## Part 1 — Unauthorized spec edits: re-adjudication rows
 
 These are NOT rubber-stamp ratifications. Each row is a fresh
@@ -410,7 +438,7 @@ closes individually with its own evidence.
 | R3.8 | F-15 extraction-gate floor + 3 uncovered cases | Assert a case-count floor in the Make recipe (n_cases >= recorded); cover ch-005/cmp-005/sd-006 in a lane (probe sections or CLI); document the 5 md ABI-lane exclusions as intentional with the CLI-lane cross-reference. | Floor asserts; 3 cases compared somewhere; vacuous-pass probe fails. | VERIFYING |
 | R3.9 | F-16 CX_BLESS=epoch armed | Disarm: epoch-bless paths refuse unless an explicit build-time flag (-d cx_epoch_bless) is set; normal builds cannot bulk-bless. | Env var alone no longer blesses; test pins refusal. | AUTH-PENDING |
 | R3.10 | F-17 ring-gate C-edge gaps | Widen the lane: relative ../<sibling> includes, @VMODROOT/../vcx/<sibling> forms, raw .c/.h scanning; narrow c_edge_allowed to the two exact known edges; add arrow/transport (and cmd_data/cli platform-free) lanes. Red-on-synthetic for each new class. | All probe bypasses from the audit now fail the gate. | VERIFYING |
-| R3.11 | F-18 profile-binary corpus lanes | REVISED 2026-08-07: FULL graded corpus through the cli and embed BINARIES (the I2 data-profile precedent ran 8978 pairs through the binary — the sample idea was a scope reduction). If measured runtime is genuinely prohibitive for TEST_TARGETS, that measurement becomes a LETTER with numbers (options: full-in-CI / full-nightly+sample-in-gate), not a silently smaller lane. | Binary lanes graded on the full corpus (or an owner-ruled letter with measurements); synthetic probe proves failure possible. | AUTH-PENDING |
+| R3.11 | F-18 profile-binary corpus lanes | REVISED 2026-08-07: FULL graded corpus through the cli and embed BINARIES (the I2 data-profile precedent ran 8978 pairs through the binary — the sample idea was a scope reduction). If measured runtime is genuinely prohibitive for TEST_TARGETS, that measurement becomes a LETTER with numbers (options: full-in-CI / full-nightly+sample-in-gate), not a silently smaller lane. | Binary lanes graded on the full corpus (or an owner-ruled letter with measurements); synthetic probe proves failure possible. | VERIFYING |
 | R3.12 | F-19 thrown-error auto-pass hole (inherited class) | Scope honestly: this is the historical #404-#407 class across THREE lanes now. Fixture-first repair in profile_gate.v + the two code_eval lanes: a thrown error only passes an out-err case when the code matches. Risk: may surface latent mismatches — each surfaced case triages as fixture-or-code under fixture-before-fix. Also: stop discarding cmodule_gate. | Thrown-vs-expected mismatch fails all three lanes; surfaced cases triaged. | VERIFYING |
 | R3.13 | F-27 I3 census off-by-one; F-28 I2 proof-claim; F-29 "standing" label | Ledger corrections (process docs): each corrected in place with a dated correction note citing this register. | Corrections landed. | AUTH-PENDING |
 | R3.14 | F-30 cosmetic spec/impl deltas | Each is a spec-vs-impl divergence → per register rule 3 the default is conform-the-impl: drop the extra request= attr from [erase-result] (or owner rules to spec it); move the G8 group-from refusal pin into the corpus; emit generation= as the spec'd attr (keep child during migration? NO — cutover rule: attr only). Any row where the owner prefers the impl's shape escalates to a letter. | Impl matches spec text exactly; pins updated. | VERIFYING |
