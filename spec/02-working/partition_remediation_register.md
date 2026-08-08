@@ -117,6 +117,30 @@ letter and the R4.4 W7-parity plan):**
   partition_epoch_amendment_packet.md sign-off is deferred to that
   moment, folded into the same ratification.
 
+**2026-08-08, owner (F2 spectrum-audit resolution — A1–A6):**
+- **A1 (a) — claim spelling.** A computation-identity CLAIM is a distinct
+  token the address parser REFUSES — never confusable with a document
+  address (the confusability was the disease). `cx_parse_tagged_address`
+  keeps rejecting `code:`; the claim rides as a distinct
+  `[computation-id sha2-256:…]` element / `computes-as:` form, never a
+  parseable address. `code:` is NOT resurrected as a claim prefix.
+- **A5 (a) — idempotency key stays on computation identity.** "Same
+  command" = same MEANING (alpha-equivalent command fns dedup); this is
+  a legitimate index/dedup use of the relation (not trust, not an
+  address), conforming to F1. Spelled as a claim, not an address.
+- **A2 (a-rec) — replacement surface.** A pure `[$cx:computation-id
+  <def>]` builtin returns the claim; store-code-003…010 re-express the
+  relation's pair properties through it, every pinned truth value kept;
+  case-ids renamed same commit (metadata, non-epoch per the I4
+  precedent).
+- **A3 (a-rec) — legacy on-disk `C` code records.** Dropped outright
+  with a LOUD refusal on encountering one (no silent skip, no
+  read-tolerance window; no users, cutover-first).
+- **A4 (a-rec) — xap-dist `identity=` claim SURVIVES**, recomputed via
+  the pure fn instead of the scratch-store put-def.
+- **A6 (a-rec) — store feed.** No "code plane" owed; def documents ride
+  the `docs` plane as ordinary documents.
+
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
 **2026-08-07:**
