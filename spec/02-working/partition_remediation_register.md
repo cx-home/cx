@@ -415,7 +415,11 @@ letter and the R4.4 W7-parity plan):**
   **RULED (b) BY OWNER 2026-08-09 (post-exit review "b) build these
   now") — the HTTPS-fetch/SRI/lockfile-integrity surface is built and
   the three fixtures flip gate=pending → enforced, green for real.
-  Execution recorded in this session's commits under RULED: R3.12(b).**
+  Execution recorded in this session's commits under RULED: R3.12(b).
+  EXECUTED + VERIFIED same day (73dc8cef; ledger entry 16): the graft
+  landed (lockfile-pinned resolution, real SRI verify, cache, live
+  TLS GET on the http-client pack), all three fixtures ENFORCED green,
+  full `make test` GATE-RC=0 with propagated status.**
 
 - R3.16 VERIFYING — interim erasure-carriage guard (rides R2.4(a)),
   fixture-before-fix. RED first, proving the audit's concern LIVE:

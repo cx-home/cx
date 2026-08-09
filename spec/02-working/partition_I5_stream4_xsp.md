@@ -1321,3 +1321,36 @@ appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
     purity) reuses as-is; design-first, unscheduled. The exceptions
     register stays empty — no orthogonality exception was consumed by
     this stream.
+
+16. **Post-exit executions + a gate-provenance correction (2026-08-09
+    evening; owner rulings at the scorecard review).**
+    - **R2.2 + R4.1 executed and CLOSED** (register; commits e1f91c44 +
+      851d2e52): the blocking per-profile install verification now
+      covers BOTH release lanes; the spec-freeze gate now requires the
+      RULED: token to name a RECORDED ruling and carries a red-proven
+      selftest.
+    - **R3.12 trio RULED (b) and EXECUTED** (73dc8cef): the Phase-2.14
+      module fetch surface is REAL — lockfile-pinned HTTPS resolution
+      (unpinned → CXER0211), SRI verified on every load (mismatch →
+      CXER0209, never cached), on-disk (url, sri) cache, live TLS GET
+      on the http-client pack, CXER0212 for a malformed/unknown-schema
+      lockfile. The three eleven-week false-green fixtures are now
+      ENFORCED and green against real behavior.
+    - **#744**: compile break fixed (9c49c393 — the lost newline
+      helper); compiling exposed the honest tail (the backend missed
+      the I1 reconciliation entirely; column-type introspection dead
+      for non-int kinds) — recorded on the issue. **#717 CLOSED** (all
+      three items + the phantom-hover residual verified landed).
+    - **GATE-PROVENANCE CORRECTION (owner caught the smell):** entry
+      13's "clean-shot rc=0" was launched through a `| tail` pipe,
+      which masks make's exit status — the claim exceeded its
+      evidence (lane logs supported it; the rc did not). A later
+      identically-piped run DID fail invisibly (a stray version
+      literal in entry 14, fixed). The settling run — full log,
+      `GATE-RC=$?` propagated, nothing piped — is **GATE-RC=0** on the
+      strictly-additive superset tree (suite 240/241 + the #572
+      classified cache-free retry green IN the log; code 83/83), so
+      every accumulated claim is re-proven with real provenance.
+      STANDING RULE from the incident: a gate NEVER runs through a
+      pipe; the launch writes a full log and propagates status; a
+      completion notification's exit code is never the verdict.
