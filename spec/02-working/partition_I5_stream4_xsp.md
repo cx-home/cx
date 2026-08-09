@@ -929,3 +929,35 @@ construction.
    maintenance). Spec-only commit; implementation follows S6.2 (budget
    substrate) → S6.3 (verbs) → S6.4 (appointed-signer + porcelain) →
    S6.5 (G13 lanes + full gate).
+
+10. **S6.2 — the F4 evaluation-budget substrate LANDED (2026-08-08,
+   RULED: F4).** `code.arm_eval_budget(mut env, steps, mem_bytes)` arms
+   an `&EvalBudget` on the evaluation env, shared by pointer through
+   every same-thread env derivation (the current_worker propagation
+   rule; spawned contexts deliberately start nil — a budgeted pushdown
+   evaluation is PURE, so it cannot spawn). The check rides `eval_node`
+   — the same single-funnel point as the #319 stack guard: steps =
+   eval_node entries; memory = MONOTONE allocated bytes against the
+   arm-time baseline (NEW V-fork builtin `gc_total_allocated()`,
+   a8a7024f80 — one atomic load of vgc's total_alloc / Boehm
+   GC_get_total_bytes; monotonicity makes the meter immune to
+   collection dips), sampled every 64 steps. `CXER0273
+   E_EVAL_BUDGET_EXCEEDED` allocated in the 0270–0279 host-capability
+   band (code.md §9.4 rows, same-change per #717), deterministic
+   message naming the conjunct + limit; the profile's wire row is
+   CXER5024 (§4.3). TWO mechanism findings, both pinned by the test:
+   (a) the refusal must ride the THROWN channel (EvalError), not an
+   err VALUE — the streamed iterator/yield hot paths collect result
+   nodes without err-introspection, and a value-form refusal was
+   MEASURED being collected (an armed 100-iteration count answered
+   100 with the latch tripped at step 6); (b) the trip LATCHES
+   (tripped_conjunct) — without the latch a memory-only budget
+   (64-step sampling) would admit up to 63 handler steps between
+   refusals, so a handler could absorb-and-progress. Fixture-first:
+   vcx/tests/eval_budget_test.v ran RED (all four refusal lanes:
+   programs completed 1000000/50000) before the check landed, GREEN
+   after — 7 lanes: step refusal, memory refusal, unbudgeted control,
+   generous-budget control, step terminality through [?fallback],
+   memory terminality (the latch lane), arming asserts. Regression:
+   full code_eval_fixtures battery green (unbudgeted evaluation
+   byte-identical), cxer-registry gate green, eval suites green.
