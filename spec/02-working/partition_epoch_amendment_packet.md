@@ -1,6 +1,10 @@
 # I1 epoch-corpus amendment review packet (remediation R2.1 / finding F-7)
 
-**Status: prepared for owner review — NOT yet ruled.**
+**Status: prepared for owner review — NOT yet ruled.** (S5 reconciliation
+addendum with fresh re-verification at HEAD appended 2026-08-08 — see the
+end of this packet; the F6(b) ruling folds this sign-off into the ONE
+ratification pass over the corrected identity corpus, and that pass is now
+ready.)
 
 Scope: every conformance-output amendment in `aa2a24c2` (ledger entry 35,
 22 "degraded bless adoptions repaired" + math-116 added) and every
@@ -339,3 +343,190 @@ of an epoch-untouched white-box lane to the epoch's landed behavior
 (Part 2); or whether any row (math-116; the sha256: rejection reversal;
 the §3.2-riding pins) requires re-review under the re-bless procedure
 before the I1 corpus is considered sealed.
+
+---
+
+## S5 reconciliation + re-verification addendum (2026-08-08; F6(b) one-pass ratification readiness)
+
+**Packet status unchanged: prepared for owner review — NOT yet ruled.**
+The F6(b) ruling folded this packet's sign-off into ONE ratification pass
+over the corrected identity corpus, taken after the F2 spectrum rip-out
+landed. S1–S4 (the CSRP demolition + the F1' identity re-derivation) are
+complete and pushed, so that pass is now ready. This addendum records the
+fresh independent re-verification and reconciles the packet against the
+post-S4 tree.
+
+### A. Fresh independent re-verification (this session, re-runnable)
+
+1. **Commit-map anchors re-run verbatim — all four hold.** Anchor 1
+   (`git diff ef80e409 aa2a24c2^` over the three corpus files) → empty.
+   Anchor 2: `f294f9ec` blobs byte-identical to `ef80e409` for all three
+   files (math `263b1964…`, prof `7de73c41…`, random `048d5d6a…`).
+   Anchor 3 (`git diff 6f1e5cc8^ d8d638b7^` over the 11 Part-2 files) →
+   empty. Anchor 4: every Part-1 degradation entered at `6f1e5cc8`
+   (verified per-case, below).
+2. **Per-case archaeology, mechanical:** all 24 Part-1 case blocks were
+   re-extracted from the three states (`b04bd52c` / `f294f9ec` /
+   `aa2a24c2`) and asserted against this packet's tables — **96/96
+   checks pass**: the 20 restorations' out-sections byte-identical
+   BEFORE==AFTER (asserted non-vacuously — empty extractions refuse);
+   the 3 input-only re-spells output-stable across all three states;
+   math-116 absent at BEFORE and APPROVED, present at AFTER with
+   `gate=enforced`.
+3. **Part-2 re-pins verified against `d8d638b7`'s actual diff:** all 12
+   §2a assert re-pins + the 2 adjacent conditions; the §2b spelling
+   flips including the `sha256:` accepted→REJECTED contract reversal
+   (the diff shows the new rejection assert verbatim); the §2c
+   `take-while` re-spell; the §2d 69-line new test file.
+4. **Live re-derivation at HEAD:** every amended Part-1 case's `in-code`
+   executed DIRECTLY through the HEAD `cx` binary (no harness) —
+   **23/23 executable cases reproduce their blessed outputs exactly**
+   (including prof-014's restored count `3` — the one silent-corruption
+   reversal — and the deterministic random goldens, e.g.
+   `1.683650517646569`); prof-018 is `gate=skip` in the corpus (CXER2103
+   unreachable from pure CX, documented in-file), reported SKIP exactly
+   as the harness treats it.
+5. **Full executable-gate battery:** see §B below — the first S5 run
+   surfaced a gate defect that invalidated its own green verdict; the
+   battery was re-run after the fix. Result recorded at the end of §B.
+
+### B. Two defects the S5 gate re-run surfaced (both fixed, commit `352619d5`)
+
+- **Retry-classifier false green (gate hole, the exact class this
+  campaign's audits exist to kill):** `test-vcx-suite`/`test-vcx-code`
+  extracted the failed-lane retry roster by grepping the raw suite log;
+  a lane whose failure dump contains NUL bytes turns the log binary and
+  the (GNU) grep suppresses line output — the lane silently drops from
+  the roster, the "every failed lane green on its classified retry"
+  banner lies, and the gate exits 0. Observed live in the first S5
+  battery: `fabric_nats_bridge` (the standing #572 `-usecache` flake)
+  was retried and green, while `store_xsp_serve_test`'s RUNTIME failure
+  was dropped (its assert dump carries raw frame bytes — the NULs).
+  Fixed: `grep -a` on the roster extraction and compile-error probe,
+  plus a LOUD extracted-vs-summary count crosscheck (mismatch ⇒ exit 1,
+  never a partial roster). Red-on-synthetic proven under the devbox GNU
+  grep: old extraction 0/2 lanes ("binary file matches"), crosscheck
+  REFUSES (want=2 have=0); new extraction 2/2, proceeds.
+- **R3.4 origin-fold lane pinned stronger than its contract:** the
+  `test_store_xsp_peer` origin lane asserted an INSTANT present-time
+  CXER5021 refusal after the revoke event was observed, but the local
+  fold rides the liveness sweeper tick and the profile's §7.1 contract
+  is explicitly bounded (`[convergence feed-lag-ms=250
+  enforcement="next-pep-check"]`). Diagnosed with timestamped
+  pump/fold/present instrumentation (reverted): failing runs show
+  `present revoked_len=0` with no fold yet; the green run shows the
+  fold landing ~150ms after the pump, then the refusal. The lane was
+  nondeterministic by exactly the tick phase (~2/6 green), explaining
+  both its historical greens and this session's reds. Re-pinned as
+  poll-until-refusal within a 2s deadline (8× the spec'd bound) — the
+  actual contract property; 5/5 green after the fix. **The product
+  conforms to its spec; no product behavior changed** (one stale
+  "post-dispatch" comment conformed to reality).
+
+Neither defect touches the epoch corpus or any Part-1/Part-2 value;
+they are disclosed because the ratification's gate-evidence chain runs
+through them.
+
+**Battery result (the re-run at `352619d5`): full `make test` rc=0.**
+All TEST_TARGETS green; the ONLY failed lane was the standing #572
+`-usecache` compile-artifact flake (fabric_nats_bridge, R=0.000ms —
+compile class), green on its sanctioned cache-free retry under the
+FIXED classifier with the count crosscheck live (summary=1 failed,
+extracted=1, retried=1). `store_xsp_serve_test` green in-battery.
+Extraction gate: 1564 Ring-0 cases through BOTH libcx.dylib and
+libcx-core.dylib (floor 1564), ABI transcripts byte-identical
+(4500316 bytes); CLI lane 8978 invocation pairs byte-identical + 17
+profile refusals verified. libcx-abi-gate: 713 symbols, I3 baseline.
+
+### C. Part-1 subjects at HEAD
+
+- `math.cxd`, `random.cxd`: byte-identical to AFTER (`aa2a24c2`) — no
+  amendment since this packet's commit.
+- `prof.cxd`: ONE later amendment, `e140357d` (RULED: R3.12, the
+  thrown-error auto-pass remediation): four input-only map-literal
+  re-spells (`{k="v"}` → `{k: "v"}`) in prof-004-time-fn-opts-cpu-cap-denied,
+  prof-006-trace-cap-denied, prof-023-prof-configure-bad-sink,
+  prof-025-trace-flush-file-unwritable — cap-denied/refusal cases
+  DISJOINT from this packet's five prof subjects; every blessed output
+  unchanged (this packet's "other" class).
+
+### D. Part-2 subjects at HEAD (the S3 CSRP demolition, RULED R4.4-a+G1a+G2a+G3a)
+
+The R2.1 question — were the post-approval amendments legitimate AT THE
+TIME — is unchanged by later retirement. This table keeps the record
+honest about what still exists at HEAD (the I3 module move `f037364c`
+relocated `vcx/code/` tests to `vcx/platform/` in between; dispositions
+are against final paths):
+
+| Packet rows | Subject file | At HEAD |
+|---|---|---|
+| §2a 1–2 | store_binary_wire_test.v | DELETED at `abaea9b9` (CSRP binary wire retired) |
+| §2a 3 | store_csrp_conformance_test.v | DELETED at `abaea9b9` |
+| §2a 4–5 + guard | store_grpc_concurrency_test.v | survives (vcx/platform/), pins live |
+| §2a 6 | store_grpc_e2e_test.v | survives, pin live |
+| §2a 7 | store_grpc_live_test.v | survives, pin live |
+| §2a 8–9 + filter | store_grpc_parity_test.v | DELETED at `abaea9b9` (CSRP-vs-gRPC parity moot with CSRP) |
+| §2a 10–12 | store_grpc_serve_test.v | survives, pins live |
+| §2b authz rows (incl. the reversal) | store_authz_wave2_test.v | DELETED at `abaea9b9` with store_authz.v (bearer/RBAC + svc_normalize_secret_hash retired) |
+| §2b service config pin | store_service_test.v | survives; bearer lanes retired at S3, replaced by the INVERSE pins (`[auth …]` = hard config error G2a; advert carries no `[auth]`) |
+| §2b cr_config seeds | store_config_reload_test.v | survives; auth seeds dropped with the G2a config |
+| §2c | worker_cancel_test.v | survives (vcx/code/), take-while pin live |
+| §2d | store_csrp_wire_tagged_test.v | DELETED at `abaea9b9` with the CSRP wire codec |
+| §2e | store_csrp_wire.v / §3.2 | codec DELETED at `abaea9b9`; cxstore-remote-protocol.md → RETIRED/historical at `6f10e7e7` |
+
+### E. The F6(b) fold — everything else the one-pass ratification covers
+
+Complete enumeration of conformance-corpus change since the approved
+seal (`f294f9ec` → HEAD), beyond this packet's two commits. Every item
+landed under a recorded ruling or phase gate; `d8d638b7` (Part 2)
+touched no conformance path.
+
+Pre-I5 phase work (each rode its phase's exit gate; I1–I4 exits ratified
+— R2.2/R2.3): `cdac43aa` (I1 L48 binding parity, binding_api.cxd),
+`daf3f921` (I2 exit harness, conversions.cxd + module-fixture removals),
+`a648ba17` (I2 front door), `0d9617d2` (I3 fmt/did/vc.cxd ADDED),
+`0e4e8e96` (I3 http seam), `85166d66` (I4 ring-tag case ATTRS — the 31
+mis-tags; metadata-only per the I4 precedent, R0 corpus untouched).
+
+I5-stream-4 waves (each green on its wave gate; W2's xsp-auth amendments
+adjudicated R1.2): `25d7c775` (W2 xsp-auth.cxd — cases 008/014 gain
+well-formed offer fields, 025–031 added), `882d1b61`/`91836dbd`/
+`ab57a9b0` (W3–W5 xsp.cxd), `46c3b64e` (W4 authz.cxd), `72909cdf` (W4
+store-log-002/003 added).
+
+Remediation: `e140357d` (R3.12 — five error-identity out-err
+conformances + twelve input fixture repairs across code/ft/prof/sched/
+session/test/validate; ruled, R4.3-re-audited).
+
+**The corrected identity corpus (the F1'/A-series correction itself):**
+- `store-code-001..010`: ids and pinned truth values KEPT; bodies
+  re-expressed off the retired put-def/get-def surface onto put-blob +
+  the pure `[$cx:computation-id]` claim (001 re-derived on the
+  string-literal-body representative that MANGLES through the
+  structured path — the evidence-first case). RULED: F1'+A2
+  (`c42e8b15`/`ab463c35`, after the `1b4fd26b`→`67f0dcdb` revert pair
+  from the corrected premise).
+- `store-blob-001..008` ADDED: the byte-exact opaque surface
+  (round-trip, no-canonicalization, dedup, absent) + the identity-rule
+  separation pins (structured-read refuses, iter/query walk structured
+  only, delete-then-reput, modify refuses). RULED: F1' (`a3e6588b`).
+- `store-029-csrp-handle-cap-denied` DELETED with the csrp-handle verb;
+  `store-022-open-csrp-cap-denied` → `store-022-open-service-cap-denied`
+  (S3/S4, RULED: R4.4-a; `abaea9b9`/`6f10e7e7`); gates.cxd prose
+  conformed (`7b328e7a`/`6f10e7e7`).
+- V-battery pins riding the same correction: legacy `C`-record LOUD
+  refusal (store_legacy_code_refusal_test.v, both persisted formats)
+  and the xap-dist `computes-as:` claim recomputed via the pure
+  relation (xap_dist_exports_identity_test.v). RULED: A3+A4.
+
+### F. What the owner is asked to rule (the one pass, per F6(b))
+
+Whether to RATIFY, in one pass: (i) this packet's two amendment commits
+as legitimate discharge of the approved epoch's intent (Part 1) and
+legitimate post-approval conformance of the epoch-untouched code lane
+(Part 2) — every value now four-ways verified (archaeology anchors,
+per-case extraction asserts, the actual diffs, live re-derivation at
+HEAD); and (ii) the corrected identity corpus as enumerated in §E —
+every item landed under its recorded ruling, with the F1'/A-series
+correction evidence-first throughout. Ratification seals the I1 epoch
+corpus as amended and unblocks S6 (pushdown) per the campaign sequence.

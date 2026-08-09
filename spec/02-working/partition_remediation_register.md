@@ -823,3 +823,44 @@ gate's executable portion re-runs before resumption.
   the stale csrp-handle section; the SOURCE guide §18 is conformed).
   S1-S4 COMPLETE; S5 (epoch ratification F6) + S6 (pushdown F3/F4/F5)
   remain, owner-sequenced.
+
+**2026-08-08, S5 (epoch ratification prep — R2.1 + F6(b), evidence for the one-pass sign-off):**
+- **Packet re-verified four ways at HEAD** (partition_epoch_amendment_
+  packet.md S5 addendum): (1) all four commit-map anchors re-run
+  verbatim, hold; (2) per-case archaeology — 24 Part-1 blocks × 3
+  states re-extracted, 96/96 mechanical asserts (restorations
+  byte-identical non-vacuously; math-116 absent/absent/present
+  gate=enforced); (3) all 12 Part-2 re-pins + 2 conditions + the
+  sha256: rejection reversal verified against d8d638b7's actual diff;
+  (4) LIVE re-derivation — 23/23 executable amended cases reproduce
+  their blessed outputs by direct `cx <file>` execution at HEAD
+  (prof-018 gate=skip as documented).
+- **Reconciliation recorded** (packet §C–§E): math/random byte-identical
+  to AFTER; prof's one later amendment = R3.12 input-only re-spells on
+  four disjoint cases; Part-2 subject disposition under the S3
+  demolition (5 files deleted under RULED R4.4-a+G1a+G2a+G3a, survivors'
+  pins live); the F6(b) fold enumerated — every post-seal conformance
+  commit attributed to its recorded ruling/gate, the F1'/A-series
+  identity-corpus correction itemized (store-code-001..010 bodies
+  re-expressed, truth values kept; store-blob-001..008; the two
+  retirement roster moves; A3/A4 V-battery pins).
+- **Two defects the S5 gate re-run surfaced, both FIXED (352619d5):**
+  (a) retry-classifier FALSE GREEN — a NUL-bearing failure dump turns
+  the suite log binary and GNU grep silently drops lanes from the
+  retry roster (observed live: store_xsp_serve_test's runtime failure
+  dropped while the banner claimed every lane green). Fixed grep -a +
+  a loud extracted-vs-summary count crosscheck in BOTH suite lanes;
+  red-on-synthetic proven under the devbox grep (old: 0/2 extracted,
+  crosscheck REFUSES; new: 2/2). (b) the R3.4 origin-fold lane pinned
+  INSTANT refusal where §7.1's contract is bounded (feed-lag-ms=250,
+  next-pep-check) — nondeterministic by tick phase (~2/6 green;
+  diagnosed with timestamped pump/fold/present instrumentation,
+  reverted); re-pinned poll-until-refusal within 2s, 5/5 green. The
+  PRODUCT conforms to its spec — no product change (one stale
+  "post-dispatch" comment conformed).
+- **Full `make test` rc=0 @ 352619d5** (post-fix re-run): lone FAIL =
+  the standing #572 -usecache flake, green on the classified retry
+  with the crosscheck live; extraction gate 1564/1564 both ABI lanes
+  byte-identical + 8978 CLI pairs; libcx-abi-gate 713/I3-baseline.
+- **R2.1 status: packet + addendum POSTED; awaiting the owner's one-pass
+  ratification (F6(b)). S6 (pushdown F3/F4/F5) does not start before it.**
