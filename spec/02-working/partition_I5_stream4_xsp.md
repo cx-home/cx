@@ -863,3 +863,69 @@ re-executes on the corrected premise (put-def/get-def retire in favor
 of put-blob/get-blob + the pure [$cx:computation-id]); store.md +
 cx.md + corpus land under the ruling; dir-sync round-trip green
 byte-exact is the acceptance fixture.
+
+## S6 letters
+
+### Letter J1 — `fold-value` is client-eval only (POSED 2026-08-08; accepted under the standing acceptance ruling; FLAGGED FOR REVIEW)
+
+**The question.** F5(b)'s eligible-verb enumeration (inherited from the
+P2 letter) lists `fold-value` among the non-signing pushdown verbs.
+Should it get a wire form?
+
+**The fact that decides it:** `fold-value` is the PURE core (§3.4) — it
+folds an **already-materialized** `[sequence element]` of entries with
+NO backend access. Its input data lives client-side by definition. A
+wire form would ship the entries TO the daemon to compute over them —
+the exact inverse of the pushdown rationale (move the compute to the
+data). `fold`/`fold-slice` — which read the daemon-side log — ARE the
+pushdown forms of the same computation.
+
+**Recommendation (J1-a, adopted):** `fold-value` stays client-eval
+only; the §4.3 family covers `fold`/`fold-slice`/`replay`/`dry-run`
+(compute-class) and the read/verify rows. No capability, error row, or
+parity lane exists for a `journal-fold-value` wire verb. Verified
+against the long-term-best bar: adding the verb would create a
+data-upload evaluation channel with budget exposure and zero locality
+win; any client holding materialized entries can fold them locally by
+construction.
+- Alternative J1-b: mirror every enumerated verb 1:1 onto the wire for
+  vocabulary symmetry. Rejected: symmetry of NAMES is not op-for-op
+  parity of BEHAVIOR; the G13 lanes pin fold ≡ fold regardless.
+
+## Work log (S6)
+
+9. **S6.1 — pushdown spec surgery LANDED (2026-08-08, RULED:
+   F3+F4+F5+R1.1(b)+R4.4(a-revised)).** xsp_store_profile.md NEW §4.3:
+   the journal pushdown verb family (feature token `store-journal`,
+   transcript-bound): 11 wire verbs — journal-read/-slice/-since/-query
+   (read-class; slice/since/query as credit-governed event streams),
+   journal-verify/-verify-slice/-snapshot-verify (read-class;
+   verification values ride VERBATIM — a finding is data),
+   journal-fold/-fold-slice/-replay/-dry-run (compute-class). Fn
+   carriage per F3(a): fn= the OPAQUE def document's address (put-blob;
+   raw-byte identity verified on load) + MANDATORY
+   claim="computes-as:<algo>:<hex>" recomputed over the parsed entry
+   def, refused on mismatch; module docs = dependency closure, entry=
+   selects; helper defs covered by the document identity. Purity =
+   server-side CXER4611 VERBATIM. Budget per F4(a): [xsp [limits
+   [pushdown steps= memory-mb=]]], named defaults, unbounded
+   unspellable, CXER5024 typed refusal w/ [conjunct :steps|:memory];
+   evaluations serialize under the mount op lock (attributable memory
+   metering). Custody per F5(b): snapshot NOT a wire verb (key never
+   travels; daemon serves state); snapshot-verify pushes down;
+   `snapshot-sign` capability row = the appointed signer (WHO signs,
+   never WHERE the key lives). NEW capability rows compute +
+   snapshot-sign (§6.1); error rows CXER5023 (claim mismatch), 5024
+   (budget), 5025 (fn violation) in §4.2. §9 G13 text conformed to
+   R4.4(a-revised) (embedded-engine oracle, TWO listeners). journal.md
+   §6.1 growth-path paragraph → the NORMATIVE pushdown contract under
+   the rulings (the d7ca927b-class deferral text retired the ruled
+   way); §7 matrix gains the pushdown-equivalence + budget property
+   rows and footnote 10 (remote snapshot = client-eval over served
+   state). Letter J1 (fold-value client-eval-only) posed + accepted
+   under the standing acceptance ruling, FLAGGED FOR REVIEW above.
+   Deliberate non-verbs recorded in §4.3 (append/head/streams ride the
+   shipped v1 carriage; retain/compact/fold-from = owner-side
+   maintenance). Spec-only commit; implementation follows S6.2 (budget
+   substrate) → S6.3 (verbs) → S6.4 (appointed-signer + porcelain) →
+   S6.5 (G13 lanes + full gate).
