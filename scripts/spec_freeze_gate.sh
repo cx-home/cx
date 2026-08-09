@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
-# spec-freeze gate — remediation register R4.1 (#651/#516, ruled 2026-08-07).
+# spec-freeze gate — remediation register R4.1 (#651/#516; RULED (a) BY OWNER
+# 2026-08-09 at the post-exit review — the gate was landed with the
+# remediation wave under the register's recommended option and the ruling
+# followed; the recorded-ruling match below closed with the ruling).
 #
 # THE RULE (standing, absolute): no normative-spec change lands in the same
 # commit as implementation without an EXPRESS recorded ruling. A ruling is
 # referenced from the commit message with a token of the form
 #     RULED: <row/letter id>          e.g.  RULED: R3.14   /  RULED: L184
 # and must exist in the ledgers/register BEFORE the commit (rulings-before-
-# edits, register R4.2 — the token is the machine-checkable half; the
-# recorded ruling itself is reviewed by humans/audit).
+# edits, register R4.2). The token is machine-checked TWO ways: it must be
+# present, and at least one of its id fragments must appear in a recorded
+# ruling store (spec/02-working/partition_*.md — the ledgers/registers) — a
+# token naming NO recorded ruling fails the gate. Semantic review of the
+# ruling itself stays with humans/audit.
 #
 # Path classes:
 #   normative spec  = spec/** EXCEPT spec/02-working/partition_*.md
@@ -55,13 +61,44 @@ classify() { # reads paths on stdin -> "spec impl" flags
   echo "$has_spec $has_impl"
 }
 
+# token_recorded: at least one id fragment of any RULED: token payload greps
+# (fixed-string) in the ruling stores. Fragments split on + , / and spaces;
+# each is tried whole and with a trailing (…) qualifier stripped, so
+# "R4.4(a-revised)" matches a store that records either spelling. Fragments
+# shorter than 2 chars are ignored (never let "a" match everything).
+token_recorded() { # $1 = full commit message
+  local payload frag base
+  while IFS= read -r payload; do
+    payload="${payload#*RULED:}"
+    for frag in $(printf '%s' "$payload" | tr '+,/' '   '); do
+      frag="${frag%%;*}"; frag="${frag%%.}"
+      [ "${#frag}" -ge 2 ] || continue
+      base="${frag%%(*}"
+      if grep -qrF -- "$frag" spec/02-working/partition_*.md 2>/dev/null; then
+        return 0
+      fi
+      if [ "$base" != "$frag" ] && [ "${#base}" -ge 2 ] \
+        && grep -qrF -- "$base" spec/02-working/partition_*.md 2>/dev/null; then
+        return 0
+      fi
+    done
+  done < <(printf '%s\n' "$1" | grep -E 'RULED:[[:space:]]*[A-Za-z0-9]' || true)
+  return 1
+}
+
 check_commit() {
   local sha="$1"
-  local flags
+  local flags msg
   flags=$(git show --format="" --name-only "$sha" | classify)
   if [ "$flags" = "1 1" ]; then
-    if ! git log -1 --format=%B "$sha" | grep -qE 'RULED:[[:space:]]*[A-Za-z0-9]'; then
+    msg=$(git log -1 --format=%B "$sha")
+    if ! printf '%s\n' "$msg" | grep -qE 'RULED:[[:space:]]*[A-Za-z0-9]'; then
       echo "SPEC-FREEZE VIOLATION: commit $sha touches normative spec AND implementation with no 'RULED: <id>' token (register R4.1)." >&2
+      git show --format="  %h %s" --name-only "$sha" | head -20 >&2
+      return 1
+    fi
+    if ! token_recorded "$msg"; then
+      echo "SPEC-FREEZE VIOLATION: commit $sha carries a RULED: token that names NO recorded ruling in spec/02-working/partition_*.md (register R4.1 — rulings are recorded BEFORE the work they authorize, R4.2)." >&2
       git show --format="  %h %s" --name-only "$sha" | head -20 >&2
       return 1
     fi

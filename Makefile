@@ -564,6 +564,7 @@ cxer-registry-gate:
 .PHONY: spec-freeze-gate
 spec-freeze-gate:
 	@bash scripts/spec_freeze_gate.sh
+	@bash scripts/spec_freeze_gate_selftest.sh
 
 # ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
 # rule, executable: the extracted artifacts must match the monolith over the
