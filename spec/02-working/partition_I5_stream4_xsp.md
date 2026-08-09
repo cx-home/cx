@@ -1019,3 +1019,22 @@ construction.
       cxer-registry OK, check-code-spec-consistency green. NEXT: S6.4
       (snapshot signed round-trip + appointed-signer + porcelain), S6.5
       (G13 families incl. gRPC-edge blob+journal parity).
+
+   **S6.3 WAVE-GATE VERDICT (2026-08-09): validated lane-by-lane; a
+   single clean-shot full `make test` was environmentally blocked, NOT a
+   code defect.** test-vcx-code (every code/platform file this change
+   touches) = 82/82 GREEN, incl. store_xsp_journal_test. test-vcx-suite =
+   238 OK incl. the modified store_xsp_serve_test (210/241 OK); its only
+   non-passes were all proven environmental and pass standalone:
+   fabric_serve_test (socket-timing flake under load — OK 25s standalone),
+   code_diagram_roundtrip_test (hung under marathon memory pressure — OK
+   8s standalone), fabric_nats_bridge_test (the standing #572 -usecache
+   compile flake). code_eval_fixtures (xsp-auth-032), verify-doc-blocks,
+   cxer-registry, check-code-spec-consistency all green. ROOT CAUSE of the
+   no-clean-shot: I had to `rm -rf ~/.vmodules/.cache` (my own debug
+   thrashing had poisoned it → 156 stale-symbol link fails), which forced
+   a COLD 241-file -j12 compile+run marathon that exhausted machine memory
+   and flaked/hung socket + vgc-heavy tests. The cache is warm again now;
+   the warm-cache full gate rides S6.4 as the clean-shot for the
+   accumulated commits. (Also fixed: test-vcx-cmd gained the #572
+   cache-free retry it lacked, 0f2e501c.)
