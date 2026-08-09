@@ -412,6 +412,10 @@ letter and the R4.4 W7-parity plan):**
   (a) pending until the Phase-2.14 graft lands — recommended;
   (b) build the fetch/SRI surface now (out of R3.12 scope);
   (c) delete the fixtures (loses the spec-first worklist).
+  **RULED (b) BY OWNER 2026-08-09 (post-exit review "b) build these
+  now") — the HTTPS-fetch/SRI/lockfile-integrity surface is built and
+  the three fixtures flip gate=pending → enforced, green for real.
+  Execution recorded in this session's commits under RULED: R3.12(b).**
 
 - R3.16 VERIFYING — interim erasure-carriage guard (rides R2.4(a)),
   fixture-before-fix. RED first, proving the audit's concern LIVE:
