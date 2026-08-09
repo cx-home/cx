@@ -1,6 +1,9 @@
 # I5 stream 4 — XSP store profile: implementation ledger
 
-**Status:** phase ledger (I5, stream 4, issues #651/#516/#676/#718;
+**Status: STREAM EXITED 2026-08-09** (entry 14 — the exit gate verified
+clause-by-clause; #676 + #718 closed; the W8 R1 riders ride the first
+release cut after I4 per ruling R1 and are recorded, not blocking).
+Phase ledger (I5, stream 4, issues #651/#516/#676/#718;
 branch `impl/I5-stream4-xsp-store` off `design/651-516-partition`).
 Governing spec: `xsp_store_profile.md` (letters 163–172 ruled; its
 identity-epoch membership paragraph landed with the wave-S4
@@ -1226,3 +1229,62 @@ appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
       ~/.vmodules/.cache, no orphaned binaries — the S6.3 lesson
       applied). **S6 (S6.1–S6.5) is COMPLETE; the stream-4 pushdown
       program (F3/F4/F5 under R1.1(b)/R4.4(a-revised)) is delivered.**
+
+14. **STREAM-4 EXIT (2026-08-09, ruled (a) at the S6.5 close-out
+    question) — the exit gate verified clause-by-clause; the stream is
+    EXITED; #676 + #718 CLOSED.**
+    - **Clause "spec conformance fixtures green":** the warm full
+      `make test` clean-shot rc=0 (entry 13) runs the whole corpus —
+      xsp.cxd (G8, W3), the store-blob rows, journal-001..075 (incl.
+      the S6.4 signer rows), the profile fixture families, fmt tail
+      12/12. VERIFIED.
+    - **Clause "gRPC-style parity suite passes over the XSP store
+      profile"** — read under the CONFORMED shape (RULED:
+      R4.4(a-revised): CSRP died at S3, so no three-listener gate; the
+      oracle is the LOCAL EMBEDDED ENGINE, the same families run
+      across the TWO live listeners): store_g13_parity_test five
+      families green (entry 13 — addresses, blob byte-exactness,
+      CXER-code error identity incl. the collapse-to-500 catch, stream
+      result sets, journal one-chain-two-wires + CAS + the S6.4 signer
+      lanes, admin Reload byte-parity); store_xsp_journal_test
+      pushed-down ≡ client-eval byte-identical (S6.3);
+      store_xsp_serve_test profile families (W3–W5). VERIFIED.
+    - **Clause "then the CSRP data plane removed":** the S3 demolition
+      (abaea9b9) — store_csrp*.v + store_authz.v + csrp-handle +
+      `cx store-token` DELETED; cx-store+http(s) refuse at open; HTTP
+      = bootstrap-only; `[auth …]` config a hard error. VERIFIED.
+    - **Clause "xsp-auth/2/ → /3/ HKDF label bump":** W2 (entry 3) —
+      all five labels bumped, the label IS the version handle, a /2/
+      transcript is not replayable at /3/ (fixture 26). VERIFIED.
+    - **Clause "#718's downgrade-strip security item verified in the
+      same cut":** W2 fixtures 25 (intersection) + 26 (strip breaks
+      the signature) — the M1/M2 offers + M4 confirm ride the signed
+      transcript. VERIFIED.
+    - **#718 inventory, all seven items:** 1 = W2 (above); 2 = S6.5
+      (the 21-RPC §2 listing + the Aliases/AliasesSet/Reload battery
+      lanes); 3 = S6.5 (list result-set lane live cross-wire; the
+      compression advert claims only `none`; retired-URL-params MOOT —
+      store_csrp.v died at S3); 4 = W1/L166 (CXER5000–5049 + numeric
+      allocations + 17xx Reserved); 5 = W1 (the `rotate` token in
+      xsp.md §5.0); 6 = W1/S4 (the "permanent" sentences struck;
+      cxstore-remote-protocol.md retired); 7 = W1 + S6.1 (journal.md
+      §6.1 normative for the PROFILE incl. the ruled pushdown
+      contract). **#718 CLOSED.**
+    - **Riders (I4 ruling R1) — recorded, NOT exit blockers by the
+      ruling's own text:** W8 = libcx rings-0–1 re-cut + ABI-baseline
+      move + bindings v1 surface + auto-mirror lane ride the FIRST
+      RELEASE CUT after I4. They start with the v0.16.0 cut decision,
+      not with this stream.
+    - **Open flags recorded at exit:** (i) letter J1 (fold-value
+      client-eval-only) stands accepted under the standing acceptance
+      ruling, FLAGGED FOR REVIEW — owner eyeball pending, effective
+      meanwhile. (ii) The W6 §6.1 truing flag (entry 8) is SUPERSEDED —
+      resolved the ruled way by the halt → audit (F-1..F-30) →
+      remediation register → S6.1 restoration chain. (iii) #749 V
+      -gc e autofree double-free (prio:high, V-runtime, count-only
+      client helper interim); #742 release-side dylib-collector verify;
+      #743 vgc SIGURG vs Go hosts (interim pinned on test-go lanes);
+      #744 columnar backend uncompilable since I3 — all filed, none
+      stream-gating. (iv) No wire-compression lane exists anywhere;
+      the advert now says so honestly; a future lane is a fresh design
+      item, not a debt of this stream.
