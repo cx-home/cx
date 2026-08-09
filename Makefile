@@ -1150,8 +1150,27 @@ test-vcx-cx: build-vcx-dev
 # -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
 # the shipped binary's composition (I4; a bare cmd/ compile is the cli
 # profile, where CX_ENGINES would be inert).
+# Same #572 classified cache-free retry as test-vcx-suite/test-vcx-code: this
+# is the ONLY vcx test lane besides those that runs -usecache ($(CX_CACHE)), so
+# a stale cache layer can inject a duplicate-symbol OR a "symbol(s) not found"
+# link failure (the latter when a fresh symbol is added to code/ and the cmd
+# lane reuses a pre-change cached object — observed on the S6.3 pushdown
+# symbols). A C-compile/link failure retries once cache-free; anything else is
+# a real failure and stays red.
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
+	@log=vcx/target/test-cmd-run.log; stf=vcx/target/test-cmd-status; \
+	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
+	if [ $$st -ne 0 ]; then \
+	  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
+	    echo "──── cache-free retry (#572: -usecache layer artifact check): vcx/cmd ────"; \
+	    if $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) test vcx/cmd/; then \
+	      st=0; \
+	      echo "──── vcx/cmd green on its cache-free retry (#572) ────"; \
+	    fi; \
+	  fi; \
+	fi; \
+	exit $$st
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
