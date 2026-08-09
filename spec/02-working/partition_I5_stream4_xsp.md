@@ -1287,8 +1287,8 @@ appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
     - **Riders (I4 ruling R1) — recorded, NOT exit blockers by the
       ruling's own text:** W8 = libcx rings-0–1 re-cut + ABI-baseline
       move + bindings v1 surface + auto-mirror lane ride the FIRST
-      RELEASE CUT after I4. They start with the v0.16.0 cut decision,
-      not with this stream.
+      RELEASE CUT after I4. They start with the next release-cut
+      decision, not with this stream.
     - **Open flags recorded at exit:** (i) letter J1 (fold-value
       client-eval-only) stands accepted under the standing acceptance
       ruling, FLAGGED FOR REVIEW — owner eyeball pending, effective
