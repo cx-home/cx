@@ -1038,3 +1038,72 @@ construction.
    the warm-cache full gate rides S6.4 as the clean-shot for the
    accumulated commits. (Also fixed: test-vcx-cmd gained the #572
    cache-free retry it lacked, 0f2e501c.)
+
+## Letter S6.4 — the appointed-signer surface (F5(b)), POSED 2026-08-09; accepted under the standing acceptance ruling
+
+**F5(b) is RULED** (client-signs default; the appointed-signer capability
+is specced this pass through the existing credential model — one row, no
+new machinery). This letter fixes the design points the implementation
+needs, all forced or strongly indicated by existing frozen contracts.
+
+**The hard constraint.** journal §4.8's signed preimage `snapshot-canonical`
+is FROZEN (I1 epoch; the `fold-id` slot was reserved specifically so no
+second signing epoch is ever minted). Therefore the appointed signer's
+IDENTITY MUST NOT enter the signed bytes — adding a `signer` field to the
+preimage would be a new signing epoch, forbidden.
+
+**Design (recommended — S6.4-a):**
+1. **Signer identity rides as an UNSIGNED outer hint, bound by the
+   signature.** The signed `[snapshot …]` value gains an outer
+   `signer="<did>"` attribute ALONGSIDE `sig-algo=`/`signature=` — NOT in
+   the `snapshot-canonical` preimage. It is a HINT telling `snapshot-verify`
+   which public key to check against; it is not itself signed, and it
+   cannot be forged usefully: `snapshot-verify` verifies the signature over
+   the recomputed frozen preimage using the key resolved from `signer`, so
+   a mismatched `signer`/key fails step 2. Absent `signer` = the pre-S6.4
+   behavior (verify against a caller-supplied key), fully back-compatible.
+2. **`snapshot-verify` stays a pure public-key check (F5(b): "pushdown-safe").**
+   It resolves the signer key (from the `signer` did:key, or a
+   caller-supplied key as today), verifies the frozen-preimage signature,
+   and checks `anchor-hash`. It does NOT by itself consult the authority
+   model — appointment is a SEPARATE, explicit check (next point), so the
+   pushdown `journal-snapshot-verify` (S6.3) needs no authority state and
+   stays pushdown-safe unchanged.
+3. **Appointment enforcement is an authority-model check, distinct from
+   crypto verify.** "Is this signer the org's APPOINTED signer for this
+   scope?" = does the `signer` DID hold `snapshot-sign over <scope>` in the
+   org's grants/delegations. This rides the EXISTING VC-compiled capability
+   path (profile §6.1) — `snapshot-sign` is already a capability row. A
+   caller that requires appointment (not mere self-attestation) verifies
+   BOTH: (2) the crypto signature AND (3) the `snapshot-sign` grant for the
+   `signer` DID. Client-signs default = signer is self; no appointment
+   needed (self-attestation). Appointed = signer is the designated principal
+   holding the delegation; the signing KEY still never travels (it lives in
+   the signer's own env / HSM — the daemon never sees it, F5(b)).
+4. **Porcelain (client-side eval per F5(b) — `snapshot` is NOT a wire
+   verb):** `$journal:snapshot` gains `opts.signer` (the DID recorded as the
+   outer hint; default = the handle's own identity) — signing still uses
+   `opts.signing-key` (the appointed signer's key, in the signer's env).
+   Over a `cx-store+xsp://` handle, `snapshot` fetches reconstruction state
+   via the S6.3 pushdown reads/object wire and signs LOCALLY;
+   `snapshot-verify` rides the pushdown `journal-snapshot-verify`.
+   `snapshot-verify` gains `opts.require-appointed` (+ the scope) → also
+   runs check (3); omitted = pure crypto verify (back-compatible).
+
+**Alternatives (rejected):** (i) put `signer` in the preimage — forbidden
+(new signing epoch). (ii) make `snapshot-verify` always enforce appointment
+— breaks the client-signs-default self-attestation case and the
+"pushdown-safe pure check" ruling; appointment is opt-in policy. (iii) a
+new "appointed-signer" credential type — F5(b) says one capability row, no
+new machinery; `snapshot-sign` already exists.
+
+**On acceptance (standing ruling — verified long-term-best):** journal
+§3.7/§4.8 gain the `signer=` outer hint + `opts.signer`/`opts.require-
+appointed` (additive, preimage untouched, back-compatible); profile §4.3
+notes `journal-snapshot-verify` stays pure and appointment is the caller's
+separate §6.1 check; new CXER rows only if a new refusal is needed
+(appointment-failed reuses the authority refusal CXER4700-band / the
+journal's snapshot-verify finding shape — NO new epoch, NO preimage change).
+Per-verb fixtures: self-signed verify (default), appointed-signer verify
+(signer holds snapshot-sign → valid), forged-signer (sig mismatch → invalid),
+appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
