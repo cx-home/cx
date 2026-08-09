@@ -961,3 +961,61 @@ construction.
    memory terminality (the latch lane), arming asserts. Regression:
    full code_eval_fixtures battery green (unbudgeted evaluation
    byte-identical), cxer-registry gate green, eval suites green.
+
+11. **S6.3 — the journal pushdown verb family LANDED (2026-08-09,
+    RULED: F3+F4+F5+F1'+R1.1(b)+R4.4(a-revised)).** The §4.3 family on
+    the profile listener + the embedded client, oracle = the local
+    engine.
+    - **store_xsp_journal.v:** 11 verbs. read-class (journal-read reply;
+      journal-slice/-since/-query as credit event streams;
+      journal-verify/-verify-slice/-snapshot-verify — verification
+      values VERBATIM). compute-class (journal-fold/-fold-slice/
+      -replay/-dry-run). Fn carriage F3a: fn= the OPAQUE def document by
+      address (store-get-blob, raw-byte identity verified on load) +
+      MANDATORY claim=computes-as:<algo>:<hex> recomputed over the
+      PARSED entry def (code.cx_program_entry_computation_id, NEW —
+      defs-only program shape enforced there) and refused on mismatch
+      CXER5023. Purity = server-side CXER4611 VERBATIM. Budget F4a: a
+      fresh env armed with cfg.pushdown_steps/mem before eval; the
+      engine's CXER0273 answers as the profile's CXER5024 [conjunct
+      :steps|:memory]. Read-only journal attach per request.
+    - **THE WIRE F1' PAIR (found missing):** a remote put-blob wrote
+      only the client's LOCAL mirror — the fn-document carriage had no
+      transport. Added put-blob/get-blob §4.1 rows (RULED F1'+F3+R1.1)
+      + serve arms + xsp_client_put_blob/get_blob + store_remote_blob_
+      put/get (gRPC edge refuses LOUDLY until its op set gains them —
+      no silent local mirror) + the stdlib_store remote branch. get-blob
+      absence crosses the embedded surface's CXER1121 VERBATIM.
+    - **TWO carriage fixes:** an EMPTY [attach] (sole-store shorthand)
+      ATOMIZES to attach=null through the data-bin frame (the W2 rule's
+      degenerate case) — stdlib_xsp_auth validate_prove and
+      stdlib_session attach-xsp now read attach child-OR-attr (the
+      shorthand had NO live consumer until the pushdown client drove it).
+      Corpus pin xsp-auth-032. Config: [xsp [limits [pushdown steps=
+      memory-mb=]]] (positive-only, unbounded unspellable). Authority:
+      NEW compute + snapshot-sign capability classes; get-blob=read,
+      put-blob=write.
+    - **THE V-RUNTIME BUG (#749, filed prio:high):** the store_xsp_
+      journal_test streams originally held the []cx.Element from the
+      collecting xcl_stream → SIGSEGV in cx__Element_free under -gc e.
+      Root-caused DECISIVELY: -gc none + ASAN runs the WHOLE flow clean
+      (zero findings, all asserts pass) and VGC_NEXT_GC_MB pinning does
+      not help → a V compile-time autofree double-free of a held
+      decoded-element slice's shared items backing, NOT a logic UAF and
+      NOT the tracing collector. Interim (owner ruling (a)): a count-only
+      client helper xcl_stream_count (returns int, never a held node
+      slice) verifies stream cardinality; content decode stays covered
+      by the read + parity fold lanes. Test split into three focused fns
+      (parity/reads/refusals), each its own daemon boot.
+    - **Coverage green under -gc e (3/3):** parity (blob byte-exact over
+      wire; pushed-down fold/fold-slice/replay BYTE-IDENTICAL to the
+      client-eval oracle; dry-run persists nothing), reads (read+absence,
+      slice/query/since cardinality, verify/verify-slice, junk-snapshot
+      refusal), refusals (CXER5023 claim, CXER5024 budget+conjunct,
+      CXER4611 impure-declared-def verbatim, CXER5025 defs-only + bad
+      entry). store_xsp_serve_test token-gate lane (CXER5012 un-negotiated
+      store-journal) + capabilities advert pin updated. Gates:
+      code_eval_fixtures (xsp-auth-032) green, verify-doc-blocks 317/0,
+      cxer-registry OK, check-code-spec-consistency green. NEXT: S6.4
+      (snapshot signed round-trip + appointed-signer + porcelain), S6.5
+      (G13 families incl. gRPC-edge blob+journal parity).
