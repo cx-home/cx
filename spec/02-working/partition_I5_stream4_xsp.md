@@ -869,7 +869,7 @@ byte-exact is the acceptance fixture.
 
 ## S6 letters
 
-### Letter J1 — `fold-value` is client-eval only (POSED 2026-08-08; accepted under the standing acceptance ruling; FLAGGED FOR REVIEW)
+### Letter J1 — `fold-value` is client-eval only (POSED 2026-08-08; accepted under the standing acceptance ruling; RATIFIED (a) BY OWNER 2026-08-09 — entry 15)
 
 **The question.** F5(b)'s eligible-verb enumeration (inherited from the
 P2 letter) lists `fold-value` among the non-signing pushdown verbs.
@@ -894,6 +894,20 @@ construction.
 - Alternative J1-b: mirror every enumerated verb 1:1 onto the wire for
   vocabulary symmetry. Rejected: symmetry of NAMES is not op-for-op
   parity of BEHAVIOR; the G13 lanes pin fold ≡ fold regardless.
+
+**RATIFIED (owner, 2026-08-09 — rulings 1a/2a at the post-exit review;
+review flag CLEARED).** Adjudicated under the ORTHOGONALITY objective
+(a concept, once introduced, applies broadly; exceptions possible but
+rare and real): J1-a stands as a **concept-boundary consequence, NOT
+an exception** — pure folds over values (concept 1) are already
+maximally orthogonal, running wherever the values live, and a wire
+form would BIND that concept to one transport, narrowing it; pushdown
+evaluation (concept 2 — client-supplied pure code to daemon-resident
+data under budget + capability) does not contain `fold-value`, whose
+input is client-held by definition. The debt the review exposed —
+concept 2 currently applies to ONE plane — is filed as **#751**
+(generalize the §4.3 compute family to store-resident documents; the
+S6 substrate reuses as-is; design-first, unscheduled).
 
 ## Work log (S6)
 
@@ -1278,7 +1292,8 @@ appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
     - **Open flags recorded at exit:** (i) letter J1 (fold-value
       client-eval-only) stands accepted under the standing acceptance
       ruling, FLAGGED FOR REVIEW — owner eyeball pending, effective
-      meanwhile. (ii) The W6 §6.1 truing flag (entry 8) is SUPERSEDED —
+      meanwhile [RESOLVED at entry 15: ratified (a), flag cleared].
+      (ii) The W6 §6.1 truing flag (entry 8) is SUPERSEDED —
       resolved the ruled way by the halt → audit (F-1..F-30) →
       remediation register → S6.1 restoration chain. (iii) #749 V
       -gc e autofree double-free (prio:high, V-runtime, count-only
@@ -1288,3 +1303,21 @@ appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
       stream-gating. (iv) No wire-compression lane exists anywhere;
       the advert now says so honestly; a future lane is a fresh design
       item, not a debt of this stream.
+
+15. **J1 RATIFIED + the orthogonality follow-up FILED (2026-08-09,
+    post-exit; owner rulings 1a/2a).** The J1 review flag is CLEARED:
+    ratified (a) as a **concept-boundary consequence, not an
+    orthogonality exception** — the full adjudication is recorded at
+    the letter itself (§"Letter J1", RATIFIED paragraph): pure folds
+    over values are already maximally orthogonal (they run wherever
+    the values live; a wire form would bind the concept to a
+    transport), and the pushdown concept's domain — daemon-resident
+    data — excludes `fold-value` by definition. The exposed debt —
+    pushdown evaluation applied to only one plane — is **#751**:
+    generalize the §4.3 compute family to store-resident documents
+    (pure-fn map/reduce over matched docs beyond the CXPath
+    filter/aggregate pushdown); the S6 substrate (F4 budget, `compute`
+    row, F3a fn-carriage + computation-identity claims, CXER4611
+    purity) reuses as-is; design-first, unscheduled. The exceptions
+    register stays empty — no orthogonality exception was consumed by
+    this stream.
