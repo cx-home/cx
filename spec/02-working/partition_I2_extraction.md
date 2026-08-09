@@ -148,5 +148,11 @@ number.)
    - Strangler rule held: the monolith's dispatch and behavior are
      unchanged (CLI-lane identity is the proof); the ring_import_gate
      stayed green throughout (fixtures joined the derived deny-set).
+     [CORRECTION 2026-08-07, register R3.13 / audit F-28: the CLI-lane
+     proof-claim was logically wrong — both lane sides share the moved
+     vcx/cli code, so a shared-layer behavior change would pass the
+     lane trivially; the actual before/after guarantee is the full
+     conformance battery, which was green at entry 8. Conclusion
+     stands; the cited proof does not.]
    - Entry-25 mode-in-identity residual remains parked BEFORE I5, per
      the standing constraint — untouched here by design.

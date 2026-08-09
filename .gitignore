@@ -75,3 +75,4 @@ vcx/tests/runners/eval/eval_conform
 # CCD spawned-task worktrees
 .claude/
 vcx/tests/runners/code_modify_sharing_bench
+.wavelog/

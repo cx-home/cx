@@ -118,7 +118,23 @@ build_one() {
         ( cd "$P" && tar czf "/out/public/cx-$prof-$T.tar.gz" ./* )
       done
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
-      echo "-- profile probes:"; for prof in data embed cli; do "vcx/target/profiles/$prof/cx" -v | head -2 || true; done
+      # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
+      # per-profile install verification, linux lane — the same contract as
+      # release.sh phase 2: every staged tarball must extract the way the
+      # installer extracts it and its binary must report the expected profile
+      # line, or the cut dies here (this script failing fails release.sh).
+      for prof in platform data embed cli; do
+        case "$prof" in
+          platform) vtar="/out/public/cx-$T.tar.gz" ;;
+          *)        vtar="/out/public/cx-$prof-$T.tar.gz" ;;
+        esac
+        vdir=$(mktemp -d)
+        tar xzf "$vtar" -C "$vdir" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar does not extract" >&2; exit 1; }
+        [ -x "$vdir/cx" ] || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar carries no executable cx at the tar root" >&2; exit 1; }
+        "$vdir/cx" -v | grep -q "profile  $prof" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar cx -v does not report profile $prof" >&2; "$vdir/cx" -v >&2 || true; exit 1; }
+        rm -rf "$vdir"
+      done
+      echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
     '
   ( cd dist/public && shasum -a 256 "$pub" ) || true
   echo "   → dist/public/${pub} + dist/${nested}"

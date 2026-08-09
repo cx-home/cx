@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate test-extraction-gate libcx-abi-gate test-profile-gate check-code-spec-consistency
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -541,6 +541,7 @@ check-no-stub-impl:
 .PHONY: ring-import-gate
 ring-import-gate:
 	@bash scripts/ring_import_gate.sh
+	@bash scripts/ring_import_gate_selftest.sh
 
 # ── GATES MANIFEST GATE (corpus audit G17) — validate conformance/gates.cxd:
 # it parses, every gate= value is in-enum, and every [module name=X] row
@@ -549,6 +550,21 @@ ring-import-gate:
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
+
+# ── CXER REGISTRY GATE (corpus-audit G18; remediation register R3.7) —
+# every emitted CXER code must have a governance §9.6 registry row and no
+# registry-internal band overlap. --strict = the mechanical certainties.
+.PHONY: cxer-registry-gate
+cxer-registry-gate:
+	@bash scripts/cxer_registry_report.sh --strict
+
+# ── SPEC-FREEZE GATE (remediation register R4.1) — no commit after the
+# audit epoch may touch normative spec AND implementation together without
+# a RULED: token referencing a recorded ruling (rulings-before-edits, R4.2).
+.PHONY: spec-freeze-gate
+spec-freeze-gate:
+	@bash scripts/spec_freeze_gate.sh
+	@bash scripts/spec_freeze_gate_selftest.sh
 
 # ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
 # rule, executable: the extracted artifacts must match the monolith over the
@@ -562,13 +578,22 @@ gates-manifest-gate:
 #     libcx.dylib and the one from libcx-core.dylib must be BYTE-IDENTICAL
 #     (`cmp`). Errors are records too, so error-text identity is asserted.
 #     One artifact per process — the GC-carrying dylibs never co-load.
+#     Vacuous-pass defense (audit F-15 / remediation R3.8): the probe
+#     enforces the case-count floor below AND refuses any zero-record
+#     Ring-0 case that is not an intentional exclusion. The only
+#     intentional exclusions are the md-input cases (no md surface in the
+#     C ABI) — the CLI lane covers those via --from=md.
 #   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
 #     data-profile cx over the shared surface (verbs + EXPLICIT --from=
 #     convert; the bare-FILE run-vs-data reading is a ruled profile
 #     difference, spec §4) requiring stdout+stderr+rc identical, plus the
 #     17 monolith-verb profile refusals on the data binary (#426 discipline).
+#     Same case-count floor.
 # Dev-shape builds (same codegen semantics as -prod minus optimization);
 # the release cut re-runs this against the prod-shape artifacts.
+# Floor = the Ring-0 census recorded at I2 (partition_I2_extraction.md);
+# raise it when Ring-0 cases are added, never lower it silently.
+EXTRACTION_GATE_FLOOR := 1564
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 .PHONY: test-extraction-gate
@@ -577,12 +602,27 @@ test-extraction-gate: build-vcx-dev
 	@mkdir -p vcx/target/extraction_gate
 	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
 	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
-	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance > vcx/target/extraction_gate/transcript_monolith.txt
-	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance > vcx/target/extraction_gate/transcript_core.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_monolith.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_core.txt
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
 	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
-	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance
+	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR)
+
+# ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
+# built with -gc e must actually COLLECT: V only emitted vgc_init() in
+# generated main() paths, so shared artifacts ran with gc_enabled=0 —
+# unbounded embedder heap growth + a degenerate empty-pool span scan
+# (~75x slower large parses through the ABI than in the cx binary).
+# The gate churns each artifact past the pacer goal under VGC_GCTRACE=1
+# and requires at least one gc cycle. Runs on both Ring artifacts.
+.PHONY: abi-gc-gate
+abi-gc-gate: build-vcx-dev
+	@$(MAKE) -C vcx build-data-dev
+	@mkdir -p vcx/target/extraction_gate
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
+	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_ART)
+	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_CORE_ART)
 
 # ── LIBCX ABI GATE (I3, partition spec §8 freeze direction) — the split
 # changes module boundaries, never the export surface. Baseline captured at
@@ -985,7 +1025,13 @@ test-vcx-suite: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
+	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
+	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
+	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
+	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    exit 1; \
+	  fi; \
 	  if [ -n "$$failed" ]; then \
 	    st=0; \
 	    for t in $$failed; do \
@@ -995,7 +1041,7 @@ test-vcx-suite: build-vcx-dev
 	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
-	          if grep -q 'C compilation error' $$log; then \
+	          if grep -aq 'C compilation error' $$log; then \
 	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
 	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
 	          else \
@@ -1038,7 +1084,13 @@ test-vcx-code: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
+	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
+	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
+	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
+	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    exit 1; \
+	  fi; \
 	  if [ -n "$$failed" ]; then \
 	    st=0; \
 	    for t in $$failed; do \
@@ -1048,7 +1100,7 @@ test-vcx-code: build-vcx-dev
 	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
-	          if grep -q 'C compilation error' $$log; then \
+	          if grep -aq 'C compilation error' $$log; then \
 	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
 	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
 	          else \
@@ -1099,8 +1151,27 @@ test-vcx-cx: build-vcx-dev
 # -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
 # the shipped binary's composition (I4; a bare cmd/ compile is the cli
 # profile, where CX_ENGINES would be inert).
+# Same #572 classified cache-free retry as test-vcx-suite/test-vcx-code: this
+# is the ONLY vcx test lane besides those that runs -usecache ($(CX_CACHE)), so
+# a stale cache layer can inject a duplicate-symbol OR a "symbol(s) not found"
+# link failure (the latter when a fresh symbol is added to code/ and the cmd
+# lane reuses a pre-change cached object — observed on the S6.3 pushdown
+# symbols). A C-compile/link failure retries once cache-free; anything else is
+# a real failure and stays red.
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
+	@log=vcx/target/test-cmd-run.log; stf=vcx/target/test-cmd-status; \
+	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
+	if [ $$st -ne 0 ]; then \
+	  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
+	    echo "──── cache-free retry (#572: -usecache layer artifact check): vcx/cmd ────"; \
+	    if $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) test vcx/cmd/; then \
+	      st=0; \
+	      echo "──── vcx/cmd green on its cache-free retry (#572) ────"; \
+	    fi; \
+	  fi; \
+	fi; \
+	exit $$st
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
@@ -1170,9 +1241,15 @@ test-vcx-api: build-vcx
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
 
+# #743 INTERIM (documented, never silent): vgc's STW suspend signal is
+# SIGURG — the Go runtime's preemption signal — so a dylib collection
+# triggering inside a Go host can hang the ack-wait forever. Until #743
+# lands a collision-free suspend path, the Go lanes pin the pacer headroom
+# high (VGC_NEXT_GC_MB) so no collection triggers in these SHORT-LIVED test
+# processes — the pre-#742 effective behavior, scoped to this lane only.
 test-go: build-go
-	cd lang/go/cxlib && $(GO) test ./...
-	cd lang/go/conformance && $(GO) run .
+	cd lang/go/cxlib && VGC_NEXT_GC_MB=65536 $(GO) test ./...
+	cd lang/go/conformance && VGC_NEXT_GC_MB=65536 $(GO) run .
 
 test-go-api: build-go
 	cd lang/go/cxlib && $(GO) test ./...

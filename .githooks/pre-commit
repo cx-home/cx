@@ -8,4 +8,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+# Spec-freeze gate (remediation register R4.1): a staged change mixing
+# normative spec + implementation needs CX_RULED=<row id> (and the commit
+# message needs the matching 'RULED: <id>' token — the range gate checks it).
+bash "${REPO_ROOT}/scripts/spec_freeze_gate.sh" --staged
 exec python3 "${REPO_ROOT}/scripts/check_lint_rules.py" --staged

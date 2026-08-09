@@ -399,7 +399,7 @@ and is not duplicated here.
 | `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/std-lib/csv.md` §5 |
 | `CXER1600–CXER1605` | `cx-stdlib/validate` | `spec/std-lib/validate.md` §6 |
 | `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/std-lib/jsonschema.md` |
-| `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*` only; distinct from `CXER11xx` `E_STORE_*`. **`CXER1704` is a TOMBSTONE (I1 row 15 / audit M21): the modify-conflict 409 body carries `CXER1114 E_STORE_REF_CONFLICT` — one ref-conflict code everywhere; never reassigned** | `spec/misc/cxstore-remote-protocol.md` §3 |
+| `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*`. **RESERVED (retired, never reused) as of stream-4 S3 (2026-08-08, #676): the CSRP data plane is deleted; the store wire is the XSP store profile (`CXER50xx`) with the gRPC edge. The op contracts these codes named carried forward to the profile; the codes themselves are not reissued.** `CXER1704` was already a TOMBSTONE (I1 row 15 / audit M21): ref-conflict unifies on `CXER1114 E_STORE_REF_CONFLICT`. Historical: `spec/misc/cxstore-remote-protocol.md` (retired) | — |
 | `CXER1720` | CSRP integrity mismatch (`E_CSRP_INTEGRITY_MISMATCH`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1721` | CSRP not found (`E_CSRP_NOT_FOUND`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1800–CXER1801` | `cx-stdlib/uuid` | `spec/std-lib/uuid.md` |
@@ -440,6 +440,7 @@ and is not duplicated here.
 | `CXER4900–CXER4901` | `cx-stdlib/similar` (island: shipped inside the pre-amendment xap proposal; regularized by the 2026-08-05 xap.md §8 yield — the 4900/4901 collision that triggered audit C5) | `spec/std-lib/similar.md` §7 |
 | `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/std-lib/fabric.md` |
 | `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/03-approved/std-lib/sched.md` |
+| `CXER5000–CXER5049` | XSP generic layer + store profile (campaign stream 4, L166; per-code rows LANDED with the W3 implementation per #717 — sub-block 5000–5009 = the generic frame/session layer, the numeric cutover of the retired symbolic `CXER-XSP-*` spellings; 5010–5021 = the store profile (5019–5021 landed with the W4 feed/authority implementation), 5022–5049 reserved for the W5 rows; the CSRP `17xx` band is marked Reserved/retired at CSRP retirement, never reused) | `spec/02-working/xsp_store_profile.md` §4.2 |
 | `CXER5070–CXER5089` | live modes / incremental evaluation (campaign stream 3; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5; codes unshipped, band pre-registered per invariant "added here before being used") | `spec/02-working/live_modes.md` §2 |
 
 **Invariants:**
