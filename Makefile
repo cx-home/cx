@@ -1024,7 +1024,13 @@ test-vcx-suite: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
+	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
+	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
+	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
+	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    exit 1; \
+	  fi; \
 	  if [ -n "$$failed" ]; then \
 	    st=0; \
 	    for t in $$failed; do \
@@ -1034,7 +1040,7 @@ test-vcx-suite: build-vcx-dev
 	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
-	          if grep -q 'C compilation error' $$log; then \
+	          if grep -aq 'C compilation error' $$log; then \
 	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
 	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
 	          else \
@@ -1077,7 +1083,13 @@ test-vcx-code: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
+	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
+	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
+	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
+	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    exit 1; \
+	  fi; \
 	  if [ -n "$$failed" ]; then \
 	    st=0; \
 	    for t in $$failed; do \
@@ -1087,7 +1099,7 @@ test-vcx-code: build-vcx-dev
 	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
-	          if grep -q 'C compilation error' $$log; then \
+	          if grep -aq 'C compilation error' $$log; then \
 	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
 	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
 	          else \
