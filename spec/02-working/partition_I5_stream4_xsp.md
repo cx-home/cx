@@ -1165,3 +1165,64 @@ appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
       test-vcx-code **82/82** (incl. store_xsp_journal_test's four
       fns). The WARM full `make test` clean-shot rides S6.5 per the
       S6.3 verdict.
+
+13. **S6.5 — the G13 parity families + gRPC-edge blob parity LANDED
+    (2026-08-09, RULED: R4.4(a-revised)+L167+R2.5).** Commits 5693d870
+    (spec) → adcac30d (impl + battery). The W7 parity-gate deliverable,
+    built once over the complete post-pushdown surface, two live
+    listeners, embedded-engine oracle.
+    - **gRPC-edge blob pair:** PutBlob/GetBlob on the edge (the Put/Get
+      message shapes reused with `encoding "raw"`; PutBlob's reply hash
+      field = the blob KEY; absence maps 404/1721 on the wire and the
+      client re-derives the blob surface's CXER1121 — cross-transport
+      identity). svc_profile_data_op gains the put-blob/get-blob arms
+      (raw octets verbatim; CXER1121→404/1721 exactly like `get`);
+      store_remote_blob_put/get route the gRPC schemes to the new
+      client fns — the S6.3 refuse-loud placeholder retired.
+    - **G13 CATCH (the battery's first run):** GrpcObjWireTransport
+      collapsed EVERY non-zero grpc status to 500 — an aliases-set to
+      an absent target surfaced CXER1101 on the edge while the profile
+      said CXER1121 (error-identity break on the whole gRPC object
+      wire: 1121/1114/authz/rate all indistinguishable). Fixed: the
+      transport maps the trailer's exact CXER (fallback: coarse
+      grpc-status) onto the SAME statuses xcl_ow_status surfaces
+      (404/409/403/429), so the store arms re-derive identical codes
+      on both wires.
+    - **store_g13_parity_test.v — five families** (oracle ≡ XSP ≡ gRPC,
+      one daemon, both listeners, focused fns): (1) docs/blobs/delete —
+      content-address identity, blob byte-exact round-trip of
+      deliberately NON-canonical bytes, absence-code identity, delete
+      parity; (2) aliases — set over gRPC read over XSP (the #718
+      item-2 AliasesSet lane), explicit-absence parity, absent-target
+      CXER1121 identity; (3) streams — list + query result-SET identity
+      cross-wire (the #718 item-3 list-shape reconciliation, live);
+      (4) journal — ONE chain through both wires (byte-identical
+      entries), stale-tail CXER1114 identity, fold ≡ the local oracle's
+      state, verify-finding identity, and the S6.4 signer surface both
+      ways (default signer= on the gRPC handle via rb.did — the one
+      identity slot both wires fill; pushdown verify ≡ wire-read local
+      check, finding-identical; forged signer identical both wires);
+      (5) admin — status shape, config-reload BYTE-parity (the item-2
+      Reload lane), and the capabilities advert pinned honest.
+    - **#718 dispositions:** item 2 CLOSED (cxstore-grpc.md §2 lists
+      the complete 21-RPC surface; Aliases/AliasesSet/Reload driven by
+      the battery). Item 3 CLOSED: list-shape = the live cross-wire
+      result-set lane (the text-vs-binary CSRP route died at S3);
+      compression advert now claims ONLY `none` (nothing implements a
+      wire compression lane — the advert stated capability it did not
+      have); retired-URL-params moot (store_csrp.v deleted at S3).
+      Feed/∂/credit/advert families remain profile-listener lanes
+      (the gRPC edge has no feed plane by design) and stay green in
+      store_xsp_serve_test — the cross-listener families are exactly
+      the ops both listeners carry.
+    - **WAVE GATE — THE WARM FULL `make test` CLEAN-SHOT: rc=0**
+      (2026-08-09, the shot the S6.3 verdict deferred, covering
+      S6.3+S6.4+S6.5): test-vcx-code **83/83** (the battery is the
+      +1 file); test-vcx-suite **240/241 + the standing #572
+      -usecache fabric_nats_bridge flake green on its classified
+      cache-free retry** (R:0.000ms link-stage signature, the
+      documented class); cmd lane green; corpus lanes green (fmt
+      12/12 tail). Machine pre-verified (76% memory free, warm
+      ~/.vmodules/.cache, no orphaned binaries — the S6.3 lesson
+      applied). **S6 (S6.1–S6.5) is COMPLETE; the stream-4 pushdown
+      program (F3/F4/F5 under R1.1(b)/R4.4(a-revised)) is delivered.**
