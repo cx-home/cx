@@ -798,9 +798,10 @@ Provisional stages:
   S4. Corpus + spec deprecation sweep: cxstore-remote-protocol.md →
       RETIRED/historical, governance 17xx → Reserved, store-022 →
       cx-store+xsp, gates prose. DONE (6f10e7e7).
-  S5. Epoch ratification (F6) — UNBLOCKED (S2 settled the identity
-      surface) but OWNER-GATED: partition_epoch_amendment_packet.md
-      sign-off is user-only (G3-class). Awaits owner.
+  S5. Epoch ratification (F6) — DONE (RULED (a), owner, 2026-08-08:
+      the packet + the corrected identity corpus RATIFIED in the
+      F6(b) one pass; I1 epoch corpus SEALED AS AMENDED; evidence =
+      the packet's S5 addendum + full `make test` rc=0 @ 352619d5).
   S6. Pushdown (F3 generation-watch + F4 delegable budget + F5 snapshot
       signing) on the clean foundation — the next IMPLEMENTATION phase;
       owner-sequenced (rides the W7 parity/exit gate, now two-listener:

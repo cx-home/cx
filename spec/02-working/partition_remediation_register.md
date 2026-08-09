@@ -585,7 +585,7 @@ text/implementation is unwound per the ruling.
 
 | Row | Finding | Question / action | Acceptance criterion | Status |
 |---|---|---|---|---|
-| R2.1 | F-7 epoch corpus amended post-approval | REVISED 2026-08-07 — the epoch is the identity bedrock; the strongest affordable evidence is both lanes: (a) review packet (the 22 outputs of aa2a24c2 + the 12 re-pins of d8d638b7, each with before/approved-degraded/after values) PLUS independent re-verification of the AMENDED families (agents that did not do the amendment re-derive expected outputs for math/random/prof), then owner sign-off rests on both — recommended; (b) full-corpus re-verification (costlier; marginal over (a) given the R4.3 re-audit re-runs every executable gate anyway). | Packet delivered; scoped re-verification recorded; ruling + sign-off recorded. | OPEN-Q |
+| R2.1 | F-7 epoch corpus amended post-approval | REVISED 2026-08-07 — the epoch is the identity bedrock; the strongest affordable evidence is both lanes: (a) review packet (the 22 outputs of aa2a24c2 + the 12 re-pins of d8d638b7, each with before/approved-degraded/after values) PLUS independent re-verification of the AMENDED families (agents that did not do the amendment re-derive expected outputs for math/random/prof), then owner sign-off rests on both — recommended; (b) full-corpus re-verification (costlier; marginal over (a) given the R4.3 re-audit re-runs every executable gate anyway). | Packet delivered; scoped re-verification recorded; ruling + sign-off recorded. | CLOSED — RULED (a) 2026-08-08, owner: RATIFIED in the F6(b) one pass (packet S5 addendum = the evidence); I1 epoch corpus SEALED AS AMENDED |
 | R2.2 | F-8 I4 installer exit-gate | (a) ratify the disclosed deferral AND make the closure MECHANICAL: I4 exit stands; tracker issue (sanitized, labeled) + the release-cut checklist/script gains a BLOCKING per-profile install-verification step (CX_PROFILE=<lean> must install from the cut artifacts or the release does not ship) — recommended (assets physically require a cut; a checklist gate is evidence, a tracker issue alone is intent); (b) reopen I4 exit until assets exist (blocks on a release cut by construction — performative). | Ruling recorded; issue filed; release gate step landed. | OPEN-Q |
 | R2.3 | F-10 I0 premature done-claims; F-11 I3 deferral-before-ruling; F-12 I2 in-ledger self-ruling; F-13 W5 post-hoc deferral; F-14 I4 R2 riding amendment | Owner ruling on the CLASS: (a) acknowledge as recorded process defects, no unwind (each converged/was cured; all are now impossible under the rulings-before-edits protocol + the R4.1 gate); (b) owner names specific items from this set for individual unwind/re-posing. | Ruling recorded; any named items get their own rows. | CLOSED |
 | R2.4 | F-13 specifically: migrate/clone erased-map → stream 20 | REVISED 2026-08-07: (a) confirm the stream-20 routing (it owns the SEK cut; stream 20 is INSIDE this campaign, so the campaign still delivers carriage) PLUS an interim fail-loud guard NOW (new row R3.16): migrate/clone of a store carrying erasure tombstones REFUSES loudly until stream-20 carriage lands — silent tombstone-dropping is the silent-partial anti-pattern and a lawful-erasure attribution loss — recommended; (b) pull full carriage into stream-4 remediation (duplicates stream-20's SEK design work). | Ruling recorded; R3.16 guard landed if (a). | CLOSED |
@@ -864,3 +864,21 @@ gate's executable portion re-runs before resumption.
   byte-identical + 8978 CLI pairs; libcx-abi-gate 713/I3-baseline.
 - **R2.1 status: packet + addendum POSTED; awaiting the owner's one-pass
   ratification (F6(b)). S6 (pushdown F3/F4/F5) does not start before it.**
+
+**2026-08-08, owner — R2.1/F6(b) RULED (a): RATIFIED.** The epoch
+amendment packet's two commits AND the corrected identity corpus
+(packet addendum §E enumeration) are ratified in the one pass F6(b)
+prescribed. The I1 epoch corpus is SEALED AS AMENDED. R2.1 CLOSED.
+Consequence: S6 (the pushdown implementation phase) is UNBLOCKED under
+the standing foundational rulings F3(a) (fold/replay fns cross as def
+DOCUMENTS by document address + a computation-identity claim the
+daemon recomputes and refuses on mismatch; dependency closure = more
+documents; no special fn carriage), F4(a) (every daemon-side
+evaluation under an operator-configured step limit + memory ceiling,
+loud typed refusal, never a takedown; per-principal delegable budgets
+= a LATER layer, not built now), F5(b) (client-signs default — the
+key never travels; the APPOINTED-SIGNER capability specced in the
+same pass through the existing credential model; snapshot-verify is
+pushdown-safe; no daemon self-attestation), and R4.4(a-revised) (the
+correctness oracle = the local embedded engine + the profile's own
+fixture families; TWO listeners — XSP profile + gRPC edge).

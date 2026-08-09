@@ -1,10 +1,15 @@
 # I1 epoch-corpus amendment review packet (remediation R2.1 / finding F-7)
 
-**Status: prepared for owner review — NOT yet ruled.** (S5 reconciliation
-addendum with fresh re-verification at HEAD appended 2026-08-08 — see the
-end of this packet; the F6(b) ruling folds this sign-off into the ONE
-ratification pass over the corrected identity corpus, and that pass is now
-ready.)
+**Status: RULED (a) — RATIFIED, owner, 2026-08-08 (the F6(b) one-pass
+ratification).** Both amendment commits (`aa2a24c2`, `d8d638b7`) are
+ratified as legitimate discharge of the approved epoch's intent (Part 1)
+and legitimate post-approval conformance of the epoch-untouched code lane
+(Part 2), and the corrected identity corpus as enumerated in addendum §E
+is ratified with them. The I1 epoch corpus is SEALED AS AMENDED. Evidence
+basis: the S5 reconciliation + four-way re-verification addendum at the
+end of this packet (anchors verbatim; 96/96 per-case archaeology asserts;
+all Part-2 re-pins against the actual diffs; 23/23 live re-derivations at
+HEAD; full `make test` rc=0 @ `352619d5`).
 
 Scope: every conformance-output amendment in `aa2a24c2` (ledger entry 35,
 22 "degraded bless adoptions repaired" + math-116 added) and every
