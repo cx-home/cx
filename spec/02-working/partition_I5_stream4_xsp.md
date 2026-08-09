@@ -1107,3 +1107,61 @@ journal's snapshot-verify finding shape — NO new epoch, NO preimage change).
 Per-verb fixtures: self-signed verify (default), appointed-signer verify
 (signer holds snapshot-sign → valid), forged-signer (sig mismatch → invalid),
 appointment-required-but-ungranted (→ refused). Impl is the next S6.4 step.
+
+## Work log (S6, continued)
+
+12. **S6.4 — the appointed-signer surface LANDED (2026-08-09, RULED:
+    S6.4-a).** Commits 7385f131 (spec) → f8f813e9 (spec addendum) →
+    e2b1c4ca (impl+fixtures).
+    - **Spec (additive; the §4.8 preimage FROZEN, byte-unchanged, no
+      second signing epoch):** journal §3.7 — `snapshot` gains
+      `opts.signer` (the UNSIGNED outer `signer="<did>"` attribute
+      alongside sig-algo=/signature=; default = the handle's own
+      identity ONLY when it equals the signing key's derived did:key —
+      a hint that could not verify is never manufactured; `sign=false`
+      + `opts.signer` = the authoring-time misuse CXER4610);
+      `snapshot-verify` gains `$opts::map {}` — the verify key resolves
+      FROM `signer=` when present (did:key/did:peer:0 offline; never
+      the unsigned verify-key= field; unresolvable →
+      `:signer-unresolvable`, mismatched → `:signature-invalid`) and
+      `opts.require-appointed` (+ `opts.authz` [authz-store] registry
+      handle + `opts.scope`) runs the DISTINCT appointment check —
+      signer holds `snapshot-sign` per the §6.1 capability calculus —
+      failing as the FINDING `valid=false reason=:not-appointed` with
+      the registry's `[deny …]` as its child (misuse without an open
+      registry handle = CXER4610). §4.8 outer-hint paragraph; §6.1 +
+      profile §4.3 pin the pushdown verb UNCHANGED on the wire (no new
+      fields, no authority state — pushdown-safe per F5(b)); §10 rows.
+    - **Impl (stdlib_journal.v + stdlib/journal.cx def):**
+      jrn_build_snapshot gains the signer param; jrn_snapshot_check
+      resolves signer-hint keys via did_key_bytes (shared by the local
+      porcelain AND the daemon's pushdown verb — one check, both
+      listeners); jrn_snapshot stamps opts.signer / the
+      identity-equality default (session did via ms.remote.xsp.did ==
+      did_key_from_seed(seed)); jrn_snapshot_verify takes $opts, and
+      over a cx-store(+xsp):// handle routes the crypto check through
+      the pushdown journal-snapshot-verify (ONE exchange, the anchor
+      checked against the daemon's AUTHORITATIVE chain, findings +
+      refusals verbatim); jrn_snapshot_appointment runs authz_decide
+      over the caller-designated registry (actor=signer,
+      capability=snapshot-sign, slice=scope, tenant=the registry's own
+      — mirroring the PEP's request shape; no as-of, exactly
+      authz-check's default posture).
+    - **Fixtures:** journal-072..075 (self-signed hint stamped
+      byte-exact incl. the 128-hex deterministic ed25519 signature;
+      appointed-valid via a root [delegation … [capabilities
+      [snapshot-sign]] [over '/ledger']]; forged signer — signed by
+      seed-A claiming seed-B's did with verify-key=pubA PRESENT →
+      `:signature-invalid` proves signer-resolution beats the carried
+      key; ungranted → `:not-appointed` + [deny [code CXER4700]
+      [reason :no-grant] …] child). V wire lane: NEW
+      test_store_xsp_journal_snapshot_porcelain (mutual session via
+      open-opts xsp-did/xsp-seed-env; default signer= = session
+      identity; pushdown verify valid=true; forged signer over the
+      wire → `:signature-invalid` — daemon-side resolution proven).
+    - **Gates:** code_eval_fixtures_test green (journal suite 75 cases
+      incl. the four new; every pre-S6.4 pinned artifact byte-identical
+      — the back-compat claim is TESTED, not asserted);
+      test-vcx-code **82/82** (incl. store_xsp_journal_test's four
+      fns). The WARM full `make test` clean-shot rides S6.5 per the
+      S6.3 verdict.
