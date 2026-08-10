@@ -808,3 +808,21 @@ needs γ + totality machinery.
     Verdict: W7 stands, with the encoder now field-complete against
     the AST; corpus cx-111 + 6 battery pins guard the audit's
     findings.
+
+    **#772 CLOSED at the addendum (c3c582ff + 7419727c; the owner's
+    highs-ASAP policy applied in-stream; i772-full-gate-2.log
+    GATE-RC=0):** ProgramPathPredicate carries type_name → the shared
+    match_attr gives predicate position the §5.2 rule-14 semantics
+    verbatim ([r 1 1 2] ground truth, RED pre-fix); the emit/ast_json/
+    program_xml round-trips un-lossied (the cx-107 class — re-emission
+    had degraded [@age::int] to [@age]); the identity rider discharged
+    in the same landing (T2 presence-marked) AND the sweep found the
+    PLAN encoder carried BOTH pre-#769 predicate holes (existence ≡
+    absence and type-blind PLAN ADDRESSES — a caching identity; false
+    sharing serves wrong cached rows) — fixed presence-marked, the
+    cx-100 plan byte-pin unmoved, address-baseline 108 unmoved,
+    extraction 1594/9158 (grew with the pins). The string-CXPath
+    engine has no ::T surface (refuses at parse — no silent
+    type-blindness; a future feature, not a bug). cxparse differential
+    741→742 (+1 agree, corpus growth only, the deliberate-update
+    path).
