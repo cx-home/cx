@@ -93,10 +93,25 @@ cp "$out1" "$umbrella"
 echo "── consolidate[$area]: umbrella in place ($umbrella); compile+run"
 log="vcx/target/consolidate_${area}.log"
 if ! v "${V_FLAGS[@]}" test "$umbrella" >"$log" 2>&1; then
-  echo "consolidate_tests: umbrella RED — originals untouched; log: $log"
-  tail -20 "$log"
-  rm "$umbrella"
-  exit 1
+  # #572 classified retry: a stale -usecache layer can inject a duplicate
+  # or missing C symbol; a C compile/link failure gets ONE cache-free
+  # retry (cache-free green proves the artifact). Anything else is real.
+  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' "$log"; then
+    echo "── consolidate[$area]: C compile/link failure — cache-free retry (#572 class)"
+    nocache_flags=()
+    for fl in "${V_FLAGS[@]}"; do [ "$fl" = "-usecache" ] || nocache_flags+=("$fl"); done
+    if ! v "${nocache_flags[@]}" test "$umbrella" >"$log" 2>&1; then
+      echo "consolidate_tests: umbrella RED (also cache-free) — originals untouched; log: $log"
+      tail -20 "$log"
+      rm "$umbrella"
+      exit 1
+    fi
+  else
+    echo "consolidate_tests: umbrella RED — originals untouched; log: $log"
+    tail -20 "$log"
+    rm "$umbrella"
+    exit 1
+  fi
 fi
 echo "── consolidate[$area]: umbrella GREEN ($(grep -c '^fn test_' "$umbrella") test fns); removing ${#inputs[@]} originals"
 git rm -q -- "${inputs[@]}"
