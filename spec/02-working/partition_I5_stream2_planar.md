@@ -207,3 +207,55 @@ needs γ + totality machinery.
      extraction gate ABI transcript byte-identical (1574 Ring-0
      cases) + CLI lane 9038 invocation pairs identical + 17 profile
      refusals; conformance suites all `0 failed`.
+
+4. **W2 CLOSED (2026-08-10; commits 74334090 → 9e210cf6 → a872e8b5
+   (merge) → ed00c158 → 4ea01ca0 → c514bf8a → 4445b782; RULED: L100,
+   U1.1a).** The wave's done-when is MET: the walk landed with its
+   battery (entry 2), the baseline is recorded (entry 2), and every
+   existing non-emitting walker is retired byte-green.
+   - **#711 item 5 DISCHARGED** (9e210cf6): the hover's retired
+     `[on-error]` advertisement removed; negative pin rides
+     test_for_hover_shows_clause_children_not_colon_slots. With items
+     3/4 (W1) and 6 (entry 3), the #711 surface-defect items owned by
+     W1/W2 are all discharged; items 7 (Tier-2 emitter = W7) and 8
+     (shape parity = W3) ride their waves.
+   - **ast_json onto the ONE walk** (9e210cf6): clause rows =
+     metadata only, payload nodes from for_comp_children (walk order
+     preserves source-outranks-expr); output byte-identical, suites
+     green. The W2 non-emitting walker set is COMPLETE.
+   - **design/651-516-partition @ 84c56283 MERGED** (a872e8b5): the
+     applied U1/U2 spec text. Conflict resolved to the design
+     branch's ruled v2.2 letter (this branch's copy was the
+     cwd-collision-committed POSED draft). Implementation of §10.4's
+     new directives stays #762 — NOT this stream.
+   - **#763 DONE** (ed00c158, RULED: U1.1a): `[stream]` → `[lazy]`
+     cutover. Old spelling tombstone-errors at parse (the
+     takewhile/dropwhile retirement rule — silent pattern-generator
+     fallback would change meaning); enum kind `.stream` → `.lazy`
+     (the kind spelling is IN the Tier-2 preimage via c.kind.str();
+     corpus has ZERO hint uses, so the baseline is unmoved — gated,
+     not assumed); parser/eval/emit/xml/ast_json/LSP + code.md
+     §7.2/§7.4 + planar L95 mention + tree-sitter artifacts
+     regenerated (ABI 14) + both tmLanguage + docs-src; three corpus
+     pins (accepted / tombstone / combine-refusal — §7.4's
+     MUST-NOT-combine rule had never been pinned).
+   - **The merge's THREE companion gaps found by this wave's gate and
+     repaired** (4ea01ca0, c514bf8a, 4445b782): the §4.1 registry
+     grew subscribe/monitor at 84c56283 with (i) grammar.ebnf's
+     closed directive-name set left behind
+     (check-code-spec-consistency), (ii) no [directive-doc] entries
+     (directive-docs-check; documented as SPEC'D-not-yet-shipped with
+     no runnable example — the [?meta] precedent), and (iii) six
+     draft-spec cx blocks that cannot parse pre-#762
+     (verify-doc-blocks; annotated `# verify-skip` with stated
+     reasons — the tool's own exemption, first use; un-skip rider
+     filed on #762). The design branch was never full-gated; this
+     branch's gate caught all three on first contact.
+   - **The W2-closing full gate: GATE-RC=0** read from the log —
+     241/242 lanes direct + fabric_nats_bridge_test green on its
+     classified cache-free retry (the standing #572 -usecache
+     artifact); address-baseline 108 Tier-2 addresses byte-identical;
+     extraction gate 1577 Ring-0 cases ABI byte-identical + 9056 CLI
+     invocation pairs identical; directive-docs 80/80;
+     verify-doc-blocks 327/0/6.
+   NEXT: W3 (membership + source refs, L95/L97).
