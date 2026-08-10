@@ -512,3 +512,67 @@ needs γ + totality machinery.
    entry-5 pattern): W5 lands the rewrite set + report + battery; its
    LIVE consumer is W6's store:query executor, one wave later, in this
    same run.
+
+8. **W5 LANDED (2026-08-10; RULED: L96 — the algebra spec's §2 is the
+   normative home per the ruled spec-edit map, which names no code.md
+   section for the equivalences: no approved-spec surgery belongs to
+   this wave).** The done-when is MET: pushdown equivalence pairs green
+   incl. the err case (every APPLIED rewrite verified equivalent by
+   LIVE evaluation — original vs rewritten through the engine,
+   byte-compared); the total-vs-partial negative green; the
+   order-barrier negatives green.
+   - **vcx/code/planar_rewrite.v** — membership-gated (CXER0120)
+     executor rewrites that never move the plan address: σ-pushdown
+     below τ, σ/σ commutation, σ-placement across independent
+     generators/extensions, π pruning of unread γ-unobservable [= …]
+     extensions. Generator REORDERING admits ZERO v1 instances (the
+     algebra is ordered — result order is meaning); σ never crosses λ —
+     within one comprehension λ is position-independent (§7.9's
+     OFFSET/LIMIT reading), so THE λ barrier is the nested-comprehension
+     boundary, DECLINED with the order-fixing-barrier reason. Every
+     rewrite reportable BOTH ways: applied[] + declined[] with
+     err-rule reasons; planar_rewrite_report_node renders the
+     [rewrites …] element for W6's introspection surface.
+   - **Err-observability ground truth probed live and encoded:**
+     [where] guards + generator SOURCES surface whole-comprehension
+     errs (exactly §7.2's normative guard rule); τ/γ KEYS and [= …]
+     binder values carry errs INERTLY (per-frame §9.2 values,
+     observable only where read) — §7.9's "err anywhere" parenthetical
+     over-summarizes its §7.2 citation, NOT touched (no ruling). The
+     analyzer's gates stay deliberately CONSERVATIVE on the inert
+     channels (a decline is always sound; each reason says which side
+     is unproven and why the gate exists).
+   - **Established totality (the stream-16 seam):**
+     planar_established_total proves literals / element construction /
+     binding-path navigation (position + equality attr-test
+     predicates) / equality forms / EBV logic / count / literal-bounded
+     range; STRICT ordered comparison ([>] errs on non-numeric —
+     probed), arithmetic, '~', set ops, directives, nested comps, and
+     ambient PathExpr stay unproven pending stream-16 inference. The
+     near-miss worth recording: operator-headed S-expressions parse as
+     cx_element LITERALS — [> …] almost scored total through the
+     construction arm; the analyzer classifies element heads.
+   - **Battery** (planar_rewrite_test.v, 12 fns): live-eval equivalence
+     of every applied rewrite incl. the yield-err pair; the
+     total-vs-partial σ negative; conservative τ-key + π-prune declines
+     WITH the inert ground truth pinned (so the conservatism is honest,
+     not folklore); σ-across-λ declined + the ((), 7) ground truth; the
+     γ barrier; non-member refusal; report rendering; hint-crossing
+     silence. **Corpus:** program-planar-equiv-001..004 (σ/τ pair,
+     σ-placement pair, the ERR-case pair — the same err both spellings
+     — and the λ-barrier NON-equivalence ground truth).
+   - **#770 gained the ambient-read cousin finding:** §7.8 point 3
+     scopes the ambient exclusion to generator SOURCES, so an ambient
+     PathExpr inside a predicate/key/yield passes membership while
+     breaking the determinism guarantee — flagged for the same ruling;
+     the analyzer's conservatism keeps rewrites off such predicates.
+   - **The W5-closing full gate: GATE-RC=0** read from the log
+     (vcx/target/w5-full-gate.log) — 245-lane suite, the single FAIL
+     (fabric_nats_bridge_test) green on its classified cache-free retry
+     (the standing #572 artifact); address-baseline 108 Tier-2 def
+     addresses byte-identical; extraction gate ABI byte-identical +
+     CLI 1593 Ring-0 cases / 9152 invocation pairs identical (counts
+     grew with the equivalence pins); conformance suites all `0
+     failed`.
+   NEXT: W6 (quoted planar store queries, L99) — the rewriter's and
+   the checker's LIVE store consumer.
