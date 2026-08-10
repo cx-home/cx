@@ -40,6 +40,7 @@ lane_globs() {
     abi-c-test)                    echo 'vcx/* include/* lang/*' ;;
     test-python)                   echo 'vcx/* lang/* include/* conformance/*' ;;
     test-vcx)                      echo 'vcx/* stdlib/* x/* conformance/* third_party/*' ;;
+    test-vcx-columnar)             echo 'vcx/platform/store_columnar* vcx/platform/stdlib_store.v vcx/arrow/* third_party/*' ;;
     test-v)                        echo 'vcx/* third_party/*' ;;
     test-rust)                     echo 'vcx/* lang/* include/*' ;;
     test-go)                       echo 'vcx/* lang/* include/*' ;;
