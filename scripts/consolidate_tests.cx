@@ -248,6 +248,46 @@
             [where [= $all-test-names[$i] $all-test-names[[- $i 1]]]]
             [yield $all-test-names[$i]]]]]
 
+      # ── refusal 3: same NAME, DIFFERENT body (non-test decls) ─────────
+      # The V compiler would refuse these as redefinitions AFTER an apply
+      # attempt; refusing here is earlier and names the offending files.
+      # Name = first word after the decl keyword on the key's first line.
+      # Records: "name\u{0007}file\u{0007}key" sorted by name+key; a name
+      # with ≥2 DISTINCT keys is a conflict.
+      [= $decl-records
+        [$sort
+          [?for [in $p $parts]
+            [in $k [$strings:split [$string $p@keys] [fence]]]
+            [where [not [= $k ""]]]
+            [= $l1 [?let [= $kls [$strings:split $k "\n"]] $kls[1]]]
+            [= $l1x [?if [$strings:starts-with $l1 "pub "] [then [$strings:slice $l1 4 [$strings:length $l1]]] [else $l1]]]
+            [= $is-named
+              [or [$strings:starts-with $l1x "fn "]
+                  [$strings:starts-with $l1x "struct "]
+                  [$strings:starts-with $l1x "enum "]
+                  [$strings:starts-with $l1x "interface "]
+                  [$strings:starts-with $l1x "type "]]]
+            [where $is-named]
+            [= $rest [$strings:slice $l1x [+ [$strings:find $l1x " "] 1] [$strings:length $l1x]]]
+            [= $sp [$strings:find $rest " "]]
+            [= $par [$strings:find $rest "("]]
+            [= $br [$strings:find $rest "{"]]
+            [= $cands
+              [$sort
+                [?for [in $x ($sp, $par, $br)] [where [>= $x 0]] [yield $x]]]]
+            [= $end [?if [= [$count $cands] 0] [then [$strings:length $rest]] [else $cands[1]]]]
+            [= $nm [$strings:slice $rest 0 $end]]
+            [where [not [$strings:starts-with $nm "test_"]]]
+            [yield [$concat $nm [fence] $k [fence] [$string $p@file]]]]]]
+      [= $conflicts
+        [$distinct
+          [?for [in $i [$range 2 [$count $decl-records]]]
+            [= $cur [$strings:split $decl-records[$i] [fence]]]
+            [= $prv [$strings:split $decl-records[[- $i 1]] [fence]]]
+            [where [= $cur[1] $prv[1]]]
+            [where [not [= $cur[2] $prv[2]]]]
+            [yield [$concat $cur[1] " (" $prv[3] " vs " $cur[3] ")"]]]]]
+
       [?if [> [$count $mixed-module] 0]
         [then
           [?let [= $_e [$io:write-line [$env:stderr]
@@ -260,6 +300,13 @@
               [?let [= $_e [$io:write-line [$env:stderr]
                   [$concat "consolidate_tests: REFUSED (area " $area ") -- duplicate test-fn name(s) across inputs (rename or exclude):\n  "
                     [$strings:join $dup-test-names "\n  "]]]]
+                [$env:exit 2]]]
+            [else
+          [?if [> [$count $conflicts] 0]
+            [then
+              [?let [= $_e [$io:write-line [$env:stderr]
+                  [$concat "consolidate_tests: REFUSED (area " $area ") -- same NAME, DIFFERENT body (the compiler would refuse these as redefinitions; exclude a holder or split the area):\n  "
+                    [$strings:join $conflicts "\n  "]]]]
                 [$env:exit 2]]]
             [else
 
@@ -370,4 +417,4 @@
                       test-fns-in=$tfns-in test-fns-out=$tfns-out
                       chunks-deduped=$deduped-total
                       out=$out-path]]]]
-              [$env:exit 0]]]]]]]]]]]]]
+              [$env:exit 0]]]]]]]]]]]]]]]

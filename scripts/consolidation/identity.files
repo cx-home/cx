@@ -1,5 +1,4 @@
 # area: identity
-vcx/tests/identity_tier1_order_semantics_test.v
 vcx/tests/identity_tier2_code_test.v
 vcx/tests/identity_tier2_program_test.v
 vcx/tests/schema_hash_basis_test.v

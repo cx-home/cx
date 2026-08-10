@@ -3,6 +3,5 @@ vcx/tests/async_eager_test.v
 vcx/tests/par_for_test.v
 vcx/tests/par_width_test.v
 vcx/tests/for_comp_closures_mem_test.v
-vcx/tests/sched_duration_test.v
 vcx/tests/vgc_oom_loud_test.v
 vcx/tests/vgc_softlimit_progress_test.v

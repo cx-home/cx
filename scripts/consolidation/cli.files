@@ -2,8 +2,6 @@
 vcx/tests/cli_default_eval_test.v
 vcx/tests/cli_demo_test.v
 vcx/tests/cli_help_test.v
-vcx/tests/cli_run_surface_test.v
-vcx/tests/cli_select_test.v
 vcx/tests/scaffold_cli_test.v
 vcx/tests/tooling_test.v
 vcx/tests/cx_lang_test.v

@@ -1,7 +1,6 @@
 # area: eval_semantics
 vcx/tests/match_eval_test.v
 vcx/tests/modify_eval_test.v
-vcx/tests/predicate_eval_test.v
 vcx/tests/predicate_expr_test.v
 vcx/tests/eval_budget_test.v
 vcx/tests/eval_data_fallback_test.v
