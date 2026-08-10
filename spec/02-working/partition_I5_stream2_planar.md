@@ -128,6 +128,9 @@ needs γ + totality machinery.
      execution. The consolidation lever (fewer test binaries) lands
      next, before W2.
    W1 done-when MET: the §4 skeleton fixtures are green and
-   expressible; code.md §7.2 conformance pinned. NEXT: the #700
-   consolidation, then W2 (the ONE walk + the full-corpus address
-   baseline).
+   expressible; code.md §7.2 conformance pinned. NOTE: the #700
+   consolidation lever was DEFERRED by owner ruling (1a, recorded on
+   the issue with the generator requirements — three ad-hoc attempts
+   failed and hand-merging 241 files mid-stream is the wrong method);
+   the skip manifest half is banked. NEXT: W2 (the ONE walk + the
+   full-corpus address baseline).
