@@ -155,8 +155,15 @@ needs γ + totality machinery.
    pure for-map accepted. #756 filed: the full table-vs-§6.5.x
    vocabulary reconciliation (60+ dispatch heads vs ~50 classified —
    spec-first where the spec list is also silent).
-   REMAINING for W2: the full-corpus Tier-1/Tier-2 address BASELINE
-   (before any further walker retires); the remaining non-emitting
-   walkers (lint ×2, extraction, ast_json, diagram ×2, LSP ×4) onto
-   for_comp_children; #711 items 5 (stale LSP FLWOR) + 6 (window
-   lexer arms, L98); the W2 gate.
+   **BASELINE CAPTURED (1382d2f3):** vcx/tests/runners/address_baseline
+   computes every corpus def's Tier-2 hash (108 defs across all .cxd
+   suites' in-code/in-cx programs) and diffs a recorded manifest;
+   MOVED/VANISHED = loud fail (no re-bless — §C9); make
+   address-baseline-gate in TEST_TARGETS + address-baseline-capture
+   (deliberate refresh for NEW defs only); skip-manifest row added.
+   Captured NOW, before ANY emitter/walker retirement — the W7
+   reference point. The gate rides every future wave.
+   REMAINING for W2: the remaining non-emitting walkers (lint ×2,
+   extraction, ast_json, diagram ×2, LSP ×4) onto for_comp_children;
+   #711 items 5 (stale LSP FLWOR) + 6 (window lexer arms, L98); the
+   W2 full gate (which now includes address-baseline-gate).
