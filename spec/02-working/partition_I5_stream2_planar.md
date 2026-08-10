@@ -134,3 +134,29 @@ needs γ + totality machinery.
    failed and hand-merging 241 files mid-stream is the wrong method);
    the skip manifest half is banked. NEXT: W2 (the ONE walk + the
    full-corpus address baseline).
+
+2. **W2 OPENED (2026-08-09 night) — the ONE walk authored; the first
+   consumer moved; TWO purity-soundness holes closed (7657a5fe, RULED:
+   L100).** vcx/cx/program_for_walk.v: `for_comp_children` — every
+   child node of a comprehension exactly once, in surface order
+   (per-clause source/expr, yield, yield_value), Ring 0. The L100
+   thesis proved on the FIRST probe: the purity walker's hand-rolled
+   arm SKIPPED the [yield-map K V] VALUE node; digging exposed two
+   compounding def-time holes — (i) the body scan ABORTED at the first
+   unclassified directive head, so one unknown head (CXER0234)
+   SHIELDED every later token from the purity check; (ii) ?for-map /
+   ?for-array were absent from the pure-flow table — so ANY
+   declared-pure for-map def with an impure call registered and ran.
+   Fixed: full-pass classification (impurity dominates; first 0234
+   raised post-pass — callers' swallow posture preserved minus the
+   shielding) + the for-family heads classified. De-shielding swept
+   the FULL corpus green (no latent violations in shipped
+   fixtures/stdlib). Pins: impure-value refused / impure-key refused /
+   pure for-map accepted. #756 filed: the full table-vs-§6.5.x
+   vocabulary reconciliation (60+ dispatch heads vs ~50 classified —
+   spec-first where the spec list is also silent).
+   REMAINING for W2: the full-corpus Tier-1/Tier-2 address BASELINE
+   (before any further walker retires); the remaining non-emitting
+   walkers (lint ×2, extraction, ast_json, diagram ×2, LSP ×4) onto
+   for_comp_children; #711 items 5 (stale LSP FLWOR) + 6 (window
+   lexer arms, L98); the W2 gate.
