@@ -576,3 +576,106 @@ needs γ + totality machinery.
      failed`.
    NEXT: W6 (quoted planar store queries, L99) — the rewriter's and
    the checker's LIVE store consumer.
+
+9. **W6 LANDED (2026-08-10; spec surgery 41819146 + impl + the fn-doc
+   fix; RULED: L99).** The done-when is MET: store-query planar
+   fixtures green over local + BOTH wire listeners (G13 family 5:
+   oracle ≡ XSP ≡ gRPC, byte-identical relations incl. scalar rows);
+   deny lanes green (the corpus membership negatives at this consumer —
+   the ruled entry-5 sequencing's W6 half — plus host-cap, authz,
+   slice-extraction, and journal-source refusals, locally and over both
+   wires).
+   - **The executor** (vcx/code/planar_query.v +
+     vcx/platform/store_planar_query.v): `[?quote [?for …]]` lowers to
+     `[cx:expr 'SOURCE']`, so the pipeline is string-as-source — parse
+     → §7.8 membership (typed CXER0120) → STATIC slice extraction on
+     the ONE walk (planar_extract_slices, the L100 which-sources
+     consumer; a non-literal path refuses CXER1709 — the slice set must
+     be static) → the authz-slice layer → the L96 rewriter (its LIVE
+     consumer — admissible rewrites applied pre-execution) → the
+     sandboxed [?eval] posture: the `eval` host-capability gate (quoted
+     code is dynamic execution; proven fail-closed LIVE at the daemon —
+     without --allow-eval the wire op answers CXER0271), the narrowed
+     cap set (write/env/clock/random/subprocess/eval/secret-reveal
+     denied for the dynamic extent), a handles-only isolated env, and
+     the relation MATERIALIZED into the CXPath verb's sequence shape.
+   - **Handle names are FORMAL parameters** (a design correction made
+     honestly mid-wave): the caller-bindings contract died on the
+     module-def env hop (the def body evaluates in the def's own env —
+     the caller's `$s` is unreachable), and the replacement is better:
+     a quoted query is PORTABLE text (plan-addressed, cacheable,
+     wire-shippable — a quote captures no environment), so every
+     store-source handle name binds to THE QUERIED STORE, identically
+     local and remote (transparency by construction); a journal source
+     inside a quoted STORE query refuses CXER1709. Spec respelled in
+     the same wave (store.md §6.2 + the profile row).
+   - **The authz-slice PEP:** opts={authz, actor, tenant, as-of} runs
+     [$authz:check] once per extracted slice ([authz-request [actor …]
+     [capability read] [slice ‹path›] [tenant …]]) BEFORE anything
+     executes; any [deny] refuses CXER4700 CARRYING the deny as cause
+     (fail-closed — a [deny] inside a relation could read as data).
+     authz.md's PEP table gains the store query PEP as the bus PEP's
+     read-side sibling: same check, second call site, the decision
+     still computed in one place.
+   - **explain-query** — the no-execution introspection twin (no eval
+     cap needed): [query-plan plan= [slices …] [rewrites …]]; plan= is
+     CROSS-PINNED equal to cx:plan-address of the same source
+     (store-033), and the L96 applied/declined report rides the same
+     element (store-034) — the honest-reporting surface.
+   - **The wire:** comp= on the XSP query op / comp field 3 on the
+     gRPC Query rpc (path=/comp= mutually exclusive); the SERVER
+     applies membership + both layers and binds the formal handles to
+     the served store; rows ride `[item [body::bytes 0x…]]` FRAMED
+     ast_bin envelopes — the doc-body lane, because the text lane
+     COLLAPSED scalar rows to text nodes (caught by the parity
+     battery's scalar lane, the wire-framing lesson).
+   - **THREE defects found and fixed en route** (fixture-first, each
+     pinned): (i) program_emit re-emitted the bare pattern-generator
+     shortcut as `[in [user]]`, which REPARSES as an element-literal
+     source — construct-and-iterate instead of ambient search, a
+     SEMANTICS-CHANGING round-trip that let a non-member EXECUTE
+     through the quoted pipeline (cx-107 pins the quote round-trip);
+     (ii) planar_membership now refuses a source-less generator at
+     point 3 (the defensive twin); (iii) gRPC error identity —
+     grpc_status_for_cxer reconstructed trailer codes from the parsed
+     number, DROPPING LEADING ZEROS (CXER0120 → CXER120), and the
+     client collapsed unmapped trailer codes to the coarse grpc-status
+     — exact CXER codes now survive VERBATIM cross-transport (the S6.5
+     error-identity posture extended beyond the store band; G13 pins
+     0120 on both listeners). Plus **#771 filed**: eval_code (the
+     one-shot API entry) renders a lazy comprehension result by its
+     iterator HEAD only — an API-vs-CLI divergence discovered when the
+     quoted pipeline appeared to lose a γ group; the executor
+     sidesteps it by materializing.
+   - **Corpus:** store-026..037 (the M5 happy path through the live
+     verb; CXER0271 host-cap deny; ambient/impure/[?eval] CXER0120;
+     non-literal-path + journal-source CXER1709; the formal-handle pin;
+     explain plan cross-pin + slices/rewrites; authz permit + deny;
+     the fn-doc byte-verbatim twin) + cx-107; stdlib/store.cx gains
+     explain-query (+ the query fn-doc respell) — and the W6 gate's
+     first run EARNED ITS KEEP: guide-check caught the explain-query
+     fn-doc example as INVALID CX (a postfix //slice on a call result
+     is an ambient-document path — with data it would silently query
+     the ambient doc) — respelled bind-then-navigate + backed.
+   - **The W6-closing full gate ran TWICE:** run 1
+     (w6-full-gate.log) GATE-RC=2 — fabric_nats_bridge green on its
+     classified cache-free retry (#572) and store_lazy_load green on
+     its classified SERIAL retry (the known socket lane), but
+     guide-check red on the fn-doc example above; fixed + committed.
+     Run 2 (w6-full-gate-2.log): **GATE-RC=0** read from the log —
+     245-lane suite with the single classified #572 retry;
+     test-vcx-code 83/83 (G13 all five families incl. the planar
+     debut); address-baseline 108 Tier-2 def addresses byte-identical
+     (C9 holds through the whole wave); extraction gate ABI
+     byte-identical + CLI 1593 Ring-0 cases / 9152 invocation pairs
+     identical; guide-check 45; directive-docs 80; verify-doc-blocks
+     327/0/6; conformance suites all `0 failed`.
+   W4→W6 all landed in one autonomous run (entries 7–9). NEXT: **W7 —
+   the owner checkpoint** (Tier-2 emitter retirement onto the ONE walk
+   under the C9 byte-identity clause + the L101 ∂ vocabulary). OWNER
+   ITEMS before/with W7: #769 (Tier-2 injectivity false merges — slice
+   bounds + pattern-attr values omitted from the normalized stream;
+   recommended (a): fix baseline-gated BEFORE the retirement so the
+   byte-identity gate references a CORRECT preimage), #770 (λ-count
+   purity + the ambient-read-in-predicate cousin, §7.8 tightening),
+   #771 (informational — eval_code render divergence).
