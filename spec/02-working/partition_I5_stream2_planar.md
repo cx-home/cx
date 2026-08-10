@@ -809,6 +809,61 @@ needs γ + totality machinery.
     the AST; corpus cx-111 + 6 battery pins guard the audit's
     findings.
 
+11. **W8 — STREAM EXIT (2026-08-10 night). THE VERDICT: the stream's
+    mandate is DELIVERED IN FULL — every ruled letter (L93–L101) is
+    implemented, live-consumed, and gated; the C9 exit clause is
+    DISCHARGED at zero movement; no deferrals, no partials, no
+    silently reduced scope.**
+    - **The mandate against the deliveries:** L94 γ complete ($group +
+      the aggregate set; the M5 revenue-by-region worked example runs
+      live — W1). L100 the ONE walk authored + ALL nine-plus walkers
+      retired onto it, the Tier-2 emitter last and byte-identical
+      (W2/W7). L95 the six-point loud membership test + the #770
+      tightening (λ-count purity, all-slot ambient exclusion — W3/W7).
+      L97 source refs + the flat provenance-bearing relation +
+      columnar/row shape parity (W3). L93 the canonical plan form +
+      plan address, the checker's first runtime consumer (W4). L96 the
+      reportable equivalence set with the err-totality rule,
+      live-eval-verified (W5). L99 quoted planar store queries over
+      local + BOTH wire listeners with dual-layer authorization (W6).
+      L101 the ∂ vocabulary + delta rules, maintained ≡ recompute
+      (W7). L98 windows stayed OUT (the lexer arms died — W2).
+    - **The exit clause (C9): DISCHARGED.** Full-corpus Tier-2
+      addresses byte-identical to the W2 baseline (108 defs @
+      1382d2f3) through every wave INCLUDING the #769 preimage
+      correction, the W7 retirement, and the audit continuation — the
+      no-re-bless rule was never exercised because nothing ever
+      moved. Tier-1 identity rode the extraction gate's canonical-
+      byte identity (1594 Ring-0 cases / 9158 CLI pairs byte-identical
+      at exit — strictly stronger than address comparison).
+    - **Defects: 9 fixed en-route, 3 filed.** Fixed with fixtures
+      first: #753 (structural element equality), the frame-set
+      pipeline rebuild (chained barriers), the λ-count silent no-op,
+      the bare-pattern emit round-trip (cx-107), the source-less
+      generator arm, the gRPC trailer identity, #769 (+5 audit
+      holes), #770 (+ the cousin), #772 (+ the plan-tier predicate
+      holes). Filed and OPEN: #771 (eval_code head-only render,
+      informational), #756 (purity-table reconciliation, pre-existing),
+      plus the owner-scheduled boundary items below.
+    - **#711: all eight items discharged** — 1/2 at W1 (L94), 3/4 at
+      W1, 5/6 at W2, 7 at W2+W7 (the retirement complete), 8 at W3
+      (L97 parity). #674 and #711 close with this entry.
+    - **The exit gate + the exit-merge:** the full gate on the final
+      stream tip and the --no-ff exit-merge to
+      design/651-516-partition are recorded below with their receipts
+      (the merge IS an exit step — the stream-4 lesson applied; the
+      design branch tip 84c56283 was already merged in at W2, so the
+      exit-merge carries no foreign deltas).
+    - **Handed to the boundary (NOT this stream's scope, surfaced
+      loud):** the #700 consolidation lever (owner-dated to this
+      boundary, generator requirements on the issue); the post-exit
+      highs fix lane (#722, #702, #724, #713) on the design branch
+      per the highs-ASAP policy; the V-fork campaign (own campaign
+      per the same ruling); stream 3 (live modes, #675) starts on its
+      own branch and consumes the ∂ vocabulary + the quoted planar
+      form.
+
+    **Entry-10-addendum detail (#772, kept in place):**
     **#772 CLOSED at the addendum (c3c582ff + 7419727c; the owner's
     highs-ASAP policy applied in-stream; i772-full-gate-2.log
     GATE-RC=0):** ProgramPathPredicate carries type_name → the shared
