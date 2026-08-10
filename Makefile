@@ -1432,8 +1432,8 @@ bench-cxparse: build-vcx
 
 # T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
 # surface additions (FLWOR clauses, ?fn calls, partial application,
-# pipeline/arrow operators, ?match, regex via RE2, range, tumbling
-# windows). Output is parsed by scripts/run_bench_json.py into the
+# pipeline/arrow operators, ?match, regex via RE2, range).
+# Output is parsed by scripts/run_bench_json.py into the
 # T1.* benchmark keys for the V7 perf regression gate.
 bench-eval: build-vcx
 	v run vcx/tests/runners/eval_features_bench.v
