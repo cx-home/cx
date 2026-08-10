@@ -72,6 +72,7 @@ lane_globs() {
     test-profile-gate)             echo 'vcx/* conformance/* stdlib/* third_party/*' ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/*' ;;
+    address-baseline-gate)         echo 'vcx/* conformance/*' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }

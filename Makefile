@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate address-baseline-gate
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect
@@ -626,6 +626,21 @@ test-extraction-gate: build-vcx-dev
 # (~75x slower large parses through the ABI than in the cx binary).
 # The gate churns each artifact past the pacer goal under VGC_GCTRACE=1
 # and requires at least one gc cycle. Runs on both Ring artifacts.
+# ── address-baseline-gate (#651/#516 stream-2 C9; RULED: L100) — the Tier-2
+# byte-identity guard for the ONE-walk retirement. Recomputes every corpus
+# def's Tier-2 address and diffs against the recorded baseline
+# (vcx/tests/runners/address_baseline/tier2_addresses.txt). A moved or
+# vanished address FAILS — no re-bless is available to this stream. Refresh
+# the baseline deliberately with `make address-baseline-capture` only when
+# NEW corpus defs are added (never to absorb a move).
+.PHONY: address-baseline-gate
+address-baseline-gate:
+	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
+
+.PHONY: address-baseline-capture
+address-baseline-capture:
+	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v --capture
+
 .PHONY: abi-gc-gate
 abi-gc-gate: build-vcx-dev
 	@$(MAKE) -C vcx build-data-dev
