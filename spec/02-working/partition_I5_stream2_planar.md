@@ -90,3 +90,44 @@ needs γ + totality machinery.
    REMAINING for W1: #753 pin-fixtures + fix + corpus triage; the §4
    revenue/top-SKU corpus cases; [fail-fast]/[on-error] repairs
    (#711); W1 gate (unpiped, GATE-RC).
+
+   **W1 LANDED (2026-08-09 late; commits 464af59a → 8d36cf12 →
+   0ef78a37 → 66226c0a; GATE-RC=0 — code 83/83, suite 240/241 + the
+   standing #572 classified retry green in-log).** Delivered beyond
+   the opening scope:
+   - **#753 FIXED** (0ef78a37): element equality STRUCTURAL (names;
+     attrs as a name-keyed set under scalar rules; children pairwise
+     in document order; decimal 1.10=1.1 survives inside elements) —
+     ZERO corpus fallout, pinned by program-eq-element-020.
+   - **SECOND ENGINE DEFECT found+fixed** (same commit): the buffered
+     [?for] engine recursed PER-FRAME after each barrier, so a second
+     order-by/group-by saw one frame at a time — chained order-by
+     silently dropped the second key (a fixture PINNED that no-op,
+     contradicting its own note — honestly re-pinned),
+     group-then-order (top-SKU!) was impossible, order-then-group made
+     singleton groups. Rebuilt as the FRAME-SET pipeline
+     (eval_for_buffered_frames): every barrier operates on the whole
+     surviving set; single-barrier behavior byte-identical.
+   - **[fail-fast] implemented** (66226c0a; grammar [129r], #711 item
+     3 — it had silently MIS-PARSED as a pattern-generator): new
+     .fail_fast clause kind through parser/AST/emit/xml/json;
+     sequential no-op by contract; under [par] short-circuits on the
+     FIRST observed err (drain queued work, discard in-flight).
+     [on-error] retirement verified already refusing + pinned (item 4
+     needed no work).
+   - **Corpus:** 9 new pins — M5 revenue-by-region (the ruled worked
+     example, live), top-SKU (γ→τ→λ across groups), the aggregate set
+     over $group (sum/max/min/avg/count/distinct), order-then-group
+     composition, structural element equality, fail-fast ×2; 1 honest
+     re-pin (multikey order-by).
+   - **#700 side-landing (owner ruling 1a at the gate-cost review):**
+     the lane-input skip manifest (scripts/test_changed.sh +
+     `make test-changed BASE=`, deny-by-default, infra-change
+     short-circuit, --dry-run; the full gate stays MANDATORY at wave
+     exits). Measured basis: 849 CPU-min compile vs 8 CPU-min test
+     execution. The consolidation lever (fewer test binaries) lands
+     next, before W2.
+   W1 done-when MET: the §4 skeleton fixtures are green and
+   expressible; code.md §7.2 conformance pinned. NEXT: the #700
+   consolidation, then W2 (the ONE walk + the full-corpus address
+   baseline).
