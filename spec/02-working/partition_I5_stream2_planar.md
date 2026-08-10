@@ -679,3 +679,96 @@ needs γ + totality machinery.
    byte-identity gate references a CORRECT preimage), #770 (λ-count
    purity + the ambient-read-in-predicate cousin, §7.8 tightening),
    #771 (informational — eval_code render divergence).
+
+10. **W7 CLOSED (2026-08-10; commits c39af096 → e6bb1f8b → 7166fa67 →
+    40db0925 + this entry; the owner checkpoint executed under the
+    standing acceptance ruling — #769/#770 verified against the
+    long-term-best bar and RULED on the issues, the #766/767/768
+    recording precedent).** The done-when is MET both ways: **the exit
+    clause is DISCHARGED — full-corpus Tier-1+Tier-2 addresses
+    byte-identical vs the W2 baseline (108 defs @ 1382d2f3) through
+    BOTH the #769 preimage correction and the retirement, zero
+    movement, no re-bless touched** — and the delta-rule fixtures are
+    green (maintained γ ≡ recompute, live-eval-verified).
+    - **#769 RULED (a) + STRENGTHENED, fixed, CLOSED** (c39af096): the
+      two named arms grew two same-class holes found by checkpoint
+      probe — pattern-attr type-test TYPE NAMES (`@role::str` ≡
+      `@role::int`) and path-predicate attr KIND (`[@k]` ≡ `[@!k]`) —
+      one defect class, one fix: slice axis bounds (per-axis kind +
+      presence-marked start/stop/step through the normal emit
+      pipeline — alpha still collapses), pattern-attr values +
+      type-test names, predicate attr_kind (marked off the .existence
+      default). Every addition presence-marked, so unaffected defs
+      keep their exact pre-fix bytes: **corpus blast radius ZERO**
+      (baseline green before AND after — the (a) text's re-bless
+      provision was never needed). 7 distinct-hash pins RED pre-fix +
+      the byte-shape guard + corpus cx-108 at the computation-id
+      consumer. DISCOVERY → **#772**: type-test CXPath attr predicates
+      are type-blind at EVAL (the parser drops ::T building
+      ProgramPathPredicate — `[@age::int]` matches any `@age`); filed
+      with the identity rider (when behavior diverges, identity must
+      too, same commit, baseline-gated).
+    - **#770 RULED (a) + the cousin ruled WITH it, fixed, CLOSED**
+      (e6bb1f8b, RULED: 770(a)): code.md §7.8 point 4 gains λ clause
+      counts (free-name counts stay members — §7.9 plan parameters;
+      pure computed counts stay members) and the point-3 ambient
+      exclusion is NOT source-slot-scoped — an ambient PathExpr
+      ANYWHERE (clause exprs, λ counts, computed sources, yields)
+      refuses point 3: a document dependency the source set cannot
+      name admits no slot-scoped carve-out. planar_algebra.md L95
+      records the tightening. Checker: the λ arm runs full
+      planar_body_expr (5→3→4 refusal order);
+      planar_find_ambient_path covers every child-bearing node kind;
+      computed sources get the nested-ambient scan. 9 battery fns +
+      corpus cx-109/cx-110 at the plan-address consumer.
+    - **The Tier-2 retirement** (7166fa67, RULED: L100): the LAST
+      identity-bearing traversal rides for_comp_children — payload
+      nodes from the walk (its order IS the emission order), clause
+      metadata (kind — in the preimage via c.kind.str() — and bind)
+      from the clause rows, metadata-only hint clauses flushed in row
+      order mid-stream and trailing. The nine-plus walker retirement
+      is COMPLETE. 5 byte-pins captured on the PRE-retirement emitter
+      pin the stream verbatim (M5 γ, interleaved + trailing hints,
+      for-map yield-value, bare pattern); the baseline is the
+      full-corpus proof.
+    - **∂ (40db0925, RULED: L101):** vcx/code/planar_delta.v authors
+      the vocabulary once for streams 3/4 — input [insert]/[retract]
+      at INDEPENDENT (source-ref) generators; output = the sequential
+      edit script [insert pos=]/[retract pos=]/[regroup pos=] in
+      final coordinates, or the honest [recompute reason=…] marker
+      (never a wrong ∂). Rules as ruled: σ/π stateless; ⋈ new-row ×
+      opposite-side state in nested-loop (lex source-ordinal) order;
+      γ group state over MONOTONE deltas — retract-reaching-γ AND a
+      first-appearance reorder both answer [recompute] loudly (L94
+      group order is first appearance; the in-place rule cannot
+      hold). planar_incremental_membership = planar member + sequence
+      shape + no τ/λ + one γ/no post-γ clauses (v1, loud) + EVERY
+      [where] predicate ESTABLISHED TOTAL (the M6 err-totality
+      amendment) — every exclusion a typed loud reason. Engine REUSED
+      (eval_node/match_pattern/nodes_equal + the L94 $group
+      construction replicated); battery (12 fns, green first run)
+      verifies every maintained result ≡ ENGINE recompute AND replays
+      every ∂ script onto the prior relation. journal.md gains the ∂
+      cross-ref (stream appends = the natural monotone input) per the
+      ruled spec-edit map.
+    - **The W7-closing full gate ran TWICE:** run 1
+      (w7-full-gate.log) GATE-RC=2 — spec-freeze-gate red on
+      e6bb1f8b's predecessor: the token regex requires an
+      ALPHANUMERIC after `RULED:` and `#770(a)` opens with `#` (the
+      earlier `RULED: #768(a)` commits passed only because they
+      touched no normative spec); the commit message reworded to
+      `RULED: 770(a)` via local-only history rewrite (5afba380 →
+      e6bb1f8b; aa3e844c/de1766ec replayed as 7166fa67/40db0925 —
+      nothing had been pushed). Run 2 (w7-full-gate-2.log):
+      **GATE-RC=0** read from the log — 246-lane suite, 245 direct +
+      fabric_nats_bridge green on its classified cache-free retry
+      (the standing #572 artifact); test-vcx-code 83/83;
+      **address-baseline 108 Tier-2 def addresses byte-identical**;
+      extraction gate ABI transcript byte-identical (1593 Ring-0
+      cases, 4576018 bytes) + CLI 9152 invocation pairs identical +
+      17 profile refusals; guide-check 45; directive-docs 80;
+      verify-doc-blocks 327/0/6.
+    NEXT: **W8 — exit**: ledger verdict, the stream exit-merge to the
+    design branch (the merge IS an exit step — do NOT repeat the
+    stream-4 miss), #674 + #711 closed with evidence; the #700
+    consolidation lever is dated for this boundary.
