@@ -372,3 +372,66 @@ needs γ + totality machinery.
    battery); source-ref fixtures green (store-023/024,
    journal-076/077); shape parity pinned (#711 item 8 discharged).
    NEXT: W4 (plan form + plan address, L93).
+
+6. **THE STORE-QUERY CORRECTNESS INTERLUDE (2026-08-10; commits
+   37da2409 → f489844d → d3e40820; RULED: owner rulings 2026-08-10 on
+   #766, #767, #768 — recorded on the issues).** The
+   owner ruled on every W3 discovery the same day, no deferrals; the
+   three interlock (#768's anchoring redefines which paths are
+   column-projectable), so they land as ONE correctness landing on the
+   stream branch before W4.
+   - **#768 (a) — document-node anchoring** (spec 37da2409, impl
+     f489844d): store.md §12 + the walker — `/x` selects the ROOT
+     element when named x; `//x` is descendant-or-self with the root
+     INCLUDED. Per-entity documents (the root IS the entity) are
+     queryable by name — the planar source-scan shape — with no
+     wrapping convention. Cutover-first: `/meta/src` over a
+     rec-rooted doc is now honestly EMPTY (absolute paths address the
+     root, never silently its children); store-022 respelled
+     (/rec/meta/src + //meta/src + the empty absolute), store-025
+     pins the per-entity capability (//order and /order match
+     `[order …]` roots; //order/line as a planar source), store-024
+     (the ruled M5 example) respelled to NATURAL unwrapped per-order
+     docs — same ruled numbers. Journal query is its own surface
+     (entry-context matcher), unmoved per the ruling's scope note.
+   - **#766 + #767 — the exactness machinery IS the fix** (the
+     owner's correction of this session's first recommendation, which
+     had narrowed the envelope and parked soundness behind a future
+     proof): the schema pass — which already parses every live doc —
+     derives the FULL Q6 preconditions: the deep-name set (root names
+     + names deeper than depth 1 → occurs-only-top-level for the
+     first path segment), a per-column EXACTNESS bit (any widening or
+     coerced source → non-exact), duplicate top-level names and
+     duplicate record sub-names force-complex. Decimal scalars
+     (exact-string payloads since I1 stream 11 — the root cause of
+     the red lane) project as float columns, coerced → non-exact by
+     construction; the previously-red promotion test passes on its
+     ORIGINAL assertion. The pushdown answers ONLY descendant forms
+     through top-only + exact + promoted columns (absolute forms
+     address the per-doc root — not a column); every failed
+     precondition declines to the row scan. Envelope battery: four
+     decline classes each paired with the row scan's correct answer
+     through the live verb + the byte-identity survivor pin.
+   - **The lane can never rot silently again:** test-vcx-columnar
+     joins TEST_TARGETS with the #318 absent-prerequisite posture
+     (pkg-config guard → SKIP-with-reason, verified both ways) + a
+     test_changed.sh row.
+   - Also this session: the owner re-confirmed the U1 letter's
+     recommended set on #761; the W3 membership-consumer sequencing
+     RULED (a) (entry 5); #700's consolidation lever scheduled for
+     the W8→stream-3 boundary (a dated schedule, recorded on the
+     issue).
+   - **The interlude-closing full gate: GATE-RC=0** read from the log
+     (vcx/target/w3i-full-gate.log; verdict read AFTER the run — the
+     entry-5 lesson applied) — the columnar lane ran green INSIDE the
+     gate for the first time (its TEST_TARGETS debut, plus the
+     in-suite pass); 243-lane 242 direct + fabric_nats_bridge green on
+     its classified cache-free retry (the standing #572 artifact);
+     test-vcx-code 83/83; address-baseline 108 Tier-2 def addresses
+     byte-identical (the anchoring + exactness changes move no def
+     address); extraction gate ABI byte-identical + CLI 1584 Ring-0
+     cases / 9098 invocation pairs identical (the counts GREW with the
+     interlude's new pins). #766 and #767 close with this landing;
+     #768's ruled cutover is live.
+   NEXT: W4 (plan form + plan address, L93) — the checker's first
+   runtime consumer.
