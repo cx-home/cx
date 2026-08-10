@@ -167,3 +167,42 @@ needs γ + totality machinery.
    extraction, ast_json, diagram ×2, LSP ×4) onto for_comp_children;
    #711 items 5 (stale LSP FLWOR) + 6 (window lexer arms, L98); the
    W2 full gate (which now includes address-baseline-gate).
+
+3. **W2 CONTINUED (2026-08-09 night → 2026-08-10; commits 7c816081,
+   84421052, a14c60d6 — this entry back-fills the ledger gap those
+   commits left across the session handoff; RULED: L100, L98).**
+   - **The non-emitting walkers retired onto `for_comp_children`**
+     (7c816081): lint ×2 (both arms), diagram ×2 (code_diagram +
+     diagram), LSP ×5 (content + features + infinite/match/modify/
+     string-list diagnostics) — with lsp_for_walk_test.v's battery
+     (the walkers HAD diverged: every LSP diagnostic walker stopped
+     before yield_value, exactly L100's prediction). Remaining
+     hand-rolled non-emitting walker: **ast_json.v only** (the W2
+     tail). code_identity.v is the Tier-2 EMITTER = W7, untouched.
+     "Extraction" from entry 2's remaining list does not exist yet as
+     a consumer — L100 names it (which-sources); it is AUTHORED ON
+     the walk at W6 (the authorize-before-execute slice set), not
+     migrated. Not a scope cut: nothing exists to move.
+   - **#711 item 6 DISCHARGED** (7c816081): the `for-tumbling` /
+     `for-sliding` lexer arms removed (parser.v is_cx_eval_name;
+     rationale comment in place — an unreserved head raises the same
+     CXER0100, so no loudness is lost; pinned by
+     test_window_heads_refused_like_any_unknown_directive).
+   - **#711 item 5 NEAR-DISCHARGED** (7c816081 + a14c60d6): the
+     colon-slot FLWOR surface is gone (hover negative pins: no
+     `:return`, no `tumbling`); the fabricated ?xpath/?xquery/?cxpath
+     completions retired; ?include/?eval/?cx trued; the
+     snippets-must-parse gate (test_completion_snippets_parse).
+     RESIDUAL found at takeover review: lsp_content.v's ?for hover
+     still lists the RETIRED `[on-error …]` as a live clause child
+     (the parser refuses it with the §9.3 guidance) — the same
+     stale-advertising class; fixed in the next commit with a hover
+     negative pin.
+   - 84421052: the NO-ADR-CITATION gate's self-trip on the #700 skip
+     manifest fixed.
+   - **Full gate run on a14c60d6** (the swept commit had carried only
+     its focused gate): **GATE-RC=0** read from the log —
+     address-baseline 108 Tier-2 def addresses byte-identical;
+     extraction gate ABI transcript byte-identical (1574 Ring-0
+     cases) + CLI lane 9038 invocation pairs identical + 17 profile
+     refusals; conformance suites all `0 failed`.
