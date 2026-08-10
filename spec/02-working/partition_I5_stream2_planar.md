@@ -339,7 +339,9 @@ needs γ + totality machinery.
      quoted acceptance), which is where the CORPUS-level membership
      negatives land — at W3 the negatives are pinned at the V battery
      level (typed err values verified end-to-end). Flagged for owner
-     review in the session summary.
+     review in the session summary. **RULED (a) 2026-08-10:** the
+     sequencing stands — corpus negatives ride W4/W6 with the
+     consumers.
    - **Deviation noted honestly:** the branch was pushed once mid-wave
      (after e0c56bc9) with focused suites green but before this
      wave-closing full gate — the standing rule wants the full gate
