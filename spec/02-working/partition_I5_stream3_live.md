@@ -80,3 +80,47 @@ exists; exit alone, as always.
 
 (entries append here; each wave = one entry with commits + gate
 verdict)
+
+1. **STREAM OPENED + W1 SPEC-SIDE LANDED (2026-08-10, Fable 5 —
+   contract authoring per the model policy; bulk V implementation
+   hands to an Opus 5 session).** Branch cut at 3760e86b; ledger
+   authored (e68d8925). The pack spec `spec/02-working/live.md`
+   AUTHORED (RULED: 122–154 — the §9 spec-edit map's "new live.md";
+   02-working pending owner-only G3 at the exit review): concrete
+   signatures for the three verbs PLUS the poll-substrate companions
+   `[$live:advance]` (the maintenance tick; sched-driven) and
+   `[$live:read]` (`[snapshot [head-set …] ROW…]` — {at-seq} for a
+   multi-source fold IS a head-set); the L99 pipeline reused verbatim
+   with ONE deliberate widening (journal sources admitted alongside
+   store sources; `$bind` map — formal names → handles — because live
+   queries span source sets, where store:query binds all to the one
+   queried store); ∂ frames = the planar_delta output vocabulary
+   verbatim incl. the `[recompute reason=…]` honest-marker form, with
+   the empty-cursor exception (exact full-relation-as-inserts for
+   EVERY comprehension = quartet leg 1); head-set cursor reuses the
+   profile §5.1 `[head-set [s source= pos=]…]` spelling (one
+   vocabulary); the observe handle = `[live-sub]` conforming to
+   delivery §4 with rung= always reported (native sources
+   :complete-ordered; mixed sets report the WEAKEST rung); consumption
+   seam pinned: stream 3 implements [?receive]/[?select]/[?close]
+   arms for live-sub (first live consumer — no-consumer seam
+   forbidden), #762 generalizes; error codes CXER5070–5078 assigned
+   (5079–5089 reserved), reuse pinned (CXER0120/4700/1114 never
+   duplicated). DECISIONS made at pack-spec latitude (within the
+   ruled design, recorded here): the advance/read companions exist
+   (live_modes §1's poll-shaped substrate demands an explicit tick —
+   a maintained fold with no driver is a stub); maintenance=
+   "incremental" opt turns the loud recompute into typed CXER5076
+   for callers that must not pay recompute; changes-since outside
+   the incremental sub-fragment answers the [recompute]+full-relation
+   form (honest, strategy-free semantics: result@head ⊖
+   result@cursor as an edit script).
+   REMAINING for W1 (the Opus session): stdlib/live.cx pack surface +
+   stdlib_bundle.v registration + stdlib.md §3 row;
+   vcx/platform/stdlib_live.v prims (changes-since first: the L99
+   pipeline + $bind resolution + source-delta pull from store:log/
+   journal-since + planar_delta feed + head-set round-trip);
+   CXER5070/5071/5072 registry rows in code.md as first implemented;
+   the W1 fixture families (quartet leg 1; head-set round-trip;
+   ∂/recompute shape parity); the W1 gate (unpiped, GATE-RC from the
+   log).
