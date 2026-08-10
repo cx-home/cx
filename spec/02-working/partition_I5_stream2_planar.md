@@ -259,3 +259,114 @@ needs γ + totality machinery.
      invocation pairs identical; directive-docs 80/80;
      verify-doc-blocks 327/0/6.
    NEXT: W3 (membership + source refs, L95/L97).
+
+5. **W3 LANDED (2026-08-10; commits c1c9def5 → 3ebb415a → e0c56bc9 →
+   a69dbbae → 23984239 → f6791544; RULED: L95, L97).** All four wave
+   items delivered; three discovered defects filed (#766/#767/#768).
+   - **Spec surgery** (c1c9def5): code.md gains §7.8 (the six-point
+     membership test, consumer-relative, typed refusal) +
+     `cx-err:CXER0120 E_NOT_PLANAR` allocated in the (entirely unused)
+     for-comprehension error band with its §9.5.1 canonical message
+     `comprehension is not planar: ‹reason›`; store.md §6.2 gains the
+     `source` def + the flat relation as query's normative shape, §12
+     the both-executors-identical-relation sentence, §14 the fixture
+     family, capability tables; journal.md §3.3 gains `source` (E3
+     position = per-stream head-seq) + table rows; the XSP profile's
+     query row respells per-MATCH; columnar spec Q6 gains the parity
+     sentence. check-code-spec-consistency green.
+   - **The L97 flat relation shipped end-to-end** (3ebb415a): one
+     `[result doc= source= MATCH]` tuple per MATCH (`source` =
+     `<store-url>#<cxpath>`), doc-keyed nesting retired cutover-first.
+     ONE row scan (store_query_scan) under query; the columnar
+     pushdown returns the same (hash, match) pairs; the wire carries
+     tuples VERBATIM both directions (the xsp/grpc client rebuild
+     loops collapsed); remote answers REBASE `source=` to the caller's
+     handle URL (caller-coherent provenance; the G13 comparator
+     normalizes the legitimately-differing store-URL half and pins
+     each handle's own prefix); go/python/rust bindings track the
+     `[result doc=` marker and dedup to their documented per-doc hash
+     lists; w5 negatives honestly re-pinned per-match (+ provenance
+     pins); corpus store-020/021; docs re-recorded live. **#711 item 8
+     DISCHARGED** — the shape-parity pin (same store, same query, both
+     executors → byte-identical relation incl. the live verb) rides
+     store_columnar_test, verified green via VTEST_ONLY_FN against
+     that lane's PRE-EXISTING unrelated failure.
+   - **DISCOVERIES → issues:** #766 (the out-of-gate test-vcx-columnar
+     lane is red on a clean tree: decimal scalars promote as
+     untyped/string columns — the decimal-exactness work moved the
+     scalar payload out of the f64 arm; float columns silently
+     degrade); #767 (columnar pushdown answers OUTSIDE its
+     provably-exact envelope: descendant axis answered root-anchored,
+     type-widening changes values, duplicate top-level names collapse
+     — restriction needs a Q6 ruling since the approved columnar spec
+     blesses `//field` pushdown); #768 (the doc ROOT element is
+     unaddressable by query/source — root-as-context convention;
+     per-entity docs must wrap, which bites the planar scan pattern;
+     lettered options + recommendation on the issue).
+   - **Row-path multi-segment fix** (e0c56bc9, fixture-first): the
+     scan matched the LAST segment's name only (`/meta/src` answered
+     with root-level `src`); store_query_plan/store_query_walk now
+     walk stepwise (child/descendant per parsed form), refusing
+     (CXER1709) non-name tests, foreign axes, and non-final
+     predicates. store-022 pinned the correct answers BEFORE the fix
+     (verified failing). modify-doc's select= untouched.
+   - **The L97 source forms** (a69dbbae): `[$store:source $store
+     PATH]` (Ring-1 def → Ring-2 store_source; payloads of the query
+     tuples, all three execution paths shared) and `[$journal:source
+     $journal STREAM]` (retained committed entries, since-1, :default
+     when omitted). Corpus: store-023 (fn-doc-backed), **store-024 =
+     the ruled M5 revenue-by-region worked example LIVE over a real
+     store (east=125, west=12 — the planar_algebra.md numbers)**,
+     journal-076/077; guide-check 45 modules green.
+   - **The six-point membership test authored** (23984239):
+     vcx/code/planar_membership.v — planar_membership(node) →
+     ?PlanarRefusal + planar_refusal_err (typed CXER0120, message
+     names the violated point). Sources must name their roots:
+     canonical source-ref calls / nested planar comps (recursive,
+     inheriting enclosing locals — the correlated form) / pure
+     computed expressions over clause-ORDERED earlier bindings
+     (pattern-bind captures collected); ambient (bare patterns, CXPath
+     values, enclosing-scope reads) + open-end ranges refused; purity
+     = the shipped §6.5 walk verbatim; [?eval]/[?with-scope] refused
+     BY NAME before purity (with-scope is pure-flow — the name check
+     is the only guard); $_position/$_last in yield refused;
+     par/lazy/ordered members-but-ERASED. Battery: 8 member pins
+     (incl. the M5 example) + 16 refusal pins (incl. the impure
+     yield-map VALUE — the W2 lesson) + the err-value shape.
+     **Consumer timeline (sequencing, not a scope cut):** the checker
+     is the shared foundation; its RUNTIME consumers arrive at W4
+     (plan-form/plan-address gates on membership) and W6 (store:query
+     quoted acceptance), which is where the CORPUS-level membership
+     negatives land — at W3 the negatives are pinned at the V battery
+     level (typed err values verified end-to-end). Flagged for owner
+     review in the session summary.
+   - **Deviation noted honestly:** the branch was pushed once mid-wave
+     (after e0c56bc9) with focused suites green but before this
+     wave-closing full gate — the standing rule wants the full gate
+     before EVERY push; the wave-closing gate below validates the
+     cumulative state.
+   - **The W3-closing full gate ran TWICE and the first run earned its
+     keep.** Run 1 (w3-full-gate.log): GATE-RC=2 — the
+     fabric_nats_bridge -usecache C-compile artifact went green on its
+     classified cache-free retry (the standing #572 class), but
+     store_g13_parity_test failed for REAL: its seed docs' ROOTS were
+     the queried `[user …]` elements, unreachable by `//user/name`
+     under the correct stepwise walk — the fixture had been riding the
+     retired last-segment-only defect (masked by the root-as-context
+     convention, #768). Repaired at f6791544 (docs wrap their
+     entities; the test's contract is cross-wire parity, not path
+     semantics). Run 2 (w3-full-gate-2.log): **GATE-RC=0** read from
+     the log — 243-lane 242 direct + fabric_nats_bridge green on its
+     classified cache-free retry; test-vcx-code 83/83 (g13 green);
+     address-baseline 108 Tier-2 def addresses byte-identical (C9
+     holds — the flat relation, the source builtins, and the checker
+     move no def address); extraction gate ABI transcript
+     byte-identical (1577 Ring-0 cases) + CLI 9056 invocation pairs
+     identical + 17 profile refusals; directive-docs 80;
+     verify-doc-blocks 327/0/6; conformance suites all `0 failed`
+     (the stdlib store/journal suites incl. the seven new W3 pins ride
+     code_eval_fixtures_test, green).
+   W3 done-when MET: membership negatives green (typed errors, the
+   battery); source-ref fixtures green (store-023/024,
+   journal-076/077); shape parity pinned (#711 item 8 discharged).
+   NEXT: W4 (plan form + plan address, L93).
