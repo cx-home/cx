@@ -435,3 +435,80 @@ needs γ + totality machinery.
      #768's ruled cutover is live.
    NEXT: W4 (plan form + plan address, L93) — the checker's first
    runtime consumer.
+
+7. **W4 LANDED (2026-08-10; spec surgery a110e4ae rode ahead of the
+   interlude; impl commit follows entry 6's tip; RULED: L93).** The
+   done-when is MET: plan-form pair-cases green — two spellings → one
+   plan address ($x-vs-$y, hint placement/width, limit-vs-take, λ
+   literal composition, order-by asc default, nested-comp respelling),
+   with the E1 distinction preserved (the encodings collapse while the
+   texts/hashes stay distinct — pinned at both the V battery and the
+   corpus).
+   - **vcx/code/planar_plan.v** — the membership-GATED canonical plan
+     emitter + `plan:<algo>:<hex>` address (the §7.8 checker's FIRST
+     runtime consumer; typed CXER0120 refusals naming the violated
+     point). Deliberately separate from the byte-frozen T2Emitter.
+     Normalization per §7.9: semantic clause order preserved; hints
+     erased (presence, position, [par N] params); the canonical λ tail
+     (drops before takes, limit→take collapse, consecutive non-negative
+     literal drops SUM / takes MIN, drop-0 erased; negative-literal and
+     expression counts break folding runs — folding across one would
+     equate an erring spelling with a non-erring one); de Bruijn
+     binders with presence markers (clause binds, pattern captures,
+     let/fn/match — levels stay recoverable, so the encoding stays
+     injective); free names verbatim (plan parameters); explicit asc.
+     **The $group/NAME discovery:** §7.2 names γ columns after BINDER
+     names, so the M5 pair case is unreachable unless the `$group/NAME`
+     first step alpha-resolves to its binder's level — implemented
+     confined to the grouped comprehension's own binder segment (a
+     nested reader of an enclosing $group keeps the step verbatim:
+     missed collapse possible, cross-comp merge impossible).
+   - **cx:plan-address** shipped (stdlib_cx.v dispatch, the
+     computation-id dispatch-only precedent; CXER0120/4100/4101); the
+     `plan:` lead refused by the tagged-address reader (pinned).
+   - **ENGINE FIX ridden by the wave (fixture-first, red on the shipped
+     binary):** grammar [129j-l] admits any ProgramExpr as a λ count,
+     but the engine honored INT LITERALS ONLY — every other count was a
+     SILENT NO-OP (`[take [+ 1 1]]` yielded everything), and negative
+     literals were silently skipped too. λ counts now evaluate ONCE at
+     comprehension entry in the enclosing scope,
+     non-negative-integer-or-typed-CXER0100; [limit] folds into the
+     take bound (the ruled L93 collapse — also healing the streamed
+     path's pre-W4 take-shadows-limit divergence); apply_limit_if_any
+     deleted. program-for-lambda-008..012 pin the cutover.
+   - **CHECKER FIX:** §7.8 point 5 ("anywhere in clause expressions")
+     now reaches λ counts — they were skipped entirely; the by-name
+     [?eval]/[?with-scope] scan covers them (pinned V + corpus). Point
+     4's purity enumeration does NOT name λ counts — posed as #770,
+     lettered, rather than silently widening the spec'd test.
+   - **Corpus:** cx-100..106 in stdlib/cx.cxd — the plan-address
+     BYTE-PIN (the encoding's drift guard, the address-baseline
+     posture applied to the new tier), alpha + limit/take pair cases,
+     the E1-distinction pin, and the CORPUS-level membership negatives
+     at this consumer (ambient generator / impure predicate / [?eval]
+     body → CXER0120) — the entry-5 ruled sequencing executed for W4's
+     half (W6 lands its own at store:query).
+   - **DISCOVERIES → issues:** #769 (Tier-2 injectivity: SLICE BOUNDS
+     and PATTERN-ATTR VALUES are omitted from the normalized stream —
+     `$x[0:2]` vs `$x[1:4]` and `@role="admin"` vs `@role="guest"`
+     verified colliding live: FALSE computation-identity merges, the
+     defect class T2's design comment claims impossible; identity-
+     critical, lettered options, owner — recommended fix BEFORE the W7
+     retirement so the byte-identity gate references a correct
+     preimage); #770 (λ-count purity outside §7.8 point 4, lettered).
+     The plan encoding carries both slots correctly from birth.
+   - **The W4-closing full gate: GATE-RC=0** read from the log
+     (vcx/target/w4-full-gate.log, verdict read AFTER the run) —
+     244-lane suite: the single FAIL (fabric_nats_bridge_test) green on
+     its classified cache-free retry (the standing #572 artifact);
+     test-vcx-code 83/83; address-baseline 108 Tier-2 def addresses
+     byte-identical (the plan tier and the λ-count fix move no def
+     address); extraction gate ABI transcript byte-identical (1589
+     Ring-0 cases, grew from 1584 with the wave's pins) + CLI 9128
+     invocation pairs identical + 17 profile refusals; directive-docs
+     80; guide-check 45; verify-doc-blocks 327/0/6; columnar lane green
+     in-gate.
+   NEXT: W5 (equivalences + err-totality, L96). Sequencing note (the
+   entry-5 pattern): W5 lands the rewrite set + report + battery; its
+   LIVE consumer is W6's store:query executor, one wave later, in this
+   same run.
