@@ -408,6 +408,16 @@ release-verify:
 # surface stabilizes (spec/bindings.md §6).
 TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate
 
+# ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
+# Runs only the TEST_TARGETS lanes whose declared input globs intersect
+# BASE..HEAD (+worktree). Deny-by-default: a lane without a manifest row in
+# scripts/test_changed.sh ALWAYS runs. The full `make test` union stays
+# MANDATORY at wave/phase exits — this target never substitutes for an exit
+# gate.
+.PHONY: test-changed
+test-changed:
+	@bash scripts/test_changed.sh $(BASE)
+
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
 # sum-type / pointer-carrying map values) that the dev builds tolerate. This
