@@ -10,4 +10,3 @@ vcx/tests/store_reopen_scale_test.v
 vcx/tests/store_shared_root_test.v
 vcx/tests/store_snapshot_streaming_test.v
 vcx/tests/store_http_test.v
-vcx/tests/cxstore_object_backend_test.v
