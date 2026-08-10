@@ -59,3 +59,34 @@ needs γ + totality machinery.
 ## Work log
 
 (entries append here; each wave = one entry with commits + gate verdict)
+
+1. **W1 IN FLIGHT (2026-08-09).** Spec surgery landed (464af59a, RULED:
+   L94): code.md §7.2 γ = hash-partition by value equality, first-
+   appearance order pinned, the $key/$count/$group binding set with
+   $group's normative shape. Impl landed (8d36cf12): eval.v's
+   .group_by arm binds $key + $group — one `[item …]` element per
+   grouped frame, generator + `[= …]` binder values as named children
+   in clause order (binders enumerated from clauses[0..barrier]) — so
+   `$group/NAME` navigates and atomizes in arithmetic. VERIFIED live:
+   the ruled M5 revenue-by-region example gives
+   `[row region=east revenue=125 n=3] [row region=west revenue=12 n=1]`;
+   sum/max/min/avg/count green over $group. The shipped partitioning
+   was ALREADY hash-partition + first-appearance (L94's premise
+   confirmed); only the bindings were missing.
+   **DISCOVERY → #753 (bug, prio:high): element equality is
+   name+child-count only** (nodes_equal's element arm, eval.v ~6903) —
+   `[= [x 1] [x 3]]` → true, `[$eq [x a=1] [x a=2]]` → true,
+   `[$distinct ([x 1],[x 3],[x 1])]` → one item, and γ's ELEMENT-valued
+   keys would mis-partition (a direct L94 violation). Consumers: [=]/
+   [!=], $eq, membership, $distinct, $position, group-by keys (23 call
+   sites). The stream-4 ledger had OBSERVED the symptom as a "gotcha"
+   ($eq on [computation-id] elements) and worked around it — defect
+   class unrecognized until L94's contract forced it. Fix direction
+   (recorded on the issue): STRUCTURAL recursion — names; attributes as
+   a name-keyed set under the shipped scalar rules; children pairwise
+   in document order; NOT canonical-byte compare (decimal 1.10 = 1.1
+   value-equality must survive inside elements). Fixture-before-fix;
+   corpus triage expected where pins rode the shallow behavior.
+   REMAINING for W1: #753 pin-fixtures + fix + corpus triage; the §4
+   revenue/top-SKU corpus cases; [fail-fast]/[on-error] repairs
+   (#711); W1 gate (unpiped, GATE-RC).
