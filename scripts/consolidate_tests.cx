@@ -313,13 +313,27 @@
       # ── merge (its own [?let]: the refusal forks above are control
       #    flow, bindings cannot continue inside an [else]) ─────────────
       [?let
+          [= $import-list
+            [$sort [$distinct
+              [?for [in $p $parts]
+                [in $l [$strings:split [$string $p@imports] "\n"]]
+                [where [not [= $l ""]]]
+                [yield $l]]]]]
+          # `import X as _` (registration-only) is subsumed by a plain
+          # `import X` from another input — keep the plain one (V refuses
+          # a module imported twice). Any OTHER alias divergence still
+          # emits both lines: the compiler is the oracle.
+          [= $import-fence
+            [$concat "\n" [$strings:join $import-list "\n"] "\n"]]
           [= $import-union
             [$strings:join
-              [$sort [$distinct
-                [?for [in $p $parts]
-                  [in $l [$strings:split [$string $p@imports] "\n"]]
-                  [where [not [= $l ""]]]
-                  [yield $l]]]] "\n"]]
+              [?for [in $l $import-list]
+                [= $subsumed
+                  [and [$strings:ends-with $l " as _"]
+                       [$strings:contains $import-fence
+                         [$concat "\n" [$strings:slice $l 0 [- [$strings:length $l] 5]] "\n"]]]]
+                [where [not $subsumed]]
+                [yield $l]] "\n"]]
 
           # per-file kept-chunk sections; dedupe = fenced byte-identical
           # membership against all EARLIER chunks (earlier files +
