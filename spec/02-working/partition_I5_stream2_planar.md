@@ -772,3 +772,39 @@ needs γ + totality machinery.
     design branch (the merge IS an exit step — do NOT repeat the
     stream-4 miss), #674 + #711 closed with evidence; the #700
     consolidation lever is dated for this boundary.
+
+    **ENTRY 10 AUDIT ADDENDUM (2026-08-10, owner-directed adversarial
+    audit of W7; commit 04a04833, gate w7-audit-gate.log GATE-RC=0).**
+    The audit field-enumerated the T2 encoder against the AST and
+    live-probed every candidate: **five more #769-class false merges
+    found and fixed under the same ruling** (one defect class) —
+    [order-by] DIRECTION (asc ≡ desc, semantics-changing),
+    duration_lit + period_lit payloads (dur_val, not the empty
+    str_val — every duration merged with every duration),
+    ProgramBinding.type_test (map-pattern typed binds {k: $v::int} ≡
+    {k: $v::str}), and ProgramBinding.is_rest (($x, *$r) ≡ ($x, $r) —
+    different match arities). All presence-marked; **corpus movement
+    ZERO again** (baseline green before/after). Probed and CLEARED:
+    date/datetime/atom/node_lit distinct; 1_000≡1000 formatting-
+    correct; [par N] width merge = the same computation under the
+    ordered-reassembly theorem (documented at t2_clause_meta);
+    ProgramPathStep fully emitted; typed binds unreachable in
+    element-pattern bodies (parse refusal). **#770 escape hunt:**
+    binding-path predicate BODIES are closed by grammar ([159a/b]
+    admits no directive/bracketed form — [?eval]/ambient/impure
+    probes all refuse at parse); no membership escape found. **∂:**
+    empty-init + first-insert gap closed in the battery; the ∂ seam's
+    consumer is stream 3 BY THE RULED WAVE PLAN (the fixtures are the
+    W7 proof — recorded, not silent). **Honesty truing:** the
+    address-baseline runner's header claimed a Tier-1 lane the code
+    never had — comment trued; the exit clause's Tier-1 half rides
+    the extraction gate's canonical-byte identity (strictly stronger:
+    full output bytes over every Ring-0 case, both lanes), which ran
+    byte-identical in every W7 gate. **Cleared design boundaries:**
+    planar_plan.v's clause iteration is a structural TRANSFORMER
+    (reorders/folds/erases clauses), not a child-node enumerator —
+    outside the ONE walk's contract, like eval itself and the ∂ frame
+    builder; the walk owns enumerators (the retired nine-plus set).
+    Verdict: W7 stands, with the encoder now field-complete against
+    the AST; corpus cx-111 + 6 battery pins guard the audit's
+    findings.
