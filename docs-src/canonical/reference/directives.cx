@@ -365,6 +365,14 @@ B"""] [expect """50"""]]
   [example [code """[?let [= $_ [?worker name="w4" [body lookupable]]] [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]"""] [expect """lookupable"""]]
 ]
 
+[directive-doc name='?subscribe' category="Concurrency" spec="§10.4"
+  [sig """[?subscribe from=CH from-pos=INT] -> subscription"""]
+  [summary """Concurrency (SPEC'D, not yet shipped — #762): subscribe to a `sharing=independent` channel and receive a per-consumer cursor (the delivery contract, delivery.md); `from-pos=` resumes within the retained window, a cursor below the window refuses loudly with CXER0205 (STREAM_GAP), and a group channel refuses with CXER0204. No runnable example until #762 lands."""]]
+
+[directive-doc name='?monitor' category="Concurrency" spec="§10.4"
+  [sig """[?monitor $h] -> subscription"""]
+  [summary """Concurrency (SPEC'D, not yet shipped — #762): subscribe to a worker handle's ordered lifecycle events (`[spawned]`, `[cancelled]`, `[panicked]`, `[done]`); a terminal event is always last, monitoring an already-terminated worker delivers its terminal event immediately (race-free supervision), and monitor subscriptions compose with `[?select]`. No runnable example until #762 lands."""]]
+
 [directive-doc name='?channel' category="Concurrency" spec="§10.4"
   [sig """[?channel name=NAME buffer=N] -> channel"""]
   [summary """Concurrency: create a named channel with a bounded buffer."""]

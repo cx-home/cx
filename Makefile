@@ -406,7 +406,17 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate address-baseline-gate
+
+# ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
+# Runs only the TEST_TARGETS lanes whose declared input globs intersect
+# BASE..HEAD (+worktree). Deny-by-default: a lane without a manifest row in
+# scripts/test_changed.sh ALWAYS runs. The full `make test` union stays
+# MANDATORY at wave/phase exits — this target never substitutes for an exit
+# gate.
+.PHONY: test-changed
+test-changed:
+	@bash scripts/test_changed.sh $(BASE)
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -616,6 +626,21 @@ test-extraction-gate: build-vcx-dev
 # (~75x slower large parses through the ABI than in the cx binary).
 # The gate churns each artifact past the pacer goal under VGC_GCTRACE=1
 # and requires at least one gc cycle. Runs on both Ring artifacts.
+# ── address-baseline-gate (#651/#516 stream-2 C9; RULED: L100) — the Tier-2
+# byte-identity guard for the ONE-walk retirement. Recomputes every corpus
+# def's Tier-2 address and diffs against the recorded baseline
+# (vcx/tests/runners/address_baseline/tier2_addresses.txt). A moved or
+# vanished address FAILS — no re-bless is available to this stream. Refresh
+# the baseline deliberately with `make address-baseline-capture` only when
+# NEW corpus defs are added (never to absorb a move).
+.PHONY: address-baseline-gate
+address-baseline-gate:
+	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
+
+.PHONY: address-baseline-capture
+address-baseline-capture:
+	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v --capture
+
 .PHONY: abi-gc-gate
 abi-gc-gate: build-vcx-dev
 	@$(MAKE) -C vcx build-data-dev
@@ -1191,8 +1216,13 @@ else
 endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev
-	$(MAKE) -C vcx arrow-shim
-	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v
+	@if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
+	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
+	  echo "$$line"; mkdir -p vcx/target; echo "$$line" >> $(CX_SKIP_LOG); \
+	else \
+	  $(MAKE) -C vcx arrow-shim && \
+	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v; \
+	fi
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
 # The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3);
@@ -1407,8 +1437,8 @@ bench-cxparse: build-vcx
 
 # T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
 # surface additions (FLWOR clauses, ?fn calls, partial application,
-# pipeline/arrow operators, ?match, regex via RE2, range, tumbling
-# windows). Output is parsed by scripts/run_bench_json.py into the
+# pipeline/arrow operators, ?match, regex via RE2, range).
+# Output is parsed by scripts/run_bench_json.py into the
 # T1.* benchmark keys for the V7 perf regression gate.
 bench-eval: build-vcx
 	v run vcx/tests/runners/eval_features_bench.v
