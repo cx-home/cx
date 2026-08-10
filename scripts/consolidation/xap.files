@@ -4,6 +4,4 @@ vcx/tests/xap_host_real_test.v
 vcx/tests/xap_journal_bind_test.v
 vcx/tests/xap_reduce_test.v
 vcx/tests/xap_registry_serve_real_test.v
-vcx/tests/xap_render_test.v
-vcx/tests/xap_serve_cap_test.v
 vcx/tests/xap_source_bind_test.v
