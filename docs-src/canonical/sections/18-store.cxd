@@ -115,7 +115,7 @@
       [= $h2 [$store:put-doc $s [invoice [total 80] [customer 'grace']]]]
   [$store:query $s '//total']]"""]
     [output
-      """([result hash=fa571812a0e85ea16e6d32b0b901a344bd2ac86cf78e18f2bb30b0d98c4b9037 ([total 120])], [result hash='0b129cf65cbf41d80663402f1d82d22e506c9f561815fadd64b8966c28165580' ([total 80])])"""]
+      """([result doc=sha2-256:e5b689fa494377cea041d4bf6496e28e97dd13a059aa4c22c75360fc7d0ceb30 source='mem://#//total' [total 120]], [result doc='sha2-256:89123d4330eda07c2dbeb3878cd1ca12760c1d19e37fdb634b4737bfc2784924' source='mem://#//total' [total 80]])"""]
     [body
       """Going durable is changing the URL — the same program against
          `file://` persists, and a reopen finds the store
