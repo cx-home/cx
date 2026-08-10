@@ -1,0 +1,11 @@
+# area: canonical
+vcx/tests/canonical_annotation_test.v
+vcx/tests/canonical_collections_test.v
+vcx/tests/canonical_decimal_bigint_test.v
+vcx/tests/canonical_float_test.v
+vcx/tests/canonical_mechanical_warts_test.v
+vcx/tests/canonical_multidoc_test.v
+vcx/tests/canonical_nfc_names_test.v
+vcx/tests/canonical_quote_escape_test.v
+vcx/tests/canonical_tagged_address_test.v
+vcx/tests/canonical_unicode_names_test.v

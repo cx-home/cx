@@ -1,0 +1,23 @@
+# area: eval_semantics
+vcx/tests/match_eval_test.v
+vcx/tests/modify_eval_test.v
+vcx/tests/predicate_eval_test.v
+vcx/tests/predicate_expr_test.v
+vcx/tests/eval_budget_test.v
+vcx/tests/eval_data_fallback_test.v
+vcx/tests/eval_stack_guard_test.v
+vcx/tests/scoping_lexical_test.v
+vcx/tests/closure_escape_test.v
+vcx/tests/recursive_def_dispatch_test.v
+vcx/tests/purity_checker_test.v
+vcx/tests/visibility_test.v
+vcx/tests/dispatcher_integration_test.v
+vcx/tests/z79g_dispatcher_test.v
+vcx/tests/meta_test.v
+vcx/tests/defenses_test.v
+vcx/tests/secret_redaction_test.v
+vcx/tests/random_streams_test.v
+vcx/tests/effect_alignment_test.v
+vcx/tests/pereference_test.v
+vcx/tests/type_strict_validator_test.v
+vcx/tests/schema_collections_test.v

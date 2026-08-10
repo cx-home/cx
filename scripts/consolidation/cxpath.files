@@ -1,0 +1,6 @@
+# area: cxpath
+vcx/tests/cxpath_dispatcher_test.v
+vcx/tests/cxpath_forward_test.v
+vcx/tests/cxpath_misc_test.v
+vcx/tests/cxpath_projection_pins_test.v
+vcx/tests/cxpath_reverse_test.v

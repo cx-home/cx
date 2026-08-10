@@ -1,0 +1,21 @@
+# area: http
+vcx/tests/http_chunked_stream_test.v
+vcx/tests/http_client_real_test.v
+vcx/tests/http_client_timeout_test.v
+vcx/tests/http_concurrent_sse_test.v
+vcx/tests/http_gzip_test.v
+vcx/tests/http_handler_no_respond_test.v
+vcx/tests/http_picoev_engine_test.v
+vcx/tests/http_query_params_test.v
+vcx/tests/http_reactor_rss_bound_test.v
+vcx/tests/http_redirect_test.v
+vcx/tests/http_request_env_isolation_test.v
+vcx/tests/http_serve_module_test.v
+vcx/tests/http_server_real_test.v
+vcx/tests/http_service_real_socket_test.v
+vcx/tests/http_slow_handler_isolation_test.v
+vcx/tests/http_split_body_test.v
+vcx/tests/http_sse_headers_test.v
+vcx/tests/http_sse_peer_rst_survival_test.v
+vcx/tests/http_sse_real_test.v
+vcx/tests/http_sse_test.v

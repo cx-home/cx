@@ -1,0 +1,10 @@
+# area: code_units
+vcx/tests/code_api_test.v
+vcx/tests/code_ast_json_test.v
+vcx/tests/code_diagram_roundtrip_test.v
+vcx/tests/code_diagram_test.v
+vcx/tests/code_eval_test.v
+vcx/tests/code_matcher_test.v
+vcx/tests/code_parser_test.v
+vcx/tests/code_render_test.v
+vcx/tests/code_tree_test.v

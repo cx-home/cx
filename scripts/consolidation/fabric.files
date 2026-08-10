@@ -1,0 +1,4 @@
+# area: fabric
+vcx/tests/fabric_adapter_test.v
+vcx/tests/fabric_nats_bridge_test.v
+vcx/tests/fabric_serve_test.v

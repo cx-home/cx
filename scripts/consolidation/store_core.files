@@ -1,0 +1,13 @@
+# area: store_core
+vcx/tests/store_concurrent_handle_test.v
+vcx/tests/store_dir_sync_test.v
+vcx/tests/store_drain_readiness_test.v
+vcx/tests/store_file_append_log_test.v
+vcx/tests/store_modify_predicate_test.v
+vcx/tests/store_modify_using_test.v
+vcx/tests/store_remote_alias_unsupported_test.v
+vcx/tests/store_reopen_scale_test.v
+vcx/tests/store_shared_root_test.v
+vcx/tests/store_snapshot_streaming_test.v
+vcx/tests/store_http_test.v
+vcx/tests/cxstore_object_backend_test.v

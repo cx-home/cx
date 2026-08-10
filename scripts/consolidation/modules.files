@@ -1,0 +1,6 @@
+# area: modules
+vcx/tests/module_loader_shadowing_test.v
+vcx/tests/module_loader_test.v
+vcx/tests/module_pkg_loader_test.v
+vcx/tests/lockfile_reader_test.v
+vcx/tests/cx_lock_cli_test.v

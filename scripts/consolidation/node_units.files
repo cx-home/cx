@@ -1,0 +1,9 @@
+# area: node_units
+vcx/tests/const_node_test.v
+vcx/tests/def_node_test.v
+vcx/tests/lib_node_test.v
+vcx/tests/match_node_test.v
+vcx/tests/modify_node_test.v
+vcx/tests/path_node_test.v
+vcx/tests/node_sum_type_test.v
+vcx/tests/program_xml_codec_test.v

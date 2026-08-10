@@ -1,0 +1,10 @@
+# area: parser_units
+vcx/tests/const_parser_test.v
+vcx/tests/def_parser_test.v
+vcx/tests/lib_parser_test.v
+vcx/tests/match_parser_test.v
+vcx/tests/path_parser_test.v
+vcx/tests/path_renderer_test.v
+vcx/tests/parser_agreement_289_test.v
+vcx/tests/parser_parity_test.v
+vcx/tests/program_emit_test.v
