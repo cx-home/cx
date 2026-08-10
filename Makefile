@@ -1544,7 +1544,7 @@ test-vcx-services: build-vcx
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_diagram_roundtrip_test.v \
-		vcx/tests/code_diagram_test.v
+		vcx/tests/code_units_umbrella_test.v
 
 # ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────
 # Drives the V-side renderer test suite — `code_render_test.v` covers
@@ -1556,8 +1556,8 @@ test-vcx-diagram-roundtrip: build-vcx
 # coverage. Per spec/v0_8_0_status.md §11.6 gate 12.
 .PHONY: test-renderer
 test-renderer: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_render_test.v \
-		vcx/tests/path_renderer_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_units_umbrella_test.v \
+		vcx/tests/parser_units_umbrella_test.v
 
 # ── Gate 28.7 — CXPath axis coverage (all 12 axes) ────────────────────────
 # Drives the V-side per-axis test files: forward axes (21 tests:
@@ -1570,9 +1570,8 @@ test-renderer: build-vcx
 # 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
 .PHONY: test-cxpath-axis-coverage
 test-cxpath-axis-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/cxpath_forward_test.v \
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/cxpath_umbrella_test.v \
 		vcx/tests/cxpath_reverse_test.v \
-		vcx/tests/cxpath_misc_test.v \
 		vcx/tests/cxpath_dispatcher_test.v
 
 # ── Gate 28.8 — [?modify] action coverage (all 11 actions) ────────────────
@@ -1588,8 +1587,8 @@ test-cxpath-axis-coverage: build-vcx
 # 28.8 (structural-sharing perf budget lives at gate 30.5).
 .PHONY: test-modify-action-coverage
 test-modify-action-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/modify_eval_test.v \
-		vcx/tests/modify_node_test.v \
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/eval_semantics_umbrella_test.v \
+		vcx/tests/node_units_umbrella_test.v \
 		vcx/tests/modify_node_codec_test.v
 
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
