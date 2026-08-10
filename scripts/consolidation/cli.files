@@ -1,10 +1,8 @@
 # area: cli
-vcx/tests/cli_default_eval_test.v
 vcx/tests/cli_demo_test.v
 vcx/tests/cli_help_test.v
 vcx/tests/scaffold_cli_test.v
 vcx/tests/tooling_test.v
 vcx/tests/cx_lang_test.v
 vcx/tests/term_test.v
-vcx/tests/cabi_test.v
 vcx/tests/directive_args_test.v
