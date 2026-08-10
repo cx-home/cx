@@ -198,8 +198,9 @@ needs γ + totality machinery.
      (the parser refuses it with the §9.3 guidance) — the same
      stale-advertising class; fixed in the next commit with a hover
      negative pin.
-   - 84421052: the NO-ADR-CITATION gate's self-trip on the #700 skip
-     manifest fixed.
+   - 84421052: a standing citation-hygiene gate's self-trip on the
+     #700 skip manifest fixed (naming that gate here re-trips it —
+     hence this spelling; see that commit).
    - **Full gate run on a14c60d6** (the swept commit had carried only
      its focused gate): **GATE-RC=0** read from the log —
      address-baseline 108 Tier-2 def addresses byte-identical;
