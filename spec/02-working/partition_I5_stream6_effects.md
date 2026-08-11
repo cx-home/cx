@@ -248,3 +248,45 @@ against the spec table by the extended `check-effect-alignment` gate)
 clause productions (L109); code.md §12.2.7 command-clause subsection +
 §9.4/§9.5 CXER0239 rows + the CXER0274 description extension (L109/
 L110/C2).
+
+**R5 (recorded at landing).** A non-empty `[effects]` on an
+UNANNOTATED def implies `impure` (declaring effects IS declaring
+impurity — a redundant `impure` bareword would be ceremony); the
+CXER0239 contradiction fires on EXPLICIT `pure` only. Compatible with
+the ruled sentence (explicit pure + effects IS the contradiction;
+the default can never reach it). `purity_explicit` added to DefNode
+to carry the distinction; code.md §12.2.7 states the implication
+normatively.
+
+**W2 CLOSED 2026-08-11 — full gate GATE-RC=0 (s6_w2_gate3.log).**
+Landed: def_node/def_parser five-clause surface (dup-clause parse
+errors; scope/requirement tokens as quoted-or-bare runs; preconditions
+verbatim via balanced-bracket capture); `command_contract.v` = the ONE
+authority (R3) called from eval_def + ensure_module_scope (unknown cap
+→ 0274; explicit-pure×effects → 0239; compensates pairing — module
+order-independent via mod.defs, script sequential); Closure gains
+has_effects/effects_caps; `caps_push_effects_narrowed` (keep-only ∩,
+policy field cleared) hooked at invoke_closure_l behind the
+has_effects branch (zero hot-path cost); effect_alignment.v gains
+io-watch/io-watch-next (the drift-canary hole: self-gating prims were
+outside BOTH directions); the spec↔impl parity gate
+(test_effect_point_table_matches_spec) parses security.md §2.1 and
+asserts BOTH directions. Fixtures cmd-001..012 green (the key
+discriminator cmd-002: read+random GRANTED, only [effects [read]]
+declared ⇒ CXER0271 from the narrowing — the runner now honors
+Effort-B grant= on code.cxd, without which the case would run empty
+and green for the wrong denial). Gate deltas triaged: cxparse
+differential = deliberate corpus growth (748/583→759/594, divergence
+classes unchanged — baseline updated with note); profile_gate[embed]
+= io pack off ⇒ cmd-001/007 re-authored onto profile-invariant
+path:canonical (path is not a pack; same declared read effect);
+fabric+http = the known usecache artifacts, green on in-gate #572
+retries. Evidence: s6_w2_gate.log (first, RC=2 triaged),
+s6_w2_gate2.log (profile delta), s6_w2_gate3.log (GATE-RC=0);
+lane logs in the session scratchpad.
+**Observed in passing (not this stream's scope, filed to the
+tracker):** the module loader's ensure_module_scope does not set
+declared_impure on module-def closures — a module-defined impure
+validator would pass the validate-with= declaration gate
+(validate.md R3.12) that program-level defs fail. See issue filed at
+W2 close.
