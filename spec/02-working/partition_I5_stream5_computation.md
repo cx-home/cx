@@ -424,3 +424,42 @@ s5_w5_reggate3.log). GOTCHA booked: every digits-dash-digits (and
 bare-code) token in a governance §9.6 row is a RANGE CLAIM — never
 repeat codes in row commentary. Full gate rerun GATE-RC=0
 (s5_w5_gate2.log; the two known usecache artifacts on #572 retries).
+Landed c803a39a.
+
+### Entry 6 — W6: L107/L108 closure + the §9 corpus audit (2026-08-11)
+
+**L107 (tapes) stated normatively** in debug.md §6a per the ruled
+spec-edit map: the tape is the DUAL of a computation identity
+(a-priori vs manufactured-a-posteriori determinism); a witnessed impure
+computation is `hash(fn, inputs ∪ {tape}, env, caps)` — the tape an
+ORDINARY Tier-1-addressed input (composition, not a new axis); the
+tape's recorded host environment is DATA, never an identity axis (the
+env component stays the minimal additive triple). Fixture
+cx-120-tape-composed-identity: the tape (already a versioned CX doc)
+has a plain Tier-1 address; adding it as an input moves the record
+address; the composition is reproducible; the shape is unchanged.
+
+**L108 (sequencing):** purely additive by construction — no
+hash-affecting change to any existing artifact landed this stream (the
+W2 [par] cutover moved BEHAVIOR previously unspecified, never an
+address; every other wave defined NEW addresses). The working spec §8
+states the epoch rule; nothing to implement.
+
+**§9 corpus audit — every handoff family present, each at its owner:**
+M5 end-to-end (store-comp-001: same⇒same, reformat⇒hit; patch-bump ⇒
+miss pinned as the env-axis discriminator store-comp-005 — a REAL
+patch bump is unfixturable in one build; meta⇒hit store-comp-007,
+post-I1 as the spec notes); record canonicalization pairs
+(store-comp-006 field-order; allow_all ≡ explicit-full = the W3
+normalization V-tests + the caps-value fixtures); [par] source-order
+discriminator pairs WITH float sums (W2: program-for-030/031/032,
+program-map-030); locale probes per audited builtin (W2:
+locale-audit-001/002/003 + the audit table in entry 2); impure-fn
+fail-loud negative (store-comp-002 + the checker-refusal arm);
+unforced-iterator negative (the shipped CXER4117 refusal case in
+cx.cxd — identity acquisition is the chokepoint, so composition
+covers record inputs; L106's sentence is enforced at the only place
+an iterator could enter: hashing it); tape-composed identity fixture
+(cx-120). Lanes green (s5_w6_lane_fixtures2.log LANE-RC=0; first run
+red on an [?if] clause-shape authoring slip in cx-120, fixed — no
+engine movement this wave). Full gate: s5_w6_gate.log.
