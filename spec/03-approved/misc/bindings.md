@@ -383,7 +383,7 @@ generic `application/octet-stream` for binary wire formats.
 |---|---|
 | CX text | `application/cx` |
 | CX strict canonical | `application/cx` + `; profile=canonical` |
-| AST binary (`ast_bin`) | `application/cx-ast` |
+| AST binary (`ast_bin`) | `application/cx-astbin` (the precise name; the former `application/cx-ast` spelling is RETIRED — stream 13 ruling 61) |
 | Data binary (`data_bin`) | `application/cx-data` |
 | Event stream (`events`, `events_bin`) | `application/cx-events` |
 | XML | `application/xml` |
@@ -392,9 +392,10 @@ generic `application/octet-stream` for binary wire formats.
 | TOML | `application/toml` |
 | CSV | `text/csv` |
 
-CSRP (`cxstore-remote-protocol.md`) uses `application/cx` and
-`application/cx-data` for its request/response bodies and is the
-reference for HTTP-level CX content negotiation.
+CSRP (`cxstore-remote-protocol.md`) uses `application/cx-astbin`,
+`application/cx` (the canonical-text alternative), and
+`application/cx-frame-stream` for its request/response bodies and is
+the reference for HTTP-level CX content negotiation.
 
 ### 7.3 Native IPC
 
