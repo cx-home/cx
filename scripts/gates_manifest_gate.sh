@@ -32,9 +32,14 @@ KNOWN_SUITES="code stdlib packages"
 
 fail=0
 
-# (1) parses
+# (1) parses — an absent cx binary FAILS LOUD (#721 item 2: a silently
+# skipped parse check reads as green; the gate's verdict must never depend
+# invisibly on build state).
 if [ -x "$CXBIN" ]; then
   "$CXBIN" "$GATES" --to=cx >/dev/null 2>&1 || { echo "gates_manifest_gate: gates.cxd does not parse"; exit 1; }
+else
+  echo "gates_manifest_gate: FAILED — cx binary absent at $CXBIN (set CX_BIN or build vcx); the parse check cannot run and MUST not be skipped silently"
+  exit 1
 fi
 
 # policy_rows — just the [gate-policy]/[suite]/[module] row lines, with any
