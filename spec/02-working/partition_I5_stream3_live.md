@@ -293,3 +293,94 @@ verdict)
      LANE-RC=0). W3 pre-survey note: NO expect-pos CAS exists anywhere
      in platform yet (only the remote wire's 409→CXER1114 mapping) —
      W3 builds the CAS alias advance the checkpoint contract needs.
+
+4. **W3 LANDED (2026-08-11, Fable 5).** `materialize` + the
+   poll-substrate companions `advance`/`read` — the pack's verb surface
+   is COMPLETE. Exactly the entry-1/live.md §7 contract:
+   - **Surface:** `stdlib/live.cx` gains materialize/advance/read
+     (fn-doc examples backed VERBATIM by live-040/041/042); catalog
+     entry + governance §9.6 updated same-change (#717): 5076 shipped
+     at W3 (5077–5078 = W4).
+   - **The checkpoint IS the durable cursor** (value-anchored):
+     `[checkpoint q= [head-set …] ROW…]` doc, put-doc-then-alias, and
+     the alias advanced by an EXPECT-POS CAS on its per-name advance
+     position (`live_alias_advance_cas` — BUILT at W3, no expect-pos
+     CAS existed anywhere; mirrors the set-alias local path under one
+     hold of the reentrant op lock; CXER1114 on conflict). `q=` = the
+     canonical-text hash of the comprehension → RE-ATTACH: materialize
+     on an existing alias resumes iff q matches (live-052); a name held
+     by a different value refuses CXER1114 (live-049) — never a silent
+     replace. Checkpoint store local-objgraph-only at v1 (CXER1709; the
+     wire CAS rides stream 4).
+   - **advance** (the sched-driven tick): read checkpoint (its alias
+     pos = the CAS expect), sample heads, quiescent → [advanced
+     applied=0 recomputed=false] no-write; else compute via the SHARED
+     window core (live_apply_window — extracted from live_answer, one
+     engine for script + fold consumers), re-checkpoint, CAS. applied =
+     source events in the window; recomputed reports the LOUD boundary.
+   - **Per-aggregate maintenance (L130):** a γ-retract is ABSORBED
+     (recomputed=false) when the yield uses only invertible aggregates
+     — live_yield_invertible walks the yield AST: any max/min/distinct
+     call, or any $group use outside a sum/avg call, forces the loud
+     recompute (recomputed=true; value still exact — the engine state
+     rebuilds either way). Pinned: sum decrements exactly
+     recomputed=false (live-044, with leg-4 $cx:equal vs fresh
+     recompute); max → recomputed=true (live-045).
+     maintenance="incremental" → CXER5076 at creation outside the
+     sub-fragment (live-046) AND at any advance whose window forces
+     recompute — incl. the lost-checkpoint full replay (live-047).
+   - **Derived-state posture:** missing/unreadable/q-mismatched
+     checkpoint = full replay, correctness untouched — read recomputes
+     at head + re-checkpoints (live-048: checkpoint doc deleted, read
+     answers the same rows).
+   - **read:** `[snapshot [head-set …] ROW…]` from the checkpoint —
+     exact in-process (coalescing is MAY; the 25ms shape is the XAP SSE
+     edge's, not built here). read is NOT eval-gated on its normal path
+     (a doc read); ONLY the derived-state replay branch carries the
+     inline eval guard (noted in effect_alignment.v — the conditional
+     posture, store modify-doc-closure precedent).
+   - **The L133 retention cover extension (the ruled journal.md
+     surgery, RULED: 122–154):** a materialization over journal sources
+     REGISTERS in each journal's own store (alias
+     `cx-live/materialization/<tenant>[/s/<stream>]/<name>` → a
+     [live-materialization] doc — the fabric-offset pattern);
+     jrn_retain refuses a pruning boundary while a registration exists
+     (jrn_registered_materialization; CXER4616 naming the
+     materialization). Rationale pinned in journal.md §2.8: a
+     journal-source relation is the stream's ENTIRE history = the
+     fold's recompute basis; store sources register nothing (a store
+     relation is CURRENT state — full replay reads live docs).
+     live-051 is the DISCRIMINATING pair: the same snapshot+policy
+     retain succeeds before registration, refuses after.
+   - **Decisions at implementation latitude (recorded):** (a) the
+     checkpoint doc gains q= and splices the fold rows (live.md §7
+     refined in place — the '[checkpoint [head-set …] VALUE]' sketch
+     made concrete); (b) re-attach semantics as above (no drop verb is
+     ruled; the retention pin is lifted by removing the registration
+     alias with the store verbs — the refusal message says so); (c)
+     registration is journal-side only (store history ≠ recompute
+     basis); (d) applied=N counts source events; the forced-recompute
+     path reports applied=0 recomputed=true; the empty-anchor seed is
+     EXACT (leg 1) → recomputed=false; (e) the invertibility walk reads
+     element-construction ATTRS (ProgramLiteral.attrs — slots is
+     retired D014; the max-in-attr case was caught live by the a2
+     smoke, recomputed=false → fixed before any fixture was blessed);
+     (f) the fold layer never edits stream 2's engine — the γ-retract
+     marker reason is exported as pub const
+     planar_delta_reason_gamma_retract (DRY, no behavior change) and
+     classified by the fold layer.
+   - **Fixtures:** conformance/stdlib/live.cxd 39 → 53 enforced cases
+     (live-040…053): the three fn-doc examples, leg 3 (043: read rows +
+     head-set ≡ the observe subscription's delivered state), leg 4 +
+     sum-decrement, max-loud, CXER5076 pair, corrupt-checkpoint full
+     replay, CXER1114 name conflict, journal fold + quiescent advance,
+     the retention-pin discriminating pair, re-attach, materialize
+     cap-deny.
+   - **W3 gate:** full `make test` UNPIPED — GATE-RC=0 read from the
+     log (scratchpad w3_gate_make_test.log line 203892). Two lanes
+     (fabric_umbrella, http_umbrella) failed their first C-compile with
+     a duplicate-symbol link error and were retried by the harness's
+     OWN classified #572 cache-free retry — both green, the log's
+     "every failed lane green on its classified retry" line; the
+     sanctioned retry, named. The standalone eval-fixtures lane was
+     green first (LANE-RC=0, w3_fixture_lane.log).
