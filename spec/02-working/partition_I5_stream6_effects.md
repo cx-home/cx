@@ -171,3 +171,80 @@ bar — the table must be normative first); W3 (durability) precedes W4
 (budgets) per L112's named prerequisite. No blockers found; the three
 named cross-stream dependencies (E1/I1 fixes, [bounds] decision layer,
 CAS primitive) are all verified landed.
+
+### W2 — the command surface (2026-08-11)
+
+**W2-entry rulings (each grounded in the ruled text + shipped
+precedent; detail decisions inside the L109/L110 scope):**
+
+- **R1 (clause payload shapes).**
+  `EffectsClause ::= '[effects' (S EffectItem)* ']'` with
+  `EffectItem ::= '[' CapName (S ScopeLiteral)* ']'` — the cx.pkg
+  §12.4.3 capability-manifest shape verbatim (`[net
+  api.example.com:443]`), the ruling's own citation for the contract
+  space a command projects onto; CapName from the closed security.md
+  §2 nine-name list; scope literals = the C4 canonical scope strings,
+  CARRIED at v1 (the C1-coarse + stdlib_caps v1 posture: boolean gate,
+  scopes carried — same honesty note as the shipped grant surface).
+  Zero-item `[effects]` is legal (the discriminator with an empty
+  gated-effect set — the only form compatible with `pure`).
+  `RequiresClause ::= '[requires' (S Requirement)+ ']'` (each a
+  `cap:` address string or capability bareword; RESOLUTION is W6's
+  L114 fail-closed machinery). `PreconditionsClause ::=
+  '[preconditions' (S ProgramExpr)+ ']'` — predicates captured
+  verbatim (the PathPredicate.source convention); evaluated at
+  propose / re-checked at commit (W6). `IdempotentClause ::=
+  '[idempotent' (S '[window' S Duration ']')? ']'` (window optional;
+  key semantics are W5). `CompensatesClause ::= '[compensates' S
+  Name ']'`. At most ONE of each clause per def — a repeat is a parse
+  error. Clauses are `[?def]`-only (the ruled clause-children framing;
+  `[?fn]` never takes them).
+- **R2 (error codes).** Static command-contract violations =
+  **`CXER0239 E_COMMAND_CONTRACT`** — the LAST free slot of the
+  purity/predicate band CXER0230–0239, the exactly-right home (the
+  band owns §12.2 purity/predicate statics; the pure×`[effects]`
+  contradiction IS the effect-totality theorem's static face). Covers:
+  `pure` + non-empty `[effects]`; `[compensates]` naming an unknown
+  def or a non-command. An unknown capability NAME inside `[effects]`
+  = **`CXER0274 E_CAP_UNKNOWN`** extended — one code for "unknown
+  capability token, fail closed" wherever a cap name is spelled
+  (host grant spec/list, now the `[effects]` declaration) — the
+  #713/L114 posture verbatim. Runtime narrowing denial =
+  **`CXER0271 E_CAP_DENIED`** (the ruled "[?with-caps]-like" reading:
+  an effect point outside the declaration IS a capability denial at
+  the effect point; the denial message names the `[effects]`
+  narrowing). No new band; no governance registry edit (core-band
+  sub-allocation is code.md §9.4's own table).
+- **R3 (enforcement points).** The declaration-level contract check
+  is ONE shared authority (`module code`) called from BOTH def
+  registration sites — program-level `eval_def` and the module
+  loader's `ensure_module_scope` — never two spellings (cap-name
+  validity needs `capability_names()`, which lives in `code`, so the
+  check sits above the `cx` parser layer by construction). Runtime
+  narrowing hooks the single closure choke point `invoke_closure_l`
+  AFTER the partial/builtin delegations (both def paths —
+  `bind_specs_and_eval` and `invoke_positional_l` — flow through it);
+  `has_effects=false` costs nothing on the hot path. Narrowing
+  installs KEEP-ONLY(declared caps) over the active set — strictly a
+  narrowing (grant ∩ declaration), never a widening; the
+  private-range policy field clears (interior set, the L104 rule).
+- **R4 (what W2 does NOT decide).** Whether a DIRECT call (default
+  mode) evaluates `[preconditions]` is a named W6-entry decision —
+  the ruled text speaks only of propose-time evaluation + commit-time
+  re-check; W2 parses, validates shape, and carries the clause.
+  `[requires]` resolution (fail-closed `cap:` lookup) is W6 (L114).
+  Idempotency key/dedup semantics are W5 (L111). The clauses'
+  LOAD-TIME consumers land here in full: static validation, the
+  command discriminator, Tier-2 exclusion (S0: every new clause is
+  outside the Tier-2 hash by the excluded-by-default closed list —
+  fixture-pinned), and the `[effects]` runtime narrowing.
+
+**Spec edits executed (per the ruled §8 map, letters cited inline):**
+security.md §2 gains the normative closed effect-point table (the
+EV-EFFECT-SET move — stream 22's ruled relocation; the source-of-truth
+inversion: `effect_alignment.v` becomes a conformance MIRROR checked
+against the spec table by the extended `check-effect-alignment` gate)
++ the L110 enforcement note; grammar.ebnf [152a] alternation + [152d–h]
+clause productions (L109); code.md §12.2.7 command-clause subsection +
+§9.4/§9.5 CXER0239 rows + the CXER0274 description extension (L109/
+L110/C2).
