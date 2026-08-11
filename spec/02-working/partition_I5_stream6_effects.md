@@ -353,3 +353,53 @@ permit-after-restart → revoke → deny-after-second-restart over
 file://); the denied-backend probe (4710 wrapping the 0271 cause,
 mutation not applied — re-verified on a REBUILT binary after the
 stale-CLI gotcha fired again). #713 item 4 evidence complete.
+
+### W4 — budgets: commit-point debit + meter-as-fold, L112 (2026-08-11)
+
+**W4-entry rulings:**
+
+- **R9 (a debit is a §2.6 transition event).** `[authz-debited
+  id=<granting delegation> (count=N)? (spend=AMT currency=CUR)?]` on
+  the SAME named `authz` stream — one trust log; the journal's
+  per-stream group-commit lock IS "the stream's commit lock" (L112:
+  linearizable for free; per-stream v1 scoping falls out — a
+  cross-stream meter has no serialization point, stream 10's gap).
+  The event records the GRANTING delegation id; the fold attributes
+  usage up the `[attenuates …]` chain to every bounds-bearing
+  ancestor (shared meters deplete for the whole subtree — replay-
+  stable, since the chain is in the same log). Verb: `debit(store,
+  id, opts {count, spend, currency, now})` — impure, journal-backed
+  tier only (an unbound store has no commit point: CXER4710).
+  Refunds never credit: a non-positive count/spend is CXER4711
+  (unissuable, the L112 "budgets meter authority exercised" rule).
+- **R10 (meter-as-fold + the `meters` verb).** `meters(store, opts
+  {now})` folds the stream's authz-debited events over the live
+  delegation set into the EXACT element the shipped PEP reads —
+  `[meters [meter id=… tokens=… count-used=… spend-used=…]…]`, one
+  meter per bounds-bearing delegation. rate = token-bucket replay
+  over event timestamps (start full, −1 per debit, refill n/per ×
+  elapsed, clamp at capacity, final refill to `now`); count = event
+  count (monotone); spend = sum of spend events inside the CURRENT
+  UTC-Z window. **Window alignment: epoch-aligned in UTC**
+  (floor(now/per)·per) — the deterministic implementation of the
+  ruled "UTC-Z calendar-aligned" rule (ruling-20 consistency; equals
+  calendar alignment for day-divisor windows, never tenant-local).
+  Time coordinate = the journal entry ts (#712's deterministic UTC-Z
+  form); `now` supplied via opts (the controllable-clock pattern) —
+  default = the newest debit's ts (data-derived, fold stays
+  deterministic with no ambient clock read). check STAYS PURE: the
+  caller folds-then-checks (`{meters: [$authz:meters $az]}` — the
+  with-context materialized-snapshot posture).
+- **R11 (commit re-checks under the lock; PEP completes the conjunct
+  triple).** `debit` re-folds INSIDE the append path before writing:
+  exhausted at commit → the same CXER4713-carrying `[deny [reason
+  :budget-exhausted] [conjunct …] ([retry-after …])?]` VALUE and NO
+  event (the two-times enforcement table — the PEP decided on a
+  snapshot; live facts re-check at commit). AuthzMeterReading gains
+  the spend axis and authz_budget_check the spend conjunct, so a
+  PEP-side denial can name ANY failing conjunct (D-C1) once a fold
+  reading is supplied — completing what stream-4 W4 deliberately left
+  to the effect surface. **Reservation** (the promoted-normative
+  extension) lands WITH ITS SUBSTRATE at stream 10 (#682) — the ruled
+  sentence itself binds its semantics to "stream 10's escrow rules";
+  named landing, not a deferral.
