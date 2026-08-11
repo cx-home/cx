@@ -333,4 +333,94 @@ in the hashed table). s5_w4_lane_env.log LANE-RC=0.
 **Spec edits (ruled map row: modules/cx.md):** §2.1 gains the three
 rows + the environment-quadrant section (full-semver rationale,
 two-tables basis, re-hash-to-verify, additivity contract, the honest
-residue note). Full gate: s5_w4_gate.log.
+residue note). Full gate GATE-RC=0 (s5_w4_gate.log; the two known
+usecache artifacts on #572 retries). Landed 8ea560f4.
+
+### Entry 5 — W5: L102 + L106 the record + the cache (2026-08-11)
+
+**Rulings taken at entry (standing acceptance, long-term-best verified):**
+
+- **R3 (fn-slot spelling reconciliation):** the working spec's §2
+  example showed `code: "code:sha2-256:…"` — authored 2026-08-05,
+  BEFORE the F1′/A1 remediation ruling (2026-08-08,
+  partition_remediation_register.md) retired the `code:` address form
+  as confusable. The fn slot's Tier-2 key is the ruled
+  `computes-as:<algo>:<hex>` CLAIM ([$cx:computation-id]'s result) —
+  same key, the ruled spelling; reconciliation note added in place.
+- **R4 (D1 discharged — NO constructor builtin).** The record is
+  constructed IN-LANGUAGE from the shipped pieces
+  ([$cx:computation-id] + store addresses + [$cx:env] + [$caps] + map
+  literals); L106's typed-error sentence enforces at the OPERATIVE
+  boundary — cache admission. Verified against the bar: (i) the
+  language cannot police map literals, so a "constructor error" that
+  only fires in one construction path is a false fence; (ii) a
+  constructor builtin would be a SECOND spelling of record
+  construction (two forms, one meaning — the divergence class E3
+  closed); (iii) admission is where a wrong record becomes a wrong
+  cache, and it validates EVERY record regardless of origin —
+  strictly stronger. The L104 entry-set-basis sentence is
+  CONSTRUCTION-LOCUS guidance (records are built at the orchestration
+  layer, outside narrowed extents); with no V-side constructor there
+  is no entry-set capture consumer — the W3 note anticipating one is
+  SUPERSEDED (booked, not silently dropped).
+
+**Landed — cache admission (store_computation.v + the set-alias hook):**
+`set-alias` into `computation/<addr>` validates fail-loud in the LOCAL
+arm (the daemon's aliases-set wire op routes through the same arm —
+one authority on every surface): CXER1117 record-invalid (non-address
+name / no stored record / mis-shape / fn.code claim does not recompute
+from fn.source / record does not rehash to the name —
+recompute-and-refuse, never trust-the-name); CXER1118 not-pure
+(fn.source unresolvable / not a single [?def] / not DECLARED pure /
+checker-refused — and admission is a #702 trust boundary: ANY checker
+refusal refuses, including the unclassified-head CXER0234 the def-
+registration path dev-swallows); CXER1119 result-not-cacheable (an
+[err] target in the never-cached class = the CXER0270–0279
+runtime-environment band + host-tunable CXER0153; input-dependent errs
+REMAIN cacheable — deterministic per the W2 theorem). Governance §9.6
+sparse list gains 1117–1119; store.md §6.2 namespace note + §13 rows.
+Def text reads through the BLOB path (F1′: code is opaque,
+put-blob) with the structured-doc fallback.
+
+**Fixture-first transcript:** store-comp-001..007 authored RED
+(s5_w5_lane_fixtures_pre.log: 001 shape-mismatch, 002/003/004
+expected-refusal-got-null, 007 mismatch) → all green
+(s5_w5_lane_fixtures_post5.log LANE-RC=0). En-route findings, each
+booked:
+- put-doc takes a VALUE (canonicalizes the node) — a string argument
+  stores a QUOTED STRING doc; the fixtures' text-level properties
+  (reformat-is-a-hit, meta) route through put-doc-text / value forms.
+- **The lane-1 meta exclusion holds at the store boundary on the VALUE
+  path** (probe: put-doc of `[?meta {…} v]` == put-doc of `v`, and
+  cx:hash agrees — the E4 "stored" mode is honest). A RAW-TEXT document
+  carrying a literal `[?meta …]` node canonicalizes WITH it (different
+  Tier-1): that is data, not the evaluated lane-1 annotation —
+  store-comp-007's note pins the distinction. No defect: the ruled
+  lane-1 form is the evaluated annotation (idh-032's form).
+- A bareword def call in a LET-BINDING value position constructs an
+  element instead of dispatching ([price-order …] vs [$price-order …])
+  — the fixture uses the unambiguous $-call form; noted as an
+  authoring gotcha, not changed (the #540 rule covers call-argument
+  position only).
+
+**The M5 worked example is now END-TO-END in the corpus**
+(store-comp-001): def stored by put-blob; record constructed
+in-language; record doc address == [$cx:hash $rec] (put-doc of the
+record IS its plain Tier-1 — no prefix, no registry row); bind + the
+explicit two-step lookup (get-alias → get-doc) returns the result;
+reformatted input ⇒ SAME computation address. Env-axis (005: a
+runtime-patch difference alone moves the address), field-order
+irrelevance (006), meta ⇒ hit (007), impure/shape/uncacheable
+negatives (002/003/004).
+
+Lanes green standalone: code_eval_fixtures (post5 log),
+store_core_umbrella (s5_w5_lane_store.log LANE-RC=0). First full gate
+RC=2 (s5_w5_gate.log): the governance §9.6 sparse-row amendment
+carried TWO numeric tokens the registry parser reads as intersecting
+range claims (1113–1119 plus the descriptive repeat) — a
+registry-internal overlap, code and fixtures never implicated; row
+reworded to a single range token (registry gate green standalone,
+s5_w5_reggate3.log). GOTCHA booked: every digits-dash-digits (and
+bare-code) token in a governance §9.6 row is a RANGE CLAIM — never
+repeat codes in row commentary. Full gate rerun GATE-RC=0
+(s5_w5_gate2.log; the two known usecache artifacts on #572 retries).
