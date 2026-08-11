@@ -229,4 +229,58 @@ taken here.
 Lanes green standalone: code_eval_fixtures (post log above), async_conc
 umbrella (s5_w2_lane_async2.log LANE-RC=0 on the rebuilt binary — first
 run red ONLY because the spawned CLI was stale, not a regression). Full
-gate: s5_w2_gate.log.
+gate GATE-RC=0 (s5_w2_gate.log; fabric+http FAILs = usecache C-compile
+artifacts, green on classified #572 retries). Landed 9bff3ad0.
+
+### Entry 3 — W3: L104 the caps value (2026-08-11)
+
+**Ruling taken at entry (standing acceptance, long-term-best verified) —
+R1 (the C4 surface spelling): a zero-arg bare-name IMPURE builtin
+`[$caps]`.** Verified against the bar: (i) a new stdlib module for one
+function would need a new std-lib spec file — NOT in the ruled §10
+spec-edit map (security.md §2/C4 + code.md ARE); (ii) purity: `[$caps]`
+MUST be impure — a pure body reading the grant set would break the
+§6.5.1 cap-set-invariance the W2 theorem rests on (booked as normative
+rationale in both specs); (iii) capability-free by the §3 narrow-only
+invariant (observation of own authority can never exceed it) — a new
+row (f) in the CLOSED impure-without-capability exception table, both
+spec-side and in effect_alignment.v (the drift-gated single source).
+The ACTIVE set is what `[$caps]` shows (C4's own sentence); the ENTRY
+set as the record's hash basis is W5's consumer and lands there with
+its capture mechanism (no-seam rule).
+
+**Fixture-first transcript:** program-caps-001 (full-grant C4 value) +
+program-caps-002 (narrowing visible, policy field never on a narrowed
+set) authored RED (s5_w3_lane_fixtures_pre.log: both shape-mismatch) →
+green post-impl (s5_w3_lane_fixtures_post.log LANE-RC=0). Five new V
+tests in stdlib_caps_test.v (normalization equality, full/empty/scoped/
+narrowed C4 renders) — green (s5_w3_lane_caps.log).
+
+**#713 item 3 (allow_all normalization):** the `allow_all` bool state is
+GONE — `caps_set_all()` now installs the explicit nine-grant set + the
+new `private_range_allowed` policy field (the ONE behavior the opt-out
+adds: the §4.5 private-range-deny bypass). `cap_allowed` loses its
+short-circuit; `cap_allow_all()` → `cap_private_range_allowed()` (the
+net SSRF check reads the policy field — semantics byte-identical);
+narrowing clears the policy field (an interior set never bypasses the
+deny set — same behavior as before, now stated).
+
+**#713 item 5 (C4 value):** `caps_to_cx_value()` — canonical map,
+key-sorted at construction: granted-unscoped → `true`; scoped → sorted
+canonicalized scope seq (hosts lower-cased, path roots trailing-slash
+normalized, deduped); ungranted → ABSENT; `private-range-allowed: true`
+only when set (so opt-out vs explicit-full are two canonical values
+differing in exactly the behavior that differs). Wired as
+`invoke_builtin('caps')`; classified impure (purity_checker table);
+exception row (f) (effect_alignment.v — the alignment gate is the drift
+canary).
+
+**Spec edits (ruled map):** security.md §2/C4 rewritten as the
+implemented normative form (spelling + canonical form + normalization +
+entry-vs-active note); code.md §6.5.x impure table gains the
+evaluation-environment-introspection row; §6.5.1 exception table gains
+row (f).
+
+Lanes green standalone: stdlib_caps_test, eval_semantics_umbrella (=
+the check-effect-alignment lane), code_eval_fixtures. Full gate:
+s5_w3_gate.log.
