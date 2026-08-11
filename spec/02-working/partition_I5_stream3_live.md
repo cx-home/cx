@@ -202,3 +202,94 @@ verdict)
      missed). Retargeted to eval_semantics_umbrella_test.v; green.
    - **W1 gate:** full `make test` UNPIPED, GATE-RC recorded from the
      log (commit message + below carry the verdict).
+
+3. **W2 LANDED (2026-08-10/11, Fable 5).** `observe` — the live ∂
+   subscription — plus the delivery.md §4 consumption arms, exactly the
+   entry-2 handoff:
+   - **Surface:** `stdlib/live.cx` gains `observe` (module-doc/fn-doc
+     updated; the fn-doc example backed VERBATIM by fixture live-020).
+     Thin catalog entry + governance §9.6 band row updated in the same
+     change (#717 discipline): 5074–5075 shipped at W2.
+   - **Prim:** `live-observe` in stdlib_live.v. The W1 pipeline
+     REFACTORED into shared pieces — `live_prepare` (parse → membership
+     → slices → $bind CXER5071 → authz-slice → L96 rewrites),
+     `live_sample_heads`, `live_answer` (the three-path core) — and
+     observe's every poll reuses them VERBATIM: observe ≡ repeated
+     changes-since IS the implementation, so equivalence leg 2 holds by
+     construction (live-021 pins it as LITERAL value equality across an
+     insert round, a retract round, and a quiescent round).
+   - **The handle:** `[live-sub id= rung= sharing=independent flow=pull
+     retention= on-close=live-close [head-set …]]` — live.md §5
+     verbatim; rung ALWAYS reported, weakest-of-set (native sources
+     declare :complete-ordered; live_rung_rank orders the closed
+     ladder; adapter rungs feed in at W4); the [head-set] child = the
+     client anchor at creation (delivery §4's head=/cursor= for a
+     multi-source set IS a head-set — unrepresentable as a scalar attr;
+     the pack's single-child rendering is the conforming form).
+   - **Consumption seam (U1.12a/U1.15a arms, FIRST consumer):** NEW
+     Ring-1 registry `Ring2SubOps` (ring_registry.v — receive + ready
+     probes keyed by handle element name; ring2_register.v registers
+     'live-sub'). `[?receive from=]` unbatched = ONE poll = the next
+     [changes] batch (empty at quiescence — the honest changes-since
+     answer); `max=`/`deadline=` engage the U1.12a batch form (the
+     sequence of up to max NON-EMPTY batches within deadline ms;
+     quiescent polls are non-deliveries; deadline without max =
+     unbounded max). `[?select]` from-cases accept subscriptions AND
+     channels mixed (readiness = the non-consuming heads>cursor probe).
+     `[?close]` fires the SHARED `__cx_close_id__` close contract
+     (bus_stamp_closeable; idempotent silent second close per SAP §5.1
+     — channel CXER0203 double-close stays the channel's own posture),
+     so [?with-open] and [?close] share one close state. #762
+     generalizes these arms across every §4 instance.
+   - **Termination/refusals:** CXER5074 closed-and-drained on receive
+     after close or after the fault frame; a mid-stream fault (query
+     err, source err, retention loss under the cursor) terminates LOUD
+     — the err delivered as the FINAL FRAME of a terminal [changes]
+     batch whose head-set is the UNADVANCED cursor; at CREATION a
+     below-retention $from refuses CXER5073 via eager anchor replay
+     (stream 7 F2 engaged always — never a silent re-seed);
+     retention=latest on a ∂ stream → CXER5075 (the named structural
+     refusal), non-point retention values → CXER5075; $opts `rung=`
+     (the delivery one-option-vocabulary guarantee-declaration key)
+     accepts exactly {:monotonic-reads, :gapless}, any other token →
+     CXER5075 — ladder REQUIREMENTS (CXER5077) are W4 adapter wiring,
+     deliberately NOT dead code now.
+   - **Decisions at implementation latitude (recorded):** (a) the
+     delivery message unit is the [changes] batch — one changes-since
+     answer per receive ("frame" = the ∂ entries INSIDE batches; the
+     burst discriminator counts [insert] frames: live-022, N inserts ⇒
+     N frames, never coalesced); (b) QUIESCENCE EXACTNESS added to
+     live.md §3 (RULED: 122–154, pack-spec latitude): cursor==head on
+     every source ⇒ ∂ = ∅ BY IDENTITY for EVERY comprehension
+     (positions advance on every source event) — W1's changes-since
+     answer for non-incremental comps at quiescence (was
+     [recompute]+full) refined to the provably-exact empty batch,
+     pinned live-037/038; the second universal exactness point beside
+     the empty cursor; (c) the subscription registry is PROCESS-GLOBAL
+     (fabric parity), never a ring2_env_reset: new_env is ALSO the L99
+     sandbox constructor (planar_query_execute builds one per
+     execution), so a per-program reset wiped the registry on the first
+     receive — found live during W2, the reset removed; (d) polls
+     re-guard the `eval` capability (every receive executes the quoted
+     comprehension; observe guards at creation too — both registered in
+     effect_alignment.v); (e) the error-pipeline order inside
+     live_prepare is parse → membership → slices → bind → authz →
+     REWRITE for both verbs (rewrite folded into prepare: V cgen cannot
+     default-init ProgramForComp, so LiveQuery is heap-built on success
+     only — the store_get_open nil convention); no fixture pinned the
+     old cap-before-rewrite relative order; (f) verb attribution
+     threaded through the replay-substrate messages (a CXER5073 out of
+     observe no longer reads "changes-since").
+   - **Fixtures:** conformance/stdlib/live.cxd 19 → 39 enforced cases
+     (live-020…039): leg-2 equivalence; burst ∂-never-coalesces;
+     handle-shape + mixed-source weakest rung; retention/rung policy
+     negatives; close/with-open/idempotence; fault-final-frame +
+     closed-and-drained pair; select readiness + timeout fallback;
+     journal-source observe; batched receive; observe below-retention
+     negative; quiescence-exactness pair; observe eval-cap deny.
+   - **W2 gate:** full `make test` UNPIPED — GATE-RC=0 read from the
+     log (scratchpad w2_gate_make_test.log line 203896; every lane
+     0-failed; the standalone eval-fixtures lane also green first,
+     LANE-RC=0). W3 pre-survey note: NO expect-pos CAS exists anywhere
+     in platform yet (only the remote wire's 409→CXER1114 mapping) —
+     W3 builds the CAS alias advance the checkpoint contract needs.
