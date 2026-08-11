@@ -516,3 +516,61 @@ verdict)
      green on the harness's classified #572 cache-free retry, named in
      the log. The standalone eval-fixtures lane was green first
      (LANE-RC=0, w4b_fixture_lane.log, 64 cases).
+
+7. **W5 LANDED (2026-08-11, Fable 5).** The store feed completed + the
+   §8 sweep + M5 end-to-end:
+   - **The per-ref advance order WIRED (the W1 decision-(b) promise
+     kept; #708/L136):** a store source is MULTI-STREAM on the live
+     cursor — the docs plane stays the bare `[s source= pos=]` entry,
+     each named wire ref gains `[s source= ref=NAME pos=]` (the profile
+     §5.1 per-stream form; live.md §4 refined, RULED: 122–154).
+     live_store_replay walks BOTH planes chronologically (advance
+     insertion order = doc_order = the executor's relation order): a
+     ref advance inside the window answers the EXACT retract(old
+     content rows)+insert(new content rows) pair
+     (live_store_ref_rows — root-authoritative, no content-address
+     re-verify: the ref's identity is its name); at-cursor ref content
+     replays at the root its cursor position recorded. The W1
+     refs-plane CXER1709 refusal is LIFTED; unknown cursor streams
+     refuse CXER5072. WHY the refusal was load-bearing (recorded):
+     named wire refs live in doc_order and the query scan resolves
+     their CURRENT content — a ref advance perturbs the doc relation,
+     so a docs-only cursor would silently miss it.
+   - **Coverage for the refs plane is the in-module V test**
+     vcx/platform/live_refs_feed_test.v (refs are wire-created —
+     store_ref_advance_local is the CSRP/XSP listeners' one funnel —
+     unreachable from public local surface; the tests-poke-MemStore
+     pattern): empty-cursor whole-relation, quiescent-exact,
+     ref-advance retract+insert pair with NO recompute marker,
+     mixed docs+refs window, head-set ref= round-trip, CXER5072
+     negative. Green standalone.
+   - **The §8 sweep (families audited against live_modes §8):** the two
+     gaps found are filled — the γ RETRACT/REINSERT GROUP-POSITION pair
+     (live-065: the group keeps its first-appearance position while a
+     member remains, maintained ≡ recompute pinned) and the
+     ∂-never-coalesces vs materialize-read COALESCE CONTRAST (live-066:
+     one burst = N frames on the stream, ONE snapshot on the read).
+     All other §8 families were already pinned (mapped in the .cxd
+     header, cases 001–064).
+   - **M5 END-TO-END (live-067):** one commerce model, all four modes
+     composed — revenue-by-region as a one-time query; changes-since
+     carrying a dashboard cursor (a [regroup] frame lands); materialize
+     maintained through a γ-retract window (recomputed=false, the
+     retract-incremental leg; the loud boundary is 045/047) with
+     maintained ≡ recompute pinned + a quiescent advance; an agent
+     observing the :snapshot-diff adapter stream fed by the CDC-less
+     order DB through adapt-poll. The honest group-reanchoring is
+     visible in the pinned output (east's first-appearance member
+     deleted ⇒ east re-anchors after west, exactly as recompute).
+   - **Spec surgery (RULED: 122–154):** live.md §4 (the multi-stream
+     store cursor); store.md gains the local-feed cross-ref (ONE
+     store:log — the local porcelain and the wire subscription can
+     never disagree; the ruled §9 map's store.md item).
+   - **Fixtures:** 64 → 67 enforced (live-065…067) + the in-module
+     refs test.
+   - **W5 gate:** full `make test` UNPIPED — GATE-RC=0 read from the
+     log (scratchpad w5_gate_make_test.log line 154693; fabric/http
+     umbrella lanes green on the harness's named classified #572
+     cache-free retry). Standalone eval-fixtures lane green first
+     (LANE-RC=0, w5_fixture_lane.log, 67 cases); the refs in-module
+     test green standalone.
