@@ -581,7 +581,22 @@ the same PR per §10.1.
 |---|---|
 | `.cx` | CX document |
 | `.cxs` | CX schema |
-| `.cxbin` | CXCol binary wire format (formerly `.cxcol`) |
+| `.cxbin` | CXCol binary wire format (formerly `.cxcol`; `.cxcol` is a deprecated alias, recognized read-only) |
+| `.cxd` | Conformance fixture suite (the corpus format) |
+| `.cxpack` | Registry pack bundle |
+| `.cxlint` | Lint configuration |
+| `.cxpath` | CXPath query file |
+
+The former draft tokens `.cxsh`, `.cxl`, `.cxlib`, and `.cxdv` are
+DELETED — never shipped, not reserved (stream 13 ruling 61; the phantom
+`.cxsh` reference is removed from grammar.ebnf in the same change).
+
+**Reserved filenames** (exact-name reservations, not extensions):
+
+| Filename | Description |
+|---|---|
+| `cx.lock` | Package lockfile |
+| `cx.pkg` | Package manifest |
 
 Reservation means the CX project's CLIs, LSP, editors, and registry
 metadata recognize the extension as CX-related. Third-party tooling
