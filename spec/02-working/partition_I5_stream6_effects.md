@@ -403,3 +403,23 @@ stale-CLI gotcha fired again). #713 item 4 evidence complete.
   extension) lands WITH ITS SUBSTRATE at stream 10 (#682) — the ruled
   sentence itself binds its semantics to "stream 10's escrow rules";
   named landing, not a deferral.
+
+**W4 CLOSED 2026-08-11 — full gate GATE-RC=0 (s6_w4_gate2.log; first
+run s6_w4_gate.log RC=2 = guide-check wanting fn-docs for the new
+public defs — added; fabric/http/udp lanes = the known retry-green
+set).** Landed: authz-debited events on the authz stream (R9);
+authz_meters_impl + authz_meter_fold (R10: bucket replay / monotone
+count / epoch-aligned UTC-Z spend windows; now via opts, default =
+newest debit ts); authz_debit_impl (R11: re-fold under the commit
+path, CXER4713-as-data deny naming conjunct + meter owner, no event on
+refusal; count>=1 / spend>0 / declared-currency validation); PEP
+reading + budget check gain the spend axis/conjunct (D-C1 complete);
+stdlib/authz.cx meters+debit defs + fn-docs; authz.md §3.8 authored
+per the ruled meter-as-fold map row. **Latent stream-4 defect fixed en
+route (fixture-first):** the [spend AMOUNT] bounds arm raw-matched
+f64/i64 and silently rejected every literal spend amount (the arm was
+fixture-untested at stream-4; authz-072/073 now pin the
+authz_node_f64 read). Fixtures authz-068..077 green; stdlib umbrella
+green. Gotcha booked: canonical attr emit does NOT quote hyphenated
+ids (meter id=d-1, not id='d-1') — out-text must match the emitter,
+not the input spelling.
