@@ -494,9 +494,11 @@ check-null-absence-conflation:
 # directions + drift canaries (process- prefix, env- minus pure prims, io
 # read/write/open). Runs as part of `test-vcx` too; this dedicated target is
 # the named gate.
+# (#700: effect_alignment_test.v consolidated into the eval_semantics
+# umbrella — the named target retargets to the umbrella like its siblings.)
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
-	@$(V) -cc cc $(CX_GC) test vcx/tests/effect_alignment_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/tests/eval_semantics_umbrella_test.v
 
 # ── check-code-spec-consistency (#707 item 4 / code.md §11.4.1 gates 1-3 +
 # the clean-room no-impl-anchor / no-dangling-decision checks). The tool

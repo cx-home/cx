@@ -124,3 +124,81 @@ verdict)
    the W1 fixture families (quartet leg 1; head-set round-trip;
    ∂/recompute shape parity); the W1 gate (unpiped, GATE-RC from the
    log).
+
+2. **W1 LANDED (2026-08-10, Opus 5 — bulk implementation per the model
+   policy).** The pack + the stateless core, exactly the entry-1
+   handoff:
+   - **Surface:** `stdlib/live.cx` ships `changes-since` ONLY (the
+     live.md §2 note "surface lands with the W1–W3 implementation" is
+     load-bearing — no-stubs means observe/materialize/advance/read
+     appear WITH their waves, never ahead); module-doc + fn-doc, the
+     example backed verbatim by `conformance/stdlib/live.cxd`
+     (guide-check green). Registered in `stdlib_bundle.v`
+     (43→44; the frozen-surface canary in stdlib_umbrella_test.v
+     updated) + `spec/03-approved/std-lib/README.md` §3 Tier-D row
+     (the L129-authorized surgery — §3/§3.2 counts reconciled to 44
+     while there: `similar`'s earlier ride-in had left the header
+     at 42, off by one BEFORE this row; flagged here for the owner) +
+     the thin catalog entry `spec/03-approved/std-lib/live.md`
+     (module-meta for the stdlib-catalog-gate — the fabric/xap/sql
+     pointer pattern; spec content stays in 02-working/live.md).
+   - **Prim:** `vcx/platform/stdlib_live.v` `live-changes-since`,
+     env-aware via ring2_register.v. The L99 pipeline verbatim
+     (planar_query_source → parse → membership CXER0120 →
+     planar_extract_slices → $bind resolution → the store:query
+     authz-slice layer reused → planar_rewrite), widened to journal
+     sources per the pack spec. Cursor = head-set per FORMAL name;
+     store pos = the #708 lineage's DOCS-PLANE advance seq
+     (`ms.advances`/`adv_pos` — heads sampled at entry; handles are
+     single-owner so reads cannot interleave a writer); journal pos =
+     the per-STREAM seq. Three answer paths: EMPTY cursor →
+     executor + full-relation-as-inserts (leg 1, exact, no marker);
+     outside `planar_incremental_membership` (or a source ref outside
+     a generator position — no ∂ entry point) → the honest
+     `[recompute reason=…]` + inserts; inside → per-generator relation
+     reconstruction at the cursor (store: lineage replay w/ object-root
+     content recovery for since-deleted docs; journal: slice 1..cur) +
+     source deltas fed through `planar_delta_init/apply`, output script
+     verbatim; an engine `[recompute]` mid-window supersedes the frames
+     (marker + maintained relation re-stated). BOTH paths behind the
+     `eval` capability (cap_guard; registered in effect_alignment.v —
+     gated ⇒ impure by construction).
+   - **Decisions at implementation latitude (recorded):** (a) a formal
+     journal name consumed with TWO distinct streams refuses CXER5072
+     (one head-set position cannot represent two per-stream seqs; bind
+     each stream through its own formal) — the §4 one-entry-per-formal
+     doctrine made concrete; (b) non-objgraph + remote stores refuse
+     CXER1709 (mirrors store:log #708 — the wire feed is stream-4/W5);
+     a store carrying NAMED WIRE REFS (refs-plane lineage) likewise
+     refuses CXER1709 loud until W5 wires the full per-ref advance
+     order — the W1 docs-plane cursor must never silently miss a
+     ref-advance; (c) unreconstructable history (post-gc/prune object
+     loss; blob history, whose F1' inserts record no object root)
+     refuses CXER5073 — fail-closed, never re-parsing raw bytes as
+     structure; (d) a query err returns as the [err] VALUE (the
+     final-frame delivery form is observe's, W2); (e) consumers re-wrap
+     the returned cursor (`[?element "head-set" $c/head-set]`) because
+     a path binding unwraps a single matched element to its content —
+     fixture-pinned spelling, revisit at W2 if the handle carries the
+     cursor.
+   - **Registry:** the per-code rows LIVE in live.md §9 (the stream-4
+     precedent — core code.md carries only the CX-code range and is
+     NOT in this stream's ruled §9 edit map; the entry-1 "code.md
+     registry rows" phrasing resolved accordingly, live.md §9 wording
+     corrected in place); governance §9.6 band row updated per #717:
+     5070–5073 shipped at W1. cxer-registry-gate --strict green.
+   - **Fixtures:** `conformance/stdlib/live.cxd`, 19 enforced cases
+     (gates.cxd row live=enforced): the three W1 families — quartet
+     leg 1 (001/002 + the τ empty-cursor exactness pair 009/010),
+     head-set round-trip (003 quiescent / 004 inserts-since / 005
+     retract), ∂/recompute shape parity (006 σ/π row equality; 007 γ
+     [regroup]; 008 γ-retract honest marker + rebuilt relation) — plus
+     the journal per-stream cursor (011) and the refusal set
+     5070/0120/5071×2/5072×2/0271/5073 (012–019).
+   - **Gate repair riding along:** `make check-effect-alignment` had
+     been broken since the #700 eval_semantics consolidation (its test
+     file merged into the umbrella; the named target was never
+     retargeted — the documented #700 retarget class, this one
+     missed). Retargeted to eval_semantics_umbrella_test.v; green.
+   - **W1 gate:** full `make test` UNPIPED, GATE-RC recorded from the
+     log (commit message + below carry the verdict).
