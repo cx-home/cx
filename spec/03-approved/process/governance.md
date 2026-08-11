@@ -602,6 +602,26 @@ Reservation means the CX project's CLIs, LSP, editors, and registry
 metadata recognize the extension as CX-related. Third-party tooling
 SHOULD NOT claim these extensions for unrelated purposes.
 
+### 12.3 Reserved reference prefixes
+
+Tagged reference prefixes are **domain separators for trust inputs**: a
+prefixed address names WHAT KIND of artifact a hash addresses, so an
+address minted in one trust domain can never be replayed into another
+(the `code:` precedent). This registry is the single source of truth;
+a new prefix adds a row here before first use. The prefixes are
+append-only and never reassigned.
+
+| Prefix | Addresses | Owner spec |
+|---|---|---|
+| `code:` | Tier-1 tagged content addresses of CX code / definition text (`code:sha2-256:<hex>`) | `spec/core/code-identity.md` |
+| `computes-as:` | Tier-2 semantic fn-identity claims (`computes-as:<algo>:<hex>`) — dispatch-only, never an address; never a trust input | `spec/core/code-identity.md` |
+| `cap:` | any **authority-artifact** value — `[capability …]`, `[delegation …]`, the C4 grant-set document (`cap:sha2-256:<hex>`); resolution is FAIL-CLOSED against the live authority registry (commands and effects, stream 6 — L114) | `spec/std-lib/authz.md` |
+
+(`cx-err:` is a wire-code namespace, not a reference prefix — governed
+at §9.6. The retired `cap:resource` grant-scope spelling collided with
+the `cap:` prefix and was renamed to `cap=resource` — #713/L114; the
+prefix is the one meaning.)
+
 ---
 
 ## 13 — Spec corpus governance
