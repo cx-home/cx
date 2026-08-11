@@ -271,3 +271,26 @@ so it pins the finished surface; exit alone.
    image is projection-only, E210 intact); cx_partition.md §2 names
    the contract as Ring 0's contract artifact. G3 graduation of this
    document = OWNER-GATED handoff packet (item 6), not attempted here.
+
+5. **W5 COMPLETE (2026-08-11) — §7 corpus completion. Full gate
+   GATE-RC=0 (s1_w5_gate2.log).**
+   The remaining §7 families landed: idh-032 meta-does-not-participate
+   (hash + cx:equal across a `[?meta]` wrap — the #708-item-1 corpus
+   pin), idh-033 quote-roundtrip-closure (parse ∘ serialize byte-stable
+   over a lowered quote result + same Tier-1 address — the §11.4
+   closure pin), store-branch-003-cas-conflict (local non-fast-forward
+   `branch` → CXER1114 — the ONE conflict code locally, completing the
+   encoding×surface matrix: journal expect-pos local (journal-06x),
+   wire both encodings (g13 parity + store_concurrent_writer +
+   cxstore_wire expect=/"" cases), force-move visibility
+   (store-log-003)). Lanes: identity_hash 23/23; stdlib battery green;
+   cxparse differential UNMOVED at 748 (identity_hash/store.cxd are
+   outside its walk set). Gate history: first W5 gate RC=2 — a REAL
+   race surfaced: store_rotation_test panicked in
+   PackObjectBackend_fold_commit (`array.set (0,0)` — b.segs emptied
+   under the worker's held op-lock ⇒ a segment-set-replacing path
+   mutates without the same lock identity). Pre-existing (zero cxstore
+   edits this stream; same tree gated green twice earlier today; three
+   standalone re-runs green). Filed #779 prio:high, PINNED to #692's
+   landing (rotation is erasure/compliance surface). Second gate
+   GATE-RC=0.
