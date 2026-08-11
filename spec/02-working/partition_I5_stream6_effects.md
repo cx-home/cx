@@ -466,3 +466,19 @@ not the input spelling.
   papering-over D-C1 warns against). Absent `[window]` = no expiry
   (the caller declared unbounded idempotency; declare a window on
   server-resident commands — documented in code.md §12.2.7).
+
+**W5 CLOSED 2026-08-11 — full gate GATE-RC=0 (s6_w5_gate2.log; first
+run RC=2 = the deliberate cxparse corpus growth +6, baseline updated
+759/594→765/600; usecache pair retry-green).** Landed: Closure
+is_idempotent/idem_window_ns/tier2_addr via command_idem_fields (both
+registration sites; malformed [window] = CXER0239); per-ProgramState
+idem_records registry; bind_specs_and_eval_k reads the DERIVED key out
+of the post-default call frame (one spelling of the binding rules);
+idem_strip_explicit_key handles the reserved idempotency-key= caller
+arg before binding; success-only recording; [deduped <outcome>] hits;
+window expiry on clock_now(). Fixtures cmd-013..018 green (cmd-014 =
+the anti-double-refund trap; cmd-016 = the failure-not-recorded
+discriminator via swallowed-first-failure-then-out-err; cmd-017 window
+expiry on [?test-clock]). code.md §12.2.7 idempotent bullet completed;
+journal.md §4.9 dedup-record retention extension authored per the
+ruled map. Durable commit-boundary CAS = W6 (g).
