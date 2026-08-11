@@ -289,4 +289,49 @@ tracker):** the module loader's ensure_module_scope does not set
 declared_impure on module-def closures — a module-defined impure
 validator would pass the validate-with= declaration gate
 (validate.md R3.12) that program-level defs fail. See issue filed at
-W2 close.
+W2 close (#780).
+
+### W3 — authority-store durability, #713 item 4 (2026-08-11)
+
+**Authority to land here:** #713 item 4 is RULED text ("Durability
+lands before or with the budget implementation at I5") + the L112
+prerequisite sentence in the ruled spec ("the authority store must
+persist across restarts before any budget is real — a meter that
+resets on restart is not a budget"). The authz.md §5 implementation-
+tier note names exactly this as the deferred pair (restart survival +
+caps routing); this wave discharges it along the spec's own §2.6/§3.1
+contract — no new spec surface is invented.
+
+**W3-entry rulings:**
+
+- **R6 (durable backing = the tenant journal, per the shipped
+  §2.6/§3.1 contract).** `store opts.journal` (already spec'd: "the
+  `[$journal:…]` handle grants/decisions are appended to") binds a
+  journal handle to the authority store. The persisting verbs
+  (delegate / revoke / grant-guardian) append attributed events per
+  §2.6 — actor = the issuer's id, authority = the issuance basis (the
+  `[attenuates …]` parent id, or `principal` for a principal-rooted
+  grant); the journal's OWN backing store provides durability,
+  group-commit, the hash chain, and capability gating (its effect
+  points charge scheme-derived caps — authz introduces no new
+  capability, the §5 restatement, now transitively REAL). Reopen =
+  REPLAY: `store {tenant, journal}` folds the journal's authz stream
+  to rebuild the delegation set — the persisted-grant-then-reopen
+  path. No journal bound = the in-process tier stands unchanged (the
+  mem-tier posture; existing programs and fixtures are untouched).
+- **R7 (journal-first, fail-closed).** The append happens BEFORE the
+  in-process mutation; an append fault is `CXER4710
+  E_AUTHZ_STORE_FAULT` (cause carried) and the mutation does NOT
+  apply — live trust state never runs ahead of its log. Replay
+  applies events WITHOUT re-running issue-time validation (the log is
+  the authority; attenuation/gate checks ran at issue — re-checking
+  at fold would make replay order-fragile for no security gain).
+- **R8 (event vocabulary).** Named stream `authz` on the bound
+  journal; two events: `[authz-issued <canonicalized delegation>]`
+  (guardian grants ride the same event — the guardian shape is IN the
+  value) and `[authz-revoked id=…]`. A cascade revoke appends ONE
+  event per affected id (§2.6 "every authority transition"; replay
+  stays a trivial fold, audit stays exact), each applied to live
+  state immediately after ITS append succeeds — on a mid-cascade
+  fault, both log and live state hold the same prefix (consistency at
+  every prefix; the remainder re-runs idempotently).
