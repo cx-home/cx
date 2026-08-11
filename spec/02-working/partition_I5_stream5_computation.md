@@ -463,3 +463,60 @@ an iterator could enter: hashing it); tape-composed identity fixture
 (cx-120). Lanes green (s5_w6_lane_fixtures2.log LANE-RC=0; first run
 red on an [?if] clause-shape authoring slip in cx-120, fixed — no
 engine movement this wave). Full gate: s5_w6_gate.log.
+
+### Entry 7 — W7: stream exit (2026-08-11)
+
+**VERDICT: L102–L108 discharged at FULL RULED SCOPE.** Every letter's
+implementable surface landed with fixtures-first + green full gates
+(w2 gate / w3 gate / w4 gate / w5 gate2 after the governance-row
+repair / w6 gate — all GATE-RC=0, verdicts read from the logs; the
+only recurring FAILs were the two known usecache C-compile artifacts,
+green on classified #572 retries every time):
+
+- **L102** — the map-shaped `[computation]` record constructs
+  in-language; computation-id = plain Tier-1 of the record (no prefix,
+  no registry row); dual fn addresses with the fn.code claim in the
+  A1-ruled `computes-as:` spelling (R3).
+- **L103** — the environment quadrant: `cx:version` / `cx:builtins` /
+  `cx:env` (three pure builtins, R2); builtin-set id = Tier-1 of the
+  two closed spec tables, re-hash-verifiable in-language; schema
+  dialect single-sourced with the S020 check.
+- **L104** — caps in the hash via the C4 canonical value (`[$caps]`,
+  impure by the invariance argument); allow_all NORMALIZED to
+  explicit-full + the private-range-policy field (#713 items 3+5).
+- **L105** — `pure ⇒ deterministic` authored normatively in code.md
+  §6.5.1; `[par]` reassembles source order ALWAYS on every path
+  (buffered map / for-par / streamed with incremental prefix
+  emission); `[ordered]` tombstoned; the locale audit swept the whole
+  pure list (clean; the simple-vs-full casing facet booked); map
+  traversal pre-registered.
+- **L106** — the pure-only VISIBLE cache: `computation/<addr>` alias
+  namespace on the existing verbs, fail-loud admission (CXER1117/
+  1118/1119: recompute-and-refuse, declared-pure + checker-verified,
+  never-cached err classes), explicit two-step lookup; no new store
+  API, no `[?memo]`; the M5 worked example end-to-end in the corpus.
+- **L107** — tapes-as-inputs stated normatively in debug.md §6a +
+  the cx-120 composition fixture.
+- **L108** — verified purely additive; the post-I1 epoch statement
+  stands in the working spec.
+
+**Out-of-scope remainders, each at a NAMED landing:**
+- G3 graduation of `computation_identity.md` (and the approved-tree
+  section beside code-identity.md) = the item-6 owner-gated handoff
+  packet (ruled at W1).
+- The `par_reduce` default-chunk-width residual (host-ncpu-dependent
+  chunking under the §8.10.6 user-asserted associative contract; a
+  one-line width-derivation change if the owner wants
+  stronger-than-contract determinism) → the item-6 packet note.
+- The bare-builtin simple-casing vs `strings:` full-casing facet —
+  documented in code.md §6.5.1 + pinned by the locale-audit fixtures;
+  unifying would be a semantics change needing its own ruling.
+- #713 item 4 (authority-store durability) → #678 (cross-pinned at
+  W1; items 3+5 CLOSED here with evidence, items 1+2 closed at the W8
+  boundary — the issue stays open for item 4 only).
+
+Handoff → #678 (stream 6, commands/effects — the order-of-march next;
+it inherits the C4 caps value + the admission-boundary posture this
+stream landed, and carries #713 item 4). Exit-merge to
+design/651-516-partition IS the exit step; the exit gate runs on the
+merged branch (s5_exit_gate.log).
