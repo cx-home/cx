@@ -602,3 +602,77 @@ runs the body after the debit clears. authz-083 (the M5 arc) pins the
 order: overspend deny arrives WITHOUT the body running and WITHOUT a
 dedup record for the refused order.
 
+
+### Stream exit entry (2026-08-11) — VERDICT: L109–L114 (+L139) discharged at full ruled scope
+
+**W7 landed:** the M5 `refund-order` end-to-end fixture (authz-083 —
+propose under a propose-only budget-bounded sub-delegation → principal
+approves the ADDRESS → commit verifies/debits/executes/journals →
+identical replay dedups as a PRESENT value → the over-budget refund
+denies naming :spend on the meter owner, with the body NEVER run and
+no dedup record: the exec-counter pins the ordering). The
+commit-ordering defect the fixture-drafting found (execute-before-
+debit) fixed via the two-pass engine protocol (verify: version +
+preconditions ONCE; then debit under the commit lock; then execute).
+
+**Exit audit vs the ruled §8 spec-edit map:**
+- grammar `[152a]` + `[152d–h]` — EXECUTED (W2).
+- code.md §12.2 (+§12.2.7, §9.4/§9.5 rows, §6.5.1 interplay) — EXECUTED
+  (W2, completed W5).
+- security.md §2 effect table + enforcement note (EV-EFFECT-SET) —
+  EXECUTED (W2; spec↔impl parity gate live; io-watch hole closed).
+- authz.md — [bounds] rows verified (stream-4 W4); §5 durable-tier note
+  (W3), §3.8 budgets (W4), §2.2 propose-only + §3.10 + §8 rows
+  4714–4716 (W6) — EXECUTED.
+- xap.md §3.4 dry-run → proposal — EXECUTED (W6; text cutover on a
+  spec'd-not-implemented surface, verified no fixture movement).
+- journal.md dedup records + retention extension — EXECUTED (W5, §4.9).
+- governance §12.3 cap: row (new reserved-reference-prefix registry) —
+  EXECUTED (W6).
+- stream-4 handoff (wire carriage) — was already DISCHARGED (store
+  profile §6.1, per the ruled map's own note).
+- stream-18 handoff (discriminator + proposal schema) — READY: the
+  `[effects]` discriminator is normative + enforced (code.md §12.2.7);
+  the proposal schema ships (modules/cx.md cx:propose + authz §3.10);
+  #690's MCP projection consumes both as specified in
+  agent_tool_projection.md.
+
+**§7 corpus handoff audit:** propose→approve→commit arc (authz-078,
+-083); tampered-args replay negative (authz-079, cmd-021);
+precondition-divergence refusal (authz-082); dedup-hit present-value
+(cmd-013, authz-083); double-spend across the budget boundary denied
+naming the conjunct (authz-073, -083); positional-vs-named ⇒ ONE key
+(cmd-014, cmd-021); budget composition (authz-075 shared meter,
+authz-028 envelope clamp — pre-existing); pure+[effects] static
+negative (cmd-003); effect outside declaration ⇒ loud (cmd-002);
+propose-predicts-commit over out-effects — the CHANNEL is reserved,
+not yet implemented (conformance README: stream 22); the pair lands
+WITH that channel (named landing). The semantic property holds by
+construction meanwhile: commit executes under (grant ∩ declared) —
+exactly the set the proposal records — so commit can never exercise an
+effect the proposal did not show (cmd-002 enforces the narrowing).
+
+**Out-of-scope remainders, each at a named landing:** reservation
+(escrow semantics) → stream 10 #682 (the ruled sentence's own
+binding); cross-process durable idem CAS (set-alias expect-addr arm)
+→ the E3 store CAS vocabulary (#708-family); the out-effects
+discriminator pair → stream 22's channel; direct-call [preconditions]
+evaluation — commit evaluates them; the DIRECT path deliberately does
+not (the ruled text speaks only of propose/commit; the question is
+BOOKED for the owner at the item-6 review, not silently decided);
+tenant at the direct-call idempotency boundary ('' — the session
+boundary supplies it where sessions exist).
+
+**Defects filed in passing:** #780 (module-loader declared_impure
+drift). **#713 item 4:** evidence complete (W3).
+
+**Item-6 packet notes:** G3 graduation of commands_effects.md is
+owner-gated; the working spec's §1–§8 are now fully implemented, so
+the graduation review can run against live behavior; the direct-call
+preconditions question above is the one lettered decision the review
+should take.
+
+**Handoff (order of march):** next is #679 (stream 7, consistency
+vocabulary — spec finalized at S3; the [idempotent]-naming
+`:exactly-once` refusal and the CAS attachment points compose with
+this stream's landings).
