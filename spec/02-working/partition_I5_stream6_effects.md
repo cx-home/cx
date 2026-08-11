@@ -335,3 +335,21 @@ contract — no new spec surface is invented.
   state immediately after ITS append succeeds — on a mid-cascade
   fault, both log and live state hold the same prefix (consistency at
   every prefix; the remainder re-runs idempotently).
+
+**W3 CLOSED 2026-08-11 — full gate GATE-RC=0 (s6_w3_gate.log; the
+fabric+http usecache pair + one load-sensitive udp-deadline lane, all
+green on in-gate retries).** Landed: AuthzStore journal binding
+(opts.journal → jrn_get_open, fault at open = CXER4710 w/ cause);
+authz_replay_journal (fold over the named `authz` stream; cross-tenant
+skip; corrupt-event fault; window inheritance re-run, issue-time
+validation NOT re-run per R7); authz_journal_append (journal-FIRST,
+attribution {actor: issuer, authority: basis, stream: authz}); hooks in
+delegate / grant-guardian / revoke (+ per-id cascade events, R8).
+authz.md §5 note rewritten to the landed two-tier contract — every
+claim verified: authz-063..067 fixture-first RED→green
+(s6_w3_pre/post logs); the FOUR-env restart test
+(test_authz_durability_survives_env_restart: issue →
+permit-after-restart → revoke → deny-after-second-restart over
+file://); the denied-backend probe (4710 wrapping the 0271 cause,
+mutation not applied — re-verified on a REBUILT binary after the
+stale-CLI gotcha fired again). #713 item 4 evidence complete.
