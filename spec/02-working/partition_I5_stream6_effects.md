@@ -423,3 +423,46 @@ authz_node_f64 read). Fixtures authz-068..077 green; stdlib umbrella
 green. Gotcha booked: canonical attr emit does NOT quote hyphenated
 ids (meter id=d-1, not id='d-1') — out-text must match the emitter,
 not the input spelling.
+
+### W5 — idempotency: keys, effect-boundary dedup, window, L111 (2026-08-11)
+
+**W5-entry rulings:**
+
+- **R12 (key derivation + explicit-key spelling).** Derived default =
+  Tier-1 hash of the canonical record `{args: <param-name → value map
+  AFTER defaulting>, fn: <Tier-2 command address>, tenant: <tenant>}`
+  — the arg record is keyed BY PARAMETER NAME after defaulting, never
+  the raw call expression (positional vs named spelling of the same
+  refund is ONE key — the anti-double-refund trap; the canonical map
+  key-sort makes spelling-invariance structural). Explicit caller key
+  WINS when present: the reserved call-site named argument
+  `idempotency-key=` (the `[?rate-limit] name=` precedent — a CALLER
+  key, not a def clause; it never binds a parameter and is stripped
+  from the arg record; on a NON-idempotent command it is the natural
+  unknown-argument error — undeclared is retry-unsafe by design).
+  Dropped from the key, stated: cap-set + authority basis (recorded,
+  not keyed — the ruled sentence). Tenant at the direct-call boundary
+  = '' (no ambient tenant in the engine); the session/commit boundary
+  supplies the real tenant (W6).
+- **R13 (success-only recording; present-value hits).** Only a
+  SUCCESSFUL outcome creates a dedup record: a failed attempt leaves
+  no record, so `[?retry]` re-executes — exactly the at-least-once +
+  effect-boundary-dedup composition the ruling names ([idempotent] is
+  what makes [?retry] SAFE; recording failures would make the first
+  crash permanent). A dedup hit returns the PRESENT wrapper
+  `[deduped <original outcome>]` — "already done, here's what
+  happened", never the absence channel.
+- **R14 (two dedup tiers, one vocabulary).** The effect boundary of a
+  DIRECT call is the per-ProgramState registry (the [?retry] scope —
+  the same cap-free clock/counter-observation posture as the
+  resilience combinators, §6.5.1 exception family; window expiry
+  reads the SAME engine clock [?test-clock] advances). The DURABLE
+  boundary (W6 commit) is the E3 must-not-exist CAS (set-alias
+  expect='' on `idem/<tenant>/<key>`, CXER1114 conflict = dedup hit)
+  + the journaled transition event (fold-visible fact); journal.md
+  §4.9 gains the ruled retention extension NOW (a dedup record may
+  not be compacted away before its declared window expires —
+  compaction reopening the double-execution window is the
+  papering-over D-C1 warns against). Absent `[window]` = no expiry
+  (the caller declared unbounded idempotency; declare a window on
+  server-resident commands — documented in code.md §12.2.7).
