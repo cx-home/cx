@@ -294,3 +294,35 @@ so it pins the finished surface; exit alone.
    standalone re-runs green). Filed #779 prio:high, PINNED to #692's
    landing (rotation is erasure/compliance surface). Second gate
    GATE-RC=0.
+
+6. **W6 — STREAM EXIT (2026-08-11). VERDICT: E1–E4 DISCHARGED AT FULL
+   RULED SCOPE.** E1 verified landed (I1 rows 8/9/14) with the C4
+   sequencing miss booked; E2 completed THIS STREAM (entry-25
+   discharged via the header cutover; L83 anchoring machinery +
+   [type-binding] claim implemented fail-closed); E3 completed THIS
+   STREAM (ONE CAS vocabulary — expect-pos + the two stale-doc
+   repairs); E4 authored as the binding contract with every
+   cross-binding edit executed; §7 corpus complete (every family
+   present or cited to its owning V-test surface). OUT-OF-SCOPE
+   remainders, each at a NAMED landing: schema-store resolution +
+   cx schema verbs → #688 (L63); G3 graduation of
+   semantic_value_model.md → item-6 handoff packet (owner-gated);
+   #778 (fabric liveness lane load-sensitivity, prio:low); #779
+   (rotation-vs-fold race, prio:high → #692's landing). #673 + #708
+   close with this exit. Exit-merge to design/651-516-partition; exit
+   gate runs ON the merged design branch (log:
+   s1_exit_gate.log). Handoff: #677 (stream 5, computation identity)
+   is next in the order of march.
+   **Stream gotchas (for the memory file):** (1) a DATA-SURFACE
+   cutover census must sweep EXTENSION-BLIND — binding tests embed
+   schema/CX text in .rs/.c string literals (two full-gate cycles
+   spent); (2) new fixture in-cx rows move the cxparse differential —
+   book the movement note WITH the fixture commit; (3) the fabric
+   floor-group liveness lane and the rotation fold race both fail
+   only under parallel-gate load — triage flakes by re-running
+   standalone BEFORE suspecting the stream's own diff; (4) V string
+   Edit replace_all of 'k: ' patterns eats the map-syntax space —
+   check the result; (5) spec-prose-only waves can share one full
+   gate with an adjacent impl wave when their lanes are disjoint and
+   the impl wave's lanes were green standalone first (W3+W4 here) —
+   note it in the ledger, never silently.
