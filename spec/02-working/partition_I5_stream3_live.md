@@ -445,3 +445,74 @@ verdict)
    - **Spec surgery this wave (the ruled §9 map):** fabric.md §14
      ladder cross-ref; io.md rung citation; live.md §8 concretization
      (RULED: 122–154).
+
+6. **W4 LANDED (2026-08-11, Fable 5).** The adapter contract, closing
+   the entry-5 design — enforcement layer + the v1 floor:
+   - **Declaration (stream 7's handle floor):** `[$journal:open]` AND
+     `[$journal:attach]` opts `declare= [adapter-stream stream= rung=
+     writer=]` → persisted `cx-live/adapter/<tenant>[/s/<stream>]` in
+     the journal's own store; idempotent re-declaration; CONFLICTING
+     re-declaration refuses CXER5075 (verified across attach handles on
+     one store instance AND across opens of a durable file:// root;
+     mem:// opens are independent store universes BY STORE DESIGN —
+     smoke-pinned, so the conflict fixture live-057 rides attach).
+   - **Reported on every subscription:** live_source_set_rung reads the
+     declaration per journal formal — an adapter stream reports ITS
+     rung; weakest-of-set is now exercised with real mixed inputs
+     (live-054/056).
+   - **CXER5077 at wiring:** $opts rung= ladder atoms are consumer
+     REQUIREMENTS on observe AND materialize (live-055 negative,
+     live-056 satisfied-weaker positive).
+   - **CXER5078 at append:** a declared stream refuses a non-writer
+     append (live-054). Embedded-tier honesty RECORDED: the actor claim
+     is the ambient process principal (journal attribution's existing
+     trust model); the served tier's session layer is where principals
+     are proven.
+   - **[$live:lower]** — the three-way ladder in the normative order
+     (JSON → [json …]; CX-parseable → first element verbatim; else
+     [foreign …], never a drop), env-free chain (live-059).
+   - **The v1 floor adapters as pack verbs** (the thin-.cx-over-prim
+     architecture of the ENTIRE stdlib; fabric §14's "written in cx"
+     posture belongs to the separate foreign-protocol edge deployables
+     — recorded as the entry-5 design refinement after the
+     module-cross-import risk assessment: the marine `$alias:`-table
+     outage class):
+     `[$live:adapt-poll URL TENANT STREAM SRC Q WRITER]` — validates Q
+     is a SINGLE-store-source comprehension at creation (any journal
+     source or second formal → CXER5075: a journal source is already a
+     CX stream), opens its journal WITH the :snapshot-diff declaration;
+     `[$live:ingest]` per tick = one changes-since window appended
+     ATOMICALLY as `[ingested from= at= FRAME…]` — the entry carries
+     the resume token (the NATS-bridge shape): cursor recovery reads
+     the stream's own head, so crash re-ingest is impossible by
+     construction (live-060/062/063 — the batch entry, the quiescent
+     tick, the incremental tick, the stream content pinned).
+     `[$live:adapt-watch URL TENANT STREAM DIR WRITER]` — mkdir-p
+     setup under the write cap (the one prim-level gate added to
+     effect_alignment), io watch handle, :coalesced-rescan declaration;
+     ingest drains fs events (timeout=0), OVERFLOW or the first tick
+     RESCANS (the io.md rung verbatim), files lower through the ladder
+     into one `[ingested rescan= [file …]…]` entry; re-delivery under
+     rescan is the DECLARED semantic (live-061 pins the rescan leg +
+     declaration; the event leg rides io watch's own tested substrate —
+     fs event latency is not fixture-deterministic, recorded).
+   - **Egress:** the cumulative-ack-after-barrier contract pinned on
+     fabric's group ack (live-064: ack after the 2xx barrier advances;
+     a failed barrier leaves the offset, the fresh group subscription
+     REDELIVERS — no bespoke egress surface invented).
+   - **Spec surgery (RULED: 122–154):** live.md §8 concretized (the
+     declaration surface, the floor verbs, the atomic-batch resume
+     shape, the egress posture); fabric.md §14 gains the ladder
+     cross-ref; io.md's overflow contract names itself as the
+     :coalesced-rescan rung with adapt-watch as the shipped consumer;
+     governance §9.6: 5070–5078 ALL SHIPPED.
+   - **Fixtures:** 53 → 64 enforced (live-054…064).
+   - **W4 gate:** full `make test` UNPIPED — GATE-RC=0 read from the
+     log (scratchpad w4_gate_make_test2.log line 205303). The FIRST run
+     was RED (GATE-RC=2): the -prod lane refuses unused variables the
+     dev build's -w masked (live_adapt_poll's validated url/tenant) —
+     fixed by passing the validated locals, strict-compile verified,
+     rerun green. Two lanes (fabric_umbrella, http_umbrella) again
+     green on the harness's classified #572 cache-free retry, named in
+     the log. The standalone eval-fixtures lane was green first
+     (LANE-RC=0, w4b_fixture_lane.log, 64 cases).
