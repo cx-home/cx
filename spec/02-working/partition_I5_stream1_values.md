@@ -164,3 +164,64 @@ so it pins the finished surface; exit alone.
    without the engine flags red-flags db.cxd redis rows as
    `enforced` — lane-harness gotcha, not a defect). No code movement
    in this wave; W2 opens with R1.
+
+2. **W2 COMPLETE (2026-08-11) — R1 discharged + the E2 anchoring
+   machinery landed. Full gate GATE-RC=0 (s1_w2_gate3.log).**
+   **R1 (mode-in-identity, entry-25 ruling executed):** the schema
+   surface cut over from directive spellings to the `[schema of=…
+   mode=… name=… version=…]` HEADER ELEMENT — ordinary body data, so
+   every header attribute rides in the canonical text and the
+   content-hash (probe: with-mode vs without-mode schemas hash
+   distinctly). Spec: schema.md §1/§2/§8/§9/§10.1/§13.1 + S-table
+   (detection = first top-level element `[schema]` w/ `of=`; the name
+   `schema` reserved at exactly that position; the four
+   `[?cx schema-*]` pragmas + standalone `[?cx frag]` RETIRED and
+   rejected at schema load with targeted S009s — `[?cx frag]` was the
+   SAME identity hole, and §8's anchored-type form was already spec'd
+   semantically identical; the §13.1 owner-flagged known-conflict
+   paragraph replaced by the resolution; `--mode` documented as
+   run-scoped, never identity-bearing); data-bin.md examples;
+   shape_inference.md's emitted-form example synced so #688 never
+   implements the retired spelling. Impl: parse_schema reads the
+   header (fail-closed: unknown mode = S009 — a typo must never
+   silently weaken to open; version ≠ 0.8 = S020; missing of = S009);
+   retired spellings rejected recursively; parser.v
+   maybe_flag_schema_header is the live schema detection (pragma
+   detection KEPT parse-only so legacy text reaches the targeted S009
+   instead of dying CXER0107 — not dual-accept: no path treats the old
+   spelling as working); S017 message re-worded.
+   **Migration (the full census):** xap_schemas ×5, inventory.cxs +
+   README, _sample_suite.cx, fixtures.cxs, validate.py;
+   schema_validate.cxd 60 cases migrated + 4 NEW negatives
+   sv-064…067 (retired schema-of / retired frag / unknown mode /
+   missing of) = 67/67; data_bin_schema_driven.cxd 12/12;
+   eval_semantics (14 sites) / identity / store_columnar umbrella
+   tests. TWO LANES MISSED BY THE FIRST CENSUS (caught by gates 1+2,
+   both migrated): lang/rust schema_validate_test.rs (2 schemas +
+   docstrings; go docstring) and tests/abi/c_abi_test.c (2 schemas) —
+   gotcha booked: the census for a DATA-SURFACE cutover must sweep
+   extension-blind, binding tests embed schema text in .rs/.c/.go
+   string literals. The named-residual test FLIPPED as designed
+   (test_mode_rides_in_canonical_text_and_hash asserts ≠) +
+   test_retired_schema_pragmas_rejected. New identity pairs
+   idh-029/030/031 (mode-in-identity, reformat-invariant,
+   facet-significant) — identity_hash.cxd 21/21. cxparse differential
+   744→748 (+4 agree = sv-064…067 plain-data targets; growth only,
+   movement note in the baseline).
+   **E2 anchoring machinery (L83):** `cx:type-binding` constructs the
+   Lane-2 `[type-binding [subject hash=…] [name …] [schema …]]` claim
+   (pair recoverable-by-computation; fail-closed CXER4116 anchoring
+   refusals — one-type-per-schema-document NORMATIVE for anchoring,
+   multi-type validates-but-cannot-anchor; E1 totality refusals
+   propagate through the cx:hash acquisition path) and
+   `cx:type-binding-verify` recomputes-and-compares field by field
+   (CXER4119 on any malformation/mismatch). modules/cx.md §2.1 rows +
+   prose + §6 error rows (4116/4119 leave the reserved list;
+   governance registry row is band-level, unchanged). Fixtures
+   cx-113…116 (claim byte-pin, verify-true, tamper→4119,
+   multi-type→4116); full stdlib battery green. Schema-store
+   resolution stays #688 (cross-bound, not duplicated).
+   Gate history: gate 1 RC=2 (rust binding lane — missed .rs class +
+   the cxparse growth), gate 2 RC=2 (C ABI lane — missed .c class),
+   gate 3 GATE-RC=0 with the two known #572 C-compile flakes green on
+   their classified cache-free retries. W3 opens with R2.
