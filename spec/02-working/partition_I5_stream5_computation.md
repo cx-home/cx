@@ -163,3 +163,70 @@ claim probe, dispatch-list read, caps line-anchors, alias funnel read,
 EV pin rows). #713 items 3+5 confirmed unlanded (probe of
 stdlib_caps.v allow_all paths); items 1+2 confirmed landed (CXER0274
 message text + `cap=resource` parse). No code movement this wave.
+
+### Entry 2 — W2: L105 `pure ⇒ deterministic` (2026-08-11)
+
+**Fixture-first transcript:** five new/flipped conformance cases authored
+RED before any engine movement (s5_w2_lane_fixtures_pre2.log: map-003 got
+completion order `(1, 9, 16, 4)`; map-030 an 8-permutation; for-031
+`false`; for-032 the wrong float `0.7000007629394531`) → all green
+post-cutover (s5_w2_lane_fixtures_post.log LANE-RC=0).
+
+**Engine cutover (source order ALWAYS, RULED: L105):**
+- `par_map` / `par_for_run` / `par_map_streamed` lose the `ordered`
+  parameter; reassembly by input index is unconditional. The streamed
+  variant emits the CONTIGUOUS COMPLETED PREFIX incrementally (buffer by
+  index + frontier pointer) — streaming cadence survives, reordering
+  never; error propagation unified to earliest-index-wins on every path
+  (matches sequential first-failure).
+- `[ordered]` = tombstoned no-op: still parsed where legal (paired with
+  `[par]`); `[ordered]`-without-`[par]` stays CXER0100 (grammar closure;
+  program-map-004 / program-reduce-003 unchanged); `for_has_ordered_clause`
+  deleted; refusal messages updated to the clause spelling.
+- Live probes post-build: top-level streamed `[?for … [par]]` and
+  `[?map … [par]]` under 8-way work-skew — three runs each, byte-stable
+  source order (previously five runs = five orders).
+
+**Spec edits (all rows from the ruled §10 map or its direct ripples):**
+code.md §6.5.1 — the theorem authored normatively (run-invariance +
+host-independence; the old "not asserted here" disclaimer now points at
+it) with the three closures ([par] source order, locale rule,
+map-traversal pre-registration) and the EV-* prerequisite inheritance;
+§7.2 `[ordered]` bullet + §7.3 output-order paragraph + the purity-
+license note ("safe to reorder" narrowed: execution interleaves, output
+never); §8.10.5 clause bullet + output-order table; grammar.ebnf [127m]
+note; §10.1.2 visualization sentence (diagram draws source as written).
+Ripple sweep: playground examples 49/50/51 re-authored + regenerated
+(182/182 green), fixture-runner D11 comment, async umbrella
+`test_for_par_unordered_multiset` → `test_for_par_source_order_always`
+(exact-order assert). `[?test-concurrent]` / scheduler completion-order
+surfaces are OUT of scope (impure concurrency scaffolds, not `[par]`).
+
+**Locale audit (the L105 mandate, swept over the §6.5.x pure list):**
+
+| Pure builtin(s) | Verdict | Evidence |
+|---|---|---|
+| `upper` / `lower` | CLEAN — V rune-table Unicode SIMPLE (1:1) default mapping; no libc locale anywhere (`grep setlocale/LC_` = zero hits outside the explicit i18n module) | fixtures program-builtin-case-locale-audit-001/002/003 (é/Greek map; ß NOT expanded at this tier; Turkish-trap `i`→`I`, `I`→`i` pinned) |
+| — divergence facet | bare builtins = simple mapping; `strings:upper` = FULL mapping (ß→SS, strings-003). Both deterministic + host-independent; unifying them is a semantics change needing its own ruling — booked, not taken | probe transcript + strings-003 |
+| `contains` / `starts-with` / `ends-with` | immune — byte equality | code reading |
+| `substring` / `string-length` | immune — codepoint counting | probe: length('héllo') = 5 |
+| `normalize-space` | immune — fixed XML whitespace class | code reading |
+| `concat` / `text` / node accessors | immune — concatenation/projection | probe |
+| numeric family (`sum`/`max`/`min`/`avg`/`abs`/`floor`/`ceiling`/`round`/`mod`/`div`/`idiv`) | immune — arithmetic + the canonical serializer (fixed `.` decimal, no locale grouping) | canonical-form corpus |
+| sequence / higher-order / generator families | immune — structural | code reading |
+| `cast` | immune — fixed-format strconv | code reading |
+| CXPath / EBV / identity hash | immune — canonical bytes | identity corpus |
+
+**Booked residual (named, no change):** `[?reduce … [par]]` chunk-fold
+is deterministic per (n, width) on a host; the RESULT is host-independent
+iff `:using` honors the §8.10.6 associative contract it already declares.
+A non-associative closure under the default width (= f(ncpu)) is a
+contract violation, not host variance of a conforming program. If the
+owner ever wants stronger-than-contract determinism there, it is a
+one-line width-derivation change — flagged for the item-6 packet, not
+taken here.
+
+Lanes green standalone: code_eval_fixtures (post log above), async_conc
+umbrella (s5_w2_lane_async2.log LANE-RC=0 on the rebuilt binary — first
+run red ONLY because the spawned CLI was stale, not a regression). Full
+gate: s5_w2_gate.log.
