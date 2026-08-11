@@ -225,3 +225,49 @@ so it pins the finished surface; exit alone.
    the cxparse growth), gate 2 RC=2 (C ABI lane — missed .c class),
    gate 3 GATE-RC=0 with the two known #572 C-compile flakes green on
    their classified cache-free retries. W3 opens with R2.
+
+3. **W3 COMPLETE (2026-08-11) — R2 executed + the E3 residuals closed.
+   Gate: SHARED with W4 (both landings spec/impl-disjoint; W3's three
+   affected lanes also green standalone first) — GATE-RC=0
+   (s1_w3w4_gate2.log).**
+   The `expect-prev-seq` → `expect-pos` cutover (L84: ONE position
+   encoding in the ONE CAS vocabulary; semantics unchanged — "the
+   stream/ref is currently at position N"; live.md already shipped
+   expect-pos): stdlib_journal.v (the §3.2 check), fabric_service.v
+   (attribution forward + the batch refusal), journal.cxd ×3,
+   fabric_umbrella_test ×4, store_g13_parity_test ×2, journal.md
+   (all 9 mentions + a retirement note at §3.2), fabric.md/xap.md/
+   delivery.md. Repo-wide sweep: zero residuals beyond the retirement
+   note. BONUS repairS the sweep surfaced: gates.cxd's journal gate
+   doc-string still said "expect-prev-seq → CXER4604" — the 4604 half
+   was STALE since I1 row 15 (tombstoned); now reads expect-pos →
+   CXER1114. cxstore-grpc.md's mapping table still carried the retired
+   `409 CXER1704` row — the L84 spec-edit map named the grpc mapping
+   and the code has mapped 1114→ABORTED since I1; row repaired.
+   Lanes green standalone: stdlib fixture battery, fabric_umbrella,
+   g13_parity. Gate history: first shared gate RC=2 — the fabric
+   floor-group LIVENESS lane panicked under parallel-gate machine load
+   ("a heartbeating holder lost the assignment"), green standalone
+   twice at the same commit → load-sensitivity, #778 filed (prio:low),
+   not a rename regression; second shared gate GATE-RC=0.
+
+4. **W4 COMPLETE (2026-08-11) — E4 authored as the binding contract.
+   Gate: shared with W3 (above), GATE-RC=0.**
+   semantic_value_model.md §5 now IS the contract: the universal
+   invariant stated normatively (same identity and meaning across the
+   seven modes; surfaces that cannot honor it MUST refuse loudly —
+   never re-key or coerce), the bound-by-reference list (zero copied
+   normative text), and the four-senses terminology table (document
+   ID/IDREF · content address · cx:equal · CXDM set-equality; an
+   unqualified "identity" means the content address). Cross-binding
+   edits executed (RULED: L85 + L77–L81): cxdm §4 gains the
+   terminology pointer (keeps its name — the reader trap closes by
+   glossary, not rename); code.md §6.4.3.1 gains the normative E1
+   promise (post-substitution tree, lowered, Tier-1 address, name-
+   sensitive w/ additional-tiers-only layering); code-identity.md
+   gains the L79 layering statement (open upward, closed against
+   redefinition); canonical §11.4 gains the quote-result closure
+   property (parse ∘ canonicalize over lowered quote results; the cx:
+   image is projection-only, E210 intact); cx_partition.md §2 names
+   the contract as Ring 0's contract artifact. G3 graduation of this
+   document = OWNER-GATED handoff packet (item 6), not attempted here.
