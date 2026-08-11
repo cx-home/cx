@@ -583,3 +583,22 @@ surface does not yet expose — composed when that E3 arm lands
 journal event + fold-visible dedup facts are in place. The
 in-process dedup at commit IS live (the invoke path's).
 
+**W6 CLOSED 2026-08-11 — full gate GATE-RC=0 (s6_w6_gate.log; the
+usecache pair retry-green).**
+
+### W7 — M5 end-to-end + exit (2026-08-11)
+
+**Ordering defect found by DRAFTING the M5 fixture (fixture-first pays
+again):** authz_commit_impl executed the body BEFORE the debit — an
+over-budget commit would run its effect and only then be refused. The
+ruled order (M5: "commit re-checks preconditions, debits the spend
+meter under the stream's commit lock, dedups by key") is verification →
+preconditions → DEBIT → execute: a refused commit exercises no
+authority (no debit on refusal), and a debited crash is correct
+("budgets meter authority EXERCISED, not net economic effect"). Fix:
+command_commit_execute gains (run_preconditions, do_execute) so the
+verify pass evaluates preconditions exactly ONCE and the execute pass
+runs the body after the debit clears. authz-083 (the M5 arc) pins the
+order: overspend deny arrives WITHOUT the body running and WITHOUT a
+dedup record for the refused order.
+
