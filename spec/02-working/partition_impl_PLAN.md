@@ -124,3 +124,9 @@ proceeds there immediately, independent of these gates. The merge target for
 the campaign branch is decided when the final gate passes — whichever
 release line is current. Sanitization rules apply to every artifact of this
 plan. No deferrals or scope cuts without express owner authorization.
+
+## Decision log
+
+| Date | Decision | Where it binds |
+|---|---|---|
+| 2026-08-10 | **OWNER RULING — I5 completes at FULL RULED SCOPE.** Every stream issue #673, #675, #677–#694 closes only when its ruled contract — everything its approved spec defines as behavior — exists as working, fixture-gated implementation merged to the campaign branch. Audit/ruling-shaped issues (#686, #687, #694) close on their audit verdict + any repairs it mandates. A stream earlier discussed as "design-only" or "direction" is NOT exempt: if its spec defines behavior, that behavior gets built before I6. The only things that stay unbuilt are the ones a spec itself marks deferred WITH a recorded owner ruling. This is a floor on completeness, not a license to expand: build exactly the ruled contract, long-term-best within it — no invented scope beyond the rulings, no partial landings below them, no re-deferring anything already ruled in. Scope changes in either direction are lettered owner questions. | The I5 row above (its per-stream exit condition), every #673–#694 stream branch, and the I6 entry gate — I6 opens only when I5 closes at this bar. |

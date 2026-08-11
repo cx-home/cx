@@ -441,7 +441,7 @@ and is not duplicated here.
 | `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/std-lib/fabric.md` |
 | `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/03-approved/std-lib/sched.md` |
 | `CXER5000–CXER5049` | XSP generic layer + store profile (campaign stream 4, L166; per-code rows LANDED with the W3 implementation per #717 — sub-block 5000–5009 = the generic frame/session layer, the numeric cutover of the retired symbolic `CXER-XSP-*` spellings; 5010–5021 = the store profile (5019–5021 landed with the W4 feed/authority implementation), 5022–5049 reserved for the W5 rows; the CSRP `17xx` band is marked Reserved/retired at CSRP retirement, never reused) | `spec/02-working/xsp_store_profile.md` §4.2 |
-| `CXER5070–CXER5089` | live modes / incremental evaluation (campaign stream 3; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5; codes unshipped, band pre-registered per invariant "added here before being used") | `spec/02-working/live_modes.md` §2 |
+| `CXER5070–CXER5089` | `cx-stdlib/live` — live modes / incremental evaluation (campaign stream 3, #675; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5, band pre-registered per invariant "added here before being used"). Per-code rows live in the pack spec §9: 5070–5078 assigned; 5070–5078 ALL SHIPPED: 5070–5073 with the W1 `changes-since` implementation, 5074–5075 with the W2 `observe` implementation, 5076 with the W3 `materialize` implementation, 5077–5078 with the W4 adapter contract (#717 same-change discipline); 5079–5089 reserved. Reused, never duplicated: `CXER0120`/`CXER4700`/`CXER1114` | `spec/02-working/live.md` §9 (band claimed at `spec/02-working/live_modes.md` §2) |
 
 **Invariants:**
 
