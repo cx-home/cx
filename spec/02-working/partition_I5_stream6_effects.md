@@ -482,3 +482,104 @@ discriminator via swallowed-first-failure-then-out-err; cmd-017 window
 expiry on [?test-clock]). code.md §12.2.7 idempotent bullet completed;
 journal.md §4.9 dedup-record retention extension authored per the
 ruled map. Durable commit-boundary CAS = W6 (g).
+
+### W6 — propose mode + cap: resolution, L113/L114
+
+**W6-entry rulings:**
+
+- **R15 (surface split: engine proposes, authz disposes).** The
+  proposal CONSTRUCTOR is the engine's (`[$cx:propose <command-fn>
+  <args-map> <opts>]`, modules/cx.md — beside cx:hash/computation-id:
+  identity work belongs to the identity module); approval + commit are
+  AUTHORITY operations and live on cx-stdlib/authz (§3.9: `approve`,
+  `commit`, `resolve-cap`) — no new module, no [?command]-style
+  registry churn, and the M5 flow composes shipped pieces (PEP,
+  meters, debit, journal, the E3 CAS on the journal's backing store).
+- **R16 (the proposal value).** `[proposal [command tier1=<Tier-1 of
+  def text> code=<Tier-2 computes-as:>] [args <param-name → value map,
+  post-default>] [effects <declared set, scopes canonicalized —
+  v1 resolved==declared, the honest note>] [preconditions <each
+  recorded with its propose-time result>] [via …opts-supplied basis…]
+  [idempotency-key <explicit or derived>] [tenant …]]`. Tier-1 of the
+  def TEXT is the trust key (the L139 amendment); Tier-2 rides for
+  cache/equivalence only. A FALSE precondition at propose REFUSES the
+  proposal (nothing coherent to approve); commit re-evaluates and any
+  divergence (recorded-true now-false) is the loud refusal.
+- **R17 (approval + commit).** `approve` constructs the Lane-2 claim
+  `[approval [subject hash=<Tier-1 of the proposal>] [by …] [tier …]
+  [signature …]]` binding the ADDRESS (approval-by-name-or-args is
+  forbidden — forgeable); signature verification follows the SHIPPED
+  authz tier posture (verify-tier: T1 single, T2 M-of-N quorum —
+  nominal-shape today, crypto composes in deployment; the proposal
+  machinery inherits whatever that posture is, one authority).
+  `commit` verifies fail-closed, in order: (a) the proposal re-hashes
+  to the approval's subject (a tampered/re-lowered proposal is a
+  DIFFERENT address); (b) the presented command-fn's def-text Tier-1
+  == the proposal's trust key (commit runs the EXACT approved
+  version); (c) approval tier verifies; (d) propose-only screening —
+  no via-chain link carrying [propose-only] can ground a commit; (e)
+  preconditions re-evaluate, divergence refuses; (f) PEP check over
+  the folded meters; (g) idempotency: the durable E3 must-not-exist
+  CAS (`idem/<tenant>/<key>` alias on the journal's backing store,
+  expect='' — CXER1114 conflict = dedup hit returning [deduped
+  <recorded outcome>]); (h) debit under the stream's commit lock;
+  (i) EXECUTE the body (code.invoke_closure — the platform→code
+  composition stdlib_live already uses); (j) journal the committed
+  transition (actor + authority chain) on the authz stream. Every
+  refusal is typed; CXER4714 E_AUTHZ_PROPOSAL_INVALID allocated for
+  the address/version/tier/divergence refusals (band-internal row,
+  authz.md §8); CXER4715 E_AUTHZ_PROPOSE_ONLY for (d).
+- **R18 (propose-only + cap:).** `[propose-only]` is a delegation
+  child (grant-side attenuation flag): a delegation carrying it can
+  ground proposals but NEVER a commit (screened at (d); attenuation
+  rule — a child of a propose-only parent is propose-only by
+  inheritance, narrowing-only). `resolve-cap(store, 'cap:sha2-256:…')`
+  resolves an authority-artifact ADDRESS against the LIVE registry
+  view (scan + Tier-1 hash compare): absent / revoked / expired →
+  fail-closed CXER4716 E_AUTHZ_CAP_UNRESOLVED (a trust input that
+  cannot be proven live is refused loudly, L114). A `[requires
+  'cap:…']` clause resolves at propose AND commit through the same
+  verb. governance §12.3 (NEW): the reserved reference-prefix
+  registry — code:, computes-as:, cap: rows (domain separators for
+  trust inputs; cx-err: stays §9.6's). xap.md §3.4: the dry-run
+  sentence amended per the ruled one-mechanism unification (dry-run's
+  return IS the proposal-value shape; dry-run is spec'd-not-yet-
+  implemented in stdlib_xap, so this is a text-level cutover with no
+  fixture movement — verified).
+
+Sub-sequencing: W6a = cx:propose + Closure cmd_meta (requires/
+preconditions/src_addr behind ONE pointer — the #45 closure-copy
+perf rule) + governance §12.3 + xap.md text + fixtures; W6b = authz
+approve/commit/resolve-cap + propose-only + durable idem CAS +
+fixtures. Both landed in ONE wave (the split proved unnecessary —
+the engine and authz halves compose through two pub seams:
+code.value_tier1_address + code.command_commit_execute).
+
+**W6 landing notes (pre-gate; standalone lanes green):** cx:propose
+(CXER4111/4112 — the band's two reserved slots claimed);
+CommandMeta behind one Closure pointer; approve/commit/resolve-cap on
+authz §3.10 (CXER4714/4715/4716); [propose-only] child + chain
+screening; commit = the full R17 chain with the engine half in
+code.command_commit_execute (version binding via the def-text Tier-1
+== the F1′ raw-byte tagged address; precondition divergence via
+re-eval — authz-082 discriminates with a test-counter that was TRUE
+at propose and FALSE at commit); [requires 'cap:…'] re-resolution
+fail-closed; governance §12.3 authored (code:/computes-as:/cap:
+rows); modules/cx.md cx:propose section + rows; xap.md §3.4 dry-run
+= proposal-value text cutover (dry-run is spec'd-not-implemented in
+stdlib_xap — verified, no fixture movement); authz.md §2.2
+propose-only + §3.10 + §8 rows. Fixtures: cmd-019..022 (proposal
+shape w/ pinned addresses; precondition-false refusal; the
+address-binding pair — arg-spelling-invariant SAME address, tampered
+args DIFFERENT; non-command refusal) + authz-078..082 (roundtrip;
+tampered-proposal 4714; propose-only 4715; resolve-cap live→revoked
+4716 fail-closed; precondition divergence 4714). cxparse baseline
+765/600→769/604 (deliberate, +4 agree). DURABLE idem CAS note: the
+commit flow rides the ordinary invoke path, so the per-program dedup
+applies; the cross-process store-alias CAS (idem/<tenant>/<key>
+expect='') needs an expect-addr arm on set-alias that the store
+surface does not yet expose — composed when that E3 arm lands
+(named landing: the store CAS vocabulary, #708-family); the commit
+journal event + fold-visible dedup facts are in place. The
+in-process dedup at commit IS live (the invoke path's).
+
