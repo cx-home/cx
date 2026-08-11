@@ -282,5 +282,55 @@ evaluation-environment-introspection row; §6.5.1 exception table gains
 row (f).
 
 Lanes green standalone: stdlib_caps_test, eval_semantics_umbrella (=
-the check-effect-alignment lane), code_eval_fixtures. Full gate:
-s5_w3_gate.log.
+the check-effect-alignment lane), code_eval_fixtures. Full gate
+GATE-RC=0 (s5_w3_gate.log; the two known usecache artifacts green on
+classified #572 retries). Landed accb9797.
+
+### Entry 4 — W4: L103 the environment (2026-08-11)
+
+**Ruling taken at entry (standing acceptance, long-term-best verified) —
+R2 (env constructibility, discharges D2): THREE zero-arg PURE cx-module
+builtins — `cx:version` + `cx:builtins` + `cx:env`.** Verified against
+the bar: L103 adds `cx:version` explicitly and states its PURPOSE
+("so records are constructible in-language") — version alone cannot
+construct the env record; `cx:builtins` exposes the two-tables value so
+ANY party re-derives the builtin-set id in-language via
+`[$cx:hash [$cx:builtins]]` (M5's "the requester re-hashes to verify" —
+an unexposed basis would make the id an unauditable oracle, violating
+the C4 dogfood posture); `cx:env` is the composed record itself (one
+canonical construction, no per-user reassembly drift). All three are
+constants of the runtime build (pure; host-dependence would be the L7a
+bug). D2 resolved AGAINST a data-file home: the value constructs from
+the in-code mirrors the drift gates already bind — `cx.directive_names`
+(gate-3-bound to grammar [127e] + code.md §4.1) and
+`builtin_purity_table()` (the effect-alignment drift canary) — no new
+file, no fs dependency (embed-profile safe). INTERPRETATION BOOKED: the
+hashed purity table is the §6.5.x classification's transitive closure
+(bare names + module primitives) — a new builtin of any tier IS a new
+builtin set, which is exactly what the id must detect; the additivity
+contract covers evolution. No `[?lib]` forwarder defs — matches the
+computation-id/type-binding precedent (always-available fallback only).
+
+**Landed:** `cx_mod_version/env/builtins` (stdlib_cx.v; the version
+mirror = `$d('cx_version', '0.0.0-dev')`, same define cmd/main.v +
+cabi.v read — one source, three readers); `cx.schema_dialect_version`
+pub const (data_bin_schema_driven.v) — the S020 check and the env
+record now read the SAME const (derive-don't-multiply; S020 message
+derives too). Env record `{builtins:, runtime:, schema-dialect:}`,
+keys pre-sorted; builtins id derives through the SAME acquisition path
+as `cx:hash` (re-hash-to-verify holds by construction).
+
+**Fixture-first transcript:** cx-117 (version shape), cx-118 (env
+canonical value: runtime==version, builtins is a plain Tier-1 address,
+schema-dialect==the S020 semver), cx-119 (rehash-verifies) authored RED
+(s5_w4_lane_fixtures_pre.log: three mismatches) → green post-impl
+(s5_w4_lane_fixtures_post.log LANE-RC=0). V lane stdlib_cx_env_test.v:
+id call-stability (no map-order leakage — every key list sorted at
+construction), V-side rehash-verify, the '0.0.0-dev' test-build
+default, dialect single-source, caps-in-basis (the W3 amendment rides
+in the hashed table). s5_w4_lane_env.log LANE-RC=0.
+
+**Spec edits (ruled map row: modules/cx.md):** §2.1 gains the three
+rows + the environment-quadrant section (full-semver rationale,
+two-tables basis, re-hash-to-verify, additivity contract, the honest
+residue note). Full gate: s5_w4_gate.log.
