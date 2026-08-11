@@ -1,6 +1,6 @@
 # I5 stream 3 — live modes: implementation ledger
 
-**Status:** OPEN (started 2026-08-10 at the W8→stream-3 boundary;
+**Status:** COMPLETE at full ruled scope (verdict entry 8, 2026-08-11; exit-merged to the campaign branch; G3 graduation of live.md pending the owner exit review). Opened 2026-08-10 at the W8→stream-3 boundary;
 boundary queue executed in full — highs lane closed, #700 lever
 delivered, V-fork campaign planned as #775 and kept OUT of this
 stream). Branch `impl/I5-stream3-live` off `design/651-516-partition`
@@ -574,3 +574,43 @@ verdict)
      cache-free retry). Standalone eval-fixtures lane green first
      (LANE-RC=0, w5_fixture_lane.log, 67 cases); the refs in-module
      test green standalone.
+
+8. **W6 — STREAM VERDICT (2026-08-11, Fable 5): #675 COMPLETE AT FULL
+   RULED SCOPE.** Every L129–L137 contract + the §10 U1 binding exists
+   as fixture-gated implementation: the pack's five verbs + the
+   poll-substrate companions + the ingest floor (changes-since W1,
+   observe + the receive/select/close arms W2, materialize/advance/read
+   W3, the adapter contract W4, the per-ref store feed + §8 sweep + M5
+   W5); 67 enforced conformance cases + the in-module refs-feed test;
+   the equivalence quartet pinned (legs 1–4); every CXER5070–5078 code
+   shipped with its wave (#717 discipline); the ruled §9 spec-edit map
+   executed in full (live.md authored+refined; journal.md retention
+   extension; store.md feed cross-ref; fabric.md §14 ladder cross-ref;
+   io.md rung citation). Nothing deferred except by ruling: NONE — the
+   pack's ruled families are complete; the wire feed over remote
+   stores is stream 4's L136 obligation, discharged in the XSP store
+   profile.
+   - **Every wave gate:** GATE-RC=0 read from its log (entries 2–7);
+     the W5 tree (2f2c83d4) is the exit tree.
+   - **Exit-merge:** the campaign branch tip is the stream's own base
+     (3760e86b — unmoved), so the merged tree is byte-identical to the
+     W5-gated tree; the --no-ff exit-merge commit is the exit step (the
+     stream-4 miss not repeated).
+   - **G3 graduation of live.md:** OWNER-ONLY, rides this exit review
+     (the spec stays 02-working until the owner graduates it — per the
+     model policy this session records the packet and does not attempt
+     the ruling).
+   - **#762 HANDOFF (the general receive/select over the delivery §4
+     contract; prio:high — its consumers now exist):** stream 3 shipped
+     the Ring-1 `Ring2SubOps` registry (ring_registry.v: receive+ready
+     probes keyed by handle element name; [?close] rides the shared
+     `__cx_close_id__` contract) with `live-sub` as the FIRST consumer.
+     #762 generalizes: register the remaining §4 instances
+     (fabric-sub, the profile feed-sub, the io watch handle, channel
+     fan-out [?subscribe], [$journal:subscribe] U1.13a, [?monitor]
+     U2.1a), cut [$fabric:receive] over to the U1.12a batch form, and
+     widen [?try-receive] to subscriptions. The registry, the batch
+     semantics (max=/deadline=; non-empty batches; the sequence
+     answer), and the mixed select arm are shipped and fixture-pinned —
+     the seams to copy are eval_receive/eval_select/eval_close +
+     live_sub_receive/live_sub_ready.
