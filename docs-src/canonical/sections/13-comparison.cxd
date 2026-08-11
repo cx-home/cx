@@ -205,7 +205,7 @@
       [tr [td 'Schema requirement'] [td 'Required — wire is unparseable without .proto'] [td 'Optional — value is self-describing']]
       [tr [td 'Wire size'] [td 'Typically smallest of any format here'] [td 'Comparable text size; data-bin closer to protobuf']]
       [tr [td 'Throughput'] [td 'Very high — compiled (de)serializers'] [td 'High but text-shaped; data-bin closes the gap']]
-      [tr [td 'Schema evolution'] [td 'Tag-numbered fields — strong forward/backward compat'] [td 'Schema modes (open/strict/closed); attribute order is data-only']]
+      [tr [td 'Schema evolution'] [td 'Tag-numbered fields — strong forward/backward compat'] [td 'Identity is schema-independent (content-addressed values never re-key); migration is always additive — new representations join, history stays replayable']]
       [tr [td 'Tooling'] [td 'protoc + every major language'] [td 'Tier-1 V/Python/Go/Rust; growing']]
       [tr [td 'Human readability'] [td 'None — binary opaque'] [td 'Text-first; binary is an optimization']]
       [tr [td 'Identity / hash'] [td 'Wire bytes — stable iff schema is fixed'] [td 'Canonical bytes — stable regardless of schema']]]
