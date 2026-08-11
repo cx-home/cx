@@ -384,3 +384,64 @@ verdict)
      "every failed lane green on its classified retry" line; the
      sanctioned retry, named. The standalone eval-fixtures lane was
      green first (LANE-RC=0, w3_fixture_lane.log).
+
+5. **W4 OPENED (2026-08-11, Fable 5) — the adapter-contract design,
+   locked before implementation.** Survey + decisions:
+   - **The declaration mechanism IS stream 7's handle floor**
+     (consistency_vocabulary §3, approved at S3: "store open-opts,
+     journal open/attach, fabric subscribe" — checked ONCE at
+     declaration, refused on conflict). Concretely: `[$journal:open]`
+     opts gain `declare=` carrying `[adapter-stream stream= rung=
+     writer=]`; persisted as the meta alias
+     `cx-live/adapter/<tenant>[/s/<stream>]` in the journal's own store
+     (the same fabric-offset pattern as the L133 registration);
+     redeclaration is idempotent, a CONFLICTING redeclaration refuses
+     CXER5075 (the fabric §9.1 group-policy precedent). This is
+     cross-stream seam consumption of #679's approved design — #679's
+     own wave generalizes the attachment mechanism; stream 3 implements
+     the slice its ruled contract mandates ("one declaration mechanism
+     — stream 7's, not a second").
+   - **Reported on every subscription:** live rung resolution
+     (live_source_set_rung / per-formal) reads the declaration alias
+     for journal sources — an adapter-declared stream reports ITS rung;
+     undeclared native sources stay :complete-ordered; the W2
+     weakest-of-set machinery now gets real mixed inputs.
+   - **CXER5077 wiring-time:** observe/materialize `$opts rung=` gains
+     the three LADDER tokens as consumer REQUIREMENTS (the W2 refusal
+     of ladder tokens was this slot, reserved): required rank >
+     source-set declared rank → CXER5077 at creation, refuse-to-lie.
+   - **CXER5078 exclusivity at append:** jrn_append refuses when the
+     stream's declared writer ≠ the append actor. Embedded-tier
+     honesty: the actor claim is the ambient process principal (exactly
+     the trust model of journal attribution today); the PROVEN-session
+     binding is the served tier's, where fabric/xsp sessions
+     authenticate principals — recorded, not glossed.
+   - **The v1 floor adapters are CX-AUTHORED** (fabric §14 "written in
+     cx", the dogfood rule) and ship as pack defs in live.cx —
+     live.md §8 gains their concrete signatures (pack-spec latitude;
+     the advance/read precedent: a mandated floor with no shipped form
+     is a stub): `adapt-poll` (source store → journal stream;
+     store:diff snapshots + content-address dedup + monotone
+     store-feed order → declares :snapshot-diff), `adapt-watch` (fs →
+     journal stream; io watch, overflow ⇒ rescan → declares
+     :coalesced-rescan), `ingest` (the explicit tick both share —
+     sched cadence is the deployment driver, the advance precedent),
+     and `lower` (the three-way ingest lowering ladder: JSON → wrapped
+     map element; CX-parseable text → first element verbatim; anything
+     else → the lossless `[foreign …]` named wrapper — never a drop).
+   - **Egress:** no egress adapter is in the ruled v1 floor; the
+     cumulative-ack-after-foreign-barrier contract is pinned as a
+     FIXTURE over fabric's group ack (the consumer pattern: ack
+     advances only after the simulated 2xx/PONG barrier) — contract
+     pinned, no invented shipped surface.
+   - **Dedup:** poll ingest dedup = content addressing itself (the
+     store:diff feed yields changed docs; re-ingest of an identical
+     record re-derives the same identity) + the ingest bookkeeping
+     cursor; the stream-6 idempotency-key CAS pattern
+     (commands_effects.md: must-not-exist CAS, present-value dedup
+     hits) is exercised by the watch/poll ingest paths through the
+     journal append bookkeeping — stream 6 (#678) later generalizes
+     the command-side surface; nothing here pre-empts it.
+   - **Spec surgery this wave (the ruled §9 map):** fabric.md §14
+     ladder cross-ref; io.md rung citation; live.md §8 concretization
+     (RULED: 122–154).
