@@ -323,8 +323,15 @@ a future cycle.
 Declared in `core/grammar.ebnf` header and in `[?cx version=X.Y]`
 directives:
 
-- **Major** (`X+1.0`): incompatible grammar changes (requires migration
-  tooling).
+- **Major** (`X+1.0`): incompatible grammar changes. **Source** migration
+  is tooling-assisted sweeps over the corpus (the shipped fmt-sweep lane —
+  closed template set, loud residue, output oracle, fail-closed per file,
+  never regex); **data** never migrates destructively — values, events,
+  and stored docs evolve **additively** per
+  [`schema_event_evolution.md`](../../02-working/schema_event_evolution.md)
+  (stream 21: identity is schema-independent; upcasters are read-side;
+  migration is always additive — nothing a grammar major does can strand
+  recorded history).
 - **Minor** (`X.Y+1`): additive grammar changes (backward-compatible).
 - **Patch** (`X.Y.Z+1`): clarifications without grammar changes.
 
