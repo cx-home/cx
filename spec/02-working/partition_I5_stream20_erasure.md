@@ -421,6 +421,83 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   unaffected when #785 lands). Named landings unchanged: replica reach =
   stream 9; wire custody = streams 4/9 (push refusal + CXER1144 posture
   hold the line meanwhile).
+- **W5 EXECUTED 2026-08-12 — read surfaces + verify reconciliation
+  @ bdd3026b (+ W5.1 @ a642a0ad). Gate `s20_w5_gate3.log` GATE-RC=0,
+  PRE/POST HEAD = a642a0ad, 0 dirty** (gate 1 `s20_w5_gate.log` RC=2:
+  the one real miss = the wire-feed erase act losing `request=` — W5.1;
+  gate 2 `s20_w5_gate2.log` RC=2 = the spec-freeze token missing from
+  W5.1's own message, amended in place pre-push; gate 3 fails all
+  classified — fabric/http #572 cache-free-retry pair + the known
+  net_udp real-socket contention lane, every one green on its
+  classified retry). Everything the wave-plan entry names landed:
+  - **The §3.6 reconciliation axis** on `verify`/`verify-slice`
+    (default + named streams): a VALID walk fetches + re-hashes every
+    detached payload; each missing/rehash-failing payload reconciles
+    against a covering `cx:erasure` record (`[docs]` scan) or the
+    address's own tombstone → `redacted=N payloads-verified=M
+    unattributed-missing=K`, any K>0 LOUD; attrs emitted only when
+    N+K>0 (L119 posture) so every shipped verify fixture stayed
+    byte-identical. Fixture journal-132 = §6's named negative corpus
+    fixture (raw delete-doc → `unattributed-missing=1`, chain
+    valid=true).
+  - **Tombstone shape → the §6 ruled form** `[erased hash= root?= at=
+    authority?= actor= shred-request=]` (request= renamed, order
+    aligned; `subject` NEVER emitted — §4; hash/root lead as
+    addressing mechanics). No reader of the old attr existed; the
+    shred-REPORT's `request=` (W4-ruled §9.1 shape) and the wire ACT's
+    `request=` (stream-4 §5.3 vocabulary) are distinct surfaces and
+    keep their names — W5.1 maps tombstone `shred-request=` → act
+    `request=` explicitly (the gate-found adjacent-wire-surface miss,
+    the W2.1/W4.1 class: the act renders in the spawned daemon).
+  - **Hydration polish (found in passing):** since W4 a tombstoned
+    payload hydrated as `[event [erased …]]` (get-doc-text answers
+    tombstone text), silently defeating event-less shred semantics —
+    now the tombstone attaches as a DIRECT typed child
+    (`jrn_tombstone_of`: rehash-mismatch AND name — either mark alone
+    misclassifies); has-event stays false, coherence `erased=` and
+    L119 pass-through unchanged, readers get the attribution.
+  - **Finding-not-fault ×2 (the W2 carried note):** porcelain
+    `store-verify` classifies a failed whole-doc open via the M29
+    evidence scan — covered → `redacted=N` counted visibly
+    (valid=true), uncovered → the typed unavailable fault naming the
+    missing evidence; the EAGER load defers exactly the absent-`sek/`
+    envelope class at the decrypt slurp (records replay AFTER the
+    slurp — judging there is impossible; wrong-KEK/tampered stays the
+    hard open error) and pass-2 reconciles: covered → the store OPENS
+    (reads answer CXER1145), uncovered → the loud refusal.
+  - **#720 item 1 = already-shipped evidence:** the get-doc three-way
+    + get-doc-text verbatim tombstone parity were landed by W4
+    (`test_local_get_doc_of_erased_answers_tombstone` pins all three
+    ways + exists=false); W5 verified the shape against §6 and closed
+    the spec residue (store.md §6.1 rows now document the three-way).
+  - **M7 cross-refs executed** (the §6 CLAIM-CORRECTED reconciliation
+    pass): live.md (02-working, the normative pack spec — the
+    per-frame redaction-count sentence now cites the generalized
+    visible-count rule + the store:log erase act as a delivered,
+    attributed change); journal.md §3.9 shredded-pass-through bullet
+    cites the generalization (lawful shred = finding; missing upcaster
+    = fault). Stream 8 is the precedent's home and needs none (per the
+    corrected claim).
+  - V tests (store_subject_test.v): verify evidence path 1 (tombstone
+    → redacted=1) and path 2 (record-covered, tombstone dropped →
+    redacted=1, never unattributed); tombstone-as-direct-child
+    hydration; §6 shape asserts (authority present, subject absent);
+    porcelain verify redacted=1 on the restored-envelope construction;
+    the durable eager construction (re-land under a fresh SEK + raw
+    destroy; the address stays covered — content-addressed, the same
+    address IS the plaintext the lawful record ordered destroyed) →
+    eager open green + CXER1145 + verify redacted=1; the UNCOVERED
+    counter-case (raw key destroy, no record) → store-verify CXER1120
+    naming 'NO covering erasure record' + eager open REFUSES.
+  Spec edits per the ruled §12 map: journal.md §3.6 axis block + §2.2
+  read note; store.md §6.1 three-way rows + §9.2 tombstone shape +
+  verify bullet; xsp_store_profile.md §7b tombstone line (W5.1).
+  fn-docs: verify/verify-slice summaries carry the axis; guide-check
+  OK 46; corpus-diff baseline unchanged ([empty] in-cx). Suites green
+  standalone: fixture battery (+132, pre-existing byte-stable),
+  journal/pack/store-core/misc umbrellas, rotation, s3
+  subtree+encryption, subject+erase battery, store_remote (under the
+  gate's exact flags).
 - **W3 EXECUTED 2026-08-12 — legal holds @ aeca490f.** The signed
   Lane-2 `[legal-hold]` claim (scope = exactly one of subject/hash;
   detached ed25519 sig over the claim's strict canonical text sans
