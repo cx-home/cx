@@ -355,8 +355,14 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   obj_cache) per §7 reach; eager verify of a shredded payload must
   become a finding-not-fault when reconciled (W5); objwire client
   reconstruct of whole-doc subject docs = stream-4 joint surface.
-- **W4 EXECUTED 2026-08-12 — erase-subject + the shred walk (commit recorded
-  at the gate).** Everything the wave-open design names landed:
+- **W4 EXECUTED 2026-08-12 — erase-subject + the shred walk @ 0c942eb5
+  (+ W4.1 @ fc90f98a). Gate `s20_w4_gate2.log` GATE-RC=0, PRE/POST HEAD =
+  fc90f98a, 0 dirty** (first run `s20_w4_gate.log` GATE-RC=2: the one real
+  miss = the columnar suite's own S3 stub lacking the new
+  `S3Transport.remove` — the `-d cxstore_columnar` gated-lane class, W2.1's
+  pattern; fixed as W4.1 — plus the classified fabric/http #572 cache-free
+  retry pair, green on retry in gate 2: "every failed lane green on its
+  classified retry"). Everything the wave-open design names landed:
   `[$journal:erase-subject]` (env-dispatched — it reaches the in-process
   dedup registry) + `[$journal:shred-generation]` + the internal
   `journal-segment-disposed`; the reserved `cx:erasure` stream with
