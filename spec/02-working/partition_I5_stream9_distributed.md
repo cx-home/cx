@@ -111,4 +111,68 @@ stream 10; the automatic placement tier = #784.
 
 ## Wave record
 
-(appended per wave)
+- **W1 EXECUTED 2026-08-12 — replica-local stream ingestion @ e69b8138.
+  Gate `s9_w1_gate.log` GATE-RC=0, PRE/POST HEAD = e69b8138, 0 dirty**
+  (first run green; fails = the classified #572 fabric/http pair, green
+  on classified retries). `[$journal:ingest-stream]`
+  (vcx/platform/journal_ingest.v): byte-identical re-land (head hashes
+  probe EQUAL across stores; the destination chain verifies unchanged),
+  full-chain pre-verification (nothing partial), clean-prefix-extension
+  idempotence (re-ingest → ingested=0; grown source lands the tail).
+  The sync band CXER5050–5069 registered in governance §9.6 BEFORE
+  first use (dense + reserved tail — no sparse parenthetical, the s20
+  W6.1 lesson); 5050 divergent / 5051 invalid-chain / 5052
+  reserved-target shipped. Lawfully-gone payloads land their entry with
+  `payloads-absent=` visible (L119 posture); the destination's verify
+  reports them unattributed-missing LOUD (no evidence replicated —
+  pinned by V test). Fixture journal-133 byte-exact; fn-doc verbatim;
+  V tests: file:// close/reopen durability + the absent-payload loud
+  lane. journal.md §2.1.1 ingestion block + stream-key naming note +
+  §3.3 verb row (ruled edit map). **Design decisions (inside ruled
+  bounds):** ingest = REGISTRATION + verification (the transfer verbs
+  move bytes; ingest recreates exactly what transfer skips — entry
+  pointers, head alias, stream index); v1 ingests FULL chains
+  (compacted-below-1 source refuses 5051 — retention-anchored seeding
+  rides W5); reserved `cx:*` streams refuse 5052 (shred records reach
+  replicas on the FEED, the stream-20 handoff — the W5 worker's job,
+  never hand-ingestion); dst-ahead-with-matching-prefix answers
+  ingested=0 (bidirectional flows meet here).
+- **W2 EXECUTED 2026-08-12 — the conflict value + per-ref
+  reconciliation (L174/L175/L176 core).**
+  `[$store:reconcile-report]` + `[$store:reconcile]`
+  (vcx/platform/store_reconcile.v): per-ref reconciliation of the
+  branch-class ALIAS plane (derived caches `computation/`/`cx-live/`
+  excluded — caches rebuild, they are not the divergence surface; the
+  wire-refs plane rides W4 over the shipped object-wire CAS).
+  Fast-forward APPLIES (target doc copied when absent via the put-doc
+  funnel — custody rules ride free; alias advanced through
+  store_alias_set_local + the set-alias funnel's own durable record);
+  ours-ahead / identical count visibly; DIVERGED applies nothing for
+  that ref and reports the ONE Ring-0 conflict value in the ruled
+  shape — `[conflict subject= kind=:diverged-advance [base position=
+  hash=] [ours position= hash= [diff …]] [theirs position= hash=
+  [diff …]] [cas code=CXER1114 expect-pos= actual-pos=]]` — built from
+  the E3 alias lineage (ms.advances; the normative common base =
+  greatest ours-position whose target appears in theirs' lineage; NO
+  shared target → conflict with `[base]` ABSENT, the absence channel).
+  Diffs via the ONE cx engine (cx_mod_diff made pub — no second diff
+  dialect); the §5 patch law holds ON the conflict's own payload
+  (patch(base, ours-diff) ≡ ours — fixture-pinned [law true]); the
+  value canonicalizes + hashes stably (data-profile citizen).
+  Agreement law: `reconcile` raises CXER5053 E_SYNC_DIVERGED (carrying
+  every [conflict] as err children + the partial-success accounting)
+  IFF the report says ok=false — the XAP compose/compose-report
+  precedent, one walk two presentations. Partial success reported,
+  never mixed silently (clean refs advance even when siblings
+  diverge). Balanced report: refs = identical + advanced + ahead +
+  conflicts. Fixtures store-reconcile-001 (fast-forward + idempotent
+  re-reconcile) + 002 (diverged: full conflict shape byte-pinned,
+  patch law, canonical stability, ours-unmoved, enforcing raise)
+  probed byte-exact; fn-docs verbatim ×2 (guide-check OK 46); store.md
+  §6.3 verb rows + semantics bullet (ruled edit map); governance row
+  updated (5053 shipped). Gotcha: a path step by NAME on a value
+  (`$conf/ours/diff`) answers the matched element's CONTENT (the
+  settled field-read semantics) — select the element itself with
+  `/*`. Resolutions-as-input-table + merge-as-an-entry = W3, where
+  the recorded join makes a resolution an ordinary advance whose
+  payload names both tips + base.
