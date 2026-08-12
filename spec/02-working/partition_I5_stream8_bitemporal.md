@@ -341,3 +341,56 @@ extended):**
   rationale, adjacency rule, the #782 note). Fixtures journal-114..116
   probed byte-exact (suite 2820); fn-docs overlaps + contains-instant
   = journal-114 verbatim; guide-check OK 46.
+- **CONCURRENT-SESSION COLLISION (recorded for the exit audit):** a
+  second session on THIS checkout cut `impl/test-consolidation-783`
+  (#783) off the W3 commit mid-wave. Its platform_journal commit
+  (1005a977) swept the then-uncommitted W4 stdlib_journal.v hunks in
+  (byte-identical to the re-landed content — merges cleanly, flagged
+  to the owner); the first W4 commit (3ef0534f) landed on that branch
+  by the same mechanism and was dropped from its tip
+  (`branch -f` to a3b7b33f — the branch was never pushed; content
+  fully re-landed here as 8a4b504a). The mid-collision gate verdict
+  was DISCARDED as unreliable (the other session was git-rm'ing test
+  files mid-run); the wave gate re-ran clean with PRE/POST HEAD
+  guards in the log (s8_w4_gate2.log). Standing consequence: gates on
+  this checkout are single-tenant — a second active session
+  invalidates them; HEAD guards ride every gate log from here on.
+
+### W5 — authz coherence + the valid-time cross-refs (2026-08-12)
+
+**Landed (RULED: 93-121 / L121+L115):**
+
+- **The L121 coherence rule** (`authz_stamp_coordinates`, hooked at
+  `authz_check_impl` so `check` AND `authorize` both stamp): the
+  decision VALUE records both temporal coordinates for audit —
+  `as-of=` (the valid-time decision instant, authz's shipped
+  spelling KEPT with the cross-reference to journal §3.8's
+  `valid-at`, per L118's naming assignment) and the CONTEXT's TX
+  position when `with-context` is a journal `[snapshot]` (`at-seq=`
+  single form; the `[at-head-set]` member list for the §3.7 set
+  form). Permit AND deny stamp; a bare folded state (no TX claim)
+  stamps NOTHING — the incoherent pair is constructible only
+  explicitly and its missing coordinate is VISIBLE on the decision;
+  optless decisions byte-identical (probed: bare-has-coord=false).
+  The PEP wrap paths are untouched — the rule binds the public
+  decision verbs.
+- **Spec edits per the ruled §10 map:** authz.md coherence paragraph
+  at the check-opts site; vc.md §8 valid-time note (issued-at/expires
+  + expired/not-yet-valid = a per-module valid-time window; shipped
+  spellings kept); session.md §2.6 valid-time note (nbf/exp
+  likewise). The L115 near-misses are now NAMED as instances of the
+  one concept — composing by cross-reference, not by respelling
+  (specs-loosely-coupled; no dual-accept surface created).
+- **Fixture authz-063** (probed byte-exact; suite 2821 green):
+  permit-with-both-coordinates + deny-with-both-coordinates +
+  bare-check-stamps-nothing in one case.
+- **GOTCHAS (real costs this wave):** (1) the NO-ADR-CITATION gate's
+  `\bdecision records?\b` regex catches the VERB phrase "the decision
+  records both …" — write "the decision value carries/records …";
+  (2) the #572 stale-layer class can defeat the in-gate cache-free
+  retry itself: poisoned objects in /tmp/v_501 made fabric's F7
+  scenario fail reproducibly ("credited transient push missing") even
+  standalone, and a stash-bisect MISLEADS (removing the fresh symbols
+  re-matches the stale cache → false green) — wipe /tmp/v_501 with
+  /tmp/cxc* before gates whenever fresh symbols landed; the clean-cache
+  rerun greened with the same diff.
