@@ -282,3 +282,63 @@ GREEN after restore: code.cxd + stdlib fixture suite 2794 pass /
   before suspecting the diff.
 
 Full gate: s7_w3_gate.log GATE-RC=0.
+
+### W4 — store + CSRP: floor, F5, F4/F6, F3 (2026-08-11)
+
+**Landed (RULED: 122-154 / L122+L123; #714 items 3 + 4):**
+
+- **Store handle floor (L123):** `open-opts` `consistency` key through the
+  ONE authority; advert = `:linearizable-ref` + `:monotonic-reads` +
+  `:read-your-writes` (local backings and SERVICE-TIER remotes — every
+  read routes to the daemon per op; byte-source remotes refuse it);
+  handle element echoes the floor; refused opens close the scratch
+  handle. store.md §5.2 authored (the floor + advert + F4 + F6).
+- **F5 (#714 item 4):** a declared `:linearizable-ref` makes expect-less
+  ref writes ERRORS on that handle — `set-alias` (local AND objwire
+  arms), `delete-alias` (no expect-bearing form exists), `branch-force`
+  (unconditional advance) each refuse CXER4990 at stage `write` naming
+  the token and the sanctioned forms; plain `branch` stays available
+  (its fast-forward guard IS the CAS discipline). Undeclared handles
+  byte-identical (the LWW pair pinned in-fixture).
+- **F4:** ref-caching refusal RULED IN PLACE (store.md §5.2):
+  immutable-objects-forever / refs-revalidate; a `?cache=` layer caching
+  REFS under a declared `:read-your-writes`/`:linearizable-ref` refuses
+  at open — today the `?cache=` URI parameter is already rejected as
+  accepted-but-unimplemented (verified, store_open_impl §3 guard); the
+  rule binds any future implementation.
+- **F6:** the one normative sentence (store.md §5.2):
+  `:read-your-writes` is writer-scoped inside the CXER1116 self-heal
+  window — after a write-failed raise the open handle's in-process
+  state stays authoritative until the next successful persist.
+- **F3 (#714 item 3):** the capability advert BINDS the config-reload
+  generation — `[config-generation N]` rides BOTH capability adverts
+  (server-level + per-store; svc_config_generation_advert reads the
+  live cfgbox, so the daemon can never serve a stale advert) and CSRP
+  §3.1 states the client rule: a cached advert is valid only for its
+  generation; a cached advert across `config-reload` is a cached lie;
+  re-fetch on any generation change. `config-reload` (§3.13) already
+  answers the same counter. Pinned:
+  `test_capabilities_advert_binds_config_generation` (gen 0 on both
+  forms → applied reload → gen 1). NOTE recorded: the CSRP client
+  (RemoteBackend.caps_*) never actually fetches capabilities today —
+  the #234.2 discovery comment is aspirational; the caching-lie class
+  is closed at the advert + the normative client rule, and any future
+  client-side pre-flight inherits the binding.
+- Fixtures store-cst-001..004 (floor accept+echo; the F5
+  LWW-vs-declared discriminator pair w/ branch-name positive +
+  branch-force refusal; delete-alias refusal; the SHARED teaching
+  refusal — one authority proven across surfaces). Suite 2799 green;
+  store_service/store_g13_parity/store_wire_wave4/store_config_reload
+  green standalone.
+
+Full gate: the FIRST run (s7_w4_gate.log) was GATE-RC=2 on two
+failures both triaged ENVIRONMENTAL by standalone re-runs (the standing
+rule): io-083[bin] in the profile gate and store_lazy_load_test — both
+the `/tmp` leftover-reuse class (io:temp-dir names `<prefix><pid>-<n>`;
+pids recycle across process generations and nothing cleans, so a later
+run reuses a stale dir and reads its contents). Green standalone after
+cleanup; profile gate PG-RC=0 standalone
+(s7_w4_profilegate_rerun.log). Root cause FILED as #781
+(mkdir-fresh-or-retry is the fix direction). Clean full gate:
+s7_w4_gate2.log GATE-RC=0 (only the two known usecache retry
+artifacts).
