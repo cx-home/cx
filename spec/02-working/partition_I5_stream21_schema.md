@@ -212,3 +212,69 @@ band.
   GATE-RC=0 with HEAD guards; exit-merge to design/651-516-partition;
   memory + handoff notes (stream 14 corpus; #688 compat landing;
   stream 20 #692 shred-generations consume fold-id — next in march).
+
+## Wave record (all executed 2026-08-12)
+
+- **W1 @ fb2826fe** — the upcaster seam ({upcast: $chain} on fold+replay
+  via ONE jrn_upcast_stage composition point, upcast-THEN-VT; pure
+  `upcast` verb; `schema=` reserved payload vocabulary §2.10 + cxdm
+  §2.4; CXER4641/4642; coherence coverage pre-flight w/ :uncovered-entry
+  findings — coherence moved to the env funnel). Fixtures
+  journal-118..121. Gate s21_w1_gate2.log GATE-RC=0 (first run
+  GATE-RC=2: the fixtures' user-domain refusal code was CXER-shaped —
+  CXER1000 — and the registry gate flags any unregistered CXER token in
+  fixture files; domain codes must be non-CXER strings).
+- **W2 @ ab4a3fe4** — fold identity (the quadruple; fold-id fills the
+  reserved signed-preimage slot; CXER4640 on declared mismatch OR
+  identity-less snapshot; upcast over the fold-from tail; retain's
+  covered-under-the-CURRENT-fold reading; SET form refuses fold-id —
+  no reserved slot). Fixtures journal-122..124. Gate s21_w2_gate.log
+  GATE-RC=0 w/ clean HEAD guards but ADVISORY (W3 fixture edits landed
+  mid-gate in runtime-read files); re-validated by the W3+W4 gate.
+- **W3 @ 2386a48b** — stored-doc migration on shipped mechanics
+  (modify-doc + pure [using FN] = THE migration primitive; batch,
+  non-destructive, dedup-free re-migration; [migrated-from] Lane-2
+  claim value; the fourth-relation discriminator journal-125 +
+  store-mig-001; store.md §6.2 cross-refs; migrate = replication).
+- **W4 @ bd6b6785** — lineage claims + `lineage-path` (the fail-closed
+  registry load: duplicate edge / cycle / any two-path pair = CXER4643;
+  unique path in composition order; no path = CXER4644; DIRECTED).
+  Fixture journal-126; schema.md §2 revisions-are-identities cross-ref.
+  Binding W3+W4 gate s21_w34_gate.log GATE-RC=0, HEAD guards clean.
+- **W5 @ e0d46cb2** — the hygiene batch: #716 item 4 (semver-honest
+  dialect acceptance, major.minor identity; sv-059a/b/c fixture-first;
+  schema_validate 70/70), item 5 (governance §9.1 promise honest),
+  item 8/L153 (the PLAN pointer corrected in place, dated); the
+  semantic_value_model §3 E2 lineage cross-ref (last ruled-map residue).
+
+## Exit audit (W6) — every ruled item executed or at a named landing
+
+| Ruled item | Disposition |
+|---|---|
+| L146 seam + payload vocabulary + upcast∘VT + today's-chain | EXECUTED W1 (journal-118/119; §2.10/§3.9/cxdm §2.4) |
+| L147 quadruple + fold-id snapshots + CXER4640 + cover current-fold | EXECUTED W2 (journal-122/123/124; §3.7/§4.8/§4.9/§8). The env-quadrant additivity statement holds through the fold-id's inputs (fn ⊕ chain ⊕ env); a fold-result computation-cache surface (where the chain would ride a cached record's env) is not shipped and was not a ruled edit (computation_identity.md is NOT in the §9 map) |
+| L148 migrated-from + fourth relation + pure-as-computation / impure-out | EXECUTED W3 (journal-125, store-mig-001; store.md §6.2); the pure/impure M5 split CORPUS family = stream 14's substrate (§8 handoff, named landing) |
+| L149 lineage claims + unique-path load; compat? | Claims + load EXECUTED W4 (journal-126; CXER4643/4644; schema.md §2); `compat?`/`cx schema compat` SEQUENCED OUT BY THE RULED TEXT behind stream 16's L65/L66 validator repairs — named landing #688 (next-but-two in the march) |
+| L150 discovery-vs-semantic tolerance + downgrade visible counts | Spec EXECUTED at S3 (market §8-item-3 text verified: visible counts + discovery-only + repaired citation); no downgrade replay impl surface exists — the fixture pair rides the market impl / stream-14 corpus rows (named landing) |
+| L151 uncovered = failure-channel err + coverage pre-flight | EXECUTED W1 (journal-120/121; CXER4641; coherence {upcast:}) |
+| L152 journals-read / stores-batch + projection-not-migration | EXECUTED W3 (store.md §6.2; the journal read side IS the W1 seam) |
+| L153 post-I1 + the plan-row pointer correction | EXECUTED W5 (dated in-place bracket on the 2026-08-04 row) |
+| L154 hygiene batch (#716) | items 1+2 W2; 3 S3-verified (+fixture at the named landing above); 4+5+8 W5; 6 = L150 ruling; 7 S3-verified — ALL CLOSED |
+| §9 spec-edit map | journal.md (W1/W2/W4) ✓; store.md (W3) ✓; schema.md lineage (W4) + dialect sentence (W5) ✓ (compat § → #688); cxdm (W1) ✓; semantic (W5) ✓; market + 13-comparison (S3, verified) ✓; governance §9.1 (W5) ✓; PLAN row (W5) ✓; stream-4 handoff VERIFIED PRE-EXECUTED (xsp_store_profile §3 transcript-covered negotiation, L164 — stream 4 exited with it) |
+| §8 corpus handoff | stream 14's M5 substrate: add-a-field / SPLIT / 10k-replay / compat three-valued / downgrade-skip pair / pre-flight pair / ambiguous-graph / migrated-from discriminator — the machinery for each is SHIPPED here (or at #688 for compat); the families land with stream 14 (named landing) |
+
+Out-of-scope remainders, each at a named landing: `compat?` + export-verdict
+(#688 after the L65/L66 repairs); the downgrade replay surface + its
+visible-count fixture (market impl / stream 14); the M5 corpus families
+(stream 14); fold-result computation-cache integration (additive, unruled —
+no landing owed); #782 (query predicate subset — filed by stream 8, open).
+
+Gotchas recorded this stream: fixture user-domain err codes must be
+non-CXER strings (the registry gate scans fixture files; CXER-shaped
+domain codes fail STRICT); `[$count $binding/path]` over an INLINE path
+answers 0 — bind the read first, count the binding (the stream-8
+bind-first discipline extended to counts); `?if` takes explicit
+[then]/[else] wrappers; a chain fn returns `[entry seq= hash= [event …]]`
+ONLY (constructing ts=/prev= off a genesis entry CXER0100s on the empty
+prev); NEVER edit runtime-read files (fixtures/specs) while a gate runs —
+the W2 gate was demoted to advisory for exactly this.
