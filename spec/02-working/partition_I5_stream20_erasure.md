@@ -254,3 +254,22 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   obj_cache) per §7 reach; eager verify of a shredded payload must
   become a finding-not-fault when reconciled (W5); objwire client
   reconstruct of whole-doc subject docs = stream-4 joint surface.
+- **W3 EXECUTED 2026-08-12 — legal holds @ aeca490f.** The signed
+  Lane-2 `[legal-hold]` claim (scope = exactly one of subject/hash;
+  detached ed25519 sig over the claim's strict canonical text sans
+  [sig]; key→signer binding = authz/vc's domain per §2.6); the reserved
+  per-tenant hold-stream `cx:legal-hold` (binds from journaled position
+  — the honest rule); WRITE-TIME validation at append (CXER4620
+  E_ERASURE_HOLD_INVALID — immutable entries, an unbindable hold must
+  never be recorded) + the fail-closed `legal-holds` load (CXER4620
+  naming seq, never a skip; returns holds + `head=` — the position
+  W4's precondition pins; {subject:|hash:} filters). Fixture
+  journal-128 FIRST (RFC 8032 vector-1 keys, deterministic ed25519;
+  preimage parity `[$cx:canonical [$cx:serialize …]]` == V-side proved
+  by verification passing); fn-doc verbatim; journal.md §2.11
+  hold-stream bullet + §3.3 verb + §8 CXER4620 row. Gotcha recorded:
+  store-rehydrated claims carry string items as TextNode (read both).
+  Gate: `s20_w3_gate.log` GATE-RC=0, PRE/POST HEAD = aeca490f, 0 dirty
+  (fabric/http classified retries only). Enforcement (hold-beats-shred,
+  head pin + commit-lock re-check, blocking shred AND re-snapshot) =
+  W4, with the erase-subject command it preconditions.
