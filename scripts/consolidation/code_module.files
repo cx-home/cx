@@ -1,0 +1,16 @@
+# 783: the vcx/code in-module tests (module code). http_pool imports net —
+# code+net is not the #773 pair (that is net+platform); it rides here.
+vcx/code/atom_test.v
+vcx/code/cxpath_test.v
+vcx/code/http_pool_test.v
+vcx/code/let_collapse_test.v
+vcx/code/lexer_test.v
+vcx/code/modify_test.v
+vcx/code/program_fmt_test.v
+vcx/code/render_test.v
+vcx/code/slice_postfix_test.v
+vcx/code/stdlib_caps_test.v
+vcx/code/stdlib_cx_env_test.v
+vcx/code/stdlib_similar_assign_test.v
+vcx/code/stdlib_similar_metaphone_test.v
+vcx/code/worker_cancel_test.v
