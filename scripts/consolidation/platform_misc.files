@@ -1,0 +1,7 @@
+# 783: remaining platform singles (module platform).
+vcx/platform/io_watch_test.v
+vcx/platform/live_refs_feed_test.v
+vcx/platform/serve_file_fastpath_test.v
+vcx/platform/sql_test.v
+vcx/platform/xap_dist_exports_identity_test.v
+vcx/platform/xap_log_reduce_test.v

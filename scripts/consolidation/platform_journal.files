@@ -1,0 +1,6 @@
+# 783: journal platform tests (module platform).
+vcx/platform/journal_detached_payload_test.v
+vcx/platform/journal_head_fresh_test.v
+vcx/platform/journal_remote_wire_test.v
+vcx/platform/journal_rotate_test.v
+vcx/platform/journal_ts_form_test.v

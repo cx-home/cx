@@ -1,0 +1,14 @@
+# 783: service/wire-plane store tests (module platform). Excluded:
+# store_admin_plane (serial roster), store_xsp_journal + store_g13_parity
+# (import net — platform_netwire); the five-file harness-helper
+# conflict cluster (service, cxstore_wire, config_reload, remote_read,
+# remote_object — pairwise same-name-different-body) stays STANDALONE per
+# the #700 rule (no renames without a ruling).
+vcx/platform/store_objwire_test.v
+vcx/platform/store_wire_wave4_test.v
+vcx/platform/store_xsp_alias_retract_test.v
+vcx/platform/store_observability_test.v
+vcx/platform/store_observability_wave7_test.v
+vcx/platform/store_otel_e2_test.v
+vcx/platform/store_tracing_test.v
+vcx/platform/store_limits_test.v
