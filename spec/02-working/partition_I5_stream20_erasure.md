@@ -517,9 +517,18 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   (fabric/http classified retries only). Enforcement (hold-beats-shred,
   head pin + commit-lock re-check, blocking shred AND re-snapshot) =
   W4, with the erase-subject command it preconditions.
-- **W6 EXECUTED 2026-08-12 — hygiene + exit.** The ruled §12 edit-map
-  residue closed, the closure evidence assembled, the M5 end-to-end
-  landed:
+- **W6 EXECUTED 2026-08-12 — hygiene + exit @ 50168815 (+ W6.1
+  @ 15ca0fe5). Exit gate `s20_exit_gate2.log` GATE-RC=0, PRE/POST HEAD =
+  15ca0fe5, 0 dirty** (gate 1 `s20_exit_gate.log` RC=2: the one real
+  miss = W6.1 — the §9.6 refresh named 1144/1145 INSIDE the sparse
+  parenthetical, which the registry scanner reads number-by-number, so
+  the named codes registered as singleton rows overlapping the
+  1140–1145 run; the naming prose moved outside the parenthetical and
+  the unshipped reserved tail's artifact-registration dropped with it —
+  registered-state now equals shipped-state; gate 2 fails all
+  classified: the #572 fabric/http cache-free-retry pair, both green on
+  their classified retries). The ruled §12 edit-map residue closed, the
+  closure evidence assembled, the M5 end-to-end landed:
   - **cxdm §12.5** gains the tombstone-vs-secret decision bullet (the
     marker withholds a LIVE value's bytes at an output boundary; the
     tombstone records ATTRIBUTED at-rest destruction — never
