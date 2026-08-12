@@ -161,4 +161,26 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
 
 ## Wave record
 
-*(appended per wave: commit ids, gate logs, fixture ids, HEAD guards)*
+- **W1 EXECUTED 2026-08-12 — #779 root-fixed @ 0c024d5f.** Root cause:
+  the eval path's dispatch funnel locks around
+  `store_stdlib_builtin_inner`, but `svc_rotate_kek` (the
+  `cx store-rotate-kek` CLI wrapper) and the daemon call the INNER
+  dispatch directly — the whole rotation walk ran UNLOCKED there; its
+  own `store_persist` kicks the background fold worker, and the
+  unlocked `write_compacted_keyed` (b.segs reset + gen bump) could land
+  inside the worker's LOCKED `fold_commit` between the position scan
+  and the `b.segs[lo_pos]` install — the observed `array.set (0,0)`
+  panic. Fix: `store_lock_enter/exit` in `store_rotate_kek` itself
+  (re-enters via the #628 owner-tid bookkeeping on the already-locked
+  eval path; acquires on the direct-inner paths; covers all four
+  substrates + the walk's read snapshot). Regression guard FIRST:
+  `test_rotation_cxpack_vs_background_fold_worker_779` (24-round
+  rotate-vs-fold-kick storm through the exact pre-fix unlocked path;
+  pre-fix window µs-narrow — 4 pre-fix runs green, fired once across
+  many parallel gates; post-fix closed by construction). Gate:
+  `s20_w1_gate2.log` GATE-RC=0, PRE/POST HEAD = 0c024d5f, 0 dirty
+  (first run `s20_w1_gate.log` GATE-RC=2 — the fabric credit/resume
+  lane blew its 5s frame-read deadline because the retry ran while
+  parallel lanes were still executing; green standalone at HEAD +
+  green with the quiet-tree gate's classified retries). #779 CLOSABLE
+  at stream exit (evidence recorded here).
