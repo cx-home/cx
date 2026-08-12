@@ -384,9 +384,14 @@ extended):**
 - **Fixture authz-063** (probed byte-exact; suite 2821 green):
   permit-with-both-coordinates + deny-with-both-coordinates +
   bare-check-stamps-nothing in one case.
-- **GOTCHAS (real costs this wave):** (1) the NO-ADR-CITATION gate's
-  `\bdecision records?\b` regex catches the VERB phrase "the decision
-  records both …" — write "the decision value carries/records …";
+- **GOTCHAS (real costs this wave):** (1) the citation-hygiene gate
+  (Makefile `check-no-*-citations`) is token-aware and catches BOTH
+  the noun phrase's verb reading (the word "decision" immediately
+  followed by the verb "record(s)" — write "the decision value
+  carries …", never those two words adjacent) AND its own
+  three-letter acronym inside hyphenated names, in ANY live-tree
+  prose including prose about the rule itself — this bullet was
+  reworded twice to pass;
   (2) the #572 stale-layer class can defeat the in-gate cache-free
   retry itself: poisoned objects in /tmp/v_501 made fabric's F7
   scenario fail reproducibly ("credited transient push missing") even
@@ -394,3 +399,77 @@ extended):**
   re-matches the stale cache → false green) — wipe /tmp/v_501 with
   /tmp/cxc* before gates whenever fresh symbols landed; the clean-cache
   rerun greened with the same diff.
+
+### W6 — the offline-replica seed + EXIT (2026-08-12)
+
+**Landed (RULED: 93-121 / L115+L118; the stream-9 handoff):**
+
+- **Fixture journal-117** (probed byte-exact; suite 2822): the
+  offline-replica seed — the January fact arrives at TX seq=2 AFTER
+  the March fact; the VT read finds it regardless of arrival order
+  (known-now=1, its TX coordinate visible), the bitemporal cut at
+  seq=1 honestly answers it was NOT yet known (known-at-seq-1=0); a
+  late arrival is an :assertion, never a correction; ts stays
+  monotonic with seq. Stream 9 (#681) inherits this as the concrete
+  sync contract: VT/TX divergence PRESERVED in sync.
+- Fixture-authoring gotcha (real cost): `[first $seq-binding]` in a
+  ?let RHS does not select — it CONSTRUCTS (the body-position rule
+  reaches bindings); `$binding[1]/@attr` does not parse in attr
+  position. Select off the bound sequence directly
+  (`$jan/event/reading/@v`) or aggregate (`[$sum $jan/@seq]`).
+
+## EXIT AUDIT (2026-08-12)
+
+**The ruled §10 spec-edit map — every row executed or verified
+pre-discharged:**
+
+1. journal.md vocabulary recognition → W2 §2.9 AUTHORED.
+2. journal.md projection → W3 §3.8 AUTHORED (+ the pure temporal-slice
+   verb; the generic pre-fold seam).
+3. journal.md opts → W3 (fold/replay/slice/since; the four-quadrant
+   table normative).
+4. journal.md ts form → PRE-DISCHARGED at I1 (#712 closed;
+   jrn_ts_for real UTC-Z; journal_ts_form_test.v pins).
+5. journal.md retention → PRE-DISCHARGED (#712 closed;
+   keep-after-time ts→seq walk; the shipped seq-at verb).
+6. cxdm.md §2.4 reserved-attribute note → W2 AUTHORED.
+7. authz.md coherence + recorded coordinates → W5 AUTHORED + landed
+   (authz_stamp_coordinates; authz-063).
+8. vc.md/session.md window cross-refs → W5 AUTHORED.
+9. stream-20 handoff (L119 binding input) → W2 §2.9 statement + W4
+   journal-116 (the executable redaction arc); #692 inherits both.
+10. stream-9 handoff (VT/TX divergence preserved in sync) → W6
+    journal-117; #681 inherits.
+11. stream-7 naming coordination (at-seq) → PRE-DISCHARGED (recon
+    verdict 2; consistency_vocab.v reserves valid-at OUT).
+12. stream-21 fold-seam handoff → W3: the seam is a GENERIC pure
+    entry-seq→entry-seq stage ahead of the reducer
+    (jrn_temporal_project's composition point); #693 composes
+    upcasters there.
+
+**The §9 corpus — every pair delivered or at a named landing:**
+four-quadrant + restatement delta = journal-108 (the FULL corpus
+family = stream 14's handoff, named); taxonomy discriminator triple =
+journal-109; half-open boundary = journal-110; open ends = journal-111;
+ts-form re-bless vectors = PRE-DISCHARGED (I1, #712);
+redaction-visibility = journal-116; authz coherence = authz-063;
+offline-replica seed = journal-117. Plus the refusal splits
+(journal-112), the fold pin guard (journal-113), the interval verbs
+(journal-114), CXPath-over-vocabulary (journal-115), and the W2
+coherence-verb family (journal-104..107).
+
+**Out-of-scope remainders — each at a named landing (L120 ratified):**
+store temporal tables (ratified OUT; store as-of if ever = an E3
+projection); interval kind (never); wall-clock TX authority (never);
+cross-stream total order → stream 10 (#682); materialized views →
+stream 3's [?materialize]; replica sync → stream 9 (#681); upcaster
+vocabulary → stream 21 (#693, the seam ships here); the query-verb
+predicate subset → #782 (filed this stream); the full M5 corpus
+family → stream 14.
+
+**Filed in passing:** #782 (journal query strips predicates).
+**Collision handled:** the W4 shared-checkout collision (recorded in
+the W4 entry); the shared-checkout hard rule + HEAD guards now
+standing; explicit-path staging from W5 on.
+
+Exit gate + exit-merge follow this entry.
