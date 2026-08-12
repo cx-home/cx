@@ -221,3 +221,36 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   parallel lanes were still executing; green standalone at HEAD +
   green with the quiet-tree gate's classified retries). #779 CLOSABLE
   at stream exit (evidence recorded here).
+- **W2 EXECUTED 2026-08-12 — the SEK tier + subject vocabulary
+  @ 98416168 (+ W2.1 @ 166ffad2).** Everything the wave-plan entry
+  names landed: the three-tier keying (Kms `create/destroy/has_key`;
+  `sek/` ids never lazy-mint; EnvKms durable sidecar custody — KEK-
+  wrapped SEK blobs + the subject→full-sek-id mapping under the store
+  root `keys/`, atomic fsynced, destroy = removal, fail-closed); the
+  typed unavailable-vs-tampered discrimination (audit M33; #720 item 2
+  first half); the subject write path (whole-doc sealed object, self-
+  identifying root key == doc hash, address parity, dedup lost only
+  for nonced records; CXER4619 nonce discipline at store arm + journal
+  coordinate check; CXER1144 custody fail-closed); rotation×SEK closed
+  on all four walks (verbatim carry + `subject-keyed=`/`subject-keys=`
+  balanced report; the shred survives rotation); read-path whole-doc
+  branches (doc-text, eager verify ×2, porcelain). **Code correction:**
+  E_ERASURE_NONCE_REQUIRED = CXER4619 (the ruled 4617 premise went
+  stale — 4617 U1 resume-gap + 4618 stream-8 temporal-invalid shipped
+  post-S4; dated brackets in erasure_compliance §3/§9; journal.md §8
+  was already correct). Spec edits per the ruled §12 map: journal.md
+  §2.11 + §8 row; store.md §9.2 + §9.1 report + §13 CXER1144 row.
+  Tests both layers + fixtures journal-127, store-subject-001..004
+  (corpus baseline unchanged — `[empty]` in-cx). **W2.1 (the #779
+  class, second instance, caught by this wave's own first gate):**
+  orphaned fold worker vs same-root reopen — close cannot join the
+  worker (op-lock inversion), so the fix is a per-root active-worker
+  registry (own mutex) + open-time quiescence for FRESH instances;
+  shared opens never wait. Plus the missed s3-test `store_kek_kms`
+  call sites. Gate: `s20_w2_gate2.log` GATE-RC=0, PRE/POST HEAD =
+  166ffad2, 0 dirty (first run `s20_w2_gate.log` GATE-RC=2 = the two
+  real W2.1 items + the classified fabric/http pair). Carried notes
+  for W4: the erase walk purges IN-PROCESS plaintext (obj_sink +
+  obj_cache) per §7 reach; eager verify of a shredded payload must
+  become a finding-not-fault when reconciled (W5); objwire client
+  reconstruct of whole-doc subject docs = stream-4 joint surface.
