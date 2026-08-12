@@ -342,3 +342,52 @@ cleanup; profile gate PG-RC=0 standalone
 (mkdir-fresh-or-retry is the fix direction). Clean full gate:
 s7_w4_gate2.log GATE-RC=0 (only the two known usecache retry
 artifacts).
+
+### W5 — fabric + XSP + stream-3 opts: plane tokens, F7, F2 (2026-08-11)
+
+**Landed (RULED: 122-154 / L122+L123; #714 items 2 + 6):**
+
+- **Fabric per-subscription floor (L123, fabric.md §7 authored):**
+  subscribe/observe opts `consistency` through the ONE authority;
+  advert per PLANE — durable subs advertise prefix-consistent /
+  at-seq-pinned (from= is the pin) / monotonic-reads / gapless;
+  `:at-least-once` is the GROUP plane's delivery class ONLY
+  (redelivery-until-ack) — an observe/ungrouped subscription is a
+  cursor replay with no redelivery contract and REFUSES it with the
+  advert carried (the plane discriminator, no silent promotion);
+  the transient plane advertises no tokens. Floor echoed on the
+  [fabric-sub] element; undeclared subs byte-identical.
+- **F2 (#714 item 2), the fabric half + the spec statement:** declared
+  `:gapless` + explicit from= below the stream's retained floor refuses
+  CXER4991 naming requested + floor, instead of the silent
+  clamp-to-seam replay (fixtured against a REAL compacted segment —
+  fabric:open($seg) works); xap/xsp.md §5.3 authored (the observe-mode
+  "starts wherever it chooses" freedom = exactly a gap and a rewind,
+  both checkable server-side; declared floors get the checks at
+  re-subscribe; undeclared keeps the pre-§5 contract byte-identically;
+  the stream-3 live surfaces already run the same cursor checks
+  UNCONDITIONALLY — CXER5072/5073, verified pre-discharged at recon).
+- **F7 (#714 item 6), fabric.md §12 authored:** a transient
+  subscription MAY declare window= (xsp §5.2 — at zero the server MUST
+  stop pushing; the wire previously IGNORED window= on transient subs
+  and pushed past any declared window); a credit-paused transient push
+  has no log to catch up from, so the miss is an INHERENT drop —
+  counted per subscription, the cumulative count riding every
+  subsequent delivery as `dropped=N` on the [channel-value] frame.
+  Undeclared transient subs keep unbounded fan-out-now byte-identically
+  (wedged conns still close loudly). Wire-tested end-to-end in the s5
+  umbrella scenario: window=1, dropless first push (no dropped=), two
+  paused emits dropped, credit + next emit delivers `dropped=2`.
+- **Stream-3 coordination row:** live's rung= consumer tokens
+  (:monotonic-reads/:gapless) now come from the ONE authority
+  (cst_consumer_checkable — no second name list to drift); its checks
+  were already always-on (stream 3 landed them citing stream 7).
+- Fixtures fab-cst-001..003 (floor accept+echo on observe; the
+  at-least-once group-accepts/observe-refuses pair; the gapless
+  resume-guard vs silent-seam pair on a compacted segment — probed
+  byte-exact before landing). Suite 2802 green; fabric umbrella green
+  WITH the F7 scenario on its classified cache-free run (#572 — fresh
+  symbols added this wave, the stale-layer link failure appeared and
+  cleared exactly as documented).
+
+Full gate: s7_w5_gate.log GATE-RC=0.
