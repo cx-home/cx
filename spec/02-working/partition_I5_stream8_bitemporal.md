@@ -195,3 +195,54 @@ Branch cut at 69bced43; ledger authored; recon verdicts 1–8 probed live
 (register, both named seams, #712 pre-discharge, greenfield sweep,
 landing sites). Wave plan derived from the ruled §10 spec-edit map +
 the §9 corpus handoff.
+
+### W2 — the VT vocabulary + correction core (2026-08-12)
+
+**Landed (RULED: 93-121 / L115+L117+L119):**
+
+- **Design decisions recorded (in-wave, consistent with the ruled
+  sentences):** (1) recognition is READ-SIDE only — append never parses
+  the payload (§2.3 holds byte-identically; the strict-validation rule
+  binds the carriers where the caller constructs them and where the
+  read surfaces consume them); (2) the taxonomy's spelling: `relation=`
+  rides the `[supersedes]` element, TYPE-STRICT (the ATOM :correction
+  or :amendment — a string spelling is misuse, stream-7 posture);
+  `:assertion` is the classification of a VT-bearing entry with NO
+  supersedes child, never a linkage spelling; (3) linkage findings are
+  three-way honest: `:dangling-supersedes` only when NO chain in the
+  tenant has a pruned floor; `:supersedes-unverifiable` when the target
+  may lawfully live in pruned history; vocabulary misuse =
+  `:temporal-vocab-invalid` with one finding per defect (a malformed
+  supersedes is never also resolved); (4) shredded payloads counted
+  visibly (`erased=N` when non-zero) — the L119 honest-reporting
+  posture reaches the linter too; (5) carrier comparison decodes
+  through the ONE datetime core (`decode_datetime`/`instant_ns`) —
+  lexicographic comparison is unsound across date/datetime grains and
+  fractional seconds.
+- **`coherence`** — the new semantic-linter verb (journal.md §3.6;
+  `verify` stays syntactic per L117): walks retained entries (scoped
+  or default-then-named-sorted), checks §2.9 vocabulary + linkage,
+  resolves well-formed targets against the TENANT-wide retained hash
+  set (linkage may cross streams). Returns a present `[coherence]`
+  findings VALUE, never an error for findings. Impl:
+  `jrn_coherence` + `jrn_coh_scan`/`jrn_coh_check_payload`/
+  `jrn_vt_instant`/`jrn_attr_lookup` (stdlib_journal.v), dispatch row
+  `journal-coherence`, def + fn-doc in stdlib/journal.cx.
+- **Spec edits per the ruled §10 map:** journal.md §2.9 authored (the
+  reserved payload vocabulary: half-open `[from, to)`,
+  absent-open-end never null, carriers under strict validation,
+  `[supersedes hash= relation=]` by content address never seq, the
+  three-relation taxonomy, VT-in-payload/TX-in-envelope + the L119
+  shreddability statement with visible redaction reporting);
+  journal.md §3.6 `coherence` authored; cxdm.md §2.4 the
+  reserved-attribute-vocabulary note (naming, not a kind).
+- **Fixtures journal-104..107** (probed byte-exact, RED-proven: a
+  corrupted expectation fails naming journal-104; suite 2811): clean
+  chain zero findings; definite dangle; `:supersedes-unverifiable` on
+  a REAL compacted segment (the pruned-floor discriminator); the
+  four-defect vocabulary probe (non-temporal carrier, empty half-open
+  interval, string-spelled relation, missing hash=). fn-doc example =
+  journal-105 verbatim; guide-check OK 46 modules.
+- CXER4618 reserved for W3 (the projection's typed refusal — the
+  raiser lands with its machinery; coherence findings are values, no
+  new code needed this wave).
