@@ -40,8 +40,10 @@ shred signal. Everything else is additive: reserved payload vocabulary
 (`subject=`/`nonce=`), tombstone reads, the `verify` reconciliation
 axis, legal-hold Lane-2 claims, the shred report, fold-id
 shred-generations (stream 21's fold-id shipped at ffb7dadc), error rows
-in the registered journal `4617–4639` + store `1144–1149` bands
-(registry repair executed 2026-08-05).
+in the registered journal `4619–4639` + store `1144–1149` bands
+(registry repair executed 2026-08-05; slice re-corrected at W2 —
+`4617`/`4618` were consumed by U1 delivery + stream 8 after the S4
+ruling; journal.md §8 records the operative slice).
 
 ## Binding inputs — verified shipped at branch cut
 
@@ -105,26 +107,61 @@ in the registered journal `4617–4639` + store `1144–1149` bands
   holds — or the set-replacement moves behind the backend's own mutex
   so gen-check→mutate is atomic against fold_commit. The KEK-rotation
   walk this stream ships must not build on a racy substrate.
-- **W2 — the SEK tier (L181, §2 + §9 custody):** keying-backend
-  refactor — key-id → (KEK, SEK, DEK) resolution; SEK-absence =
-  fail-closed; SEKs KMS-resident as `sek/<tenant>/<subject-token>`
-  (opaque token, never the subject id); the re-wrap primitive reused;
-  `envelope_open` gains the fail-closed `unavailable` finding now (the
-  `shredded` discrimination lands with the journaled shred-request it
-  is evidenced from — W5; never key-absence-derived, audit M33).
-- **W3 — subject/nonce vocabulary + the oracle family (L182/L183,
-  §3+§4):** `subject=`/`nonce=` reserved payload attributes; CXER4617
-  E_ERASURE_NONCE_REQUIRED refusal (first code of 4617–4639);
-  weak-nonce NEGATIVE witnesses (no-nonce refusal; derived/short nonce
-  rejection — dedup/parity witnesses alone pass for `nonce=1`, the C7
-  trap); ≥128-bit CSPRNG; nonce inside the sealed payload only;
-  address-parity + nonced-dedup-loss witnesses.
-- **W4 — legal hold (L188, §8):** signed Lane-2 `[legal-hold]` claim;
+- **W2 — the SEK tier + subject vocabulary (L181/L182/L183, §2+§3+§4+§9
+  custody; MERGED at wave open 2026-08-12 from the original W2+W3 —
+  the live-consumer rule: SEK create/destroy and seal-under-named-key
+  would otherwise ship as dormant seams until the subject= write path
+  consumes them):** keying-backend refactor — key-id → (KEK, SEK, DEK)
+  resolution; SEK-absence = fail-closed; SEKs KMS-resident as
+  `sek/<tenant>/<subject-token>` (opaque CSPRNG token, never the
+  subject id); `envelope_open` gains the fail-closed `unavailable`
+  discrimination now (absent-key vs auth-fail; the `shredded`
+  classification lands with the journaled shred-request it is evidenced
+  from — the erase wave; never key-absence-derived, audit M33).
+  `subject=`/`nonce=` reserved payload attributes; CXER4619
+  E_ERASURE_NONCE_REQUIRED refusal (first FREE code of the slice —
+  `4617`/`4618` were consumed by U1 delivery + stream 8 after the S4
+  ruling; the spec's premise corrected in place with a dated bracket,
+  the registry-repair precedent; journal.md §8 row rides the same
+  commit); weak-nonce NEGATIVE witnesses (no-nonce
+  refusal; derived/short nonce rejection — dedup/parity witnesses alone
+  pass for `nonce=1`, the C7 trap); ≥128-bit CSPRNG; nonce inside the
+  sealed payload only; address-parity + nonced-dedup-loss witnesses.
+  **Wave-open design decisions (inside ruled bounds):**
+  - **Rotation×SEK interaction (found at wave open — a compliance hole
+    if unhandled):** the shipped KEK-rotation walk re-wraps EVERY
+    envelope to the new tenant key; once SEK-wrapped envelopes exist
+    that would move subject payloads back under the tenant KEK and
+    defeat crypto-shredding. Ruled basis: §2 "the re-wrap primitive
+    from rotation IS the SEK-rotation primitive" + §10 "KEK rotation
+    over a store with shredded subjects keeps the report balanced".
+    Design: envelopes whose recorded key-id is `sek/…` are OUT OF SCOPE
+    for tenant rotation (their wrapping key is the SEK — carried
+    verbatim, visible `subject-keyed=` count); the SEK KEY MATERIAL
+    (KEK-wrapped) re-wraps under the new KEK via the same rewrap
+    kernel; a destroyed-SEK envelope also carries verbatim (the shred
+    survives rotation); the §9.1 balanced account extends.
+  - **Reference SEK custody:** durable KEK-wrapped SEK blobs in a
+    store-root `keys/` sidecar (EnvKms layer); create = CSPRNG 32B
+    wrapped under the tenant KEK; destroy = file removal, after which
+    unwrap fails closed by construction (§2/§9); `sek/` ids NEVER
+    lazy-mint (an ephemeral re-mint would misreport absence as
+    auth-fail). Production supplies a real KMS through the same seam.
+  - **subject→token mapping** = a manifest-level tenant-scoped record
+    (consistent with the shipped plaintext refs/aliases posture —
+    content seals, names don't); removed by the shred walk (the erase
+    wave); post-shred the substrate names the subject only from the
+    journaled shred-request (§4's stated design).
+  - **CXER4617 raised from BOTH write surfaces** (journal append +
+    store put-doc of a subject-bearing doc) — the stream-7 precedent
+    (CXER4990 consistency codes raise from store verbs); band 4617–4639
+    already registered as a §9.6 range (2026-08-05 repair).
+- **W3 — legal hold (L188, §8):** signed Lane-2 `[legal-hold]` claim;
   per-tenant hold-stream (a hold binds from its journaled position
   onward); the `[requires-at]` head pin + commit-lock re-check;
   unsigned → fail-closed. Lands BEFORE the command so the shred
   precondition is never a partial impl.
-- **W5 — erase-subject + the shred walk (L184 remainder/L187/L181
+- **W4 — erase-subject + the shred walk (L184 remainder/L187/L181
   completion, §7):** the recorded command (stream-6 mechanics:
   `[effects]` checked-and-enforced, `[idempotent]` w/ the exempt
   opaque-token dedup record — audit M31 carve-out; shred reach beats
@@ -138,7 +175,7 @@ in the registered journal `4617–4639` + store `1144–1149` bands
   cache, stream-6 dedup records, replay tapes); the §9.1-shaped
   balanced shred report; `envelope_open`'s `shredded` finding evidenced
   from the journaled record (M29 read-time reconciliation).
-- **W6 — read surfaces + verify reconciliation (L185/L186, §6):** typed
+- **W5 — read surfaces + verify reconciliation (L185/L186, §6):** typed
   `[erased subject? at= authority= actor= shred-request=]` tombstone on
   the value channel; `get-doc` three-way (never-existed CXER1121 /
   unreconstructable CXER1120 / lawfully-erased `[erased]` — #720 item
@@ -147,7 +184,7 @@ in the registered journal `4617–4639` + store `1144–1149` bands
   fixture (payload destroyed with no shred-request →
   `unattributed-missing=1`); visible-count generalization
   cross-references (streams 3/21 per audit M7).
-- **W7 — hygiene + exit:** §12 edit-map residue (store.md §9, cxdm §12,
+- **W6 — hygiene + exit:** §12 edit-map residue (store.md §9, cxdm §12,
   cx_partition §8, handoff texts 4/9/10/21); #720 all-items closure
   evidence; #692 closure; unnonced-legacy remedy text verified
   (re-write-with-nonce before shred / documented residual-risk); M5
