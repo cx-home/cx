@@ -167,3 +167,66 @@ never fuse); `?cache=` layer construction (F4 rules the refusal only).
 
 Branch cut at ecae77aa; recon verdicts above; #714 item-5 (docs
 amendment) verified pre-discharged in tree.
+
+### W2 — the vocabulary core (2026-08-11)
+
+**Landed (RULED: 122-154 / L122+L123+L125):**
+
+- `vcx/platform/consistency_vocab.v` — THE one token authority (a second
+  token list or refusal shape anywhere is a drift hole): the L122 closed
+  set (ten atoms; `snapshot-isolation`/`causal`/`eventual` OUT entirely,
+  `valid-at` never a consistency token); `cst_read_declared` (the
+  `consistency` opts key, one atom or a `(…, …)` sequence, TYPE-STRICT —
+  a string spelling of a valid token refuses at stage `vocabulary`, so a
+  quoted near-miss can never silently declare); `cst_check_floor`
+  (scrutiny order per token: closed-set membership → the two teaching
+  refusals → the advert); refusal constructors carrying the D-C1 naming
+  as structured `[context …]` children (stage/token/surface/guarantees/
+  answer for CXER4990; stage/token/surface/requested/floor/
+  resolve-through for CXER4991) so fixtures assert the naming as DATA,
+  not by message-grep.
+- Journal floor (L123): `open`/`attach` validate the declared tokens
+  ONCE against `jrn_guarantee_advert` (prefix-consistent, at-seq-pinned,
+  at-head-set, monotonic-reads, gapless; + read-your-writes over
+  mem/file backends only — the store-advert refinement is W4's); the
+  handle element echoes the floor (`consistency=` attr; undeclared
+  handles byte-identical). A `compact` target is an OPEN — compact opts
+  carry the same `consistency` key as the segment handle's floor.
+- Per-read guards (L122/L125): the `replay`/`snapshot` at-seq pin is
+  ALWAYS-ON (a pin IS a declaration) — on a retention-pruned chain it
+  refuses CXER4991 naming requested + floor + the resolve-through path,
+  never a silent fold from the seam; under a declared `:gapless` floor
+  an explicit-`from` read (`slice`/`since`/`replay from=`) below the
+  retained floor refuses the same way (`source` reads the retained
+  suffix BY CONTRACT and is not an explicit-from read — spec-worded).
+- Teaching refusals (L122): `:exactly-once` → CXER4990 with
+  `[answer '[idempotent]']` (the shipped code.md §12.2.7 clause named);
+  `:serializable` → `[answer 'cross-stream coordination (stream 10)']`.
+- Spec edits per the ruled §10 map: journal.md §4.4 (the two attachment
+  points + the closed-set discipline + the pin/gapless guards);
+  governance §9.6 row `CXER4990–CXER4999 | cx-core/consistency`
+  (registered before first use, per invariant).
+- Fixtures journal-089..097 (discriminator-pair style; header id-range
+  block extended). `scripts/cxer_registry_report.sh --strict` RC=0
+  (s7_w2_cxer_report.log); no cxparse baseline movement (all new
+  fixtures are `[empty]`-in-cx); no new public defs (guide-check
+  unaffected).
+
+**The RED proof (fixture-first, impl stashed and suite re-run on the
+pre-change tree — 9/9 new fixtures fail with the SILENT behaviors the
+vocabulary exists to close):**
+
+- journal-090..094: opens SUCCEED SILENTLY under an unadvertised /
+  unknown / string-spelled declaration (the `consistency` key was
+  ignored wholesale — the F-class in the flesh).
+- journal-095: `[pair pinned-at2=2 1]` — the pinned replay on the
+  compacted segment answered **1** where the true state at seq 2 is
+  **2**: the silent wrong answer, exactly as booked.
+- journal-096: a **SIGNED snapshot of a wrong state** — `[state 2]`
+  (folded from the seam) where the chain's true state at seq 3 is 3,
+  signed sig-algo=none as a real artifact.
+- journal-097: the undeclared segment silently clamps (n=2), preserved
+  as the legacy arm of the pair.
+
+GREEN after restore: code.cxd + stdlib fixture suite 2794 pass /
+0 enforced failures. Full gate: s7_w2_gate.log GATE-RC=0.
