@@ -304,3 +304,40 @@ extended):**
   are LIVE syntax — `[Aug 1, Aug 5)` in a comment broke the whole
   file's parse (unterminated element body at the file tail); [# #]
   raw blocks are safe.
+
+### W4 — interval verbs + CXPath-over-vocabulary + the erasure constraint (2026-08-12)
+
+**Landed (RULED: 93-121 / L118+L119):**
+
+- **Placement decision (in-wave, long-term-best):** `[$overlaps]` /
+  `[$contains-instant]` land as **journal MODULE verbs** (`overlaps`,
+  `contains-instant` — pure, backed by env-free prims), NOT §6.5 core
+  builtins: the §6.5 tables are CLOSED and identity-bearing (stream 5's
+  builtin-set id hashes the two spec tables — extending them for a
+  vocabulary helper would move every computation identity for zero
+  gain), and the vocabulary's normative home is journal §2.9.
+  Half-open adjacency does NOT overlap (the no-double-count
+  discriminator); absent ends unbounded; malformed vocabulary on an
+  argument = CXER4618, non-element/non-temporal args = CXER4610.
+  Shared bounds extraction `jrn_vt_bounds` (the projection's pass-2
+  refactored onto it — one carrier-validation authority).
+- **L118's no-grammar-change claim PROVEN, not assumed**
+  (journal-115): attr-presence, negated presence, and prefix-operator
+  comparison predicates all filter the vocabulary on materialized
+  entries as-is. **FILED IN PASSING: #782** — the `query` VERB
+  silently strips trailing predicates (a deliberate name-step subset
+  that over-matches vs §3.3's promise; probed live: predicate query
+  answered 3 where 2 match). Pre-existing, out of ruled scope, named
+  landing = #782; the fixture pins the read-surface paths and notes
+  the exclusion.
+- **The L119 redaction-visibility fixture on a REAL shred**
+  (journal-116): store delete of the payload doc by its detached
+  address; the ENGAGED projection passes the shredded entry through
+  VISIBLY (projected=2); coherence counts it (erased=1); the chain
+  still VERIFIES (hash covers the address — the erasure mandate).
+  Stream 20 (#692) inherits this fixture + §2.9's statement as its
+  binding input.
+- Spec: journal.md §3.8 interval-verbs block (defs, the module-verbs
+  rationale, adjacency rule, the #782 note). Fixtures journal-114..116
+  probed byte-exact (suite 2820); fn-docs overlaps + contains-instant
+  = journal-114 verbatim; guide-check OK 46.
