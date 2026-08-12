@@ -517,3 +517,90 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   (fabric/http classified retries only). Enforcement (hold-beats-shred,
   head pin + commit-lock re-check, blocking shred AND re-snapshot) =
   W4, with the erase-subject command it preconditions.
+- **W6 EXECUTED 2026-08-12 — hygiene + exit.** The ruled §12 edit-map
+  residue closed, the closure evidence assembled, the M5 end-to-end
+  landed:
+  - **cxdm §12.5** gains the tombstone-vs-secret decision bullet (the
+    marker withholds a LIVE value's bytes at an output boundary; the
+    tombstone records ATTRIBUTED at-rest destruction — never
+    substitutable; #720 item 5's distinction stated in the marker's own
+    spec).
+  - **cx_partition §8** gains the erasure-inside-the-guarantee bullet
+    (RTBF coexists with the archival promise by construction; chains
+    verify with payloads lawfully gone; unauthorized deletion and
+    lawful shred observationally distinct forever).
+  - **governance §9.6 rows refreshed to shipped state:** store sparse
+    list → 1140–1145 with 1144/1145 named shipped (1146–1149 remain
+    reserved; the parser's sparse-scan semantics unchanged — reserved
+    codes were already inside the scanned parenthetical); journal row
+    amended — 4617 (U1) + 4618 (stream 8) shipped ahead of the stale
+    reservation bracket, which now reads 4619–4639 with 4619–4622
+    named shipped; 4640 named shipped (stream 21, 4641–4649 reserved).
+  - **vc.md §9** gains the legal-hold receiving bullet (the edit map's
+    unexecuted authz/vc row, found by this exit audit): key→signer
+    binding for `[legal-hold]` claims is vc's §4 recovery model; an
+    unbindable signer carries only raw key possession.
+  - **Handoffs 4/9/10/21 disposed:** stream 4 = verified pre-carried
+    (xsp_store_profile §7b/§7b.1 + the W5.1 act mapping: tombstone as
+    distinct wire response, erase act carriage, replica posture, no
+    CSRP); stream 9 = RECEIVING text authored in distributed_store.md
+    (the shred-reach block: shred-requests as journal data on the same
+    feed a revocation rides, per-replica walk + own §9-shaped report,
+    (subject, request-token) idempotence, `push`-refuses-CXER1144
+    line-hold, multi-store = stream 10's saga) + the joint requirement
+    filed on #681 (comment); stream 10 = verified pre-carried
+    (cross_stream_coordination's erasure step-class: one irreversible
+    pivot, visible per-stream counts); stream 21 = verified landed at
+    W5 (journal.md §3.9 finding-vs-fault + schema_event_evolution's M7
+    visible-count cross-reference).
+  - **Unnonced-legacy remedy VERIFIED (the §3 text vs shipped state):**
+    both arms are mechanically real — re-write-with-nonce = a stream-8
+    supersedes-correction re-landing through the subject arm, then both
+    generations shredded (the record's `[docs]` scope + the doc-level
+    erase funnel reach the unnonced generation); documented
+    residual-risk = doc-level erase → attributed record + tombstone →
+    the redaction accounting is nonce-agnostic and counts it VISIBLY
+    (`redacted=`, never silent). The C7 negatives
+    (store-subject-001..003, CXER4619) guard the trap the witnesses
+    alone miss.
+  - **M5 `o-5521` end-to-end = `test_rtbf_o5521_end_to_end`**
+    (store_subject_test.v, cxpack+SEK — the custody-deep half of the
+    standing fixture split; the mem-expressible command slice is
+    journal-129/130/131/132, and the corpus-expressible family stays
+    §10's stream-14 handoff): the order aggregate stream
+    (`order:o-5521`) carries personal + non-personal events; the RTBF
+    command with authority (docs=1 erased=1 subject-keys=1, balanced
+    account, `holds-head=` pinned — the head-set scope); idempotent
+    replay `[deduped …]`; the named-stream chain green (valid=true
+    redacted=1 unattributed-missing=0 payloads-verified=2);
+    attribution intact on BOTH evidence bases (the tombstone naming
+    shred-request with `subject` absent; the `cx:erasure` record
+    naming subject/request + the `[docs]` scope covering the erased
+    address + the pinned `[head-set]`); non-personal events read
+    intact and the erased entry hydrates the typed tombstone as a
+    direct child. **Gotcha found:** `journal-read` takes a TRAILING
+    STREAM KEY (`jrn_opt_stream`), not an opts map — a `{stream: …}`
+    map arg silently reads the default stream.
+  - **#720 all-items closure evidence:** item 1 = W4/W5
+    (`test_local_get_doc_of_erased_answers_tombstone` + store.md §6.1
+    three-way rows); item 2 = `test_sek_destroy_unavailable_vs_tampered`
+    (encryption_test.v, the M33 typed discrimination, W2) + the
+    CXER1145-vs-fail-closed M29 classification (W4/W5); item 3 = the
+    2026-08-05 registry repair + this wave's §9.6 row refresh; item 4 =
+    #712 CLOSED (keep-after-time implemented, stdlib_journal.v); item
+    5 = the cxdm §12.5 distinction bullet + the shipped typed
+    `[erased]` element (deliberately divergent, rationale stated).
+  - **#779 closure evidence** = the W1 record (root cause; the
+    store_lock_enter/exit fix in store_rotate_kek covering all four
+    substrates; `test_rotation_cxpack_vs_background_fold_worker_779`).
+  **Exit audit — every §12 edit-map row disposed:** store.md §9
+  (W2/W4/W5), journal.md §2.2/§4.2 (I1 + W2), §2.8/§4.9 (W4), §3.6
+  (W5), cxdm §12 (W6), authz/vc legal-hold (W6, this audit's find),
+  governance §9.6 (2026-08-05 repair + W6 refresh), cx_partition §8
+  (W6), handoffs 4/9/10/21 (W6, above). Named landings (ruled, not
+  deferrals) unchanged: replica shred-reach = stream 9 (#681 comment +
+  distributed_store receiving text); cross-stream erasure = stream 10's
+  saga vocabulary; M5 corpus families = stream 14 (§10); no erasure on
+  the retiring CSRP plane (stream 4). Open adjacents filed, not
+  stream-20 scope: #784 (placement tier), #785 (rotate/compact at-rest
+  options), #786 (SQL facade).
