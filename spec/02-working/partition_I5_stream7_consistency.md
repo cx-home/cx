@@ -391,3 +391,89 @@ artifacts).
   cleared exactly as documented).
 
 Full gate: s7_w5_gate.log GATE-RC=0.
+
+### W6 — the M5 substrate + exit (2026-08-12)
+
+**Landed (RULED: 122-154 / L122+L124+L125; the §9 corpus handoff):**
+
+- **The §3.7 tenant SET snapshot — the `:at-head-set` cut substrate.**
+  Found at W6 recon, defect-shaped and RED-probed: a tenant snapshot
+  (no stream=) over a journal with named streams silently answered the
+  (empty) default chain — `at-seq=0`, genesis anchor, `[state 0]` — a
+  FALSE artifact signed as the tenant state, in an R2
+  "IMPLEMENTED (complete)" surface. Never true a spec to a shortfall:
+  implemented per the approved §3.7 sentence — the set of stream heads
+  `{(stream, at-seq, anchor-hash)}` + per-member folded states under
+  ONE signature; members deterministic (default first, named sorted);
+  the cut taken under the journal op funnel; `opts.at-seq` refused on
+  the set form; a pruned member refuses CXER4991 like the single form.
+  New ADDITIVE preimage `snapshot-set-canonical` (§4.8 — members
+  byte-shared between canonical and artifact so verify re-renders them
+  verbatim; every existing single-stream preimage byte-unmoved — the
+  frozen-preimage rule and the stream's additive epoch posture hold).
+  `snapshot-verify` gains the set arm (`form=set`; anchor-mismatch
+  NAMES the failing stream); `fold-from` on a set refuses CXER4610
+  teaching the consumption path (fold-slice from at-seq+1 seeded by the
+  member state, composed per §3.4); retention covers stay
+  single-stream. journal.md §3.7 + §4.8 authored.
+- **The M5 pair (§9):** journal-101 — the invoice+inventory join over a
+  declared `:at-head-set` floor; the set snapshot IS the verifiable
+  multi-stream READ coordinate (both heads, one instant, one signature
+  basis); the no-cut half is F8's at-the-verb annotation (W3).
+- **The L125 resolve-through arc (§9):** journal-102 — the pinned
+  replay below a pruned floor refuses naming requested+floor; the
+  caller RESOLVES through the covering snapshot (fold-slice seeded by
+  its state reconstructs state-at-pin exactly); a pin BELOW the
+  snapshot's coverage cannot resolve — the refusal is final.
+- Fixtures journal-099..103 (all probed byte-exact; 099 pins the full
+  signed set artifact; 100 pins valid + the divergence finding naming
+  the stream). Suite 2807 green.
+
+**Exit audit — every ruled §10 spec-edit map row:**
+
+1. journal.md §4.4 (tokens + floor + pins) — W2; §3.3/§4.6 fresh-head +
+   F1 statement — W3; §3.4 F8 not-a-cut — W3; §3.7/§4.8 set form — W6.
+2. store.md advert + refusals — W4 (§5.2 authored; F4/F5/F6 in place).
+3. fabric.md plane tokens + drop counts — W5 (landed at §7 + §12, the
+   semantically right sections; specs-loosely-coupled).
+4. xap/xsp.md §5.3 resume guards — W5.
+5. governance §9.6 band row — W2 (registered before first use;
+   cxer_registry --strict green).
+6. docs-src cxstore architecture amendment — PRE-DISCHARGED (verified
+   in tree at W1 recon; the L127 strikethrough text ships).
+7. stream-3 surfaces declare through the same opts — PRE-DISCHARGED
+   (live's CXER5072/5073 cursor checks always-on, landed by stream 3
+   citing stream 7) + the W5 authority pin (cst_consumer_checkable).
+
+**§6 F1–F8, all closed with evidence:** F1 W3 (head stated + head-fresh
++ the stale/fresh V-test pair); F2 W5 (fabric declared-floor guard +
+xsp §5.3; live pre-discharged); F3 W4 (config-generation on both
+adverts + the CSRP client rule + test); F4 W4 (ruled in place); F5 W4
+(the three write arms + fixtures); F6 W4 (the one sentence); F7 W5
+(windowed transient drop counts, wire-tested); F8 W3 (at the verb).
+
+**§8 replica profile:** handed to stream 9 as VOCABULARY (the spec
+section is the handoff; #681 inherits — no replica impl here, per the
+ruling). **§9 corpus:** every named pair delivered — per-token
+floor accept/refuse (journal/store/fabric), the stale-head pair (V
+test), the observe-resume gapless pair (fab-cst-003), the expect-less
+refusal pair (store-cst-002), :exactly-once naming [idempotent]
+(journal-091 + store-cst-004 — one authority proven), :serializable
+naming stream 10 (journal-092), the multi-stream no-cut vs
+:at-head-set pair (journal-101 + the F8 annotations), and
+pin-below-retention resolve-through-then-refuse (journal-102).
+
+**Out-of-scope remainders at their named landings:** serializable
+cross-stream coordination → stream 10 (#682); replica reads /
+conflict values → stream 9 (#681, the §8 profile in hand); `valid-at`
+stays stream 8's query axis; `?cache=` layer construction (F4 rules
+the refusal); the CSRP client-side capabilities pre-flight fetch →
+whenever a client-side advert consumer lands, it inherits the F3
+generation rule (the advert + normative rule ship now); #781 io
+temp-dir collision (filed, out of stream).
+
+Exit gate: s7_exit_gate.log GATE-RC=0. Exit-merge to
+design/651-516-partition follows on green; #714 + #679 close with this
+evidence.
+
+**Status: EXITED** (pending the exit-gate log reference above).
