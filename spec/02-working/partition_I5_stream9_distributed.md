@@ -198,3 +198,25 @@ stream 10; the automatic placement tier = #784.
   naming a doc absent at ours refuses CXER1121 loud (resolver lands it
   locally or names a side's tip); resolutions for non-diverged refs
   are ignored deterministically (stale input, no effect).
+- **W4 EXECUTED 2026-08-12 — the sync surface @ a279a6f9 (#719 items
+  4+5 discharged).** The pull/fetch split (pull = fetch + per-ref
+  reconciliation, composed head-set-bearing [pull-result] w/
+  opts.resolutions; pull enforcing per the agreement law, CXER5053
+  carrying conflicts, the fetch half + clean fast-forwards already
+  landed; pull-report = the never-raising twin; a REMOTE pull source
+  refuses LOUD naming the W5 wire lane — never a silent degrade);
+  clone/push/fetch results head-set-bearing (pc_heads — the status
+  shape, one vocabulary); the signed seed (journal-134: signed SET
+  snapshot verifies → ingest per stream → replica heads byte-identical
+  to the signed anchors; journal-135: fold-from a diverging anchor
+  refuses CXER4615 — the §7 corpus rows). The alias-plane asymmetry vs
+  migrate documented as design. Fixtures journal-134/135 +
+  store-pull-002 byte-exact; battery 2850 green; guide-check OK 46.
+  **FINDING (assess at W6):** pc_transfer lands docs without E3 feed
+  appends — the docs stream undercounts transferred docs (pinned
+  visibly in store-pull-002); the live changes-since consumer over a
+  synced store is the affected surface; decide fix-vs-file at the M5
+  end-to-end. **Scope decision (inside ruled bounds):** wire-side ref
+  reconciliation + status ahead/behind both need the peer's
+  lineage/head-set read — ONE design, landing together in W5's
+  peer-facing batch (declaration profile + shred worker ride along).
