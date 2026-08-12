@@ -176,3 +176,25 @@ stream 10; the automatic placement tier = #784.
   `/*`. Resolutions-as-input-table + merge-as-an-entry = W3, where
   the recorded join makes a resolution an ordinary advance whose
   payload names both tips + base.
+- **W3 EXECUTED 2026-08-12 — merge-as-an-entry + resolutions + cx:merge
+  @ a1f0a38e (#719 item 3 discharged).** Resolutions re-enter as the
+  input table (`opts {resolutions: [resolve ref= target=]}`): the join
+  records FIRST (a stored `[merge]` doc — base/ours/theirs as locator
+  triples on the alias lineage + the target), then the lineage ADOPTS
+  theirs before advancing to the target — two ordinary advances, linear
+  lineage, no merge node — so the next reconcile finds theirs' tip as
+  the common base and answers AHEAD (converged; determinism
+  fixture-pinned). `resolved=` rides the report only when engaged
+  (L119; W2 reports byte-stable). cx:merge implemented ALIGNED TO
+  VALUES: defined deep-merge semantics in modules/cx.md §2.3;
+  error-on-conflict raises CXER4110 carrying every collision as the
+  ONE `[conflict subject= kind=:merge-value [ours][theirs]]` shape.
+  store.md §6.3 merge/rebase sentence amended to the ruled narrower
+  truth. Fixtures cx-048 + store-reconcile-003 byte-exact; battery
+  2847 green; guide-check OK 46; strict registry RC=0. **Design
+  decisions (inside ruled bounds):** convergence rides the LINEAGE
+  (adopt-theirs intermediate advance), not a join-record index — the
+  common-base rule alone makes re-reconcile converge; a resolution
+  naming a doc absent at ours refuses CXER1121 loud (resolver lands it
+  locally or names a side's tip); resolutions for non-diverged refs
+  are ignored deterministically (stale input, no effect).
