@@ -220,3 +220,26 @@ stream 10; the automatic placement tier = #784.
   reconciliation + status ahead/behind both need the peer's
   lineage/head-set read — ONE design, landing together in W5's
   peer-facing batch (declaration profile + shred worker ride along).
+- **W5 EXECUTED 2026-08-12 — the peer batch @ 475a3724 (#719 item 1
+  discharged — all five #719 items now closed).** Status ahead/behind
+  via opts.peer = the DRY reconcile classification (per-stream
+  :identical/:ahead/:behind/:diverged w/ each side's own E3 positions);
+  the replica declaration profile (open-opts replica:"true" → the
+  replica advert; ryw/lin-ref refuse CXER4990 at open — M8 received);
+  register-or-refuse retention ([$journal:register-replica] upsert; a
+  retain boundary above a registered cursor refuses CXER4616 — the
+  stream-3 registration pattern, same consultation site); the
+  shred-reach worker ([$journal:apply-erasures]: the replica's OWN
+  erase-subject per origin record, same (subject, request-token) key,
+  own balanced report, [deduped] replay, LOCAL holds refuse LOUD
+  [held] — the stream-20 §6 joint requirement DISCHARGED). Fixtures
+  journal-136/137 + store-status-003 + store-replica-001 byte-exact;
+  V test custody-deep shred reach (cxpack+SEK ×2 stores); battery
+  2854 green; guide-check OK 46; strict registry RC=0. **Gotchas:**
+  the env-dispatch wrapper holds the journal's NON-REENTRANT jmu —
+  intra-verb composition calls the inner fns direct (#779 class; the
+  first probe hung); the open floor's key is `consistency:` w/ atom
+  SEQUENCE spelling for multi-token. **Re-plan (recorded):** the WIRE
+  composition (peer-lineage op + wire reconcile/pull/status + the
+  feed-riding replica worker) = W6; M5 end-to-end + hygiene + exit =
+  W7. W5 gate next.
