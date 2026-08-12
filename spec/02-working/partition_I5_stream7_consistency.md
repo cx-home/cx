@@ -230,3 +230,55 @@ vocabulary exists to close):**
 
 GREEN after restore: code.cxd + stdlib fixture suite 2794 pass /
 0 enforced failures. Full gate: s7_w2_gate.log GATE-RC=0.
+
+### W3 — the journal findings: F1 fresh-head + F8 not-a-cut (2026-08-11)
+
+**Landed (RULED: 122-154 / L126; #714 items 1 + 6):**
+
+- **F1, both halves.** `head` KEEPS its declared purity and gains the
+  honest statement (journal.md §3.3 + §4.6 restated): it answers the
+  handle's CACHED view — coherent within one process (shared-root
+  sibling advances fold in forward-only, the #628 rule) — and makes NO
+  freshness claim; under a second writer it MAY report a stale position
+  with no signal; it satisfies neither `:read-your-writes` freshness
+  nor a declared-fresh need. **`head-fresh`** is the distinct, IMPURE
+  verb (§3.3 + `[?def]` + fn-doc): it re-resolves the durable head
+  through the SUBSTRATE — mem:// answers the live instance;
+  remote-active backings already read the daemon's table per op; a
+  read-only LOCAL handle (the private-snapshot views, exactly where the
+  silent-stale class lives — the supported cross-process shape is one
+  writer + N read-only) re-TAKES its view from disk through the normal
+  capability-gated open path (`store-open-opts` scratch reopen +
+  `store_swap_read_view`, both directions, scratch closed through the
+  ordinary path so the OLD view's resources release normally; a cap
+  denial or integrity refusal propagates loudly). Read-through then
+  serves the new entries.
+- **F8 at the verb.** fold/streams fn-docs + journal.md §3.4 carry the
+  not-a-cut annotation: per-stream heads snapshot independently, no
+  cross-stream linearization is claimed — the verifiable multi-stream
+  READ coordinate is `:at-head-set` (the §3.7 signed head-set);
+  committing across streams is stream 10's entirely.
+- **W2 advert repair (found by this wave's recon):** a bare `file://`
+  journal store resolves to the cxpack backend (subtree default), so
+  the W2 `['mem','file']` locality list OVER-REFUSED
+  `:read-your-writes` on the real file substrate —
+  `jrn_guarantee_advert` now reads mem/file/cxobj/cxpack (and never a
+  remote-active handle). Pinned by the V test.
+- Tests: `journal_head_fresh_test.v` — the F1 stale/fresh discriminator
+  PAIR over a real file (cxpack) substrate: writer appends past a
+  read-only sibling's snapshot; `head` on the reader asserts the STALE
+  seq (the stated degradation, documented not hidden); `head-fresh`
+  asserts the durable head AND the refreshed view serves the new entry;
+  plus the cxpack `:read-your-writes` floor-accept pin. Fixture
+  journal-098 (mem contract; cached==fresh on the live instance),
+  backing the fn-doc example verbatim (guide-check OK, 46 modules —
+  s7_w3_guidecheck2.log).
+- Gotchas found live: paths do not parse off a call result (`[$f
+  $x]/@seq` is CXER0100 — bind first); `[first EXPR]` in body position
+  CONSTRUCTS an element named `first` (attrs must use the bare
+  attr-position path, scalar-only); V multi-assign cannot swap maps
+  (`.move()` + mut temps); io.cxd temp-dir fixtures can collide with
+  stale `/tmp` dirs across repeated local runs (pid recycling) — clean
+  before suspecting the diff.
+
+Full gate: s7_w3_gate.log GATE-RC=0.
