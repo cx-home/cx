@@ -175,6 +175,107 @@ ruling; journal.md §8 records the operative slice).
   cache, stream-6 dedup records, replay tapes); the §9.1-shaped
   balanced shred report; `envelope_open`'s `shredded` finding evidenced
   from the journaled record (M29 read-time reconciliation).
+  **Wave-open design decisions (2026-08-12, inside ruled bounds):**
+  - **Surface:** `[$journal:erase-subject $j $subject $attribution
+    $opts?]` — journal-level (the journal is the system of record; the
+    walk covers the backing store + every store the segment index
+    names). Attribution requires actor+authority (the append rule —
+    authority journaled). `opts.request` may name the shred-request id
+    explicitly (the xsp erase `request=` precedent; fixtures need the
+    determinism); the DEFAULT mints the opaque 128-bit CSPRNG token.
+  - **The reserved record stream `cx:erasure`:** the shred-request
+    journals as an `[erase-subject [subject] [request] [sek]?
+    [holds-head] [generation] [head-set …] [docs …] [report …]]` record
+    on a reserved per-tenant stream; DIRECT appends refuse `CXER4622
+    E_ERASURE_RECORD_RESERVED` (a forgeable erasure record would poison
+    M29 read-time reconciliation and W5 verify) — the write-time §2.11
+    posture spent again. The record payload names the subject via a
+    CHILD element, never the reserved `subject=` root attr (the record
+    must not itself demand a nonce + SEK seal).
+  - **M31 discharged by construction:** the eval-layer `[idempotent]`
+    clause is deliberately NOT used — its derived key
+    (tier2‖tenant‖args) is subject-derivable, the exact digest oracle
+    M31 forbids, and its registry is in-process only. The journaled
+    record IS the durable dedup record: replay detection scans the
+    reserved stream for the subject (records are seq-keyed journal
+    entries — no subject-keyed digest namespace exists anywhere); the
+    opaque token is the `request=` id. Replay returns
+    `[deduped [shred-report …]]` (stream-6 R13 present-value shape)
+    AND re-runs the idempotent walk (self-heal: a crashed walk —
+    committed record, incomplete walk — completes on replay; destroy
+    of an absent key and re-erase of a tombstoned doc are no-ops,
+    never a second destructive act).
+  - **Hold precondition = pin + re-check on ONE lock:** the unlocked
+    precondition pass loads holds (subject-scoped match on $subject;
+    hash-scoped match against the enumerated doc set) and pins head H1;
+    then the store op-lock is taken FOR THE WHOLE COMMAND (the W1 #779
+    posture) — under it the hold head re-reads, entries H1+1..H2
+    re-validate, a binding hold refuses `CXER4621 E_ERASURE_HELD`
+    naming hold seq/signer/scope. All journal appends serialize on this
+    same lock (#628), so no hold can land between re-check and commit —
+    the lock IS the writing commit lock. Refusal is atomic: the
+    generation never advances, no re-snapshot is forced (the §8 "blocks
+    shred AND re-snapshot" suspension is structural, not a second
+    check).
+  - **Atomic record + generation:** the erase entry append and the
+    per-tenant shred-generation advance
+    (`cx-journal/shred-generation/<tenant>` meta alias) share one outer
+    flush-hold scope (#614 group-commit; the counter nests).
+    `[$journal:shred-generation $j]` reads it — the ENV-quadrant input
+    callers bind into their fold identity (cx:env itself stays a build
+    constant; the generation is tenant state, so it rides the journal,
+    and the CXER4640 staleness machinery consumes it unchanged — no new
+    invalidation machinery).
+  - **KMS destroy strictly POST-COMMIT:** after the record is durable,
+    the walk runs: per-store `store_erase_subject_walk` (SEK lookup
+    WITHOUT create; enumerate sek-wrapped envelopes — durable keys +
+    staged seal-overrides; tombstone each doc via the §7b.1 funnel with
+    T+E records; destroy the store's SEK blob + remove the
+    `keys/subjects/` mapping; purge in-process plaintext: pc_reclaim
+    after persist — tombstone objects flush first, then the rebuilt
+    sink drops shredded plaintext — plus targeted `obj_cache` eviction,
+    the W2 carried note). Each predecessor/archive store seals under
+    ITS OWN sidecar SEK (rotation re-puts payload docs through the
+    subject arm), so the walk destroys each store's key.
+  - **Predecessor + archive reach via a TRUTHFUL segment index:**
+    `fs_retention_dispose` now records its disposition on the segment
+    record (`archived-to=<url>` after a clone; `disposed=true` after an
+    `archive="none"` drop) — the index the walk follows; a non-disposed
+    segment store that fails to open is a LOUD walk error (missing an
+    enumerated surface is a compliance failure), a disposed one is
+    reported visibly. The `store_erasure_transfer_guard` is REMOVED and
+    clone/migrate carry the erased map (E records — attribution
+    survives archival), the removal its own comment names stream 20
+    for.
+  - **Derived surfaces in each walked store:** `computation/` aliases
+    whose record doc references a scoped address or the subject id →
+    record + result docs erased, alias dropped (cache-cold is safe);
+    `cx-live/materialization/` aliases whose target is a `[checkpoint]`
+    doc → checkpoint erased + alias dropped (derived-state posture:
+    loss = full replay; `[live-materialization]` REGISTRATION markers
+    are untouched — no payload rows, and retention-cover extension
+    depends on them); the in-process stream-6 dedup registry purges
+    records whose rendered outcome references the subject or a scoped
+    address (selective — the M31 exempt record lives in the journal,
+    not here; reached via the env dispatch hook). Columnar `__cx_doc` =
+    N/A by construction (subject puts refuse CXER1144 on
+    plaintext/non-objgraph substrates — recorded, not walked); replay
+    tapes = discharged by construction (computation-record inputs,
+    L107) — no shipped surface.
+  - **M29 read classification `CXER1145 E_STORE_SHREDDED`:** the
+    whole-doc read fallback, on an unwrap that probes key-ABSENT,
+    reconciles against the journaled erasure records in the same store
+    (the `cx:erasure` entry pointers): covered → the typed shredded
+    finding naming `request=`; uncovered → fail-closed unavailable
+    (W5's `unattributed-missing` feeds on the same discrimination). The
+    store band's second code (1144 spent at W2).
+  - **Fixture split (the W2 pattern):** journal-129 covers the
+    mem-expressible command surface byte-exact (hold-blocked refusal
+    CXER4621 + no generation advance; zero-doc erase report; deduped
+    replay; reserved-stream refusal CXER4622; shred-generation +
+    CXER4640 staleness); the custody-deep walk (SEK destroy, envelope
+    enumeration, predecessors/archives, sink/cache purge, clone
+    carriage, CXER1145) = V tests (store/journal layers).
 - **W5 — read surfaces + verify reconciliation (L185/L186, §6):** typed
   `[erased subject? at= authority= actor= shred-request=]` tombstone on
   the value channel; `get-doc` three-way (never-existed CXER1121 /
@@ -254,6 +355,66 @@ stream 10's saga/escrow vocabulary (§11); M5 corpus families = stream
   obj_cache) per §7 reach; eager verify of a shredded payload must
   become a finding-not-fault when reconciled (W5); objwire client
   reconstruct of whole-doc subject docs = stream-4 joint surface.
+- **W4 EXECUTED 2026-08-12 — erase-subject + the shred walk (commit recorded
+  at the gate).** Everything the wave-open design names landed:
+  `[$journal:erase-subject]` (env-dispatched — it reaches the in-process
+  dedup registry) + `[$journal:shred-generation]` + the internal
+  `journal-segment-disposed`; the reserved `cx:erasure` stream with
+  write-time CXER4622; CXER4621 hold refusals at pin AND commit-lock
+  re-check (atomic — no record, no generation advance); the record+
+  generation group-commit; the strictly-post-commit walk
+  (store_erase_subject_walk per store: scope by recorded key-id + staged
+  seal overrides, §7b.1 tombstones w/ T+E, SEK destroy + subject unmap,
+  computation/checkpoint sweeps w/ registration markers untouched,
+  obj_cache eviction + pc_reclaim after persist, durable residue purge);
+  segment-index reach (predecessors + archived-to=) with the EMPTY-open
+  fail-closed guard (file:// creates on open — a missing predecessor must
+  never read as clean); fs_retention_dispose records dispositions;
+  clone/migrate custody carry + erased-map carriage (the R3.16 interim
+  guard REMOVED as its own comment promised; push refuses CXER1144);
+  migrate routes subject docs through the subject arm; CXER1145
+  E_STORE_SHREDDED at the whole-doc read fallback (M29: evidenced from the
+  journaled record, never key absence). **Design decisions beyond the
+  wave-open notes (inside ruled bounds):**
+  - **Dedup keys on (subject, request-token), not subject alone** — a
+    subject's first record must never absorb every later RTBF act
+    (re-landed data stays erasable; a subject-only match would BE the
+    subject-keyed forever-record M31 forbids). Resubmission = same token →
+    `[deduped <recorded report>]` + the idempotent self-heal walk; new
+    token = new command.
+  - **The durable residue purge** (pack survivors-fold / cxobj unlink /
+    sqlite DELETE / s3 keyed DELETE via the new S3Transport.remove):
+    found by the re-landed-data test — a re-put at the same address
+    content-dedups against the STALE envelope under the destroyed SEK
+    (wrapper has_object short-circuit), so the supersede silently broke
+    across restart. Physical purge closes the class; crypto-shred remains
+    the erasure mechanism (the purge is residue hygiene, zero writes to
+    sealed bytes it keeps).
+  - **CXER1145's positive case** = restored-from-backup (objects restored
+    separately from the KMS) or a crashed walk: envelope present, key
+    absent, record covers → typed + attributed. No covering record →
+    fail-closed unavailable (W5's unattributed-missing feeds here).
+  Fixtures journal-129 (the mem-expressible command surface, byte-exact:
+  CXER4621 + no generation advance; zero-doc balanced report; deduped
+  replay; CXER4622; CXER4640 staleness via generation-composed fold-ids),
+  journal-130 (shred-generation), journal-131 (the stream-6 dedup purge:
+  purged=1, replay re-executes — the §7-accepted consequence, visible);
+  V tests (store_subject_test.v): the full cxpack walk (derived sweeps,
+  cache+sink purge, sidecar removal, re-land + second erase, CXER1145),
+  predecessor+archive reach (3 stores, 3 SEKs destroyed), disposed vs
+  unreachable segments (loud vs visible), transfer custody+carriage
+  (clone/migrate/push × encrypted/plaintext); the old interim-guard tests
+  flipped to pin carriage. fn-docs verbatim ×2; guide-check OK 46.
+  **Found in passing:** W2's `store_kek_kms(…, os.dir(ms.root))` call in
+  the cxstore_sqlite-gated file lacked `import os` — every
+  `-d cxstore_sqlite` platform compile broken since 98416168 (the gated
+  -d-file class, third instance; one-line fix rides this wave). **Filed
+  #785:** rotate/compact targets open with no at-rest options — an
+  encrypted journal cannot rotate (found composing predecessor reach; the
+  erase walk already passes encrypt-key-id to segment opens, so it is
+  unaffected when #785 lands). Named landings unchanged: replica reach =
+  stream 9; wire custody = streams 4/9 (push refusal + CXER1144 posture
+  hold the line meanwhile).
 - **W3 EXECUTED 2026-08-12 — legal holds @ aeca490f.** The signed
   Lane-2 `[legal-hold]` claim (scope = exactly one of subject/hash;
   detached ed25519 sig over the claim's strict canonical text sans
