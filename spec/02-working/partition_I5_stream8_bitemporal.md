@@ -246,3 +246,61 @@ the §9 corpus handoff.
 - CXER4618 reserved for W3 (the projection's typed refusal — the
   raiser lands with its machinery; coherence findings are values, no
   new code needed this wave).
+
+### W3 — the bitemporal read (2026-08-12)
+
+**Landed (RULED: 93-121 / L118 + L115/L117 semantics + the L125 guard
+extended):**
+
+- **The pure pre-fold projection** (`jrn_temporal_project`): TX cut on
+  `at-seq`; a given `valid-at` ENGAGES the as-of collapse — every
+  in-cut `:correction` target excluded across its whole extent (a
+  corrector's own later supersession never restores its target;
+  restoration = a NEW assertion), every `:amendment` clamps its
+  target's valid-to to the amender's OWN valid-from (earliest clamp
+  wins; an amendment without its own valid-from = undefined close
+  point, CXER4618) — then the half-open [from, to) filter. Entries
+  without vocabulary are valid always; NON-ELEMENT payloads likewise;
+  shredded (event-less) entries PASS THROUGH VISIBLY (filtering them
+  would silently under-report a redaction — the L119 posture decided
+  IN the projection, W4 fixtures pin it). Malformed vocabulary under
+  an engaged projection = CXER4618 naming the seq (the CHAIN's
+  vocabulary); malformed opts = CXER4610 (the CALLER's args). The
+  seam is authored generically — a pure entry-seq→entry-seq stage
+  ahead of the reducer; stream 21 (#693) composes upcasters at the
+  same point.
+- **Surfacing per L118:** `fold` gains trailing `$opts::map {}` —
+  `at-seq` (the TX pin, with the stream-7 L125 ALWAYS-ON guard exactly
+  as replay's: pinned below a pruned floor refuses CXER4991
+  resolve-through-snapshot; beyond head CXER4606) + `valid-at`;
+  `replay` opts gains `valid-at` (at-seq shipped); `slice`/`since`
+  gain trailing opts with `valid-at` (at-seq there is a TEACHING
+  refusal CXER4610 — the explicit range IS the TX axis); NEW PURE VERB
+  `temporal-slice` (the fold-value twin over materialized entries).
+  `fold-slice` deliberately takes no temporal opts — its composition
+  is temporal-slice ∘ fold-value (decided, documented, not deferred).
+  Undeclared paths byte-identical (no opts → the shipped fold/replay/
+  slice code paths).
+- **Spec edits:** journal.md §3.8 authored (the projection, the
+  surfacing, the NORMATIVE four-quadrant table, the collapse rules,
+  the honesty rules, the M5 restatement-delta line); §3.3/§3.4/§3.5
+  def-blocks + opts sentences; §8 row CXER4618 (reserved band now
+  4619–4649). Governance untouched — 4618 is in-band within journal's
+  registered 4600–4649 allocation.
+- **Fixtures journal-108..113** (probed byte-exact; suite 2817 green;
+  guide-check OK 46): 108 = the M5 four-quadrant table with the
+  restatement delta (q4 vs q3; q1 raw-fold last-wins probed 17.99 —
+  the draft's 19.99 was wrong, the probe corrected it); 109 = the
+  taxonomy fold discriminator triple (amendment survives-before/
+  clamps-after; correction drops the whole extent; assertions
+  coexist); 110 = half-open boundary probes (IN at from, OUT at to
+  exactly); 111 = open ends (absent attr, from-only/to-only/plain);
+  112 = the refusal split (chain vocab CXER4618 ×2 incl.
+  amendment-without-valid-from vs caller args CXER4610; raw fold of
+  the same chain stays green — quadrants 1–2 never parse payloads);
+  113 = fold's at-seq pin guard CXER4991 on a real compacted segment
+  (requested+floor named). fn-doc temporal-slice = journal-110
+  verbatim. GOTCHA (real cost): brackets inside [; …] fixture comments
+  are LIVE syntax — `[Aug 1, Aug 5)` in a comment broke the whole
+  file's parse (unterminated element body at the file tail); [# #]
+  raw blocks are safe.
