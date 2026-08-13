@@ -210,3 +210,21 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   `s17_w3b_gate4.log` GATE-RC=0, PRE/POST HEAD = d9fb6286, dirty=0
   (fabric/http = the #572 compile pair, retries GREEN). W3c next:
   Arrow validity bitmaps + chunked nullable.
+- **W3c EXECUTED 2026-08-13 — chunked nullable + REAL Arrow validity
+  (#710 item 3 COMPLETE).** Chunked §3.10.5 (0x80 in the col-spec —
+  whole-table decision; every group emits the wrapper; type names
+  refine from the inner; exact null positions across group
+  boundaries); the streaming lane's silent null-coercion → LOUD
+  refusal; Arrow export derives layout from WIRE codes
+  (codes_snapshot + a one-group peek resolves inner types at schema
+  time; expanded buffers + validity bitmaps + ARROW_FLAG_NULLABLE —
+  Parquet refuses undeclared nulls, gate-found); Arrow import emits
+  §3.10.5 from validity (the '?' type-name prefix rides the ast_bin
+  col-spec carrier — a raw byte form corrupted it, gate-found).
+  End-to-end acceptance: CX → parquet (real validity) → back, the
+  null lands as NullValue at the right row. All data-bin lanes +
+  columnar + codecs/table umbrellas green.
+- **W3c gate record:** `s17_w3c_gate.log` GATE-RC=0 first run,
+  PRE/POST HEAD = 9b8b487a, dirty=0 (fabric/http = the #572 compile
+  pair; retries green — the W3b.2 barrier holding). W4 next:
+  vectorized pushdown (#710 item 2).
