@@ -114,3 +114,14 @@ named there.
   admission evaluates on the authz-commit path + (W2) the saga runner —
   the engine's rule is refuse-unless-admitted, since Ring 1 cannot read
   a journal. W1 gate next.
+- **W2 EXECUTED 2026-08-12 — the saga record + runner.** The
+  ordinary-value record (home stream; last-record-wins state; the
+  authority basis mandatory), the runner (real command invocations —
+  effects/idempotent/pin admission all apply; command_invoke_labeled =
+  the engine entry), the durable step-dedup (record-borne; completed
+  sagas answer [deduped]; resume skips :done), one-pivot validation,
+  the failed-step record. Fixture journal-139 (the M5 checkout)
+  byte-exact; battery 2859; guide-check OK 46. **Gotcha:** a
+  [compensates] target must be DEFINED BEFORE the command that names
+  it (registration-time sibling check) — compensators first. W2 gate
+  next.
