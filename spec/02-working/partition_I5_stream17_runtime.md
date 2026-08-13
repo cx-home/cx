@@ -260,3 +260,41 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   shared-checkout rule), not gate residue (fabric/http = the #572
   pair; in-gate retries green). W5 next: parser_streaming
   disposition (#710 item 5).
+- **W5 EXECUTED 2026-08-13 — parser_streaming disposition (#710
+  item 5; L91): WIRED as the gate-15 input fast path; the raw lane
+  REMOVED.** The Element lane rose to a PULL reader
+  (cx.open_top_level_children / CXChildStream.next — the root head
+  validated by a REAL cx.parse of its slice; strict ws-only tail;
+  every child through the real parser) consumed by
+  code/streamed_input.v inside eval_code_streaming for the canonical
+  `[?for [in $u $doc/user] [yield $u]]` shape (1–2 plain child
+  steps). Equivalence machinery: per-match ns+lang resolution under
+  the root context (lexical + downward ⇒ whole-doc-equivalent;
+  validate_reserved_ns_bindings per child); conservative declines
+  ($doc/$input spelled exactly once in the program text; no `..`; no
+  `&`/`#name` input bytes — resolve_ids is doc-global); DEFERRED
+  COMMIT (buffer to the 2nd match; 0/1-match walks decline
+  pre-emission so the materializing path owns the single-match
+  field-read shape, the #21 lone-collection unwrap, the __cx_slot
+  fallback); TWO-PASS walk (the validation pass parses+resolves all
+  and verifies the tail BEFORE any output — an input the
+  materializing path refuses ALWAYS declines pre-emission and
+  reproduces the exact refusal; the multi-doc fixture caught the
+  single-pass emit-then-error live). Engagement WITNESSED
+  (streamed_input_commits — the dead-seam guard). REMOVED:
+  scan_top_level_children_raw + render_flat_record_to +
+  StreamCtx.emit_raw_bytes + ptr helpers (a caller-less PARALLEL
+  RENDERER of identity-bearing canonical text — the #563-565 class)
+  + the false headers (claimed consumer; a resolve_languages pass
+  that does not exist — lang rides resolve_namespaces). **Measured
+  @20MiB:** peak RSS 290MB streamed vs 1283MB materialized (4.4×),
+  wall ~20% faster; throughput 2.1 MB/s on BOTH paths — the 200 MB/s
+  gate-15 threshold is an engine-wide per-item eval gap, NOT an
+  input-path gap; gate 15 now RUNS honestly and measures a true red
+  (W6 evidence item). **Gotchas:** cx.parse REFUSES multi-doc
+  (`---`) input outright — parse_input_doc never sees a second doc;
+  `ref` is a reserved element name (fixtures must not use it).
+- **W5 gate record:** `s17_w5_gate.log` GATE-RC=0, PRE/POST HEAD =
+  2acded26 (fabric/http = the #572 pair, retries green; dirty=1 both
+  ends = the same parallel-session PLAN.md paragraph). W6 next:
+  PathNode graft + drift repairs.
