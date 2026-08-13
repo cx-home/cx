@@ -144,3 +144,16 @@ books it).
   **W2.1**. Gate 2 `s22_w2_gate2.log` GATE-RC=0, PRE/POST HEAD =
   9deed1f8, dirty=0 (fabric/http = the classified #572 pair, green
   on retries). W3 next: EV-ASYNC-SPAWN (the #707 residual).
+- **W3 EXECUTED 2026-08-13 — EV-ASYNC-SPAWN (the #707 residual).**
+  worker_threads_enabled DELETED; both spawn paths unconditional;
+  drive_future (90 lines) + run_worker_body + the sync [?worker]
+  tail DELETED; the lazy await arm = a defensive terminal read. The
+  two asserting tests re-authored (sizing-only under =0: the
+  un-awaited effect MUST fire; cancel-after-done forces completion
+  via explicit [?wait-for] — deterministic without sync). Witness
+  pair EV-ASYNC-SPAWN-1/2 (the empty-trace-under-lazy
+  discriminator). #707 closes at exit w/ this as the evidence.
+- **W3 gate record:** `s22_w3_gate.log` GATE-RC=0 first run, PRE/POST
+  HEAD = 49da0f8d, dirty=0 (fabric/http = the classified #572 pair,
+  green on retries). W4 next: EV-WORKER-EXIT (cancel-and-drain — the
+  one ruled-against-shipped row; fixture FIRST).
