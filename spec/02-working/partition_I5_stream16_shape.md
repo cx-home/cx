@@ -158,3 +158,36 @@ sealed packages over the schema store (no new machinery).
   fab1fffe, dirty=0 (fabric/http = the classified #572 cache-free
   pair, green on retries). W4 next: SchemaRef ≡ E2 + the registry
   re-rule.
+- **W4 EXECUTED 2026-08-13 — the registry re-rule (L63).** Names are
+  hints, hashes are identity: register-schema binds name → E2
+  content-hash (returns the hash receipt) + retains canonical text;
+  validate-against resolves name → hash → content FAIL-CLOSED at
+  every hop (CXER1600 = a real resolution error naming the hop; the
+  0x12 rule generalized — CX_SCHEMA_STORE reads self-verify, a
+  poisoned store never resolves). Resolution: bindings → cx.lock
+  [schemas] pins; content: registry → store (cache-write
+  silent-degrade, the module-cache posture). Content-language
+  dispatch: [schema …] w/o of= = validate.md inline (custom
+  validators; validate_shape_with_env factored); of=/.cxs = schema.md
+  data validation, mapped onto the ONE [ok]/[invalid] vocabulary
+  (values render via render_canonical first — runtime marker shapes
+  ≠ parse shapes). cx.lock [schemas] block: reader + emitter + `cx
+  lock --pin-schema NAME=FILE.cxs` (pins carry forward — authored
+  state; modules-empty legal when pins exist). Purity: BOTH verbs
+  impure by construction (a rebindable registry read must never be
+  cacheable — stream-5 identity); the validate.md §3.2 `pure` marker
+  amends at W7's sweep. **Design disposition (owner exit review):**
+  the [?schema-register] DIRECTIVE spelling retired-before-birth —
+  the closed §4.1 registry (grammar [127e], NOT on the ruled edit
+  map) is one-form-per-act (the chain-alias precedent); registration
+  is a stdlib act; the verb is THE spelling; W7's validate.md §7
+  sweep states the discharge. Fixtures validate-041..045 +
+  validate-032 re-authored; V tests: lock-pin end-to-end, poisoned
+  store, cross-process store readback, --pin-schema round-trip.
+  **Gotchas:** a .cxs HEADER is also [schema …] — of= is the language
+  discriminator; [?do] does not yield its last value ([?let] in
+  fixtures); runtime→parse validation needs render_canonical.
+- **W4 gate record:** gate 1 `s16_w4_gate.log` GATE-RC=0 first run,
+  PRE/POST HEAD = b88e7fd7, dirty=0 (fabric/http = the classified
+  #572 cache-free pair, green on retries). W5 next: --strict real +
+  CX_STRICT_TYPES retired + lint surfacing + the Layer-B minimum.
