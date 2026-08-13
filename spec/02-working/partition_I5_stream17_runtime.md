@@ -162,3 +162,25 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   98d8ef79, dirty=0 (fabric/http = the classified #572 pair, green
   on retries; the first gate run died with the session — re-run
   clean). W3 next: the columnar lattice rise (#710 item 3, L89).
+- **W3a EXECUTED 2026-08-13 — the §3.10.3 lattice rise (#710 item 3
+  core).** column_type_code RISEN (unsigned + f16/f32 widths KEPT;
+  decimal/bigint codes reachable; bool = 0x01 bit-packed §3.10.4;
+  atom = 0x70; unknown = 0x81 honest mixed); the plain 0x60 form
+  emits TYPED per-column payloads (per-cell tags die — the omit-tag
+  optimization IS the encoding); undeclared columns probe cells;
+  nulls wrap 0x80 (bitmap + packed non-nulls); collection columns →
+  0x81. Full V decoder mirror incl. IEEE-754 binary16 both ways.
+  CHUNKED rises w/ the shared mapper (bool bit-packs column-level;
+  u*/f32/f16/decimal/bigint/atom strict cells). ARROW bool = direct
+  bit-copy both directions. ch-009 wire hex RE-BLESSED deliberately.
+  **Gate-found ×2 (W3a.1/W3a.2): EVERY language binding carries an
+  INDEPENDENT CXCol decoder — python, rust, AND go (go's red hidden
+  behind its test cache) all read the retired per-cell-tagged form;
+  all three risen to §3.10.3 (typed payloads, 0x80, 0x81, bit-packed
+  bool; rust parses bigint/decimal native; canonical UTC datetime
+  renderers).** Lattice round-trip fixture family landed. Remaining
+  for W3b: 0x62 dictionary + atom-by-construction + Arrow validity
+  bitmaps + secret-force-node (the store-columnar side).
+- **W3a gate record:** gates 1-2 caught the binding decoders
+  (`s17_w3a_gate.log`/`gate2`); gate 3 `s17_w3a_gate3.log` GATE-RC=0,
+  PRE/POST HEAD = c3335716, dirty=0 (fails all classified).
