@@ -259,3 +259,27 @@ stream 10; the automatic placement tier = #784.
   shipped truth. Battery 2854 byte-stable; guide-check OK 46; strict
   registry RC=0. W7 (M5 end-to-end + hygiene + exit) next; the W4
   pc_transfer feed-append finding assessed there.
+- **W7 EXECUTED 2026-08-12 — the M5 end-to-end + exit @ 7f520f48.**
+  journal-138 = the §1 worked example byte-pinned end to end (seed pull;
+  offline valid-from appends + branch divergence; byte-identical
+  ingest both directions — both chains valid=true; conflict →
+  resolution re-entry → merged target; the VT-precedes-TX read;
+  attribution survives ingest). TWO composition defects fixed: (1) the
+  W4 finding — transferred docs now feed the E3 docs stream (a
+  changes-since consumer over a synced store missed every pulled doc);
+  (2) found by the fixture — the reconcile walk blind-fast-forwarded
+  cx-journal/* pointers WITHOUT chain verification, pre-empting ingest
+  (verify :seq-gap); the journal/replica namespaces are excluded —
+  journal streams sync ONLY via chain-verified ingest.
+  **EXIT AUDIT — every §8 edit-map row disposed:** store.md §6.3
+  (W3/W4/W6) + status head-sets (W5); journal.md ingestion § +
+  naming note (W1) + verb rows (W5); cross_stream §4 unified conflict
+  shape (applied at ruling, verified); modules/cx.md (W3);
+  consistency's replica profile (ruled there, RECEIVED W5);
+  live/bitemporal cross-refs (bitemporal's offline-replica seed =
+  journal-117 + 138); the stream-20 handoff (the W5 worker + W6 wire).
+  Every §7 corpus row has a shipped pin; the full program = stream 14
+  (named landing). #719 all five items discharged (1 W5, 2 the
+  divergence fixtures W2-W7, 3 W3, 4+5 W4). Named landings unchanged:
+  N-way + replica↔replica peering additive (L176); corpus program =
+  stream 14; cross-store = stream 10; placement = #784. Exit gate next.
