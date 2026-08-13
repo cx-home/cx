@@ -82,4 +82,13 @@ sealed packages over the schema store (no new machinery).
 
 ## Wave record
 
-(appended per wave)
+- **W1 EXECUTED 2026-08-13 — the type-language repair.** The full
+  [155]–[158] kind set (15→32 names); the [iterator T] head (additive
+  0x26 discriminator); loud def-time structural failures; the
+  structural checker completed and wired (both runtime sequence
+  representations handled — the __cx_seq__ marker duality found by the
+  fixture); both enforcement sites stay strict-gated (default-mode
+  behavior unchanged; every pre-existing fixture byte-stable). ONE
+  named residual: 'path' accepts until the PathNode sum-type graft
+  lands. Fixtures cmd-025/026; battery 2865; umbrellas green;
+  guide-check OK 46. W1 gate next.
