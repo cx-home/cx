@@ -236,3 +236,32 @@ recovered, D-MOD confirmed. Recorded in the campaign decision log.
 5. Ring-tag application (`ring=` attributes) — lands at I0 with the gates.
 6. Fixture families added by later streams are ring-tagged on entry
    (append-only corpus discipline).
+
+## Stream-14 receiving register — the I5 handoff manifest (authored 2026-08-13, audit ruling Q6a)
+
+Stream 14 (#686) is the corpus absorber and runs LAST. Every I5 stream
+that deferred corpus families here is enumerated below with the pointer
+to the owing ledger section — this register is the single place the
+stream-14 implementer starts; the ledger sections hold the content.
+(Authored by the I5 adversarial audit, which found the handoffs living
+only in per-stream prose — partition_I5_audit.md AF-10.)
+
+| owing stream | handoff | recorded at |
+|---|---|---|
+| s8 (#680) | the full four-quadrant/restatement M5 corpus family | partition_I5_stream8_bitemporal.md §wave-record (search "stream 14") |
+| s9 (#681) | the full §7 corpus program of distributed_store.md | partition_I5_stream9_distributed.md (search "stream 14") |
+| s10 (#682) | the entire §6 corpus handoff: both-ways serializable pair, replay-isolation family, compensation triple, idempotent-step pair, escrow pair, stale-pin negative, budget-boundary pair, head-set read, [conflict] fixture, anti-2PC negatives | cross_stream_coordination.md §6 |
+| s16 (#688) | M5 corpus families per shape_inference §11 | partition_I5_stream16_shape.md (search "stream 14") |
+| s17 (#689) | the FULL per-combinator pull matrix + M5 witness families (runtime_representation §9 + the stream-22 handoff) | partition_I5_stream17_runtime.md §named-landings |
+| s20 (#692) | M5 corpus families per erasure_compliance §10 | partition_I5_stream20_erasure.md (search "stream 14") |
+| s21 (#693) | 8 named families: add-a-field / SPLIT / 10k-replay / compat three-valued / downgrade-skip pair / pre-flight pair / ambiguous-graph / migrated-from discriminator; + the downgrade-replay visible-count fixture | partition_I5_stream21_schema.md §8 handoff row |
+| s22 (#694) | M5 witness corpus families per clean_room_implementability §9 | partition_I5_stream22_cleanroom.md (search "stream 14") |
+
+Audit-added corpus notes for stream 14 (partition_I5_audit.md AF-9):
+the strict-mode fixture tag is honored only in the code.cxd runner lane
+(stdlib/package lanes lack the handling — latent until a fixture uses
+it); out-effects grading is skipped for thrown-error fixtures (latent);
+the no-CXER-code out-err sweep (journal-057/058 class) rides the #796
+batch but the corpus discipline (every out-err carries a code) belongs
+here. New entries to this register are append-only; a stream that hands
+off to stream 14 after this date adds its row here in the same commit.

@@ -608,3 +608,32 @@ L2 weights streams equally with the audit as a stream-equivalent unit;
 L3 weights waves equally with W3's three sub-waves as one unit. Exited
 streams count 100% at L2 because their residues are dispositioned into
 named batches (Q1/Q4/Q6), not reopened.*
+
+---
+
+## §6 Rulings record — RULED (owner, 2026-08-13: "1a, 2a, 3a, 4a, 5a, 6a, 7a")
+
+All seven recommendations accepted. Executed same-day by the audit
+session (paperwork only; engine/fixture work goes to the implementation
+sessions): **Q1a** the gate-truth batch filed as **#805** (#803 head +
+#804 + gates 7/8 + gate 4 + abi-§4 driver + bench baseline + #802);
+#781/#782 mapped into #796 (landing comments on all, membership comment
+on #796, back-reference added to #695). **Q2a** relabels applied — #803
+prio:high, #793 prio:medium, #794 prio:medium; the #791 argument
+recorded on the issue for the #795 review. **Q3a** AF-1 filed as
+**#806** (prio:high, landing = stream-17 W7, fixture-first). **Q4a**
+AF-2+AF-3 filed as **#807** (prio:high, one family; ruled direction:
+out-of-range cells refuse loudly; AF-2a+AF-3 fix in W7; the flip gated
+on the family). **Q5a** the gate-registry re-home is scoped into #805's
+bar. **Q6a** the stream-14 receiving register authored
+(partition_corpus_audit.md, pointer comment on #686); the item-6 packet
+authored (partition_I5_exit_review_packet.md); the W7 scope additions
+recorded in the stream-17 ledger. **Q7a** resume order: s17 W7 → exit →
+#805 → stream 18 → stream 14 LAST. **Model ruling:** the ruled
+execution is Opus 5 work (standing policy — bulk implementation);
+Fable-5 escalation boundaries: #803 descending into GC/runtime memory
+debugging, any new lettered ruling, any canonical-byte re-bless, and
+audits. PLAN.md pending edit: the #805 mapping paragraph belongs beside
+the #795/#796 rows but PLAN.md carries a parallel session's uncommitted
+hunk — the first session that finds PLAN.md clean adds it (recorded in
+the packet §3 meanwhile).

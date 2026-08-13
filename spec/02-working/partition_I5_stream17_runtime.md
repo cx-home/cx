@@ -337,3 +337,24 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   exit) does NOT start until the audit's findings are dispositioned.
   #802/#803/#804 need a post-gate batch mapping ruling (the 1a
   mapping predates them).
+- **AUDIT RULED (owner, 2026-08-13: "1a-7a"; report
+  spec/02-working/partition_I5_audit.md; rulings record §3 of
+  partition_I5_exit_review_packet.md).** Mapping: #802/#803/#804 → the
+  GATE-TRUTH batch #805 (after s17 exit, before stream 18); #781/#782 →
+  #796. Relabels applied (#803 high, #793/#794 medium). **W7 SCOPE
+  ADDITIONS (Q3a/Q4a/Q6a — part of W7 acceptance):** (1) #806 fixed
+  fixture-first — refusal-IDENTITY parity lane (same refusal, compared)
+  + the three gate closures (@ scan; Unicode name predicate; yield-body
+  path validation or rooted-form decline); (2) #807 head items — u16
+  out-of-range cells REFUSE loudly at encode (ruled; never wrap, never
+  silently widen) + cx:serialize emits the canonical trailing LF, with
+  a byte-level fixture; the full AF-2 family pinned by the §9 pair
+  fixtures, and the advisory→enforced flip is GATED on that family
+  green; (3) engagement witnesses — a 0x62 hex pin (an ::atom column in
+  an out-data-bin-hex fixture), a corrupt-dictionary-index negative, a
+  verb-level pushdown witness (honest-reporting flag asserted at the
+  live verb, both engage and decline directions); (4) the EV-BUDGET
+  exactly-at-floor probe (code.md §"MUST accept ≥ 1,000,000"). Model:
+  W7 implementation = Opus 5 per the standing policy; #803-class
+  vgc/GC descent, new lettered rulings, and any canonical re-bless
+  escalate out.
