@@ -155,3 +155,34 @@ named there.
   commands_effects reservation bullet names the shipped verbs; xap
   §14.2 cross-ref; consistency/bitemporal verified. Battery 2863;
   guide-check OK 46; registry RC=0. W5 gate next; W6 = exit.
+- **W5 gate record:** gates 1–3 `s10_w5_gate(.2/.3).log` RC=2 — the ONE
+  failing lane every time = the fabric credited-transient-push read's 5s
+  wall-clock deadline in the cache-free retry (green standalone at HEAD
+  under exact flags every time; the same panic archived in the s8_w5 +
+  s20_w1 gate logs — a marginal constant under full-gate load, not a
+  product defect). **W5.1** = the targeted deadline fix (5s→30s on that
+  one read; siblings untouched; content asserts unchanged). Gate 4
+  `s10_w5_gate4.log` GATE-RC=0, PRE/POST HEAD = d5506677, 0 dirty
+  (fabric/http = the #572 compile pair, both green on retries — the
+  fabric retry now RUNS green).
+- **W6 EXIT AUDIT — every §7 edit-map row disposed:** commands_effects
+  (clause list W1; allocations/reservation bullet W5),
+  consistency_vocabulary :serializable pointer (W5 retarget, re-pinned),
+  bitemporal cross-ref (S3, verified), journal.md locator-triple note +
+  saga verb rows (W5), governance §9.6 band rows (W1 4950–4969; the
+  repair note verified), live_modes band (applied at ruling, verified),
+  xap.md §14.2 vocabulary cross-ref (W5), stream-9 conflict-shape
+  handoff (shipped by stream 9, adopted here — :uncompensatable emits
+  the ONE shape), docs-src promotion (verified consistent). **Every §6
+  corpus row has a shipped pin:** both-ways headline (journal-092 +
+  authz-084), replay-isolation (journal-142 + 139), compensation triple
+  (journal-140), idempotent-step (139/140 resumed=), escrow pair
+  (authz-085; expiry-via-timer = the sched composition noted in the
+  fn-doc), stale-pin negative (authz-084; CXER1114-as-value =
+  journal-042, row 15), budget-boundary under allocations (authz-085
+  denials), head-set completeness read (saga-status + stream 7's
+  machinery), [conflict] shape (141, shared), anti-2PC negatives
+  (journal-142: fold-reads-another-stream ⇒ CXER4611; no verb spans a
+  commit — by construction, §1). The full M5 corpus program = stream 14
+  (named landing). Adjacent filed: #788 (the Ring-2 purity-registration
+  completeness sweep + parity gate). Exit gate next.
