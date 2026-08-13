@@ -218,3 +218,22 @@ sealed packages over the schema store (no new machinery).
   HEAD = b2a3e985, dirty=0 (fabric/http = the classified #572 pair,
   green on retries). W6 next: schema export (json-schema, the
   stream-18 handoff) + the L67 ingest-split cross-refs.
+- **W6 EXECUTED 2026-08-13 — schema export + L67 (L69/L67).**
+  `cx schema export --to=json-schema`: .cxs → JSON Schema 2020-12
+  describing the LOSSLESS \$tag-envelope projection (element types →
+  \$defs objects; [card] → contains/minContains/maxContains;
+  TYPE-BEARING child kinds ride their {"cx:T": …} carriers — found
+  against the real --lossless output; seq/tuple = the cx:seq carrier;
+  or/enum/list/map/refinements mapped; deterministic name-sorted,
+  byte-stable). Both binaries; --to=json-schema only (XSD = #288's
+  table, refused loudly). Golden corpus conformance/schema_export/
+  (3 pairs) byte-pinned + determinism double-run + shrink guard. L67
+  stated normatively BOTH sides (conversions.md §8.2 + csv.md —
+  deliberate split, neither default may silently adopt the other's).
+  **Gotcha:** unasserted python replaces fail SILENTLY — a no-op
+  replace shipped a wrong binary mid-wave (caught by golden review);
+  assert every replacement.
+- **W6 gate record:** `s16_w6_gate.log` GATE-RC=0 first run, PRE/POST
+  HEAD = 43720594, dirty=0 (fabric/http = the classified #572 pair,
+  green on retries). W7 next: hygiene + exit (the §12 edit-map sweep,
+  #706/#688 closure evidence, exit audit, merge).
