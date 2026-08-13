@@ -243,3 +243,19 @@ stream 10; the automatic placement tier = #784.
   composition (peer-lineage op + wire reconcile/pull/status + the
   feed-riding replica worker) = W6; M5 end-to-end + hygiene + exit =
   W7. W5 gate next.
+- **W6 EXECUTED 2026-08-12 — the wire composition @ 3d6f5868.** The
+  `log` profile op (the E3 advance log, read-only, one producer — the
+  porcelain builtin; XSP only, the retiring CSRP gains nothing);
+  PeerView (one examination, two transports: local MemStore reads vs
+  wire aliases/log/doc-text); wire pull/pull-report/reconcile/
+  status-peer compose end-to-end against a live daemon (the W4 remote
+  refusal retires; byte-source remotes + remote destinations keep loud
+  refusals); the client transport gains the 'log' passthrough (found
+  by the wire test: the marshal whitelists ops). V-tested in the
+  store_remote umbrella (wire ff + diverged report + :diverged
+  classification). Journal-over-the-wire verified pre-composed (jrn
+  reads route through the builtin arm; the daemon serves journal-read
+  ops). Spec: xsp profile §7a op row; store.md bullets amended to the
+  shipped truth. Battery 2854 byte-stable; guide-check OK 46; strict
+  registry RC=0. W7 (M5 end-to-end + hygiene + exit) next; the W4
+  pc_transfer feed-append finding assessed there.
