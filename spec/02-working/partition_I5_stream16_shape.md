@@ -191,3 +191,30 @@ sealed packages over the schema store (no new machinery).
   PRE/POST HEAD = b88e7fd7, dirty=0 (fabric/http = the classified
   #572 cache-free pair, green on retries). W5 next: --strict real +
   CX_STRICT_TYPES retired + lint surfacing + the Layer-B minimum.
+- **W5 EXECUTED 2026-08-13 — --strict real (L64 + L62B).** The flag
+  on run + eval (help included); new_env seeds ProgramState.strict;
+  CX_STRICT_TYPES RETIRED (pinned negative) + the declaration-
+  PRESENCE validator retired (presence was never the contract).
+  E2-pinned element-name types enforce by SCHEMA VALIDATION under
+  strict (value_matches_type_env at both 0206/0207 sites; of= root
+  subsumes head match; unpinned = W1 head-match; pinned-but-
+  unavailable content fails CLOSED). Layer-B minimum:
+  pipe_precheck_stage_flow PRE-EXECUTION under strict (adjacent
+  declared no-hole [?def] boundaries; conservative composition:
+  equal/any/int→float-number; undeclared silent — declarations are
+  the contract). Adoption dial: lint CX-L008 (warn default,
+  --fail-on/--disable honored). LSP: inlayHint real (declared «T»
+  flow before pipe stages); the CXPath hover 'any' re-stated as the
+  correct modular answer. **Registry carrier fix:** canonical text =
+  HASH basis only, never content — canonical emission mangles
+  ::T-annotated barewords ([attr sku::string] → [attr 'sku::string '],
+  semantics erased); registry/store now store VERBATIM text, verify
+  formatting-invariantly; #791 filed (the canonical-lane defect).
+  Fixtures cmd-027/028; V tests: --strict end-to-end + retirement
+  negative, L008 x4. **Gotchas:** a multi-statement program parses as
+  ONE block ProgramLiteral (walkers must descend items); [?def]
+  program directives carry their source in the raw-source slot.
+- **W5 gate record:** `s16_w5_gate.log` GATE-RC=0 first run, PRE/POST
+  HEAD = b2a3e985, dirty=0 (fabric/http = the classified #572 pair,
+  green on retries). W6 next: schema export (json-schema, the
+  stream-18 handoff) + the L67 ingest-split cross-refs.
