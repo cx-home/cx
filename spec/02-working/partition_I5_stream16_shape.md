@@ -237,3 +237,37 @@ sealed packages over the schema store (no new machinery).
   HEAD = 43720594, dirty=0 (fabric/http = the classified #572 pair,
   green on retries). W7 next: hygiene + exit (the §12 edit-map sweep,
   #706/#688 closure evidence, exit audit, merge).
+- **W7 EXECUTED 2026-08-13 — hygiene + exit.** The §12 edit-map
+  sweep DISPOSED in full: schema.md §4 spelling note + §13.3 runtime
+  registry + §14 export exception + §16 inference (all W7); validate.md
+  §3.2 operable rewrite + §5/§6 rows + §7 both deferrals DISCHARGED
+  (W7); conversions.md + csv.md L67 both sides (W6); code.md §12.7
+  strict (W7); grammar [152b] clause-only note (W7); cx_partition §4
+  verb detail (W7); lockfile.md §3 + §6.1 pins (W7). Freeze gate
+  clean + selftest 5/5.
+- **EXIT AUDIT.** Wave-plan bullets: W1–W6 all executed (records
+  above). NAMED RESIDUALS with filed/named landings: the W1 'path'
+  type acceptance → stream 17's runtime-representation lane (PathNode
+  joining the Node sum-type — stated in the stream-17 handoff);
+  target-document diagnostic locations (the #706 item-6 sub-point;
+  the data AST carries NO source positions — a parser-level surface)
+  → #792. Adjacents filed this stream: #790 (cxparse
+  quoted-string-in-collection rendering), #791 (canonical mangles
+  ::T-annotated barewords — hash basis only, verbatim carrier), #792
+  (diagnostic positions). DISPOSITIONS for owner exit review: (a)
+  the [?schema-register] DIRECTIVE spelling retired-before-birth
+  (closed §4.1 registry, one-form-per-act — the verb is THE
+  spelling; validate.md §7 states the discharge); (b) register-schema
+  + validate-against are IMPURE (the §3.2 `pure` spelling superseded
+  — a rebindable registry read must never be cacheable). Named
+  landings (ruled): M5 corpus families = stream 14; XSD = #288's
+  mapping table; the #288 catalog = sealed packages over the schema
+  store. #706 all-items evidence: 1+2 = W1 (full kind set + loud
+  CXDEF_PARSE), 3+4 = W5 (--strict real; the second mechanism
+  retired), 5 = W1 checker + W5 pinned enforcement (#703-A remains
+  separately filed), 6 = W2/W2.1/W3 (completion + cutover + S024/S025;
+  locations = #792), 7 = sv-068..074 + cmd-025..028 +
+  validate-041..045. Handoffs: stream 18 (#690) receives `cx schema
+  export --to=json-schema` (golden-pinned); stream 17 (#689) receives
+  the PathNode residual note. Exit gate next; then merge to
+  design/651-516-partition, close #706 + #688.
