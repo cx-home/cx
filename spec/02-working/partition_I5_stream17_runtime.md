@@ -149,3 +149,16 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   PRE/POST HEAD = 13116a8b, dirty=0 (fabric/http = the classified
   #572 pair, green on retries). W2 next: batch [?for] over tables
   (#710 item 7).
+- **W2 EXECUTED 2026-08-13 — batch [?for] over tables (#710 item 7).**
+  The [?for] table walk streams rows one at a time (table_row_map_at
+  builds a single row's D22 view only when its iteration runs; a
+  :take/:where short-circuit stops construction — the up-front
+  N(1+2M) boxing is dead on the hot path); the row SHAPE is
+  byte-identical (table_row_maps delegates to the same per-row
+  builder). **Gotcha:** the for-source tail keeps plain iterate()
+  (the EV-PULL state hook forces combinator chains; an iterate_env
+  swap there regressed the statically-infinite refusal shape).
+- **W2 gate record:** `s17_w2_gate.log` GATE-RC=0, PRE/POST HEAD =
+  98d8ef79, dirty=0 (fabric/http = the classified #572 pair, green
+  on retries; the first gate run died with the session — re-run
+  clean). W3 next: the columnar lattice rise (#710 item 3, L89).
