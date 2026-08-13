@@ -144,3 +144,14 @@ named there.
   parent-visible synthesis; existing meter fixtures byte-stable.
   Fixture authz-085 byte-exact; battery 2862; guide-check OK 46.
   W4 gate next.
+- **W5 EXECUTED 2026-08-12 — hygiene + corpus completion.** The
+  :serializable retarget to the shipped pattern (journal-092 re-pinned);
+  journal-142 (replay isolation + the anti-2PC negative) — which FOUND a
+  real cross-ring defect: unclassified Ring-2 callees defaulted to pure,
+  so the 2PC-shaped fold read DEADLOCKED on the pack jmu instead of
+  refusing CXER4611; fixed via the new I3-seam purity registration
+  (journal + store lists landed; #788 = the remaining packs + parity
+  gate). Edit map executed: journal.md saga rows + locator note;
+  commands_effects reservation bullet names the shipped verbs; xap
+  §14.2 cross-ref; consistency/bitemporal verified. Battery 2863;
+  guide-check OK 46; registry RC=0. W5 gate next; W6 = exit.
