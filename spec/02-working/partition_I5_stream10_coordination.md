@@ -134,3 +134,13 @@ named there.
   Two runner bugs fixed in-wave (invoke errors read as success; the
   scope-blind closure lookup). Fixtures journal-140/141 byte-exact;
   battery 2861; guide-check OK 46. W3 gate next.
+- **W4 EXECUTED 2026-08-12 — escrow allocations.** allocate (parent
+  debited at reservation under its lock; the deny names the conjunct;
+  rate refused; window pinned at reservation) + allocation-expire
+  (visible reclaim; never replenishment — fold synthesis: parent
+  consumption = reserved-while-active, exactly-drawn-once-expired) +
+  allocation draws on debit (one draw, one meter; the allocation's own
+  conjuncts in denials). authz_collect_raw single walk +
+  parent-visible synthesis; existing meter fixtures byte-stable.
+  Fixture authz-085 byte-exact; battery 2862; guide-check OK 46.
+  W4 gate next.
