@@ -98,3 +98,26 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
 
 ## Wave record
 
+- **W1 DESIGN (recorded before implementation).** The demand-driven
+  core: (1) IteratorNode gains `consumed i64` (the source cursor —
+  additive Ring-0 field; memo stays the yielded prefix, exhausted
+  flips when the source ends). (2) eval.v gains `iter_pull(mut it,
+  want, mut env) !` — extends memo to `want` items (want<0 = all):
+  per-kind incremental arms for map/filter/take/drop/zip/enumerate/
+  chunks/concat/cycle/scan (pull sources recursively via iter_pull
+  when the source is an IteratorNode, index directly when
+  materialized); partition/group-by remain FULL-FORCE with their
+  lookahead DOCUMENTED in §6.7 (they must see the whole source —
+  the spec's "except where a combinator documents it" seam);
+  generator kinds (range_open/iterate/unfold) respect `want`; live
+  kinds delegate to the Ring-2 walk registry unchanged. (3) The 16
+  construction sites build LAZY nodes (no eager memo). (4) iterate()
+  has NO env (why the W3c dead-end existed) — env-bearing callers
+  move to a new `iterate_env(n, mut env)`; the program-RESULT
+  boundary forces via a new `pub fn force_lazy_result(n, mut env)`
+  called in api.v (all three variants) AND the conformance runner —
+  laziness survives bindings, forcing happens only at consumers and
+  the env-bearing result boundary. EBV keeps refusing to force
+  (eval.v:3890 — now true). EV-BUDGET guards total pulls. Acceptance:
+  ev-pull-001/003 flip advisory→enforced; ev-pull-002 +
+  program-iterator-* + take-over-infinite ([$range 1 *]) green.
