@@ -121,3 +121,31 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   (eval.v:3890 — now true). EV-BUDGET guards total pulls. Acceptance:
   ev-pull-001/003 flip advisory→enforced; ev-pull-002 +
   program-iterator-* + take-over-infinite ([$range 1 *]) green.
+- **W1 EXECUTED 2026-08-13 — EV-PULL, the demand-driven engine (#710
+  item 6; the stream-22 acceptance FLIP executed red→green).** The
+  pull core (iter_pull.v): lazy construction at map/filter/take/drop;
+  per-kind incremental arms incl. the BOUNDED open-range
+  (take-over-INFINITE works — the spec's motivating case);
+  IterClosureEntry{cl, scope, closures-alias} parks transforms at
+  construction and invokes against their OWN frame world (partials'
+  inner sentinels resolve; EV-CLOSURE-CAP-faithful); the env-free
+  consumer problem solved by the g_iter_pull_state hook (iterate()
+  forces through a minimal state-built env — no 51-site sweep); §9.2
+  err short-circuits surface at the FORCE point (err-terminal
+  collapse; bare unwrap at the result boundary — force_lazy_result in
+  eval_code all paths + BOTH runners + the profile-gate runner);
+  statically-infinite unbounded forcing keeps the immediate classic
+  refusal; EV-BUDGET exactly-at-floor succeeds; [par] map eager BY
+  REQUEST (documented). ev-pull-001/003 ENFORCED (the acceptance);
+  ev-pull-002 + all program-iterator-* + program-err-010 +
+  program-pfa-004 green. **Gotchas:** V maps alias on assignment
+  (entry closures = cheap COW-protected alias); error()-carried codes
+  double-prefix through mk_err — strip before wrapping; the -prod
+  lane refuses unused vars the dev build tolerates; EVERY runner is
+  a result boundary (three of them).
+- **W1 gate record:** gate 1 `s17_w1_gate.log` RC=2 (the unused
+  filter binding under -prod; the profile-gate runner missing the
+  boundary force) → **W1.1**. Gate 2 `s17_w1_gate2.log` GATE-RC=0,
+  PRE/POST HEAD = 13116a8b, dirty=0 (fabric/http = the classified
+  #572 pair, green on retries). W2 next: batch [?for] over tables
+  (#710 item 7).
