@@ -228,3 +228,35 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   PRE/POST HEAD = 9b8b487a, dirty=0 (fabric/http = the #572 compile
   pair; retries green — the W3b.2 barrier holding). W4 next:
   vectorized pushdown (#710 item 2).
+- **W4 EXECUTED 2026-08-13 — vectorized pushdown (#710 item 2;
+  L86+L91).** The pushdown path materializes nothing it does not
+  answer with: `parse_data_bin_projected` decodes ONLY the wanted
+  columns (every other §3.10.3 payload cursor-skips — bool bitpack,
+  f16, decimal/bigint varlen, atom/string dictionary, 0x80 nullable —
+  witnessed by the LAST column decoding correctly across every
+  skipped representation); the store executor consumes it for
+  [projected col + `__cx_key`], killing the filed
+  parse-everything-then-loop. Final-step PREDICATES lower: a
+  promoted+exact column's candidates are shape-invariant BY PROMOTION
+  (scalar leaves — no attrs, no element children, one name), so the
+  row scan's own `store_elem_matches_predicates` evaluates ONCE and
+  decides every row — parity by construction (the identical
+  fail-closed engine, never a re-implementation); the attribute axis
+  answers provably-empty. The executor runs `store_query_plan` FIRST
+  — a path the row lane would CXER1709-refuse is never answered from
+  columns. **Disposition (recorded):** §6's min/max row-group pruning
+  + per-cell vectorized compare stay unconsumed BY THE PREDICATE
+  GRAMMAR — no shipped predicate form reads cell values (attrs / name
+  / position only), so building them now would be a dead seam
+  (seam-needs-live-consumer); the verdict-once form IS the vectorized
+  evaluation for the shipped universe. The moment the grammar grows a
+  value-comparison form, the pushdown extends over the projected
+  buffer. **Gotcha:** infix `[@x='1']` is RETIRED in CXPath — the
+  prefix form `[= $_@x '1']` is the shipped spelling.
+- **W4 gate record:** `s17_w4_gate.log` GATE-RC=0, PRE/POST HEAD =
+  c00c2e38; POST dirty=1 is a PARALLEL SESSION's uncommitted
+  `partition_campaign_PLAN.md` edit (the #800 analytics-campaign
+  paragraph — spec-only, no build input; left untouched per the
+  shared-checkout rule), not gate residue (fabric/http = the #572
+  pair; in-gate retries green). W5 next: parser_streaming
+  disposition (#710 item 5).
