@@ -95,8 +95,17 @@ Query the lanes with `make ring-query` (env: `RING=`, `LANE=`,
   containing the section's text (usually a `CXER****` code).
 - `out-hash` asserts the Tier-1 content address (tagged
   `sha2-256:<hex>` form) of the input's strict-canonical bytes.
-- `out-effects` (reserved, stream 22) will assert observable effect
-  traces, one per line, in required order.
+- `out-effects` (stream 22 W1 — LIVE) asserts the ordered
+  admitted-effect-point trace: one `capability:resource` line per
+  admission through the capability gate — the resource text is
+  whatever the effect point presents to the gate (typically its
+  primitive name, e.g. `clock:time-now`; io/store points present the
+  requested resource). Exact in order AND count
+  (denied effects never execute and never trace — the denial is the
+  error channel's evidence). Graded in addition to the value channel.
+  Concurrent programs must not assert a total order across tasks
+  (interleaving is genuinely nondeterministic) — use per-task
+  subsequences or multiset-style matchers.
 - Typed assertions (`expect-codes`, `expect-valid`, …) are native CX
   values, not payloads — see `fixtures.cxs`.
 

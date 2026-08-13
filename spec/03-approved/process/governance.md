@@ -482,6 +482,39 @@ A change to any spec under `spec/` requires:
 - Conformance fixture updates if behavior changes.
 - Reviewer approval from at least one maintainer not authoring the PR.
 
+**The clean-room clause (stream 22, L74).** A change that pins or
+alters EVALUATION-observable behavior additionally requires:
+
+- the rule lands IN THE REGISTER (code.md §14.4) with a stable
+  `EV-…` id — never as prose outside it;
+- a witness that FAILS UNDER THE OPPOSITE CHOICE (a discriminator
+  pair — a fixture both readings pass pins nothing);
+- numeric limits ship WITH FLOORS, never bare numbers (the EV-BUDGET
+  pattern: "implementations MUST accept ≥ N" — a bare limit is an
+  implementation detail, a floor is a contract).
+
+### 10.1a Implementability grades (stream 22, L71 — normative)
+
+Every spec area carries a clean-room implementability grade; grade-D
+areas are IMPLEMENTATION BLOCKERS for their areas (behavior-affecting;
+the corpus cannot police them until pinned). Grades move only by spec
+work (D→A via pin + witness), recorded here:
+
+| Area | Grade | Basis |
+|---|---|---|
+| code.md §9.1.2 / §9.2 / §10.5.7 / §12.5 | A | clean-room implementable as written |
+| code.md §14 evaluation core + EV register | A | stream 22 (pins + discriminator pairs; was D across §6.1/§8.5/§8.6/§6.4.1/§6.7/§10.5.1/§10.5.3) |
+| code.md §6.7 iterators — EV-PULL engine conformance | D | pinned rule; engine lands with the runtime-representation stream (#710) — blocker for iterator-engine work until then |
+| code.md §6.5.1 | C→A | the effect table moved to security.md §2.1 (stream 6; EV-EFFECT-SET) |
+| code.md §11.4 gate protocols | C→B | partitioned reference-lane vs conformance-bar (L75) |
+| security.md §4 | C | scope text still impl-anchored; move with the next security amendment |
+| fp.md, jsonschema.md | A | de-anchored at I2 (#707) |
+| conformance front door | A | #707 items 1–7 + the out-effects channel (stream 22 W1) |
+
+Grades A (clean-room implementable) / B (implementable with corpus) /
+C (impl-anchored — must move) / D (trap — specify or fixture before
+implementation).
+
 ### 10.2 Grammar changes
 
 A change to `spec/core/grammar.ebnf` additionally requires:
