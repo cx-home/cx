@@ -172,3 +172,42 @@ books it).
   HEAD = ac22e98f, dirty=0 (fabric/http = the classified #572 pair,
   green on retries). W5 next: the EV-PULL rule + probe infrastructure
   (the engine rewrite = stream 17's named landing, #710 item 6).
+- **W5 EXECUTED 2026-08-13 — the EV-PULL rule + probe family.**
+  code.md §6.7 pull protocol normative (demand-driven; no
+  undocumented lookahead; the reference engine's frontier debt named
+  honestly — the rule binds new implementations NOW). Family:
+  ev-pull-001/003 gate=advisory (the spec-first frontier — reporting
+  the eager (10,3)/(10,2) vs the pinned (3,3)/(4,2), not blocking),
+  ev-pull-002 ENFORCED (full consumption fires once per item — both
+  engines). #710 handoff comment: flip 001/003 enforced with item
+  6's rewrite; red→green = acceptance. **Gotcha:** consistency gate 2
+  reads [?…] spellings in spec prose against the §4.1 registry —
+  fixture helpers named without brackets.
+- **W5 gate record:** `s22_w5_gate.log` GATE-RC=0 first run, PRE/POST
+  HEAD = 1de41c4d, dirty=0 (fails all classified).
+- **W6 EXIT AUDIT.** The §10 edit map DISPOSED in full: code.md new
+  §14 + §11.4 rework (W2) + §6.7 (W5) + worker-exit text (W4);
+  security.md §2.1 = stream 6 (VERIFIED live — the mirror test +
+  check-effect-alignment green every gate); §4 = grade C recorded w/
+  the named landing (the next security amendment — the L71 grades
+  table IS the movement mechanism); fp.md/jsonschema.md de-anchoring
+  = I2 (VERIFIED — no-impl-anchor green); conformance/README +
+  fixtures.cxs (W1: out-effects live + rule=); witnesses.txt
+  eval/trace kinds (W1, ENFORCED); governance §10.1 + §10.1a (W2);
+  checker + Makefile (I2, green in every gate). **The EV register,
+  all 11 rows discharged:** RESULT-IMAGE (I2 spec + W1 one-owner
+  unification), LET-SEQ (W2 pair), CLOSURE-CAP (W2 pair),
+  ASYNC-SPAWN (W3 retirement + pair), CLOCK-PARK (W2 pair,
+  probe-verified), PULL (W5 rule + advisory family; engine = #710
+  item 6 NAMED), BUDGET (W2 floor pair), ARG-ORDER (W2 — pinned
+  VERIFIED SHIPPED attrs-first), EFFECT-SET (stream 6 table + W1
+  trace channel + the authz-086/087 pair), WORKER-EXIT (W4
+  red→green), SELECT-FAIR (W2 — the shipped source-order bias FIXED
+  + pair). M22 re-bless: W1's renderer unification moved ZERO
+  outputs (every lane stayed green) — no re-bless was needed.
+  Adjacents filed: #793 ([?await] fail-open positional args).
+  Named landings: EV-PULL engine + flipping the advisory pair =
+  stream 17 (#710 item 6); the full per-combinator pull matrix + M5
+  witness families = stream 14 (§9). #707 closes on the W3 evidence
+  (items 1–7 at I2; the residual retired). #694 closes on the
+  all-letters evidence. Exit gate next; then merge, close, memory.
