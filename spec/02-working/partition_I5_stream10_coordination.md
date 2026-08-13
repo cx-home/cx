@@ -100,4 +100,17 @@ named there.
 
 ## Wave record
 
-(appended per wave)
+- **W1 EXECUTED 2026-08-12 — the [requires-at] pin.** The clause
+  ([152i]; attr-pair reader; all-three-mandatory refusal), CommandMeta
+  carriage (outside Tier-2), the B3 admission read at the authz commit
+  point (CXER4950 stale — no debit, no body), the fail-closed
+  direct-invocation refusal (CXER4951 at invoke; the pin_admitted
+  bracket wraps exactly the engine execute pass — leak-proof, pinned
+  both sides of a successful commit), the 4950–4969 band row (before
+  first use), coordination.v opened as the stream's platform home.
+  Fixtures cmd-023/024 + authz-084 byte-exact; battery 2858; guide-check
+  OK 46; strict registry RC=0. **Design decisions (inside ruled
+  bounds):** ONE pin per def v1 (multi-pin additive later); the
+  admission evaluates on the authz-commit path + (W2) the saga runner —
+  the engine's rule is refuse-unless-admitted, since Ring 1 cannot read
+  a journal. W1 gate next.
