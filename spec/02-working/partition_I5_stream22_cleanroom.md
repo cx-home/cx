@@ -116,3 +116,31 @@ books it).
   green on retries). W2 next: the normative §Evaluation core +
   desugar-to-core + grades + governance + gate partition + the
   spec-only EV rows w/ pairs.
+- **W2 EXECUTED 2026-08-13 — the normative core (L70/L71/L74/L75).**
+  code.md §14: the environment object (4 parts), the 8 core forms,
+  the L70-D desugaring map (every registry directive placed), the
+  §14.4 EV register (all 11 rules, each naming its foreclosed
+  divergence), the §14.5 parking algorithm (probe-verified:
+  await-all(10,20ms)→20ms; timeout=2ms bounds at exactly 2ms +
+  CXER0241). **Two probe-driven findings:** EV-ARG-ORDER pinned to
+  VERIFIED SHIPPED (attrs-first then body — the register draft
+  guessed interleaved; only WORKER-EXIT is ruled against shipped);
+  EV-SELECT-FAIR — shipped eval_select was DETERMINISTICALLY
+  source-order biased (its own comment admitted the degeneration) →
+  rewritten two-pass (non-consuming probes; xorshift tiebreak among
+  ready — scheduling nondeterminism, ungated; consume only the
+  chosen); §10.4.7 downgraded to the ruled fixture-checkable form.
+  governance §10.1 clean-room clause + §10.1a grades table; §11.4
+  gate partition (L75). Witness pairs ENFORCED: ARG-ORDER/
+  CLOSURE-CAP/CLOCK-PARK/BUDGET ×2 each; fixtures
+  ev-select-fair-001/002. #793 filed ([?await] fail-open positional
+  args). **Gotchas:** [?do] returns null; [?await-all] takes ONE
+  sequence arg; [?channel] needs name=+buffer=; [?loop] exits must
+  be TAIL-visible (a [?do] wrap hides [continue]); the consistency
+  gate reads banned tokens even in forecloses-descriptions and
+  resolves §refs against real headings only.
+- **W2 gate record:** gate 1 `s22_w2_gate.log` RC=2 — the §14 text
+  caught by its own gates (the banned token + two list-item §refs) →
+  **W2.1**. Gate 2 `s22_w2_gate2.log` GATE-RC=0, PRE/POST HEAD =
+  9deed1f8, dirty=0 (fabric/http = the classified #572 pair, green
+  on retries). W3 next: EV-ASYNC-SPAWN (the #707 residual).
