@@ -96,4 +96,23 @@ pair = authored here W1 against the new channel (the stream-6 ledger
 books it).
 
 ## Wave record
-
+- **W1 EXECUTED 2026-08-13 — witness instrumentation (L73/§8).** The
+  out-effects channel LIVE end-to-end (the cap_guard admission tap —
+  the §2.1 choke point; denied never traces; declared-but-empty
+  asserts ZERO admissions; mutex-guarded; per-program reset); its own
+  discriminator pair eff-trace-001/002 (order vs multiset); the
+  BOOKED stream-6 pair authz-086/087 (propose-predicts-commit + the
+  undeclared-effect-never-ADMITTED negative). rule= attr
+  (fixtures.cxs + loader — the EV map is a corpus query).
+  witnesses.txt kind=eval/trace, ENFORCED in the harness
+  (n_eval_fail==0; parse-convergence triage stays exploratory);
+  first pairs EV-RESULT-IMAGE/EV-LET-SEQ/EV-EFFECT-SET. Result image
+  UNIFIED: the harness's 339-line dead mirror renderer DELETED;
+  render_canonical carries the §11.1a citation as THE one producer.
+  **Gotchas:** [effects] items are [CAP scope*] ELEMENTS; the env
+  verb is env:var; the loader's else-arm maps any section generically.
+- **W1 gate record:** `s22_w1_gate.log` GATE-RC=0 first run, PRE/POST
+  HEAD = 88bb4e33, dirty=0 (fabric/http = the classified #572 pair,
+  green on retries). W2 next: the normative §Evaluation core +
+  desugar-to-core + grades + governance + gate partition + the
+  spec-only EV rows w/ pairs.
