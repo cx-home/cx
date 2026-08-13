@@ -92,3 +92,17 @@ sealed packages over the schema store (no new machinery).
   named residual: 'path' accepts until the PathNode sum-type graft
   lands. Fixtures cmd-025/026; battery 2865; umbrellas green;
   guide-check OK 46. W1 gate next.
+- **W2 EXECUTED 2026-08-13 — validator completion + the cutover.**
+  [or] member-wise both positions (the attr fail-open retired; the
+  text-body-as-string duality handled); [tuple] fixed-arity
+  per-position; [ref] fail-closed named-type resolution (S025);
+  [record]-in-[type] collects declarations; bracket-prefix
+  parse_container_kind (nested recursion, real paths); glued forms
+  retired cleanly (both suites green); S024 = container-in-attr
+  unsatisfiable (the CXER1603-respecting rule — schema.md's own attr
+  examples were unsatisfiable-by-construction). sv-068..074; suite
+  77/77; battery 2867; guide-check OK 46. **Notes:** composite types
+  spell via the ::[…] annotation on [attr]/[type] (data-mode token
+  text); [ref X] works ONLY in annotation position (the reserved
+  [ref @id] element rule) — [body [ref X]] children do not parse;
+  W7's schema.md sweep states this. W2 gate next.
