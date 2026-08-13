@@ -125,3 +125,36 @@ sealed packages over the schema store (no new machinery).
   classified #572 cache-free pair, both green on retries; gate 2's
   RC=2 was a bad target name, not a lane). W3 next: `cx schema
   infer`.
+- **W3 EXECUTED 2026-08-13 — `cx schema infer` (L62A/L68).** The §8
+  join lattice exactly as ruled: identical→identical; int⊔float→float
+  (the one collapse — the validator admits int where float declares);
+  decimal joins only decimal; anything else → sorted `[or …]`, NEVER
+  string; containers join ITEM-WISE (list⊔list joins items, never
+  textual or-members). Attr [req]/[opt] from observed presence; child
+  `[card "M..N"]` from per-occurrence counts (absence and late
+  first-sight floor to 0); bodies [opt] when not always present;
+  mixed-content bodies untyped (open mode covers). Determinism: all
+  emission name-sorted (root type first), the CLI sorts its file list
+  — same corpus → byte-identical .cxs → same schema_content_hash (E2).
+  mode=open always; full-corpus default; `--sample=N` records
+  `sample="N/TOTAL"` header provenance. ONE shared Ring-0
+  implementation (vcx/cli/schema_verbs.v, os+cx only) dispatched by
+  BOTH binaries; extraction gate 9631 pairs byte-identical. Validator
+  find: probe_member_type carried the SAME seq→arr collapse as W2.1's
+  apply-path — `[or …]` members validated seq bodies as :arr; split,
+  pinned by the round-trip corpus row. Fixture family: lattice
+  vectors, determinism+E2, cardinality, optionality, mixed-roots
+  refusal, sampling, validate(docs,infer(docs))=clean over 6 corpus
+  shapes, CLI end-to-end. **Gotchas:** plain `2.5` in CX data is
+  DECIMAL (exact-by-default) — float spells `2.5e0`; -prod refuses
+  unsafe-bracketed pointer-map reads the dev build accepts (or{}
+  blocks required).
+- **W3 gate record:** gate 1 `s16_w3_gate.log` RC=2 — completions
+  drift (the lockstep contract: bash/zsh/fish lacked the new verb) →
+  **W3.1** (verb + infer + flags in all three). Gate 2
+  `s16_w3_gate2.log` RC=2 — the -prod lane refused schema_infer's
+  unsafe pointer-map reads → **W3.2** (or{} blocks, behavior
+  unchanged). Gate 3 `s16_w3_gate3.log` GATE-RC=0, PRE/POST HEAD =
+  fab1fffe, dirty=0 (fabric/http = the classified #572 cache-free
+  pair, green on retries). W4 next: SchemaRef ≡ E2 + the registry
+  re-rule.
