@@ -125,3 +125,12 @@ named there.
   [compensates] target must be DEFINED BEFORE the command that names
   it (registration-time sibling check) — compensators first. W2 gate
   next.
+- **W3 EXECUTED 2026-08-12 — compensation flows.** Reverse pre-pivot
+  compensation via the [compensates] pairing (CommandMeta-resolved,
+  full invoke path); forward-only post-pivot w/ visible incomplete= +
+  tail-only resume; the :uncompensatable conflict (locator-triple link
+  to the un-reversible :done transition + the failing err as [ours]);
+  the fail-closed pre-pivot compensability check; terminal-state dedup.
+  Two runner bugs fixed in-wave (invoke errors read as success; the
+  scope-blind closure lookup). Fixtures journal-140/141 byte-exact;
+  battery 2861; guide-check OK 46. W3 gate next.
