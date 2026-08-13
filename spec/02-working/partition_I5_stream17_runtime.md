@@ -184,3 +184,29 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
 - **W3a gate record:** gates 1-2 caught the binding decoders
   (`s17_w3a_gate.log`/`gate2`); gate 3 `s17_w3a_gate3.log` GATE-RC=0,
   PRE/POST HEAD = c3335716, dirty=0 (fails all classified).
+- **W3b EXECUTED 2026-08-13 — 0x62 dictionary + secret-never-columnar
+  (#710 item 3 cont.).** The §3.10.2 form (atoms BY CONSTRUCTION;
+  strings by the byte-savings rule; per-column 0x00/0x01 flags; FULL
+  tagged dict values; range-checked indexes); SECRET NEVER COLUMNAR
+  pinned structurally (__cx_secret__ = marker elements — promotion
+  can't lift them; the force-node negative fixture). #794 filed
+  (canonical quotes atom cells — the #791 family; the dict fixture
+  asserts round-trip == direct render instead). **W3b.2 — the fabric
+  flake ROOT-CAUSED:** the credited-transient-push read was NEVER a
+  deadline problem (two raises masked it — 5s→30s stream-10, an
+  attempted 30s→90s here still expired): the credit rides obsc, the
+  next emit rides pubc — no cross-socket ordering; under load the
+  emit beat the credit and the push was LOST (inherent drop, window=1).
+  Fix = a request/response BARRIER on obsc after the credit (in-order
+  per connection; the observer's DENIED reply is the side-effect-free
+  barrier shape). Reproduced deterministically 3rd-consecutive-run
+  pre-fix; 4× green post-fix; the in-gate retry ran green at gate 4.
+  Deadline reverted to 30s. **Batch mapping (ruled 1a):** #795 = the
+  canonical-forms batch (#790/#791/#794, owner-reviewed as one
+  family, post-I5 own lane); #796 = the post-gate defect batch
+  (#788/#792/#793, rides the #695 wave slot); campaign plan updated.
+- **W3b gate record:** gates 1–3 red on the fabric race (classified
+  wrongly as wall-clock twice before the root-cause); gate 4
+  `s17_w3b_gate4.log` GATE-RC=0, PRE/POST HEAD = d9fb6286, dirty=0
+  (fabric/http = the #572 compile pair, retries GREEN). W3c next:
+  Arrow validity bitmaps + chunked nullable.

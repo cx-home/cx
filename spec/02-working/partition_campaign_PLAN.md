@@ -125,6 +125,16 @@ assumed.)
 Streams 1–22 = #673–#694 (in order: 1→#673 … 22→#694) · hygiene batch =
 #695 · consumability C1–C4 = #696–#699. Every issue carries gate rule 4(b).
 
+**Post-gate defect batches (ruled 1a, 2026-08-13)** — the adjacents the
+I5 fixtures exposed, each with a named lane so nothing tracker-rots:
+the CANONICAL-FORMS batch #795 (= #790 + #791 + #794 — identity-adjacent
+kind erasure through the canonical text lane; owner-reviewed as ONE
+family since canonical bytes are identity-bearing; its own lane,
+post-I5); the post-gate defect batch #796 (= #788 purity sweep + #792
+data-AST positions + #793 await arg validation; scheduled WITH the
+#695 hygiene wave, separate umbrella — #695 stays the protocol-surface
+inventory).
+
 ## Consumability track (ruled 2026-08-05: post-gate sequencing)
 
 Tooling/product streams that consume the partition's artifacts; sequenced
