@@ -157,3 +157,18 @@ books it).
   HEAD = 49da0f8d, dirty=0 (fabric/http = the classified #572 pair,
   green on retries). W4 next: EV-WORKER-EXIT (cancel-and-drain — the
   one ruled-against-shipped row; fixture FIRST).
+- **W4 EXECUTED 2026-08-13 — EV-WORKER-EXIT (ruled against shipped;
+  fixture FIRST, red→green).** drain_workers_at_exit (cancel stamp +
+  join to quiescence) hooked via defer on every exit edge of all
+  three eval_code variants. Parked-at-cancellation-point bodies
+  terminate CANCELLED (prompt exit, post-park effects suppressed);
+  no-cancellation-point bodies run to COMPLETION (effects land, never
+  orphaned); a non-cancellable infinite body hangs exit VISIBLY.
+  code.md worker section gains the exit paragraph. Fixtures
+  test_worker_exit_cancel_and_drain + _drain_completes (the latter
+  authored red on shipped orphaning). Scope: workers only (the ruled
+  row); futures stay under EV-ASYNC-SPAWN's in-program guarantee.
+- **W4 gate record:** `s22_w4_gate.log` GATE-RC=0 first run, PRE/POST
+  HEAD = ac22e98f, dirty=0 (fabric/http = the classified #572 pair,
+  green on retries). W5 next: the EV-PULL rule + probe infrastructure
+  (the engine rewrite = stream 17's named landing, #710 item 6).
