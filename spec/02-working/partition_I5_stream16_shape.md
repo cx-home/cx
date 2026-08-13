@@ -106,3 +106,22 @@ sealed packages over the schema store (no new machinery).
   text); [ref X] works ONLY in annotation position (the reserved
   [ref @id] element rule) — [body [ref X]] children do not parse;
   W7's schema.md sweep states this. W2 gate next.
+- **W2 gate record:** gate 1 `s16_w2_gate.log` RC=2 — three real
+  finds: (1) the eval-semantics umbrella pinned the RETIRED glued
+  family comprehensively (arr[T]/seq[T]/map[K,V] + a legacy :T[]
+  body-desugar test — the "zero fixtures pin either" survey missed
+  the V-file battery); (2) the corpus-diff baseline moved 772/607/20
+  → 779/612/22 (+7 = sv-068..074; +2 diverge = the PRE-EXISTING
+  quoted-string-in-collection cxparse rendering class exposed by
+  sv-071/sv-073 — filed #790, the #473/#495 sibling lane); (3) the
+  auto-updated evidence file. **W2.1** = the cutover of every pinned
+  site + the natural `[body [list u16] …]` ELEMENT-CHILD spelling
+  (schema_type_child_text renders the child back through the ONE
+  annotation path; type-shaped leading child = list/seq/map/or/
+  tuple/enum) + the apply path's seq→arr collapse split (seq bodies
+  validate as :seq — found by the cutover fixtures) + the deliberate
+  baseline bless w/ history note. Gate 3 `s16_w2_gate3.log`
+  GATE-RC=0, PRE/POST HEAD = 4674fe6a, dirty=0 (fabric/http = the
+  classified #572 cache-free pair, both green on retries; gate 2's
+  RC=2 was a bad target name, not a lane). W3 next: `cx schema
+  infer`.
