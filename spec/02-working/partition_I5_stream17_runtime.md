@@ -298,3 +298,42 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   2acded26 (fabric/http = the #572 pair, retries green; dirty=1 both
   ends = the same parallel-session PLAN.md paragraph). W6 next:
   PathNode graft + drift repairs.
+- **W6 EXECUTED 2026-08-13 — PathNode graft + drift repairs (#710
+  items 1+4 residue; the stream-16 residual; L87+L91+L92).** GRAFT:
+  PathNode joined the Node sum type; the `::path` kind test became a
+  REAL check (the accept-always arm validated ANY value —
+  program-sap-O1-10b pins the refusal); wire arms complete capability
+  bit 36's three-kinds promise (0x13 encode/decode dispatch +
+  node_is_v8; emitters follow the MatchNode conventions). RULED SPEC
+  EDITS (the L91 edit map): table-api §8.1/§8.2 (bindings are
+  row-major boxed; compactness is a WIRE guarantee; one-allocation
+  aliasing = fixed-width lanes only); cx_partition §9 dual lean
+  restored (L87 — the owner's BOTH correction); abi.md bit 41 claimed
+  + cx_features SET (0x203df7fffff); cxstore_columnar_backend §6
+  timing note (verdict-once IS the vectorized evaluation for the
+  shipped predicate grammar). PERF-GATE REPAIRS (L92): gate 14
+  (retired [?for PATTERN :yield] spelling → [?match] case-pattern
+  form) PASS p99 0.3ms/1ms; gate 16 (retired [?service]/postfix-pipe
+  spellings → [?http-service]/[?pipe]) PASS 15.7K rps, p99
+  0.2ms/10ms; gate 30.5 runs honestly — sharing-ratio TRUE red
+  (32,648 B/match vs 29 B subtree avg; identity PASS) → **#803**;
+  gate 15 runs honestly — ~2 MB/s vs 200, an engine-wide per-item
+  eval gap (identical on both input paths) → **#804**;
+  _gate_evidence/gate_{14,15,16,30.5}.log refreshed on disk (the .log
+  family is gitignored by design). FOUND IN PASSING: cx_features
+  under-advertises bits 23/29/34-40 → **#802**. Y6: streaming_bench.v
+  repaired off retired spellings (streaming 1.78× buffered);
+  streaming_bench_json.v REMOVED (unwired, parse-dead, rode the
+  retired interpolation form).
+- **W6 gate record:** `s17_w6_gate.log` GATE-RC=0, PRE/POST HEAD =
+  1f8214bc (fabric/http = the #572 pair, retries green; dirty=1 both
+  ends = the parallel-session PLAN.md paragraph).
+- **MARCH PAUSED (owner order, 2026-08-13, post-W6):** an ADVERSARIAL
+  AUDIT of I5 runs before W7 or any further stream — the owner's read:
+  the campaign is generating bugs faster than it fixes them (#790-#794,
+  #802-#804 filed across three streams while headline issues close;
+  #803/#804 are TRUE reds in shipped engine behavior surfaced by the
+  W6 gate repairs). W7 (§9 transparency family + closure evidence +
+  exit) does NOT start until the audit's findings are dispositioned.
+  #802/#803/#804 need a post-gate batch mapping ruling (the 1a
+  mapping predates them).
