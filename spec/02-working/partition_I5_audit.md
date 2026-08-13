@@ -31,6 +31,63 @@ two new ones land green.
 
 ---
 
+## §0 Plain summary — what happened, impact, recovery, prevention
+
+**What happened.** The v0.8.0 homoiconic reshape (May 2026) replaced the
+pre-reshape engine with a uniformly boxed node representation. Streaming
+throughput fell from a measured 353 MB/s (v0.7.6, gate 15 green) to ~2 MB/s.
+The gate that would have said so went red immediately — the 2026-05-25 gate
+audit recorded it as "likely re-run/regression to bisect, not architectural"
+— and was never bisected. The runner then rotted through the syntax
+migrations (retired spellings), the gate table was archived out of the tree,
+and the master gate-check script disappeared. From late May to 2026-08-13
+(v0.8.0 through v0.15.0, eight releases), the 200 MB/s normative budget had
+no measuring artifact. Stream-17 W5/W6 repaired the runner, measured
+honestly, and filed #804. Gates 7, 8, 4, bench-eval, and bench-compare died
+the same way (this audit ran them; §1 AF-5); abi.md §4's timing table never
+had a measuring artifact at all (AF-6). The same weak-assertion blindness
+let two regressions land green inside I5 itself (AF-1, AF-2a).
+
+**Impact.** No wrong answers — the engine is correct and ~100× slower than
+the spec promises on streaming workloads (a 100 MiB data-shaped stream:
+~50 s/core instead of ≤0.5 s). code.md §11.4.4 and abi.md §4 over-promised
+to adopters for the whole window. `[?modify]` violates its enforced
+structural-sharing budget ~1000× (#803). Two I5-introduced divergences
+shipped in stream-17 waves (AF-1 wrong-answer class on refused inputs;
+AF-2a silent u16 value wrap on the wire).
+
+**Recovery.** Two legs, both already ruled (letters 86-92), neither built:
+leg 1 (~2→~30 MB/s) removes the per-item eval cost — #804's decomposition:
+frame clone per iteration + yield + render; ceiling is the parser bound.
+Leg 2 (~30→200+ MB/s) removes the parser's GC cap (~1.1M boxes/100 MiB) via
+lazy materialization, columnar in-flight, and the L88-admitted direct
+batch→canonical-bytes emitter (byte-identical, pair-fixture-pinned). The
+work lands in the Q1 gate-truth batch + the #804 lane.
+
+**Can 353 MB/s come back?** 353 was streaming-eval throughput on the
+semantically thinner pre-reshape engine; treat it as an existence proof that
+the workload is not hardware-bound, not as a target. The commitment is the
+normative floor: **≥200 MB/s (gate 15), which stands — the spec is never
+trued to the shortfall.** For bulk fixed-width data the columnar decode +
+direct-emit path is nearly memcpy-shaped, so exceeding 200 there is
+plausible; the general node path will land lower. The post-fix ceiling is
+unmeasured — establishing it is #804's profiling job, and no number beyond
+the 200 floor should be promised before that.
+
+**Prevention.** The root cause is structural: a normative budget whose
+measuring artifact can die silently. Four fixes, all inside Q5/Q1:
+(1) a living gate register in-tree — every budget → runner → threshold →
+wiring; (2) every budget-bearing gate either in the stream-gate matrix or
+freshness-checked, where evidence older than a release is itself a red;
+(3) syntax migrations sweep gate/bench runners too (gates 7/8/14/15/16/30.5
+and bench-eval all rotted because they live outside `make test`);
+(4) a gate that goes red files an issue at that moment — the May
+"not architectural" note went three months without a bisect or a tracker
+entry. For new work: no wave ships a "by construction" claim without a
+counterexample-shaped fixture lane (the AF-1 lesson).
+
+---
+
 ## §1 Findings, ranked by severity
 
 Severity: **S1** shipped-behavior divergence (execution-verified) · **S2**
