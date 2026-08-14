@@ -115,7 +115,7 @@ unblocked by the fix.
 | defect batches | #795 (#790 #791 #794) · #796 (#788 #792 #793 + #781 #782) | filed with named members |
 | visible gate-4 debt | #808 | rows flip with the raise implementations |
 | await owner routing | #809 (kind-test grammar remnant) · #812 (x/term spec-or-retire) | filed at s18 |
-| release lane | #741 #752 (the v0.16.0 cut; s4's W8 R1 riders ride it) | owner-gated cut |
+| release lane | #741 #752 (the v0.16.0 cut — version-literal-ok, the named next release; s4's W8 R1 riders ride it) | owner-gated cut |
 | design backlog | #728–#735 · analytics #751 #786 #797–#800 · #784 #787 #789 #801 · #758 #765 | tracker-routed, post-campaign |
 
 ## 7. Review questions for the owner
@@ -127,13 +127,13 @@ unblocked by the fix.
    if any single spec draws findings. **Recommend (a).**
 2. **What the march does next (after this review).** (a) The
    prio:high clearance first — #807 remainder + #775 V-runtime — then
-   the v0.16.0 release cut (#741/#752), then #804; (b) cut v0.16.0
+   the v0.16.0 release cut (#741/#752), then #804; (b) cut v0.16.0 <!-- version-literal-ok -->
    first; (c) #804 first. **Recommend (a):** the standing policy is
    prio:high ASAP, and the cut ships cleaner after #807's identity
    surface settles.
 3. **Campaign issue closure.** (a) Close #651+#516 at this review with
    the packet as the closing evidence, remainder tracked by the routed
-   issues; (b) hold them open through the v0.16.0 cut. **Recommend
+   issues; (b) hold them open through the v0.16.0 cut <!-- version-literal-ok -->. **Recommend
    (a)** — the partition scope is delivered; open campaign issues that
    track nothing actionable go stale.
 4. **Branch disposition.** (a) Merge design/651-516-partition →
@@ -155,7 +155,7 @@ unblocked by the fix.
   in approved specs/code comments update; partition_* ledgers keep
   their historical text unrewritten.
 - **exit-2a** — the next arc: prio:high clearance first (#807
-  render-parity remainder, #775 V-runtime campaign), then the v0.16.0
+  render-parity remainder, #775 V-runtime campaign), then the v0.16.0 <!-- version-literal-ok -->
   cut (#741/#752 + the s4 W8 R1 riders), then #804.
 - **exit-3a** — #651 + #516 CLOSE at this review; this packet is the
   closing evidence; the remainder is tracked by the §6 routed issues.
