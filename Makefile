@@ -321,6 +321,24 @@ stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
 	@"$(CX_BIN)" eval scripts/stdlib_catalog_gate.cx --allow-all
 
+# ── tools-export golden gate (stream 18, #690) ────────────────────────────────
+# `cx tools export` over the checked-in M5 module must reproduce the checked-in
+# golden byte-for-byte — the offline registration lane pinned end-to-end
+# (cx-x/tools descriptors → cx-x/mcp-server adapter → JSON emission). A
+# projection change that moves these bytes is deliberate and regenerates the
+# golden via the verb itself in the same commit.
+.PHONY: tools-export-gate
+tools-export-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+tools-export-gate: build-vcx
+	@out=$$("$(CX_BIN)" tools export conformance/tools-export/refund_order.cx) || { echo "tools-export-gate: the verb FAILED"; exit 1; }; \
+	want=$$(cat conformance/tools-export/refund_order.tools.json); \
+	if [ "$$out" != "$$want" ]; then \
+	  echo "tools-export-gate: OUTPUT DIVERGES from conformance/tools-export/refund_order.tools.json"; \
+	  echo "--- got:"; echo "$$out"; echo "--- want:"; echo "$$want"; \
+	  exit 1; \
+	fi; \
+	echo "tools-export-gate OK — refund_order.tools.json reproduced byte-for-byte"
+
 # Format-companion regeneration (#424) — the derived companions under
 # examples/ (books.*, config.*, doc.md, comparisons/table_block.csv) are
 # GENERATED from their .cx sources; regenerate them here so they cannot
@@ -406,7 +424,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect
