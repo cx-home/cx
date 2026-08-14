@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate address-baseline-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect
@@ -509,6 +509,17 @@ check-effect-alignment: build-vcx
 .PHONY: check-code-spec-consistency
 check-code-spec-consistency:
 	@$(PYTHON) scripts/check_code_spec_consistency.py > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
+
+# ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
+# batch — it was RED and in no lane, so no stream gate ever ran it). The
+# corpus/spec agreement gate over conformance/code.cxd: id-category
+# registry, directive registry (§4.1) with retired/PI/intentional-unknown
+# discipline, and ENFORCED spec-error-code coverage (every CXER code
+# cited, verified covered cross-suite, or pinned to its filed issue —
+# #808 rows are the visible debt).
+.PHONY: check-code-fixtures
+check-code-fixtures:
+	@$(PYTHON) scripts/check_code_fixtures.py > /dev/null && echo "check-code-fixtures OK — 1000+ fixtures: ids/directives/error-code coverage green (run the script directly for the JSON report)"
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
