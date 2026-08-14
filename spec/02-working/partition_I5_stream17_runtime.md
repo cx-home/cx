@@ -603,3 +603,23 @@ field's transport role. No other spec text moves.
 
 **Flip:** ttp-009/010/012/013 advisory→enforced on family green (the
 Q4a gate), completing the columnar lanes' enforcement.
+
+**LANDED (2026-08-14, fix/807-render-parity):** the whole remainder in
+three commits (ledger a27cc668 → V-side 021d133f → bindings+spec
+c71dbee4). ttp-009/010/013 GREEN and ENFORCED; ttp-012 re-pinned to
+the arc-3 contract (exact-pair green; the non-representable refusal
+pinned beside the Q4a integer contracts in the width-refusal V
+family, f16 AND f32); the ch-001..013 goldens re-derived with every
+delta verified byte-exact to the annotation/offset mechanism (ch-007
+re-scoped to offset-rides-transport); the three binding decoders
+risen with live witnesses (go/python vectors, rust through libcx's
+encoder). table_transparency 17/17 enforced, data_bin_chunked 13/13,
+umbrella suite green, binding suites green, verify-doc-blocks +
+check-code-spec-consistency + spec-freeze-gate green. The columnar
+lanes' advisory→enforced flip is EXECUTED — Q4a discharged.
+**Observed adjacent (filed separately, not silently fixed):** the Go
+binding's SCALAR 0x32 arm still speaks a pre-§3.6.1 placeholder form
+(10 reserved bytes + u16-length source string, writer and reader
+both) — internally consistent but below spec; the COLUMN 0x32 arm is
+spec-true. The events-layer col_spec (§1.1, u32-prefixed) is its own
+protocol surface and does not carry the annotation by design.
