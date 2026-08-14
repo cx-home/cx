@@ -1500,6 +1500,15 @@ bench-code-soak: build-vcx
 bench-code-cancel: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_async_cancel_battery.v
 
+# abi.md §4 performance-budget driver (#805/AF-6 — the table's FIRST
+# measuring artifact). In-process ABI-call timing, full call semantics;
+# budgets verbatim from the spec, never trued; exit 1 on any red cell.
+# First honest verdict (2026-08-13): six conversion cells RED at
+# 7.9-16.7x over budget (the #804 engine ceiling extends here);
+# cx_events_next PASS at ~9 ns/event. 100 MB tier opt-in: ABI_S4_100MB=1.
+bench-abi-s4: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/abi_s4_bench.v
+
 # Aggregate runner — drives all three v0.8.0 perf gates back-to-back.
 # Exit code is the FIRST failing gate's exit code (make stops on
 # first non-zero); use individual targets to triage in isolation.

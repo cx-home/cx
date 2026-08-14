@@ -1,0 +1,56 @@
+{
+  "benchmarks": {
+    "eval.flwor.count": {
+      "median": 19.661,
+      "unit": "ms"
+    },
+    "eval.flwor.group_by": {
+      "median": 7.519,
+      "unit": "ms"
+    },
+    "eval.flwor.order_by": {
+      "median": 21.072,
+      "unit": "ms"
+    },
+    "eval.flwor.where": {
+      "median": 5.513,
+      "unit": "ms"
+    },
+    "eval.fn.call_x500": {
+      "median": 2.145,
+      "unit": "ms"
+    },
+    "eval.match.string": {
+      "median": 138.812,
+      "unit": "ms"
+    },
+    "eval.op.pipeline": {
+      "median": 5.236,
+      "unit": "ms"
+    },
+    "eval.op.to_range_10k": {
+      "median": 16.498,
+      "unit": "ms"
+    },
+    "eval.partial.invoke_x500": {
+      "median": 4.701,
+      "unit": "ms"
+    },
+    "eval.regex.matches_x500": {
+      "median": 7.357,
+      "unit": "ms"
+    },
+    "streaming.buffered_ms": {
+      "median": 158.0,
+      "unit": "ms"
+    },
+    "streaming.streaming_ms": {
+      "median": 92.0,
+      "unit": "ms"
+    }
+  },
+  "cx_commit": "88f6bea6",
+  "run_id": "2026-08-14T00:49:30Z",
+  "schema_version": 1,
+  "uname": "Darwin 25.4.0 arm64"
+}
