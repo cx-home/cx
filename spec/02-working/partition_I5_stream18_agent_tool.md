@@ -110,3 +110,43 @@ Named landings (ruled): the full M5 witness families = stream 14
   projection module = x/tools.cx (CX code — the dogfood rule; the
   probe.cx idiom is the precedent), consumed by mcp-server (W3) and
   a2a (W4).
+- **W1 probe program COMPLETE — enumeration solved on shipped surface;
+  a structured-input gap found and pinned (2026-08-14, binary @
+  b78a3b4c).** Probes at the scratchpad (enum_probe3..11), facts:
+  (1) **Enumeration SOLVED**: `$t//effects/..` as ONE path yields the
+  [?def] directive nodes themselves — the [effects] discriminator IS
+  the enumerator (descendant walks THROUGH directives pushing them on
+  the ancestors chain, eval.v collect_descendant_focus; the G2 parent
+  axis pops the RAW EvalDirectiveNode). Per-def scoping from the
+  recovered focus works ($d//idempotent, $d//returns, $d//effects
+  count correctly per def); pure defs (no [effects]) are correctly
+  absent; the parent step MUST ride the same path expression — a
+  detached `$e/..` loses ancestry (doc-scan fallback, empty).
+  (2) **Tier-1 address available**: [$cx:hash $d] on the recovered
+  focus returns the def's sha2-256 — W2's approval-binding input works
+  from the data lane. [$cx:serialize $d] round-trips faithfully.
+  (3) **The structured-input GAP (stop-point (i))**: the def HEAD
+  (name, scope=, purity) and PARAMS arrive at the data layer as raw
+  TEXT runs — invisible to /* (elements only), [$text]/[$string]
+  (empty), $d@scope (()); visible only inside [$cx:serialize] output.
+  A structured default SPLITS the run (`' ($a::map' {} ') '` — mixed
+  text-fragment + MapNode lanes), so CX-side string extraction =
+  re-implementing the lexer (rejected: no-text-hacks rule). [$name $d]
+  errors on a directive focus (ruled: a directive is not an element,
+  eval.v:446). [?match] `[case [?def $x]]` does not match. No shipped
+  reflection fills it: the cx: registry (serialize/canonical/hash/env/
+  builtins/computation-id/plan-address/equal/type-binding*/diff/patch/
+  merge/to-format/from-format/select/propose + parse/eval) has no AST
+  or module-def surface. Kind tests (`node()`) do not parse in binding
+  paths (two-args misparse in expr position; hard parse error in
+  [in …]) — grammar [131b] remnant vs the paren-call retirement.
+  (4) **The near-miss**: the program-AST-as-JSON projection ALREADY
+  ships spec'd (ast.md; DefNode carries name + structured params) and
+  is EXTERNALLY exposed via the C ABI (cabi.v program_ast_json) — but
+  is not callable from CX. External ABI consumers can read the program
+  AST; CX code cannot. STOPPED at stop-point (i): filling the gap
+  needs new spec surface outside the §9 ruled edit map — lettered
+  question set posed to owner (recommendation: expose the existing
+  ast.md JSON-AST projection as a pure [$cx:ast] builtin; enumeration
+  then rides the AST and the //effects/.. lane remains the
+  fixture-pinned data-layer witness).
