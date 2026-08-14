@@ -178,3 +178,44 @@ commit message's "Owner-directed (destination (a) confirmed)" + issue
 #727) — the sha rides the gate's adjudicated register with a loud
 skip, citing this row. Rewriting pushed shared release history to
 inject the token was rejected.
+
+## 10. Next-arc rulings record (owner, 2026-08-14 session close: arc-1..8)
+
+Recorded rulings-before-edits; the post-exit march executes against
+this record.
+
+- **arc-1 (cut authority + scope)** — the v0.16.0 cut <!-- version-literal-ok -->
+  comes AFTER bug clearance and STOPS for the owner's one-word confirm
+  before tag/merge-to-main/publish. The publish gate: the ~40-bug open
+  ledger worked to MAJORITY-CLEAR — all prio:high and prio:medium bugs
+  closed or expressly deferred via lettered questions AT the cut
+  confirm (no silent deferrals); prio:low case-by-case. Named
+  exception: #804 (perf recovery) stays post-cut per exit-2a.
+- **arc-2 (#807 trailing-LF, QUALIFIED a)** — the LONG-TERM-BEST
+  reading for CX decides, determined fixture-first; if the best
+  reading preserves existing Tier-1 addresses → adopt; if it would
+  MOVE addresses → STOP-POINT (the owner rules the migration; never
+  auto-adopt movement, never pick the worse design to dodge it).
+- **arc-3 (#807 f16)** — refuse-or-widen: a value that does not
+  round-trip exactly widens to full precision or refuses loudly; never
+  silently approximates (extends Q4a).
+- **arc-4 (#809)** — implement kind-test reachability from binding
+  paths — impl rises to the approved grammar (the #810 pattern).
+- **arc-5 (#812)** — author the thin x/term catalog spec (the
+  graduated pattern); term stays in the bundle.
+- **arc-6 (packet §2)** — the six booked dispositions CONFIRMED en
+  bloc as recorded.
+- **arc-7** — the canonical-forms batch #795 (#790/#791/#794) and the
+  defect batch #796 (#788/#792/#793 + #781/#782) ride BEFORE the cut.
+- **arc-8 (#726)** — the reference app is built BEFORE the cut, after
+  the bug arcs: a small CX-generic application exercising the campaign
+  surface end-to-end (agent tools propose/approve, live views,
+  bitemporal query, erasure, a licensed package); it doubles as the
+  release's end-to-end acceptance and the adopter demo.
+
+**The ruled march order:** #807 remainder (arc-2/arc-3; the
+advisory→enforced flip gated on family green) → #775 V-runtime (ruled
+order #737→#773→#754→#755→#742/#743) → #795 → #796 → the remaining
+bug ledger by priority to majority-clear (incl. #814) → #726 reference
+app → cut prep (#741/#752 + the s4 W8 R1 riders) → STOP for the
+owner's confirm → publish → #804.
