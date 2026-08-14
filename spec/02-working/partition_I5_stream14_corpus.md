@@ -100,3 +100,21 @@ is owed unless verification falsifies a ruling's premise).
   handling + out-effects grading for thrown errors = runner work
   (lands W5 with the discipline sweep); every-out-err-carries-a-code =
   a sweepable check (W5).
+- **W2 progress (2026-08-14).** s8 row DISCHARGED @ e94b24a8
+  (journal-143..147 — restatement-delta pair w/ control, amendment ×
+  quadrants, assertion coexistence, depth-2 correction chain,
+  fold≡replay parity; gate green). **s20 diff (verify-then-author):**
+  shipped pins cover journal-127 (absent-nonce CXER4619), 128 (legal
+  holds), 129 (erase-subject), 130 (shred generation), 131 (dedup
+  purge), 132 (verify reconciliation), 116 (redaction visibility);
+  snapshot/fold-from/retain generally at 027-030/050-054; o-5521 RTBF
+  lives as the V test test_rtbf_o5521_end_to_end (s20's judged home —
+  spans keys/store/authz). TRUE REMAINDER to author: (1) KEK-rotation
+  balanced-report case; (2) the C7 weak-nonce negative TWINS (derived
+  nonce, short nonce — the absent case alone passes for nonce=1, the
+  ruled trap); (3) the plaintext-vs-encrypted address-parity witness;
+  (4) the tombstone THREE-WAY discriminator (never-existed / corrupt /
+  erased in one case); (5) verify-valid-headline explicitness check on
+  132 (assert valid=true post-shred if not already); (6) the
+  visible-count silent-under-report negative twin check on 116. Then
+  s21's 8 named families (its ledger §8 row) close W2.
