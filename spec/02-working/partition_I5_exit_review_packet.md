@@ -161,3 +161,20 @@ unblocked by the fix.
   closing evidence; the remainder is tracked by the §6 routed issues.
 - **exit-4a** — design/651-516-partition merges → release/0.16.0 at
   the review (GitFlow: the current release branch, never main).
+
+## 9. exit-4a execution record (the release-branch merge, 2026-08-14)
+
+Merged @ the release/0.16.0 merge commit. Conflict domain: release's
+#727 gtin cutover × the campaign's registry re-bless. Resolution =
+campaign content + the gtin cutover applied on top; the registry
+RE-SEALED FRESH from the merged engine (gtin@0.1.0 manifest
+sha2-256:938ccff3… tree sha2-256:9f0e24be… — prefixed addresses, the
+campaign form); every pin re-derived from the seal; the pkg: consume
+example re-verified live; the serve_real test stays deleted (the #783
+consolidation home is xap_umbrella_test.v). **Freeze-gate
+adjudication:** 550f8a1a (#727) was authored ON release/0.16.0 where
+the R4.1 gate did not run; its ruling is EXPRESS and recorded (the
+commit message's "Owner-directed (destination (a) confirmed)" + issue
+#727) — the sha rides the gate's adjudicated register with a loud
+skip, citing this row. Rewriting pushed shared release history to
+inject the token was rejected.

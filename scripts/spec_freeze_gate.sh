@@ -36,6 +36,16 @@ set -euo pipefail
 
 FREEZE_EPOCH=f964c16a
 
+# Adjudicated commits: authored on a PARALLEL integration lineage where this
+# gate did not run, carrying an express owner ruling recorded OUTSIDE the
+# token spelling (rewriting pushed shared history to add the token would be
+# worse than the miss). Each row exists ONLY under owner authority and names
+# where the ruling is recorded; the skip is LOUD (no-silent-skip rider,
+# GATE_REGISTER.md). Full 40-char shas only.
+ADJUDICATED_SHAS="
+550f8a1a272ad2e0217fccdb5f0ec44e7e453154 #727-destination-(a) — owner-directed, recorded in the commit message + issue #727; register row: partition_I5_exit_review_packet.md §9 (exit-4a execution record)
+"
+
 is_normative_spec() {
   case "$1" in
     spec/02-working/partition_*) return 1 ;;
@@ -88,7 +98,13 @@ token_recorded() { # $1 = full commit message
 
 check_commit() {
   local sha="$1"
-  local flags msg
+  local flags msg full row
+  full=$(git rev-parse "$sha")
+  row=$(printf '%s\n' "$ADJUDICATED_SHAS" | grep -F "$full" || true)
+  if [ -n "$row" ]; then
+    echo "spec-freeze-gate: $sha ADJUDICATED (${row#* })"
+    return 0
+  fi
   flags=$(git show --format="" --name-only "$sha" | classify)
   if [ "$flags" = "1 1" ]; then
     msg=$(git log -1 --format=%B "$sha")
