@@ -145,3 +145,20 @@ is owed unless verification falsifies a ruling's premise).
   journal-129/130; o-5521 RTBF end-to-end = test_rtbf_o5521_end_to_end
   (s20's judged home). NEXT: the s21 row (8 named families, its ledger
   §8) closes W2.
+- **W2: the s21 diff (2026-08-14).** Shipped pins journal-118..126
+  cover: add-a-field (118 seam + 119 VT order + 120 refusals), the
+  pre-flight pair (121 carries both halves), fold-id snapshot/mismatch
+  (122/123), cover-current-fold (124), migrated-from + the
+  migration-is-not-a-correction discriminator (125), lineage
+  ambiguous-graph + :split relations + gap (126). RECORDED VERDICTS:
+  compat-predicate three-valued + [req]-in-open-mode + export-lossiness
+  = NO SHIPPED SURFACE (no schema-compat verb anywhere; the s21→#688
+  re-route closed with s16 without the verb) — fixtures land WITH the
+  surface, never against nothing; downgrade-skip pair = same class
+  (L150's own row: "no downgrade replay impl surface exists").
+  AUTHORING REMAINDER (§8's two open families): (1) SPLIT — pure split
+  AS COMPUTATION (flat-map over materialized entries; the SEAM's 1→N
+  refusal CXER4642 is design, pin it), impure-split-refused leg,
+  totality-residue loud per-entry err leg; (2) 10k-replay — the scale
+  witness + parallel-upcast ≡ sequential equivalence (fold-id legs
+  already pinned at 122/123; prune-cover at 036/052).
