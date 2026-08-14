@@ -265,3 +265,18 @@ is owed unless verification falsifies a ruling's premise).
   register trued (G2/G12/G15 closed; G9 split-state; G16
   open-by-design). Remaining for exit: full `make test` union;
   #686 closure; merge; the campaign exit-review packet (OWNER-GATED).
+
+## Post-exit addendum — the #810 ruling (2026-08-14)
+
+**#810 RULED (a) BY OWNER 2026-08-14** (after the exit-probe
+characterization on the issue): the map-value/array-slot refusal of a
+lone paren group is repaired PARSER-SIDE — a lone paren group that
+FILLS a collection slot is a sequence literal (a slot has no prose
+lane; the body-text comma disambiguator keeps its home). Completes the
+#587 fidelity invariant in its last position. The spec already
+permitted the form ([53] BodyItem ⊃ CollectionLiteral; [L86]; cxdm
+sequence-as-item-in-containers) — impl rises to spec; ZERO canonical
+bytes move; no address migration (broken shapes had no address).
+Options (b) collapse and (c) emitter re-spell REFUTED/declined on the
+issue record. Fix branch fix/810-slot-singleton; fixtures
+program-slot-singleton-001/002.
