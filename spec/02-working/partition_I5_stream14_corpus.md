@@ -252,3 +252,16 @@ is owed unless verification falsifies a ruling's premise).
   choreography witness + registry-dispatch + two-boundary strict-args;
   G9/D-DBG debug-tape fixtures; the G16 traceability map; the
   audit-notes runner items.
+- **W5 COMPLETE + the W6 register truth-up (2026-08-14).** W5: the s18
+  row discharged (mcp-server-011 THE choreography witness; 012 the
+  two-boundary strict-args pair — the extra-key client pass is
+  SUBSET-BY-DESIGN, jsonschema.md §2.1; run-008 the post-#45
+  closures-in-data registry w/ absence-channel miss); cxtape-001 (the
+  D-DBG format half; completeness = no-surface verdict, lands WITH the
+  recorder); the G16 map artifact opened (5 verified row-groups; ~300
+  unmapped HONESTLY; prefix-derivation refused); BOTH audit-note
+  runner repairs live (thrown-path out-effects grading — authz-087
+  verifies it; strict-tag parity in stdlib/package lanes). W6: the §4
+  register trued (G2/G12/G15 closed; G9 split-state; G16
+  open-by-design). Remaining for exit: full `make test` union;
+  #686 closure; merge; the campaign exit-review packet (OWNER-GATED).
