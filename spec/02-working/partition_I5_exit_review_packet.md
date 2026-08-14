@@ -21,6 +21,7 @@ commit.**
 | consistency_vocabulary.md | s7 (#679) | partition_I5_stream7_consistency.md (~:67-68) |
 | bitemporal.md | s8 (#680) | partition_I5_stream8_bitemporal.md (~:68) |
 | schema_event_evolution.md | s21 (#693) | partition_I5_stream21_schema.md (~:84) |
+| runtime_representation.md | s17 (#689) | partition_I5_stream17_runtime.md §W7 record (family authored; flip gated on #807 remainder) |
 
 ## 2. Booked owner-review notes and dispositions
 

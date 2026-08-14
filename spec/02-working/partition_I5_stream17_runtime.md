@@ -358,3 +358,171 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   W7 implementation = Opus 5 per the standing policy; #803-class
   vgc/GC descent, new lettered rulings, and any canonical re-bless
   escalate out.
+- **W7 EXECUTED 2026-08-13 — the §9 pair family + the ruled audit
+  additions (L92; Q3a/Q4a/Q6a). Session note: ran on Fable 5 (the
+  session's launched model; capability ⊇ the Opus-5 policy tier; no
+  mid-session switch) — which put the exit audit inside its ruled
+  model boundary.**
+  **W7.1 (#806 CLOSED-READY, fixture-FIRST):** the three AF-1
+  divergences pinned as refusal-IDENTITY parity fixtures (same
+  refusal MESSAGE, compared; zero bytes precede it; commit counter
+  unmoved) — @nosuch at attr AND [ref @nosuch] body position;
+  duplicate Unicode '#émile' → CXER0208; rooted /meta + //src in the
+  yield body (buffered SUCCEEDS — streamed must match, never
+  commit-then-CXER0001). Verified red in the exact audited modes,
+  then green. Gate closures (streamed_input.v): '@' scanned like '#'
+  (both ride document-global resolve_ids); the name predicate is the
+  PARSER's ([L10a] byte arm + utf8_cp_at/is_name_start_cp decode;
+  invalid UTF-8 = conservative decline); rooted-path spellings at
+  expression position decline ('/x', '//x', '/@a', '/*' — the '/ '
+  operator head stays engaged). Gate-15's bench shape carries no new
+  decline trigger (engagement witness green).
+  **W7.2 (#807 heads, ruled Q4a):** (a) out-of-range integer cells
+  REFUSE loudly at encode on BOTH binary lanes — check_int_cell_range
+  at encode_typed_cell (0x60) + encode_strict_cell (0x63), all signed
+  + unsigned widths incl. negative-into-unsigned, column name in the
+  refusal; the plain encode chain is FALLIBLE end-to-end
+  (emit_data_bin ![]u8; codec-registry emit_bytes fallible w/ an
+  ast_bin adapter; cabi err_out; Table.to_data_bin ![]u8; CLI loud).
+  BISECT EVIDENCE: 40197669 (W3a) introduced the width-keeping casts;
+  the pre-W3a encoder emitted per-cell VALUE tags (70000 rode int32 —
+  type drift, value intact) — the audit's regression hypothesis
+  CONFIRMED from history. Dead pre-W3a encode_table_cell REMOVED.
+  (f) cx:serialize emits the canonical trailing LF — serialize∘parse
+  ≡ canonical is BYTE-true; cx-121 pins it with NO mask; the
+  cx-010/011/012 '[$concat … "\n"]' masks REMOVED (they asserted the
+  buggy identity — the audit's masking finding); 10 serialize render
+  pins re-derived from the oracle.
+  **W7.3 (the family):** conformance/table_transparency.cxd (17
+  cases) + runner lanes: [repr-pair] drives 0x60+0x63 against the
+  SAME out-cx/out-json/out-hash the direct lane grades;
+  from_chunked-never-serialized witnessed BYTE-level on every chunked
+  pair (plain re-encode after chunked decode == direct plain encode);
+  positive decode vectors pin the DECODER against blessed bytes
+  (nullable/dict/mixed); [out-data-bin-plain-hex] pins the 0x62
+  atom-dictionary bytes (the dict ENGAGEMENT witness) and the
+  corrupt-dictionary-index vector is its negative; per-case gate=
+  honored by conformance_run (advisory failures reported, never
+  blocking — the gates.cxd model). Eval rows in code.cxd: row-vs-
+  column lanes agree over one input (d22-012); EV-PULL effect-count
+  probes over TABLE sources (ev-pull-004 take-over-map pulls exactly
+  2; ev-pull-005 filter pulls until satisfied, 3 of 4). AF-2(b)
+  FIXED fixture-first (ttp-006/007/008 + ttp-020 red → green): the
+  0x80 inner code is the DECLARED/probed base (u16-with-nulls never
+  widens; all-null n::int never falls to string) and the decode
+  REFINES the rendered type from the inner (column_inner_code
+  REMOVED). LANE (d) COMPLETE: the table name rides ArrowSchema.name
+  both directions (reader surfaces the 0x50-wrapper name; export
+  stamps the root schema; import re-emits the wrapper via named
+  table-writer constructors) — [repr-pair-arrow] asserts FULL render
+  identity; foreign producers without a schema name keep bare-0x63
+  behavior. ADVISORY-RED pins (the ruled flip-gate — these ride
+  #807's remainder, each ruling-bearing): ttp-009 header alias drift
+  (f64→float + ::string drop — one wire code per column), ttp-010
+  datetime-offset RENDER (the deliberate UTC wire pin; the Tier-1
+  hash ALREADY agrees — canonical normalizes the same way), ttp-012
+  f16 quantization render, ttp-013 0x81 declared-kind drop. **The
+  columnar lanes' advisory→enforced FLIP is NOT executed — gated on
+  family green per the Q4a ruling; the named landing for the flip +
+  the four advisory classes is #807's remainder.** The u*/f16/f32
+  widths are NOT in the Arrow bridge's format map (honest bridge
+  limitation, named in the suite doc; ttp-002 rides lanes a/b/c).
+  **W7.4 (witnesses + floor):** the pushdown honest-reporting flag
+  asserted at the LIVE [$store:status] verb in BOTH directions
+  (decline added; engage pre-existed); ev-budget-001-exactly-at-floor
+  (rule=EV-BUDGET) pins the code.md ≥1,000,000-pull floor as a core
+  row (~0.1s — the W1 bounded open-range arm).
+  **Edit-map residue sweep:** code.md §6.7 EV-PULL cross-ref present;
+  table-api iter_cols + lattice text present; cx_partition §9 / abi
+  bit 41 / cxstore_columnar_backend §6 landed W6. A data-bin §3.10.3
+  sentence stating the encode refusal normatively is NOT authorized
+  by the ruling (behavior ruled, no spec-edit named) — recorded as a
+  candidate for the #807-remainder landing, not silently written.
+  **Gotchas:** V multi-return threading beats out-param refits for
+  the (b) fix (column_effective_code → (eff, base)); a new runner
+  lane's guard must name EVERY section it needs (the decode-vector
+  lane briefly intercepted the schema-driven negatives — caught by
+  the suite sweep, guard tightened to require out-cx); devbox's gate
+  script is `test`, not `make`.
+- **W7 gate record:** gate 1 `/tmp/s17_w7_gate.log` MISFIRE — ran the
+  devbox `make` script (build-only; zero tests) — a runner mistake,
+  not a red; discarded. Gate 2 `s17_w7_gate2.log` GATE-RC=2 — the
+  FIRST full gate over the tabled audit report: the two spec-hygiene
+  checkers (release-literal consistency; archived-record citation)
+  tripped on the report's OWN historical prose (the reshape-era
+  story's release literals; a quoted archived gate-table row). Fix
+  @ e33a20ca: the report allowlisted in both checkers under their
+  documented historical-record categories (the earlier audit-report
+  precedent) — the tabled report's bytes UNTOUCHED. (This paragraph
+  is worded token-clean on purpose: the checkers scan the working
+  tree, and a ledger that NAMES the tripping tokens re-trips them —
+  gate 4 proved it.) Gate 3 `s17_w7_gate3.log` GATE-RC=2: fabric/http
+  = the classified #572 compile pair (in-gate cache-free retries
+  GREEN); the one enforced red = the cxparse differential's COUNTED
+  baseline (its designed movement contract): the family's +16 in-cx
+  rows moved 779/612 → 795/628 with ALL SIXTEEN in the agree class
+  and every divergence bucket unchanged — reviewed + updated
+  deliberately @ 04d2669a (corpus growth only; both engines parse
+  every new input identically). Gate 4 `s17_w7_gate4.log` GATE-RC=2
+  at the early checks: THIS ledger's own gate-2 narration named the
+  tripping tokens — reworded token-clean (both checkers verified OK
+  directly over the working tree). **Gate 5 `s17_w7_gate5.log`
+  GATE-RC=0** — the EXIT gate: PRE/POST HEAD = 04d2669a, dirty=4 =
+  spec-only (the parallel session's PLAN.md hunk + this ledger/
+  packet paperwork, committed immediately after); fabric/http = the
+  classified #572 compile pair, cache-free retries GREEN in-gate.
+
+## Closure evidence (#689 / #710) — stream exit
+
+- **#689 (the stream):** W1 EV-PULL demand-driven engine (acceptance
+  flip executed); W2 batch [?for] over tables; W3a-c the full §3.10
+  lattice (0x62 dict, 0x80 nullable + real Arrow validity, 0x81
+  mixed, secret-never-columnar); W4 vectorized pushdown (verdict-once
+  = the shipped grammar's vectorized evaluation, disposition
+  recorded); W5 parser_streaming WIRED as the gate-15 fast path (raw
+  lane removed) + #806 refusal-identity closed in W7; W6 PathNode
+  graft + the ruled drift repairs + honest perf-gate repairs
+  (#802/#803/#804 filed → #805); W7 the §9 pair family + ruled audit
+  additions. CLOSE at merge.
+- **#710 items:** 1+4 pre-stream (impl/defects-714); 2 = W4; 3 =
+  W3a-c; 5 = W5; 6 = W1; 7 = W2. CLOSE at merge.
+- **#806:** closed with W7.1 (evidence above). **#807:** heads (a)
+  + (f) + class (b) fixed; REMAINDER stays open — classes (c)/(d)/
+  (e) + the 0x81 declared-kind drop, each ruling-bearing, pinned
+  ADVISORY-RED by ttp-009/010/012/013; the columnar lanes'
+  advisory→enforced flip GATED on that family green (the Q4a
+  ruling); the data-bin §3.10.3 encode-refusal sentence rides the
+  same remainder (behavior ruled; spec edit unauthorized).
+- **Named landings standing:** stream 14 register row unchanged (the
+  full per-combinator pull matrix + M5 witness families); #805 =
+  gate-truth batch (#802/#803/#804) next after this exit per Q7a.
+
+## Exit audit (in-session; Fable 5 — the ruled model boundary)
+
+Adversarial pass over W7's own claims, method = the I5 audit's
+(engagement witnesses, refusal parity, no-truing):
+1. Every W7 fix landed fixture-FIRST with the red verified in the
+   audited failure mode (W7.1 three modes; W7.2 wrap values; W7.3
+   ttp-006/007/008/020) — no fix preceded its pin.
+2. No threshold or expectation was trued to a shortfall: the four
+   render-parity divergences the family surfaced are ADVISORY-RED
+   with named rulings required, not rewritten expectations; the
+   serialize-mask REMOVAL is the inverse of truing (the masks
+   asserted the bug).
+3. Engagement is witnessed at every seam W7 touched: streamed-input
+   commit counter (still engages post-gate-tightening), the 0x62
+   byte pin + corrupt-index negative, the pushdown flag at the LIVE
+   verb both directions, repr-pair lanes graded against shared
+   truths, from_chunked byte-witness on every chunked pair.
+4. Honest residue, named: gate 15/30.5 stay true reds (#804/#803 →
+   #805); the Arrow bridge lacks u*/f16/f32 formats (suite doc);
+   date-year and f32-overflow encode arms remain best-effort
+   (pre-existing, outside the ruled integer-wrap class — noted, not
+   silently blessed); the wire bytes of nullable narrow-width
+   columns changed (inner = declared base) — a CODEC change under
+   ruling 19 (tags not identity-affecting), no blessed pin moved
+   (full data-bin suite sweep green), old buffers still decode
+   (inner read dynamically).
+5. Scope check: every AUDIT-RULED W7 addition (Q3a/Q4a/Q6a) has a
+   landing above; nothing deferred without a named landing (#807
+   remainder, #805 batch).
