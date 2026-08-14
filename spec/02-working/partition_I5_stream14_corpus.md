@@ -118,3 +118,30 @@ is owed unless verification falsifies a ruling's premise).
   132 (assert valid=true post-shred if not already); (6) the
   visible-count silent-under-report negative twin check on 116. Then
   s21's 8 named families (its ledger §8 row) close W2.
+- **W2: the s20 row DISCHARGED BY VERIFICATION (2026-08-14) — zero new
+  cases owed.** Every §10 item traced to a recorded honest home:
+  verify-valid-with-payloads-destroyed = journal-132 (asserts
+  valid=true both sides + the unattributed-missing LOUD account);
+  visible-count + its no-silent-under-report half = journal-116
+  (projected count does not shrink AND erased=1 is visible); weak-nonce
+  C7 twins = store-subject-001/002/003 (required/short/derived) +
+  journal-127 (coordinate-derived — all four §3 rules pinned);
+  plaintext-vs-encrypted parity = SUPERSEDED BY DESIGN (store-subject-
+  004: a plaintext store REFUSES subject declarations CXER1144 — there
+  is no plaintext lane to compare; the §10 sentence predates the
+  refusal ruling); SEK-destroy → TYPED unavailable finding (M33,
+  never "tampered") + KEK rotation balanced account over subjects
+  (rewrapped + already-current + subject-keyed; SEK envelopes never
+  move; destroyed stays shredded through rotation) + the attributed
+  [erased] tombstone read = vcx/platform/store_subject_test.v
+  (test_subject_seal_shred_and_rotation_cxpack + the erase-subject
+  walks) — the custody lane journal-129's own note records as the
+  V-tested boundary (mem:// has no key custody); tombstone three-way =
+  COVERED-AS-SPLIT (never-existed + corrupt = store negatives;
+  erased-attributed = the custody lane + journal-132's reconciliation)
+  — a single-case discriminator cannot reach the custody leg from
+  mem:// without faking custody, refused; snapshot-reach family =
+  journal-027..030/050..054 + the shred-generation CXER4640 leg in
+  journal-129/130; o-5521 RTBF end-to-end = test_rtbf_o5521_end_to_end
+  (s20's judged home). NEXT: the s21 row (8 named families, its ledger
+  §8) closes W2.
