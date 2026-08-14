@@ -5,3 +5,4 @@ vcx/tests/net_set_deadline_test.v
 vcx/tests/net_set_opt_test.v
 vcx/tests/net_stream_iter_test.v
 vcx/tests/net_tls_test.v
+vcx/tests/net_ssrf_test.v
