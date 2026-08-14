@@ -65,6 +65,17 @@ inert at load time and add **no language change**.
 - `[sig """…"""]` (child, required): the human-readable signature, raw string so
   `::`/parens/`*` appear verbatim. Convention: `(<args>) -> <return-type>`.
 - `[summary """…"""]` (child, required): one- to few-sentence description.
+- `[param-doc name=<param> """…"""]` (child, zero or more; additive — agent-tool
+  projection stream, L143): a per-parameter description. `name` MUST match a
+  parameter of the sibling `[?def]`; the body is the description prose (raw
+  string). `[sig]` stays the human-readable prose signature; `[param-doc]` is
+  the MACHINE-projectable per-parameter channel — the agent-tool projection
+  (`x/tools.cx`) maps it onto JSON-Schema per-property `description` fields in a
+  command's `inputSchema`. For a COMMAND (an `[effects]`-bearing `[?def]`), a
+  `[summary]` is REQUIRED for projectability — projection fails loudly on a
+  command def whose `[fn-doc]` lacks one (L143); `[param-doc]` coverage is
+  RECOMMENDED for commands and enforced only as name-validity (a `[param-doc]`
+  naming a nonexistent parameter is a doc-gate failure).
 - `[example …]` (child, zero or more): a worked example. Each carries:
   - `[code """<cx source>"""]` — the example program (raw string, verbatim CX).
   - `[expect """<canonical output>"""]` — the exact expected output of running
@@ -115,6 +126,15 @@ prose is derived FROM it (by a human or a one-time pass), not the reverse.
 - **Example backing:** every `[example]`'s `code` block **and** its `expect`
   appear verbatim in the module's conformance corpus
   (`conformance/stdlib/<m>.cxd`).
+
+**Gate scope (agent-tool projection stream, L143):** the gate extends from
+`stdlib/*.cx` to `x/*.cx` and every command-bearing module — a description
+that becomes agent-facing tool contract cannot be ungated (#715 carries the
+wiring). Two additive checks ride the extension: **summary-required for
+commands** (an `[effects]`-bearing public `[?def]` whose `[fn-doc]` lacks a
+`[summary]` fails the gate — the same condition the projection fails loudly
+on) and **`[param-doc]` name validity** (each `[param-doc name=…]` names a
+real parameter of the sibling def).
 
 Module-set parity (bundle vs. the status=current spec set, including the
 bundled-but-separately-specced `xap`) stays with the existing

@@ -1,0 +1,13 @@
+# 783: store gRPC edge tests (module platform). Excluded: store_grpc_live
+# (CODE_SERIAL_RETRY roster), store_grpc_concurrency (import net — the
+# #773 poison-pair quarantine area platform_netwire).
+vcx/platform/store_grpc_call_auth_test.v
+vcx/platform/store_grpc_conn_test.v
+vcx/platform/store_grpc_e2e_test.v
+vcx/platform/store_grpc_frame_test.v
+vcx/platform/store_grpc_h2_test.v
+vcx/platform/store_grpc_hardening_wave6_test.v
+vcx/platform/store_grpc_hpack_test.v
+vcx/platform/store_grpc_huffman_test.v
+vcx/platform/store_grpc_proto_test.v
+vcx/platform/store_grpc_serve_test.v

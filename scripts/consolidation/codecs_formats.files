@@ -1,0 +1,19 @@
+# area: codecs_formats
+vcx/tests/ast_bin_test.v
+vcx/tests/ast_bin_table_test.v
+vcx/tests/ast_json_table_test.v
+vcx/tests/data_bin_test.v
+vcx/tests/data_bin_one_shots_test.v
+vcx/tests/codec_surface_test.v
+vcx/tests/conversion_lossless_test.v
+vcx/tests/delimited_test.v
+vcx/tests/fmt_lossless_test.v
+vcx/tests/logfmt_test.v
+vcx/tests/lossless_examples_matrix_test.v
+vcx/tests/lossless_xml_test.v
+vcx/tests/toml_lossless_test.v
+vcx/tests/yaml_lossless_test.v
+vcx/tests/include_test.v
+vcx/tests/text_surgery_test.v
+vcx/tests/nav_test.v
+vcx/tests/data_program_seam_test.v

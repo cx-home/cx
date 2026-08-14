@@ -1,0 +1,5 @@
+# area: cxparse_forks
+vcx/tests/cxparse_namechar_fork_test.v
+vcx/tests/cxparse_number_fork_test.v
+vcx/tests/cxparse_temporal_fork_test.v
+vcx/tests/cxparse_tokenization_spike_test.v

@@ -98,7 +98,11 @@ echo "  go..."
 
 # V
 echo "  v..."
-if ! v -path "@vlib|@vmodules|$ROOT/vcx|$ROOT/lang/v" -o "$V_DRIVER" "$V_DRIVER_SRC" 2>"$WORK/v_build.err"; then
+# -path matches test-v's V_MODULE_PATH (@vlib|@vmodules|vcx): `native`
+# resolves relative to the driver file, and ALSO listing $ROOT/lang/v
+# double-registered the module trees — post-I1 vcx is big enough that
+# the duplicate load overflows V's 65535-type table (new_type panic).
+if ! v -path "@vlib|@vmodules|$ROOT/vcx" -o "$V_DRIVER" "$V_DRIVER_SRC" 2>"$WORK/v_build.err"; then
     echo "error: failed to build V driver" >&2
     cat "$WORK/v_build.err" >&2
     exit 2

@@ -1,0 +1,11 @@
+# 783: object/pack/encryption store backends (module platform). Excluded:
+# the s3 pair (same-name-different-body vs each other — standalone).
+vcx/platform/store_cxobj_test.v
+vcx/platform/store_cxpack_test.v
+vcx/platform/store_cxpack_fold_test.v
+vcx/platform/store_cxpack_incremental_test.v
+vcx/platform/store_cxpack_subtree_test.v
+vcx/platform/store_encryption_test.v
+vcx/platform/store_pack_encryption_test.v
+vcx/platform/store_erase_test.v
+vcx/platform/store_erasure_transfer_guard_test.v

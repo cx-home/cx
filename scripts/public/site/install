@@ -2,14 +2,30 @@
 # CX installer — https://cxhome.org/install
 # Usage:  curl -sSL https://cxhome.org/install | sh
 #         curl -sSL https://cxhome.org/install | PREFIX=/usr/local sh
+#         curl -sSL https://cxhome.org/install | CX_PROFILE=data sh
 # Downloads the latest CX release for this platform from GitHub Releases,
 # verifies its SHA-256 against the published SHA256SUMS, and installs
-# cx + libcx under PREFIX (default: ~/.local).
+# cx (+ the profile's library, when it ships one) under PREFIX
+# (default: ~/.local).
+#
+# CX_PROFILE selects the artifact composition (one binary name, profile-
+# decided surface):
+#   platform (default) — everything: evaluator, store/fabric daemons, servers
+#   cli                — evaluator + local-effect stdlib packs; no servers
+#   embed              — evaluator only (no local-effect packs) + libcx
+#   data               — data tool only: parse/convert/hash/diff/validate;
+#                        cannot execute programs (no evaluator in the binary)
 set -eu
 
 REPO="cx-home/cx"
 PREFIX="${PREFIX:-$HOME/.local}"
+PROFILE="${CX_PROFILE:-platform}"
 API="https://api.github.com/repos/$REPO/releases/latest"
+
+case "$PROFILE" in
+  platform|cli|embed|data) ;;
+  *) echo "install: unknown CX_PROFILE '$PROFILE' (expected platform, cli, embed, or data)" >&2; exit 1 ;;
+esac
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 arch=$(uname -m)
@@ -26,21 +42,26 @@ esac
 
 command -v curl >/dev/null || { echo "install: curl is required" >&2; exit 1; }
 
-echo "==> resolving latest CX release for ${os}-${arch}"
+echo "==> resolving latest CX release for ${os}-${arch} (profile: $PROFILE)"
 json=$(curl -sSL "$API")
 tag=$(printf '%s' "$json" | grep -m1 '"tag_name"' | cut -d'"' -f4)
 [ -n "$tag" ] || { echo "install: could not resolve the latest release tag" >&2; exit 1; }
 
-# Asset naming per the release pipeline: cx-<os>-<arch>.tar.gz
-# (darwin/linux spelling, not macos)
+# Asset naming per the release pipeline (darwin/linux spelling, not macos):
+# the platform profile keeps the stable historical name cx-<os>-<arch>.tar.gz;
+# leaner profiles are cx-<profile>-<os>-<arch>.tar.gz.
 case "$os" in macos) osname="darwin" ;; *) osname="$os" ;; esac
-asset="cx-${osname}-${arch}.tar.gz"
+if [ "$PROFILE" = "platform" ]; then
+  asset="cx-${osname}-${arch}.tar.gz"
+else
+  asset="cx-${PROFILE}-${osname}-${arch}.tar.gz"
+fi
 base="https://github.com/$REPO/releases/download/$tag"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 echo "==> downloading $asset ($tag)"
-curl -sSL -o "$tmp/$asset" "$base/$asset" || { echo "install: no prebuilt $asset for this platform — build from source: https://github.com/$REPO#building" >&2; exit 1; }
+curl -sSL -o "$tmp/$asset" "$base/$asset" || { echo "install: no prebuilt $asset for this platform/profile — build from source: https://github.com/$REPO#building" >&2; exit 1; }
 curl -sSL -o "$tmp/SHA256SUMS" "$base/SHA256SUMS.txt"
 
 echo "==> verifying SHA-256"
@@ -51,7 +72,7 @@ mkdir -p "$PREFIX/bin" "$PREFIX/lib" "$PREFIX/include"
 tar -xzf "$tmp/$asset" -C "$tmp/"
 find "$tmp" -name cx -type f -perm +111 -maxdepth 3 -exec cp {} "$PREFIX/bin/cx" \; 2>/dev/null || find "$tmp" -name cx -type f -maxdepth 3 -exec cp {} "$PREFIX/bin/cx" \;
 chmod +x "$PREFIX/bin/cx"
-find "$tmp" -name 'libcx.*' -maxdepth 3 -exec cp {} "$PREFIX/lib/" \; 2>/dev/null || true
+find "$tmp" -name 'libcx*.*' -maxdepth 3 -exec cp {} "$PREFIX/lib/" \; 2>/dev/null || true
 find "$tmp" -name 'cx.h' -maxdepth 3 -exec cp {} "$PREFIX/include/" \; 2>/dev/null || true
 
 "$PREFIX/bin/cx" --version

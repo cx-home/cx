@@ -587,13 +587,13 @@
            [# Parallel evaluation                                        #]
            [?for [in $r //request] [par] [yield [got [$text $r]]]]
 
-           [# Streaming over large input                                 #]
-           [?for [in $row //logs/row] [stream] [yield [$text $row]]]"""]
+           [# Lazy evaluation over large input                           #]
+           [?for [in $row //logs/row] [lazy] [yield [$text $row]]]"""]
       [body
-        """`[par]` and `[stream]` are evaluation-modifier clauses —
+        """`[par]` and `[lazy]` are evaluation-modifier clauses —
            same surface, different scheduler. `[par]` distributes
            iterations across worker threads (add `[ordered]` to
-           preserve source order). `[stream]` couples the generator
+           preserve source order). `[lazy]` couples the generator
            to a streaming input source so that the iteration runs in
            bounded memory regardless of input size. Full semantics in
            [`spec/code.md`](../../spec/code.md) §7."""]

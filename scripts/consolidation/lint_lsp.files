@@ -1,0 +1,6 @@
+# area: lint_lsp
+vcx/tests/lint_field_read_test.v
+vcx/tests/lint_let_staircase_test.v
+vcx/tests/lsp_for_walk_test.v
+vcx/tests/lsp_parser_parity_test.v
+vcx/tests/lsp_semantic_comment_test.v

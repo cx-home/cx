@@ -59,6 +59,7 @@ if grep -q '"credsStore"' "$HOME/.docker/config.json" 2>/dev/null; then
 fi
 
 BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
+PROFILES_TARGET=$([ "$DEV" = 1 ] && echo build-profiles-dev || echo build-profiles)
 SDE="$(git log -1 --format=%ct)"
 # Version stamps: the container copy carries no .git (lean copy), so derive
 # the commit + V-fork pins on the host and hand them to make (command-line
@@ -103,7 +104,37 @@ build_one() {
       cp third_party/re2/LICENSE "/tmp/$T/LICENSE-re2.txt"
       ( cd /tmp && tar czf "/out/cx-'"$TAG"'-$T.tar.gz" "$T/" )
       ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
+      # I4 (#651/#516): the §4 profile tarballs (see release.sh phase 2 for
+      # the composition rationale) — cx-<profile>-linux-<arch>.tar.gz.
+      make -C vcx '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"'
+      for prof in data embed cli; do
+        P="/tmp/prof-$prof"; mkdir -p "$P"
+        cp "vcx/target/profiles/$prof/cx" "$P/"
+        cp third_party/re2/LICENSE "$P/LICENSE-re2.txt"
+        case "$prof" in
+          data)  cp include/cx.h "$P/"; cp vcx/target/libcx-core.so "$P/" ;;
+          embed) cp include/cx.h "$P/"; cp vcx/target/profiles/embed/libcx.so "$P/" ;;
+        esac
+        ( cd "$P" && tar czf "/out/public/cx-$prof-$T.tar.gz" ./* )
+      done
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
+      # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
+      # per-profile install verification, linux lane — the same contract as
+      # release.sh phase 2: every staged tarball must extract the way the
+      # installer extracts it and its binary must report the expected profile
+      # line, or the cut dies here (this script failing fails release.sh).
+      for prof in platform data embed cli; do
+        case "$prof" in
+          platform) vtar="/out/public/cx-$T.tar.gz" ;;
+          *)        vtar="/out/public/cx-$prof-$T.tar.gz" ;;
+        esac
+        vdir=$(mktemp -d)
+        tar xzf "$vtar" -C "$vdir" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar does not extract" >&2; exit 1; }
+        [ -x "$vdir/cx" ] || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar carries no executable cx at the tar root" >&2; exit 1; }
+        "$vdir/cx" -v | grep -q "profile  $prof" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar cx -v does not report profile $prof" >&2; "$vdir/cx" -v >&2 || true; exit 1; }
+        rm -rf "$vdir"
+      done
+      echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
     '
   ( cd dist/public && shasum -a 256 "$pub" ) || true
   echo "   → dist/public/${pub} + dist/${nested}"
@@ -115,5 +146,5 @@ if [ "$AMD64" = 1 ]; then
 fi
 
 echo
-echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-linux-*.tar.gz --clobber"
+echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-*linux*.tar.gz --clobber"
 echo "(and refresh dist/public/SHA256SUMS.txt to include the linux tarballs before uploading it)"

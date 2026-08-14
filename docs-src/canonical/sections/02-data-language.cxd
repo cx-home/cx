@@ -704,7 +704,7 @@
       [table
         [tr [th 'prefix'] [th 'URI'] [th 'notes']]
         [tr [td 'xml'] [td 'http://www.w3.org/XML/1998/namespace'] [td 'XML built-in; always resolves; xml:lang accepted as alias for cx:lang']]
-        [tr [td 'cx'] [td 'https://cx-home.org/ns/cx'] [td 'CX metadata; cannot be redeclared; carries cx:lang etc.']]
+        [tr [td 'cx'] [td 'tag:cxhome.org,2026:ns/cx'] [td 'CX metadata; cannot be redeclared; carries cx:lang etc.']]
         [tr [td 'xmlns'] [td 'declaration syntax only'] [td 'Never resolves as a name prefix']]]]
 
     [child id=ns-equality n=2.10.4 title='Equality and canonical form'

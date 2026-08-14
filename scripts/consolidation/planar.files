@@ -1,0 +1,5 @@
+# area: planar
+vcx/tests/planar_delta_test.v
+vcx/tests/planar_membership_test.v
+vcx/tests/planar_plan_test.v
+vcx/tests/planar_rewrite_test.v

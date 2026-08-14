@@ -1,0 +1,7 @@
+# area: net
+vcx/tests/net_cap_outbound_test.v
+vcx/tests/net_read_deadline_test.v
+vcx/tests/net_set_deadline_test.v
+vcx/tests/net_set_opt_test.v
+vcx/tests/net_stream_iter_test.v
+vcx/tests/net_tls_test.v

@@ -125,6 +125,22 @@ installs to `~/.local` (override with `PREFIX=`):
 curl -sSL https://cxhome.org/install | sh
 ```
 
+The installer installs a **profile** — a named artifact composition with the
+same `cx` binary name and a profile-decided surface. The default is
+`platform` (everything: evaluator, store/fabric daemons, servers); leaner
+compositions install with `CX_PROFILE=`:
+
+```sh
+curl -sSL https://cxhome.org/install | CX_PROFILE=data sh
+```
+
+| Profile | Surface |
+|---|---|
+| `platform` (default) | Rings 0–2: evaluator + local-effect stdlib + store/fabric/XAP daemons |
+| `cli` | Rings 0–1: evaluator + local-effect stdlib packs + http client; no servers |
+| `embed` | Rings 0–1 core: evaluator only, no local-effect packs; ships the embed-shape `libcx` |
+| `data` | Ring 0: parse/convert/canonical/hash/diff/validate — cannot execute programs (no evaluator in the artifact) |
+
 V users — the native V binding lives in its own
 [`cx-home/cx-v`](https://github.com/cx-home/cx-v) repo so V's package manager
 can install it directly:

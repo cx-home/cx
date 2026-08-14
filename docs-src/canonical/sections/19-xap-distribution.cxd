@@ -6,7 +6,7 @@
    docs: docs/dev/{features-*,registry-*,marketplace}.md
    (runtime-verified). Every command and output on this page was run
    against the branch-head binary — including the pkg pipeline against
-   the live xap-marine registry (issue #425 coverage gap: XAP feature
+   the live external reference registry (issue #425 coverage gap: XAP feature
    distribution). #]
 
 [section id=xap-distribution n=19 title='XAP feature distribution'
@@ -91,7 +91,7 @@
          by a schema — requirements are the source, the grammar is the
          compiled output, and a requirement's acceptance criteria are
          its conformance fixtures. The skeleton (the full-size real
-         reference is `xap-marine/features/own-ship/`):"""]
+         reference is the #726 reference app's base feature package):"""]
     [; check=none — a *.feature.cxd is a DATA document consumed by the
        feature toolchain (cx validate --schema=feature.cxs), not a
        runnable program: its intent-template $placeholders ($text) are
@@ -204,7 +204,7 @@
     [body
       """Sign from day one, even internally — it costs nothing, and it
          makes every later growth stage a **re-host, never a
-         re-package**: the live instance is `xap-marine/registry/`
+         re-package**: the live instance was the original external reference registry
          (stage 1, sealed+signed packages in a git repo), the same
          store served over the store daemon is stage 2 (consumers
          switch the URI scheme, nothing else), and the market of the
@@ -221,12 +221,12 @@
          every check is offline-verifiable — a vendored mirror is as
          good as the origin. Discovery and verification against a
          registry store (this exact program, pointed at the live
-         xap-marine registry, was run for this page — status `ok`, kind
+         original external reference registry, was run for this page — status `ok`, kind
          `feature`, one catalog hit):"""]
     [example lang=cx
       """[?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/store' :as store]
-[?let [= $reg [$store:open-opts 'file:///path/to/xap-marine/registry/store'
+[?let [= $reg [$store:open-opts 'file:///path/to/your-project/registry/store'
                                 [map read-only='true']]]
       [= $v [$xap:pkg-verify $reg 'own-ship@0.1.1']]
       [= $cat [$xap:pkg-catalog $reg {term: 'nmea'}]]
@@ -263,12 +263,12 @@
     [; check=none — needs a bound CX_REGISTRY plus read/env grants;
        with no registry the load fails CXER4889 by design (output of
        the fail-closed lane pinned in the table below). Verified live
-       2026-07-15 against the xap-marine registry: '3.3 m/s'. ]
+       2026-07-15 against the original external reference registry: '3.3 m/s'. ]
     [example lang=cx check=none
       """[?lib 'pkg:marine-common@0.2.0' :as mc]
 [$mc:fmt-speed 6.4 'm/s']"""]
     [output
-      """$ CX_REGISTRY=file:///path/to/xap-marine/registry/store cx speed.cx --allow-read --allow-env
+      """$ CX_REGISTRY=file:///path/to/your-project/registry/store cx speed.cx --allow-read --allow-env
 '3.3 m/s'"""]
     [body
       """A `pkg:NAME@VERSION#MANIFEST-HASH` reference pins past the
@@ -370,7 +370,7 @@
     [table
       [tr [th 'piece'] [th 'status']]
       [tr [td 'packaging, signing, publish, verify, install, pkg: loading, deployment host'] [td 'implemented']]
-      [tr [td 'stage-1 git registry, stage-2 served registry, catalog/discovery'] [td 'implemented — live in xap-marine']]
+      [tr [td 'stage-1 git registry, stage-2 served registry, catalog/discovery'] [td 'implemented — proven by the original external reference instance; in-family successor tracked as #726']]
       [tr [td 'entitlement machinery: license-issue/verify, all pricing shapes, install policy'] [td 'implemented (engine + conformance)']]
       [tr [td 'the market as a running product (hosted catalog XAP, storefront, onboarding)'] [td 'specified, not yet implemented']]
       [tr [td 'the commerce feature + payment rails (card, invoicing, app-store, crypto)'] [td 'specified, not yet implemented (staged phase P3 of the distribution spec)']]

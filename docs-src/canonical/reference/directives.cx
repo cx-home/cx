@@ -69,8 +69,8 @@
 
 [directive-doc name='?quote' category="Core — quasiquote (eager; two-color hygiene)" spec="§6.4.3"
   [sig """[?quote FORM] -> inert tree"""]
-  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` becomes `[cx:var 'x']` rather than dereferencing."""]
-  [example [code """[?quote [a $x]]"""] [expect """[a [cx:var 'x']]"""]]
+  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` stays an inert hole `$x` rather than dereferencing."""]
+  [example [code """[?quote [a $x]]"""] [expect """[a $x]"""]]
 ]
 
 [directive-doc name='?unquote' category="Core — quasiquote hole (single value)" spec="§6.4.3"
@@ -233,12 +233,6 @@ B"""] [expect """50"""]]
   [example [code """[?concat (1, 2) (3, 4)]"""] [expect """(1, 2, 3, 4)"""]]
 ]
 
-[directive-doc name='?chain' category="Iterator stdlib — alias of `[?concat]`" spec="§8"
-  [sig """[?chain SRC…] -> iterator"""]
-  [summary """Iterator combinator: alias of [?concat] — concatenate sources end to end."""]
-  [example [code """[?chain (1, 2) (3, 4) (5, 6)]"""] [expect """(1, 2, 3, 4, 5, 6)"""]]
-]
-
 [directive-doc name='?cycle' category="Iterator stdlib — bounded repeat" spec="§8"
   [sig """[?cycle SRC max=N] -> iterator"""]
   [summary """Iterator combinator: repeat a source cyclically, bounded by `max`."""]
@@ -370,6 +364,14 @@ B"""] [expect """50"""]]
   [summary """Concurrency: look up a running worker by name to obtain its handle."""]
   [example [code """[?let [= $_ [?worker name="w4" [body lookupable]]] [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]"""] [expect """lookupable"""]]
 ]
+
+[directive-doc name='?subscribe' category="Concurrency" spec="§10.4"
+  [sig """[?subscribe from=CH from-pos=INT] -> subscription"""]
+  [summary """Concurrency (SPEC'D, not yet shipped — #762): subscribe to a `sharing=independent` channel and receive a per-consumer cursor (the delivery contract, delivery.md); `from-pos=` resumes within the retained window, a cursor below the window refuses loudly with CXER0205 (STREAM_GAP), and a group channel refuses with CXER0204. No runnable example until #762 lands."""]]
+
+[directive-doc name='?monitor' category="Concurrency" spec="§10.4"
+  [sig """[?monitor $h] -> subscription"""]
+  [summary """Concurrency (SPEC'D, not yet shipped — #762): subscribe to a worker handle's ordered lifecycle events (`[spawned]`, `[cancelled]`, `[panicked]`, `[done]`); a terminal event is always last, monitoring an already-terminated worker delivers its terminal event immediately (race-free supervision), and monitor subscriptions compose with `[?select]`. No runnable example until #762 lands."""]]
 
 [directive-doc name='?channel' category="Concurrency" spec="§10.4"
   [sig """[?channel name=NAME buffer=N] -> channel"""]
