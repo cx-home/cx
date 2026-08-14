@@ -334,3 +334,43 @@ Named landings (ruled): the full M5 witness families = stream 14
   doc-freshness gate extension to x/, the #715 rider sweep
   (remaining stale-#45 sites ×3, dangling provenance refs ×5,
   x/term disposition issue).
+- **W5 COMPLETE — G15 spec-all-SIX; x-tier placement; the docs lane;
+  the rider sweep (2026-08-14 @ ce441797).** Six specs at
+  spec/03-approved/x/ (tools.md NEW; mcp.md rewritten at 2025-06-18;
+  mcp-server.md; a2a.md — DERIVED skills ratified, empty-skills dead;
+  a2a-xap.md; llm.md minimal) + README → pointer form w/ the
+  agent-tool-spine paragraph. cx_partition.md §4: x-tier packs
+  (run/mcp/a2a/llm/tools/adjudicate = Ring 1; mcp-server/a2a-xap =
+  Ring 2 — adjudicate/tools placed by the same membership test the
+  ruling applied; flagged as completing details). gates.cxd: explicit
+  enforced rows ×8 (a NESTING defect caught: the first insertion
+  landed OUTSIDE the stdlib suite — the line-based manifest gate
+  cannot see tree structure; renested + verified). Doc-freshness gate
+  extended to x/*.cx + checks (4) summary-required-for-commands and
+  (5) param-doc name validity; #811 CLOSED (fail-loud on internal
+  errs + the optional-group-3 guard). **THE W5 FINDING (design-grade):
+  a whole-module DATA parse silently degrades on program-bearing def
+  bodies** — x/a2a.cx parsed to an opaque blob (0 fn-docs visible;
+  map-literals-with-holes in def bodies poison the file-level data
+  read), so the shipped projection's fn-doc lane had the same
+  fragility on real modules → **cx:ast gains the `docs` lane**:
+  top-level plain-element spans VERBATIM (module_loader_scan_spans —
+  ONE scanner, two views; scan_directives now layered on it), each
+  span parsing cleanly as DATA alone; x/tools.cx became single-call
+  (fn-docs-of over $ast.docs; the whole-file [$cx:parse] is GONE) and
+  the doc gate rides the same lane; modules/cx.md contract updated
+  under L146; cxast-006 pins it, cxast-003 updated (a plain element
+  now rides docs). **The extended gate exposed REAL months-old
+  drift:** stdlib/authz.cx carried an UNCLOSED [fn-doc name=debit]
+  swallowing the allocate/allocation-expire doc blocks (the
+  descendant search found them NESTED, masking the corruption —
+  restructured to three siblings); stdlib/validate.cx's
+  register-schema example had drifted from its corpus spelling
+  (realigned verbatim). Riders: stale-#45 ×3 repaired; provenance
+  refs ×5 repointed (multi-line spelling in jsonrpc.cxd caught);
+  x/term disposition filed #812. Gates: resilience-matrix FULL
+  GATE-RC=0 @ 690_w5_gate2.log; guide-check OK 55 modules;
+  tools-export byte-for-byte; catalog OK 51; manifest OK. W6 NEXT:
+  corpus handoff rows → the stream-14 register (§8's program);
+  closure evidence #690+#715; exit audit; the full `make test` union;
+  merge to design/651-516-partition.
