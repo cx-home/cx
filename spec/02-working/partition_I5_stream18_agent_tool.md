@@ -186,3 +186,46 @@ Named landings (ruled): the full M5 witness families = stream 14
   (the projection module: cx:ast lane + fn-doc data lane + jsonschema
   param mapping) + the refund-order golden descriptor +
   description-required fail-loud negative + [param-doc] fixtures.
+- **W1 COMPLETE — the projection core SHIPPED (2026-08-14 @ afe7afae).**
+  x/tools.cx (cx-x/tools registered: embed const + two registry rows in
+  stdlib_bundle.v): descriptors-of = THE projection (module source →
+  [tool …] descriptor sequence, derived at call time, L141), two lanes
+  paired by def name (cx:ast structured defs; cx:parse fn-docs).
+  Fail-loud L143 twice over: missing [summary] on ANY command refuses
+  the WHOLE projection ([err code=missing-summary] naming every
+  offender); malformed source propagates the cx:ast err (an early
+  draft SWALLOWED it into () via [?else] — fixed with an [err @code]
+  match guard; the discriminator also moved off [$exists] (false on an
+  EMPTY array — the zero-item clause vanished) to the {effects: $e}
+  map-key-presence pattern). L142 rows all live: carriers per
+  stream-16; required = non-defaulted positionals; rest param → out of
+  properties + additionalProperties true; hints incl. the empty-set ⊆
+  read-only case; meta {Tier-1 source, Tier-2 code (computation-id),
+  schema ids, requires}. **Schema-id basis (v1 decision, honest):
+  sha2-256 of the schema's JSON EMISSION** (adapter-visible bytes,
+  deterministic sorted keys) — NOT cx:hash of the CX map, which is
+  #810-blocked: canonical emit of a SINGLETON sequence in map-value
+  position drops string quoting and does not re-parse (serialize∘parse
+  broken; cx:hash non-total — filed prio:high with repro; the
+  emit-quoting owner-gate applies, so no in-line fix). Named-type
+  [returns Order] E2 pins ride W3 (the registry seam arrives with
+  tools/list; kind returns cover W1 — recorded, not silent).
+  Fixtures: conformance/stdlib/tools.cxd 001–008 (golden refund-order
+  M5 descriptor; fail-loud negative; pure-def exclusion; zero-item
+  command; rest param; malformed-source propagation; requires+
+  idempotent carriage; carrier spot-checks) — goldens BINARY-derived;
+  suite picked up by the stdlib glob, default=enforced. Gates:
+  resilience-matrix GATE-RC=0 @ 690_tools_gate.log;
+  stdlib-catalog-gate OK (51, no orphans — x/ spec parity is W5's
+  G15 pass, ruled sequencing; x/tools.md joins the FIVE → SIX);
+  guide-check shows a PRE-EXISTING masked CXER3202 (err prints, RC=0)
+  — out of this diff's scope (script guards stdlib/*.cx only), filed
+  #811 (gate-truth class). CX-authoring gotchas pinned for W3/W4:
+  missing map keys RAISE on dot-read ([?else $m.k ()] absorbs);
+  [$exists] is false on empty arrays (use map-pattern key presence);
+  [yield-array] body is an ARRAY-CONSTRUCTOR context (scalars via
+  fp:map/filter); def rest-param surface is *$name; [?fallback] needs
+  [recover-with …]. W2 NEXT: the commands_effects.md §5 amendment
+  (Tier-1 binds trust — the RULED L139 token rides the spec+impl
+  commit); approve/commit re-keyed to Tier-1 src_addr; the
+  approval-binds-Tier-1 PAIR fixtures + tampered-args negative.
