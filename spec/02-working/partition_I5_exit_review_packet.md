@@ -33,7 +33,7 @@ commit.**
 | disposition (b): register-schema/validate-against IMPURE (supersedes the §3.2 pure marker) | s16 | partition_I5_stream16_shape.md:261-263 |
 | disposition: min/max row-group pruning + per-cell vectorized compare = dead seam until the predicate grammar grows a value form; live-consumer trigger = the analytics campaign #751/#798 (link recorded here — the two were mutually unlinked, audit AF-11) | s17 W4 | partition_I5_stream17_runtime.md:247-256 |
 | columnar backend compile-flag gating (-d cxstore_columnar; default build never runs the W4 path) — surfaced by the audit; decide with stream-18/#800 context | audit | partition_I5_audit.md AF-7; #744 comment 2026-08-13 |
-| gate-16 protocol mismatch: in-process loop vs the spec'd wrk form — upgrade the runner or amend the spec, never silently; needs an express call at the Q5a re-home | audit | partition_I5_audit.md AF-4 |
+| gate-16 protocol: RULED (b) 2026-08-13 — the spec'd wrk form stands, runner upgraded (real listener + external wrk, c=64, 3-min); rider: skipping gates silently is FORBIDDEN (missing tool = loud red). Verdict: PASS 145,204 req/s / p99 2.52 ms. 28.11-14 RETIRED at the same re-home (record-anchored acceptance vs the spec-single-source model; behavioral surface covered by enforced gate 4 + corpus). Register: conformance/GATE_REGISTER.md | audit → #805 | GATE_REGISTER.md; _gate_evidence/gate_16.log |
 
 ## 3. Audit rulings record (2026-08-13, owner: "1a, 2a, 3a, 4a, 5a, 6a, 7a")
 
