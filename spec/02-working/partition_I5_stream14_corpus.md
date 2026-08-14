@@ -68,3 +68,35 @@ is owed unless verification falsifies a ruling's premise).
 - **OPENED 2026-08-14** — branch cut @ 488fc5ee; evidence sweep above;
   the wave plan sized off the receiving register. W1 begins with the
   per-gap verification pass.
+- **W1 verification pass — gap verdicts (2026-08-14).**
+  **G12 CLOSED-by-evidence:** conform-streaming-write V lane exists
+  (vcx/Makefile:436, rides `conform`) — the register's "no V lane"
+  claim is stale; truth-up applies to partition_corpus_audit.md §4 at
+  the W6 register pass. **G2 OPEN (real W-work):** identity_hash.cxd
+  carries ZERO Tier-2 (computation-id) pair cases — the Tier-2
+  pair-property family (alpha-renaming / whitespace / comment
+  invariance + the S0 exclusion set as CORPUS pairs) still lives only
+  in V tests (identity_umbrella_test.v tier2 sections); cmd-011 covers
+  exactly one exclusion property. Lands W4 (identity group).
+  **G3 PARTIAL:** out-canonical assertions now 37 across six files
+  (was 31) — the stream-12 "canonical-emit family expansion" landed
+  thin; NOTE: broad canonical-emit goldens are PARTIALLY BLOCKED by
+  #810 (the singleton-seq-in-map-value emit defect, owner-gated):
+  pinning today's broken emission as goldens would freeze the defect —
+  the G3 family lands AFTER or AROUND the #810 ruling (the non-broken
+  shapes can pin now; the singleton shape gets its fixture WITH the
+  #810 fix). **G5-half OPEN-thin:** one decimal/bigint mention in
+  data_bin_chunked.cxd — the post-epoch wire goldens for 0x18/0x28
+  columns (stream-17 columnar variants) need the family; lands W4.
+  **Receiving-row pointers resolved:** s8 → its ledger §wave-record
+  four-quadrant family; s9 → distributed_store.md §7 (every row has a
+  shipped pin; the FULL program is the handoff); s10 →
+  cross_stream_coordination.md §6; s16 → shape_inference §11; s17 →
+  runtime_representation §9 (+ the s22 handoff); s20 →
+  erasure_compliance §10; s21 → its ledger §8 row (8 named families +
+  the pure/impure M5 split); s22 → clean_room §9; s18 →
+  agent_tool_projection §8 beyond the shipped pins (the register row
+  enumerates). Audit-notes triage: strict-tag stdlib/package lane
+  handling + out-effects grading for thrown errors = runner work
+  (lands W5 with the discipline sweep); every-out-err-carries-a-code =
+  a sweepable check (W5).
