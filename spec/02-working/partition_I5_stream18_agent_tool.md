@@ -150,3 +150,39 @@ Named landings (ruled): the full M5 witness families = stream 14
   ast.md JSON-AST projection as a pure [$cx:ast] builtin; enumeration
   then rides the AST and the //effects/.. lane remains the
   fixture-pinned data-layer witness).
+- **L146 RULED (a) + [$cx:ast] SHIPPED (2026-08-14).** Owner ruled (a).
+  Shipped: `[$cx:ast SOURCE]` (stdlib_cx.v cx_mod_ast — the module
+  loader's scan_directives front half + the per-node JSON emitters
+  assembled into the ast.md Program shape); def_node_to_json RISEN to
+  spec (tag `DefNode`, params `kind` discriminator) + the [152d–h]
+  command clauses emitted (effects on clause PRESENCE — empty array =
+  zero-item clause = still a command; requires/preconditions/
+  idempotent+window/compensates/requires_at); lib/const tags collapsed
+  (`LibNode` + ast.md field spellings resolver/resolver_kind/as;
+  `ConstNode`); LSP completion row. Probe-verified end-to-end on the
+  real top-level module shape: structured params w/ types + default
+  PRESENCE (`"default":"{}"` on $opts::map {}), effects items, requires
+  cap refs, idempotent, returns — everything L142 needs. **Two design
+  facts pinned:** (1) the C-ABI program_ast_json is the PLAYGROUND
+  shape, NOT the ast.md encoding — the builtin emits the spec'd
+  per-node encoding instead (correction to the option-(a) text,
+  recorded in §9 L146); (2) string-only argument — a //effects/..
+  def focus is REFUSED (CXER0100): canonical serialization QUOTES the
+  def-head text run (not program-parseable), so the module-source lane
+  is the projection lane and the data lane pairs by def name.
+  Fixtures: code.cxd cxast-001..005 (structured projection; the
+  effects-presence discriminator pair; empty Program; non-string
+  refused; malformed CXER4100). Unit tests: node_units umbrella +4
+  clause cases, 3/3 files green. Gate: test-vcx-resilience-matrix
+  (code.cxd, no whitelist) GATE-RC=0, 2869 fixtures — log
+  690_cxast_gate3.log (runs 1–2 red were the KNOWN engines gotcha:
+  the target compiles without CX_ENGINES -d flags → 14 pre-existing
+  db.cxd engine-fixture fails; passed with -d cx_db_sqlite -d
+  cx_db_redis, mirroring test-vcx-code's own CX_ENGINES). Spec edits
+  under the L146 authorization: modules/cx.md §2.2 (row + contract
+  prose), ast.md DefNode (additive [152d–h] + purity +
+  positional-default; gate-3 consistency repair). NEXT (W1
+  continues): [param-doc] in stdlib_colocated_docs.md + x/tools.cx
+  (the projection module: cx:ast lane + fn-doc data lane + jsonschema
+  param mapping) + the refund-order golden descriptor +
+  description-required fail-loud negative + [param-doc] fixtures.
