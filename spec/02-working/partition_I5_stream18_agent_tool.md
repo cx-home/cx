@@ -88,4 +88,25 @@ Named landings (ruled): the full M5 witness families = stream 14
 
 ## Wave record
 
-(in progress — W1 next.)
+- **W1 OPENED — seams mapped + the first design finding (2026-08-13).**
+  Proven seams: the extraction idiom (gen_stdlib_docs/probe.cx —
+  [$cx:parse] + //fn-doc + [?match] children); [fn-doc] shape
+  (stdlib/path.cx — [sig]/[summary]/[example]; [param-doc] is the
+  additive newcomer); the command shape (`[?def NAME impure [effects
+  [CAPS]] [returns T] (params) BODY` — cmd-001.. fixtures); the
+  schema engine (cx.schema_export_json_schema, stream 16); the
+  jsonschema stdlib module (the CONSUMING side; the projection BUILDS
+  scalar param schemas directly); x-tier resolvers `cx-x/<name>`
+  (stdlib_bundle.v — a new x/tools.cx needs the embed const + two
+  registry rows). **DESIGN FINDING (probe-verified):** descendant
+  CXPath reaches INSIDE [?def] ($t//effects, $t//returns count
+  correctly — #436 transparency) but the CHILD axis SKIPS directive
+  nodes ($t/* over a module wrapper yields only the plain [fn-doc]
+  siblings, never the [?def]s) — so defs cannot be enumerated or
+  per-def scoped by plain paths. W1's first decision: surface
+  directive nodes for enumeration (the [?meta] reflection boundary
+  (L88) vs a directive-kind child-axis surfacing vs pairing via
+  fn-doc name= + per-def descendant scoping once selected). The
+  projection module = x/tools.cx (CX code — the dogfood rule; the
+  probe.cx idiom is the precedent), consumed by mcp-server (W3) and
+  a2a (W4).
