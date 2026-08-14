@@ -623,3 +623,16 @@ binding's SCALAR 0x32 arm still speaks a pre-§3.6.1 placeholder form
 both) — internally consistent but below spec; the COLUMN 0x32 arm is
 spec-true. The events-layer col_spec (§1.1, u32-prefixed) is its own
 protocol surface and does not carry the annotation by design.
+
+**Exit-gate record (2026-08-14):** union run 1 GATE-RC=2 — the R4.1
+freeze gate refused the bindings+spec commit's prose-only arc citation
+(the token form is `RULED: <id>`); the unpushed commit reworded to
+carry `RULED: arc-2/arc-3` (verified against the packet §10 store);
+freeze gate solo GATE-RC=0. Union run 2 GATE-RC=2 — two reds: (i) the
+numerics-umbrella chunked-datetime pin still asserted the pre-ruling
+hard-zeroed normalization (missed in the first sweep; re-derived to
+the ruled offset carriage, RULED: arc-2, solo-green), (ii)
+ev-async-006[bin] under the 12-way load = the pinned #814 signature
+(profile gate solo GATE-RC=0, same tree — fresh classification
+evidence on the issue's terms). Union run 3 **GATE-RC=0 — every lane
+green, no classification needed** (807_union3.log).
