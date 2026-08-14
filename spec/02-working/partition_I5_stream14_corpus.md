@@ -162,3 +162,14 @@ is owed unless verification falsifies a ruling's premise).
   totality-residue loud per-entry err leg; (2) 10k-replay — the scale
   witness + parallel-upcast ≡ sequential equivalence (fold-id legs
   already pinned at 122/123; prune-cover at 036/052).
+- **W2 COMPLETE — all three story rows discharged (2026-08-14).** s21's
+  two open families LANDED as journal-148..152: split-as-computation
+  (flat-map, 2→4 partition), the seam-is-1→1 refusal pin (CXER4642 BY
+  DESIGN — splits are computations), impure-split refused-as-computation
+  (CXER4611 pre-effect), totality residue LOUD per-entry (CXER4641
+  carrying the chain's message), and the 10k parallel≡sequential parity
+  witness ([par 4] over the pure chain ≡ the seam fold; closed-form
+  50005000; ~2s runtime, acceptable enforced). Gate GATE-RC=0 @
+  686_w2_s21.log. W2 tally: s8 authored (+5), s20 verified (+0 owed),
+  s21 authored (+5) + two no-surface verdicts recorded. W3 NEXT:
+  s9 (distributed_store.md §7) + s10 (cross_stream_coordination.md §6).
