@@ -526,3 +526,80 @@ Adversarial pass over W7's own claims, method = the I5 audit's
 5. Scope check: every AUDIT-RULED W7 addition (Q3a/Q4a/Q6a) has a
    landing above; nothing deferred without a named landing (#807
    remainder, #805 batch).
+
+## #807 remainder landing (post-exit; packet §10 arc-2/arc-3, 2026-08-14)
+
+**Rulings-before-edits.** The owner's next-arc record (exit packet §10,
+2026-08-14) governs this landing: **arc-2** (the remainder's
+identity-adjacent choice — the long-term-best reading decides,
+fixture-first; adopt when existing Tier-1 addresses are preserved;
+address movement is a STOP-POINT) and **arc-3** (f16: refuse-or-widen —
+a value that does not round-trip exactly widens to full precision or
+refuses loudly; never silently approximates; extends Q4a). The
+data-bin normative sentences named below ride these rulings (the
+§3.10.3 encode-refusal sentence was recorded at exit as a candidate
+for exactly this landing).
+
+**The stop-point check (arc-2) — resolved to ADOPT, zero movement:**
+Tier-1 hashing of binary inputs goes through canonical TEXT
+(`cx_data_bin_hash` decodes and hashes `cx_canonical_doc_text` — the
+CXCol wire bytes are not a hash basis anywhere in the tree), and this
+landing changes no text canonicalization. The alternative branch for
+class (c) — canonicalizing type-alias spellings in TEXT — would move
+every `::f64`-spelling document's address AND erase declared-width
+vocabulary; rejected on both counts. Wire-byte goldens (ch-*) are
+deliberate re-pin fixtures by their own G5 charter ("show exactly
+which wire bytes moved"), not addresses.
+
+**The design (lossless-transport wire; strict stays strict):**
+`canonical.md` §2.6 already defines the two tiers — LOSSLESS canonical
+preserves offsets and source spellings; STRICT canonical (the hash
+basis) normalizes. The CXCol transport writer aligns with the lossless
+tier; strict canonicalization of binary inputs remains decode→strict-
+text (unchanged):
+
+- **Class (c) + the 0x81 declared-kind drop (ttp-009/013):** the
+  col-spec gains a declared-type-name annotation — `0x82
+  <string(declared-name)> <col-type>` in the col-type position,
+  emitted IFF the declared spelling differs from the code's default
+  render (minimal-annotation determinism; `v::float` col-specs are
+  byte-identical to before). The reader applies the annotation as the
+  rendered type name (it wins over 0x80 inner refinement); unknown
+  declared types on the 0x81 escape round-trip their names. All
+  col-spec readers rise: plain/dict/chunked (V), the streaming lane's
+  two readers, chunked_group_row_counts, and the three native binding
+  decoders (python/rust/go).
+- **Class (d) datetime-offset render (ttp-010):** the wire's §3.6.1
+  12-byte form ALREADY carries `offset_minutes`; the transport
+  encoders (scalar 0x32, 0x60/0x62 column cells, 0x63 strict cells)
+  stop hard-zeroing it and carry the parsed offset; `unix_nanos`
+  stays UTC-normalized; decoders already applied the offset. The
+  strict-canonical CONSTRAINT (offset 0) is untouched and continues
+  to govern strict canonicalization (which runs through text). The
+  Tier-1 hash already agreed on this class; only render/json parity
+  moves. ch-007 re-pins deliberately (its ns-normalization spirit
+  holds; the offset bytes now ride).
+- **Class (e) f16 (ttp-012, arc-3):** encode REFUSES a cell whose
+  value does not round-trip exactly through the declared float width
+  (never silently approximates; the shortest-round-trip renderer was
+  considered and REJECTED — it masks the approximation behind the
+  original spelling). Applied to BOTH reduced float widths (f16 AND
+  f32 — arc-3's wording is width-agnostic and the f32 lane is the
+  same defect class); both binary lanes; the refusal names the value,
+  the width, and the exact representable alternative. ttp-012
+  re-pins to the ruled contract: exact-value pair rows (green) + the
+  non-representable refusal pinned in the width-refusal V family
+  beside the Q4a integer contracts. Widen-vs-refuse: refuse, matching
+  Q4a's "never silently widen" (a declared width is a contract;
+  widening would drift the wire type exactly like the axis class (a)
+  closed).
+
+**Authorized spec edits riding arc-2/arc-3 (data-bin.md):** the
+§3.10.1 col-spec annotation grammar + its §3.10.3 registry row and
+strict-minimality constraint; the §3.10.3 encode-refusal sentence
+(integer ranges per Q4a + float-width exactness per arc-3); a §3.6.1
+transport-vs-strict sentence naming the already-specified offset
+field's transport role. No other spec text moves.
+
+**Flip:** ttp-009/010/012/013 advisory→enforced on family green (the
+Q4a gate), completing the columnar lanes' enforcement.
