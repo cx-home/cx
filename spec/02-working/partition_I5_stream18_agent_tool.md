@@ -306,3 +306,31 @@ Named landings (ruled): the full M5 witness families = stream 14
   skills derived from the SAME projection (a2a.cx's hardcoded
   `skills: ()` dies), input-required as the durable pending-approval
   realization, a2a-xap DID/VC approval-substrate wiring.
+- **W4 COMPLETE — A2A from the SAME projection; input-required = the
+  durable pending-approval slot (2026-08-14 @ a6054289).** a2a.cx:
+  skill-of (the SECOND lossy adapter — drops the JSON Schemas, keeps
+  the true annotation hints as skill tags) + skills-for (source →
+  skills; failures propagate); agent-card takes explicit $skills —
+  the hardcoded `skills: ()` is DEAD (#715 rider #2 of the batch).
+  a2a-xap.cx: task-event gains the additive address= attr;
+  propose-task journals input-required CARRYING the proposal's Tier-1
+  address (durable + replayable — a2a-xap-008 pins the lifecycle path
+  AND address survival through replay); approval-credential issues a
+  DID-signed VC whose delegation subject IS the proposal address (one
+  delegation language with the PEP; grant-status verifies fail-closed
+  — a2a-xap-009). Probe-proven end-to-end under --allow-random before
+  fixturing. CX gotchas pinned: () is not a legal param DEFAULT
+  (parse error — required params instead); literal paren-sequence
+  POSITIONS keep () items (unlike [?for] yields — [$filter]+
+  [?to-sequence] to drop them); [$filter] returns a LAZY iterator —
+  json:emit refuses it (CXER3103), materialize with [?to-sequence].
+  Gates: resilience-matrix FULL suite GATE-RC=0 @ 690_w4_gate.log;
+  a2a live round-trip 1/1; goldens binary-derived (the [?str]
+  non-scalar-hole refusal caught a guessed golden — sequences don't
+  interpolate; element output instead). W5 NEXT: G15 spec-all-SIX
+  (mcp rewrite at 2025-06-18; mcp-server +tools/list+propose shape;
+  a2a thin — DERIVED skills ratified; a2a-xap; llm minimal; x/tools
+  NEW), x-tier ring placement (cx_partition.md §4), gates.cxd rows,
+  doc-freshness gate extension to x/, the #715 rider sweep
+  (remaining stale-#45 sites ×3, dangling provenance refs ×5,
+  x/term disposition issue).
