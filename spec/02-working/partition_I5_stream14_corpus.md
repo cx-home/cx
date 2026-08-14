@@ -205,3 +205,28 @@ is owed unless verification falsifies a ruling's premise).
   shape-shared = store-reconcile-002. Gate GATE-RC=0 @
   686_w3_gate.log. W4 NEXT: s16/s17/s22 rows + G2 (Tier-2 corpus
   pairs) + G5-half (decimal/bigint wire goldens).
+- **W4 progress (2026-08-14).** s16 row LANDED @ b9d8bb74 (cx:schema-of
+  wired — spec'd-never-dispatched, returns the .cxs TEXT identity form;
+  the #813 FAIL-OPEN validator repair — text bodies invisible to the
+  scalar body check, fixed symmetrically via scalar_or_text_body; pins
+  sv-075/076 + validate-046/047/048 incl. the ruled lattice vectors).
+  s17 row DISCHARGED BY VERIFICATION: ttp-001..023 carry the four-lane
+  pair family (out-hash + [repr-pair-arrow]), from_chunked
+  never-serialized (file header records it), decode vectors + the
+  corruption refusal; the secret-column negative's V-side home is
+  RECORDED in the ttp header (no secret literal exists in data);
+  EV-PULL-over-tables = ev-pull-004/005. G5-half CLOSED: ch-012/013
+  wire goldens for the 0x28 decimal / 0x18 bigint columns
+  (verbatim-text carriers visible in the hex; lane 13/13). G2 CLOSED:
+  cmd-025..028 beside the cmd-011 precedent (alpha + whitespace
+  invariance; scope AND THE DEF NAME excluded — computes-as addresses
+  the computation, naming is Tier-1's; body divergence participates;
+  the Tier-1 runner's in-a/in-b spelling stays Tier-1's — the pair
+  SEMANTICS ride the in-code lane, form choice recorded). Gate green @
+  686_w4_g2.log. **s22 diff (the W4 remainder):** shipped = eff-trace
+  order probes, ev-pull-001..005 (take/map/filter × seq+table),
+  ev-budget-001 floor, ev-select-fair, [?test-counter]. TO AUTHOR:
+  the let-vs-let* discriminator (EV-LET-SEQ), the per-combinator pull
+  matrix expansion beyond take/map/filter, async fire-and-forget +
+  worker-at-exit probes, mock-clock parking across futures, the
+  result-image golden family (the §73 front door).
