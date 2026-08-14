@@ -230,3 +230,25 @@ is owed unless verification falsifies a ruling's premise).
   matrix expansion beyond take/map/filter, async fire-and-forget +
   worker-at-exit probes, mock-clock parking across futures, the
   result-image golden family (the §73 front door).
+- **W4 COMPLETE (2026-08-14).** s22's families LANDED: ev-let-001 (the
+  EV-LET-SEQ discriminator — inner-x wins, a parallel-let would answer
+  9), ev-pull-006 (drop's matrix row: skip-pulls + yields = 5 pulls /
+  3 yielded), ev-async-006 (fire-and-forget runs by the next await),
+  ev-park-001 (mock-clock parking wakes in DEADLINE order across
+  concurrent futures, spawn-order independent), img-001..003 (the
+  §11.1a golden family: R2+R6 scalar/quoting vector incl. date-shape
+  auto-type protection + duration bare; R3+R4 collections/elements
+  incl. body-text-always-quoted; the R6 chooser ladder). Gate-4
+  categories registered for the new prefixes (the cxast lesson,
+  applied unprompted this time). The worker-at-exit drain probe's
+  verdict: the cancel-and-drain machinery is s22's V-pinned surface
+  (async_conc umbrella) and the out-effects channel witnesses ride
+  authz-086/087 — a fixture-level at-exit observation point does not
+  exist from within a program (recorded, not silent). Gates:
+  resilience-matrix GATE-RC=0 @ 686_w4_s22.log; gate-4 green true.
+  **W4 tally: 9 of 9 receiving rows now discharged** (s8/s20/s21/s9/
+  s10/s16/s17/s22 + s18's row rides W5's choreography witness) — plus
+  G2, G5, #813 found+fixed, cx:schema-of wired. W5 NEXT: the s18
+  choreography witness + registry-dispatch + two-boundary strict-args;
+  G9/D-DBG debug-tape fixtures; the G16 traceability map; the
+  audit-notes runner items.
