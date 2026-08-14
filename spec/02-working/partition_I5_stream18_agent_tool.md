@@ -229,3 +229,43 @@ Named landings (ruled): the full M5 witness families = stream 14
   (Tier-1 binds trust — the RULED L139 token rides the spec+impl
   commit); approve/commit re-keyed to Tier-1 src_addr; the
   approval-binds-Tier-1 PAIR fixtures + tampered-args negative.
+- **W2 COMPLETE — approval binding VERIFIED Tier-1; the args-record
+  seam repaired (2026-08-14 @ 3536af54).** Finding first: the shipped
+  commit path ALREADY binds Tier-1 (stream 6 implemented after the
+  2026-08-05 ruling — stdlib_cx.v:2014 `prop_tier1 != meta.src_addr` →
+  version-mismatch; the commit error text carries the L139 token; the
+  §5 amendment was pre-applied at design). So W2 = the ruled fixture
+  pair + one REAL defect found in the same seam. The PAIR: registered
+  test modules ./cmd-v1.cx / ./cmd-v2-widened.cx (same name/params/
+  body ⇒ same Tier-2 by cmd-011's clause exclusion; [effects] vs
+  [effects [net]] ⇒ different Tier-1 text) — authz-088 positive (the
+  exact approved version commits, 42), authz-089 negative (the
+  widened-effects version REFUSED CXER4714, "commit runs the EXACT
+  approved version (L139)"). The tampered-args negative already
+  shipped as authz-079. **THE DEFECT (found by the pair probe): the
+  §5 args record could not bind non-defaulted POSITIONAL params** —
+  build_param_call_env consults labels for NAMED specs only; every
+  prior propose/commit fixture used $name=default (named) params so
+  nobody hit it; the W1 projection names positionals as inputSchema
+  properties and MCP arguments bind by name, so W3 would have hit it
+  at the tool boundary. FIX: build_param_call_env_record (eval.v) —
+  the record is NAME-KEYED over the WHOLE param list (positional and
+  named alike; defaults evaluated ONCE; unknown keys refuse loud
+  CXER0100→CXER4111; rest binds empty — a record has no positional
+  overflow); cx_mod_propose + command_commit_execute both ride it
+  (the two binding passes must agree — propose-predicts-commit);
+  execute lays the record-resolved values out in spec order through
+  invoke_closure_l (defaults never re-evaluated). The GENERAL call
+  surface is deliberately untouched. Pinned: cmd-023 (typed
+  non-defaulted positional binds by name; the [args] record shows the
+  defaulted entry), cmd-024 (unknown key refused). §5 gains the
+  record-binding sentence (within the ruled edit's scope). Gate:
+  resilience-matrix FULL suite GATE-RC=0 @ 690_w2_gate.log (all
+  existing propose/commit fixtures unregressed on the new builder).
+  Probe gotcha pinned: [?fallback][recover-with] does NOT bind $_ to
+  the caught err (an unbound-$_ probe artifact briefly masqueraded as
+  the refusal code — derive negatives bare via out-err). W3 NEXT: MCP
+  at 2025-06-18 (both pins), tools/list from the projection
+  (tools-list-result's first callers), the tools/call propose-only
+  boundary, named-type E2 pins via the registry seam, `cx tools
+  export` offline lane gated by goldens.
