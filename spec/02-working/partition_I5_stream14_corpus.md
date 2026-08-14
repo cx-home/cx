@@ -173,3 +173,35 @@ is owed unless verification falsifies a ruling's premise).
   686_w2_s21.log. W2 tally: s8 authored (+5), s20 verified (+0 owed),
   s21 authored (+5) + two no-surface verdicts recorded. W3 NEXT:
   s9 (distributed_store.md §7) + s10 (cross_stream_coordination.md §6).
+- **W3 COMPLETE — both distribution rows discharged (2026-08-14).**
+  **s9 (distributed_store §7):** discharged with ONE authored case —
+  journal-153 (the s9×s8 cross: the four-quadrant table holds UNCHANGED
+  over an INGESTED replica stream; ingested=2, answers ≡ journal-108's
+  origin-native shape — sync never bends time). Everything else
+  verified at shipped pins: seed+tamper (134/135 CXER4615), the M5
+  end-to-end w/ VT-precedes-TX read + attribution survival +
+  conflict→resolution (138), reconcile FF/diverged/merge-entry
+  (store-reconcile-001/002/003 — 002 alone carries the conflict-value
+  round-trip [stable true], THE PATCH LAW [law true], the
+  enforcing/reporting AGREEMENT law, and unmoved-ref; 001's [again]
+  row IS idempotent re-sync: identical=1 advanced=0), replica
+  declaration profile + wiring-time refusals (store-replica-001
+  CXER4990), retention wall (136 CXER4616), ingest byte-identity +
+  idempotent re-ingest + CXER5050/5052 (133), head-set plane
+  (store-status-002; the advance rows' from/to hashes ENUMERATE the
+  transferred set — exact-delta covered by report shape).
+  **s10 (cross_stream_coordination §6): discharged BY VERIFICATION —
+  zero new cases.** both-ways pair = 092 (:serializable teaching
+  refusal) + 139 (the same intent succeeding as a saga) covered-as-
+  split; replay-isolation + anti-2PC CXER4611 = 142; compensation
+  triple = 140 (+141 uncompensatable); redelivery⇒one-effect = 139
+  ([deduped], re-executes NOTHING); positional-vs-named⇒one-key =
+  COLLAPSED BY DESIGN into the name-keyed args record (the W2
+  commands_effects §5 sentence + cmd-021 order-insensitivity +
+  cmd-023 record normalization); escrow pair + budget conjuncts =
+  authz-085 (the durable-timer ARMING is sched's own pinned surface —
+  covered-as-split); stale pins = authz-084 (CXER4950/4951) + the
+  journal expect-pos CXER1114 lane; head-set cut = 101; [conflict]
+  shape-shared = store-reconcile-002. Gate GATE-RC=0 @
+  686_w3_gate.log. W4 NEXT: s16/s17/s22 rows + G2 (Tier-2 corpus
+  pairs) + G5-half (decimal/bigint wire goldens).
