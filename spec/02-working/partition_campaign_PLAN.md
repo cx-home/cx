@@ -135,6 +135,27 @@ data-AST positions + #793 await arg validation; scheduled WITH the
 #695 hygiene wave, separate umbrella — #695 stays the protocol-surface
 inventory).
 
+**Analytics campaign #800 (grouped 2026-08-13)** — the query-surface
+capability program, also its OWN post-I5 lane (nothing here runs inside a
+stream boundary; #797 edits `planar_algebra.md`'s L98 seam, so the
+no-spec-edits-during-implementation rule holds it until the gate clears).
+Members in execution order atop the DELIVERED #711 (`$group` + the pure
+aggregate set over hash-partition γ, ruled L94 at stream-2 W1 — which
+already satisfies the "after #711" gates #797 and #799 carry): #751
+pushdown generality (the compute verb family beyond the journal) → #798
+typed value-range seeks (derived/rebuildable index, secret-never-indexed)
+→ #797 window clauses (additive plan operators; clauses, never heads) →
+#786 SQL facade (a surface over the ladder — every rung it advertises must
+exist underneath first) → #799 distributed query execution (gated on #784).
+#751 precedes #798 so the seek-vs-scan-vs-pushdown choice is made ONCE at
+one planner seam. Campaign-wide acceptance bar (binding on every member,
+re-scope rather than drop): canonical plan identity survives every new
+operator; ERR-TOTALITY outranks the optimizer; derived layers are never
+authority; equality-of-results fixtures mandatory for every fast path
+(indexed ≡ naive, pushed-down ≡ local, distributed ≡ single-store,
+vectorized ≡ row-path); no kind erasure through any new lane (cf. #795);
+per-tenant isolation + secret exclusion compose.
+
 ## Consumability track (ruled 2026-08-05: post-gate sequencing)
 
 Tooling/product streams that consume the partition's artifacts; sequenced
