@@ -269,3 +269,40 @@ Named landings (ruled): the full M5 witness families = stream 14
   (tools-list-result's first callers), the tools/call propose-only
   boundary, named-type E2 pins via the registry seam, `cx tools
   export` offline lane gated by goldens.
+- **W3 COMPLETE — MCP at 2025-06-18; tools/list from the projection;
+  the propose-only boundary (2026-08-14 @ cd605fcc).** Both pins →
+  2025-06-18 (client + server; goldens mcp-007 + mcp-server-001 —
+  the ONLY prior pin sites, verified by repo-wide grep). mcp-server
+  gains the MCP adapter: tool-json-of (ONE descriptor → the
+  2025-06-18 entry: outputSchema, the four hints, _meta {source,
+  code, schema ids, requires, returnsType}) + tools-for (module
+  source → tools array at LIST time; tools-list-result's FIRST
+  caller; projection failures PROPAGATE — mcp-server-007 THE
+  refund-order golden, 008 the fail-loud negative). propose-call /
+  propose-result: the tools/call boundary NEVER executes — the reply
+  carries the proposal's CANONICAL CX text + Tier-1 address
+  (structuredContent.address); mcp-server-009 golden + 010 the
+  out-effects-EMPTY discriminator (a real [$time:now] body that
+  never traced). `cx tools export` (vcx/cmd/tools_verb.v, verb
+  registered in main.v): EVALUATES the same CX adapter via
+  code.eval_code — raw module bytes ride base64 in (verbatim def
+  text preserved — the Tier-1 basis is never re-serialized);
+  refusal = exit 2 with the [err] on stderr; the golden gate
+  tools-export-gate (conformance/tools-export/refund_order.{cx,
+  tools.json}) wired into TEST_TARGETS + a GATE_REGISTER row.
+  **Named-type [returns T] disposition (recorded, not silent):** the
+  descriptor carries [meta][returns-type] and the MCP entry
+  _meta.returnsType; resolving a NAME to its schema is store-backed +
+  fail-closed by the L63 registry re-ruling (CX_SCHEMA_STORE +
+  cx.lock pins) — inherently IMPURE, so it can never live in the
+  Ring-0/1 pure projection; adapter-side resolution under grants is
+  the named landing for W5's x/mcp-server.md spec (the returnsType
+  carriage makes the unresolved case visible, never silent). Rider
+  progress: the stale-#45 generic-registry claim in mcp-server.cx's
+  header REPAIRED (1 of #715's four sites — W5 sweeps the rest).
+  Gates: resilience-matrix FULL suite GATE-RC=0 @ 690_w3_gate.log;
+  tools-export-gate OK byte-for-byte; mcp live round-trip tests 2/2
+  (no version assertions there — verified). W4 NEXT: A2A thin —
+  skills derived from the SAME projection (a2a.cx's hardcoded
+  `skills: ()` dies), input-required as the durable pending-approval
+  realization, a2a-xap DID/VC approval-substrate wiring.
