@@ -48,3 +48,116 @@ advisory→enforced flip gated on the family. Q5a gate-registry re-home
 packet + the stream-14 receiving register (partition_corpus_audit.md) +
 W7 scope additions (recorded in the s17 ledger). Q7a resume order: s17
 W7 → exit → #805 → stream 18 → stream 14 LAST.
+
+---
+
+# Part II — the campaign exit review (appended 2026-08-14, stream roster complete)
+
+**The I5 stream roster is COMPLETE.** All 22 streams exited on
+design/651-516-partition with full `make test` union GREEN at every
+exit merge. This part consolidates the campaign evidence for the
+OWNER-GATED exit review (march stop-point iv). Pointer style holds:
+each ledger cited is the authority.
+
+## 4. The stream exit table
+
+| stream | topic | issues closed | exit merge | ledger |
+|---|---|---|---|---|
+| s1 | semantic value model | #673 #708 | 9ac7d605 | partition_I5_stream1_values.md |
+| s2 | planar query algebra | #674 #711 | 3be47a3c | partition_I5_stream2_planar.md |
+| s3 | live modes | #675 (+U1/U2 @ 84c56283; #762 consumers @ 11ba938c) | dc94cbda | partition_I5_stream3_live.md |
+| s4 | XSP store profile | #676 #718 | e9f7abfe | partition_I5_stream4_xsp.md |
+| s5 | computation identity | #677 | b0b03bd5 | partition_I5_stream5_computation.md |
+| s6 | commands/effects | #678 #713 | ecae77aa | partition_I5_stream6_effects.md |
+| s7 | consistency vocabulary | #679 #714 | 69bced43 | partition_I5_stream7_consistency.md |
+| s8 | bitemporal | #680 | 84306188 | partition_I5_stream8_bitemporal.md |
+| s9 | distributed store | #681 #719 | 59f9bb08 | partition_I5_stream9_distributed.md |
+| s10 | coordination | #682 | eccb8022 | partition_I5_stream10_coordination.md |
+| s11–s13, s15, s19 | close-out verification lane | #683 #684 #685 #687 #691 (+#776) | b54832b4 | the merge record @ b54832b4 (fixture-verified closes; no separate ledger) |
+| s14 | corpus absorption (LAST) | #686 | 3cc843ca | partition_I5_stream14_corpus.md |
+| s16 | shape/type inference | #688 #706 | a3b5e97e | partition_I5_stream16_shape.md |
+| s17 | runtime representation | #689 #710 #806 | cea35ee4 | partition_I5_stream17_runtime.md |
+| s18 | agent-tool projection | #690 #715 | 488fc5ee | partition_I5_stream18_agent_tool.md |
+| s20 | erasure | #692 #720 #779 | 454aa061 | partition_I5_stream20_erasure.md |
+| s21 | schema/event evolution | #693 #716 | ffb7dadc | partition_I5_stream21_schema.md |
+| s22 | clean-room implementability | #694 #707 | 3667027a | partition_I5_stream22_cleanroom.md |
+
+Supporting batches inside the phase: item-4 defect batch @ ba9efe09
+(#712 #721 #723 #703); #725 phantom-filter removal @ 51740e05; #783
+test consolidation @ ff546063; the #805 gate-truth batch @ d375d342
+(audit Q1a/Q5a); #811 guide-check masking + #813 fail-open .cxs
+validator found-and-fixed en route; **#810 canonical singleton-in-slot
+RULED (a) by the owner 2026-08-14 and FIXED post-roster**
+(fix/810-slot-singleton — the parser was below spec; zero identity
+movement; s14 ledger addendum carries the ruling record).
+
+## 5. Gap register final state
+
+Authority: partition_corpus_audit.md §4 (trued at s14 exit).
+Summary: **closed** G1 G2 G4 G12 G15 (+G11 resolved → #701);
+**split** G9 (tape format closed; completeness lands WITH the
+recorder) and G5 (scalar-kind goldens landed; decimal/bigint goldens
+landed with the epoch); **open-by-design** G16 (the continuous
+production→witness map, vcx/tests/formal/production_witness_map.md —
+fill-with-the-work discipline, ~300 honest unmapped); remaining rows
+(G3 G6 G7 G8 G10 G13 G14 G17 G18) carry their landings in the register
+text — G8/G13 landed with stream 4, G17/G18 with the I0 validators,
+and G3's canonical-emit expansion was PARTIALLY blocked on #810, now
+unblocked by the fix.
+
+## 6. Open-issue routing at exit (for owner confirmation)
+
+| lane | issues | state |
+|---|---|---|
+| the ruled post-campaign perf arc | #804 | gate 15 honest-red stands; leg-1 begun in #805 |
+| render-parity remainder (prio:high) | #807 | advisory→enforced flip GATED on family green (Q4a) |
+| V-runtime campaign (prio:high) | #775 (#737 #742 #743 #749 #754 #755 #759 #773) | its own ruled order |
+| defect batches | #795 (#790 #791 #794) · #796 (#788 #792 #793 + #781 #782) | filed with named members |
+| visible gate-4 debt | #808 | rows flip with the raise implementations |
+| await owner routing | #809 (kind-test grammar remnant) · #812 (x/term spec-or-retire) | filed at s18 |
+| release lane | #741 #752 (the v0.16.0 cut; s4's W8 R1 riders ride it) | owner-gated cut |
+| design backlog | #728–#735 · analytics #751 #786 #797–#800 · #784 #787 #789 #801 · #758 #765 | tracker-routed, post-campaign |
+
+## 7. Review questions for the owner
+
+1. **G3 graduations (§1 table — eight specs).** (a) One review
+   sitting, graduate en bloc from the ledger pointers — every spec is
+   fixture-backed and gate-green, and batching keeps the cross-spec
+   vocabulary coherent; (b) per-spec sessions — slower, only worth it
+   if any single spec draws findings. **Recommend (a).**
+2. **What the march does next (after this review).** (a) The
+   prio:high clearance first — #807 remainder + #775 V-runtime — then
+   the v0.16.0 release cut (#741/#752), then #804; (b) cut v0.16.0
+   first; (c) #804 first. **Recommend (a):** the standing policy is
+   prio:high ASAP, and the cut ships cleaner after #807's identity
+   surface settles.
+3. **Campaign issue closure.** (a) Close #651+#516 at this review with
+   the packet as the closing evidence, remainder tracked by the routed
+   issues; (b) hold them open through the v0.16.0 cut. **Recommend
+   (a)** — the partition scope is delivered; open campaign issues that
+   track nothing actionable go stale.
+4. **Branch disposition.** (a) Merge design/651-516-partition →
+   release/0.16.0 at the review (GitFlow rule: work lands on the
+   current release branch, never main); (b) hold the design branch
+   until the cut. **Recommend (a)** — 22 exit-merged streams on one
+   long-lived branch is accumulated merge risk for zero benefit.
+
+## 8. Exit-review rulings record (owner, 2026-08-14: "1a 2a 3a 4a")
+
+- **exit-1a** — the eight §1/§7.1 G3 specs GRADUATE en bloc:
+  semantic_value_model, computation_identity, commands_effects,
+  consistency_vocabulary, bitemporal, schema_event_evolution,
+  runtime_representation → spec/03-approved/core/ (s5's ledger pins
+  "beside code-identity.md"); the live pack spec merges INTO
+  spec/03-approved/std-lib/live.md (the journal.md form: full spec
+  under the module-meta header — the thin pointer retires with the
+  graduation). Status headers flip to Approved; live path references
+  in approved specs/code comments update; partition_* ledgers keep
+  their historical text unrewritten.
+- **exit-2a** — the next arc: prio:high clearance first (#807
+  render-parity remainder, #775 V-runtime campaign), then the v0.16.0
+  cut (#741/#752 + the s4 W8 R1 riders), then #804.
+- **exit-3a** — #651 + #516 CLOSE at this review; this packet is the
+  closing evidence; the remainder is tracked by the §6 routed issues.
+- **exit-4a** — design/651-516-partition merges → release/0.16.0 at
+  the review (GitFlow: the current release branch, never main).
