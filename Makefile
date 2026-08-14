@@ -406,7 +406,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency stdlib-catalog-gate address-baseline-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect
@@ -509,6 +509,17 @@ check-effect-alignment: build-vcx
 .PHONY: check-code-spec-consistency
 check-code-spec-consistency:
 	@$(PYTHON) scripts/check_code_spec_consistency.py > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
+
+# ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
+# batch — it was RED and in no lane, so no stream gate ever ran it). The
+# corpus/spec agreement gate over conformance/code.cxd: id-category
+# registry, directive registry (§4.1) with retired/PI/intentional-unknown
+# discipline, and ENFORCED spec-error-code coverage (every CXER code
+# cited, verified covered cross-suite, or pinned to its filed issue —
+# #808 rows are the visible debt).
+.PHONY: check-code-fixtures
+check-code-fixtures:
+	@$(PYTHON) scripts/check_code_fixtures.py > /dev/null && echo "check-code-fixtures OK — 1000+ fixtures: ids/directives/error-code coverage green (run the script directly for the JSON report)"
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
@@ -793,7 +804,7 @@ test-code-diagram:
 # Saxon-HE (via Docker) and asserts byte-identical results for the parity
 # tag and documented divergence for the divergence tag. Requires Docker on
 # PATH; skip-cleanly behaviour lives inside the script (exit 2 on missing
-# prerequisites). Active gate per spec/v0_8_0_status.md §11.6.
+# prerequisites). Active gate per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded).
 .PHONY: test-xpath-parity
 test-xpath-parity: build-vcx
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
@@ -1448,7 +1459,7 @@ bench-eval: build-vcx
 # ── v0.8.0 §11.6 release-gate harnesses ────────────────────────────────────────
 #
 # Each target runs one of the three perf gates blocking the v0.8.0 tag
-# (spec/v0_8_0_status.md §11.6, spec/code.md §11.4.4). Exit code
+# (conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded), spec/code.md §11.4.4). Exit code
 # is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
 # The benches print their threshold + measured numbers so PASS/FAIL is
 # self-evident in logs. Env knobs documented in each .v file header.
@@ -1489,6 +1500,15 @@ bench-code-soak: build-vcx
 bench-code-cancel: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_async_cancel_battery.v
 
+# abi.md §4 performance-budget driver (#805/AF-6 — the table's FIRST
+# measuring artifact). In-process ABI-call timing, full call semantics;
+# budgets verbatim from the spec, never trued; exit 1 on any red cell.
+# First honest verdict (2026-08-13): six conversion cells RED at
+# 7.9-16.7x over budget (the #804 engine ceiling extends here);
+# cx_events_next PASS at ~9 ns/event. 100 MB tier opt-in: ABI_S4_100MB=1.
+bench-abi-s4: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/abi_s4_bench.v
+
 # Aggregate runner — drives all three v0.8.0 perf gates back-to-back.
 # Exit code is the FIRST failing gate's exit code (make stops on
 # first non-zero); use individual targets to triage in isolation.
@@ -1502,7 +1522,7 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # umbrella; these targets are narrowly-scoped gate-evidence pointers so
 # the gate-check can verify each gate's coverage in isolation rather
 # than relying on the umbrella having run a moment earlier. Per
-# spec/v0_8_0_status.md §11.6.
+# conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded).
 
 # ── Gate 5 — resilience composition matrix ────────────────────────────────
 # Drives the 67 resilience fixtures in conformance/code.txt (31 single-
@@ -1510,7 +1530,7 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # whose `supported_fixtures` whitelist covers all 67. The fixture runner
 # parses each block, evaluates in_code with $doc bound, and compares the
 # rendered result against out_text. Asserts at runtime that at least one
-# fixture executed. Per spec/v0_8_0_status.md §11.6 gate 5.
+# fixture executed. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 5.
 .PHONY: test-vcx-resilience-matrix
 test-vcx-resilience-matrix: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -1530,7 +1550,7 @@ test-vcx-concurrency-soundness:
 # the same vcx/tests/code_eval_fixtures_test.v whose `supported_fixtures`
 # whitelist covers all 21 program-svc-NNN fixtures (HTTP verbs + status
 # codes + TLS + streaming body + graceful-stop + handle lookup). Per
-# spec/v0_8_0_status.md §11.6 gate 6.
+# conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 6.
 .PHONY: test-vcx-services
 test-vcx-services: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -1541,7 +1561,7 @@ test-vcx-services: build-vcx
 # cx_code_tree with structural-equivalence — 29/29
 # fixtures). This target is the §11.6-named alias plus the V-side
 # diagram unit tests that exercise the emitter + round-trip directly.
-# Per spec/v0_8_0_status.md §11.6 gate 9.
+# Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 9.
 .PHONY: test-vcx-diagram-roundtrip
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
@@ -1555,7 +1575,7 @@ test-vcx-diagram-roundtrip: build-vcx
 # vs. text round-trips); `path_renderer_test.v` covers the
 # PathNode → source emitter introduced for the CXPath value kind. LSP CodeLens
 # tests are not yet authored; this target tracks the V-side renderer
-# coverage. Per spec/v0_8_0_status.md §11.6 gate 12.
+# coverage. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 12.
 .PHONY: test-renderer
 test-renderer: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_units_umbrella_test.v \
@@ -1569,7 +1589,7 @@ test-renderer: build-vcx
 # scaffolding (21 tests: predicates, unions, integer-literal predicate,
 # attribute-axis short-form), and dispatcher integration (3 tests:
 # `[?find …/axis::…]` end-to-end). 62 tests total exercising the
-# 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
+# 12-axis vocabulary. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 28.7.
 .PHONY: test-cxpath-axis-coverage
 test-cxpath-axis-coverage: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/cxpath_umbrella_test.v \
@@ -1585,7 +1605,7 @@ test-cxpath-axis-coverage: build-vcx
 # invariant, multi-match focus, and Z79g path-aware dispatcher hop;
 # `modify_node_test.v` + `_codec_test.v` cover the ModifyNode shape
 # + binary codec round-trip; `modify_parser_test.v` covers the
-# `[?modify]` directive parser. Per spec/v0_8_0_status.md §11.6 gate
+# `[?modify]` directive parser. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate
 # 28.8 (structural-sharing perf budget lives at gate 30.5).
 .PHONY: test-modify-action-coverage
 test-modify-action-coverage: build-vcx
@@ -1601,7 +1621,7 @@ test-modify-action-coverage: build-vcx
 # enforced; the absolute-byte budgets are ADVISORY per the bench
 # header's Element + Attribute diet analysis (post-diet residual cost
 # is spine-frame overhead that closes to v0.9.0+ with HAMT-backed
-# items containers). Per spec/v0_8_0_status.md §11.6 gate 30.5.
+# items containers). Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 30.5.
 bench-code-modify-sharing: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_modify_sharing_bench.v
 

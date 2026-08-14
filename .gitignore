@@ -76,3 +76,4 @@ vcx/tests/runners/eval/eval_conform
 .claude/
 vcx/tests/runners/code_modify_sharing_bench
 .wavelog/
+bench/current.json
