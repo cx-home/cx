@@ -78,3 +78,31 @@ deliberate corpus re-bless in this batch: the cxparse corpus-diff
 counted baseline (divergence steps down), the canonical/conformance
 goldens of the affected classes, and any pinned hashes over affected
 shapes. Every re-blessed pin is enumerated in the batch's commits.
+
+## The #790 direction ruling (owner, RULED: 790-1a, 2026-08-15)
+
+The three-contract collision resolves to **(a) converge on
+bare-when-safe** (recorded before the edits below):
+
+- The parser's kind-faithful typing STAYS (a quoted collection item is
+  a string ScalarNode).
+- The emitter's string-scalar collection arm RESTORES bare-when-safe
+  (the shared `cx_collection_string` authority) — one semantic string,
+  one canonical spelling, per I1; the node kinds are parse artifacts
+  (the semantic projection already erases them), so the quoted and
+  bare spellings of a bare-safe payload share ONE canonical form and
+  ONE address, and conversions.md's lossless round-trip holds by
+  construction.
+- The CODE renderer CONVERGES to the same bare-when-safe form for
+  data-position strings through the same authority — the corpus-diff
+  rows re-classify from the code side (the program lane's quoting was
+  a program-surface artifact applied to data positions).
+- #791 (both decl carriers) and #794 (atom cells) land as built; the
+  #794 atom-table movement is the batch's one deliberate address
+  migration (ttp-004 re-pins).
+- The always-quote re-derivations REVERT (xml.cxd 023, the
+  stdlib/tools.cxd source hashes, the map-value/yaml import pins);
+  the parse-typing re-derivations STAND (quote-needing collection
+  items re-parse as string scalars). The greet-def F1-prime heal is
+  re-verified under this direction and the evidence tests follow the
+  outcome.
