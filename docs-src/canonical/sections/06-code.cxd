@@ -117,9 +117,9 @@
       [tr [td '[?worker-handle]'] [td 'Look up an existing worker by :name']]
       [tr [td '[?channel]'] [td 'Create a FIFO channel with :buffer of given size']]
       [tr [td '[?send]'] [td 'Blocking send to a channel; returns [ok] or CHANNEL_CLOSED']]
-      [tr [td '[?try-send]'] [td 'Send with :timeout — SEND_TIMEOUT if buffer stays full']]
+      [tr [td '[?try-send]'] [td 'Send with timeout= — SEND_TIMEOUT if buffer stays full']]
       [tr [td '[?receive]'] [td 'Blocking receive — returns next value or CHANNEL_CLOSED']]
-      [tr [td '[?try-receive]'] [td 'Receive with :timeout — RECV_TIMEOUT if empty']]
+      [tr [td '[?try-receive]'] [td 'Receive with timeout= — RECV_TIMEOUT if empty']]
       [tr [td '[?close]'] [td 'Close a channel; second close raises CHANNEL_ALREADY_CLOSED']]
       [tr [td '[?select]'] [td 'Multi-way receive — first ready case wins (uniform-random on ties)']]
       [tr [td '[?stop]'] [td 'Initiate graceful shutdown on a service or worker handle']]]
@@ -1210,7 +1210,7 @@
       [table
         [tr [th 'code'] [th 'symbolic'] [th 'meaning'] [th 'recovery']]
         [tr [td 'CXER0240'] [td 'AWAIT_ALL_FAILED'] [td '[?await-all] saw ≥ 1 non-done future'] [td 'Inspect :causes slot — sequence of [err …] per failed future']]
-        [tr [td 'CXER0241'] [td 'AWAIT_TIMEOUT'] [td '[?await $f :timeout] deadline expired (future itself still running)'] [td 'Tune :timeout; abandon or [?cancel $f]']]
+        [tr [td 'CXER0241'] [td 'AWAIT_TIMEOUT'] [td '[?await $f timeout=DURATION] deadline expired (future itself still running)'] [td 'Tune timeout=; abandon or [?cancel $f]']]
         [tr [td 'CXER0260'] [td 'CANCELLED'] [td 'Operation observed cooperative cancellation'] [td 'Expected; clean up; do not retry']]]
 
       [body
