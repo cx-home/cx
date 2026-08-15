@@ -106,3 +106,26 @@ bare-when-safe** (recorded before the edits below):
   items re-parse as string scalars). The greet-def F1-prime heal is
   re-verified under this direction and the evidence tests follow the
   outcome.
+
+## Batch completion record (2026-08-15)
+
+LANDED: the three fixes at the 790-1a seam (parsed-tree canonicals
+bare-when-safe in BOTH engines via the shared cx_emit authority;
+evaluated result images keep the s22 quoted convention; the
+render_seq_item convergence attempt reverted with in-code execution
+notes), #791's both-carrier schema readers (S002 through canonical
+schemas verified live in both directions), #794's atom cells (:name
+with the honest quoted escape; ttp-004/021 re-pinned with the new
+hash — the batch's one deliberate address migration). Collateral
+finds fixed: the streaming col-spec writers' bogus '?T' annotations;
+the Arrow importer's ::string reconstruction (utf8 → the elided
+default); arrow-011 re-scoped to offset-rides-transport with the new
+per-side expect-values-in/-out runner sections; the conform suite
+wiring (the runner's default list now covers all 24 suites in one
+process; test-vcx runs conform-all + fmt + arrow; the 27-target
+fan-out OOM class retired; the stale conform-ns-cxpath /
+test-cxpath-axis-coverage targets retired). Exit: FULL make test
+union GATE-RC=0 with every lane green (795_union4.log; the falsified
+directions — the separator-space trim, always-quote, the program-lane
+convergence — each carry their constraint documentation in code or
+in this ledger).
