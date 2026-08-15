@@ -998,8 +998,14 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
+# conform (the FULL aggregate) — not conform-all (the runner's default
+# subset): the transparency / chunked / compression / schema-driven /
+# atoms / delimited / yaml / conversions suites were OUTSIDE every
+# union target (found at the #795 batch, 2026-08-15 — the ttp/ch pins
+# only ran when someone invoked their targets by hand; the same
+# unwired-gate class as the #743 battery find).
 test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
-	$(MAKE) -C vcx conform-all
+	$(MAKE) -C vcx conform
 	$(MAKE) -C vcx conform-fmt
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
@@ -1611,11 +1617,9 @@ test-renderer: build-vcx
 # attribute-axis short-form), and dispatcher integration (3 tests:
 # `[?find …/axis::…]` end-to-end). 62 tests total exercising the
 # 12-axis vocabulary. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 28.7.
-.PHONY: test-cxpath-axis-coverage
-test-cxpath-axis-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/cxpath_umbrella_test.v \
-		vcx/tests/cxpath_reverse_test.v \
-		vcx/tests/cxpath_dispatcher_test.v
+# (test-cxpath-axis-coverage RETIRED at the #795 batch, 2026-08-15 — its
+# files died with the placeholder axis engine at the #805 sweep; see
+# vcx/Makefile's conform-ns-cxpath retirement note.)
 
 # ── Gate 28.8 — [?modify] action coverage (all 11 actions) ────────────────
 # Drives the V-side modify test files: `modify_eval_test.v` covers
