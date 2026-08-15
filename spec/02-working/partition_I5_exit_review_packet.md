@@ -220,6 +220,14 @@ bug ledger by priority to majority-clear (incl. #814) → #726 reference
 app → cut prep (#741/#752 + the s4 W8 R1 riders) → STOP for the
 owner's confirm → publish → #804.
 
+**§10 addendum — 804-return (owner, 2026-08-14, during the #795
+stage):** #804 (the gate-15 perf recovery) RETURNS to the pre-cut
+march — this supersedes exit-2a's post-cut placement and arc-1's named
+exception. Slot: after the #795/#796 batches, before the general
+ledger sweep (the march's heavy-item-first principle; the owner may
+reorder). The arc-1 publish gate now counts #804 among the pre-cut
+work rather than the deferral column.
+
 **§10 addendum — 743-1a (owner, 2026-08-14, at the #775 exit):**
 #743 (the vgc-in-Go-host STW ack-wait hang) is EXPRESSLY DEFERRED past
 the v0.16.0 cut <!-- version-literal-ok --> with the documented interim
