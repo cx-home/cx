@@ -219,3 +219,16 @@ order #737→#773→#754→#755→#742/#743) → #795 → #796 → the remaining
 bug ledger by priority to majority-clear (incl. #814) → #726 reference
 app → cut prep (#741/#752 + the s4 W8 R1 riders) → STOP for the
 owner's confirm → publish → #804.
+
+**§10 addendum — 743-1a (owner, 2026-08-14, at the #775 exit):**
+#743 (the vgc-in-Go-host STW ack-wait hang) is EXPRESSLY DEFERRED past
+the v0.16.0 cut <!-- version-literal-ok --> with the documented interim
+(the go-lane pacer pins + the issue's embedder guidance); the darwin
+signal-free mach-suspension work is its own post-cut lane beside #804.
+Basis: the signal-swap direction was FALSIFIED by a battery-verified
+attempt (the Go runtime intercepts signals generally — no signal
+choice clears the class; findings on the issue), the exposure is
+narrow and documented, and an STW redesign against the session-4
+weak-stop-point UAF history does not belong on the cut's critical
+path. #743 keeps prio:high. This is the arc-1 express-deferral form
+for the cut confirm.
