@@ -998,15 +998,17 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-# conform (the FULL aggregate) — not conform-all (the runner's default
-# subset): the transparency / chunked / compression / schema-driven /
-# atoms / delimited / yaml / conversions suites were OUTSIDE every
-# union target (found at the #795 batch, 2026-08-15 — the ttp/ch pins
-# only ran when someone invoked their targets by hand; the same
-# unwired-gate class as the #743 battery find).
+# conform-all now covers EVERY suite in one process (the runner's
+# default list was extended at the #795 batch, 2026-08-15 — the
+# transparency/chunked/compression/schema/atoms/delimited/yaml/
+# conversions suites were previously OUTSIDE every union target, the
+# #743-battery unwired-gate class; and the per-suite `conform`
+# aggregate fan-out OOM-killed the parallel union with 27 concurrent
+# `v run` compiles). The Arrow lane rides its own runner/target.
 test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
-	$(MAKE) -C vcx conform
+	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
+	$(MAKE) -C vcx conform-data-bin-arrow
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
