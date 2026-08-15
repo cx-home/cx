@@ -424,7 +424,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect
@@ -813,8 +813,17 @@ test-no-parallel: $(TEST_TARGETS)
 # cx_code_tree with structural-equivalence comparison.
 # Skips cleanly when the binary lacks the subcommands (Phase 7.1 / 7.6
 # / 7.7 implements them) so this target stays green during scaffold.
+# #774: this checker is the ONLY gate that sees the ERD attribute-type
+# rows and the diagram structure (the roundtrip suites in the eval-fixtures
+# lane compare trees, not emitted types), and for a long time it was wired
+# into NO union target — so a real regression sat green for a whole stream.
+# It is in TEST_TARGETS now. It also builds first and pins LIBCX_LIB_DIR,
+# exactly as test-python does: cxlib's loader otherwise finds an INSTALLED
+# libcx.dylib ahead of this tree's, and the checker then dies on whichever
+# ABI export the installed copy predates rather than on a fixture.
 .PHONY: test-code-diagram
-test-code-diagram:
+test-code-diagram: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
+test-code-diagram: build-vcx-dev
 	@python3 scripts/check_code_diagram_fixtures.py
 
 # ── v0.8.0 gate 28.5 — XPath 3.1 parity (Saxon-HE reference) ─────────────
