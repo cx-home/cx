@@ -240,3 +240,47 @@ narrow and documented, and an STW redesign against the session-4
 weak-stop-point UAF history does not belong on the cut's critical
 path. #743 keeps prio:high. This is the arc-1 express-deferral form
 for the cut confirm.
+
+**§10 addendum — 809-1a (owner, 2026-08-15, during the pre-cut ledger
+sweep):** the `[131b]` `text()` kind test ADMITS CX's typed body scalars
+— it selects TextNode **and** ScalarNode, the character-data node kinds,
+not TextNode alone. The `ast.md` node-test table's "Text nodes only" row
+is AUTHORIZED to be re-spelled to name both kinds; the change is
+one-line and identity-inert (a node test filters a candidate set — it
+does not participate in canonical bytes or any address).
+
+Basis: in CX the Text/ScalarNode split is an artifact of AUTO-TYPING,
+not of authorial intent — `[port eight]` is a TextNode and `[port 8080]`
+a ScalarNode from the same authorial act. A `text()` that silently
+skipped the typed ones would make a query's result set depend on whether
+a body happened to auto-type, which is the opposite of the orthogonality
+objective; `node()` reaching both is not a substitute, since it also
+takes elements. #809 shipped the literal approved reading with the
+divergence pinned BOTH ways (`program-cxpath-kindtest-010`) precisely so
+this ruling would have a fixture to move.
+
+Scope: `text()` only. `node()` / `element()` / `attribute()` are
+unchanged, and the cxdm §2.2 taxonomy is unchanged — Text and ScalarNode
+remain distinct Node KINDS; what this settles is which of them the
+`text()` NODE TEST selects.
+
+**§10 addendum — 738-2a (owner, 2026-08-15, same sweep):** the TOML
+import surface becomes a STRICT reader — malformed input is REFUSED
+(`cx-err:CXER0100 PARSE_ERROR`), never silently guessed into a
+document. `conversions.md §6` is AUTHORIZED to gain the normative
+strict-reader sentence, mirroring §4's JSON lane (which already cites
+`json.md §3` by name).
+
+Basis: a Ring-0 `data`-profile artifact whose pitch is safety on
+untrusted input must reject garbage rather than guess at it, and every
+sibling import lane (XML / JSON / YAML) already surfaces parse errors
+through the same `!Document` seam — TOML was the one reader that did
+not, by construction (`or { continue }` at every level, no error seam at
+all). The leniency was never ruled correct; it was undocumented
+behaviour that the G7 fixture batch pinned as-shipped pending exactly
+this ruling.
+
+Scope: the refusal is the import lane's, and it carries a
+negative-fixture family. The DATE half of #738 (native date/datetime
+mapping) closed separately at d2361a5d and needed no ruling — §6.1's
+mapping table had already decided it and only the impl was behind.
