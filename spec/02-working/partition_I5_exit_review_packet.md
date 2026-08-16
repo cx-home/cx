@@ -342,3 +342,49 @@ unreachable BY DESIGN rather than merely unimplemented, that finding is
 surfaced as its own lettered question rather than answered with a
 synthetic raise site — a guard that cannot fire is not an
 implementation.
+
+**§10 addendum — tables-1a (owner, 2026-08-16, pre-cut ledger sweep):**
+for every CLOSED CLASSIFICATION TABLE in the system, **the spec is the
+source and the implementation check is DERIVED from it by a gate.** The
+implementation may never lead the spec: a row lands in the approved
+document first, and the gate asserts equality in both directions so
+neither side can drift.
+
+This ruling is cross-cutting and settles three open items at once:
+
+- **#827** — `security.md` §2.1 (the closed effect-point table) is
+  AUTHORIZED to gain the rows it is missing. The audit: §2.1 carries 118
+  rows of which exactly **one** charges `net`, while the implementation
+  gates **55 distinct network primitives** — 11 http client
+  (`http_client_gated_prims`), 6 http serve (`http_serve_gated_prims`),
+  38 raw socket (`net_gated_prims`) — plus `io-edit-file`, which
+  self-gates on read AND write as the one primitive spanning both. CX's
+  entire network surface is enforced in the implementation and absent
+  from the table that calls itself the normative closed set.
+- **#756** — `code.md` is AUTHORIZED to gain a normative per-directive
+  purity classification table. §6.5.1 carries the invariants only; the
+  closed head list exists solely in `purity_checker.v`, whose comments
+  claim a spec parity that was never there. The audit: 56 heads
+  classified against 85 dispatched and 81 registered, with 47
+  unclassified and 13 stale entries naming heads that exist in neither
+  the registry nor the dispatch.
+- the general rule for any table added later.
+
+Basis: purity and capability are SECURITY properties, and #788's lesson
+was that a hand-kept list drifts until something derives it. #818 then
+demonstrated the mechanism working in the intended direction — the
+spec-parity gate REFUSED to let the implementation mirror list an effect
+point §2.1 had not declared, which is precisely the protection this
+ruling generalizes.
+
+Consequence for the mirror's shape: `capability_gated_prims()` lives in
+Ring 1 and cannot import Ring 2, so the Ring-2 gated lists need their own
+exposed half and the GATE (which lives in `vcx/tests`, and per §3 "tests
+and tooling may import anything") unions the two before comparing against
+§2.1. The import contract is not bent to make the gate convenient.
+
+NOT settled by this ruling, and still open on #827: whether
+`mime-multipart-boundary` (draws OS entropy) and `locale-default-locale`
+(reads an environment variable) should BE gated. That is a question about
+which surfaces are effect points, not about where the table lives, and it
+is a runtime behaviour change on a security surface.
