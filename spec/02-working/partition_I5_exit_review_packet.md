@@ -284,3 +284,61 @@ Scope: the refusal is the import lane's, and it carries a
 negative-fixture family. The DATE half of #738 (native date/datetime
 mapping) closed separately at d2361a5d and needed no ruling — §6.1's
 mapping table had already decided it and only the impl was behind.
+
+**§10 addendum — 739-1a (owner, 2026-08-15, pre-cut ledger sweep):** the
+`vc` predicate is RENAMED `valid?` → `valid`, cutover-first, in both
+`spec/03-approved/std-lib/vc.md` and `stdlib/vc.cx`. The approved vc.md
+surface row is AUTHORIZED to change.
+
+Basis: `valid?` is unreachable — the locked lexicon does not admit `?` in
+an identifier, so `[$vc:valid? …]` cannot be written and the public
+surface exists only in prose. `valid?` is the ONLY `?`-suffixed def in
+the bundled stdlib, so this is a one-symbol collision between a surface
+naming choice and the lexicon. A one-symbol collision does not justify
+moving the lexicon: admitting `?`-suffixed identifiers touches every
+reader, the canonical spellings, and the fmt/emit round trip. The
+semantics remain available through `verify`'s status channel meanwhile,
+so nothing is lost by the rename.
+
+Cutover-first per the no-dual-accept rule: the old spelling is not
+accepted alongside the new one. Its conformance pin
+(`vc-016-validq-surface-unreachable`, which currently asserts the parse
+failure) flips with the fix.
+
+**§10 addendum — 820-1a (owner, 2026-08-15, same sweep):** the `cx:`
+namespace reservation is enforced at the PROGRAM construction seam, and
+it reuses **E210** — the same code the data reader raises. No new code is
+minted in the program band.
+
+Basis: it is ONE reservation. Two codes for one rule teaches a user that
+authoring `cx:foo` is two different mistakes depending on which reader
+sees it first, when it is the same mistake with the same remedy. The
+layering argument for a program-band code is real but abstract; the
+user-facing cost of splitting the code is concrete. Enforcement belongs
+at CONSTRUCTION rather than at emit: refusing on the way out would let
+the bad node exist and be operated on first, and the diagnostic would
+point at the emit site instead of the authoring site.
+
+Scope note carried from the issue: the `xml:` prefix sibling and the
+COMPUTED element-name form (a name that is not literal in the source
+cannot be caught by a parse-time check alone) are checked in the same
+landing.
+
+**§10 addendum — 808-1a (owner, 2026-08-15, same sweep):** the two
+unraisable codes are IMPLEMENTED, not retired — `CXER0280`
+(E_RENDER_FAILED) gains a real raise site in the renderer, and
+`CXER4113` gains the `[?eval]` `[?lib]` non-widening guard code.md §6.4.4
+already declares normative.
+
+Basis: both rows describe conditions that genuinely exist. §6.4.4's
+sandbox rule ("[?eval] inherits the caller's [?lib] set; may narrow, not
+widen") is a SECURITY boundary whose depth-cap twin CXER4114 is already
+enforced — leaving the lib-widening half unenforced is a hole, not a
+spec surplus. Retiring either row would be truing the spec to a
+shortfall.
+
+Qualification: if implementation shows a row's condition is genuinely
+unreachable BY DESIGN rather than merely unimplemented, that finding is
+surfaced as its own lettered question rather than answered with a
+synthetic raise site — a guard that cannot fire is not an
+implementation.
