@@ -388,3 +388,31 @@ NOT settled by this ruling, and still open on #827: whether
 (reads an environment variable) should BE gated. That is a question about
 which surfaces are effect points, not about where the table lives, and it
 is a runtime behaviour change on a security surface.
+
+**§10 addendum — 785-1a (the derived open inherits the source's posture,
+2026-08-16, during the pre-cut ledger sweep):** `journal.md` is AUTHORIZED
+to state, normatively, that a `rotate`/`compact` TARGET is a DERIVED open
+which inherits the source chain's **at-rest posture** (`encrypt-key-id`,
+and framing `encoding`/`compression` within one scheme) and its
+**`hash-algo`**, with an explicit key on the caller's `opts` overriding —
+and that `journal-open` itself carries the at-rest keys.
+
+Basis: the rule is an IMPLICATION of two settled contracts, not a new
+policy. `store.md` §9 mandates fail-closed at rest — an at-rest posture
+must never silently become a plaintext write — and §4.11 already makes
+rotation a copy-then-**swap** in which the returned journal BECOMES the
+live chain. A swap that downgrades the at-rest posture at every segment
+boundary contradicts both. What the spec genuinely lacked, and what this
+authorizes, is the **precedence order** (explicit `opts` ▸ the target
+URL's own `?encoding=`/`?compression=` ▸ the source) and the **same-scheme
+scoping** of framing inheritance: `file://` → `sqlite://` must not carry
+`object-per-key` into a substrate that has no such framing, while
+`encrypt-key-id` inherits ACROSS schemes precisely so a target that cannot
+seal refuses LOUDLY (§9) instead of writing plaintext.
+
+The `hash-algo` half rode the same call site and is the same defect class:
+the target took the DEFAULT algo while `compact` copied entries **verbatim**
+(§4.10, hashes unchanged), stamping `sha2-256` on a segment whose entries
+were hashed under the source's algo — a segment that fails its own
+`verify`. No identity surface moves: addresses stay the plaintext content
+hashes (§9), and the copy-forward is byte-identical either way.
