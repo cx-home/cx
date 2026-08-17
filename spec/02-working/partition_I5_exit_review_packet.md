@@ -659,3 +659,40 @@ posted against the measured ledger-run status):**
   restructure) PROCEED alongside the #804 architecture rather than waiting
   behind it. Neither depends on its answer, both are cut-blocking in their
   own right, and the critical path should not be the only path.
+
+**§10 addendum 2 — the 804-1c render strategy (owner, 2026-08-17: "1a 2a",
+posted against the leg-1 entry point):**
+
+- **804-1d — CANONICALITY IS COMPUTED BY THE VALIDATING SCAN, and the
+  predicate is CONSERVATIVE.** A lazy record node holds a source span; a
+  pass-through `[yield $u]` must emit canonical bytes; a span may be emitted
+  directly only if it is already canonical. The scan that walks a child's
+  bytes to validate it also decides canonicality and records it, so render
+  emits the span when the flag is set and materialises otherwise.
+
+  Chosen over always-materialising-on-render, and over normalising every
+  record's bytes on ingest. Always-materialising was declined because
+  pass-through IS the gate's workload and the common adopter shape — it
+  leaves the architecture's whole win unclaimed and lands near the measured
+  ~26 MB/s bound. Normalise-on-ingest was declined because it pays a copy
+  per record precisely in the case we most want fast (input that was already
+  canonical), and because a scan already touching every byte gets the
+  predicate nearly free.
+
+  **The predicate is CONSERVATIVE: any uncertainty answers "not canonical"
+  and falls back to materialising.** A false negative costs throughput; a
+  false positive corrupts canonical output. These are not symmetric, and the
+  asymmetry is the whole reason this is a ruling rather than an
+  implementation detail.
+
+  Safety instrument, unchanged and non-negotiable: the cxparse full-corpus
+  differential census (802 inputs, 7 buckets, byte-level) plus the
+  conformance corpus and the identity/hash fixtures. Representation may
+  change; canonical output may not. A leg that leaves the census
+  byte-identical has not moved canonical bytes or Tier-1 addresses.
+
+- **SEQUENCING 2a(ii)** — #804 leg 1 starts in a FRESH session rather than
+  continuing the 2026-08-17 ledger run. The change is substantial engine
+  work on the most identity-sensitive code in the system and needs the
+  context budget to verify against the census; a half-verified parser change
+  is worse than a slow parser. The leg-1 entry point is recorded on #804.
