@@ -13,6 +13,28 @@
 # Bare short tokens with false-positive surface (e.g. a lone "pb") are
 # intentionally excluded; the multi-char forms below catch real leaks.
 #
+# ENUMERATION IS THE WEAK POINT, and it failed once. `pb-ae` sat in shipped
+# engine source and a test for three weeks (from #567, 2026-07-21) while
+# this gate reported clean, because the list carried `pb-engine`, `pb-xap`,
+# `pb-hq`, `x-pb-` … and not that particular spelling — even though
+# `ae-queue` and `account executive` were already banned, so it was exactly
+# the vocabulary the list exists to stop, in a spelling nobody thought to
+# add. Guessing every suffix is not a strategy.
+#
+# So `pb-<word>` is matched as a CLASS — any suffix, present or future.
+# Verified against the whole tracked tree: zero legitimate uses, so the
+# false-positive surface the comment above worries about does not exist for
+# the hyphenated form (a lone "pb" is still excluded, and still should be).
+#
+# `ae-<word>` was tried as a class too and REVERTED, which is worth
+# recording so nobody repeats it. It fires on `mem://ae-origin` /
+# `mem://ae-rep` / `shred-ae-N` in the journal erasure examples, where `ae`
+# abbreviates apply-erasures — an innocent, unrelated use, and one whose ids
+# appear in expected fixture output. A gate that cries wolf gets ignored or
+# gets exclusions bolted on, and either way stops protecting anything. `ae`
+# is too short and too common to class-match; the specific consumer spelling
+# stays enumerated below.
+#
 # Exit 0 when clean; exit 1 listing every offending file:line.
 
 set -uo pipefail
@@ -22,15 +44,14 @@ cd "$ROOT"
 
 TERMS=(
 	'powerband'
-	'pb-engine'
 	'pbengine'
-	'pb-xap'
-	'pb-hq'
-	'pb-roadmap'
 	'client-acme'
-	'ae-queue'
-	'x-pb-'
 	'account executive'
+	'ae-queue'
+	# CLASS pattern — any suffix, so a new spelling cannot slip through the
+	# way `pb-ae` did. Subsumes pb-engine / pb-xap / pb-hq / pb-roadmap /
+	# x-pb-, which are no longer listed individually.
+	'pb-[a-z]'
 )
 
 pattern="$(IFS='|'; echo "${TERMS[*]}")"
