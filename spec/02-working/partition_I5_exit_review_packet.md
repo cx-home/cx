@@ -517,3 +517,67 @@ moved. Data-lane goldens: `yaml-001`, `conv-020`.
 hash basis), and in the data lane it moves only images that were UNREADABLE
 in the program reading — the class no correct document should have depended
 on.
+
+**§10 addendum — 828-1a (owner, 2026-08-16: "2a"):** both surfaces #827
+split out BECOME effect points and are gated —
+`mime-multipart-boundary` under `random`, `locale-default-locale` under
+`env`. Neither is new policy; both are the implementation rising to rules
+already written down.
+
+- **locale-default-locale.** `env.md` §7 states it flatly: *"Environment-
+  variable reads require `env`"*. The capability-free carve-out there is
+  limited to the ambient process basics "intrinsic to the running process"
+  (stdin/stdout/stderr, pid, argv, cpu-count, exit) — an env-var read is
+  not one of those, and `hostname`/`username` are gated "in the same
+  spirit". The counter-argument (LANG is not a secret) does not reach the
+  rule: the spec chose BREADTH over secret-ness for this capability.
+- **mime-multipart-boundary.** `security.md` §2.1 is a closed EFFECT-POINT
+  table, not a secrets table, so the question is whether the surface
+  reaches an OS resource that can fail — and this one's own failure mode is
+  literally "entropy unavailable". Every sibling entropy draw charges
+  `random`. The counter-argument is answered rather than dismissed: a
+  boundary is NOT a secret, which is exactly why it must resist COLLISION
+  with body content — and that is still entropy.
+
+Friction is answered by the §4 ergonomics the model already ships
+(actionable denial errors, `cx.pkg` manifest grants, `--allow-all`), not by
+leaving an effect point ungated.
+
+Mechanics: the two prims move OUT of `impure_without_capability_exceptions`
+(where they sat as the "(h) KNOWN GAP #828" rows) and INTO
+`capability_gated_prims`, with their rows added to §2.1 — the
+`check-effect-alignment` gate asserts spec ↔ impl equality in both
+directions, so the table and the mirror move together or not at all.
+Witnesses: `locale-069` and `mime-046`, which carry no `grant=` and so run
+under the EMPTY cap set (both disarm-verified red with the guards removed).
+
+**§10 addendum — 829-1c (owner, 2026-08-16: "1c"):** a mid-run comment keeps
+its POSITION and stays HASH-INERT — both, not one at the cost of the other.
+
+The remainder of #829 looked blocked: `canonical.md` §2.9 requires "comment
+placement preserved relative to nodes", and placing a comment INSIDE a text
+run appeared to need the run split into two text nodes, which #469 closed in
+those words because splitting moves the strict-canonical hash. The commit
+that fixed the trailing shape (`ab978098`) recorded exactly that reasoning
+and left the mid-run shape alone.
+
+It does not need a split. The comment carries a **presentation-only**
+`run_offset` — the same class as `pos` (#792) — recording where it sat
+inside the run. Canonical form strips comments (lexicon [L2]/[L3]), so the
+run remains ONE TextNode and the Tier-1 hash is untouched BY CONSTRUCTION;
+the lossless emitter splits the rendered TEXT, never the node.
+
+The interleave is DECLINED, keeping the historical leading placement, when a
+fragment would not round-trip: one that needs quoting (`'a b'` + comment +
+`' c'` re-reads as two strings, not one run) or one that would auto-type
+(`x 5` split after `x ` re-reads `5` as an INT). The oracle for the second
+is the parser's own `try_autotype`, NOT `cx_would_autotype` — that one
+deliberately OVER-reports (its #473 note calls over-reporting "the safe
+direction"), which is right for a quoting decision and wrong here, where it
+silently costs the placement for images like a bare `e`.
+
+**Remaining, not covered by this ruling:** the third shape in the report —
+`[config [; c ] env=dev]` → `[config env=dev [; c ]]` — is a comment in the
+ELEMENT-META zone, not a text run, so `run_offset` does not reach it. It is
+#469's item 2 territory (the meta-zone retention lane) and needs its own
+carrier.
