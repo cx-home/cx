@@ -62,6 +62,7 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
  abi-c-test \
  conform conform-vcx conform-md bench bench-python bench-streaming bench-cxparse \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
+ bench-lazy-ceiling \
  examples example-python example-v example-go example-rust \
  demos demo-v demo-go demo-rust \
  clean
@@ -1526,6 +1527,16 @@ bench-code-pattern-compile: build-vcx
 # untouched by it.
 bench-code-streaming: build-vcx
 	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_streaming_throughput_bench.v
+
+# #804 leg-2 CEILING probe — not a gate, a decision instrument. Walks the
+# gate-15 corpus doing only what a never-forced lazy record would do
+# (scan the child, write its canonical image) and reports the upper bound
+# any forcing discipline can reach. Answers, before the code is written,
+# whether leg 2's architecture can clear the §11.4.4 floor at all. Re-run
+# it when leg 2 lands: the real number must sit under this ceiling, and
+# how far under is the discipline's measured cost.
+bench-lazy-ceiling: build-vcx
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/lazy_record_ceiling_probe.v
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
