@@ -581,3 +581,42 @@ silently costs the placement for images like a bare `e`.
 ELEMENT-META zone, not a text run, so `run_offset` does not reach it. It is
 #469's item 2 territory (the meta-zone retention lane) and needs its own
 carrier.
+
+**§10 addendum — pre-cut ledger rulings (owner, 2026-08-17: "1a 2a 3b 4a"
++ the #823 scope direction):**
+
+- **808-1a** — `CXER0280 E_RENDER_FAILED` RETIRES to reserved. The
+  renderer's real failure mode is `CXER0281 E_UNRENDERABLE_DIRECTIVE`,
+  which exists and is exercised; inventing a second failure class to
+  justify a registry row is backwards. (`CXER4113`, the issue's other half,
+  already gained its raise site at e5fdbd14 — #808 closes with this.)
+- **760-1a** — the four dead `[59a]` EvalName reservations (`?with`,
+  `?use`, `?cond`, `?try`) RETIRE, the same treatment L98 gave the
+  `[?for-tumbling]` / `[?for-sliding]` window heads. A name the grammar
+  reserves and the evaluator cannot dispatch is a promise the language
+  breaks.
+- **804-1b — THE 200 MB/s THRESHOLD IS BINDING, AND THE CUT HOLDS FOR IT.**
+  `code.md` §11.4.4 is normative; gate 15 measures ~2 MB/s. This
+  supersedes every prior placement of #804 (exit-2a's post-cut slot, the
+  §10 addendum's pre-cut-but-late slot): it is now the RELEASE CRITICAL
+  PATH, not the last item before the cut. The threshold is not re-rulable
+  against whatever the implementation happens to reach — the
+  implementation rises to the spec, which is the same discipline #810 /
+  #809 / #815 / #830 all followed. Diagnosis to work from (#804): the cost
+  is per-ITEM evaluation machinery — `clone_frame_sharing_closures` per
+  item, yield-leaf evaluation, `render_node_to` per emit — roughly 45 µs
+  per ~95-byte record, and NOT the input path (the streamed-input fast
+  path and the materializing path measure identically).
+- **833-1a** — the new broad grant is spelled `--allow-common`: it names
+  the common working set without implying "safe" or "dev-only", neither of
+  which it guarantees.
+- **#823 — SCOPE IS THE WHOLE ISSUE, not the byte-equivalence half.**
+  Fixing the streamed `[?map]` renderer to emit the sequence wrapper is
+  necessary but not sufficient. While `[?map]` returns `.buffered`
+  (api.v ~285) it keeps exactly the memory profile #822 closed — 514 MiB
+  peak RSS on a 10 MB pass-through — and NOTHING detects that, because
+  gate 15 benches a `[?for]` shape only. The exclusion is honest at the
+  predicate but its cost is unmeasured, which is how a regression class
+  hides behind a documented trade-off. So the fix is: restore streaming
+  for the shape, AND extend the gate to cover a `[?map]` shape so the
+  exclusion can never silently return.
