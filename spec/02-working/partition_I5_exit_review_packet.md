@@ -416,3 +416,54 @@ the target took the DEFAULT algo while `compact` copied entries **verbatim**
 were hashed under the source's algo — a segment that fails its own
 `verify`. No identity surface moves: addresses stay the plaintext content
 hashes (§9), and the copy-forward is byte-identical either way.
+
+**§10 addendum — 777-1a + 830-1a (owner, 2026-08-16: "1a 2a"):**
+
+**777-1a — one map lane; the envelope carries key TYPE.** The program map
+grammar ADMITS the key kinds the data reading already accepts, and the
+`__cx_map__` envelope records each key's CXDM kind rather than only its
+name image. Keys keep their kinds through eval and render; the §8
+admissible-key parity nit disappears with the split that caused it.
+
+What the investigation found is worse than the reported nonuniqueness, and
+is what the ruling is really buying:
+
+- `parse_map_literal` accepts key tokens of kind `.string_lit` / `.ident` /
+  `.number_lit` only. `true`/`false` (`bool_lit`) AND date/datetime
+  literals fall OUT of the program map grammar into the DATA map reading —
+  so the lane a map lands in is decided by its key's *token kind*.
+- The envelope stores keys as entry element NAMES, so the key's kind is
+  erased: `{'7': 'a', 7: 'b'}` — a string key and an int key, two distinct
+  keys — renders `{7: 'a', 7: 'b'}`, which `cx canonical` then REFUSES with
+  **W014 duplicate map key**. The program lane emits canonical text the
+  canonicalizer rejects: a hard round-trip break, not a cosmetic second
+  spelling.
+- `{'true': v}` renders `{true: v}` (string key → bool key on re-parse) and
+  `{'2026-08-16': v}` renders `{2026-08-16: v}` (string → date). The kind
+  flips across the round trip.
+- #776's ruling ("`{1:}` ≠ `{1::bigint:}` ≠ `{1.0:}`, three distinct keys")
+  is not delivered in the canonical form: the ascription rides in the name
+  text, and `{1::bigint: v}` renders `{'1::bigint': v}` — a STRING key.
+  Carrying the kind structurally is what makes the three actually distinct.
+
+Key identity in the envelope is therefore the pair (kind, image), and
+duplicate detection compares the pair. Entries whose kind is unset keep
+today's image heuristic byte-identically — every stdlib-constructed option
+map has bare-name keys and is unaffected.
+
+**830-1a — V's scalar temporal encoder rises to §3.6.1, in this sitting.**
+`scalar_node_to_dataval` is kind-aware for decimal (0x28) and bigint (0x18)
+only, so date/datetime scalars erase to the string tag 0x30 and V's own
+data-bin round trip returns a quoted STRING. The impl rises to the spec
+(the #810/#809/#815 pattern); data-bin goldens covering a temporal scalar
+re-bless with the change. No Tier-1 identity surface: identity is the
+canonical TEXT hash, and data-bin is transport.
+
+**NOT settled by either ruling, and newly found — filed separately.** The
+program renderer and `cx canonical` disagree on the VALUE spelling in map
+position, for every key kind, not just the bool-keyed case that surfaced
+it: `[m {yes: 'x'}]` renders `{yes: 'x'}` through `cx FILE` and `{yes: x}`
+through `cx canonical` (the data lane's bare-when-safe rule, #790's
+790-1a). That axis is orthogonal to the lane split, moves identity-bearing
+canonical output broadly, and is left for its own ruling rather than
+absorbed here.
