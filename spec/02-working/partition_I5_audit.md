@@ -105,6 +105,16 @@ the materializing path refuses ALWAYS declines pre-emission and reproduces
 the exact refusal" (partition_I5_stream17_runtime.md:271-282). All three
 guards leak:
 
+> **Forward note (2026-08-18, #804 leg 3).** The quoted claim's
+> *pre-emission* half has since been retired by owner ruling: the
+> validation pass was removed because the two-pass ceiling measured 201.7
+> MB/s against §11.4.4's 200 floor. This finding is NOT weakened by that —
+> AF-1 is about refusal **parity** (which inputs are refused), and leg 3
+> explicitly preserves the accepted-input set; only *when* a late refusal
+> is discovered moved. Read "declines pre-emission" below as "refuses",
+> which is the part AF-1 tested. Kept as written — this is a dated audit
+> record, not a live specification.
+
 - **AF-1a `@`-reference inputs stream instead of refusing.** The input gate
   `streamed_input_safe` (vcx/code/streamed_input.v:135-146) scans for `&` and
   `#name` bytes but not the `@` reference sigil; `resolve_ids` (which the

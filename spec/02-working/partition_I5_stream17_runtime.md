@@ -276,11 +276,26 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   COMMIT (buffer to the 2nd match; 0/1-match walks decline
   pre-emission so the materializing path owns the single-match
   field-read shape, the #21 lone-collection unwrap, the __cx_slot
-  fallback); TWO-PASS walk (the validation pass parses+resolves all
-  and verifies the tail BEFORE any output — an input the
-  materializing path refuses ALWAYS declines pre-emission and
-  reproduces the exact refusal; the multi-doc fixture caught the
-  single-pass emit-then-error live). Engagement WITNESSED
+  fallback); ONE WALK — **superseding this stream's TWO-PASS walk,
+  #804 leg 3, owner-ruled 2026-08-18.** The validation pass used to
+  run first (parse+resolve all, verify the tail) so that an input the
+  materializing path refuses ALWAYS declined pre-emission and
+  reproduced the exact refusal; the multi-doc fixture caught the
+  single-pass emit-then-error live, and that is why it was built. It
+  was removed because it became measurably the binding constraint on
+  §11.4.4: with the leg-2 lazy record in place the two-pass ceiling is
+  **201.7 MB/s against a 200 MB/s floor**, so a perfect evaluation
+  pass still could not pass gate 15 (one walk: ~306). Input errors now
+  behave as EVAL-time errors already did — partial chunks may precede
+  the failure, the streaming mode's stated contract. Deferred commit
+  still covers everything up to the 2nd match, so an input whose error
+  precedes its second match declines with nothing emitted exactly as
+  before; the ACCEPTED-INPUT SET is unchanged, only the moment a late
+  refusal is discovered has moved. The multi-doc fixture now pins the
+  new contract, and `test_streamed_input_late_error_may_emit_first`
+  pins the cost at a size that can actually show it (below StreamCtx's
+  64 KiB flush threshold the trade is invisible, which is exactly how
+  it could have been relaxed silently). Engagement WITNESSED
   (streamed_input_commits — the dead-seam guard). REMOVED:
   scan_top_level_children_raw + render_flat_record_to +
   StreamCtx.emit_raw_bytes + ptr helpers (a caller-less PARALLEL
