@@ -467,3 +467,53 @@ through `cx canonical` (the data lane's bare-when-safe rule, #790's
 790-1a). That axis is orthogonal to the lane split, moves identity-bearing
 canonical output broadly, and is left for its own ruling rather than
 absorbed here.
+
+**§10 addendum — 831-1a′ (one string image for collection items; owner,
+2026-08-16):** `code.md` §11.1a **R6** is AUTHORIZED to redefine "bare-safe"
+as the INTERSECTION of the two readings, and both the data emitter and the
+program result renderer are authorized to share one implementation of it.
+
+The issue was filed as a canonical NONUNIFORMITY — `cx FILE` rendering
+`{yes: 'x'}` where `cx canonical` renders `{yes: x}`. The investigation found
+something sharper underneath: "safe" had been computed for the DATA reading
+alone, so the canonical form emitted images the PROGRAM reader **cannot
+parse** —
+
+```
+{k: 'a b'}          ->  {k: a b}            expected ':' after map key
+{k: 'a.b'}          ->  {k: a.b}            same
+{k: 'https://a.com'} -> {k: https://a.com}  same
+```
+
+— including a shipped golden (`conv-020`, the TOML-import expected output).
+That is `lexicon.ebnf` [L11]'s **one deliberate name-char mode fork** showing
+through a canonical form: the data lexer folds `.`/`:` into a name, the
+program lexer does not, and a single interior space is legal body text but
+splits a collection item. Array position was never affected — its item
+emitter already applied a stricter boundary predicate, which is exactly why
+arrays were the one collection position where the lanes always agreed.
+
+So the divergence was a SYMPTOM and the unreadable image was the defect.
+Narrowing the safe set fixes the defect, and once it is narrowed the two
+surfaces converge onto a spelling BOTH readers accept — which is why the
+convergence is landing now after being reverted once.
+
+**On that revert (#790/790-1a, 2026-08-15).** A bare-when-safe arm for
+string scalars was tried in the program renderer and backed out, on the
+reading that §11.1a means "program results quote their strings". R6 says the
+opposite and always did — *"a string renders BARE iff it is bare-safe AND
+does not auto-type"* — so the implementation was below its own normative
+rule and the goldens pinned the pre-R6 behavior. What was genuinely missing
+was not the direction but the safe SET; with R6 tightened, the earlier
+objection no longer applies.
+
+**Re-bless:** 111 expected-output lines across 19 conformance files (109 via
+the `CX_BLESS=1` gate mode, which emits a record ONLY where it has proved the
+diff quote-only, + 2 whose single-line `out-text` form the applier's pattern
+skipped). Every diff verified quote-only before applying; no `in-code` block
+moved. Data-lane goldens: `yaml-001`, `conv-020`.
+
+**Not a Tier-1 identity move in the program lane** (the result image is not a
+hash basis), and in the data lane it moves only images that were UNREADABLE
+in the program reading — the class no correct document should have depended
+on.
