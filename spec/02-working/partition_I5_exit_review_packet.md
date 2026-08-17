@@ -620,3 +620,42 @@ carrier.
   hides behind a documented trade-off. So the fix is: restore streaming
   for the shape, AND extend the gate to cover a `[?map]` shape so the
   exclusion can never silently return.
+
+**§10 addendum — the #804 recovery architecture (owner, 2026-08-17: "1a 2a",
+posted against the measured ledger-run status):**
+
+- **804-1c — THE RECOVERY ARCHITECTURE IS LAZY RECORD NODES**
+  (materialize-on-first-structural-access). Chosen over a shape-gated
+  fused parse-and-render, and over an incremental arena/validation-pass
+  package, on the stated grounds: it is the only one of the three that is
+  both GENERAL and plausibly SUFFICIENT, and it dissolves the two-pass
+  problem rather than working around it. The fused renderer was declined
+  because it is a SECOND implementation of value canonicalization that
+  must stay byte-identical to the AST renderer forever — the duplication
+  CX refuses everywhere else (one grammar, one emitter, one authority:
+  the #831 / #777 / #760 pattern). The incremental package is right as a
+  first step INSIDE this architecture and wrong as an endpoint: its
+  ceiling is measurably ~50 MB/s, so choosing it alone means the cut does
+  not happen.
+
+  This ruling REPLACES 804-1b's "diagnosis to work from" paragraph above,
+  which restates the issue's original text. That diagnosis is FALSIFIED:
+  a fresh `-prod` profile puts 81% of samples under
+  `CXChildStream_next → Parser_parse_node` and 11% in eval + render. The
+  input path is the bottleneck; equal throughput on the streamed-input and
+  materializing paths is what a parse-bound loop looks like, since both
+  parse the same bytes. 804-1b's THRESHOLD ruling stands untouched.
+
+  Measured basis for the choice (post-diet, `-prod`): a ~95-byte record
+  becomes ~25 heap objects, and the streamed-input fast path pays that
+  TWICE because its transparency posture runs a full validation walk
+  before the evaluation walk — the throwaway pass is 42% of total. Upper
+  bounds, neither reachable: dropping the second pass ~26 MB/s; also
+  removing every remaining allocation ~50 MB/s. The corpus-spelling
+  hypothesis was checked and killed (attribute-spelled records measure
+  12.2 MB/s against the typed-list corpus's 15.0 — slower, not faster).
+
+- **SEQUENCING 2a** — #726 (reference app) and #826 (documentation
+  restructure) PROCEED alongside the #804 architecture rather than waiting
+  behind it. Neither depends on its answer, both are cut-blocking in their
+  own right, and the critical path should not be the only path.
