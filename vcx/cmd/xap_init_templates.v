@@ -243,17 +243,25 @@ fn xap_init_compose(name string) string {
 
    NOTE the `//feature` DESCENDANT step. Each spec file opens with a
    `[; … ]` block comment, so the CHILD step `/feature` selects NOTHING —
-   and composing zero features cheerfully reports ok=true, because the
-   empty grammar is the identity. A vacuous green is the one failure mode
-   of this script worth guarding against. ]
+   and composing zero features reports ok=true, because the empty grammar
+   is the identity. A vacuous green is this script's one real failure
+   mode.
+
+   NOTE the postfix `!` on each read. Navigating an err yields the EMPTY
+   node-set, not the err (code.md §6.2, normative) — so without the `!` a
+   missing or misnamed file reads as a document with no features, and the
+   gate above it says ok=true. The spec's own remedy is `guard the
+   BINDING, not the query`: `!` turns an unreadable input into a named
+   abort with a non-zero exit, where a silent empty composition would
+   otherwise print green. ]
 [?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/cx' :as cx]
 
 [?let
-  [= \$ad [\$cx:parse [\$io:read-file 'thing.feature.cxd']]]
-  [= \$bd [\$cx:parse [\$io:read-file 'owner.feature.cxd']]]
-  [= \$cd [\$cx:parse [\$io:read-file 'thing-of-owner.feature.cxd']]]
+  [= \$ad [\$cx:parse [\$io:read-file 'thing.feature.cxd']!]]
+  [= \$bd [\$cx:parse [\$io:read-file 'owner.feature.cxd']!]]
+  [= \$cd [\$cx:parse [\$io:read-file 'thing-of-owner.feature.cxd']!]]
   [= \$a  [\$first [?for [in \$n \$ad//feature] [yield \$n]]]]
   [= \$b  [\$first [?for [in \$n \$bd//feature] [yield \$n]]]]
   [= \$c  [\$first [?for [in \$n \$cd//feature] [yield \$n]]]]
