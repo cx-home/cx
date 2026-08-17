@@ -1411,7 +1411,7 @@
         """[?let [= $f1 [?async [+ 1 1]]]
               [= $f2 [?async [* 2 2]]]
               [= $f3 [?async [$upper 'go']]]
-           [?await-all $f1 $f2 $f3]]"""]
+           [?await-all ($f1, $f2, $f3)]]"""]
 
       [body
         """**Future state machine.** Futures progress through
