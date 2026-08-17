@@ -99,6 +99,14 @@ fi
 # actually the #58 worker path). Each stressor now gets its own log + verdict line.
 log_http=$(mktemp); log_churn=$(mktemp); log_workers=$(mktemp); log_mainloop=$(mktemp)
 
+# cleanup is used by the boot-sanity block below, so it must be defined (and
+# trapped) BEFORE it — the original placement after that block made the
+# pre-boot `cleanup` calls "command not found" no-ops (set -u, no -e), so a
+# stale server from an aborted earlier run could keep the port and answer the
+# boot probe / stressors in place of the freshly-built binary (#743).
+cleanup() { pkill -9 -f "serve57|serve_churn_heavy|serve_mainloop|workers8|wrk -t12" 2>/dev/null; }
+trap cleanup EXIT
+
 # Boot sanity (2026-08-14, #743 battery repair): a serve fixture that cannot
 # even BIND (stdlib-surface drift, a missing pack/define) must fail the gate
 # as SETUP, never as a verdict — exactly this rot (no callable "http-serve"
@@ -120,8 +128,6 @@ if command -v wrk >/dev/null 2>&1; then
   cleanup
 fi
 crash_http=0; crash_churn=0; crash_workers=0; crash_mainloop=0
-cleanup() { pkill -9 -f "serve57|serve_churn_heavy|serve_mainloop|workers8|wrk -t12" 2>/dev/null; }
-trap cleanup EXIT
 
 # --- multi-reactor HTTP (the #63 reactor stressor) ---
 # Needs `wrk` for load. If absent, skip the HTTP stressor (the worker stressor below
