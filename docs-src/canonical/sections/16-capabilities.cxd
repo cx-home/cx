@@ -70,6 +70,7 @@
       [tr [td '--allow-subprocess'] [td 'subprocess'] [td 'process spawn ([$process:run] and friends)']]
       [tr [td '--allow-eval'] [td 'eval'] [td 'dynamic evaluation — [?eval] tree-eval']]
       [tr [td '--allow-secret-reveal'] [td 'secret-reveal'] [td 'declassifying a [?secret] value via [?reveal]']]
+      [tr [td '--allow-common'] [td '(all but secret-reveal)'] [td 'the common working set — everything above except declassifying secrets']]
       [tr [td '--allow-all'] [td '(all)'] [td 'every capability — explicit trusted-local opt-out']]]
     [body
       """Each denial names its own grant. A few worked examples, each
@@ -171,23 +172,43 @@ $ cx home.cx --allow-env
          wanted — so the denial tells you exactly what to review before
          widening the grant."""]]
 
-  [child id=caps-allow-all n=16.4 title='The --allow-all opt-out'
+  [child id=caps-broad-grants n=16.4 title='The two broad grants'
     [body
-      """`--allow-all` grants everything. It exists because
-         deny-by-default must stay ergonomic for fully-trusted local
-         use — your own build script, a REPL experiment, a one-off
-         transform on your own machine. It is an explicit, visible
-         opt-out: anyone reading the invocation can see the program
-         runs unconfined."""]
+      """Enumerating capabilities per script gets tiresome while you
+         are still exploring, so there are two broad grants. They differ
+         in exactly one capability, and that one matters."""]
     [body
-      """Where **not** to use it: anything long-running, anything
+      """`--allow-common` grants the common working set: read, write,
+         net, env, clock, random, subprocess, eval. It does **not**
+         grant `secret-reveal`, so a `[?reveal]` under it still refuses
+         with `CXER0271`. This is the grant to reach for while you are
+         learning, and the one these pages use."""]
+    [example lang=cx
+      """[?let [= $s [?secret 'hunter2']]
+  [out [?reveal $s]]]"""]
+    [output
+      """$ cx reveal.cx --allow-common
+[out [err code=cx-err:CXER0271 message='E_CAP_DENIED: secret-reveal capability required for reveal; none granted (grant via --allow-secret-reveal)']]
+$ cx reveal.cx --allow-all
+[out 'hunter2']"""]
+    [body
+      """`--allow-all` grants everything, `secret-reveal` included. It
+         exists because deny-by-default must stay ergonomic for
+         fully-trusted local use — your own build script, a REPL
+         experiment, a one-off transform on your own machine. It is an
+         explicit, visible opt-out: anyone reading the invocation can
+         see the program runs unconfined."""]
+    [body
+      """Where **not** to use either: anything long-running, anything
          network-facing, anything whose inputs you do not control, and
          any invocation you copy into documentation, CI, a systemd
          unit, or a Dockerfile. Those should carry the narrowest set
          that works — the flags are the audit trail. Note that
          `--allow-all` is strictly wider than granting all nine flags
-         individually: it is also the only grant that bypasses the
-         private-range deny set on network dials."""]]
+         individually, `--allow-common` included: it is the only grant
+         that bypasses the private-range deny set on network dials, so
+         a local-service example under `--allow-common` asks for the
+         scope it needs (`--allow-net=127.0.0.1:PORT`)."""]]
 
   [child id=caps-narrowing n=16.5 title='Narrowing with [?with-caps]'
     [body

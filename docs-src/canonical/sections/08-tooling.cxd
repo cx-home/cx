@@ -145,13 +145,17 @@
         """$ cx report.cx --data=orders.cx       # orders.cx binds as $doc
            $ cx build_site.cx --allow-read --allow-write
            $ cx serve.cx --allow-net
-           $ cx pipeline.cx --allow-all          # every capability"""]
+           $ cx pipeline.cx --allow-common       # the common working set"""]
       [body
         """The capability set: `--allow-read`, `--allow-write`,
            `--allow-net`, `--allow-env`, `--allow-clock`,
            `--allow-random`, `--allow-subprocess`, `--allow-eval`,
-           `--allow-secret-reveal`, and the blanket `--allow-all`.
-           See [[security]] for the security model."""]
+           `--allow-secret-reveal`. Two broad grants stand beside them:
+           `--allow-common` is all of the above EXCEPT
+           `--allow-secret-reveal`, and `--allow-all` is everything
+           including it. Prefer `--allow-common` while exploring — it
+           keeps `[?secret]` values sealed. See [[security]] for the
+           security model."""]
       [body
         """A `cx eval FILE` alias exists for the same action; prefer
            the plain `cx FILE` spelling — the alias adds nothing."""]]
