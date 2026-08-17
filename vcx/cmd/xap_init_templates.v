@@ -242,18 +242,18 @@ fn xap_init_compose(name string) string {
      cx --allow-read compose.cx
 
    NOTE the `//feature` DESCENDANT step. Each spec file opens with a
-   `[; … ]` block comment, so the CHILD step `/feature` selects NOTHING —
-   and composing zero features reports ok=true, because the empty grammar
-   is the identity. A vacuous green is this script's one real failure
-   mode.
+   `[; … ]` block comment, so the CHILD step `/feature` selects NOTHING.
+   Composing zero features is now refused outright (CXER4874) rather than
+   reported green, so this mistake fails loudly instead of quietly — but
+   the selector is still the thing to get right.
 
    NOTE the postfix `!` on each read. Navigating an err yields the EMPTY
    node-set, not the err (code.md §6.2, normative) — so without the `!` a
-   missing or misnamed file reads as a document with no features, and the
-   gate above it says ok=true. The spec's own remedy is `guard the
-   BINDING, not the query`: `!` turns an unreadable input into a named
-   abort with a non-zero exit, where a silent empty composition would
-   otherwise print green. ]
+   missing or misnamed file reads as a document with no features. The
+   spec's own remedy is `guard the BINDING, not the query`: `!` names the
+   failing FILE at the point it fails, where the compose refusal below can
+   only tell you the composition ended up empty. Two guards, and they
+   report different things on purpose. ]
 [?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/cx' :as cx]
