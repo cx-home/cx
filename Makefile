@@ -1515,8 +1515,17 @@ bench-code-pattern-compile: build-vcx
 
 # Gate 15 — streaming throughput on JSON-shape workloads:
 # mean MUST be ≥ 200 MB/s + no trial below 80 % of mean.
+#
+# `-prod` is load-bearing, not decoration (#804). The recipe depends on
+# `build-vcx`, which builds the SHIPPED artifacts optimised — but the bench
+# links the evaluator as V SOURCE and compiles it fresh, so without `-prod`
+# the gate measured an unoptimised build of the engine, which is not the
+# artifact CX ships. Same corpus, same program, same threshold: 2.6 MB/s
+# unoptimised vs 13.3 MB/s optimised. A perf gate has to measure the build
+# under test; this is a measurement repair, and the §11.4.4 floor is
+# untouched by it.
 bench-code-streaming: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_streaming_throughput_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_streaming_throughput_bench.v
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
