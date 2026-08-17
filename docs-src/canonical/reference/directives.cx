@@ -212,13 +212,13 @@ B"""] [expect """50"""]]
 [directive-doc name='?zip' category="Iterator stdlib — per-position tuples" spec="§8"
   [sig """[?zip SRC-A SRC-B…] -> iterator of tuples"""]
   [summary """Iterator combinator: per-position tuples across two or more sources, stopping at the shortest."""]
-  [example [code """[?zip (1, 2, 3) ("a", "b", "c")]"""] [expect """((1, 'a'), (2, 'b'), (3, 'c'))"""]]
+  [example [code """[?zip (1, 2, 3) ("a", "b", "c")]"""] [expect """((1, a), (2, b), (3, c))"""]]
 ]
 
 [directive-doc name='?enumerate' category="Iterator stdlib — emit `(i, item)` pairs" spec="§8"
   [sig """[?enumerate SRC] -> iterator of (i, item)"""]
   [summary """Iterator combinator: pair each element with its zero-based index."""]
-  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((0, 'a'), (1, 'b'), (2, 'c'))"""]]
+  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((0, a), (1, b), (2, c))"""]]
 ]
 
 [directive-doc name='?chunks' category="Iterator stdlib — group by `count`" spec="§8"
