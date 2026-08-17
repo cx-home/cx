@@ -202,27 +202,27 @@ fn test_xap_shell_any_mount_and_declared_verbs() {
 	}
 	port := xap_port(3)
 	dir := os.temp_dir()
-	shell := os.join_path(dir, 'cx_xap_pbae_shell_${port}')
+	shell := os.join_path(dir, 'cx_xap_review_queue_shell_${port}')
 	os.mkdir_all(shell) or { panic(err) }
 	os.write_file(os.join_path(shell, 'layout.html'), '<!doctype html>\n<html><body>\n' +
-		'<section id="pb-ae-panel">{{surface:pb-ae}}</section>\n</body></html>\n') or {
+		'<section id="review-queue-panel">{{surface:review-queue}}</section>\n</body></html>\n') or {
 		panic(err)
 	}
-	prog := os.join_path(dir, 'cx_xap_pbae_server.cx')
+	prog := os.join_path(dir, 'cx_xap_review_queue_server.cx')
 	os.write_file(prog, '[?lib \'cx-xap\' :as xap]\n' +
-		'[\$xap:component pb-ae\n' +
-		'  {bind: "/pb-ae"\n' +
+		'[\$xap:component review-queue\n' +
+		'  {bind: "/review-queue"\n' +
 		'   emits: ([do :approve [note :string]])\n' +
 		'   view: [?fn (\$rs)\n' +
 		'           [panel [list [?for [in \$r \$rs] [yield [item \$r/note]]]]\n' +
 		'                  [control :approve [label "Approve"] [input :note]]]]\n' +
 		'   working-panel: :none}]\n' +
-		'[?let [= \$rt [\$xap:run {tenant: "pb" components: (pb-ae)}]]\n' +
+		'[?let [= \$rt [\$xap:run {tenant: "demo" components: (review-queue)}]]\n' +
 		'  [\$xap:serve "http://127.0.0.1:${port}" {runtime: \$rt shell: "${shell}"}]]\n') or {
 		panic(err)
 	}
 
-	pid_s := os.execute('${cx_binary()} --allow-net ${prog} >/tmp/cx-xap-pbae.${port}.out 2>&1 & echo \$!')
+	pid_s := os.execute('${cx_binary()} --allow-net ${prog} >/tmp/cx-xap-review-queue.${port}.out 2>&1 & echo \$!')
 	pid := pid_s.output.trim_space().int()
 	defer {
 		os.execute('kill ${pid} 2>/dev/null')
@@ -237,19 +237,19 @@ fn test_xap_shell_any_mount_and_declared_verbs() {
 	}
 	assert up, 'xap serve never bound on ${port}'
 
-	// #567: the shell's own mount (section#pb-ae-panel) is resolved — the whole
+	// #567: the shell's own mount (section#review-queue-panel) is resolved — the whole
 	// mount element is replaced, controls target the SHELL's id, and no
 	// placeholder text leaks to the browser.
 	page := curl('http://127.0.0.1:${port}/')
 	assert !page.contains('{{surface:'), 'shell placeholder leaked to the browser; got: ${page}'
-	assert page.contains('<section id="pb-ae-panel">'), 'shell mount element/id not preserved by the splice; got: ${page}'
-	assert page.contains('hx-target="#pb-ae-panel"'), 'control does not target the shell mount id; got: ${page}'
+	assert page.contains('<section id="review-queue-panel">'), 'shell mount element/id not preserved by the splice; got: ${page}'
+	assert page.contains('hx-target="#review-queue-panel"'), 'control does not target the shell mount id; got: ${page}'
 	assert page.contains('hx-post="/intent/approve"'), 'control endpoint not derived from the view; got: ${page}'
 
 	// #570: POST /intent/approve (a declared, non-demo verb) commits through the
 	// cascade; the response fragment swaps against the shell mount.
 	frag := curl('-X POST http://127.0.0.1:${port}/intent/approve -d "note=ok-to-send"')
-	assert frag.contains('<section id="pb-ae-panel">'), 'intent fragment not wrapped in the shell mount; got: ${frag}'
+	assert frag.contains('<section id="review-queue-panel">'), 'intent fragment not wrapped in the shell mount; got: ${frag}'
 	assert frag.contains('<li>ok-to-send</li>'), 'declared verb did not commit through the cascade; got: ${frag}'
 	surface := curl('http://127.0.0.1:${port}/surface')
 	assert surface.contains("[item 'ok-to-send']"), 'committed intent not in the live fold; got: ${surface}'
@@ -275,12 +275,12 @@ fn test_xap_shell_unknown_surface_refuses() {
 	}
 	prog := os.join_path(dir, 'cx_xap_ghost_server.cx')
 	os.write_file(prog, '[?lib \'cx-xap\' :as xap]\n' +
-		'[\$xap:component pb-ae\n' +
-		'  {bind: "/pb-ae"\n' +
+		'[\$xap:component review-queue\n' +
+		'  {bind: "/review-queue"\n' +
 		'   emits: ([do :approve [note :string]])\n' +
 		'   view: [?fn (\$rs) [panel [list]]]\n' +
 		'   working-panel: :none}]\n' +
-		'[?let [= \$rt [\$xap:run {tenant: "pb" components: (pb-ae)}]]\n' +
+		'[?let [= \$rt [\$xap:run {tenant: "demo" components: (review-queue)}]]\n' +
 		'  [\$xap:serve "http://127.0.0.1:${port}" {runtime: \$rt shell: "${shell}"}]]\n') or {
 		panic(err)
 	}
@@ -330,7 +330,7 @@ fn test_xap_detail_routes() {
 		'           [panel [list [?for [in \$r \$rs] [yield [item [\$concat \$r/id ":" \$r/note]]]]]\n' +
 		'                  [control :approve [label "Approve"] [input :note]]]]\n' +
 		'   working-panel: :none}]\n' +
-		'[?let [= \$rt [\$xap:run {tenant: "pb" components: (queue)}]]\n' +
+		'[?let [= \$rt [\$xap:run {tenant: "demo" components: (queue)}]]\n' +
 		'[?let [= \$a [\$xap:emit \$rt [do :approve [id "opp-0001"] [note "alpha"]]]]\n' +
 		'[?let [= \$b [\$xap:emit \$rt [do :approve [id "opp-0002"] [note "bravo"]]]]\n' +
 		'  [\$xap:serve "http://127.0.0.1:${port}" {runtime: \$rt}]]]]\n') or {

@@ -1158,7 +1158,7 @@ fn xap_html_page(mut rt XapRuntime, mut env MatchEnv) !string {
 // xap_shell_splice resolves every `{{surface:NAME}}` mount in the shell
 // template (#567): each names a registered component whose view renders the
 // panel spliced in its place. When the placeholder sits inside a mount
-// element carrying an id (`<main id="pb-ae-panel">{{surface:pb-ae}}</main>`),
+// element carrying an id (`<main id="review-queue-panel">{{surface:review-queue}}</main>`),
 // the WHOLE mount element is replaced and its tag/id are recorded on the
 // runtime, so POST fragments and control hx-targets swap against the
 // shell's own geometry. A bare placeholder (no enclosing id) is replaced by
