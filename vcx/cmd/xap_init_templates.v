@@ -329,7 +329,7 @@ fn xap_init_client_files(name string) map[string]string {
 	return {
 		'client.cxd':         xap_init_client_spec(name)
 		'shell/layout.html':  xap_init_client_shell(name)
-		'README.md':          '# ${name}-web-client\n\nA SEPARATE project from the XAP (N-CLIENT-2): a XAP never embeds its\nrenderer. It exposes the surface as data; this materializes it into one\nmedium. The same surface drives a CLI, a TUI, an agent and a browser with\nno change to the XAP.\n\nServe it with `[\$xap:serve]` over a runtime that has the XAP\'s components\nregistered — see the reference application for a worked entrypoint.\n'
+		'README.md':          '# ${name}-web-client\n\nA SEPARATE project from the XAP (N-CLIENT-2): a XAP never embeds its\nrenderer. It exposes the surface as data; this materializes it into one\nmedium. The same surface drives a CLI, a TUI, an agent and a browser with\nno change to the XAP.\n\n## This is a SPEC + SHELL ONLY — it does not run yet\n\nWhat is scaffolded here is `client.cxd` (the spec layer) and `shell/` (the\ndocument shell). There is deliberately no server: a serve entrypoint has to\nregister a component per feature WITH A VIEW, and views are the one thing\nonly you can write — they are your medium, not the scaffold\'s.\n\nTo make it run, add a `serve.cx` that:\n\n1. declares `[\$xap:component NAME {bind: …, emits: …, view: …}]` per feature\n2. composes the XAP\'s features and runs a runtime over them\n3. calls `[\$xap:serve URL {runtime: …, shell: \'shell\'}]`\n\n`reference/shop-web-client/serve.cx` in the cx repo is a worked example of\nexactly those three steps.\n'
 	}
 }
 
@@ -371,7 +371,7 @@ fn xap_init_client_shell(name string) string {
 	return '<!doctype html>\n' +
 		'<html lang="en">\n<head>\n  <meta charset="utf-8">\n' +
 		'  <title>${name} console</title>\n' +
-		'  <script src="/static/htmx.min.js"></script>\n' +
+		'  <script src="https://unpkg.com/htmx.org@1.9.10"></script>\n' +
 		'</head>\n<body>\n  <h1>${name}</h1>\n\n' +
 		'  <section hx-get="/thing" hx-trigger="every 5s" hx-swap="outerHTML">\n' +
 		'    <div id="things-mount">${o}thing${c}</div>\n  </section>\n\n' +
