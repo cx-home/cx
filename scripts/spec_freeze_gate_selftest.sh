@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # spec_freeze_gate_selftest — proves the gate's detection power on a
 # SYNTHETIC repo (mktemp; never the live tree — the R3.10 gate-idempotency
-# rule). Five scenarios:
+# rule). Eight scenarios:
 #   A  mixed spec+impl, no token                → MUST FAIL  (red proof)
 #   B  mixed, token naming a RECORDED ruling    → must pass
 #   C  mixed, token naming NO recorded ruling   → MUST FAIL  (match check)
 #   D  spec-only, no token                      → must pass
 #   E  impl-only, no token                      → must pass
+#   F  mixed, PARENTHESIZED recorded token      → must pass  (the "(RULED: id)"
+#      spelling; id carries a non-ASCII prime, the real 831-1a′ shape)
+#   G  mixed, parenthesized token with an internal (…) qualifier → must pass
+#   H  mixed, parenthesized BOGUS token         → MUST FAIL  (paren stripping
+#      must not loosen the recorded-match check)
 set -euo pipefail
 
 GATE="$(cd "$(dirname "$0")" && pwd)/spec_freeze_gate.sh"
@@ -18,7 +23,7 @@ trap 'rm -rf "$T"' EXIT
   git init -q .
   git config user.email t@t && git config user.name t
   mkdir -p spec/03-approved spec/02-working vcx
-  printf 'ledger\n\nRULED: TST-1 — recorded test ruling (a)\n' > spec/02-working/partition_test_ledger.md
+  printf 'ledger\n\nRULED: TST-1 — recorded test ruling (a)\nRULED: TST-3′ — recorded, id ends in a prime\nRULED: TST-4 — recorded base id; commits may cite TST-4(a-revised)\n' > spec/02-working/partition_test_ledger.md
   git add -A && git commit -qm "seed ledger"
 
   sha_of_mixed() { # $1 = message
@@ -56,6 +61,22 @@ trap 'rm -rf "$T"' EXIT
   git add -A && git commit -qm "impl-only change"
   bash "$GATE" --check-commit "$(git rev-parse HEAD)" || {
     echo "SELFTEST FAILED: scenario E (impl-only) was refused" >&2; exit 1; }
+
+  # F — mixed, parenthesized recorded token with a prime → must pass
+  f=$(sha_of_mixed "mixed change under an express ruling (RULED: TST-3′)")
+  bash "$GATE" --check-commit "$f" || {
+    echo "SELFTEST FAILED: scenario F (parenthesized recorded token) was refused" >&2; exit 1; }
+
+  # G — mixed, parenthesized token carrying an internal qualifier → must pass
+  g=$(sha_of_mixed "mixed change under an express ruling (RULED: TST-4(a-revised))")
+  bash "$GATE" --check-commit "$g" || {
+    echo "SELFTEST FAILED: scenario G (parenthesized qualified token) was refused" >&2; exit 1; }
+
+  # H — mixed, parenthesized bogus token → gate must REFUSE
+  h=$(sha_of_mixed "mixed change with a bogus token (RULED: NOPE-77)")
+  if bash "$GATE" --check-commit "$h" 2>/dev/null; then
+    echo "SELFTEST FAILED: scenario H (parenthesized unrecorded token) passed the gate" >&2; exit 1
+  fi
 )
 
-echo "spec-freeze-gate selftest: 5/5 (tokenless-mixed RED, unrecorded-token RED, recorded/spec-only/impl-only green)"
+echo "spec-freeze-gate selftest: 8/8 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green)"

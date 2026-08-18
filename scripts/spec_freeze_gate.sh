@@ -76,12 +76,27 @@ classify() { # reads paths on stdin -> "spec impl" flags
 # each is tried whole and with a trailing (…) qualifier stripped, so
 # "R4.4(a-revised)" matches a store that records either spelling. Fragments
 # shorter than 2 chars are ignored (never let "a" match everything).
+#
+# A token written parenthesized — "(RULED: 828-1a)" — leaves the wrapping
+# ")" glued to the last fragment; only UNBALANCED trailing parens are
+# stripped, so a recorded "(…)" qualifier inside the id survives intact.
+
+strip_unbalanced_parens() { # $1 = fragment -> stdout
+  local f="$1" o c
+  while [ "${f%)}" != "$f" ]; do
+    o=${f//[^(]/}; c=${f//[^)]/}
+    [ "${#c}" -gt "${#o}" ] || break
+    f="${f%)}"
+  done
+  printf '%s' "$f"
+}
 token_recorded() { # $1 = full commit message
   local payload frag base
   while IFS= read -r payload; do
     payload="${payload#*RULED:}"
     for frag in $(printf '%s' "$payload" | tr '+,/' '   '); do
       frag="${frag%%;*}"; frag="${frag%%.}"
+      frag=$(strip_unbalanced_parens "$frag")
       [ "${#frag}" -ge 2 ] || continue
       base="${frag%%(*}"
       if grep -qrF -- "$frag" spec/02-working/partition_*.md 2>/dev/null; then
