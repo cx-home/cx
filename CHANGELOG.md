@@ -13,7 +13,124 @@ version, library version).
 
 ## [Unreleased]
 
-Nothing yet.
+The **partition** release. v0.13.0 made CX consumable and v0.14.0 made a
+deployment survive its own success; this release states what CX *is* — four
+rings with a one-directional import contract — and makes that structure
+enforced, buildable, documented, and demonstrated by a reference application.
+
+Nothing here is a breaking change to the public surface (§9 versioning
+rules); the partition is a separation of what already existed, not a
+redefinition of it.
+
+### Added — the four-ring partition
+
+- **Ring 0 Data · Ring 1 Code · Ring 2 Platform · Ring 3 Ecosystem**, with a
+  **one-directional import contract**: a ring may depend only inward. Ring 0
+  is the format (values, identity, surfaces, schema); Ring 1 is execution
+  (programs, capabilities, computation identity); Ring 2 is the platform
+  (store, history, wire, services, operations); Ring 3 is the ecosystem
+  (distribution, registry, marketplace, bindings). The boundary readers most
+  often get wrong is stated once and held to: **the XAP host is Ring 2, the
+  XAP marketplace is Ring 3** — running a feature is platform, discovering
+  and installing one is ecosystem.
+- **The contract is gated, not asserted.** Ring membership carries a tag
+  checked by a gate; imports are checked against the contract; and a
+  per-profile **extraction gate** verifies the ring artifacts byte-for-byte
+  against the monolith over the full tagged corpus, so "you may adopt Ring 0
+  alone" is a tested claim rather than a diagram.
+- **Build profiles** — per-ring build artifacts with installer assets
+  verified at the cut, so a consumer takes only the ring they need.
+
+### Added — seven concept specs graduated to approved
+
+Each moved from working to approved status, and each is now a **taught guide
+arc** rather than a spec link:
+
+- **the semantic value model** — what a CX value is, independent of syntax;
+- **computation identity** — when two computations are the same computation;
+- **bitemporal time** — valid time and transaction time kept distinct;
+- **commands and effects** — the effect signature and what it admits;
+- **the consistency vocabulary** — the words the platform uses for what it
+  guarantees, defined once;
+- **schema and event evolution** — additive migration, identity unaffected;
+- **runtime representation** — how a value is represented while running.
+
+### Added — a reference application
+
+- **`reference/shop`** — an in-family XAP that exercises the model end to
+  end: a committed cascade (PEP, journal, state as a fold), a **composite
+  feature** whose derived noun exists in neither base, real packaging through
+  the distribution engine with the compose gate standing at install time, and
+  a **separate web client** (hypermedia, htmx) that keeps agent parity. The
+  specs stop pointing at the tracker for an example.
+- **`cx xap init`** — scaffolds a project that already composes and passes
+  W1–W6 unedited.
+
+### Changed — streaming throughput
+
+- **Lazy record nodes.** The streamed-input path stops materializing a
+  document to walk it: certified top-level children are scanned rather than
+  parsed, and a record that is only ever yielded is never materialized at
+  all. `[?for]` over a streamed document moved **14.7 → ~200 MB/s**, and
+  `[?map]` — which streamed its output but materialized its input —
+  **12.7 → 129.2 MB/s**, with its monotonic in-process decay eliminated and
+  the §11.4.4 jitter clamp now passing.
+- **The §11.4.4 streaming gate is not green yet.** The remaining criterion is
+  throughput on the `[?map]` shape; it is tracked, and the threshold has not
+  been relaxed to meet the implementation.
+
+### Added — language surface
+
+- **`[$present]`** — a presence predicate that answers "is this here",
+  true for any value including a childless element and false only for
+  absence. `[$count]` / `[$exists]` keep their content-arity meaning; the
+  new predicate exists because those two answer a different question and
+  every "did this step match" test written with them was wrong on a leaf
+  element.
+
+### Changed — error propagation
+
+- **Element construction is operand-consuming.** A computed `[err]` in a
+  child position now **propagates** instead of being adopted as a child, and
+  propagation is transitive, so a refusal cannot come to rest inside a
+  document at any depth. Previously a refusal spliced into a document had
+  stopped being a refusal: it no longer short-circuited and `[?match]` could
+  not see it. A **source-literal** `[err …]` is still data — the
+  discriminator is position, not value — so err-shaped documents remain
+  expressible.
+- **Migration:** embedding a *captured* err as data no longer works
+  (`[?let [= $e …] [report $e]]` propagates). Rebuild from its parts
+  (`[report [code $e@code] [message $e@message]]` — path navigation does not
+  propagate), or collect outcomes in a paren **sequence**, which is not
+  element construction.
+
+### Changed — XAP grammar composition
+
+- **`[from …]` is checked.** A derived noun's source list takes one or more
+  qualified noun references (`[from 'orders/order' 'shipments/shipment']`),
+  and W5 requires each to resolve in the composed grammar. It was previously
+  unvalidated free text beside a strict `uses` and `constituents` — and the
+  check immediately caught the `cx xap init` scaffold shipping a dangling
+  reference. Join *semantics* remain deliberately unspecified and uncomputed;
+  no join algebra is committed.
+
+### Fixed
+
+- Roughly 150 tracker issues closed across the language core, standard
+  library, V runtime, tooling and XAP — including a signal-free thread
+  suspension for the darwin collector, and a sweep of correctness defects
+  found by the partition's own gates.
+
+### Documentation
+
+- **The guide is restructured on the rings** — six navigation groups (the
+  four rings plus orientation and reference), the standard-library pages
+  indexed under the ring that owns each pack, and the seven graduated
+  concept specs written as teaching arcs. A reader can answer "what is Ring
+  N, what may it import, and what can I do with only that ring" from the
+  guide alone.
+- **`x/term` specced** rather than retired, and `ROADMAP.md` trued to this
+  release line.
 
 ## [0.15.0] — 2026-08-03
 
