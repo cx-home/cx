@@ -63,6 +63,7 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
  conform conform-vcx conform-md bench bench-python bench-streaming bench-cxparse \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
  bench-lazy-ceiling \
+ bench-streamed-alloc \
  examples example-python example-v example-go example-rust \
  demos demo-v demo-go demo-rust \
  clean
@@ -1537,6 +1538,25 @@ bench-code-streaming: build-vcx
 # how far under is the discipline's measured cost.
 bench-lazy-ceiling: build-vcx
 	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/lazy_record_ceiling_probe.v
+
+# #804 leg-9 ALLOCATION CENSUS — the instrument that answers "what generates
+# the garbage", which sampling cannot. `sample` attributes CPU; collection work
+# is triggered by allocation VOLUME but paid at whatever safepoint the mutator
+# next reaches, so a call tree charges it to whoever polled rather than to
+# whoever produced it. This meters bytes directly (vgc's monotone
+# `gc_total_allocated`) across a ladder of rungs that each stop one stage
+# earlier, so consecutive differences are one stage's allocation.
+#
+# It exists because leg 8 assumed a removed allocation would compound through
+# the collector and it did not. Run it BEFORE choosing the next optimisation,
+# and again after, with the same rung. Not a gate — a decision instrument.
+#
+# One rung per process (`LEG9_SHAPES=<name>`): three rungs in one process
+# pollute each other's heap state and the jitter reads 45-70% of mean instead
+# of ~90%. `LEG9_INPUT_MB` defaults to 64 — do not lower it below 16 or vgc's
+# 1 MiB accounting flush swamps the reading (the probe says so itself).
+bench-streamed-alloc: build-vcx
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/streamed_for_alloc_probe.v
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
