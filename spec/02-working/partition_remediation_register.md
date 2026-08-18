@@ -354,6 +354,31 @@ and it is fixed BEFORE the cut. Id R5.12.**
 cost:** every other site that moved was a test or fixture LABELLING a refusal;
 this one was a production path SERVING on top of one.
 
+**2026-08-18 (fourth round), owner — "1a": a top-level err result EXITS
+NON-ZERO. Id R5.13. This carries NAMED authorization to edit `cli.md`.**
+
+- **R5.13** — R5.12's hardening landed its diagnostic half but could not be made
+  loud, because **CX has no `exit` and no `raise` directive and the run surface
+  prints a top-level `err` result to stdout and exits 0** (verified three ways).
+  A supervisor therefore cannot distinguish an adapter that refused to start
+  from a clean shutdown — the silent-success trap, in the one place that matters
+  most. Options posed: **(a)** rule the mapping and land it — TAKEN; **(b)** fold
+  it into #832, which leaves shipped tooling refusing with rc=0 through the cut;
+  **(c)** accept rc=0 and treat the diagnostic as sufficient — recommended
+  against, since it makes the failure undetectable by any supervisor.
+  **AUTHORIZED:** `cli.md`'s run-surface exit mapping — a program whose RESULT is
+  an err exits **1**. Plus the conformance/engine lanes that pin it.
+  **THE DISCRIMINATOR FOLLOWS #853's, and is POSITION, not value** (the §6.4.1
+  principle already ruled): a **computed / propagated** err result is a failure
+  and exits 1; a **literal** `[err code=…]` written as the program's own
+  top-level form is DATA and stays exit 0, exactly as it stays data in element
+  child position. Any implementation that cannot tell these apart at the point
+  it prints the result must be reported rather than approximated — collapsing
+  them would make every `[err …]`-shaped DATA document a failing program.
+  Scope note: this is the run surface only. `cx eq` / `cx diff` / `cx lint` /
+  `cx validate` keep their own documented exit contracts (§3.4-§3.6), and an
+  engine-RAISED error already exits 1 on stderr — unchanged.
+
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
 **2026-08-07:**
