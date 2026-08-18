@@ -137,25 +137,30 @@ reclassification.
 
 ## Part 3 — Rulings (R6.x ids reserved here; recorded BEFORE execution per R4.2)
 
-- **R6.1 — ruling-store relocation.** AWAITING OWNER (letter Q1).
-- **R6.2 — disposition of the 13 open violations.** AWAITING OWNER (letter
-  Q2). Proposed: one adjudication batch — all 13 into `ADJUDICATED_SHAS`,
-  each row naming its evidence (the table above) and this ruling; the skip
-  stays loud, history stays intact, the gate goes green on facts rather than
-  on a moved epoch.
-- **R6.3 — wire `spec-freeze-gate` into `test-vcx`.** AWAITING OWNER (letter
-  Q3). R5.8's order applies: green first, then wired.
-- **R6.4 — §6.5.x anchor.** AWAITING OWNER (letter Q4). Deferred here by the
-  08-18 second round ("#832 owns this class"). Evaluation: §6.5.x is the
-  umbrella section whose children are §6.5.0/§6.5.1; renumbering it into the
-  sequence shifts THREE anchors across 61 citation sites in 17 files (approved
-  specs, checker script, evaluator sources, fixtures, ledgers) for zero
-  behavioral gain — the owner's own framing. Recommended instead: one
-  sentence in `code.md` §6.5.x declaring the anchor DELIBERATE and permanent
-  (the x names the classification axis, not a pending number), which is also
-  the spelling the loosely-coupled-references preference favors. That
-  sentence is a normative-spec edit and executes only under R6.4 recorded
-  here first.
+**Owner ruled 2026-08-18: "1a 2a 3a 4a" — all four as recommended.**
+
+- **R6.1 (1a) — ruling-store relocation, RULED.** Top-level `ledger/`,
+  outside `spec/` entirely. All 36 glob-named files (34 `partition_*` +
+  2 `batch_*`, this file among them) `git mv` with basenames kept. The gate's
+  ruling store becomes `ledger/**/*.md` (recursive — archival into
+  `ledger/_archived/` can never orphan a ruling); normative spec becomes
+  `spec/**` with NO exceptions for NEW work; the legacy spellings
+  (`spec/02-working/partition_*` / `batch_*`) keep their ledger classification
+  so pre-move history classifies as it did when written, and the gate REFUSES
+  the legacy namespace at the tree level — any file matching it at HEAD is a
+  violation, so the historical carve-out cannot be re-entered.
+- **R6.2 (2a) — disposition of the 13 open violations, RULED.** One
+  adjudication batch: all 13 into `ADJUDICATED_SHAS`, each row naming its
+  Part 1 evidence and this ruling. The skip stays loud, history stays intact,
+  the gate goes green on facts rather than on a moved epoch.
+- **R6.3 (3a) — wire `spec-freeze-gate` into `test-vcx`, RULED.** After R6.2
+  makes it green (R5.8's order: green first, then wired).
+- **R6.4 (4a) — §6.5.x anchor, RULED.** Declared DELIBERATE and permanent by
+  one sentence in `code.md` §6.5.x (the x names the classification axis, not
+  a pending number); NOT renumbered. Renumbering would shift three anchors
+  across 61 citation sites in 17 files for zero behavioral gain — the owner's
+  own framing at the 08-18 second round. **This is the NAMED spec
+  authorization for that one sentence**, recorded here before the edit.
 
 ## Part 4 — Execution log
 
