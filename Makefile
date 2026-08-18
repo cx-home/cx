@@ -1512,8 +1512,18 @@ bench-eval: build-vcx
 
 # Gate 14 — pattern compilation (depth-8, 32-binding pattern):
 # p99 parse-time MUST be ≤ 1 ms.
+#
+# `-prod` is load-bearing here for the same reason it is on gate 15 (#804,
+# #835): the recipe depends on `build-vcx`, which builds the SHIPPED artifacts
+# optimised — but the bench links the evaluator as V SOURCE and compiles it
+# fresh, so without `-prod` the gate measured an unoptimised build of the very
+# code under test. Measured on gate 15's corpus, the same shape of workload:
+# 2.6 MB/s unoptimised vs 13.3 optimised, a 5.1x measurement error. Both gates
+# passed either way, so this only ever moved them in the passing direction —
+# but a gate that measures a build CX does not ship is not measuring the
+# threshold it claims to.
 bench-code-pattern-compile: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_pattern_compile_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_pattern_compile_bench.v
 
 # Gate 15 — streaming throughput on JSON-shape workloads:
 # mean MUST be ≥ 200 MB/s + no trial below 80 % of mean.
@@ -1560,16 +1570,32 @@ bench-streamed-alloc: build-vcx
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
+#
+# `-prod` is load-bearing here for the same reason it is on gate 15 (#804,
+# #835): the recipe depends on `build-vcx`, which builds the SHIPPED artifacts
+# optimised — but the bench links the evaluator as V SOURCE and compiles it
+# fresh, so without `-prod` the gate measured an unoptimised build of the very
+# code under test. Measured on gate 15's corpus, the same shape of workload:
+# 2.6 MB/s unoptimised vs 13.3 optimised, a 5.1x measurement error. Both gates
+# passed either way, so this only ever moved them in the passing direction —
+# but a gate that measures a build CX does not ship is not measuring the
+# threshold it claims to.
 bench-code-http: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_throughput_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_http_throughput_bench.v
 
 # HTTP backend-direction isolation bench — settles whether the ~10k
 # req/s ceiling is transport-bound (net.http socket stack) or
 # interpreter-bound (code.eval + env.clone) before any backend rewrite.
 # Two-point: in-process code.eval leg vs real net.http listener on :0
 # with a trivial no-op handler. Prints a ratio + verdict, no PASS/FAIL.
+#
+# `-prod` for the #835 reason, and it matters MORE here than on a pass/fail
+# gate: this bench exists to decide whether the ~10k req/s ceiling is
+# transport-bound or interpreter-bound, and an unoptimised build inflates the
+# INTERPRETER leg specifically — so the unoptimised verdict is biased toward
+# the answer the bench is supposed to test for.
 bench-code-http-isolation: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_isolation_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_http_isolation_bench.v
 
 # Gate 7 — concurrency soak. Loops a buffered send/receive workload
 # detecting deadlocks (per-iter wall-clock cap) and registry leaks
