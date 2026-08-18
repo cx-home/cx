@@ -134,7 +134,10 @@ fn xap_init_composite(name string) string {
    [field name=owner type=text]
    [field name=owner-name type=text]
    [field name=label type=text]
-   [from 'thing/thing JOIN owner/owner ON thing/thing.owner = owner/owner.id']]]
+   [; the JOIN this noun means is prose — [from …] names the SOURCES, and
+      join semantics are deliberately unspecified and uncomputed (#840):
+        thing/thing JOIN owner/owner ON thing/thing.owner = owner/owner.id ]
+   [from 'thing/thing' 'owner/owner']]]
 
  [verbs
   [verb name=review effect=observe
@@ -267,6 +270,11 @@ fn xap_init_compose(name string) string {
   [= \$c  [\$first [?for [in \$n \$cd//feature] [yield \$n]]]]
   [= \$g  [\$xap:compose \$a \$b \$c]]
   [= \$g1 [\$xap:compose \$a]]
+  [; #853 — a computed [err] in element CHILD position PROPAGATES (code.md
+     §6.4.1), so an ambiguity/unknown VALUE cannot be embedded as a child.
+     Bind it and read its parts: path navigation does not propagate. ]
+  [= \$amb [\$xap:resolve \$g 'list']]
+  [= \$unk [\$xap:resolve \$g 'nosuchverb']]
 
   [${name}
     [gate [\$xap:compose-report \$a \$b \$c]]
@@ -277,13 +285,13 @@ fn xap_init_compose(name string) string {
       [qualified-wins  [\$xap:resolve \$g 'thing/list']]
       [; both bases define a bare `list`, so this is an ambiguity VALUE
          listing both candidates — a prompt, never a guess ]
-      [ambiguous       [\$xap:resolve \$g 'list']]
-      [unknown         [\$xap:resolve \$g 'nosuchverb']]]
+      [ambiguous       code=\$amb@code candidates=\$amb@candidates]
+      [unknown         code=\$unk@code]]
     [; enabling a feature may only ever turn a resolution into a prompt
        that STILL LISTS the old answer — never into a different verb ]
     [no-silent-rebinding
       [with-thing-alone [\$xap:resolve \$g1 'list']]
-      [with-owner-too   [\$xap:resolve \$g 'list']]]]]
+      [with-owner-too   code=\$amb@code candidates=\$amb@candidates]]]]
 "
 }
 
