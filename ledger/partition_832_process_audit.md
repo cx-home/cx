@@ -164,7 +164,30 @@ reclassification.
 
 ## Part 4 — Execution log
 
-- 2026-08-18: Class T cure landed — `spec_freeze_gate.sh` unbalanced-paren
-  stripping + selftest 5→8 (red-proofs H for parenthesized-bogus). Gate
-  output 16 → 13, the delta exactly Class T. SELFTEST-RC=0.
-- (pending R6.1–R6.4)
+- 2026-08-18: Class T cure landed (`55ea91f9`) — `spec_freeze_gate.sh`
+  unbalanced-paren stripping + selftest 5→8 (red-proof H for
+  parenthesized-bogus). Gate output 16 → 13, the delta exactly Class T.
+  SELFTEST-RC=0.
+- 2026-08-18: owner ruled "1a 2a 3a 4a"; recorded at `1abd4ba7` BEFORE
+  execution (R4.2).
+- 2026-08-18 **R6.1 EXECUTED** (`d749950b`) — 37 files `git mv` to `ledger/`
+  (34 `partition_*` + 2 `batch_*` + this file), basenames kept;
+  `spec/02-working/` back to 29 actual working specs. Gate path classes
+  rewritten (store = `ledger/**/*.md` recursive; spec = `spec/**`; legacy
+  spelling classified ledger for history and REFUSED at the tree level);
+  selftest 8→9 (scenario I: legacy-namespace red-proof). Verified: the gate
+  reported the SAME 13 violations after the move as before — the historical
+  classification held, and every pre-existing token still resolves. Eight
+  reference sites repointed; zero relative links existed in the moving files
+  (measured); the register's CLOSED R4.1 row kept verbatim as history.
+- 2026-08-18 **R6.2 EXECUTED** (`21421fba`) — 13 `ADJUDICATED_SHAS` rows,
+  each naming its Part 1 evidence class. **`make spec-freeze-gate` GREEN:
+  GATE-RC=0, clean (f964c16a..HEAD), 14 ADJUDICATED lines, selftest 9/9.**
+- 2026-08-18 **R6.3 EXECUTED** (`5ebd4ac4`) — `spec-freeze-gate` wired into
+  `test-vcx`, green-first per R5.8's order.
+- 2026-08-18 **R6.4 EXECUTED** (`63884f6b`) — the §6.5.x anchor note landed
+  in `code.md` (spec-only commit, RULED: R6.4). First wording said "not a
+  placeholder" and turned `check-code-spec-consistency` gate 1 red —
+  "placeholder" is a forbidden completeness token in `code.md`. Reworded to
+  "not an unassigned number"; gate green. The checker policing the sentence
+  that legitimizes its own §6.5.x anchor is the process working.
