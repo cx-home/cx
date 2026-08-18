@@ -136,10 +136,50 @@
    for-results into a single sequence nests them, so we never do that). #]
 [?def guide-nav-items scope=public ($metas $active)
   [$strings:join [?for [in $m $metas] [yield [$nav-item $m $active]]] '']]
-[?def lib-nav-items scope=public ($libfiles $active)
-  [$cat ([$nav-link 'libraries' 'Overview' '' $active],
-         [$strings:join [?for [in $f $libfiles] [yield
-           [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] ''])]]
+[# group-nav-items: the sections whose group= matches, in reading order.
+   #826 — the nav is the ring model made visible, so a group is a ring and
+   the order is inward-out. #]
+[?def group-nav-items scope=public ($metas $g $active)
+  [$strings:join [?for [in $m $metas] [where [= $m@group $g]]
+    [yield [$nav-item $m $active]]] '']]
+[# lib-nav-items RETIRED with the flat Standard-library group (#826 ruling
+   3a) — see lib-ring-items, which indexes the packs under the ring that owns
+   each one. #]
+[# ── pack → ring (#826 §3, ruling 3a) ────────────────────────────────────
+   `Standard library` stops being a top-level nav group: each ring indexes
+   the packs it OWNS, so the ring page answers "what can I do with only this
+   ring" completely — and a reader on Ring 0 sees, in the same breath, that
+   `http` is not among them.
+        
+   THE ASSIGNMENT IS DERIVED, NOT CURATED. cx_partition.md §2's membership
+   test is "every stdlib pack whose imports stay within Rings 0-1" is Ring 1,
+   and Ring 2 owns the protocol/service packs. A pack is a thin CX wrapper
+   over native `$<pack>-*` builtins, so the ring it belongs to is the ring of
+   the vcx tree that IMPLEMENTS those builtins — `vcx/code` is Ring 1,
+   `vcx/platform` and `vcx/cxstore` are Ring 2. That derivation resolved 44 of
+   46 packs mechanically; `test` resolved to vcx/code/stdlib_testkit.v (Ring 1)
+   and `jsonrpc` is pure CX over [$json:…] with no native builtins (Ring 1).
+   Re-derive rather than hand-edit when a pack moves.
+        
+   RING 0 HAS NO PACKS, and that is a fact about the architecture rather than
+   an omission: Ring 0 has no evaluator, so it has nothing to call a pack
+   from. Its surface is the format itself plus the bindings. #]
+[?def ring2-packs scope=public [returns string] ()
+  ' authz bus did email fabric http journal live net session store vc xap xsp ']
+[?def pack-ring scope=public [returns int] ($name)
+  [?if [>= [$strings:find [$ring2-packs] [$cat (' ', $name, ' ')]] 0]
+    [then 2] [else 1]]]
+[# lib-ring-items: the pack links for ONE ring, in name order.
+
+   The standalone `libraries.html` index page RETIRED here (#826 ruling 3a):
+   with the packs indexed per ring, a single flat index is a second answer to
+   "which packs exist" that is free to disagree with the ring pages — and it
+   was the only page in the tree left reachable from nothing. #]
+[?def lib-ring-items scope=public ($libfiles $ring $active)
+  [$strings:join [?for [in $f $libfiles]
+    [where [= [$pack-ring [$stdlib-slug $f]] $ring]]
+    [yield [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] '']]
+
 [?def xap-nav-items scope=public ($active)
   [$cat ([$nav-link 'xap' 'Overview' '' $active],
          [$strings:join [?for [in $d [$xap-demos]] [yield
@@ -149,7 +189,14 @@
   [$cat ([$nav-link 'directives' 'Directives' '' $active],
          [$nav-link 'syntax' 'Core syntax' '' $active])]]
 
-[# nav-html: the sidebar <aside> — one group per top-level area. #]
+[# nav-html: the sidebar <aside> — one group per top-level area.
+
+   #826 §3 — SIX groups: the four rings, plus the two things that are not
+   ring-shaped and should stop pretending to be. `Standard library` is no
+   longer top-level; each ring indexes the packs it owns, so a reader on the
+   Ring 0 page sees what Ring 0 gives them and, in the same breath, that
+   `http` is not among them. Ring order is inward-out, which is also the
+   dependency order the import contract allows. #]
 [?def nav-html scope=public ($metas $libfiles $active)
   [$cat (
     '<aside class="sidebar">\n',
@@ -165,10 +212,23 @@
     '           autocomplete="off" spellcheck="false" data-prefix="" />\n',
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
-    [$nav-section 'Guide' [$guide-nav-items $metas $active]],
-    [$nav-section 'Reference' [$ref-nav-items $active]],
-    [$nav-section 'Standard library' [$lib-nav-items $libfiles $active]],
-    [$nav-section 'XAP' [$xap-nav-items $active]],
+    [$nav-section 'Start here' [$group-nav-items $metas 'Start here' $active]],
+    [$nav-section 'Ring 0 — Data'
+      [$cat ([$group-nav-items $metas 'Ring 0 — Data' $active],
+             [$lib-ring-items $libfiles 0 $active])]],
+    [$nav-section 'Ring 1 — Code'
+      [$cat ([$group-nav-items $metas 'Ring 1 — Code' $active],
+             [$lib-ring-items $libfiles 1 $active])]],
+    [$nav-section 'Ring 2 — Platform'
+      [$cat ([$group-nav-items $metas 'Ring 2 — Platform' $active],
+             [$lib-ring-items $libfiles 2 $active],
+             [$xap-nav-items $active])]],
+    [$nav-section 'Ring 3 — Ecosystem'
+      [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' $active],
+             [$lib-ring-items $libfiles 3 $active])]],
+    [$nav-section 'Reference'
+      [$cat ([$group-nav-items $metas 'Reference' $active],
+             [$ref-nav-items $active])]],
     '</aside>\n')]]
 
 [# wrap-page: body fragment + chrome → full HTML document string. #]
@@ -241,10 +301,23 @@
     '   Bracket form for data, the same bracket form for code, one\n',
     '   evaluator, one identity function.</p>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
-    [$nav-section 'Guide' [$guide-nav-items $metas '']],
-    [$nav-section 'Reference' [$ref-nav-items '']],
-    [$nav-section 'Standard library' [$lib-nav-items $libfiles '']],
-    [$nav-section 'XAP' [$xap-nav-items '']],
+    [$nav-section 'Start here' [$group-nav-items $metas 'Start here' '']],
+    [$nav-section 'Ring 0 — Data'
+      [$cat ([$group-nav-items $metas 'Ring 0 — Data' ''],
+             [$lib-ring-items $libfiles 0 ''])]],
+    [$nav-section 'Ring 1 — Code'
+      [$cat ([$group-nav-items $metas 'Ring 1 — Code' ''],
+             [$lib-ring-items $libfiles 1 ''])]],
+    [$nav-section 'Ring 2 — Platform'
+      [$cat ([$group-nav-items $metas 'Ring 2 — Platform' ''],
+             [$lib-ring-items $libfiles 2 ''],
+             [$xap-nav-items ''])]],
+    [$nav-section 'Ring 3 — Ecosystem'
+      [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' ''],
+             [$lib-ring-items $libfiles 3 ''])]],
+    [$nav-section 'Reference'
+      [$cat ([$group-nav-items $metas 'Reference' ''],
+             [$ref-nav-items ''])]],
     '</section>\n',
     '<p class="note">\n',
     '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',
@@ -282,8 +355,11 @@
     {slug: $slug, title: $title, summary: '', text: $text}]]
 
 [# ── section metadata ────────────────────────────────────────────────────
-   One [m group='Guide' n= slug= srcpath= title=] per hand-authored section
-   file (glob = reading order). README.cxd carries no [section] (skipped via
+   One [m group= n= slug= srcpath= title=] per hand-authored section file
+   (glob = reading order). The GROUP comes from the section's own `group=`
+   attribute (#826): placement lives beside the content it places, so a
+   section cannot drift from a mapping table kept somewhere else. A section
+   with no group= falls to Reference rather than vanishing from the nav. README.cxd carries no [section] (skipped via
    the empty check). The old generated 16-libraries.cxd is skipped — the
    Standard-library group is now projected fresh from stdlib/*.cx below. #]
 [?def load-metas scope=public impure ($src)
@@ -292,7 +368,7 @@
       [?let [= $d [$parse-or-die $f]]
             [= $s $d//section]
         [?if [$empty $s] [then ()] [else
-          [m group='Guide' n=$s@n id=$s@id slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
+          [m group=[?else $s@group 'Reference'] n=$s@n id=$s@id slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
 
 [# ── Standard-library projection ──────────────────────────────────────────
    Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
@@ -354,22 +430,10 @@
           [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
           [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
 
-[# landing-row / render-landing: the Standard-library landing (module index). #]
-[?def landing-row scope=public impure ($f)
-  [?let [= $m [$stdlib-slug $f]] [= $d [$parse-or-die $f]]
-    [li [a href=[$cat ('lib-', $m, '.html')] $m]
-        [$cat ('  —  ', [$first-sentence [$module-scope $d]])]]]]
-[?def render-landing scope=public impure ($files)
-  [$post-body [$xml:emit
-    [section id=libraries
-      [h1 'Standard library']
-      [p class="lede"
-        'The CX standard library ships bundled with the binary as the '
-        [code 'cx-stdlib/*'] ' sub-packages. Load one with '
-        [code "[?lib 'cx-stdlib/<module>']"] ' and call its functions as '
-        [code '[$<module>:<fn> …]']
-        '. Every contract, prose block, and runnable example is co-located with the function definitions in the bundle source — so these pages are generated straight from the shipped code and cannot drift from it.']
-      [ul class="module-index" [?for [in $f $files] [yield [$landing-row $f]]]]]]]]
+[# landing-row / render-landing RETIRED with `libraries.html` (#826 ruling
+   3a): the packs are indexed per RING now, so the flat module index has no
+   consumer. A def with no live consumer is a partial implementation, so it
+   goes rather than waiting to be rediscovered. #]
 
 [# ── Reference projection ────────────────────────────────────────────────────
    The directive + core-syntax reference is projected from the co-located
@@ -554,9 +618,6 @@
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
             [= $page [$wrap-page $m@title $m@slug $metas $libfiles $body]]
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
-    [$io:write-file [$cat ($out, '/libraries.html')]
-      [$wrap-page 'Standard library' 'libraries' $metas $libfiles
-        [$render-landing $libfiles]]],
     [?for [in $f $libfiles] [yield
       [?let [= $m [$stdlib-slug $f]]
             [= $body [$render-module $f]]

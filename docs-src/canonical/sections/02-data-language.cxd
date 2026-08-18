@@ -4,7 +4,7 @@
    spec/namespaces.md, spec/include.md, spec/i18n.md, spec/streaming.md.
    File extension: .cxd (data-only source, per d-2026-05-22-05). #]
 
-[section id=data n=2 title='The data language'
+[section id=data group='Ring 0 — Data' n=2 title='The data language'
 
   [intro
     """CX's data language is what you write in a `.cx` or `.cxd` file when

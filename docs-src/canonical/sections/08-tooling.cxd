@@ -5,7 +5,7 @@
    scripts/gen_docs/, vcx/cmd/.
    File extension: .cxd (data-only). #]
 
-[section id=tooling n=8 title='Tooling'
+[section id=tooling group='Start here' n=8 title='Tooling'
 
   [intro
     """The CX toolchain is one binary (`cx`) and a small fleet of editor

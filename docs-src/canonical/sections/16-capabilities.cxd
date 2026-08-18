@@ -4,7 +4,7 @@
    and output on this page was run against the live binary (issue #425
    coverage gap #1). #]
 
-[section id=capabilities n=16 title='Capabilities and permissions'
+[section id=capabilities group='Ring 1 — Code' n=16 title='Capabilities and permissions'
 
   [intro
     """A CX evaluation runs under an explicit **capability set**, and the

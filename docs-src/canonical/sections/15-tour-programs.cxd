@@ -6,7 +6,7 @@
    2026-05-27. Designer pre-approved as guide appendix.
    File extension .cxd — data-only source. #]
 
-[section id=tour-programs n=15 title='50 Ways to Love Your CX Programs'
+[section id=tour-programs group='Ring 1 — Code' n=15 title='50 Ways to Love Your CX Programs'
 
   [intro
     """Fifty short CX code examples — paths, filters, conditionals,

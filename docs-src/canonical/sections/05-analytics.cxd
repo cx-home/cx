@@ -4,7 +4,7 @@
    spec/core/data-bin.md §3.10-3.13 + spec/streaming.md.
    Cross-links use [[anchor]] form. #]
 
-[section id=analytics n=5 title='Analytics, columnar formats, and bridges'
+[section id=analytics group='Ring 0 — Data' n=5 title='Analytics, columnar formats, and bridges'
 
   [child id=overview n=5.1 title='The analytics lane'
     [intro

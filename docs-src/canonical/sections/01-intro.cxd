@@ -3,7 +3,7 @@
    Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
    resolves them at emit time. #]
 
-[section id=intro n=1 title='Introduction'
+[section id=intro group='Start here' n=1 title='Introduction'
 
   [child id=hello n=1.1 title='Hello, CX'
     [intro

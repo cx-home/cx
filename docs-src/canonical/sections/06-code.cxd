@@ -5,7 +5,7 @@
    Largest section in the guide. Cross-links use [[anchor]] form.
    File extension .cxd — data-only source. #]
 
-[section id=code n=6 title='The code language'
+[section id=code group='Ring 1 — Code' n=6 title='The code language'
 
   [child id=overview n=6.1 title='The CX code language'
     [intro

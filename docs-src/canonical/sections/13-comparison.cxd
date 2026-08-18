@@ -6,7 +6,7 @@
    tooling familiarity — and concrete where it wins. Cross-links use
    [[anchor]] form. File extension .cxd — data-only source. #]
 
-[section id=comparison n=13 title='Comparison to alternatives'
+[section id=comparison group='Reference' n=13 title='Comparison to alternatives'
 
   [intro
     """CX is one of many serialization / config / wire formats. This

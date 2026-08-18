@@ -4,7 +4,7 @@
    CX ships V (native reference), Python, Go, Rust as Tier-1 bindings.
    File extension .cxd — data-only source. #]
 
-[section id=bindings n=7 title='Bindings'
+[section id=bindings group='Ring 3 — Ecosystem' n=7 title='Bindings'
 
   [intro
     """libcx is a V library. Every other supported language is a

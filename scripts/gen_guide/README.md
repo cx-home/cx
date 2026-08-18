@@ -100,8 +100,15 @@ breakage at review time.
 
 ## Standard-library pages (projected, not generated-to-disk)
 
-The Standard-library landing (`libraries.html`) and per-module pages
-(`lib-<m>.html`) are projected **at build time** by `guide_build.cx` directly
+Since the #826 restructure there is **no standalone `libraries.html` index**:
+each pack is indexed under the ring that owns it (ruling 3a), and the
+pack→ring assignment is DERIVED from which vcx tree implements the pack's
+native builtins (`vcx/code` → Ring 1, `vcx/platform` / `vcx/cxstore` → Ring 2)
+— see `pack-ring` in `guide_build.cx`. Re-derive rather than hand-edit when a
+pack moves.
+
+The per-module pages (`lib-<m>.html`) are projected **at build time** by
+`guide_build.cx` directly
 from the co-located `[module-doc]`/`[fn-doc]` blocks in `stdlib/*.cx` — the
 single source of truth. There is no checked-in `16-libraries.cxd` section and no
 intermediate coverage document; the module set is the glob of `stdlib/*.cx`, so a

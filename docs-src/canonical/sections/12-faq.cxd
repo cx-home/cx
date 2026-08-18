@@ -8,7 +8,7 @@
    sections use [[anchor]] form. File extension .cxd — data-only
    source. #]
 
-[section id=faq n=12 title='Frequently Asked Questions'
+[section id=faq group='Reference' n=12 title='Frequently Asked Questions'
 
   [intro
     """If you ran into something confusing in your first week of CX,

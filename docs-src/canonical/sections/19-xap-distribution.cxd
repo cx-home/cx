@@ -9,7 +9,7 @@
    the live external reference registry (issue #425 coverage gap: XAP feature
    distribution). #]
 
-[section id=xap-distribution n=19 title='XAP feature distribution'
+[section id=xap-distribution group='Ring 3 — Ecosystem' n=19 title='XAP feature distribution'
 
   [intro
     """The headline of the 0.13 release is that XAP features became a

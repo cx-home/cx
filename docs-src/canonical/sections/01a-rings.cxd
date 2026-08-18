@@ -13,7 +13,7 @@
 
    Cross-links use [[anchor]] form. #]
 
-[section id=rings n='1a' title='The four rings'
+[section id=rings group='Start here' n='1a' title='The four rings'
 
   [child id=rings-idea n=1a.1 title='How much CX do you have to take on?'
     [intro

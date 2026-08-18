@@ -3,7 +3,7 @@
    Anchored in spec/canonical.md, spec/identity.md, spec/core/ast-bin.md,
    spec/core/data-bin.md, spec/abi.md. #]
 
-[section id=identity n=4 title='Identity'
+[section id=identity group='Ring 0 — Data' n=4 title='Identity'
 
   [intro
     """CX's identity story rests on three layers: **canonical bytes**

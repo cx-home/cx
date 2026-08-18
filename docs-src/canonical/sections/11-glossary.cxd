@@ -5,7 +5,7 @@
    introduced. Entries are alphabetical (case-insensitive). File
    extension .cxd — data-only source. #]
 
-[section id=glossary n=11 title='Glossary'
+[section id=glossary group='Reference' n=11 title='Glossary'
 
   [intro
     """This is the working glossary for the CX data and code guide.

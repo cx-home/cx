@@ -4,7 +4,7 @@
    minutes. Cross-links use [[anchor]] form; spec references use
    ordinary markdown links. File extension .cxd — data-only source. #]
 
-[section id=quickstart n=0 title='Quickstart — first 5 minutes with CX'
+[section id=quickstart group='Start here' n=0 title='Quickstart — first 5 minutes with CX'
 
   [intro
     """This is the shortest path from "I have never seen CX" to "I have

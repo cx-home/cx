@@ -1,7 +1,7 @@
 [# Section 10 — migration: v0.7.x → v0.8.0, cross-format intake,
    retired surfaces. #]
 
-[section id=migration n=10 title='Migration'
+[section id=migration group='Reference' n=10 title='Migration'
 
   [child id=from-v07x n=10.1 title='From v0.7.x to v0.8.0'
     [intro

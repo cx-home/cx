@@ -2,7 +2,7 @@
    Authored 2026-05-22, expanded with full per-surface detail.
    Anchored in spec/canonical.md + spec/conversions.md. #]
 
-[section id=surfaces n=3 title='Surfaces and projections'
+[section id=surfaces group='Ring 0 — Data' n=3 title='Surfaces and projections'
 
   [intro
     """CX has one canonical surface (the bracket form) and projections
