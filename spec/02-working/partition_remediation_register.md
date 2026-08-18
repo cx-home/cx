@@ -141,6 +141,71 @@ letter and the R4.4 W7-parity plan):**
 - **A6 (a-rec) — store feed.** No "code plane" owed; def documents ride
   the `docs` plane as ordinary documents.
 
+**2026-08-18, owner — the pre-cut bug-sweep rulings ("1a 2a 3a 4 approved 5
+approved 6 approved"). Ids R5.1–R5.6 are allocated HERE so the R4.1 token has
+a recorded ruling to name.**
+
+- **R5.1 (1a)** — #854 + #849: an **ADDITIVE presence predicate**. `[$count]` /
+  `[$exists]` keep their ruled content-arity meaning; **#584 STANDS** (owner
+  2026-07-23, "closed by design") and the `count_items` → `iterate()`
+  unification is NOT re-landed — it was measured and fails 8 enforced fixtures.
+  Authorized: a `code.md` §6.5 row for the new predicate (true for any node
+  including a childless element; false only for `()` / an empty node-set) plus
+  conformance cases. Nothing else in the sequence-builtin family changes.
+- **R5.2 (2a)** — #853: a computed `[err]` **propagates from plain child
+  position**. Authorized: `code.md` §6.4.1 / §9.2 text making element
+  construction operand-consuming for propagation. MUST PRESERVE: a LITERAL
+  `[err …]` in source stays DATA — the discriminator is POSITION, not value.
+  MUST STATE the cost in the spec text: embedding a CAPTURED err stops working.
+- **R5.3 (3a)** — #840: `[from 'feature/noun' …]` gets a minimal checkable
+  syntax — one or more QUALIFIED NOUN REFERENCES, each required to resolve to a
+  noun of the composed grammar. Join SEMANTICS stay unspecified and uncomputed,
+  so no join algebra is committed. Authorized: the
+  `xap_grammar_composition.md` W5 row + the `[from …]` grammar.
+- **R5.4 (4 approved)** — #826 Acceptance 1: the docs-restructure proposal is
+  approved AS A WHOLE; implementation unblocked. §7 was already ruled 1a/2a/3a
+  @ 120bd33e. §6's two staleness items remain outstanding.
+- **R5.5 (5 approved)** — #832: the spec-process audit and cure is AUTHORIZED,
+  including editing the process artifacts themselves. Sequencing UNCHANGED:
+  still the **LAST** issue before the v0.16.0 cut, after #845 and #741/#752.
+- **R5.6 (6 approved)** — #812: **SPEC** `x/term`, do NOT retire — it has a
+  working exercised `select` (#852 fixed @ 3843e6e5) and a live consumer. The
+  spec gives #852's TLS caveat a documented home: for a secured stream,
+  socket-readable is not frame-available, so a poll can miss a buffered record
+  and a `timeout:` is what recovers it.
+
+**R5.0 — recording is LATE, and that is the point of the row.** R4.2 requires a
+ruling to be committed BEFORE the work it authorizes. These six were ruled and
+executed on 2026-08-18 with the authorization cited in prose in each commit
+message, but were not recorded in this register first, so the three commits
+that touch normative spec AND implementation carry no `RULED:` token:
+
+| commit | issue | ruling |
+|---|---|---|
+| `a36244f4` | #854 + #849 | R5.1 |
+| `ab6a62e5` | #853 | R5.2 |
+| `d3277277` | #840 | R5.3 |
+
+(#812's spec, `abba2a0c`, is spec-only and is not an R4.1 violation — verified
+against the gate.)
+
+**RULED (a) BY OWNER 2026-08-18 on how to settle it:** record the rulings here
+now — done by this entry, which makes `RULED: R5.1`/`R5.2`/`R5.3` citable for
+any follow-on commit — and fold the standing violation set into **#832's**
+audit rather than rewriting pushed shared history or self-adding
+`ADJUDICATED_SHAS` rows (which the gate script reserves to owner authority).
+
+**The finding #832 inherits, measured not assumed:** `make spec-freeze-gate`
+reports **16 violations** over `f964c16a..HEAD`, of which **THIRTEEN pre-date
+2026-08-18** (e.g. `c5019ca6` fix(#844)). The R4.1 token discipline has not been
+followed on `release/0.16.0` for a long stretch; the 13:3 split is why this is
+systemic process debt and not three careless commits. It went unseen because
+`spec-freeze-gate` is in `TEST_TARGETS` (Makefile:429) but is **not** a
+dependency of `test-vcx` (Makefile:1025), so a green full `make test-vcx` at
+`40510b9b` never ran it — the same lane hole as #860
+(`check-code-spec-consistency`, also red at that commit). Do not settle this by
+loosening the gate.
+
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
 **2026-08-07:**
