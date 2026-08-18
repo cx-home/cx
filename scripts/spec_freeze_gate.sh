@@ -50,6 +50,19 @@ FREEZE_EPOCH=f964c16a
 # GATE_REGISTER.md). Full 40-char shas only.
 ADJUDICATED_SHAS="
 550f8a1a272ad2e0217fccdb5f0ec44e7e453154 #727-destination-(a) — owner-directed, recorded in the commit message + issue #727; register row: partition_I5_exit_review_packet.md §9 (exit-4a execution record)
+a36244f40b17bc4726c4034685e13499b25f8411 #854+#849 — R6.2 batch (owner 2026-08-18 2a); express ruling R5.1 (register), recorded LATE per R5.0 — Class S, ledger/partition_832_process_audit.md Part 1
+ab6a62e56530d2a0f1e8542238f843d114036824 #853 — R6.2 batch; express ruling R5.2 (register), recorded LATE per R5.0 — Class S
+d3277277351de784e73ef9c482f56d881019233f #840 — R6.2 batch; express ruling R5.3 (register), recorded LATE per R5.0 — Class S
+9a76fb184dcd79c575269eda727b8e27a6923db4 #808+#760+#833 — R6.2 batch; rulings 808-1a/760-1a/833-1a recorded BEFORE the work (exit packet §10); message wrote RULED without the colon — Class S
+f62deb82c19060385cc87b4c9f88b49f04aa3e74 #823 — R6.2 batch; owner scope ruling recorded (exit packet: SCOPE IS THE WHOLE ISSUE); no token written — Class S
+397cbfff151f21bc52286e34879b13d862962789 #819+#817+#778+#740 — R6.2 batch; #817 rides the batch_796 owner ruling (a file the old glob could not read); #819/#778/#740 unrecorded — Class U/M
+c5019ca640a90913223216b6d34e9cc1c5784bf1 #844 — R6.2 batch; owner ruling 2a cited, ruled OUTCOME recorded in xap_grammar_composition.md (a working spec, not a store) — Class U
+aef85bebbe2ec518625560ce442115e173ada40f #705 — R6.2 batch; media-type ruling recorded in grammar_lexicon_review.md (outside the old glob); rest is stale-citation cleanup — Class U/M
+05e4e5d30ac9cadf2680c232031a2e6b93a0ba2f #837 — R6.2 batch; link-path typos + one stale example, no recorded ruling — Class M
+efd780b17b6c5511f6a5d3fd16fee549a4fd614d #777-catch-up — R6.2 batch; illustrative enumeration completed, nothing behavioral; 777-1a covers the lane, arguably not this half — Class M
+5a6ae8438b78782faa52f32c550b5ab5f16aaca6 #726-init — R6.2 batch; authoring-process §7 status row riding the feature commit, no recorded ruling — Class M
+c6caa75609a7e12f0b7a4b60426032be4488fa62 #726-reference — R6.2 batch; spec pointers repointed at the landed app riding the app commit, no recorded ruling — Class M
+c21515cb5766f09c1f48247e4e2c42bb4b5591fd #826-proposal — R6.2 batch; the proposal + its rendered demo, approval later given as R5.4 — Class M
 "
 
 is_normative_spec() {
