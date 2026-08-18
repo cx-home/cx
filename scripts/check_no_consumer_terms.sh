@@ -54,6 +54,69 @@ TERMS=(
 	'pb-[a-z]'
 )
 
+# PROBES — one string per TERM that the term MUST match. Parallel array; the
+# self-test below feeds every probe through BOTH engines this gate uses.
+#
+# #842: the gate builds ONE pattern and hands it to two DIFFERENT engines —
+# `git grep -inE` for tracked files, plain `grep -inE` for the --gh-metadata
+# lane. They do not agree on `\b`: plain grep honours it, `git grep -E`
+# silently ignores it and matches nothing. So a term written with `\b` would be
+# LIVE on the metadata lane and DEAD on the tracked lane, and the gate would
+# report OK on a tree containing the term while flagging it in the tracker.
+# That is the same hollow-gate failure the pathspec note below records,
+# reached by a different route, and invisible because the other lane still
+# fires. No current term uses `\b`, so this was latent — which is exactly when
+# to nail it down.
+#
+# The self-test is deliberately stronger than a `\b` ban: it proves each term
+# matches its own probe under BOTH engines, so ANY future construct the two
+# disagree about is caught, not just the one instance that was noticed.
+PROBES=(
+	'powerband'
+	'pbengine'
+	'client-acme'
+	'account executive'
+	'ae-queue'
+	'pb-x'
+)
+
+if [ "${#TERMS[@]}" -ne "${#PROBES[@]}" ]; then
+	echo "check-no-consumer-terms: FAIL — TERMS (${#TERMS[@]}) and PROBES (${#PROBES[@]}) are out of step; every term needs a probe"
+	exit 2
+fi
+
+selftest_dir="$(mktemp -d)"
+trap 'rm -rf "$selftest_dir"' EXIT
+selftest_file="$selftest_dir/probe.txt"
+selftest_failed=0
+for i in "${!TERMS[@]}"; do
+	term="${TERMS[$i]}"
+	probe="${PROBES[$i]}"
+	case "$term" in
+		*'\b'*)
+			echo "check-no-consumer-terms: FAIL — term '$term' uses \\b, which \`git grep -E\` silently ignores."
+			echo "  portable form: (^|[^a-z])term(\$|[^a-z])"
+			selftest_failed=1
+			;;
+	esac
+	printf '%s\n' "$probe" > "$selftest_file"
+	if ! grep -qiE "$term" "$selftest_file"; then
+		echo "check-no-consumer-terms: FAIL — term '$term' does not match its own probe '$probe' under \`grep -E\` (the --gh-metadata lane)"
+		selftest_failed=1
+	fi
+	# Run from INSIDE the temp dir: `git grep --no-index` still refuses a path
+	# outside the repository, and the probe deliberately lives outside so it is
+	# never itself scanned by the real gate below.
+	if ! ( cd "$selftest_dir" && git grep --no-index -qiE "$term" -- probe.txt ); then
+		echo "check-no-consumer-terms: FAIL — term '$term' does not match its own probe '$probe' under \`git grep -E\` (the tracked-file lane)"
+		echo "  the gate's two lanes disagree about its own vocabulary; neither can be trusted"
+		selftest_failed=1
+	fi
+done
+if [ "$selftest_failed" -ne 0 ]; then
+	exit 2
+fi
+
 pattern="$(IFS='|'; echo "${TERMS[*]}")"
 
 # ── --gh-metadata mode (audit C10; owner-authorized 2026-08-05) ──────────────
@@ -139,8 +202,21 @@ if [ "${1:-}" = "--tree" ]; then
 	exit 0
 fi
 
-# Tracked files only (a release cut ships tracked content); skip vendored
-# code, archives, and this gate itself (it must name the terms it bans).
+# Tracked files only (a release cut ships tracked content); skip vendored code
+# and this gate itself (it must name the terms it bans).
+#
+# ARCHIVES ARE IN SCOPE, deliberately (#842). The exclusion used to read
+# `:(exclude)_archive*`, which is TOP-LEVEL-ANCHORED — and there is no
+# top-level `_archive*` path in this repo at all, so it excluded NOTHING while
+# reading as protection. The three archive directories that do exist are all
+# nested (`docs-src/_archive`, `lang/_archived` — 161 files — and
+# `spec/_archived`) and were being scanned the whole time.
+#
+# Rather than widen it to `:(exclude)**/_archive*` and match the old comment's
+# intent, the line is gone and the intent is corrected: an archived binding is
+# still tracked content that a release cut carries, so it is exactly what this
+# gate exists to check. Verified green with all three in scope, so nothing is
+# being papered over to make this true.
 #
 # PATHSPEC FORM IS LOAD-BEARING: `:!_archive*` dies with git's
 # "Unimplemented pathspec magic '_'" (short-form magic parsing eats the
@@ -149,7 +225,6 @@ fi
 # banned terms. Long-form `:(exclude)` pathspecs + loud error handling.
 hits="$(git grep -inE "$pattern" -- \
 	':(exclude)third_party' \
-	':(exclude)_archive*' \
 	':(exclude)_gate_evidence' \
 	':(exclude)scripts/check_no_consumer_terms.sh')"
 grep_status=$?
