@@ -11,16 +11,22 @@
 # and must exist in the ledgers/register BEFORE the commit (rulings-before-
 # edits, register R4.2). The token is machine-checked TWO ways: it must be
 # present, and at least one of its id fragments must appear in a recorded
-# ruling store (spec/02-working/partition_*.md — the ledgers/registers) — a
-# token naming NO recorded ruling fails the gate. Semantic review of the
-# ruling itself stays with humans/audit.
+# ruling store (ledger/**/*.md — the ledgers/registers; recursive, so an
+# archived ledger's rulings stay resolvable) — a token naming NO recorded
+# ruling fails the gate. Semantic review of the ruling itself stays with
+# humans/audit.
 #
-# Path classes:
-#   normative spec  = spec/** EXCEPT spec/02-working/partition_*.md
-#                     (campaign ledgers/registers/audits are process records)
+# Path classes (R6.1 — the store is a LOCATION, not a filename prefix):
+#   ledger          = ledger/** (process records; neither spec nor impl)
+#   normative spec  = spec/** — NO exceptions for new work. The LEGACY
+#                     spellings spec/02-working/partition_* / batch_* keep
+#                     their ledger classification so pre-move history
+#                     classifies as it did when written; the tree check in
+#                     default mode refuses any file re-entering that
+#                     namespace, so the legacy carve-out is not a loophole.
 #   implementation  = everything else EXCEPT .claude/**, README*, CHANGELOG*,
 #                     LICENSE*
-# A commit touching BOTH classes with no RULED: token is a violation.
+# A commit touching BOTH spec and impl with no RULED: token is a violation.
 #
 # Modes:
 #   (default)             scan FREEZE_EPOCH..HEAD (every post-audit commit)
@@ -48,7 +54,7 @@ ADJUDICATED_SHAS="
 
 is_normative_spec() {
   case "$1" in
-    spec/02-working/partition_*) return 1 ;;
+    spec/02-working/partition_*|spec/02-working/batch_*) return 1 ;; # legacy ledger spelling (pre-R6.1 history only; tree check refuses new files here)
     spec/*) return 0 ;;
     *) return 1 ;;
   esac
@@ -56,7 +62,7 @@ is_normative_spec() {
 
 is_impl() {
   case "$1" in
-    spec/*|.claude/*|README*|CHANGELOG*|LICENSE*) return 1 ;;
+    spec/*|ledger/*|.claude/*|README*|CHANGELOG*|LICENSE*) return 1 ;;
     *) return 0 ;;
   esac
 }
@@ -99,11 +105,11 @@ token_recorded() { # $1 = full commit message
       frag=$(strip_unbalanced_parens "$frag")
       [ "${#frag}" -ge 2 ] || continue
       base="${frag%%(*}"
-      if grep -qrF -- "$frag" spec/02-working/partition_*.md 2>/dev/null; then
+      if grep -qrF --include='*.md' -- "$frag" ledger/ 2>/dev/null; then
         return 0
       fi
       if [ "$base" != "$frag" ] && [ "${#base}" -ge 2 ] \
-        && grep -qrF -- "$base" spec/02-working/partition_*.md 2>/dev/null; then
+        && grep -qrF --include='*.md' -- "$base" ledger/ 2>/dev/null; then
         return 0
       fi
     done
@@ -129,7 +135,7 @@ check_commit() {
       return 1
     fi
     if ! token_recorded "$msg"; then
-      echo "SPEC-FREEZE VIOLATION: commit $sha carries a RULED: token that names NO recorded ruling in spec/02-working/partition_*.md (register R4.1 — rulings are recorded BEFORE the work they authorize, R4.2)." >&2
+      echo "SPEC-FREEZE VIOLATION: commit $sha carries a RULED: token that names NO recorded ruling in ledger/ (register R4.1 — rulings are recorded BEFORE the work they authorize, R4.2)." >&2
       git show --format="  %h %s" --name-only "$sha" | head -20 >&2
       return 1
     fi
@@ -152,6 +158,16 @@ case "${1:-}" in
     ;;
   *)
     rc=0
+    # R6.1 tree check — the legacy ledger namespace is CLOSED. Ledgers live
+    # in ledger/; a file matching the old spelling at HEAD would silently
+    # re-enter the historical carve-out above, so its existence is a
+    # violation in itself.
+    legacy=$(ls spec/02-working/partition_* spec/02-working/batch_* 2>/dev/null || true)
+    if [ -n "$legacy" ]; then
+      echo "SPEC-FREEZE VIOLATION: the legacy ledger namespace is closed (R6.1) — these files must live in ledger/:" >&2
+      printf '  %s\n' $legacy >&2
+      rc=1
+    fi
     for sha in $(git rev-list --no-merges "${FREEZE_EPOCH}..HEAD" 2>/dev/null); do
       check_commit "$sha" || rc=1
     done

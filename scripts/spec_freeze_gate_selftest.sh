@@ -12,6 +12,8 @@
 #   G  mixed, parenthesized token with an internal (…) qualifier → must pass
 #   H  mixed, parenthesized BOGUS token         → MUST FAIL  (paren stripping
 #      must not loosen the recorded-match check)
+#   I  a file re-entering the LEGACY ledger namespace
+#      (spec/02-working/partition_*) at HEAD    → MUST FAIL  (R6.1 tree check)
 set -euo pipefail
 
 GATE="$(cd "$(dirname "$0")" && pwd)/spec_freeze_gate.sh"
@@ -22,8 +24,8 @@ trap 'rm -rf "$T"' EXIT
   cd "$T"
   git init -q .
   git config user.email t@t && git config user.name t
-  mkdir -p spec/03-approved spec/02-working vcx
-  printf 'ledger\n\nRULED: TST-1 — recorded test ruling (a)\nRULED: TST-3′ — recorded, id ends in a prime\nRULED: TST-4 — recorded base id; commits may cite TST-4(a-revised)\n' > spec/02-working/partition_test_ledger.md
+  mkdir -p spec/03-approved spec/02-working vcx ledger
+  printf 'ledger\n\nRULED: TST-1 — recorded test ruling (a)\nRULED: TST-3′ — recorded, id ends in a prime\nRULED: TST-4 — recorded base id; commits may cite TST-4(a-revised)\n' > ledger/test_ledger.md
   git add -A && git commit -qm "seed ledger"
 
   sha_of_mixed() { # $1 = message
@@ -77,6 +79,16 @@ trap 'rm -rf "$T"' EXIT
   if bash "$GATE" --check-commit "$h" 2>/dev/null; then
     echo "SELFTEST FAILED: scenario H (parenthesized unrecorded token) passed the gate" >&2; exit 1
   fi
+
+  # I — a file re-entering the legacy ledger namespace at HEAD → default-mode
+  # gate must REFUSE (R6.1 tree check; the per-commit classifier deliberately
+  # treats the legacy spelling as ledger-class for history, so the tree check
+  # is the only thing standing between the carve-out and a loophole)
+  printf 'sneaky ledger\n' > spec/02-working/partition_sneaky.md
+  git add -A && git commit -qm "re-enter the legacy namespace"
+  if bash "$GATE" 2>/dev/null; then
+    echo "SELFTEST FAILED: scenario I (legacy-namespace file at HEAD) passed the default-mode gate" >&2; exit 1
+  fi
 )
 
-echo "spec-freeze-gate selftest: 8/8 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green)"
+echo "spec-freeze-gate selftest: 9/9 (tokenless-mixed RED, unrecorded-token RED plain+parenthesized, recorded plain/parenthesized/qualified green, spec-only/impl-only green, legacy-namespace RED)"

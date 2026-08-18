@@ -526,7 +526,7 @@ numbered; every option is lettered; recommendations are stated.
 
 **Q5. Gate-registry re-home (AF-4).**
 - **(a) RECOMMENDED — a living gates register in-tree** (either a
-  `spec/02-working/partition_gates.md` table or an extension block in
+  `ledger/partition_gates.md` table or an extension block in
   conformance/gates.cxd): every numbered gate → runner path → threshold →
   wiring (TEST_TARGETS / manual / env-gated) → last-honest-verdict; Makefile
   comments repointed; the four fictional §11.4.4 script names amended to

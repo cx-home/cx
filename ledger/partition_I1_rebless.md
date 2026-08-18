@@ -50,7 +50,7 @@ plus the obligations the final coordinated re-bless must discharge.
 
 ## Mapping file
 
-`spec/02-working/partition_I1_hash_mapping.md` (authored at re-bless): one row
+`ledger/partition_I1_hash_mapping.md` (authored at re-bless): one row
 per moved artifact class with a representative old→new digest pair per row,
 plus the full corpus diff as the exhaustive record (the re-bless commit).
 
@@ -605,7 +605,7 @@ movers + the 23 `epoch:` ts pins — chains verify under the normative
 wrappers); (2) the spec-edit maps (every ledger entry lists its
 obligations — execute as ONE batch); (3) THE ONE COORDINATED RE-BLESS:
 regenerate ALL ledgered corpus reds, author
-spec/02-working/partition_I1_hash_mapping.md (old→new digest per class
+ledger/partition_I1_hash_mapping.md (old→new digest per class
 + the full corpus diff), re-seal registry/ (gtin@0.1.0 re-publishes via
 make registry-publish), flip xap_registry_serve_real_test.v consts —
 then the eval gate goes to ZERO reds and conform goes fully green; the

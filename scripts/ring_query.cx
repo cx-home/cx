@@ -2,7 +2,7 @@
 #
 # Eat-our-own-dog-food: written entirely in CX; runs via `cx <file>`.
 # Implements the ring-tag resolution the corpus audit §2 "Tagging
-# mechanics" defines (spec/02-working/partition_corpus_audit.md):
+# mechanics" defines (ledger/partition_corpus_audit.md):
 #
 #   ring(case) = case@ring  ->  nearest enclosing [module]@ring  ->  suite@ring
 #

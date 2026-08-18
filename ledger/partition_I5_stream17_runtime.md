@@ -353,7 +353,7 @@ items none. Items 1+4 = landed pre-stream (impl/defects-714).
   #802/#803/#804 need a post-gate batch mapping ruling (the 1a
   mapping predates them).
 - **AUDIT RULED (owner, 2026-08-13: "1a-7a"; report
-  spec/02-working/partition_I5_audit.md; rulings record §3 of
+  ledger/partition_I5_audit.md; rulings record §3 of
   partition_I5_exit_review_packet.md).** Mapping: #802/#803/#804 → the
   GATE-TRUTH batch #805 (after s17 exit, before stream 18); #781/#782 →
   #796. Relabels applied (#803 high, #793/#794 medium). **W7 SCOPE
