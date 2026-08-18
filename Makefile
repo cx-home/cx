@@ -1026,6 +1026,14 @@ test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxsto
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
+	# RULED: R5.8 (#860) — the corpus/spec agreement gates run IN THIS LANE now.
+	# Both were in TEST_TARGETS but not a test-vcx dependency, so a green full
+	# `make test-vcx` never executed them: check-code-spec-consistency sat red
+	# from 2026-08-17 (a directive-extractor bug plus an unallowlisted impl
+	# anchor) straight through a run recorded as green. A gate in the roster but
+	# not in a lane that runs is indistinguishable from no gate.
+	$(MAKE) check-code-spec-consistency
+	$(MAKE) check-code-fixtures
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
