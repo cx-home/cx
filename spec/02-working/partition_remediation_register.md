@@ -278,6 +278,41 @@ and it is fixed BEFORE the cut. Id R5.12.**
   The hardening itself still stands as ruled and should land WITH a test that
   proves the diagnostic fires.
 
+  **ATTRIBUTION SETTLED 2026-08-18 by the bisect (worktree build at
+  `40510b9b` vs HEAD `61d0292c`). #853 IS the cause — of a DIFFERENT defect than
+  the withdrawn hypothesis, and the withdrawal was correct: the lane wiring is
+  not what fires.** The adapter comes up, binds its door and serves correctly;
+  the empty `adapter.log` is simply a working adapter that prints nothing. What
+  broke is `make-handler`'s REFUSAL RESPONSES. Every one built
+  `[?element 'response' [?attr 'status' N] [?element 'body' [$format:canonical
+  <err>]]]`, and an `err`-headed node is operand-consuming in BOTH positions
+  used there — as the `$format:canonical` CALL OPERAND and as an element CHILD.
+  Post-#853 the err propagates transitively and the whole envelope, status
+  included, is discarded; `http:serve` then serves the bare err with its default
+  **200**. The test's readiness probe accepts only 401 or 404, gets 200 for the
+  full 10s loop, and reports "adapter never came up" — a misleading message for
+  a door that is up and answering.
+  Measured, pre-fix, on the live adapter: `GET /nope` no-auth → **200** with the
+  correct `CXER0271` body; with bearer → **200** with the correct `CXER4926`
+  body; the 200 receipt path was UNAFFECTED (its payload is not an err), which
+  is exactly why only the refusal statuses moved.
+  **A second fact the bisect turned up: `$format:canonical` was never actually
+  running on these bodies in EITHER build.** Pre-#853 the same call was already
+  short-circuited by the err operand and the err was ADOPTED as the body child,
+  so the body was an err NODE rendered by the serve layer, not canonical text.
+  #853 did not break a working path; it converted a containment into a
+  propagation and thereby surfaced a fault that had been silent since P3.
+  **Fixed** by `err-body` — a `[?def]` taking the code and message as SCALARS
+  (the ruling's own "build a fresh element from `@code`/`@message`" remedy),
+  so no err node sits in an operand position and `$format:canonical` still does
+  the quoting. All four refusal sites (401/404 static, 400/502 dynamic) moved.
+  `fabric_umbrella` GREEN, `FABRIC-RC=0`, verified twice.
+  **`http_umbrella` is NOT a regression and never was.** Its union-run red is
+  the #572 `-usecache` duplicate-symbol link artifact — `ld: 1 duplicate
+  symbols`, 0.000 ms runtime, the lane never ran. Green cache-free at HEAD
+  (`OK 30787 ms`). It has no retry class in `SUITE_SERIAL_RETRY`, so the lane
+  classifier can only reach it through the `C compilation error` branch.
+
 **This is the first live consumer to prove #853's value rather than only its
 cost:** every other site that moved was a test or fixture LABELLING a refusal;
 this one was a production path SERVING on top of one.
