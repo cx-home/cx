@@ -251,6 +251,37 @@ numbered and then became load-bearing — cited 8× inside `code.md` and from
 Renumbering is a cross-spec rewrite for zero behavioural gain; #832 owns this
 class of artifact.
 
+**2026-08-18 (third round), owner — "1a 2a": the webhook adapter fails LOUDLY,
+and it is fixed BEFORE the cut. Id R5.12.**
+
+- **R5.12** — `tooling/cxfabric/webhook-adapter.cx` wired `[$fabric:observe]` /
+  `[$fabric:subscribe]` in element CHILD position, so before #853 a failed lane
+  was CONTAINED and the adapter went on to bind its HTTP port and serve with
+  DEAD LANES. #853's propagation turned that into an early exit with no
+  output — which broke `fabric_umbrella` and, more importantly, revealed that
+  the old behaviour was hiding a real fault.
+  **Ruled: fail fast and LOUDLY** — check each lane, exit with a diagnostic
+  NAMING the stream that failed. Restoring containment was refused: it would
+  deliberately re-bury a refusal in a document, which is the defect the #853
+  ruling removed. Reverting #853 was refused: a ruled semantics is not
+  discarded because one consumer relied on the bug.
+  Ruled fixed before the cut (2a) — but **NOT YET DONE, and the causation claim
+  behind it is WITHDRAWN.** Attempting it produced the evidence against it: with
+  the broker unreachable the adapter HANGS inside `[$fabric:open]` (rc=124 under
+  `timeout`, zero output) and never reaches the lane code at all, so the
+  "adapter never came up" failure is not demonstrated to be #853's. A hardening
+  edit was written and then REVERTED unverified — no diagnostic was ever
+  observed, and shipping unverified code into shipped tooling is the mistake
+  this session already made twice. `fabric_umbrella` remains RED with the cause
+  UNESTABLISHED; it needs a bisect against the pre-session build, which is a
+  rebuild.
+  The hardening itself still stands as ruled and should land WITH a test that
+  proves the diagnostic fires.
+
+**This is the first live consumer to prove #853's value rather than only its
+cost:** every other site that moved was a test or fixture LABELLING a refusal;
+this one was a production path SERVING on top of one.
+
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
 **2026-08-07:**
