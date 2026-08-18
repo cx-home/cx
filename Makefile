@@ -1034,6 +1034,12 @@ test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxsto
 	# not in a lane that runs is indistinguishable from no gate.
 	$(MAKE) check-code-spec-consistency
 	$(MAKE) check-code-fixtures
+	# RULED: R6.3 (#832) — spec-freeze-gate runs IN THIS LANE now, wired only
+	# after R6.1/R6.2 made it green (R5.8's order). It sat in TEST_TARGETS
+	# while 13 violations accumulated across six work streams over three days
+	# of green test-vcx runs — the discipline did not decay, the feedback loop
+	# was disconnected.
+	$(MAKE) spec-freeze-gate
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
