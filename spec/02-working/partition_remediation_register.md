@@ -313,6 +313,43 @@ and it is fixed BEFORE the cut. Id R5.12.**
   (`OK 30787 ms`). It has no retry class in `SUITE_SERIAL_RETRY`, so the lane
   classifier can only reach it through the `C compilation error` branch.
 
+  **THE HARDENING ITSELF IS NOW LANDED, WITH THE TEST — and #853 turns out not
+  to be involved in it at all.** Measured on the live adapter with the
+  principal's `observe` grant removed: `[$fabric:observe]` returns
+  `CXER4925 E_FABRIC_DENIED` correctly, but a `[?for]` yields that err as a
+  SEQUENCE ITEM, and a sequence is not element construction — so the err was
+  CONTAINED, never propagated. The adapter bound its door, answered 401s
+  correctly, and pumped an SSE lane that had never joined, with both output
+  streams empty, indefinitely. **The pre-session `rc=124` "hang with zero
+  output" was a `timeout` killing a daemon that serves and never exits** — not
+  a hang, and the reason the earlier attribution attempt went astray. #853's
+  propagation never fired on this path in either direction.
+  Fixed: each lane's join is inspected with `[?match]`; a refusal becomes a
+  `[lane-failed kind=… stream=… code=… message=…]` diagnostic, and `$srv` is
+  bound INSIDE the `[else]` branch of a `[$present …//lane-failed]` guard —
+  because an err- or diagnostic-valued BINDING does not by itself stop the
+  bindings after it in a flat `[?let]` (verified). Branch-local bindings are
+  the sanctioned nesting, not a cascade.
+  Observed diagnostic: `[adapter-refused-to-start reason=lane-join-failed
+  ([lane-failed kind=sse stream=orders code=cx-err:CXER4925 message='…holds no
+  observe grant on stream "orders"'])]`, adapter dead in ~1s, door never opened.
+  Test `test_fabric_adapter_refuses_on_lane_join_failure` (9 asserts), and it is
+  BROKEN THREE WAYS to earn its green: gate disabled → red naming the fault
+  ("kept serving despite a failed lane, door answered 401"); stream name
+  redacted → ONLY the naming assertion red (6 of 7 still pass, so that
+  assertion is independently load-bearing); and the FIRST version of the test
+  was itself defective — it waited on the adapter in the FOREGROUND, so the
+  gate-disabled break HUNG the lane for 300s instead of failing it. Restructured
+  to poll a background process. **A test whose failure mode is a hang reports
+  nothing.**
+  Full lane green: 16/16, 315 asserts, `FABRIC-RC=0`.
+  **REMAINING SHORTFALL, named not papered over: the refusal exits 0.** CX has
+  no exit and no raise directive, and a top-level result — err or otherwise — is
+  printed and exited 0 (verified). So a supervisor cannot distinguish this
+  refusal from a clean shutdown. Making it non-zero is a `cli.md` question about
+  the run surface's exit mapping, i.e. normative spec, and is NOT taken here.
+  **OWNER QUESTION, open.**
+
 **This is the first live consumer to prove #853's value rather than only its
 cost:** every other site that moved was a test or fixture LABELLING a refusal;
 this one was a production path SERVING on top of one.
