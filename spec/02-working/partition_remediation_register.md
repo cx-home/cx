@@ -381,6 +381,65 @@ NON-ZERO. Id R5.13. This carries NAMED authorization to edit `cli.md`.**
 
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
+**2026-08-18 (R5.13 execution):**
+- R5.13 VERIFYING — `cli.md` §3.7.1 authored + the §5 exit matrix row amended
+  (the ONE authorized spec edit); engine side is `note_top_level_result` in
+  `code/api.v`, called at BOTH result boundaries — the single-form path and the
+  multi-form loop. The multi-form path needed `eval_top_level_each` to return its
+  FORMS alongside its results: results are **not** index-aligned with `items`,
+  because declaration directives evaluate but contribute no output, so pairing by
+  index misattributes every form after the first `[?lib]`/`[?def]`/`[?const]`.
+  A test pins exactly that (a `[?lib]` before a literal-err form).
+  The discriminator reuses `is_literal_err_head` from `dynamic_construction.v` —
+  #853's own predicate, not a second copy that could drift from it.
+  Six lanes in `cli_run_surface_test.v`; **break-tested by collapsing the
+  discriminator to value-only** (`is_err_value(result)` alone): exactly the two
+  DATA-side lanes go red — literal-is-data, and multi-form pairing — while the
+  four failure-side lanes stay green. That is the split that matters, because
+  value-only is the specific mistake the ruling warned against.
+  `code_eval_fixtures` GATE-RC=0 (no fixture moved: the rule changes the exit
+  status and no output bytes).
+- **AND IT IMMEDIATELY EARNED ITS KEEP: `examples/code-tour.cx` was ALREADY
+  BROKEN BY #853 and no gate could see it.** §14's `[?retry]` exhausts its budget
+  on purpose — pedagogy — so its value is an err in element CHILD position, which
+  since #853 propagates: out of `[section]`, then out of `[tour]`, so the flagship
+  tour rendered as **nothing but that one err**, losing every section. The
+  existing `test_flagship_tours_documented_run_lines_work` passed throughout,
+  because it asserts only `exit_code == 0` (which held, pre-R5.13) and non-empty
+  output (which held — the err is output). Fixed with the escape #853's own
+  ruling documents, the same one `ab6a62e5` applied to its ten fixtures: the
+  demonstration moves into a paren SEQUENCE, which is not element construction
+  and therefore CONTAINS the refusal. Tour restored from 42 lines to 51 with all
+  6 sections and the full cause chain intact; `rc=0`.
+  **This is the eighth #853 consumer, and the first found by a gate rather than by
+  reading.** It is also the answer to "what else did #853 quietly change" — the
+  honest one is that a gate keyed on exit status finds these and a gate keyed on
+  non-empty output cannot.
+- **R5.13 IS NOT LANDED — it is PARKED IN A STASH, blocked, and the blocker is
+  MINE.** `git stash` entry "R5.13 WIP" on `release/0.16.0` holds all of it:
+  `cli.md` §3.7.1 + the §5 matrix row, the engine change, the six CLI lanes with
+  their value-only break-test, the `code-tour` repair, and the four remediations.
+  Every targeted lane is green — `cli_run_surface` 62/62, `code_eval_fixtures`
+  GATE-RC=0, `async_conc_umbrella` and `xap_umbrella` green after remediation.
+  **What blocks it: `vcx/code/code_module_umbrella_test.v` takes SIGNAL 11 under
+  the 12-parallel-job `make test-vcx-code`, while passing 469/469 in isolation.**
+  Attributed, not guessed: stashing the change makes that target green (26/26,
+  rc=0) and restoring it makes it segfault again, reproducibly.
+  Ruled OUT as the cause: the `__global` declaration style. Moving it from a
+  top-level `__global x = false` into the block form this module already uses did
+  NOT fix it.
+  **Prime suspect, untested: the `eval_top_level_each` signature change** — it now
+  returns `!([]cx.Node, []cx.ProgramNode)`, and `dynamic_construction.v`'s own
+  header warns that V's cgen trips `type_default_impl` recursion on the recursive
+  `cx.Node` sumtype in exactly this shape. The multi-form path needs the FORMS to
+  pair results with their source spelling (results are not index-aligned with
+  `items`), so if the tuple return is the cause, the fix is to carry the forms
+  some other way — classify inside `eval_top_level_each`, or pass a `mut`
+  out-param — NOT to drop the pairing, which would reintroduce the value-only bug
+  the break-test exists to catch.
+  A full `make test-vcx` has NOT passed with R5.13 in the tree. The row stays
+  OPEN. Nothing was committed on a green-in-isolation reading.
+
 **2026-08-07:**
 - R3.7 VERIFYING — cxer-registry-gate in TEST_TARGETS (commit 7af29685);
   green on tree, RED on synthetic unregistered CXER9871, green after
