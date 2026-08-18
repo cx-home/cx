@@ -406,7 +406,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?close' category="Concurrency" spec="§10.4"
   [sig """[?close CHANNEL] -> ()"""]
   [summary """Concurrency: close a channel; drained receives on a closed channel yield a channel-closed error."""]
-  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]"""] [expect """([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])"""]]
+  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ($first, $second)]"""] [expect """(a, [err code=cx-err:CXER0200 message='channel closed'])"""]]
 ]
 
 [directive-doc name='?select' category="Concurrency" spec="§10.4"
@@ -458,7 +458,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?await-race' category="Async" spec="§10.5"
   [sig """[?await-race (F…)] -> value"""]
   [summary """Async: yield the first future to settle and cancel the losers."""]
-  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]"""] [expect """[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]"""]]
+  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] ($winner, $slow-state)]"""] [expect """(fast, [err code=cx-err:CXER0260 message='operation cancelled'])"""]]
 ]
 
 [directive-doc name='?cancel' category="Async" spec="§10.5"
