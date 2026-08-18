@@ -206,6 +206,51 @@ dependency of `test-vcx` (Makefile:1025), so a green full `make test-vcx` at
 (`check-code-spec-consistency`, also red at that commit). Do not settle this by
 loosening the gate.
 
+**2026-08-18 (second round), owner — the pre-cut gate/spec dispositions
+("1a 2a 3a 4a 5a 6a"). Ids R5.7–R5.11.**
+
+- **R5.7 (1a)** — #860: the `vcx/code/diagram.v` anchor at `code.md:3893` is
+  **ALLOWLISTED** in `IMPL_ANCHOR_ALLOWLIST`, not deleted from the spec. It
+  meets the list's stated criterion — a pure pointer-to-realisation beside
+  self-contained normative text — so it qualifies on the merits rather than as
+  a convenience. Deleting it would have edited approved normative text to
+  satisfy a gate, and set that precedent.
+- **R5.8 (2a)** — #860: `check-code-spec-consistency` is **wired into
+  `test-vcx`**, AFTER R5.7 makes it green. A gate in `TEST_TARGETS` but not in
+  a lane that runs is indistinguishable from no gate; that hole is why it sat
+  red from 2026-08-17 through a green full-suite run.
+- **R5.9 (3a)** — #859: **§6.5.x gains a CARVE-OUT sentence** stating that it
+  classifies the LANGUAGE, and that native primitives backing stdlib module
+  bodies are classified implementation-side. Mirrors the precedent §6.5.x
+  already sets for the `[?test-…]` harness directives. Chosen over
+  enumerating the eight stdlib-backing natives (`sqrt` `cbrt` `exp` `log`
+  `log2` `log10` `pow` `validate-item`) in the Numeric list, which would put
+  non-language primitives in the language's closed list and need an edit per
+  new native. **This is the NAMED spec authorization for the §6.5.x edit.**
+- **R5.10 (4a)** — #840: `[from 'a/b' 'c/d']` (one reference per string) and
+  `[constituents 'a/b c/d']` (space-separated) **KEEP their different shapes**,
+  with the divergence documented in `xap_grammar_composition.md` §4.1. No
+  defect sits behind converging them. Converging `[from]` onto the
+  space-separated form is REFUSED — it would destroy fail-closedness, since a
+  stray join sentence would split into plausible-looking names instead of being
+  refused. Converging `[constituents]` the other way is the better end state
+  and may be scheduled after the cut.
+- **R5.11 (5a)** — #861: widening `x/term`'s `read-event` to forward the
+  native's optional timeout gets **its own lane after the cut**, with fixtures
+  for the `:rest` variadic path itself — `:rest` has no live consumer anywhere
+  in `stdlib/`, `x/`, or the corpus, so the first one cannot ride a one-line
+  fix. The doc now states the blocking behaviour and points at `select`.
+
+Sequencing (6a): #741/#752 cut prep next; #832 stays LAST.
+
+**Deferred to #832 by the same round:** `§6.5.x` is an anchor whose siblings
+are `§6.5.0` and `§6.5.1`, so it reads as a placeholder that was never
+numbered and then became load-bearing — cited 8× inside `code.md` and from
+`computation_identity.md`, `security.md`, `modules/cx.md`,
+`modules/tree-sitter.md`, `process/threat-model.md` and two ledgers.
+Renumbering is a cross-spec rewrite for zero behavioural gain; #832 owns this
+class of artifact.
+
 ## Execution evidence log (rows move CLOSED only after the R4.3 pass re-verifies)
 
 **2026-08-07:**
