@@ -1507,4 +1507,80 @@
            sized), `bool → bool`, `string → String`, `atom →
            cx_lang::Atom`, `date →
            chrono::NaiveDate`, `datetime → chrono::DateTime`,
-           `bytes → Vec<u8>`."""]]]]
+           `bytes → Vec<u8>`."""]]]
+
+  [child id=abi-stability n=7.12 title='ABI stability and versioning'
+    [intro
+      """The C ABI is the contract that lets every binding call into
+         libcx without recompilation, so its evolution rules are worth
+         stating plainly. The normative policy lives in
+         [`spec/governance.md`](../../spec/governance.md); this is the
+         practicing summary."""]
+
+    [list
+      [item """**Semver discipline, pre-1.0.** On the 0.x line the ABI
+              may break at minor versions; every break is annotated in
+              `CHANGELOG.md` with a migration note. From 1.0 the ABI
+              breaks only at major versions, with a published migration
+              guide."""]
+      [item """**Capability bits are the forward-compatibility
+              mechanism.** A binding examines the feature bitmask at
+              load and enables, degrades, or refuses per feature — the
+              negotiation flow and the current bit map are in the
+              capability-bit subsection above. A bit, once assigned,
+              keeps its meaning forever; features never reuse bits."""]
+      [item """**Newer libcx, older binding: works.** The library
+              exports a superset; unused symbols and unclaimed bits sit
+              idle. This is the normal state after a library upgrade —
+              bindings keep working without recompile."""]
+      [item """**Older libcx, newer binding: refuses or degrades,
+              never limps.** A missing required bit fails the load with
+              a clear error; a missing optional bit disables that API
+              surface, which then errors as \"feature unavailable\"
+              when called — never a silent wrong answer."""]
+      [item """**Symbols are append-only.** Frozen signatures stay
+              frozen; a signature that must change arrives as a new
+              suffixed symbol beside the old one, and removal is a
+              major-version event."""]]
+
+    [body
+      """Schema compatibility versions independently of the ABI — what
+         may change within a schema line, and how breaking schema
+         changes travel, is Ring 0 material: [[schema-evolution]]."""]]
+
+  [child id=wasm-story n=7.13 title='The WebAssembly build'
+    [intro
+      """libcx also builds to WebAssembly (`scripts/wasm/
+         build_libcx_wasm.sh`; artifacts land in `dist/wasm/`). The
+         wasm build is a **strict subset of the native C ABI** — every
+         exported symbol already exists in the native library — so
+         tools written against the ABI work identically against wasm
+         for the surface it exposes, through the same JS wrapper the
+         playground uses (`scripts/wasm/cxlib.js`)."""]
+
+    [body
+      """**What wasm is for.** Browser-side tooling — the playground,
+         in-page validators and formatters, documentation that
+         evaluates its own examples — and low-trust embedding, where
+         the wasm sandbox is a hard isolation boundary: the embedded
+         engine cannot reach the host filesystem or network at all,
+         however the capability set is misconfigured. The playground
+         and its delivery modes (single-threaded static hosting versus
+         the locally-served build where `[par]` gets real threads) are
+         covered with the rest of the tooling in [[tooling]]."""]
+
+    [body
+      """**What wasm is not.** The production target. Native
+         deployments use the CLI, the language bindings, or libcx as a
+         shared library — none of which carry the wasm build's
+         event-loop instrumentation, bundle-size pressure, or
+         single-thread default. Expect wasm to run at a substantial
+         fraction of native speed and treat the playground as an
+         explorable demonstration surface, not a benchmark."""]
+
+    [note
+      """A pure-JavaScript reimplementation of CX (no wasm) is a
+         long-term option that is deliberately **not** scheduled: it
+         would mean two implementations held in parity with the spec.
+         The wasm path keeps a single source of truth — one engine,
+         compiled twice."""]]]

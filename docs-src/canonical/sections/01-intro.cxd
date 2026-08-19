@@ -188,9 +188,10 @@
               V, Python, Go, and Rust."""]
       [item """[[tooling]] — LSP, tree-sitter, VS Code, Neovim, Helix,
               `make docs`, the playground."""]
-      [item """[[concepts]] — pure-functional updates, structural sharing,
-              capability bits, error-code namespace, ABI versioning,
-              governance."""]
+      [item """[[value-model]], [[computation-identity]],
+              [[commands-effects]], [[runtime-representation]] — the
+              concept arcs: identity, determinism, effects, structural
+              sharing, and how values are represented at runtime."""]
       [item """[[migration]] — upgrade guide: renames, retired surfaces,
               the automated migration script, the archived binding set."""]]
 

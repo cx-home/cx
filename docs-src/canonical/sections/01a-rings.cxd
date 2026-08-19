@@ -79,7 +79,7 @@
       """What you can do with only Ring 0: parse and emit; convert between
          formats losslessly; canonicalize; hash, compare, and diff;
          validate against a schema; embed in another language through the
-         bindings. See [[data-language]], [[identity]], [[surfaces]]."""]]
+         bindings. See [[data]], [[identity]], [[surfaces]]."""]]
 
   [child id=rings-ring1 n=1a.3 title='Ring 1 — code'
     [body
@@ -106,7 +106,7 @@
       """What you can do with only Ring 1: evaluate programs; query with
          CXPath; transform and generate; run the formatter, linter, and
          language server; call the stdlib packs whose own imports stay
-         inside Rings 0–1. See [[code-language]], [[tour-programs]]."""]]
+         inside Rings 0–1. See [[code]], [[tour-programs]]."""]]
 
   [child id=rings-ring2 n=1a.4 title='Ring 2 — platform'
     [body
@@ -162,26 +162,13 @@
          consequence of Ring 0 importing no evaluator, checked by the
          build. \"Ring 1 cannot open a socket\" is the same kind of fact."""]]
 
-  [child id=rings-choosing n=1a.7 title='Choosing a ring'
+  [child id=rings-choosing n=1a.7 title='Where to go from here'
     [body
       """Take the smallest ring that answers your question. You can always
          move outward later — nothing you wrote against a lower ring has to
-         change, because the lower ring is unchanged by the higher one."""]
-
-    [table
-      [tr [th 'If you want to…'] [th 'You need']]
-      [tr [td 'read, write, or convert CX documents'] [td 'Ring 0']]
-      [tr [td 'give data a stable identity, or diff two versions'] [td 'Ring 0']]
-      [tr [td 'validate against a schema'] [td 'Ring 0']]
-      [tr [td 'embed CX somewhere that must not run code'] [td 'Ring 0']]
-      [tr [td 'query, transform, or generate with programs'] [td 'Ring 1']]
-      [tr [td 'run a program with controlled access to files or the network'] [td 'Ring 1']]
-      [tr [td 'store data, keep history, or serve it'] [td 'Ring 2']]
-      [tr [td 'host an XAP feature'] [td 'Ring 2']]
-      [tr [td 'publish, discover, or install a feature'] [td 'Ring 3']]
-      [tr [td 'call CX from Go, Python, Rust, or V'] [td 'Ring 3']]]
-
-    [body
-      """If you are evaluating CX and do not yet know which of these you
-         want, start at [[quickstart]] — it runs entirely inside Ring 0
-         before it shows you anything that executes."""]]]
+         change, because the lower ring is unchanged by the higher one.
+         [[choosing]] is the router: a task table and four reader paths
+         (evaluator, data-format adopter, application author, platform
+         operator), each ending in something you can do. If you just want
+         to try CX first, start at [[quickstart]] — it runs entirely
+         inside Ring 0 before it shows you anything that executes."""]]]

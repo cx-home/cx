@@ -662,14 +662,14 @@
 
     [child id=include-capabilities n=2.9.4 title='Capability gating'
       [body
-        """Includes are gated by capability bits per
-           [[concepts]]: `include-local` (file-system reads under the
-           document's directory tree), `include-absolute` (file-system
-           reads outside that tree), `include-network` (HTTPS URLs),
-           `external-entity` (XML external entity refs). The default
-           profile enables `include-local` only. Untrusted-input
-           processing should disable all four. See [[security]] in
-           [[concepts]] for the threat model."""]]]
+        """An include is a filesystem read, and reads are capabilities:
+           `[?cx include=…]` refuses with `CXER0271` unless the run was
+           granted `--allow-read` — deny-by-default, like every effect
+           (see [[capabilities]]). Resolution is rooted: relative
+           include paths resolve against the including document's
+           directory, or against an explicit `--include-root=DIR`.
+           Untrusted-input processing grants nothing and parses pure;
+           see [[security]] for the threat model."""]]]
 
   [child id=namespaces n=2.10 title='Namespaces (xmlns:)'
     [intro
@@ -814,10 +814,11 @@
       [tr [td 'Max canonical-form size'] [td '1 GiB'] [td 'CX_MAX_CANON'] [td 'CXER0148']]]
     [body
       """For untrusted-input processing (parsing CX received over a
-         network), tighten these via the `--profile untrusted` flag on
-         the CLI or `cx.config(profile='untrusted')` in the bindings —
-         which preset-clamps every limit to ~10% of the default. See
-         [[concepts]] §security for the threat model."""]]
+         network), tighten these explicitly for the workload and pair
+         them with OS-level process limits — the parser needs no
+         capability grants at all, so the empty grant set plus tightened
+         budgets is the whole posture. See [[security]] for the threat
+         model."""]]
 
   [child id=datetime-detail n=2.16 title='Date / time semantics — timezones, precision, leap seconds'
     [intro

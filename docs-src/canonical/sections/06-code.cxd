@@ -1146,6 +1146,20 @@
          lighter sugar; `[?fallback PRIMARY [recover-with …]]` (§10.2.4)
          binds `$err` in the recovery."""]
 
+    [body
+      """**Why not exceptions.** Exceptions contaminate every signature
+         with an invisible \"may throw\" that no tool can see, and force
+         every caller to either catch or be transparent. In CX the
+         error is in the value, the propagation discipline is in the
+         operators (`?` and `!`), and the handling is in `[?match]` —
+         all three visible in the source. The cost of an error path is
+         the cost of one value: no stack scan, no unwind tables. And
+         because an error is just a value, it crosses every boundary
+         values cross — pipelines, `[?await]`, worker channels — without
+         a parallel control-flow mechanism: a worker that errors sends
+         the `[err]` through its result channel and terminates
+         cleanly."""]
+
     [child id=error-registry n=6.8.1 title='Error code registry (CXER0100–0299)'
       [body
         """The CXER0100–0299 range is reserved for code-language

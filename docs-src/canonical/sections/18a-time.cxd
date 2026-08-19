@@ -1,0 +1,135 @@
+[# Section 18a — time: valid time and transaction time. Teaching surface
+   for spec/03-approved/core/bitemporal.md. The price-correction example
+   is the spec's own worked example (M5), kept verbatim in spirit so the
+   guide and the corpus teach the same story. Authored 2026-08-19 for
+   #826 acceptance 3. #]
+
+[section id=bitemporal group='Ring 2 — Platform' n='18a' title='Time: valid time and transaction time'
+
+  [child id=bt-two-axes n=18a.1 title='Two different questions about when'
+    [intro
+      """\"When\" is two questions wearing one word. *When was this fact
+         true in the world?* — **valid time**. *When did we learn it?* —
+         **transaction time**. Systems that fuse them cannot answer the
+         auditor's question — \"what did we know when we sent that
+         invoice?\" — because the moment a correction lands, the past
+         silently repaints. CX keeps the axes separate, and each lives
+         exactly where it belongs."""]
+
+    [table
+      [tr [th 'Axis'] [th 'Lives'] [th 'Coordinate'] [th 'Who owns it']]
+      [tr [td '**Transaction time**'] [td 'the journal envelope']
+          [td 'the entry sequence number — a position, not a clock'] [td 'the journal']]
+      [tr [td '**Valid time**'] [td 'the payload — your data']
+          [td '`valid-from=` / `valid-to=` attributes'] [td 'you']]]
+
+    [body
+      """Transaction time is **position, not wall-clock**: each stream's
+         entries are dense, gap-free, and hash-chained, so \"as of entry
+         27\" is exact, replayable, and machine-independent, while
+         timestamps stay non-authoritative annotations. Valid time is
+         **payload data under a reserved vocabulary**: `valid-from=` and
+         `valid-to=`, half-open `[from, to)` so adjacent intervals never
+         double-count, with an open end spelled as an *absent* attribute
+         — never a null. Two records differing only in effective date
+         are different values with different addresses, which is exactly
+         why validity is payload and not metadata (see the lane
+         discipline in [[value-model]])."""]]
+
+  [child id=bt-corrections n=18a.2 title='Corrections — three relations, not one'
+    [intro
+      """The journal is append-only, so a correction is a new entry —
+         but \"a later entry\" can mean three different things, and a
+         substrate that cannot tell them apart makes restatement
+         unauditable. A correcting entry names what it corrects by
+         **content address** (`[supersedes hash=…]`) and declares which
+         relation it is:"""]
+
+    [table
+      [tr [th 'Relation'] [th 'Meaning'] [th 'How it folds']]
+      [tr [td '`:assertion`'] [td 'a late-arriving fact — nothing was wrong']
+          [td 'joins the timeline; supersedes nothing']]
+      [tr [td '`:correction`'] [td 'the prior fact was WRONG']
+          [td 'supersedes it across its whole valid extent']]
+      [tr [td '`:amendment`'] [td 'the prior fact was right then, wrong now']
+          [td 'closes its valid interval; opens a new one']]]
+
+    [body
+      """Both entries remain forever — the superseded fact is never
+         deleted, the chain stays verifiable, and the correction itself
+         is attributed (who corrected it, under what authority, at which
+         position). A dangling `supersedes` reference is a *finding*
+         from the coherence verb, never a chain break: chain
+         verification stays syntactic."""]
+
+    [note
+      """A fourth relation exists and deliberately stays out of this
+         taxonomy: **migration** — the vocabulary changed, not the fact
+         (see [[event-evolution]]). A migration entry never alters valid
+         time and never folds as a correction; conflating \"we
+         restated the number\" with \"we renamed the field\" is how
+         audit trails rot."""]]
+
+  [child id=bt-read n=18a.3 title='The bitemporal read'
+    [intro
+      """Reads take two coordinates, independently optional:
+         `{at-seq: N}` — the transaction position — and
+         `{valid-at: T}` — the instant in the world. Four quadrants,
+         one of which is THE bitemporal query:"""]
+
+    [table
+      [tr [th 'Query'] [th 'Answers']]
+      [tr [td 'now / now'] [td 'what do we currently believe is true now']]
+      [tr [td '`at-seq` / now'] [td 'what did we believe at position N about now']]
+      [tr [td 'now / `valid-at`'] [td 'what do we currently believe was true at T']]
+      [tr [td '`at-seq` / `valid-at`'] [td '**what did we know when** — the audit query']]]
+
+    [body
+      """The worked example the corpus pins: on Aug 5 we learn the Aug 1
+         price was wrong. Entry 12 asserted 19.99 valid from Aug 1; an
+         order priced from it at entry 13; entry 27 corrects to 17.99,
+         superseding entry 12, valid from the same Aug 1. Then
+         `{at-seq: 13, valid-at: Aug 3}` returns 19.99 — the defensible
+         invoice, what we knew when we sent it — and
+         `{at-seq: 27, valid-at: Aug 3}` returns 17.99 — the restatement
+         basis. The pair is the restatement delta: the number the
+         auditor actually asks for, produced from one immutable chain,
+         no rewrites anywhere."""]
+
+    [body
+      """Mechanically, the bitemporal read is a **pure projection over
+         entries, composed before the fold** — the fold contract itself
+         never changes (see [[store]] for folds). The projection selects
+         and collapses per the correction taxonomy; interval predicates
+         over the validity vocabulary need no new query machinery. The
+         same seam hosts version upcasting ([[event-evolution]]) —
+         upcast first, then the valid-time projection, so an upcaster
+         may synthesize validity vocabulary for entries that predate
+         it."""]]
+
+  [child id=bt-boundaries n=18a.4 title='What this design refuses'
+    [list
+      [item """**No store temporal tables.** The journal is the only
+              history; anything table-shaped is a fold over it."""]
+      [item """**No in-place temporal rewrites.** Append-only is
+              permanent; a rewritten past is not a past."""]
+      [item """**No wall-clock ordering authority.** Positions order
+              entries; timestamps annotate them. A tenant-wide
+              coordinate is a *set* of per-stream positions (a
+              head-set), carried by signed snapshots — there is no
+              global sequence to pretend to."""]
+      [item """**Validity windows elsewhere are instances, not
+              inventions.** Authorization `[until]`, credential
+              issued/expires, session not-before/expiry — each is a
+              valid-time window named by its own module; the vocabulary
+              here is the common language under them."""]]
+
+    [body
+      """One composition rule reaches into authorization: a policy
+         decision evaluated against historical context records **both**
+         coordinates — the position its context was folded at and the
+         instant it was asked about — so \"what would we have decided at
+         position P about instant T\" is a first-class, auditable
+         query. See [[operations]] for the operational side of
+         journals, retention, and snapshots."""]]
+]

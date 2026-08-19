@@ -259,4 +259,67 @@ $ cx reveal.cx --allow-all
          output is a `CXER0271` denial passes (the denial is
          environmental, not staleness), and anything else that errors
          fails the build."""]]
+
+  [child id=security n=16.7 title='Untrusted inputs and untrusted code'
+    [intro
+      """The capability model is one half of CX's security posture; this
+         subsection is the whole posture in one place. The normative
+         reference is the threat model
+         (`spec/03-approved/process/threat-model.md`), which assumes one
+         of three deployment shapes: **A — trusted inputs**
+         (operator-authored files; defaults suffice), **B —
+         semi-trusted** (PRs, CI artifacts, third-party config; pin the
+         toolchain and validate at the boundary), and **C — untrusted**
+         (network payloads, public uploads; everything below, plus
+         process isolation)."""]
+
+    [body
+      """CX distinguishes two threats that get conflated elsewhere:"""]
+    [list
+      [item """**Untrusted data, trusted code.** Your program parses
+              attacker-supplied bytes. The parser is the attack surface;
+              the mitigations are structural: parsing needs no
+              capabilities at all, every regex call site routes through
+              the vendored RE2 engine (**linear-time matching** — no
+              catastrophic backtracking class, in the schema `[pattern]`
+              constraint included), invalid UTF-8 is a typed refusal
+              rather than a silent substitution, and a `.cxs` schema at
+              the boundary type-checks every field before anything
+              downstream sees the value ([[schema-evolution]])."""]
+      [item """**Untrusted code.** You evaluate a tree you did not
+              author. The threat is reach, and reach is exactly what the
+              capability set bounds: with no grants the code can
+              compute, transform, hash, validate, and project — and
+              cannot read a file, dial a host, spawn a process, read the
+              clock or the environment, or declassify a secret. There is
+              no ambient escape hatch to close because there is no
+              ambient authority to begin with."""]]
+
+    [body
+      """The idiom for running untrusted sub-computations inside a
+         granted process is **narrowing**: evaluate the foreign tree
+         under `[?with-caps [deny …] …]` (see the narrowing subsection
+         above) and its authority is bounded no matter what it contains
+         — a `deny` cannot be undone from inside. Dynamic evaluation is
+         itself a capability (`--allow-eval`), so a program that runs
+         runtime-supplied source says so on its command line, visibly."""]
+
+    [body
+      """What the capability model does **not** bound: total CPU and
+         memory spent inside pure computation. A hostile-but-pure
+         program can still burn cycles, so deployment shape C pairs the
+         empty capability set with **OS-level process isolation** —
+         memory caps, wall-clock timeouts, file-descriptor limits — and
+         monitoring on the refusal codes. Output of untrusted evaluation
+         is a value, not sanitized markup: HTML contexts route it
+         through an escaping renderer, never string concatenation."""]
+
+    [note
+      """CX has not yet received an external security audit. The
+         hardening above is real and continuously exercised (the
+         conformance corpus, the capability-denial gates, reproducible
+         builds), but until an audit lands, the recommended posture for
+         shape C is the belt-and-suspenders one: empty grant set,
+         narrowing around foreign trees, schema validation at the
+         boundary, and process isolation around the whole thing."""]]
 ]
