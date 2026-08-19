@@ -496,8 +496,10 @@ above named the wrong suspect on all three counts):**
   is UNANSWERABLE for now: stock V 0.5.1 cannot compile vcx (fork-only APIs),
   and a minimal standalone reproducer does not reproduce. The workaround (the
   classifier in `eval.v`) remains REQUIRED because every test lane runs under
-  `CX_CACHE=-usecache`. Fix-verification stays blocked on `v self` not
-  rebuilding edited compiler source — the #775-wide blocker.
+  `CX_CACHE=-usecache`. **2026-08-19 addendum: the "`v self` doesn't rebuild"
+  blocker is RETRACTED — proven false by marker builds; the 08-18 reading was
+  a dead-twin emission site (cgen.v vs spawn_and_go.v). #864 and #855 are
+  actionable end-to-end; details in comments on both issues.**
 
 **2026-08-07:**
 - R3.7 VERIFYING — cxer-registry-gate in TEST_TARGETS (commit 7af29685);
