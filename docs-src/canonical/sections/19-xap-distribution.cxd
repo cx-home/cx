@@ -24,9 +24,10 @@
        (`spec/03-approved/xap/xap_feature_distribution_market.md`); the
        task-oriented developer set is `docs/dev/` (`features-authoring`,
        `features-consuming`, `registry-setup`, `registry-consuming`,
-       `marketplace`, `client-and-views`). This section walks the
-       staircase and is explicit about which steps are shipped and
-       which are specified-but-not-yet-built."""]
+       `marketplace`, `client-and-views` — and `oriel-guide`, the
+       worked end-to-end reference surface built the declarative way).
+       This section walks the staircase and is explicit about which
+       steps are shipped and which are specified-but-not-yet-built."""]
 
   [child id=dist-what n=19.1 title='The unit — what a feature is'
     [body
