@@ -415,8 +415,11 @@ NON-ZERO. Id R5.13. This carries NAMED authorization to edit `cli.md`.**
   reading.** It is also the answer to "what else did #853 quietly change" — the
   honest one is that a gate keyed on exit status finds these and a gate keyed on
   non-empty output cannot.
-- **R5.13 IS NOT LANDED — it is PARKED IN A STASH, blocked, and the blocker is
-  MINE.** `git stash` entry "R5.13 WIP" on `release/0.16.0` holds all of it:
+- **[SUPERSEDED 2026-08-19 — read the UNBLOCKED entry below. Three of this
+  entry's factual claims were measured FALSE. It is kept verbatim because the
+  way it was wrong is the lesson.]** R5.13 IS NOT LANDED — it is PARKED IN A
+  STASH, blocked, and the blocker is MINE. `git stash` entry "R5.13 WIP" on
+  `release/0.16.0` holds all of it:
   `cli.md` §3.7.1 + the §5 matrix row, the engine change, the six CLI lanes with
   their value-only break-test, the `code-tour` repair, and the four remediations.
   Every targeted lane is green — `cli_run_surface` 62/62, `code_eval_fixtures`
@@ -439,6 +442,58 @@ NON-ZERO. Id R5.13. This carries NAMED authorization to edit `cli.md`.**
   the break-test exists to catch.
   A full `make test-vcx` has NOT passed with R5.13 in the tree. The row stays
   OPEN. Nothing was committed on a green-in-isolation reading.
+
+**2026-08-19 (R5.13 UNBLOCKED — the blocker was a V CGEN BUG, and the entry
+above named the wrong suspect on all three counts):**
+- **The segfault does NOT need parallelism, and it does NOT pass in isolation.**
+  `v test vcx/code/code_module_umbrella_test.v` on 1 job segfaults in ~28s with
+  a byte-identical trace. The previous entry's "passes 469/469 in isolation" is
+  not reproducible; every subsequent inference drawn from the parallel/isolated
+  split was therefore drawn from a phantom. Baseline re-measured at HEAD without
+  the change: `BASELINE-RC=0`. Attribution holds; the CONDITIONS did not.
+- **The tuple return is EXONERATED.** Variant G — the `!([]cx.Node,
+  []cx.ProgramNode)` return reverted to plain `![]cx.Node`, everything else
+  kept — is still RED. The `type_default_impl` story could not have been right
+  in any case: the file **compiles clean** (`C: 42707.7 ms`) and dies 873ms into
+  the **run** (`R: 873.079 ms`), and a cgen nesting abort is a compile-time
+  failure. The tuple return stays; it carries the result↔form pairing.
+- **ROOT CAUSE, bisected to a signature.** A function taking BOTH recursive
+  sumtypes `cx.Node` and `cx.ProgramNode` in its parameter list, declared in
+  `vcx/code/api.v` — the module's FIRST file of 86 by compile order — corrupts
+  V's generated `indent_cx__ProgramCall_str`. Established by five one-variable
+  runs: the function need never be CALLED (defined-and-unused is RED); the
+  `__global` alone is GREEN; `cx.ProgramNode` alone is GREEN; `cx.Node` alone is
+  GREEN; the identical function in `eval.v` is GREEN. Only the pair, only in
+  `api.v`.
+- **Why nobody saw it for what it was:** the victim is `prog_shape()` in
+  `program_fmt.v` walking the AST of `prog_118` — a FOUR-LINE program. A
+  6-frame trace on a tiny tree is neither deep recursion nor stack exhaustion,
+  which is what "SIGNAL 11 in `str()`" was assumed to be. `construction_attr_value`
+  in `eval.v` already takes both sumtypes and is fine — the file position is the
+  variable, not the type pair on its own.
+- **FIX:** `note_top_level_result` is declared in `eval.v` beside
+  `eval_top_level_each` — its natural home, since it classifies an eval result
+  against its source form — carrying a HAZARD comment that says it must not move
+  back. Same signature, same body, different file. This is a workaround for a
+  compiler defect, recorded as such, not a design preference.
+- **VERIFIED:** `make test-vcx-code` GATE-RC=0, 26/26, zero `make: ***`, zero
+  `signal 11` (the exact lane that blocked). `cli_run_surface` green. The
+  value-only break-test STILL BITES after the move — collapsing the
+  discriminator to `is_err_value(result)` reddens exactly the two DATA-side
+  lanes (literal-is-data, multi-form pairing) and leaves the four failure-side
+  lanes green, which is the split that proves the position rule is live.
+  Exit mapping proven directly against the built binary: literal top-level
+  `[err …]` → 0; `[?element 'err' …]` → 1; propagated call err → 1;
+  `[?lib …]` + literal err multi-form → 0 (the pairing case).
+- **UPSTREAM DEFECT — NOT YET FILED (open action):** the V cgen bug is real and
+  bisected, but no issue exists for it yet; file it against the fork with the
+  bisect above as its evidence (`bug`, `area:v-runtime`, `prio:high`,
+  `upstream`), and replace this bullet with the number.
+  A minimal standalone reproducer was ATTEMPTED and does NOT reproduce — two
+  small recursive sumtypes plus an uncalled two-param function print fine, so
+  the trigger needs more of the real type graph than a toy has. The citable
+  repro is the in-tree one: move `note_top_level_result` to `api.v` and run the
+  umbrella test.
 
 **2026-08-07:**
 - R3.7 VERIFYING — cxer-registry-gate in TEST_TARGETS (commit 7af29685);
