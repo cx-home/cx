@@ -63,9 +63,19 @@ this rebase (the rider below).
 
 ## Rider landed with this integration
 
-- **DP4 (i)**: `[$ux:found]`/`[$ux:seq-child]` rewritten over upstream
-  `[$present]` (#854) — recorded as ruled at DP4 §9, scheduled "at the
-  release/0.16.0 rebase", i.e. here.
+- **DP4 (i)**: `[$ux:found]` rewritten over upstream `[$present]` (#854) —
+  recorded as ruled at DP4 §9, scheduled "at the release/0.16.0 rebase",
+  i.e. here. The def stays as a thin delegation (its vocabulary name has
+  ~55 call sites across all three faces and the harnesses); the workaround
+  body retires.
+- **IR-6 disposition on `[$ux:seq-child]`** (the letter names it too): the
+  def is NOT a presence workaround — it discriminates sequence-vs-element
+  by name-emptiness (its body never used `[$exists]`/`[$absent]`; W5
+  history confirms it was name-based from birth), and `[$present]` cannot
+  express it (`[$present ()]` is false where `seq-child` must answer true).
+  A literal rewrite would break every walk on all three faces. It stands
+  unchanged; the audit's T2 bundled it by adjacency, not by content.
+  FLAGGED for owner review with this record.
 
 ## Exit gates (the ruling's own)
 
