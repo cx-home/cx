@@ -102,6 +102,20 @@ this rebase (the rider below).
   the pty buffer; a consumer that stops reading before wait() wedges the
   child in write()). quit-shell drains to EOF; only EOF or the round bound
   ends the drain.
+- **Silent-gate sweep (ruled during the #868 review).** The guide-quickstart
+  find (store/serve.cx logged the boot gate's refusal with the err as a bare
+  call operand — under R5.13 the `$log:error` call PROPAGATES, the err
+  dissolves in the `?let` binding, and a refused surface boots silently) is a
+  CLASS, not a one-off. Swept the tree before the 0.16.0 cut: exactly three
+  `[$ux:check-surface]` gate sites exist; the store one was fixed in-line,
+  and the two earlier-wave demo servers (w1/serve.cx, w5/shop/serve.cx)
+  carried the identical silent arm — both moved to the ruled contained
+  position (`[$cx:canonical ($gate)]` inside `[$concat …]`). Every other err
+  arm in design/, x/, scripts/, tooling/ uses destructured string attributes
+  or returns literals — no bare err-value operands remain. Both demo servers
+  boot with the agree line after; the w1 refusal arm was provoked live
+  (route dropped from the accounted list) and logs
+  `error ux/W1: surface refused — ([err code=ux-refused …ux-route-unserved path=/orders…]`.
 
 ## Exit gates (the ruling's own)
 
