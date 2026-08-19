@@ -485,15 +485,19 @@ above named the wrong suspect on all three counts):**
   Exit mapping proven directly against the built binary: literal top-level
   `[err …]` → 0; `[?element 'err' …]` → 1; propagated call err → 1;
   `[?lib …]` + literal err multi-form → 0 (the pairing case).
-- **UPSTREAM DEFECT — NOT YET FILED (open action):** the V cgen bug is real and
-  bisected, but no issue exists for it yet; file it against the fork with the
-  bisect above as its evidence (`bug`, `area:v-runtime`, `prio:high`,
-  `upstream`), and replace this bullet with the number.
-  A minimal standalone reproducer was ATTEMPTED and does NOT reproduce — two
-  small recursive sumtypes plus an uncalled two-param function print fine, so
-  the trigger needs more of the real type graph than a toy has. The citable
-  repro is the in-tree one: move `note_top_level_result` to `api.v` and run the
-  umbrella test.
+- **FILED AS #864 (2026-08-19), and the matrix that preceded filing NARROWED
+  the diagnosis: it is a `-usecache` MISCOMPILE, not a general cgen bug.**
+  Fork V 0.5.2 `-gc e`: with `-usecache` RED (deterministic, and RED from a
+  VIRGIN cache via `VCACHE=<empty dir>` — so not stale-layer mixing); without
+  `-usecache` GREEN. Same family as #855 (loud duplicate-symbol link failures
+  under `-usecache`) but strictly worse: this links clean and corrupts
+  silently. Mechanism hypothesis in the issue (sumtype `_typ` registration
+  skew between the cached layer and the fresh unit), UNVERIFIED. Fork-vs-stock
+  is UNANSWERABLE for now: stock V 0.5.1 cannot compile vcx (fork-only APIs),
+  and a minimal standalone reproducer does not reproduce. The workaround (the
+  classifier in `eval.v`) remains REQUIRED because every test lane runs under
+  `CX_CACHE=-usecache`. Fix-verification stays blocked on `v self` not
+  rebuilding edited compiler source — the #775-wide blocker.
 
 **2026-08-07:**
 - R3.7 VERIFYING — cxer-registry-gate in TEST_TARGETS (commit 7af29685);
