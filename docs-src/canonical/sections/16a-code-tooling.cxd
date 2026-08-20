@@ -218,10 +218,10 @@
            current replacement form."""]
       [example lang=sh
         """$ cx broken.cx
-           error: cx-err:CXER0100: parse: cx-err:CXER0100: infix
-           attribute comparison `[@active=…]` in a CXPath predicate
-           is retired — predicates are homoiconic CX code; write the
-           prefix operator form `[= $_@active …]` (code.md §5.5.2)
+           error: cx-err:CXER0100: parse: infix attribute comparison
+           `[@active=…]` in a CXPath predicate is retired —
+           predicates are homoiconic CX code; write the prefix
+           operator form `[= $_@active …]` (code.md §5.5.2)
            at line 2:8"""]]
 
     [child id=diag-explain n='16a.5.2' title='Visualize the program'
