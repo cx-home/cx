@@ -114,3 +114,37 @@ subtree's; and the remote-proxy mounts keep no local lineage by design.
   generation and purges the old one.
 
 Closes #885 (pre-cut; the parent closes).
+
+---
+
+## Implementation record (appended at landing)
+
+- `vcx/platform/store_lineage.v`: the sidecar parser factored to bytes —
+  `store_lineage_install(mut ms, data []u8)` + `LineageCursor` (line /
+  length-prefixed-exact reads with identical torn-tail semantics); the file
+  load is now read-bytes + install. `store_feed_open`,
+  `store_lineage_append`, and `store_lineage_compact` dispatch per substrate
+  (s3 → store_s3_lineage.v); the path-of comment trued.
+- `vcx/platform/store_s3_lineage.v` (new): key naming
+  (`.cxstore-lineage/G-<gen16>-full` / `…-S-<seq16>`), the one-LIST scan
+  (unrecognized keys ignored), generation read (full + segments in seq
+  order, concatenated), load-else-seed open, per-act segment append
+  (failed PUT tolerated; the next boot's density check reseeds),
+  generation-guarded compacted write, best-effort old-generation purge.
+- `vcx/platform/stdlib_store.v`: MemStore `lineage_gen` / `lineage_seq`
+  (handle bookkeeping; not swapped on reload, per the FL-1 rule).
+- `spec/03-approved/xap/xsp_store_profile.md` §5.1: the durable-lineage
+  paragraph extended — the `s3` seed-per-boot carve-out replaced by the
+  bucket-lineage story (segments, generation guard, single-writer names,
+  no RMW/conditional PUT); `CXER5020` narrowing and the wire shape
+  untouched (zero wire change).
+- Gate `vcx/platform/store_s3_lineage_test.v` (hermetic in-memory S3
+  transport, the §6 conformance seam): restart-resume with exact replay
+  (no duplicates, no losses, post-restart continuation), wrong-epoch /
+  above-head / below-floor typed refusals, compaction generation bump +
+  old-gen purge + floors surviving restart, pre-FL-2 bucket seeding fresh
+  + writing initial lineage, torn segment discarded → fresh epoch →
+  durable again, lost middle segment (density gap) never trusted.
+- Lanes green: store_s3_lineage_test OK; store_lineage_test +
+  store_s3_subtree_test + platform_store_pack_umbrella 3/3;
+  store_remote_umbrella OK. Build: devbox make build-vcx-dev green.
