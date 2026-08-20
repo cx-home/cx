@@ -31,10 +31,14 @@
     [intro
       """Whether schema v2 accepts everything schema v1 accepted is not
          a matter of judgment — it is a **decidable, pure predicate**
-         over the two declaration forms. CX computes it, and the verdict
-         is three-valued: for every document valid under v1, validation
-         under v2 yields *valid* or a *named diagnostic* — never a
-         silently different meaning."""]
+         over the two declaration forms, and for every document valid
+         under v1, validation under v2 yields *valid* or a *named
+         diagnostic* — never a silently different meaning. The
+         predicate is approved surface that has not yet shipped as a
+         callable check; what ships today is the other half of the
+         contract, the lineage claim ([[se-lineage]]). Until the
+         checker lands, the compatibility rules below are the
+         normative reference you apply by review."""]
 
     [body
       """The changes that are **safe within a schema line**:"""]
