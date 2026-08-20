@@ -49,6 +49,7 @@ FREEZE_EPOCH=f964c16a
 # where the ruling is recorded; the skip is LOUD (no-silent-skip rider,
 # GATE_REGISTER.md). Full 40-char shas only.
 ADJUDICATED_SHAS="
+c920cd9d18b559183a4bc8ea476e1336eee8ada0 #869 — the ORIEL promotion executing TWO recorded rulings (packaging 2b in ledger/rulings_2026_08_19_787_guide_and_packaging.md; R9.2 in ledger/rulings_2026_08_19_0160_cut_path.md): the spec-side paths are the MOVED demo estate, not spec prose; token omitted from the pushed message — Class S
 72a6ea437e01e9be9ab1d7dad43a35622f195752 #865 — wave rulings RW65.1/RW65.2 recorded in ledger/rulings_2026_08_19_865_wave.md BEFORE the work (owner '1a 2a'); the commit message cited the ruling ids but omitted the RULED: token — Class S
 550f8a1a272ad2e0217fccdb5f0ec44e7e453154 #727-destination-(a) — owner-directed, recorded in the commit message + issue #727; register row: partition_I5_exit_review_packet.md §9 (exit-4a execution record)
 a36244f40b17bc4726c4034685e13499b25f8411 #854+#849 — R6.2 batch (owner 2026-08-18 2a); express ruling R5.1 (register), recorded LATE per R5.0 — Class S, ledger/partition_832_process_audit.md Part 1
