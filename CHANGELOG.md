@@ -13,6 +13,10 @@ version, library version).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.16.0] — 2026-08-19
+
 The **partition** release. v0.13.0 made CX consumable and v0.14.0 made a
 deployment survive its own success; this release states what CX *is* — four
 rings with a one-directional import contract — and makes that structure
@@ -1264,6 +1268,9 @@ wire formats, spec-normative grammar).
 - BREAKING: leading-zero integers are now strings (`02134` is a string, not int 2134).
 - BREAKING: binding `loads()` / `dumps()` preserve integer/float distinction via CXDB v1 (was JSON-coerced in v0.5).
 
-[Unreleased]: https://github.com/cx-home/cx/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/cx-home/cx/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/cx-home/cx/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/cx-home/cx/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/cx-home/cx/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/cx-home/cx/compare/v0.12.0...v0.13.0
 [0.6.0]: https://github.com/cx-home/cx/releases/tag/v0.6.0
