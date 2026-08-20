@@ -489,40 +489,58 @@
       [body
         """The reference storefront (1,004 products, live derived
            state, zero view code) renders a full department page in
-           **~7 ms** server-side; category pages over the whole
-           catalog render in **~0.13 s** — down from ~3.6 s before
-           this release's evaluator fix (per-arm dispatch no longer
-           scales with closure-table size; the whole conformance
-           corpus's runtime halved from the same change). Declarative
-           surfaces are not the slow path."""]]
+           **~7 ms** server-side and full category pages over the
+           whole catalog in **~0.13 s**. Declarative surfaces are not
+           the slow path: the tree-walk evaluator is compiled native,
+           and per-node dispatch cost is independent of program
+           size."""]]
 
     [child id=perf-streaming n='13.14a.3' title='Streaming evaluation'
       [body
         """The lazy-record streaming path evaluates `[?for]` over
-           streamed documents at **~200 MB/s** (the §11.4.4 gate's
-           five-trial protocol; up from 14.7 MB/s before this
-           release's rework — a 13× jump), with bounded memory
-           regardless of input size. `[?map]` measures **129 MB/s**
-           against the same 200 MB/s floor — the gate is honestly red
-           on that one criterion and the threshold was not relaxed;
-           the numbers re-measure on the perf campaign. Streaming is
-           the high-throughput lane: it outruns the buffered parser
-           because it never materializes the whole tree."""]]
+           streamed documents at **~200 MB/s** (the release gate's
+           five-trial protocol) with bounded memory regardless of
+           input size — it never materializes the whole tree, so a
+           multi-gigabyte input streams at full speed in constant
+           residency. `[?map]` measures **129 MB/s** against the same
+           200 MB/s floor the gate holds every shape to. Streaming is
+           the high-throughput lane for text-form bulk data."""]]
+
+    [child id=perf-xsp n='13.14a.3b' title='XSP — the binary wire, small-and-frequent to bulk'
+      [body
+        """XSP is CX's binary frame and session layer, and it is built
+           for both ends of the shape spectrum. **Small and frequent:**
+           a frame costs 17 bytes of header plus the principal, a u64
+           stream-id multiplexes every exchange over **one
+           connection** (requests, replies, events, and cancels
+           interleave without head-of-line blocking between streams),
+           and credit-based flow control keeps a slow consumer from
+           stalling anyone else. Measured on the reference bench:
+           durable publish commits at **p50 2.5 ms** flat with respect
+           to journal size, embedded ingest folds **~1,100 events/s**,
+           and a checkpointed boot replays 500 entries in **28 ms**.
+           **Large and bulk:** payloads ride CX data-bin — the binary
+           form, no text re-parse on either end — and columnar CXCol
+           pages with zstd compression under the store profile, where
+           result streams and live ∂-updates flow as credit-governed
+           event frames. One frame format serves both shapes across
+           TCP, TLS, Unix sockets, and WebSocket unchanged."""]]
 
     [child id=perf-parse n='13.14a.4' title='Parsing — honest numbers'
       [body
-        """The buffered data parser measures **35–42 MB/s** (median,
-           small/medium/large fixtures; the lexer alone runs
-           84–104 MB/s) — parsing a substantially richer grammar than
-           JSON: type ascriptions, anchors, mixed content, tables,
-           comments. A specialized JSON parser will beat CX at parsing
-           JSON; nobody should pick CX for raw text-parse throughput,
-           and this section will not pretend otherwise. The
-           high-throughput lanes for bulk data are the **binary
-           forms** (ast-bin, CXCol with zstd pages) and the streaming
-           path above — and the amplification gate holds parse cost
-           linear in input bytes, so throughput is a constant, not a
-           cliff."""]]
+        """The buffered parser runs **35–42 MB/s** (median across the
+           fixture sizes; the lexer alone runs 84–104 MB/s) — and
+           every one of those bytes buys far more than a JSON byte
+           does: type ascriptions, sized numerics, anchors and merges,
+           mixed content, comments, and whole typed tables come out of
+           the same single pass, with identity-bearing canonical bytes
+           one step away. That is very fast for a grammar this rich —
+           one parse replaces the parse-then-validate-then-decode
+           tower other stacks bolt together. Parse cost is **linear in
+           input bytes and gated to stay that way** (the amplification
+           gate runs on every full test), so throughput is a constant,
+           not a cliff. For raw bulk, the binary lanes below and the
+           streaming path above are the fast path by design."""]]
 
     [child id=perf-bindings n='13.14a.5' title='One engine, thin bindings'
       [body
@@ -536,9 +554,35 @@
 
   [child id=cmp-when-cx n=13.15 title='When CX wins'
     [body
-      [b 'CX is the right pick'] ' for typed configuration, mixed '
-      'content alongside structured data, lossless conversion across '
-      'formats, cases where you need a stable canonical form for '
-      'hashing or signing, and any pipeline where the query/transform '
-      'layer (' [code 'CXPath'] ' + ' [code '[?match]'] ' + '
-      [code '[?modify]'] ') should live in the same syntax as the data.']]]
+      """Every alternative on this page does one layer. **CX wins when
+         the layers are the problem.** A real system is data plus a
+         schema plus a query language plus a transform layer plus
+         config plus a wire format plus, increasingly, an agent
+         interface — and the incumbent answer is seven tools with six
+         impedance boundaries between them: JSON with JSON Schema
+         bolted on, jq for queries, a template engine for transforms,
+         YAML for config, protobuf for the wire, and a hand-written
+         tool layer for the agents."""]
+    [body
+      """CX is **one surface for the whole stack**. The same bracket
+         form is the document, the schema that validates it, the query
+         that selects from it, the transform that rewrites it, the
+         config that deploys it, and the program that serves it —
+         `[?match]` and `[?modify]` operate on the same values `cx
+         hash` addresses. Identity is **machine-checked, not
+         promised**: strict canonical bytes give every value one
+         SHA-256 address on every platform and every binding, which is
+         what makes caching, dedup, signing, and content-addressed
+         storage boring instead of bespoke. Adoption is **ring-scoped**:
+         take the data format alone (it cannot execute anything), and
+         nothing above it can reach down and make it heavier. The
+         runtime is **compiled native** — the numbers above, from one
+         binary with no interpreter tax. And the same definitions that
+         serve humans serve **agents at parity**: the tools face and
+         the ux projection derive from the identical `[?def]`s, so an
+         agent interface is something you already have, not something
+         you build."""]
+    [body
+      """Pick a specialist when one layer IS the whole problem — this
+         page names those cases honestly. Pick CX when you would
+         otherwise be gluing the specialists together."""]]]
