@@ -86,3 +86,7 @@ vcx/tests/runners/eval/eval_conform
 vcx/tests/runners/code_modify_sharing_bench
 .wavelog/
 bench/current.json
+
+# FL-1 (#764): feed-lineage sidecars are runtime artifacts, never committed
+**/.cxstore-lineage
+*.cxstore-lineage
