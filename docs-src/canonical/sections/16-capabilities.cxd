@@ -15,7 +15,7 @@
        dialing a host, spawning a process, even reading the clock)
        checks the active set at the effect point and raises the
        capability error `CXER0271` when the matching grant is absent.
-       The model is specified in `spec/core/security.md`; this section
+       The model is specified in `spec/03-approved/core/security.md`; this section
        is the practical guide to the `--allow-*` flags."""]
 
   [child id=caps-model n=16.1 title='Deny-by-default'
@@ -36,8 +36,7 @@
          that grants it. Add the grant and the same program works:"""]
     [example lang=sh
       """$ cx read_version.cx --allow-read
-'0.12.0
-'"""]
+'0.16.0\\n'"""]
     [body
       """Grants combine — a program that reads the environment and
          writes a file needs both flags:"""]
@@ -49,12 +48,12 @@
          never opened. And because the check happens at the effect
          point, a `pure` function can never raise `CXER0271` under any
          capability set: purity is capability-freedom by construction
-         (the effect-totality rule in `spec/core/security.md`)."""]]
+         (the effect-totality rule in `spec/03-approved/core/security.md`)."""]]
 
   [child id=caps-grants n=16.2 title='The grant list'
     [body
       """Nine capabilities cover every effectful surface in the engine
-         and standard library, plus one blanket opt-out. This is the
+         and standard library, plus two broad grants. This is the
          full set the binary accepts — there are no hidden grants, and
          a misspelled grant flag (`--alow-net`, `--allow-nett`, …) is a
          hard usage error (exit 2) naming the flag, never a silent
@@ -134,7 +133,7 @@ $ cx home.cx --allow-env
          (next subsection). For every other capability the resource
          suffix is carried, not yet enforced — the grant is
          all-or-nothing per capability. Per-path and per-name
-         enforcement is specified (`spec/core/security.md`, coarse-v1
+         enforcement is specified (`spec/03-approved/core/security.md`, coarse-v1
          scoping) and lands per domain; do not rely on a path suffix as
          a security boundary today."""]]
 
@@ -181,14 +180,16 @@ $ cx home.cx --allow-env
       """`--allow-common` grants the common working set: read, write,
          net, env, clock, random, subprocess, eval. It does **not**
          grant `secret-reveal`, so a `[?reveal]` under it still refuses
-         with `CXER0271`. This is the grant to reach for while you are
-         learning, and the one these pages use."""]
+         with `CXER0271` — and the denial propagates out of the `[out]`
+         wrapper to the top level, printed as a **bare** `[err …]`
+         value with exit code 1. This is the grant to reach for while
+         you are learning, and the one these pages use."""]
     [example lang=cx
       """[?let [= $s [?secret 'hunter2']]
   [out [?reveal $s]]]"""]
     [output
       """$ cx reveal.cx --allow-common
-[out [err code=cx-err:CXER0271 message='E_CAP_DENIED: secret-reveal capability required for reveal; none granted (grant via --allow-secret-reveal)']]
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: secret-reveal capability required for reveal; none granted (grant via --allow-secret-reveal)']
 $ cx reveal.cx --allow-all
 [out 'hunter2']"""]
     [body

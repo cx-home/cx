@@ -58,12 +58,12 @@
     [body
       """Two tokens exist so their refusals can point somewhere better:"""]
     [list
-      [item """**`:exactly-once` is permanently refused** — no
+      [item """`:exactly-once` — **permanently refused**: no
               distributed substrate delivers it, and pretending is how
               double-charges happen. The refusal names the real answer:
               at-least-once delivery composed with declared idempotency
               at the effect boundary ([[commands-effects]])."""]
-      [item """**`:serializable` is refused with a pointer** — the
+      [item """`:serializable` — **refused with a pointer**: the
               substrate offers no cross-stream commit coordination, and
               this vocabulary will not imply one. The refusal names the
               coordination design as the place where that either arrives

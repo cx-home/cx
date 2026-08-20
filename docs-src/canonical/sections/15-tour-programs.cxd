@@ -76,7 +76,7 @@
          //pizza/parent::*/@name"""]]
 
   [child id=tp-11 n=15.11 title='11. Ancestor axis'
-    [body """All ancestors of `c`. Prints "mid;top;"."""]
+    [body """All ancestors of `c`, in **document order** — outermost first. Prints "top;mid;"."""]
     [example lang=cx
       """[a tag=top [b tag=mid [c found]]]
          [?for [in $x //c/ancestor::*] [yield [?str "{$x/@tag};"]]]"""]]
@@ -272,21 +272,16 @@
          [?let [= $dbl [?fn ($x) [* $x 2]]]
            [?for [in $x //v] [yield [$dbl $x/@n]]]]"""]]
 
-  [child id=tp-41 n=15.41 title='41. HTML-safe output'
-    [body """`[?cx output-target=html]` switches the evaluator into context-aware escaping. No XSS from the menu."""]
-    [; check=none — [?cx output-target] is approved evaluator-config
-       surface; the current binary rejects every [?cx …] directive,
-       tracked as engine regression #421. ]
-    [example lang=cx check=none
+  [child id=tp-41 n=15.41 title='41. HTML-safe output — specified, not yet wired'
+    [body """`[?cx output-target=html]` is the **specified** switch into context-aware escaping — but the shipped binary does not implement it yet: the directive passes through as inert data, and the output of this program is **not** escaped. Do not rely on it as an XSS defense today; route untrusted values through an escaping renderer at the HTML boundary instead."""]
+    [example lang=cx
       """[?cx output-target=html]
          [pizza name='<script>alert(1)</script>']
          //pizza/@name"""]]
 
   [child id=tp-42 n=15.42 title='42. Plain-text output'
-    [body """Useful for terminals and files where escaping would be noise."""]
-    [; check=none — [?cx output-target] is approved evaluator-config
-       surface; rejected by the current binary (#421). ]
-    [example lang=cx check=none
+    [body """`[?cx output-target=text]` names plain-text output — useful for terminals and files where escaping would be noise. Same status as 41: carried as inert data today (the default output is already unescaped text). Other `[?cx …]` directives **are** honored — `[?cx lint-disable=…]` and `[?cx schema=…]` among them — so a `[?cx]` prefix is not, by itself, unimplemented surface."""]
+    [example lang=cx
       """[?cx output-target=text]
          [pizza name='<b>Margherita</b>']
          //pizza/@name"""]]
@@ -357,6 +352,6 @@
   [note
     """**The arc.** Read a value → put it in context → walk paths
        → filter and combine → branch → loop → factor into
-       functions → swap output mode → reflect / hash / merge /
+       functions → declare an output target → reflect / hash / merge /
        log. Every step adds exactly one capability; data from §14
        flows through unchanged."""]]
