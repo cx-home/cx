@@ -52,13 +52,29 @@ headline is architectural rather than a feature list:
   a committed cascade, a composed feature, real packaging through the
   distribution engine, a separate web client, and `cx xap init`
   scaffolding a project that already composes.
+- **The ux projection capability, specified** — the third projection:
+  the same command/query definitions that serve the wire and the
+  agent-tools face project forms, tables, and live regions through a
+  closed semantic vocabulary with web and terminal faces
+  (`spec/03-approved/xap/ux.md`; the `cx-x/ux` module tier).
+- **Prebuilt downloads** — per-profile darwin-arm64 tarballs
+  (`platform` / `cli` / `embed` / `data`) published per release with a
+  hosted installer (`curl -sSL https://cxhome.org/install | sh`,
+  `CX_PROFILE=` selects the lean builds), checksums, and a Downloads
+  page in the guide. Editor tooling joins the release motion: the
+  Neovim plugin is consumable as a plugin root, and the VS Code
+  extension packages/publishes from the release script.
 - **Streaming throughput** — the data parser and evaluator reworked
   around lazy record nodes: `[?for]` over a streamed document moved from
   14.7 MB/s to roughly 200, and `[?map]` from 12.7 to 129 (16 MiB rung,
   the gate's five-trial configuration). The §11.4.4 gate is not green
   yet; the remaining criterion is throughput on the `[?map]` shape.
-- **Documentation restructured on the rings** — the guide reorganized so
-  the architecture is visible to a reader who has never seen the tracker.
+- **Documentation restructured on the rings — and trued** — the guide
+  reorganized so the architecture is visible to a reader who has never
+  seen the tracker, redesigned as a coherent visual system, and put
+  through a full verification audit: every checkable claim tested
+  against the live binary, with several hundred stale or fictional
+  claims corrected to the engine's real surface.
 
 ## Next — queued in the tracker
 
@@ -77,6 +93,11 @@ for live state.
   extension SDK, foreign-runtime engines, a REPL/notebook surface, CX in
   the browser as a native TypeScript client, and CX as CI/CD and as IaC.
   Each needs an approved spec before implementation.
+- **HTTP/2 on the serve path** — the liveness contract (one SSE feed
+  per page, pages never poll) structurally wants a multiplexing
+  transport; the platform already carries a tested RFC-7540 codec, so
+  the work is TLS+ALPN integration and stream mapping, not protocol
+  implementation.
 - **Test-suite duration relief** — tiered lanes and per-ring gates, so
   the partition pays back in build time as well as in architecture.
 - **Deferred smaller items** — ftps:// end-to-end verification on Linux,
