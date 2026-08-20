@@ -1193,18 +1193,18 @@
            fields override; missing ones inherit."""]]
 
     [child id=recipe-html-safe n='8.10.10' title='HTML-safe templating'
-      [; check=none — [?cx output-target] is approved evaluator-config
-         surface (grammar.ebnf CXDirective attrs); the current binary
-         rejects every [?cx …] directive (#421). ]
-      [example lang=cx check=none
-        """[?cx output-target=html]
-           [h1 //page/@title]
-           [?for [in $u //user] [yield [li $u/@name]]]"""]
       [body
-        """`[?cx output-target=html]` switches the evaluator into
-           context-aware escaping. Substituted values containing
-           `<`, `>`, `&`, or quotes escape correctly with no
-           manual sprintf."""]]
+        """There is **no** `[?cx output-target=html]` escaping mode —
+           the key is **reserved and refused** (the pragma registry is
+           closed; it once passed through inert while reading like an
+           XSS defense). Until context-aware escaping ships, escape at
+           the boundary: `[$strings:escape-html]` for text,
+           `[$html:sanitize]` for untrusted markup, and
+           `[$html:serialize]` for trees built as data — escaping by
+           construction, never string concatenation."""]
+      [example lang=cx
+        """[?lib 'cx-stdlib/strings']
+           [$strings:escape-html '<script>alert(1)</script>']"""]]
 
     [child id=recipe-log-structured n='8.10.11' title='Emit structured log records'
       [example lang=cx

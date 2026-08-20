@@ -272,18 +272,21 @@
          [?let [= $dbl [?fn ($x) [* $x 2]]]
            [?for [in $x //v] [yield [$dbl $x/@n]]]]"""]]
 
-  [child id=tp-41 n=15.41 title='41. HTML-safe output — specified, not yet wired'
-    [body """`[?cx output-target=html]` is the **specified** switch into context-aware escaping — but the shipped binary does not implement it yet: the directive passes through as inert data, and the output of this program is **not** escaped. Do not rely on it as an XSS defense today; route untrusted values through an escaping renderer at the HTML boundary instead."""]
-    [example lang=cx
+  [child id=tp-41 n=15.41 title='41. HTML-safe output — reserved, refused until it ships'
+    [body """`[?cx output-target=html]` is **reserved and refused**: the pragma key set is a closed registry (`include | schema | version | lint-disable | lint-enable`), and `output-target` refuses with a message saying exactly why — it once passed through as inert data while reading like an XSS defense, which is the silent-acceptance class CX refuses everywhere else. Until context-aware escaping ships, route untrusted values through an escaping renderer at the HTML boundary."""]
+    [; check=none — pins the refusal shape; the snippet exits 1 by design. ]
+    [example lang=cx check=none
       """[?cx output-target=html]
          [pizza name='<script>alert(1)</script>']
-         //pizza/@name"""]]
+         //pizza/@name"""]
+    [output
+      """error: cx-err:CXER0100: parse: invalid [?cx] directive: 1:24: [?cx output-target] is reserved and NOT implemented — output is not escaped by it; remove the pragma until context-aware output escaping ships (CXP-1) at line 1:1"""]]
 
-  [child id=tp-42 n=15.42 title='42. Plain-text output'
-    [body """`[?cx output-target=text]` names plain-text output — useful for terminals and files where escaping would be noise. Same status as 41: carried as inert data today (the default output is already unescaped text). Other `[?cx …]` directives **are** honored — `[?cx lint-disable=…]` and `[?cx schema=…]` among them — so a `[?cx]` prefix is not, by itself, unimplemented surface."""]
+  [child id=tp-42 n=15.42 title='42. The closed pragma registry'
+    [body """Every `[?cx …]` pragma key comes from a **closed registry** — `include`, `schema`, `version`, `lint-disable`, `lint-enable` — and an unknown key is a loud parse refusal naming that registry, never a silent pass-through. `version` is reader-facing metadata and round-trips verbatim; the other four are consumed by the resolver, the validator, and the linter."""]
     [example lang=cx
-      """[?cx output-target=text]
-         [pizza name='<b>Margherita</b>']
+      """[?cx version=1.0]
+         [pizza name='Margherita']
          //pizza/@name"""]]
 
   [child id=tp-43 n=15.43 title='43. Load a module'
