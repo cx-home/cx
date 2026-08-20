@@ -411,7 +411,10 @@
            definition in document order wins, deterministically. The
            lossless canonicalizer preserves anchors and aliases; the strict
            canonicalizer expands them and the canonical bytes are the
-           expanded form."""]]
+           expanded form. The lossy projections (`--json` / `--yaml` /
+           `--csv` / …) and a program's `$doc` read that same expanded
+           form — the semantic document — while default CX and XML
+           output keep the authored sharing."""]]
 
     [child id=merge n=2.5.2 title='The * merge sigil'
       [body

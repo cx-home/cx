@@ -229,10 +229,13 @@
            resolved (expanded) on YAML → CX parse — the data content is
            preserved, the anchor/alias structure is not
            ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §5.1).
-           In the other direction, CX anchors and merges are dropped by
-           the default YAML emit and carried by the lossless envelope's
-           `$anchor` / `$merge` keys, which the importer reconstructs —
-           so a `--lossless` round-trip preserves them."""]]]
+           In the other direction the default YAML emit is symmetric:
+           CX anchors and merges are **resolved** — aliases expand to
+           their referent, merge hosts inherit — so the YAML carries the
+           semantic document (the Resolved AST, `ast.md`). The lossless
+           envelope instead carries the authored structure via `$anchor`
+           / `$merge` keys, which the importer reconstructs — so a
+           `--lossless` round-trip preserves them."""]]]
 
   [child id=toml n=3.4 title='TOML projection'
     [intro
@@ -574,10 +577,12 @@
               (in lossless mode both recover, via the `cx:key-type`
               sidecar and the `cx:seq` carrier)."""]
       [item """**§** — Delimited (CSV/TSV/PSV) is well-defined but lossy:
-              type metadata is lost on emit; comments, anchors,
-              multi-document, mixed content, and PIs are stripped or
-              error; element names are lost on parse (recovered via
-              schema or auto-typing — see [[delim-types]])."""]
+              type metadata is lost on emit; anchors, aliases, and
+              merges are resolved (an aliased row projects as a full
+              row); comments, multi-document, mixed content, and PIs
+              are stripped or error; element names are lost on parse
+              (recovered via schema or auto-typing — see
+              [[delim-types]])."""]
       [item """\\* — YAML anchors and aliases are resolved (expanded) on
               parse; not reconstructed in CX output. Data content is
               preserved."""]
