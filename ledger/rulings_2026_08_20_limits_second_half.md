@@ -22,3 +22,15 @@ the ruling instead of caps:
    not the parser; the gate ships median-of-5.
 
 #876 closes: LIM-1 (spec home) + LIM-2 (this ruling) cover both halves.
+
+ADDENDUM (same day): the gate's time assertion is DEMOTED to an advisory
+printed diagnostic after two calibration findings — (1) wall time under
+a 12-way-parallel suite inflates with scheduler delay (first false red);
+(2) process CPU under -gc e is genuinely superlinear at MB scale (up to
+14x per 4x bytes on tiny-siblings) because parallel-mark cost grows with
+live heap — a collector property the -gc none run does not show. The
+HARD gate is the node-amplification bound (deterministic, load-immune,
+catches the actual attack class); the algorithmic-linearity calibration
+(-gc none, 1.9–2.3x per doubling, every shape) is recorded here and in
+limits.md §4. The GC mark-cost growth at large single-doc parses is
+perf-campaign material (#804 family), noted, not newly filed.
