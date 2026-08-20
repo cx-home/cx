@@ -27,7 +27,7 @@
     [example lang=cx check=none
       """[?def place-order impure ($sku $qty)
            [preconditions [in-stock $sku $qty]]
-           [effects [journal-append stream=orders]]
+           [effects [write "orders"]]
            …body…]
 
          [$ux:form place-order]   [; param schema → a complete form ]"""]
