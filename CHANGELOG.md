@@ -114,6 +114,73 @@ arc** rather than a spec link:
   reference. Join *semantics* remain deliberately unspecified and uncomputed;
   no join algebra is committed.
 
+### Added — the composition track (features as building blocks, ruled end to end)
+
+- **Derivation semantics — the deriver as actor.** A derived noun is
+  computed by a **declared deriver**: a principal bound at run assembly
+  that reads within the noun's `[from …]` envelope and emits the noun's
+  events as `actor: deriver:<name>` through the ordinary append — the
+  system's derived state is always attributable. Derived nouns are
+  **deriver-reserved** (a grammar verb declaring `[writes]` on one is a
+  new W7 compose conflict); a grammar whose derived noun has no bound
+  producer refuses at run assembly, never serving a silently empty view.
+  `[$xap:derive]` is the commit surface; no join algebra is committed —
+  engine evaluation, if ever, is an optimization of this same contract.
+- **Archetype instantiation and the refinement contract** — third-party
+  feature catalogs without forks. An archetype is an immutable,
+  content-addressed feature document; an instance is a tenant-owned
+  binding pinning its exact address, admitted to **rename presentation,
+  add, tighten, and select** — repurposing an inherited name and loosening
+  an inherited rule/type/signature **refuse** (removal cannot even be
+  spelled), which is what keeps N customers from becoming N forks.
+  Archetype fixes propagate by **re-bless only** (one recorded act per
+  instance; the whole contract re-checks against the new base).
+  `[$xap:instantiate]` is pure; compose receives the result as an ordinary
+  feature. The reference pair ships: one attestation archetype instantiated
+  as a retail review flow and a marketplace endorsement flow, composing
+  clean together.
+- **Granularity stops being taste.** The feature's internal graph under a
+  **declared-edge set** (verb reads/writes, ordering/dependency targets,
+  checked rule noun-lists, sub-noun typing, `[from …]`; keys and frames
+  are deliberately NOT edges) makes boundaries computable: a spanning rule
+  means one feature (the floor), **two connected components are two
+  features wearing one name** (the ceiling — `[$xap:cohesion]`,
+  report-first, and the components it reports are the split it would
+  accept), and a feature graduates to marketplace/archetype status only by
+  surviving **two genuinely different compositions**. Validity rules gain
+  `nouns=` — a checked declaration of the nouns their sentences span.
+
+### Added — ORIEL, the reference storefront, promoted
+
+- **`spec/03-approved/xap/demos/oriel/`** is now the reference XAP's home:
+  1,004 products, six departments, facets, baskets, four-step checkout,
+  subscriptions, returns, reviews — **in a browser, in a terminal, and in
+  a serial voice-style renderer, from declarations, with zero view code**
+  (`diff` computes that claim rather than asserting it). Its six
+  instruments run as their own CI lane (`make test-oriel-lane`), and the
+  developer guide (`docs/dev/oriel-guide.md`) teaches building a surface
+  the same way. The estate measures **one component** under the cohesion
+  gate — the granularity discipline's own flagship evidence.
+- **`product.rating` is derived, live**: the catalogue seeds it and a
+  declared rating deriver re-records the mean from approved reviews
+  (`actor: deriver:rating`) — the second deriver exemplar, visible on any
+  product page after a review lands.
+
+### Fixed — two owner-felt platform defects, found and closed same-day
+
+- **`[?match]` arm attempts stopped deep-copying the closure table** — a
+  per-arm full environment clone made per-node dispatch scale with closure
+  fatness; ORIEL category pages had reached ~3.6s. Renders returned to and
+  beat the recorded baselines (category pages ~0.13s, the gate walks 80×
+  faster); the whole fixture corpus's runtime halved. Gate 15's numbers
+  are queued for re-measurement on the perf campaign.
+- **SSE subscriber fds leaked on mid-dispatch disconnect** — a browser
+  navigating ~1s/click made every page's feed FIN race its own dispatch;
+  the leaked registry entries meant recycled fd numbers received **other
+  visitors' frames** and swallowed their own requests ("pending" hangs).
+  Close notification is now a fan-out with one purge point, invoked on
+  every close path and defensively at accept.
+
 ### Fixed
 
 - Roughly 150 tracker issues closed across the language core, standard
