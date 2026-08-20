@@ -107,37 +107,57 @@
 [?def md-links impure ($s)
   [$re:replace [$re:compile '\[([^\[\]<]+)\]\(([^() \n\t]*[/.#:][^() \n\t]*)\)']
     $s '<a href="$2">$1</a>']]
+[; md-tick-pairs: every `x` pair → <code>x</code> in ONE global regex pass.
+   The former per-pair self-recursion hit the evaluator's call-depth ceiling
+   at ~195 spans and RETURNED EARLY, silently truncating nine rendered pages
+   (#826 verification find, 2026-08-20 — the Ring 0/1 arcs shipped at 34%/31%).
+   An unpaired trailing tick has no match and stays literal, matching the old
+   behavior. ]
+[?def md-tick-pairs impure ($s)
+  [$re:replace [$re:compile '`([^`]*)`'] $s '<code>$1</code>']]
+
+[; walk-emph: apply md-emph to the prose BETWEEN <code>…</code> regions —
+   iteratively: a [?for] over the '<code' split makes one FLAT call per
+   region, never a nested one, so span count can never meet a depth cap. ]
+[?def walk-emph impure ($s)
+  [?let [= $parts [$strings:split $s '<code']]
+    [$cat (
+      [$md-emph [$first $parts]],
+      [$strings:join
+        [?for [in $p [$tail $parts]]
+          [yield
+            [?let [= $end [$strings:find $p '</code>']]
+              [?if [< $end 0]
+                [then [$cat ('<code', $p)]]
+                [else [$cat ('<code',
+                             [$strings:slice $p 0 [+ $end 7]],
+                             [$md-emph [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
+        ''])]]]
+
 [?def md-ticks scope=public impure ($s0)
-  [?let [= $s [$md-tick-composites [$md-tick-composites [$md-links $s0]]]]
-        [= $i [$strings:find $s '`']]
-    [?if [< $i 0] [then [$md-emph $s]]
-      [else
-        [?let [= $head [$strings:slice $s 0 $i]]
-              [= $rest [$strings:slice $s [+ $i 1] [$strings:length $s]]]
-              [= $j [$strings:find $rest '`']]
-          [?if [< $j 0]
-            [then [$cat ([$md-emph $head], '`', [$md-emph $rest])]]
-            [else [$cat (
-              [$md-emph $head],
-              '<code>', [$strings:slice $rest 0 $j], '</code>',
-              [$md-ticks [$strings:slice $rest [+ $j 1] [$strings:length $rest]]])]]]]]]]]
+  [$walk-emph
+    [$md-tick-pairs
+      [$md-tick-composites [$md-tick-composites [$md-links $s0]]]]]]
 
 [# md-inline: walk the emitted fragment, passing existing <code>…</code>
    regions through untouched (mirrors escape-code-xrefs; every [pre] body
-   is a [code], so this shields code blocks too). #]
+   is a [code], so this shields code blocks too). Same flat-iteration shape
+   as walk-emph: prose chunks between pre-existing code regions go through
+   md-ticks; the regions themselves are copied verbatim. #]
 [?def md-inline scope=public impure ($h)
-  [?let [= $i [$strings:find $h '<code']]
-    [?if [< $i 0] [then [$md-ticks $h]]
-      [else
-        [?let [= $head [$strings:slice $h 0 $i]]
-              [= $rest [$strings:slice $h $i [$strings:length $h]]]
-              [= $end  [$strings:find $rest '</code>']]
-          [?if [< $end 0]
-            [then [$cat ([$md-ticks $head], $rest)]]
-            [else [$cat (
-              [$md-ticks $head],
-              [$strings:slice $rest 0 [+ $end 7]],
-              [$md-inline [$strings:slice $rest [+ $end 7] [$strings:length $rest]]])]]]]]]]]
+  [?let [= $parts [$strings:split $h '<code']]
+    [$cat (
+      [$md-ticks [$first $parts]],
+      [$strings:join
+        [?for [in $p [$tail $parts]]
+          [yield
+            [?let [= $end [$strings:find $p '</code>']]
+              [?if [< $end 0]
+                [then [$cat ('<code', $p)]]
+                [else [$cat ('<code',
+                             [$strings:slice $p 0 [+ $end 7]],
+                             [$md-ticks [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
+        ''])]]]
 
 [# post-body: clean an [$xml:emit] fragment.
    - strip the empty-name <>/</> wrappers [$xml:emit] emits around a
@@ -146,12 +166,23 @@
    - rewrite <code lang="X"> → <code class="language-X"> for highlight.js;
    - render the inline-markdown authoring convention (md-inline above). #]
 [?def post-body scope=public impure ($h)
-  [$md-inline
-    [$strings:replace
-      [$strings:replace
-        [$strings:replace $h '</>' '']
-        '<>' '']
-      '<code lang="' '<code class="language-']]]
+  [?let [= $in [$strings:replace
+                 [$strings:replace
+                   [$strings:replace $h '</>' '']
+                   '<>' '']
+                 '<code lang="' '<code class="language-']]
+        [= $out [$md-inline $in]]
+    [; render-completeness gate: every md pass is strictly ADDITIVE (they only
+       insert markup around existing bytes), so a shorter output than input is
+       proof of truncation — the defect class that silently shipped nine
+       truncated pages past all seven doc gates (2026-08-20). Refuse loudly. ]
+    [?if [< [$strings:length $out] [$strings:length $in]]
+      [then [err code=guide-truncated
+        [$cat ('post-body: md-inline SHRANK the fragment (',
+               [$string [$strings:length $in]], ' -> ',
+               [$string [$strings:length $out]],
+               ' bytes) — render truncation; refusing to emit a partial page')]]]
+      [else $out]]]]
 
 [# ── per-section render (recursive) ─────────────────────────────────────
    render-section renders a [section] element to an HTML fragment string;
@@ -367,17 +398,22 @@
    so literal double brackets in code samples (TOML [[array-of-tables]],
    xref syntax shown as syntax) are never treated as cross-references. #]
 [?def escape-code-xrefs scope=public impure ($h)
-  [?let [= $i [$strings:find $h '<code']]
-    [?if [< $i 0] [then $h]
-      [else
-        [?let [= $head [$strings:slice $h 0 $i]]
-              [= $rest [$strings:slice $h $i [$strings:length $h]]]
-              [= $end  [$strings:find $rest '</code>']]
-          [?if [< $end 0] [then $h]
-            [else [$cat (
-              $head,
-              [$strings:replace [$strings:slice $rest 0 [+ $end 7]] '[[' '&#91;&#91;'],
-              [$escape-code-xrefs [$strings:slice $rest [+ $end 7] [$strings:length $rest]]])]]]]]]]]
+  [; flat [?for] walker, same shape as md-inline — the former per-span
+     self-recursion was the SECOND site of the ~195-span depth-cap
+     truncation (2026-08-20; md-ticks/md-inline were the first). ]
+  [?let [= $parts [$strings:split $h '<code']]
+    [$cat (
+      [$first $parts],
+      [$strings:join
+        [?for [in $p [$tail $parts]]
+          [yield
+            [?let [= $end [$strings:find $p '</code>']]
+              [?if [< $end 0]
+                [then [$cat ('<code', $p)]]
+                [else [$cat ('<code',
+                             [$strings:replace [$strings:slice $p 0 [+ $end 7]] '[[' '&#91;&#91;'],
+                             [$strings:slice $p [+ $end 7] [$strings:length $p]])]]]]]]
+        ''])]]]
 
 [# anchor-href: target href for one reference, given the current page slug. #]
 [?def anchor-href scope=public ($cur $slug $frag $name)
