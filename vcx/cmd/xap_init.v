@@ -33,10 +33,10 @@ const xap_init_usage = [
 	'',
 	'  --dir DIR   where to create it (default: ./NAME)',
 	'  --client    also scaffold NAME-web-client/ as a SEPARATE project',
-	'              (N-CLIENT-2: a XAP never embeds its renderer). What it',
-	'              emits is the client SPEC (client.cxd) + document shell,',
-	'              NOT a runnable server — views are your medium to write;',
-	'              its README shows the three steps to make it serve.',
+	'              (N-CLIENT-2: a XAP never embeds its renderer). It RUNS',
+	'              as generated: serve.cx renders each pane as a generic',
+	'              table derived from the surface\'s `shows` declarations —',
+	'              a floor to replace with your own views, never final UX.',
 	'',
 	'check-surface verifies every *.surface.cxd in DIR (default .) is a',
 	'faithful DERIVATION of the xap + feature specs beside it — the classes',
@@ -148,7 +148,9 @@ fn run_xap(args []string) {
 	println('Next: cx --allow-read ${os.join_path(dir, 'compose.cx')}')
 	if want_client {
 		println('')
-		println('${dir}-web-client/ is the client SPEC + shell, not a runnable server —')
-		println('views are yours to write; its README shows the three steps to serve it.')
+		println('${dir}-web-client/ RUNS as generated — from that directory:')
+		println('  cx --allow-read --allow-env --allow-net=127.0.0.1:8791 serve.cx')
+		println('Its panes are generic tables derived from the surface\'s `shows`')
+		println('declarations — a floor to replace with your own views, never final UX.')
 	}
 }
