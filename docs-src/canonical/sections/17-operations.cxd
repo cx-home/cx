@@ -170,7 +170,7 @@ ready"""]
          binary tells you which one it carries:"""]
     [output
       """$ cx --version
-cx v0.16.0
+cx vX.Y.Z             [# the repo VERSION, stamped at build #]
   profile  platform
   commit   3ed9ade5
   built    2026-08-20T05:52:49Z

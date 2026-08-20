@@ -99,8 +99,16 @@
     [$re:replace [$re:compile '(^|[ \n\t(>])\*\*([^*`<]*)`([^`]+)`([^*`<]*)\*\*($|[ \n\t).,;:!?<])']
       $s '$1<b>$2<code>$3</code>$4</b>$5']
     '$1<i><code>$2</code></i>$3']]
+[; md-links: markdown [label](url) → <a> — the corpus has always authored
+   links this way and the renderer never had a pass for them (143 literal
+   link spellings shipped on 14 pages). Runs BEFORE tick segmentation so a
+   label carrying `code` stays attached to its url; the url must contain
+   a / . # or : so prose like 'array[0](x)' can never read as a link. ]
+[?def md-links impure ($s)
+  [$re:replace [$re:compile '\[([^\[\]<]+)\]\(([^() \n\t]*[/.#:][^() \n\t]*)\)']
+    $s '<a href="$2">$1</a>']]
 [?def md-ticks scope=public impure ($s0)
-  [?let [= $s [$md-tick-composites [$md-tick-composites $s0]]]
+  [?let [= $s [$md-tick-composites [$md-tick-composites [$md-links $s0]]]]
         [= $i [$strings:find $s '`']]
     [?if [< $i 0] [then [$md-emph $s]]
       [else

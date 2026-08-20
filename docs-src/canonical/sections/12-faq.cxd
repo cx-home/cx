@@ -521,8 +521,8 @@
            binding** — Layer 1 is identical across all four, so the
            migration is mostly module-import changes plus
            host-idiomatic adjustments at Layer 2. (There is no
-           supported v0.7.x line to stay on — no maintenance
-           releases are cut for pre-v0.8.0 tags.)
+           supported pre-reshape line to stay on — no maintenance
+           releases are cut for tags before the stability boundary.)
            See `lang/_archived/README.md` for the per-binding
            archival notes and pointer to the last working
            commit."""]

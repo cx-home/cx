@@ -341,7 +341,7 @@
            $ make bench-code-http        # http client perf
            $ make bench-code-soak        # long-running soak
            $ make bench-code-cancel      # cancellation responsiveness
-           $ make bench-code-gates       # the three v0.8.0 perf gates
+           $ make bench-code-gates       # the three gate-tracked perf benches
 
            $ make bench-streaming        # data-streaming bench
            $ make bench-eval             # general eval cost
