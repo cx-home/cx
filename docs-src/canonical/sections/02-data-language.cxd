@@ -367,21 +367,24 @@
                 Scalar Items. `{name: 'a'}` is one Map Item that holds one
                 (key, value) pair."""]]
       [body
-        """This governs which operations apply where. Sequence operations
-           (`count`, `head`, `tail`, `concat`, `distinct`, `union`,
-           `intersect`, `except`) take **Sequence** and do not implicitly
-           descend into a container — at the value-model level,
-           `count(arr)` on an Array is a type error; the explicit form is
-           `count(items(arr))`, or flatten one nesting level first with
-           the `[?flatten]` directive. Array operations (`array:size`,
-           1-based indexing) take **Array** and treat it as a single
-           value. Map operations (`map:keys`, `map:get`) take **Map**."""]
+        """This governs which operations apply where, and the rule is a
+           **read/construct split**. *Readers* — `[$count]`, `[$length]`,
+           `[$empty]`, `[$exists]`, `[$first]`, `[$last]`, `[$nth]`,
+           `[$head]`, `[$tail]`, `[$distinct]` — destructure **any**
+           collection kind and answer over its items:
+           `[$count [1, 2, 3]]` is `3` on an Array exactly as it is on a
+           Sequence. Orderedness is a property of the value, not a wrapper
+           the reader must peel first. *Constructors and combiners* keep
+           the strict container typing: `[$concat [1, 2] [3]]` is a type
+           error, because building a Sequence out of Arrays would erase
+           the very distinction the container kinds carry. Map values are
+           read by key — `$m.name` on `{name: 'a'}` yields `'a'`."""]
       [body
-        """The practical impact: function signatures type-check at the
-           value-model layer. A function that expects a sequence will not
-           silently accept an array (or vice versa); the caller writes the
-           conversion explicitly, making intent visible to readers and
-           tools."""]]]
+        """The practical impact: readers never make you convert just to
+           ask a question, so there is no silent wrong answer of a
+           collection counting as one scalar — while anything that
+           *builds* a value type-checks its containers strictly, keeping
+           construction intent visible to readers and tools."""]]]
 
   [child id=sigils n=2.5 title='Sigils'
     [intro
