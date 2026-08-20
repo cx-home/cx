@@ -85,7 +85,8 @@
    md-emph would then (correctly) refuse the crossing match. #]
 [?def md-ticks scope=public impure ($s0)
   [?let [= $s [$re:replace [$re:compile '(^|[ \n\t(>])\*`([^`]+)`\*($|[ \n\t).,;:!?<])']
-                [$re:replace [$re:compile '\*\*`([^`]+)`\*\*'] $s0 '<b><code>$1</code></b>']
+                [$re:replace [$re:compile '\*\*([^*`<]*)`([^`]+)`([^*`<]*)\*\*']
+                  $s0 '<b>$1<code>$2</code>$3</b>']
                 '$1<i><code>$2</code></i>$3']]
         [= $i [$strings:find $s '`']]
     [?if [< $i 0] [then [$md-emph $s]]
