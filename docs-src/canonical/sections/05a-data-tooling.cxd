@@ -54,7 +54,7 @@
   [child id=cli-canon n='5a.3' title='cx canonical / cx hash / cx eq'
     [body
       """`cx canonical` emits the **strict canonical text** per
-         [`spec/canonical.md`](../../spec/canonical.md): comments
+         [`spec/core/canonical.md`](../../spec/03-approved/core/canonical.md): comments
          stripped, attributes sorted, anchors expanded, whitespace
          collapsed, quoting normalised. Two data-equivalent inputs
          produce identical output — that is the contract `cx hash`
@@ -69,7 +69,7 @@
   [child id=cli-validate n='5a.4' title='cx validate'
     [body
       """Validates a document against a `.cxs` schema
-         ([`spec/schema.md`](../../spec/schema.md)). Flags:
+         ([`spec/core/schema.md`](../../spec/03-approved/core/schema.md)). Flags:
          `--schema=SCHEMA.cxs` (required),
          `--fail-on=info|warn|error|none` (default `error`),
          `--mode=open|strict|closed` (overrides the schema-mode
@@ -109,8 +109,8 @@
          inverse). Parquet / Arrow output (`--to=parquet|arrow`)
          defers to the `libcx_arrow` bridge. See [[analytics]]."""]
     [example lang=sh
-      """$ cx table info data.cxcol
-         $ cx table dump data.cxcol --to=cx | head"""]]
+      """$ cx table info data.cxbin
+         $ cx table dump data.cxbin --to=cx | head"""]]
 
   [child id=cli-diff n='5a.7' title='cx diff'
     [body
@@ -135,7 +135,7 @@
     [child id=diff-scope n='5a.8.1' title='What cx diff reports (and ignores)'
       [body
         """`cx diff` reports differences in the strict canonical form
-           ([`spec/canonical.md §1.2`](../../spec/canonical.md)).
+           ([`spec/core/canonical.md §1.2`](../../spec/03-approved/core/canonical.md)).
            Specifically it **reports**:"""]
 
       [list
@@ -150,7 +150,7 @@
                 the annotation IS part of the data)."""]
         [item """Element order changed *when order is
                 data-significant* (per
-                [`spec/canonical.md §2.1`](../../spec/canonical.md))."""]]
+                [`spec/core/canonical.md §2.1`](../../spec/03-approved/core/canonical.md))."""]]
 
       [body
         """And **ignores**:"""]
@@ -171,11 +171,11 @@
         """Three output modes via `--format`:"""]
 
       [list
-        [item """**`unified`** (default) — element-rooted hunks,
+        [item """`unified` (default) — element-rooted hunks,
                 `-` / `+` / ` ` prefixes. Human-readable."""]
-        [item """**`json`** — structured array of change records.
+        [item """`json` — structured array of change records.
                 Suitable for CI gates and editor integrations."""]
-        [item """**`summary`** — one-line counts. Useful for shell
+        [item """`summary` — one-line counts. Useful for shell
                 prompts and PR bots."""]]
 
       [example lang=sh
@@ -213,10 +213,10 @@
         [item """`before` / `after` — relevant value for the kind.
                 Absent when the side has no value (e.g.
                 `element-added` has no `before`). The field is
-                **omitted**, not `null` — per
-                [`spec/policies.md §2.6`](../../spec/policies.md)'s
-                four-way null/empty/missing distinction this is
-                *missing*."""]]]
+                **omitted**, not `null` — per the four-way
+                null/empty/missing distinction of
+                [`spec/core/code.md §8.13`](../../spec/03-approved/core/code.md)
+                this is *missing*."""]]]
 
     [child id=diff-git n='5a.8.4' title='Git integration'
       [body
@@ -226,16 +226,11 @@
       [example lang=text
         """*.cx    diff=cx
            *.cxd   diff=cx
-           *.cxs   diff=cx
-           *.cxcol diff=cx-binary"""]
+           *.cxs   diff=cx"""]
 
       [example lang=sh
         """# One-time per repo
-           git config diff.cx.command 'cx diff'
-           git config diff.cx-binary.command 'cx diff --binary'
-
-           # Or scaffold it
-           cx scaffold gitattributes >> .gitattributes"""]
+           git config diff.cx.command 'cx diff'"""]
 
       [body
         """With this in place, `git diff path/to/config.cx` and
@@ -248,11 +243,11 @@
         """Match `diff(1)`:"""]
 
       [list
-        [item """**`0`** — inputs are data-equivalent (no
+        [item """`0` — inputs are data-equivalent (no
                 differences)."""]
-        [item """**`1`** — inputs differ (at least one semantic
+        [item """`1` — inputs differ (at least one semantic
                 delta)."""]
-        [item """**`2`** — error (parse failure, file not found,
+        [item """`2` — error (parse failure, file not found,
                 invalid arguments)."""]]
 
       [example lang=sh
