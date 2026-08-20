@@ -120,7 +120,7 @@
          Validation is real tooling, run as you author (the notes
          feature above validates clean against the shipped schema):"""]
     [example lang=sh
-      """$ cx validate notes.feature.cxd --schema=spec/02-working/xap_schemas/feature.cxs"""]
+      """$ cx validate notes.feature.cxd --schema=spec/03-approved/xap/xap_schemas/feature.cxs"""]
     [body
       """The behavior half is the **contract module** — a plain CX
          module exporting the conventional surface the deployment host

@@ -1,6 +1,6 @@
 # Co-located stdlib documentation (CX-native, self-sourcing)
 
-**Status:** 02-inprogress (DRAFT — not graduated; only the user moves this to 03-approved)
+**Status:** APPROVED — graduated 2026-08-20 by owner ruling SPR-1 (G3; ledger/rulings_2026_08_20_spec_tree_reshape.md). Prior status: 02-inprogress (DRAFT — not graduated; only the user moves this to 03-approved)
 
 **Target version:** current
 
@@ -98,7 +98,7 @@ inert at load time and add **no language change**.
 ## §3. Derived views (consumers) — REALIZED
 
 The single CX projection program is
-[`scripts/gen_guide/guide_build.cx`](../../scripts/gen_guide/guide_build.cx). It
+[`scripts/gen_guide/guide_build.cx`](../../../scripts/gen_guide/guide_build.cx). It
 walks every `stdlib/<m>.cx`, reads `[module-doc]` + `[fn-doc]` via `[$cx:parse]`
 + CXPath, and emits the **Standard-library guide pages directly** — the landing
 `libraries.html` (module index, one row per module using the scope's first
@@ -116,7 +116,7 @@ prose is derived FROM it (by a human or a one-time pass), not the reverse.
 
 ## §4. Gates — REALIZED as `make guide-check`
 
-[`scripts/gen_guide/stdlib_docs_check.cx`](../../scripts/gen_guide/stdlib_docs_check.cx)
+[`scripts/gen_guide/stdlib_docs_check.cx`](../../../scripts/gen_guide/stdlib_docs_check.cx)
 (CX-native, `cx eval`) enforces, for every bundled module:
 
 - **Presence parity:** every public `[?def NAME]` has a matching `[fn-doc

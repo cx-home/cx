@@ -46,7 +46,7 @@
 # the one illustrative example per function -- so collapsing the test
 # source onto the doc examples would discard negative/edge coverage. The
 # .cxd stays authoritative; the examples are pinned to it. (Design note
-# recorded in spec/02-working/stdlib_colocated_docs.md.)
+# recorded in spec/03-approved/std-lib/stdlib_colocated_docs.md.)
 #
 # Capabilities: glob / read-file need `read`; the env standard streams +
 # exit are ambient (env.md §7). Run:
