@@ -70,6 +70,11 @@ c21515cb5766f09c1f48247e4e2c42bb4b5591fd #826-proposal — R6.2 batch; the propo
 is_normative_spec() {
   case "$1" in
     spec/02-working/partition_*|spec/02-working/batch_*) return 1 ;; # legacy ledger spelling (pre-R6.1 history only; tree check refuses new files here)
+    spec/03-approved/xap/demos/*) return 1 ;; # the reference-XAP demo ESTATE (#869): versioned
+                                              # implementation living at the spec home — code,
+                                              # instruments, data documents. The freeze gate
+                                              # guards normative PROSE drift; demo maintenance
+                                              # is implementation by definition.
     spec/*) return 0 ;;
     *) return 1 ;;
   esac
