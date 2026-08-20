@@ -41,3 +41,15 @@ Opus-bulk-impl model policy for this leg). Order:
 
 Out of scope for the session: #804 (post-cut), #834 (linux, upstream),
 anything on main.
+
+## Cut-boundary rulings (owner "1a 2a 3a", 2026-08-19, in-session)
+
+RULED: RW-CUT.1 — darwin-only cut (1a): v0.16.0 ships the darwin artifacts
+exactly as v0.14/v0.15 did; the #520 dockerized Linux lane stays unmerged
+and #741's Linux post-publish half re-scopes to the #520 landing (noted on
+both issues). RULED: RW-CUT.2 — ORIEL stays PRIVATE at this cut (2a): the
+publish.sh exclusion + forbidden-path guard stand; exposure remains a later
+owner allowlist ruling. RULED: RW-CUT.3 — the ruled process verbatim (3a):
+Phase 1 on release-cut/v0.16.0 + the cut PR for owner review; Phase 2 (tag,
+mirror publish, GitHub release, post-publish verification) only after the
+merge, with its own owner go.
