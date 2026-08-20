@@ -71,15 +71,15 @@
       [tr [th 'dimension'] [th 'json'] [th 'cx']]
       [tr [td 'Schema'] [td 'JSON Schema (separate spec)'] [td '.cxs — same syntax as data (see [[schema]])']]
       [tr [td 'Identity / hash'] [td 'No canonical form; hash drifts on key reorder'] [td 'SHA-256 of canonical bytes; stable across platforms (see [[hash]])']]
-      [tr [td 'Comments'] [td 'None (in the standard); JSON5 / JSONC are extensions'] [td '[# … #] preserved by cx fmt, stripped by cx canonical']]
+      [tr [td 'Comments'] [td 'None (in the standard); JSON5 / JSONC are extensions'] [td '[; … ] blocks + # line comments, preserved by cx fmt, stripped by cx canonical']]
       [tr [td 'Trailing commas'] [td 'Forbidden'] [td 'Not applicable — bracket form, no commas in attribute list']]
-      [tr [td 'Number precision'] [td 'Underspecified; JS doubles by default'] [td 'Sized type tags (:i64, :u32, :f32) (see [[sized-types]])']]
+      [tr [td 'Number precision'] [td 'Underspecified; JS doubles by default'] [td 'Sized type annotations (::i64, ::u32, ::f32) (see [[sized-types]])']]
       [tr [td 'Multi-line strings'] [td 'Escaped only'] [td 'Triple-quoted, whitespace-preserving (see [[strings]])']]
       [tr [td 'Date / datetime'] [td 'String only'] [td 'First-class :date / :datetime scalar (see [[dates]])']]
       [tr [td 'Bytes'] [td 'Base64 in a string'] [td 'First-class :bytes scalar (see [[bytes]])']]
       [tr [td 'Tooling ecosystem'] [td 'Vast — every language, every editor, every CDN'] [td 'Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing']]
       [tr [td 'Wire size'] [td 'Baseline'] [td 'Comparable text form; data-bin / CXCol smaller']]
-      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Reference parser ~600 MB/s on the gate-15 workload']]
+      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Fast reference parser; the release gate holds streaming to a >=200 MB/s floor (not yet green)']]
       [tr [td 'Learning curve'] [td 'Trivial'] [td 'Bracket-and-sigil form; ~one hour for the data subset']]]
 
     [body
@@ -111,7 +111,7 @@
       [tr [td 'Norway problem'] [td 'no parses as false in YAML 1.1'] [td 'Only true/false are bools; no /yes is a string']]
       [tr [td 'Schema'] [td 'JSON Schema (separate)'] [td '.cxs (same syntax)']]
       [tr [td 'Identity / hash'] [td 'No canonical form'] [td 'SHA-256 of canonical bytes (see [[hash]])']]
-      [tr [td 'Comments'] [td '# line comments only'] [td '[# … #] nest, span lines, preserved by cx fmt']]
+      [tr [td 'Comments'] [td '# line comments only'] [td '[; … ] blocks (span lines) + # line comments, preserved by cx fmt']]
       [tr [td 'Tooling'] [td 'Kubernetes, GitLab CI, Ansible'] [td 'Growing — LSP + tree-sitter + VS Code; analytical pipelines']]
       [tr [td 'Round-trip'] [td 'Lossy in many YAML 1.1 → 1.2 cases'] [td 'Lossless by spec (see [[roundtrip]])']]]
 
@@ -143,7 +143,7 @@
       [tr [td 'Tooling'] [td 'Cargo, pip, Poetry — narrow but deep'] [td 'LSP + tree-sitter; broader workloads than configs alone']]
       [tr [td 'Round-trip'] [td 'Lossy — comment placement and key order'] [td 'Lossless']]
       [tr [td 'Mixed content'] [td 'Not supported'] [td 'Native (prose form, see [[prose]])']]
-      [tr [td 'Date / datetime'] [td 'Native :datetime'] [td 'Native :date / :datetime / :time']]]
+      [tr [td 'Date / datetime'] [td 'Native datetime'] [td 'Native ::date / ::datetime (plus duration and instant kinds)']]]
 
     [body
       """**When to pick TOML.** Your config is flat — language
@@ -234,7 +234,7 @@
       [tr [td 'Wire format'] [td 'Binary, schemaless'] [td 'Text (CX) or binary (data-bin)']]
       [tr [td 'Schema'] [td 'None'] [td '.cxs (optional)']]
       [tr [td 'Wire size'] [td 'Smaller than JSON; comparable to data-bin'] [td 'data-bin similar; CXCol smaller for tabular']]
-      [tr [td 'Type richness'] [td 'Scalars + map + array; ext-type extension'] [td 'Eight scalar kinds, elements with attributes, mixed content, namespaces']]
+      [tr [td 'Type richness'] [td 'Scalars + map + array; ext-type extension'] [td 'Eleven atomic kinds, elements with attributes, mixed content, namespaces']]
       [tr [td 'Identity / hash'] [td 'Wire bytes — stable iff serializer is deterministic'] [td 'Canonical bytes — stable by construction']]
       [tr [td 'Tooling'] [td 'Wide language coverage'] [td 'Tier-1 V/Python/Go/Rust']]]
 
@@ -265,7 +265,7 @@
       [tr [td 'Computation'] [td 'Lambdas, comprehensions, methods'] [td 'Directives — [?for], [?match], [?modify], [?let]']]
       [tr [td 'Output formats'] [td 'JSON / YAML / Plist / Properties + custom renderers'] [td 'CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']]
       [tr [td 'Identity / hash'] [td 'Not built-in'] [td 'SHA-256 of canonical bytes']]
-      [tr [td 'Module system'] [td 'Imports, packages, semantic versioning'] [td '[?cx include] — capability-gated path resolution']]
+      [tr [td 'Module system'] [td 'Imports, packages, semantic versioning'] [td '[?lib] / [?def] / [?const] with cx.lock SRI integrity']]
       [tr [td 'Tooling'] [td 'LSP, IntelliJ plugin, CLI — solid'] [td 'LSP + tree-sitter + VS Code — comparable']]
       [tr [td 'Ecosystem'] [td 'Apple-backed; growing community'] [td 'Open-source; growing community']]]
 
@@ -293,7 +293,7 @@
       [tr [td 'Computation'] [td 'λ-calculus — total, no recursion without bound'] [td 'Directives — [?for] / [?match] / [?modify]; bounded by resilience directives']]
       [tr [td 'Surface'] [td 'Haskell-flavoured ML syntax'] [td 'Bracket form']]
       [tr [td 'Output formats'] [td 'JSON / YAML / Text'] [td 'CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']]
-      [tr [td 'Imports'] [td 'Content-addressed by hash — same idea as CX'] [td '[?cx include] with capability gating']]
+      [tr [td 'Imports'] [td 'Content-addressed by hash — same idea as CX'] [td '[?lib] modules pinned by cx.lock SRI hashes']]
       [tr [td 'Identity / hash'] [td 'Standard form hash for imports'] [td 'Canonical bytes + SHA-256 for any value']]
       [tr [td 'Learning curve'] [td 'Steep — ML / Haskell familiarity helps'] [td 'Moderate — bracket form is unfamiliar but small']]
       [tr [td 'Tooling'] [td 'LSP, type-aware; narrow'] [td 'LSP + tree-sitter + VS Code']]]
@@ -328,7 +328,7 @@
       [tr [td 'Bridge'] [td '—'] [td 'CX ↔ Parquet bridge via Arrow (see [[parquet-bridge]])']]
       [tr [td 'Identity / hash'] [td 'File hash — sensitive to write order'] [td 'Canonical bytes of the logical value']]
       [tr [td 'Streaming'] [td 'Row-group oriented'] [td 'Native streaming evaluator (see [[streaming]])']]
-      [tr [td 'Write speed'] [td '~150 MB/s on the reference benchmark'] [td 'Faster — no compression overhead by default']]]
+      [tr [td 'Write speed'] [td 'Pays for compression + conversion on write'] [td 'No compression overhead by default (no maintained benchmark numbers to quote)']]]
 
     [body
       """**When to pick Parquet.** Your data is large, tabular,
@@ -429,10 +429,10 @@
       [tr [td 'Mixed content'] [td '✅ first-class'] [td '❌'] [td '❌'] [td '❌'] [td '✅ first-class']]
       [tr [td 'Multiple top-level docs'] [td '✅ no wrapper required'] [td '❌ requires array'] [td '✅ via --- separator'] [td '❌ single document'] [td 'partial']]
       [tr [td 'Attribute / element distinction'] [td '✅ explicit'] [td '❌ flat keys'] [td '❌ flat keys'] [td '❌ flat keys'] [td '✅ explicit']]
-      [tr [td 'Type fidelity through round-trip'] [td '✅ via CXCol'] [td '❌ int↔float coerced'] [td 'partial'] [td '✅ preserved'] [td 'partial']]
+      [tr [td 'Type fidelity through round-trip'] [td '✅ via --lossless'] [td '❌ int↔float coerced'] [td 'partial'] [td '✅ preserved'] [td 'partial']]
       [tr [td 'Tabular data efficiency'] [td '✅ ' [code ':table'] ' block, columnar binary'] [td '❌ verbose array-of-objects'] [td '❌ verbose'] [td 'partial (array of tables)'] [td '❌ verbose']]
       [tr [td 'Streaming parser'] [td '✅ pull-based handle API'] [td 'partial'] [td '❌ usually whole-file'] [td '❌'] [td '✅ SAX']]
-      [tr [td 'Built-in query language'] [td '✅ CXPath value kind, all 12 XPath 3.1 axes'] [td '❌ third-party (jq)'] [td '❌ third-party (yq)'] [td '❌'] [td '✅ XPath 1.0 / XQuery']]
+      [tr [td 'Built-in query language'] [td "✅ CXPath value kind, 12 axes (XPath 3.1's 13 minus the deprecated namespace axis)"] [td '❌ third-party (jq)'] [td '❌ third-party (yq)'] [td '❌'] [td '✅ XPath 1.0 / XQuery']]
       [tr [td 'Pure-functional transform'] [td '✅ ' [code '[?modify]'] ' focus + 11 actions, structural sharing'] [td '❌'] [td '❌'] [td '❌'] [td 'partial (XSLT)']]
       [tr [td 'Pattern-match dispatch'] [td '✅ ' [code '[?match]'] ' heterogeneous arms'] [td '❌'] [td '❌'] [td '❌'] [td '❌']]
       [tr [td 'Module system'] [td '✅ ' [code '[?def]'] ' / ' [code '[?lib]'] ' / cx.lock SRI'] [td '❌'] [td '❌'] [td '❌'] [td 'partial (XInclude)']]]]
@@ -447,11 +447,11 @@
 
     [table
       [tr [th 'CX → format → CX'] [th 'Lossless?'] [th 'What is preserved'] [th 'What is normalised or lost']]
-      [tr [td 'CX → JSON → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, types via CXCol, values, nesting'] [td 'Comments dropped; element vs attribute distinction collapses to keys']]
+      [tr [td 'CX → JSON → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, types via --lossless, values, nesting'] [td 'Comments dropped; element vs attribute distinction collapses to keys']]
       [tr [td 'CX → YAML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, types via ' [code '!!tags'] ', multiline strings'] [td 'Comments dropped by most parsers; flow-vs-block style normalised']]
       [tr [td 'CX → TOML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape via table headers, strong types'] [td 'Comments dropped; section ordering normalised; deep nesting flattened']]
       [tr [td 'CX → XML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, mixed content, namespaces, PIs'] [td 'Whitespace normalised per ' [code 'xml:space'] '; entity references resolved']]
-      [tr [td 'CX → CXCol → CX'] [td 'bytes ✅'] [td 'Everything byte-for-byte'] [td 'Nothing — CXCol is the strict-canonical form']]
+      [tr [td 'CX → CXCol → CX'] [td 'data ✅'] [td 'Values with full type fidelity — CXCol is the columnar binary export'] [td 'Presentation (comments, whitespace); the strict-canonical text form is cx canonical, not CXCol']]
       [tr [td 'CX → CSV → CX'] [td 'data partial'] [td [code ':table'] ' block columns and rows'] [td 'Non-table data not encodable; cell subtyping collapses']]]
 
     [note
