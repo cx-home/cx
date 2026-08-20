@@ -361,7 +361,7 @@
                 verbatim (`//x[1]` is the first), but CX explicitly
                 rejects `[0]` (raises `CXER0100`); XPath silently
                 yields the empty sequence."""]
-        [item """**No general-purpose `for` / `let` inside paths** —
+        [item """**No general-purpose** `for` / `let` **inside paths** —
                 CX moves binding into the `[?for]` / `[?let]`
                 directive surface; predicates take expressions but
                 not binding clauses. Use the surrounding directive."""]

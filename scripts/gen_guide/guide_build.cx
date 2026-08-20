@@ -71,11 +71,17 @@
    ('a/*.cx and b/*.md') never read as emphasis. NOTE the engine quirk:
    \s inside a character class silently matches nothing (and an unescaped
    '(' beside it is E_RE_PATTERN_INVALID), so whitespace is spelled out. #]
-[?def md-emph scope=public impure ($s)
+[?def md-emph-once impure ($s)
   [$re:replace [$re:compile '(^|[ \n\t(>])\*([^ \n\t*<](?:[^*<]*[^ \n\t*<])?)\*($|[ \n\t).,;:!?<])']
     [$re:replace [$re:compile '(^|[ \n\t(>])\*\*([^*<]+)\*\*($|[ \n\t).,;:!?<])']
       $s '$1<b>$2</b>$3']
     '$1<i>$2</i>$3']]
+[; TWO passes: the trailing boundary guard CONSUMES its character (this
+   regex engine has no lookahead), so of two ADJACENT emphasis spans the
+   second loses its leading boundary to the first match and fails; on the
+   second pass the rewritten text supplies a fresh '>' or space boundary. ]
+[?def md-emph scope=public impure ($s)
+  [$md-emph-once [$md-emph-once $s]]]
 
 [# md-ticks: pair backticks into <code> spans; emphasis runs only on the
    text BETWEEN them, so `a ** b` inside ticks stays verbatim. An unmatched
@@ -83,11 +89,18 @@
    folded FIRST — the tick split would otherwise part an emphasis pair
    around its own code span, and the '<'-excluding content classes in
    md-emph would then (correctly) refuse the crossing match. #]
+[?def md-tick-composites impure ($s)
+  [$re:replace [$re:compile '(^|[ \n\t(>])\*`([^`]+)`\*($|[ \n\t).,;:!?<])']
+    [; boundary-guarded like md-emph — without the guards this pattern
+       cross-pairs a CLOSING ** with a later OPENING ** whenever a code
+       span sits between two bold pairs ('**a** … `x` … **b**' matched
+       as one bold). Two passes for the same consumed-boundary reason
+       as md-emph. ]
+    [$re:replace [$re:compile '(^|[ \n\t(>])\*\*([^*`<]*)`([^`]+)`([^*`<]*)\*\*($|[ \n\t).,;:!?<])']
+      $s '$1<b>$2<code>$3</code>$4</b>$5']
+    '$1<i><code>$2</code></i>$3']]
 [?def md-ticks scope=public impure ($s0)
-  [?let [= $s [$re:replace [$re:compile '(^|[ \n\t(>])\*`([^`]+)`\*($|[ \n\t).,;:!?<])']
-                [$re:replace [$re:compile '\*\*([^*`<]*)`([^`]+)`([^*`<]*)\*\*']
-                  $s0 '<b>$1<code>$2</code>$3</b>']
-                '$1<i><code>$2</code></i>$3']]
+  [?let [= $s [$md-tick-composites [$md-tick-composites $s0]]]
         [= $i [$strings:find $s '`']]
     [?if [< $i 0] [then [$md-emph $s]]
       [else

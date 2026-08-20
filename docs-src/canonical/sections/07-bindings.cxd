@@ -442,11 +442,11 @@
            assert_eq!(explain("select_iter", "//user"),
                       r#"doc.select_all("//user")?.into_iter()"#);"""]
       [body
-        """There is **no `#[derive(CxData)]`, no `cx!` macro, no
-           `collect::<T>()` typed projection, and no proc-macro
-           crate** — those surfaces are unbuilt. The idioms layer is
-           the iterator/explain trio above; everything else is
-           Layer 1."""]]
+        """There is **no** `#[derive(CxData)]`, **no** `cx!` macro,
+           **no** `collect::<T>()` typed projection, and **no
+           proc-macro crate** — those surfaces are unbuilt. The
+           idioms layer is the iterator/explain trio above;
+           everything else is Layer 1."""]]
 
     [child id=layer-2-v n=7.3.4 title='V — Layer 1 is already idiomatic'
       [body

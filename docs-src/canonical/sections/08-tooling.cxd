@@ -277,15 +277,15 @@
            prefix:"""]
 
       [list
-        [item """**CXER\\*** — runtime / parse errors from the V core.
+        [item """`CXER` **prefix** — runtime / parse errors from the V core.
                 The namespace registry is
                 [`spec/03-approved/process/governance.md`](../../spec/03-approved/process/governance.md)
                 §9.6; the language-core sub-blocks live in
                 [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
                 §9.4."""]
-        [item """**CX-L\\*** — lint findings from `cx_lint` (see
+        [item """`CX-L` **prefix** — lint findings from `cx_lint` (see
                 [[lint]]); same codes the CLI emits."""]
-        [item """**CXLS\\*** — LSP-only static-analysis diagnostics
+        [item """`CXLS` **prefix** — LSP-only static-analysis diagnostics
                 that don't have a CLI surface. Currently shipped:"""]]
 
       [table
