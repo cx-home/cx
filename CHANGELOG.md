@@ -15,7 +15,7 @@ version, library version).
 
 Nothing yet.
 
-## [0.16.0] — 2026-08-19
+## [0.16.0] — 2026-08-20
 
 The **partition** release. v0.13.0 made CX consumable and v0.14.0 made a
 deployment survive its own success; this release states what CX *is* — four
@@ -25,6 +25,57 @@ enforced, buildable, documented, and demonstrated by a reference application.
 Nothing here is a breaking change to the public surface (§9 versioning
 rules); the partition is a separation of what already existed, not a
 redefinition of it.
+
+### Added — at the cut (2026-08-20)
+
+- **The studio (#884)**: the visual editor over surface documents — an edit
+  mode of the real web face (capability-gated by a `ux:edit` claim), with
+  the layout-command vocabulary completed by `[ux:place]` / `[ux:remove]`
+  (ux.md P0-105…P0-110), emitter-stamped selection resolution, inverse-command
+  undo, and propose/commit flow.
+- **Durable feed lineage (#764)**: XSP store data-plane resume cursors now
+  survive daemon restarts — a per-substrate lineage sidecar turns the boot
+  token into a durable epoch token (zero wire change); `CXER5020` narrows to
+  wrong-epoch / below-retention-floor / above-head.
+- **Semantic projections (#877, ANC-1)**: every lossy projection
+  (JSON/YAML/TOML/MD/CSV/TSV/PSV) and the `$doc` binding read the RESOLVED
+  document — aliases expand, merges apply — matching strict canonical's
+  identity; default CX, the XML `cx:*` carry, and `--lossless` preserve the
+  authored sharing.
+- **Parse limits (#876, LIM-1/LIM-2)**: `spec/core/limits.md`, the
+  `ParseLimits.max_input_bytes` embedder guard, and the amplification gate
+  (node growth bounded, hard-asserted).
+- **Session guest attach (#857)** and **HTTP/2 on the serve path (#875)** —
+  landed at the cut (see their issues for surface details).
+- **One-command editor install (#874)**: `tooling/install/` — signed
+  tree-sitter parser with a headless load-proof (#883), lazy.nvim `dir=`
+  spec, VS Code VSIX.
+
+### Fixed — at the cut (2026-08-20)
+
+- **#883**: macOS killed Neovim (and its spawning TUI) on every parser
+  reinstall — the universal build shipped an unsigned arm64 slice and the
+  installer overwrote the old inode; every parser binary is now ad-hoc
+  signed, installed to a fresh inode, and load-proofed at install time.
+- **#879 (CXP-1)**: the `[?cx …]` pragma registry is CLOSED
+  (`include|schema|version|lint-disable|lint-enable`); unknown keys —
+  including the documented-but-inert `output-target` — now refuse at parse
+  with a named message instead of being silently accepted.
+- **#878 (ENT-1)**: XML emission of entity references at item boundaries no
+  longer glues text (`Cheese &amp; Pepper` round-trips); attr-position
+  entity text is carried verbatim by design.
+- **#881 (BP-1)**: explicit `axis::` steps on binding paths refuse with a
+  precise diagnostic naming the compact-step surface and the rooted-path
+  alternative (was a bare `unexpected token '::'`).
+- **#882 (ARR-1)**: the collection read/construct split is normative —
+  readers (`count`, `first`, `nth`, …) destructure any collection kind;
+  constructors (`concat`) keep strict container typing. The engine was
+  already right; the docs taught otherwise.
+- **#880**: silent-acceptance sweep — lint config attr typos, unknown bench
+  flags, and a doubled `CXER0100` error prefix all refuse loudly now.
+- The guide generator no longer silently truncates pages past ~195 code
+  spans (two recursion-ceiling walkers made flat; the builder now REFUSES
+  to emit a partial page).
 
 ### Added — the four-ring partition
 

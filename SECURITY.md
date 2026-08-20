@@ -6,7 +6,8 @@ CX is **pre-1.0**. Only the latest released minor series — currently
 **0.16.x**, per the repo-root [`VERSION`](VERSION) file, which is the
 single source of truth for the release version — receives security
 fixes. Integration for the next minor happens on its `release/X.Y.0`
-branch (currently `release/0.13.0`); pre-release branches receive
+branch (derived from `VERSION` — never named here, so this file cannot
+go stale against a cut); pre-release branches receive
 fixes as part of normal development, not as security backports.
 
 There has been no external security audit yet — see the

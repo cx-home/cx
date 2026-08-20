@@ -723,7 +723,9 @@
     [intro
       """CX supports XML-namespace-style scoping via `xmlns:` attribute
          declarations. The normative spec is
-         [`spec/namespaces.md`](../../spec/namespaces.md)."""]
+         [`cxdm.md`](../../spec/03-approved/core/cxdm.md) §3 (model)
+         with the canonical-form rules in
+         [`canonical.md`](../../spec/03-approved/core/canonical.md) §2.7a."""]
 
     [child id=ns-prefix-decl n=2.10.1 title='Prefix declarations'
       [body

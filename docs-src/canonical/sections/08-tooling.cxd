@@ -169,8 +169,10 @@
            [`tooling/lsp/neovim.example.lua`](../../tooling/lsp/neovim.example.lua);
            the install script
            [`tooling/install/install-nvim.sh`](../../tooling/install/install-nvim.sh)
-           drops the config block into `~/.config/nvim/lua/cx.lua`
-           and registers the LSP."""]
+           installs the signed tree-sitter grammar (with a headless
+           load-proof) and writes a lazy.nvim `dir =` spec pointing at
+           the in-repo plugin root — LSP included via native
+           `vim.lsp.config`."""]
 
       [example lang=sh
         """# One-shot install
