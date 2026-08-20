@@ -421,22 +421,21 @@
          and XML. The per-format children (§13.2-§13.11) carry
          the depth; this matrix is the spreadsheet view."""]
 
-    [body
-      """| Feature | CX | JSON | YAML | TOML | XML |
-         |---|---|---|---|---|---|
-         | Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
-         | Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom | ❌ number only | partial (auto-detect) | ✅ int / float / bool / datetime | partial (xs:type) |
-         | Comments | ✅ block and line | ❌ | ✅ # … | ✅ # … | ✅ |
-         | Mixed content | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
-         | Multiple top-level docs | ✅ no wrapper required | ❌ requires array | ✅ via --- separator | ❌ single document | partial |
-         | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
-         | Type fidelity through round-trip | ✅ via CXCol | ❌ int↔float coerced | partial | ✅ preserved | partial |
-         | Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
-         | Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
-         | Built-in query language | ✅ CXPath value kind, all 12 XPath 3.1 axes | ❌ third-party (jq) | ❌ third-party (yq) | ❌ | ✅ XPath 1.0 / XQuery |
-         | Pure-functional transform | ✅ `[?modify]` focus + 11 actions, structural sharing | ❌ | ❌ | ❌ | partial (XSLT) |
-         | Pattern-match dispatch | ✅ `[?match]` heterogeneous arms | ❌ | ❌ | ❌ | ❌ |
-         | Module system | ✅ `[?def]` / `[?lib]` / cx.lock SRI | ❌ | ❌ | ❌ | partial (XInclude) |"""]]
+    [table
+      [tr [th 'Feature'] [th 'CX'] [th 'JSON'] [th 'YAML'] [th 'TOML'] [th 'XML']]
+      [tr [td 'Syntax weight'] [td 'brackets, no closing tags'] [td 'curly braces + brackets'] [td 'indent-significant'] [td 'tables + key=val'] [td 'open + close tags']]
+      [tr [td 'Strong types'] [td '✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom'] [td '❌ number only'] [td 'partial (auto-detect)'] [td '✅ int / float / bool / datetime'] [td 'partial (xs:type)']]
+      [tr [td 'Comments'] [td '✅ block and line'] [td '❌'] [td '✅ # …'] [td '✅ # …'] [td '✅']]
+      [tr [td 'Mixed content'] [td '✅ first-class'] [td '❌'] [td '❌'] [td '❌'] [td '✅ first-class']]
+      [tr [td 'Multiple top-level docs'] [td '✅ no wrapper required'] [td '❌ requires array'] [td '✅ via --- separator'] [td '❌ single document'] [td 'partial']]
+      [tr [td 'Attribute / element distinction'] [td '✅ explicit'] [td '❌ flat keys'] [td '❌ flat keys'] [td '❌ flat keys'] [td '✅ explicit']]
+      [tr [td 'Type fidelity through round-trip'] [td '✅ via CXCol'] [td '❌ int↔float coerced'] [td 'partial'] [td '✅ preserved'] [td 'partial']]
+      [tr [td 'Tabular data efficiency'] [td '✅ ' [code ':table'] ' block, columnar binary'] [td '❌ verbose array-of-objects'] [td '❌ verbose'] [td 'partial (array of tables)'] [td '❌ verbose']]
+      [tr [td 'Streaming parser'] [td '✅ pull-based handle API'] [td 'partial'] [td '❌ usually whole-file'] [td '❌'] [td '✅ SAX']]
+      [tr [td 'Built-in query language'] [td '✅ CXPath value kind, all 12 XPath 3.1 axes'] [td '❌ third-party (jq)'] [td '❌ third-party (yq)'] [td '❌'] [td '✅ XPath 1.0 / XQuery']]
+      [tr [td 'Pure-functional transform'] [td '✅ ' [code '[?modify]'] ' focus + 11 actions, structural sharing'] [td '❌'] [td '❌'] [td '❌'] [td 'partial (XSLT)']]
+      [tr [td 'Pattern-match dispatch'] [td '✅ ' [code '[?match]'] ' heterogeneous arms'] [td '❌'] [td '❌'] [td '❌'] [td '❌']]
+      [tr [td 'Module system'] [td '✅ ' [code '[?def]'] ' / ' [code '[?lib]'] ' / cx.lock SRI'] [td '❌'] [td '❌'] [td '❌'] [td 'partial (XInclude)']]]]
 
   [child id=cmp-loss-matrix n=13.14 title='Conversion-loss matrix'
     [intro

@@ -2,35 +2,39 @@
    Source top-left, Output bottom-left, View (Tree/Graph) right column. */
 
 :root {
-  /* Dark base palette — One Dark-ish */
-  --bg-app:       #1e2127;
-  --bg-pane:      #1c1f24;
-  --bg-head:      #21252b;
-  --bg-toolbar:   #181a1f;
-  --bg-input:     #1e2127;
-  --bg-hover:     #2c313a;
-  --border:       #181a1f;
-  --border-soft:  #3a3f4b;
-  --text:         #c8ccd4;
-  --text-dim:     #6b7280;
-  --text-strong:  #e5e9f0;
-  --accent:       #61afef;
-  --accent-hover: #82c0ff;
-  --ok:           #98c379;
-  --err:          #e06c75;
-  --pending:      #d19a66;
+  /* Warm-ink palette — the guide's drawing-office family (ruled
+     2026-08-20): the playground is the instrument bench behind the
+     paper sheets, so its dark surfaces are warm ink, its accent the
+     drafting vermilion, and its annotations IBM Plex Mono. */
+  --bg-app:       #1d1a11;
+  --bg-pane:      #211e15;
+  --bg-head:      #262214;
+  --bg-toolbar:   #17150d;
+  --bg-input:     #1d1a11;
+  --bg-hover:     #322d1d;
+  --border:       #12100a;
+  --border-soft:  #453e28;
+  --text:         #d8d2c0;
+  --text-dim:     #8a8371;
+  --text-strong:  #efe9d8;
+  --accent:       #d9744a;
+  --accent-hover: #e89a6e;
+  --ok:           #a9cc9e;
+  --err:          #e8927c;
+  --pending:      #e3b76a;
 
-  /* Syntax palette (used by highlight.js + tree view) */
-  --syn-keyword:  #c678dd;   /* directives [?...] */
-  --syn-string:   #98c379;
-  --syn-number:   #d19a66;
-  --syn-comment:  #5c6370;
-  --syn-name:     #e5c07b;   /* element names */
-  --syn-attr:     #56b6c2;   /* attribute keys */
-  --syn-binding:  #e06c75;   /* $name */
-  --syn-punct:    #abb2bf;
+  /* Syntax palette (used by highlight.js + tree view) — matches the
+     guide's warm highlight tones in style.css. */
+  --syn-keyword:  #e8a9c0;   /* directives [?...] */
+  --syn-string:   #e3b76a;
+  --syn-number:   #dd9046;
+  --syn-comment:  #837b64;
+  --syn-name:     #9ecbe0;   /* element names */
+  --syn-attr:     #a9cc9e;   /* attribute keys */
+  --syn-binding:  #e8927c;   /* $name */
+  --syn-punct:    #c9c2ad;
 
-  --code-font:    ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --code-font:    'IBM Plex Mono', ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -39,7 +43,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'IBM Plex Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 14px;
   color: var(--text);
   background: var(--bg-app);
@@ -73,7 +77,13 @@ html, body {
   border-right: 1px solid var(--border-soft);
   margin-right: 6px;
 }
-.cxp-brand img { display: block; filter: brightness(1.1); }
+.cxp-brand svg { display: block; width: 22px; height: 22px; color: var(--text-strong); }
+.cxp-brand:hover svg { color: var(--accent-hover); }
+.cxp-brand span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+}
 .cxp-spacer { flex: 1; }
 .cxp-pick-label {
   color: var(--text-dim);
@@ -117,7 +127,7 @@ html, body {
 .cxp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .cxp-btn-primary {
   background: var(--accent);
-  color: #0e1116;
+  color: #17150d;
   border-color: var(--accent);
   font-weight: 600;
 }
@@ -508,7 +518,7 @@ body.cxp-resizing.is-row { cursor: row-resize; }
 .cxp-status a { color: var(--accent); text-decoration: none; }
 .cxp-status a:hover { text-decoration: underline; }
 .cxp-status.is-ok { color: var(--ok); }
-.cxp-status.is-error { color: var(--err); background: #2b1d1f; border-top-color: #5c2a2e; }
+.cxp-status.is-error { color: var(--err); background: #2b1d14; border-top-color: #5c3a2a; }
 .cxp-status.is-pending { color: var(--pending); }
 
 /* ── Syntax highlighting — class names from scripts/gen_guide/highlight/highlight.js ── */
