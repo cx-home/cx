@@ -69,4 +69,62 @@ equality literal; the envelope must never be a second event vocabulary.
   negotiated-carriage amendment (recording this ruling id). No other
   normative text moves.
 
-Implementation record appended below on landing.
+## Implementation record (2026-08-20 — landed)
+
+What landed (one encoder, three subscription surfaces, per-subscription
+carriage at every fan-out):
+
+- `vcx/platform/stdlib_xsp.v` — `xsp_sse_data_b64(payload)`: ONE helper
+  wrapping the existing `xsp_encode_one` (never a second framer): builds
+  the `event`/`binary=false` frame over the exact payload text and
+  base64s the wire bytes.
+- **Generic topic layer** (`[$http:serve]` / `[?http-service]`):
+  `[sse-subscribe topic="…" [envelope codec="xsp"] …]` sets
+  `WireResp.sse_xsp`; unknown codec refuses 500. The XSP lane registers
+  under a NUL-prefixed sibling registry key (`sse_topic_key` —
+  authored topics never carry NUL, so no collision), which makes the
+  fd, h2-stream, AND TLS-h1 registries carriage-aware with ZERO change
+  to their publish/prune/close logic. `[$http:sse-publish]` renders the
+  event once per carriage (`sse_frame_event_xsp`: id/event/retry lines
+  stay plain; data = base64 frame) and publishes to both keys; the
+  delivered count spans both lanes. Initial `[event …]` frames ride the
+  subscription's negotiated carriage.
+- **`[$xap:serve]` `/events`** — `?envelope=xsp` (unknown value refuses
+  400 via `xap_sse_envelope_of`); per-fd flag `xap_sse_xsp` beside the
+  #609 delta flag; `xap_push_now` splits full-frame subscribers by
+  carriage and wraps each delta subscriber's payload
+  (`xap_delta_payload`, formerly xap_delta_frame, now returns the
+  payload text) in its own carriage; the initial full frame is
+  carriage-correct.
+- **`[$xap:host]` `/stream`** — same `?envelope=xsp` opt-in (the
+  downstream twin of the deployment doc's `[transport [envelope
+  codec="xsp"]]` upstream opt-in); `xap_host_push_frame` fans the SAME
+  readout out as the plain named event and the XSP twin
+  (`xap_sse_named_frame_xsp`: `event: <feature>` stays a plain line);
+  `xap_sse_push` now writes per-fd negotiated carriage.
+- Spec: xsp.md §4.1 gains the negotiated-carriage amendment (this
+  ruling). No other normative text moved.
+
+Gates (all green, full logs, RC echoed):
+
+- `vcx/tests/sse_xsp_downstream_test.v` (NEW lane) — topic layer: plain
+  + xsp subscribers COEXIST ON ONE TOPIC, publish reports both
+  (pushed=2), plain bytes verbatim (`data: tick-42\n\n`), xsp data
+  decodes via an INDEPENDENT §2 wire parse to the byte-equal payload,
+  and round-trips through the shipped codec
+  (`[$xsp:decode [$bytes:from-base64 …]]` → `event|false|tick-42`);
+  unknown codec refuses 500. XAP `/events`: initial + post-intent
+  frames byte-compare across carriages; `?envelope=cbor` refuses 400.
+  RC=0.
+- `vcx/tests/http_h2_serve_test.v` (extended: check_sse_xsp_envelope_over_h2
+  + `/feedx` resource) — both carriages of one topic multiplex on ONE
+  TLS/h2 connection; plain stream byte-identical; xsp stream decodes to
+  the same event text; existing battery untouched and green. RC=0.
+- `vcx/tests/xap_umbrella_test.v` (host test extended) — `/stream` +
+  `/stream?envelope=xsp` held across the admitted act: named `door`
+  event in both carriages, byte-compare after decode; `?envelope=cbor`
+  refuses 400. RC=0.
+- Plain-lane pins untouched: `http_umbrella_test.v` RC=0 (pushed=2
+  stands), `xap_render_test.v` RC=0 (test_xap_sse_push stands),
+  `store_remote_umbrella_test.v` RC=0 (xsp frame-layer consumers),
+  `stdlib_umbrella_test.v` RC=0 (xsp codec TDD).
