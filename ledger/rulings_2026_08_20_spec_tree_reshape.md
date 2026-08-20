@@ -64,3 +64,17 @@ supervise.md, worker_lifecycle.md (no stdlib/supervise.cx exists),
 message_delivery_unification.md (U1.8 still open), xap_architecture.md
 (open questions; flagged for owner review post-cut as the stalest genuine
 design file).
+
+## SPR-4 (owner "1b", same day, spec-review session) — set-identity sketch RETIRED, precedent made normative
+
+Reviewing spec/01-new/cxstore_set_identity_index.md, the owner could not name
+the problem it solves — and the honest answer is: barely one. Strict
+canonical already sorts map keys (§2.11.1); the residue ("a sequence the
+caller privately means as a set") is app-level discipline (sort before
+write); no consumer exists. Ruled 1b: the address-purity precedent from the
+#82 closure (identity = pure function of canonical bytes; no schema/profile/
+policy input; semantic-equality beyond bytes may only be a DERIVED,
+rebuildable, explicit-profile index) is now NORMATIVE in
+spec/03-approved/core/canonical.md §1; the sketch is archived
+⛔ RETIRED — NEVER GRADUATED. spec/01-new now holds exactly one file
+(cxstore_universal_object_model.md, review pending).
