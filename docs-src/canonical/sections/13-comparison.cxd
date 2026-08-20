@@ -464,6 +464,76 @@
       [code 'cx hash'] ' because the hash operates on strict-canonical '
       'bytes, where presentation is stripped.']]
 
+  [child id=cmp-performance n='13.14a' title='Where CX is fast — measured'
+    [intro
+      """CX's performance culture is **gates, not brags**: every number
+         below names its runner, was measured on the reference dev
+         machine (Apple Silicon, `-prod` build, 2026-08-20), and is
+         re-measured each release. Claims without a measurement do not
+         ship in these docs."""]
+
+    [child id=perf-http n='13.14a.1' title='HTTP serving — the headline'
+      [body
+        """A CX HTTP service runs deep in compiled-server territory:
+           **~122,000 requests/second** measured against the static
+           guide server (`wrk -t8 -c128`, containerized, the B18
+           allocation-work findings), with ~135k req/s on the
+           uncontainerized reference run. That is two orders of
+           magnitude past a typical scripting-language app server and
+           in the league of Go/Rust HTTP frameworks — from `[?http-service]`
+           declarations, not hand-tuned handler code. (Multi-core
+           scaling is the honestly-stated frontier: see the README
+           status note.)"""]]
+
+    [child id=perf-surfaces n='13.14a.2' title='Server-rendered surfaces'
+      [body
+        """The reference storefront (1,004 products, live derived
+           state, zero view code) renders a full department page in
+           **~7 ms** server-side; category pages over the whole
+           catalog render in **~0.13 s** — down from ~3.6 s before
+           this release's evaluator fix (per-arm dispatch no longer
+           scales with closure-table size; the whole conformance
+           corpus's runtime halved from the same change). Declarative
+           surfaces are not the slow path."""]]
+
+    [child id=perf-streaming n='13.14a.3' title='Streaming evaluation'
+      [body
+        """The lazy-record streaming path evaluates `[?for]` over
+           streamed documents at **~200 MB/s** (the §11.4.4 gate's
+           five-trial protocol; up from 14.7 MB/s before this
+           release's rework — a 13× jump), with bounded memory
+           regardless of input size. `[?map]` measures **129 MB/s**
+           against the same 200 MB/s floor — the gate is honestly red
+           on that one criterion and the threshold was not relaxed;
+           the numbers re-measure on the perf campaign. Streaming is
+           the high-throughput lane: it outruns the buffered parser
+           because it never materializes the whole tree."""]]
+
+    [child id=perf-parse n='13.14a.4' title='Parsing — honest numbers'
+      [body
+        """The buffered data parser measures **35–42 MB/s** (median,
+           small/medium/large fixtures; the lexer alone runs
+           84–104 MB/s) — parsing a substantially richer grammar than
+           JSON: type ascriptions, anchors, mixed content, tables,
+           comments. A specialized JSON parser will beat CX at parsing
+           JSON; nobody should pick CX for raw text-parse throughput,
+           and this section will not pretend otherwise. The
+           high-throughput lanes for bulk data are the **binary
+           forms** (ast-bin, CXCol with zstd pages) and the streaming
+           path above — and the amplification gate holds parse cost
+           linear in input bytes, so throughput is a constant, not a
+           cliff."""]]
+
+    [child id=perf-bindings n='13.14a.5' title='One engine, thin bindings'
+      [body
+        """Identity operations (hash, canonical, eval) route through
+           the one compiled `libcx` from every binding, so they are
+           bit-identical AND uniformly fast: the V-native path parses
+           the 35 KB bench fixture in **~1.0 ms**, Rust lands within
+           **1.6×** of that through its hand-written FFI layer.
+           There is no interpreter tax between your host language and
+           the engine."""]]]
+
   [child id=cmp-when-cx n=13.15 title='When CX wins'
     [body
       [b 'CX is the right pick'] ' for typed configuration, mixed '
