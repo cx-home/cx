@@ -53,6 +53,23 @@ know before upgrading programs is the error-propagation tightening below.
   table — tree-walk dispatch had scaled with closure fatness. ORIEL
   category pages went from ~3.6s to ~0.13s; renders now beat the campaign's
   recorded baselines; the conformance corpus's own runtime halved.
+- **The ux projection capability, specified.** The third projection joins
+  the wire and the agent-tools face as a spec
+  (`spec/03-approved/xap/ux.md`): the same definitions project forms,
+  tables, and live regions through a closed, gate-enforced semantic
+  vocabulary with web and terminal faces — what is shown is what is
+  allowed, every state is a URL, and the terminal face is the
+  keyboard-reachability fixture.
+- **Prebuilt downloads, and a guide worth reading.** Per-profile
+  darwin-arm64 tarballs publish with the release behind the hosted
+  installer (`CX_PROFILE=data|embed|cli`), with a Downloads page
+  presenting the profile matrix as the ring ladder. The guide itself was
+  redesigned as one visual system (drawing-office chrome, the ring model
+  drawn as an annotated figure) and put through a full verification
+  audit — every checkable claim tested against the live binary, several
+  hundred stale or fictional claims corrected. Editor tooling joins the
+  release motion: the Neovim plugin installs as a plugin root; the VS
+  Code extension packages and publishes from the release script.
 
 ## Changed (behavioral)
 

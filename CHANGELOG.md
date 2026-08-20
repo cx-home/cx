@@ -170,6 +170,38 @@ arc** rather than a spec link:
   (`actor: deriver:rating`) — the second deriver exemplar, visible on any
   product page after a review lands.
 
+### Added — the ux projection capability, specified
+
+- **`spec/03-approved/xap/ux.md`** is the normative home of the third
+  projection: the same command/query definitions that serve the wire and
+  the agent-tools face project **forms, tables, and live regions** —
+  derived at render time, no UI manifest to drift. The spec pins the four
+  keying regimes, the closed 45-member semantic vocabulary (gate-enforced:
+  unknown members and unknown attributes refuse), the emitter contract
+  (sole attribute author, strict CSP, escaping by construction), the
+  hypermedia obligations (every state a URL; degrade without the kernel),
+  the one-evaluator authorization rule (what is shown is what is allowed),
+  and the accessibility clauses — with the terminal face as the mechanical
+  keyboard-reachability fixture. Implementation rides the x-tier
+  (`cx-x/ux` core + web/terminal faces); the guide teaches it as a Ring 2
+  arc.
+
+### Added — prebuilt downloads and editor distribution
+
+- **Per-profile darwin-arm64 tarballs publish with every release** —
+  `platform` (default) / `cli` / `embed` / `data`, resolved by the hosted
+  installer (`curl -sSL https://cxhome.org/install | sh`; `CX_PROFILE=`
+  selects the lean builds), each gated by extract-and-probe before
+  publish, all under one `SHA256SUMS.txt`. The guide gains a **Downloads
+  page** presenting the profile matrix as the ring ladder.
+- **Editor tooling joins the release motion.** `tooling/neovim/` is a
+  real plugin root — lazy.nvim/LazyVim consume it directly
+  (`{ dir = "…/cx/tooling/neovim" }`) on Neovim 0.11's native
+  `vim.lsp.config`, no nvim-lspconfig dependency, copy-file install
+  retired. The release script packages the VS Code extension and
+  publishes to the Marketplace/Open VSX when publisher tokens are
+  present.
+
 ### Fixed — two owner-felt platform defects, found and closed same-day
 
 - **`[?match]` arm attempts stopped deep-copying the closure table** — a
@@ -184,6 +216,13 @@ arc** rather than a spec link:
   visitors' frames** and swallowed their own requests ("pending" hangs).
   Close notification is now a fan-out with one purge point, invoked on
   every close path and defensively at accept.
+- **A hidden page releases its feed's connection-pool slot** — browsers
+  cap HTTP/1.1 at six connections per host and the liveness contract
+  holds one SSE feed per page, so a handful of open tabs starved
+  navigations. The web kernel now closes the feed while a page is hidden
+  and reconnects on visibility; a background-opened tab takes no slot
+  until first viewed. (The structural fix — HTTP/2 on the serve path,
+  reusing the platform's existing RFC-7540 codec — is queued.)
 
 ### Fixed
 
@@ -191,6 +230,12 @@ arc** rather than a spec link:
   library, V runtime, tooling and XAP — including a signal-free thread
   suspension for the darwin collector, and a sweep of correctness defects
   found by the partition's own gates.
+- **Engine-side findings from the documentation audit**: the shipped
+  `cxstore.service.cx` operator template could not boot the daemon it
+  documents (retired `[auth]` block → the real `[xsp [grants …]]` shape);
+  the LSP's semantic-token directive list carried only the pre-reshape 37
+  names against the registry's 80; two binding manifests declared MIT
+  against the repo's Apache-2.0 license.
 
 ### Documentation
 
@@ -200,6 +245,20 @@ arc** rather than a spec link:
   concept specs written as teaching arcs. A reader can answer "what is Ring
   N, what may it import, and what can I do with only that ring" from the
   guide alone.
+- **The guide is designed** — a coherent visual system (drawing-office
+  chrome with monograph body typography): a sheet frame and title block on
+  every page, the ring model drawn as an annotated engineering figure on
+  the landing, ink code panels with paper output prints, and the
+  playground retinted to the same family. Inline emphasis in prose now
+  renders (the corpus carried ~900 unrendered spans). Works served or
+  double-clicked (`file://`).
+- **The guide is trued** — a full verification audit tested every
+  checkable claim against the live binary and corrected several hundred
+  stale or fictional ones: invented CLI verbs and flags, a fictional
+  limits/env-var surface, wrong error codes, an inverted canonicalization
+  story, fabricated binding APIs and capability-bit tables, and stale
+  perf numbers. Where the docs described a surface the engine should
+  have, that became a tracked decision, never a doc claim.
 - **`x/term` specced** rather than retired, and `ROADMAP.md` trued to this
   release line.
 
