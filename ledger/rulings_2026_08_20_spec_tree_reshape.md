@@ -78,3 +78,35 @@ rebuildable, explicit-profile index) is now NORMATIVE in
 spec/03-approved/core/canonical.md §1; the sketch is archived
 ⛔ RETIRED — NEVER GRADUATED. spec/01-new now holds exactly one file
 (cxstore_universal_object_model.md, review pending).
+
+## SPR-5 (owner "2a 3a", spec-review session) — xap_architecture split-and-settled; the U1 letter archived
+
+**3a — message_delivery_unification.md ✅ EXECUTED → _archived.** All fifteen
+sub-rulings ruled (U1.1a–U1.9a, U1.10 no-action, U1.11a–U1.15a) and every
+ruled implementation live-verified at archival: channel sharing/retention
+axes construct, [?receive max=/deadline=] present, [$journal:subscribe] /
+[$journal:seq-at] shipped with RULED tokens in the code, [?select] send case
+present, [$fabric:receive] retired ("no callable"). delivery.md (approved,
+SPR-1) is the normative home. #761 CLOSED at archival; #764 tracks the one
+remainder — which the owner then reclassified as a PRE-CUT BUG (see FL-1,
+its own ledger file; fixed in a dedicated worktree).
+
+**2a — xap_architecture.md split-and-settled → _archived:**
+- §11 serving execution model → GRADUATED as std-lib/http.md §14 (shipped,
+  field-proven #275 → PRs #278/#279; gate http_slow_handler_isolation_test).
+- §10 deployment process model → GRADUATED as misc/deployment.md (port is
+  the only mutex; fail-fast collisions; no bespoke supervision).
+- §9.3 DID/VC — found ALREADY SUPERSEDED during the split: std-lib/did.md +
+  vc.md are approved and stdlib/session.cx ships attach-did with tests. The
+  review's "unfiled forward design" claim was wrong; corrected here.
+- §9.1–9.2 — consolidation of approved xap.md §14.1/§16/§22; no extraction.
+- §1–§8 positioning essay — ADOPTED 2026-06-15 in-document; §5's open
+  questions since answered by the composition track / 804-1c / value-model
+  spec. Code comments and the vc.md link repointed.
+
+**Also ruled the same session (recorded here for the chain):** #764
+reclassified bug + pre-cut (FL-1 lane, dedicated worktree agent); the W26
+studio design letter POSED at design/787/w26/studio.md (ST-1…ST-8) — the
+studio was to be POC'd early in the ux campaign and finished by v0.16.0;
+never scheduled; the contract half (ux.md §2.2/§4) graduated with UX-1, the
+editor half is W26.
