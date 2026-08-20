@@ -55,3 +55,16 @@ the scaffolded client still validates against client.cxs AND now RUNS —
 spawned headless, asserted to answer HTTP with the derived table (columns
 = the shown fields), the pane-refresh fragment route, and a committed
 intent visible in the re-rendered table.
+
+## ATC-2 riders resolved at integration (parent session, same day)
+
+- (a) The reference client shell polled `/orders`/`/shipments` (plural) while
+  the components bind `/order`/`/shipment` — the two panes 404'd silently on
+  every cadence tick. Fixed to the bound segments (layout.html one-liner);
+  the delay pane already matched.
+- (d) The view-tree node vocabulary (panel/heading/list/control/text/table)
+  was enumerated nowhere in xap.md — pinned in §5 under this token; additions
+  are individual rulings.
+- (b) recorded: derive-at-boot is the floor; live re-derive-on-commit rides
+  the composition track (#865/#867). (c) the sibling-worktree test flake did
+  not reproduce on the integrated tree (full xap umbrella green).
