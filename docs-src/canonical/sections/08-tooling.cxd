@@ -76,6 +76,7 @@
         [tr [td 'cx schema VERB'] [td 'Schema verb family — infer a .cxs from a corpus; export to JSON Schema']]
         [tr [td 'cx tools VERB'] [td 'Agent-tool verb family — project command defs to MCP tool descriptors']]
         [tr [td 'cx xap init NAME'] [td 'Scaffold a XAP project']]
+        [tr [td 'cx xap check-surface DIR'] [td 'Surface derivation check — every surface against the composed grammar + enabled features']]
         [tr [td 'cx demo'] [td 'Self-contained showcase, no I/O, < 1s']]
         [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
         [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]

@@ -25,18 +25,27 @@ import os
 
 const xap_init_usage = [
 	'Usage: cx xap init NAME [--dir DIR] [--client]',
+	'       cx xap check-surface [DIR]',
 	'',
-	'Scaffolds a XAP project: two base features, one composite that joins',
-	'them, the xap wiring layer, and a surface. The result composes through',
-	'the W1-W6 gate as generated — nothing to fix before it runs.',
+	'init scaffolds a XAP project: two base features, one composite that',
+	'joins them, the xap wiring layer, and a surface. The result composes',
+	'through the W1-W6 gate as generated — nothing to fix before it runs.',
 	'',
 	'  --dir DIR   where to create it (default: ./NAME)',
 	'  --client    also scaffold NAME-web-client/ as a SEPARATE project',
-	'              (N-CLIENT-2: a XAP never embeds its renderer)',
+	'              (N-CLIENT-2: a XAP never embeds its renderer). What it',
+	'              emits is the client SPEC (client.cxd) + document shell,',
+	'              NOT a runnable server — views are your medium to write;',
+	'              its README shows the three steps to make it serve.',
+	'',
+	'check-surface verifies every *.surface.cxd in DIR (default .) is a',
+	'faithful DERIVATION of the xap + feature specs beside it — the classes',
+	'the shape schema cannot see. `cx xap check-surface --help` lists them.',
 	'',
 	'Then:',
 	'  cx --allow-read DIR/compose.cx        # the gate + bare-term resolution',
 	'  cx validate --schema=… DIR/*.cxd      # each layer against its schema',
+	'  cx xap check-surface DIR              # the surface derivation check',
 ]
 
 fn xap_init_die(msg string) {
@@ -54,8 +63,12 @@ fn run_xap(args []string) {
 		}
 		exit(if args.len == 0 { 2 } else { 0 })
 	}
+	if args[0] == 'check-surface' {
+		run_xap_check_surface(args[1..])
+		return
+	}
 	if args[0] != 'init' {
-		xap_init_die('unknown action `${args[0]}` — the only action is `init`')
+		xap_init_die('unknown action `${args[0]}` — actions: init, check-surface')
 	}
 	if args.len < 2 {
 		xap_init_die('missing NAME')
@@ -133,4 +146,9 @@ fn run_xap(args []string) {
 	}
 	println('')
 	println('Next: cx --allow-read ${os.join_path(dir, 'compose.cx')}')
+	if want_client {
+		println('')
+		println('${dir}-web-client/ is the client SPEC + shell, not a runnable server —')
+		println('views are yours to write; its README shows the three steps to serve it.')
+	}
 }
