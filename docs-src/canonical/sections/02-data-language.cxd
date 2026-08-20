@@ -635,30 +635,32 @@
     [child id=include-paths n=2.9.1 title='Path resolution'
       [body
         """Include paths are resolved relative to the **including
-           document's directory**, not the working directory. Absolute
-           paths are accepted but flagged by `cx lint` (recommendation:
-           prefer relative). HTTPS URLs are accepted when the network
-           capability bit is enabled — see [[include-capabilities]]."""]
-      [body
-        """The resolver honors a `CX_INCLUDE_PATH` environment variable
-           (a colon-separated list of search roots), mirroring `gcc -I`.
-           Paths inside the document's own subtree resolve first; the
-           search path is consulted only if the local lookup fails."""]]
+           document's directory**, not the working directory — and the
+           whole resolution is **root-bounded**: the embedding supplies
+           an absolute include root, and every resolved include must lie
+           under it. Everything that could reach outside the root is
+           refused, each with its own error: an absolute path
+           (`cx-err:E901`), a relative path that traverses out of the
+           root (`cx-err:E902`), and any URL scheme — `https:` included
+           (`cx-err:E903`). An include is a local, root-bounded file
+           read by construction; there is no search path and no
+           environment variable — one root, one resolution rule."""]]
 
     [child id=include-cycles n=2.9.2 title='Cycle detection'
       [body
-        """A include cycle (A includes B which includes A) raises CXER0140
-           at the second visit to A. The resolver tracks include
+        """An include cycle (A includes B which includes A) is refused
+           with `cx-err:E904` at the second visit, and the error names
+           the whole chain (`A → B → A`). The resolver tracks include
            ancestors per document; sibling includes that happen to
            reference the same file are fine, only cyclic ancestry
            errors."""]]
 
     [child id=include-depth n=2.9.3 title='Depth limit'
       [body
-        """Default maximum include nesting depth is 16. Exceeding it
-           raises CXER0141. The limit prevents pathological documents
-           from exhausting the parser's stack. Override with
-           `CX_INCLUDE_MAX_DEPTH=N` (rarely needed in practice)."""]]
+        """Default maximum include nesting depth is 8. Exceeding it is
+           refused with `cx-err:E905`, naming the limit and the path
+           that crossed it. The bound is configurable by the embedding
+           (the resolver options), not by environment variable."""]]
 
     [child id=include-capabilities n=2.9.4 title='Capability gating'
       [body
@@ -799,26 +801,34 @@
 
   [child id=limits n=2.15 title='Limits and quotas'
     [intro
-      """CX has finite resource budgets to prevent adversarial inputs
-         from exhausting host memory or stack. All limits are
-         configurable via environment variables."""]
+      """The parse surface carries a small set of **structural guards**
+         against adversarial input. They are deliberately few, they are
+         built in rather than tuned by environment variables, and each
+         refusal names its limit."""]
     [table
-      [tr [th 'limit'] [th 'default'] [th 'env var'] [th 'error']]
-      [tr [td 'Max document depth (nested brackets)'] [td '512'] [td 'CX_MAX_DEPTH'] [td 'CXER0142']]
-      [tr [td 'Max attributes per element'] [td '1024'] [td 'CX_MAX_ATTRS'] [td 'CXER0143']]
-      [tr [td 'Max body byte length per element'] [td '256 MiB'] [td 'CX_MAX_BODY'] [td 'CXER0144']]
-      [tr [td 'Max include depth'] [td '16'] [td 'CX_INCLUDE_MAX_DEPTH'] [td 'CXER0141']]
-      [tr [td 'Max entity-reference expansion'] [td '10000 chars'] [td 'CX_MAX_ENTITY_EXPAND'] [td 'CXER0145']]
-      [tr [td 'Max recursion depth in [?for]/[?def]'] [td '1024'] [td 'CX_MAX_RECURSE'] [td 'CXER0146']]
-      [tr [td 'Max parse time per document'] [td '30 s'] [td 'CX_MAX_PARSE_TIME'] [td 'CXER0147']]
-      [tr [td 'Max canonical-form size'] [td '1 GiB'] [td 'CX_MAX_CANON'] [td 'CXER0148']]]
+      [tr [th 'guard'] [th 'bound'] [th 'refusal']]
+      [tr [td 'Element nesting (text parser)'] [td '64'] [td 'parse refusal naming the line, column, and limit']]
+      [tr [td 'Include depth'] [td '8 (embedding-configurable)'] [td [code 'cx-err:E905']]]
+      [tr [td 'Include cycle'] [td 'refused at the repeat visit'] [td [code 'cx-err:E904'] ' naming the chain']]
+      [tr [td 'Include escape — absolute path / root traversal / URL scheme'] [td 'refused outright'] [td [code 'cx-err:E901'] ' / ' [code 'cx-err:E902'] ' / ' [code 'cx-err:E903']]]
+      [tr [td 'CXCol decode recursion'] [td '64'] [td 'decode refusal naming the limit']]]
     [body
-      """For untrusted-input processing (parsing CX received over a
-         network), tighten these explicitly for the workload and pair
-         them with OS-level process limits — the parser needs no
-         capability grants at all, so the empty grant set plus tightened
-         budgets is the whole posture. See [[security]] for the threat
-         model."""]]
+      """Two classes of bomb are **structurally absent** rather than
+         capped. Entity references parse to nodes — there is no textual
+         expansion pass — so recursive expansion attacks (the XML
+         "billion laughs") have nothing to attack. And includes cannot
+         fan out beyond the root-bounded tree above: no search paths, no
+         URLs, no absolute paths."""]
+    [body
+      """What the engine deliberately does **not** carry: attribute-count
+         caps, body-size caps, parse-time budgets, or canonical-form
+         size caps. Parse cost is linear in input bytes, so the
+         untrusted-input posture is boundary-side: bound the input size
+         where it enters, run with the empty grant set (the parser needs
+         no capability grants at all), and pair with OS-level process
+         limits. See [[security]] for the threat model. Evaluation-side
+         bounds (recursion, time) are the code language's story, not the
+         data format's — Ring 0 cannot execute anything."""]]
 
   [child id=datetime-detail n=2.16 title='Date / time semantics — timezones, precision, leap seconds'
     [intro
