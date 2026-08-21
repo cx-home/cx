@@ -294,8 +294,16 @@
    was the only page in the tree left reachable from nothing. #]
 [?def lib-ring-items scope=public ($libfiles $ring $active)
   [$strings:join [?for [in $f $libfiles]
-    [where [= [$pack-ring [$stdlib-slug $f]] $ring]]
+    [where [and [not [$is-x-file $f]] [= [$pack-ring [$stdlib-slug $f]] $ring]]]
     [yield [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] '']]
+
+[# x-tier-items: the experimental tier's own links, in name order. Its own
+   group rather than a ring, because the tier is a STABILITY statement and not
+   a layering one — a reader needs to know the promise before the position. #]
+[?def x-tier-items scope=public ($libfiles $active)
+  [$strings:join [?for [in $f $libfiles]
+    [where [$is-x-file $f]]
+    [yield [$nav-link [$module-page $f] [$stdlib-slug $f] '' $active]]] '']]
 
 [?def xap-nav-items scope=public ($active)
   [$cat ([$nav-link 'xap' 'Overview' '' $active],
@@ -344,6 +352,8 @@
     [$nav-section 'Ring 3 — Ecosystem'
       [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' $active],
              [$lib-ring-items $libfiles 3 $active])]],
+    [$nav-section 'x/ tier — experimental'
+      [$x-tier-items $libfiles $active]],
     [$nav-section 'Reference'
       [$cat ([$group-nav-items $metas 'Reference' $active],
              [$ref-nav-items $active])]],
@@ -532,13 +542,15 @@
     [$nav-section 'Ring 3 — Ecosystem'
       [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' ''],
              [$lib-ring-items $libfiles 3 ''])]],
+    [$nav-section 'x/ tier — experimental'
+      [$x-tier-items $libfiles '']],
     [$nav-section 'Reference'
       [$cat ([$group-nav-items $metas 'Reference' ''],
              [$ref-nav-items ''])]],
     '</section>\n',
     '<p class="note">\n',
     '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',
-    '  the co-located docs in <code>stdlib/*.cx</code>. Built by\n',
+    '  the co-located docs in <code>stdlib/*.cx</code> and <code>x/*.cx</code>. Built by\n',
     '  <code>make guide</code>.\n',
     '</p>\n')]]
 
@@ -635,6 +647,21 @@
    index. Pure projection: read → [$cx:parse] → extract → reshape. #]
 
 [# stdlib-slug: 'stdlib/path.cx' → 'path'. #]
+[# is-x-file: which TIER a module file belongs to, read off its path. The x/
+   tier is experimental by decision D3, and every surface that shows it says so.
+   #]
+[# The reference covers BOTH module tiers (XD-1a): stdlib/*.cx and x/*.cx are
+   globbed into one list and told apart by their PATH, so the nav can group them
+   separately without threading a second parameter through every page signature.
+   The x/ tier is exempt from the frozen-stability promise (std-lib README,
+   decision D3), so it is never mixed in with the frozen packs — it gets its own
+   nav group and a banner on every page. #]
+[?def is-x-file scope=public [returns bool] ($f)
+  [$strings:starts-with $f 'x/']]
+[# the page slug for a module: the frozen packs keep `lib-`, the experimental
+   tier takes `x-`, so a URL states which promise applies to what it shows. #]
+[?def module-page scope=public ($f)
+  [$cat ([?if [$is-x-file $f] [then 'x-'] [else 'lib-']], [$stdlib-slug $f])]]
 [?def stdlib-slug scope=public ($f)
   [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.cx' '']]
 
@@ -716,9 +743,16 @@
         [= $d [$module-docs $f]]
         [= $fns $d//fn-doc]
     [$post-body [$xml:emit
-      [section id=[$cat ('lib-', $m)]
+      [section id=[$module-page $f]
         [h1 $m]
         [p class="lede" [$module-scope $d]]
+        [# XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. #]
+        [?if [$is-x-file $f]
+          [then [p class="note" [$cat ('Experimental x/ tier — imported as cx-x/', $m,
+            '. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.')]]]
+          [else '']]
         [?if [$empty $fns]
           [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
           [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
@@ -871,7 +905,8 @@
   [= $gen 'scripts/gen_guide']
   [= $out 'docs/guide']
   [= $metas [$load-metas $src]]
-  [= $libfiles [$io:glob 'stdlib/*.cx']]
+  [= $libfiles [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'])
+                 [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
   [= $sec-ancs [?for [in $m $metas] [yield
     [anc name=$m@id slug=$m@slug frag='']]]]
@@ -915,9 +950,10 @@
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
     [?for [in $f $libfiles] [yield
       [?let [= $m [$stdlib-slug $f]]
+            [= $slug [$module-page $f]]
             [= $body [$render-module $f]]
-            [= $page [$wrap-page $m [$cat ('lib-', $m)] $metas $libfiles $ver $body]]
-        [$io:write-file [$cat ($out, '/lib-', $m, '.html')] $page]]]],
+            [= $page [$wrap-page $m $slug $metas $libfiles $ver $body]]
+        [$io:write-file [$cat ($out, '/', $slug, '.html')] $page]]]],
     [$io:write-file [$cat ($out, '/directives.html')]
       [$wrap-page 'Directive reference' 'directives' $metas $libfiles $ver
         [$render-directive [$cat ($src, '/reference/directives.cx')]]]],
