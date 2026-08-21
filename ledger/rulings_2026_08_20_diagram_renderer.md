@@ -118,7 +118,13 @@ spec sentence is trued to the real path (letter finding 1 flagged it;
 stale name, zero behavior).
 
 **DRW1-8 — §10.1.4 flag divergence and the sequenceDiagram stub are
-RECORDED, not repaired, this wave.** Shipped CLI = `--format`/`-o`
+RECORDED, not repaired, this wave.** (Measured precisely at the wave-2
+close: the `mermaid:<detail>` suffix is NOT reachable from the CLI at
+all — `render.v`'s output-target validation rejects `mermaid:compact`
+as an unknown target before `render_diagram` ever sees it, so the
+detail rungs are an ABI/wasm-only surface today. Pre-existing, verified
+unchanged across both waves; it makes §10.1.4's missing `--detail`
+flag a sharper gap than the letter's finding 7 stated.) Shipped CLI = `--format`/`-o`
 only (no `--direction`/`--detail`); detail rides the
 `mermaid[:detail]` format suffix; the sequenceDiagram emitter is a
 note-per-directive stub chosen only for top-level
