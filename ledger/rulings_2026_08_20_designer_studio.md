@@ -106,3 +106,68 @@ redistribute if customization survives upgrade.
 Spec: ux.md §19 states DS-12a/b as normative clauses [P0-121]/[P0-122] and
 records the adopter→client contract as the framing §18.5's fleet clauses
 serve. Spec commits carry `RULED: DS-12`.
+
+## Addendum — DS-13…DS-17: the finish pass (owner directives, 2026-08-20)
+
+**Owner framing (verbatim intent):** *"keep going until we're 80-100% … get a
+full working spec complete, fully implement it"*; *"make studio amazing to work
+with. don't cut corners. give designers simplicity across detailed control
+surface in a way that is safe. When I demo it people should walk away thinking
+wow"*; and *"is cx ability to gen diagrams helpful for studio? at least as a xap
+wide map with all the routes and ability to navigate and restructure … sound,
+solid, highly efficient, simple to use and just beautiful."*
+
+- **DS-13 — the kit projects on EVERY arranged route.** A component the
+  registry offers is placeable wherever an arrangement exists; a page's own
+  projector owns only the blocks that belong to that page and delegates the
+  rest to one shared kit projector. Ground: the studio offered "add a banner"
+  on a category page, the command journaled cleanly, and the page rendered
+  nothing. A command that succeeds and shows nothing is worse than a refusal —
+  it teaches the designer that the tool lies. Corollary ruled with it: a
+  projector answers ONE shape (a sequence) on every arm, because `$first` means
+  "first item" of a sequence and "first child" of an element, and that
+  difference silently emitted a card's heading without the card — and so
+  without the id the emitter stamps selection onto.
+
+- **DS-14 — the surface has a map, and the map is derived.** The studio shows
+  every route the composition declares, which of them are arrangement-driven,
+  and the blocks in each — computed from `surface.cx` plus the live folds, so
+  it cannot drift from what is served. A route pattern carries a WALKABLE
+  example derived from the catalogue actually loaded, which is what makes
+  "open this route and edit it" a real gesture rather than a link to a 404.
+  The same map answers as Mermaid text (`?format=mermaid`), so the platform's
+  existing diagram surface — `cx code-diagram` — and any document that speaks
+  Mermaid get the XAP's structure for free. Diagram GENERATION is therefore
+  useful to the studio as an EXPORT of a derived model, never as a second
+  source of truth: nothing in the studio reads a diagram back.
+
+- **DS-15 — history is a place to stand, and going back is additive.** A
+  page's journal is readable as a list of changes, newest last, and an editor
+  may return to any point. Returning APPENDS the inverse commands for the
+  range (P0-108's pairs, P0-27's batch); it never rewrites or erases an entry.
+  A studio whose undo is a mutation of the record cannot be trusted with a
+  client's deployment.
+
+- **DS-16 — the declared width wins.** Inside an arranged region the
+  arrangement decides geometry; the face's classification guesses (facet rail,
+  panel placement) stand down on any element the designer gave a width. Ground:
+  two whole specificity chains were dead — a wide-tier span and a narrow-tier
+  span both lost to rail rules naming more classes, so the resize gesture
+  wrote its hint, the inspector read it back, and the page never moved. THAT
+  was the "clunky" the owner kept meeting.
+
+- **DS-17 — the studio's own surface is a designed instrument.** Curated
+  brand controls (palette, colours, type, shape) over the full token set, not
+  instead of it; closed axes shown as segmented controls, never as dropdowns a
+  reader must open to learn the options; palettes that write several tokens as
+  ONE journaled change so a whole look moves and reverts together; one command
+  box (⌘K) over jump / add / switch; the keyboard sheet discoverable at `?`;
+  viewport tiers that make the narrow decision its own decision; and an
+  editor's own window repainting through the PAGE'S OWN declared refetch —
+  never a second rendering path, and never a wait on a broadcast it just
+  caused.
+
+Spec: ux.md §18 gains the map, the history/return clauses and the
+projection rule as normative clauses; §19 gains the declared-width rule; the
+§18.6 status ladder is trued. Spec commits carry `RULED: DS-13` … `RULED:
+DS-17`.
