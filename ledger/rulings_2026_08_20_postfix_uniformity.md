@@ -111,3 +111,52 @@ found):**
 parser_units_umbrella, cxparse_full_corpus_diff (zero movement),
 eval_semantics_umbrella, code_units umbrella + the new gate — full
 logs, RCs echoed.
+
+---
+
+## Implementation record (appended at landing, same day)
+
+**Heads landed (all of PS-1's roster):** directive results (every
+shape — special forms, [?for]/[?for-array]/[?for-map], [?element],
+[?cx], [?str], module directives — one attach at the expression-
+position directive dispatch), operator forms + element literals (the
+cx_element carrier), array literals (empty, comma, dollar/double-star
+comma arms), sequence literals (a bare paren group parses as a
+one-item sequence_lit, so `(E)/x` is covered by the sequence arm),
+map literals, slice literals. NO riders — no head surfaced a grammar
+ambiguity: the CRS-1 byte-adjacency gate resolved every glued/spaced
+reading, exactly as §2.3 of the letter predicted.
+
+**Live probes (dev binary, this tree):**
+`[?let [= $u [user [name "ann"]]] $u]/name` → `'ann'`;
+`[?if true [then [user [b 7]]]]/b` → `7`; `[user [b 1] [c 2]]/c` →
+`2`; `[report [+ 1 2]/x]` → `[report ()]` (kind-driven empty);
+`{a: 5}.a` → `5`; `[+ 1 2]@a` → typed CXER0001 refusal;
+`[?let [= $x 1] $x]/ancestor::y` → the BP-1 [135a] diagnostic.
+
+**Predicted vs actual golden movement: zero vs ZERO.**
+cxparse_full_corpus_diff green with no fixture movement;
+code_eval_fixtures (code.cxd, now 1168 cases incl. the 8 new
+program-callstep-005…012) green; verify-doc-blocks 361 passed /
+0 failed.
+
+**Gate RCs (all 0):** postfix_step_uniformity_test.v (new gate, 20
+tests), code_parse_fixtures, parser_units_umbrella,
+cxparse_full_corpus_diff, eval_semantics_umbrella,
+code_units_umbrella, code_eval_fixtures, verify-doc-blocks,
+spec-freeze-gate.
+
+**In passing (trued, evidence):** the CRS-1 conformance negative
+`program-callstep-004-axis-on-call-result-refused` had shipped
+WITHOUT registration in code_parse_fixtures'
+`expected_parse_failures` roster — the lane was RED at this branch's
+baseline (verified by stash-and-run: 1 unexpected parse failure at
+56cab635). Registered alongside the new PS-1 negative (012); the
+grounded refusal itself is enforced via the eval runner's out-err
+path, unchanged.
+
+**Streaming/TCO seams (a stepped form is a READ):** stream_mode_of
+declines a path-bearing [?for]; stream_map_directive declines a
+path-bearing [?map]; eval_tail's [?if]/[?let] tail threading and
+cx_element_as_tail_call's trampoline are gated on `path.len == 0` —
+a stepped tail form evaluates as a value and steps the result.
