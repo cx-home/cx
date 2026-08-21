@@ -12,6 +12,9 @@
 #       impossible to ship silently.
 #   (2) PURITY AGREEMENT -- each [?def]'s `pure`/`impure` keyword matches
 #       its [fn-doc]'s `purity=` attribute.
+#   (6) DOC EXTRACTABILITY -- every bundled module projects at least one
+#       [module-doc]/[fn-doc] span through [$cx:ast], which is what the
+#       guide's stdlib pages are built from.
 #   (3) EXAMPLE BACKING  -- every [fn-doc]/[example]'s code block AND its
 #       expected output appear verbatim in the module's conformance corpus
 #       (conformance/stdlib/<m>.cxd). Because that corpus is executed green
@@ -93,10 +96,21 @@
         [= $defs [?else $ast.defs []]]
         # the doc lane: fn-doc/example elements from the VERBATIM docs spans
         # (a whole-module data parse chokes on program-bearing def bodies).
-        [= $fn-docs [?for [in $sp [?else $ast.docs []]]
+        [= $spans [?else $ast.docs []]]
+        [= $fn-docs [?for [in $sp $spans]
                       [= $el [$cx:parse $sp]]
                       [where [= [$name $el] "fn-doc"]]
                       [yield $el]]]
+        # (6) DOC EXTRACTABILITY -- the guide's stdlib pages are projected
+        # from these same spans (scripts/gen_guide/guide_build.cx ::
+        # module-docs). A module whose docs stop projecting must fail HERE,
+        # loudly, instead of taking every stdlib page of the guide down with
+        # it at `make guide` time (#889: diagram.cx was the first module to
+        # use program-only syntax, and the guide's whole-file data parse died
+        # on it).
+        [= $spanviol [?if [= [$count $spans] 0]
+                       [then ([$concat "  [" $m "] no [module-doc]/[fn-doc] blocks project from the module source (guide_build cannot render its page)"],)]
+                       [else ()]]]
         # (4) summary-required-for-commands
         [= $cmdviol
           [?for [in $cd [$filter $defs [?fn ($q) [?match $q [case {effects: $e} true] [else false]]]]]
@@ -146,7 +160,7 @@
             [where [not [and [$strings:contains $cxdraw $code] [$strings:contains $cxdraw $expect]]]]
             [yield [$concat "  [" $m "] example not backed by " $m ".cxd:\n      " $code "\n      => " $expect]]]]
 
-        [= $parts [?for [in $blk ([$strings:join $astviol "\n"], [$strings:join $cmdviol "\n"], [$strings:join $pdviol "\n"], [$strings:join $defviol "\n"], [$strings:join $docviol "\n"], [$strings:join $exviol "\n"])]
+        [= $parts [?for [in $blk ([$strings:join $astviol "\n"], [$strings:join $spanviol "\n"], [$strings:join $cmdviol "\n"], [$strings:join $pdviol "\n"], [$strings:join $defviol "\n"], [$strings:join $docviol "\n"], [$strings:join $exviol "\n"])]
                     [where [not [= $blk ""]]] [yield $blk]]]
         [= $blob [$strings:join $parts "\n"]]
         [where [not [= $blob ""]]]

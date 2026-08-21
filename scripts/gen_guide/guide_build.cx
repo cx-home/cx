@@ -675,10 +675,45 @@
         [pre [code lang=cx [$ex-part $ex 'code']]]
         [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
 
+[# module-docs: the co-located [module-doc] / [fn-doc] blocks of a
+   bundled module, WITHOUT data-parsing the whole file.
+
+   A stdlib module is a PROGRAM, and a program is entitled to
+   program-only syntax the DATA reader is right to refuse: a bare
+   singleton sequence in call-argument position, a node-valued
+   attribute, program directives in element bodies. stdlib/diagram.cx
+   is the first module to use them, and the whole-file [$cx:parse] this
+   projection used to do died on it — taking every stdlib page of the
+   guide with it (the #425 class of failure: a doc source that stops
+   projecting must FAIL, never silently render an empty page).
+
+   [$cx:ast] returns the verbatim doc SPANS alongside the structured
+   def view, so each doc block is parsed on its own and the module body
+   is never data-read. This is the technique the sibling gate
+   scripts/gen_guide/stdlib_docs_check.cx already uses; both now read
+   docs the same way, so they cannot disagree about a module. #]
+[?def module-docs scope=public impure ($f)
+  [?let [= $raw [$cx:ast [$io:read-file $f]]]
+    [?match $raw
+      [case [err $e]
+        ([$io:write-line [$env:stderr]
+           [$cat ('guide_build: AST FAILED — ', $f, ' — ', $e@message)]],
+         [$env:exit 1])]
+      [else
+        [?let [= $ast [$json:parse $raw]]
+              [= $spans [?else $ast.docs []]]
+          [?if [$empty $spans]
+            [then
+              ([$io:write-line [$env:stderr]
+                 [$cat ('guide_build: NO DOC BLOCKS — ', $f,
+                        ' — the module projects no [module-doc]/[fn-doc]')]],
+               [$env:exit 1])]
+            [else [docs [?splice [?for [in $sp $spans] [yield [$cx:parse $sp]]]]]]]]]]]]
+
 [# render-module: stdlib/<m>.cx → the module page body (HTML fragment). #]
 [?def render-module scope=public impure ($f)
   [?let [= $m [$stdlib-slug $f]]
-        [= $d [$parse-or-die $f]]
+        [= $d [$module-docs $f]]
         [= $fns $d//fn-doc]
     [$post-body [$xml:emit
       [section id=[$cat ('lib-', $m)]

@@ -118,3 +118,200 @@ playground reaches this renderer through the wasm export
 (cabi.v). The port changes what the export computes with, not its
 signature, its level encoding, or its error-string prefixes. No re-cut,
 no ABI-surface re-bless (`tools/libcx-abi-gate.sh`, #888).
+
+**DRW3-6 — the structural path node.** The §4 projection hatches a bare
+CXPath expression to its SOURCE TEXT (`<cx:expr>`), but this renderer's
+label for a path is the steps-joined form its
+`render_path_or_fallback` produced: leading marker + step NAMES, with
+axes and predicates dropped (`/users/user[1]`, after the DRW3-2 rewrite
+`//users/user[1]`, labels as `//users/user` — fixture
+cfg-009-modify-three-actions). Text cannot become that label without
+re-parsing, and the renderer must not parse. **Adjudication:** the
+`"code"` image lift re-reads the hatch's own text with the engine's
+parser (bytes the engine itself emitted) and, when it IS a path
+expression, replaces the hatch with
+`<cx:path leading=…><cx:pstep name=…/>…`. Anything else the hatch
+covers (dynamic element names, operator-with-attrs) keeps the text
+form. Engine-side, `"code"` mode only; the `"ref"` image is untouched.
+
+**DRW3-7 — `of-source` is declared IMPURE.** Two of its four formats
+(`svg`, `png`) reach the graphviz hop, which is capability-charged
+(DR-2a); `mermaid` and `dot` perform no effect. A split surface (a pure
+entry for the text formats, an impure one for the vector formats) was
+considered and refused: the owner asked for ONE call taking a format,
+and a caller that wants a provably-pure render can still reach
+`render-mermaid` / `render-dot` with an image. The conservative
+annotation is honest — the purity checker accepts `impure`
+unconditionally and it is the callers of the vector formats who must be
+impure anyway.
+
+**DRW3-8 — the frozen public surface, and why the wave-2 internals stay
+public.** `guide-check` requires an `[fn-doc]` with a runnable example
+for every `scope=public` def, which put the question "what is actually
+this module's API?" on the table. Ruled: the public surface is the two
+entry points (`of-source`, `code-diagram`), the render verbs
+(`render-mermaid` / `render-dot` / `render-svg` / `render-png`), the
+three extractors, the two sealed tables and their lookups (`rules`,
+`admitted`, `code-rules`, `code-class`), the two dot-less envelopes,
+the two metadata splices, and `crc32` — eighteen functions, each now
+carrying an fn-doc whose example runs. The five that read as internals
+(the envelopes, the splices, `crc32`) are NOT privatised: each is a
+NAMED normative clause of this module's spec (§6 envelope contract,
+§8.1 splices) and each is a probe of the wave-2 hermetic vector gate
+(`diagram_vector_golden_test.v` reaches them through the seam, which
+can only call public defs). Privatising them would have bought a
+smaller surface by deleting gate coverage — refused. Everything else in
+the module (≈240 defs) is module-private.
+
+**DRW3-9 — `[err]`-named image elements: recorded, not papered over.**
+A CX source containing an `[err …]` element (e.g.
+`[?select [case [timeout 50ms] [err code="timeout"]]]`) lifts to an
+image element NAMED `err` — which the evaluator treats as an error
+VALUE, so handing that node to any def or reading it in a dynamic-child
+position propagates instead of rendering. The SEQ port hardened the
+readers the corpus reaches (child navigation, `[?let]` binding,
+sequence membership and splices are safe; calls and dynamic children
+are not), which is what makes fixture seq-004 byte-identical.
+**Residual, unreached by any golden and NOT worked around:** an `err`
+element in a position where an emitter must hand it to a def (e.g.
+`[?worker name="w" [err code="x"]]`, which V rendered as
+`Note over w : [err]`) still propagates. The honest fixes are a
+sequence-carrier convention for every node parameter (~40 defs) or an
+engine-side rename in the injected image; both are surface decisions,
+so they are POSED rather than invented here — see the owner question in
+the wave-3 report. The CFG half has the same exposure.
+
+**DRW3-10 — the CLI's refusal text is preserved.** `code_diagram_with_level`
+surfaces a module `[err …]` as a PLAIN V error carrying the module's
+message verbatim, not as an `EvalError` (whose `msg()` would prefix a
+wire code). `cx code-diagram` therefore still prints
+`cx code-diagram: [?def] parse: …` exactly as the V emitter's
+`error('[?def] parse: …')` did. The wasm export's own parse-error wire
+strings are likewise unchanged: `cx_code_diagram` keeps its diagnostic
+parse (the lift now happens inside the module), so its
+`CXER0100:parse: …` text is byte-identical.
+
+---
+
+## Wave-3 execution record (this session)
+
+### The DR-8 instrument
+
+`vcx/tools/regen_code_diagram_golden` captured **264 goldens** — 88
+sources × 3 levels — from the UNMODIFIED V emitter BEFORE the cutover:
+the 46 graph-view fixtures of `conformance/code_diagram.cxd` plus 42
+synthetic pins chosen by reading the emitter's arms (every SEQ inner
+directive including the whole await family and all six resilience
+policies; the CFG shapes the fixtures skip — nested `[?let]`, an
+over-cap basic block, a >30-char match arm, an unnamed `[?for]`,
+`[?if]` without else, cross-def calls; the ERD edges — every scalar
+kind, non-identifier entity names, FK inference, deep name collisions,
+the DOCUMENT suppression step-back; and the parse-failure fallbacks
+including both DRW3-2 patches). The conformance runner compares
+node-SETS and edge-SETS, so it cannot see line order, node-id minting
+order, or label bytes; this corpus does. Each id carries its
+`<id>.source` sidecar (this renderer embeds no source marker).
+`vcx/tests/code_diagram_golden_test.v` asserts byte equality:
+**264/264 bit-for-bit** on the CX renderer, through the shipped
+`code.code_diagram_with_level` entry.
+
+Zero movement elsewhere: the wave-1 mermaid corpus is 120/120
+unchanged, and it now renders THROUGH the new `of-source` path (the
+byte-identity proof for deliverable B).
+
+### What moved to CX
+
+`stdlib/diagram.cx` §9 (≈1,950 lines added): the pre-parse text layer
+(`strip_cx_pis` + both DRW3-2 patches, scanning by structural jumps
+rather than per-codepoint — the CX per-character cost makes a byte loop
+untenable, and every delimiter is ASCII so the jump is observationally
+identical); the image readers and the auto-detect classification
+(including the text-level fallbacks); the `short_label` twin; the whole
+CFG family (basic blocks with the 10-line cap, `[?if]`/`[?match]`/
+`[?for]`/`[?modify]`/`[?let]` emitters, def sub-graphs with their id
+scopes and self-recursion back-edges, min and full layers with the
+twelve colour classes, cross-def call edges, yield sentinels and
+binding circles); the whole ERD family (containment walk, cardinality
+promotion, row dedup, min, and the full level's DOCUMENT root, FK
+inference, value enumeration and occurrence badges); and the whole SEQ
+family (actor lanes, activation-depth arrow minting, channel aliasing,
+`alt`/`else` frames, resilience notes, async lanes, the full level's
+INPUT/OUTPUT lanes and binding notes). The two sealed tables (§1 for
+the reference renderer, §9.0 for this one) are the only classification
+sets in the module.
+
+### What V was deleted
+
+`vcx/code/code_diagram.v`: **3,219 → 69 lines**. Gone: `patch_paths`,
+`patch_match_arms`, `rewrite_match_inner`, `split_case_head`,
+`find_matching_close`, `strip_cx_pis`, `debug_patch_for_diagram_parse`,
+both text-level classifiers, `program_is_code` /
+`program_is_sequence_shape` / `node_is_sequence_trigger` /
+`is_data_statement` / `top_level_statements`, `CFGState` and every CFG
+emitter, `def_name_and_body` / `def_name_min_extract`, the ERD structs
+and walker with `erd_entity_name` / `scalar_type_str` /
+`is_scalar_child`, `short_label` / `render_path_or_fallback`,
+`SeqState` and every SEQ emitter, `collect_callees` / `collect_yields`
+/ `collect_binding_intros`, `sanitize_id`, and `mermaid_escape`. What
+remains is the level vocabulary and three thin entry points.
+
+New V (invocation and ingress only, zero text production):
+`vcx/code/stdlib_diagram.v` (the `diagram-program-image` primitive,
+chained into `stdlib_builtin`) and, in `diagram_cx_seam.v`,
+`diagram_lower_code` + `dgc_def_image` + `dgc_path_image` (the DRW3-4 /
+DRW3-6 image additions), the `code_diagram_cx` driver, the
+`render_of_source_cx` driver, and the two completeness-gate probes.
+
+### One path, no twin (deliverable B)
+
+`render_diagram` lost its redundant `prog` parameter and now routes
+through `[$diagram:of-source]`, so `cx diagram`, `cx eval --target=…`,
+the wasm `cx_code_diagram` export, the golden gates and the bench gate
+all enter the module through the caller-facing entry. Verified live:
+`[$diagram:of-source SRC "mermaid"]` and
+`cx diagram --format=mermaid FILE` produce the same bytes, and the
+120-golden wave-1 corpus is unmoved through the new route.
+
+### The DR-5 gate, extended
+
+`vcx/tests/code_diagram_completeness_gate_test.v` — six clauses over
+the wave-3 table (§10.2 of the module spec is the independent side):
+every row is a live registry directive; the declared classes are
+exactly the classes the emitter implements and the live dispatch is
+total over the registry; every row is corpus-exercised (with the await
+family's named emitter twins); the ERD type rows are exactly the §4
+scalar tags; an untabled directive takes the declared generic paths;
+and the spec tables ↔ the module table are SET-EQUAL both ways.
+
+**Drift-redness PROVEN at landing:** deleting the
+`[seq directive=cancel class=cancel …]` row reddened clause (vi)
+(`spec §10.2 rows with no module row: ['cancel']`) AND moved the
+`pin-seq-cancel` goldens (`Note over w : [?cancel]` instead of
+`w -x job : cancel`); restoring it returned both to green. Note which
+clause caught it: clauses (i)-(v) stay self-consistent under a matched
+deletion precisely BECAUSE the emitters read the table, which is why
+the spec side of clause (vi) is load-bearing.
+
+### The two guide breaks (fixed in this pass, same token)
+
+1. **`guide-check`** was red: twelve public defs had no `[fn-doc]`.
+   Ruled per DRW3-8 and fixed by documenting the real surface — every
+   public def now carries an fn-doc with an example that runs, and the
+   examples are BACKED by a new conformance corpus,
+   `conformance/stdlib/diagram.cxd` (18 cases, generated FROM the
+   fn-docs so they cannot drift, green in the stdlib fixture lane).
+   `guide-check` → OK, 60 modules.
+2. **`make guide`** was red: `guide_build.cx` data-parsed each stdlib
+   module whole (`[$cx:parse]`) to find its doc blocks, and
+   `diagram.cx` is the first module using program-only syntax the data
+   reader is RIGHT to refuse (a bare singleton sequence in
+   call-argument position; a node-valued attribute — E211/D2). The
+   module was not contorted. The SCANNER was fixed: `module-docs` now
+   reads the verbatim doc SPANS out of `[$cx:ast]` and parses each span
+   on its own — the technique the sibling gate
+   `scripts/gen_guide/stdlib_docs_check.cx` already used, so the two
+   cannot disagree about a module. `guide_build` → RC 0, and
+   `docs/guide/lib-diagram.html` renders all eighteen functions.
+   Regression fence: `stdlib_docs_check.cx` gained clause (6) — every
+   bundled module must project at least one doc span, so module #47
+   fails at the gate rather than silently taking the guide down.
