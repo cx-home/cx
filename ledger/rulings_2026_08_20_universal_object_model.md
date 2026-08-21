@@ -102,8 +102,79 @@ this re-base so its §3 CSRP framing cannot mislead.
   behavior (store_objgraph.v store_erase_doc_local; store_cxpack.v fold;
   store_porcelain gc/prune) and is hereby recorded as the ruled posture.
 
+- **UOM-1r2 (version-consistency rider, pre-existing red):** the tip carried
+  two unmarked version literals in `spec/02-working/diagram_renderer_cx.md`
+  (an owner-ruling citation and the literal branch name) failing
+  check_version_consistency tree-wide. Fixed with the check's own
+  `version-literal-ok` inline markers (genuine historical citations) — not
+  UOM scope, fixed in-line to keep the gate green throughout.
+
 (Ledger updated with dispositions as the phases verify/land below.)
 
 ### Execution record
 
-- (appended as work lands)
+**Live substrate-consistency probe (the owner's complaint, verbatim check)**
+— one program puts two docs sharing a fat subtree into `mem://`,
+`document+mem://`, `file://` (pack), `file://…?encoding=object-per-key`, and
+`document+file://` (flat index), then cross-checks:
+
+- store keys UNIVERSAL: the same doc yields the same store key on every
+  substrate and BOTH models (all six cross-equalities true);
+- round-trip byte-identical on all five mounts;
+- dedup live where subtree: logical=38 / distinct=28 IDENTICAL on
+  mem/pack/opk; document mounts honestly report the degenerate counts
+  (objects=2 for 2 docs).
+
+**Two genuine substrate-consistency defects found by the probe and FIXED
+(both `RULED: UOM-1`):**
+
+1. `store_status` reported **`remote=true` for a LOCAL `document+file://`
+   store** — the non-objgraph/non-columnar fallback arm assumed
+   remote/byte-source. Fix (store_porcelain.v): `remote` is emitted only
+   when ops actually route over a remote transport (`ms.remote` set); a
+   local flat store now reports plain `docs=N`. No golden pinned the old
+   behavior (checked conformance + tests).
+2. `store_objgraph_stats` **under-reported `object_count` for the pack
+   substrate** (live-sink remnant, e.g. 15, where mem/opk answered 28 for
+   the same docs): the pack backend carries its durable substrate in
+   `obj_pack`, which the stats counter skipped (it consulted only
+   `obj_backend`). Fix (stdlib_store.v): count from `obj_pack` when
+   attached — object_count's documented meaning ("distinct objects
+   physically held", durable + staged). In-memory cxpack test mounts
+   (obj_pack nil) keep the sink count, so the existing stats/fingerprint
+   tests and the mem-pinned conformance goldens are unmoved.
+
+**§6 wire-economy literal assertion added** (`RULED: UOM-1`,
+store_remote_object_test.v): through the REAL client funnel
+(`push_doc` = decompose → objects-have → objects-put of only the missing →
+refs-set), pushing a doc sharing a fat subtree with one already on the
+daemon transfers strictly fewer content bytes than the whole doc
+(`put_bytes < canonical.len`), the have probe fires, and the daemon serves
+the doc back byte-identical.
+
+**§6 conformance-gate mapping (all seven items, gated lanes):**
+
+1. Round-trip per substrate — mem/pack/opk: platform_store_pack +
+   platform_store_core umbrellas + live probe; sqlite:
+   test_store_sqlite_subtree_roundtrip_and_dedup (test-vcx-sqlite lane);
+   s3: test_s3_subtree_roundtrip_dedup_versionsharing (hermetic);
+   server mount: test_cxstore_object_wire_put_get_roundtrip +
+   test_xsp_client_full_surface (store_remote umbrella).
+2. Dedup (object-count delta) — test_cxobj_dedup_* (pack umbrella GATE 2),
+   test_objgraph_stats_object_count_and_dedup (core), sqlite + s3 lanes.
+3. Version sharing — test_cxobj_version_sharing (pack umbrella GATE 3),
+   s3 subtree lane, modify-structural-sharing (core umbrella).
+4. Cross-tier object identity —
+   test_remote_object_backend_client_wire_crosstier (same object hashes
+   embedded vs wired; objects-have reports the overlap).
+5. Wire economy — test_cxstore_object_wire_economy (daemon object-count
+   delta < decompose count) + the NEW bytes-on-wire assertion above.
+6. Universal integrity — test_object_backend_self_verifies_on_read,
+   test_cxobj/pack corruption tests (CXER1120),
+   test_store_sqlite_corruption_is_hard_error,
+   test_s3_subtree_corruption_is_hard_error, wire CXER5017
+   (xsp regression guards).
+7. Full gate — test-vcx battery + doc gates (recorded below).
+
+**Lane RCs and shas:** recorded in the closing section as the battery
+completes.
