@@ -234,3 +234,45 @@ light theme. Colour is now stated on the root.
 Spec: ux.md §18.6 gains [P0-128] (an offered control must be reachable and
 must take effect) and §19.2a records the orientation-outranks-width rule.
 Spec commits carry `RULED: DS-18`.
+
+## Addendum — DS-19: the third owner walkthrough (2026-08-21)
+
+- **DS-19a — a thumbnail is not a map.** A 960×1610 drawing shown 307px wide in
+  the rail is a rumour of a diagram. The map opens over the whole viewport with
+  the drawing INLINED — so its nodes are elements a click can land on rather
+  than a picture of clickable things — with zoom including fit-the-whole-surface,
+  and every route and block as a door into editing it. Corollary, learned the
+  hard way: **an exported drawing must be legible without its stylesheet.**
+  Under the page's CSP (`style-src 'self'`) a transplanted `<style>` is an
+  inline stylesheet and is REFUSED, so every `var()` fell back to black and the
+  whole map rendered as a black rectangle with 55 invisible labels. Colours are
+  presentation attributes now; the style block carries only the dark-mode
+  override, which is a standalone-viewing concern.
+- **DS-19b — a control must not lose the designer's place.** Applying a colour
+  in Brand "bounced back to the inspector": a theme or shell commit reloads the
+  page (the stylesheet and the chrome are not region-refetchable) and the studio
+  came back on the Design tab. The open panel is part of where the designer IS
+  and survives the reload. It is a view position, not a document, so it lives in
+  the session and never in the journal.
+- **DS-19c — the bar fits.** The owner's "layout gibberish": every box was
+  placed correctly and the content of one was 89px wider than its track. A
+  search form's intrinsic width is its input plus its button; a flex item that
+  wide does not shrink, it overflows — and under right-alignment it overflows
+  LEFTWARD, sliding the input in under the menu. `min-width: 0` is what lets a
+  flex item honour the track it was given. The default split moves to eight
+  columns for the menu and four for the search, because a search is two
+  controls and three columns could not hold both. And a menu item's label does
+  not wrap mid-phrase — stated only inside the narrow media query, so a
+  squeezed bar broke "Basket · 0 items · $0.00" across two lines at full width.
+- **DS-19d — a loud palette colours the GROUND.** "Very bland… I was looking
+  for bright, almost obnoxiously colorful." A palette that repaints the accent
+  and leaves every surface white reads as bland whatever the accent is. The
+  vivid ones now set the ground, the cards, the wash, the price, the stars and
+  the tone colours: Kids is yellow ground / hot pink / navy ink at pill radius,
+  Tie-dye is violet on lilac, Neon is acid green on near-black, Candy and
+  Sunset join them. The sober ones — Editorial, Ink, Executive, High contrast —
+  stay sober on purpose: a house style and a party are different jobs.
+
+Spec: ux.md §18.6 records the place-keeping rule under [P0-128] and the
+legible-without-its-stylesheet rule under [P0-124]. Spec commits carry
+`RULED: DS-19`.
