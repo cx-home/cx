@@ -145,15 +145,10 @@ html, body {
   font-size: 11px;
   letter-spacing: -0.02em;
 }
-.cxp-viz-src-toggle {
-  margin-left: 12px;
-  min-width: 64px;
-  text-align: center;
-}
-.cxp-viz-src-toggle::before {
-  content: '⇄  ';
-  opacity: 0.6;
-}
+/* Subject toggle — names what the View pane is showing (the program,
+   the value it produced, or both). Before this the subject was implicit
+   and the pane could not say which of the two you were looking at. */
+.cxp-subject-group { margin-left: 6px; }
 .cxp-detail-group { margin-right: auto; margin-left: 6px; }
 .cxp-detail-tab {
   padding: 3px 10px;
@@ -259,6 +254,8 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  row-gap: 5px;
+  flex-wrap: wrap;
   padding: 6px 12px;
   background: var(--bg-head);
   border-bottom: 1px solid var(--border);
@@ -327,7 +324,7 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   letter-spacing: 0;
   font-weight: 500;
 }
-.cxp-tab, .cxp-viz-tab {
+.cxp-tab, .cxp-viz-tab, .cxp-subject-tab {
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -340,11 +337,12 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   text-transform: uppercase;
 }
 .cxp-tab + .cxp-tab,
-.cxp-viz-tab + .cxp-viz-tab { border-left: none; }
-.cxp-tab:first-child, .cxp-viz-tab:first-child { border-radius: 3px 0 0 3px; }
-.cxp-tab:last-child,  .cxp-viz-tab:last-child  { border-radius: 0 3px 3px 0; }
-.cxp-tab:hover, .cxp-viz-tab:hover { color: var(--text); background: var(--bg-hover); }
-.cxp-tab.is-active, .cxp-viz-tab.is-active {
+.cxp-viz-tab + .cxp-viz-tab,
+.cxp-subject-tab + .cxp-subject-tab { border-left: none; }
+.cxp-tab:first-child, .cxp-viz-tab:first-child, .cxp-subject-tab:first-child { border-radius: 3px 0 0 3px; }
+.cxp-tab:last-child,  .cxp-viz-tab:last-child,  .cxp-subject-tab:last-child  { border-radius: 0 3px 3px 0; }
+.cxp-tab:hover, .cxp-viz-tab:hover, .cxp-subject-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cxp-tab.is-active, .cxp-viz-tab.is-active, .cxp-subject-tab.is-active {
   background: var(--accent);
   border-color: var(--accent);
   color: #0e1116;
@@ -422,6 +420,39 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   background: var(--bg-input);
 }
 .cxp-viz-content.is-active { display: block; }
+
+/* Subject sections inside the View pane. In `all` mode the program and
+   the value it produced are STACKED, not side by side: the pane is the
+   right-hand column (a third of the viewport by default), so splitting
+   it again would leave each half too narrow for an indented tree or a
+   Mermaid diagram. Stacking also matches the reading order — the
+   program above the value it evaluated to. */
+.cxp-viz-part + .cxp-viz-part {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-soft);
+}
+.cxp-viz-part-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+  user-select: none;
+}
+.cxp-viz-part-head .cxp-viz-part-note {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 6px;
+}
+/* Graph blocks carry their own padding: the canvas is edge-to-edge so
+   the zoom toolbar can pin to its corner. */
+#cxp-viz-graph .cxp-viz-part + .cxp-viz-part { margin-top: 18px; }
+
 .cxp-viz-placeholder {
   color: var(--text-dim);
   font-style: italic;

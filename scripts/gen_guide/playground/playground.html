@@ -67,9 +67,12 @@
   <section class="cxp-pane cxp-viz-pane">
     <div class="cxp-pane-head">
       <span>VIEW</span>
-      <button id="cxp-viz-src-toggle" class="cxp-mini-btn cxp-viz-src-toggle"
-              type="button" data-vizsrc="source"
-              title="Toggle which content the view pane visualizes">Source</button>
+      <span class="cxp-tabs cxp-subject-group" role="tablist"
+            title="Choose the subject: the program you wrote, the value it produced, or both">
+        <button class="cxp-subject-tab is-active" data-subject="source" type="button">Source</button>
+        <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
+        <button class="cxp-subject-tab"           data-subject="all"    type="button">All</button>
+      </span>
       <span class="cxp-tabs cxp-detail-group" role="tablist"
             title="Adjust how much detail nodes show (attributes, scalar bodies)">
         <button class="cxp-detail-tab" data-detail="min"     type="button">Min</button>
