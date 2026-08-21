@@ -46,3 +46,23 @@ such below. The letter: design/787/w27/studio-2.md.
 Spec edits under these rulings carry tokens `RULED: DS-4`, `RULED: DS-5`,
 `RULED: DS-6` (P0-111/P0-112/P0-113). The standing owner protocol from this
 review: every delivered iteration ends with a concise "try this" list.
+
+## Addendum — DS-11: the studio gets a normative spec section (owner, 2026-08-20)
+
+**Owner directive:** *"we really need a spec for this so we can keep track of
+where we're going."* SPEC AUTHORIZED for a consolidating section — `ux.md §18,
+"The studio — the editing model"` — which states, normatively and in one
+place: the three editable planes and their documents; base-document + journaled
+fold semantics; the multi-document render (shell + route arrangements) and its
+id-uniqueness obligation; gestures-as-commands (no gesture may bypass the
+journaled wire); the FLEET model (cascade levels, per-tenant pins, adopt-base
+as a journaled act with fleet preflight, refusal triage, the three deploy
+channels) — the durable answer to "how do improvements reach many clients
+without wiping their customizations"; and a STATUS LADDER distinguishing what
+is built and normative from what is ruled-but-unbuilt, so the roadmap is
+tracked in the spec rather than in conversation.
+
+Clauses land as [P0-114]…[P0-120]. The fleet clauses are ruled as the MODEL
+(the shape every implementation must take); their implementation is a named
+campaign, not a claim of shipped behavior — the ladder says which is which.
+Spec commits carry `RULED: DS-11`.
