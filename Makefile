@@ -544,7 +544,11 @@ check-code-spec-consistency:
 # the tree it is gating is not a gate.
 .PHONY: check-code-fixtures
 check-code-fixtures: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-check-code-fixtures: build-vcx-dev
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+check-code-fixtures: build-vcx
 	@$(PYTHON) scripts/check_code_fixtures.py > /dev/null && echo "check-code-fixtures OK — 1000+ fixtures: ids/directives/error-code coverage green (run the script directly for the JSON report)"
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
@@ -646,7 +650,11 @@ EXTRACTION_GATE_FLOOR := 1564
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 .PHONY: test-extraction-gate
-test-extraction-gate: build-vcx-dev
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+test-extraction-gate: build-vcx
 	@$(MAKE) -C vcx build-data-dev
 	@mkdir -p vcx/target/extraction_gate
 	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
@@ -681,7 +689,11 @@ address-baseline-capture:
 	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v --capture
 
 .PHONY: abi-gc-gate
-abi-gc-gate: build-vcx-dev
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+abi-gc-gate: build-vcx
 	@$(MAKE) -C vcx build-data-dev
 	@mkdir -p vcx/target/extraction_gate
 	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
@@ -706,7 +718,11 @@ abi-gc-gate: build-vcx-dev
 # diff went red on any dependency rebuild with no CX change. Symbol names
 # are underscore-normalized, so one baseline serves Darwin AND Linux —
 # the platform SKIP is retired.
-libcx-abi-gate: build-vcx-dev
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+libcx-abi-gate: build-vcx
 	@tools/libcx-abi-gate.sh $(LIBCX_ART)
 
 # ── I4 PROFILE CORPUS GATE (#651/#516, spec §4/§7) — each §4 profile builds
