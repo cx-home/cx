@@ -51,6 +51,68 @@ redefinition of it.
   tree-sitter parser with a headless load-proof (#883), lazy.nvim `dir=`
   spec, VS Code VSIX.
 
+### Added — the surface-completion wave (2026-08-21)
+
+The owner's directive for this window: it is the last chance to change
+surfaces across the rings before production clients, after which every
+change carries per-engagement migration cost. These landed under that rule.
+
+- **`cx-stdlib/supervise` (#765)** — restart policies over monitored
+  workers: `:one-for-one` / `:one-for-all` / `:rest-for-one`, per-supervisor
+  restart intensity, per-child exponential backoff with window reset,
+  dynamic children, an observable event stream, and supervision trees by
+  composition. Pure CX over the shipped worker/monitor/select/channel/timer
+  primitives — no new engine primitive, no capability.
+- **`cx-stdlib/diagram` (#758, #889)** — the `code.md` §10.1.2 reference
+  renderer AND the control-flow / entity / sequence renderer both move from
+  V to CX. `code_diagram.v` went 3,219 → 69 lines and `diagram.v` 1,661 →
+  399; the only effect left is one `dot` invocation under `subprocess`.
+  §10.1.1's own sentence — "the renderer is itself a CX program" — is true
+  for the first time. New caller-facing entry `[$diagram:of-source]`.
+- **Uniform postfix path steps (#886)** — every program-position bracketed
+  form's closing bracket now takes the compact step postfix (directive
+  results, operator forms, every literal), not just bindings and calls.
+  One rule, no special cases, nothing to migrate later.
+- **The universal store model** — content-addressed piece storage is
+  available across every substrate (memory, pack, object-per-key, SQLite,
+  S3) and the server tier, with whole-document mode as the compatibility
+  option; the six guarantees (universal dedup, version sharing, cross-tier
+  object identity, self-verifying integrity, canonical round-trip,
+  model-invisible API) are now normative in `store.md`.
+- **Durable feed lineage everywhere (#764, #885, #887)** — data-plane resume
+  cursors survive daemon restarts on local substrates, s3-rooted stores and
+  the columnar backend alike. Zero wire change.
+- **One-command editor install (#874, in-repo half)** — `tooling/install/`
+  with a signed, load-proofed tree-sitter parser and a lazy.nvim spec.
+- The `[?cx]` fixture generator is now CX (#856), the store examples lead
+  with TLS (#745), and `cx -v` reports the DB engines compiled in (#520).
+
+### Fixed — the surface-completion wave (2026-08-21)
+
+- **`[?try-send]` silently lost values sent to fan-out channels** — it
+  answered `[ok]` while the value went to a queue no subscriber reads. Found
+  by sweeping every channel-delivery path after the same class was fixed in
+  the scheduler's timer ticks; both instances are now pinned by conformance
+  cases.
+- **The scheduler's timer ticks never reached fan-out channels** at all — a
+  dead delivery path nothing had exercised until the supervisor did.
+- **`cx diagram --format=svg` emitted malformed SVG** — the source carrier
+  was spliced into the document prolog, so every SVG the tool ever produced
+  was invalid. It now sits where SVG 1.1 puts metadata, and validity is a
+  gate with a negative case pinning the old bytes as rejected.
+- **The `svg`/`png` diagram formats now require an explicit `subprocess`
+  grant** rather than granting themselves one, and a denial is reported
+  rather than silently substituted with the graphviz-absent fallback.
+- **The guide silently truncated nine pages** past ~195 code spans, shipping
+  two ring arcs at roughly a third of their length; the builder now refuses
+  to emit a partial page.
+- **The DSN diagnostic told you to rebuild your binary when your URL was
+  malformed** (#520), and `sqlite::memory:` did not parse at all.
+- **The libcx ABI gate compared vendored C++ symbols** and would have gone
+  red on any toolchain rebuild with no CX change (#888); it now pins the CX
+  surface and additionally verifies that every entry point declared in the
+  public header is exported.
+
 ### Fixed — at the cut (2026-08-20)
 
 - **#883**: macOS killed Neovim (and its spawning TUI) on every parser
