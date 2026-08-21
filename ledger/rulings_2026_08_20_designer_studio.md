@@ -66,3 +66,43 @@ Clauses land as [P0-114]…[P0-120]. The fleet clauses are ruled as the MODEL
 (the shape every implementation must take); their implementation is a named
 campaign, not a claim of shipped behavior — the ladder says which is which.
 Spec commits carry `RULED: DS-11`.
+
+## Addendum — DS-12: design control, and the adopter→client contract (owner, 2026-08-20)
+
+**Owner framing (verbatim intent):** the studio is **CX PLATFORM capability**,
+so an **adopter** can build an app for their own use *or redistribute it to
+their clients with customizations* — *"customizations without creating a
+nightmare upgrade scenario."* Plus the review verdict: a UX designer looking at
+today's studio would say *"we have no control, no way to differentiate and make
+it beautiful."*
+
+Both are ruled as one section because they are one problem: an adopter can only
+differentiate if the studio gives real design control, and can only
+redistribute if customization survives upgrade.
+
+- **DS-12a — the container plane.** Layout containers carry real layout
+  intent — track count, gap, alignment, padding, ground — as CLOSED,
+  TOKEN-VALUED variants, never CSS and never pixels. Admissible under P0-20 /
+  P0-53 because every face can honor them natively (a terminal has columns and
+  blank lines). Landing now: `columns` (cols/gap/align) and `group`
+  (pad/tone/align); the section kit and per-element style variants follow.
+- **DS-12b — containment is declared.** A container states what it ACCEPTS;
+  an unaccepted place or move refuses (`ux-layout-not-accepted`). Ground: the
+  owner placed a search box inside the nav's item list and the system produced
+  garbage, because nothing said no. A studio that lets a reasonable gesture
+  produce an invalid tree is not a design tool.
+- **DS-12c — the adopter's product is the VENDOR level.** An adopter's app is
+  a vendor-level bundle (base arrangements + registry + theme + allow
+  document), content-addressed and versioned; each client is a tenant with
+  their own command streams at tenant/surface level. This is what P0-13
+  reserved the vendor level for, and populating it is now the named next
+  campaign — it is the redistribution story, not an optimization.
+- **DS-12d — upgrade is replay with preflight, fleet-wide.** As P0-119/P0-120
+  already rule: three deploy channels, per-tenant pins, `adopt-base` as a
+  journaled act whose dry run classifies every customization clean / drifted /
+  refused, runnable across every client before release, refusals surfaced as
+  decisions, breaking changes shipping migration commands.
+
+Spec: ux.md §19 states DS-12a/b as normative clauses [P0-121]/[P0-122] and
+records the adopter→client contract as the framing §18.5's fleet clauses
+serve. Spec commits carry `RULED: DS-12`.
