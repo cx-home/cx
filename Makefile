@@ -699,15 +699,15 @@ abi-gc-gate: build-vcx-dev
 # semantics differ); a Linux baseline joins if/when the linux lane runs
 # TEST_TARGETS (it builds only today).
 .PHONY: libcx-abi-gate
+# #888: the gate checks the CX EXPORT SURFACE (cx_*/vgc_*, pinned) and
+# HEADER/BINARY AGREEMENT (every include/cx.h entry point is exported).
+# Vendored statics (re2/abseil/zstd — 543 symbols, toolchain-vintage
+# dependent) are counted as an advisory, never asserted: the old full-nm
+# diff went red on any dependency rebuild with no CX change. Symbol names
+# are underscore-normalized, so one baseline serves Darwin AND Linux —
+# the platform SKIP is retired.
 libcx-abi-gate: build-vcx-dev
-ifeq ($(shell uname -s),Darwin)
-	@nm -gU $(LIBCX_ART) | awk '{print $$3}' | sort > vcx/target/libcx_exports_current.txt
-	@diff vcx/tests/runners/abi_gate/libcx_exports_baseline_darwin.txt vcx/target/libcx_exports_current.txt \
-	  && echo "libcx-abi-gate OK — export surface identical to the I3-cut baseline ($$(wc -l < vcx/target/libcx_exports_current.txt | tr -d ' ') symbols)" \
-	  || { echo "libcx-abi-gate FAILED — libcx export surface changed (diff above; baseline vcx/tests/runners/abi_gate/)"; exit 1; }
-else
-	@echo "libcx-abi-gate SKIP — no $(shell uname -s) baseline (Darwin-only; see comment)"
-endif
+	@tools/libcx-abi-gate.sh $(LIBCX_ART)
 
 # ── I4 PROFILE CORPUS GATE (#651/#516, spec §4/§7) — each §4 profile builds
 # and passes its ring-tagged corpus: the vcx recipe builds the full profile
