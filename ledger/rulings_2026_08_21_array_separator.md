@@ -41,3 +41,25 @@ re-blessed.
 **Not in scope.** Element parsing (`[name …]` stays an element — `[true (2,3)]`
 is an element named `true`, which is correct), the comma-makes-a-sequence rule
 for `(…)`, sequence and map slots.
+
+## ASP-1a — the same fault at the TOP LEVEL (#906)
+
+Found while verifying the playground with the engine actually running: the
+page showed a sequence example as a quoted string, and the page was right.
+The DATA reader returned the STRING `"(1, 2, 3)"` for a whole-document
+`(…)`, while the SAME bytes read as a sequence nested in an element body and
+evaluated as a sequence by the PROGRAM reader — three readings of one
+literal, the odd one silent and stable under canonicalization, so it would
+have taken a legitimate content address.
+
+Cause: the top-level dispatch had a branch for a `{…}` map literal
+(`peek_is_map_literal_at_brace`) and none for `(…)`, so a parenthesised run
+fell to the bare-text path. Fixed by giving sequences the branch maps
+already had, guarded the same way — a comma-less `(x)` still falls through
+to text, per the rule ASP-1 recorded.
+
+Corpus: the #906 change moved NO counts (no corpus document opens with a
+top-level `(…)`). The single baseline movement in this landing (+1 total,
++1 cx_only, 827→828) is ASP-1's own new conformance case, which the data
+reader accepts and the program reader declines — recorded in the baseline
+comment with that reason rather than re-blessed.
