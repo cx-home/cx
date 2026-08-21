@@ -192,9 +192,20 @@
          code-diagram FILE` renders a locked sequence-diagram view
          of a program; `cx code-tree FILE` renders the evaluation
          tree. The playground's Diagram toggle uses the same
-         renderers via WASM (see [[playground]])."""]
+         renderers via WASM (see [[playground]]).
+
+         `mermaid` is pure text and needs nothing. The `svg` and
+         `png` formats render through graphviz `dot`, which is a
+         subprocess — so they require the ordinary
+         `--allow-subprocess` grant, exactly like any other effect
+         in CX. Without it the command refuses (`CXER0271`) rather
+         than quietly handing back a diagram you didn't ask for.
+         With the grant but no `dot` installed you get the
+         dot-less envelope: a 1×1 placeholder that still carries
+         the program source, so it still reverse-parses."""]
     [example lang=sh
       """$ cx diagram config.cx --format=mermaid
+         $ cx diagram config.cx --format=svg --allow-subprocess -o config.svg
          $ cx code-diagram pipeline.cx
          $ cx code-tree pipeline.cx"""]]
 

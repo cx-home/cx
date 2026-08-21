@@ -81,7 +81,7 @@
         [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
         [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]
         [tr [td 'cx lsp'] [td 'Language server on stdio']]
-        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png)']]
+        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png; svg and png need --allow-subprocess for graphviz)']]
         [tr [td 'cx code-diagram FILE'] [td 'Sequence diagram of a CX program']]
         [tr [td 'cx code-tree FILE'] [td 'Evaluation-tree rendering of a CX program']]
         [tr [td 'cx store-serve'] [td 'Serve a cx-store (platform profile only)']]
@@ -935,8 +935,9 @@
                 graphviz for richer (DOT-based) renders. Designed
                 (the editor / CI integration story) but **not
                 shipped** — no service directory exists; the CLI's
-                graphviz shell-out (`cx diagram --format=svg|png`)
-                covers the richer-render need locally."""]
+                graphviz hop (`cx diagram --format=svg|png
+                --allow-subprocess`) covers the richer-render need
+                locally."""]
         [item """**Tier 3** — wasm-graphviz inline. Planned
                 follow-up. Eliminates the Tier-2 service hop while
                 keeping the richer-render output quality."""]]
