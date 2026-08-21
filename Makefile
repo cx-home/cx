@@ -1291,7 +1291,7 @@ test-vcx-columnar: build-vcx-dev
 	  echo "$$line"; mkdir -p vcx/target; echo "$$line" >> $(CX_SKIP_LOG); \
 	else \
 	  $(MAKE) -C vcx arrow-shim && \
-	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v; \
+	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
 	fi
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
