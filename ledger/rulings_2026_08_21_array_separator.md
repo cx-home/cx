@@ -63,3 +63,31 @@ top-level `(…)`). The single baseline movement in this landing (+1 total,
 +1 cx_only, 827→828) is ASP-1's own new conformance case, which the data
 reader accepts and the program reader declines — recorded in the baseline
 comment with that reason rather than re-blessed.
+
+## ASP-1 REVERTED (2026-08-21, same day) — the uniform rule collides with mixed-content slots
+
+The implementation of ASP-1 shipped and then failed the full suite in four
+lanes. Root cause: a comma-delimited array slot is ALSO how CX code
+directives carry mixed content —
+`[?if [@stock > 0, In stock: [?=@stock], out of stock]]` is a three-slot
+array whose middle slot is a SequenceNode of text + interpolation. ASP-1's
+"whitespace separates items" made that slot's parts separate array items,
+so the directive read four slots instead of three.
+
+Both behaviors are wanted and they are not distinguishable by the rule as
+ruled: `[1 (2, 3)]` should be two items, while `In stock: [?=@stock]` must
+stay one. The parser changes are therefore REVERTED in full (the slot
+reader's flag, the comma-optional array loop, and the paren-at-slot-head
+branch), along with the conformance case and the corpus baseline movement
+that pinned them.
+
+**#903 is therefore REOPENED**, and the ruling needs re-posing with this
+evidence: option (b) as stated is not implementable without also deciding
+what happens to mixed-content slots, which the option set did not consider.
+The surgical option (a) — leave the comma rule alone and only stop a
+whitespace-preceded `(` from being absorbed into the preceding scalar — was
+not affected by this collision and remains available.
+
+**ASP-1a (#906) is UNAFFECTED and stays landed:** the top-level sequence
+branch is in the document dispatch, not the slot reader, and all four lanes
+are green with it in place.
