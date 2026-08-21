@@ -49,6 +49,7 @@ FREEZE_EPOCH=f964c16a
 # where the ruling is recorded; the skip is LOUD (no-silent-skip rider,
 # GATE_REGISTER.md). Full 40-char shas only.
 ADJUDICATED_SHAS="
+0f82c1d36a8a28bddd92442deffb7d94ad692c02 #520 — the DSN-diagnostic fix; the spec-side touch is ONE mechanical version-literal genericization in a 02-working DESIGN LETTER (required by check-version-consistency), no clause or claim changed; ruled under the owner standing autonomy grant 2026-08-20 and recorded LATE per R5.0 in ledger/rulings_2026_08_21_dsn_diagnostic_late_record.md — Class S. NOTE: adjudication authored by the agent that made the miss; flagged for owner review in the cut package.
 c920cd9d18b559183a4bc8ea476e1336eee8ada0 #869 — the ORIEL promotion executing TWO recorded rulings (packaging 2b in ledger/rulings_2026_08_19_787_guide_and_packaging.md; R9.2 in ledger/rulings_2026_08_19_0160_cut_path.md): the spec-side paths are the MOVED demo estate, not spec prose; token omitted from the pushed message — Class S
 72a6ea437e01e9be9ab1d7dad43a35622f195752 #865 — wave rulings RW65.1/RW65.2 recorded in ledger/rulings_2026_08_19_865_wave.md BEFORE the work (owner '1a 2a'); the commit message cited the ruling ids but omitted the RULED: token — Class S
 550f8a1a272ad2e0217fccdb5f0ec44e7e453154 #727-destination-(a) — owner-directed, recorded in the commit message + issue #727; register row: partition_I5_exit_review_packet.md §9 (exit-4a execution record)
