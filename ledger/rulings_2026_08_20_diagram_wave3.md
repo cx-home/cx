@@ -329,3 +329,33 @@ the spec side of clause (vi) is load-bearing.
    Regression fence: `stdlib_docs_check.cx` gained clause (6) — every
    bundled module must project at least one doc span, so module #47
    fails at the gate rather than silently taking the guide down.
+
+### Gate results (wave 3) — every RC from the log
+
+| Gate | RC | Note |
+|---|---|---|
+| `make build-vcx-dev` | 0 | |
+| `make test-code-diagram` | 0 | 52 passed / 0 failed of 52 — the §D3/§D4 conformance runner, now driving the CX renderer through the wasm ABI export |
+| `code_diagram_golden_test` | 0 | **264/264 byte-identical** |
+| `code_diagram_completeness_gate_test` | 0 | six clauses; drift-redness proven and reverted |
+| `diagram_of_source_test` | 0 | the #889 byte-identity pin (CLI ↔ a CX program's call) |
+| `diagram_mermaid_golden_test` | 0 | 120/120 — wave-1 corpus unmoved through the new of-source route |
+| `diagram_vector_golden_test` | 0 | DOT + both envelopes + both splices + CRC vectors unmoved |
+| `diagram_completeness_gate_test` | 0 | the wave-1 gate |
+| `diagram_bench_gate_test` | 0 | DR-6 budget still met with the render routed through of-source |
+| `code_diagram_roundtrip_test` | 0 | gate 9, both roads |
+| `stdlib_umbrella_test` | 0 | |
+| `eval_semantics_umbrella_test` | 0 | RED first — the #788/#818 purity-parity canary caught `of-source` (DRW3-7 addendum); green after the hop was inlined |
+| `make guide-check` | 0 | 60 modules — was RED before this pass |
+| `guide_build.cx` | 0 | was RED before this pass; `docs/guide/lib-diagram.html` renders all eighteen functions |
+| `make verify-doc-blocks` | 0 | |
+| `make stdlib-catalog-gate` | 0 | |
+| `make libcx-abi-gate` | 0 | the `cx_*` export surface is unchanged — no re-bless (DRW3-5) |
+| `make verify-playground-examples` | 0 | 182 examples clean & current |
+| conformance fixture lane | 0 for `diagram` | the 18 new `conformance/stdlib/diagram.cxd` cases pass (the only reds in that ad-hoc run were the pre-existing `db` cases, which need the `-d cx_db_*` engine flags `make test-vcx` passes) |
+
+The playground's browser smoke (`scripts/test_playground_smoke.sh`) is
+NOT runnable here: it needs `dist/wasm/`, and the wasm build is blocked
+on this machine (emcc). The ABI gate plus the 264 goldens through the
+same `code_diagram_with_level` entry the export calls are the standing
+evidence for the playground path.
