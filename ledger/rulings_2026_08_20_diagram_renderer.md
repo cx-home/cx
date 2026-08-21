@@ -226,6 +226,105 @@ banked before the port.
   debugging of data trees carrying `cx:*` names is hampered by the
   E210 authoring refusal (correct for authored source, but there is no
   blessed way to CONSTRUCT such a test fixture in pure CX).
+- **C12** (wave 2) — `security.md` §2 specifies an *allowed
+  executables* constraint for the `subprocess` capability and
+  `CapSet` carries the `exec_allow` field, but nothing populates or
+  enforces it: `main.v` parses a `=`-scope only for `net`, and
+  `cap_guard('subprocess', name)` checks the boolean alone. So
+  DR-2a's "executable allowlist `["dot"]`, the constraint field used
+  as designed" is HALF available today — the capability is
+  all-or-nothing. Recorded, not worked around: the module's argv is a
+  literal `"dot"`, so wiring the constraint later narrows the grant
+  with no change to the renderer. Spec-vs-engine gap, follow-up filed.
+- **C13** (wave 2) — the ast.md §4 projection CONFLATES a directive
+  with a same-named value image: `<cx:str>` is emitted both for a
+  string literal and for a `[?str]` directive, `<cx:map>` for both a
+  map literal and `[?map]`. A consumer that must know which (the DOT
+  walk does — V emitted a node for the directive and nothing for the
+  literal) cannot recover it from the tag, and asking the grammar
+  registry gets it WRONG: `str` is a registry name, so every string
+  literal rendered as a spurious `[?str]` node. Caught by the
+  pre-cutover DOT goldens. Fixed structurally rather than by
+  heuristic: the seam marks directive/for-comp elements `cx-node=` on
+  the INJECTED image (not on the §4 wire projection), which also let
+  the registry injection be removed entirely. The §4 projection's own
+  ambiguity stands as a spec finding.
+- **C14** (wave 2) — a capability denial is an err VALUE, and binding
+  it in a `[?let]` PROPAGATES railway-style (#853). The dot-less
+  envelope was therefore unreachable by construction: withholding
+  `subprocess` blew up the render instead of degrading it. Gate 9,
+  which runs with no capabilities granted, caught it. The hop is now
+  coalesced with `[?else]` to an internal sentinel before binding.
+  Generalizable lesson for any "try an effect, fall back" shape in CX:
+  `[?let]` is the wrong instrument; coalesce first.
+
+---
+
+## Wave-2 execution record (this session)
+
+Scope per DR-9a: DOT emission, the SVG/PNG metadata splices, the PNG
+CRC-32 and chunk construction, both dot-less envelopes, and the
+graphviz hop move to CX; `shell_dot` / `import_os_execute` are
+DELETED. `vcx/code/diagram.v` now holds no renderer logic at all —
+only the format-string surface and dispatch to the seam — and no
+longer imports `os`.
+
+### Mini-rulings (DR-8 adjudications)
+
+**DRW2-1 — `cx diagram --format=svg|png` grants `subprocess` itself.**
+After DR-2a the graphviz hop is capability-charged, but the `cx
+diagram` subcommand parses no capability flags, so the shipped
+behavior (`--format=svg` produces a real graphviz SVG on a machine
+with `dot`) would have silently become the 1×1 envelope. DR-8's
+default-winner rule forbids that inside a port. Adjudication: the
+subcommand exists to produce a rendered diagram, so requesting a
+graphviz format IS the request to run `dot`; the grant is made at that
+surface. Mermaid stays capability-free. Every OTHER caller must grant
+explicitly and otherwise gets the envelope. The alternative — demand a
+second `--allow-subprocess` flag — is a deliberate UX change and is
+named here so it can be flipped by ruling rather than by drift.
+
+**DRW2-2 — the malformed-SVG splice is PRESERVED.**
+`inject_svg_metadata` splices after the FIRST `>` in the document. On
+real graphviz output that is the end of the `<?xml …?>` declaration,
+so the metadata block lands before the `<!DOCTYPE>` and outside the
+root element: the shipped SVG is not well-formed XML. Verified live
+against graphviz 14.1.3. The bit-for-bit bar keeps it (the port
+reproduces it exactly, byte-verified); the defect is recorded here
+with a follow-up rather than repaired inside a port that must show
+zero movement. Round-trip is unaffected — the extractor scans for
+`<cx:source` anywhere.
+
+### The wave-2 instrument
+
+graphviz's own output is version- and font-dependent and is NOT
+goldenable across machines, so the corpus
+`vcx/tests/testdata/diagram_vector_golden/` pins the DETERMINISTIC
+halves, captured from the unmodified V code BEFORE the cutover: the
+DOT text for all 20 supported fixtures, both dot-less envelopes, and
+both splices applied to FIXED inputs. `diagram_vector_golden_test.v`
+is hermetic (never spawns `dot`, needs no capability) and adds
+known-vector pins for the CX CRC-32. The live end-to-end graphviz hop
+stays gate 9's job, and gate 9 now pins BOTH roads explicitly: the
+graphviz path (capability granted in the harness, so the lane keeps
+the coverage it always had) and the dot-less path (capability
+withheld — the envelope must still round-trip).
+
+Verified live beyond the goldens: the CX SVG for viz-020 is
+byte-identical to the V algorithm applied to the same graphviz output,
+and the CX PNG carries a valid `tEXt` chunk after IHDR with a
+zlib-verified CRC whose payload round-trips to the exact source.
+
+### Gate results (wave 2)
+
+diagram_vector_golden OK · diagram_mermaid_golden OK (120/120, still
+bit-for-bit after the cutover) · diagram_completeness_gate OK ·
+diagram_bench_gate OK · code_diagram_roundtrip OK (both roads) ·
+stdlib_umbrella OK · eval_semantics_umbrella OK — the last one caught
+`render-svg`/`render-png` declaring `impure` while reaching no
+engine-classified impure callee (the `run-dot` indirection hid
+`process-run` from the one-level classifier); fixed by inlining the
+gated call into both entry points, which is also the honest shape.
 
 ---
 
