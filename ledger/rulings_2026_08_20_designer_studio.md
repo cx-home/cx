@@ -171,3 +171,66 @@ Spec: ux.md §18 gains the map, the history/return clauses and the
 projection rule as normative clauses; §19 gains the declared-width rule; the
 §18.6 status ladder is trued. Spec commits carry `RULED: DS-13` … `RULED:
 DS-17`.
+
+## Addendum — DS-18: the second owner walkthrough (2026-08-21)
+
+The owner drove the studio and reported eight things. Six were defects, two were
+missing capability. Recorded together because they share one cause: **a control
+that exists is not a control that works**, and every one of these passed its own
+layer's check while failing the person using it.
+
+- **DS-18a — the default arrangement puts the search beside the menu.** The
+  owner's first request of the studio, twice now. It cannot go INSIDE the nav
+  ([P0-122] refuses that, correctly), so it goes beside — and beside is a
+  WIDTH, which means shipping the widths in the base document rather than
+  making a designer discover the grid first. The face aligns the two into one
+  bar: same centre, the card's own chrome dropped, the bar's rule continued
+  under both.
+- **DS-18b — a side menu is BESIDE the content.** The rail rules said so
+  already; inside an arranged region the 12-column grid outranked them and
+  everything stacked under the menu. Same class as [P0-126]: a decision that
+  cannot take effect is not a decision. Ruled: a menu's orientation is a
+  decision about the whole region's shape, and therefore outranks any width
+  declared for one child within it.
+- **DS-18c — an empty container is a drop zone.** A container with nothing in
+  it rendered as a zero-height box: invisible, so unclickable, so
+  unselectable — "add something to a column" was impossible even though the
+  command wire accepted it perfectly. In edit mode an empty container states
+  what it is and offers its own space. It changes nothing a visitor sees,
+  because the thing it decorates is empty.
+- **DS-18d — returning through a multi-command batch.** History refused. The
+  range inverse computed EVERY command's inverse against the batch's
+  pre-state, so a batch that placed an element and then removed it asked for
+  the removal's inverse in a document where the element did not exist yet, and
+  the whole revert answered `ux-layout-address-miss`. Ruled: within a batch the
+  inverses are built by folding forward and emitted in reverse.
+- **DS-18e — the map is DRAWN, not only described.** Words and cards told the
+  shape; the owner asked to see it. The same derivation emits an SVG document
+  on its own route, embedded as an image — no diagram library, CSP posture
+  unchanged, and each arrangement's box brackets the blocks it owns so a group
+  reads as a group. Still export-only ([P0-124]): nothing reads a drawing back.
+- **DS-18f — a panel must say what it is for.** "Not sure what layers do" is a
+  copy defect, not a feature request. Every panel states its purpose in the
+  reader's terms, and the block list earns its place by doing what the canvas
+  cannot: reaching a block that is off-screen, nested, or too small to click —
+  so it also carries the reorder controls.
+- **DS-18g — a theme can be SAVED under a name and applied.** Editing was
+  already journaled per token; what was missing was a name. A saved theme is
+  one journal entry carrying every editable token as it stands, in its own
+  stream; applying one writes those tokens through the SAME path a hand edit
+  takes, so it is not a second mechanism and cannot express anything a hand
+  edit could not.
+- **DS-18h — the palette set covers real house styles.** Coastal, Mountain,
+  Rock, Tie-dye, High contrast, Executive and Kids join Editorial, Ink and
+  Ember. High contrast is not decoration: it is the accessibility floor said as
+  a palette, and it carries a heavier border width because contrast is not only
+  colour.
+
+Found in passing and fixed with them: the command palette hangs off the studio
+ROOT rather than the rail, so it inherited the PAGE's ink and every unselected
+row read as blank on the dark panel — the whole ⌘K list was invisible against a
+light theme. Colour is now stated on the root.
+
+Spec: ux.md §18.6 gains [P0-128] (an offered control must be reachable and
+must take effect) and §19.2a records the orientation-outranks-width rule.
+Spec commits carry `RULED: DS-18`.
