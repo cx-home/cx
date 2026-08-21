@@ -145,6 +145,20 @@ annotation is honest — the purity checker accepts `impure`
 unconditionally and it is the callers of the vector formats who must be
 impure anyway.
 
+**Addendum (caught by a gate, not by review).** Declaring `impure` is
+not enough: `eval_semantics_umbrella`'s #788/#818 parity gate requires
+an impure-declared stdlib def to reach, IN ITS OWN BODY, a callee the
+engine classifies impure — the classifier is one level, so a `[?def]`
+indirection hides `process-run` from it. `of-source` first delegated
+its vector arms to `render-svg` / `render-png` and the gate refused the
+mislabel (`diagram:of-source`). Fixed the way wave 2 fixed the same
+class: the graphviz hop is INLINED in the `svg` and `png` arms of
+`of-source` itself. Everything else — admission, the DOT text, both
+splices, both dot-less envelopes — stays shared, so the duplication is
+one call line per format, not a second renderer; and it is the honest
+shape, since the capability now reads at the entry point that charges
+it.
+
 **DRW3-8 — the frozen public surface, and why the wave-2 internals stay
 public.** `guide-check` requires an `[fn-doc]` with a runnable example
 for every `scope=public` def, which put the question "what is actually
