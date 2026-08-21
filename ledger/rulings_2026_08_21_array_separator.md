@@ -91,3 +91,60 @@ not affected by this collision and remains available.
 **ASP-1a (#906) is UNAFFECTED and stays landed:** the top-level sequence
 branch is in the document dispatch, not the slot reader, and all four lanes
 are green with it in place.
+
+## ASP-2 — RULED (owner "b", 2026-08-21): the discrete-token array, plus the slot-fill rule
+
+**Status:** RULED, on the measured decision packet posted to #903
+(issue comment, prototypes measured at a8152a52: corpus buckets identical,
+0/827 per-input render hashes moved on either reader, cli_umbrella /
+code_units_umbrella / xap_umbrella / code_eval_fixtures green, oriel lane
+green — under BOTH candidates). Supersedes ASP-1, which is dead: its
+carve-outs (bare text coalesces; text + `[…]` coalesce; glued runs stay one
+item) reduce exactly to this rule.
+
+**The rule, in one breath.** No comma: whitespace separates discrete values.
+Comma: commas separate slots. Inside a slot, whitespace never separates —
+structure whitespace-adjacent to anything refuses; glued runs are one item.
+
+**Precisely:**
+
+1. **Discrete-token array (the (b) half).** A comma-less bracket whose 2+
+   whitespace-separated tokens are ALL discrete values — typed scalars,
+   quoted strings, `$name` holes, `[…]` nodes, and now `(…)` sequence
+   literals and map-shaped `{…}` — is an array of those values.
+   `[1 (2, 3)]` is two items: the int and the sequence. A structure span
+   counts as a token only when whitespace-delimited on both sides (the
+   glued-span refinement: `[(1, 2)[0]]` keeps its historical one-item
+   mixed reading). A bare-Name first token keeps the element reading —
+   `[true (2, 3)]` stays the element `true` (the ASP-1 scope note stands).
+   A bareword anywhere else keeps the whole bracket prose/comma-path —
+   `[(1, 2) three]` is NOT an array of two.
+2. **Slot-fill (the (a) half).** Within one collection slot (array item,
+   sequence item, map value — the comma-delimited positions), a sequence or
+   map literal may not be WHITESPACE-adjacent to any other content: loud
+   CXER0100 naming the fix (add the comma, or quote the prose). GLUED runs
+   remain one mixed-content item — CXPath kind tests (`$c/node()`, fmt-013)
+   and call shapes live glued mid-slot and keep parsing byte-identically.
+3. **Untouched:** text + `[…]` mixed content in slots (directive rendering);
+   body/args position (already separates structures — `[?zip]`,
+   `[$cx:propose]`, the oriel `[$opt]` carrier); the element-vs-array
+   dispatch; ASP-1a.
+
+**Costs accepted with the ruling (measured, named):**
+- `(1, (2, 3) (4, 5))` — right-by-accident glue (wrapper flatten) — now
+  refuses; the author writes the comma. Zero corpus reach.
+- Prose slots carrying a comma-bearing parenthetical (`[1, weight (kg, lbs)]`,
+  `[?if [@x, use (a, b) now, else]]`) now refuse loudly; the author quotes.
+  Zero corpus reach; glued parentheticals unaffected.
+
+**Riders landing under this ruling:** grammar.ebnf [56b] drops the stale
+ASP-1 paragraph (the 3f3e02f6 revert missed the spec hunk — the approved
+spec asserted a rule the parser did not implement) and its `position.`
+splice artifact, replaced by the ASP-2 statement; lexicon [L83] states the
+headless typed-list array (implemented since @CHOICE-1, never written down)
+and the discrete-token extension; conformance cases pin the packet's syntax
+table; the corpus-diff baseline movement those NEW CASES cause is recorded
+with its cause (fixture additions, not parser drift); the element-body
+`[k 1 (2, 3)]` int→string mangle is filed as #909 (body prose lane — same
+corruption signature, different position, needs its own reading; options
+posed there).
