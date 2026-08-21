@@ -176,5 +176,35 @@ the doc back byte-identical.
    (xsp regression guards).
 7. Full gate — test-vcx battery + doc gates (recorded below).
 
-**Lane RCs and shas:** recorded in the closing section as the battery
-completes.
+**Lane RCs (2026-08-20/21, worktree off release-cut/v0.16.0 @ 56cab635,
+V pin b3d0da67):**
+
+Baseline battery — 18/18 RC=0: store_lineage, store_s3_lineage,
+store_s3_subtree, platform_store_pack/core/wire umbrellas, store_porcelain,
+store_cxstore_wire, store_remote_object, store_remote_read,
+store_subject (erasure/shred), platform_journal umbrella,
+cxstore_object_backend, store_core_umbrella, store_remote_umbrella,
+xap_umbrella (packages install through the store), test-vcx-sqlite,
+test-vcx-cxstore. BATTERY-OVERALL-RC=0.
+
+Post-fix definitive reruns (code changed after the baseline compiled) —
+7/7 RC=0: platform_store_core, platform_store_pack, store_porcelain,
+store_remote_object (incl. the NEW bytes-on-wire test),
+store_cxstore_wire, store_s3_encryption, test-vcx-sqlite (incl. sqlite
+encryption + concurrent-writer). RERUN-OVERALL-RC=0.
+
+Doc/process gates: verify-doc-links 1420+0 failed (spec/03-approved) +
+docs-src clean; verify-doc-blocks 361 passed / 0 failed;
+check_version_consistency OK (after the UOM-1r2 rider);
+spec-freeze-gate clean through the UOM commits.
+
+**Commits (this worktree, never pushed):**
+- ed16e946 ledger(UOM-1) — this ruling, before work.
+- 3bd35520 fix(gate) — UOM-1r2 version-literal rider.
+- 30e5ac8a fix(UOM-1) — the two substrate-consistency fixes + the §6
+  item-5 literal bytes-on-wire assertion.
+- a9e10375 spec(UOM-1) — store.md §7 property completion + CSRP→XSP seam
+  truing + draft archival with GRADUATED banner.
+
+Full gate (`make test`, §6 item 7): run recorded in the final commit
+touching this file.
