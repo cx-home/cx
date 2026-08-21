@@ -206,5 +206,33 @@ spec-freeze-gate clean through the UOM commits.
 - a9e10375 spec(UOM-1) — store.md §7 property completion + CSRP→XSP seam
   truing + draft archival with GRADUATED banner.
 
-Full gate (`make test`, §6 item 7): run recorded in the final commit
-touching this file.
+- **UOM-1r4 (libcx-abi-gate toolchain-vintage sensitivity, environment —
+  found running the full gate in this worktree):** a freshly built
+  `third_party/re2/obj/libre2.a` (same pinned source 3a8436ac, today's
+  clang 21 / libc++ 20.1 headers) emits `std::piecewise_construct` as an
+  EXTERNAL data symbol (`__ZNSt3__119piecewise_constructE`), where the
+  2026-08-02 archive kept it internal (`…L19…`, type `s`) — one extra
+  dylib export, failing the full-list baseline diff with zero CX-surface
+  change. Remedied here by reusing the pinned-source artifact from the
+  main checkout (byte-parity: ABI-PARITY-OK). LATENT: the baseline is
+  vintage-sensitive through vendored C++ statics — the main checkout hits
+  this the day re2 is rebuilt; the durable fix is visibility-hidden
+  vendored C++ (or filtering vendored `__Z` internals from the contract),
+  which amends the I3-cut baseline and belongs to the owner/main tree.
+  RECOMMEND filing as an issue (kind:defect area:build prio:medium).
+- **UOM-1r5 (full-gate `-j` same-path races, environment):** under
+  `make test -j<ncpu>` in this cold worktree, three transient classes
+  fired across attempts, none a tree defect: (1) check-code-fixtures
+  dlopened `vcx/target/libcx.dylib` mid-relink (another target rebuilds
+  the same path) → "symbol not found" on a symbol the lib exports;
+  (2) the extraction CLI lane exec'd `vcx/target/cx` mid-relink →
+  sv-048 rc-1 divergence that does not reproduce standalone (both
+  binaries convert identically when probed directly); (3) spec-freeze-gate
+  transiently read empty commit messages under shared-.git contention
+  (parallel sessions share this object store) and flagged three commits
+  that all carry their RULED: tokens — direct rerun clean. The §6.7 run
+  therefore uses the Makefile's own sequential fallback
+  (`make test-no-parallel`), which removes every raced pair.
+
+Full gate (§6 item 7, `make test-no-parallel` — same TEST_TARGETS union,
+sequential): GATE-RC recorded in the final commit touching this file.
