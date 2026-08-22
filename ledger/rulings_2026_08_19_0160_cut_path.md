@@ -39,6 +39,28 @@ Opus-bulk-impl model policy for this leg). Order:
    mirror exposure of ORIEL stays a SEPARATE owner allowlist decision —
    not part of this session's remit.
 
+### R9.3 SUPERSEDED (owner, 2026-08-21): Opus 5 through release
+
+Owner directive, replacing R9.3's model provision verbatim: **"we'll use
+Opus 5 through release unless there's a good reason not to."** The remaining
+cut path — every item 1–4 above, plus #914 (TI-1) and anything else landing
+before the tag — runs in **Opus 5**. The single-dedicated-session and
+ordering provisions of R9.3 are unaffected; only the model changes.
+
+Recorded because R9.3 was an explicit owner-ruled exception to the
+Opus-bulk-impl policy, so setting it aside needs to be equally explicit and
+equally findable. Provenance for this session, stated plainly: ASP-3 (#909),
+DGF-1 (#912), TA-1 (#911), D913-1 + D913-1a and the EDL-1 gate (#913) all
+landed under **Fable 5**; the TI-1 ruling (#914,
+`ledger/rulings_2026_08_21_table_image.md`) and everything after it are
+**Opus 5** — the switch happened mid-session, which the standing policy
+otherwise forbids, and is on the record here rather than left implicit.
+
+"Unless there's a good reason not to" keeps one live carve-out: the
+**vgc / GC-soundness deep-debugging lineage** (#57/#58/#63/#145) remains
+Fable-5-only on recorded evidence, which this directive does not touch. A
+future leg wanting Fable back asks for it by name.
+
 Out of scope for the session: #804 (post-cut), #834 (linux, upstream),
 anything on main.
 
