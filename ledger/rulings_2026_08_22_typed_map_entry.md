@@ -78,3 +78,55 @@ invent a different document. That is not contingent on this ruling.
 entries (`{a: 1 b: 2}` → `{a: 1, b: 2}`) which `[L85]` never admitted —
 commas only. That divergence is noted here so the implementer decides it
 deliberately rather than preserving it by accident.
+
+---
+
+# TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22)
+
+**Do not implement TME-1 as written.** It was authorized on a claim I made
+that turns out to be wrong, and the correction is recorded here rather than
+by editing the ruling above, so the mistake stays visible.
+
+**The false claim.** I told the owner the glued-key syntax space was free —
+"`{a::int}` and `{a::int: 5}` are clean parse errors today, so nothing is
+reinterpreted." That was tested only through the PROGRAM reader, which
+errors. The DATA reader's `read_map_key` (vcx/cx/parser.v) deliberately
+absorbs a glued `::` as the **key's own** postfix scalar ascription — landed
+2026-08-05 in `a7de7583` (#516/#684/I1 row-1, "postfix value ascription,
+strict carriers, decimal/bigint canonical forms"), lexicon L43/L47.
+Measured: `{1.10::decimal: x}` → rc=0, decimal key; `{42::bigint: y}` →
+rc=0, round-trips with its ascription; `{a::string: 5}` → rc=0, key `a`
+ascribed string. TME-1 would have SILENTLY REDEFINED that construct.
+
+**What is actually true, and it is smaller than TME-1 assumed.** CX already
+has BOTH type slots in the grammar:
+
+- **Key type** — `[L87] MapKey ::= Ident | QuotedText | Scalar`, plus the
+  L43/L47 postfix ascription. IMPLEMENTED and working, single and multiple
+  entries.
+- **Value type** — `[L86] MapEntry ::= MapKey S? ':' S? BodyItem`, and
+  `[53] BodyItem` includes `Scalar`, and `[27] Scalar ::= TypeAnnotation S
+  ScalarValue` ("explicit scalar in any context"). So `{a: ::int 5}` is
+  ALREADY LEGAL GRAMMAR. It is NOT implemented: the parser returns the
+  string `'::int 5'`.
+
+So value typing is an unimplemented spec provision, NOT a missing feature,
+and it needs NO grammar change. `{a: ::int 5}` and
+`{1.10::decimal: ::string "x"}` are what the spec already admits.
+
+**The only genuinely missing capability** is a field declared with a type
+and NO value (`{a: ::ref}`), because `[27]` requires `TypeAnnotation S
+ScalarValue`. That is exactly what `spec/03-approved/xap/xap.md`'s props
+maps want, and it is the ONE piece that would need a new production. The
+owner was asked and has NOT yet answered.
+
+**Therefore the work splits three ways:**
+1. Implement `[27] Scalar` in value position (map values, array items,
+   sequence items). Pure bug fix against the spec as written — NO spec
+   change, NO new ruling needed.
+2. Fix #917's silent mangling — a parse that cannot represent its input must
+   REFUSE it, never invent a different document. NO spec change.
+3. The declaration-only entry `{a: ::ref}` — OPEN, needs the owner's letter.
+
+**The named spec authorization TME-1 claimed is NOT exercised** and does not
+carry forward: nothing in `spec/03-approved/` was edited under it.
