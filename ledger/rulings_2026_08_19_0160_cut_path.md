@@ -56,10 +56,14 @@ landed under **Fable 5**; the TI-1 ruling (#914,
 **Opus 5** — the switch happened mid-session, which the standing policy
 otherwise forbids, and is on the record here rather than left implicit.
 
-"Unless there's a good reason not to" keeps one live carve-out: the
-**vgc / GC-soundness deep-debugging lineage** (#57/#58/#63/#145) remains
-Fable-5-only on recorded evidence, which this directive does not touch. A
-future leg wanting Fable back asks for it by name.
+"Unless there's a good reason not to" named one standing carve-out — the
+**vgc / GC-soundness deep-debugging lineage** (#57/#58/#63/#145), Fable-5-only
+on recorded evidence. Owner, same day: **the vgc work is DEFERRED past
+v0.16.0.** So the carve-out is DORMANT for this release, not competing with
+the directive: no vgc item is on the cut path, and **Opus 5 is unconditional
+through the tag**. The Fable-5 evidence for that lineage is not withdrawn — it
+simply has nothing to apply to before v0.16.0, and revives whenever the vgc
+work is scheduled (a leg wanting Fable back asks for it by name, then).
 
 Out of scope for the session: #804 (post-cut), #834 (linux, upstream),
 anything on main.
