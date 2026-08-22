@@ -28,6 +28,21 @@ redefinition of it.
 
 ### Added — at the cut (2026-08-20)
 
+- **The map-syntax settlement (#917, RULED: MSS-1…MSS-6, 2026-08-22)**: map
+  values are one expression-shaped item in BOTH readers (unquoted prose
+  refuses with quote guidance — the silent slot absorption that read
+  `{a: 1 b: 2}` as one junk-string entry at exit 0 is gone); entries
+  separate by comma or whitespace ([L85] amended, ratifying the shipped
+  form); every ascription coercion arm is checked and a bare `::`-carrying
+  token either ascribes or refuses (`{x: prose ::bool}` invented `false`
+  before; `5::bogus` silently stringified); the **declaration-only entry**
+  `{k: ::T}` lands — declared kind (the [157] KindName vocabulary), value
+  ABSENT (not null), carried by cx text, round-trip XML (`cx:decl-kind`)
+  and ast_bin v10, refused loudly by every lossy target; double-quoted map
+  keys and checked key ascription now behave identically in both readers.
+  `verify-doc-blocks` returns green (the xap.md typed-props fences parse
+  as written, respelled per MSS-5).
+
 - **The studio (#884)**: the visual editor over surface documents — an edit
   mode of the real web face (capability-gated by a `ux:edit` claim), with
   the layout-command vocabulary completed by `[ux:place]` / `[ux:remove]`

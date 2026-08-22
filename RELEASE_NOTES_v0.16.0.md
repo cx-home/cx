@@ -83,11 +83,26 @@ know before upgrading programs is the error-propagation tightening below.
   deterministic` is normative, which is what makes computation addresses
   and the pure result cache sound.
 
+- **Map literals refuse instead of inventing (#917, MSS).** A map value is
+  one expression-shaped item in both readers — unquoted prose, spaced
+  `::` annotations, unknown type tags, and unparseable entries are loud
+  errors now, never silently absorbed as text or coerced into invented
+  values (`{x: prose ::bool}` used to yield `false` at exit 0). Entries
+  separate by whitespace as well as commas (the shipped form, now spec).
+  New capability: the declaration-only entry `{k: ::T}` — a typed field
+  with its value ABSENT (not null) — carried by cx/XML/ast_bin, refused
+  by lossy targets.
+
 ## Migration
 
 - Programs that embedded a *captured* err as document data must rebuild it
   from parts (`[report [code $e@code] [message $e@message]]`) or collect
   outcomes in a paren sequence — element construction now propagates.
+- Map literals: quote prose values (`{note: 'two words'}`), quote bare
+  `::`/`:`-carrying text values (`{a: 'std::vector'}`,
+  `{u: 'http://x'}`). Well-formed maps — including the whitespace-
+  separated entry form the stdlib always used — parse unchanged; the
+  zero-movement corpus differential (829 inputs) is the receipt.
 - Nothing else: cx source, schemas, stored documents, and wire formats are
   unchanged; the partition did not move any address.
 
