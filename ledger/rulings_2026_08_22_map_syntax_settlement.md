@@ -128,3 +128,45 @@ verify-doc-blocks + the guide build.
 - **Movement protocol:** PROTO_CANON_OUT corpus differential + the golden
   sweep, movement predicted before measuring, legitimate movement stated
   with its cause (DR-8).
+
+---
+
+## MSS-7 — the prefix family completes: `::T VALUE` types the value (RULED "1a", 2026-08-22, same day)
+
+**Supersedes one clause of MSS-4** ("`{a: ::int 5}` STAYS a parse error —
+the prefix takes no value"), recorded as a rider, the original left
+intact. **The evidence that forced it**: testing the rebuilt playground,
+the owner reached for `{age::int: 30}`, then `{age: :int 30}`, then
+`{age: ::int 30}` — three consecutive type-BEFORE-value spellings, zero
+attempts at the ruled postfix. The surface was fighting its own
+designer's instincts.
+
+**The rule.** In a collection VALUE slot (map value; array/sequence item
+for uniformity), a prefix `TypeAnnotation` followed by ONE scalar value
+token is a TYPED VALUE, coercion-checked through the same strict core as
+the postfix form — the historical [27] `TypeAnnotation S ScalarValue`
+production revived in exactly the positions where no element name
+precedes it (so TA-1 is untouched). The prefix family is now one rule:
+**`::T` in a value slot — with a value it types the value, without one
+it declares the field (MSS-4)**. Declarations stay map-entry-only; a
+value-less prefix in an array slot still refuses.
+
+- The tag for a PREFIXED VALUE draws from the scalar tag set
+  (is_valid_type_tag); a kind-only tag (`::element`, `::path`, …)
+  followed by a value refuses — kinds declare, they do not coerce.
+- Slot-initial `::T` COMMITS the slot: exactly one value token (bare or
+  quoted) must follow, then the slot ends — trailing content refuses.
+- Canonical form is unchanged: annotation-iff-retyping governs, so
+  `::int 30` emits `30` and `::decimal 2` emits `2::decimal`. One
+  canonical image; two accepted input spellings (prefix + the shipped
+  L43 postfix), which is the same acceptance/emit split every annotation
+  position already has.
+- Both readers implement it identically (the program reading carries the
+  coerced scalar via the node_lit seam — the program reading of a typed
+  scalar IS the data reading).
+- Zero corpus movement by construction: both spellings refused before
+  this ruling.
+
+The letter's Part 5 line "`{a: ::int 5}` stays a loud error" and the
+MSS-4 fixture pin flip WITH this rider; the diagnostics that taught
+postfix-only now teach both spellings.
