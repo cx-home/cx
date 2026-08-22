@@ -1117,8 +1117,8 @@
       [example lang=cx
         """[count::int 42]
            [ratio::decimal 3.14159]
-           [oven-temps ::int[] 220 240 260 480]
-           [tags ::[] cheap fast tasty]"""]]]
+           [oven-temps::int[] 220 240 260 480]
+           [tags::[] cheap fast tasty]"""]]]
 
   [# Migrated from docs-src/content/reference/{schemas,includes,streaming,tables}.cx
      during Phase B docs → guide consolidation (2026-05-24). Compact

@@ -239,8 +239,8 @@
   [child id=td-43 n=14.43 title='43. Typed array as body'
     [body """`::int[]` for typed; `::[]` for inferred (string array here)."""]
     [example lang=cx
-      """[oven-temps ::int[] 220 240 260 480]
-         [tags ::[] cheap fast tasty]"""]]
+      """[oven-temps::int[] 220 240 260 480]
+         [tags::[] cheap fast tasty]"""]]
 
   [child id=td-44 n=14.44 title='44. Plain table — header plus rows'
     [body """The `[table[…]]` block declares column names once. Each line below is a row."""]
