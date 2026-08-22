@@ -316,7 +316,11 @@
     [child id=map n=2.4.3 title='Map literals {k: v}'
       [body
         """Curly braces wrap a map literal: keys are atomic scalars, values
-           are any item. Keys must be unique; a duplicate key raises
+           are **one expression-shaped item each** — a scalar, a quoted
+           string, a nested collection, or an entity reference. Multi-word
+           prose must be quoted (`{note: 'two words'}`); an unquoted run
+           is a loud parse error, never silently absorbed. Keys must be
+           unique; a duplicate key raises
            `W014` (`CXERMAP-DUPKEY`). Insertion order is preserved for round-trip
            but not for canonical identity — two maps with the same
            key-value pairs hash to the same canonical bytes regardless of
@@ -324,11 +328,36 @@
       [example lang=cx
         """[env {host: 'a.com', port: 8080, tls: true}]"""]
       [body
+        """Entries separate by comma **or plain whitespace/newlines** — the
+           same rule arrays follow (`[1 2 3]` ≡ `[1, 2, 3]`):"""]
+      [example lang=cx
+        """[env {host: 'a.com' port: 8080
+                 tls: true}]"""]
+      [body
         """The map key type is `ScalarKey` per cxdm §2: bool, int, float,
            string, date, datetime, or bytes. `null` is not a valid key
            (`null = null` would not satisfy the uniqueness invariant
            under value-comparison semantics). Mixed-type keys are
-           permitted; comparison is by canonical bytes of each key."""]]
+           permitted; comparison is by canonical bytes of each key."""]
+      [body
+        """The `::` annotation takes one meaning per position. Glued to the
+           **key** it types the key (`{1.10::decimal: x}` — a decimal key,
+           scale-distinct from `{1.1::decimal: x}`). Postfix on the
+           **value** it types the value, coercion-checked
+           (`{price: 19.99::decimal}`; `{price: soon::decimal}` is a loud
+           `CXER0290`, and an unknown tag like `5::bogus` is a loud
+           `CXER0107` — never silent text). Standing **alone after the
+           colon** it *declares* the field: typed, value ABSENT — not
+           null:"""]
+      [example lang=cx
+        """[props {order: ::string, compact: ::bool, tags: ::string[]}]"""]
+      [body
+        """A declared entry's kind draws from the same kind vocabulary bind
+           patterns test (`int`, `string`, `element`, `array`, `path`, …,
+           plus `[]` for array kinds). Reading a declared entry's value
+           refuses — absence is not null — and only the `cx` and
+           round-trip-XML lanes can carry a declaration; every lossy
+           target (JSON, YAML, CSV, …) refuses the document loudly."""]]
 
     [child id=seq-flat n=2.4.4 title='The sequence-flat principle'
       [body

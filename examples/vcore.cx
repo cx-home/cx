@@ -34,6 +34,14 @@
 [user_id::bigint     1234567890123456789]
 [microcoin::decimal  0.000_000_01]      # eight zeros after the decimal
 
+[; 5a. TYPED MAP ENTRIES: one meaning per `::` position (MSS, #917) ]
+[prices {book: 19.99::decimal, qty: 3::int}]        # postfix types the VALUE (checked)
+[ledger {1.10::decimal: credit, 42::bigint: audit}] # glued to the KEY types the key
+[schema {order: ::string, compact: ::bool,          # prefix ALONE declares the field —
+         tags: ::string[]}]                         #   typed, value ABSENT (not null)
+[config {host: 'a.com' port: 8080                   # entries separate by whitespace or
+         note: 'quoted prose'}]                     #   comma; prose values are quoted
+
 [; 6. NUMERIC UNDERSCORES: cosmetic separators in numeric literals ]
 [heap_max::u64   16_777_216]            # 16 MiB
 [heap_min::u64   4_096]
