@@ -85,8 +85,15 @@ check "R2.2 per-profile install gate (4 tarballs, extract + probe)" \
  "make -s release-profile-gate"
 
 section "Capability rubric"
+# The row's target is the readiness rubric FILE. A doc-curation text-replace
+# (365923b7) once rewrote the path literal into the prose phrase "the release
+# criteria" — grep then errored on three nonexistent files and the leading
+# `!` inverted that error into a VACUOUS PASS on every run since. The file
+# must exist (test -f) so a future move fails loud instead of vacuously
+# passing again; the grep pattern matches only a lone-⚠ status cell, not the
+# legend's tier column.
 check "no unresolved \"⚠\" in readiness rubric" \
- "! grep -E '^\\| .* \\| *⚠ \\|' the release criteria"
+ "test -f spec/03-approved/process/readiness-rubric.md && ! grep -E '^\\| .* \\| *⚠ \\|' spec/03-approved/process/readiness-rubric.md"
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
