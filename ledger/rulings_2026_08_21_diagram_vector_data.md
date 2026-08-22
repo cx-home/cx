@@ -58,3 +58,29 @@ shipped examples.
 **Sequencing.** EDL-1 lands AFTER D913-1 (its content assertions on the
 vector/flowchart lanes only hold once the data tree renders); one landing
 each, both pre-cut.
+
+## Addendum (owner "1a 2a", 2026-08-21) — the residue found landing D913-1
+
+**D913-1a — element-ROOTED docs render the tree; embedded directives are
+leaves.** The tree render extends to documents whose TOP structure is
+elements: when no directive is reachable ABOVE the first element (the root
+is a plain element, or a multi-form block whose top-level forms carry no
+cx-node mark), the element tree renders even though directives sit INSIDE
+elements — and an embedded directive renders as a LEAF node labeled
+`[?name]`, never descended, so demo-code interiors do not masquerade as
+data. This is the honest picture of the element-wrapped program tours
+(cxpath-tour, match-multi, modify-crud): their section tree, with the
+directive demos marked where they sit. A directive at top level (root or a
+block form) keeps the program render. Rejected: descending plain elements
+in the program DOT walk hunting directives (an orphaned skeleton without
+context, plus golden risk wherever pinned sources nest directives in
+elements).
+
+**EDL-1a — the gate carves out table-carrying docs, by NAME, with a filed
+issue.** The program lift defers `[table[…]]` elements as the `node_lit`
+source-text hatch, so a table doc is blank in EVERY lane (the ERD
+included) — a structural table image (name, columns, row shape) is its own
+vocabulary design, filed as a prio:medium issue and NOT rushed pre-cut.
+The gate names the excluded file(s) explicitly beside the issue number —
+a named, removable carve-out, never a heuristic — and the exclusion dies
+when the table image lands.
