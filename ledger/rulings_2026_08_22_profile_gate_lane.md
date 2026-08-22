@@ -72,3 +72,88 @@ tolerant staging copies, a cut could stage a lib-less `data` tarball and
 the gate would pass it. That is a real hole with a real asymmetry between
 the lanes, and it is out of scope for a landing ruled behavior-preserving.
 Filed as its own issue rather than widened into this one.
+
+---
+
+# PGL-1a — AMENDMENT: the gate was BROKEN, and the lane proved it on its first run
+
+Recorded after the measurement, because PGL-1 authorized a
+behavior-preserving extraction and this is a genuine behavior CHANGE. The
+amendment exists so the change is findable by anyone grepping the ledger
+for PGL-1, rather than hidden inside a "refactor" commit.
+
+## What the lane found, first time it ran
+
+The R2.2 gate FAILED — on a correct artifact. The staged platform tarball
+carries the right contents (`cx`, `cx.h`, `libcx.dylib`, the re2 license)
+and its binary reports `profile  platform`, verified byte-for-byte with
+`od -c`. The gate reported it missing anyway, 3 runs out of 3, confirmed
+under `bash -x` (the pipeline at trace line 102-103 returns non-zero; the
+same binary prints the wanted line at trace line 106).
+
+## Root cause, MEASURED — SIGPIPE under pipefail
+
+    "$vdir/cx" -v | grep -q "profile  $prof"
+
+`grep -q` exits the instant it matches. The profile line is line 2 of 8,
+so `cx` is still writing when the pipe closes; it takes SIGPIPE and exits
+**141** (128+13); `set -o pipefail` promotes that to the pipeline's status;
+the `||` arm fires a false failure on a good artifact.
+
+A/B, one `-prod` build, both probe forms against the SAME staged bytes,
+the probe form the only variable:
+
+| probe form | result |
+|---|---|
+| `cx -v \| grep -q …` (original) | **FAIL(rc=141) 6/6** |
+| capture once, then match the text | **pass 6/6** |
+
+Why nobody had ever seen it:
+- the **darwin** lane had never run — the gate landed 2026-08-09, AFTER
+  both prior releases, and sits in the arm `--dry-run` skips (the PGL-1
+  finding);
+- the **linux** lane runs under `bash -euc`, which has NO pipefail, so
+  grep's 0 wins and the pipeline passes. The gate was only ever broken on
+  the lane that never executed.
+
+**This class was already known in this repo.** `scripts/test_playground_smoke.sh`
+(around line 120) carries a comment naming the identical mechanism —
+`grep -q` early exit, SIGPIPE 141, pipefail propagating a false failure —
+and works around it with a here-string. The R2.2 gate is the SECOND
+instance. A hazard documented in one file's comment is not a defense; see
+the follow-up below.
+
+## The change
+
+The probe captures `cx -v` ONCE into a variable and matches the captured
+text with `case`. One exec, no pipeline, nothing to receive SIGPIPE. On
+failure it prints the probe's **exit status** and the **actual captured
+bytes**.
+
+That second half matters as much as the fix. The original probe was
+undiagnosable BY CONSTRUCTION: it discarded the exit status and stderr,
+then re-ran `cx -v` to print diagnostics — and the re-run could succeed
+where the first failed, so a real failure printed a "does not report"
+verdict directly above the very line it claimed was missing. That
+self-contradicting evidence is why three wrong hypotheses got proposed and
+killed before the A/B settled it. A gate that cannot explain its own
+failure costs more than the bug it hides.
+
+## Blast radius of the class, swept
+
+Every `| grep -q` under `pipefail` in `scripts/` and `tools/` was checked.
+All remaining instances pipe a **builtin** (`echo`/`printf`) of a small
+string, which completes before `grep` can exit, so the producer never
+receives SIGPIPE — safe in practice, not merely unobserved. The R2.2 gate
+was the only site piping a slow, multi-line EXTERNAL binary into `grep -q`.
+`tools/verify-doc-blocks.sh` (`head -n 1 … | grep -q`) is the nearest
+remaining relative and is low-risk (one short line, producer exits
+immediately), NOT zero-risk — noted, not touched.
+
+## Follow-up, filed not absorbed
+
+The class deserves a mechanical check, not a comment in one script: a lint
+forbidding an external multi-line producer piped into `grep -q` inside a
+`pipefail` script, pointing at the here-string / capture-once forms. Two
+independent instances, one of which sat inside a BLOCKING release gate, is
+the argument. Filed as its own issue.

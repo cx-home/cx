@@ -77,6 +77,13 @@ check "make verify-doc-blocks" \
 check "make verify-doc-links" \
  "make -s verify-doc-links"
 
+section "Release assets"
+# RULED: PGL-1 (#741) — the R2.2 blocking per-profile install gate runs HERE,
+# pre-tag, instead of first executing inside the cut itself. Proves item 1 of
+# #741; item 2 (installing from the PUBLISHED assets) still needs the cut.
+check "R2.2 per-profile install gate (4 tarballs, extract + probe)" \
+ "make -s release-profile-gate"
+
 section "Capability rubric"
 check "no unresolved \"⚠\" in readiness rubric" \
  "! grep -E '^\\| .* \\| *⚠ \\|' the release criteria"

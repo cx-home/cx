@@ -412,6 +412,13 @@ bump-version-check:
 	fi
 	@python3 scripts/check_version_consistency.py
 
+# RULED: PGL-1 (#741) — the R2.2 BLOCKING per-profile install gate, runnable
+# WITHOUT a cut. It used to live only inside release.sh phase 2, in the arm
+# that --dry-run skips, so its first execution was always the real cut.
+.PHONY: release-profile-gate
+release-profile-gate:
+	@scripts/release_profile_gate.sh
+
 # Full pre-tag check — runs everything in the release process + §0.5.
 # Defaults to the VERSION file (single source of truth).
 release-verify:
@@ -426,7 +433,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect
@@ -453,6 +460,16 @@ check-prod-build:
 # Token-aware, not a raw grep ([?try-send]/[?try-receive] + the CSV dialect
 # [on-error "…"] option + the retirement-pinning negatives are allowlisted).
 .PHONY: check-no-legacy-try
+# ── SIGPIPE-PIPE gate (RULED: SPG-1, #916) — `external cmd | grep -q P`
+# inside a pipefail script fires FALSE failures: grep -q exits on the first
+# match, the producer takes SIGPIPE (141), pipefail promotes it. Two
+# instances existed before this gate, one of them inside the BLOCKING R2.2
+# release gate, where it aborted a cut on a good artifact (PGL-1a). Landed
+# green with ZERO annotated exceptions; that is the standard to hold.
+.PHONY: check-pipefail-pipes
+check-pipefail-pipes:
+	@scripts/pipefail_pipe_gate.sh
+
 check-no-legacy-try:
 	@python3 scripts/check_no_legacy_try.py
 

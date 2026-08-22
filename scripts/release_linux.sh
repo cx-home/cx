@@ -123,17 +123,11 @@ build_one() {
       # release.sh phase 2: every staged tarball must extract the way the
       # installer extracts it and its binary must report the expected profile
       # line, or the cut dies here (this script failing fails release.sh).
-      for prof in platform data embed cli; do
-        case "$prof" in
-          platform) vtar="/out/public/cx-$T.tar.gz" ;;
-          *)        vtar="/out/public/cx-$prof-$T.tar.gz" ;;
-        esac
-        vdir=$(mktemp -d)
-        tar xzf "$vtar" -C "$vdir" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar does not extract" >&2; exit 1; }
-        [ -x "$vdir/cx" ] || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar carries no executable cx at the tar root" >&2; exit 1; }
-        "$vdir/cx" -v | grep -q "profile  $prof" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar cx -v does not report profile $prof" >&2; "$vdir/cx" -v >&2 || true; exit 1; }
-        rm -rf "$vdir"
-      done
+      # RULED: PGL-1 (#741) — ONE implementation, shared with release.sh and
+      # with the standalone pre-cut lane. The lean container copy above
+      # includes scripts/, so the file is here at /build; cwd is /build.
+      . scripts/lib/r22_profile_gate.sh
+      r22_profile_gate /out/public "$T" /linux
       echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
     '
   ( cd dist/public && shasum -a 256 "$pub" ) || true

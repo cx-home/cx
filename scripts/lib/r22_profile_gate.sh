@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+#
+# scripts/lib/r22_profile_gate.sh — the R2.2 per-profile install
+# verification and the asset staging it verifies, in ONE place.
+#
+# RULED: PGL-1 (#741, ledger/rulings_2026_08_22_profile_gate_lane.md).
+# The gate loop below existed VERBATIM TWICE — scripts/release.sh phase 2
+# (darwin) and the scripts/release_linux.sh in-container body — and ran
+# ONLY inside a real cut: release.sh's copy sits in the `else` arm of the
+# --dry-run test, so `release.sh --dry-run` printed a plan line and never
+# executed a single assertion. A gate that exists twice can drift in one
+# copy, and a gate whose first execution is the irreversible step is
+# indistinguishable from an unmeasured one. Both callers now share this
+# file, and scripts/release_profile_gate.sh runs it WITHOUT a cut.
+#
+# Source it, then call. Every function expects the CWD to be the repo root
+# (release.sh does `cd "$ROOT"`; the linux lane runs from the container's
+# /build copy, which carries scripts/ in its lean tar list).
+#
+#   r22_collect_platform_files <destdir>
+#   r22_tar_platform           <srcdir> <pubdir_abs> <plat>
+#   r22_stage_profiles         <pubdir> <plat>
+#   r22_profile_gate           <pubdir> <plat> [label]
+#
+# The staging keeps the tolerant `cp … 2>/dev/null || true` form it has
+# always had for the dual .dylib/.so lib names: this landing changes NO
+# lane's strictness. The linux lane's own staging is deliberately NOT
+# unified here (different make target, different lib set) — see PGL-1
+# point 4 for why, and the ruling's closing note for the lib-content hole
+# that neither lane checks.
+
+# r22_collect_platform_files — the platform-profile payload: the binary,
+# the shared lib under whichever extension this host produces, the public
+# header, and the vendored re2 license (#573, statically linked).
+r22_collect_platform_files() {
+  local dest="$1"
+  cp vcx/target/cx "$dest/"
+  cp vcx/target/libcx.dylib "$dest/" 2>/dev/null || true
+  cp vcx/target/libcx.so   "$dest/" 2>/dev/null || true
+  cp include/cx.h "$dest/"
+  cp third_party/re2/LICENSE "$dest/LICENSE-re2.txt"
+}
+
+# r22_tar_platform — the FLAT, stable-named public artifact.
+# releases/latest/download/<name> needs an exact version-LESS filename and
+# the quickstart does `tar xz && mv cx`, so `cx` must sit at the tar ROOT,
+# not under a <target>/ directory. pubdir must be ABSOLUTE: this subshell
+# cds into srcdir first.
+r22_tar_platform() {
+  local srcdir="$1" pubdir="$2" plat="$3"
+  ( cd "$srcdir" && tar czf "$pubdir/cx-${plat}.tar.gz" cx cx.h libcx.* LICENSE-re2.txt )
+}
+
+# r22_stage_profiles — the I4 (#651/#516, partition spec §4) lean profile
+# tarballs, cx-<profile>-<plat>.tar.gz, which the installer resolves via
+# CX_PROFILE=data|embed|cli. ONE binary name, profile-decided surface;
+# the platform default above is what the bare install command fetches.
+#   data  — cx (cannot-execute) + libcx-core + cx.h
+#   embed — cx + the embed-shape libcx (Rings 0-1, no local-effect packs) + cx.h
+#   cli   — cx only (the binary is the deliverable)
+r22_stage_profiles() {
+  local pubdir_rel="$1" plat="$2"
+  local pubdir prof pdir
+  pubdir="$(cd "$pubdir_rel" && pwd)"
+  for prof in data embed cli; do
+    pdir="$pubdir/_prof_$prof"; rm -rf "$pdir"; mkdir -p "$pdir"
+    cp "vcx/target/profiles/$prof/cx" "$pdir/"
+    cp third_party/re2/LICENSE "$pdir/LICENSE-re2.txt"
+    case "$prof" in
+      data)
+        cp include/cx.h "$pdir/"
+        cp vcx/target/libcx-core.dylib "$pdir/" 2>/dev/null || true
+        cp vcx/target/libcx-core.so   "$pdir/" 2>/dev/null || true ;;
+      embed)
+        cp include/cx.h "$pdir/"
+        cp vcx/target/profiles/embed/libcx.dylib "$pdir/" 2>/dev/null || true
+        cp vcx/target/profiles/embed/libcx.so   "$pdir/" 2>/dev/null || true ;;
+    esac
+    ( cd "$pdir" && tar czf "$pubdir/cx-${prof}-${plat}.tar.gz" ./* )
+    rm -rf "$pdir"
+  done
+}
+
+# r22_profile_payload — RULED: PGC-1 (#915). The gate used to assert only
+# that a tarball extracts and that its `cx` reports the right profile. It
+# never checked the LIBRARY and HEADER the profile exists to deliver, and
+# the staging copies are deliberately tolerant (one host emits .dylib, the
+# other .so), so a missing lib staged a lib-less tarball that the gate
+# waved through — and the `data`/`embed` profiles ARE a library surface.
+#
+# Libs match by GLOB on either extension, so one implementation serves both
+# lanes. The globs are disjoint: `libcx.*` cannot match `libcx-core.dylib`,
+# because what follows `libcx` there is `-`, not `.`.
+#
+# `cli` is checked by EXCLUSION as well as inclusion: "the binary is the
+# deliverable" is a claim about what is ABSENT, and a staging bug that
+# bundles a lib into `cli` breaks the profile's whole reason to exist.
+r22_profile_payload() {
+  local dir="$1" prof="$2" vtar="$3" label="${4:-}"
+  local miss=() extra=()
+  _r22_has() { compgen -G "$dir/$1" > /dev/null 2>&1; }
+  _r22_need() { _r22_has "$1" || miss+=("$1"); }
+
+  _r22_need 'cx'
+  _r22_need 'LICENSE-re2.txt'
+  case "$prof" in
+    platform|embed) _r22_need 'cx.h'; _r22_need 'libcx.*' ;;
+    data)           _r22_need 'cx.h'; _r22_need 'libcx-core.*' ;;
+    cli)
+      # nothing beyond cx + the license may be present
+      local e
+      for e in "$dir"/*; do
+        case "$(basename "$e")" in
+          cx|LICENSE-re2.txt) ;;
+          *) extra+=("$(basename "$e")") ;;
+        esac
+      done ;;
+  esac
+
+  if [ ${#miss[@]} -ne 0 ] || [ ${#extra[@]} -ne 0 ]; then
+    echo "RELEASE GATE FAILED (R2.2${label}): $vtar payload wrong for profile '$prof'" >&2
+    [ ${#miss[@]}  -ne 0 ] && echo "  MISSING: ${miss[*]}" >&2
+    [ ${#extra[@]} -ne 0 ] && echo "  UNEXPECTED (cli ships the binary only): ${extra[*]}" >&2
+    echo "  tarball contains:" >&2
+    ls -1 "$dir" | sed 's/^/    /' >&2
+    exit 1
+  fi
+}
+
+# r22_profile_gate — R2.2 (#651/#516 remediation register, ruled (a) BY
+# OWNER 2026-08-09): BLOCKING per-profile install verification. The cut
+# does not proceed unless EVERY staged tarball (default platform + the
+# three lean profiles) extracts the way the installer will extract it,
+# carries an executable `cx` at the tar root, and reports the expected
+# profile line. This is the mechanical closure of the I4 exit-gate
+# deferral (audit F-8): "assets ship at the next cut" enforced AT the cut.
+#
+# `label` suffixes the failure text so a lane names itself — "" for the
+# darwin cut, "/linux" in the container, "/precut" for the standalone
+# lane. Failure calls `exit 1`, exactly as both original copies did: in
+# release.sh that aborts the cut before the phase-3 push, and in the
+# container it fails the container, which fails release_linux.sh, which
+# fails release.sh.
+r22_profile_gate() {
+  local pubdir="$1" plat="$2" label="${3:-}"
+  local prof vtar vdir probe_rc probe_out
+  for prof in platform data embed cli; do
+    case "$prof" in
+      platform) vtar="$pubdir/cx-${plat}.tar.gz" ;;
+      *)        vtar="$pubdir/cx-${prof}-${plat}.tar.gz" ;;
+    esac
+    vdir="$(mktemp -d)"
+    tar xzf "$vtar" -C "$vdir" || { echo "RELEASE GATE FAILED (R2.2${label}): $vtar does not extract" >&2; exit 1; }
+    [ -x "$vdir/cx" ] || { echo "RELEASE GATE FAILED (R2.2${label}): $vtar carries no executable cx at the tar root" >&2; exit 1; }
+    # AMENDED: PGL-1a — capture ONCE, then match the captured text.
+    # The original probe was `cx -v | grep -q …` and, on failure, re-ran
+    # `cx -v` to print diagnostics. That is undiagnosable by construction:
+    # it discards the probe's exit status and stderr, and the second
+    # invocation can succeed where the first failed, so a real failure
+    # printed a "does not report" verdict directly above the very line it
+    # claimed was missing. One exec, no pipeline, and the failure text
+    # carries the rc and the actual bytes.
+    probe_rc=0
+    probe_out="$("$vdir/cx" -v 2>&1)" || probe_rc=$?
+    case "$probe_out" in
+      *"profile  $prof"*) ;;
+      *)
+        echo "RELEASE GATE FAILED (R2.2${label}): $vtar cx -v does not report 'profile  $prof'" >&2
+        echo "  probe exit status: $probe_rc" >&2
+        echo "  probe output (${#probe_out} bytes):" >&2
+        printf '%s\n' "$probe_out" | sed 's/^/    /' >&2
+        exit 1 ;;
+    esac
+    r22_profile_payload "$vdir" "$prof" "$vtar" "$label"
+    rm -rf "$vdir"
+  done
+}
