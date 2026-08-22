@@ -98,7 +98,19 @@ r22_stage_profiles() {
 r22_profile_payload() {
   local dir="$1" prof="$2" vtar="$3" label="${4:-}"
   local miss=() extra=()
-  _r22_has() { compgen -G "$dir/$1" > /dev/null 2>&1; }
+  # PGC-1 AMENDED: glob presence WITHOUT compgen — devbox's nix bash is
+  # built without programmable completion, so `compgen` is rc=127 there
+  # and every payload entry reported MISSING while `ls` printed it two
+  # lines below (found on this row's first full run under the runner's
+  # own shell). Unquoted expansion + -e is portable: with no match the
+  # pattern stays literal and -e fails.
+  _r22_has() {
+    local m
+    for m in $dir/$1; do
+      [ -e "$m" ] && return 0
+    done
+    return 1
+  }
   _r22_need() { _r22_has "$1" || miss+=("$1"); }
 
   _r22_need 'cx'
