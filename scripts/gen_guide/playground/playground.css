@@ -581,3 +581,16 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   #cxp-pick { min-width: 200px; flex: 1; }
   .cxp-brand span { display: none; }
 }
+
+/* the detail dropdown (replaces the three-tab detail group) */
+.cxp-detail-select {
+  background: var(--cxp-bg-raise, #2a2620);
+  color: var(--cxp-fg, #e8e0d0);
+  border: 1px solid var(--cxp-border, #4a443a);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.35rem;
+}

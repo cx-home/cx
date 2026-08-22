@@ -23,7 +23,7 @@
   const outTabs  = [...document.querySelectorAll('.cxp-tab')];
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
   const subjectTabs = [...document.querySelectorAll('.cxp-subject-tab')];
-  const detailTabs = [...document.querySelectorAll('.cxp-detail-tab')];
+  const detailSelect = document.getElementById('cxp-detail-select');
   const outs     = {
     cx:   document.querySelector('#cxp-out-cx code'),
     json: document.querySelector('#cxp-out-json code'),
@@ -399,16 +399,18 @@
     try { localStorage.setItem('cxp.vizSubject', vizSubject); } catch (_) {}
     refreshView();
   }));
+  // The three detail tabs collapsed into one compact select — the VIEW
+  // header carried three button groups and read as crowded (owner
+  // report 2026-08-22).
   function applyDetailActiveState() {
-    detailTabs.forEach(t => t.classList.toggle('is-active', t.dataset.detail === detailLevel));
+    if (detailSelect) detailSelect.value = detailLevel;
   }
   applyDetailActiveState();
-  detailTabs.forEach(t => t.addEventListener('click', () => {
-    detailLevel = t.dataset.detail;
-    applyDetailActiveState();
+  if (detailSelect) detailSelect.addEventListener('change', () => {
+    detailLevel = detailSelect.value;
     try { localStorage.setItem('cxp.detailLevel', detailLevel); } catch (_) {}
     refreshView();
-  }));
+  });
 
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';

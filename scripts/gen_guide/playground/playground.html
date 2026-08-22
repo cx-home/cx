@@ -73,12 +73,12 @@
         <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
         <button class="cxp-subject-tab"           data-subject="all"    type="button">All</button>
       </span>
-      <span class="cxp-tabs cxp-detail-group" role="tablist"
-            title="Adjust how much detail nodes show (attributes, scalar bodies)">
-        <button class="cxp-detail-tab" data-detail="min"     type="button">Min</button>
-        <button class="cxp-detail-tab is-active" data-detail="compact" type="button">Compact</button>
-        <button class="cxp-detail-tab" data-detail="full"    type="button">Full</button>
-      </span>
+      <select id="cxp-detail-select" class="cxp-detail-select"
+              title="Adjust how much detail nodes show (attributes, scalar bodies, values)">
+        <option value="min">Detail: min</option>
+        <option value="compact" selected>Detail: compact</option>
+        <option value="full">Detail: full</option>
+      </select>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
         <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>
