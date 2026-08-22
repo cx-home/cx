@@ -342,13 +342,14 @@
       [body
         """The `::` annotation takes one meaning per position. Glued to the
            **key** it types the key (`{1.10::decimal: x}` — a decimal key,
-           scale-distinct from `{1.1::decimal: x}`). Postfix on the
-           **value** it types the value, coercion-checked
-           (`{price: 19.99::decimal}`; `{price: soon::decimal}` is a loud
-           `CXER0290`, and an unknown tag like `5::bogus` is a loud
-           `CXER0107` — never silent text). Standing **alone after the
-           colon** it *declares* the field: typed, value ABSENT — not
-           null:"""]
+           scale-distinct from `{1.1::decimal: x}`). In the **value slot**
+           it types the value, coercion-checked, spelled either way:
+           type-first (`{age: ::int 30}`) or postfix
+           (`{price: 19.99::decimal}`) — one canonical image either way
+           (`{price: soon::decimal}` is a loud `CXER0290`, and an unknown
+           tag like `5::bogus` is a loud `CXER0107` — never silent text).
+           Standing **alone after the colon** it *declares* the field:
+           typed, value ABSENT — not null:"""]
       [example lang=cx
         """[props {order: ::string, compact: ::bool, tags: ::string[]}]"""]
       [body
