@@ -35,7 +35,7 @@
 # It is also quadratic — MEASURED 2026-08-23 over fixtures/bench: 3.4 KB →
 # 3.1 ms, 34.9 KB → 146.8 ms, 354 KB → 5178 ms (100x the input for 1670x
 # the time), which alone was 98% of this harness's wall clock while it was
-# in the target set. Filed separately.
+# in the target set. Filed as #941.
 #
 # Error values are NOT findings. Every CX surface reports refusal as an
 # error VALUE (a deliberate design, not friction), so a malformed input
