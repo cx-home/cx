@@ -927,6 +927,7 @@
     [$copy-if [$cat ($gen, '/playground/playground.js')]          [$cat ($out, '/playground/playground.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
+    [$copy-if [$cat ($gen, '/playground/jspi_probe.html')]        [$cat ($out, '/playground/jspi_probe.html')]],
     [$copy-if [$cat ($gen, '/playground/playground.html')] [$cat ($out, '/playground.html')]],
     [$io:make-dirs [$cat ($out, '/wasm')]],
     [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],

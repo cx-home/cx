@@ -125,13 +125,23 @@ build-playground:
 	@#     :par via Web Workers. Needs separate .wasm for pthread
 	@#     workers to share the module instance via SAB.
 	@# ASYNCIFY=1 lets wall-clock [?sleep DUR] yield through the JS
-	@# event loop on the main thread without freezing the UI. ~10%
-	@# per-call overhead; the default `make build-wasm` keeps ASYNCIFY=0
-	@# so CLI/binding consumers don't pay it.
-	@# Build recipe mirrors scripts/gen_guide/guide.mk lines 77-78 so
-	@# `build-playground` and `guide` stay consistent.
-	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@# event loop on the main thread without freezing the UI. The
+	@# default `make build-wasm` keeps ASYNCIFY=0 so CLI/binding
+	@# consumers don't pay it.
+	@# ASYNCIFY_MODE=2 selects JSPI (-sASYNCIFY=2) instead of the
+	@# classic binaryen Asyncify rewriter (#930): the classic rewriter
+	@# under emcc 5.0.7 costs ~7x host stack per CX eval level, which
+	@# shrank the recursion window to ~10-11 levels and broke the
+	@# diagram walkers on stock example [64]. JSPI removes the
+	@# instrumentation entirely — sync exports get full depth (the
+	@# #319 guard trips catchably at ~40 levels) and the single-file
+	@# bundle drops 36MB → 13MB. Requires a JSPI-capable browser
+	@# (Chromium 137+); cxlib.js routes the async lanes through
+	@# WebAssembly.promising wrappers when Module.cxAsyncifyMode == 2.
+	@# Build recipe mirrors scripts/gen_guide/guide.mk (build-playground-
+	@# wasm-for-guide) so `build-playground` and `guide` stay consistent.
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
@@ -141,6 +151,7 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
 	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
 	@cp dist/wasm/libcx-async.js dist/playground-preview/wasm/libcx-async.js
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/wasm/libcx-pthreads.js; fi

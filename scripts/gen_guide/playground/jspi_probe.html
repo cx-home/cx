@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>libcx wasm JSPI probe (#930)</title>
+<!--
+  Self-checking probe for the JSPI playground bundles (ASYNCIFY_MODE=2,
+  #930). node cannot instantiate a JSPI artifact (WebAssembly.Suspending
+  is missing in node v22 even behind --experimental-wasm-jspi), so the
+  browser-side counterpart to scripts/wasm/check_stack_guard.mjs lives
+  here. Serve docs/guide/ (e.g. `make guide-http`, port 8767) and open
+    /playground/jspi_probe.html            — host-picked variant
+    /playground/jspi_probe.html?variant=async     — force libcx-async
+    /playground/jspi_probe.html?variant=pthreads  — force libcx-pthreads
+  Every row self-judges PASS/FAIL; the SUMMARY line at the top flips to
+  ALL PASS / FAILURES only when every test has settled.
+
+  Checks:
+    1. build/mode report (isAsyncify / isJspi / runtimeMode / version)
+    2. sync recursion window — bisects the CXER0272 guard trip depth;
+       asserts trip in [20..80], usable depth >= 30, depth-500 still the
+       catchable guard err (never a host RangeError), [?fallback] recovers
+    3. stock example [64] — SOURCE diagram + OUTPUT diagram both render
+    4. wall-clock [?sleep 300ms] through evalCodeAsync — elapsed ~300ms
+       AND the UI thread kept ticking (rAF counter) while suspended
+    5. example [44] streaming (4 x 300ms sleeps) via
+       evalCodeStreamingAsync — 4 chunks, paced arrival
+-->
+<style>
+  body { font: 14px/1.5 ui-monospace, monospace; margin: 1.5rem; background: #111; color: #ddd; }
+  h1 { font-size: 16px; }
+  #summary { font-weight: bold; padding: .4rem .6rem; border: 1px solid #555; display: inline-block; }
+  .pass { color: #6f6; } .fail { color: #f66; } .info { color: #9cf; } .run { color: #fd7; }
+  table { border-collapse: collapse; margin-top: 1rem; }
+  td, th { border: 1px solid #444; padding: .3rem .6rem; text-align: left; vertical-align: top; }
+  td.detail { max-width: 60rem; word-break: break-word; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>libcx wasm JSPI probe (#930)</h1>
+<div id="summary" class="run">RUNNING…</div>
+<table id="rows"><tr><th>test</th><th>verdict</th><th>detail</th></tr></table>
+
+<script>
+  // Variant forcing: cxlib.js skips its own loader injection when
+  // createCxModule is already defined, so pre-load the requested
+  // artifact synchronously via document.write (script executes before
+  // cxlib.js below).
+  (function () {
+    const v = new URLSearchParams(location.search).get('variant');
+    if (v === 'async' || v === 'pthreads') {
+      document.write('<scr' + 'ipt src="../wasm/libcx-' + v + '.js"></scr' + 'ipt>');
+    }
+  })();
+</script>
+<script src="../wasm/cxlib.js"></script>
+<script>
+(async function () {
+  const rows = document.getElementById('rows');
+  const summary = document.getElementById('summary');
+  let failures = 0;
+  function row(name, verdict, detail) {
+    const tr = document.createElement('tr');
+    const cls = verdict === 'PASS' ? 'pass' : verdict === 'FAIL' ? 'fail' : 'info';
+    tr.innerHTML = '<td>' + name + '</td><td class="' + cls + '">' + verdict +
+      '</td><td class="detail"></td>';
+    tr.lastChild.textContent = detail;
+    rows.appendChild(tr);
+    if (verdict === 'FAIL') failures++;
+  }
+  function check(name, ok, detail) { row(name, ok ? 'PASS' : 'FAIL', detail); }
+
+  try {
+    await cxlib.ready;
+  } catch (e) {
+    row('cxlib.ready', 'FAIL', String(e));
+    summary.textContent = 'FAILURES: wasm failed to load';
+    summary.className = 'fail';
+    return;
+  }
+
+  // ── 1. build/mode report ─────────────────────────────────────
+  const loadedArtifacts = performance.getEntriesByType('resource')
+    .map(r => r.name.split('/').pop().split('?')[0])
+    .filter(n => n.startsWith('libcx'));
+  row('build', 'INFO',
+    'version=' + cxlib.version() +
+    ' | loaded=' + (loadedArtifacts.join('+') || '(inline)') +
+    ' | runtimeMode(env)=' + cxlib.runtimeMode +
+    ' | isAsyncify=' + cxlib.isAsyncify() +
+    ' | isJspi=' + (typeof cxlib.isJspi === 'function' ? cxlib.isJspi() : 'n/a') +
+    ' | WebAssembly.promising=' + (typeof WebAssembly.promising) +
+    ' | visibility=' + document.visibilityState);
+  check('asyncify build flag', cxlib.isAsyncify() === true, 'cx_wasm_is_asyncify() must report 1');
+  check('jspi mode active', typeof cxlib.isJspi === 'function' && cxlib.isJspi() === true,
+    'cxAsyncifyMode=2 stamp + host JSPI support + raw export reachable');
+
+  // ── 2. sync recursion window (the #930/#353 class) ───────────
+  const probeProg = n =>
+    '[?def f ($n) [?if [= $n 0] [then 0] [else [+ 1 [$f [- $n 1]]]]]] [$f ' + n + ']';
+  function classify(n) {
+    try {
+      const r = cxlib.evalCode(probeProg(n), 'text', '');
+      if (r.includes('CXER0272')) return 'guard';
+      return 'ok';
+    } catch (e) {
+      if (e && e.cxCode === 'CXER0272') return 'guard';
+      return 'host-death: ' + String(e).slice(0, 120);
+    }
+  }
+  let lastOk = 0, firstTrip = 0, death = null;
+  for (const d of [10, 20, 30, 40, 60, 80, 120, 200]) {
+    const c = classify(d);
+    if (c === 'ok') lastOk = d;
+    else if (c === 'guard') { firstTrip = d; break; }
+    else { death = c + ' at depth ' + d; break; }
+  }
+  if (death) {
+    row('recursion window', 'FAIL', death + ' — host death before the guard (the #353 wedge class)');
+  } else if (firstTrip === 0) {
+    row('recursion window', 'FAIL', 'no guard trip up to depth 200 — unguarded');
+  } else {
+    let lo = lastOk, hi = firstTrip;
+    while (hi - lo > 2) {
+      const mid = (lo + hi) >> 1;
+      if (classify(mid) === 'ok') lo = mid; else hi = mid;
+    }
+    row('recursion window', 'INFO', 'guard trip depth ≈ ' + hi + ' (last clean ' + lo + ')');
+    check('usable depth ≥ 30', lo >= 30, 'measured last clean depth = ' + lo);
+    check('trip inside [20..80]', hi >= 20 && hi <= 80, 'measured trip = ' + hi);
+    check('depth-500 stays catchable guard', classify(500) === 'guard',
+      'must be CXER0272-as-value, never a RangeError');
+    let rec = '';
+    try {
+      rec = cxlib.evalCode(
+        '[?def f ($n) [?if [= $n 0] [then 0] [else [+ 1 [$f [- $n 1]]]]]] ' +
+        "[?fallback [$f 500] [recover-with 'saved']]", 'text', '');
+    } catch (e) { rec = 'threw: ' + e; }
+    check('[?fallback] recovers the guard err', rec.includes('saved'), 'got: ' + rec.slice(0, 120));
+  }
+
+  // ── 3. stock example [64] — both GRAPH panes ─────────────────
+  const ex64 = '[?let [= $doc [order [item qty=2] [item qty=3] [item qty=5]]]\n' +
+               '  [?for [in $i $doc/item]\n    [yield $i/@qty]]]';
+  let srcDiag = '', srcErr = '';
+  try { srcDiag = cxlib.diagram(ex64, 'mermaid:compact'); } catch (e) { srcErr = String(e); }
+  check('ex64 SOURCE diagram renders',
+    !srcErr && srcDiag.includes('flowchart') && srcDiag.trim().includes('\n'),
+    srcErr || (srcDiag.split('\n').length + ' mermaid lines: ' + srcDiag.slice(0, 100) + '…'));
+  let out = '', outDiag = '', outErr = '';
+  try {
+    out = cxlib.evalCode(ex64, 'cx', '');
+    outDiag = cxlib.diagram(out, 'mermaid:compact');
+  } catch (e) { outErr = String(e); }
+  check('ex64 evaluates', out.includes('2') && out.includes('3') && out.includes('5'),
+    'output: ' + out.slice(0, 80));
+  check('ex64 OUTPUT diagram renders',
+    !outErr && outDiag.trim().length > 0 && !outDiag.includes('CXER'),
+    outErr || (outDiag.split('\n').length + ' mermaid lines: ' + outDiag.slice(0, 100) + '…'));
+
+  // ── 4. wall-clock sleep through the async lane ───────────────
+  // Yield proof must survive a HIDDEN page (automation panes render
+  // hidden): rAF is fully suspended and setTimeout clamps to 1Hz
+  // there, so count event-loop turns with a MessageChannel pump
+  // (macrotasks, not visibility-throttled). A blocked main thread
+  // pumps 0 turns; a suspended-and-yielding wasm lets it spin freely.
+  let pumpTicks = 0, pumpOn = true, rafTicks = 0, rafOn = true;
+  const mc = new MessageChannel();
+  mc.port1.onmessage = () => { if (pumpOn) { pumpTicks++; mc.port2.postMessage(0); } };
+  mc.port2.postMessage(0);
+  (function tick() { if (rafOn) { rafTicks++; requestAnimationFrame(tick); } })();
+  const t0 = performance.now();
+  let sleepOut = '', sleepErr = '';
+  try {
+    sleepOut = await cxlib.evalCodeAsync("[?let [= $_ [?sleep 300ms]] [slept ok=true]]", 'cx', '');
+  } catch (e) { sleepErr = String(e); }
+  const elapsed = performance.now() - t0;
+  pumpOn = false; rafOn = false; mc.port1.close(); mc.port2.close();
+  const hidden = document.visibilityState === 'hidden';
+  check('wall [?sleep 300ms] completes', !sleepErr && sleepOut.includes('slept'),
+    sleepErr || ('output: ' + sleepOut.slice(0, 80)));
+  // Hidden pages clamp the resume setTimeout to 1s — accept up to 2.5s
+  // there; a visible page must land near the nominal 300ms.
+  check('sleep elapsed ≈ 300ms', elapsed >= 280 && elapsed < (hidden ? 2500 : 2000),
+    'elapsed = ' + elapsed.toFixed(0) + 'ms (visibility=' + document.visibilityState + ')');
+  check('UI thread yielded during sleep', pumpTicks >= 50,
+    'MessageChannel turns during await = ' + pumpTicks + ', rAF ticks = ' + rafTicks +
+    ' (a blocked main thread gives 0 turns; rAF stays 0 on hidden pages)');
+
+  // ── 5. example [44] streaming via evalCodeStreamingAsync ─────
+  const ex44 = '[?for [in $n (1, 2, 3, 4)]\n  [yield [?let [= $_ [?sleep 300ms]]\n           [tick n=$n]]]]';
+  const chunks = [];
+  const s0 = performance.now();
+  let streamErr = '';
+  try {
+    await cxlib.evalCodeStreamingAsync(ex44, 'cx', c => chunks.push({ t: performance.now() - s0, c }), '');
+  } catch (e) { streamErr = String(e); }
+  const sElapsed = performance.now() - s0;
+  const ticks = chunks.map(x => x.c).join('').match(/\[tick/g) || [];
+  check('ex44 streams 4 ticks', !streamErr && ticks.length === 4,
+    streamErr || ('chunks=' + chunks.length + ' ticks=' + ticks.length +
+      ' arrival(ms)=' + chunks.map(x => x.t.toFixed(0)).join(',')));
+  // Hidden pages clamp each of the 4 resume timeouts to 1s (→ ~4s).
+  check('ex44 paced ≈ 4×300ms', sElapsed >= 1100 && sElapsed < (hidden ? 6000 : 4000),
+    'elapsed = ' + sElapsed.toFixed(0) + 'ms (visibility=' + document.visibilityState + ')');
+
+  summary.textContent = failures === 0 ? 'ALL PASS' : 'FAILURES: ' + failures;
+  summary.className = failures === 0 ? 'pass' : 'fail';
+  document.title = (failures === 0 ? 'PASS — ' : 'FAIL — ') + document.title;
+})();
+</script>
+</body>
+</html>

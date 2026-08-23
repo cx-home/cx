@@ -164,8 +164,14 @@ build-playground-wasm-for-guide:
 	@# libcx-pthreads keeps SINGLE_FILE=0 because emscripten's pthread
 	@# runtime needs the separate .wasm to spawn Worker threads sharing
 	@# the same wasm module instance via SharedArrayBuffer.
-	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@# ASYNCIFY_MODE=2 = JSPI (#930): the classic Asyncify rewriter cost
+	@# ~7x host stack per CX eval level under emcc 5.0.7 and broke the
+	@# diagram walkers at ~10 levels; JSPI restores full sync depth
+	@# (guard trips catchably at ~40) and shrinks the single-file bundle
+	@# 36MB → 13MB. MUST stay in lockstep with the top-level Makefile's
+	@# build-playground recipe.
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-http   Build docs/guide/ + boot the dog-food CX HTTP static
 ##                                   server (scripts/gen_guide/guide_serve.cx)
