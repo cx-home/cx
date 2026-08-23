@@ -372,15 +372,17 @@
 
     [child id=profile-per-binding n='16a.6.3' title='Per-binding bench'
       [body
-        """The per-binding bench shim is `bench_report.py`. It drives
+        """The per-binding bench shim is `bench_report.cx`. It drives
            every binding through a common harness and prints
            comparative numbers — per binding, the parse and stream
            medians on the common fixture, then a comparative table.
-           Filters are **positional** binding names; unknown `--flags`
-           are silently ignored (only `--verbose`/`-v` is read):"""]
+           Filters are **positional** binding names; the only flag is
+           `--verbose`/`-v`, and any other flag is a hard error (exit 1)
+           rather than a silent no-op:"""]
 
       [example lang=sh
-        """$ python3 bench_report.py python go rust
+        """$ cx --allow-read --allow-write --allow-subprocess \
+                --allow-clock --allow-env bench_report.cx python go rust
            benchmarking python       ... parse=…ms  stream=…ms
            benchmarking go           ... parse=…ms  stream=…ms
            benchmarking rust         ... parse=…ms  stream=…ms"""]

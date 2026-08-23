@@ -1549,8 +1549,10 @@ bench-xap: BENCH_K ?= 500
 bench-xap: build-vcx-dev
 	@bench/xap/run.sh $(BENCH_K)
 
+bench: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench: build-vcx
-	$(PYTHON) bench_report.py
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-clock \
+	   --allow-env bench_report.cx
 
 bench-python: build-vcx
 	$(PYTHON) lang/python/bench.py
