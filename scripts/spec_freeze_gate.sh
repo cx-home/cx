@@ -126,12 +126,24 @@ token_recorded() { # $1 = full commit message
       frag=$(strip_unbalanced_parens "$frag")
       [ "${#frag}" -ge 2 ] || continue
       base="${frag%%(*}"
-      if grep -qrF --include='*.md' -- "$frag" ledger/ 2>/dev/null; then
-        return 0
+      # grep rc: 0 found, 1 not-found, >1 ERROR (e.g. failed spawn under
+      # load). An error must not read as not-found — that verdict is a
+      # false SPEC-FREEZE VIOLATION (see check_commit's infra note).
+      grep -qrF --include='*.md' -- "$frag" ledger/ 2>/dev/null
+      gr=$?
+      if [ "$gr" -eq 0 ]; then return 0; fi
+      if [ "$gr" -gt 1 ]; then
+        echo "SPEC-FREEZE-GATE INFRA FAILURE: grep over ledger/ errored (rc $gr) — cannot adjudicate; rerun the gate." >&2
+        exit 3
       fi
-      if [ "$base" != "$frag" ] && [ "${#base}" -ge 2 ] \
-        && grep -qrF --include='*.md' -- "$base" ledger/ 2>/dev/null; then
-        return 0
+      if [ "$base" != "$frag" ] && [ "${#base}" -ge 2 ]; then
+        grep -qrF --include='*.md' -- "$base" ledger/ 2>/dev/null
+        gr=$?
+        if [ "$gr" -eq 0 ]; then return 0; fi
+        if [ "$gr" -gt 1 ]; then
+          echo "SPEC-FREEZE-GATE INFRA FAILURE: grep over ledger/ errored (rc $gr) — cannot adjudicate; rerun the gate." >&2
+          exit 3
+        fi
       fi
     done
   done < <(printf '%s\n' "$1" | grep -E 'RULED:[[:space:]]*[A-Za-z0-9]' || true)
@@ -150,7 +162,26 @@ check_commit() {
   flags=$(git show --format="" --name-only "$sha" | classify)
   if [ "$flags" = "1 1" ]; then
     msg=$(git log -1 --format=%B "$sha")
-    if ! printf '%s\n' "$msg" | grep -qE 'RULED:[[:space:]]*[A-Za-z0-9]'; then
+    # A commit message is NEVER empty (the subject line always exists) — an
+    # empty read is a transient infrastructure failure (measured 2026-08-23:
+    # under release-verify's fully parallel `make test`, this check falsely
+    # flagged 1b4fd26b5, whose message carries TWO RULED: tokens, while the
+    # same gate passed standalone at the same HEAD; the sibling extraction
+    # gate flaked a 27-byte-stderr spawn failure in the same run). Retry
+    # once; a persistent empty read is ITS OWN loud failure, never a
+    # spec-freeze verdict.
+    if [ -z "$msg" ]; then
+      sleep 1
+      msg=$(git log -1 --format=%B "$sha")
+      if [ -z "$msg" ]; then
+        echo "SPEC-FREEZE-GATE INFRA FAILURE: git log returned an empty message for $sha twice — cannot adjudicate; rerun the gate." >&2
+        return 1
+      fi
+    fi
+    # Bash's own regex, no subprocess: a grep that fails to SPAWN under
+    # load is indistinguishable from "token absent" and mints a false
+    # violation.
+    if ! [[ "$msg" =~ RULED:[[:space:]]*[A-Za-z0-9] ]]; then
       echo "SPEC-FREEZE VIOLATION: commit $sha touches normative spec AND implementation with no 'RULED: <id>' token (register R4.1)." >&2
       git show --format="  %h %s" --name-only "$sha" | head -20 >&2
       return 1
