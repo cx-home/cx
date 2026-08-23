@@ -2249,13 +2249,11 @@ includes it.
 
 ## Importing
 
-```cx
-[?lib 'cx-stdlib/strings']            ; bound as `strings`
-[?lib 'cx-stdlib/strings' as=str]     ; renamed
-[?lib 'cx-x/tools' as=tools]          ; experimental tier, said out loud
-```
+`[?lib 'cx-stdlib/strings']` binds the module under its own name.
+`[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-x/tools' as=tools]`
+imports from the experimental tier, and says so in the import line.
 
-Two tiers, and the import line always says which:
+Two tiers:
 
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
 * **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
