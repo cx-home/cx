@@ -19,6 +19,7 @@ records under `spec/02-working/`).
 |------|------|
 | `*.cxd` | Top-level fixture suites, one `[test-suite …]` document each |
 | `stdlib/*.cxd` | Per-module stdlib suites |
+| `llm/*.cxd` | The executable backing for the generated LLM primer (#938). Consumed by `scripts/gen_docs/primer_build.cx`, gated by `make docs-check`. It records diagnostic messages BYTE-EXACT — unlike the suites above, whose `[out-err]` pins the error CODE and not the wording — because the wording is what the primer teaches a reader to recognise. Adds `[cli-argv]` for invocation-level cases. Deliberately NOT a top-level `*.cxd`: the corpus scanners in `vcx/tests/` `os.ls` the root and carry pinned baselines that this suite's contract is not part of. See its own `[doc]` block. |
 | `fixtures.cxs` | THE fixture schema (CX schema; suites validate against it) |
 | `gates.cxd` | Gate-policy manifest (per-module gate toggles; validated by `scripts/gates_manifest_gate.sh`) |
 
