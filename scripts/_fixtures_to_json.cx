@@ -1,0 +1,126 @@
+# scripts/_fixtures_to_json.cx — emit a conformance .cxd suite as a JSON array
+# of flat fixture dicts (#922 CX port of the retired scripts/_fixtures_to_json.py).
+#
+# Thin CX-native reimplementation of the fixture-loader contract
+# (vcx/fixtures/fixture_loader.v, mirrored by lang/python/cxlib/fixtures.py)
+# so non-CX consumers — e.g. the WASM parity runner scripts/wasm/run_parity.mjs
+# — can read the canonical .cxd fixtures without hand-rolling a CX parser.
+# Each object is `{"id": <name>, "tags": [...], <section-key>: <body>, ...}`
+# (legacy snake-keyed section bodies, byte-exact from the loader rules: one
+# leading + one trailing newline stripped from each [# … #] body).
+#
+# Output formatting matches the Python's json.dump(..., ensure_ascii=False):
+# `, ` / `: ` separators, non-ASCII passthrough — byte-compatible for the
+# same suite.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write scripts/_fixtures_to_json.cx conformance/code.cxd
+#
+# Exit codes: 0 emitted; 2 usage / unreadable suite.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/format'  as=format]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[; JSON string literal, Python-compatible escaping. ]
+[?def jstr scope=public ($s) [$cat ('"', [$strings:escape-json $s], '"')]]
+
+# el-value: semantic value of one child element, {name: value} -> value.
+# Multi-rawtext siblings (a literal hash-bracket close in the payload)
+# surface as an array of strings — rejoin them, mirroring the loader's
+# concatenation.
+#
+# rawtext-value: the loader (fixture_loader.v / fixtures.py _rawtext) takes
+# RAWTEXT payloads ONLY — a plain-text body ([grant eval], [title words…])
+# contributes the empty string. Rawtext is detected via canonical render:
+# a rawtext first child renders as an immediate raw block after the name.
+[?def el-value scope=public ($el)
+  [?let [= $m [$json:parse [$json:emit $el]]]
+        [= $v [?else [$map:get $m [$name $el]] '']]
+    [?match $v
+      [case $arr::array [$strings:join $arr '']]
+      [else $v]]]]
+
+[?def is-rawtext scope=public ($el)
+  [$strings:starts-with [$format:canonical $el]
+    [$cat ('[', [$name $el], ' [', '#')]]]
+
+[?def rawtext-value scope=public ($el)
+  [?if [$is-rawtext $el] [then [$el-value $el]] [else '']]]
+
+[; loader rule: strip ONE leading and ONE trailing newline. ]
+[?def normalize scope=public ($s)
+  [?let [= $a [?if [$strings:starts-with $s '\n']
+                [then [$strings:slice $s 1 [$strings:length $s]]] [else $s]]]
+    [?if [$strings:ends-with $a '\n']
+      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+
+[; comma-joined atom names from [expect-codes [:A :B]] — ':A' -> 'A'. ]
+[?def atom-csv scope=public ($el)
+  [?let [= $m [$json:parse [$json:emit $el]]]
+        [= $v [?else [$map:get $m [$name $el]] ()]]
+    [$strings:join
+      [?for [in $a $v]
+        [yield [?if [$strings:starts-with [$string $a] ':']
+          [then [$strings:slice [$string $a] 1 [$strings:length [$string $a]]]]
+          [else [$string $a]]]]]
+      ',']]]
+
+# member: one key-colon-value JSON member.
+[?def member scope=public ($k $v) [$cat ([$jstr $k], ': ', [$jstr $v])]]
+
+[; one case element -> one JSON object string (key order: id, tags, then
+   sections in document order — the loader's fc.order). ]
+[?def case-json scope=public ($c)
+  [?let
+    [= $cid [$string [?else $c@id '']]]
+    [= $title [$strings:join [?for [in $k $c/*] [where [= [$name $k] 'title']]
+                [yield [$rawtext-value $k]]] '']]
+    [= $nm [?if [= $title ''] [then $cid] [else [$cat ($cid, ' ', $title)]]]]
+    [= $tags-text [$strings:join [?for [in $k $c/*] [where [= [$name $k] 'tags']]
+                    [yield [$el-value $k]]] ' ']]
+    [= $tags [?for [in $t [$strings:split-whitespace $tags-text]]
+               [where [not [= $t '']]] [yield [$jstr $t]]]]
+    [= $sections
+      [?for [in $k $c/*]
+        [= $knm [$name $k]]
+        [where [and [not [= $knm 'title']] [and [not [= $knm 'tags']] [not [= $knm 'meta']]]]]
+        [yield
+          [?match $knm
+            [case 'expect-valid'
+              [$member 'sv_assert_valid'
+                [?if [= [$el-value $k] true] [then '1'] [else '0']]]]
+            [case 'expect-codes'      [$member 'sv_expected_codes' [$atom-csv $k]]]
+            [case 'expect-warn-codes' [$member 'sv_expected_warn_codes' [$atom-csv $k]]]
+            [else [$member [$strings:replace $knm '-' '_']
+                           [$normalize [$rawtext-value $k]]]]]]]]
+    [$cat ('{', [$jstr 'id'], ': ', [$jstr $nm],
+           ', ', [$jstr 'tags'], ': [', [$strings:join $tags ', '], ']',
+           [?if [$present $sections]
+             [then [$cat (', ', [$strings:join $sections ', '])]] [else '']],
+           '}')]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $_usage [?if [< [$count $argv] 2]
+    [then ([$cry 'usage: _fixtures_to_json.cx <suite.cxd>'], [$env:exit 2])]
+    [else ()]]]
+  [= $path [$nth $argv 2]]
+  [= $src [?fallback [$io:read-file $path]
+            [recover-with ([$cry [$cat ('cannot read ', $path)]], [$env:exit 2], '')]]]
+  [= $doc [?fallback [$cx:parse $src]
+            [recover-with ([$cry [$cat ('cannot parse ', $path)]], [$env:exit 2], null)]]]
+  [; only a top-level [test-suite]'s direct [case] children contribute —
+     mirror of fixture_loader.v / fixtures.py parse_fixture_suite. ]
+  [= $objs [?for [in $c $doc//test-suite/case] [yield [$case-json $c]]]]
+  [= $_out [$io:write-string [$env:stdout]
+             [$cat ('[', [$strings:join $objs ', '], ']')]]]
+  [$env:exit 0]]
