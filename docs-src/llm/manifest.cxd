@@ -20,7 +20,11 @@ citing an undeclared (or nonexistent) fixture id is a HARD generator
 failure, never a silently empty block.
 #]]
 
-  [site base='https://cxhome.org/llm/']
+  [; `base` addresses the reference set; `root` is the SITE ROOT, where the
+     two llmstxt.org files live (the convention is /llms.txt — a copy under
+     /llm/ is not discoverable and does not count). scripts/publish.sh puts
+     them in both places and asserts the root pair arrived. ]
+  [site base='https://cxhome.org/llm/' root='https://cxhome.org/']
 
   [tagline [#
 CX is a homoiconic data-and-code language: one bracketed element syntax for

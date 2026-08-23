@@ -2701,6 +2701,7 @@ Subcommands (`cx <subcommand> --help` for details):
   lint              Style + correctness warnings.
   validate          Validate a document against a CX schema (.cxs).
   eval              Evaluate a CX program (alias of the default run action; prefer `cx FILE`).
+  primer            Print the LLM onboarding primer for THIS binary (#938).
   version           Version / build info (same output as -v / --version).
   select            CXPath query over a document (matches in canonical CX).
   diagram           Render a CX program as a diagram (mermaid/svg/png).

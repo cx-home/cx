@@ -530,11 +530,18 @@
 
 # ── the llmstxt.org index ───────────────────────────────────────────────
 
-[?def render-llms-txt scope=public ($version $base $tagline $docs)
+# one-line: llms.txt is a LINE-ORIENTED index — one entry per line, the
+# description after the colon. The manifest's prose is wrapped for humans
+# reading the manifest, so it is reflowed here rather than requiring authors to
+# write single 200-column lines.
+[?def one-line scope=public ($s)
+  [$strings:trim [$strings:replace [$strings:replace $s "\n" " "] "  " " "]]]
+
+[?def render-llms-txt scope=public ($version $base $root $tagline $docs)
   [$strings:join (
     [$concat "# CX " $version],
     "",
-    [$concat "> " $tagline],
+    [$concat "> " [$one-line $tagline]],
     "",
     [$concat "Generated from the CX conformance corpus at the v" $version
              " cut by scripts/gen_docs/primer_build.cx. Every code example in "
@@ -546,18 +553,18 @@
     [$strings:join [?for [in $d $docs]
       [where [= [$string $d@id] "primer"]]
       [yield [$concat "- [" [$string $d@title] "](" $base [$string $d@out] "): "
-                      [$string $d@summary]]]] "\n"],
+                      [$one-line [$string $d@summary]]]]] "\n"],
     "",
     "## Reference",
     "",
     [$strings:join [?for [in $d $docs]
       [where [not [= [$string $d@id] "primer"]]]
       [yield [$concat "- [" [$string $d@title] "](" $base [$string $d@out] "): "
-                      [$string $d@summary]]]] "\n"],
+                      [$one-line [$string $d@summary]]]]] "\n"],
     "",
     "## Optional",
     "",
-    [$concat "- [Everything above, concatenated](" $base "llms-full.txt): "
+    [$concat "- [Everything above, concatenated](" $root "llms-full.txt): "
              "one fetch, the whole layer."],
     "") "\n"]]
 
@@ -607,6 +614,8 @@
 
   [= $base [$strings:join [?for [in $k $manifest/*]
       [where [= [?else [$name $k] ""] "site"]] [yield [$string $k@base]]] ""]]
+  [= $root [$strings:join [?for [in $k $manifest/*]
+      [where [= [?else [$name $k] ""] "site"]] [yield [$string $k@root]]] ""]]
   [= $tagline [$strings:join [?for [in $k $manifest/*]
       [where [= [?else [$name $k] ""] "tagline"]]
       [yield [$normalize [$raw-of $k]]]] ""]]
@@ -649,7 +658,7 @@
     [where [not [= $msg ""]]]
     [yield $msg]]]
 
-  [= $llms [$render-llms-txt $version $base $tagline $docs]]
+  [= $llms [$render-llms-txt $version $base $root $tagline $docs]]
   [= $llms-full [$strings:join [?for [in $d $docs]
       [yield [$concat "<!-- " $base [$string $d@out] " -->\n\n"
                       [$map:get $bodies [$string $d@id]]]]] "\n\n"]]
