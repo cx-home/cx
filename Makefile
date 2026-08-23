@@ -582,19 +582,15 @@ check-code-spec-consistency:
 # discipline, and ENFORCED spec-error-code coverage (every CXER code
 # cited, verified covered cross-suite, or pinned to its filed issue —
 # #808 rows are the visible debt).
-# Builds first and pins LIBCX_LIB_DIR, same as test-python / test-code-diagram
-# (#774's finding, hit again here): the checker loads cxlib, whose loader
-# otherwise finds an INSTALLED libcx.dylib ahead of this tree's and dies on
-# whichever ABI export the installed copy predates — a gate that cannot load
-# the tree it is gating is not a gate.
+# CX gate (#922, RULED: PYE-5): reads the corpus through THIS TREE's cx
+# binary ([$cx:parse]) — the gate exercises the reader it guards. The
+# former LIBCX_LIB_DIR pin is obsolete (nothing dlopens cxlib any more);
+# the build-vcx dep remains the #902 rule — the shipped artifact is the
+# only honest subject for a gate.
 .PHONY: check-code-fixtures
-check-code-fixtures: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
-# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
-# "which build is under test" a decision instead of a race, and it is the
-# only honest subject for a gate — the dev library is not what ships.
+check-code-fixtures: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-code-fixtures: build-vcx
-	@$(PYTHON) scripts/check_code_fixtures.py > /dev/null && echo "check-code-fixtures OK — 1000+ fixtures: ids/directives/error-code coverage green (run the script directly for the JSON report)"
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_code_fixtures.cx > /dev/null && echo "check-code-fixtures OK — 1000+ fixtures: ids/directives/error-code coverage green (run the script directly for the JSON report)"
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
