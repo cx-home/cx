@@ -1,0 +1,185 @@
+# scripts/check_completions_drift.cx — the shell-completion drift gate (#423).
+#
+# Extracts the subcommand list from the SubcommandSpec registry in
+# vcx/cmd/main.v (the single source of truth for `cx <verb>`) and asserts
+# that each of the three shell completion files (tooling/completions/
+# {cx.bash,_cx.zsh,cx.fish}) mentions every subcommand — so a new verb added
+# to the dispatch can never silently rot the completions again.
+#
+# Since #447 the registry drives both dispatch and help; since I4 (#651/#516)
+# it has two halves: build_subcommands (vcx/cmd/main.v, every profile) plus
+# platform_subcommands (the `-d cx_platform`-gated
+# vcx/cmd/platform_verbs_d_cx_platform.v, appended to the same registry in
+# the default platform-profile build). Shipped completions describe the
+# DEFAULT (platform-profile) binary, so the dispatch registry the completions
+# are checked against is the UNION of the two halves.
+#
+# Also cross-checks two flag surfaces that have already drifted once:
+#   * `cx diagram` — the completions must offer exactly the real flags
+#     (--format with mermaid/svg/png values, -o) and must NOT offer the
+#     formerly fabricated ones (--output=, --depth=, graphviz).
+#   * fabricated subcommands — anything the completions offer as a verb that
+#     the dispatch does not know is an error.
+#
+# Exit 0 clean, 1 on drift, 2 on harness failure (missing files / registry
+# shape). Run from the repo root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_completions_drift.cx
+# (or: make check-completions-drift)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+# member: is $x one of $xs?
+[?def member scope=public ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# uniq: first occurrence of each value, input order preserved.
+[?def uniq scope=public ($xs)
+  [?for [in $i [$range 1 [$count $xs]]]
+    [where [= [$count [?for [in $j [$range 1 [- $i 1]]]
+                [where [= $xs[$j] $xs[$i]]] [yield 1]]] 0]]
+    [yield $xs[$i]]]]
+
+# verb-drift-for: the missing/fabricated drift lines for one shell.
+[?def verb-drift-for scope=public ($shell $have $verbs)
+  [?let
+    [= $missing [?for [in $v $verbs] [where [not [$member $v $have]]] [yield $v]]]
+    [= $fabricated [$sort [$uniq [?for [in $h $have]
+                     [where [not [$member $h $verbs]]] [yield $h]]]]]
+    [$fp:flat-map (
+       [?if [> [$count $missing] 0]
+         [then ([$cat ("DRIFT [", $shell, "]: completions missing dispatch subcommand(s): ",
+                       [$strings:join $missing ", "])],)]
+         [else ()]],
+       [?if [> [$count $fabricated] 0]
+         [then ([$cat ("DRIFT [", $shell, "]: completions offer verbs the dispatch does not know: ",
+                       [$strings:join $fabricated ", "])],)]
+         [else ()]])
+     [?fn ($x) $x]]]]
+
+# diag-drift-for: the `cx diagram` flag-surface drift lines for one shell.
+[?def diag-drift-for scope=public ($shell $section $forbidden $required)
+  [?if [= $section ""]
+    [then ([$cat ("DRIFT [", $shell, "]: cannot locate the `cx diagram` completion section")],)]
+    [else
+      [$fp:flat-map (
+         [?for [in $bad $forbidden]
+           [where [$strings:contains $section $bad]]
+           [yield [$cat ("DRIFT [", $shell, "]: diagram completion offers fabricated '", $bad,
+                         "' (real flags: --format=mermaid|svg|png, -o per vcx/cmd/diagram.v)")]]],
+         [?for [in $good $required]
+           # fish spells a short option `-o` as `-s o`.
+           [where [not [and [= $good "-o"] [= $shell "fish"]
+                            [$matched [$re:find [$re:compile "-s\\s+o\\b"] $section]]]]]
+           [where [not [$strings:contains $section $good]]]
+           [yield [$cat ("DRIFT [", $shell, "]: diagram completion is missing '", $good,
+                         "' (per vcx/cmd/diagram.v)")]]])
+       [?fn ($x) $x]]]]]
+
+[?let
+  [= $main-v "vcx/cmd/main.v"]
+  # I4 (#651/#516): the platform-profile verbs (store/fabric daemons +
+  # operator helpers) live in their own `-d cx_platform`-gated file.
+  [= $platform-v "vcx/cmd/platform_verbs_d_cx_platform.v"]
+  [= $bash-f "tooling/completions/cx.bash"]
+  [= $zsh-f  "tooling/completions/_cx.zsh"]
+  [= $fish-f "tooling/completions/cx.fish"]
+
+  # Fabricated diagram surface (#423 item 1) — must never reappear.
+  [= $diagram-forbidden ("graphviz", "--output=", "--depth=")]
+  [= $diagram-required ("mermaid", "svg", "png", "-o")]
+
+  [= $name-rx [$re:compile "name:\\s*'([a-z][a-z0-9-]*)'"]]
+
+  [= $missing-files
+    [?for [in $p ($main-v, $bash-f, $zsh-f, $fish-f)]
+      [where [not [$io:is-file $p]]]
+      [yield $p]]]
+
+  [?if [> [$count $missing-files] 0]
+    [then
+      [?let [= $_e [?for [in $p $missing-files]
+                     [yield [$cry [$cat ("check_completions_drift: missing ", $p)]]]]]
+        [$env:exit 2]]]
+    [else
+  [?let
+    [= $main-src     [$io:read-file $main-v]]
+    [= $platform-src [$io:read-file $platform-v]]
+    [= $bash-src     [$io:read-file $bash-f]]
+    [= $zsh-src      [$io:read-file $zsh-f]]
+    [= $fish-src     [$io:read-file $fish-f]]
+
+    [= $build-m [$re:find [$re:compile "(?s)fn build_subcommands\\(\\) \\[\\]SubcommandSpec \\{(.*?)\\n\\}"] $main-src]]
+    [= $plat-m  [$re:find [$re:compile "(?s)fn platform_subcommands\\(\\) \\[\\]SubcommandSpec \\{(.*?)\\n\\}"] $platform-src]]
+
+    [?if [not [$matched $build-m]]
+      [then [?let [= $_e [$cry "check_completions_drift: cannot find build_subcommands registry in vcx/cmd/main.v"]]
+              [$env:exit 2]]]
+      [else
+    [?if [not [$matched $plat-m]]
+      [then [?let [= $_e [$cry "check_completions_drift: cannot find platform_subcommands registry in vcx/cmd/platform_verbs_d_cx_platform.v"]]
+              [$env:exit 2]]]
+      [else
+    [?let
+      [= $verbs-main [?for [in $m [$re:find-all $name-rx [$re:group $build-m 1]]]
+                       [yield [$re:group $m 1]]]]
+      [= $verbs-plat [?for [in $m [$re:find-all $name-rx [$re:group $plat-m 1]]]
+                       [yield [$re:group $m 1]]]]
+      [= $verbs [$fp:flat-map ($verbs-main, $verbs-plat) [?fn ($x) $x]]]
+
+      [?if [= [$count $verbs] 0]
+        [then [?let [= $_e [$cry "check_completions_drift: registry parsed but no verbs found"]]
+                [$env:exit 2]]]
+        [else
+      [?let
+        # What each completion file offers as verbs.
+        [= $bash-m [$re:find [$re:compile "(?s)_cx_subcmds\\(\\)\\s*\\{.*?echo\\s+\"([^\"]+)\""] $bash-src]]
+        [= $bash-have [?if [$matched $bash-m]
+                        [then [$strings:split-whitespace [$re:group $bash-m 1]]]
+                        [else ()]]]
+        [= $zsh-have [?for [in $m [$re:find-all [$re:compile "(?m)^\\s*'([a-z][a-z0-9-]*):"] $zsh-src]]
+                       [yield [$re:group $m 1]]]]
+        [= $fish-have [?for [in $m [$re:find-all [$re:compile "__fish_use_subcommand'\\s+-a\\s+([a-z][a-z0-9-]*)\\b"] $fish-src]]
+                        [yield [$re:group $m 1]]]]
+
+        # The `cx diagram` (not code-diagram) completion block per shell.
+        [= $case-section-rx [$re:compile "(?sm)^\\s*diagram\\)\\n(.*?)^\\s*[a-z][a-z0-9-]*\\)"]]
+        [= $bash-diag [?let [= $m [$re:find $case-section-rx $bash-src]]
+                        [?if [$matched $m] [then [$re:group $m 1]] [else ""]]]]
+        [= $zsh-diag  [?let [= $m [$re:find $case-section-rx $zsh-src]]
+                        [?if [$matched $m] [then [$re:group $m 1]] [else ""]]]]
+        [= $fish-diag [$strings:join
+                        [?for [in $l [$strings:split-lines $fish-src]]
+                          [where [$strings:contains $l "subcommand_from diagram'"]]
+                          [yield $l]] "\n"]]
+
+        # One drift line per finding, in the Python gate's print order:
+        # per-shell verb coverage first, then the per-shell diagram surface.
+        [= $drift
+          [$fp:flat-map (
+             [$verb-drift-for "bash" $bash-have $verbs],
+             [$verb-drift-for "zsh"  $zsh-have  $verbs],
+             [$verb-drift-for "fish" $fish-have $verbs],
+             [$diag-drift-for "bash" $bash-diag $diagram-forbidden $diagram-required],
+             [$diag-drift-for "zsh"  $zsh-diag  $diagram-forbidden $diagram-required],
+             [$diag-drift-for "fish" $fish-diag $diagram-forbidden $diagram-required])
+           [?fn ($x) $x]]]
+        [= $_p [?for [in $d $drift] [yield [$say $d]]]]
+
+        [?if [> [$count $drift] 0]
+          [then
+            [?let [= $_t [$say [$cat ("check_completions_drift: FAIL (", [$string [$count $drift]],
+                                      " drift finding(s); dispatch has ", [$string [$count $verbs]], " verbs)")]]]
+              [$env:exit 1]]]
+          [else
+            [?let [= $_ok [$say [$cat ("check_completions_drift: OK — ", [$string [$count $verbs]],
+                                       " dispatch verbs covered by bash/zsh/fish completions")]]]
+              [$env:exit 0]]]]]]]]]]]]]]]]

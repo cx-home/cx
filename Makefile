@@ -805,8 +805,9 @@ check-xap-dist-absences:
 # must match vcx/cmd/diagram.v (--format=mermaid|svg|png + -o; the fabricated
 # --format=graphviz / --output= / --depth= surface must never reappear).
 .PHONY: check-completions-drift
+check-completions-drift: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-completions-drift:
-	@python3 scripts/check_completions_drift.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_completions_drift.cx
 
 # ── TextMate grammar single-sourcing gate (#423) — the canonical grammar is
 # tooling/vscode/syntaxes/cx.tmLanguage.json (scope-tested via
