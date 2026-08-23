@@ -1,0 +1,222 @@
+# scripts/check_no_adr_citations.cx — the NO-A·D·R-CITATION standing gate.
+#
+# CX does NOT use A·D·Rs / decision-records — they are an anti-pattern (stale
+# scratch history that drifts from the spec and invites pointer-rot). A
+# resolved decision is written DIRECTLY into the spec as self-contained
+# normative prose, never into a separate rationale doc and never cited as
+# "see <token>-NN". Any old records are archived (spec/decisions/, guarded)
+# and MUST NEVER be cited from the live tree — such a citation pins live
+# code/docs to a record that is not authority and corrupts the single-source
+# model. This gate enforces the *absence* of such citations AND of
+# record-as-process framing, so the rule is permanent (mirrors the other
+# check-* gates in make test).
+#
+# Scanned (authored) roots, recursive; build/vendor/archive excluded:
+#   spec/ (except spec/decisions, spec/_archive, spec/archive), docs-src/
+#   (except _archive), lang/ (except target, .venv, node_modules,
+#   __pycache__, dist, build), scripts/, corpus/, include/, vcx/, tooling/,
+#   examples/, tests/, plus top-level *.md (incl. all RELEASE_NOTES_*.md)
+#   and Makefile.
+#
+# Detected forms (all case-insensitive):
+#   - the three-letter identifier glued to 3-4 digits (with optional -/_/
+#     space), including the underscore-glued test-name form the old
+#     word-boundary regex missed;
+#   - spec/decisions/NNNN… path references;
+#   - the bare two-word record phrase;
+#   - the bare three-letter token (record-as-process framing).
+#
+# The trigger tokens are CONSTRUCTED at runtime ($tok3 / $TOK3 / $dr below) so
+# this gate's own source never carries them and needs no self-allowlist —
+# unlike the retired Python original, whose source was allowlisted.
+#
+# Allowlist ($allow-relpaths): legitimate mentions that are NOT citations —
+# citation-processing tooling (which must contain the strings to strip/track
+# them); the Makefile target name + comments describing this gate; the #700
+# lane-input skip manifest (its case arms spell the exact target names);
+# meta-text that *states the no-record policy* or *describes* the archived
+# record; a generic third-party convention tutorial; and shipped/frozen
+# release notes (a historical record of what was true at release —
+# grandfathered rather than rewritten).
+#
+# A behavioral self-test (--self-test, wired into the make target) proves the
+# detector catches the forms the old regex MISSED without flagging innocuous
+# text that merely contains the three letters.
+#
+# Exit 0 clean; 1 with citations (or self-test failures). Run from the repo
+# root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_no_adr_citations.cx [--self-test]
+# (or: the make target for this gate — runs the self-test, then the scan)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+[?def member scope=public ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+[?let
+  # The trigger tokens, constructed so they never appear literally here.
+  [= $tok3 [$cat ("ad", "r")]]
+  [= $TOK3 [$strings:upper $tok3]]
+  [= $dr  [$cat ("decision", " ", "record")]]
+  [= $decisions-path [$cat ("spec/decisi", "ons/")]]
+
+  [= $citation-rx [$re:compile [$cat (
+    "(?i)",
+    $tok3, "[-_\\s]?[0-9]{3,4}",        # 0022-style ids, incl. _-glued test names
+    "|", $decisions-path, "[0-9]",     # archived record path
+    "|\\b", $dr, "s?\\b",              # bare record phrase
+    "|\\b", $TOK3, "s?\\b")]]]          # bare token (record-as-process framing)
+
+  [?if [$member "--self-test" [$env:argv]]
+    [then
+      # Behavioral self-test: proves the detector catches the forms the old
+      # \b-anchored regex MISSED (underscore-glued identifiers, bare framing)
+      # without flagging innocuous text containing the three letters.
+      [?let
+        [= $must-catch (
+          [$cat ("fn test_", $tok3, "0063_attr_and_clause_modifiers() {")],
+          [$cat ("fn test_", $tok3, "0041_iterator_strided() {")],
+          [$cat ("a follow-on ", $TOK3, " will design the export")],
+          [$cat ("Files a NEW ", $TOK3, ".")],
+          [$cat ("Requires substantive ", $TOK3, " covering isolation")],
+          [$cat ("warrants its own ", $TOK3, ".")],
+          [$cat ($TOK3, "s are immutable once accepted.")],
+          [$cat ([$strings:upper $dr], " — 2026-06-15 (resolves §4.6).")],
+          [$cat ("see ", [$strings:title $dr], " above")],
+          [$cat ("per ", $TOK3, " 0030 §D2")],
+          [$cat ($TOK3, "-0063 modifiers")],
+          [$cat ("post-", $TOK3, "-0030 carve-out")],
+          [$cat ($decisions-path, "0022-cx-is-one-language.md")])]
+        [= $must-not-catch (
+          "Methods that return a new Doc do NOT mutate the receiver.",
+          "decision recorded in `_migration_plan.md`",
+          "a cadre of engineers reviewed the address book",
+          "padre, quadratic, hydra, leader — none of these",
+          "the spec is the single source of truth",
+          "id=propose-change title='Proposing a design change'")]
+
+        [= $failures
+          [$fp:flat-map (
+             [?for [in $s $must-catch]
+               [where [not [$matched [$re:find $citation-rx $s]]]]
+               [yield [$cat ("MISSED (should catch): ", $s)]]],
+             [?for [in $s $must-not-catch]
+               [= $m [$re:find $citation-rx $s]]
+               [where [$matched $m]]
+               [yield [$cat ("FALSE POSITIVE on '", [$re:group $m 0], "': ", $s)]]])
+           [?fn ($x) $x]]]
+
+        [?if [> [$count $failures] 0]
+          [then
+            [?let
+              [= $_h [$say [$cat ("NO-", $TOK3, "-CITATION self-test FAILED — ",
+                                  [$string [$count $failures]], " case(s):")]]]
+              [= $_l [?for [in $x $failures] [yield [$say [$cat ("  ", $x)]]]]]
+              [$env:exit 1]]]
+          [else
+            [?let [= $_ok [$say [$cat ("NO-", $TOK3, "-CITATION self-test OK — ",
+                                       [$string [$count $must-catch]], " catch + ",
+                                       [$string [$count $must-not-catch]],
+                                       " no-catch cases pass.")]]]
+              [$env:exit 0]]]]]]
+    [else
+      [?let
+        [= $scan-dirs ("spec", "docs-src", "lang", "scripts", "corpus", "include",
+                       "vcx", "tooling", "examples", "tests")]
+        [= $scan-toplevel ("README.md", "ROADMAP.md", "CHANGELOG.md", "Makefile",
+                           "CONTRIBUTING.md", "SECURITY.md")]
+        [= $exclude-substr ("/.git/", "/target/", "/.venv/", "/node_modules/",
+                            "/__pycache__/", "/dist/", "/build/", "/_archive/",
+                            "/_archived/", "/decisions/", "/archive/")]
+        [= $text-exts (".md", ".cxd", ".cx", ".v", ".go", ".rs", ".py", ".js",
+                       ".mjs", ".ts", ".h", ".c", ".sh", ".txt", ".toml",
+                       ".json", ".ebnf", ".mk", "")]
+        [= $allow-relpaths (
+          # citation-processing / provenance tooling — must contain the strings
+          "scripts/check_v_upstream_patches.py",
+          "scripts/strip_conformance_provenance.py",
+          # the gate's own Makefile target name + descriptive comments
+          "Makefile",
+          # the #700 lane-input skip manifest: its rows are `case` arms keyed
+          # on the EXACT make-target names in TEST_TARGETS, so the row for
+          # this gate must spell this gate's own name.
+          "scripts/test_changed.sh",
+          # meta-text that STATES the no-record policy or DESCRIBES the
+          # archived record
+          "spec/03-approved/README.md",
+          "docs-src/canonical/cxstore/object_model.md",
+          "docs-src/canonical/cxstore/architecture.md",
+          "docs-src/canonical/cxstore/README.md",
+          "docs-src/canonical/cxstore/plan.md",
+          "scripts/gen_guide/NEXT_SESSION.md",
+          # generic third-party convention tutorial — depicts the practice as
+          # an external one, not a CX record
+          "examples/etl_conventions_cx.md",
+          # shipped/frozen release notes — historical record, grandfathered
+          "RELEASE_NOTES_v0.6.0.md",
+          "RELEASE_NOTES_v0.8.0.md",
+          # the TABLED I5 adversarial audit report (read-only record): its
+          # gate-registry table QUOTES the archived rows it found evaporated —
+          # describing the archived record, never citing it as authority.
+          "ledger/partition_I5_audit.md")]
+
+        [= $dir-files
+          [$fp:flat-map $scan-dirs [?fn ($d)
+            [?for [in $p [$io:glob [$cat ($d, "/**/*")]]]
+              [where [$io:is-file $p]]
+              [where [$member [$strings:lower [$path:extension $p]] $text-exts]]
+              [where [= [$count [?for [in $x $exclude-substr]
+                          [where [$strings:contains [$cat ("/", $p)] $x]]
+                          [yield 1]]] 0]]
+              [yield $p]]]]]
+        [= $top-files
+          [$fp:flat-map ($scan-toplevel, [$io:glob "RELEASE_NOTES_*.md"])
+            [?fn ($x) $x]]]
+        [= $files
+          [?for [in $p [$fp:flat-map ($dir-files, $top-files) [?fn ($x) $x]]]
+            [where [$io:is-file $p]]
+            [where [not [$member $p $allow-relpaths]]]
+            [yield $p]]]
+
+        [= $hits
+          [$fp:flat-map $files [?fn ($f)
+            [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
+              [?if [not [$matched [$re:find $citation-rx $text]]]
+                [then ()]
+                [else
+                  [?let [= $lines [$strings:split-lines $text]]
+                    [?for [in $i [$range 1 [$count $lines]]]
+                      [= $line $lines[$i]]
+                      [where [$matched [$re:find $citation-rx $line]]]
+                      [= $trimmed [$strings:trim-end $line]]
+                      [= $shown [?if [> [$strings:length $trimmed] 120]
+                                  [then [$strings:slice $trimmed 0 120]]
+                                  [else $trimmed]]]
+                      [yield [$cat ($f, ":", [$string $i], ": ", $shown)]]]]]]]]]]
+
+        [?if [> [$count $hits] 0]
+          [then
+            [?let
+              [= $n [$count $hits]]
+              [= $n-shown [?if [> $n 200] [then 200] [else $n]]]
+              [= $_h [$say [$cat ("NO-", $TOK3, "-CITATION gate FAILED — ", [$string $n],
+                                  " decision-record ",
+                                  "citation(s) in the live tree (spec is the only source of truth):")]]]
+              [= $_l [?for [in $k [$range 1 $n-shown]]
+                       [yield [$say [$cat ("  ", $hits[$k])]]]]]
+              [= $_m [?if [> $n 200]
+                       [then [$say [$cat ("  … and ", [$string [- $n 200]], " more")]]]
+                       [else ""]]]
+              [$env:exit 1]]]
+          [else
+            [?let [= $_ok [$say [$cat ("NO-", $TOK3, "-CITATION gate OK — no decision-record ",
+                                       "citations in the live tree.")]]]
+              [$env:exit 0]]]]]]]]

@@ -592,9 +592,10 @@ check-docs-tier1-guardrail:
 # a non-authoritative record and corrupts the single-source model. The gate is
 # token-aware; the gate script + the SAP audit report are allowlisted.
 .PHONY: check-no-adr-citations
+check-no-adr-citations: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-adr-citations:
-	@python3 scripts/check_no_adr_citations.py --self-test
-	@python3 scripts/check_no_adr_citations.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_adr_citations.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_adr_citations.cx
 
 # ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle
 # (vcx/code/*.v) must contain no fake-success stub: an effectful prim returning
