@@ -58,6 +58,22 @@ if grep -q '"credsStore"' "$HOME/.docker/config.json" 2>/dev/null; then
   [ -f "$DOCKER_CONFIG/config.json" ] || printf '{"auths":{"https://index.docker.io/v1/":{}}}\n' > "$DOCKER_CONFIG/config.json"
 fi
 
+# Pre-flight: local=1 below builds V from the VENDORED vc bootstrap tree,
+# which is gitignored and therefore absent in a fresh submodule checkout
+# (the in-container tree has no network identity to pin a fetch to, and the
+# default network refresh path is broken on the copied detached-HEAD trees).
+# Fail here with the remediation instead of 4 minutes into the container.
+if [ ! -f third_party/v/vc/v.c ]; then
+  echo "release_linux.sh: third_party/v/vc/v.c is missing — the vendored V" >&2
+  echo "bootstrap tree is gitignored and this checkout never fetched it." >&2
+  echo "Seed it from a sibling checkout of the fork, e.g.:" >&2
+  echo "  cp -R ../cx-private/third_party/v/vc third_party/v/vc" >&2
+  echo "or fetch it: git clone --depth=1 https://github.com/vlang/vc third_party/v/vc" >&2
+  echo "(a vc revision proven against this fork pin is preferred; latest vc" >&2
+  echo "tracks vlang master and may not bootstrap an older fork)." >&2
+  exit 2
+fi
+
 BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
 PROFILES_TARGET=$([ "$DEV" = 1 ] && echo build-profiles-dev || echo build-profiles)
 SDE="$(git log -1 --format=%ct)"
