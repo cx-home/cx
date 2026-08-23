@@ -522,8 +522,9 @@ check-version-consistency:
 # `[returns null]` and param-position `[or T null]` are deliberately not
 # flagged. Permanent gate, not migration-only.
 .PHONY: check-null-absence-conflation
+check-null-absence-conflation: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-null-absence-conflation:
-	@python3 scripts/check_null_absence_conflation.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_null_absence_conflation.cx
 
 # ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
 # capability-alignment invariant: (1) every capability-gated effect point is
