@@ -279,8 +279,9 @@ verify-doc-blocks: build-vcx
 # V2 — upstream V patch tracking. Reports status of the vlang/v
 # issues that block cx v0.7.0. Exit non-zero only
 # on a closed-unfixed (upstream-rejected) outcome.
-check-v-upstream:
-	@python3 scripts/check_v_upstream_patches.py
+check-v-upstream: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-v-upstream: build-vcx
+	@"$(CX_BIN)" --allow-net --allow-write scripts/check_v_upstream_patches.cx
 
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
