@@ -25,7 +25,7 @@
 
    Run (the sample document binds as $doc — document-driven sections
    need it; without --data the document-rooted queries raise loudly):
-     cx examples/code-tour.cx --data=examples/code-tour.input.cx #]
+     cx --data=examples/code-tour.input.cx examples/code-tour.cx #]
 
 [# ─── Module imports — [?lib] (§12.1) ───
    Three resolver shapes: bundled stdlib name ('cx-stdlib/strings'),

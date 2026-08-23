@@ -15,8 +15,8 @@
    Idempotent: a module that already has a [module-doc] is skipped (so the
    hand-authored path.cx is preserved and re-runs don't double-append).
 
-   Dry run (inspect, no writes):  cx scripts/gen_stdlib_docs/seed.cx --allow-read
-   Apply (append to stdlib/*.cx):  cx scripts/gen_stdlib_docs/seed.cx --allow-read --allow-write --data=APPLY #]
+   Dry run (inspect, no writes):  cx --allow-read scripts/gen_stdlib_docs/seed.cx
+   Apply (append to stdlib/*.cx):  cx --allow-read --allow-write --data=APPLY scripts/gen_stdlib_docs/seed.cx #]
 
 [?lib 'cx-stdlib/io']
 [?lib 'cx-stdlib/cx']

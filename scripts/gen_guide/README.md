@@ -31,7 +31,7 @@ make guide        # builds the cx binary + playground wasm, then runs guide_buil
 or directly:
 
 ```
-cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+cx --allow-read --allow-write scripts/gen_guide/guide_build.cx
 ```
 
 The `--allow-read` / `--allow-write` grants are required (the program reads

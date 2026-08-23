@@ -1021,10 +1021,10 @@
 
            # Run a program (data + program in one input).
            cat data.cx program.cx | cx
-           cx pipeline.cx --allow-read --allow-write
+           cx --allow-read --allow-write pipeline.cx
 
            # Run a program against a separate input document ($doc).
-           cx program.cx --data=input.cx
+           cx --data=input.cx program.cx
 
            # Include resolution.
            cx --xml --include-root=./conf main.cx     # resolve [?cx include=…]"""]

@@ -180,7 +180,7 @@
       [= $v [$xap:pkg-verify $reg 'geo-utils@0.1.0']]
   ($pubr@alias, $v@status, $v@kind)]"""]
     [output
-      """$ cx publish.cx --allow-random
+      """$ cx --allow-random publish.cx
 ('geo-utils@0.1.0', 'ok', 'library')"""]
     [list
       [item """**pkg-tree** seals the directory as one canonical
@@ -234,7 +234,7 @@
       [= $cat [$xap:pkg-catalog $reg {term: 'gtin'}]]
   ($v@status, $v@kind, [$count $cat//package])]"""]
     [output
-      """$ cx discover.cx --allow-read
+      """$ cx --allow-read discover.cx
 (ok, library, 1)"""]
     [body
       """Install takes your `[xap …]` deployment document and returns
@@ -254,7 +254,7 @@
       [= $done [$xap:pkg-install $xap0 $reg 'geo-utils@0.1.0']]
   [$count $done//library]]"""]
     [output
-      """$ cx install.cx --allow-random
+      """$ cx --allow-random install.cx
 1"""]
     [body
       """Loading pinned library code at runtime is the fourth `[?lib]`
@@ -271,7 +271,7 @@
       """[?lib 'pkg:gtin@0.1.0' :as gtin]
 [$gtin:valid '4006381333931']"""]
     [output
-      """$ CX_REGISTRY=file://registry/store cx check_gtin.cx --allow-read --allow-env
+      """$ CX_REGISTRY=file://registry/store cx --allow-read --allow-env check_gtin.cx
 true"""]
     [body
       """A `pkg:NAME@VERSION#MANIFEST-HASH` reference pins past the
@@ -318,7 +318,7 @@ true"""]
       [= $v [$xap:license-verify $vc 'own-ship' '0.1.1' {now: '2026-07-15T00:00:00Z'}]]
   $v@status]"""]
     [output
-      """$ cx license.cx --allow-random
+      """$ cx --allow-random license.cx
 'ok'"""]
     [body
       """Every pricing shape is an attenuation of the issued
@@ -345,7 +345,7 @@ true"""]
       [= $v [$xap:license-verify $vc 'weather' '0.1.0' {now: '2026-08-07T00:00:00Z'}]]
   $v@status]"""]
     [output
-      """$ cx grace.cx --allow-random
+      """$ cx --allow-random grace.cx
 'grace'"""]
     [body
       """**Price is a market property, never a package property** — the

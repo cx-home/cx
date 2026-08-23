@@ -43,10 +43,10 @@
          (denied effect points raise the catchable capability
          error `CXER0271`):"""]
     [example lang=sh
-      """$ cx report.cx --data=orders.cx       # orders.cx binds as $doc
-         $ cx build_site.cx --allow-read --allow-write
-         $ cx serve.cx --allow-net
-         $ cx pipeline.cx --allow-common       # the common working set"""]
+      """$ cx --data=orders.cx report.cx       # orders.cx binds as $doc
+         $ cx --allow-read --allow-write build_site.cx
+         $ cx --allow-net serve.cx
+         $ cx --allow-common pipeline.cx       # the common working set"""]
     [body
       """The capability set: `--allow-read`, `--allow-write`,
          `--allow-net`, `--allow-env`, `--allow-clock`,

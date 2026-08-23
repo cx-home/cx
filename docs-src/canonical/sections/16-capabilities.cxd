@@ -35,13 +35,13 @@
          capability, the operation that wanted it, and the exact flag
          that grants it. Add the grant and the same program works:"""]
     [example lang=sh
-      """$ cx read_version.cx --allow-read
+      """$ cx --allow-read read_version.cx
 '0.16.0\\n'"""]
     [body
       """Grants combine — a program that reads the environment and
          writes a file needs both flags:"""]
     [example lang=sh
-      """$ cx snapshot_home.cx --allow-env --allow-write"""]
+      """$ cx --allow-env --allow-write snapshot_home.cx"""]
     [note
       """A denied effect is refused **fail-closed, before any type or
          domain validation** — the path is never touched, the socket
@@ -80,28 +80,28 @@
     [output
       """$ cx home.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)']
-$ cx home.cx --allow-env
+$ cx --allow-env home.cx
 '/Users/ep'"""]
     [body """Reading the clock:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/time']
 [$time:now]"""]
     [output
-      """$ cx now.cx --allow-clock
+      """$ cx --allow-clock now.cx
 '2026-07-14T22:11:55.071838Z'"""]
     [body """Asking for entropy:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/uuid']
 [$uuid:v4]"""]
     [output
-      """$ cx id.cx --allow-random
+      """$ cx --allow-random id.cx
 '2c9be10f-2a88-456f-b00d-9af606793775'"""]
     [body """Spawning a subprocess:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/process']
 [$process:run ('echo', 'hi')]"""]
     [output
-      """$ cx run_echo.cx --allow-subprocess
+      """$ cx --allow-subprocess run_echo.cx
 [proc-result exit-code=0 signaled=false timed-out=false stdout='hi
 ' stderr='']"""]
     [body
@@ -111,7 +111,7 @@ $ cx home.cx --allow-env
     [example lang=cx
       """[?eval [?quote [+ $a $b]] [context {a: 10, b: 5}]]"""]
     [output
-      """$ cx calc.cx --allow-eval
+      """$ cx --allow-eval calc.cx
 15"""]
     [body
       """Secrets are the inverse case: **wrapping** a value with
@@ -156,14 +156,14 @@ $ cx home.cx --allow-env
       """[?lib 'cx-stdlib/http']
 [$http:get 'http://127.0.0.1:1/health']"""]
     [output
-      """$ cx probe.cx --allow-net
+      """$ cx --allow-net probe.cx
 [err code=cx-err:CXER4504 message='E_NET_FORBIDDEN_ADDRESS: 127.0.0.1:1 resolves into a denied range with no admitting literal-IP/localhost grant (§4.5)']"""]
     [body
       """To talk to a local service, name it — a literal-IP or
          `localhost` scope overrides the deny set for exactly that
          address:"""]
     [example lang=sh
-      """$ cx probe.cx --allow-net=127.0.0.1:8443"""]
+      """$ cx --allow-net=127.0.0.1:8443 probe.cx"""]
     [body
       """And a host-scoped grant is a real boundary: with
          `--allow-net=api.example.com:443`, a dial to any other host is
@@ -188,9 +188,9 @@ $ cx home.cx --allow-env
       """[?let [= $s [?secret 'hunter2']]
   [out [?reveal $s]]]"""]
     [output
-      """$ cx reveal.cx --allow-common
+      """$ cx --allow-common reveal.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: secret-reveal capability required for reveal; none granted (grant via --allow-secret-reveal)']
-$ cx reveal.cx --allow-all
+$ cx --allow-all reveal.cx
 [out 'hunter2']"""]
     [body
       """`--allow-all` grants everything, `secret-reveal` included. It
@@ -223,7 +223,7 @@ $ cx reveal.cx --allow-all
 [?with-caps [deny env]
   [$env:var 'HOME']]"""]
     [output
-      """$ cx narrowed.cx --allow-env
+      """$ cx --allow-env narrowed.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)']"""]
     [body
       """This is the tool for running untrusted sub-computations:

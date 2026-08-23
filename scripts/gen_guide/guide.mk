@@ -57,7 +57,7 @@ endif
 ## engine changed and the playground must reflect it. The render's own stdout
 ## (write-file results) is discarded; real errors still surface.
 guide: $(GUIDE_CX_DEP)
-	@$(GUIDE_CX_BIN) $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null
+	@$(GUIDE_CX_BIN) --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
 ## guide-snippets-check  Docs-example gate (#425): run every
@@ -192,7 +192,7 @@ guide-diff:
 endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 $(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null; \
+	 $(CURDIR)/vcx/target/cx --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 

@@ -53,7 +53,7 @@
 #
 # Capabilities: glob / read-file need `read`; the env standard streams +
 # exit are ambient (env.md §7). Run:
-#   vcx/target/cx eval scripts/gen_guide/stdlib_docs_check.cx --allow-read
+#   vcx/target/cx eval --allow-read scripts/gen_guide/stdlib_docs_check.cx
 #   (or: make guide-check)
 
 [?lib 'cx-stdlib/cx']

@@ -99,8 +99,8 @@
 
     [example lang=sh
       """$ cx report.cx                  # pure: computes, touches nothing
-         $ cx report.cx --allow-read     # now it may read files
-         $ cx report.cx --allow-common   # the common working set"""]
+         $ cx --allow-read report.cx     # now it may read files
+         $ cx --allow-common report.cx   # the common working set"""]
 
     [body
       """What you can do with only Ring 1: evaluate programs; query with

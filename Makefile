@@ -288,7 +288,7 @@ install-hooks:
 .PHONY: guide-check
 guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 guide-check: build-vcx
-	@"$(CX_BIN)" eval scripts/gen_guide/stdlib_docs_check.cx --allow-all
+	@"$(CX_BIN)" eval --allow-all scripts/gen_guide/stdlib_docs_check.cx
 
 # Directive + syntax reference drift gate — every code.md §4.1 registry
 # directive has a [directive-doc], no orphans, and each example is backed
@@ -296,7 +296,7 @@ guide-check: build-vcx
 .PHONY: directive-docs-check
 directive-docs-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 directive-docs-check: build-vcx
-	@"$(CX_BIN)" eval scripts/gen_guide/directive_docs_check.cx --allow-all
+	@"$(CX_BIN)" eval --allow-all scripts/gen_guide/directive_docs_check.cx
 
 # Playground example drift gate (#92) — every entry in
 # scripts/gen_guide/playground/playground.examples.js must still run clean on
@@ -321,7 +321,7 @@ verify-playground-examples: build-vcx
 .PHONY: stdlib-catalog-gate
 stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
-	@"$(CX_BIN)" eval scripts/stdlib_catalog_gate.cx --allow-all
+	@"$(CX_BIN)" eval --allow-all scripts/stdlib_catalog_gate.cx
 
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
 # `cx tools export` over the checked-in M5 module must reproduce the checked-in
@@ -779,10 +779,10 @@ test-ring2: test-ring1 test-vcx-suite test-vcx-cxstore test-vcx-cmd
 .PHONY: ring-query ring-tag-gate
 ring-query: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ring-query:
-	@"$(CX_BIN)" scripts/ring_query.cx --allow-read --allow-env --allow-write
+	@"$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx
 ring-tag-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ring-tag-gate: build-vcx
-	@FORMAT=count "$(CX_BIN)" scripts/ring_query.cx --allow-read --allow-env --allow-write >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; lanes queryable via 'make ring-query'"
+	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; lanes queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
 # (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and

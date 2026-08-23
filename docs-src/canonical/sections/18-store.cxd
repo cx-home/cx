@@ -127,7 +127,7 @@
 [?let [= $s [$store:open 'file:///tmp/notes-store']]
   [$store:put-doc $s [note [text 'durable']]]]"""]
     [example lang=sh
-      """$ cx notes.cx --allow-read --allow-write"""]
+      """$ cx --allow-read --allow-write notes.cx"""]
     [body
       """Three habits worth forming from day one: open read paths
          read-only (`[$store:open-opts URL [map read-only='true']]` —
@@ -233,7 +233,7 @@ ready"""]
       [= $h [$store:put-doc $remote [doc [title 'over the wire']]]]
   [$store:get-doc $remote $h]]"""]
     [output
-      """$ cx wire.cx --allow-net=127.0.0.1:18971
+      """$ cx --allow-net=127.0.0.1:18971 wire.cx
 [doc [title 'over the wire']]"""]
     [body
       """Authority is XSP-AUTH, deny-by-default: a client presents a
@@ -309,7 +309,7 @@ ready"""]
       [= $h [$store:put-doc $s [secret-plan [step 'first']]]]
   [$store:get-doc $s $h]]"""]
     [output
-      """$ CX_STORE_KEK_tenant-a=<64 hex chars> cx sealed.cx --allow-read --allow-write --allow-env
+      """$ CX_STORE_KEK_tenant-a=<64 hex chars> cx --allow-read --allow-write --allow-env sealed.cx
 [secret-plan [step 'first']]"""]
     [body
       """Key material never lives in config files — the KEK arrives by

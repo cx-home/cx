@@ -6,7 +6,7 @@
    read → [$cx:parse] → transform → [$xml:emit] → [$io:write-file], no
    subprocess, no Python).
 
-   Run: cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+   Run: cx --allow-read --allow-write scripts/gen_guide/guide_build.cx
    (the Makefile `guide` target builds the binary + passes the grants).
 
    Pipeline per section:

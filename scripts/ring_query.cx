@@ -35,7 +35,7 @@
 # with a matched count, then a TOTAL line.
 #
 # Run from the repo root (glob is cwd-relative):
-#   vcx/target/cx scripts/ring_query.cx --allow-read --allow-env
+#   vcx/target/cx --allow-read --allow-env scripts/ring_query.cx
 # (or: make ring-query [RING=n] [LANE=l] [FORMAT=f])
 #
 # Exit: 0 on success (a zero-match query is a valid census answer),

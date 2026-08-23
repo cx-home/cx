@@ -397,7 +397,7 @@
            cx big.cx
 
            [# Streaming comprehension output — bounded memory          #]
-           cx program.cx --data=big.cx"""]]
+           cx --data=big.cx program.cx"""]]
 
     [child id=faq-single-threaded title='Is parsing single-threaded?'
       [body
