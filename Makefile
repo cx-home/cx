@@ -491,8 +491,9 @@ check-no-infix-range:
 # (Formerly mis-named `check-no-stale-version` — it never checked versions;
 # version-number drift is now caught by check-version-consistency below.)
 .PHONY: check-no-cxl-token
+check-no-cxl-token: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-cxl-token:
-	@python3 scripts/check_no_cxl_token.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_cxl_token.cx
 
 # ── NO-CONSUMER-TERMS gate — downstream-consumer identity (names, products,
 # business-domain vocabulary) must never appear in tracked content: the public
