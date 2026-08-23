@@ -1106,7 +1106,7 @@
 
            # Benchmarks — vcx/tests/runners/streaming_bench.v.
            make bench           # full bench harness
-           scripts/run_bench_json.py"""]
+           make bench-json      # the same run as machine-readable JSON"""]
       [note
         """Streaming throughput gate: the release gate requires a
            ≥200 MB/s floor on the reference corpus. The gate is not

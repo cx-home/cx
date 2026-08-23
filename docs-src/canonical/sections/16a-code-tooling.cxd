@@ -364,7 +364,7 @@
            dimension). The machine-readable JSON is produced
            downstream: `make bench-json` runs the streaming bench and
            parses its stdout into a stable JSON report
-           (`scripts/run_bench_json.py`), and
+           (`scripts/run_bench_json.cx`), and
            `make bench-compare BASELINE=a.json CURRENT=b.json`
            diffs two such reports for regressions.
            `make bench-code-gates` chains the three gate-tracked
