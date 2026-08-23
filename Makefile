@@ -600,8 +600,9 @@ check-no-adr-citations:
 # an effect is correct, faking it is the bug. A new effect must be real + carry a
 # behavioral (real socket/process/file) test, or fail closed.
 .PHONY: check-no-stub-impl
+check-no-stub-impl: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-stub-impl:
-	@python3 scripts/check_no_stub_impl.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_stub_impl.cx
 
 # ── RING IMPORT GATE (partition spec §3, phase I0) — the ring import contract,
 # enforced grep-level, zero-tolerance. Lands BEFORE any code moves so the seam
