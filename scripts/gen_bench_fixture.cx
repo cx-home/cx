@@ -103,7 +103,7 @@
   [= $g [$grow $target 1 '' [$strings:length-bytes $header]]]
   [= $doc [$cat ($header, $g@body, ']\n')]]
   [= $parent [$path:parent $out]]
-  [= $_mk [?if [$strings:is-empty $parent] [then ()] [else [$io:make-dirs $parent]]]]
+  [= $_mk [?if [= $parent ''] [then ()] [else [$io:make-dirs $parent]]]]
   [= $_w [$io:write-file $out $doc]]
   [= $size [$io:size $out]]
   [= $_p [$say [$cat ('wrote ', $out, ' — ', [$string $g@n], ' services, ',
