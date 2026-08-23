@@ -423,16 +423,17 @@ verify-doc-links:
 	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md
 
 # Pre-tag version-string consistency. VERSION (the repo-root file) is the
-# single source of truth; scripts/check_version_consistency.py verifies every
+# single source of truth; scripts/check_version_consistency.cx verifies every
 # stamped manifest + derived code surface against it. An explicit
 # VERSION=X.Y.Z arg additionally asserts the file holds the version you
 # intend to release (catches "forgot to run scripts/bump_version.sh").
-bump-version-check:
+bump-version-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+bump-version-check: build-vcx
 	@if [ -n "$(VERSION)" ] && [ "$(VERSION)" != "$$(cat VERSION)" ]; then \
 	  echo "bump-version-check: VERSION file holds $$(cat VERSION), expected $(VERSION) — run scripts/bump_version.sh $(VERSION)"; \
 	  exit 1; \
 	fi
-	@python3 scripts/check_version_consistency.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
 
 # RULED: PGL-1 (#741) — the R2.2 BLOCKING per-profile install gate, runnable
 # WITHOUT a cut. It used to live only inside release.sh phase 2, in the arm
@@ -533,8 +534,9 @@ check-no-consumer-terms:
 # drift that previously went unnoticed (cx.pc.in at 0.6.1, C-ABI at 0.8.0 while
 # the CLI said 0.10.0). Re-stamp with scripts/bump_version.sh.
 .PHONY: check-version-consistency
-check-version-consistency:
-	@python3 scripts/check_version_consistency.py
+check-version-consistency: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-version-consistency: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
 
 # ── check-null-absence-conflation gate (SAP C1 / spec/core/code.md §9.1.2.1
 # rule (b)) — the no-conflation guard: no builtin returns `null` to mean

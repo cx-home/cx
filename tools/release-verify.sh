@@ -43,7 +43,7 @@ section "Version consistency"
 check "VERSION file = $EXPECTED_VERSION" \
  "test \"\$(cat VERSION)\" = \"$EXPECTED_VERSION\""
 check "manifests + derived surfaces match VERSION" \
- "python3 scripts/check_version_consistency.py"
+ "vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx"
 
 section "Working tree state"
 check "git working tree clean" \
