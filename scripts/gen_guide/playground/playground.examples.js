@@ -6,7 +6,7 @@
 //   173-182 functional composition (cx-stdlib/fp)
 // runnable:false marks an example that needs a wasm-unavailable capability
 // (net / subprocess / fs); it is exempt from the clean-run gate.
-// Generator: scripts/gen_guide/playground/gen_examples.py — re-run (or `make guide`)
+// Generator: scripts/gen_guide/playground/gen_examples.cx — re-run (or `make guide`)
 // after any syntax change; `--check` verifies this file without rewriting it.
 
 (function () {

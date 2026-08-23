@@ -139,11 +139,12 @@ structural, not procedural:
 
 - `make guide-wasm` rebuilds the wasm **and** regenerates
   `playground.examples.js` (via `make playground-examples-regen` →
-  `gen_examples.py`, which CLI-audits every entry against the current binary)
+  `gen_examples.cx` reading the `examples.cxd` corpus, CLI-auditing every
+  entry against the current binary)
   in the same invocation, then renders the guide — the render always stages
   after both. There is no target that rebuilds the wasm without the examples.
 - `make verify-playground-examples` (top-level Makefile, in `TEST_TARGETS`
-  next to `guide-check`) runs `gen_examples.py --check`: it fails when any
+  next to `guide-check`) runs `gen_examples.cx --check`: it fails when any
   example no longer runs clean on the current binary **or** when the
   checked-in `playground.examples.js` differs from a fresh render — stale
   examples can't ship silently.

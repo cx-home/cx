@@ -330,7 +330,8 @@ directive-docs-check: build-vcx
 # carry runnable:false (exempt). --check verifies without rewriting the file.
 .PHONY: verify-playground-examples
 verify-playground-examples: build-vcx
-	@python3 scripts/gen_guide/playground/gen_examples.py --check
+	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	  scripts/gen_guide/playground/gen_examples.cx --check
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)

@@ -87,12 +87,14 @@ check-retired-surface:
 ## playground-examples-regen  Regenerate + re-audit
 ##                                   scripts/gen_guide/playground/
 ##                                   playground.examples.js from its generator
-##                                   (gen_examples.py: every entry CLI-audited
-##                                   against the current binary, then the file
-##                                   is rewritten). Run after any engine/syntax
+##                                   (gen_examples.cx reading examples.cxd:
+##                                   every entry CLI-audited against the
+##                                   current binary, then the file is
+##                                   rewritten). Run after any engine/syntax
 ##                                   change the playground must reflect.
 playground-examples-regen: $(GUIDE_CX_DEP)
-	@python3 $(GUIDE_GEN)/playground/gen_examples.py
+	@$(GUIDE_CX_BIN) --allow-read --allow-write --allow-subprocess --allow-env \
+	  $(GUIDE_GEN)/playground/gen_examples.cx
 
 ## guide-wasm    Rebuild the playground wasm AND regenerate the playground
 ##                                   examples, then render the guide. Use when
