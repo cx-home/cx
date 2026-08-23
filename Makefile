@@ -7,6 +7,15 @@
 -include scripts/gen_guide/guide.mk
 # ── v0.8.0 CX Data Language Guide ───────────────────────────────── END gen_guide
 
+# ── LLM onboarding layer (#938) ──────────────────────────────────── BEGIN gen_docs
+# Makes `make docs` / `make docs-check` first-class. Renders docs-src/llm/
+# templates into docs/llm/ (primer.md, reference-*.md, llms.txt,
+# llms-full.txt), pulling every example from a conformance fixture and
+# re-recording its output from the live binary. `make docs-check` is the drift
+# gate (in TEST_TARGETS + tools/release-verify.sh).
+-include scripts/gen_docs/docs.mk
+# ── LLM onboarding layer (#938) ────────────────────────────────────── END gen_docs
+
 # Prefer the patched V toolchain (third_party/v/v) for EVERY recipe that
 # invokes `v`. It carries the macOS hardened-runtime libgc / -prod fixes and
 # the picoev shared-listener patch (`new_with_listen_fd`) the http
