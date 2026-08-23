@@ -437,9 +437,15 @@
       setStatus(
         `Powered by <code>libcx.wasm ${ver}</code> · pthreads + SharedArrayBuffer — ` +
         `<code>:par</code> runs on real OS threads.`, null);
+    } else if (mode === 'sync') {
+      setStatus(
+        `Powered by <code>libcx.wasm ${ver}</code> · single-threaded compatibility build ` +
+        `(this browser lacks WebAssembly JSPI) — wall-clock <code>[?sleep]</code> is ` +
+        `unavailable (use <code>[?sleep DUR mock]</code>); <code>:par</code> produces ` +
+        `correct output but doesn't accelerate.`, null);
     } else {
       setStatus(
-        `Powered by <code>libcx.wasm ${ver}</code> · single-threaded ASYNCIFY — ` +
+        `Powered by <code>libcx.wasm ${ver}</code> · single-threaded JSPI — ` +
         `<code>:par</code> produces correct output but doesn't accelerate. ` +
         `For real parallelism: <code>make guide-http</code> or run <code>cx</code> in your terminal.`,
         null);

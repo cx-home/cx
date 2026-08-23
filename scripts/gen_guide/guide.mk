@@ -170,8 +170,14 @@ build-playground-wasm-for-guide:
 	@# (guard trips catchably at ~40) and shrinks the single-file bundle
 	@# 36MB → 13MB. MUST stay in lockstep with the top-level Makefile's
 	@# build-playground recipe.
+	@# libcx-sync: plain (ASYNCIFY=0) compatibility bundle for hosts
+	@# without the JSPI API (Safari; flag-gated Firefox) — the JSPI
+	@# bundles abort at instantiation there. cxlib.js selects it when
+	@# WebAssembly.Suspending is absent. MUST stay in lockstep with the
+	@# top-level Makefile's build-playground recipe.
 	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
 	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-http   Build docs/guide/ + boot the dog-food CX HTTP static
 ##                                   server (scripts/gen_guide/guide_serve.cx)

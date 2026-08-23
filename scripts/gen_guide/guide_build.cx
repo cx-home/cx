@@ -932,6 +932,7 @@
     [$io:make-dirs [$cat ($out, '/wasm')]],
     [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],
     [$copy-if 'dist/wasm/libcx-async.js'      [$cat ($out, '/wasm/libcx-async.js')]],
+    [$copy-if 'dist/wasm/libcx-sync.js'       [$cat ($out, '/wasm/libcx-sync.js')]],
     [$copy-if 'dist/wasm/libcx-async.wasm'    [$cat ($out, '/wasm/libcx-async.wasm')]],
     [$copy-if 'dist/wasm/libcx-pthreads.js'   [$cat ($out, '/wasm/libcx-pthreads.js')]],
     [$copy-if 'dist/wasm/libcx-pthreads.wasm' [$cat ($out, '/wasm/libcx-pthreads.wasm')]],

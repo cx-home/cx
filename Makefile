@@ -140,8 +140,15 @@ build-playground:
 	@# WebAssembly.promising wrappers when Module.cxAsyncifyMode == 2.
 	@# Build recipe mirrors scripts/gen_guide/guide.mk (build-playground-
 	@# wasm-for-guide) so `build-playground` and `guide` stay consistent.
+	@# libcx-sync: plain (ASYNCIFY=0) compatibility bundle for hosts
+	@# WITHOUT the JSPI API (Safari; Firefox where still flag-gated).
+	@# The JSPI bundles abort at instantiation there, so cxlib.js
+	@# selects this one when WebAssembly.Suspending is absent — full
+	@# recursion window, wall-clock [?sleep] raises catchable CXER0270
+	@# (mock sleeps work). No pthreads.
 	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
 	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     ./scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
@@ -154,6 +161,7 @@ build-playground:
 	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
 	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
 	@cp dist/wasm/libcx-async.js dist/playground-preview/wasm/libcx-async.js
+	@cp dist/wasm/libcx-sync.js dist/playground-preview/wasm/libcx-sync.js
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/wasm/libcx-pthreads.wasm; fi
 	@# Smoke-test compatibility: also stage flat copies under dist/wasm/
@@ -162,9 +170,10 @@ build-playground:
 	@# matches docs/guide/ deployment.
 	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
 	@cp dist/wasm/libcx-async.js dist/playground-preview/dist/wasm/libcx-async.js
+	@cp dist/wasm/libcx-sync.js dist/playground-preview/dist/wasm/libcx-sync.js
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/dist/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/dist/wasm/libcx-pthreads.wasm; fi
-	@echo "[build-playground] OK — dist/playground-preview/ ready (libcx-async + libcx-pthreads staged)"
+	@echo "[build-playground] OK — dist/playground-preview/ ready (libcx-async + libcx-pthreads + libcx-sync staged)"
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
