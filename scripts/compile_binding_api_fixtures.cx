@@ -1,0 +1,569 @@
+# scripts/compile_binding_api_fixtures.cx — compile conformance/binding_api.cxd
+# into a JSONL stream of fixtures (#922 CX port of the retired
+# scripts/compile_binding_api_fixtures.py).
+#
+# Each output line is a self-contained JSON object describing one fixture:
+#
+#     {
+#       "id": "binding-api-001-parse-empty-root",
+#       "in_cx": "[root]\n",
+#       "ops": {...},          <- op-tree the driver evaluates, or null
+#       "unsupported": null,   <- or a reason string when ops is null
+#       "expected_text": "[root]\n",
+#       "expected_err": null
+#     }
+#
+# The op-tree is a binding-agnostic IR for the Layer-1 mini-syntax used in
+# call sections (spec/bindings.md 4.1). Drivers in V / Python / Go / Rust
+# consume one JSON object per invocation and execute it through their
+# Layer-1 surface (scripts/test_binding_api_parity.sh).
+#
+# Mini-syntax grammar (unchanged from the Python):
+#
+#     call    := expr
+#     expr    := equality
+#     equality:= primary ( '==' primary )?
+#     primary := 'spawn' block
+#              | block
+#              | receiver ( '.' method '(' args? ')' )*
+#     block   := '{' binding (';' binding)* ';'? '}'
+#     binding := ident ':' expr   |   expr
+#     receiver:= 'doc' | 'cx'
+#     method  := identifier
+#     args    := arg (',' arg)*
+#     arg     := str | num | bool | nested-expr | 'cx.' Action '(' args? ')'
+#              | lambda
+#     lambda  := 'lambda' ident (',' ident)* ':' lambda-body
+#
+# Anything else lowers to ops=null with an unsupported reason string.
+#
+# JSON output is Python-json.dumps-compatible (', ' / ': ' separators,
+# insertion-ordered keys, ensure_ascii=False escaping) — byte-identical to
+# the retired compiler on the shipped corpus.
+#
+# Usage (program args are positional after the FILE, cli.md 3 / PYE-2):
+#   cx --allow-read --allow-write scripts/compile_binding_api_fixtures.cx \
+#        [conformance/binding_api.cxd]
+#
+# Exit codes: 0 emitted; 2 fixture file missing / unreadable.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/format'  as=format]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?const EMPTY-ARR []]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# ── Python-compatible JSON rendering ─────────────────────────────────────────
+
+[?def jstr scope=public ($s) [$cat ('"', [$strings:escape-json $s], '"')]]
+
+# py-json: render a compiled value (nested maps in insertion order, arrays,
+# strings, bools, null) with Python json.dumps default separators.
+#
+# MEASURED (2026-08-23, vcx/target/cx at this commit): a map literal and an
+# array literal both evaluate to an ELEMENT, not to a MapNode / ArrayNode —
+# so the `::map` / `::array` value-kind tests of code.md §12.7 never fire on
+# a literal-constructed collection (`[case $_::map …]` falls to `[else]`).
+# The collections are discriminated by their marker element name instead:
+# `__cx_map__` for maps, `__cx_arr__` / the bare seq marker for arrays.
+[?def py-json scope=public ($v)
+  [?if [= $v null] [then 'null']
+  [else [?if [= $v true] [then 'true']
+  [else [?if [= $v false] [then 'false']
+  [else
+    [?match $v
+      [case $s::string [$jstr $s]]
+      [case $i::int [$string $i]]
+      [case $f::float [$string $f]]
+      [else
+        [?if [= [$string [$name $v]] '__cx_map__']
+          [then
+            [$cat ('{',
+                   [$strings:join
+                     [?for [in $k [$map:keys $v]]
+                       [yield [$cat ([$jstr [$string $k]], ': ',
+                                     [$py-json [?else [$map:get $v $k] null]])]]]
+                     ', '],
+                   '}')]]
+          [else
+            [$cat ('[',
+                   [$strings:join [?for [in $x $v] [yield [$py-json $x]]] ', '],
+                   ']')]]]]]]]]]]]]
+
+# ── character helpers (0-based, mirroring the Python) ────────────────────────
+
+[?def ch scope=public ($s $i)
+  [?if [< $i [$strings:length $s]] [then [$strings:at $s $i]] [else '']]]
+
+[?def is-ident-char scope=public ($c)
+  [?if [= $c ''] [then false]
+    [else [or [$strings:is-alphanumeric $c] [= $c '_']]]]]
+
+[?def is-ident-start scope=public ($c)
+  [?if [= $c ''] [then false]
+    [else [or [$strings:is-alpha $c] [= $c '_']]]]]
+
+# starts-at: src has tok at pos.
+[?def starts-at scope=public ($src $pos $tok)
+  [$strings:starts-with [$strings:slice $src $pos [$strings:length $src]] $tok]]
+
+# pyrepr: Python repr() of a short ASCII-ish snippet (single-quoted form) —
+# used only inside parse-error reasons, mirroring the Python's {!r}.
+[?def pyrepr scope=public ($s)
+  [?let [= $e [$strings:replace [$strings:replace [$strings:replace [$strings:replace
+                $s '\\' '\\\\'] '\n' '\\n'] '\t' '\\t'] "'" "\\'"]]
+    [$cat ("'", $e, "'")]]]
+
+[?def snippet scope=public ($src $pos $n)
+  [?let [= $len [$strings:length $src]]
+        [= $end [?if [> [+ $pos $n] $len] [then $len] [else [+ $pos $n]]]]
+    [?if [> $pos $len] [then ''] [else [$strings:slice $src $pos $end]]]]]
+
+# ── parser result helpers ────────────────────────────────────────────────────
+# Every parse fn returns {pos: N, node: V} on success or {err: MSG}.
+
+[?def ok scope=public ($pos $node) {pos: $pos, node: $node}]
+[?def perr scope=public ($msg) {err: $msg}]
+[?def is-perr scope=public ($r) [$map:contains $r 'err']]
+[?def r-pos scope=public ($r) [?else [$map:get $r 'pos'] 0]]
+[?def r-node scope=public ($r) [?else [$map:get $r 'node'] null]]
+[?def r-err scope=public ($r) [$string [?else [$map:get $r 'err'] '']]]
+
+# skip: advance over whitespace.
+[?def skip scope=public ($src $pos)
+  [?if [and [< $pos [$strings:length $src]]
+            [$strings:is-whitespace [$ch $src $pos]]]
+    [then [$skip $src [+ $pos 1]]]
+    [else $pos]]]
+
+# eat: skip then consume tok; {pos: N} on success, {err: ''} sentinel miss.
+[?def eat scope=public ($src $pos $tok)
+  [?let [= $p [$skip $src $pos]]
+    [?if [$starts-at $src $p $tok]
+      [then [$ok [+ $p [$strings:length $tok]] null]]
+      [else [$perr '']]]]]
+
+# expect: eat or a Python-shaped error.
+[?def expect scope=public ($src $pos $tok)
+  [?let [= $r [$eat $src $pos $tok]]
+    [?if [$is-perr $r]
+      [then [$perr [$cat ('expected ', [$pyrepr $tok], ' at pos ', [$string $pos],
+                          ': ', [$pyrepr [$snippet $src $pos 30]])]]]
+      [else $r]]]]
+
+[?def at-eof scope=public ($src $pos)
+  [?if [< [$skip $src $pos] [$strings:length $src]] [then false] [else true]]]
+
+# read-ident-end: scan ident chars from $i.
+[?def ident-end scope=public ($src $i)
+  [?if [$is-ident-char [$ch $src $i]]
+    [then [$ident-end $src [+ $i 1]]]
+    [else $i]]]
+
+[?def read-ident scope=public ($src $pos)
+  [?let [= $p [$skip $src $pos]]
+        [= $e [$ident-end $src $p]]
+    [?if [= $e $p]
+      [then [$perr [$cat ('expected identifier at pos ', [$string $p])]]]
+      [else [$ok $e [$strings:slice $src $p $e]]]]]]
+
+# read-string-scan: from $i (inside the quotes), accumulate until closing
+# quote; handles the four escapes plus pass-through, like the Python.
+[?def read-string-scan scope=public ($src $i $quote $acc)
+  [?if [not [< $i [$strings:length $src]]]
+    [then [$perr 'unterminated string']]
+    [else
+      [?let [= $c [$ch $src $i]]
+        [?if [and [= $c '\\'] [< [+ $i 1] [$strings:length $src]]]
+          [then
+            [?let [= $nxt [$ch $src [+ $i 1]]]
+                  [= $decoded [?match $nxt
+                    [case 'n' '\n'] [case 't' '\t'] [case '\\' '\\']
+                    [else [?if [= $nxt $quote] [then $quote] [else $nxt]]]]]
+              [$read-string-scan $src [+ $i 2] $quote [$cat ($acc, $decoded)]]]]
+          [else [?if [= $c $quote]
+            [then [$ok [+ $i 1] $acc]]
+            [else [$read-string-scan $src [+ $i 1] $quote [$cat ($acc, $c)]]]]]]]]]]
+
+[?def read-string scope=public ($src $pos)
+  [?let [= $quote [$ch $src $pos]]
+    [$read-string-scan $src [+ $pos 1] $quote '']]]
+
+[?def number-end scope=public ($src $i)
+  [?let [= $c [$ch $src $i]]
+    [?if [or [$strings:is-digit [?if [= $c ''] [then 'x'] [else $c]]] [= $c '.']]
+      [then [?if [= $c ''] [then $i] [else [$number-end $src [+ $i 1]]]]]
+      [else $i]]]]
+
+[?def read-number scope=public ($src $pos)
+  [?let [= $start $pos]
+        [= $p [?if [= [$ch $src $pos] '-'] [then [+ $pos 1]] [else $pos]]]
+        [= $e [$number-end $src $p]]
+    [$ok $e [$strings:slice $src $start $e]]]]
+
+# kw-at: keyword at pos with no ident char after it.
+[?def kw-at scope=public ($src $pos $kw)
+  [and [$starts-at $src $pos $kw]
+       [not [$is-ident-char [$ch $src [+ $pos [$strings:length $kw]]]]]]]
+
+# ── recursive-descent parser ─────────────────────────────────────────────────
+
+# parse-arg-list: '(' args? ')' -> {pos, node: [args...]}.
+[?def parse-arg-list scope=public ($src $pos)
+  [?let [= $o [$expect $src $pos '(']]
+    [?if [$is-perr $o] [then $o]
+      [else
+        [?let [= $close [$eat $src [$r-pos $o] ')']]
+          [?if [not [$is-perr $close]]
+            [then [$ok [$r-pos $close] EMPTY-ARR]]
+            [else [$arg-list-rest $src [$r-pos $o] EMPTY-ARR]]]]]]]]
+
+[?def arg-list-rest scope=public ($src $pos $acc)
+  [?let [= $a [$parse-arg $src $pos]]
+    [?if [$is-perr $a] [then $a]
+      [else
+        [?let
+          [= $acc2 [$array:append $acc [$r-node $a]]]
+          [= $comma [$eat $src [$r-pos $a] ',']]
+          [?if [not [$is-perr $comma]]
+            [then [$arg-list-rest $src [$r-pos $comma] $acc2]]
+            [else
+              [?let [= $close [$eat $src [$r-pos $a] ')']]
+                [?if [not [$is-perr $close]]
+                  [then [$ok [$r-pos $close] $acc2]]
+                  [else [$perr [$cat ('expected , or ) at pos ',
+                                      [$string [$r-pos $a]])]]]]]]]]]]]]
+
+# chain-loop: ( '.' method '(' args ')' )* over an existing node.
+[?def chain-loop scope=public ($src $pos $node)
+  [?let [= $dot [$eat $src $pos '.']]
+    [?if [$is-perr $dot]
+      [then [$ok $pos $node]]
+      [else
+        [?let [= $m [$read-ident $src [$r-pos $dot]]]
+          [?if [$is-perr $m] [then $m]
+            [else
+              [?let [= $al [$parse-arg-list $src [$r-pos $m]]]
+                [?if [$is-perr $al] [then $al]
+                  [else [$chain-loop $src [$r-pos $al]
+                          {kind: 'method', target: $node,
+                           method: [$r-node $m], args: [$r-node $al]}]]]]]]]]]]]
+
+[?def parse-chain scope=public ($src $pos)
+  [?let [= $p [$parse-primary $src $pos]]
+    [?if [$is-perr $p] [then $p]
+      [else [$chain-loop $src [$r-pos $p] [$r-node $p]]]]]]
+
+[?def parse-expr scope=public ($src $pos)
+  [?let [= $l [$parse-chain $src $pos]]
+    [?if [$is-perr $l] [then $l]
+      [else
+        [?let [= $p [$skip $src [$r-pos $l]]]
+          [?if [and [$starts-at $src $p '=='] [not [= [$ch $src [+ $p 2]] '=']]]
+            [then
+              [?let [= $r [$parse-chain $src [+ $p 2]]]
+                [?if [$is-perr $r] [then $r]
+                  [else [$ok [$r-pos $r]
+                          {kind: 'eq', left: [$r-node $l], right: [$r-node $r]}]]]]]
+            [else [$ok [$r-pos $l] [$r-node $l]]]]]]]]]
+
+# block-probe: named-binding block iff an ident followed by ':' opens it.
+[?def block-probe scope=public ($src $pos)
+  [?let [= $p [$skip $src $pos]]
+    [?if [not [$is-ident-start [$ch $src $p]]]
+      [then false]
+      [else
+        [?let [= $scan [$ident-end $src $p]]
+              [= $tail [$skip $src $scan]]
+          [= [$ch $src $tail] ':']]]]]]
+
+[?def block-bindings scope=public ($src $pos $acc)
+  [?let [= $close [$eat $src $pos '}']]
+    [?if [not [$is-perr $close]]
+      [then [$ok [$r-pos $close] $acc]]
+      [else
+        [?let [= $n [$read-ident $src $pos]]
+          [?if [$is-perr $n] [then $n]
+            [else
+              [?let [= $colon [$expect $src [$r-pos $n] ':']]
+                [?if [$is-perr $colon] [then $colon]
+                  [else
+                    [?let [= $v [$parse-expr $src [$r-pos $colon]]]
+                      [?if [$is-perr $v] [then $v]
+                        [else
+                          [?let
+                            [= $acc2 [$array:append $acc
+                                       {name: [$r-node $n], op: [$r-node $v]}]]
+                            [= $semi [$eat $src [$r-pos $v] ';']]
+                            [?if [not [$is-perr $semi]]
+                              [then [$block-bindings $src [$r-pos $semi] $acc2]]
+                              [else
+                                [?let [= $close2 [$eat $src [$r-pos $v] '}']]
+                                  [?if [not [$is-perr $close2]]
+                                    [then [$ok [$r-pos $close2] $acc2]]
+                                    [else [$perr [$cat ("expected ';' or '}' in block at pos ",
+                                                        [$string [$r-pos $v]])]]]]]]]]]]]]]]]]]]]]]
+
+# MEASURED (2026-08-23): $array:get is ONE-based (`[$array:get (a b c) 3]` is
+# 'c'), so the Python's `bindings[-1]` is index $n, not $n-1.
+[?def last-binding-name scope=public ($bindings)
+  [?let [= $last [$array:get $bindings [$count $bindings]]]
+    [$string [?else [$map:get $last 'name'] '']]]]
+
+[?def parse-block scope=public ($src $pos)
+  [?let [= $o [$expect $src $pos '{']]
+    [?if [$is-perr $o] [then $o]
+      [else
+        [?if [not [$block-probe $src [$r-pos $o]]]
+          [then
+            [; bare expression block: { expr } ]
+            [?let [= $inner [$parse-expr $src [$r-pos $o]]]
+              [?if [$is-perr $inner] [then $inner]
+                [else
+                  [?let [= $close [$expect $src [$r-pos $inner] '}']]
+                    [?if [$is-perr $close] [then $close]
+                      [else [$ok [$r-pos $close]
+                        {kind: 'block',
+                         bindings: [$array:append EMPTY-ARR {name: '__result__', op: [$r-node $inner]}],
+                         result: '__result__'}]]]]]]]]
+          [else
+            [?let [= $b [$block-bindings $src [$r-pos $o] EMPTY-ARR]]
+              [?if [$is-perr $b] [then $b]
+                [else
+                  [?if [= [$count [$r-node $b]] 0]
+                    [then [$perr 'empty block']]
+                    [else [$ok [$r-pos $b]
+                      {kind: 'block', bindings: [$r-node $b],
+                       result: [$last-binding-name [$r-node $b]]}]]]]]]]]]]]]
+
+[?def parse-primary scope=public ($src $pos0)
+  [?let [= $pos [$skip $src $pos0]]
+    [?if [$kw-at $src $pos 'spawn']
+      [then
+        [?let [= $p [$skip $src [+ $pos 5]]]
+          [?if [not [= [$ch $src $p] '{']]
+            [then [$perr "expected '{' after spawn"]]
+            [else
+              [?let [= $b [$parse-block $src $p]]
+                [?if [$is-perr $b] [then $b]
+                  [else [$ok [$r-pos $b] {kind: 'spawn', body: [$r-node $b]}]]]]]]]]
+      [else [?if [= [$ch $src $pos] '{']
+        [then [$parse-block $src $pos]]
+      [else [?if [$kw-at $src $pos 'doc']
+        [then [$ok [+ $pos 3] {kind: 'doc_ref'}]]
+      [else [?if [$starts-at $src $pos 'cx.']
+        [then
+          [?let [= $n [$read-ident $src [+ $pos 3]]]
+            [?if [$is-perr $n] [then $n]
+              [else
+                [?let [= $al [$parse-arg-list $src [$r-pos $n]]]
+                  [?if [$is-perr $al] [then $al]
+                    [else [$ok [$r-pos $al]
+                      {kind: 'action', name: [$r-node $n], args: [$r-node $al]}]]]]]]]]
+      [else [?if [or [= [$ch $src $pos] '"'] [= [$ch $src $pos] "'"]]
+        [then
+          [?let [= $s [$read-string $src $pos]]
+            [?if [$is-perr $s] [then $s]
+              [else [$ok [$r-pos $s] {kind: 'str', value: [$r-node $s]}]]]]]
+      [else [?if [or [$strings:is-digit [?if [= [$ch $src $pos] ''] [then 'x'] [else [$ch $src $pos]]]]
+                     [and [= [$ch $src $pos] '-']
+                          [$strings:is-digit [?if [= [$ch $src [+ $pos 1]] ''] [then 'x'] [else [$ch $src [+ $pos 1]]]]]]]
+        [then
+          [?let [= $n [$read-number $src $pos]]
+            [$ok [$r-pos $n] {kind: 'num', value: [$r-node $n]}]]]
+      [else [?if [$kw-at $src $pos 'true']
+        [then [$ok [+ $pos 4] {kind: 'bool', value: true}]]
+      [else [?if [$kw-at $src $pos 'false']
+        [then [$ok [+ $pos 5] {kind: 'bool', value: false}]]
+      [else [?if [$is-ident-start [$ch $src $pos]]
+        [then
+          [?let [= $n [$read-ident $src $pos]]
+            [?if [$is-perr $n] [then $n]
+              [else [$ok [$r-pos $n] {kind: 'var', name: [$r-node $n]}]]]]]
+        [else [$perr [$cat ('expected primary at pos ', [$string $pos], ': ',
+                            [$pyrepr [$snippet $src $pos 40]])]]]]]]]]]]]]]]]]]]]]]]
+
+# parse-lambda: only the fixture-091 shape (lambda n: n + 1) is recognised.
+[?def parse-lambda scope=public ($src $pos)
+  [?let [= $p [$skip $src [+ [$skip $src $pos] 6]]]
+        [= $param [$read-ident $src $p]]
+    [?if [$is-perr $param] [then $param]
+      [else
+        [?let [= $colon [$expect $src [$r-pos $param] ':']]
+          [?if [$is-perr $colon] [then $colon]
+            [else
+              [?let [= $bi [$read-ident $src [$r-pos $colon]]]
+                [?if [$is-perr $bi] [then $bi]
+                  [else
+                    [?let
+                      [= $p2 [$skip $src [$r-pos $bi]]]
+                      [= $opch [$ch $src $p2]]
+                      [?if [not [or [= $opch '+'] [or [= $opch '-'] [or [= $opch '*'] [= $opch '/']]]]]
+                        [then [$perr [$cat ('lambda body op expected at pos ', [$string $p2])]]]
+                        [else
+                          [?let
+                            [= $p3 [$skip $src [+ $p2 1]]]
+                            [= $num [$read-number $src $p3]]
+                            [$ok [$r-pos $num]
+                              {kind: 'lambda_cx',
+                               source: [$cat ('[?fn $', [$r-node $param],
+                                              ' :body [?', $opch, ' $', [$r-node $bi],
+                                              ' ', [$r-node $num], ']]')]}]]]]]]]]]]]]]]]
+
+[?def parse-arg scope=public ($src $pos0)
+  [?let [= $pos [$skip $src $pos0]]
+    [?if [$kw-at $src $pos 'lambda']
+      [then [$parse-lambda $src $pos]]
+      [else
+        [?let [= $p [$parse-primary $src $pos]]
+          [?if [$is-perr $p] [then $p]
+            [else [$chain-loop $src [$r-pos $p] [$r-node $p]]]]]]]]]
+
+[?def parse-call scope=public ($src)
+  [?let [= $r [$parse-expr $src 0]]
+    [?if [$is-perr $r] [then $r]
+      [else
+        [?if [$at-eof $src [$r-pos $r]]
+          [then $r]
+          [else [$perr [$cat ('unparsed trailing input at pos ', [$string [$r-pos $r]],
+                              ': ', [$pyrepr [$snippet $src [$r-pos $r] 40]])]]]]]]]]
+
+# ── fixture loading (loader-faithful; see _fixtures_to_json.cx) ─────────────
+
+[?def el-value scope=public ($el)
+  [?let [= $m [$json:parse [$json:emit $el]]]
+        [= $v [?else [$map:get $m [$name $el]] '']]
+    [?match $v
+      [case $arr::array [$strings:join $arr '']]
+      [else $v]]]]
+
+[?def is-rawtext scope=public ($el)
+  [$strings:starts-with [$format:canonical $el]
+    [$cat ('[', [$name $el], ' [', '#')]]]
+
+[?def rawtext-value scope=public ($el)
+  [?if [$is-rawtext $el] [then [$el-value $el]] [else '']]]
+
+[?def normalize scope=public ($s)
+  [?let [= $a [?if [$strings:starts-with $s '\n']
+                [then [$strings:slice $s 1 [$strings:length $s]]] [else $s]]]
+    [?if [$strings:ends-with $a '\n']
+      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+
+# strip-drop-edges: drop leading/trailing blank + '#'-banner lines from a
+# section body — the former flush() normalization the Python preserved.
+#
+# MEASURED (2026-08-23): a [?def] that RETURNS an empty sequence hands the
+# caller ABSENCE — a 0-item sequence and absence are the same value in CXDM,
+# so the sequence does not survive the return boundary and every downstream
+# call absence-propagates. (Passing an already-bound empty sequence INTO a
+# def is fine; `[$count $empty]` is 0.) The edge trim therefore computes
+# first-kept / last-kept INDICES and slices, instead of shrinking a sequence
+# through recursive returns — an all-droppable body would otherwise vanish
+# into absence rather than producing the empty string the Python emits.
+[?def droppable scope=public ($line)
+  [or [= [$strings:trim $line] ''] [$strings:starts-with [$strings:trim-start $line] '#']]]
+
+# MEASURED (2026-08-23): `[and A B]` is NOT a short-circuit guard against an
+# out-of-range index — `[and false [$strings:starts-with [$nth $seq 99] '#']]`
+# is ABSENCE, not false, because the absent `$nth` poisons the stdlib call in
+# B and that propagates out of the `and`. (A literally-absent operand, e.g.
+# a def returning `()`, is fine: `[and false ()]` is false.) The bound checks
+# below are therefore NESTED `?if`s, so the `$nth` never runs out of range.
+[?def first-keep scope=public ($lines $i)
+  [?if [<= $i [$count $lines]]
+    [then [?if [$droppable [$nth $lines $i]]
+            [then [$first-keep $lines [+ $i 1]]]
+            [else $i]]]
+    [else $i]]]
+
+[?def last-keep scope=public ($lines $j)
+  [?if [>= $j 1]
+    [then [?if [$droppable [$nth $lines $j]]
+            [then [$last-keep $lines [- $j 1]]]
+            [else $j]]]
+    [else $j]]]
+
+[?def strip-drop-edges scope=public ($s)
+  [?let [= $lines [$strings:split $s '\n']]
+        [= $a [$first-keep $lines 1]]
+        [= $b [$last-keep $lines [$count $lines]]]
+    [?if [> $a $b]
+      [then '']
+      [else [$strings:join
+              [?for [in $i [$range $a $b]] [yield [$nth $lines $i]]] '\n']]]]]
+
+# section-of: the normalized + edge-stripped body of the named section, or
+# absence when the case has no such section.
+[?def section-of scope=public ($c $secname)
+  [?let [= $hits [?for [in $k $c/*] [where [= [$name $k] $secname]]
+                   [yield [$strip-drop-edges [$normalize [$rawtext-value $k]]]]]]
+    [?if [$present $hits] [then [$nth $hits 1]] [else ()]]]]
+
+# ── main ─────────────────────────────────────────────────────────────────────
+
+[?def compile-call scope=public ($call-text)
+  [; strip full-line comments and blanks, join, trim — the Python's cleaning. ]
+  [?let
+    [= $cleaned [?for [in $line [$strings:split $call-text '\n']]
+                  [where [?let [= $t [$strings:trim $line]]
+                           [and [not [= $t '']] [not [$strings:starts-with $t '#']]]]]
+                  [yield $line]]]
+    [?if [not [$present $cleaned]]
+      [then {err: 'empty call body'}]
+      [else
+        [?let [= $src [$strings:trim [$strings:join $cleaned '\n']]]
+              [= $r [$parse-call $src]]
+          [?if [$is-perr $r]
+            [then {err: [$cat ('parse-error: ', [$r-err $r])]}]
+            [else {node: [$r-node $r]}]]]]]]]
+
+[?def case-line scope=public ($c)
+  [?let
+    [= $cid [$string [?else $c@id '']]]
+    [= $title [$strings:join [?for [in $k $c/*] [where [= [$name $k] 'title']]
+                [yield [$rawtext-value $k]]] '']]
+    [= $nm [?if [= $title ''] [then $cid] [else [$cat ($cid, ' ', $title)]]]]
+    [= $in-cx [?else [$section-of $c 'in-cx'] '']]
+    [= $in-cx-full [?if [and [not [= $in-cx '']] [not [$strings:ends-with $in-cx '\n']]]
+                     [then [$cat ($in-cx, '\n')]] [else $in-cx]]]
+    [= $call-text [?else [$section-of $c 'call'] '']]
+    [= $out-text [$section-of $c 'out-text']]
+    [= $out-err [$section-of $c 'out-err']]
+    [= $compiled [$compile-call $call-text]]
+    [= $ops-json [?if [$map:contains $compiled 'err']
+                   [then 'null']
+                   [else [$py-json [?else [$map:get $compiled 'node'] null]]]]]
+    [= $unsup-json [?if [$map:contains $compiled 'err']
+                     [then [$jstr [$string [?else [$map:get $compiled 'err'] '']]]]
+                     [else 'null']]]
+    [= $exp-text-json [?if [$present $out-text] [then [$jstr $out-text]] [else 'null']]]
+    [= $exp-err-json [?if [$present $out-err] [then [$jstr $out-err]] [else 'null']]]
+    [$cat ('{"id": ', [$jstr $nm],
+           ', "in_cx": ', [$jstr $in-cx-full],
+           ', "ops": ', $ops-json,
+           ', "unsupported": ', $unsup-json,
+           ', "expected_text": ', $exp-text-json,
+           ', "expected_err": ', $exp-err-json,
+           '}')]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $path [?if [> [$count $argv] 1] [then [$nth $argv 2]] [else 'conformance/binding_api.cxd']]]
+  [= $src [?fallback [$io:read-file $path]
+            [recover-with ([$cry [$cat ('error: ', $path, ' not found')]],
+                           [$env:exit 2], '')]]]
+  [= $doc [?fallback [$cx:parse $src]
+            [recover-with ([$cry [$cat ('error: cannot parse ', $path)]],
+                           [$env:exit 2], null)]]]
+  [= $lines [?for [in $c $doc//test-suite/case] [yield [$case-line $c]]]]
+  [= $_out [?for [in $l $lines] [yield [$say $l]]]]
+  [$env:exit 0]]

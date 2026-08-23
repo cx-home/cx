@@ -916,7 +916,7 @@ test-xpath-parity: build-vcx
 # bindings (TS / Java / C# / Ruby / Kotlin / Swift) are out of scope per
 # d-2026-05-22-03.
 #
-# Driver architecture: `scripts/compile_binding_api_fixtures.py` parses
+# Driver architecture: `scripts/compile_binding_api_fixtures.cx` parses
 # the fixture file and emits a JSONL op-tree per fixture; per-binding
 # drivers under `lang/<lang>/binding_api_driver/` execute each op-tree
 # through their Layer-1 surface. The shell harness diffs the four
