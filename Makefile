@@ -265,8 +265,9 @@ check-v-upstream:
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
 # cxl-version=/cx-eval-version= rename window deprecation.
+check-lint-rules: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-lint-rules:
-	@python3 scripts/check_lint_rules.py
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_lint_rules.cx
 
 # V6 — install the .githooks/ scripts as repo-local git hooks
 # (idempotent). Sets core.hooksPath rather than symlinking each
