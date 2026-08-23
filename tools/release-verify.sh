@@ -22,20 +22,33 @@ cd "$ROOT"
 
 PASS=0
 FAIL=0
+ROW=0
+# Per-ROW log files, kept for the whole run. The old single
+# /tmp/release-verify.log was OVERWRITTEN by every subsequent row, so a
+# mid-run failure's full output was destroyed by the rows after it — the
+# `make test` row failed twice across releases with its evidence already
+# clobbered by the time anyone looked (2026-08-22 and 2026-08-23).
+RVLOG_DIR="$(mktemp -d /tmp/release-verify.XXXXXX)"
+echo "release-verify: per-row logs in $RVLOG_DIR"
 section() {
  echo ""
  echo "── $1 ────────────────────────────────────────────────"
 }
 check() {
  local label="$1" cmd="$2"
+ ROW=$((ROW + 1))
+ local slug
+ slug="$(printf '%02d-%s' "$ROW" "$(echo "$label" | tr -cs 'a-zA-Z0-9' '-' | cut -c1-48)")"
+ local rowlog="$RVLOG_DIR/$slug.log"
  printf " %-60s " "$label"
- if eval "$cmd" > /tmp/release-verify.log 2>&1; then
+ if eval "$cmd" > "$rowlog" 2>&1; then
  echo "OK"
  PASS=$((PASS + 1))
  else
  echo "FAIL"
  FAIL=$((FAIL + 1))
- sed 's/^/ /' /tmp/release-verify.log | head -5
+ sed 's/^/ /' "$rowlog" | tail -15
+ echo "   full row log: $rowlog"
  fi
 }
 
