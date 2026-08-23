@@ -880,22 +880,21 @@ test:
 test-no-parallel: $(TEST_TARGETS)
 
 # ── gate 37.10 — code_diagram / code_tree conformance ────────────
-# Runs conformance/code_diagram.txt through cx_code_diagram and
-# cx_code_tree with structural-equivalence comparison.
-# Skips cleanly when the binary lacks the subcommands (Phase 7.1 / 7.6
-# / 7.7 implements them) so this target stays green during scaffold.
+# Runs conformance/code_diagram.cxd through `cx code-diagram` and
+# `cx code-tree` with structural-equivalence comparison. An all-SKIP
+# run FAILS (RULED: PYE-6) and a missing binary is exit 2 — this tree's
+# build or CX_BIN, never PATH (#929).
 # #774: this checker is the ONLY gate that sees the ERD attribute-type
 # rows and the diagram structure (the roundtrip suites in the eval-fixtures
 # lane compare trees, not emitted types), and for a long time it was wired
 # into NO union target — so a real regression sat green for a whole stream.
-# It is in TEST_TARGETS now. It also builds first and pins LIBCX_LIB_DIR,
-# exactly as test-python does: cxlib's loader otherwise finds an INSTALLED
-# libcx.dylib ahead of this tree's, and the checker then dies on whichever
-# ABI export the installed copy predates rather than on a fixture.
+# It is in TEST_TARGETS now. CX gate (#922, RULED: PYE-5): the former
+# LIBCX_LIB_DIR pin is obsolete — nothing dlopens cxlib any more; the
+# gate drives the tree's own cx binary end to end.
 .PHONY: test-code-diagram
-test-code-diagram: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
+test-code-diagram: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
 test-code-diagram: build-vcx-dev
-	@python3 scripts/check_code_diagram_fixtures.py
+	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_code_diagram_fixtures.cx
 
 # ── v0.8.0 gate 28.5 — XPath 3.1 parity (Saxon-HE reference) ─────────────
 # Runs conformance/xpath_31_parity.txt fixtures through both `cx eval` and
