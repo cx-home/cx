@@ -480,8 +480,9 @@ check-no-legacy-try:
 # Token-aware, not a raw grep (English to/by prose, to=/by= named args, and the
 # colon slice-stride [a:b:s] are not matched; the negatives are allowlisted).
 .PHONY: check-no-infix-range
+check-no-infix-range: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-infix-range:
-	@python3 scripts/check_no_infix_range.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_infix_range.cx
 
 # ── NO-CXL-TOKEN gate — the retired language name `CXL` must not reappear
 # in conformance/ + docs-src/ + examples/ + scripts/ + tooling/ + top-level
