@@ -432,7 +432,14 @@ verify-doc-links:
 	@tools/verify-doc-links.sh docs-src/
 	@tools/verify-doc-links.sh spec/03-approved/
 	@tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md \
-	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md
+	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md \
+	  AGENTS.md CLAUDE.md
+	@# docs/llm/ (#938) is the GENERATED LLM layer. It is expected to carry
+	@# ZERO relative links: it is served from the published SITE ROOT, where a
+	@# repo-relative path resolves to nothing. So this row's job is to stay at
+	@# "0 failed" as the layer grows — the moment a template starts emitting
+	@# `](…)` paths, they have to resolve in the checkout too.
+	@tools/verify-doc-links.sh docs/llm/
 
 # Pre-tag version-string consistency. VERSION (the repo-root file) is the
 # single source of truth; scripts/check_version_consistency.cx verifies every
