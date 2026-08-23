@@ -579,8 +579,9 @@ check-code-fixtures: build-vcx
 # allowlistable. Tier 2/3 sections (concepts §9, libraries §16) are out of
 # scope by design — they carry the opt-in/advanced markers.
 .PHONY: check-docs-tier1-guardrail
+check-docs-tier1-guardrail: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-docs-tier1-guardrail:
-	@python3 scripts/check_docs_tier1_guardrail.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_docs_tier1_guardrail.cx
 
 # ── NO-ADR-CITATION gate — the spec (spec/core/*.md) is the only source of
 # truth. Decision records are archived (under the guarded decisions dir) and
