@@ -3,7 +3,7 @@ name: Perf (V7)
 # Performance regression gate (historical V7 gate from v0.7.0 status;
 # carried forward into v0.8.0).
 #
-# Nightly run of `make bench-streaming` (via scripts/run_bench_json.py),
+# Nightly run of `make bench-streaming` (via scripts/run_bench_json.cx),
 # JSON result uploaded as a workflow artifact. The 'compare' job
 # downloads the most recent main-branch artifact and runs
 # scripts/compare_bench.cx against it; a regression past the
@@ -48,7 +48,8 @@ jobs:
           mkdir -p out
           # --include-eval also runs the T1 evaluator-feature bench
           # so the artifact carries every perf signal in one JSON blob.
-          python3 scripts/run_bench_json.py --include-eval -o out/bench.json
+          ./vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-clock \
+            scripts/run_bench_json.cx --include-eval -o out/bench.json
           cat out/bench.json
 
       - name: Upload bench artifact
