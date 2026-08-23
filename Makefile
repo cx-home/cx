@@ -789,8 +789,9 @@ ring-tag-gate: build-vcx
 # ships NO parallel primitive — no own hashing, no archive format, no
 # transport, no second compose gate.
 .PHONY: check-xap-dist-absences
+check-xap-dist-absences: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-xap-dist-absences:
-	@python3 scripts/check_xap_dist_absences.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_xap_dist_absences.cx
 
 # ── Shell-completion drift gate (#423) — the bash/zsh/fish completions in
 # tooling/completions/ must mention every subcommand in the vcx/cmd/main.v
