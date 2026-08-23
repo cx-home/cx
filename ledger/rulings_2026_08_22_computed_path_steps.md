@@ -55,7 +55,20 @@ Nothing in the corpus can be reading them today, so no golden and no
 canonical image moves. The PROTO_CANON_OUT differential is still run — the
 claim is checked, not asserted.
 
-### Implementer decisions recorded under this rider (findable, not silent)
+### Implementer PROPOSALS — NOT RULED (correction, 2026-08-22)
+
+**The owner ruled exactly two things in this file: PYE-1a (the grammar edit
+is inside PYE-1's authorization) and PYE-1b (all four compact steps take a
+computed name). Nothing below was ruled.** The five clauses that follow were
+written by the implementer and presented under the owner's "1a 2b" as though
+settled. They are proposals for #925 and carry NO authority. A successor may
+adopt, change, or discard any of them without a supersession, and should put
+whichever survive to the owner rather than inherit them.
+
+The original heading called these "implementer decisions recorded under this
+rider (findable, not silent)", which read as decisions taken under a ruling.
+That framing is withdrawn.
+
 
 - **The computed name is a BARE `$name` binding — no inner path, no QName
   fold.** `$m.$k/foo` is therefore a computed member step followed by a
