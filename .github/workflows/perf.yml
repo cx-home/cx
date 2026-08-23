@@ -6,7 +6,7 @@ name: Perf (V7)
 # Nightly run of `make bench-streaming` (via scripts/run_bench_json.py),
 # JSON result uploaded as a workflow artifact. The 'compare' job
 # downloads the most recent main-branch artifact and runs
-# scripts/compare_bench.py against it; a regression past the
+# scripts/compare_bench.cx against it; a regression past the
 # default 30% threshold fails the job. The 30% threshold absorbs
 # the ±15-20% noise floor of GitHub-hosted runners — see
 # docs/perf.md (TODO) for the strict-mode baseline discipline.
@@ -62,10 +62,18 @@ jobs:
     name: Compare against latest baseline
     needs: bench
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 30  # includes the vcx build the CX gate script runs on
     continue-on-error: true  # informational until a stable baseline is published
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install V
+        run: |
+          git clone --depth=1 https://github.com/vlang/v /tmp/v
+          (cd /tmp/v && make && sudo ./v symlink)
+
+      - name: Build libcx (the compare gate is a CX script)
+        run: make build-vcx
 
       - name: Download current bench
         uses: actions/download-artifact@v4
@@ -90,7 +98,7 @@ jobs:
       - name: Compare (informational)
         run: |
           if [ -f bench/baseline.json ]; then
-            python3 scripts/compare_bench.py bench/baseline.json out/bench.json
+            ./vcx/target/cx --allow-read --allow-write scripts/compare_bench.cx bench/baseline.json out/bench.json
           else
             echo "No committed baseline at bench/baseline.json — skipping compare."
             echo "To establish one, run workflow_dispatch with publish_baseline=true"

@@ -396,15 +396,16 @@ examples-regen:
 	@echo "==> done; review with 'git diff examples/' and commit"
 
 # V7 — bench harness JSON runner. Drives bench-streaming and emits
-# a stable JSON shape consumable by scripts/compare_bench.py.
+# a stable JSON shape consumable by scripts/compare_bench.cx.
 bench-json:
 	@python3 scripts/run_bench_json.py
 
 # V7 — bench regression comparison. Pass BASELINE= and CURRENT= as
 # paths to JSON files produced by bench-json. Default threshold is
 # 30%; pass STRICT=1 for the 10% threshold.
+bench-compare: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench-compare:
-	@python3 scripts/compare_bench.py \
+	@"$(CX_BIN)" --allow-read --allow-write scripts/compare_bench.cx \
 	  $(or $(BASELINE),bench/baseline.json) \
 	  $(or $(CURRENT),bench/current.json) \
 	  $(if $(STRICT),--strict,)

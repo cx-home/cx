@@ -1,0 +1,165 @@
+# scripts/compare_bench.cx — V7 bench regression gate (#922 CX port of the
+# retired scripts/compare_bench.py).
+#
+# Loads a baseline JSON file (produced by scripts/run_bench_json.cx on a
+# known-good run) and a current run, and fails if any tracked benchmark
+# regressed past the configured threshold.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write scripts/compare_bench.cx BASELINE.json CURRENT.json
+#   cx --allow-read --allow-write scripts/compare_bench.cx BASELINE.json CURRENT.json --strict
+#   (or: make bench-compare)
+#
+# Thresholds:
+#   default  — 30% (loose; absorbs the ±15-20% noise floor of free
+#              GitHub Actions runners).
+#   --strict — 10% (matches the ROADMAP v0.6.1 deferral target; use when both
+#              runs come from a stable bare-metal baseline machine).
+#
+# Lower-is-better is assumed (every key is a millisecond figure).
+#
+# Exit codes:
+#   0 — no regressions past threshold.
+#   1 — at least one benchmark regressed past threshold.
+#   2 — baseline / current JSON malformed or missing keys.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/math'    as=math]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?const ARG_SPEC [argspec
+  [flag name="strict" type=bool]
+  [positional name="baseline" type=string required=true]
+  [positional name="current"  type=string required=true]]]
+
+[; fixed-point with 1 decimal, no padding: 2.5 -> '2.5', -0.05 -> '-0.1'-ish.
+   Rounding is round-half-even on the scaled value (Python %.1f is correctly
+   rounded on the binary double; ties differ only on exactly-representable
+   halves, which measured medians do not hit). ]
+[?def fixed1 scope=public ($v)
+  [?let [= $n [$math:round-half-even [* [* $v 1.0e0] 10.0e0]]]
+        [= $neg [< $n 0]]
+        [= $a [?if $neg [then [- 0 $n]] [else $n]]]
+        [= $body [$cat ([$string [$div $a 10]], '.', [$string [$mod $a 10]])]]
+    [?if $neg [then [$cat ('-', $body)]] [else $body]]]]
+
+[; fixed-point 0 decimals: 30.000001 -> '30'. ]
+[?def fixed0 scope=public ($v)
+  [$string [$math:round-half-even [* $v 1.0e0]]]]
+
+[; Python repr of a JSON number: ints as-is, floats with .0 kept — exactly
+   what $json:emit produces for int / float kinds. ]
+[?def numstr scope=public ($v) [$json:emit $v]]
+
+[; signed fixed1: always carries a sign, Python '{:+.1f}'. ]
+[?def sfixed1 scope=public ($v)
+  [?let [= $s [$fixed1 $v]]
+    [?if [$strings:starts-with $s '-'] [then $s] [else [$cat ('+', $s)]]]]]
+
+[?def load scope=public impure ($p)
+  [?let [= $body [?fallback [$io:read-file $p]
+                   [recover-with [load-failed reason='read']]]]
+    [?match $body
+      [case [load-failed] $body]
+      [else [?fallback [$json:parse $body]
+              [recover-with [load-failed reason='parse']]]]]]]
+
+[?def median-of scope=public ($bm $key)
+  [?let [= $entry [?else [$map:get $bm $key] {}]]
+    [$map:get $entry 'median']]]
+
+[?def unit-of scope=public ($bm $key)
+  [?let [= $entry [?else [$map:get $bm $key] {}]]
+    [?else [$map:get $entry 'unit'] '']]]
+
+[?def meta-str scope=public ($doc $key)
+  [?else [$map:get $doc $key] '?']]
+
+[?let
+  [= $args [?fallback [$env:parse-args ARG_SPEC]
+             [recover-with ([$cry 'usage: compare_bench.cx BASELINE.json CURRENT.json [--strict]'],
+                            [$env:exit 2], null)]]]
+  [= $strict [?else [$env:flag $args 'strict'] false]]
+  [= $baseline-path [$env:positional $args 'baseline']]
+  [= $current-path  [$env:positional $args 'current']]
+
+  [= $base [$load $baseline-path]]
+  [= $_b [?match $base
+    [case [load-failed]
+      ([$cry [$cat ('could not load ', $baseline-path)]], [$env:exit 2])]
+    [else ()]]]
+  [= $curr [$load $current-path]]
+  [= $_c [?match $curr
+    [case [load-failed]
+      ([$cry [$cat ('could not load ', $current-path)]], [$env:exit 2])]
+    [else ()]]]
+
+  [= $threshold [?if $strict [then 1.10e0] [else 1.30e0]]]
+  [= $thr-pct [$fixed0 [* [- $threshold 1.0e0] 100.0e0]]]
+
+  [= $base-bm [?else [$map:get $base 'benchmarks'] {}]]
+  [= $curr-bm [?else [$map:get $curr 'benchmarks'] {}]]
+
+  [= $_empty [?if [or [= [$map:size $base-bm] 0] [= [$map:size $curr-bm] 0]]
+    [then ([$cry 'baseline or current has no `benchmarks` key'], [$env:exit 2])]
+    [else ()]]]
+
+  [= $_h1 [$say [$cat ('V7 perf gate (threshold: ', $thr-pct, '% slowdown)')]]]
+  [= $_h2 [$say [$cat ('  baseline ', [$meta-str $base 'cx_commit'], ' on ',
+                       [$meta-str $base 'uname'], ' (', [$meta-str $base 'run_id'], ')')]]]
+  [= $_h3 [$say [$cat ('  current  ', [$meta-str $curr 'cx_commit'], ' on ',
+                       [$meta-str $curr 'uname'], ' (', [$meta-str $curr 'run_id'], ')')]]]
+  [= $_h4 [$say '']]
+
+  [= $all-keys [$sort [$map:keys [$map:merge ($base-bm, $curr-bm)]]]]
+
+  [; one row per key; yields the regression message for REGRES rows, () otherwise. ]
+  [= $regressions
+    [?for [in $key $all-keys]
+      [= $b [$median-of $base-bm $key]]
+      [= $c [$median-of $curr-bm $key]]
+      [= $key-pad [$strings:pad-end $key 40 ' ']]
+      [yield
+        [?if [not [$present $b]]
+          [then [?let [= $_p [$say [$cat ('  ', $key-pad, '  NEW    current=', [$numstr $c])]]] ()]]
+          [else [?if [not [$present $c]]
+            [then [?let [= $_p [$say [$cat ('  ', $key-pad, '  GONE   baseline=', [$numstr $b])]]] ()]]
+            [else
+              [?let
+                [= $bf [* $b 1.0e0]]
+                [= $cf [* $c 1.0e0]]
+                [; b=0 would be inf in the Python; measured medians are never 0,
+                   and a 0 baseline with any current regresses. ]
+                [= $ratio [?if [= $bf 0.0e0] [then 1.0e10] [else [/ $cf $bf]]]]
+                [= $delta [* [- $ratio 1.0e0] 100.0e0]]
+                [= $badge [?if [> $ratio $threshold] [then 'REGRES']
+                  [else [?if [< $ratio 0.9e0] [then 'FASTER'] [else 'OK    ']]]]]
+                [= $_p [$say [$cat ('  ', $key-pad, '  ', $badge,
+                                    '  baseline=', [$strings:pad-start [$fixed1 $bf] 7 ' '],
+                                    '  current=', [$strings:pad-start [$fixed1 $cf] 7 ' '],
+                                    '  (', [$strings:pad-start [$sfixed1 $delta] 5 ' '], '%)')]]]
+                [?if [> $ratio $threshold]
+                  [then [$cat ($key, ': baseline=', [$numstr $b], [$unit-of $base-bm $key],
+                               ' → current=', [$numstr $c], [$unit-of $curr-bm $key],
+                               ' (', [$sfixed1 $delta], '%, threshold ', $thr-pct, '%)')]]
+                  [else ()]]]]]]]]]]
+
+  [= $_blank [$say '']]
+  [= $nregr [$count $regressions]]
+  [?if [> $nregr 0]
+    [then
+      [?let
+        [= $_f [$say 'FAIL: performance regressions past threshold:']]
+        [= $_l [?for [in $r $regressions] [yield [$say [$cat ('  - ', $r)]]]]]
+        [$env:exit 1]]]
+    [else
+      [?let [= $_ok [$say 'OK: no benchmarks regressed past threshold']]
+        [$env:exit 0]]]]]
