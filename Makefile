@@ -470,8 +470,9 @@ check-prod-build:
 check-pipefail-pipes:
 	@scripts/pipefail_pipe_gate.sh
 
+check-no-legacy-try: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-legacy-try:
-	@python3 scripts/check_no_legacy_try.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_legacy_try.cx
 
 # ── NO-INFIX-RANGE gate (generator-family reshape, C-gen-1) — the retired
 # infix range operators `to`/`by` must not reappear in conformance/ + docs-src/
