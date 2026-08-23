@@ -316,6 +316,19 @@
                         ' duration=', [$string $duration], 's',
                         ' baseline_rss=', [$string $baseline])]]]
   [= $out [$fuzz-loop $g $seeds $deadline $baseline 0 0]]
+  # The loop's contract is a {runs, findings} map. A capability refusal
+  # inside the loop (measured: running without the documented grants)
+  # propagates an ERR element out instead — and an err poisons every
+  # downstream probe the same way ([$map:contains $err …] is itself an err,
+  # and [?if $err …] runs neither branch), while [?else [$map:get $err …] 0]
+  # quietly defaults runs to 0, so the harness would print 'done - 0 runs'
+  # and exit 0: a fuzz run that fuzzed nothing reading as a pass. The err
+  # must be RECOVERED into a bool before ?if can act on it.
+  [= $ok [?fallback [$map:contains $out 'runs'] [recover-with false]]]
+  [= $_guard [?if $ok
+               [then ()]
+               [else ([$cry 'fuzz_cx.cx: the fuzz loop broke its contract - a grant is likely missing (needs --allow-read --allow-write --allow-random --allow-clock --allow-subprocess)'],
+                      [$env:exit 2], null)]]]
   [= $runs [?else [$map:get $out 'runs'] 0]]
   [= $findings [?else [$map:get $out 'findings'] 0]]
   [= $_done [$say [$cat ('[fuzz] done - ', [$string $runs], ' runs, ',
