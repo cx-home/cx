@@ -77,6 +77,32 @@ check "make verify-doc-blocks" \
 check "make verify-doc-links" \
  "make -s verify-doc-links"
 
+section "LLM onboarding layer (#938)"
+# THE DRIFT GATE. `make docs-check` regenerates docs/llm/ in memory and fails
+# if either half moved:
+#   (a) any primer example's LIVE output no longer matches the conformance
+#       fixture it is drawn from — an example whose output changed without its
+#       fixture changing is exactly the "stale primer" this row exists to
+#       block, and it is caught by REPLAYING all ~100 cited fixtures, not by
+#       reading them;
+#   (b) the committed bytes differ from a fresh generation (prose, registry
+#       projection, module catalog, or `cx --help` moved).
+# A wrong example in an LLM primer poisons in-context learning, so the cut must
+# not be able to ship one. Fix by running `make docs` and committing the result.
+check "make docs-check (primer example freshness + no drift)" \
+ "make -s docs-check"
+# The `cx primer` door is only useful if the SHIPPED BINARY carries the current
+# text. docs-check proves the FILE is fresh; this proves the EMBED is, by
+# diffing the subcommand's stdout against the file it was embedded from. (The
+# stdout is byte-exact by design precisely so this row can exist.) Catches the
+# `make docs` without a following `make build-vcx`, which no other gate sees.
+check "cx primer == docs/llm/primer.md (embed is fresh)" \
+ "vcx/target/cx primer > /tmp/release-verify-primer.md && diff -q /tmp/release-verify-primer.md docs/llm/primer.md"
+# Presence of the published doors. Negative guards cannot see a REQUIRED file
+# going missing, and the whole value of these is that a fixed path answers.
+check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
+ "test -s docs/llm/llms.txt && test -s docs/llm/llms-full.txt && test -s AGENTS.md && test -s CLAUDE.md"
+
 section "Release assets"
 # RULED: PGL-1 (#741) — the R2.2 blocking per-profile install gate runs HERE,
 # pre-tag, instead of first executing inside the cut itself. Proves item 1 of
