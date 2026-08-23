@@ -22,7 +22,7 @@ threshold → wiring → last honest verdict.
 
 | gate | what / budget | runner / entry | wiring | last honest verdict |
 |---|---|---|---|---|
-| 1–3 (spec) | code.md completeness / consistency / companion alignment | `make check-code-spec-consistency` (`scripts/check_code_spec_consistency.py`) | matrix | GREEN (every stream gate) |
+| 1–3 (spec) | code.md completeness / consistency / companion alignment | `make check-code-spec-consistency` (`scripts/check_code_spec_consistency.cx`) | matrix | GREEN (every stream gate) |
 | 4 (coverage) | every directive × param × CXER code covered by the corpus | `make check-code-fixtures` (`scripts/check_code_fixtures.cx`) | **matrix** (wired by #805 — was orphaned + red) | GREEN 2026-08-13 (coverage ENFORCED; CXER0280/4113 = visible debt → #808) |
 | 5 (resilience matrix) | 67 resilience fixtures green | `make test-vcx-resilience-matrix` (code_eval_fixtures_test.v) | matrix | GREEN (every stream gate) |
 | 6 (services) | service + client round-trip fixtures | `make test-vcx-services` (code_eval_fixtures_test.v) | matrix | GREEN (every stream gate) |

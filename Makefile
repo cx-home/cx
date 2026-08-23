@@ -572,8 +572,9 @@ check-effect-alignment: build-vcx
 # formal-files move and nobody noticed. Repaired + wired at I2. Gate 1 runs
 # on the code.md bounded-freedom register (BF-* ids), not a blanket token ban.
 .PHONY: check-code-spec-consistency
-check-code-spec-consistency:
-	@$(PYTHON) scripts/check_code_spec_consistency.py > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
+check-code-spec-consistency: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-code-spec-consistency: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_code_spec_consistency.cx > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
 # batch — it was RED and in no lane, so no stream gate ever ran it). The

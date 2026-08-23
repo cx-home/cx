@@ -1,0 +1,466 @@
+# scripts/check_code_spec_consistency.cx — gates 1-3 for spec/core/code.md
+# (code.md §11.4.1) + the clean-room no-impl-anchor / no-dangling-decision
+# checks.
+#
+# CX rewrite of scripts/check_code_spec_consistency.py (RULED: PYE-5,
+# ledger/rulings_2026_08_22_python_eradication.md; #922).
+#
+#   Gate 1 (completeness)  — zero freedom tokens (TBD/TODO/FIXME/…) in
+#     normative sections, except on lines naming a registered BF-<n>
+#     bounded-freedom id. Tokens inside code spans / fences / links
+#     are excluded.
+#   Gate 2 (consistency)   — bare §N.N refs resolve to an in-file
+#     heading anchor (cross-file refs like `cxdm.md §4.6` excluded);
+#     CXER codes map 1:1 to symbolic names; the §4.1 registry equals
+#     the [?name] set used in §§5-10 (modulo the documented tombstone /
+#     clause-keyword / non-program / external-body exclusions).
+#   Gate 3 (companion)     — grammar.ebnf [127e] (+ [127e′] `+=`
+#     amendments) equals the §4.1 registry; ast.md defines and
+#     summary-lists the six program AST node types; eval.md §12 (when
+#     the file exists) equals the registry.
+#
+# Design (PYE directive, #922 HANDOFF §4): the Python's four lookahead
+# regexes are NOT ported — RE2 has no lookaround. ast.md is read as a
+# `cx --from=md` DOCUMENT TREE (headings + tables are queried as
+# nodes); grammar.ebnf is genuinely unstructured, so its production
+# block is cut by explicit terminator scans (the sanctioned fallback).
+# code.md's own gates are LINE-scoped by contract (file:line output),
+# so they run as a per-line fold, exactly as the Python's line loop.
+#
+# Exit 0 if all gates are green, 1 otherwise; 2 when the spec file is
+# missing. JSON report on stdout.
+#
+# Run:  cx --allow-read --allow-write scripts/check_code_spec_consistency.cx [SPEC.md]
+# (or:  make check-code-spec-consistency)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat-seqs scope=public ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
+[?def to-arr scope=public ($s) [$fp:fold $s [] [?fn ($a $x) [$array:append $a $x]]]]
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+# ── compiled patterns ────────────────────────────────────────────────
+[?const ANCHOR-RX  [$re:compile "^#+\\s+(§[0-9]+(?:\\.[0-9]+)*)"]]
+[?const REF-RX     [$re:compile "§[0-9]+(?:\\.[0-9]+)*"]]
+[?const ERR-TABLE-RX [$re:compile "\\|\\s*([A-Z][A-Z_]+)\\s*\\|\\s*`cx-err:(CXER[0-9]{4})`"]]
+[?const DIR-USE-RX [$re:compile "\\[\\?([a-z][a-z0-9-]*)"]]
+[?const DIR-REG-RX [$re:compile "^\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`"]]
+[?const TOKEN-RX   [$re:compile "(?i)\\b(?:TBD|TODO|FIXME|XXX|subject to change|implementation\\-defined|to be specified|future work|coming soon|placeholder)\\b"]]
+[?const CROSS-FILE-RX [$re:compile "(?:[A-Za-z][A-Za-z0-9_./-]*\\.(?:md|ebnf)|\\blexicon\\b|XQuery\\s+[0-9]+(?:\\.[0-9]+)*|XPath\\s+[0-9]+(?:\\.[0-9]+)*|XSLT\\s+[0-9]+(?:\\.[0-9]+)*|XQDM|RFC\\s*[0-9]+)[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*(?:[`'\")\\s,]*/[`'\")\\s,]*§[0-9]+(?:\\.[0-9]+)*)*"]]
+[?const CODE-SPAN-RX [$re:compile "`[^`]*`"]]
+[?const LINK-RX      [$re:compile "\\[[^\\]]*\\]\\([^)]*\\)"]]
+[?const IMPL-RX      [$re:compile "(?:vcx/[A-Za-z0-9_./-]+|__cx_[a-z_]+__)"]]
+[?const DECDEF-RX    [$re:compile "-\\s+\\*\\*D([0-9]+)\\*\\*|\\*\\*[^*\\n]*\\(D([0-9]+)[,)]"]]
+[?const DECREF-RX    [$re:compile "\\bD[0-9]+(?:\\.[0-9]+)?\\b"]]
+[?const BF-ROW-RX    [$re:compile "^\\|\\s*(BF-[0-9]+)\\s*\\|"]]
+[?const BF-USE-RX    [$re:compile "\\bBF-[0-9]+\\b"]]
+[?const QUOTED-NAME-RX [$re:compile "'([a-z][a-z0-9-]*)'"]]
+[?const PROG-NODE-RX [$re:compile "^(Program[A-Za-z]*)"]]
+[?const SUMMARY-ROW-RX [$re:compile "(?m)^\\|\\s*(Program[A-Za-z]*)\\s*\\|"]]
+
+# ── exclusion registers (ported verbatim; rationales live in the spec
+#    and in the #707/#860 landing notes) ─────────────────────────────
+[?const RETIRED-TOMBSTONES ('find','try','with-tasks','chain','while')]
+[?const CLAUSE-KEYWORDS    ('on-error')]
+[?const NON-PROGRAM-DIRS   ('cx','test-clock','test-concurrent','test-')]
+[?const EXTERNAL-BODY-DIRS ('reveal','secret')]
+[?const IMPL-ANCHOR-ALLOWLIST ('vcx/code/parser.v','vcx/cx/parser.v',
+                               'vcx/code/lexer.v','vcx/code/diagram.v')]
+[?const EXPECTED-AST-NODES ('Program','ProgramBinding','ProgramCall',
+                            'ProgramPattern','ProgramDirective','ProgramForComp')]
+[?const BODY-SECTIONS ('§5','§6','§7','§8','§9','§10')]
+
+[?def strip-inline scope=public ($line)
+  [$re:replace LINK-RX [$re:replace CODE-SPAN-RX $line ""] ""]]
+
+[?def rx-found scope=public ($rx $s)
+  [?match [$re:find $rx $s] [case [no-match] false] [else true]]]
+
+# set ops over map-sets
+[?def set-put scope=public ($m $k) [$map:put $m $k true]]
+[?def set-minus scope=public ($m $names)
+  [$fp:fold $names $m [?fn ($acc $n) [$map:remove $acc $n]]]]
+[?def sorted-keys scope=public ($m) [$sort [?for [in $k [$map:keys $m]] [yield $k]]]]
+
+# add every [?name] use on a line into the body-dirs set.
+[?def add-dirs scope=public ($dirs $raw)
+  [$fp:fold [$re:find-all DIR-USE-RX $raw] $dirs
+    [?fn ($acc $m) [$set-put $acc [$re:group $m 1]]]]]
+
+# ── the per-line fold (the Python's line loop, faithful order) ───────
+[?def scan-line scope=public ($acc0 $raw $anchors $bf-register)
+  [?let [= $acc [$map:put $acc0 "ln" [+ 1 [$map:get $acc0 "ln"]]]]
+        [= $ln [$map:get $acc "ln"]]
+        [= $trimmed [$strings:trim $raw]]
+    [?if [$starts-with $trimmed "```"]
+      [then [$map:put $acc "fence" [not [$map:get $acc "fence"]]]]
+    [else [?let [= $am [$re:find ANCHOR-RX $raw]]
+      [?match $am
+        [case [no-match]
+          [?if [= $trimmed "<!-- informative -->"]
+            [then [$map:put $acc "informative" true]]
+          [else [?if [$map:get $acc "fence"]
+            # fenced examples still feed the §§5-10 directive-use scan
+            [then [?if [$member BODY-SECTIONS [$map:get $acc "top"]]
+              [then [$map:put $acc "bodydirs" [$add-dirs [$map:get $acc "bodydirs"] $raw]]]
+              [else $acc]]]
+          [else [?if [$map:get $acc "informative"]
+            [then $acc]
+            [else [$scan-normal $acc $ln $raw $anchors $bf-register]]]]]]]]
+        [case $m
+          [?let [= $anchor [$re:group $m 1]]
+                [= $parts [$strings:split $anchor "."]]
+            [$map:merge ($acc,
+              {informative: false,
+               registry: [= $anchor "§4.1"],
+               top: [$first $parts],
+               sub: [?if [>= [$count $parts] 2]
+                      [then [$concat [$nth $parts 1] "." [$nth $parts 2]]]
+                      [else $anchor]]})]]]]]]]]]
+
+# scan-normal: the un-fenced, non-informative, non-heading line work.
+[?def scan-normal scope=public ($acc $ln $raw $anchors $bf-register)
+  [?let
+    # registry rows (§4.1 only)
+    [= $a1 [?if [$map:get $acc "registry"]
+      [then [?match [$re:find DIR-REG-RX $raw]
+        [case [no-match] $acc]
+        [case $m [$map:put $acc "regdirs" [$set-put [$map:get $acc "regdirs"] [$re:group $m 1]]]]]]
+      [else $acc]]]
+    # body directives (§§5-10)
+    [= $a2 [?if [$member BODY-SECTIONS [$map:get $a1 "top"]]
+      [then [$map:put $a1 "bodydirs" [$add-dirs [$map:get $a1 "bodydirs"] $raw]]]
+      [else $a1]]]
+    # error-code table rows
+    [= $a3 [?match [$re:find ERR-TABLE-RX $raw]
+      [case [no-match] $a2]
+      [case $m
+        [?let [= $sym [$re:group $m 1]] [= $code [$re:group $m 2]]
+              [= $c2s [$map:get $a2 "c2s"]] [= $s2c [$map:get $a2 "s2c"]]
+              [= $conf1 [?if [and [$map:contains $c2s $code]
+                                  [not [= [$map:get $c2s $code] $sym]]]
+                [then ({line: $ln, kind: "code-multimap", code: $code,
+                        got: $sym, had: [$map:get $c2s $code]})]
+                [else ()]]]
+              [= $conf2 [?if [and [$map:contains $s2c $sym]
+                                  [not [= [$map:get $s2c $sym] $code]]]
+                [then ({line: $ln, kind: "sym-multimap", sym: $sym,
+                        got: $code, had: [$map:get $s2c $sym]})]
+                [else ()]]]
+          [$map:merge ($a2,
+            {c2s: [$map:put $c2s $code $sym],
+             s2c: [$map:put $s2c $sym $code],
+             conflicts: [$fp:fold [$cat-seqs ($conf1, $conf2)]
+                          [$map:get $a2 "conflicts"]
+                          [?fn ($a $c) [$array:append $a $c]]]})]]]]]
+    # gate 1 + gate 2a on stripped text
+    [= $stripped [$strip-inline $raw]]
+    [= $line-bf [?for [in $m [$re:find-all BF-USE-RX $raw]] [yield [$re:group $m 0]]]]
+    [= $bf-registered [> [$count [?for [in $b $line-bf]
+      [where [$map:contains $bf-register $b]] [yield $b]]] 0]]
+    [= $g1 [?if $bf-registered [then ()]
+      [else [?for [in $m [$re:find-all TOKEN-RX $stripped]]
+        [yield {line: $ln, token: [$re:group $m 0]}]]]]]
+    [= $a4 [$map:put $a3 "gate1" [$fp:fold $g1 [$map:get $a3 "gate1"]
+      [?fn ($a $h) [$array:append $a $h]]]]]
+    # §-refs that resolve in a different document (scan the RAW line)
+    [= $crossrefs [$fp:fold
+      [?for [in $cf [$re:find-all CROSS-FILE-RX $raw]]
+        [in $r [$re:find-all REF-RX [$re:group $cf 0]]]
+        [yield [$re:group $r 0]]] {}
+      [?fn ($a $r) [$set-put $a $r]]]]
+    [= $unres [?for [in $m [$re:find-all REF-RX $stripped]]
+      [= $ref [$re:group $m 0]]
+      [where [not [$map:contains $anchors $ref]]]
+      [where [not [$map:contains $crossrefs $ref]]]
+      [yield {line: $ln, ref: $ref}]]]
+    [= $a5 [$map:put $a4 "unresolved" [$fp:fold $unres [$map:get $a4 "unresolved"]
+      [?fn ($a $h) [$array:append $a $h]]]]]
+    # no-impl-anchor (raw line; §11.4 exempt; allowlist exact-match)
+    [= $impl [?if [= [$map:get $a5 "sub"] "§11.4"] [then ()]
+      [else [?for [in $m [$re:find-all IMPL-RX $raw]]
+        [where [not [$member IMPL-ANCHOR-ALLOWLIST [$re:group $m 0]]]]
+        [yield {line: $ln, anchor: [$re:group $m 0]}]]]]]
+    [= $a6 [$map:put $a5 "impl" [$fp:fold $impl [$map:get $a5 "impl"]
+      [?fn ($a $h) [$array:append $a $h]]]]]
+    # no-dangling-decision
+    [= $a7 [$map:put $a6 "decdefs" [$fp:fold [$re:find-all DECDEF-RX $raw]
+      [$map:get $a6 "decdefs"]
+      [?fn ($a $m)
+        # alternation: exactly one of groups 1/2 participates — a
+        # non-participating group is a typed refusal, caught here.
+        [?let [= $g1v [$re:group $m 1]]
+              [= $d [?match $g1v
+                [case [err $e] [$re:group $m 2]]
+                [else [?if [= $g1v ""] [then [$re:group $m 2]] [else $g1v]]]]]
+          [$set-put $a [$concat "D" $d]]]]]]]
+    [$map:put $a7 "decrefs" [$fp:fold
+      [?for [in $m [$re:find-all DECREF-RX $stripped]]
+        [yield {line: $ln, ref: [$re:group $m 0]}]]
+      [$map:get $a7 "decrefs"]
+      [?fn ($a $h) [$array:append $a $h]]]]]]
+
+# ── gate 3: grammar.ebnf [127e] — line-scoped terminator scan (the file
+#    is genuinely unstructured; the sanctioned fallback per the #922
+#    HANDOFF §4). Offset-free by design: re match offsets are BYTE
+#    positions while the strings module is codepoint-indexed, so block
+#    boundaries are found by LINE walk, never by mixing the two units.
+[?def is-block-terminator scope=public ($l)
+  [or [$starts-with $l "["]
+      [$rx-found [$re:compile "^[ \\t]*/\\*"] $l]]]
+
+# names-in-block: the part of line $i0 after $sep, plus following lines
+# until a terminator (optionally also a blank line), as quoted names.
+[?def names-in-block scope=public ($lines $i0 $sep $stop-blank)
+  [?let [= $l0 [$nth $lines $i0]]
+        [= $cut [$strings:find $l0 $sep]]
+        [= $head [?if [< $cut 0] [then ""]
+          [else [$strings:slice $l0 [+ $cut [$strings:length $sep]]
+                                    [$strings:length $l0]]]]]
+        [= $n [$count $lines]]
+        [= $endi [?else [$first [?for [in $i [$range [+ $i0 1] $n]]
+          [= $l [$nth $lines $i]]
+          [where [or [$is-block-terminator $l]
+                     [and $stop-blank [= [$strings:trim $l] ""]]]]
+          [yield $i]]] [+ $n 1]]]
+        [= $block [$strings:join [$cat-seqs (
+          ($head),
+          [?for [in $i [$range [+ $i0 1] [- $endi 1]]]
+            [yield [$nth $lines $i]]])] "\n"]]
+    [?for [in $q [$re:find-all QUOTED-NAME-RX $block]] [yield [$re:group $q 1]]]]]
+
+[?def audit-grammar scope=public impure ($gpath $expected)
+  [?if [not [$io:is-file $gpath]]
+    [then {file: $gpath, found: false, pass: false,
+           missing_from_companion: [$to-arr [$sort $expected]],
+           missing_from_spec: []}]
+    [else
+      [?let [= $lines [$strings:split [$io:read-file $gpath] "\n"]]
+            # the [127e] base production: the first line carrying both
+            # "[127e]" and "::=".
+            [= $base-idxs [?for [in $i [$range 1 [$count $lines]]]
+              [= $l [$nth $lines $i]]
+              [where [and [$strings:contains $l "[127e]"]
+                          [$strings:contains $l "::="]]]
+              [yield $i]]]
+        [?if [$empty $base-idxs]
+          [then {file: $gpath, found: false, pass: false,
+                 missing_from_companion: [$to-arr [$sort $expected]],
+                 missing_from_spec: []}]
+          [else
+            [?let [= $base-names [$names-in-block $lines [$first $base-idxs] "::=" false]]
+                  # [127e′] ProgramDirName += … amendments (zero or more;
+                  # each block also ends at a blank line).
+                  [= $ext-names [?for [in $i [$range 1 [$count $lines]]]
+                    [= $l [$nth $lines $i]]
+                    [where [and [or [$strings:contains $l "[127e′]"]
+                                    [$strings:contains $l "[127e']"]]
+                                [$rx-found [$re:compile "ProgramDirName\\s*\\+="] $l]]]
+                    [in $nm [$names-in-block $lines $i "+=" true]]
+                    [yield $nm]]]
+                  [= $found [$distinct [$cat-seqs ($base-names, $ext-names)]]]
+                  [= $missing-comp [$sort [?for [in $d $expected]
+                    [where [not [$member $found $d]]] [yield $d]]]]
+                  [= $missing-spec [$sort [?for [in $d $found]
+                    [where [not [$member $expected $d]]] [yield $d]]]]
+              {file: $gpath, found: true,
+               production_size: [$count $found],
+               missing_from_companion: [$to-arr $missing-comp],
+               missing_from_spec: [$to-arr $missing-spec],
+               pass: [and [$empty $missing-comp] [$empty $missing-spec]]}]]]]]]]
+
+# ── gate 3: ast.md via the md DOCUMENT TREE ──────────────────────────
+[?def audit-ast scope=public impure ($apath)
+  [?if [not [$io:is-file $apath]]
+    [then {file: $apath, found: false, pass: false,
+           missing_definitions: [$to-arr EXPECTED-AST-NODES],
+           missing_summary_rows: [$to-arr EXPECTED-AST-NODES]}]
+    [else
+      [?let [= $doc [$cx:from-format [$io:read-file $apath] "md"]]
+            # definitions: h2/h3/h4 heading nodes whose text opens with a
+            # Program* node name.
+            [= $defined [$distinct [?for [in $h $doc/*]
+              [where [$member ('h2','h3','h4') [?else [$name $h] ""]]]
+              [= $m [$re:find PROG-NODE-RX [$text $h]]]
+              [where [?match $m [case [no-match] false] [else true]]]
+              [yield [$re:group $m 1]]]]]
+            # summary rows: table nodes' rows whose first cell is a node name.
+            [= $tables [$strings:join [?for [in $t $doc//table]
+              [yield [$cx:serialize $t]]] "\n"]]
+            [= $summary [$distinct [?for [in $m [$re:find-all SUMMARY-ROW-RX $tables]]
+              [yield [$re:group $m 1]]]]]
+            [= $missing-def [$sort [?for [in $n EXPECTED-AST-NODES]
+              [where [not [$member $defined $n]]] [yield $n]]]]
+            [= $missing-sum [$sort [?for [in $n EXPECTED-AST-NODES]
+              [where [not [$member $summary $n]]] [yield $n]]]]
+        {file: $apath, found: true,
+         definitions: [$to-arr [$sort [?for [in $n $defined]
+           [where [$member EXPECTED-AST-NODES $n]] [yield $n]]]],
+         summary_rows: [$to-arr [$sort [?for [in $n $summary]
+           [where [$member EXPECTED-AST-NODES $n]] [yield $n]]]],
+         missing_definitions: [$to-arr $missing-def],
+         missing_summary_rows: [$to-arr $missing-sum],
+         extra_definitions: [$to-arr [$sort [?for [in $n $defined]
+           [where [not [$member EXPECTED-AST-NODES $n]]] [yield $n]]]],
+         pass: [and [$empty $missing-def] [$empty $missing-sum]]}]]]]
+
+# ── gate 3: eval.md §12 via the md DOCUMENT TREE (n/a when absent —
+#    consolidated into code.md at the v0.8.0 restructure) ─────────────
+[?def audit-eval scope=public impure ($epath $expected)
+  [?if [not [$io:is-file $epath]]
+    [then {file: $epath, found: false, pass: false,
+           missing_from_companion: [$to-arr [$sort $expected]],
+           missing_from_spec: []}]
+    [else
+      [?let [= $doc [$cx:from-format [$io:read-file $epath] "md"]]
+            [= $kids [?for [in $k $doc/*] [yield $k]]]
+            [= $n [$count $kids]]
+            [= $starts [?for [in $i [$range 1 $n]]
+              [= $k [$nth $kids $i]]
+              [where [and [= [?else [$name $k] ""] "h2"]
+                          [$rx-found [$re:compile "^12\\s+—"] [$text $k]]]]
+              [yield $i]]]
+        [?if [$empty $starts]
+          [then {file: $epath, found: false, pass: false,
+                 missing_from_companion: [$to-arr [$sort $expected]],
+                 missing_from_spec: []}]
+          [else
+            [?let [= $start [$first $starts]]
+                  [= $ends [?for [in $i [$range [+ $start 1] $n]]
+                    [where [$member ('h2','hr') [?else [$name [$nth $kids $i]] ""]]]
+                    [yield $i]]]
+                  [= $end [?if [$empty $ends] [then [+ $n 1]] [else [$first $ends]]]]
+                  [= $sect [$strings:join [?for [in $i [$range [+ $start 1] [- $end 1]]]
+                    [yield [$cx:serialize [$nth $kids $i]]]] "\n"]]
+                  [= $found [$distinct [?for [in $m [$re:find-all
+                      [$re:compile "\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`"] $sect]]
+                    [yield [$re:group $m 1]]]]]
+                  [= $missing-comp [$sort [?for [in $d $expected]
+                    [where [not [$member $found $d]]] [yield $d]]]]
+                  [= $missing-spec [$sort [?for [in $d $found]
+                    [where [not [$member $expected $d]]] [yield $d]]]]
+              {file: $epath, found: true, row_count: [$count $found],
+               missing_from_companion: [$to-arr $missing-comp],
+               missing_from_spec: [$to-arr $missing-spec],
+               pass: [and [$empty $missing-comp] [$empty $missing-spec]]}]]]]]]]
+
+# ── main ─────────────────────────────────────────────────────────────
+[?let
+  [= $argv [$env:argv]]
+  [= $spec-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]]
+                 [else "spec/03-approved/core/code.md"]]]
+  [?if [not [$io:is-file $spec-path]]
+    [then [?let [= $_e [$cry [$concat "error: " $spec-path " not found"]]]
+            [$env:exit 2]]]
+    [else
+      [?let
+        [= $text [$io:read-file $spec-path]]
+        [= $lines [$strings:split $text "\n"]]
+        # pass 1: heading anchors + the BF register (forward refs work).
+        [= $anchors [$fp:fold $lines {}
+          [?fn ($a $l) [?match [$re:find ANCHOR-RX $l]
+            [case [no-match] $a]
+            [case $m [$set-put $a [$re:group $m 1]]]]]]]
+        [= $bf-register [$fp:fold $lines {}
+          [?fn ($a $l) [?match [$re:find BF-ROW-RX [$strings:trim $l]]
+            [case [no-match] $a]
+            [case $m [$set-put $a [$re:group $m 1]]]]]]]
+        # pass 2: the line scan.
+        [= $st [$fp:fold $lines
+          {ln: 0, fence: false, informative: false, registry: false,
+           top: "", sub: "", gate1: [], unresolved: [], c2s: {}, s2c: {},
+           conflicts: [], regdirs: {}, bodydirs: {}, impl: [],
+           decdefs: {}, decrefs: []}
+          [?fn ($acc $l) [$scan-line $acc $l $anchors $bf-register]]]]
+
+        [= $registry-dirs [$map:get $st "regdirs"]]
+        [= $body-dirs [$set-minus [$set-minus [$set-minus [$set-minus
+            [$map:get $st "bodydirs"]
+            RETIRED-TOMBSTONES] CLAUSE-KEYWORDS] NON-PROGRAM-DIRS]
+            EXTERNAL-BODY-DIRS]]
+        [= $registry-for-parity [$set-minus $registry-dirs EXTERNAL-BODY-DIRS]]
+        [= $reg-minus-body [$sort [?for [in $d [$map:keys $registry-for-parity]]
+          [where [not [$map:contains $body-dirs $d]]] [yield $d]]]]
+        [= $body-minus-reg [$sort [?for [in $d [$map:keys $body-dirs]]
+          [where [not [$map:contains $registry-for-parity $d]]] [yield $d]]]]
+        [= $parity-ok [and [$empty $reg-minus-body] [$empty $body-minus-reg]]]
+
+        # gate 3 companions: current home first, then the legacy sibling.
+        [= $spec-dir [$path:dirname $spec-path]]
+        [= $formal-dir [$path:join [$path:dirname $spec-dir] "formal"]]
+        [= $grammar-path [?if [$io:is-file [$path:join $formal-dir "grammar.ebnf"]]
+          [then [$path:join $formal-dir "grammar.ebnf"]]
+          [else [$path:join $spec-dir "grammar.ebnf"]]]]
+        [= $registry-list [$sorted-keys $registry-dirs]]
+        [= $grammar-report [$audit-grammar $grammar-path $registry-list]]
+        [= $ast-report [$audit-ast [$path:join $spec-dir "ast.md"]]]
+        [= $eval-path [$path:join $spec-dir "eval.md"]]
+        [= $eval-report [$audit-eval $eval-path $registry-list]]
+        [= $eval-ok [or [$map:get $eval-report "pass"]
+                        [not [$io:is-file $eval-path]]]]
+        [= $gate3-pass [and [and [$map:get $grammar-report "pass"]
+                                 [$map:get $ast-report "pass"]]
+                            $eval-ok]]
+
+        [= $decdefs [$map:get $st "decdefs"]]
+        [= $dangling [?for [in $r [$map:get $st "decrefs"]]
+          [= $refbase [$first [$strings:split [$map:get $r "ref"] "."]]]
+          [where [or [not [$map:contains $decdefs $refbase]]
+                     [$strings:contains [$map:get $r "ref"] "."]]]
+          [yield $r]]]
+
+        [= $gate1-hits [$map:get $st "gate1"]]
+        [= $unresolved [$map:get $st "unresolved"]]
+        [= $conflicts [$map:get $st "conflicts"]]
+        [= $impl-hits [$map:get $st "impl"]]
+        [= $green [and [and [and [= [$array:size $gate1-hits] 0]
+                                 [= [$array:size $unresolved] 0]]
+                            [and [= [$array:size $conflicts] 0] $parity-ok]]
+                       [and [and $gate3-pass [= [$array:size $impl-hits] 0]]
+                            [$empty $dangling]]]]
+
+        [= $report
+          {file: $spec-path,
+           anchors_defined: [$map:size $anchors],
+           gate_1_completeness: {
+             matches: $gate1-hits,
+             pass: [= [$array:size $gate1-hits] 0]},
+           gate_2_consistency: {
+             unresolved_refs: $unresolved,
+             error_codes_unique: [$map:size [$map:get $st "c2s"]],
+             error_code_conflicts: $conflicts,
+             directive_registry_size: [$map:size $registry-dirs],
+             directive_body_size: [$map:size $body-dirs],
+             directive_set_diff: {
+               registry_minus_body: [$to-arr $reg-minus-body],
+               body_minus_registry: [$to-arr $body-minus-reg]},
+             pass: [and [and [= [$array:size $unresolved] 0]
+                             [= [$array:size $conflicts] 0]]
+                        $parity-ok]},
+           gate_3_companion_alignment: {
+             grammar_diff: $grammar-report,
+             ast_diff: $ast-report,
+             eval_diff: $eval-report,
+             pass: $gate3-pass},
+           check_no_impl_anchor: {
+             hits: $impl-hits,
+             pass: [= [$array:size $impl-hits] 0]},
+           check_no_dangling_decision: {
+             definitions: [$to-arr [$sorted-keys $decdefs]],
+             dangling: [$to-arr $dangling],
+             pass: [$empty $dangling]},
+           green: $green}]
+        [= $_out [$say [$json:emit-with-opts $report {indent: 2}]]]
+        [?if $green [then [$env:exit 0]] [else [$env:exit 1]]]]]]]
