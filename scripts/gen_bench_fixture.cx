@@ -1,0 +1,112 @@
+# scripts/gen_bench_fixture.cx — generate a synthetic CX bench fixture at a
+# target byte size (#922 CX port of the retired scripts/gen_bench_fixture.py).
+#
+# The shape matches fixtures/bench/bench_{small,medium,large}.cx — a
+# `[services [service ...]*]` document — so timings are directly comparable
+# across all fixture sizes. Consumers of the generated files:
+# vcx/tests/runners/cxparse_baseline_bench.v (bench_1mb.cx) and
+# vcx/tests/runners/abi_s4_bench.v (bench_1mb.cx / bench_10mb.cx).
+#
+# The generation algorithm is byte-for-byte the retired Python's: header, then
+# service blocks from n=1, stopping at the first multiple-of-1024 block count
+# where written-bytes + footer reaches the target — so regenerated fixtures
+# are identical to ones the Python produced for the same arguments.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write scripts/gen_bench_fixture.cx <out-path> <target-bytes>
+#   cx --allow-read --allow-write scripts/gen_bench_fixture.cx fixtures/bench/bench_1mb.cx 1048576
+#
+# Exit codes: 0 written; 2 usage error.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/math'    as=math]
+[?lib 'cx-stdlib/path'    as=path]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?const REGIONS ('us-west', 'us-east', 'eu-west', 'eu-east', 'ap-east', 'ap-south', 'sa-east')]
+[?const TAG_SETS ('internal db cache',
+                  'web frontend cdn',
+                  'worker queue async',
+                  'web api backend',
+                  'edge router proxy',
+                  'batch etl pipeline',
+                  'monitoring metrics logs')]
+[?const DATES ('2026-01-01', '2026-02-14', '2026-03-21', '2026-04-30', '2026-05-12')]
+
+[; comma-group an int: 1048576 -> '1,048,576' (Python's {:,}). ]
+[?def int-commas scope=public ($n)
+  [?let [= $s [$string $n]]
+        [= $len [$strings:length $s]]
+    [?if [< $len 4] [then $s]
+      [else [$cat ([$int-commas [$strings:slice $s 0 [- $len 3]]],
+                   ',',
+                   [$strings:slice $s [- $len 3] $len])]]]]]
+
+[?def service-block scope=public ($i)
+  [?let
+    [= $region [$nth REGIONS [+ [% $i 7] 1]]]
+    [= $tags   [$nth TAG_SETS [+ [% $i 7] 1]]]
+    [= $date   [$nth DATES [+ [% $i 5] 1]]]
+    [= $active [?if [= [% $i 3] 0] [then 'false'] [else 'true']]]
+    [= $port   [$string [+ 8000 [% $i 1000]]]]
+    [= $ratio  [$cat ('1.', [$string [% $i 10]])]]
+    [$cat ('  [service id=', [$string $i], ' name=svc-', [$string $i],
+           ' host=svc-', [$string $i], '.example.com port=', $port,
+           ' active=', $active, ' ratio=', $ratio, '\n',
+           '    [tags :string[] ', $tags, ']\n',
+           '    [meta created=', $date, ' region=', $region, ']\n',
+           '  ]\n')]]]
+
+[; one chunk of blocks [n0 .. n1], joined. ]
+[?def chunk scope=public ($n0 $n1)
+  [$cat [?for [in $i [$range $n0 $n1]] [yield [$service-block $i]]]]]
+
+[; grow: append 1024-block chunks (first chunk is blocks 1..1023, mirroring
+   the Python's n%1024 check on the POST-incremented counter) until
+   bytes-so-far + footer >= target at a chunk boundary. Tail-recursive.
+   Returns [gen n=<final n> body=<all blocks>]. ]
+[?def grow scope=public ($target $next $body $bytes)
+  [?let
+    [= $hi [- [+ $next 1024] [?if [= $next 1] [then 2] [else 1]]]]
+    [= $c [$chunk $next $hi]]
+    [= $bytes2 [+ $bytes [$strings:length-bytes $c]]]
+    [= $body2 [$cat ($body, $c)]]
+    [= $n2 [+ $hi 1]]
+    [?if [not [< [+ $bytes2 2] $target]]
+      [then [gen n=$n2 body=$body2]]
+      [else [$grow $target $n2 $body2 $bytes2]]]]]
+
+[; percent with 1 decimal: (size/target*100) rounded half-even — Python {:.1%}. ]
+[?def pct-1 scope=public ($num $den)
+  [?let [= $scaled [/ [* [* $num 1.0e0] 1000.0e0] [* $den 1.0e0]]]
+        [= $r [$math:round-half-even $scaled]]
+        [= $whole [$string [$div $r 10]]]
+        [= $frac [$string [$mod $r 10]]]
+    [$cat ($whole, '.', $frac, '%')]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $_usage-check
+    [?if [not [= [$count $argv] 3]]
+      [then ([$cry 'usage: cx --allow-read --allow-write scripts/gen_bench_fixture.cx <out-path> <target-bytes>'],
+             [$env:exit 2])]
+      [else ()]]]
+  [= $out [$nth $argv 2]]
+  [= $target [?else [$strings:to-int [$nth $argv 3]]
+    ([$cry '<target-bytes> must be an integer'], [$env:exit 2], 0)]]
+  [= $header '[services\n']
+  [= $g [$grow $target 1 '' [$strings:length-bytes $header]]]
+  [= $doc [$cat ($header, $g@body, ']\n')]]
+  [= $parent [$path:parent $out]]
+  [= $_mk [?if [$strings:is-empty $parent] [then ()] [else [$io:make-dirs $parent]]]]
+  [= $_w [$io:write-file $out $doc]]
+  [= $size [$io:size $out]]
+  [= $_p [$say [$cat ('wrote ', $out, ' — ', [$string $g@n], ' services, ',
+                      [$int-commas $size], ' bytes (',
+                      [$pct-1 $size $target], ' of target)')]]]
+  [$env:exit 0]]
