@@ -1099,9 +1099,10 @@
            make test-python     # Python binding
 
            # Fuzzer — structured-random input over the parser.
-           # scripts/fuzz_cx.py, run continuously by
+           # scripts/fuzz_cx.cx, run continuously by
            # .github/workflows/fuzz.yml; run it locally with:
-           python3 scripts/fuzz_cx.py
+           cx --allow-read --allow-write --allow-random --allow-clock \
+              scripts/fuzz_cx.cx
 
            # Benchmarks — vcx/tests/runners/streaming_bench.v.
            make bench           # full bench harness

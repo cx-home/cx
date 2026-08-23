@@ -56,12 +56,12 @@ Out of scope:
 
 ## Fuzz testing
 
-The repo carries an in-tree fuzz harness:
-`scripts/fuzz_cx.py` drives the parser and the
-published C ABI with random byte sequences, malformed CX text,
-oversized inputs, and known parser edge cases, asserting on crashes
-(SIGSEGV / SIGBUS / SIGABRT), a memory-leak proxy, and
-catastrophic-time regressions. Crash findings land in
+The repo carries an in-tree fuzz harness, itself written in CX:
+`scripts/fuzz_cx.cx` drives the parser, the buffered evaluator, the
+streaming emitter and the strict-canonical serializer with random byte
+sequences, malformed CX text, oversized inputs, and known parser edge
+cases, asserting on crashes (SIGSEGV / SIGBUS / SIGABRT), a memory-leak
+proxy, and catastrophic-time regressions. Crash findings land in
 `vcx/fuzz/crashes/` (a gitignored runtime-artifact directory) and are
 fixed with accompanying regression fixtures.
 

@@ -1,0 +1,323 @@
+# scripts/fuzz_cx.cx — CC1/CC3 fuzz harness over the parser + evaluator +
+# emitter surfaces (#922 CX port of the retired scripts/fuzz_cx.py).
+#
+# Drives the CX engine with random byte sequences, malformed CX text,
+# oversized inputs and known parser-edge cases. A finding is recorded when a
+# surface exceeds the catastrophic-time ceiling (30 s for an input under
+# 1 MB); the memory-growth proxy (RSS > 10x baseline per 1000 runs) is
+# reported as a warning, as it was in the Python. A hard abort (SIGSEGV /
+# SIGBUS / SIGABRT) inside the engine takes the harness process with it and
+# so surfaces as a nonzero harness exit — the same channel the Python had,
+# since both run the engine in-process.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write --allow-random --allow-clock \
+#      scripts/fuzz_cx.cx [--duration SECONDS] [--seed N]
+#
+# Defaults: 60 seconds wall clock, seed 0. Corpus: fixtures/bench/*.cx plus
+# the hand-picked tricky seeds below. Findings hub (created on first
+# finding, .gitignore'd): vcx/fuzz/crashes/
+#
+# Exit codes: 0 no findings; 1 at least one finding; 2 usage error.
+#
+# Surfaces fuzzed, and why they differ from the Python's three:
+# the Python called the C ABI through the exempt Python binding
+# (`cxlib.to_ast_bin` / `eval_code` / `eval_code_streaming`). A CX harness
+# reaches the same engine directly, so the targets are the CX-language
+# surfaces over it: `cx:parse` (parser), `cx:select` (buffered evaluation),
+# `format:emit-stream` (incremental emission — the streaming emitter that
+# `eval_code_streaming` fed) and `cx:canonical` (the strict-canonical
+# serializer the ABI passthrough exercised). Four surfaces rather than three.
+#
+# `cx:ast` is deliberately NOT a target, though it looks like the twin of
+# `to_ast_bin`: it is the module-DECLARATION-header projection, not a
+# document AST, so pointing it at data documents fuzzes the wrong thing.
+# It is also quadratic — MEASURED 2026-08-23 over fixtures/bench: 3.4 KB →
+# 3.1 ms, 34.9 KB → 146.8 ms, 354 KB → 5178 ms (100x the input for 1670x
+# the time), which alone was 98% of this harness's wall clock while it was
+# in the target set. Filed separately.
+#
+# Error values are NOT findings. Every CX surface reports refusal as an
+# error VALUE (a deliberate design, not friction), so a malformed input
+# producing `cx-err:CXER0100` is the parser working. The Python drew the
+# same line — it classified `RuntimeError` from the binding as the clean
+# path — and the ctypes binding raised `RuntimeError` for every libcx error,
+# so its crash channel was, in practice, exactly this one.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/bytes'   as=bytes]
+[?lib 'cx-stdlib/random'  as=random]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/prof'    as=prof]
+[?lib 'cx-stdlib/hash'    as=hash]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/format'  as=format]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+
+[?const ARG_SPEC [argspec
+  [flag name="duration" type=int default=60]
+  [flag name="seed"     type=int default=0]]]
+
+[?const CRASH-DIR 'vcx/fuzz/crashes']
+[?const BENCH-DIR 'fixtures/bench']
+
+# The four fuzz targets (see the header note on why these, not the ABI three).
+[?const TARGETS ('parse', 'eval', 'emit_stream', 'canonical')]
+
+# Byte-level mutation operators, in the Python's order and probability
+# (uniform choice of four; a guard-blocked op leaves the seed unmutated,
+# which the Python also did).
+[?const MUT-OPS ('flip', 'insert', 'delete', 'duplicate')]
+
+# Catastrophic-time ceiling: the docstring assertion the Python declared but
+# never implemented — 30 s for an input under 1 MB. Nanoseconds.
+[?const SLOW-NS 30000000000]
+[?const SMALL-INPUT 1000000]
+
+# Memory-growth proxy: warn when RSS exceeds 10x the baseline, checked every
+# 1000 runs (unchanged from the Python).
+[?const RSS-FACTOR 10]
+[?const TICK-EVERY 1000]
+
+[?const EMPTY-ARR []]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# ── seed corpus ──────────────────────────────────────────────────────────────
+
+# bench-seeds: fixtures/bench/*.cx as bytes. An unreadable file is skipped,
+# matching the Python's `except OSError: pass`.
+[?def bench-seeds scope=public impure ()
+  [?for [in $f [?fallback [$io:list-dir BENCH-DIR] [recover-with EMPTY-ARR]]]
+    [where [$strings:ends-with $f '.cx']]
+    [yield [?fallback [$io:read-file-bytes [$cat (BENCH-DIR, '/', $f)]]
+             [recover-with [$bytes:from-string-utf8 '']]]]]]
+
+# tricky-seeds: the hand-picked parser-edge seeds, byte-identical to the
+# Python's list (including the two synthesized wide/deep inputs).
+[?def tricky-seeds scope=public ()
+  [?for [in $s ('',
+                '[',
+                '[]',
+                '[a [b [c]]]',
+                '[?for x :in //v :return [?=x]]',
+                '[?if [true, then, else]]',
+                '[a #id]',
+                '[a ~~~ b=1]',
+                '[a [#raw#]]',
+                '[a [|block|]]',
+                [$cat ('[a ', [$strings:repeat 'b=1 ' 1000], ']')],
+                [$strings:repeat '[a]' 10000])]
+    [yield [$bytes:from-string-utf8 $s]]]]
+
+# MEASURED (2026-08-23): `($seqA, $seqB)` builds a TWO-item array whose items
+# are the sequences — the nested sequences are not flattened, and neither
+# `$array:flatten` nor a nested `?for` collapses them. The corpus is therefore
+# concatenated by index, so `random:gen-choose` picks a seed and never a
+# sub-sequence (which silently fed a sequence to `$bytes:length` and
+# absence-propagated the whole loop to zero runs).
+[?def load-seed-corpus scope=public impure ()
+  [?let [= $b [$bench-seeds]]
+        [= $t [$tricky-seeds]]
+        [= $nb [$count $b]]
+    [?for [in $i [$range 1 [+ $nb [$count $t]]]]
+      [yield [?if [<= $i $nb]
+               [then [$nth $b $i]]
+               [else [$nth $t [- $i $nb]]]]]]]]
+
+# ── mutation ─────────────────────────────────────────────────────────────────
+
+[?def rand-byte scope=public impure ($g) [$bytes:pack 'B' ([$random:gen-int-range $g 0 255])]]
+
+# rand-bytes: n random bytes, for the empty-seed case.
+#
+# MEASURED (2026-08-23): `$bytes:concat` does NOT accept a `?for`-produced
+# sequence — `arg_items` (vcx/code/stdlib_bytes.v:110) takes a SequenceNode,
+# an ArrayNode or a `__cx_seq__`/`__cx_arr__` element, and a `?for` hands it
+# something none of those match, so the call answers absence. A literal
+# tuple `(a, b, c)` is accepted. Built by recursion over 2-tuples instead;
+# n is at most 64, and tail calls are trampolined anyway (#60).
+[?def rand-bytes scope=public impure ($g $n)
+  [?if [<= $n 1]
+    [then [$rand-byte $g]]
+    [else [$bytes:concat ([$rand-byte $g], [$rand-bytes $g [- $n 1]])]]]]
+
+[?def mut-flip scope=public impure ($g $b $n)
+  [?let [= $i [$random:gen-int-range $g 0 [- $n 1]]]
+    [$bytes:concat ([$bytes:slice $b 0 $i],
+                    [$rand-byte $g],
+                    [$bytes:slice $b [+ $i 1] $n])]]]
+
+[?def mut-insert scope=public impure ($g $b $n)
+  [?if [< $n SMALL-INPUT]
+    [then [?let [= $i [$random:gen-int-range $g 0 $n]]
+            [$bytes:concat ([$bytes:slice $b 0 $i],
+                            [$rand-byte $g],
+                            [$bytes:slice $b $i $n])]]]
+    [else $b]]]
+
+[?def mut-delete scope=public impure ($g $b $n)
+  [?if [> $n 1]
+    [then [?let [= $i [$random:gen-int-range $g 0 [- $n 1]]]
+            [$bytes:concat ([$bytes:slice $b 0 $i],
+                            [$bytes:slice $b [+ $i 1] $n])]]]
+    [else $b]]]
+
+[?def mut-duplicate scope=public impure ($g $b $n)
+  [?if [< $n SMALL-INPUT]
+    [then
+      [?let [= $span [$random:gen-int-range $g 1 [?if [< $n 64] [then $n] [else 64]]]]
+            [= $i [$random:gen-int-range $g 0 [- $n $span]]]
+        [$bytes:concat ([$bytes:slice $b 0 [+ $i $span]],
+                        [$bytes:slice $b $i [+ $i $span]],
+                        [$bytes:slice $b [+ $i $span] $n])]]]
+    [else $b]]]
+
+[?def mutate scope=public impure ($g $seed)
+  [?let [= $n [$bytes:length $seed]]
+    [?if [= $n 0]
+      [then [$rand-bytes $g [$random:gen-int-range $g 1 64]]]
+      [else
+        [?let [= $op [$random:gen-choose $g MUT-OPS]]
+          [?match $op
+            [case 'flip'      [$mut-flip $g $seed $n]]
+            [case 'insert'    [$mut-insert $g $seed $n]]
+            [case 'delete'    [$mut-delete $g $seed $n]]
+            [case 'duplicate' [$mut-duplicate $g $seed $n]]
+            [else $seed]]]]]]]
+
+# ── one attempt ──────────────────────────────────────────────────────────────
+
+# drive: run one target over the decoded input. The value is discarded — the
+# harness asserts on time and on process survival, not on the result — but
+# each surface is FORCED with the cheapest available witness (`$count` /
+# `$strings:length`), never serialized: canonicalizing a 354 KB
+# fixtures/bench/bench_large.cx result cost more than the surface under test
+# and dropped throughput to ~1 run/s.
+[?def drive scope=public impure ($target $s)
+  [?match $target
+    [case 'parse' [$count [?fallback [$cx:parse $s] [recover-with 'err']]]]
+    [case 'eval'  [$count [?fallback [$cx:select [$cx:parse $s] '//*']
+                            [recover-with 'err']]]]
+    [case 'emit_stream'
+                  [$count [?fallback [$format:emit-stream [$cx:parse $s] {}]
+                            [recover-with 'err']]]]
+    [case 'canonical'
+                  [$strings:length [?fallback [$cx:canonical [$cx:parse $s]]
+                                     [recover-with 'err']]]]
+    [else 0]]]
+
+# attempt: {ok: true} or {err: MSG}. A refusal (error value) is the clean
+# path; exceeding the catastrophic-time ceiling on a small input is a finding.
+[?def attempt scope=public impure ($target $input)
+  [?let [= $s [$bytes:to-string-utf8-lossy $input]]
+        [= $t0 [$time:monotonic-now]]
+        [= $_r [$drive $target $s]]
+        [= $dt [- [$time:monotonic-now] $t0]]
+    [?if [and [> $dt SLOW-NS] [< [$bytes:length $input] SMALL-INPUT]]
+      [then {err: [$cat ('catastrophic time: ', [$string $dt], ' ns on a ',
+                         [$string [$bytes:length $input]], '-byte input')]}]
+      [else {ok: true}]]]]
+
+# ── findings ─────────────────────────────────────────────────────────────────
+
+# stamp: the Python's time.strftime('%Y%m%d-%H%M%S') over the local clock.
+# `time:now` is ISO-8601 (2026-08-23T13:37:21.321801Z), so the digits are
+# lifted from it rather than re-formatted.
+[?def stamp scope=public impure ()
+  [?let [= $iso [$string [$time:now]]]
+        [= $d [$strings:replace [$strings:slice $iso 0 10] '-' '']]
+        [= $t [$strings:replace [$strings:slice $iso 11 19] ':' '']]
+    [$cat ($d, '-', $t)]]]
+
+# save-finding: write the input plus a sidecar report, and answer the path.
+#
+# The Python named the file from `abs(hash(input_bytes)) % 0xFFFFFFFF`, which
+# is PYTHONHASHSEED-salted and therefore differs between runs of the SAME
+# input. This uses the first 8 hex of the content SHA-256 instead, so a
+# finding filed twice lands on one name and a report can be matched to its
+# input — a deliberate divergence, and the only one in the file protocol.
+[?def save-finding scope=public impure ($input $target $info)
+  [?let [= $s [$bytes:to-string-utf8-lossy $input]]
+        [= $tag [$strings:slice [$hash:sha256-hex $s] 0 8]]
+        [= $base [$cat (CRASH-DIR, '/', [$stamp], '-', $target, '-', $tag)]]
+        [= $_d [$io:make-dirs CRASH-DIR]]
+        [= $_b [$io:write-file-bytes [$cat ($base, '.bin')] $input]]
+        [= $_t [$io:write-file [$cat ($base, '.txt')]
+                 [$cat ('target: ', $target, '\n',
+                        'finding: ', $info, '\n',
+                        'input_len: ', [$string [$bytes:length $input]], '\n',
+                        'input_sha256: ', [$hash:sha256-hex $s], '\n')]]]
+    [$cat ($base, '.bin')]]]
+
+[?def report-finding scope=public impure ($input $target $info)
+  [?let [= $path [$save-finding $input $target $info]]
+    [?do [$cry [$cat ('[fuzz] CRASH (', $target, '): ', $info)]]
+         [$cry [$cat ('[fuzz] saved -> ', $path)]]]]]
+
+# rss-now: the resident-set proxy the Python read from
+# resource.getrusage(RUSAGE_SELF).ru_maxrss. Kept as an INT (the `[$string …]`
+# wrapper an earlier draft carried made `[* $baseline RSS-FACTOR]` absent and
+# silently disabled the growth check).
+[?def rss-now scope=public impure () [?else [$prof:mem-snapshot]@rss-bytes 0]]
+
+[?def tick scope=public impure ($runs $findings $baseline)
+  [?let [= $rss [$rss-now]]
+        [= $_w [?if [> $rss [* $baseline RSS-FACTOR]]
+                 [then [$cry [$cat ('[fuzz] WARN: RSS grew from ', [$string $baseline],
+                                    ' to ', [$string $rss], ' after ', [$string $runs],
+                                    ' runs')]]]
+                 [else ()]]]
+    [$say [$cat ('[fuzz] runs=', [$string $runs], ' findings=', [$string $findings],
+                 ' rss=', [$string $rss])]]]]
+
+# ── the loop ─────────────────────────────────────────────────────────────────
+#
+# Tail-recursive: CX trampolines tail calls (#60), so an hour-long budget at
+# thousands of runs a second never touches a stack ceiling.
+[?def fuzz-loop scope=public impure ($g $seeds $deadline $baseline $runs $findings)
+  [?if [>= [$time:monotonic-now] $deadline]
+    [then {runs: $runs, findings: $findings}]
+    [else
+      [?let [= $seed [$random:gen-choose $g $seeds]]
+            [= $mutated [$mutate $g $seed]]
+            [= $target [$string [$random:gen-choose $g TARGETS]]]
+            [= $res [$attempt $target $mutated]]
+            [= $bad [$map:contains $res 'err']]
+            [= $_r [?if $bad
+                     [then [$report-finding $mutated $target
+                             [$string [?else [$map:get $res 'err'] '']]]]
+                     [else ()]]]
+            [= $runs2 [+ $runs 1]]
+            [= $findings2 [?if $bad [then [+ $findings 1]] [else $findings]]]
+            [= $_t [?if [= [% $runs2 TICK-EVERY] 0]
+                     [then [$tick $runs2 $findings2 $baseline]]
+                     [else ()]]]
+        [$fuzz-loop $g $seeds $deadline $baseline $runs2 $findings2]]]]]
+
+# ── main ─────────────────────────────────────────────────────────────────────
+
+[?let
+  [= $args [?fallback [$env:parse-args ARG_SPEC]
+             [recover-with ([$cry 'usage: fuzz_cx.cx [--duration SECONDS] [--seed N]'],
+                            [$env:exit 2], null)]]]
+  [= $duration [?else [$env:flag $args 'duration'] 60]]
+  [= $seed-n [?else [$env:flag $args 'seed'] 0]]
+  [= $g [$random:new $seed-n]]
+  [= $seeds [$load-seed-corpus]]
+  [= $baseline [$rss-now]]
+  [= $deadline [+ [$time:monotonic-now] [* $duration 1000000000]]]
+  [= $_hdr [$say [$cat ('[fuzz] seeds=', [$string [$count $seeds]],
+                        ' duration=', [$string $duration], 's',
+                        ' baseline_rss=', [$string $baseline])]]]
+  [= $out [$fuzz-loop $g $seeds $deadline $baseline 0 0]]
+  [= $runs [?else [$map:get $out 'runs'] 0]]
+  [= $findings [?else [$map:get $out 'findings'] 0]]
+  [= $_done [$say [$cat ('[fuzz] done - ', [$string $runs], ' runs, ',
+                         [$string $findings], ' findings')]]]
+  [$env:exit [?if [= $findings 0] [then 0] [else 1]]]]
