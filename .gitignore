@@ -90,3 +90,6 @@ bench/current.json
 # FL-1 (#764): feed-lineage sidecars are runtime artifacts, never committed
 **/.cxstore-lineage
 *.cxstore-lineage
+
+# campaign working notes — agent briefs, not shipped surface
+.campaign/
