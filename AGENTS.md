@@ -88,16 +88,49 @@ them.
 ## Working in this repo
 
 ```
-make build-vcx      build the toolchain (the `cx` binary lands in vcx/target/)
-make test           the full gate matrix — run this once, at the end
-make test-changed   only the lanes whose inputs your change touched
-make docs           regenerate the LLM layer after changing a cited fixture
-make docs-check     the drift gate; fails if the layer is stale
-make guide          the human-facing documentation site
+make build-vcx        build the toolchain (the `cx` binary lands in vcx/target/)
+make test             the full gate matrix — run this once, at the end
+make test-changed     only the lanes whose inputs your change touched
+make test-changed-dry the same selection, printed and not run
+make docs             regenerate the LLM layer after changing a cited fixture
+make docs-check       the drift gate; fails if the layer is stale
+make guide            the human-facing documentation site
 ```
 
 Targeted lanes are the development loop; the full matrix is the exit gate.
 [`CONTRIBUTING.md`](CONTRIBUTING.md) has the rest.
+
+### The development loop
+
+`make test-changed` is the loop. It reads the change set, intersects it with a
+per-lane input manifest in [`scripts/test_changed.sh`](scripts/test_changed.sh),
+and runs only the lanes that can possibly have moved. It is conservative by
+construction: a lane with no manifest row always runs (and says so), a touched
+`Makefile`/`scripts/`/`VERSION`/`devbox.*` collapses to the full union, and the
+globs over-include on doubt — a false "run" costs minutes, a false "skip" costs
+correctness.
+
+`BASE` sets the window and defaults to `HEAD`, i.e. the work you have not
+committed yet. Widen it when your change is already committed:
+
+```
+make test-changed                            # uncommitted work only (default)
+make test-changed BASE=origin/release/0.17   # the whole branch
+make test-changed-dry BASE=HEAD~3            # show the decision, run nothing
+```
+
+**`make test-changed` never substitutes for `make test`.** The release gate is
+the full matrix, and it is what a wave or phase exits on.
+
+Test *files*, not test functions, are the unit of compile cost: every
+`*_test.v` links its own binary over the whole module graph, so a new standalone
+test file costs a whole-graph link on every gate run. Add test functions to the
+umbrella that already owns the area — the roster is
+[`scripts/consolidation/`](scripts/consolidation)`/<area>.files` and
+`scripts/consolidate_tests.sh absorb <area>` folds a stray file in — and
+introduce a standalone `*_test.v` only when the lane genuinely needs process
+isolation (a real socket, a serial-retry class, an exclusion in
+`scripts/publish_v.sh`).
 
 If you change a conformance fixture the primer cites, `make docs` and commit
 the regenerated `docs/llm/` **in the same change**. The gate exists so that

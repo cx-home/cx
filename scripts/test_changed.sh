@@ -80,6 +80,16 @@ lane_globs() {
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/*' ;;
     address-baseline-gate)         echo 'vcx/* conformance/*' ;;
+    # #700 wave 1 (2026-08-24): five TEST_TARGETS lanes had no row and so
+    # always ran. Each row is the lane's actual input surface, over-including
+    # on doubt as the rest do.
+    check-code-fixtures)           echo 'conformance/* vcx/* spec/*' ;;
+    # the SIGPIPE-PIPE gate reads every shell script in the tree
+    check-pipefail-pipes)          echo '*' ;;
+    test-code-diagram)             echo 'conformance/* vcx/* stdlib/*' ;;
+    # the oriel surface lane drives spec/03-approved/xap/demos/oriel/
+    test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
+    tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }
@@ -110,10 +120,12 @@ fi
 
 run_lanes=()
 skip_lanes=()
+unlisted_lanes=()
 for lane in $LANES; do
   globs=$(lane_globs "$lane")
   if [ -z "$globs" ]; then
     run_lanes+=("$lane") # deny-by-default: no manifest row → run
+    unlisted_lanes+=("$lane")
     continue
   fi
   hit=0
@@ -131,6 +143,9 @@ done
 
 echo "test-changed: SKIP (inputs unchanged): ${skip_lanes[*]:-none}"
 echo "test-changed: RUN: ${run_lanes[*]:-none}"
+if [ ${#unlisted_lanes[@]} -gt 0 ]; then
+  echo "test-changed: NO MANIFEST ROW (running by deny-by-default — add a row in this file to make them selectable): ${unlisted_lanes[*]}"
+fi
 if [ ${#run_lanes[@]} -eq 0 ]; then
   echo "test-changed: nothing to run"
   exit 0

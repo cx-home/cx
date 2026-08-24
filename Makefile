@@ -487,14 +487,29 @@ release-verify:
 TEST_TARGETS := abi-c-test check-v-fork test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
-# Runs only the TEST_TARGETS lanes whose declared input globs intersect
-# BASE..HEAD (+worktree). Deny-by-default: a lane without a manifest row in
-# scripts/test_changed.sh ALWAYS runs. The full `make test` union stays
-# MANDATORY at wave/phase exits — this target never substitutes for an exit
-# gate.
+# THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
+# declared input globs intersect BASE..HEAD (+worktree). Deny-by-default: a
+# lane without a manifest row in scripts/test_changed.sh ALWAYS runs. The full
+# `make test` union stays MANDATORY at wave/phase exits — this target never
+# substitutes for an exit gate.
+#
+# BASE defaults to HEAD, i.e. "what I have not committed yet" — the loop a
+# developer is actually in, and a ref that always resolves. Widen the window
+# explicitly when the work is already committed:
+#   make test-changed BASE=origin/release/0.17     # the whole branch's change set
+#   make test-changed BASE=HEAD~3
+# `make test-changed-dry` prints the SKIP/RUN decision and executes nothing.
+# (#700 wave 1, 2026-08-24: BASE had no default, so the entry point AGENTS.md
+# documents exited 2 with a usage message unless the caller already knew to
+# pass BASE=.)
+BASE ?= HEAD
 .PHONY: test-changed
 test-changed:
 	@bash scripts/test_changed.sh $(BASE)
+
+.PHONY: test-changed-dry
+test-changed-dry:
+	@bash scripts/test_changed.sh $(BASE) --dry-run
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
