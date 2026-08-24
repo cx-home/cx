@@ -1217,6 +1217,29 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/a2a_real_test.v \
                       vcx/tests/code_eval_fixtures_test.v
 
+# The retry ROSTERS above say WHICH lanes get a serial retry. This says WHY,
+# PER LANE. The emitted line used to read "serial retry (known real-socket
+# contention lane)" for every lane in either roster, which became a false
+# statement the moment code_eval_fixtures_test.v joined on 2026-08-23: its cause
+# is the #951 supervise note/terminal load-race, and it holds no socket. A log
+# line that asserts a single cause for a heterogeneous roster sends whoever
+# reads it after a red gate looking in the wrong place.
+#
+# The default branch is deliberately LOUD rather than a guessed cause: a lane in
+# a roster with no declared reason still GETS ITS RETRY — the retry mechanism is
+# load-bearing and is not weakened here — but the log says the reason is
+# undeclared instead of inventing one.
+RETRY_REASON_CASE = case "$$rel" in \
+	  vcx/tests/code_eval_fixtures_test.v) \
+	    reason="\#951 supervise note/terminal load-race under -j compile storms; green 25/25 and 80/80 in isolation" ;; \
+	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v) \
+	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
+	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_grpc_parity_test.v|vcx/platform/store_lazy_load_test.v) \
+	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
+	  *) \
+	    reason="NO REASON DECLARED for this lane -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
+	esac
+
 test-vcx-suite: build-vcx-dev
 	@rm -f $(CX_SKIP_LOG)
 	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
@@ -1236,7 +1259,8 @@ test-vcx-suite: build-vcx-dev
 	      rel=$${t#$(CURDIR)/}; \
 	      case " $(SUITE_SERIAL_RETRY) " in \
 	        *" $$rel "*) \
-	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
+	          $(RETRY_REASON_CASE); \
+	          echo "──── serial retry ($$reason): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
 	          if grep -aq 'C compilation error' $$log; then \
@@ -1295,7 +1319,8 @@ test-vcx-code: build-vcx-dev
 	      rel=$${t#$(CURDIR)/}; \
 	      case " $(CODE_SERIAL_RETRY) " in \
 	        *" $$rel "*) \
-	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
+	          $(RETRY_REASON_CASE); \
+	          echo "──── serial retry ($$reason): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
 	          if grep -aq 'C compilation error' $$log; then \
