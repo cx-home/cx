@@ -123,9 +123,17 @@
   # ── the fork as it actually is ────────────────────────────────────────
   [= $head [$strings:trim [$run-git ('git', '-C', $sub, 'rev-parse', 'HEAD') 'rev-parse']]]
   [= $gitlink-raw [$run-git ('git', 'ls-tree', 'HEAD', $sub) 'ls-tree']]
-  [= $gitlink [?let [= $fs [$strings:split [$strings:trim $gitlink-raw] "\t"]]
-                    [= $cols [$strings:split [$first $fs] ' ']]
-                 [?if [< [$count $cols] 3] [then ''] [else [$nth $cols 3]]]]]
+  # `git ls-tree HEAD <path>` prints `<mode> <type> <sha>\t<path>` for a
+  # gitlink, and NOTHING (exit 0) for a path the superproject does not
+  # track. The empty case has to be handled before the split: `[$first ()]`
+  # is absence, and feeding absence to [$strings:split] reports `no callable
+  # "str-split"` — a type-mismatched argument surfacing as a missing
+  # function (see #955), which is a misleading way to learn you have a bug.
+  [= $gitlink [?if [= [$strings:trim $gitlink-raw] '']
+    [then '']
+    [else [?let [= $fs [$strings:split [$strings:trim $gitlink-raw] "\t"]]
+                [= $cols [$strings:split [$first $fs] ' ']]
+             [?if [< [$count $cols] 3] [then ''] [else [$nth $cols 3]]]]]]]
   [= $dirty [$lines [$run-git ('git', '-C', $sub, 'status', '--porcelain',
                                '--untracked-files=no') 'status']]]
   [= $ancestor [?let [= $r [?fallback [$process:run ('git', '-C', $sub, 'merge-base',
@@ -223,7 +231,9 @@
                [$cry '    Uncommitted fork changes are divergence no commit records.'])]
         [else ()]],
       [?if [= $gitlink $head] [then ()]
-        [else ([$cry [$cat ('  PIN DRIFT — the ', $sub, ' gitlink is ', [$short $gitlink],
+        [else ([$cry [$cat ('  PIN DRIFT — the ', $sub, ' gitlink is ',
+                            [?if [= $gitlink ''] [then 'ABSENT (the superproject tracks no gitlink there)']
+                              [else [$short $gitlink]]],
                             ' but the checked-out HEAD is ', [$short $head], '.')]],
                [$cry '    A fresh clone would build a different compiler than this tree does.'])]],
       [$cry ''])]
