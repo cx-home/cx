@@ -501,3 +501,92 @@ Two consequences, both binding:
 So this campaign's exit state is: docket complete, record pair green, review
 package prepared, and **one named outstanding release blocker** — #700 wave
 2 — rather than a clean ready-to-tag.
+
+---
+
+# AMENDMENT 10 (2026-08-24) — VC-19
+
+**Status:** RULED by the owner — reply verbatim: **"all these issues get
+solved and sound in 0.17.0 period. I want a new session with fable 5 to
+address and continue"** — against the question of what model to use for a
+cluster of defects that kept fracturing each other. Recorded BEFORE the work
+per R6.1/R4.2.
+
+## VC-19 — the path/value and comment clusters are SETTLED IN v0.17.0, spec-first, by a Fable 5 session
+
+The question posed: *"(a) Two partitions — path/value model, and comment
+fidelity — with #961/#964/#966/#965 folding into the first and #962/#967 into
+the second; #961 held rather than landed as a point fix. (b) One partition
+covering everything including error surfacing. (c) Land the point fixes now
+and partition afterward."* And the owner's framing: *"there is a whole set of
+related problems that keep fracturing each other and thrashing rather than
+settling on a sound spec and implementation. I want this resolved for good
+and not pushed down the road or partially implemented."*
+
+**Ruled: ALL of it is solved and sound IN v0.17.0. No deferral, no partial
+implementation.** The work continues in a NEW session on **Fable 5**
+(consistent with the standing model policy: Fable 5 for identity-critical
+work, rulings, audits, and spec authoring — and there is no mid-session
+model switching).
+
+### Why the point-fix model failed, recorded so it is not repeated
+
+Every defect in this cluster was found at a symptom site and ruled
+individually, but each is a CELL in one unwritten table. The collisions that
+followed:
+
+- #961 widens the child axis, flipping a fixture whose own comment read "the
+  fix aligns the descendant axis, it does not widen child" (#587-era scope).
+- #966's obvious remedy (adding `.child` to `node_set_query`) would break the
+  §6.2 field-accessor collapse SETTLED by #582–#587.
+- #964, #965 and #961 are three faces of ONE clause, `code.md:1010`.
+- #966 proved to be two mechanisms stacked, and the first filed diagnosis of
+  it (mine) was wrong.
+- `[$first $x/*]` shifts meaning at dozens of sites once a grouping becomes
+  transparent.
+
+The model exists only in fragments — `code.md:1010`'s distribution table,
+`cxdm.md` §2.1/§2.2, #853's err-position table (DISCOVERED BY PROBING, never
+specified), #587's settled-but-narrow decision. So each fix re-derived part of
+the model locally and moved adjacent cells without anyone deciding they
+should. That is the predictable outcome of specifying a total function
+case-by-case.
+
+### The model to use
+
+The pattern that already works in this repo, twice: `similar.md` §3.2 pins the
+FULL construct × kind matrix (all 40 cells); #853 produced a position table
+with every row verified by a probe. Neither area thrashes.
+
+So: **a total matrix, specified normatively; a conformance grid pinning every
+cell; prior rulings reconciled IN WRITING; then one implementation pass; then
+frozen — changing a cell later requires a ruling that names the cell.**
+
+### Scope
+
+**Cluster A — the path/value model.** #961, #964, #965, #966; reconcile
+#582–#587 and #847 explicitly; the `[$first $x/*]` idiom sweep. Matrix axes:
+operand kinds (element, sequence, grouping envelope, array, map, scalar, err,
+absence) × operations (`/name`, `//name`, `/@attr`, `/*`, predicate, `count`,
+`first`, the field-accessor collapse). Deliberately-opaque cells are cells and
+get pinned too.
+
+**Cluster B — comment fidelity across the three lanes.** #962, #967, and the
+data-reader/program-reader divergence (unfiled). #967 is active user data
+loss: `cx fmt` deletes every comment in every position while `cli.md:107`
+calls it the lossless formatter that preserves comments.
+
+**Cluster C — error surfacing.** #955's two mechanisms, and #965's
+err-reads-as-truthy. The least specified of the three; the owner's ruling
+covers it.
+
+### Consequence for the in-flight work
+
+The VC-13 worktree (`worktree-agent-acc56e4a435712c0a`, four commits on
+`1c6a44a63`) is PRESERVED, not landed and not discarded: #962 and #964 are
+verified, #961 is verified but is one cell of Cluster A's matrix. Whether
+each rides the partition or lands ahead of it is the Fable 5 session's call
+against the matrix, not a point decision.
+
+v0.17.0 now has three named tag blockers: #700 wave 2 (VC-18), Cluster A, and
+Cluster B/C. `scripts/release.sh v0.17.0` is not run while any is open.
