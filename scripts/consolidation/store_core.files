@@ -1,13 +1,19 @@
 # area: store_core
-vcx/tests/store_concurrent_handle_test.v
-vcx/tests/store_dir_sync_test.v
-vcx/tests/store_drain_readiness_test.v
-vcx/tests/store_file_append_log_test.v
-vcx/tests/store_modify_predicate_test.v
-vcx/tests/store_modify_using_test.v
-vcx/tests/store_remote_alias_unsupported_test.v
-vcx/tests/store_reopen_scale_test.v
-vcx/tests/store_shared_root_test.v
-vcx/tests/store_snapshot_streaming_test.v
-vcx/tests/store_http_test.v
-vcx/tests/store_sigv4_test.v
+#absorbed vcx/tests/store_concurrent_handle_test.v
+#absorbed vcx/tests/store_dir_sync_test.v
+#absorbed vcx/tests/store_drain_readiness_test.v
+#absorbed vcx/tests/store_file_append_log_test.v
+#absorbed vcx/tests/store_modify_predicate_test.v
+#absorbed vcx/tests/store_modify_using_test.v
+#absorbed vcx/tests/store_remote_alias_unsupported_test.v
+#absorbed vcx/tests/store_reopen_scale_test.v
+#absorbed vcx/tests/store_shared_root_test.v
+#absorbed vcx/tests/store_snapshot_streaming_test.v
+#absorbed vcx/tests/store_http_test.v
+#absorbed vcx/tests/store_sigv4_test.v
+# ── #700 wave 1, 2026-08-24.
+# NOT listed: resolved_projection_test.v — cited by path in approved spec
+# prose (spec/03-approved/core/ast.md:57); repointing it is an unauthorized
+# spec edit.
+vcx/tests/cxstore_object_backend_test.v
+vcx/tests/schema_compat_test.v

@@ -1,0 +1,25 @@
+# area: diagram
+# The diagram lane family (#700 wave 1, 2026-08-24): near-pure-compile lanes
+# (~2,200 CPU-s of compile for ~12 s of work in the v0.16.0 record run).
+#
+# NOT listed, on purpose — each of these is cited BY PATH in approved spec
+# prose, and repointing a spec citation is a spec edit this campaign has not
+# authorized (VC-3's mechanical-truing list does not name them; the spec-freeze
+# gate classes spec/* as normative). They stay standalone until that
+# authorization exists:
+#   diagram_completeness_gate_test.v        spec/03-approved/std-lib/diagram.md:135
+#   diagram_bench_gate_test.v               spec/03-approved/std-lib/diagram.md:300
+#   code_diagram_completeness_gate_test.v   spec/03-approved/std-lib/diagram.md:514
+# Also NOT listed:
+#   code_diagram_roundtrip_test.v — named in scripts/publish_v.sh's rsync
+#     --exclude list (it reads @VMODROOT/../stdlib/diagram.cx, which escapes
+#     the relocated cx-v package). Absorbing it would force that exclusion
+#     onto the whole umbrella and drop the lanes below out of the cx-v
+#     package smoke test.
+vcx/tests/code_diagram_golden_test.v
+vcx/tests/diagram_effect_completeness_gate_test.v
+vcx/tests/diagram_effect_golden_test.v
+vcx/tests/diagram_mermaid_golden_test.v
+vcx/tests/diagram_vector_golden_test.v
+vcx/tests/diagram_of_source_test.v
+vcx/tests/examples_diagram_gate_test.v

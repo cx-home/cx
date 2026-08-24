@@ -1,10 +1,17 @@
 # area: stdlib
-vcx/tests/stdlib_base58_test.v
-vcx/tests/stdlib_did_test.v
-vcx/tests/stdlib_session_did_test.v
-vcx/tests/stdlib_skeleton_test.v
-vcx/tests/stdlib_vc_test.v
-vcx/tests/stdlib_xap_coord_test.v
-vcx/tests/stdlib_xap_pep_test.v
-vcx/tests/stdlib_xsp_test.v
-vcx/tests/vc_roundtrip_test.v
+#absorbed vcx/tests/stdlib_base58_test.v
+#absorbed vcx/tests/stdlib_did_test.v
+#absorbed vcx/tests/stdlib_session_did_test.v
+#absorbed vcx/tests/stdlib_skeleton_test.v
+#absorbed vcx/tests/stdlib_vc_test.v
+#absorbed vcx/tests/stdlib_xap_coord_test.v
+#absorbed vcx/tests/stdlib_xap_pep_test.v
+#absorbed vcx/tests/stdlib_xsp_test.v
+#absorbed vcx/tests/vc_roundtrip_test.v
+# ── #700 wave 1, 2026-08-24.
+# NOT listed: stdlib_supervise_test.v — cited by path in approved spec prose
+# (spec/03-approved/std-lib/supervise.md:13 and :359); repointing it is an
+# unauthorized spec edit. It also drives supervise in-process with
+# FIXED-NAME channels (vlane-never / vlane-never2 / vlane-ok2) and sits next
+# to the #951 note-transit family, so it wants its own process anyway.
+vcx/tests/stdlib_session_guest_test.v
