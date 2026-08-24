@@ -47,9 +47,23 @@ if [ ! -x "$CX" ]; then
 fi
 
 echo "── F1/F9: cx demo within 60s and deterministic ────────────"
-# Portable timer: macOS lacks GNU `timeout`. Measure wall-clock.
-run "T-60-1: cx demo completes in < 60s" \
- "start=\$(date +%s); $CX demo > $DEMO_OUT; end=\$(date +%s); test \$((end - start)) -lt 60"
+# The 60s budget is ENFORCED, not measured (#947). The old row was
+#   start=$(date +%s); cx demo > out; end=$(date +%s); test $((end-start)) -lt 60
+# which only evaluates once `cx demo` RETURNS: it could fail a slow demo but
+# never a hung one, so a hang blocked this gate indefinitely instead of failing
+# it — while the row read "completes in < 60s", a bound it never held. Its old
+# comment blamed macOS for lacking GNU `timeout`, but the bound was always
+# available in the runtime: tools/bounded_run.cx drives the child through
+# [$process:run timeout-ms=...], which escalates SIGTERM -> SIGKILL at expiry
+# and reports timed-out (process.md §4.5), exiting 124. Same contract as the
+# profile-gate hang watchdog (37a160806).
+#
+# The bound also fixes a second flaw in the old row: its last command was
+# `test`, so a FAILED redirect of the demo output was masked and the row
+# reported OK. bounded_run.cx writes the capture itself and exits non-zero if
+# it cannot.
+run "T-60-1: cx demo completes in < 60s (enforced bound)" \
+ "BOUNDED_RUN_MS=60000 BOUNDED_RUN_STDOUT=$DEMO_OUT $CX --allow-subprocess --allow-write --allow-env $ROOT/tools/bounded_run.cx $CX demo"
 run "T-60-3: cx demo output deterministic" \
  "diff $DEMO_OUT $ROOT/fixtures/expected_demo_output.txt"
 

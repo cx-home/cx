@@ -1,0 +1,104 @@
+# tools/bounded_run.cx -- run a child under a HARD wall-clock bound (#947).
+#
+# The shape this replaces: `start=$(date +%s); cmd; end=$(date +%s);
+# test $((end-start)) -lt N`. That evaluates elapsed time only AFTER the
+# child returns, so it can fail a SLOW child but never a HUNG one -- a
+# hang blocks the gate indefinitely instead of failing it, while the row
+# still reads "completes in < Ns", a budget the check never held.
+#
+# Here the bound IS the mechanism: [$process:run timeout-ms=...] with
+# kill-on-timeout escalates SIGTERM -> SIGKILL at expiry (process.md
+# section 4.5). Same contract as the profile-gate hang watchdog
+# (vcx/tests/runners/profile_gate/profile_gate.v): the child is killed
+# and the row FAILS LOUDLY.
+#
+# Usage:
+#   BOUNDED_RUN_MS=60000 BOUNDED_RUN_STDOUT=/path/out.txt \
+#   cx --allow-subprocess --allow-write --allow-env \
+#      tools/bounded_run.cx <argv0> [argv...]
+#
+#   BOUNDED_RUN_MS      required, the hard budget in milliseconds
+#   BOUNDED_RUN_STDOUT  optional; when set, the child's stdout is written
+#                       there byte-for-byte. Unset => forwarded to ours.
+#
+# Exit codes:
+#   0    child exited 0 inside the bound
+#   124  child exceeded the bound and was killed (the timeout(1) code)
+#   1    child completed inside the bound but exited non-zero
+#   2    usage error
+#
+# KNOWN LIMIT OF THE BOUND, measured 2026-08-24 while red-proving this tool
+# -- read this before reusing bounded_run.cx on a new child:
+# the bound holds for a child that does not leave a RUNNING GRANDCHILD
+# behind. If the child spawns its own child (a wrapper script is enough),
+# the grandchild inherits the stdout pipe; the timeout kill reaches only
+# the direct child, so [$process:run]'s post-kill stdout slurp never sees
+# EOF and the call blocks PAST ITS OWN DEADLINE. Measured: a 60000ms
+# budget still running at 5m07s; a 3000ms budget still running at 2m07s.
+#
+# Neither documented escape works, because on the `run` path both are spec
+# clauses with no implementation (read in
+# vcx/code/stdlib_process_notd_cx_no_pack_process.v):
+#   * `capture=:none` (process.md section 3.1: "uncaptured streams inherit the
+#     parent's") -- arg [7] is never read; set_redirect_stdio() is
+#     unconditional, so stdout is ALWAYS a pipe.
+#   * `new-process-group=true` (section 4.5: "the escalation targets the whole
+#     group") -- use_pgroup is set on the `spawn` path only, never on `run`.
+#     Measured: the surviving grandchild carried the PARENT cx process's
+#     own PGID, so there was no separate group to escalate to.
+# Reported as a runtime defect rather than worked around here: the
+# alternatives (spawn + kill-group, reading stdout after the wait) trade
+# this hang for a pipe-buffer hang on any child that writes more than the
+# 64KB pipe before being read, which is worse in a gate.
+#
+# The gate's actual subject, `cx demo`, spawns no grandchild, so the bound
+# is real for it -- and strictly better than the unbounded row it replaces.
+#
+# NOTE on the discriminator (measured): a child killed at timeout reports
+# exit-code 0, so `timed-out` -- not the exit code -- is the only reliable
+# signal that the budget blew. Check it FIRST.
+
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=str]
+
+[?def bail scope=public impure ($msg::string $code::int)
+  [?do
+    [$io:write-line [$env:stderr] $msg]
+    [$env:exit $code]]]
+
+[?let
+  [= $argv      [$tail [$env:argv]]]
+  [= $budget-ms [$env:var-int "BOUNDED_RUN_MS" 0]]
+  [= $out-path  [$env:var-or-default "BOUNDED_RUN_STDOUT" ""]]
+  [?if [$empty $argv]
+    [then [$bail "bounded_run: no child argv given (usage: BOUNDED_RUN_MS=<ms> cx tools/bounded_run.cx <argv0> [argv...])" 2]]
+    [else
+      [?if [<= $budget-ms 0]
+        [then [$bail "bounded_run: BOUNDED_RUN_MS must be a positive integer -- an unbounded run is the defect this tool exists to prevent" 2]]
+        [else
+          [?let
+            [= $label [$str:join $argv " "]]
+            [= $r [$process:run $argv timeout-ms=$budget-ms kill-on-timeout=true capture=:both]]
+            [?do
+              [; the child's stderr is the diagnosis when it fails -- never swallow it ]
+              [?if [= [$string $r@stderr] ""]
+                [then null]
+                [else [$io:write-line [$env:stderr] [$string $r@stderr]]]]
+              [?if [= $out-path ""]
+                [then [$io:write-line [$env:stdout] [$string $r@stdout]]]
+                [else [$io:write-file $out-path [$string $r@stdout]]]]
+              [?if [= [$string $r@timed-out] "true"]
+                [then [$bail [$str:join ("bounded_run: HARD TIMEOUT after ",
+                                         [$string $budget-ms],
+                                         "ms -- killed `", $label,
+                                         "`. This budget is ENFORCED, not measured: a hang fails the row.") ""]
+                             124]]
+                [else
+                  [?if [= $r@exit-code 0]
+                    [then null]
+                    [else [$bail [$str:join ("bounded_run: `", $label, "` exited ",
+                                             [$string $r@exit-code],
+                                             " inside the ", [$string $budget-ms], "ms budget") ""]
+                                 1]]]]]]]]]]]]
