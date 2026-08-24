@@ -318,3 +318,40 @@ fixtured behavior. It is not a licence to edit approved spec more broadly:
 anything else still stops and asks.
 
 Commits carry a `RULED: VC-11` token (spec-freeze R4.1).
+
+---
+
+# AMENDMENT 6 (2026-08-24) — VC-12
+
+**Status:** RULED by the owner — reply verbatim: **"8a"** — against the
+question of what to do with three stale agent worktrees carrying unverified
+ruled work. Recorded BEFORE the work per R6.1/R4.2. This session also took
+ownership of all cx-private worktrees by the owner's instruction the same
+day.
+
+## VC-12 (8a) — the three unverified branches are TRACKED, not audited and not deleted
+
+The question: *"(a) Leave them; file one tracking issue naming all three
+branches + SHAs — cheap, makes them recoverable, defers an expensive audit
+out of a cut window, and nothing is decaying. (b) Verify all three now — 11
+commits at roughly the cost of the 4d29a8519 check each. (c) Delete them on
+the 'it looks landed' signal."* Ruled (a).
+
+(c) was the live hazard, not a straw option: a peer session had already
+proposed deleting `worktree-agent-a32908394a6249253` on the signal that "all
+25 cd-sq-* defs are already upstream". Verifying it properly took checking
+354 files and 115 defs, of which FIVE were absent — two `dbg-` probes and
+three defs the tree itself documents as deliberately retired
+(`stdlib/diagram.cx:1981`). The conclusion held, but the reasoning that
+reached it would not have.
+
+Worktrees pruned under this ownership, all provably landed (commits
+cherry-picked onto release/0.17 and verified by the integrated matrix):
+`agent-a2c6a7dd0e4a333f2`, `agent-a59f37e3043a67d52`,
+`agent-a842c97e3b82a13ec`, `agent-a0cab674d723f0431`,
+`agent-a58afa828f64e3734`. Branches kept as provenance.
+
+Worktrees PRESERVED and not to be pruned: `busy-maxwell-6e39ce` (#962) and
+`objective-lovelace-b5cd8e` (#961) — live shipped defects whose fixes are
+not yet ported.
+
