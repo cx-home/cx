@@ -115,3 +115,55 @@ owner's ruling verbatim, reasoning in commit messages). CX-only, no
 Python for any tooling. Gates never piped. Explicit `model: opus` on
 every spawned agent. Worktree agents hard-reset to the branch tip; every
 agent's green is re-verified on the integrated tree.
+
+---
+
+# AMENDMENT 2 (2026-08-24) — VC-6, VC-7
+
+**Status:** RULED by the owner — reply verbatim: **"1a 2a"** — against the
+two questions posed mid-campaign, after #939 closed and wave 2 integrated.
+Recorded BEFORE the work per R6.1/R4.2.
+
+## VC-6 (1a) — #940: the ten unimplemented `cx:` module functions are IMPLEMENTED
+
+The question: *"How do the ten go? (a) Implement them — the spec is the
+only truth and it already says these exist; ten missing functions is the
+implementation owing the spec, not the reverse. (b) Amend
+`modules/cx.md` to describe what exists — truing spec to a shortfall.
+(c) Split — implement the six pure ones, leave `cx:eval`/`cx:render` for
+a scoped capability pass."* Ruled (a).
+
+This SUPERSEDES the `cx:eval` half of VC-2. VC-2 authorized retiring the
+registration on the stated premise that implementing it "would need spec
+text first"; the premise is inverted — `spec/03-approved/modules/cx.md`
+§2.2 carries the signature and purity, §3 carries four subsections of
+sandbox semantics (CXER4113, CXER4114, depth 8), `cx:render` is defined
+there as sugar over `cx:eval`, and `core/code.md` §6.4.4 has `[?eval]`
+reusing its sandbox and sharing its recursion counter. The `sort-by` half
+of VC-2 stands as landed (zero spec footprint, retired @ c8abd87f9).
+
+The ten, measured absent at spec arity and absent from
+`vcx/code/stdlib_cx.v`'s dispatch table: `cx:eval`, `cx:render`,
+`cx:validate`, `cx:anchors`, `cx:ids`, `cx:references`,
+`cx:resolve-includes`, `cx:strip-comments`, `cx:strip-attrs`,
+`cx:pretty-print`.
+
+## VC-7 (2a) — #945: gate 28.5 is REBUILT as two rows
+
+The question: *"(a) Rebuild as two rows — `xpath_31_parity.cxd`'s 23
+cases currently run nowhere; a CX-side lane is real new signal and needs
+no Docker, Saxon cross-check stays manual. Cost: new spec text, which is
+why it needs your authorization rather than VC-3. (b) Retire — deletes
+the only external-compliance check and 23 fixtures of intent. (c) Leave
+as landed."* Ruled (a).
+
+This is the NAMED AUTHORIZATION for the new spec text VC-3 excludes:
+`cxpath_alignment.md`, the normative reference gate 28.5 cites and which
+does not exist in the tree. The authorization covers authoring that
+document and re-deriving the 23 expected outputs against one oracle. It
+does NOT carry graduation: G3 approval to place spec text in
+`spec/03-approved/` remains owner-only, so the document lands in
+`spec/02-working/` and graduation is proposed separately.
+
+Commits under both rulings carry their `RULED: VC-6` / `RULED: VC-7`
+token (spec-freeze R4.1).
