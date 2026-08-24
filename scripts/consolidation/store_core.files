@@ -14,6 +14,6 @@
 # ── #700 wave 1, 2026-08-24.
 # SPEC-CITATION DEBT: spec/03-approved/core/ast.md:57 cites
 # resolved_projection_test.v by path; not trued here (see diagram.files).
-vcx/tests/cxstore_object_backend_test.v
-vcx/tests/schema_compat_test.v
-vcx/tests/resolved_projection_test.v
+#absorbed vcx/tests/cxstore_object_backend_test.v
+#absorbed vcx/tests/schema_compat_test.v
+#absorbed vcx/tests/resolved_projection_test.v
