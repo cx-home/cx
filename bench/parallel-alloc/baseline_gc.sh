@@ -35,9 +35,27 @@ for bin in cx_e cx_boehm; do for f in serial par; do
 done; done
 [ "$ok" = 1 ] && echo "correctness: OK (80000200000 x8 everywhere)" || echo "correctness: FAILED"
 
-best() { local b=999999 i s e ms; for i in 1 2 3; do
-  s=$(python3 -c 'import time;print(time.time())'); "$1" "$2" >/dev/null 2>&1; e=$(python3 -c 'import time;print(time.time())')
-  ms=$(python3 -c "print(int(($e-$s)*1000))"); [ "$ms" -lt "$b" ] && b=$ms; done; echo "$b"; }
+# Timing is CX, not python (#943). The three `python3 -c` calls this replaces —
+# two time.time() reads and an int((e-s)*1000) — were utility Python that
+# survived the #922 eradication under the awk/sed/shell carve-out. Python is
+# banned for all tooling outside the lang/python binding surface. `date` is not
+# a substitute here: ms resolution needs GNU `date +%s%N` or bash 5's
+# $EPOCHREALTIME, and this script documents being run OUTSIDE devbox (see the
+# CX_LDDIR note above), where macOS gives neither. measure.cx uses
+# cx-stdlib/time's monotonic-now — nanosecond and monotonic, the correct clock
+# for elapsed time, where time.time() was wall-clock and can step.
+#
+# The driver runs under cx_e, the -gc e build produced above: a full cx binary
+# is already in hand, so this adds no dependency on vcx/target/cx.
+#
+# --allow-write is required even though nothing here touches a file:
+# [$io:write-line] is gated on the write capability whatever handle it is given,
+# stdout included. Measured — without it every cell of the table below read
+# `[err code=cx-err:CXER0271 message='E_CAP_DENIED: write capability required
+# for io-write-line...']ms` instead of a number.
+best() { MEASURE_RUNS=3 "$WK/cx_e" \
+  --allow-subprocess --allow-clock --allow-env --allow-write \
+  "$ROOT/bench/parallel-alloc/measure.cx" "$1" "$2"; }
 
 printf '\n%-12s %12s %12s\n' "build" "single" "par(8)"
 printf '%-12s %10sms %10sms\n' "-gc e"     "$(best "$WK/cx_e" "$WK/serial.cx")"     "$(best "$WK/cx_e" "$WK/par.cx")"

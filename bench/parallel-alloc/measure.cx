@@ -1,0 +1,98 @@
+# bench/parallel-alloc/measure.cx -- best-of-N wall-clock timing for the
+# parallel-alloc probes (#943).
+#
+# WHY THIS EXISTS. Both probes here timed their children with
+#   s=$(python3 -c 'import time;print(time.time())')
+#   e=$(python3 -c 'import time;print(time.time())')
+#   ms=$(python3 -c "print(int(($e-$s)*1000))")
+# Seven such invocations survived the #922 Python eradication because the sweep
+# enumerated .py FILES and these were Python embedded in shell, which the
+# awk/sed/shell carve-out did not cover. Python is banned for all tooling
+# outside the lang/python binding surface, so the timing moves to CX.
+#
+# WHY NOT `date`. Millisecond resolution needs GNU `date +%s%N` or bash 5's
+# $EPOCHREALTIME. Neither is available where these probes are DESIGNED to run:
+# baseline_gc.sh documents running outside the devbox/nix shell (the nix
+# cctools ld aborts under -prod), and out there macOS ships /bin/date without
+# %N and bash 3.2 without $EPOCHREALTIME. cx-stdlib/time's monotonic-now is
+# nanosecond, monotonic (the right clock for elapsed measurement -- unlike
+# python's time.time(), which is wall-clock and can step), and always present
+# because the probes already have a cx binary in hand.
+#
+# WHY THE DRIVER SPAWNS THE CHILD. The clock has to bracket the child, so the
+# same program must own both. This mirrors bench/xap/run.sh, whose report step
+# is bench/xap/aggregate.cx with only lifecycle left in shell.
+#
+# Usage:
+#   MEASURE_RUNS=3 MEASURE_STDERR=/path/err.txt \
+#   <cx-binary> --allow-subprocess --allow-clock --allow-env --allow-write \
+#     bench/parallel-alloc/measure.cx <argv0> [argv...]
+#
+#   MEASURE_RUNS    number of runs; the BEST (lowest) elapsed is reported. Default 3.
+#   MEASURE_STDERR  optional path; the stderr of the BEST run is written there.
+#                   range_reduce_rss.sh uses it to read peak RSS out of
+#                   `/usr/bin/time -l` for the run whose time it reports.
+#
+# Prints one line to stdout: the best elapsed time in whole milliseconds.
+# Exit 0 on success, 2 on a usage error. A child's own exit status is NOT
+# propagated -- these are timing probes, and both callers verify correctness
+# separately by comparing the child's stdout.
+
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/math'    as=math]
+[?lib 'cx-stdlib/strings' as=str]
+
+[; One timed run. Returns [run ms=<int> stderr=<string>]. monotonic-now is
+   nanoseconds; integer-divide to whole milliseconds, matching the int() the
+   python one-liner applied. ]
+[?def timed-run scope=public impure [returns element] ($argv)
+  [?let [= $t0 [$time:monotonic-now]]
+        [= $r  [$process:run $argv]]
+        [= $ns [- [$time:monotonic-now] $t0]]
+    [?element 'run'
+      [?attr 'ms'     [$string [$math:truncate [/ $ns 1000000]]]]
+      [?attr 'stderr' [$string $r@stderr]]]]]
+
+[; Best-of-N by recursion: $left runs remain, $best is the winner so far
+   ([run ms=-1] as the "nothing yet" seed). ]
+[?def best-of scope=public impure [returns element] ($argv $left::int $best::element)
+  [?if [<= $left 0]
+    [then $best]
+    [else
+      [?let [= $this [timed-run $argv]]
+            [= $best-ms [$str:to-int [$string $best@ms]]]
+            [= $this-ms [$str:to-int [$string $this@ms]]]
+        [?if [< $best-ms 0]
+          [then [best-of $argv [- $left 1] $this]]
+          [else
+            [?if [< $this-ms $best-ms]
+              [then [best-of $argv [- $left 1] $this]]
+              [else [best-of $argv [- $left 1] $best]]]]]]]]]
+
+[?let
+  [= $argv    [$tail [$env:argv]]]
+  [= $runs    [$env:var-int "MEASURE_RUNS" 3]]
+  [= $errpath [$env:var-or-default "MEASURE_STDERR" ""]]
+  [?if [$empty $argv]
+    [then [?do
+            [$io:write-line [$env:stderr] "measure: no child argv given (usage: MEASURE_RUNS=<n> cx bench/parallel-alloc/measure.cx <argv0> [argv...])"]
+            [$env:exit 2]]]
+    [else
+      [?if [<= $runs 0]
+        [then [?do
+                [$io:write-line [$env:stderr] "measure: MEASURE_RUNS must be a positive integer"]
+                [$env:exit 2]]]
+        [else
+          [?let [= $best [best-of $argv $runs [?element 'run' [?attr 'ms' "-1"] [?attr 'stderr' ""]]]]
+            [?do
+              [?if [= $errpath ""]
+                [then null]
+                [else [$io:write-file $errpath [$string $best@stderr]]]]
+              [$io:write-line [$env:stdout] [$string $best@ms]]
+              [; explicit exit: without it the top-level [?let]'s value is
+                 echoed as a trailing `null` line, and callers read this
+                 program's stdout as a bare integer. ]
+              [$env:exit 0]]]]]]]]
