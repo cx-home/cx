@@ -7,13 +7,14 @@ serial voice-style renderer, from declarations, with zero view code**. This
 guide teaches the way it is built, so the next feature, XAP, or surface can be
 built the same way.
 
-Everything here was run against the rebased `release/0.16.0` lineage
-(`impl/787-poc`, 2026-08-19). Every command in this document was executed
-against that tree before it was written down. Paths are relative to the repo
-root. ORIEL currently lives in `spec/03-approved/xap/demos/oriel/` (with its domain documents
-in `spec/03-approved/xap/demos/oriel/data/`); issue #869 promotes it to the reference-XAP home
-(`spec/03-approved/xap/demos/`) at the 0.16.0 cut — the paths move with it,
-the way does not.
+Every command in this document was executed against the tree before it was
+written down, and re-verified against the released **v0.16.0** (the
+storefront boots and answers on :8790 with the release binary; the
+`test-oriel-lane` gate re-runs the drive/keys/voice/nokernel/diff battery
+inside every full `make test`). Paths are relative to the repo root. ORIEL
+lives at its reference-XAP home, `spec/03-approved/xap/demos/oriel/` (domain
+documents in `spec/03-approved/xap/demos/oriel/data/`) — the promotion #869
+planned for the 0.16.0 cut happened, and these are the promoted paths.
 
 The normative source for every rule this guide mentions is the Phase 0 spec,
 `design/787/787-phase0-spec.md` — clauses are cited by name (`P0-…`) and never
