@@ -278,3 +278,43 @@ So the disposition is three parts:
    recorded in the release log.
 
 Commits under this carry a `RULED: VC-10` token (spec-freeze R4.1).
+
+---
+
+# AMENDMENT 5 (2026-08-24) — VC-11
+
+**Status:** RULED by the owner — reply verbatim: **"6a"** — against the two
+spec gaps VC-6's implementation surfaced. Recorded BEFORE the work per
+R6.1/R4.2. This is the **G3 authorization** for approved-tier spec text.
+
+## VC-11 (6a) — the two undefined `cx:` contracts are DEFINED to match what shipped
+
+The question: *"(a) Authorize the two sentences now, written to match what
+shipped — the implementations are fixtured and the readings are defensible;
+the alternative is two approved functions whose behavior is defined only by
+their implementation, which is precisely the drift this campaign keeps
+finding. Cost: approved-tier spec, so it needs your G3. (b) Leave spec
+silent; SPEC-FINDINGS §AR stays the record. (c) Change the implementation
+first."* Ruled (a).
+
+Both gaps were recorded in `conformance/stdlib/SPEC-FINDINGS.md` §AR rather
+than resolved, because VC-6 authorized implementation only:
+
+1. **`cx:strip-attrs`' "name-pattern" was undefined.** `spec/modules/cx.md`
+   §6 assigns `CXER4115` to an "invalid name-pattern"; nothing said what a
+   name-pattern is. Shipped as the single-segment name GLOB the engine
+   already carries (`stdlib_path.v match_one_seg`, shared with `io:glob` and
+   `bus.md` head-name patterns) — deliberately NOT the RE2 `pattern=` that
+   schema/validate use. The fork mattered: had spec later said RE2, shipped
+   behavior would have changed under anyone who adopted the glob.
+2. **`cx:references`' map keys were unnamed.** §2.2 typed the return
+   `[sequence map]` and stopped. Shipped as `{attr, kind, path, ref,
+   resolved}` in canonical sorted order, `kind` enumerating all four grammar
+   reference productions across cxdm.md §4's two disjoint namespaces.
+
+The authorization covers **these two definitions in
+`spec/03-approved/modules/cx.md` only**, written to describe the shipped and
+fixtured behavior. It is not a licence to edit approved spec more broadly:
+anything else still stops and asks.
+
+Commits carry a `RULED: VC-11` token (spec-freeze R4.1).
