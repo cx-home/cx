@@ -212,3 +212,33 @@ campaign so a later session does not re-litigate it.
 
 Commits under VC-8 carry a `RULED: VC-8` token (spec-freeze R4.1). VC-9
 authorizes no work.
+
+## CORRECTION to VC-9 (same day, measured after the ruling)
+
+The VC-9 question was posed on a STALE reading of #874 and the recorded
+reasoning is partly false. Correcting the record rather than the ruling:
+the outcome (stay parked, open, not closed) is unchanged and better
+supported, but not for the reason given.
+
+Measured at `8c6f30ad3`: #874's in-repo half **already landed** on
+2026-08-20 at `c63b1e2f4`. `tooling/neovim/` is a real plugin root
+(`lua/cx/` + `plugin/`, native `vim.lsp.config`, `nvim-lspconfig` dropped,
+the copy-file flow retired); `tooling/tree-sitter-cx/REGISTRY.md` carries
+the nvim-treesitter and mason payloads verbatim; `scripts/release.sh`
+Phase 7 packages and publishes the VS Code extension, skipping loudly
+without `VSCE_PAT`/`OVSX_PAT`. So the VC-9 statement that items 2 and 3
+"did not land, deliberately" is wrong — item 2 is done and item 3 is
+prepared.
+
+What remains on #874 is credential-gated or external-repo work: the
+Marketplace/Open VSX publish (owner-minted tokens, fires at the cut), the
+nvim-treesitter PR, and the mason entry — the latter two submitting only
+after a release publishes the public mirror. None of it is work a campaign
+session can perform, which is the honest basis for parking.
+
+The mechanism that produced the error is worth recording because it will
+recur: #874's BODY still describes the 08-20 gaps as open and the issue
+still carries `prio:high`, so a docket sweep reads a stale body, sees a
+high-priority label, and re-parks it. The 2026-08-20 comment on the issue
+was accurate and the sweep did not read it. Reading issue COMMENTS, not
+only bodies, before posing an owner question is the correction.
