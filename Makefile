@@ -317,8 +317,8 @@ install-hooks:
 	@echo "[install-hooks] git core.hooksPath set to .githooks"
 	@ls -1 .githooks/ | sed 's/^/  - /'
 
-# std-lib documentation freshness gate — CX-native (dog-food), run by
-# `cx eval`. Verifies the co-located [module-doc]/[fn-doc] in stdlib/*.cx:
+# std-lib documentation freshness gate — CX-native (dog-food), run as
+# `cx <file>`. Verifies the co-located [module-doc]/[fn-doc] in stdlib/*.cx:
 # presence parity (every public [?def] has a [fn-doc] and vice-versa),
 # purity agreement, and that every [fn-doc] example is backed verbatim by
 # the module's conformance corpus (conformance/stdlib/<m>.cxd, run green by
@@ -328,7 +328,7 @@ install-hooks:
 .PHONY: guide-check
 guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 guide-check: build-vcx
-	@"$(CX_BIN)" eval --allow-all scripts/gen_guide/stdlib_docs_check.cx
+	@"$(CX_BIN)" --allow-all scripts/gen_guide/stdlib_docs_check.cx
 
 # Directive + syntax reference drift gate — every code.md §4.1 registry
 # directive has a [directive-doc], no orphans, and each example is backed
@@ -336,7 +336,7 @@ guide-check: build-vcx
 .PHONY: directive-docs-check
 directive-docs-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 directive-docs-check: build-vcx
-	@"$(CX_BIN)" eval --allow-all scripts/gen_guide/directive_docs_check.cx
+	@"$(CX_BIN)" --allow-all scripts/gen_guide/directive_docs_check.cx
 
 # Playground example drift gate (#92) — every entry in
 # scripts/gen_guide/playground/playground.examples.js must still run clean on
@@ -357,12 +357,12 @@ verify-playground-examples: build-vcx
 # is implemented (stdlib/*.cx bundle and/or a *_stdlib_builtin entry in
 # vcx/code/stdlib_dispatch.v), and there are no orphan impls/bundles
 # without a current spec. The gate is itself written in CX (dog-food) and
-# run by `cx eval`; its nonzero exit on drift propagates through make.
+# run as `cx <file>`; its nonzero exit on drift propagates through make.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
 .PHONY: stdlib-catalog-gate
 stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
-	@"$(CX_BIN)" eval --allow-all scripts/stdlib_catalog_gate.cx
+	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
 
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
 # `cx tools export` over the checked-in M5 module must reproduce the checked-in

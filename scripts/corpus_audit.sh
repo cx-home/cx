@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Rosetta corpus cadence audit.
-# Iterates corpus/rosetta/NN-*.cx, runs each via vcx/target/cx eval,
+# Iterates corpus/rosetta/NN-*.cx, runs each via `vcx/target/cx <file>` (the
+# standing run surface — the legacy `cx eval` alias is never used, AGENTS.md
+# rule 4),
 # computes a live status, and compares against corpus/rosetta/AUDIT.md.
 # Exits 0 if every live status matches recorded; exits 1 on drift.
 set -u
@@ -38,7 +40,7 @@ for cx in "$CORPUS_DIR"/[0-9]*-*.cx; do
   if [ ! -f "$md" ]; then
     live="missing"; notes="no sibling .md"
   else
-    out=$("$CX_BIN" eval "$cx" 2>&1); rc=$?
+    out=$("$CX_BIN" "$cx" 2>&1); rc=$?
     md_status=$(grep -oE '^\*\*Status:\*\* [A-Z]+' "$md" | head -1 | awk '{print tolower($2)}')
     if [ "$rc" -ne 0 ]; then
       live="blocked"; notes="exit=$rc"
