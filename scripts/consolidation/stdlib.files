@@ -18,5 +18,5 @@
 # umbrella ever flakes under -j load, the #951 supervise note-transit family
 # is the first suspect and the mitigation is SUITE_SERIAL_RETRY membership,
 # not un-merging.
-vcx/tests/stdlib_session_guest_test.v
-vcx/tests/stdlib_supervise_test.v
+#absorbed vcx/tests/stdlib_session_guest_test.v
+#absorbed vcx/tests/stdlib_supervise_test.v
