@@ -123,8 +123,19 @@ if [[ $DRY_RUN -eq 1 ]]; then
         fail "make test target missing"
     fi
 else
-    make test 2>&1 | tail -10
-    [[ ${PIPESTATUS[0]} -eq 0 ]] || fail "make test failed"
+    # Full log KEPT, never piped through tail (the gates-never-piped rule):
+    # the v0.16.0 cut failed here twice with the failing target's output
+    # already discarded — tail -10 kept the passing test-vcx summary and
+    # threw away everything else, so the actual red was unidentifiable
+    # from the run that found it. Digest on failure: the make error lines
+    # plus a pointer to the full log.
+    TAG_TEST_LOG="$(mktemp /tmp/tag-release-make-test.XXXXXX.log)"
+    note "full 'make test' log: $TAG_TEST_LOG"
+    if ! make test > "$TAG_TEST_LOG" 2>&1; then
+        grep -E "make(\[[0-9]+\])?: \*\*\*|FAIL|Error" "$TAG_TEST_LOG" | tail -20
+        fail "make test failed — full log: $TAG_TEST_LOG"
+    fi
+    tail -3 "$TAG_TEST_LOG"
 fi
 
 # -- Step 5: doc-link verification ------------------------------------
