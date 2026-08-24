@@ -1,12 +1,13 @@
 [# Section 18 — the CX store platform: content addressing, the embedded
-   workflow, git-porcelain and replication, the service tier, CSRP/gRPC
-   transports, security/encryption, the management console. Spec home:
+   workflow, git-porcelain and replication, the service tier, the XSP
+   store profile + gRPC-edge transports, security/encryption, the
+   management console. Spec home:
    the store spec (spec/03-approved/std-lib/store.md); operator docs:
    docs/dev/store-*.md (runtime-verified). Every command and output on
    this page was run against the branch-head binary before it landed
    here (issue #425 coverage gap: store platform user guide). #]
 
-[section id=store n=18 title='The store platform'
+[section id=store group='Ring 2 — Platform' n=18 title='The store platform'
 
   [intro
     """The CX Store is the platform's persistence spine: a
@@ -40,23 +41,29 @@
     [output
       """(true, [order [id 1] [amt 100]])"""]
     [body
-      """`get-doc` re-hashes after decode, so a corrupted or tampered
-         object can never come back as a silently wrong document — an
-         integrity mismatch is the hard error `CXER1120`. Identity is
-         **two-tier** (the code-identity spec,
-         `spec/03-approved/core/code-identity.md`): Tier-1 is the
-         content hash of canonical bytes — the identity of *data* and
-         the trust anchor for everything in this section; Tier-2 is
-         code identity — `put-def`/`get-def` address CX *code* modulo
-         renaming, so alpha-equivalent definitions share one key:"""]
+      """`get-doc` re-hashes after decode, so a corrupted object can
+         never come back as a silently wrong document — an integrity
+         mismatch is the hard error `CXER1120`. Documents split by
+         **identity rule**: a *structured* document (cx data) is keyed
+         by the hash of its canonical bytes, and the canonicalized
+         round-trip above is the contract; an *opaque* document — CX
+         code, images, plain text, anything whose bytes ARE the
+         content — is keyed by the hash of its **raw bytes** via
+         `put-blob`, and `get-blob` returns those bytes exactly. Code's
+         "same function?" question is answered separately by the pure
+         `[$cx:computation-id]` claim — an index, never a storage
+         key — so alpha-equivalent definitions share one claim while
+         each spelling keeps its own byte-exact address:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
-      [= $k1 [$store:put-def $s '[?def double ($x) [* $x 2]]']]
-      [= $k2 [$store:put-def $s '[?def double ($n) [* $n 2]]']]
-  ([= $k1 $k2], [$store:get-def $s $k1])]"""]
+      [= $src '[?def double ($x) [* $x 2]]']
+      [= $back [$store:get-blob $s [$store:put-blob $s $src]]]
+  ([= $back $src],
+   [= [$cx:computation-id '[?def double ($x) [* $x 2]]']
+      [$cx:computation-id '[?def double ($n) [* $n 2]]']])]"""]
     [output
-      """(true, '[?def double ($x) [* $x 2]]')"""]
+      """(true, true)"""]
     [body
       """The substrate is chosen by the URL scheme at open time, and
          every effectful substrate is capability-gated deny-by-default
@@ -68,7 +75,7 @@
       [tr [td 'sqlite:///path.db'] [td 'single SQLite file'] [td '--allow-read / --allow-write']]
       [tr [td 's3://bucket/prefix'] [td 'S3-compatible object storage'] [td '--allow-net']]
       [tr [td 'http(s):// · ftp:// · sftp://'] [td 'remote backends'] [td '--allow-net']]
-      [tr [td 'cx-store+http(s)://host:port/name/'] [td 'the service daemon (next subsections)'] [td '--allow-net=host:port']]]
+      [tr [td 'cx-store://name/ · cx-store+xsp://host:port/name/'] [td 'the service daemon over THE store wire (next subsections)'] [td '--allow-net=host:port']]]
     [note
       """By default a store decomposes each document into a Merkle
          graph of shared subtree objects — identical subtrees across
@@ -109,7 +116,7 @@
       [= $h2 [$store:put-doc $s [invoice [total 80] [customer 'grace']]]]
   [$store:query $s '//total']]"""]
     [output
-      """([result hash=fa571812a0e85ea16e6d32b0b901a344bd2ac86cf78e18f2bb30b0d98c4b9037 ([total 120])], [result hash='0b129cf65cbf41d80663402f1d82d22e506c9f561815fadd64b8966c28165580' ([total 80])])"""]
+      """([result doc=sha2-256:e5b689fa494377cea041d4bf6496e28e97dd13a059aa4c22c75360fc7d0ceb30 source='mem://#//total' [total 120]], [result doc='sha2-256:89123d4330eda07c2dbeb3878cd1ca12760c1d19e37fdb634b4737bfc2784924' source='mem://#//total' [total 80]])"""]
     [body
       """Going durable is changing the URL — the same program against
          `file://` persists, and a reopen finds the store
@@ -120,7 +127,7 @@
 [?let [= $s [$store:open 'file:///tmp/notes-store']]
   [$store:put-doc $s [note [text 'durable']]]]"""]
     [example lang=sh
-      """$ cx notes.cx --allow-read --allow-write"""]
+      """$ cx --allow-read --allow-write notes.cx"""]
     [body
       """Three habits worth forming from day one: open read paths
          read-only (`[$store:open-opts URL [map read-only='true']]` —
@@ -148,11 +155,11 @@
       [= $gcr [$store:gc $s]]
   ($st@docs, $gcr@reclaimed, [$count [$store:log $s]])]"""]
     [output
-      """(1, 4, 1)"""]
+      """(1, 4, 3)"""]
     [table
       [tr [th 'verb'] [th 'what it does']]
       [tr [td 'status'] [td 'held docs, distinct objects, dedup ratio, unflushed refs']]
-      [tr [td 'log'] [td 'the linear ref-log — each held doc-ref is one insertion-ordered epoch']]
+      [tr [td 'log'] [td 'the linear ref-log in per-ref advance order — every insert, retract, and ref/alias advance is one recorded epoch (a delete is an act in the history, not a disappearance)']]
       [tr [td 'prune / gc'] [td 'reclaim objects no live ref reaches; gc adds durable compaction. A shared subtree survives the deletion of another doc — an object stays live while ANY ref reaches it']]
       [tr [td 'branch / branch-force'] [td 'point a mutable named ref at a doc; a non-fast-forward move is refused (CXER1114, CAS-safe) unless forced']]
       [tr [td 'diff'] [td 'structural diff by hash — identical subtrees are skipped, so cost is O(changed), not O(size)']]]
@@ -189,8 +196,8 @@
          **same** API, wire format, and content addressing move behind
          a purpose-built daemon: `cx store-serve` (also covered from
          the operator side in [[ops-store-daemon]]). It adds the
-         operational layer — auth, RBAC, tenancy, observability, DoS
-         fairness — and no storage smarts. The config is a CX document;
+         operational layer — XSP-AUTH grant-table authority, tenancy,
+         observability, DoS fairness — and no storage smarts. The config is a CX document;
          one daemon mounts many named stores, each mount any embedded
          substrate URL:"""]
     [example lang=cx
@@ -200,7 +207,7 @@
     [example lang=sh
       """$ cx store-serve --config svc.cx --allow-net=127.0.0.1:18971"""]
     [output
-      """cx store-serve: listening on tcp://127.0.0.1:18971 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no providers configured, anonymous full access (configure [auth …] for production)"""]
+      """cx store-serve: listening on tcp://127.0.0.1:18971 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no [xsp [grants …]] configured, anonymous full access (configure grants for production)"""]
     [body
       """Config validation is **attr-exact**: an unknown attribute is a
          startup error (`CXER1711`), never a silent drop. Liveness and
@@ -217,33 +224,31 @@ $ cx store-health --url http://127.0.0.1:18971/cx-store/v1/ready && echo ready
 ready"""]
     [body
       """A client program is unchanged except for the URL — a
-         `cx-store+http://` handle is a named remote store with the
-         identical API (`cx-store+https://` for TLS):"""]
+         `cx-store://` handle (the XSP store profile — THE store wire;
+         `cx-store+xsp://` is the cleartext-dev sibling) is a named
+         remote store with the identical API:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/store' :as store]
-[?let [= $remote [$store:open 'cx-store+http://127.0.0.1:18971/docs/']]
+[?let [= $remote [$store:open 'cx-store+xsp://127.0.0.1:18971/docs/']]
       [= $h [$store:put-doc $remote [doc [title 'over the wire']]]]
   [$store:get-doc $remote $h]]"""]
     [output
-      """$ cx wire.cx --allow-net=127.0.0.1:18971
+      """$ cx --allow-net=127.0.0.1:18971 wire.cx
 [doc [title 'over the wire']]"""]
     [body
-      """Auth is deny-by-default with four credential providers —
-         static tokens (hashed at rest), JWT, DID (the
-         agentic-principal path), and OIDC — all resolving to one
-         principal shape with roles over the protocol's permission
-         classes. `cx store-token` mints a bearer token and prints the
-         ready-to-paste `[auth …]` stanza (the secret is shown once,
-         never stored):"""]
-    [output
-      """$ cx store-token --id ci --roles writer --tenant docs
-[static [token id="ci" secret-hash="sha256:17af07a0…" roles="writer" tenant="docs"]]
-cx store-token: secret for "ci" (shown ONCE, not stored — the config carries only the hash):
-401cfe52…"""]
+      """Authority is XSP-AUTH, deny-by-default: a client presents a
+         verifiable credential (a DID it holds, plus an optional
+         delegation chain), and the daemon's `[xsp [grants …]]` table —
+         principal-rooted delegations over the capability classes
+         read/write/delete/admin — decides per op. There is ONE
+         authority calculus; the retired bearer/RBAC plane and the
+         `[auth …]` config section are gone. A client names its
+         identity through open-opts (`xsp-did` + `xsp-seed-env`); the
+         seed never rides a URL."""]
     [body
       """Lifecycle: SIGTERM drains bounded and checkpoints every
          mounted store; SIGHUP hot-reloads the reloadable config
-         (auth, limits, observability, timeouts, TLS contents) with
+         sections (tls, timeouts, limits, observability) with
          validate-then-swap, all-or-nothing (`CXER1712` names any
          restart-required offender and refuses the whole reload).
          Prometheus metrics, optional OpenTelemetry tracing, structured
@@ -252,14 +257,14 @@ cx store-token: secret for "ci" (shown ONCE, not stored — the config carries o
          are covered in `docs/dev/store-service.md` and
          [[operations]]."""]]
 
-  [child id=store-transports n=18.5 title='Transports — CSRP and gRPC'
+  [child id=store-transports n=18.5 title='Transports — the store wire and the edge'
     [body
-      """The daemon speaks two wire protocols over the same store
-         surface — same ops, same semantics, same error codes:"""]
+      """The daemon serves the same store surface over two wires —
+         same ops, same semantics, same error codes:"""]
     [table
-      [tr [th 'transport'] [th 'client URL scheme'] [th 'status']]
-      [tr [td 'CSRP — HTTP/1.1 + CX bodies'] [td 'cx-store+http:// (TLS: cx-store+https://)'] [td 'the canonical, permanent interface (the CSRP spec, spec/03-approved/misc/cxstore-remote-protocol.md)']]
-      [tr [td 'gRPC — HTTP/2 + protobuf'] [td 'cx-store+grpc:// (TLS: cx-store+grpcs://)'] [td 'opt-in second listener ([grpc enabled=true addr=…]) with normative CSRP parity; server-streaming for iter and large query (spec/03-approved/misc/cxstore-grpc.md)']]]
+      [tr [th 'transport'] [th 'client URL scheme'] [th 'role']]
+      [tr [td 'XSP store profile'] [td 'cx-store:// (TLS) · cx-store+xsp:// (cleartext dev)'] [td 'THE CX-to-CX store wire (spec/03-approved/std-lib/store.md §6.4)']]
+      [tr [td 'gRPC — HTTP/2 + protobuf'] [td 'cx-store+grpc:// (TLS: cx-store+grpcs://)'] [td 'the integration edge for gRPC-speaking systems — opt-in second listener ([grpc enabled=true addr=…]) with normative profile parity and per-call XSP-AUTH (spec/03-approved/misc/cxstore-grpc.md)']]]
     [body
       """Only the scheme on `[$store:open]` changes — a client cannot
          tell the transports apart above the URL. Three runnable,
@@ -268,14 +273,14 @@ cx store-token: secret for "ci" (shown ONCE, not stored — the config carries o
          server, drives a client, and stops it (all three were run
          green against this branch-head binary):"""]
     [list
-      [item """`client-server/` — CSRP client + server as two `cx`
-              processes on loopback. The server is seven lines: open a
-              store, listen, hand every accepted HTTP exchange to
-              `[$store:csrp-handle]` — that one builtin is the whole
-              server loop."""]
-      [item """`grpc/` — the same surface over gRPC: a daemon config
-              exposing one store on **two** listeners (CSRP and gRPC),
-              and a client driving put/get/list/query/modify through
+      [item """`client-server/` — a client over THE store wire: `cx
+              store-serve` holds a store and serves it over the XSP
+              profile, and a client drives put/get/list/query through
+              `cx-store+xsp://` — remoting is a URL change, not an API
+              change."""]
+      [item """`grpc/` — the same surface over the integration edge: a
+              daemon config exposing one store on a gRPC listener, and a
+              client driving put/get/list/query/modify through
               `cx-store+grpc://`."""]
       [item """`dir-sync/` — a directory tree of `.cxd` files gains
               content addressing, dedup, history, and name-based lookup:
@@ -288,7 +293,7 @@ cx store-token: secret for "ci" (shown ONCE, not stored — the config carries o
     [body
       """Store security is four independent fail-closed layers — host
          capabilities at the effect point ([[capabilities]]),
-         encryption at rest, service-tier RBAC/tenancy, and XAP-layer
+         encryption at rest, service-tier grants/tenancy, and XAP-layer
          authority when a store backs a XAP (see
          [[dist-entitlements]]). The layer this subsection teaches is
          encryption: open a store with an `encrypt-key-id` and every
@@ -304,7 +309,7 @@ cx store-token: secret for "ci" (shown ONCE, not stored — the config carries o
       [= $h [$store:put-doc $s [secret-plan [step 'first']]]]
   [$store:get-doc $s $h]]"""]
     [output
-      """$ CX_STORE_KEK_tenant-a=<64 hex chars> cx sealed.cx --allow-read --allow-write --allow-env
+      """$ CX_STORE_KEK_tenant-a=<64 hex chars> cx --allow-read --allow-write --allow-env sealed.cx
 [secret-plan [step 'first']]"""]
     [body
       """Key material never lives in config files — the KEK arrives by
@@ -335,7 +340,7 @@ cx store-token: secret for "ci" (shown ONCE, not stored — the config carries o
 [rotation-report objects=5 rewrapped=5 already-current=0 from=tenant-a to=tenant-b]
 cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify reads, then destroy the old KEK `tenant-a`."""]
     [body
-      """Service-tier RBAC and tenancy sit above this: the tenant
+      """Service-tier grant authority and tenancy sit above this: the tenant
          boundary is **store-per-tenant**, so each tenant owns a
          separate dedup pool — a shared pool would let one tenant probe
          another's content by hash, and the design rejects that
@@ -351,14 +356,14 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
          (`xap-store-console`) and is never embedded in the daemon. It
          is itself a XAP built from feature packages (the distribution
          system of the next section, eating its own dog food),
-         connecting to daemons over CSRP with role-scoped credentials —
-         so everything it can do is a public, RBAC-gated protocol op,
-         and the console doubles as proof the management API is
-         complete. The free tier covers connect, health, metrics,
+         connecting to daemons over the XSP store profile with a
+         DID-held credential — so everything it can do is a public,
+         grant-gated protocol op, and the console doubles as proof the
+         management API is complete. The free tier covers connect, health, metrics,
          status, browse, config reload, and maintenance (gc). Contract:
          the store management console spec
          (`spec/03-approved/misc/store_management_console.md`);
          operator walkthrough: `docs/dev/store-management.md`.
-         Bootstrap credentials with `cx store-token` (previous
-         subsection)."""]]
+         Client identity is a DID presented over the wire (open-opts
+         xsp-did/xsp-seed-env); operator authority rides [xsp [grants …]]."""]]
 ]

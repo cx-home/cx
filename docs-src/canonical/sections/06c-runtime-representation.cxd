@@ -1,0 +1,193 @@
+[# Section 6c — how a value is represented at runtime: transparency as
+   the contract, structural sharing, streaming, columnar data-in-flight,
+   and honest performance. Teaching surface for
+   spec/03-approved/core/runtime_representation.md. Absorbs the
+   pure-updates/lenses page (was 9.3), the streaming page (was 9.4), the
+   spine-copy deep dive (was 9.14), and the performance pages (were
+   9.7/9.16) — the absorbed material is condensed and re-verified;
+   era-specific bench figures and gate citations are replaced by the
+   living bench harness (`make bench`) rather than restated. Authored
+   2026-08-19 for #826 acceptance 3. #]
+
+[section id=runtime-representation group='Ring 1 — Code' n='6c' title='How a value is represented at runtime'
+
+  [child id=rr-transparency n=6c.1 title='Transparency is the contract'
+    [intro
+      """CX pins **what you can observe** and leaves **how the engine
+         gets there** free. Results, canonical bytes, content addresses,
+         error codes, evaluation order, and equality must be identical
+         whichever internal path executes — that is normative. Whether
+         the engine walked a node tree, a byte slice, or a column buffer
+         to produce them is quality of implementation."""]
+
+    [body
+      """This is the ruling that lets the engine get faster without the
+         spec moving: no internal representation is identity-bearing
+         (identity is canonical text, full stop — [[value-model]]), so a
+         faster path that produces byte-identical observables is always
+         admissible, and a faster path that changes one observable byte
+         is always a bug. The conformance corpus pins the observables;
+         pair-fixtures pin that the same data yields the same results
+         and addresses as text, as binary, as chunked columns, and back
+         from an Arrow round-trip."""]
+
+    [note
+      """The companion obligation is **honest reporting**: wherever a
+         representation choice is invisible in results, it must be
+         visible in introspection. Engines report which path executed —
+         batch or node, pushdown or scan — through their status
+         surfaces, so you can reason about performance without reading
+         engine internals, and a full scan can never masquerade as an
+         index."""]]
+
+  [child id=pure-updates n=6c.2 title='Pure-functional updates — the spine copy'
+    [intro
+      """`[?modify]` names a location and a change and returns a **new**
+         document; the input is observably untouched (see the modify
+         material in [[code]]). What makes that affordable on large
+         trees is **structural sharing**: only the spine from the root
+         to each matched node is fresh; every unchanged subtree is the
+         same memory as the original."""]
+
+    [example lang=text
+      """input doc:                    output doc (after set on root/foo/@bar):
+
+            root [a]                      root' [a]                ← new
+             ├─ foo [b]                    ├─ foo' [b']            ← new
+             │   ├─ bar=1   ─┐             │   ├─ bar=2            ← new (set)
+             │   ├─ baz     ─┼─── shared ──┤   ├─ baz              ← same ref
+             │   └─ children ┘             │   └─ children         ← same ref
+             └─ qux                        └─ qux                  ← same ref"""]
+
+    [body
+      """\"Same ref\" is literal — the same pointer. The two documents
+         differ in identity (different addresses, `eq` is false) while
+         sharing almost all of their bytes in RAM. Allocation is
+         O(depth × matches), not O(document size); the GC reclaims
+         shared subtrees when the last document referencing them goes
+         unreachable. It is the same persistent-data-structure idiom as
+         Clojure's maps and Haskell's lenses — and it is why a pipeline
+         of ten modifications over a large document costs a fraction of
+         ten copies."""]
+
+    [body
+      """Two consequences worth owning. **Thread safety for free:**
+         since no node is ever mutated, any number of threads can read
+         shared subtrees without locks — which is half of why `[par]`
+         is cheap (see [[computation-identity]]). **The identity
+         invariant:** no API in any binding mutates a node in place;
+         there is no set-attribute-in-place anywhere in the surface,
+         and there never will be — immutability here is structural, not
+         disciplinary."""]]
+
+  [child id=streaming n=6c.3 title='Streaming — bounded memory over unbounded input'
+    [intro
+      """Large inputs — log streams, exports, telemetry — do not have to
+         materialize as trees. The `[lazy]` clause on `[?for]` asks the
+         evaluator for a stream-aware pass: parse events flow through
+         the iteration body row by row, and resident memory is bounded
+         by what the body accumulates, not by the input."""]
+
+    [; check=none — streams over an inline fixture; the [lazy] clause is
+       an evaluator hint whose value is on multi-GB inputs, not this
+       three-row panel. ]
+    [example lang=cx check=none
+      """[logs [entry level='error' service='api']
+               [entry level='info'  service='api']
+               [entry level='error' service='db']]
+         [?for [in $row //logs/entry] [lazy]
+           [where [= $row@level 'error']]
+           [yield $row@service]]"""]
+
+    [body
+      """Streaming is for **forward passes**. Random access is what
+         trees are for — you cannot jump to the 99th match of a stream
+         without consuming 98 — and `[lazy]` is a hint the evaluator may
+         partially decline when a predicate genuinely needs
+         materialization. The write-side dual exists too: the
+         event-writer surface emits CX to a wire without ever holding
+         the document, enforcing grammar invariants at emit time.
+         Streaming composes with chunked columnar tables (next
+         subsection): a row-group reader with per-column statistics
+         feeding a `[lazy]` pipeline is the constant-memory shape for
+         columnar workloads."""]]
+
+  [child id=rr-columnar n=6c.4 title='Columnar data in flight'
+    [intro
+      """Bulk tabular data moves as **columns**, not boxed rows — on the
+         wire (the chunked table format) and, progressively, in flight
+         inside the engine. The logical value model does not change:
+         columnar is a representation beneath the transparency line,
+         with a small set of observable rules above it."""]
+
+    [list
+      [item """**Table rows are not children.** A `[table[…]]` block's
+              rows are cells behind the table API, not CXDM child
+              elements — `$t//row` selects nothing. That carve-out is
+              the columnar seam: it is what lets a million rows live as
+              column buffers without a million element boxes."""]
+      [item """**The column type lattice is the wire's.** A decimal
+              column never silently becomes a string column or an int
+              column; declared widths keep their width; irregular
+              columns fall back to a per-row-tagged escape, honestly
+              reported — never silently widened."""]
+      [item """**Atom columns dictionary-encode by construction** —
+              tag-shaped values are the natural dictionary fit."""]
+      [item """**Secrets never get a raw columnar cell.** Redaction
+              semantics cannot be bypassed by a bulk buffer;
+              secret-bearing shapes force the node path. A security
+              rule, not a performance one."""]]
+
+    [body
+      """Where node form is **required to exist** (materialized or
+         indistinguishably emulated), because it is observable: identity
+         and hashing (always over canonical text), inspection surfaces
+         (emitters, AST projections, the LSP), CXPath navigation,
+         pattern matching, quasiquotation, and metadata reflection.
+         Everywhere else, the engine is free — and expected — to stay
+         columnar for bulk movement and unboxed for scalar work."""]]
+
+  [child id=performance n=6c.5 title='Performance characteristics'
+    [intro
+      """The honest summary: CX is fast where the representation story
+         above is finished and measurably behind its own targets where
+         it is not — and the project publishes both. Numbers live where
+         they are re-measured, not in prose that goes stale: `make
+         bench` refreshes the bench record, the perf gates in the
+         release process enforce floors, and this page teaches the
+         *shape* of the costs."""]
+
+    [list
+      [item """**Parsing is allocation-bound.** The classic tree parse
+              allocates per element; huge inputs want the streaming or
+              binary paths. Binary AST and schema-driven binary decode
+              skip text lexing entirely; chunked columnar tables also
+              skip row boxing."""]
+      [item """**A parsed document costs more resident memory than its
+              source bytes** (headers, interned names, attribute maps) —
+              measure before planning capacity, and lean on structural
+              sharing: derived documents cost their spine, not their
+              size."""]
+      [item """**The canonical emitter pays a normalization pass** over
+              the regular emitter — you buy identity with it."""]
+      [item """**FFI overhead is per-call, not per-byte** — negligible
+              per document, dominant per tiny call in a hot loop; batch
+              at the boundary."""]]
+
+    [body
+      """**When CX wins over JSON:** large documents (the binary forms
+         are smaller on the wire and cheaper to parse); repeated parsing
+         under content-addressed caching (canonical bytes hit caches
+         that formatting-sensitive formats miss); type-tagged data
+         (dates, decimals, sized integers as first-class scalars);
+         schema-validated boundaries; and shipping code beside data over
+         one wire with one identity story."""]
+
+    [body
+      """**When JSON wins over CX:** consumers that only speak JSON
+         (project to it and pay the type loss knowingly); tiny one-off
+         payloads where ubiquity beats capability; flat key-value
+         config where TOML or JSON is already enough. The comparison
+         page ([[comparison]]) carries the full argument in both
+         directions."""]]
+]

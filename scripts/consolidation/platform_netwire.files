@@ -1,0 +1,7 @@
+# 783: the net-importing platform tests, quarantined together (the #773
+# net+platform poison pair is umbrella-level — these already compile as
+# single files; if this umbrella trips the fork-vlib class, they revert
+# to standalone per the recorded rule).
+vcx/platform/store_grpc_concurrency_test.v
+vcx/platform/store_g13_parity_test.v
+vcx/platform/store_xsp_journal_test.v

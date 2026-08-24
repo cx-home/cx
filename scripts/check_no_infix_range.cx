@@ -1,0 +1,105 @@
+# scripts/check_no_infix_range.cx — the NO-INFIX-RANGE gate (generator-family
+# reshape, C-gen-1).
+#
+# The infix range operators `to` / `by` are retired; ranges are the prefix
+# builtin `[$range lo hi step?]`. This guard fails the suite if infix `to`/`by`
+# reappears in the corpus.
+#
+# Token-aware, NOT a raw grep: it matches only the CX-syntactic *infix* shapes,
+# so English "to"/"by" prose and `to=`/`by=` named args never trip it:
+#   - `EXPR to EXPR` / `EXPR to *`  — a `to` token flanked by CX value tokens
+#     (a digit, `$var`, `*`, `)` or `]` before; a digit, `$`, or `*` after).
+#     Prose "refers to the", "up to date" etc. have a letter before/after
+#     `to`, so they do not match.
+#   - ` by STEP]` — a ` by` stride immediately preceding a numeric literal and
+#     a clause/bracket close, the only place the retired `by` ever appeared.
+#     `to=`/`by=` channel/named args (`[?send $i to=$work]`) are never matched
+#     (the `=` is not whitespace).
+# RE2 has no lookahead: the Python original's `\*(?!\*)` (open-end `*` that is
+# not markdown `**bold**`) is expressed as the equivalent per-line alternation
+# `\*[^*]|\*$` under (?m).
+#
+# Scope: conformance/ + docs-src/ + examples/ + lang/** (excl. lang/_archived
+# and vendored/generated trees). The live spec/ tree is owned by the
+# NO-LEGACY-SPEC audit (the design record generator_family_reshape.md
+# legitimately quotes the retired form) and is not scanned here.
+#
+# Allowlist: the enforced negative fixtures in conformance/code.cxd that PIN
+# the retirement (program-gen-no-infix-01/02/03) and their section comment.
+#
+# Exit 0 clean; 1 with hits (report on stderr). Run from the repo root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_no_infix_range.cx
+# (or: make check-no-infix-range)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?let
+  [= $scan-dirs ("conformance", "docs-src", "examples", "lang")]
+  [= $scan-exts (".cx", ".cxd", ".cxs", ".md", ".rs", ".go", ".py", ".ts", ".v")]
+  # Path substrings that mark vendored / generated / archived trees — never
+  # CX corpus. Tested against "/" + path so a leading component matches too.
+  [= $exclude-substr ("/.venv/", "/node_modules/", "/site-packages/",
+                      "/_archived/", "/_archive/", "/dist/", "/target/")]
+
+  # `to` flanked by CX value tokens — the retired infix range operator.
+  # before: digit / `)` / `]` / `*` / `$name` ; after: digit / `$` / a lone `*`
+  # (`\*[^*]|\*$` ≡ the original `\*(?!\*)` per line: excludes markdown
+  # `**bold**` after "to").
+  [= $infix-to-rx [$re:compile "(?m)(?:[0-9)\\]\\*]|\\$[A-Za-z][\\w-]*)\\s+to\\s+(?:[0-9$]|\\*[^*]|\\*$)"]]
+  # ` by STEP]` — the retired stride, only ever a numeric literal before a
+  # close.
+  [= $infix-by-rx [$re:compile "\\sby\\s+-?[0-9]+\\s*\\]"]]
+
+  # (file-relpath, substring) pairs ALLOWED to carry the retired tokens — the
+  # negative fixtures pinning the retirement itself.
+  [= $allow (
+    [a f="conformance/code.cxd" sub="[?for [in $x 1 to 5] [yield $x]]"],
+    [a f="conformance/code.cxd" sub="[?for [in $x 1 to 10 by 2] [yield $x]]"],
+    [a f="conformance/code.cxd" sub="[?for [in $x 1 to *] [take 5] [yield $x]]"],
+    [a f="conformance/code.cxd" sub="NO-INFIX-RANGE: retired infix to/by"])]
+
+  [= $files
+    [$fp:flat-map $scan-dirs [?fn ($d)
+      [$fp:flat-map $scan-exts [?fn ($e)
+        [?for [in $p [$io:glob [$cat ($d, "/**/*", $e)]]]
+          [where [= [$count [?for [in $x $exclude-substr]
+                      [where [$strings:contains [$cat ("/", $p)] $x]]
+                      [yield 1]]] 0]]
+          [yield $p]]]]]]]
+
+  [= $hits
+    [$fp:flat-map $files [?fn ($f)
+      [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
+        [?if [and [not [$matched [$re:find $infix-to-rx $text]]]
+                  [not [$matched [$re:find $infix-by-rx $text]]]]
+          [then ()]
+          [else
+            [?let [= $lines [$strings:split-lines $text]]
+              [?for [in $i [$range 1 [$count $lines]]]
+                [= $line $lines[$i]]
+                [where [or [$matched [$re:find $infix-to-rx $line]]
+                           [$matched [$re:find $infix-by-rx $line]]]]
+                [where [= [$count [?for [in $a $allow]
+                            [where [and [= [$string $a@f] $f]
+                                        [$strings:contains $line [$string $a@sub]]]]
+                            [yield 1]]] 0]]
+                [yield [$cat ($f, ":", [$string $i], ": ", [$strings:trim $line])]]]]]]]]]]
+
+  [?if [> [$count $hits] 0]
+    [then
+      [?let
+        [= $_h [$cry "NO-INFIX-RANGE: retired infix `to`/`by` found — use [$range lo hi step?]:"]]
+        [= $_l [?for [in $h $hits] [yield [$cry [$cat ("  ", $h)]]]]]
+        [$env:exit 1]]]
+    [else
+      [?let [= $_ok [$say "NO-INFIX-RANGE: clean (no residual infix to/by in corpus)"]]
+        [$env:exit 0]]]]]

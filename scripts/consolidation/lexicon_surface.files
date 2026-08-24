@@ -1,0 +1,19 @@
+# area: lexicon_surface
+vcx/tests/attr_value_scalar_test.v
+vcx/tests/body_value_test.v
+vcx/tests/call_arg_adjacency_test.v
+vcx/tests/codepoint_charref_test.v
+vcx/tests/collection_literals_test.v
+vcx/tests/comma_array_test.v
+vcx/tests/comment_bracket_balance_test.v
+vcx/tests/escape_eof_test.v
+vcx/tests/head_typeann_test.v
+vcx/tests/line_comments_test.v
+vcx/tests/module_scan_string_literal_test.v
+vcx/tests/qname_attrtype_test.v
+vcx/tests/str_expr_holes_test.v
+vcx/tests/str_raw_literal_test.v
+vcx/tests/temporal_lex_test.v
+vcx/tests/triple_quoted_test.v
+vcx/tests/underscore_name_test.v
+vcx/tests/type_expr_test.v

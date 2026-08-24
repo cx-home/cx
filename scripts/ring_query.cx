@@ -1,0 +1,186 @@
+# scripts/ring_query.cx -- the partition ring-lane corpus query (I0).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs via `cx <file>`.
+# Implements the ring-tag resolution the corpus audit §2 "Tagging
+# mechanics" defines (ledger/partition_corpus_audit.md):
+#
+#   ring(case) = case@ring  ->  nearest enclosing [module]@ring  ->  suite@ring
+#
+# and the MIXED-suite lane discriminator: a suite whose header carries
+# `eval-ring=N` (today: conformance/code.cxd, ring=0 eval-ring=1)
+# contributes EVERY case a second time in the EVAL lane -- per case at
+#
+#   eval-ring(case) = case@eval-ring -> case@ring -> suite@eval-ring
+#
+# (I4: code.cxd's svc family carries eval-ring=2 -- its programs need the
+# platform services substrate while the doc lane stays ring 0) -- and
+# the parse/document lane stays at the resolved `ring=`. This is the
+# machine-readable form of "the eval lane elevates to 1": the Ring-N
+# lane is a corpus QUERY, never a maintained external list (§2), and
+# this tool is that query. gates.cxd (policy manifest, no suite header)
+# is excluded by name.
+#
+# The tool doubles as the tagging-completeness gate: any suite whose
+# header lacks `ring=` is a hard failure (stderr report, exit 2) -- an
+# untagged suite would silently fall out of every ring lane.
+#
+# -- Interface (env vars; `cx FILE` takes no program argv, cli.md §3) --
+#   RING    0 | 1 | 2      restrict to one ring        (unset = all)
+#   LANE    doc | eval | both   lane selector          (default doc)
+#   FORMAT  summary | ids | count                      (default summary)
+#
+# FORMAT=ids prints matching case ids one per line (in LANE=both a
+# MIXED-suite case id legitimately appears once per lane). FORMAT=count
+# prints the single total. FORMAT=summary prints one line per suite
+# with a matched count, then a TOTAL line.
+#
+# Run from the repo root (glob is cwd-relative):
+#   vcx/target/cx --allow-read --allow-env scripts/ring_query.cx
+# (or: make ring-query [RING=n] [LANE=l] [FORMAT=f])
+#
+# Exit: 0 on success (a zero-match query is a valid census answer),
+#       2 when any suite is untagged.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?let [= $ring-want   [?else [$env:var "RING"]   ""]]
+      [= $lane-want   [?else [$env:var "LANE"]   "doc"]]
+      [= $format-want [?else [$env:var "FORMAT"] "summary"]]
+
+      # The corpus: every fixture suite, top-level + stdlib. gates.cxd is
+      # the gate-policy manifest (no [test-suite] header) -- excluded.
+      [= $files
+        [?for [in $f [$io:glob "conformance/**/*.cxd"]]
+          [where [not [$strings:ends-with $f "gates.cxd"]]]
+          [yield $f]]]
+
+      # One [suite-report ...] element per file. All per-case work
+      # happens here so nothing downstream re-parses. Id blocks are
+      # "\n"-joined strings: "" -> 0 entries, else count("\n")+1.
+      [= $reports
+        [?for [in $f $files]
+          [= $t     [$cx:parse [$io:read-file $f]]]
+          [= $sname [$string [?else $t@name $f]]]
+          [= $sring [$string [?else $t@ring ""]]]
+          [= $ering [$string [?else $t@eval-ring ""]]]
+
+          # Membership fence for "case is under a [module]": ids joined
+          # with '|' delimiters; ids never contain '|'.
+          [= $mod-ids
+            [$strings:join
+              [?for [in $m $t//module]
+                [yield [$strings:join
+                  [?for [in $mc $m//case] [yield [$string $mc@id]]] "|"]]]
+              "|"]]
+          [= $mod-ids-fenced [$concat "|" $mod-ids "|"]]
+
+          # Doc lane, module-scoped cases: case@ring -> module@ring -> suite.
+          [= $mod-block
+            [$strings:join
+              [?for [in $m $t//module]
+                [= $mring [$string [?else $m@ring $sring]]]
+                [yield [$strings:join
+                  [?for [in $mc $m//case]
+                    [= $cring [$string [?else $mc@ring $mring]]]
+                    [where [or [= $ring-want ""] [= $ring-want $cring]]]
+                    [yield [$string $mc@id]]] "\n"]]]
+              "\n"]]
+
+          # Doc lane, top-level cases (not under any [module]).
+          [= $top-block
+            [$strings:join
+              [?for [in $c $t//case]
+                [where [not [$strings:contains $mod-ids-fenced
+                              [$concat "|" [$string $c@id] "|"]]]]
+                [= $cring [$string [?else $c@ring $sring]]]
+                [where [or [= $ring-want ""] [= $ring-want $cring]]]
+                [yield [$string $c@id]]] "\n"]]
+
+          [= $doc-block
+            [?if [= $mod-block ""]
+              [then $top-block]
+              [else [?if [= $top-block ""]
+                [then $mod-block]
+                [else [$concat $mod-block "\n" $top-block]]]]]]
+
+          # Eval lane: only MIXED suites (eval-ring= on the header) have
+          # one; each case joins it at case@eval-ring -> case@ring ->
+          # suite@eval-ring (I4 per-case override, fixtures.cxs).
+          [= $eval-block
+            [?if [not [= $ering ""]]
+              [then [$strings:join
+                [?for [in $c $t//case]
+                  [= $cer [$string [?else $c@eval-ring [?else $c@ring $ering]]]]
+                  [where [or [= $ring-want ""] [= $ring-want $cer]]]
+                  [yield [$string $c@id]]] "\n"]]
+              [else ""]]]
+
+          [yield [suite-report file=$f name=$sname ring=$sring
+                   eval-ring=$ering
+                   n-cases=[$count $t//case]
+                   doc-ids=$doc-block eval-ids=$eval-block]]]]
+
+      # Tagging-completeness gate: an untagged suite falls out of every
+      # ring lane silently -- hard failure.
+      [= $untagged
+        [?for [in $r $reports]
+          [where [= [$string $r@ring] ""]]
+          [yield [$string $r@file]]]]
+
+      # Lane selection per report -> the final per-suite id block.
+      [= $picked-blocks
+        [?for [in $r $reports]
+          [= $doc-ids  [$string $r@doc-ids]]
+          [= $eval-ids [$string $r@eval-ids]]
+          [= $sel
+            [?if [= $lane-want "doc"]  [then $doc-ids]
+            [else [?if [= $lane-want "eval"] [then $eval-ids]
+            [else [?if [= $doc-ids ""] [then $eval-ids]
+            [else [?if [= $eval-ids ""] [then $doc-ids]
+            [else [$concat $doc-ids "\n" $eval-ids]]]]]]]]]]
+          [yield $sel]]]
+
+      [= $all-ids
+        [$strings:join
+          [?for [in $blk $picked-blocks] [where [not [= $blk ""]]] [yield $blk]]
+          "\n"]]
+      [= $total
+        [?if [= $all-ids ""] [then 0]
+          [else [+ [$strings:count $all-ids "\n"] 1]]]]
+
+      # Per-suite summary lines (matched counts via the same "\n" rule).
+      [= $summary-lines
+        [?for [in $i [$range 1 [$count $reports]]]
+          [= $r $reports[$i]]
+          [= $blk $picked-blocks[$i]]
+          [= $n [?if [= $blk ""] [then 0]
+                  [else [+ [$strings:count $blk "\n"] 1]]]]
+          [where [> $n 0]]
+          [yield [$concat "  " [$string $r@name]
+                   "  ring=" [$string $r@ring]
+                   [?if [= [$string $r@eval-ring] ""] [then ""]
+                     [else [$concat " eval-ring=" [$string $r@eval-ring]]]]
+                   "  cases=" [$string $r@n-cases]
+                   "  matched=" $n
+                   "  (" [$string $r@file] ")"]]]]
+
+  [?if [> [$count $untagged] 0]
+    [then
+      [?let [= $_e [$io:write-line [$env:stderr]
+          [$concat "ring_query: UNTAGGED suite header (no ring=) in:\n  "
+            [$strings:join $untagged "\n  "]]]]
+        [$env:exit 2]]]
+    [else
+      [?let [= $out
+          [?if [= $format-want "count"] [then [$string $total]]
+          [else [?if [= $format-want "ids"] [then $all-ids]
+          [else
+            [$concat "ring-query  ring=" [?if [= $ring-want ""] [then "all"] [else $ring-want]]
+              "  lane=" $lane-want "\n"
+              [$strings:join $summary-lines "\n"]
+              "\n  TOTAL matched=" [$string $total]]]]]]]
+        [?let [= $_w [$io:write-line [$env:stdout] $out]]
+          [$env:exit 0]]]]]]

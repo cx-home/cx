@@ -1,0 +1,176 @@
+# scripts/run_bench_json.cx — V7 bench runner with JSON output (#922 CX port
+# of the retired scripts/run_bench_json.py).
+#
+# Drives `make bench-streaming` and parses the human-readable output into a
+# machine-readable JSON object suitable for scripts/compare_bench.cx.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write --allow-subprocess --allow-clock \
+#      scripts/run_bench_json.cx                  # emit JSON to stdout
+#   cx … scripts/run_bench_json.cx -o bench.json  # write to file
+#   cx … scripts/run_bench_json.cx --include-eval # add the T1 evaluator bench
+#   (or: make bench-json)
+#
+# Output schema:
+#   {
+#     "schema_version": 1,
+#     "run_id": "2026-05-18T14:00:00Z",
+#     "cx_commit": "abc1234",
+#     "uname": "Darwin 25.4.0 arm64",
+#     "benchmarks": {
+#       "streaming.buffered_ms":  { "median": 320.0, "unit": "ms" },
+#       "streaming.streaming_ms": { "median": 280.0, "unit": "ms" },
+#       ...
+#     }
+#   }
+#
+# Designed so adding more bench harnesses (FLWOR, ?fn, partial app) is a
+# matter of appending entries to the `benchmarks` map under stable keys.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?const ARG_SPEC [argspec
+  [flag name="output"       short="o" type=string]
+  [flag name="include-eval"           type=bool]]]
+
+# The T1 rows this gate REQUIRES, as a closed set (#759). Parsing whatever
+# happens to appear is what let the whole bench die unnoticed: every program
+# string had been written in the retired colon-slot FLWOR surface, `run_once`
+# panicked on the first case, the harness produced ZERO measurements, and the
+# perf gate simply carried fewer keys — a silent coverage loss, not a failure.
+# Checked in BOTH directions: a missing row fails (coverage lost), and an
+# unexpected row fails too (a new bench case is added here deliberately rather
+# than drifting in). Retired rows — `op.arrow` with the postfix arrow,
+# `flwor.tumbling` with `[?for-tumbling]` — are simply absent.
+[?const T1_EXPECTED_KEYS ('flwor.where', 'flwor.count', 'flwor.order_by',
+                          'flwor.group_by', 'fn.call_x500',
+                          'partial.invoke_x500', 'op.pipeline',
+                          'match.string', 'regex.matches_x500',
+                          'op.to_range_10k')]
+
+[?def die scope=public impure ($msg) ([$cry $msg], [$env:exit 1], null)]
+
+[?def cx-commit scope=public impure ()
+  [?let [= $r [?fallback [$process:run ('git', 'rev-parse', '--short', 'HEAD')]
+                [recover-with [proc-result exit-code=1 stdout='']]]]
+    [?if [= $r@exit-code 0] [then [$strings:trim [$string $r@stdout]]] [else 'unknown']]]]
+
+[?def uname-str scope=public impure ()
+  [?let [= $r [?fallback [$process:run ('uname', '-srm')]
+                [recover-with [proc-result exit-code=1 stdout='']]]]
+    [?if [= $r@exit-code 0] [then [$strings:trim [$string $r@stdout]]] [else 'unknown']]]]
+
+[; UTC timestamp %Y-%m-%dT%H:%M:%SZ — iso8601 truncated to seconds. ]
+[?def run-id scope=public impure ()
+  [$cat ([$strings:slice [$time:format-iso8601 [$time:utc-now]] 0 19], 'Z')]]
+
+[; Run `make bench-streaming`, parse `buffered : N ms` / `streaming : N ms`. ]
+[?def run-streaming-bench scope=public impure ()
+  [?let
+    [= $r [$process:run ('make', 'bench-streaming')]]
+    [= $_fail [?if [not [= $r@exit-code 0]]
+      [then ([$cry [$string $r@stderr]],
+             [$die [$cat ('bench-streaming exited ', [$string $r@exit-code])]])]
+      [else ()]]]
+    [= $rx-buf [$re:compile '^\\s*buffered\\s*:\\s*(\\d+)\\s*ms']]
+    [= $rx-str [$re:compile '^\\s*streaming\\s*:\\s*(\\d+)\\s*ms']]
+    [= $lines [$strings:split [$string $r@stdout] '\n']]
+    [= $out
+      [$fp:fold $lines {} [?fn ($acc $line)
+        [?let [= $mb [$re:find $rx-buf $line]]
+              [= $ms [$re:find $rx-str $line]]
+          [?if [$matched $mb]
+            [then [$map:put $acc 'streaming.buffered_ms'
+                    {median: [?else [$strings:to-float [$re:group $mb 1]] 0.0e0], unit: 'ms'}]]
+            [else [?if [$matched $ms]
+              [then [$map:put $acc 'streaming.streaming_ms'
+                      {median: [?else [$strings:to-float [$re:group $ms 1]] 0.0e0], unit: 'ms'}]]
+              [else $acc]]]]]]]]
+    [?if [not [and [$map:contains $out 'streaming.buffered_ms']
+                   [$map:contains $out 'streaming.streaming_ms']]]
+      [then ([$cry [$string $r@stdout]],
+             [$die 'could not parse streaming bench output; see stdout above'])]
+      [else $out]]]]
+
+[; Run `make bench-eval`, parse the T1 evaluator-feature lines, enforce the
+   closed key set in both directions. ]
+[?def run-eval-features-bench scope=public impure ()
+  [?let
+    [= $r [$process:run ('make', 'bench-eval')]]
+    [= $_fail [?if [not [= $r@exit-code 0]]
+      [then ([$cry [$string $r@stderr]],
+             [$die [$cat ('bench-eval exited ', [$string $r@exit-code])]])]
+      [else ()]]]
+    [= $rx [$re:compile '^\\s+(?P<key>[a-z][a-z0-9_.]+)\\s+median=\\s*(?P<median>[\\d.]+)ms']]
+    [= $lines [$strings:split [$string $r@stdout] '\n']]
+    [= $out
+      [$fp:fold $lines {} [?fn ($acc $line)
+        [?let [= $m [$re:find $rx $line]]
+          [?if [$matched $m]
+            [then [$map:put $acc [$cat ('eval.', [$re:group-named $m 'key'])]
+                    {median: [?else [$strings:to-float [$re:group-named $m 'median']] 0.0e0],
+                     unit: 'ms'}]]
+            [else $acc]]]]]]
+    [= $_empty [?if [= [$map:size $out] 0]
+      [then ([$cry [$string $r@stdout]],
+             [$die 'could not parse bench-eval output; see stdout above'])]
+      [else ()]]]
+    [= $seen [?for [in $k [$map:keys $out]]
+               [yield [$strings:slice $k 5 [$strings:length $k]]]]]
+    [= $missing [$sort [?for [in $k T1_EXPECTED_KEYS]
+                  [where [not [$present [?for [in $s $seen] [where [= $s $k]] [yield 1]]]]]
+                  [yield $k]]]]
+    [= $unexpected [$sort [?for [in $k $seen]
+                     [where [not [$present [?for [in $s T1_EXPECTED_KEYS] [where [= $s $k]] [yield 1]]]]]
+                     [yield $k]]]]
+    [= $_miss [?if [> [$count $missing] 0]
+      [then ([$cry [$string $r@stdout]],
+             [$die [$cat ('bench-eval lost T1 coverage — these rows produced no measurement: ',
+                          [$strings:join $missing ', '],
+                          ' (a row that stops running must FAIL this gate, never silently ',
+                          'reduce the key set; see #759)')]])]
+      [else ()]]]
+    [= $_unex [?if [> [$count $unexpected] 0]
+      [then [$die [$cat ('bench-eval emitted T1 rows not in the expected set: ',
+                         [$strings:join $unexpected ', '],
+                         ' — add them to T1_EXPECTED_KEYS deliberately so the set stays closed')]]]
+      [else ()]]]
+    $out]]
+
+[?let
+  [= $args [?fallback [$env:parse-args ARG_SPEC]
+             [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval]'],
+                            [$env:exit 2], null)]]]
+  [; an unpassed string flag surfaces as null — normalize to ''. ]
+  [= $output-raw [?else [$env:flag $args 'output'] '']]
+  [= $output [?if [= $output-raw null] [then ''] [else $output-raw]]]
+  [= $include-eval [?else [$env:flag $args 'include-eval'] false]]
+
+  [= $streaming [$run-streaming-bench]]
+  [= $benchmarks [?if $include-eval
+    [then [$map:merge ($streaming, [$run-eval-features-bench])]]
+    [else $streaming]]]
+
+  [= $report {schema_version: 1,
+              run_id: [$run-id],
+              cx_commit: [$cx-commit],
+              uname: [$uname-str],
+              benchmarks: $benchmarks}]
+  [= $text [$json:emit-with-opts $report {indent: 2, sort-keys: true}]]
+  [?if [= $output '']
+    [then [?let [= $_p [$say $text]] [$env:exit 0]]]
+    [else [?let [= $_w [$io:write-file $output [$cat ($text, '\n')]]]
+      [$env:exit 0]]]]]

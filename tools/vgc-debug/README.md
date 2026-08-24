@@ -54,6 +54,8 @@ from the #63/#58 investigation (see the case study below).
 | `probes/neon_syscall_probe.c` | Does `thread_get_state` return the full user GP+NEON for a thread blocked **in a syscall**? (it does — GAP-1) | probe |
 | `probes/single_step_probe.c` | Can a controller hardware-single-step another thread (ARM_DEBUG_STATE64 MDSCR_EL1.SS) + read its regs per instruction via a mach exception port? (yes) | probe |
 | `probes/anon_walk_probe.c` | Does a `mach_vm_region` walk + word-scan find a planted pointer in private/anon memory? (validates the holder-find scanner) | probe |
+| `probes/go_host_suspend_probe/` | Can signal-suspend stop a registered thread under a Go host? (NO — any signal, either install order; mach suspend 200/200 — cx #743) | probe |
+| `probes/go_host_suspend_probe/libcxforce/` | Deterministic #743 forcing repro against REAL libcx (straggler + `VGC_NEXT_GC_MB=1`): pre-fix 0x0acd hang, post-fix FORCE-OK | probe |
 | `patches/passive_detector.patch` | The sweep-while-live ORACLE: catches a freed map-key buffer read in `map_clone_string`/`string.clone` (tag `0xbf1`; `0xc0de` GOLD if matched to a swept-log). ~6.3% single-reactor, non-masking with `-d vgc_nosweep`. | `-d vgc_passive -d vgc_nosweep` |
 | `patches/holder_find.patch` | Read-time search for the persistent root of a confirmed victim (legacy/diagnostic; defeated by co-free — kept for reference). | `-d vgc_holderfind` |
 | `patches/bstep_*` | B-STEP: single-step `MatchEnv.clone` and check the keys-array's reachability from vgc's captured roots at each instruction (root-coverage localizer). Needs the cx-private hook (`bstep_matcher.patch`). | `-d vgc_bstep` |

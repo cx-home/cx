@@ -36,7 +36,7 @@
 #
 # Capabilities: glob / read-file need `read`; write-line needs `write`;
 # the env standard streams + exit are ambient (never gated, env.md §7).
-# Run via:  vcx/target/cx eval scripts/stdlib_catalog_gate.cx --allow-all
+# Run via:  vcx/target/cx eval --allow-all scripts/stdlib_catalog_gate.cx
 # (or:      make stdlib-catalog-gate)
 
 [?lib 'cx-stdlib/io'      as=io]
@@ -64,13 +64,28 @@
         [yield [$path:stem $b]]]]
 
       # -- DISPATCH_SET -------------------------------------------------
-      # every <name>_stdlib_builtin prefix in stdlib_dispatch.v. find-all
+      # every <name>_stdlib_builtin prefix across BOTH dispatch halves:
+      # the Ring-1 chain (vcx/code/stdlib_dispatch.v) and the Ring-2
+      # registrations (vcx/platform/ring2_register.v) — the I3 ring split
+      # moved the platform modules' dispatch behind the seam-G registry,
+      # so reading only the code/ half reports them as unimplemented
+      # (same both-halves rule as check-completions-drift). find-all
       # yields one match per occurrence; the membership tests below
       # tolerate duplicates and the orphan walk dedups explicitly.
+      # Normalizations: the seam-H split serves http as two halves
+      # (http_client_stdlib_builtin Ring 1 / http_serve_stdlib_builtin
+      # Ring 2) — the catalog module is still `http`; `ring2` is the
+      # seam probe itself, not a module, and is excluded.
       [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
+             [= $dispatch-raw [$concat [$io:read-file "vcx/code/stdlib_dispatch.v"]
+                                       [$io:read-file "vcx/platform/ring2_register.v"]]]
         [?let [= $dispatch-set
-          [?for [in $dm [$re:find-all $dispatch-rx [$io:read-file "vcx/code/stdlib_dispatch.v"]]]
-            [yield [$re:group $dm 1]]]]
+          [?for [in $dm [$re:find-all $dispatch-rx $dispatch-raw]]
+            [where [not [= [$re:group $dm 1] "ring2"]]]
+            [yield [?if [or [= [$re:group $dm 1] "http_client"]
+                            [= [$re:group $dm 1] "http_serve"]]
+              [then "http"]
+              [else [$re:group $dm 1]]]]]]
 
           # -- Direction (1): specced modules with no implementation.
           # A spec module is satisfied iff it is a member of BUNDLE_SET

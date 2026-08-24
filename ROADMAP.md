@@ -24,39 +24,85 @@ migration in the release notes.
 
 ---
 
-## Now — the `release/0.13.0` integration line
+## Now — the `release/0.16.0` partition line
 
-The platform release in progress (see the *Unreleased* section of
-[`CHANGELOG.md`](CHANGELOG.md) for the authoritative running list):
+The release in progress (see the *Unreleased* section of
+[`CHANGELOG.md`](CHANGELOG.md) for the authoritative running list). Its
+headline is architectural rather than a feature list:
 
-- **cx store** — a content-addressed multimodel store engine
-  (mem / file / sqlite / s3 substrates, one canonical URI surface) and a
-  single-node production **service tier** (daemon, auth, observability,
-  CSRP/gRPC remote protocols).
-- **XAP feature distribution** — the full author → seal → sign →
-  publish → install pipeline for distributing features through
-  git-repo registries.
-- **Database access to external engines** — build-gated (`-d cx_db_*`)
-  connectors.
-- **Reliability hardening** across the serve plane, plus the
-  fix waves from the 2026-07 release audits.
+- **The four-ring partition** — CX is separated into four rings with a
+  one-directional import contract: **Ring 0 Data** (the format: values,
+  identity, surfaces, schema), **Ring 1 Code** (execution: programs,
+  capabilities, computation identity), **Ring 2 Platform** (store,
+  history, wire, services, operations) and **Ring 3 Ecosystem**
+  (distribution, registry, marketplace, bindings). A ring may depend
+  only inward. This is what makes "adopt the data format without
+  adopting the runtime" a supported position rather than an accident,
+  and it is enforced by gates (ring-tag, ring-import, per-profile
+  extraction) rather than asserted in prose.
+- **Build profiles** — the partition made buildable: per-ring artifacts
+  with verified installer assets, so a consumer takes only the ring they
+  need.
+- **Seven concept specs graduated** — the semantic value model,
+  computation identity, bitemporal time, commands and effects, the
+  consistency vocabulary, schema and event evolution, and runtime
+  representation moved to approved status, and each becomes a taught
+  guide arc in this release rather than a spec link.
+- **A reference application** — an in-family XAP (`reference/shop`) with
+  a committed cascade, a composed feature, real packaging through the
+  distribution engine, a separate web client, and `cx xap init`
+  scaffolding a project that already composes.
+- **The ux projection capability, specified** — the third projection:
+  the same command/query definitions that serve the wire and the
+  agent-tools face project forms, tables, and live regions through a
+  closed semantic vocabulary with web and terminal faces
+  (`spec/03-approved/xap/ux.md`; the `cx-x/ux` module tier).
+- **Prebuilt downloads** — per-profile darwin-arm64 tarballs
+  (`platform` / `cli` / `embed` / `data`) published per release with a
+  hosted installer (`curl -sSL https://cxhome.org/install | sh`,
+  `CX_PROFILE=` selects the lean builds), checksums, and a Downloads
+  page in the guide. Editor tooling joins the release motion: the
+  Neovim plugin is consumable as a plugin root, and the VS Code
+  extension packages/publishes from the release script.
+- **Streaming throughput** — the data parser and evaluator reworked
+  around lazy record nodes: `[?for]` over a streamed document moved from
+  14.7 MB/s to roughly 200, and `[?map]` from 12.7 to 129 (16 MiB rung,
+  the gate's five-trial configuration). The §11.4.4 gate is not green
+  yet; the remaining criterion is throughput on the `[?map]` shape.
+- **Documentation restructured on the rings — and trued** — the guide
+  reorganized so the architecture is visible to a reader who has never
+  seen the tracker, redesigned as a coherent visual system, and put
+  through a full verification audit: every checkable claim tested
+  against the live binary, with several hundred stale or fictional
+  claims corrected to the engine's real surface.
 
 ## Next — queued in the tracker
 
 Derived from the open issues at the time of writing; see the tracker
 for live state.
 
-- **Release-audit repairs** — CLI surface honesty and conversion-lane
-  fixes (`--lossless` wiring, `[table]` conversion loss, `cx diff`
-  blind spot, `cx --help` / `cx demo` repair), guide/examples rebuild,
-  and editor-tooling sync (VS Code, Neovim, completions).
-- **XAP design work** — the identity model, session multiplicity /
-  attach policy, client-platform strategy, and the marketplace /
-  entitlement model. Design-stage; each needs an approved spec before
+- **Consumability** — a browser playground over Ring 0 wasm with
+  shareable content-addressed snippets, `cx schema infer`, a
+  model-facing docs pack, and package-manager distribution of the Ring 0
+  bindings (pip/npm/brew/cargo). These four are what turn "you may adopt
+  Ring 0 alone" from true into easy.
+- **Analytics to parity-or-beyond** — aggregate coverage, generalized
+  pushdown, a typed value-range index, and distributed query execution
+  over composed stores.
+- **Platform tracks in design** — ETL/iPaaS components, a native
+  extension SDK, foreign-runtime engines, a REPL/notebook surface, CX in
+  the browser as a native TypeScript client, and CX as CI/CD and as IaC.
+  Each needs an approved spec before implementation.
+- **HTTP/2 on the serve path** — the liveness contract (one SSE feed
+  per page, pages never poll) structurally wants a multiplexing
+  transport; the platform already carries a tested RFC-7540 codec, so
+  the work is TLS+ALPN integration and stream mapping, not protocol
   implementation.
-- **Deferred smaller items** — ftps:// end-to-end verification,
-  spreadsheet-writer stdlib module, XSD→CX schema catalog, a
-  runtime-architecture review.
+- **Test-suite duration relief** — tiered lanes and per-ring gates, so
+  the partition pays back in build time as well as in architecture.
+- **Deferred smaller items** — ftps:// end-to-end verification on Linux,
+  a spreadsheet-writer module, the XSD→CX schema catalog, and a Windows
+  investigation (investigation only, no port commitment).
 
 ## Toward 1.0
 
@@ -77,6 +123,9 @@ binaries/tags live on the
 
 | Release | Date | Theme |
 |---|---|---|
+| [v0.15.0](RELEASE_NOTES_v0.15.0.md) | 2026-08-03 | Toolchain: vendored V moves to upstream 0.5.2, carrying the fork's memory-management series — deliberately thin — [release](https://github.com/cx-home/cx/releases/tag/v0.15.0) |
+| [v0.14.0](RELEASE_NOTES_v0.14.0.md) | 2026-08-02 | Eventing + endurance: `cx fabric` graduates to a served tier (consumer groups, failover, DLQ, request–reply, backpressure) — [release](https://github.com/cx-home/cx/releases/tag/v0.14.0) |
+| [v0.13.0](RELEASE_NOTES_v0.13.0.md) | 2026-07-16 | Platform + consumption: the store becomes a production component under a service tier; XAP features become a full distribution unit — [release](https://github.com/cx-home/cx/releases/tag/v0.13.0) |
 | [v0.12.0](RELEASE_NOTES_v0.12.0.md) | 2026-06-22 | Reliability: sound concurrency + memory (TCO, cooperative-safepoint GC, reactor/streaming hardening) — [release](https://github.com/cx-home/cx/releases/tag/v0.12.0) |
 | [v0.11.0](RELEASE_NOTES_v0.11.0.md) | 2026-06-18 | Agentic substrate: `cx-x/` tier (MCP, A2A, LLM), did/vc/jsonrpc/jsonschema stdlib, XAP advances — [release](https://github.com/cx-home/cx/releases/tag/v0.11.0) |
 | [v0.10.1](RELEASE_NOTES_v0.10.1.md) | 2026-06-15 | Version-hygiene patch; VERSION file becomes the single source of truth — [release](https://github.com/cx-home/cx/releases/tag/v0.10.1) |

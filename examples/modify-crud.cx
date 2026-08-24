@@ -7,7 +7,7 @@
    one [crud-tour …] element.
 
    Run:
-     cx examples/modify-crud.cx --data=examples/modify-crud.input.cx #]
+     cx --data=examples/modify-crud.input.cx examples/modify-crud.cx #]
 
 [crud-tour version='0.8.0'
 

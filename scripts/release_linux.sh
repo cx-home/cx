@@ -3,7 +3,7 @@
 # scripts/release_linux.sh — build the LINUX release tarball(s) from this
 # checkout via Docker (#520: the GitHub org cannot allocate Actions runners,
 # so releases are cut locally on macOS — which left the public mirror with
-# only cx-darwin-arm64.tar.gz; downstream (pbengine) needs cx-linux-arm64
+# only cx-darwin-arm64.tar.gz; downstream deployments need cx-linux-arm64
 # for containerized/appliance deployment and CI-on-Linux).
 #
 # Produces, per platform:
@@ -58,7 +58,24 @@ if grep -q '"credsStore"' "$HOME/.docker/config.json" 2>/dev/null; then
   [ -f "$DOCKER_CONFIG/config.json" ] || printf '{"auths":{"https://index.docker.io/v1/":{}}}\n' > "$DOCKER_CONFIG/config.json"
 fi
 
+# Pre-flight: local=1 below builds V from the VENDORED vc bootstrap tree,
+# which is gitignored and therefore absent in a fresh submodule checkout
+# (the in-container tree has no network identity to pin a fetch to, and the
+# default network refresh path is broken on the copied detached-HEAD trees).
+# Fail here with the remediation instead of 4 minutes into the container.
+if [ ! -f third_party/v/vc/v.c ]; then
+  echo "release_linux.sh: third_party/v/vc/v.c is missing — the vendored V" >&2
+  echo "bootstrap tree is gitignored and this checkout never fetched it." >&2
+  echo "Seed it from a sibling checkout of the fork, e.g.:" >&2
+  echo "  cp -R ../cx-private/third_party/v/vc third_party/v/vc" >&2
+  echo "or fetch it: git clone --depth=1 https://github.com/vlang/vc third_party/v/vc" >&2
+  echo "(a vc revision proven against this fork pin is preferred; latest vc" >&2
+  echo "tracks vlang master and may not bootstrap an older fork)." >&2
+  exit 2
+fi
+
 BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
+PROFILES_TARGET=$([ "$DEV" = 1 ] && echo build-profiles-dev || echo build-profiles)
 SDE="$(git log -1 --format=%ct)"
 # Version stamps: the container copy carries no .git (lean copy), so derive
 # the commit + V-fork pins on the host and hand them to make (command-line
@@ -103,7 +120,31 @@ build_one() {
       cp third_party/re2/LICENSE "/tmp/$T/LICENSE-re2.txt"
       ( cd /tmp && tar czf "/out/cx-'"$TAG"'-$T.tar.gz" "$T/" )
       ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
+      # I4 (#651/#516): the §4 profile tarballs (see release.sh phase 2 for
+      # the composition rationale) — cx-<profile>-linux-<arch>.tar.gz.
+      make -C vcx '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"'
+      for prof in data embed cli; do
+        P="/tmp/prof-$prof"; mkdir -p "$P"
+        cp "vcx/target/profiles/$prof/cx" "$P/"
+        cp third_party/re2/LICENSE "$P/LICENSE-re2.txt"
+        case "$prof" in
+          data)  cp include/cx.h "$P/"; cp vcx/target/libcx-core.so "$P/" ;;
+          embed) cp include/cx.h "$P/"; cp vcx/target/profiles/embed/libcx.so "$P/" ;;
+        esac
+        ( cd "$P" && tar czf "/out/public/cx-$prof-$T.tar.gz" ./* )
+      done
       echo "-- engines probe:"; "/tmp/$T/cx" -v || true
+      # R2.2 (#651/#516 remediation register, ruled (a) 2026-08-09): BLOCKING
+      # per-profile install verification, linux lane — the same contract as
+      # release.sh phase 2: every staged tarball must extract the way the
+      # installer extracts it and its binary must report the expected profile
+      # line, or the cut dies here (this script failing fails release.sh).
+      # RULED: PGL-1 (#741) — ONE implementation, shared with release.sh and
+      # with the standalone pre-cut lane. The lean container copy above
+      # includes scripts/, so the file is here at /build; cwd is /build.
+      . scripts/lib/r22_profile_gate.sh
+      r22_profile_gate /out/public "$T" /linux
+      echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
     '
   ( cd dist/public && shasum -a 256 "$pub" ) || true
   echo "   → dist/public/${pub} + dist/${nested}"
@@ -115,5 +156,5 @@ if [ "$AMD64" = 1 ]; then
 fi
 
 echo
-echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-linux-*.tar.gz --clobber"
+echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-*linux*.tar.gz --clobber"
 echo "(and refresh dist/public/SHA256SUMS.txt to include the linux tarballs before uploading it)"

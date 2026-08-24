@@ -2,8 +2,8 @@ name: Fuzz (CC5)
 
 # Nightly fuzz runs (historical CC5 gate from v0.7.0 status; carried
 # forward into v0.8.0 as a continuous-integration regression guard).
-# See docs/fuzzing.md. Runs scripts/fuzz_cx.py for 1 hour against the
-# parser + buffered eval + streaming eval + ABI-passthrough surfaces.
+# Runs scripts/fuzz_cx.cx for 1 hour against the parser + buffered eval +
+# streaming eval + strict-canonical serializer surfaces.
 # A new crash fails the job and uploads the archive so the on-call
 # can triage.
 #
@@ -38,23 +38,18 @@ jobs:
           (cd /tmp/v && make && sudo ./v symlink)
           v version
 
-      - name: Build libcx (release-shaped, hardened)
+      - name: Build cx + libcx (release-shaped, hardened)
         run: make build-vcx
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-
-      - name: Install cxlib (Python)
-        run: |
-          cd lang/python
-          python -m pip install -e .
-
+      # The harness is a CX program (#922 / PYE-5): cx's own flags bind
+      # BEFORE the resource, the harness's arguments come after it
+      # (cli.md §3 / PYE-2).
       - name: Run fuzz harness
         env:
           DURATION: ${{ github.event.inputs.duration_seconds || '3600' }}
         run: |
-          python3 scripts/fuzz_cx.py --duration "$DURATION"
+          ./vcx/target/cx --allow-read --allow-write --allow-random --allow-clock \
+            scripts/fuzz_cx.cx --duration "$DURATION"
 
       - name: Upload crash archive (if any)
         if: failure() || always()

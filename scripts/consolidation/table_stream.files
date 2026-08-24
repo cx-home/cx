@@ -1,0 +1,9 @@
+# area: table_stream
+vcx/tests/table_api_test.v
+vcx/tests/table_emitter_test.v
+vcx/tests/table_lanes_cli_test.v
+vcx/tests/table_parser_test.v
+vcx/tests/streaming_table_test.v
+vcx/tests/chunked_table_events_test.v
+vcx/tests/events_writer_test.v
+vcx/tests/iterator_wire_test.v

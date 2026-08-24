@@ -2,10 +2,15 @@
 # V6 — pre-commit lint hook.
 #
 # Install with `make install-hooks`. Calls
-# scripts/check_lint_rules.py in --staged mode against the files
-# in the index.
+# scripts/check_lint_rules.cx in --staged mode against the files
+# in the index (cx [cx-flags] FILE [program-args...], cli.md §3).
 
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-exec python3 "${REPO_ROOT}/scripts/check_lint_rules.py" --staged
+# Spec-freeze gate (remediation register R4.1): a staged change mixing
+# normative spec + implementation needs CX_RULED=<row id> (and the commit
+# message needs the matching 'RULED: <id>' token — the range gate checks it).
+bash "${REPO_ROOT}/scripts/spec_freeze_gate.sh" --staged
+exec "${CX_BIN:-${REPO_ROOT}/vcx/target/cx}" --allow-read --allow-write --allow-subprocess \
+  "${REPO_ROOT}/scripts/check_lint_rules.cx" --staged

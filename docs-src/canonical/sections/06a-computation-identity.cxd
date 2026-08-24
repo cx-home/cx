@@ -1,0 +1,156 @@
+[# Section 6a — computation identity: the same computation, the same
+   answer, the same address. Teaching surface for
+   spec/03-approved/core/computation_identity.md. Absorbs the determinism
+   concept page (was 9.12) and the parallelism page (was 9.5) — the
+   latter REWRITTEN to the ruled L105 semantics: [par] reassembles source
+   order ALWAYS; [ordered] is a tombstoned no-op. Authored 2026-08-19 for
+   #826 acceptance 3. #]
+
+[section id=computation-identity group='Ring 1 — Code' n='6a' title='Computation identity'
+
+  [child id=ci-idea n=6a.1 title='Naming a computation, not just a value'
+    [intro
+      """Ring 0 gives every **value** an address. Ring 1 extends the
+         same move to **computations**: a pure function applied to known
+         inputs in a known environment is itself a value — a record —
+         and that record's content address names the computation. Same
+         function, same inputs, same environment: same address,
+         everywhere, forever."""]
+
+    [body
+      """The record has four slots, and each earns its place:"""]
+    [table
+      [tr [th 'Slot'] [th 'What it carries'] [th 'Why it is in the hash']]
+      [tr [td '`fn`'] [td 'the definition — its code-equivalence key for cache sharing, plus the content address of the exact source text for trust']
+          [td 'a different definition is a different computation']]
+      [tr [td '`inputs`'] [td 'the content address of every argument']
+          [td 'reformatting an input does not move it; changing a field does']]
+      [tr [td '`env`'] [td 'runtime version, builtin-set identity, schema dialect']
+          [td 'a runtime patch can fix a determinism bug — and a fix must invalidate']]
+      [tr [td '`caps`'] [td 'the capability set in canonical form']
+          [td 'recorded for completeness — for a pure computation it provably cannot change the result']]]
+
+    [body
+      """What this buys: a node that holds neither the source nor the
+         inputs can serve a cached result by address, and the requester
+         can re-derive the address to verify what it was handed. A
+         reformatted input is a cache **hit** (same address); a runtime
+         upgrade is a cache **miss** (new address, cold cache, never a
+         wrong answer). The environment slot is deliberately minimal and
+         only ever grows additively — when a field is added, every
+         address changes exactly once, and the old cache goes cold
+         rather than stale."""]
+
+    [note
+      """The cache is **pure-only and fail-loud**: constructing a
+         computation record for an impure function is a typed error, and
+         results live in an ordinary store namespace — an explicit
+         lookup, not an invisible memoization layer. Budget exhaustion
+         and non-termination are never cached. Impure work can still be
+         made replayable by recording its nondeterministic boundary
+         reads onto a **tape** and treating the tape as one more
+         addressed input — determinism manufactured after the fact,
+         with the same identity machinery."""]]
+
+  [child id=determinism n=6a.2 title='Determinism and reproducibility'
+    [intro
+      """Computation identity only works because CX evaluation is
+         deterministic where it claims to be. The same input produces
+         byte-identical output across machines, operating systems,
+         architectures, and bindings — the foundation under
+         content-addressing, reproducible builds, cross-binding parity
+         tests, and audit trails."""]
+
+    [list
+      [item """**Canonical form is the substrate.** Attribute order,
+              whitespace, quoting, and numeric formatting are pinned by
+              the canonical rules (see [[identity]]), so equality and
+              hashing never depend on who serialized the value."""]
+      [item """**Float formatting is CX's own.** Canonical float output
+              uses a self-contained shortest-round-trip algorithm, not
+              the host `printf` — libc differences (musl, glibc, Apple)
+              cannot leak into canonical bytes."""]
+      [item """**Arithmetic is IEEE-754 strict.** Round-to-nearest-even,
+              no fast-math, bit-identical exact arithmetic across
+              platforms. Transcendentals (`sin`, `log`, …) use the host
+              libm and are documented as platform-dependent — keep them
+              out of anything whose address you rely on."""]
+      [item """**No locale leaks.** Pure builtins are locale-free by
+              rule: case mapping is Unicode default casing, never the
+              host locale. A locale-sensitive pure builtin is treated as
+              a conformance bug, not a platform quirk."""]]
+
+    [body
+      """What is deliberately **not** deterministic, and flagged as
+         such: effectful builtins that read the world (`now`, `random`,
+         `uuid` — each behind its capability, see [[capabilities]]);
+         wall-clock timeout behavior under `[?timeout]`; and the
+         *timing* of parallel execution (though never its result — next
+         subsection)."""]]
+
+  [child id=ci-theorem n=6a.3 title='pure means deterministic — including under [par]'
+    [intro
+      """CX's purity checker classifies every definition, and the
+         guarantee is normative: **a pure computation is deterministic**
+         — same inputs, same environment, same result, regardless of
+         capability set, thread count, or evaluation order. This is the
+         theorem that makes a computation address meaningful at all."""]
+
+    [body
+      """The clause that historically breaks this promise in other
+         systems is parallelism, so CX pins it explicitly: `[par]`
+         **reassembles results in source order, always.** A parallel
+         `[?for]`, `[?map]`, or `[?reduce]` may *execute* iterations in
+         any order across any number of threads, but the value it
+         returns is the value the sequential evaluation returns — element
+         for element, float-accumulation order included. There is no
+         unordered mode. (An older `[ordered]` clause survives
+         grammatically as a documented no-op: order is no longer
+         optional, so there is nothing left for it to request.)"""]
+
+    [example lang=cx
+      """[?map (1, 2, 3, 4) [using [?fn ($x) [* $x $x]]] [par]]"""]
+    [output
+      """(1, 4, 9, 16)"""]]
+
+  [child id=parallelism n=6a.4 title='Parallelism by construction'
+    [intro
+      """Because every value is immutable and every error is a value,
+         parallelism costs almost nothing to adopt. `[par]` on `[?for]`,
+         `[?map]`, and `[?reduce]` splits pure work across a bounded
+         worker pool; there is no user-level lock primitive because
+         there is no shared mutable state to protect."""]
+
+    [; check=none — three [par] shapes in one panel; the map form above
+       already runs in the gate. ]
+    [example lang=cx check=none
+      """[# Comprehension over matches: ]
+         [?for [in $r //request] [par] [yield [got [$text $r]]]]
+
+         [# Associative parallel fold: ]
+         [?reduce (1, 2, 3) [using [?fn ($a $b) [+ $a $b]]] [init 0] [par]]"""]
+
+    [body
+      """**Why it is safe.** No CX expression can mutate a value another
+         thread is reading — `[?modify]` returns a new tree, and
+         derived values share structure with their origins by pointer
+         (see [[runtime-representation]]), so handing a large document
+         to N workers is handing N pointers. Purity is the
+         parallelization license: the evaluator parallelizes bodies the
+         checker proves pure, and the source-order reassembly rule
+         (above) guarantees the result is indistinguishable from
+         sequential evaluation."""]
+
+    [body
+      """**When `[par]` does not help.** Tiny bodies lose to dispatch
+         overhead — for a trivial body over a small input, the cost of
+         distributing the work can exceed the work itself, so
+         sequential evaluation wins. An erroring iteration
+         cancels its in-flight siblings cooperatively: iterations
+         observe cancellation at safepoints (between CXPath steps and
+         directive invocations), so a long CPU-bound body without
+         natural safepoints runs to completion — the same hazard as
+         every cooperative-cancellation system. Error values from
+         iterations propagate like any other value; see the error
+         material in [[code]]."""]]
+]

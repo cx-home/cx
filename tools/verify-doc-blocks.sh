@@ -89,7 +89,10 @@ for file in "${TARGETS[@]}"; do
   while [ "$idx" -lt "$nblocks" ]; do
     idx=$((idx + 1))
     BLOCK_FILE="$TMPDIR_BLOCKS/$idx.cx"
-    if head -n 1 "$BLOCK_FILE" | grep -q '^# verify-skip'; then
+    # RULED: SPG-1 (#916) — here-string, not `head … | grep -q`: under
+    # pipefail, grep -q's early exit SIGPIPEs the producer (141) and fails
+    # the guard on input that matched.
+    if grep -q '^# verify-skip' <<< "$(head -n 1 "$BLOCK_FILE")"; then
       SKIP=$((SKIP + 1))
       continue
     fi

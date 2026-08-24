@@ -1,6 +1,6 @@
 # Co-located stdlib documentation (CX-native, self-sourcing)
 
-**Status:** 02-inprogress (DRAFT — not graduated; only the user moves this to 03-approved)
+**Status:** APPROVED — graduated 2026-08-20 by owner ruling SPR-1 (G3; ledger/rulings_2026_08_20_spec_tree_reshape.md). Prior status: 02-inprogress (DRAFT — not graduated; only the user moves this to 03-approved)
 
 **Target version:** current
 
@@ -65,6 +65,17 @@ inert at load time and add **no language change**.
 - `[sig """…"""]` (child, required): the human-readable signature, raw string so
   `::`/parens/`*` appear verbatim. Convention: `(<args>) -> <return-type>`.
 - `[summary """…"""]` (child, required): one- to few-sentence description.
+- `[param-doc name=<param> """…"""]` (child, zero or more; additive — agent-tool
+  projection stream, L143): a per-parameter description. `name` MUST match a
+  parameter of the sibling `[?def]`; the body is the description prose (raw
+  string). `[sig]` stays the human-readable prose signature; `[param-doc]` is
+  the MACHINE-projectable per-parameter channel — the agent-tool projection
+  (`x/tools.cx`) maps it onto JSON-Schema per-property `description` fields in a
+  command's `inputSchema`. For a COMMAND (an `[effects]`-bearing `[?def]`), a
+  `[summary]` is REQUIRED for projectability — projection fails loudly on a
+  command def whose `[fn-doc]` lacks one (L143); `[param-doc]` coverage is
+  RECOMMENDED for commands and enforced only as name-validity (a `[param-doc]`
+  naming a nonexistent parameter is a doc-gate failure).
 - `[example …]` (child, zero or more): a worked example. Each carries:
   - `[code """<cx source>"""]` — the example program (raw string, verbatim CX).
   - `[expect """<canonical output>"""]` — the exact expected output of running
@@ -87,7 +98,7 @@ inert at load time and add **no language change**.
 ## §3. Derived views (consumers) — REALIZED
 
 The single CX projection program is
-[`scripts/gen_guide/guide_build.cx`](../../scripts/gen_guide/guide_build.cx). It
+[`scripts/gen_guide/guide_build.cx`](../../../scripts/gen_guide/guide_build.cx). It
 walks every `stdlib/<m>.cx`, reads `[module-doc]` + `[fn-doc]` via `[$cx:parse]`
 + CXPath, and emits the **Standard-library guide pages directly** — the landing
 `libraries.html` (module index, one row per module using the scope's first
@@ -105,7 +116,7 @@ prose is derived FROM it (by a human or a one-time pass), not the reverse.
 
 ## §4. Gates — REALIZED as `make guide-check`
 
-[`scripts/gen_guide/stdlib_docs_check.cx`](../../scripts/gen_guide/stdlib_docs_check.cx)
+[`scripts/gen_guide/stdlib_docs_check.cx`](../../../scripts/gen_guide/stdlib_docs_check.cx)
 (CX-native, `cx eval`) enforces, for every bundled module:
 
 - **Presence parity:** every public `[?def NAME]` has a matching `[fn-doc
@@ -115,6 +126,15 @@ prose is derived FROM it (by a human or a one-time pass), not the reverse.
 - **Example backing:** every `[example]`'s `code` block **and** its `expect`
   appear verbatim in the module's conformance corpus
   (`conformance/stdlib/<m>.cxd`).
+
+**Gate scope (agent-tool projection stream, L143):** the gate extends from
+`stdlib/*.cx` to `x/*.cx` and every command-bearing module — a description
+that becomes agent-facing tool contract cannot be ungated (#715 carries the
+wiring). Two additive checks ride the extension: **summary-required for
+commands** (an `[effects]`-bearing public `[?def]` whose `[fn-doc]` lacks a
+`[summary]` fails the gate — the same condition the projection fails loudly
+on) and **`[param-doc]` name validity** (each `[param-doc name=…]` names a
+real parameter of the sibling def).
 
 Module-set parity (bundle vs. the status=current spec set, including the
 bundled-but-separately-specced `xap`) stays with the existing

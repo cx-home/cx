@@ -69,11 +69,17 @@ fi
 #   CRASHBIN = the REAL-SWEEP shipping collector (${GCMODE}, no nosweep). Real sweep +
 #          the #131 churn-collect bound RSS, so a crash here is a GENUINE fault (UAF
 #          segfault or a real OOM), not a nosweep artifact. Crashes counted on CRASHBIN.
+# -d cx_platform is REQUIRED since the I3 ring split moved the http/serve
+# primitives into the platform module: without it the serve fixtures die at
+# boot with 'no callable "http-serve"' and the kill-0 probe counts every
+# round as a "crash" — a deterministic false red that (2026-08-14, found at
+# the #743 battery re-run) had silently disarmed the http/churn stressors.
+PLATFORM_DEFINES="-d cx_platform -d cx_db_sqlite -d cx_db_redis"
 BIN=${CX_SOUNDNESS_BIN:-}
 if [ -z "$BIN" ]; then
   BIN=$ROOT/vcx/target/cx_soundness_gate
   echo "[gate] building bf1 detector: $GCMODE -d vgc_passive -d vgc_nosweep"
-  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} -d vgc_passive -d vgc_nosweep \
+  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} ${=PLATFORM_DEFINES} -d vgc_passive -d vgc_nosweep \
       -o target/cx_soundness_gate cmd/ ) || { echo "[gate] BUILD FAIL (detector)"; exit 2; }
 fi
 [ -x "$BIN" ] || { echo "[gate] no detector binary: $BIN"; exit 2; }
@@ -82,7 +88,7 @@ CRASHBIN=${CX_CRASH_BIN:-}
 if [ -z "$CRASHBIN" ]; then
   CRASHBIN=$ROOT/vcx/target/cx_crash_gate
   echo "[gate] building real-sweep crash binary: $GCMODE (no nosweep)"
-  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} \
+  ( cd $ROOT/vcx && $VFORK_ROOT/v -n -w -cc cc ${=GCMODE} ${=PLATFORM_DEFINES} \
       -o target/cx_crash_gate cmd/ ) || { echo "[gate] BUILD FAIL (crash bin)"; exit 2; }
 fi
 [ -x "$CRASHBIN" ] || { echo "[gate] no crash binary: $CRASHBIN"; exit 2; }
@@ -92,9 +98,36 @@ fi
 # mis-directed a whole investigation cycle (#145 "regressed" verdicts that were
 # actually the #58 worker path). Each stressor now gets its own log + verdict line.
 log_http=$(mktemp); log_churn=$(mktemp); log_workers=$(mktemp); log_mainloop=$(mktemp)
-crash_http=0; crash_churn=0; crash_workers=0; crash_mainloop=0
+
+# cleanup is used by the boot-sanity block below, so it must be defined (and
+# trapped) BEFORE it — the original placement after that block made the
+# pre-boot `cleanup` calls "command not found" no-ops (set -u, no -e), so a
+# stale server from an aborted earlier run could keep the port and answer the
+# boot probe / stressors in place of the freshly-built binary (#743).
 cleanup() { pkill -9 -f "serve57|serve_churn_heavy|serve_mainloop|workers8|wrk -t12" 2>/dev/null; }
 trap cleanup EXIT
+
+# Boot sanity (2026-08-14, #743 battery repair): a serve fixture that cannot
+# even BIND (stdlib-surface drift, a missing pack/define) must fail the gate
+# as SETUP, never as a verdict — exactly this rot (no callable "http-serve"
+# after the I3 ring split dropped -d cx_platform from the gate builds) read
+# as deterministic "real-sweep crashes" through the kill-0 probe.
+if command -v wrk >/dev/null 2>&1; then
+  for fixf in serve57.cx serve_churn_heavy.cx serve_mainloop.cx; do
+    cleanup; sleep 0.2
+    bootlog=$(mktemp)
+    "$CRASHBIN" --allow-all $FIX/$fixf >/dev/null 2>$bootlog &
+    BPID=$!; bound=0
+    for i in $(seq 1 20); do nc -z 127.0.0.1 $PORT 2>/dev/null && { bound=1; break; }; sleep 0.5; done
+    kill -9 $BPID 2>/dev/null
+    if [ $bound -ne 1 ]; then
+      echo "[gate] SETUP FAIL: $fixf never bound port $PORT — $(head -1 $bootlog)"
+      exit 2
+    fi
+  done
+  cleanup
+fi
+crash_http=0; crash_churn=0; crash_workers=0; crash_mainloop=0
 
 # --- multi-reactor HTTP (the #63 reactor stressor) ---
 # Needs `wrk` for load. If absent, skip the HTTP stressor (the worker stressor below
@@ -146,7 +179,7 @@ done
 
 # --- #57 FIELD SHAPE: DEFAULT-env multi-reactor serve + busy ALLOCATING MAIN thread ---
 # No CX_HTTP_N / CX_WORKER_THREADS overrides: this is the stock posture the field
-# workload (xap-marine) runs — reactors at the default fan-out plus the main thread
+# workload (the external reference instance) runs — reactors at the default fan-out plus the main thread
 # evaluating an allocation-heavy loop. Multi-mutator by default; previously uncovered.
 if command -v wrk >/dev/null 2>&1; then
   for r in $(seq 1 $ROUNDS); do

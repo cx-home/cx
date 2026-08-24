@@ -1,0 +1,242 @@
+# scripts/check_version_consistency.cx — the VERSION-CONSISTENCY gate.
+#
+# CX rewrite of scripts/check_version_consistency.py (RULED: PYE-5,
+# ledger/rulings_2026_08_22_python_eradication.md; #922).
+#
+# The repo-root VERSION file is the single source of truth for the CX
+# release version; every place that must carry a literal release version
+# has to match it, and the code surfaces must DERIVE it.
+#
+# Four checks (same contract as the retired Python):
+#   1. STATIC MANIFESTS equal VERSION exactly (stamped by
+#      scripts/bump_version.sh).
+#   2. CODE SURFACES derive via the `cx_version` build define
+#      (`$d('cx_version', …)`) — never hardcode.
+#   3. README version badges + SECURITY.md supported series (X.Y.x)
+#      equal / derive from VERSION.
+#   4. STRAY `vX.Y.Z` release literals in the live vcx/ + spec/ +
+#      docs-src/ + stdlib/ + tooling/ trees (issue #67) — fails on any
+#      hit outside the allowlist; a line carrying the
+#      `version-literal-ok` marker is exempt. A per-run self-test
+#      proves the matcher still has detection power.
+#
+# Matcher note (this rewrite): the Python anchored the stray pattern
+# with lookarounds; RE2 has none, so the boundary is spelled as a
+# consumed non-alphanumeric-or-edge class on each side. For per-line
+# EXISTENCE (all this gate needs) the two are equivalent; the self-test
+# below proves both directions on the same fixtures the Python used.
+#
+# Run:  cx --allow-read --allow-write scripts/check_version_consistency.cx
+# (or:  make check-version-consistency / make bump-version-check)
+#
+# Exit: 0 all green; 1 any failure (including a broken self-test).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+
+# cat-seqs: concatenate a tuple of sequences (sequence literals nest;
+# flat-map with identity removes exactly one level).
+[?def cat-seqs scope=public ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
+
+# ── Check 4: stray release-version literal scan ─────────────────────────
+# A CX release version written `vX.Y.Z` (or a release series `vX.Y.x`),
+# anchored on non-alphanumeric-or-edge boundaries (see matcher note).
+[?const STRAY-RX [$re:compile "(?:[^A-Za-z0-9]|^)v[0-9]+\\.[0-9]+\\.(?:[0-9]+|x)(?:[^A-Za-z0-9]|$)"]]
+[?const STRAY-MARKER "version-literal-ok"]
+
+# Live trees scanned for stray literals: (root, extensions). spec/_archived
+# is immutable history (excluded); *_test.v fixtures are excluded.
+[?const STRAY-SCAN (
+  [scan root='vcx'              exts='v'],
+  [scan root='spec/01-new'      exts='md ebnf'],
+  [scan root='spec/02-working'  exts='md ebnf'],
+  [scan root='spec/03-approved' exts='md ebnf'],
+  [scan root='docs-src'         exts='md cx cxd html'],
+  [scan root='stdlib'           exts='cx'],
+  [scan root='tooling'          exts='md json vim lua bash zsh fish js scm cx cxd'])]
+
+# Dirs never scanned (build artifacts / vendored deps / immutable history).
+[?const STRAY-EXCLUDE-DIRS ('node_modules','dist','_archive','_archived',
+                            '_gate_evidence')]
+
+# Whole files allowed to carry release literals as legitimate history.
+[?const STRAY-ALLOW-FILES (
+  'docs-src/canonical/sections/10-migration.cxd',
+  'tooling/lsp/diagnostics.md',
+  'ledger/partition_I5_audit.md')]
+
+[?def excluded scope=public ($p)
+  [> [$count [?for [in $d STRAY-EXCLUDE-DIRS]
+       [where [$strings:contains $p [$concat "/" $d "/"]]]
+       [yield $d]]] 0]]
+
+[?def allowed-file scope=public ($p)
+  [> [$count [?for [in $a STRAY-ALLOW-FILES]
+       [where [= $a $p]] [yield $a]]] 0]]
+
+# stray-hits-in: one "path:line: text" entry per stray literal in one file
+# (already prefiltered to files whose whole text matches).
+[?def stray-hits-in scope=public impure ($p)
+  [?let [= $lines [$strings:split-lines [$io:read-file $p]]]
+    [?for [in $i [$range 1 [$count $lines]]]
+      [= $line [$nth $lines $i]]
+      [where [not [$strings:contains $line STRAY-MARKER]]]
+      [where [?match [$re:find STRAY-RX $line]
+               [case [no-match] false] [else true]]]
+      [yield [$concat $p ":" [$string $i] ": " [$strings:trim-end $line]]]]]]
+
+# stray-hits: scan every tree; whole-file RE2 prefilter, then per-line.
+[?def stray-hits scope=public impure ()
+  [?for [in $sc STRAY-SCAN]
+    [in $ext [$strings:split-whitespace [$string $sc@exts]]]
+    [in $p [$io:glob [$concat [$string $sc@root] "/**/*." [$string $ext]]]]
+    [where [not [$strings:ends-with $p "_test.v"]]]
+    [where [not [$excluded $p]]]
+    [where [not [$allowed-file $p]]]
+    [where [?match [$re:find STRAY-RX [$io:read-file $p]]
+             [case [no-match] false] [else true]]]
+    [in $hit [$stray-hits-in $p]]
+    [yield $hit]]]
+
+# self-test: prove the matcher has detection power and no obvious false
+# positives — a matcher that silently stops matching turns this gate into
+# a no-op; these assertions make that a red build.
+[?const MUST-MATCH (
+  "// shipped in v0.8.0",
+  "**Status:** Current for v0.11.0.",
+  "error('only foo is recognised at v0.7.6')",
+  "see v1.2.3-rc1 notes",
+  "deferred to v0.8.x refinement")]
+[?const MUST-NOT-MATCH (
+  "// see §9.1.2 and §6.4.2",
+  "bind_host := '127.0.0.1'",
+  "const version = $d('cx_version', '0.0.0-dev')",
+  "pub const cx_bundled_stdlib_version = '0.8.0'",
+  "url = 'https://x/regex-helpers-1.2.3.zip'",
+  "the v0.8.xyz identifier is not a version")]
+
+[?def rx-hits scope=public ($s)
+  [?match [$re:find STRAY-RX $s] [case [no-match] false] [else true]]]
+
+[?def self-test scope=public ()
+  [?let [= $marked "// kept as history v0.8.0  // version-literal-ok"]
+    [$cat-seqs (
+      [?for [in $s MUST-MATCH] [where [not [$rx-hits $s]]]
+        [yield [$concat "self-test: matcher FAILED to flag a stray literal: '" $s "'"]]],
+      [?for [in $s MUST-NOT-MATCH] [where [$rx-hits $s]]
+        [yield [$concat "self-test: matcher false-positived on: '" $s "'"]]],
+      [?if [and [$strings:contains $marked STRAY-MARKER] [$rx-hits $marked]]
+        [then ()]
+        [else ("self-test: marker fixture is malformed")]])]]]
+
+# read-or: file text, or the [missing] sentinel.
+[?def read-or scope=public impure ($p)
+  [?match [$io:read-file $p]
+    [case [err $e] [missing]]
+    [case $t $t]]]
+
+# check-manifest: () when the manifest's version field equals $version;
+# a fail-line otherwise.
+[?def check-manifest scope=public impure ($path $pattern $version)
+  [?let [= $t [$read-or $path]]
+    [?match $t
+      [case [missing] [$concat $path ": missing (expected a stamped manifest)"]]
+      [else
+        [?match [$re:find [$re:compile $pattern] $t]
+          [case [no-match] [$concat $path ": no version field matched '" $pattern "'"]]
+          [case $m
+            [?if [= [$re:group $m 1] $version] [then ()]
+              [else [$concat $path ": version '" [$re:group $m 1]
+                             "' != VERSION '" $version "'"]]]]]]]]]
+
+[?let
+  [= $version [$strings:trim [$io:read-file "VERSION"]]]
+  [= $version-ok [$re:matches [$re:compile "[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.]+)?"] $version]]
+  [?if [not $version-ok]
+    [then [?let [= $_m [$say [$concat "FAIL: VERSION file holds a malformed version: '" $version "'"]]]
+            [$env:exit 1]]]
+    [else
+      [?let
+        # 1. Static manifests — must contain the literal VERSION.
+        [= $manifest-fails [?for [in $m (
+            [mf path='cx.pc.in'                          rx="(?m)^Version:[ \\t]*([^ \\t\\n]+)[ \\t]*$"],
+            [mf path='vcx/v.mod'                         rx="version:\\s*'([^']+)'"],
+            [mf path='lang/v/v.mod'                      rx="version:\\s*'([^']+)'"],
+            [mf path='lang/rust/cxlib/Cargo.toml'        rx="(?m)^version\\s*=\\s*\"([^\"]+)\""],
+            [mf path='lang/rust/cxlib/Cargo.lock'        rx="name = \"cxlib\"\\nversion = \"([^\"]+)\""],
+            [mf path='lang/python/pyproject.toml'        rx="(?m)^version\\s*=\\s*\"([^\"]+)\""],
+            [mf path='tooling/vscode/package.json'       rx="(?m)^\\s*\"version\"\\s*:\\s*\"([^\"]+)\""],
+            [mf path='tooling/vscode/package-lock.json'  rx="(?m)^\\s*\"version\"\\s*:\\s*\"([^\"]+)\""])]
+          [= $f [$check-manifest [$string $m@path] [$string $m@rx] $version]]
+          [where [not [$empty $f]]]
+          [yield $f]]]
+
+        # 2. Code surfaces — must DERIVE from the build define.
+        [= $derive-fails [?for [in $p ('vcx/cx/cabi.v', 'vcx/cmd/main.v')]
+          [where [not [$strings:contains [$io:read-file $p] "$d('cx_version'"]]]
+          [yield [$concat $p ": release version must derive via $d('cx_version'…), not a hardcoded literal"]]]]
+
+        # 3. README version badges must equal VERSION.
+        [= $badge [$concat "badge/version-v" $version "-blue"]]
+        [= $badge-rx [$re:compile "badge/version-v([0-9A-Za-z.]+)-blue"]]
+        [= $badge-fails [?for [in $p ('README.md', 'vcx/README.md')]
+          [= $f [?match [$read-or $p]
+            [case [missing] [$concat $p ": missing (expected the version badge)"]]
+            [case $t
+              [?if [$strings:contains $t $badge] [then ()]
+                [else [?match [$re:find $badge-rx $t]
+                  [case [no-match] [$concat $p ": version badge 'no version badge' != VERSION '" $version "'"]]
+                  [case $m [$concat $p ": version badge '" [$re:group $m 1] "' != VERSION '" $version "'"]]]]]]]]
+          [where [not [$empty $f]]]
+          [yield $f]]]
+
+        # 3b. SECURITY.md — the supported-versions series (X.Y.x).
+        [= $series [$concat [$strings:join [?for [in $i (1,2)]
+            [yield [$nth [$strings:split $version "."] $i]]] "."] ".x"]]
+        [= $security-fails [?match [$read-or "SECURITY.md"]
+          [case [missing] ("SECURITY.md: missing (expected the supported-series text)")]
+          [case $t
+            [?match [$re:find [$re:compile "\\*\\*([0-9]+\\.[0-9]+\\.x)\\*\\*"] $t]
+              [case [no-match] ("SECURITY.md: no bolded supported-series token (**X.Y.x**) found")]
+              [case $m
+                [?if [= [$re:group $m 1] $series] [then ()]
+                  [else ([$concat "SECURITY.md: supported series '" [$re:group $m 1]
+                                  "' != '" $series "' (derived from VERSION '" $version "')"])]]]]]]]
+
+        # 0. Self-test — prove the stray-literal matcher still has teeth.
+        [= $st [$self-test]]
+        [?if [> [$count $st] 0]
+          [then
+            [?let [= $_h [$say "VERSION-CONSISTENCY: FAIL (gate self-test broken — fix the matcher)"]]
+                  [= $_l [?for [in $e $st] [yield [$say [$concat "  - " $e]]]]]
+              [$env:exit 1]]]
+          [else
+            [?let
+              # 4. Stray release-version literals in live code/spec (#67).
+              [= $stray [?for [in $h [$stray-hits]]
+                [yield [$concat "stray version literal (genericize or derive): " $h]]]]
+              [= $fails [$cat-seqs ($manifest-fails, $derive-fails, $badge-fails,
+                                    $security-fails, $stray)]]
+              [?if [> [$count $fails] 0]
+                [then
+                  [?let
+                    [= $_h [$say [$concat "VERSION-CONSISTENCY: FAIL (source of truth: VERSION = " $version ")"]]]
+                    [= $_l [?for [in $f $fails] [yield [$say [$concat "  - " $f]]]]]
+                    [= $_f [$say [$concat "\nFix: stamped manifests → run  scripts/bump_version.sh <version>; "
+                      "code version surfaces → derive via $d('cx_version', …); "
+                      "stray `vX.Y.Z` literals in code/spec → genericize the prose "
+                      "(an error/status describes CURRENT behavior, never a release), "
+                      "or add the inline `" STRAY-MARKER "` marker for a genuine "
+                      "historical-migration note."]]]
+                    [$env:exit 1]]]
+                [else
+                  [?let [= $_ok [$say [$concat "VERSION-CONSISTENCY: OK — manifests + README badges + vscode + "
+                      "SECURITY.md series == VERSION (" $version "); cabi.v + main.v derive "
+                      "from the build define; no stray vX.Y.Z literals in vcx/ + spec/ + "
+                      "docs-src/ + stdlib/ + tooling/"]]]
+                    [$env:exit 0]]]]]]]]]]]

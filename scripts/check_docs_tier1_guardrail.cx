@@ -1,0 +1,134 @@
+# scripts/check_docs_tier1_guardrail.cx — the check-docs-tier1-guardrail gate
+# (spec-authoring-guide.md §4) — learnability.
+#
+# The §4 progressive-disclosure rule (`spec/process/spec-authoring-guide.md`)
+# is normative for the guide: CX's mantra is "easy to learn and fun to code,"
+# so the depth the errors/effects/fp layer adds (four channels, an fp
+# protocol, effect-totality, concurrency) is **available, never required**.
+# The surface is laddered into three tiers, and the beginner-facing material
+# MUST lead with **Tier 1 only**:
+#
+#   Tier 1 (first hour): values flow · absence (empty) flows · [?else]
+#           defaults · [?pipe seed f g] pipelines · [?match] to handle.
+#   Tier 2 (opt-in):     the four-channel model · [?fallback] ·
+#           [?with-error-hook] observability · capabilities.
+#   Tier 3 (advanced):   spec/std-lib/fp.md (functor/monad/traverse) ·
+#           effect-totality · structured concurrency · --strict / [throws T].
+#
+# §4's three normative rules say a guide/docs reviewer applies them. This
+# guard makes rule 1 + rule 2 a PERMANENT, executable gate so the beginner
+# surface cannot silently drift back into advanced theory:
+#
+#   Rule 1 — the guide intro/quickstart shows only Tier 1.
+#   Rule 2 — fp.md (and the words "monad"/"functor"/"typeclass") never appear
+#            in beginner material; fp is documented as an advanced optional
+#            module.
+#
+# The detectable signal: the Tier-3 vocabulary
+# ("monad"/"functor"/"typeclass"/fp.md/cx-stdlib/fp) appearing anywhere in
+# the BEGINNER sections — the quickstart (§0) and intro (§1) of the canonical
+# guide. These are exactly the "first surface a learner sees" files §4 rule 1
+# names. Sections beyond intro/quickstart (the concepts essay §9, libraries
+# §16, the examples tour) may introduce Tier 2/3 with an opt-in/advanced
+# marker — they are out of this guard's scope by design.
+#
+# Token-aware: matches the whole-word advanced terms (so "typeclasses" /
+# "monadic" / a path like "fp.md" are caught, but an unrelated substring is
+# not). Comments and prose alike count — a learner reads both.
+#
+# Allowlist: a beginner section MAY mention an advanced term only to say it
+# is *deferred* ("no monads required", "you never need fp.md to be
+# productive"). Such a use is the opposite of a violation — it reassures the
+# learner. Add the exact line substring + a one-line rationale to $allow if
+# that case arises. Empty today.
+#
+# Exit 0 clean; 1 on leakage or a missing beginner section. Run from the
+# repo root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_docs_tier1_guardrail.cx
+# (or: make check-docs-tier1-guardrail)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?let
+  # The beginner-facing surface §0.1 rule 1 names: the quickstart + intro of
+  # the canonical guide. These are the only sections held to Tier-1-only.
+  [= $beginner-sections (
+    "docs-src/canonical/sections/00-quickstart.cxd",
+    "docs-src/canonical/sections/01-intro.cxd")]
+
+  # Tier-3 vocabulary that must not appear in beginner material (§0.1 rule
+  # 2). Whole-word / path-aware so plural + adjectival forms are caught but
+  # unrelated substrings are not.
+  [= $tier3-rx [$re:compile [$cat (
+    "(?i)",
+    "\\bmonad(?:s|ic)?\\b",
+    "|\\bfunctor(?:s|ial)?\\b",
+    "|\\btypeclass(?:es)?\\b",
+    "|\\bfp\\.md\\b",
+    "|\\bcx-stdlib/fp\\b")]]]
+
+  # (file-relpath-suffix, line-substring) pairs ALLOWED — a beginner section
+  # may name an advanced term ONLY to defer it (e.g. "no monads required").
+  # Empty today.
+  [= $allow ()]
+
+  [= $missing
+    [?for [in $rel $beginner-sections]
+      [where [not [$io:is-file $rel]]]
+      [take 1]
+      [yield $rel]]]
+
+  [?if [> [$count $missing] 0]
+    [then
+      # A missing beginner section is itself a defect: the gate cannot vouch
+      # for a surface that is not there.
+      [?let [= $_e [$cry [$cat ("check-docs-tier1-guardrail FAILED — beginner section missing: ",
+                                $missing[1])]]]
+        [$env:exit 1]]]
+    [else
+  [?let
+    [= $hits
+      [$fp:flat-map $beginner-sections [?fn ($rel)
+        [?let [= $lines [$strings:split-lines
+                          [?fallback [$io:read-file $rel] [recover-with ""]]]]
+          [?for [in $i [$range 1 [$count $lines]]]
+            [= $line $lines[$i]]
+            [= $m [$re:find $tier3-rx $line]]
+            [where [$matched $m]]
+            [where [= [$count [?for [in $a $allow]
+                        [where [and [$strings:ends-with $rel [$string $a@suffix]]
+                                    [$strings:contains $line [$string $a@sub]]]]
+                        [yield 1]]] 0]]
+            [yield [$cat ($rel, ":", [$string $i], ": [", [$re:group $m 0], "] ",
+                          [$strings:trim $line])]]]]]]]
+
+    [?if [> [$count $hits] 0]
+      [then
+        [?let
+          [= $_h [$say [$cat ("check-docs-tier1-guardrail FAILED — Tier-3 vocabulary in ",
+                              "beginner material (spec-authoring-guide.md §4 rule 1/2 violation):")]]]
+          [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
+          [= $_t [$say [$cat ("Per the spec-authoring-guide.md §4 learnability guardrail, the guide ",
+                              "intro/quickstart shows Tier 1 ONLY, and fp.md / ",
+                              "'monad'/'functor'/'typeclass' never appear in beginner ",
+                              "material. Move the advanced content to a Tier-2/3 section ",
+                              "(concepts §9 / libraries §16) with an opt-in/advanced marker, ",
+                              "or — if the term is used to DEFER it ('no monads required') — ",
+                              "add the line to ALLOW with a rationale.")]]]
+          [$env:exit 1]]]
+      [else
+        [?let [= $_ok [$say [$cat ("check-docs-tier1-guardrail OK — ",
+                                   [$string [$count $beginner-sections]],
+                                   " beginner section(s) ",
+                                   "(quickstart + intro) are Tier-1-only; no fp.md / monad / functor / ",
+                                   "typeclass leakage (§0.1 rule 1/2).")]]]
+          [$env:exit 0]]]]]]]]

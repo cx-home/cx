@@ -5,7 +5,7 @@
    introduced. Entries are alphabetical (case-insensitive). File
    extension .cxd — data-only source. #]
 
-[section id=glossary n=11 title='Glossary'
+[section id=glossary group='Reference' n=11 title='Glossary'
 
   [intro
     """This is the working glossary for the CX data and code guide.
@@ -78,14 +78,15 @@
   [child id=g-bytes title='bytes'
     [body
       """A scalar kind holding raw binary data. Written as a
-         length-prefixed base64 literal: `:bytes 'SGVsbG8='`. See
+         base64 literal under the `::bytes` annotation:
+         `[data::bytes "SGVsbG8="]` (no length prefix). See
          [[bytes]] and [[bytes-wire]]."""]]
 
   [child id=g-canonical-bytes title='canonical bytes'
     [body
       """The unique byte sequence that represents a CX document after
          the canonicalization rules in
-         [`spec/canonical.md`](../../spec/canonical.md) are applied.
+         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) are applied.
          The SHA-256 of the canonical bytes is the document's
          identity. See [[canonical]]."""]]
 
@@ -93,7 +94,7 @@
     [body
       """A bit in the value returned by `cx_features()` that signals
          whether the loaded `libcx` supports a particular optional
-         feature (Parquet bridge, diagram render, etc.). Bindings
+         feature (Arrow C-Data bridge, diagram render, etc.). Bindings
          check before calling new entry points. See
          [[ast-bin-capabilities]]."""]]
 
@@ -113,13 +114,16 @@
 
   [child id=g-comment title='comment'
     [body
-      """`[# … #]` — nests, spans lines, allowed anywhere whitespace
-         is allowed. Preserved by lossless canonical, stripped by
-         strict canonical. See [[comments]]."""]]
+      """Two forms: `[; … ]` block comments (span lines, allowed
+         anywhere whitespace is allowed) and `#` line comments (to
+         end-of-line). Preserved by lossless canonical, stripped by
+         strict canonical. `[# … #]` is NOT a comment — it is the
+         raw-text form, whose content is preserved verbatim. See
+         [[comments]]."""]]
 
   [child id=g-container-item title='container Item'
     [body
-      """In the CXDM model (`spec/cxdm.md` §2), an Item is either an
+      """In the CXDM model (`spec/03-approved/core/cxdm.md` §2), an Item is either an
          atom (one scalar) or a container (an element, array, or
          map). Sequences are flat — they are not containers. See
          [[container-atom]]."""]]
@@ -155,8 +159,9 @@
   [child id=g-cxdm title='CXDM'
     [body
       """CX Data Model — the abstract value model formalised in
-         [`spec/cxdm.md`](../../spec/cxdm.md). Defines the eight
-         scalar kinds, container kinds, sequence-flatness, equality,
+         [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md).
+         Defines the eleven
+         atomic kinds, container kinds, sequence-flatness, equality,
          and the effective boolean value. The basis for every
          binding's value mapping."""]]
 
@@ -165,8 +170,9 @@
       """The universal selector vocabulary. Same syntax for reading
          (`select_all`), iteration (`[?for]`), pattern matching
          (`[?match]`), and update focus (`[?modify]`). XPath 3.1
-         aligned with deliberate divergences (see
-         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
+         aligned with deliberate divergences (see the path-expression
+         sections of
+         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md))
          and a value-kind. See [[cxpath]]."""]]
 
   [child id=g-data-bin title='data-bin'
@@ -183,12 +189,12 @@
 
   [child id=g-date title='date'
     [body
-      """The `:date` scalar kind. ISO 8601 calendar date with no time
+      """The `::date` scalar kind. ISO 8601 calendar date with no time
          component: `2026-05-22`. See [[dates]]."""]]
 
   [child id=g-datetime title='datetime'
     [body
-      """The `:datetime` scalar kind. ISO 8601 timestamp with
+      """The `::datetime` scalar kind. ISO 8601 timestamp with
          timezone offset: `2026-05-22T14:30:00Z`. Resolution is
          nanoseconds; leap seconds are not represented. See
          [[datetime-detail]]."""]]
@@ -210,8 +216,10 @@
     [body
       """An element whose name starts with `?` (e.g. `[?for]`,
          `[?match]`, `[?modify]`). Interpreted by the evaluator
-         rather than carried as data. Currently 40 normative
-         directives. See [[directives]]."""]]
+         rather than carried as data. Around eighty normative
+         directives — the closed registry in
+         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+         §4.1. See [[directives]]."""]]
 
   [child id=g-doctype title='doctype'
     [body
@@ -230,7 +238,7 @@
   [child id=g-ebv title='effective boolean value (EBV)'
     [body
       """The truthiness coercion rule applied by `[?if]` and `[where …]`
-         guards. Defined in [`spec/cxdm.md`](../../spec/cxdm.md)
+         guards. Defined in [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
          §4.6. Empty sequence / `false` / `0` / `''` / `null` are
          false; everything else is true. See [[if]]."""]]
 
@@ -283,8 +291,8 @@
 
   [child id=g-float title='float'
     [body
-      """The `:float` scalar kind. IEEE-754 double-precision by
-         default; `:f32` and `:f64` are sized variants. See
+      """The `::float` scalar kind. IEEE-754 double-precision by
+         default; `::f32` and `::f64` are sized variants. See
          [[numbers]] and [[sized-types]]."""]]
 
   [child id=g-fn title='fn'
@@ -329,16 +337,18 @@
   [child id=g-idref title='IDREF'
     [body
       """An attribute value that references another element's `id`
-         attribute. Resolved on demand via `cx_idref_resolve`;
-         cycles are detected and surfaced as `CXER0501`. See
+         attribute. Resolved on demand via `cx_resolve_ref` (with
+         `cx_id_lookup` as the id-declaration finder). See
          [[idref-resolution]]."""]]
 
   [child id=g-include title='include'
     [body
-      """The `[?cx include path='…']` directive resolves and inlines
-         another CX document. Capability-gated by default —
-         `--profile untrusted` disables filesystem includes. See
-         [[includes]]."""]]
+      """The `[?cx include=…]` directive resolves and inlines
+         another CX document. Include resolution rides the
+         deny-by-default capability model: it needs the `read` grant
+         (`--allow-read`) plus an explicit `--include-root`; with no
+         grants the evaluation is pure-only and includes stay
+         unresolved. See [[includes]]."""]]
 
   [child id=g-instance title='instance'
     [body
@@ -348,9 +358,9 @@
 
   [child id=g-int title='int'
     [body
-      """The `:int` scalar kind. 64-bit signed integer by default;
-         `:i8`/`:i16`/`:i32`/`:i64` and unsigned variants are sized
-         tags. See [[numbers]] and [[sized-types]]."""]]
+      """The `::int` scalar kind. 64-bit signed integer by default;
+         `::i8`/`::i16`/`::i32`/`::i64` and unsigned variants are
+         sized annotations. See [[numbers]] and [[sized-types]]."""]]
 
   [child id=g-jsonl title='JSONL / NDJSON'
     [body
@@ -452,8 +462,8 @@
 
   [child id=g-parallel title='parallel'
     [body
-      """The CX concurrency posture — `[?map par=true]` and
-         `[?reduce par=true]` (and `[?for ... par=true]`) distribute
+      """The CX concurrency posture — a `[par]` clause on
+         `[?map]` / `[?reduce]` / `[?for]` distributes
          work across bounded worker pools; immutability makes the
          result deterministic. See [[parallelism]]."""]]
 
@@ -466,8 +476,9 @@
 
   [child id=g-parquet-bridge title='parquet bridge'
     [body
-      """The libcx subsystem that reads and writes Apache Parquet
-         files via Arrow. Capability bit 12. See
+      """The Rust-binding bridge that reads and writes Apache
+         Parquet files over the Arrow C-Data interop (capability
+         bit 23 — Arrow; there is no separate Parquet bit). See
          [[parquet-bridge]]."""]]
 
   [child id=g-pattern title='pattern'
@@ -526,9 +537,10 @@
   [child id=g-regex title='regex'
     [body
       """The regular-expression dialect used by CX builtins. CX
-         ships an RE2-equivalent engine; the dialect is documented
-         in [`spec/regex.md`](../../spec/regex.md). See
-         [[string-builtins]]."""]]
+         ships an RE2-backed engine; the string builtins that take
+         patterns are specified in
+         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md).
+         See [[string-builtins]]."""]]
 
   [child id=g-reserved-token title='reserved token'
     [body
@@ -546,7 +558,7 @@
     [body
       """A CX document (`.cxs`) describing the allowed shape of
          another CX document. The schema language is documented
-         in [`spec/schema.md`](../../spec/schema.md). See
+         in [`spec/03-approved/core/schema.md`](../../spec/03-approved/core/schema.md). See
          [[schema]]."""]]
 
   [child id=g-scope title='scope'
@@ -578,7 +590,7 @@
     [body
       """A leading punctuation character that prefixes an
          identifier and changes its interpretation: `&` (anchor),
-         `*` (merge), `#` (id), `:` (type tag),
+         `*` (merge), `#` (id), `:` (atom), `::` (type annotation),
          `$` (binding variable), `?` (directive). See [[sigils]]."""]]
 
   [child id=g-signed-canonical title='signed canonical'
@@ -589,8 +601,9 @@
 
   [child id=g-sized-type-tag title='sized type tag'
     [body
-      """An explicit numeric type prefix: `:i8`, `:i16`, `:i32`,
-         `:i64`, `:u8`, `:u16`, `:u32`, `:u64`, `:f32`, `:f64`.
+      """An explicit numeric type annotation: `::i8`, `::i16`,
+         `::i32`, `::i64`, `::u8`, `::u16`, `::u32`, `::u64`,
+         `::f32`, `::f64`.
          Required when the host binding needs a specific width.
          See [[sized-types]]."""]]
 
@@ -598,7 +611,7 @@
     [body
       """A position inside a directive's argument list. Positional
          slots come first; labeled slots use the `:label value`
-         form (per `spec/grammar.ebnf [127e]`). Slot syntax is
+         form (per `spec/03-approved/formal/grammar.ebnf [127e]`). Slot syntax is
          exclusive to directives — on data elements use
          `name=value` attributes. See [[directives]]."""]]
 
@@ -645,10 +658,10 @@
 
   [child id=g-time title='time'
     [body
-      """The wall-clock-time-of-day scalar kind. Not a separate
-         scalar in CXDM — represented as a datetime with the
-         epoch-1970 date placeholder when carried at the wire
-         level. See [[datetime-detail]]."""]]
+      """There is no time-of-day scalar kind in CX. Time
+         quantities are carried by `duration` (an integer count of
+         nanoseconds) and `instant` (encoded as a UTC datetime on
+         the wire). See [[datetime-detail]]."""]]
 
   [child id=g-timezone title='time zone'
     [body
@@ -658,9 +671,10 @@
 
   [child id=g-type-tag title='type tag'
     [body
-      """An explicit `:name` prefix on a scalar that forces a
-         specific kind: `:int`, `:str`, `:date`, `:bytes`, `:u32`,
-         etc. See [[bodies]] and [[sized-types]]."""]]
+      """An explicit `::name` annotation on a scalar that forces a
+         specific kind: `::int`, `::string`, `::date`, `::bytes`,
+         `::u32`, etc. A single-colon `:name` is not a type — it is
+         an atom literal. See [[bodies]] and [[sized-types]]."""]]
 
   [child id=g-utf8 title='UTF-8'
     [body
@@ -701,7 +715,7 @@
          modes: GitHub Pages static (HTTPS), local clone file://
          (double-click `playground.html`), and `make guide-http`
          (V veb server with cross-origin isolation enabled). Only
-         the third mode runs `par=true` examples on real OS threads;
+         the third mode runs `[par]` examples on real OS threads;
          the first two run sequentially under the same surface.
          Production CX (CLI, language bindings, libcx as shared
          library) has no browser-environment overhead. See

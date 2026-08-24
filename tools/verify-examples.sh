@@ -70,9 +70,13 @@ check_file() {
 	# `cx FILE [--data=FILE.input.cx]` — the same spelling the READMEs and
 	# tour headers carry, so this checker exercises the real run surface
 	# (including the --data $doc binding) rather than the `cx eval` alias.
+	# Flag BEFORE file: the #926 argv cutover made everything after FILE a
+	# PROGRAM argument (the ap-flags-after-file anti-pattern) — a trailing
+	# --data= is handed to the program instead of binding $doc, and the tour
+	# dies on CXER0001. This is also the spelling the tour headers document.
 	local input="${f%.cx}.input.cx"
 	if [ -f "$input" ]; then
-		if ! "$CX" "$f" --data="$input" > /dev/null 2>&1; then
+		if ! "$CX" --data="$input" "$f" > /dev/null 2>&1; then
 			FAIL=$((FAIL + 1))
 			FAIL_DETAILS+=("$rel [neither data-JSON nor the documented run line (with $(basename "$input")) succeeded]")
 			return

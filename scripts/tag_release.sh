@@ -76,13 +76,20 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # -- Step 1: sanity ---------------------------------------------------
 
+# #666 topology: the release is cut ON its release branch — the bump becomes
+# the branch's FINAL commit and the tag lands on that bump commit, so the tag
+# IS the branch tip (and, after release.sh merges to main, reachable from main
+# as the merge's second parent). Branch name, tag, VERSION file, and artifact
+# all name one commit. vX.Y.Z (any Z) cuts from release/X.Y.0 — patch releases
+# ride the same branch.
 CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+EXPECT_BRANCH="release/${VERSION%.*}.0"
 if [[ $DRY_RUN -eq 0 ]]; then
-    if [[ "$CUR_BRANCH" != "main" ]]; then
-        fail "Not on main (currently on $CUR_BRANCH); refusing real tag."
+    if [[ "$CUR_BRANCH" != "$EXPECT_BRANCH" ]]; then
+        fail "Not on $EXPECT_BRANCH (currently on $CUR_BRANCH); v$VERSION cuts from its release branch (#666)."
     fi
 else
-    echo "[dry-run] current branch: $CUR_BRANCH  (real tag requires main)"
+    echo "[dry-run] current branch: $CUR_BRANCH  (real tag requires $EXPECT_BRANCH)"
 fi
 
 if ! git diff-index --quiet HEAD; then
@@ -116,8 +123,19 @@ if [[ $DRY_RUN -eq 1 ]]; then
         fail "make test target missing"
     fi
 else
-    make test 2>&1 | tail -10
-    [[ ${PIPESTATUS[0]} -eq 0 ]] || fail "make test failed"
+    # Full log KEPT, never piped through tail (the gates-never-piped rule):
+    # the v0.16.0 cut failed here twice with the failing target's output
+    # already discarded — tail -10 kept the passing test-vcx summary and
+    # threw away everything else, so the actual red was unidentifiable
+    # from the run that found it. Digest on failure: the make error lines
+    # plus a pointer to the full log.
+    TAG_TEST_LOG="$(mktemp /tmp/tag-release-make-test.XXXXXX.log)"
+    note "full 'make test' log: $TAG_TEST_LOG"
+    if ! make test > "$TAG_TEST_LOG" 2>&1; then
+        grep -E "make(\[[0-9]+\])?: \*\*\*|FAIL|Error" "$TAG_TEST_LOG" | tail -20
+        fail "make test failed — full log: $TAG_TEST_LOG"
+    fi
+    tail -3 "$TAG_TEST_LOG"
 fi
 
 # -- Step 5: doc-link verification ------------------------------------
@@ -146,37 +164,56 @@ else
     note "stamping version to $VERSION (VERSION file + manifests via bump_version.sh)"
     scripts/bump_version.sh "$VERSION"
     note "verifying version consistency"
-    python3 scripts/check_version_consistency.py || fail "version inconsistent after bump"
+    vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx || fail "version inconsistent after bump"
 fi
 
-# -- Step 3: rebuild --------------------------------------------------
+# -- Step 3: commit the bump, THEN rebuild (#666) ---------------------
+#
+# ORDER IS LOAD-BEARING: the build stamps CX_COMMIT from HEAD and CX_VERSION
+# from the VERSION file. Building while the bump sat uncommitted stamped the
+# NEW version against the PRE-bump commit — an artifact whose provenance
+# claim could not both be true (`cx version` said v0.15.0 @ a commit whose
+# VERSION file said 0.14.0), and rev-parse is silent about the dirty tree
+# that would have explained it. Committing first makes the stamped commit
+# the SAME commit the tag points at: the artifact reproduces from its tag.
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would run: make build-vcx"
+    echo "[dry-run] would commit version bump, then run: make build-vcx"
 else
+    note "committing version bump"
+    # Stage every file bump_version.sh just stamped. The tree was verified clean
+    # at the start of this script, so the only tracked modifications now are the
+    # version stamps — `git add -u` captures them all and CANNOT drift out of
+    # sync with bump_version.sh the way a hand-maintained file list does (that
+    # drift left vscode/package.json at the old version in a tagged commit).
+    git add -u 2>/dev/null || true
+    git commit -m "chore(release): bump version strings to $VERSION" || true
+
     note "rebuilding libcx + cli"
     make build-vcx
+
+    # Provenance gate (#666): the binary we just built must self-report
+    # exactly this version at exactly this (clean) commit — the check that
+    # would have caught the mis-stamp. `cx version` is the contract surface
+    # downstream BOMs pin on, so assert on its output, not on build inputs.
+    STAMP="$(vcx/target/cx version 2>/dev/null || vcx/target/cx -v)"
+    WANT_COMMIT="$(git rev-parse --short HEAD)"
+    echo "$STAMP" | grep -q "cx v$VERSION\$" \
+        || fail "provenance stamp: binary reports '$(echo "$STAMP" | head -1)', expected 'cx v$VERSION'"
+    echo "$STAMP" | grep -qE "commit[[:space:]]+$WANT_COMMIT\$" \
+        || fail "provenance stamp: binary's commit is not clean '$WANT_COMMIT' — got: $(echo "$STAMP" | grep commit)"
+    note "provenance stamp verified: cx v$VERSION @ $WANT_COMMIT (clean)"
 fi
 
 # -- Step 6: tag (skipped on dry-run) ---------------------------------
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would commit version bump + create signed tag $TAG"
+    echo "[dry-run] would create signed tag $TAG"
     echo "[dry-run] would print push instructions"
     echo
     echo "[dry-run] all checks passed — real tag would proceed cleanly."
     exit 0
 fi
-
-note "committing version bump"
-# Stage every file bump_version.sh just stamped. The tree was verified clean
-# at the start of this script and the build emits only gitignored artifacts, so
-# the only tracked modifications now are the version stamps — `git add -u`
-# captures them all and CANNOT drift out of sync with bump_version.sh the way a
-# hand-maintained file list does (that drift left vscode/package.json at the
-# old version in a tagged commit).
-git add -u 2>/dev/null || true
-git commit -m "chore(release): bump version strings to $VERSION" || true
 
 TAG_MSG="CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
 if git config --get user.signingkey >/dev/null 2>&1 && gpg --list-secret-keys >/dev/null 2>&1; then

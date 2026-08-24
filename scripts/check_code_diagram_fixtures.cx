@@ -1,0 +1,622 @@
+# scripts/check_code_diagram_fixtures.cx — the gate-37.10 harness: run
+# conformance/code_diagram.cxd fixtures through `cx code-diagram` and
+# `cx code-tree` with STRUCTURAL comparison.
+#
+# CX rewrite of scripts/check_code_diagram_fixtures.py (RULED: PYE-5,
+# ledger/rulings_2026_08_22_python_eradication.md; #922). Both rules the
+# Python carried are preserved EXACTLY:
+#
+#   RULED: PYE-6 — an all-SKIP run is a FAILURE. Zero passes means the
+#   gate proved nothing, and a gate that proves nothing must not report
+#   success. Individual skips stay legitimate; an empty selection (a
+#   --filter matching no fixture) fails for the same reason.
+#
+#   #929 — binary discovery is THIS TREE's build or an explicit CX_BIN;
+#   PATH is deliberately NOT searched (an installed cx is not this
+#   tree). A missing binary is a MISSING PREREQUISITE: exit 2, never 52
+#   skips.
+#
+# Comparison is structural, not byte-identical:
+#   - Mermaid (`view: graph`): node-id set + edge set (+ subgraphs;
+#     entities/relationships for erDiagram; participants/messages/blocks
+#     for sequenceDiagram) — ordering irrelevant.
+#   - JSON (`view: tree`): every node carries {kind, loc} with
+#     loc.start < loc.end inside the source's UTF-8 byte range;
+#     key-order/whitespace-tolerant recursive compare; extra fields in
+#     actual are accepted (forward-compat).
+#
+# Exit codes:
+#   0  at least one fixture PASSED and none FAILed or ERRORed
+#   1  one or more fixtures FAIL or ERROR, or NO fixture passed
+#      (all-SKIP, or an empty selection) — RULED: PYE-6
+#   2  fixture file missing / malformed, or no usable cx binary (#929)
+#
+# Run:  cx --allow-read --allow-write --allow-env --allow-subprocess \
+#         scripts/check_code_diagram_fixtures.cx \
+#         [--filter RX] [--fixtures FILE.cxd] [--verbose]
+# (or:  make test-code-diagram)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat-seqs scope=public ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+[?def set-put scope=public ($m $k) [$map:put $m $k true]]
+[?def sorted-keys scope=public ($m) [$sort [?for [in $k [$map:keys $m]] [yield $k]]]]
+[?def set-of scope=public ($seq) [$fp:fold $seq {} [?fn ($a $x) [$map:put $a $x true]]]]
+
+# raw-of / normalize: the fixture-loader projection (see
+# scripts/check_code_fixtures.cx for the rationale).
+[?def raw-of scope=public ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [< $i 0] [< $j 0] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] $j]]]]]
+[?def normalize scope=public ($raw)
+  [?let [= $a [?if [$starts-with $raw "\n"] [then [$strings:slice $raw 1 [$strings:length $raw]]] [else $raw]]]
+    [?if [$ends-with $a "\n"] [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+[?def parse-meta scope=public ($body)
+  [$fp:fold [$strings:split-lines $body] {}
+    [?fn ($acc $line)
+      [?let [= $i [$strings:find $line ":"]]
+        [?if [< $i 0] [then $acc]
+          [else [$map:put $acc
+                  [$strings:trim [$strings:slice $line 0 $i]]
+                  [$strings:trim [$strings:slice $line [+ $i 1] [$strings:length $line]]]]]]]]]]
+
+# clamp: reproduce the section-end truncation — stop at a bare `---`
+# line or a `## ` heading, then strip trailing newlines.
+[?def clamp scope=public ($s)
+  [?let [= $lines [$strings:split $s "\n"]]
+        [= $n [$count $lines]]
+        [= $stops [?for [in $i [$range 1 $n]]
+          [= $l [$nth $lines $i]]
+          [where [or [= [$strings:trim-end $l] "---"]
+                     [$starts-with $l "## "]]]
+          [yield $i]]]
+        [= $end [?if [$empty $stops] [then [+ $n 1]] [else [$first $stops]]]]
+    [$strings:trim-end-chars
+      [$strings:join [?for [in $i [$range 1 [- $end 1]]]
+        [yield [$nth $lines $i]]] "\n"]
+      "\n"]]]
+
+# parse one [case] into a fixture map.
+[?def parse-fixture scope=public ($c)
+  [?let
+    [= $cid [$string [?else $c@id ""]]]
+    [= $title [$strings:join [?for [in $k $c/*]
+        [where [= [?else [$name $k] ""] "title"]]
+        [yield [$raw-of $k]]] ""]]
+    [= $meta [$fp:fold [?for [in $k $c/*]
+        [where [= [?else [$name $k] ""] "meta"]]
+        [yield [$normalize [$raw-of $k]]]] {}
+      [?fn ($acc $b) [$map:merge ($acc, [$parse-meta $b])]]]]
+    [= $sections [$fp:fold [?for [in $k $c/*]
+        [where [$member ('source','expected') [?else [$name $k] ""]]]
+        [yield $k]] {}
+      [?fn ($acc $k)
+        [$map:put $acc [?else [$name $k] ""] [$normalize [$raw-of $k]]]]]]
+    [= $attr-level [$string [?else $c@level ""]]]
+    {test_id: [?if [= $title ""] [then $cid] [else [$concat $cid " " $title]]],
+     view: [$string [?else [$map:get $meta "view"] ""]],
+     kind: [$string [?else [$map:get $meta "kind"] ""]],
+     level: [?if [= $attr-level ""]
+              [then [$string [?else [$map:get $meta "level"] ""]]]
+              [else $attr-level]],
+     source: [$clamp [?else [$map:get $sections "source"] ""]],
+     expected: [$clamp [?else [$map:get $sections "expected"] ""]]}]]
+
+# ── Mermaid structural parser ────────────────────────────────────────
+# Node patterns, longest delimiters first (only the id feeds the
+# compare; the decl is stripped to its bare id before edge parsing).
+[?const NODE-RXS (
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\[/\"((?:[^\"\\\\]|\\\\.)*)\"/\\]"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\{\\{\"((?:[^\"\\\\]|\\\\.)*)\"\\}\\}"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\{\"((?:[^\"\\\\]|\\\\.)*)\"\\}"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\{([^}{]+)\\}"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\(\\[\"((?:[^\"\\\\]|\\\\.)*)\"\\]\\)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\(\\[([^\\]\\[]+)\\]\\)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\(\\(\"((?:[^\"\\\\]|\\\\.)*)\"\\)\\)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\(\"((?:[^\"\\\\]|\\\\.)*)\"\\)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\(([^)(]+)\\)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\[\"((?:[^\"\\\\]|\\\\.)*)\"\\]"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\[([^\\]\\[]+)\\]"])]
+
+# Edge patterns; capture (src, label?, dst).
+[?const EDGE-RX-LABELED (
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\s*--\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*-->\\s*([A-Za-z_][0-9A-Za-z_]*)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\s*--\\s*([^>\\-][^-]*?)\\s*-->\\s*([A-Za-z_][0-9A-Za-z_]*)"],
+  [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\s*-\\.\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\.->\\s*([A-Za-z_][0-9A-Za-z_]*)"])]
+[?const EDGE-RX-PLAIN [$re:compile "([A-Za-z_][0-9A-Za-z_]*)\\s*-->\\s*([A-Za-z_][0-9A-Za-z_]*)"]]
+
+[?const SUBGRAPH-RX [$re:compile "^subgraph\\s+([A-Za-z_][0-9A-Za-z_]*)"]]
+[?const ER-REL-RX [$re:compile "^([A-Za-z_][0-9A-Za-z_]*)\\s+([|}{o][|}{o\\-]+[|}{o])\\s+([A-Za-z_][0-9A-Za-z_]*)(?:\\s*:\\s*(.+))?"]]
+[?const ER-ENT-RX [$re:compile "^([A-Za-z_][0-9A-Za-z_]*)\\s*\\{"]]
+[?const PARTICIPANT-RX [$re:compile "^participant\\s+([0-9A-Za-z_\\-]+)"]]
+# sequence arrows: (pattern, kind); search (not anchored).
+[?const SEQ-SYNC-RX  [$re:compile "([0-9A-Za-z_\\-]+)\\s*->>?(?:\\+|-)?\\s*([0-9A-Za-z_\\-]+)\\s*:"]]
+[?const SEQ-ASYNC-RX [$re:compile "([0-9A-Za-z_\\-]+)\\s*-->>?(?:\\+|-)?\\s*([0-9A-Za-z_\\-]+)\\s*:"]]
+[?const SEQ-CANCEL-RX [$re:compile "([0-9A-Za-z_\\-]+)\\s*-x\\s*([0-9A-Za-z_\\-]+)\\s*:"]]
+[?const SEQ-BARE-RX  [$re:compile "([0-9A-Za-z_\\-]+)\\s*->>?(?:\\+|-)?\\s*([0-9A-Za-z_\\-]+)$"]]
+
+[?const SEP "\t"]
+
+[?def rx-is-match scope=public ($m)
+  [?match $m [case [no-match] false] [else true]]]
+
+# strip-nodes: collect node ids on a line and reduce each decl to its
+# bare id (pattern-priority global passes; the fixture corpus is
+# well-formed mermaid, where this equals the positional walk).
+[?def strip-nodes scope=public ($line0)
+  [$fp:fold NODE-RXS {line: $line0, ids: []}
+    [?fn ($acc $rx)
+      [?let [= $line [$map:get $acc "line"]]
+            [= $new-ids [?for [in $m [$re:find-all $rx $line]] [yield [$re:group $m 1]]]]
+        {line: [$re:replace $rx $line "$1"],
+         ids: [$fp:fold $new-ids [$map:get $acc "ids"]
+                [?fn ($a $i) [$array:append $a $i]]]}]]]]
+
+[?def parse-flowchart scope=public ($lines)
+  [$fp:fold $lines {nodes: {}, edges: {}, subgraphs: {}}
+    [?fn ($g $raw)
+      [?let [= $s [$strings:trim $raw]]
+        [?if [or [= $s ""] [$starts-with $s "%%"]
+                 [or [$starts-with $s "flowchart"] [$starts-with $s "graph"]]]
+          [then $g]
+        [else [?if [$starts-with $s "subgraph"]
+          [then [?let [= $m [$re:find SUBGRAPH-RX $s]]
+            [?if [$rx-is-match $m]
+              [then [$map:put $g "subgraphs"
+                [$set-put [$map:get $g "subgraphs"] [$re:group $m 1]]]]
+              [else $g]]]]
+        [else [?if [= $s "end"] [then $g] [else [$flow-line $g $s]]]]]]]]]]]
+
+[?def flow-line scope=public ($g $s)
+  [?let [= $sn [$strip-nodes $s]]
+        [= $stripped [$map:get $sn "line"]]
+        [= $nodes [$fp:fold [$map:get $sn "ids"]
+          [$map:get $g "nodes"] [?fn ($a $i) [$set-put $a $i]]]]
+        [= $edges1 [?for [in $rx EDGE-RX-LABELED]
+          [in $m [$re:find-all $rx $stripped]]
+          [yield [$concat [$strings:trim [$re:group $m 1]] SEP
+                          [$strings:trim [$re:group $m 3]] SEP
+                          [$strings:trim-chars [$strings:trim [$re:group $m 2]] "\""]]]]]
+        [= $edges2 [?for [in $m [$re:find-all EDGE-RX-PLAIN $stripped]]
+          [yield [$concat [$strings:trim [$re:group $m 1]] SEP
+                          [$strings:trim [$re:group $m 2]] SEP]]]]
+        [= $edges [$fp:fold [$cat-seqs ($edges1, $edges2)]
+          [$map:get $g "edges"] [?fn ($a $e) [$set-put $a $e]]]]
+    [$map:merge ($g, {nodes: $nodes, edges: $edges})]]]
+
+[?def parse-er scope=public ($lines)
+  [?let [= $st [$fp:fold $lines
+      {entities: {}, relationships: {}, in-entity: "", rows: []}
+      [?fn ($g $raw)
+        [?let [= $s [$strings:trim $raw]]
+          [?if [or [= $s ""] [$starts-with $s "%%"] [= $s "erDiagram"]]
+            [then $g]
+          [else [?if [not [= [$map:get $g "in-entity"] ""]]
+            [then [?if [= $s "}"]
+              [then [$map:merge ($g, {
+                entities: [$map:put [$map:get $g "entities"] [$map:get $g "in-entity"]
+                  [$strings:join [$sort [?for [in $r [$map:get $g "rows"]] [yield $r]]] SEP]],
+                in-entity: "", rows: []})]]
+              [else [$map:put $g "rows" [$array:append [$map:get $g "rows"] $s]]]]]
+          [else
+            [?let [= $me [$re:find ER-ENT-RX $s]]
+              [?if [and [$rx-is-match $me] [$ends-with $s "{"]]
+                [then [$map:merge ($g, {in-entity: [$re:group $me 1], rows: []})]]
+                [else
+                  [?let [= $mr [$re:find ER-REL-RX $s]]
+                    [?if [$rx-is-match $mr]
+                      [then [?let [= $lbl [?match [$re:group $mr 4]
+                              [case [err $e] ""] [case $v [$strings:trim $v]]]]
+                        [$map:put $g "relationships" [$set-put [$map:get $g "relationships"]
+                          [$concat [$re:group $mr 1] SEP [$re:group $mr 3] SEP
+                                   [$re:group $mr 2] SEP $lbl]]]]]
+                      [else $g]]]]]]]]]]]]]]
+    {entities: [$map:get $st "entities"], relationships: [$map:get $st "relationships"]}]]
+
+[?def seq-arrow scope=public ($s)
+  # first matching arrow pattern (order = the Python's), or ().
+  [?let [= $m1 [$re:find SEQ-SYNC-RX $s]]
+        [= $m2 [$re:find SEQ-ASYNC-RX $s]]
+        [= $m3 [$re:find SEQ-CANCEL-RX $s]]
+        [= $m4 [$re:find SEQ-BARE-RX $s]]
+    [?if [$rx-is-match $m1] [then [arrow src=[$re:group $m1 1] dst=[$re:group $m1 2] kind="sync"]]
+    [else [?if [$rx-is-match $m2] [then [arrow src=[$re:group $m2 1] dst=[$re:group $m2 2] kind="async"]]
+    [else [?if [$rx-is-match $m3] [then [arrow src=[$re:group $m3 1] dst=[$re:group $m3 2] kind="cancel"]]
+    [else [?if [$rx-is-match $m4] [then [arrow src=[$re:group $m4 1] dst=[$re:group $m4 2] kind="sync"]]
+    [else ()]]]]]]]]]]
+
+[?def parse-seq scope=public ($lines)
+  [$fp:fold $lines {participants: {}, messages: {}, blocks: {}}
+    [?fn ($g $raw)
+      [?let [= $s [$strings:trim $raw]]
+        [?if [or [= $s ""] [$starts-with $s "%%"] [= $s "sequenceDiagram"]]
+          [then $g]
+          [else
+            [?let [= $mp [$re:find PARTICIPANT-RX $s]]
+              [?if [$rx-is-match $mp]
+                [then [$map:put $g "participants"
+                  [$set-put [$map:get $g "participants"] [$re:group $mp 1]]]]
+                [else
+                  [?let
+                    [= $blk [?else [$first [?for [in $kw ('alt','loop','par','opt','activate','deactivate')]
+                      [where [or [= $s $kw] [$starts-with $s [$concat $kw " "]]]]
+                      [yield $kw]]] ""]]
+                    [= $g2 [?if [= $blk ""] [then $g]
+                      [else [$map:put $g "blocks" [$set-put [$map:get $g "blocks"] $blk]]]]]
+                    [= $ar [$seq-arrow $s]]
+                    [?if [$empty $ar] [then $g2]
+                      [else [$map:merge ($g2, {
+                        messages: [$set-put [$map:get $g2 "messages"]
+                          [$concat [$string $ar@src] SEP [$string $ar@dst] SEP [$string $ar@kind]]],
+                        participants: [$set-put [$set-put [$map:get $g2 "participants"]
+                          [$string $ar@src]] [$string $ar@dst]]})]]]]]]]]]]]]]
+
+[?def parse-mermaid scope=public ($text0)
+  [?let [= $text [$strings:trim $text0]]
+        [= $lines [$strings:split $text "\n"]]
+        [= $header [?else [$first [?for [in $l $lines]
+          [= $s [$strings:trim $l]]
+          [where [not [= $s ""]]]
+          [= $h [?if [or [$starts-with $s "flowchart"] [$starts-with $s "graph"]]
+                  [then "flowchart TD"]
+                [else [?if [= $s "erDiagram"] [then "erDiagram"]
+                [else [?if [= $s "sequenceDiagram"] [then "sequenceDiagram"]
+                [else ""]]]]]]]
+          [where [not [= $h ""]]]
+          [yield $h]]] ""]]
+    [?if [= $header "erDiagram"]
+      [then [$map:merge ({header: "erDiagram"}, [$parse-er $lines])]]
+    [else [?if [= $header "sequenceDiagram"]
+      [then [$map:merge ({header: "sequenceDiagram"}, [$parse-seq $lines])]]
+    [else [$map:merge ({header: $header}, [$parse-flowchart $lines])]]]]]]]
+
+# set-diff display: sorted members of $a missing from $b.
+[?def missing-from scope=public ($a $b)
+  [$sort [?for [in $k [$map:keys $a]] [where [not [$map:contains $b $k]]] [yield $k]]]]
+[?def show-keys scope=public ($ks)
+  [$concat "[" [$strings:join [?for [in $k $ks]
+    [yield [$concat "'" [$strings:replace $k SEP ", "] "'"]]] ", "] "]"]]
+
+[?def diff-two-sets scope=public ($what $exp $act)
+  [?let [= $miss [$missing-from $exp $act]]
+        [= $extra [$missing-from $act $exp]]
+    [$cat-seqs (
+      [?if [$empty $miss] [then ()]
+        [else ([$concat $what " missing: " [$show-keys $miss]])]],
+      [?if [$empty $extra] [then ()]
+        [else ([$concat $what " extra: " [$show-keys $extra]])]])]]]
+
+[?def compare-mermaid scope=public ($exp $act)
+  [?if [not [= [$map:get $exp "header"] [$map:get $act "header"]]]
+    [then ([$concat "header: '" [$map:get $act "header"] "' != expected '"
+                    [$map:get $exp "header"] "'"])]
+  [else [?if [= [$map:get $exp "header"] "sequenceDiagram"]
+    [then [$cat-seqs (
+      [$diff-two-sets "participants" [$map:get $exp "participants"] [$map:get $act "participants"]],
+      [$diff-two-sets "messages" [$map:get $exp "messages"] [$map:get $act "messages"]],
+      # block-kind set: expected says "must include" (subset check).
+      [?let [= $miss [$missing-from [$map:get $exp "blocks"] [$map:get $act "blocks"]]]
+        [?if [$empty $miss] [then ()]
+          [else ([$concat "seq blocks missing: " [$show-keys $miss]])]]])]]
+  [else [?if [= [$map:get $exp "header"] "erDiagram"]
+    [then [$cat-seqs (
+      [$diff-two-sets "entities" [$set-of [$map:keys [$map:get $exp "entities"]]]
+                                 [$set-of [$map:keys [$map:get $act "entities"]]]],
+      [?for [in $name [$sorted-keys [$map:get $exp "entities"]]]
+        [where [$map:contains [$map:get $act "entities"] $name]]
+        [where [not [= [$map:get [$map:get $exp "entities"] $name]
+                       [$map:get [$map:get $act "entities"] $name]]]]
+        [yield [$concat $name ": rows ["
+          [$strings:replace [$map:get [$map:get $act "entities"] $name] SEP "; "]
+          "] != expected ["
+          [$strings:replace [$map:get [$map:get $exp "entities"] $name] SEP "; "] "]"]]],
+      [$diff-two-sets "relationships" [$map:get $exp "relationships"] [$map:get $act "relationships"]])]]
+  [else [$cat-seqs (
+    [$diff-two-sets "nodes" [$map:get $exp "nodes"] [$map:get $act "nodes"]],
+    [$diff-two-sets "edges" [$map:get $exp "edges"] [$map:get $act "edges"]],
+    [?if [= [$strings:join [$sorted-keys [$map:get $exp "subgraphs"]] ","]
+            [$strings:join [$sorted-keys [$map:get $act "subgraphs"]] ","]]
+      [then ()]
+      [else ([$concat "subgraphs: " [$show-keys [$sorted-keys [$map:get $act "subgraphs"]]]
+                      " != expected " [$show-keys [$sorted-keys [$map:get $exp "subgraphs"]]]])]])]]]]]]]]
+
+# ── JSON tree validation + structural compare ────────────────────────
+[?const VALID-KINDS ('attribute','directive','element','path','scalar','text')]
+
+# JSON values parse to NODES here: a JSON object answers the open map
+# pattern {}, a JSON array answers the rest pattern [*$r] (maps answer
+# it too, so the map test runs first) — measured against the shipped
+# json:parse, whose results are not ::map/::array kinded values.
+[?def is-json-map scope=public ($v)
+  [?match $v [case {} true] [else false]]]
+[?def is-json-arr scope=public ($v)
+  [?if [$is-json-map $v] [then false]
+    [else [?match $v [case [*$r] true] [else false]]]]]
+[?def is-int scope=public ($v)
+  [?match $v [case $x::int true] [else false]]]
+
+[?def validate-tree scope=public ($node $srclen $path)
+  [?if [not [$is-json-map $node]]
+    [then ([$concat $path ": not a JSON object"])]
+    [else
+      [?let
+        [= $kind [$string [?else [$map:get $node "kind"] "null"]]]
+        [= $e-kind [?if [$member VALID-KINDS $kind] [then ()]
+          [else ([$concat $path ".kind: '" $kind "' not in the kind set"])]]]
+        [= $loc [?else [$map:get $node "loc"] ()]]
+        [= $e-loc [?if [not [$is-json-map $loc]]
+          [then ([$concat $path ".loc: missing or not an object"])]
+          [else
+            [?let [= $start [?else [$map:get $loc "start"] ()]]
+                  [= $end [?else [$map:get $loc "end"] ()]]
+              [?if [not [and [$is-int $start] [$is-int $end]]]
+                [then ([$concat $path ".loc: start/end not integers"])]
+                [else [?if [>= $start $end]
+                  [then ([$concat $path ".loc: start (" [$string $start]
+                                  ") >= end (" [$string $end] ")"])]
+                  [else [?if [or [< $start 0] [> $end $srclen]]
+                    [then ([$concat $path ".loc: [" [$string $start] ","
+                                    [$string $end] ") outside source (0.."
+                                    [$string $srclen] ")"])]
+                    [else ()]]]]]]]]]]
+        [= $e-name [?if [and [$member ('element','attribute','directive') $kind]
+                             [not [$map:contains $node "name"]]]
+          [then ([$concat $path ".name: required for kind=" $kind])] [else ()]]]
+        [= $e-value [?if [and [$member ('attribute','text','scalar') $kind]
+                              [not [$map:contains $node "value"]]]
+          [then ([$concat $path ".value: required for kind=" $kind])] [else ()]]]
+        [= $e-children [?if [not [$map:contains $node "children"]] [then ()]
+          [else
+            [?let [= $ch [$map:get $node "children"]]
+              [?if [not [$is-json-arr $ch]]
+                [then ([$concat $path ".children: not a list"])]
+                [else [$cat-seqs [?for [in $i [$range 1 [$array:size $ch]]]
+                  [yield [$validate-tree [$array:get $ch $i] $srclen
+                    [$concat $path ".children[" [$string [- $i 1]] "]"]]]]]]]]]]]
+        [$cat-seqs ($e-kind, $e-loc, $e-name, $e-value, $e-children)]]]]]
+
+[?def tree-equal scope=public ($expected $actual $path)
+  [?if [and [$is-json-map $expected] [$is-json-map $actual]]
+    [then [$cat-seqs [?for [in $k [$map:keys $expected]]
+      [yield [?if [$map:contains $actual $k]
+        [then [$tree-equal [$map:get $expected $k] [$map:get $actual $k]
+                [$concat $path "." $k]]]
+        [else ([$concat $path "." $k ": missing in actual"])]]]]]]
+    [else [?if [and [$is-json-arr $expected] [$is-json-arr $actual]]
+      [then [?if [not [= [$array:size $expected] [$array:size $actual]]]
+        [then ([$concat $path ": list length " [$string [$array:size $actual]]
+                        " != expected " [$string [$array:size $expected]]])]
+        [else [$cat-seqs [?for [in $i [$range 1 [$array:size $expected]]]
+          [yield [$tree-equal [$array:get $expected $i] [$array:get $actual $i]
+                   [$concat $path "[" [$string [- $i 1]] "]"]]]]]]]]
+      [else [?if [= $expected $actual] [then ()]
+        [else ([$concat $path ": '" [$string $actual] "' != expected '"
+                        [$string $expected] "'"])]]]]]]]
+
+# ── binary discovery (#929: THIS TREE's build or CX_BIN; no PATH) ────
+[?def executable-file scope=public impure ($p)
+  # is-file, plus the execute bit WHEN the stat surface reports
+  # permissions (the shipped io:stat omits the spec'd permissions attr —
+  # measured 2026-08-23; absence is treated as executable so discovery
+  # does not fail closed on the gap).
+  [?if [not [$io:is-file $p]] [then false]
+    [else [?let [= $perms [$string [?else [$io:stat $p]@permissions ""]]]
+      [or [= $perms ""] [$strings:contains $perms "x"]]]]]]
+
+[?def locate-cx scope=public impure ()
+  [?let [= $envbin [$strings:trim [?else [$env:var "CX_BIN"] ""]]]
+    [?if [not [= $envbin ""]]
+      [then [?if [$executable-file $envbin]
+        [then [bin ok=true path=$envbin reason=[$concat "CX_BIN=" $envbin]]]
+        [else [bin ok=false path=""
+                reason=[$concat "CX_BIN=" $envbin " is not an executable file"]]]]]
+      [else
+        [?let [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+              [= $cands ([$path:join $root "dist/bin/cx"],
+                         [$path:join $root "vcx/target/cx"],
+                         [$path:join $root "vcx/cx"])]
+              [= $hits [?for [in $c $cands] [where [$executable-file $c]] [yield $c]]]
+          [?if [$empty $hits]
+            [then [bin ok=false path=""
+              reason=[$concat "no cx binary in this tree — looked at ["
+                [$strings:join [?for [in $c $cands] [yield [$concat "'" $c "'"]]] ", "]
+                "]. Build it (`make build-vcx-dev`) or point CX_BIN at the "
+                "build to grade. PATH is deliberately NOT searched: an "
+                "installed cx is not this tree."]]]
+            [else [bin ok=true path=[$first $hits] reason="found"]]]]]]]]
+
+# ── emitter invocation: `cx <subcommand> [--level=L] -`, stdin-fed ───
+[?def looks-unimplemented scope=public ($stderr $subcommand)
+  [?let [= $s [$lower $stderr]]
+    [or [or [$strings:contains $s "not implemented"]
+            [or [$strings:contains $s "unknown command"]
+                [$strings:contains $s "unknown subcommand"]]]
+        [or [or [$strings:contains $s "unrecognized"]
+                [or [$strings:contains $s "no such command"]
+                    [$strings:contains $s "no such subcommand"]]]
+            # pre-v0.8.0 fallback-to-filename shape
+            [or [$strings:contains $s [$concat "failed to open file \"" $subcommand "\""]]
+                [$strings:contains $s [$concat "error reading file " $subcommand]]]]]]]
+
+[?def invoke-emitter scope=public impure ($binpath $subcommand $source $level)
+  [?let [= $argv [$cat-seqs (
+          ($binpath, $subcommand),
+          [?if [= $level ""] [then ()] [else ([$concat "--level=" $level])]],
+          ("-"))]]
+        [= $r [$process:run $argv stdin=$source timeout-ms=10000]]
+    [?match $r
+      [case [err $e] [inv ok=false stdout="" stderr=[$concat "spawn: " [$string $e@message]]]]
+      [else [?if $r@timed-out
+        [then [inv ok=false stdout="" stderr="timeout: 10s emitter budget exceeded"]]
+        [else [inv ok=[= $r@exit-code 0]
+                   stdout=[$string $r@stdout] stderr=[$string $r@stderr]]]]]]]]
+
+# ── per-fixture runner ───────────────────────────────────────────────
+# run-tree-compare: JSON-parse both sides, validate the actual tree
+# against the {kind, loc} contract, then structural-compare.
+[?def run-tree-compare scope=public ($fix $id $stdout)
+  [?let [= $exp [$json:parse [$map:get $fix "expected"]]]
+        [= $act [$json:parse $stdout]]
+    [?match $exp
+      [case [err $e] [res id=$id status="ERROR"
+        detail=[$concat "JSON parse: " [$string $e@message]]]]
+      [else
+        [?match $act
+          [case [err $e] [res id=$id status="ERROR"
+            detail=[$concat "JSON parse: " [$string $e@message]]]]
+          [else
+            [?let [= $errs [$validate-tree $act
+                    [$strings:length-bytes [$map:get $fix "source"]] "$"]]
+              [?if [not [$empty $errs]]
+                [then [res id=$id status="FAIL"
+                  detail=[$concat "validate: "
+                    [$strings:join
+                      [?for [in $i [$range 1 [$min ([$count $errs], 5)]]]
+                        [yield [$nth $errs $i]]] "; "]]]]
+                [else
+                  [?let [= $diffs [$tree-equal $exp $act "$"]]
+                    [?if [$empty $diffs]
+                      [then [res id=$id status="PASS" detail=""]]
+                      [else [res id=$id status="FAIL"
+                        detail=[$strings:join
+                          [?for [in $i [$range 1 [$min ([$count $diffs], 5)]]]
+                            [yield [$nth $diffs $i]]] "; "]]]]]]]]]]]]]]
+
+[?def run-fixture scope=public impure ($fix $binpath)
+  [?let [= $view [$map:get $fix "view"]]
+        [= $id [$map:get $fix "test_id"]]
+    [?if [= $view "graph"]
+      [then
+        [?let [= $r [$invoke-emitter $binpath "code-diagram"
+                      [$map:get $fix "source"] [$map:get $fix "level"]]]
+          [?if [not $r@ok]
+            [then [?if [$looks-unimplemented [$string $r@stderr] "code-diagram"]
+              [then [res id=$id status="SKIP" detail="cx_code_diagram not implemented"]]
+              [else [res id=$id status="ERROR"
+                      detail=[$concat "emitter exit nonzero: "
+                        [$strings:trim [$string $r@stderr]]]]]]]
+            [else
+              [?let [= $diffs [$compare-mermaid
+                      [$parse-mermaid [$map:get $fix "expected"]]
+                      [$parse-mermaid [$string $r@stdout]]]]
+                [?if [$empty $diffs]
+                  [then [res id=$id status="PASS" detail=""]]
+                  [else [res id=$id status="FAIL"
+                    detail=[$strings:join
+                      [?for [in $i [$range 1 [$min ([$count $diffs], 5)]]]
+                        [yield [$nth $diffs $i]]] "; "]]]]]]]]]
+      [else [?if [= $view "tree"]
+        [then
+          [?let [= $r [$invoke-emitter $binpath "code-tree"
+                        [$map:get $fix "source"] [$map:get $fix "level"]]]
+            [?if [not $r@ok]
+              [then [?if [$looks-unimplemented [$string $r@stderr] "code-tree"]
+                [then [res id=$id status="SKIP" detail="cx_code_tree not implemented"]]
+                [else [res id=$id status="ERROR"
+                        detail=[$concat "emitter exit nonzero: "
+                          [$strings:trim [$string $r@stderr]]]]]]]
+              [else [$run-tree-compare $fix $id [$string $r@stdout]]]]]]
+        [else [res id=$id status="ERROR"
+                detail=[$concat "unknown view: '" $view "'"]]]]]]]]
+
+# ── main ─────────────────────────────────────────────────────────────
+[?let
+  [= $args [$env:parse-args [argspec
+    [flag name="filter" type=string default=""]
+    [flag name="fixtures" type=string default=""]
+    [flag name="verbose" short="v" type=bool]]]]
+  [= $filter [$string [?else [$env:flag $args "filter"] ""]]]
+  [= $fix-path [?let [= $fx [$string [?else [$env:flag $args "fixtures"] ""]]]
+    [?if [= $fx ""] [then "conformance/code_diagram.cxd"] [else $fx]]]]
+  [= $verbose [$env:flag $args "verbose"]]
+  [?if [not [$io:is-file $fix-path]]
+    [then [?let [= $_e [$cry [$concat "error: fixture file not found: " $fix-path]]]
+            [$env:exit 2]]]
+    [else
+      [?let [= $suite [$cx:parse [$io:read-file $fix-path]]]
+        [?match $suite
+          [case [err $e]
+            [?let [= $_e [$cry [$concat "error: malformed fixture file: " [$string $e@message]]]]
+              [$env:exit 2]]]
+          [else
+            [?let
+              [= $all-fixtures [?for [in $c $suite/*]
+                [where [= [?else [$name $c] ""] "case"]]
+                [yield [$parse-fixture $c]]]]
+              [= $fixtures [?if [= $filter ""] [then $all-fixtures]
+                [else [?let [= $frx [$re:compile $filter]]
+                  [?for [in $f $all-fixtures]
+                    [where [$rx-is-match [$re:find $frx [$map:get $f "test_id"]]]]
+                    [yield $f]]]]]]
+              [= $binary [$locate-cx]]
+              [?if [not $binary@ok]
+                [then
+                  # #929: a missing binary is a MISSING PREREQUISITE
+                  # (exit 2), not N skips.
+                  [?let [= $_e [$cry [$concat "error: cx binary unavailable: "
+                                              [$string $binary@reason]]]]
+                    [$env:exit 2]]]
+                [else
+                  [?let
+                    [= $results [?for [in $f $fixtures]
+                      [yield [?if [not [$member ('tree','graph') [$map:get $f "view"]]]
+                        [then [res id=[$map:get $f "test_id"] status="ERROR"
+                                detail=[$concat "bad view: '" [$map:get $f "view"] "'"]]]
+                        [else [?if [and [= [$map:get $f "expected"] ""]
+                                        [= [$map:get $f "view"] "tree"]]
+                          [then [res id=[$map:get $f "test_id"] status="ERROR"
+                                  detail="tree fixture has empty :expected"]]
+                          [else [$run-fixture $f [$string $binary@path]]]]]]]]]
+                    [= $n-pass [$count [?for [in $r $results] [where [= [$string $r@status] "PASS"]] [yield 1]]]]
+                    [= $n-fail [$count [?for [in $r $results] [where [= [$string $r@status] "FAIL"]] [yield 1]]]]
+                    [= $n-skip [$count [?for [in $r $results] [where [= [$string $r@status] "SKIP"]] [yield 1]]]]
+                    [= $n-err  [$count [?for [in $r $results] [where [= [$string $r@status] "ERROR"]] [yield 1]]]]
+                    [= $total [$count $results]]
+                    [= $_lines [?for [in $r $results]
+                      [= $status [$string $r@status]]
+                      [yield [?if [or $verbose [$member ('FAIL','ERROR') $status]]
+                        [then [$say [?if [= [$string $r@detail] ""]
+                          [then [$concat $status " " [$string $r@id]]]
+                          [else [$concat $status " " [$string $r@id] ": " [$string $r@detail]]]]]]
+                        [else [?if [= $status "SKIP"]
+                          [then [$say [$concat "SKIP " [$string $r@id] ": " [$string $r@detail]]]]
+                          [else ()]]]]]]]
+                    [= $_sum [$say [$concat
+                      [$string $n-pass] " passed, "
+                      [$string $n-fail] " failed, "
+                      [$string $n-skip] " skipped, "
+                      [$string $n-err] " errored, of "
+                      [$string $total] " total"]]]
+                    [?if [or [> $n-fail 0] [> $n-err 0]]
+                      [then [$env:exit 1]]
+                      [else
+                        # RULED: PYE-6 — an all-SKIP run is a FAILURE; so is
+                        # an empty selection. Zero passes proved nothing.
+                        [?if [= $n-pass 0]
+                          [then [?let [= $_e [?if [= $total 0]
+                              [then [$cry "error: no fixtures selected — a gate run that examines nothing cannot pass (RULED: PYE-6)"]]
+                              [else [$cry [$concat "error: " [$string $n-skip] " of "
+                                [$string $total] " fixtures skipped and NONE passed — the "
+                                "gate proved nothing (RULED: PYE-6). Check that the `cx` "
+                                "binary is built and that cx_code_diagram / cx_code_tree "
+                                "are present."]]]]]
+                            [$env:exit 1]]]
+                          [else [$env:exit 0]]]]]]]]]]]]]]]

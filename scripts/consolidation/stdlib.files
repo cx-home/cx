@@ -1,0 +1,10 @@
+# area: stdlib
+vcx/tests/stdlib_base58_test.v
+vcx/tests/stdlib_did_test.v
+vcx/tests/stdlib_session_did_test.v
+vcx/tests/stdlib_skeleton_test.v
+vcx/tests/stdlib_vc_test.v
+vcx/tests/stdlib_xap_coord_test.v
+vcx/tests/stdlib_xap_pep_test.v
+vcx/tests/stdlib_xsp_test.v
+vcx/tests/vc_roundtrip_test.v

@@ -8,7 +8,7 @@
    sections use [[anchor]] form. File extension .cxd — data-only
    source. #]
 
-[section id=faq n=12 title='Frequently Asked Questions'
+[section id=faq group='Reference' n=12 title='Frequently Asked Questions'
 
   [intro
     """If you ran into something confusing in your first week of CX,
@@ -76,24 +76,28 @@
 
     [child id=faq-attr-vs-slot title='Why does `[user :id 42]` parse differently from `[user id=42]`?'
       [body
-        """They are two different syntactic forms. **`name=value`** is
-           the data-element attribute syntax (per `spec/grammar.ebnf
-           [55] Attribute`). **`:name value`** is the *directive
-           labeled-slot* syntax (per `spec/grammar.ebnf [127e]`) and
-           is only valid inside `[?directive …]`. On a data element,
-           `:id` looks like a type tag — and `[user :id 42]` parses
-           as a `user` element whose body is the value `42` carrying
-           the type tag `:id` (which is not a known type, so it errors
-           later). On a directive, `:id 42` is the labeled slot named
-           `id` bound to `42`."""]
+        """They are two different syntactic forms that both parse.
+           `name=value` — the data-element *attribute* syntax, per
+           `spec/03-approved/formal/grammar.ebnf [55] Attribute` —
+           attaches a named value to the element.
+           `:name` on its own is an **atom literal** — so
+           `[user :id 42]` is a `user` element whose body is two
+           items: the atom `:id` and the int `42`. No error is
+           raised; it just doesn't mean "the id attribute is 42".
+           Inside a `[?directive …]`, the same `:name value` spelling
+           is the *labeled-slot* syntax (per
+           `spec/03-approved/formal/grammar.ebnf [127e]`), so
+           `:id 42` there is the slot named `id` bound to `42`. And
+           if you wanted a type annotation, that is the double-colon
+           glue: `[user::int 42]`."""]
       [example lang=cx
-        """[# Right — data element with attribute                     #]
+        """[# Attribute — the id attribute is 42                      #]
            [user id=42 email='ada@example.com']
 
-           [# Right — directive with labeled slot                     #]
+           [# Directive labeled slot — slot id bound to 'users'       #]
            [?service :id 'users' :port 8080 [route '/users' …]]
 
-           [# Wrong — :id on a data element looks like a type tag     #]
+           [# Atom + int body — NOT an attribute, NOT a type tag      #]
            [user :id 42]"""]
       [note
         """The two-form distinction is by design — see the body
@@ -114,7 +118,7 @@
       [output """(3, 2)"""]
       [body
         """The distinction is the **container vs atom** principle in
-           [`spec/cxdm.md`](../../spec/cxdm.md) §2.0. See
+           [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §2.0. See
            [[container-atom]] for the full rules; sequences are flat,
            arrays are containers."""]]
 
@@ -148,7 +152,7 @@
            about key order."""]
       [example lang=shell
         """cx fmt doc.cx                   [# preserves attr order    #]
-           cx convert --to json doc.cx     [# sorts attr keys         #]"""]]
+           cx --to=json doc.cx             [# sorts attr keys         #]"""]]
 
     [child id=faq-double-anchor title='Can I have two `&anchor` declarations with the same name?'
       [body
@@ -264,39 +268,40 @@
 
     [child id=faq-cx-thread-register title='When do I call `cx_thread_register()`?'
       [body
-        """**Never if you use a binding.** The binding's Layer-1
-           wrappers auto-call `cx_thread_register` on the first
-           libcx call from each thread and `cx_thread_unregister`
-           when the thread exits.
-           **Manually only if** you are calling the C ABI directly
-           from a host-spawned thread, e.g. a Rust binding's
-           `tokio::task::spawn_blocking` closure that calls a raw
-           `cx_*` C symbol — that thread is opaque to libcx's
-           Boehm GC and must register itself. See
+        """It depends on the binding. **Rust**: never — every FFI
+           chokepoint calls `ensure_thread` before the C call and
+           unregisters at thread exit. **Go**: never — each cgo call
+           runs on a locked OS thread that the internal guard
+           registers. **Python**: the binding does NOT register
+           threads at all; it assumes the GIL plus a single calling
+           thread, so a `threading.Thread` that calls into libcx is
+           unprotected — keep libcx calls on one thread, or call
+           `cx_thread_register` yourself before the first call from
+           a worker thread. **Manually always** when you call the C
+           ABI directly from a host-spawned thread — that thread is
+           opaque to libcx's Boehm GC until it registers. See
            [[ffi-thread-register]] and
-           [`spec/abi.md`](../../spec/abi.md) §1.5.5."""]]
+           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §1.6."""]]
 
-    [child id=faq-python-memory title='Why does my Python Doc keep memory allocated after I drop it?'
+    [child id=faq-python-memory title='Do I need to close a Python Doc to release memory?'
       [body
-        """Boehm GC (the collector inside libcx) is conservative and
-           runs on its own schedule — dropping the Python wrapper
-           does not immediately free the underlying CX nodes. For
-           long-running processes that hold many `Doc` handles
-           briefly, call `.close()` to release the libcx reference
-           explicitly:"""]
+        """No — there is nothing to close. A Python `Doc` is an
+           ordinary refcounted object: the binding copies every
+           string libcx returns and frees the C buffer at the call
+           boundary, so no Doc holds libcx memory between calls.
+           Dropping the last reference reclaims it like any other
+           Python value. `Doc` has no `close()`, no `__del__`, and
+           no context-manager protocol."""]
+      [body
+        """The handle-backed classes are the ones with an explicit
+           lifecycle — `Stream`, `TableReader`, `TableWriter`, and
+           `EventWriter` carry `close()` and support `with`:"""]
       [example lang=python
         """import cxlib
-         doc = cxlib.parse_file('huge.cx')
-         try:
-             use(doc)
-         finally:
-             doc.close()                 [# release immediately       #]"""]
-      [body
-        """`Doc` is also a context manager:"""]
-      [example lang=python
-        """with cxlib.parse_file('huge.cx') as doc:
-             use(doc)
-         [# doc.close() called automatically on exit                   #]"""]
+         with cxlib.TableReader(open('huge.cxcol', 'rb').read()) as reader:
+             for row_group in reader:
+                 use(row_group)
+         [# reader.close() called automatically on exit                #]"""]
       [note
         """See [[ffi-doc-lifetime]] for the full per-binding lifetime
            contract. The TS binding had a Boehm GC interaction bug
@@ -312,23 +317,28 @@
       [example lang=shell
         """find . -name '*.cx' -print0 | xargs -0 cx lint"""]
       [body
-        """`cx lint` runs the rule set in
-           [`spec/lint.md`](../../spec/lint.md); exit code is the
-           number of files with diagnostics. See [[lint]] for the
-           rule list and how to configure rule severity per
-           project (`.cx-lint.yml` at the repo root)."""]]
+        """`cx lint` runs the built-in rule set (CX-L001 and
+           CX-L003 through CX-L008; the codes are registered in
+           [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+           §9.4/§9.5). Exit codes are the CLI convention: 0 = no
+           findings at or above `--fail-on`, 1 = findings, 2 = I/O
+           or parse failure. Per-project configuration lives in a
+           `.cxlint.cx` file, discovered by walking up from the
+           linted file. See [[lint]] for the rule list."""]]
 
     [child id=faq-semantic-diff title='How do I diff two CX files semantically?'
       [body
-        """`cx diff a.cx b.cx --semantic` does a tree-structured
-           diff that ignores attribute order, quote choice, and
-           comment-only changes. Without `--semantic` you get a
-           byte-level diff on the strict canonical form, which is
-           still better than a textual diff because both inputs
-           are normalised first."""]
+        """`cx diff a.cx b.cx` — the diff is always semantic:
+           it walks the strict-canonical forms of both inputs, so
+           attribute order, quote choice, and comment-only changes
+           produce no delta. There is no `--semantic` flag because
+           there is no other mode. Output shape is
+           `--format=unified|json|summary` (default unified), with
+           `--color[=always|never|auto]` / `--no-color` for the
+           unified view."""]
       [example lang=shell
-        """cx diff before.cx after.cx --semantic
-           cx diff before.cx after.cx --format=unified"""]
+        """cx diff before.cx after.cx
+           cx diff before.cx after.cx --format=summary"""]
       [body
         """See [[diff]] for the algorithm and the JSON-output mode
            used by CI integrations."""]]
@@ -344,15 +354,17 @@
       [body
         """The generator reads `docs-src/canonical/manifest.cxd`,
            assembles the section files, expands example
-           placeholders against `conformance/*.txt`, and writes
+           placeholders against `conformance/*.cxd`, and writes
            the rendered guide into `_docs_staging/`. See
            [[docgen]]."""]]
 
     [child id=faq-vscode-highlight title="Why doesn't VS Code highlight my CX file?"
       [body
-        """The CX VS Code extension is not auto-installed. From the
-           command palette, run "Extensions: Install from VSIX…"
-           and point at `tooling/vscode/cx-language-*.vsix`. After
+        """The CX VS Code extension is not auto-installed, and no
+           prebuilt `.vsix` is committed — build one first with
+           `npm run package` in `tooling/vscode/`, then from the
+           command palette run "Extensions: Install from VSIX…"
+           and point at the produced file. After
            install, run "Developer: Reload Window" to pick up the
            grammar. The extension contributes the `.cx`, `.cxs`,
            and `.cxd` file associations; if a file is mis-detected,
@@ -366,31 +378,34 @@
 
   [child id=faq-perf n=12.6 title='Performance'
 
-    [child id=faq-max-file-size title='How big a file can `cx parse` handle?'
+    [child id=faq-max-file-size title='How big a file can cx handle?'
       [body
-        """The parser is bounded by `CX_MAX_BODY` (default 256 MiB).
-           For files larger than the cap, use the streaming
-           evaluator — see [[streaming-data]]. Gate 15 of the
-           gate 15 measures the streaming
-           throughput at **353 MB/s** on the reference workload."""]
+        """Parsing is the default action — `cx FILE` parses and
+           evaluates — and there is no configured size cap: the
+           whole-document path is memory-bound, so the practical
+           limit is the RAM the parsed tree needs. For inputs too
+           big to materialize, use the streaming surfaces — the
+           events pull API at the ABI (`cx_events_open` /
+           `cx_events_next`) and streamed `[?for]` comprehension
+           output — which bound resident memory to a chunk. See
+           [[streaming-data]]. The release gate holds streaming
+           throughput to a ≥200 MB/s floor; that gate is not green
+           yet (`[?for]` measures around the line, `[?map]` below
+           it), so treat the floor as the target, not a promise."""]
       [example lang=shell
-        """[# Raise the cap if your workflow needs it                  #]
-           CX_MAX_BODY=$((1024*1024*1024)) cx parse big.cx
+        """[# Whole-document — fine while the tree fits in memory      #]
+           cx big.cx
 
-           [# Or stream                                                #]
-           cx stream big.cx --eval '//record/@id'"""]
-      [body
-        """The per-document `CX_MAX_*` family is documented at
-           [[limits]] — body, depth, attribute count, scalar
-           length, total nodes are independently capped."""]]
+           [# Streaming comprehension output — bounded memory          #]
+           cx --data=big.cx program.cx"""]]
 
     [child id=faq-single-threaded title='Is parsing single-threaded?'
       [body
         """The **parser** is single-threaded per document — the
            bracket grammar is inherently sequential. The
            **streaming evaluator** is single-threaded per stream
-           but multiple streams can run concurrently, and
-           `[?map par=true]` / `[?reduce par=true]` parallelise across
+           but multiple streams can run concurrently, and a `[par]`
+           clause on `[?map]` / `[?reduce]` parallelises across
            bounded worker pools. For analytical workloads on
            tabular data, CXCol scans are SIMD-accelerated where
            the host CPU supports it."""]]
@@ -401,10 +416,10 @@
            bundled into the browser. It carries unavoidable
            overhead — Asyncify instrumentation (so `[?sleep]` can
            yield through the JS event loop), pthreads runtime (so
-           `par=true` runs real OS threads), and the wasm format
+           `[par]` runs real OS threads), and the wasm format
            itself. Production CX deployments use the native CLI
-           (~5 MB binary), the language bindings (~1.5 MB per
-           wrapper), or libcx as a shared library directly —
+           (a ~10 MB binary), the language bindings, or libcx as a
+           shared library (~12 MB) directly —
            those paths have no Asyncify overhead, no
            SharedArrayBuffer requirement, no bundle-size
            pressure. The playground exists to make CX explorable
@@ -413,31 +428,31 @@
            full framing, including the three playground delivery
            modes (GitHub Pages, file://, `make guide-http`)."""]]
 
-    [child id=faq-playground-par-no-speedup title='I ran [?map par=true] in the playground and it did not speed up — bug?'
+    [child id=faq-playground-par-no-speedup title='I ran [?map [par]] in the playground and it did not speed up — bug?'
       [body
         """Not a bug — your playground is most likely running in
            single-thread mode. Three delivery modes: GitHub Pages
            and `file://` both serve the
            single-threaded Asyncify build (no cross-origin
            isolation possible without custom HTTP headers, and
-           browsers gate SharedArrayBuffer behind that). `par=true`
+           browsers gate SharedArrayBuffer behind that). `[par]`
            is honoured (output multiset is correct, sequential is
            one valid ordering) but doesn't accelerate. For real
            parallel speedup in the playground, run
            `make guide-http` — the V veb server sends the
            required cross-origin-isolation headers, the
-           pthreads-enabled wasm loads, and `par=true` uses real OS
+           pthreads-enabled wasm loads, and `[par]` uses real OS
            threads. The playground's adaptive footer tells you
            which mode you're in."""]]
 
     [child id=faq-parquet-perf title='How fast is Parquet round-trip vs native CXCol?'
       [body
-        """Parquet writes hit roughly **150 MB/s** on the
-           reference benchmark — the bottleneck is Snappy
-           compression and the Arrow → Parquet conversion.
-           Native **CXCol** is faster because it skips
-           compression by default and uses a wire format
-           designed for the CX value model. Rule of thumb: use
+        """There is no maintained benchmark number to quote for the
+           Parquet path. Structurally, Parquet writes pay for
+           compression and the Arrow → Parquet conversion; native
+           **CXCol** skips compression by default and uses a wire
+           format designed for the CX value model, so it is the
+           cheaper CX-internal path. Rule of thumb: use
            **Parquet** for interchange with the broader analytics
            ecosystem, **CXCol** for CX-internal pipelines. See
            [[cxcol-vs-others]] for the full decision matrix."""]]]
@@ -446,34 +461,39 @@
 
     [child id=faq-include-untrusted title='Is `[?cx include]` safe with untrusted input?'
       [body
-        """It depends on the capability profile. The default
-           profile (`default`) allows `include-local` — relative
-           paths from the source document — but disallows
-           `include-remote` and `include-absolute`. For untrusted
-           input, use `--profile untrusted`, which disables
-           includes entirely and refuses any directive that
-           touches the filesystem or network:"""]
+        """Yes by default — because by default nothing is granted.
+           CX is deny-by-default: with no `--allow-*` flags the
+           evaluation is pure-only, so includes (which ride the
+           `read` capability) stay unresolved and no directive can
+           touch the filesystem or network. That makes the bare
+           invocation the safe one for untrusted input:"""]
       [example lang=shell
-        """cx --profile untrusted untrusted.cx"""]
+        """[# Pure-only — untrusted input cannot reach fs or network  #]
+           cx untrusted.cx
+
+           [# Trusted input that needs includes: grant read + a root  #]
+           cx --allow-read --include-root=./conf main.cx"""]
       [body
-        """The full capability matrix lives at
+        """The full capability model lives at
            [[include-capabilities]] and in
-           [`spec/include.md`](../../spec/include.md) §4. The
-           `cx_features()` bitfield exposes what the loaded libcx
-           supports; the profile gates what the runtime
+           [`spec/03-approved/core/security.md`](../../spec/03-approved/core/security.md).
+           The `cx_features()` bitmask exposes what the loaded libcx
+           supports; the grant set gates what the runtime
            permits."""]]
 
     [child id=faq-resource-limits title='How do I limit resource use?'
       [body
-        """Environment variables cap per-document and per-process
-           resource consumption. The full list lives at
-           [[limits]] and [[security]]; the most common are:"""]
+        """CX has no environment-variable cap family — there is no
+           parse-size, depth, or node-count knob. What bounds a run:
+           the **capability grant set** (deny-by-default `--allow-*`)
+           gates every effect an evaluation can perform, the
+           **streaming surfaces** bound resident memory to a chunk,
+           and per-process ceilings come from the operating system
+           (`ulimit`, cgroups, container limits) like any other
+           process. See [[limits]] and [[security]]."""]
       [example lang=shell
-        """CX_MAX_BODY=$((64*1024*1024))      [# parse size cap   #]
-           CX_MAX_DEPTH=128                    [# nesting cap      #]
-           CX_MAX_ATTRS=4096                   [# attrs per element #]
-           CX_MAX_NODES=$((1024*1024))         [# total nodes      #]
-           CX_EVAL_TIMEOUT_MS=5000             [# eval wall clock  #]
+        """[# OS-level ceilings around a pure-only evaluation          #]
+           ulimit -v 1048576        [# 1 GiB address-space cap         #]
            cx input.cx"""]]]
 
   [child id=faq-migration n=12.8 title='Migration'
@@ -497,14 +517,12 @@
            available on v0.7.5 (last release before the archive) [; version-literal-ok ]
            and live under `lang/_archived/` for reference. The
            current binding set is V, Python, Go, Rust (Tier 1)
-           only. Your options:
-           (a) **Stay on v0.7.5** — it remains tagged and [; version-literal-ok ]
-           supported for the v0.7.x bugfix line; CX file format [; version-literal-ok ]
-           is forward-compatible.
-           (b) **Migrate to a Tier-1 binding** — Layer 1 is
-           identical across all four, so the migration is mostly
-           module-import changes plus host-idiomatic adjustments
-           at Layer 2.
+           only. The path forward is to **migrate to a Tier-1
+           binding** — Layer 1 is identical across all four, so the
+           migration is mostly module-import changes plus
+           host-idiomatic adjustments at Layer 2. (There is no
+           supported pre-reshape line to stay on — no maintenance
+           releases are cut for tags before the stability boundary.)
            See `lang/_archived/README.md` for the per-binding
            archival notes and pointer to the last working
            commit."""]
@@ -577,9 +595,11 @@
            classes. All format converters are stateless and can
            run concurrently across threads on disjoint inputs.
            The Boehm GC underneath libcx requires
-           `cx_thread_register` on each calling thread; Tier-1
-           bindings handle this automatically at every FFI
-           chokepoint."""]]
+           `cx_thread_register` on each calling thread. Rust and Go
+           handle that automatically (per-chokepoint registration;
+           locked OS threads); the Python binding does NOT — it
+           assumes the GIL and a single calling thread, so keep
+           Python libcx calls on one thread."""]]
 
     [child id=faq-confusion-raw n=12.9.6 title='Why does my embedded code get garbled?'
       [body

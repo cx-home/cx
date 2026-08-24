@@ -19,7 +19,7 @@ _gate_evidence/*.log
 # `make guide` from docs-src/canonical/ (see scripts/gen_guide/README.md).
 docs/guide/
 
-# Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.py)
+# Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.cx)
 fixtures/bench/bench_1mb.cx
 fixtures/bench/bench_10mb.cx
 fixtures/bench/bench_100mb.cx
@@ -38,6 +38,15 @@ vcx/cx/*.so
 vcx/tests/*.dylib
 vcx/tests/*.so
 lang/rust/cxlib/target/
+# V compile-cache objects. `-usecache` (CX_CACHE in the Makefile) C-compiles
+# each unchanged module once and reuses the object; the layer is machine- and
+# toolchain-specific and fully regenerable. 227 of these (2.5 MB of
+# `*.module.net.mbedtls.o` plus `.thirdparty.description.txt` siblings) were
+# committed by accident in dee871be (2026-04-20) and untracked at #841: a cut
+# was shipping opaque binaries nobody reviewed, and every content gate that
+# scans tracked files was reporting `Binary file … matches` noise on them —
+# which is exactly the kind of output that trains a reader to skim a gate.
+.cache/
 lang/v/.cache/
 
 # compiled V binaries
@@ -75,3 +84,9 @@ vcx/tests/runners/eval/eval_conform
 # CCD spawned-task worktrees
 .claude/
 vcx/tests/runners/code_modify_sharing_bench
+.wavelog/
+bench/current.json
+
+# FL-1 (#764): feed-lineage sidecars are runtime artifacts, never committed
+**/.cxstore-lineage
+*.cxstore-lineage

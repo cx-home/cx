@@ -1,9 +1,10 @@
 # scripts/gen_guide/stdlib_docs_check.cx -- co-located stdlib doc freshness gate.
 #
 # Eat-our-own-dog-food: written entirely in CX, run under `cx eval`. It
-# guards the co-located documentation in stdlib/*.cx ([module-doc] /
-# [fn-doc]) against drift from the implementation and the conformance
-# corpus. It enforces, for every bundled module:
+# guards the co-located documentation in stdlib/*.cx AND x/*.cx (stream 18,
+# L143 -- a description that becomes agent-facing tool contract cannot be
+# ungated) ([module-doc] / [fn-doc]) against drift from the implementation
+# and the conformance corpus. It enforces, for every bundled module:
 #
 #   (1) PRESENCE PARITY  -- every public [?def NAME ...] has a matching
 #       [fn-doc name=NAME ...], and every [fn-doc] names a real public def
@@ -11,6 +12,9 @@
 #       impossible to ship silently.
 #   (2) PURITY AGREEMENT -- each [?def]'s `pure`/`impure` keyword matches
 #       its [fn-doc]'s `purity=` attribute.
+#   (6) DOC EXTRACTABILITY -- every bundled module projects at least one
+#       [module-doc]/[fn-doc] span through [$cx:ast], which is what the
+#       guide's stdlib pages are built from.
 #   (3) EXAMPLE BACKING  -- every [fn-doc]/[example]'s code block AND its
 #       expected output appear verbatim in the module's conformance corpus
 #       (conformance/stdlib/<m>.cxd). Because that corpus is executed green
@@ -20,6 +24,19 @@
 #       (wrong call or wrong output) is no longer backed and fails here.
 #       Modules with no .cxd (the new `xap`, whose examples come from the
 #       live demo ladder, not a fixture file) are skipped for backing.
+#   (4) SUMMARY REQUIRED FOR COMMANDS (stream 18, L143) -- an
+#       [effects]-bearing public [?def] whose [fn-doc] lacks a [summary]
+#       fails the gate: the same condition the agent-tool projection
+#       (cx-x/tools) fails loudly on at list time, caught here at commit
+#       time instead. Commands are found structurally via [$cx:ast]
+#       (clause PRESENCE, zero-item included) -- never by regex.
+#   (5) PARAM-DOC NAME VALIDITY (stream 18, L143) -- every
+#       [param-doc name=N] under [fn-doc name=F] names a real parameter
+#       of def F (params from the [$cx:ast] projection).
+#
+# Fail-loud contract (#811): any internal [err] from a probe (a regex
+# group miss, a parse failure) FAILS the gate naming the module -- an
+# error must never render-and-exit-0.
 #
 # Module-set parity (the bundle vs the status=current spec set, incl. the
 # bundled-but-separately-specced `xap`) is owned by a separate gate,
@@ -32,11 +49,11 @@
 # the one illustrative example per function -- so collapsing the test
 # source onto the doc examples would discard negative/edge coverage. The
 # .cxd stays authoritative; the examples are pinned to it. (Design note
-# recorded in spec/02-working/stdlib_colocated_docs.md.)
+# recorded in spec/03-approved/std-lib/stdlib_colocated_docs.md.)
 #
 # Capabilities: glob / read-file need `read`; the env standard streams +
 # exit are ambient (env.md §7). Run:
-#   vcx/target/cx eval scripts/gen_guide/stdlib_docs_check.cx --allow-read
+#   vcx/target/cx eval --allow-read scripts/gen_guide/stdlib_docs_check.cx
 #   (or: make guide-check)
 
 [?lib 'cx-stdlib/cx']
@@ -45,6 +62,8 @@
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/fp'      as=fp]
 
 # example child-text extractors (mirror guide_build's ex-part).
 [?def ex-code ($ex)
@@ -56,24 +75,69 @@
 [?def def-rx () [$re:compile "\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
 
 [?let [= $rx [$def-rx]]
-  [?let [= $bundle-files [$io:glob "stdlib/*.cx"]]
+  [?let [= $bundle-files [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "x/*.cx"])] [in $f $g] [yield $f]]]
 
-    # --- per-module (1)(2)(4): one violation blob per module -----------
+    # --- per-module (1)(2)(3)(4)(5): one violation blob per module -----
     [?let [= $blobs
       [?for [in $f $bundle-files]
         [= $m [$path:stem $f]]
         [= $txt [$io:read-file $f]]
-        [= $d [$cx:parse $txt]]
         [= $cxdpath [$concat "conformance/stdlib/" $m ".cxd"]]
         [= $has-cxd [$io:exists $cxdpath]]
         [= $cxdraw [?if $has-cxd [then [$io:read-file $cxdpath]] [else ""]]]
+        # the structured def view (stream 18: [$cx:ast] — commands by clause
+        # PRESENCE + per-def param lists; fail LOUD on a malformed module).
+        [= $ast-raw [$cx:ast $txt]]
+        [= $ast-bad [?match $ast-raw [case [err @code=$c] true] [else false]]]
+        [= $astviol [?if $ast-bad
+                      [then ([$concat "  [" $m "] cx:ast refused the module source: " [$string $ast-raw]])]
+                      [else ()]]]
+        [= $ast [?if $ast-bad [then {}] [else [$json:parse $ast-raw]]]]
+        [= $defs [?else $ast.defs []]]
+        # the doc lane: fn-doc/example elements from the VERBATIM docs spans
+        # (a whole-module data parse chokes on program-bearing def bodies).
+        [= $spans [?else $ast.docs []]]
+        [= $fn-docs [?for [in $sp $spans]
+                      [= $el [$cx:parse $sp]]
+                      [where [= [$name $el] "fn-doc"]]
+                      [yield $el]]]
+        # (6) DOC EXTRACTABILITY -- the guide's stdlib pages are projected
+        # from these same spans (scripts/gen_guide/guide_build.cx ::
+        # module-docs). A module whose docs stop projecting must fail HERE,
+        # loudly, instead of taking every stdlib page of the guide down with
+        # it at `make guide` time (#889: diagram.cx was the first module to
+        # use program-only syntax, and the guide's whole-file data parse died
+        # on it).
+        [= $spanviol [?if [= [$count $spans] 0]
+                       [then ([$concat "  [" $m "] no [module-doc]/[fn-doc] blocks project from the module source (guide_build cannot render its page)"],)]
+                       [else ()]]]
+        # (4) summary-required-for-commands
+        [= $cmdviol
+          [?for [in $cd [$filter $defs [?fn ($q) [?match $q [case {effects: $e} true] [else false]]]]]
+            [= $nm $cd.name]
+            [= $has-summary [> [$count [?for [in $fd $fn-docs] [where [= $fd@name $nm]] [where [$exists $fd/summary]] [yield 1]]] 0]]
+            [where [not $has-summary]]
+            [yield [$concat "  [" $m "] command def `" $nm "` has no [fn-doc][summary] — unprojectable (L143)"]]]]
+        # (5) param-doc name validity
+        [= $pdviol
+          [?for [in $fd $fn-docs]
+            [= $fnm $fd@name]
+            [= $owner [$filter $defs [?fn ($q) [= $q.name $fnm]]]]
+            [in $pd $fd//param-doc]
+            [= $pnm $pd@name]
+            [= $ownerdef [$first $owner]]
+            [= $valid [?if [$exists $owner]
+                        [then [> [$count [?to-sequence [$filter [?else $ownerdef.params []] [?fn ($pp) [= $pp.name $pnm]]]]] 0]]
+                        [else false]]]
+            [where [not $valid]]
+            [yield [$concat "  [" $m "] [param-doc name=" $pnm "] on `" $fnm "` names no parameter of that def (L143)"]]]]
         [= $defviol
           [?for [in $dm [$re:find-all $rx $txt]]
             [= $nm [$re:group $dm 1]]
-            [= $dpur [$re:group $dm 3]]
-            [= $doc-exists [> [$count [?for [in $fd $d//fn-doc] [where [= $fd@name $nm]] [yield 1]]] 0]]
+            [= $dpur [?fallback [$re:group $dm 3] [recover-with ""]]]
+            [= $doc-exists [> [$count [?for [in $fd $fn-docs] [where [= $fd@name $nm]] [yield 1]]] 0]]
             [= $pur-ok [or [= $dpur ""]
-                           [> [$count [?for [in $fd $d//fn-doc] [where [= $fd@name $nm]] [where [= $fd@purity $dpur]] [yield 1]]] 0]]]
+                           [> [$count [?for [in $fd $fn-docs] [where [= $fd@name $nm]] [where [= $fd@purity $dpur]] [yield 1]]] 0]]]
             [= $line [?if [not $doc-exists]
                        [then [$concat "  [" $m "] missing [fn-doc] for public def: " $nm]]
                        [else [?if [not $pur-ok]
@@ -82,20 +146,21 @@
             [where [not [= $line ""]]]
             [yield $line]]]
         [= $docviol
-          [?for [in $fd $d//fn-doc]
+          [?for [in $fd $fn-docs]
             [= $nm $fd@name]
             [= $def-exists [> [$count [?for [in $dm [$re:find-all $rx $txt]] [where [= [$re:group $dm 1] $nm]] [yield 1]]] 0]]
             [where [not $def-exists]]
             [yield [$concat "  [" $m "] orphan [fn-doc] with no public def: " $nm]]]]
         [= $exviol
-          [?for [in $ex $d//example]
+          [?for [in $fd $fn-docs]
+            [in $ex $fd//example]
             [= $code [$strings:trim [$ex-code $ex]]]
             [= $expect [$strings:trim [$ex-expect $ex]]]
             [where $has-cxd]
             [where [not [and [$strings:contains $cxdraw $code] [$strings:contains $cxdraw $expect]]]]
             [yield [$concat "  [" $m "] example not backed by " $m ".cxd:\n      " $code "\n      => " $expect]]]]
 
-        [= $parts [?for [in $blk ([$strings:join $defviol "\n"], [$strings:join $docviol "\n"], [$strings:join $exviol "\n"])]
+        [= $parts [?for [in $blk ([$strings:join $astviol "\n"], [$strings:join $spanviol "\n"], [$strings:join $cmdviol "\n"], [$strings:join $pdviol "\n"], [$strings:join $defviol "\n"], [$strings:join $docviol "\n"], [$strings:join $exviol "\n"])]
                     [where [not [= $blk ""]]] [yield $blk]]]
         [= $blob [$strings:join $parts "\n"]]
         [where [not [= $blob ""]]]

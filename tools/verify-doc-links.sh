@@ -13,7 +13,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGETS=()
 for arg in "$@"; do
  if [ -d "$arg" ]; then
- while IFS= read -r f; do TARGETS+=("$f"); done < <(find "$arg" -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/_archive/*")
+ # .cxd sources carry the same [label](path) links in their prose bodies —
+ # the 2026-08-20 #826 verification found three dead repo paths this gate
+ # structurally could not see because it scanned *.md only. Example blocks
+ # rarely contain ](…) shapes and the path filter below drops non-paths,
+ # so the same extraction applies.
+ while IFS= read -r f; do TARGETS+=("$f"); done < <(find "$arg" \( -name "*.md" -o -name "*.cxd" \) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/_archive/*")
  elif [ -f "$arg" ]; then
  TARGETS+=("$arg")
  fi
@@ -33,8 +38,39 @@ FAIL_DETAILS=()
 # Fenced code blocks and inline code spans are stripped first — text inside
 # them renders literally, so `[text](url)` examples and code like
 # `Project[User](doc.Filter(...))` are not links.
+#
+# Code-span stripping is WHOLE-FILE, not per line (#837). A code span may
+# wrap across a newline — CommonMark allows it, and CX prose does it often
+# because bracketed element spans are long:
+#
+#     A **substrate-provided PURE projection** `[sequence entry] → [sequence
+#     entry]`, parameterized by `(tx-position, valid-instant)`, composed
+#
+# Stripped line by line, the first line has an ODD number of backticks, so
+# nothing matches there; on the second line the stripper pairs the SPAN'S
+# CLOSING backtick with the next opening one and removes the text between
+# them — leaving `entry](tx-position, valid-instant)` and inventing a link
+# that does not exist in the source. That false positive is expensive:
+# scripts/release.sh runs this gate and must refuse to publish on a red one.
+#
+# Slurping alone is not enough either. A code span is delimited by a RUN of
+# backticks and closed by a run of the SAME length (CommonMark), so `code.md`'s
+# eight ``double-backtick`` spans — among 9,235 single ones — read as two
+# adjacent spans under a naive `[^`]*` and desynchronise every span after
+# them. That produced seven MORE invented links, not fewer.
+#
+# The rule below is the CommonMark one: an opening run that is maximal (no
+# backtick either side), then the shortest text up to a closing run of the
+# same length, equally maximal. Verified over all 118 approved specs: zero
+# broken links, where the previous two spellings reported one and seven
+# phantoms respectively.
 for file in "${TARGETS[@]}"; do
  file_dir=$(dirname "$file")
+ # .cxd sources render into docs/guide/*.html — their relative links are
+ # authored for THAT location, so resolve them there, not at the source.
+ case "$file" in
+ *.cxd) file_dir="$ROOT/docs/guide" ;;
+ esac
  while IFS= read -r link; do
  # Strip any #anchor
  target="${link%%#*}"
@@ -49,7 +85,7 @@ for file in "${TARGETS[@]}"; do
  FAIL_DETAILS+=("$file → $target (resolved as $resolved)")
  fi
  done < <(awk 'BEGIN{fence=0} /^[[:space:]]*(```|~~~)/{fence=!fence; next} !fence' "$file" \
- | sed -E 's/`[^`]*`//g' \
+ | perl -0777 -pe 's/(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)//gs' \
  | grep -oE '\]\(([^)]+)\)' \
  | sed -E 's/^\]\(//; s/\)$//' \
  | grep -vE '^(https?:|mailto:|#)' \

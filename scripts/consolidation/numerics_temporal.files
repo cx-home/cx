@@ -1,0 +1,8 @@
+# area: numerics_temporal
+vcx/tests/bigint_overflow_test.v
+vcx/tests/datetime_test.v
+vcx/tests/decimal_bigint_semantics_test.v
+vcx/tests/duration_period_test.v
+vcx/tests/numerics_test.v
+vcx/tests/sized_types_test.v
+vcx/tests/slice_step_zero_test.v

@@ -3,10 +3,11 @@
 ## Supported versions
 
 CX is **pre-1.0**. Only the latest released minor series — currently
-**0.15.x**, per the repo-root [`VERSION`](VERSION) file, which is the
+**0.16.x**, per the repo-root [`VERSION`](VERSION) file, which is the
 single source of truth for the release version — receives security
 fixes. Integration for the next minor happens on its `release/X.Y.0`
-branch (currently `release/0.13.0`); pre-release branches receive
+branch (derived from `VERSION` — never named here, so this file cannot
+go stale against a cut); pre-release branches receive
 fixes as part of normal development, not as security backports.
 
 There has been no external security audit yet — see the
@@ -55,12 +56,12 @@ Out of scope:
 
 ## Fuzz testing
 
-The repo carries an in-tree fuzz harness:
-`scripts/fuzz_cx.py` drives the parser and the
-published C ABI with random byte sequences, malformed CX text,
-oversized inputs, and known parser edge cases, asserting on crashes
-(SIGSEGV / SIGBUS / SIGABRT), a memory-leak proxy, and
-catastrophic-time regressions. Crash findings land in
+The repo carries an in-tree fuzz harness, itself written in CX:
+`scripts/fuzz_cx.cx` drives the parser, the buffered evaluator, the
+streaming emitter and the strict-canonical serializer with random byte
+sequences, malformed CX text, oversized inputs, and known parser edge
+cases, asserting on crashes (SIGSEGV / SIGBUS / SIGABRT), a memory-leak
+proxy, and catastrophic-time regressions. Crash findings land in
 `vcx/fuzz/crashes/` (a gitignored runtime-artifact directory) and are
 fixed with accompanying regression fixtures.
 

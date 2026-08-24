@@ -7,6 +7,15 @@
 -include scripts/gen_guide/guide.mk
 # ── v0.8.0 CX Data Language Guide ───────────────────────────────── END gen_guide
 
+# ── LLM onboarding layer (#938) ──────────────────────────────────── BEGIN gen_docs
+# Makes `make docs` / `make docs-check` first-class. Renders docs-src/llm/
+# templates into docs/llm/ (primer.md, reference-*.md, llms.txt,
+# llms-full.txt), pulling every example from a conformance fixture and
+# re-recording its output from the live binary. `make docs-check` is the drift
+# gate (in TEST_TARGETS + tools/release-verify.sh).
+-include scripts/gen_docs/docs.mk
+# ── LLM onboarding layer (#938) ────────────────────────────────────── END gen_docs
+
 # Prefer the patched V toolchain (third_party/v/v) for EVERY recipe that
 # invokes `v`. It carries the macOS hardened-runtime libgc / -prod fixes and
 # the picoev shared-listener patch (`new_with_listen_fd`) the http
@@ -62,6 +71,8 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
  abi-c-test \
  conform conform-vcx conform-md bench bench-python bench-streaming bench-cxparse \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
+ bench-lazy-ceiling \
+ bench-streamed-alloc \
  examples example-python example-v example-go example-rust \
  demos demo-v demo-go demo-rust \
  clean
@@ -123,13 +134,30 @@ build-playground:
 	@#     :par via Web Workers. Needs separate .wasm for pthread
 	@#     workers to share the module instance via SAB.
 	@# ASYNCIFY=1 lets wall-clock [?sleep DUR] yield through the JS
-	@# event loop on the main thread without freezing the UI. ~10%
-	@# per-call overhead; the default `make build-wasm` keeps ASYNCIFY=0
-	@# so CLI/binding consumers don't pay it.
-	@# Build recipe mirrors scripts/gen_guide/guide.mk lines 77-78 so
-	@# `build-playground` and `guide` stay consistent.
-	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@# event loop on the main thread without freezing the UI. The
+	@# default `make build-wasm` keeps ASYNCIFY=0 so CLI/binding
+	@# consumers don't pay it.
+	@# ASYNCIFY_MODE=2 selects JSPI (-sASYNCIFY=2) instead of the
+	@# classic binaryen Asyncify rewriter (#930): the classic rewriter
+	@# under emcc 5.0.7 costs ~7x host stack per CX eval level, which
+	@# shrank the recursion window to ~10-11 levels and broke the
+	@# diagram walkers on stock example [64]. JSPI removes the
+	@# instrumentation entirely — sync exports get full depth (the
+	@# #319 guard trips catchably at ~40 levels) and the single-file
+	@# bundle drops 36MB → 13MB. Requires a JSPI-capable browser
+	@# (Chromium 137+); cxlib.js routes the async lanes through
+	@# WebAssembly.promising wrappers when Module.cxAsyncifyMode == 2.
+	@# Build recipe mirrors scripts/gen_guide/guide.mk (build-playground-
+	@# wasm-for-guide) so `build-playground` and `guide` stay consistent.
+	@# libcx-sync: plain (ASYNCIFY=0) compatibility bundle for hosts
+	@# WITHOUT the JSPI API (Safari; Firefox where still flag-gated).
+	@# The JSPI bundles abort at instantiation there, so cxlib.js
+	@# selects this one when WebAssembly.Suspending is absent — full
+	@# recursion window, wall-clock [?sleep] raises catchable CXER0270
+	@# (mock sleeps work). No pthreads.
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     ./scripts/wasm/build_libcx_wasm.sh
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
@@ -139,8 +167,10 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
+	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
 	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
 	@cp dist/wasm/libcx-async.js dist/playground-preview/wasm/libcx-async.js
+	@cp dist/wasm/libcx-sync.js dist/playground-preview/wasm/libcx-sync.js
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/wasm/libcx-pthreads.wasm; fi
 	@# Smoke-test compatibility: also stage flat copies under dist/wasm/
@@ -149,9 +179,10 @@ build-playground:
 	@# matches docs/guide/ deployment.
 	@cp dist/wasm/cxlib.js dist/playground-preview/dist/wasm/cxlib.js
 	@cp dist/wasm/libcx-async.js dist/playground-preview/dist/wasm/libcx-async.js
+	@cp dist/wasm/libcx-sync.js dist/playground-preview/dist/wasm/libcx-sync.js
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/dist/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/dist/wasm/libcx-pthreads.wasm; fi
-	@echo "[build-playground] OK — dist/playground-preview/ ready (libcx-async + libcx-pthreads staged)"
+	@echo "[build-playground] OK — dist/playground-preview/ ready (libcx-async + libcx-pthreads + libcx-sync staged)"
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
@@ -257,14 +288,16 @@ verify-doc-blocks: build-vcx
 # V2 — upstream V patch tracking. Reports status of the vlang/v
 # issues that block cx v0.7.0. Exit non-zero only
 # on a closed-unfixed (upstream-rejected) outcome.
-check-v-upstream:
-	@python3 scripts/check_v_upstream_patches.py
+check-v-upstream: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-v-upstream: build-vcx
+	@"$(CX_BIN)" --allow-net --allow-write scripts/check_v_upstream_patches.cx
 
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
 # cxl-version=/cx-eval-version= rename window deprecation.
+check-lint-rules: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-lint-rules:
-	@python3 scripts/check_lint_rules.py
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_lint_rules.cx
 
 # V6 — install the .githooks/ scripts as repo-local git hooks
 # (idempotent). Sets core.hooksPath rather than symlinking each
@@ -286,7 +319,7 @@ install-hooks:
 .PHONY: guide-check
 guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 guide-check: build-vcx
-	@"$(CX_BIN)" eval scripts/gen_guide/stdlib_docs_check.cx --allow-all
+	@"$(CX_BIN)" eval --allow-all scripts/gen_guide/stdlib_docs_check.cx
 
 # Directive + syntax reference drift gate — every code.md §4.1 registry
 # directive has a [directive-doc], no orphans, and each example is backed
@@ -294,7 +327,7 @@ guide-check: build-vcx
 .PHONY: directive-docs-check
 directive-docs-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 directive-docs-check: build-vcx
-	@"$(CX_BIN)" eval scripts/gen_guide/directive_docs_check.cx --allow-all
+	@"$(CX_BIN)" eval --allow-all scripts/gen_guide/directive_docs_check.cx
 
 # Playground example drift gate (#92) — every entry in
 # scripts/gen_guide/playground/playground.examples.js must still run clean on
@@ -306,7 +339,8 @@ directive-docs-check: build-vcx
 # carry runnable:false (exempt). --check verifies without rewriting the file.
 .PHONY: verify-playground-examples
 verify-playground-examples: build-vcx
-	@python3 scripts/gen_guide/playground/gen_examples.py --check
+	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	  scripts/gen_guide/playground/gen_examples.cx --check
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
@@ -319,7 +353,25 @@ verify-playground-examples: build-vcx
 .PHONY: stdlib-catalog-gate
 stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
-	@"$(CX_BIN)" eval scripts/stdlib_catalog_gate.cx --allow-all
+	@"$(CX_BIN)" eval --allow-all scripts/stdlib_catalog_gate.cx
+
+# ── tools-export golden gate (stream 18, #690) ────────────────────────────────
+# `cx tools export` over the checked-in M5 module must reproduce the checked-in
+# golden byte-for-byte — the offline registration lane pinned end-to-end
+# (cx-x/tools descriptors → cx-x/mcp-server adapter → JSON emission). A
+# projection change that moves these bytes is deliberate and regenerates the
+# golden via the verb itself in the same commit.
+.PHONY: tools-export-gate
+tools-export-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+tools-export-gate: build-vcx
+	@out=$$("$(CX_BIN)" tools export conformance/tools-export/refund_order.cx) || { echo "tools-export-gate: the verb FAILED"; exit 1; }; \
+	want=$$(cat conformance/tools-export/refund_order.tools.json); \
+	if [ "$$out" != "$$want" ]; then \
+	  echo "tools-export-gate: OUTPUT DIVERGES from conformance/tools-export/refund_order.tools.json"; \
+	  echo "--- got:"; echo "$$out"; echo "--- want:"; echo "$$want"; \
+	  exit 1; \
+	fi; \
+	echo "tools-export-gate OK — refund_order.tools.json reproduced byte-for-byte"
 
 # Format-companion regeneration (#424) — the derived companions under
 # examples/ (books.*, config.*, doc.md, comparisons/table_block.csv) are
@@ -353,15 +405,17 @@ examples-regen:
 	@echo "==> done; review with 'git diff examples/' and commit"
 
 # V7 — bench harness JSON runner. Drives bench-streaming and emits
-# a stable JSON shape consumable by scripts/compare_bench.py.
+# a stable JSON shape consumable by scripts/compare_bench.cx.
+bench-json: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench-json:
-	@python3 scripts/run_bench_json.py
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-clock scripts/run_bench_json.cx
 
 # V7 — bench regression comparison. Pass BASELINE= and CURRENT= as
 # paths to JSON files produced by bench-json. Default threshold is
 # 30%; pass STRICT=1 for the 10% threshold.
+bench-compare: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench-compare:
-	@python3 scripts/compare_bench.py \
+	@"$(CX_BIN)" --allow-read --allow-write scripts/compare_bench.cx \
 	  $(or $(BASELINE),bench/baseline.json) \
 	  $(or $(CURRENT),bench/current.json) \
 	  $(if $(STRICT),--strict,)
@@ -378,19 +432,34 @@ verify-doc-links:
 	@tools/verify-doc-links.sh docs-src/
 	@tools/verify-doc-links.sh spec/03-approved/
 	@tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md \
-	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md
+	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md \
+	  AGENTS.md CLAUDE.md
+	@# docs/llm/ (#938) is the GENERATED LLM layer. It is expected to carry
+	@# ZERO relative links: it is served from the published SITE ROOT, where a
+	@# repo-relative path resolves to nothing. So this row's job is to stay at
+	@# "0 failed" as the layer grows — the moment a template starts emitting
+	@# `](…)` paths, they have to resolve in the checkout too.
+	@tools/verify-doc-links.sh docs/llm/
 
 # Pre-tag version-string consistency. VERSION (the repo-root file) is the
-# single source of truth; scripts/check_version_consistency.py verifies every
+# single source of truth; scripts/check_version_consistency.cx verifies every
 # stamped manifest + derived code surface against it. An explicit
 # VERSION=X.Y.Z arg additionally asserts the file holds the version you
 # intend to release (catches "forgot to run scripts/bump_version.sh").
-bump-version-check:
+bump-version-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+bump-version-check: build-vcx
 	@if [ -n "$(VERSION)" ] && [ "$(VERSION)" != "$$(cat VERSION)" ]; then \
 	  echo "bump-version-check: VERSION file holds $$(cat VERSION), expected $(VERSION) — run scripts/bump_version.sh $(VERSION)"; \
 	  exit 1; \
 	fi
-	@python3 scripts/check_version_consistency.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
+
+# RULED: PGL-1 (#741) — the R2.2 BLOCKING per-profile install gate, runnable
+# WITHOUT a cut. It used to live only inside release.sh phase 2, in the arm
+# that --dry-run skips, so its first execution was always the real cut.
+.PHONY: release-profile-gate
+release-profile-gate:
+	@scripts/release_profile_gate.sh
 
 # Full pre-tag check — runs everything in the release process + §0.5.
 # Defaults to the VERSION file (single source of truth).
@@ -406,7 +475,17 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-v test-rust test-go check-prod-build check-no-legacy-try check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples
+TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
+
+# ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
+# Runs only the TEST_TARGETS lanes whose declared input globs intersect
+# BASE..HEAD (+worktree). Deny-by-default: a lane without a manifest row in
+# scripts/test_changed.sh ALWAYS runs. The full `make test` union stays
+# MANDATORY at wave/phase exits — this target never substitutes for an exit
+# gate.
+.PHONY: test-changed
+test-changed:
+	@bash scripts/test_changed.sh $(BASE)
 
 # ── -prod strictness gate (#338) — shipped artifacts build with -prod
 # (`build-vcx`), which enforces strict map-index checks (`or {}` required on
@@ -423,8 +502,19 @@ check-prod-build:
 # Token-aware, not a raw grep ([?try-send]/[?try-receive] + the CSV dialect
 # [on-error "…"] option + the retirement-pinning negatives are allowlisted).
 .PHONY: check-no-legacy-try
+# ── SIGPIPE-PIPE gate (RULED: SPG-1, #916) — `external cmd | grep -q P`
+# inside a pipefail script fires FALSE failures: grep -q exits on the first
+# match, the producer takes SIGPIPE (141), pipefail promotes it. Two
+# instances existed before this gate, one of them inside the BLOCKING R2.2
+# release gate, where it aborted a cut on a good artifact (PGL-1a). Landed
+# green with ZERO annotated exceptions; that is the standard to hold.
+.PHONY: check-pipefail-pipes
+check-pipefail-pipes:
+	@scripts/pipefail_pipe_gate.sh
+
+check-no-legacy-try: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-legacy-try:
-	@python3 scripts/check_no_legacy_try.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_legacy_try.cx
 
 # ── NO-INFIX-RANGE gate (generator-family reshape, C-gen-1) — the retired
 # infix range operators `to`/`by` must not reappear in conformance/ + docs-src/
@@ -432,8 +522,9 @@ check-no-legacy-try:
 # Token-aware, not a raw grep (English to/by prose, to=/by= named args, and the
 # colon slice-stride [a:b:s] are not matched; the negatives are allowlisted).
 .PHONY: check-no-infix-range
+check-no-infix-range: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-infix-range:
-	@python3 scripts/check_no_infix_range.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_infix_range.cx
 
 # ── NO-CXL-TOKEN gate — the retired language name `CXL` must not reappear
 # in conformance/ + docs-src/ + examples/ + scripts/ + tooling/ + top-level
@@ -442,8 +533,9 @@ check-no-infix-range:
 # (Formerly mis-named `check-no-stale-version` — it never checked versions;
 # version-number drift is now caught by check-version-consistency below.)
 .PHONY: check-no-cxl-token
+check-no-cxl-token: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-cxl-token:
-	@python3 scripts/check_no_cxl_token.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_cxl_token.cx
 
 # ── NO-CONSUMER-TERMS gate — downstream-consumer identity (names, products,
 # business-domain vocabulary) must never appear in tracked content: the public
@@ -461,8 +553,9 @@ check-no-consumer-terms:
 # drift that previously went unnoticed (cx.pc.in at 0.6.1, C-ABI at 0.8.0 while
 # the CLI said 0.10.0). Re-stamp with scripts/bump_version.sh.
 .PHONY: check-version-consistency
-check-version-consistency:
-	@python3 scripts/check_version_consistency.py
+check-version-consistency: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-version-consistency: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_version_consistency.cx
 
 # ── check-null-absence-conflation gate (SAP C1 / spec/core/code.md §9.1.2.1
 # rule (b)) — the no-conflation guard: no builtin returns `null` to mean
@@ -473,8 +566,9 @@ check-version-consistency:
 # `[returns null]` and param-position `[or T null]` are deliberately not
 # flagged. Permanent gate, not migration-only.
 .PHONY: check-null-absence-conflation
+check-null-absence-conflation: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-null-absence-conflation:
-	@python3 scripts/check_null_absence_conflation.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_null_absence_conflation.cx
 
 # ── ALIGNMENT gate (SAP C2 / spec/core/code.md §6.5.1) — the one-way
 # capability-alignment invariant: (1) every capability-gated effect point is
@@ -484,9 +578,39 @@ check-null-absence-conflation:
 # directions + drift canaries (process- prefix, env- minus pure prims, io
 # read/write/open). Runs as part of `test-vcx` too; this dedicated target is
 # the named gate.
+# (#700: effect_alignment_test.v consolidated into the eval_semantics
+# umbrella — the named target retargets to the umbrella like its siblings.)
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
-	@$(V) -cc cc $(CX_GC) test vcx/tests/effect_alignment_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/tests/eval_semantics_umbrella_test.v
+
+# ── check-code-spec-consistency (#707 item 4 / code.md §11.4.1 gates 1-3 +
+# the clean-room no-impl-anchor / no-dangling-decision checks). The tool
+# existed since v0.7.6 but was wired into NEITHER the Makefile NOR CI — its
+# gate 3 (registry↔grammar [127e] parity) had been silently dead since the
+# formal-files move and nobody noticed. Repaired + wired at I2. Gate 1 runs
+# on the code.md bounded-freedom register (BF-* ids), not a blanket token ban.
+.PHONY: check-code-spec-consistency
+check-code-spec-consistency: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-code-spec-consistency: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_code_spec_consistency.cx > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
+
+# ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
+# batch — it was RED and in no lane, so no stream gate ever ran it). The
+# corpus/spec agreement gate over conformance/code.cxd: id-category
+# registry, directive registry (§4.1) with retired/PI/intentional-unknown
+# discipline, and ENFORCED spec-error-code coverage (every CXER code
+# cited, verified covered cross-suite, or pinned to its filed issue —
+# #808 rows are the visible debt).
+# CX gate (#922, RULED: PYE-5): reads the corpus through THIS TREE's cx
+# binary ([$cx:parse]) — the gate exercises the reader it guards. The
+# former LIBCX_LIB_DIR pin is obsolete (nothing dlopens cxlib any more);
+# the build-vcx dep remains the #902 rule — the shipped artifact is the
+# only honest subject for a gate.
+.PHONY: check-code-fixtures
+check-code-fixtures: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-code-fixtures: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_code_fixtures.cx > /dev/null && echo "check-code-fixtures OK — 1000+ fixtures: ids/directives/error-code coverage green (run the script directly for the JSON report)"
 
 # ── check-docs-tier1-guardrail gate (SAP C6 / SAP §0.1) — the learnability
 # guardrail: the canonical guide's beginner sections (quickstart §0 + intro §1)
@@ -497,8 +621,9 @@ check-effect-alignment: build-vcx
 # allowlistable. Tier 2/3 sections (concepts §9, libraries §16) are out of
 # scope by design — they carry the opt-in/advanced markers.
 .PHONY: check-docs-tier1-guardrail
+check-docs-tier1-guardrail: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-docs-tier1-guardrail:
-	@python3 scripts/check_docs_tier1_guardrail.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_docs_tier1_guardrail.cx
 
 # ── NO-ADR-CITATION gate — the spec (spec/core/*.md) is the only source of
 # truth. Decision records are archived (under the guarded decisions dir) and
@@ -506,9 +631,10 @@ check-docs-tier1-guardrail:
 # a non-authoritative record and corrupts the single-source model. The gate is
 # token-aware; the gate script + the SAP audit report are allowlisted.
 .PHONY: check-no-adr-citations
+check-no-adr-citations: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-adr-citations:
-	@python3 scripts/check_no_adr_citations.py --self-test
-	@python3 scripts/check_no_adr_citations.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_adr_citations.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_adr_citations.cx
 
 # ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle
 # (vcx/code/*.v) must contain no fake-success stub: an effectful prim returning
@@ -520,16 +646,199 @@ check-no-adr-citations:
 # an effect is correct, faking it is the bug. A new effect must be real + carry a
 # behavioral (real socket/process/file) test, or fail closed.
 .PHONY: check-no-stub-impl
+check-no-stub-impl: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-stub-impl:
-	@python3 scripts/check_no_stub_impl.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_stub_impl.cx
+
+# ── RING IMPORT GATE (partition spec §3, phase I0) — the ring import contract,
+# enforced grep-level, zero-tolerance. Lands BEFORE any code moves so the seam
+# can never regress silently. As of I0 it gates the structurally-clean Ring-0
+# sink invariant (vcx/cx imports nothing internal — the §7 byte-for-byte
+# extraction precondition); the Ring-1/2 split inside vcx/code is gated at I3.
+.PHONY: ring-import-gate
+ring-import-gate:
+	@bash scripts/ring_import_gate.sh
+	@bash scripts/ring_import_gate_selftest.sh
+
+# ── GATES MANIFEST GATE (corpus audit G17) — validate conformance/gates.cxd:
+# it parses, every gate= value is in-enum, and every [module name=X] row
+# resolves (suite-aware) to a real fixture. Nothing else validated this policy
+# file, and it governs whether every OTHER fixture blocks its gate.
+.PHONY: gates-manifest-gate
+gates-manifest-gate:
+	@bash scripts/gates_manifest_gate.sh
+
+# ── CXER REGISTRY GATE (corpus-audit G18; remediation register R3.7) —
+# every emitted CXER code must have a governance §9.6 registry row and no
+# registry-internal band overlap. --strict = the mechanical certainties.
+.PHONY: cxer-registry-gate
+cxer-registry-gate:
+	@bash scripts/cxer_registry_report.sh --strict
+
+# ── SPEC-FREEZE GATE (remediation register R4.1) — no commit after the
+# audit epoch may touch normative spec AND implementation together without
+# a RULED: token referencing a recorded ruling (rulings-before-edits, R4.2).
+.PHONY: spec-freeze-gate
+spec-freeze-gate:
+	@bash scripts/spec_freeze_gate.sh
+	@bash scripts/spec_freeze_gate_selftest.sh
+
+# ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
+# rule, executable: the extracted artifacts must match the monolith over the
+# full Ring-0-tagged corpus — outputs, canonical bytes, hashes, error codes.
+# Two lanes:
+#   ABI lane — vcx/tests/runners/extraction_gate/probe/ dlopens ONE artifact,
+#     feeds every Ring-0 case input through a fixed C-ABI battery (conversions
+#     matrix, canonical/hash/fmt/lint, ast-bin/data-bin/events + decoder
+#     round-trips, diff/eq pairs, schema validate, the streaming-write event
+#     interpreter) and emits a deterministic transcript; the transcript from
+#     libcx.dylib and the one from libcx-core.dylib must be BYTE-IDENTICAL
+#     (`cmp`). Errors are records too, so error-text identity is asserted.
+#     One artifact per process — the GC-carrying dylibs never co-load.
+#     Vacuous-pass defense (audit F-15 / remediation R3.8): the probe
+#     enforces the case-count floor below AND refuses any zero-record
+#     Ring-0 case that is not an intentional exclusion. The only
+#     intentional exclusions are the md-input cases (no md surface in the
+#     C ABI) — the CLI lane covers those via --from=md.
+#   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
+#     data-profile cx over the shared surface (verbs + EXPLICIT --from=
+#     convert; the bare-FILE run-vs-data reading is a ruled profile
+#     difference, spec §4) requiring stdout+stderr+rc identical, plus the
+#     17 monolith-verb profile refusals on the data binary (#426 discipline).
+#     Same case-count floor.
+# Dev-shape builds (same codegen semantics as -prod minus optimization);
+# the release cut re-runs this against the prod-shape artifacts.
+# Floor = the Ring-0 census recorded at I2 (partition_I2_extraction.md);
+# raise it when Ring-0 cases are added, never lower it silently.
+EXTRACTION_GATE_FLOOR := 1564
+LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
+.PHONY: test-extraction-gate
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+test-extraction-gate: build-vcx
+	@$(MAKE) -C vcx build-data-dev
+	@mkdir -p vcx/target/extraction_gate
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
+	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_monolith.txt
+	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_core.txt
+	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
+	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
+	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
+	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR)
+
+# ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
+# built with -gc e must actually COLLECT: V only emitted vgc_init() in
+# generated main() paths, so shared artifacts ran with gc_enabled=0 —
+# unbounded embedder heap growth + a degenerate empty-pool span scan
+# (~75x slower large parses through the ABI than in the cx binary).
+# The gate churns each artifact past the pacer goal under VGC_GCTRACE=1
+# and requires at least one gc cycle. Runs on both Ring artifacts.
+# ── address-baseline-gate (#651/#516 stream-2 C9; RULED: L100) — the Tier-2
+# byte-identity guard for the ONE-walk retirement. Recomputes every corpus
+# def's Tier-2 address and diffs against the recorded baseline
+# (vcx/tests/runners/address_baseline/tier2_addresses.txt). A moved or
+# vanished address FAILS — no re-bless is available to this stream. Refresh
+# the baseline deliberately with `make address-baseline-capture` only when
+# NEW corpus defs are added (never to absorb a move).
+.PHONY: address-baseline-gate
+address-baseline-gate:
+	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
+
+.PHONY: address-baseline-capture
+address-baseline-capture:
+	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v --capture
+
+.PHONY: abi-gc-gate
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+abi-gc-gate: build-vcx
+	@$(MAKE) -C vcx build-data-dev
+	@mkdir -p vcx/target/extraction_gate
+	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
+	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_ART)
+	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_CORE_ART)
+
+# ── LIBCX ABI GATE (I3, partition spec §8 freeze direction) — the split
+# changes module boundaries, never the export surface. Baseline captured at
+# the I3 branch cut (7a38b6a6, `nm -gU` over the dev-shape libcx): 713
+# exported symbols = 166 cx_* (the intentional ABI, incl. the two
+# cx_iowatch_* C→V callbacks) + vendored C statics (zstd/re2 shim). V does
+# NOT export module-mangled internals, so the full-list diff is stable
+# across module splits — any diff means the shipped surface moved.
+# Darwin-only for now: the baseline is per-platform (Mach-O vs ELF export
+# semantics differ); a Linux baseline joins if/when the linux lane runs
+# TEST_TARGETS (it builds only today).
+.PHONY: libcx-abi-gate
+# #888: the gate checks the CX EXPORT SURFACE (cx_*/vgc_*, pinned) and
+# HEADER/BINARY AGREEMENT (every include/cx.h entry point is exported).
+# Vendored statics (re2/abseil/zstd — 543 symbols, toolchain-vintage
+# dependent) are counted as an advisory, never asserted: the old full-nm
+# diff went red on any dependency rebuild with no CX change. Symbol names
+# are underscore-normalized, so one baseline serves Darwin AND Linux —
+# the platform SKIP is retired.
+# #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
+# These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
+# "which build is under test" a decision instead of a race, and it is the
+# only honest subject for a gate — the dev library is not what ships.
+libcx-abi-gate: build-vcx
+	@tools/libcx-abi-gate.sh $(LIBCX_ART)
+
+# ── I4 PROFILE CORPUS GATE (#651/#516, spec §4/§7) — each §4 profile builds
+# and passes its ring-tagged corpus: the vcx recipe builds the full profile
+# matrix (data/embed/cli; platform = the default build) and runs the
+# profile_gate runner at the cli and embed engine compositions with binary
+# probes. The data profile's corpus clause is test-extraction-gate (I2).
+.PHONY: test-profile-gate
+test-profile-gate:
+	@$(MAKE) -C vcx test-profile-gate
+
+# ── PER-RING GATE LANES (#700 structural relief, activated at I4) — run the
+# lanes that cover the ring you touched instead of the full battery. Each
+# lane is a SUPERSET of the ones below it (a Ring-1 change can still break
+# Ring 0). These are inner-loop dev lanes; `make test` stays the merge gate.
+#   test-ring0 — Ring-0 surfaces: vcx/cx in-module tests, the byte-identity
+#                extraction gate, the libcx ABI freeze, the import/tag gates.
+#   test-ring1 — + the evaluator: code+platform in-module tests, the §4
+#                profile corpus gate (cli/embed compositions over the ring≤1
+#                eval corpus), fmt conformance, effect alignment.
+#   test-ring2 — + the platform battery: the full V suite (daemons, store,
+#                fabric, xap) + conform-all. Near `make test` scope minus
+#                the binding/doc/tooling gates.
+.PHONY: test-ring0 test-ring1 test-ring2
+test-ring0: test-vcx-cx test-extraction-gate libcx-abi-gate ring-import-gate ring-tag-gate gates-manifest-gate
+test-ring1: test-ring0 test-vcx-code test-profile-gate check-effect-alignment
+	@$(MAKE) -C vcx conform-fmt
+test-ring2: test-ring1 test-vcx-suite test-vcx-cxstore test-vcx-cmd
+	@$(MAKE) -C vcx conform-all
+
+# ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
+# ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
+# LANE=doc|eval|both, FORMAT=summary|ids|count. `ring-tag-gate` is the
+# no-parameter run wired into TEST_TARGETS: it hard-fails (exit 2) when any
+# suite header lacks ring= — an untagged suite silently falls out of every
+# ring lane, which is exactly how C8's blanket-tag defect went unseen.
+.PHONY: ring-query ring-tag-gate
+ring-query: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ring-query:
+	@"$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx
+ring-tag-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ring-tag-gate: build-vcx
+	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; lanes queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
 # (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
 # ships NO parallel primitive — no own hashing, no archive format, no
 # transport, no second compose gate.
 .PHONY: check-xap-dist-absences
+check-xap-dist-absences: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-xap-dist-absences:
-	@python3 scripts/check_xap_dist_absences.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_xap_dist_absences.cx
 
 # ── Shell-completion drift gate (#423) — the bash/zsh/fish completions in
 # tooling/completions/ must mention every subcommand in the vcx/cmd/main.v
@@ -537,8 +846,9 @@ check-xap-dist-absences:
 # must match vcx/cmd/diagram.v (--format=mermaid|svg|png + -o; the fabricated
 # --format=graphviz / --output= / --depth= surface must never reappear).
 .PHONY: check-completions-drift
+check-completions-drift: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-completions-drift:
-	@python3 scripts/check_completions_drift.py
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_completions_drift.cx
 
 # ── TextMate grammar single-sourcing gate (#423) — the canonical grammar is
 # tooling/vscode/syntaxes/cx.tmLanguage.json (scope-tested via
@@ -558,7 +868,7 @@ sync-tmlanguage:
 
 # Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
 # sign + alias a package directory into registry/store, then re-verify.
-#   CX_PKG_DIR=packages/nmea0183 CX_PKG_NAME=nmea0183 CX_PKG_VERSION=0.1.0 \
+#   CX_PKG_DIR=packages/gtin CX_PKG_NAME=gtin CX_PKG_VERSION=0.1.0 \
 #     make registry-publish
 .PHONY: registry-publish
 registry-publish: build-vcx-dev
@@ -581,6 +891,12 @@ TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 
 # when the running make advertises the feature.
 OUTPUT_SYNC := $(if $(filter output-sync,$(.FEATURES)),--output-sync=target,)
 test:
+	# Serial pre-build BEFORE the parallel fan-out: every lane's recursive
+	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
+	# skips the relink — without this, concurrent sub-makes RELINKED
+	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
+	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
+	@$(MAKE) build-vcx
 	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(TEST_TARGETS)
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
@@ -589,20 +905,28 @@ test:
 test-no-parallel: $(TEST_TARGETS)
 
 # ── gate 37.10 — code_diagram / code_tree conformance ────────────
-# Runs conformance/code_diagram.txt through cx_code_diagram and
-# cx_code_tree with structural-equivalence comparison.
-# Skips cleanly when the binary lacks the subcommands (Phase 7.1 / 7.6
-# / 7.7 implements them) so this target stays green during scaffold.
+# Runs conformance/code_diagram.cxd through `cx code-diagram` and
+# `cx code-tree` with structural-equivalence comparison. An all-SKIP
+# run FAILS (RULED: PYE-6) and a missing binary is exit 2 — this tree's
+# build or CX_BIN, never PATH (#929).
+# #774: this checker is the ONLY gate that sees the ERD attribute-type
+# rows and the diagram structure (the roundtrip suites in the eval-fixtures
+# lane compare trees, not emitted types), and for a long time it was wired
+# into NO union target — so a real regression sat green for a whole stream.
+# It is in TEST_TARGETS now. CX gate (#922, RULED: PYE-5): the former
+# LIBCX_LIB_DIR pin is obsolete — nothing dlopens cxlib any more; the
+# gate drives the tree's own cx binary end to end.
 .PHONY: test-code-diagram
-test-code-diagram:
-	@python3 scripts/check_code_diagram_fixtures.py
+test-code-diagram: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
+test-code-diagram: build-vcx-dev
+	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_code_diagram_fixtures.cx
 
 # ── v0.8.0 gate 28.5 — XPath 3.1 parity (Saxon-HE reference) ─────────────
 # Runs conformance/xpath_31_parity.txt fixtures through both `cx eval` and
 # Saxon-HE (via Docker) and asserts byte-identical results for the parity
 # tag and documented divergence for the divergence tag. Requires Docker on
 # PATH; skip-cleanly behaviour lives inside the script (exit 2 on missing
-# prerequisites). Active gate per spec/v0_8_0_status.md §11.6.
+# prerequisites). Active gate per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded).
 .PHONY: test-xpath-parity
 test-xpath-parity: build-vcx
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
@@ -614,7 +938,7 @@ test-xpath-parity: build-vcx
 # bindings (TS / Java / C# / Ruby / Kotlin / Swift) are out of scope per
 # d-2026-05-22-03.
 #
-# Driver architecture: `scripts/compile_binding_api_fixtures.py` parses
+# Driver architecture: `scripts/compile_binding_api_fixtures.cx` parses
 # the fixture file and emits a JSONL op-tree per fixture; per-binding
 # drivers under `lang/<lang>/binding_api_driver/` execute each op-tree
 # through their Layer-1 surface. The shell harness diffs the four
@@ -778,8 +1102,31 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
 		--test arrow_conformance -- --nocapture
 
-test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore
+# conform-all now covers EVERY suite in one process (the runner's
+# default list was extended at the #795 batch, 2026-08-15 — the
+# transparency/chunked/compression/schema/atoms/delimited/yaml/
+# conversions suites were previously OUTSIDE every union target, the
+# #743-battery unwired-gate class; and the per-suite `conform`
+# aggregate fan-out OOM-killed the parallel union with 27 concurrent
+# `v run` compiles). The Arrow lane rides its own runner/target.
+test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
 	$(MAKE) -C vcx conform-all
+	$(MAKE) -C vcx conform-fmt
+	$(MAKE) -C vcx conform-data-bin-arrow
+	# RULED: R5.8 (#860) — the corpus/spec agreement gates run IN THIS LANE now.
+	# Both were in TEST_TARGETS but not a test-vcx dependency, so a green full
+	# `make test-vcx` never executed them: check-code-spec-consistency sat red
+	# from 2026-08-17 (a directive-extractor bug plus an unallowlisted impl
+	# anchor) straight through a run recorded as green. A gate in the roster but
+	# not in a lane that runs is indistinguishable from no gate.
+	$(MAKE) check-code-spec-consistency
+	$(MAKE) check-code-fixtures
+	# RULED: R6.3 (#832) — spec-freeze-gate runs IN THIS LANE now, wired only
+	# after R6.1/R6.2 made it green (R5.8's order). It sat in TEST_TARGETS
+	# while 13 violations accumulated across six work streams over three days
+	# of green test-vcx runs — the discipline did not decay, the feedback loop
+	# was disconnected.
+	$(MAKE) spec-freeze-gate
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
@@ -849,10 +1196,17 @@ CX_SKIP_LOG := vcx/target/test-skips.log
 #     duplicate V-runtime symbol, e.g. ___v_thread_wait; cache-free green
 #     proves the artifact — the cache-key root fix is the V-fork follow-up);
 #   • anything else → a real failure, no retry, gate stays red.
+#   • code_eval_fixtures_test.v joined 2026-08-23 for the #951 supervise
+#     load-race family (sup-011/sup-012: a note/terminal lost or starved
+#     only under full-parallel compile storms — measured green 25/25 and
+#     80/80 in isolation, red 3× across gates only under -j12 load, root
+#     tracked on #951). The serial retry keeps the same honesty contract:
+#     a deterministic eval regression re-fails it and the gate stays red.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
-                      vcx/tests/a2a_real_test.v
+                      vcx/tests/a2a_real_test.v \
+                      vcx/tests/code_eval_fixtures_test.v
 
 test-vcx-suite: build-vcx-dev
 	@rm -f $(CX_SKIP_LOG)
@@ -860,7 +1214,13 @@ test-vcx-suite: build-vcx-dev
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
+	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
+	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
+	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
+	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    exit 1; \
+	  fi; \
 	  if [ -n "$$failed" ]; then \
 	    st=0; \
 	    for t in $$failed; do \
@@ -870,7 +1230,7 @@ test-vcx-suite: build-vcx-dev
 	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
-	          if grep -q 'C compilation error' $$log; then \
+	          if grep -aq 'C compilation error' $$log; then \
 	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
 	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
 	          else \
@@ -899,16 +1259,27 @@ test-vcx-suite: build-vcx-dev
 # retry class, so a live-socket lane flaking under -j parallel load failed the
 # umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
 # isolation, is the proven case).
-CODE_SERIAL_RETRY := vcx/code/store_admin_plane_test.v \
-                     vcx/code/store_grpc_live_test.v
+CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
+                     vcx/platform/store_grpc_live_test.v \
+                     vcx/platform/store_grpc_parity_test.v \
+                     vcx/platform/store_lazy_load_test.v
 
+# I3 module split (#651/#516): the in-module tests now live in TWO
+# modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
+# store/journal/grpc/service subjects moved). One lane runs both.
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev
 	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
-	  failed=$$(grep -E '^FAIL ' $$log | grep -oE '[^ ]+_test\.v$$' | sort -u); \
+	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
+	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
+	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
+	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
+	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    exit 1; \
+	  fi; \
 	  if [ -n "$$failed" ]; then \
 	    st=0; \
 	    for t in $$failed; do \
@@ -918,7 +1289,7 @@ test-vcx-code: build-vcx-dev
 	          echo "──── serial retry (known real-socket contention lane): $$rel ────"; \
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
-	          if grep -q 'C compilation error' $$log; then \
+	          if grep -aq 'C compilation error' $$log; then \
 	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
 	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
 	          else \
@@ -938,14 +1309,27 @@ test-vcx-code: build-vcx-dev
 # test-vcx-code, `v test` only runs the directory it is given, so neither
 # vcx/tests/ nor vcx/code/ pulls these in; this dedicated target wires the
 # cxstore in-module suite into the gate (same default -gc e memory model).
-# Scoped to the top-level `*_test.v` glob (NOT the directory) so it excludes
-# the `cxsqlite/` subdir — that DB-engine backend test needs sqlite3.h +
-# `-d cx_db_sqlite` (the separate db-access milestone) and is not part of the
-# default build surface. The glob still picks up every cxstore module test
-# (V compiles the whole `cxstore` module behind the listed test files).
+# (The dead `cxsqlite/` subdir this glob used to dodge was deleted at I2 —
+# the live sqlite store backend is vcx/code/store_sqlite_d_cxstore_sqlite.v.)
 .PHONY: test-vcx-cxstore
 test-vcx-cxstore: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
+
+# White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
+# the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
+# moved out of shipped libcx at I2). These lanes ran NOWHERE before I2:
+# `v test` only runs the directory it is given, and no target named vcx/cx —
+# five in-module tests sat outside every gate (found wiring this lane).
+# Files are listed explicitly, not the directory glob:
+# vcx/cx/parser_multidoc_test.v is EXCLUDED — it segfaults under the shipped
+# `-gc e` model (module-internal-test-only RC double-free of the multi-doc
+# Document tree; production paths and external-linkage tests are green).
+# That exclusion is #737; delete the list and glob the directory when it
+# closes.
+.PHONY: test-vcx-cx
+test-vcx-cx: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) test vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
 # they assert on the cmd module's own constants (e.g. the `cx scaffold`
@@ -953,8 +1337,30 @@ test-vcx-cxstore: build-vcx-dev
 # `v test` only runs the directory it is given, so without this target the
 # cmd suite had NO gate consumer (#448 wired it in).
 .PHONY: test-vcx-cmd
+# -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
+# the shipped binary's composition (I4; a bare cmd/ compile is the cli
+# profile, where CX_ENGINES would be inert).
+# Same #572 classified cache-free retry as test-vcx-suite/test-vcx-code: this
+# is the ONLY vcx test lane besides those that runs -usecache ($(CX_CACHE)), so
+# a stale cache layer can inject a duplicate-symbol OR a "symbol(s) not found"
+# link failure (the latter when a fresh symbol is added to code/ and the cmd
+# lane reuses a pre-change cached object — observed on the S6.3 pushdown
+# symbols). A C-compile/link failure retries once cache-free; anything else is
+# a real failure and stays red.
 test-vcx-cmd: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/
+	@log=vcx/target/test-cmd-run.log; stf=vcx/target/test-cmd-status; \
+	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
+	if [ $$st -ne 0 ]; then \
+	  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
+	    echo "──── cache-free retry (#572: -usecache layer artifact check): vcx/cmd ────"; \
+	    if $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) test vcx/cmd/; then \
+	      st=0; \
+	      echo "──── vcx/cmd green on its cache-free retry (#572) ────"; \
+	    fi; \
+	  fi; \
+	fi; \
+	exit $$st
 
 # ── Columnar (Parquet / Arrow-IPC) [$store] backend gate — #129 D5 (#76) ──
 # The columnar document backend (document+file://…?encoding=parquet) lives behind
@@ -974,8 +1380,13 @@ else
 endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev
-	$(MAKE) -C vcx arrow-shim
-	PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/code/store_columnar_test.v
+	@if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
+	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
+	  echo "$$line"; mkdir -p vcx/target; echo "$$line" >> $(CX_SKIP_LOG); \
+	else \
+	  $(MAKE) -C vcx arrow-shim && \
+	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
+	fi
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
 # The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3);
@@ -994,7 +1405,7 @@ else
 endif
 .PHONY: test-vcx-sqlite
 test-vcx-sqlite: build-vcx-dev
-	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/code/store_sqlite_test.v vcx/code/store_sqlite_encryption_test.v vcx/code/store_concurrent_writer_test.v
+	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical
@@ -1024,9 +1435,18 @@ test-vcx-api: build-vcx
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
 
+# #743 INTERIM (documented, never silent): a dylib collection inside a
+# Go host can hang the STW ack-wait forever. 2026-08-14 finding: this is
+# NOT specific to SIGURG (the original report's theory) — a SIGXCPU
+# default was battery-green on pure-V soundness yet the Go-host hang
+# REPRODUCED under it (run 3 of 5, ~70min ack-wait spin; the Go runtime
+# intercepts/forwards signals generally). Only a signal-free suspend
+# path (the mach direction on #743) can clear the class. Until then the
+# Go lanes pin the pacer headroom high (VGC_NEXT_GC_MB) so no collection
+# triggers in these SHORT-LIVED test processes.
 test-go: build-go
-	cd lang/go/cxlib && $(GO) test ./...
-	cd lang/go/conformance && $(GO) run .
+	cd lang/go/cxlib && VGC_NEXT_GC_MB=65536 $(GO) test ./...
+	cd lang/go/conformance && VGC_NEXT_GC_MB=65536 $(GO) run .
 
 test-go-api: build-go
 	cd lang/go/cxlib && $(GO) test ./...
@@ -1158,8 +1578,10 @@ bench-xap: BENCH_K ?= 500
 bench-xap: build-vcx-dev
 	@bench/xap/run.sh $(BENCH_K)
 
+bench: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench: build-vcx
-	$(PYTHON) bench_report.py
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-clock \
+	   --allow-env bench_report.cx
 
 bench-python: build-vcx
 	$(PYTHON) lang/python/bench.py
@@ -1184,8 +1606,8 @@ bench-cxparse: build-vcx
 
 # T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
 # surface additions (FLWOR clauses, ?fn calls, partial application,
-# pipeline/arrow operators, ?match, regex via RE2, range, tumbling
-# windows). Output is parsed by scripts/run_bench_json.py into the
+# pipeline/arrow operators, ?match, regex via RE2, range).
+# Output is parsed by scripts/run_bench_json.cx into the
 # T1.* benchmark keys for the V7 perf regression gate.
 bench-eval: build-vcx
 	v run vcx/tests/runners/eval_features_bench.v
@@ -1193,33 +1615,97 @@ bench-eval: build-vcx
 # ── v0.8.0 §11.6 release-gate harnesses ────────────────────────────────────────
 #
 # Each target runs one of the three perf gates blocking the v0.8.0 tag
-# (spec/v0_8_0_status.md §11.6, spec/code.md §11.4.4). Exit code
+# (conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded), spec/code.md §11.4.4). Exit code
 # is 0 on PASS, non-zero on FAIL; CI consumes the gate verdict line.
 # The benches print their threshold + measured numbers so PASS/FAIL is
 # self-evident in logs. Env knobs documented in each .v file header.
 
 # Gate 14 — pattern compilation (depth-8, 32-binding pattern):
 # p99 parse-time MUST be ≤ 1 ms.
+#
+# `-prod` is load-bearing here for the same reason it is on gate 15 (#804,
+# #835): the recipe depends on `build-vcx`, which builds the SHIPPED artifacts
+# optimised — but the bench links the evaluator as V SOURCE and compiles it
+# fresh, so without `-prod` the gate measured an unoptimised build of the very
+# code under test. Measured on gate 15's corpus, the same shape of workload:
+# 2.6 MB/s unoptimised vs 13.3 optimised, a 5.1x measurement error. Both gates
+# passed either way, so this only ever moved them in the passing direction —
+# but a gate that measures a build CX does not ship is not measuring the
+# threshold it claims to.
 bench-code-pattern-compile: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_pattern_compile_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_pattern_compile_bench.v
 
 # Gate 15 — streaming throughput on JSON-shape workloads:
 # mean MUST be ≥ 200 MB/s + no trial below 80 % of mean.
+#
+# `-prod` is load-bearing, not decoration (#804). The recipe depends on
+# `build-vcx`, which builds the SHIPPED artifacts optimised — but the bench
+# links the evaluator as V SOURCE and compiles it fresh, so without `-prod`
+# the gate measured an unoptimised build of the engine, which is not the
+# artifact CX ships. Same corpus, same program, same threshold: 2.6 MB/s
+# unoptimised vs 13.3 MB/s optimised. A perf gate has to measure the build
+# under test; this is a measurement repair, and the §11.4.4 floor is
+# untouched by it.
 bench-code-streaming: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_streaming_throughput_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_streaming_throughput_bench.v
+
+# #804 leg-2 CEILING probe — not a gate, a decision instrument. Walks the
+# gate-15 corpus doing only what a never-forced lazy record would do
+# (scan the child, write its canonical image) and reports the upper bound
+# any forcing discipline can reach. Answers, before the code is written,
+# whether leg 2's architecture can clear the §11.4.4 floor at all. Re-run
+# it when leg 2 lands: the real number must sit under this ceiling, and
+# how far under is the discipline's measured cost.
+bench-lazy-ceiling: build-vcx
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/lazy_record_ceiling_probe.v
+
+# #804 leg-9 ALLOCATION CENSUS — the instrument that answers "what generates
+# the garbage", which sampling cannot. `sample` attributes CPU; collection work
+# is triggered by allocation VOLUME but paid at whatever safepoint the mutator
+# next reaches, so a call tree charges it to whoever polled rather than to
+# whoever produced it. This meters bytes directly (vgc's monotone
+# `gc_total_allocated`) across a ladder of rungs that each stop one stage
+# earlier, so consecutive differences are one stage's allocation.
+#
+# It exists because leg 8 assumed a removed allocation would compound through
+# the collector and it did not. Run it BEFORE choosing the next optimisation,
+# and again after, with the same rung. Not a gate — a decision instrument.
+#
+# One rung per process (`LEG9_SHAPES=<name>`): three rungs in one process
+# pollute each other's heap state and the jitter reads 45-70% of mean instead
+# of ~90%. `LEG9_INPUT_MB` defaults to 64 — do not lower it below 16 or vgc's
+# 1 MiB accounting flush swamps the reading (the probe says so itself).
+bench-streamed-alloc: build-vcx
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/streamed_for_alloc_probe.v
 
 # Gate 16 — HTTP service throughput (in-process substrate per §1.2):
 # mean MUST be ≥ 10K req/s AND p99 ≤ 10 ms.
+#
+# `-prod` is load-bearing here for the same reason it is on gate 15 (#804,
+# #835): the recipe depends on `build-vcx`, which builds the SHIPPED artifacts
+# optimised — but the bench links the evaluator as V SOURCE and compiles it
+# fresh, so without `-prod` the gate measured an unoptimised build of the very
+# code under test. Measured on gate 15's corpus, the same shape of workload:
+# 2.6 MB/s unoptimised vs 13.3 optimised, a 5.1x measurement error. Both gates
+# passed either way, so this only ever moved them in the passing direction —
+# but a gate that measures a build CX does not ship is not measuring the
+# threshold it claims to.
 bench-code-http: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_throughput_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_http_throughput_bench.v
 
 # HTTP backend-direction isolation bench — settles whether the ~10k
 # req/s ceiling is transport-bound (net.http socket stack) or
 # interpreter-bound (code.eval + env.clone) before any backend rewrite.
 # Two-point: in-process code.eval leg vs real net.http listener on :0
 # with a trivial no-op handler. Prints a ratio + verdict, no PASS/FAIL.
+#
+# `-prod` for the #835 reason, and it matters MORE here than on a pass/fail
+# gate: this bench exists to decide whether the ~10k req/s ceiling is
+# transport-bound or interpreter-bound, and an unoptimised build inflates the
+# INTERPRETER leg specifically — so the unoptimised verdict is biased toward
+# the answer the bench is supposed to test for.
 bench-code-http-isolation: build-vcx
-	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_http_isolation_bench.v
+	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_http_isolation_bench.v
 
 # Gate 7 — concurrency soak. Loops a buffered send/receive workload
 # detecting deadlocks (per-iter wall-clock cap) and registry leaks
@@ -1234,6 +1720,15 @@ bench-code-soak: build-vcx
 bench-code-cancel: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_async_cancel_battery.v
 
+# abi.md §4 performance-budget driver (#805/AF-6 — the table's FIRST
+# measuring artifact). In-process ABI-call timing, full call semantics;
+# budgets verbatim from the spec, never trued; exit 1 on any red cell.
+# First honest verdict (2026-08-13): six conversion cells RED at
+# 7.9-16.7x over budget (the #804 engine ceiling extends here);
+# cx_events_next PASS at ~9 ns/event. 100 MB tier opt-in: ABI_S4_100MB=1.
+bench-abi-s4: build-vcx
+	$(PATCHED_V) -enable-globals run vcx/tests/runners/abi_s4_bench.v
+
 # Aggregate runner — drives all three v0.8.0 perf gates back-to-back.
 # Exit code is the FIRST failing gate's exit code (make stops on
 # first non-zero); use individual targets to triage in isolation.
@@ -1247,7 +1742,7 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # umbrella; these targets are narrowly-scoped gate-evidence pointers so
 # the gate-check can verify each gate's coverage in isolation rather
 # than relying on the umbrella having run a moment earlier. Per
-# spec/v0_8_0_status.md §11.6.
+# conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded).
 
 # ── Gate 5 — resilience composition matrix ────────────────────────────────
 # Drives the 67 resilience fixtures in conformance/code.txt (31 single-
@@ -1255,7 +1750,7 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # whose `supported_fixtures` whitelist covers all 67. The fixture runner
 # parses each block, evaluates in_code with $doc bound, and compares the
 # rendered result against out_text. Asserts at runtime that at least one
-# fixture executed. Per spec/v0_8_0_status.md §11.6 gate 5.
+# fixture executed. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 5.
 .PHONY: test-vcx-resilience-matrix
 test-vcx-resilience-matrix: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -1275,7 +1770,7 @@ test-vcx-concurrency-soundness:
 # the same vcx/tests/code_eval_fixtures_test.v whose `supported_fixtures`
 # whitelist covers all 21 program-svc-NNN fixtures (HTTP verbs + status
 # codes + TLS + streaming body + graceful-stop + handle lookup). Per
-# spec/v0_8_0_status.md §11.6 gate 6.
+# conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 6.
 .PHONY: test-vcx-services
 test-vcx-services: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -1286,12 +1781,12 @@ test-vcx-services: build-vcx
 # cx_code_tree with structural-equivalence — 29/29
 # fixtures). This target is the §11.6-named alias plus the V-side
 # diagram unit tests that exercise the emitter + round-trip directly.
-# Per spec/v0_8_0_status.md §11.6 gate 9.
+# Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 9.
 .PHONY: test-vcx-diagram-roundtrip
 test-vcx-diagram-roundtrip: build-vcx
 	$(MAKE) test-code-diagram
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_diagram_roundtrip_test.v \
-		vcx/tests/code_diagram_test.v
+		vcx/tests/code_units_umbrella_test.v
 
 # ── Gate 12 — reference renderer (CLI + web + LSP) ────────────────────────
 # Drives the V-side renderer test suite — `code_render_test.v` covers
@@ -1300,11 +1795,11 @@ test-vcx-diagram-roundtrip: build-vcx
 # vs. text round-trips); `path_renderer_test.v` covers the
 # PathNode → source emitter introduced for the CXPath value kind. LSP CodeLens
 # tests are not yet authored; this target tracks the V-side renderer
-# coverage. Per spec/v0_8_0_status.md §11.6 gate 12.
+# coverage. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 12.
 .PHONY: test-renderer
 test-renderer: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_render_test.v \
-		vcx/tests/path_renderer_test.v
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_units_umbrella_test.v \
+		vcx/tests/parser_units_umbrella_test.v
 
 # ── Gate 28.7 — CXPath axis coverage (all 12 axes) ────────────────────────
 # Drives the V-side per-axis test files: forward axes (21 tests:
@@ -1314,13 +1809,10 @@ test-renderer: build-vcx
 # scaffolding (21 tests: predicates, unions, integer-literal predicate,
 # attribute-axis short-form), and dispatcher integration (3 tests:
 # `[?find …/axis::…]` end-to-end). 62 tests total exercising the
-# 12-axis vocabulary. Per spec/v0_8_0_status.md §11.6 gate 28.7.
-.PHONY: test-cxpath-axis-coverage
-test-cxpath-axis-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/cxpath_forward_test.v \
-		vcx/tests/cxpath_reverse_test.v \
-		vcx/tests/cxpath_misc_test.v \
-		vcx/tests/cxpath_dispatcher_test.v
+# 12-axis vocabulary. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 28.7.
+# (test-cxpath-axis-coverage RETIRED at the #795 batch, 2026-08-15 — its
+# files died with the placeholder axis engine at the #805 sweep; see
+# vcx/Makefile's conform-ns-cxpath retirement note.)
 
 # ── Gate 28.8 — [?modify] action coverage (all 11 actions) ────────────────
 # Drives the V-side modify test files: `modify_eval_test.v` covers
@@ -1331,12 +1823,12 @@ test-cxpath-axis-coverage: build-vcx
 # invariant, multi-match focus, and Z79g path-aware dispatcher hop;
 # `modify_node_test.v` + `_codec_test.v` cover the ModifyNode shape
 # + binary codec round-trip; `modify_parser_test.v` covers the
-# `[?modify]` directive parser. Per spec/v0_8_0_status.md §11.6 gate
+# `[?modify]` directive parser. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate
 # 28.8 (structural-sharing perf budget lives at gate 30.5).
 .PHONY: test-modify-action-coverage
 test-modify-action-coverage: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/modify_eval_test.v \
-		vcx/tests/modify_node_test.v \
+	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/eval_semantics_umbrella_test.v \
+		vcx/tests/node_units_umbrella_test.v \
 		vcx/tests/modify_node_codec_test.v
 
 # ── Gate 30.5 — [?modify] structural-sharing perf budget ──────────────────
@@ -1347,7 +1839,7 @@ test-modify-action-coverage: build-vcx
 # enforced; the absolute-byte budgets are ADVISORY per the bench
 # header's Element + Attribute diet analysis (post-diet residual cost
 # is spine-frame overhead that closes to v0.9.0+ with HAMT-backed
-# items containers). Per spec/v0_8_0_status.md §11.6 gate 30.5.
+# items containers). Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 30.5.
 bench-code-modify-sharing: build-vcx
 	$(PATCHED_V) -enable-globals run vcx/tests/runners/code_modify_sharing_bench.v
 
@@ -1375,3 +1867,12 @@ clean:
 	cargo clean --manifest-path lang/rust/cxlib/Cargo.toml
 	find lang/python -name '*.pyc' -delete
 	find lang/python -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
+
+## test-oriel-lane  ORIEL, the reference XAP, as its own CI lane (#869): boot
+##                  the store at spec/03-approved/xap/demos/oriel/, run the
+##                  five asserting instruments (drive 38, keys 9, voice,
+##                  nokernel, diff drift=0), tear down. bench stays
+##                  measured-not-asserted. Refuses if :8790 is already served.
+.PHONY: test-oriel-lane
+test-oriel-lane: build-vcx
+	@bash scripts/oriel_lane.sh

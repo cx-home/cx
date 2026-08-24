@@ -326,7 +326,7 @@
     [child n=16.1 id=caps-model     title='Deny-by-default']
     [child n=16.2 id=caps-grants    title='The grant list']
     [child n=16.3 id=caps-net       title='Scoping the network grant']
-    [child n=16.4 id=caps-allow-all title='The --allow-all opt-out']
+    [child n=16.4 id=caps-broad-grants title='The two broad grants']
     [child n=16.5 id=caps-narrowing title='Narrowing with [?with-caps]']
     [child n=16.6 id=caps-errors    title='Denials are values']]
   [section n=17 id=operations file='17-operations.cxd'
@@ -352,7 +352,7 @@
     [child n=19.5 id=dist-entitlements title='Entitlements and identity']
     [child n=19.6 id=dist-market       title='The marketplace — today versus specified']]
 
-  [# The "Standard library" area (libraries.html + lib-<m>.html) and the
+  [# The per-ring standard-library index (lib-<m>.html pages) and the
      "XAP" area are NOT manifest sections: guide_build.cx projects them
      directly from the co-located [module-doc]/[fn-doc] in stdlib/*.cx and
      from spec/03-approved/xap/demos/, so there is no section file or TOC

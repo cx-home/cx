@@ -22,6 +22,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Scan only the v0.8.0 reference implementation tree.
 TARGETS=(
     "$ROOT/vcx/code"
+    "$ROOT/vcx/platform"
     "$ROOT/vcx/cx/cabi.v"
     "$ROOT/vcx/cmd"
     "$ROOT/include/cx.h"

@@ -1,0 +1,9 @@
+# area: store_remote
+vcx/tests/store_ftp_test.v
+vcx/tests/store_sftp_test.v
+vcx/tests/store_s3_minio_test.v
+vcx/tests/store_grpc_client_test.v
+vcx/tests/store_serve_tls_test.v
+vcx/tests/store_tls_rotation_test.v
+vcx/tests/store_xsp_client_test.v
+vcx/tests/store_xsp_serve_test.v

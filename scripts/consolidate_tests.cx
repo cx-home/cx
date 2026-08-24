@@ -1,0 +1,552 @@
+# scripts/consolidate_tests.cx -- the #700 test-binary consolidation
+# GENERATOR (owner ruling 1a, 2026-08-09; scheduled to the W8->stream-3
+# boundary, 2026-08-10).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs via `cx <file>`.
+# Merges the V test files named by an explicit per-area manifest into ONE
+# umbrella _test.v -- identical code, fewer whole-module-graph compiles
+# (the 2026-08-09 measurement: V compilation = 849 of 857 gate
+# CPU-minutes, once per test FILE).
+#
+# The merge is deliberately conservative -- it can refuse, it can fail a
+# compile, it can NEVER silently drop or alter behavior:
+#   - module clause: every input must declare the SAME module (main for
+#     vcx/tests/, code/platform for the in-module lanes); mixed = refuse.
+#   - imports: multi-line selective imports (`import X {` with the
+#     member list on following lines -- the vfmt form) are collapsed to
+#     one line per file first; the union then merges selective imports
+#     per MODULE (member lists unioned, sorted -- V refuses a module
+#     imported twice), and a plain `import X` or `import X as _` is
+#     subsumed by a selective import of X (a selective import also
+#     imports the module). Everything else is exact-line union, sorted,
+#     deduped; alias conflicts emit both lines -- the V compiler
+#     refuses loudly.
+#   - bodies: each file splits into top-level chunks at column-0
+#     declaration lines (fn/struct/const/enum/interface/type/__global/
+#     $if), with the contiguous //-comment + @[attribute] block directly
+#     above a declaration attached to it. vfmt formatting makes column-0
+#     the top-level marker; a pathological mis-split (e.g. a raw string
+#     containing a column-0 declaration line) can only cause a MISSED
+#     dedupe, which surfaces as a V redefinition error -- loud, never
+#     silent.
+#   - dedupe: byte-identical whole chunks only (the owner requirement).
+#     The FIRST occurrence is kept, later identical copies are dropped
+#     and counted. Chunks carrying `fn test_...` are NEVER deduped: an
+#     identical test copied into two files must be renamed by a human --
+#     dropping one would change the test-fn count (the equivalence gate)
+#     and silently halve coverage. Duplicate test-fn NAMES refuse here,
+#     earlier and better-named than the compiler's redefinition error.
+#   - name collisions with DIFFERENT bodies are not resolved here at
+#     all: the merged file carries both and the V compiler is the
+#     collision oracle.
+#
+# Deterministic and idempotent by construction: no clock, no random, no
+# ordering beyond manifest order + sorted imports. Same inputs -> same
+# bytes.
+#
+# -- Interface (env vars; `cx FILE` takes no program argv, cli.md §3) --
+#   MANIFEST  path to the area manifest: one input .v path per line,
+#             blank lines and #-comment lines ignored     (required)
+#   OUT       output path for the umbrella file -- MUST be outside the
+#             input files' directory (the wrapper moves it in after the
+#             equivalence gate)                           (required)
+#   AREA      area name stamped into the umbrella header  (required)
+#
+# Run from the repo root:
+#   MANIFEST=scripts/consolidation/store.files OUT=/tmp/x.v AREA=store \
+#     vcx/target/cx --allow-read --allow-write --allow-env scripts/consolidate_tests.cx
+#
+# Output: the umbrella file at OUT, plus one [consolidate ...] stats
+# element on stdout.
+# Exit: 0 = written; 2 = refusal (reason on stderr, OUT not written).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/format'  as=format]
+
+# A column-0 line that OPENS a top-level V declaration.
+[?def is-decl-start scope=private pure [returns bool] ($l::string)
+  [or [$strings:starts-with $l "fn "]
+      [$strings:starts-with $l "pub fn "]
+      [$strings:starts-with $l "struct "]
+      [$strings:starts-with $l "pub struct "]
+      [$strings:starts-with $l "const "]
+      [$strings:starts-with $l "pub const "]
+      [$strings:starts-with $l "enum "]
+      [$strings:starts-with $l "pub enum "]
+      [$strings:starts-with $l "interface "]
+      [$strings:starts-with $l "pub interface "]
+      [$strings:starts-with $l "type "]
+      [$strings:starts-with $l "pub type "]
+      [$strings:starts-with $l "__global"]
+      [$strings:starts-with $l "$if "]]]
+
+# A column-0 line that ATTACHES to the declaration below it.
+[?def is-attach scope=private pure [returns bool] ($l::string)
+  [or [$strings:starts-with $l "//"]
+      [$strings:starts-with $l "@["]]]
+
+# The dedupe KEY of a chunk: the DECLARATION BODY — leading `//` doc
+# lines stripped AND trailing blank/`//` narrative lines stripped (a
+# mid-file helper's chunk runs to the next decl, so trailing file
+# narrative rides in the chunk; it must not defeat the dedupe). Two
+# helpers copied across files are duplicates when their CODE bytes
+# match even if surrounding comments drifted; the kept (first) copy
+# keeps its comments, and a dropped copy's trailing narrative is
+# re-emitted via chunk-tail (below) so no commentary is lost. `@[...]`
+# attribute lines are semantics and STAY in the key. An all-comment
+# chunk keys to "" and is never deduped (guarded at the membership
+# test).
+[?def chunk-key scope=private pure [returns string] ($c::string)
+  [?let [= $ls [$strings:split $c "\n"]]
+        [= $code-idxs
+          [?for [in $i [$range 1 [$count $ls]]]
+            [= $l $ls[$i]]
+            [where [not [or [$strings:starts-with $l "//"] [= [$strings:trim $l] ""]]]]
+            [yield $i]]]
+    [?if [= [$count $code-idxs] 0] [then ""]
+      [else
+        [$strings:join
+          [?for [in $i [$range $code-idxs[1] $code-idxs[[$count $code-idxs]]]]
+            [yield $ls[$i]]]
+          "\n"]]]]]
+
+# The trailing narrative of a chunk: the blank/`//` lines AFTER the last
+# code line. Re-emitted when a duplicate chunk is dropped.
+[?def chunk-tail scope=private pure [returns string] ($c::string)
+  [?let [= $ls [$strings:split $c "\n"]]
+        [= $code-idxs
+          [?for [in $i [$range 1 [$count $ls]]]
+            [= $l $ls[$i]]
+            [where [not [or [$strings:starts-with $l "//"] [= [$strings:trim $l] ""]]]]
+            [yield $i]]]
+    [?if [= [$count $code-idxs] 0] [then ""]
+      [else
+        [$strings:trim
+          [$strings:join
+            [?for [in $i [$range [+ $code-idxs[[$count $code-idxs]] 1] [$count $ls]]]
+              [yield $ls[$i]]]
+            "\n"]]]]]]
+
+# Selective-import helpers, over the NORMALIZED single-line form
+# `import X { a, b }`: the module head and the brace-list body. Only
+# called on lines carrying both braces.
+[?def sel-mod scope=private pure [returns string] ($l::string)
+  [$strings:trim [$strings:slice $l 7 [$strings:find $l "{"]]]]
+
+[?def sel-members scope=private pure [returns string] ($l::string)
+  [$strings:slice $l [+ [$strings:find $l "{"] 1] [$strings:find $l "}"]]]
+
+# The chunk fence: joins chunk lists for storage + byte-identical
+# membership tests. A V source chunk would have to contain this exact
+# line verbatim to confuse it -- and even then the failure mode is a
+# missed/false dedupe that the compile gate turns into a loud error.
+[?def fence scope=private pure [returns string] ()
+  "\n//~~CX-CONSOLIDATE-FENCE~~//\n"]
+
+[?let [= $manifest [?else [$env:var "MANIFEST"] ""]]
+      [= $out-path [?else [$env:var "OUT"]      ""]]
+      [= $area     [?else [$env:var "AREA"]     ""]]
+
+  [?if [or [= $manifest ""] [= $out-path ""] [= $area ""]]
+    [then
+      [?let [= $_e [$io:write-line [$env:stderr]
+          "consolidate_tests: MANIFEST=, OUT= and AREA= are all required (see the file header)"]]
+        [$env:exit 2]]]
+    [else
+
+  [?let
+      # ── manifest → input file list ────────────────────────────────────
+      [= $files
+        [?for [in $line [$io:read-file-lines $manifest]]
+          [= $t [$strings:trim $line]]
+          [where [and [not [= $t ""]] [not [$strings:starts-with $t "#"]]]]
+          [yield $t]]]
+
+      # ── per-file parse: [file-part ...] elements ─────────────────────
+      [= $parts
+        [?for [in $f $files]
+          # ── selective-import normalization ───────────────────────────
+          # V's MULTI-LINE selective import (`import code {` with the
+          # member list on following lines -- the vfmt form) breaks
+          # line-oriented parsing two ways: the import extraction keeps
+          # only the dangling opener, and the member/closer lines leak
+          # into the preamble. Collapse each block to ONE line
+          # (`import code { a, b }`) before anything else reads $lines.
+          # An unclosed opener (not valid V) passes through untouched --
+          # the compile gate is the loud oracle, as everywhere else.
+          [= $rlines [$io:read-file-lines $f]]
+          [= $rn [$count $rlines]]
+          [= $sel-opens
+            [?for [in $i [$range 1 $rn]]
+              [= $l $rlines[$i]]
+              [where [and [$strings:starts-with $l "import "]
+                          [$strings:ends-with [$strings:trim-end $l] "{"]]]
+              [yield $i]]]
+          [= $sel-closes
+            [?for [in $o $sel-opens]
+              [= $cands
+                [?for [in $j [$range [+ $o 1] $rn]]
+                  [where [= [$strings:trim $rlines[$j]] "}"]]
+                  [yield $j]]]
+              [yield [?if [= [$count $cands] 0] [then 0] [else $cands[1]]]]]]
+          [= $lines
+            [?for [in $i [$range 1 $rn]]
+              [= $l $rlines[$i]]
+              [= $covered
+                [?for [in $k [$range 1 [$count $sel-opens]]]
+                  [where [and [> $sel-closes[$k] 0]
+                              [> $i $sel-opens[$k]]
+                              [<= $i $sel-closes[$k]]]]
+                  [yield 1]]]
+              [= $open-k
+                [?for [in $k [$range 1 [$count $sel-opens]]]
+                  [where [and [= $sel-opens[$k] $i] [> $sel-closes[$k] 0]]]
+                  [yield $k]]]
+              [where [= [$count $covered] 0]]
+              [yield
+                [?if [= [$count $open-k] 0]
+                  [then $l]
+                  [else
+                    [?let [= $close $sel-closes[$open-k[1]]]
+                          [= $mems
+                            [?for [in $j [$range [+ $i 1] [- $close 1]]]
+                              [= $mraw [$strings:trim $rlines[$j]]]
+                              [= $m [?if [$strings:ends-with $mraw ","]
+                                      [then [$strings:trim [$strings:slice $mraw 0 [- [$strings:length $mraw] 1]]]]
+                                      [else $mraw]]]
+                              [where [not [= $m ""]]]
+                              [yield $m]]]
+                          [= $head [$strings:trim-end
+                            [$strings:slice [$strings:trim-end $l] 0
+                              [- [$strings:length [$strings:trim-end $l]] 1]]]]
+                      [$concat $head " { " [$strings:join $mems ", "] " }"]]]]]]]
+          [= $n [$count $lines]]
+
+          # missing clause = V's implicit `module main` for a _test.v --
+          # normalize so implicit and explicit main merge together.
+          [= $module-raw
+            [$strings:join
+              [?for [in $l $lines]
+                [where [$strings:starts-with $l "module "]]
+                [yield $l]] "\n"]]
+          [= $module-line
+            [?if [= $module-raw ""] [then "module main"] [else $module-raw]]]
+          [= $import-lines
+            [$strings:join
+              [?for [in $l $lines]
+                [where [$strings:starts-with $l "import "]]
+                [yield $l]] "\n"]]
+
+          # decl-start line indices (1-based)
+          [= $starts
+            [?for [in $i [$range 1 $n]]
+              [where [is-decl-start $lines[$i]]]
+              [yield $i]]]
+
+          # pull each start upward over the contiguous attach block
+          # directly above it ([$range 1 0] = empty for s=1)
+          [= $astarts
+            [?for [in $s $starts]
+              [= $non-attach-dists
+                [?for [in $d [$range 1 [- $s 1]]]
+                  [where [not [is-attach $lines[[- $s $d]]]]]
+                  [yield $d]]]
+              [= $first-non
+                [?if [= [$count $non-attach-dists] 0] [then $s] [else $non-attach-dists[1]]]]
+              [yield [- $s [- $first-non 1]]]]]
+
+          [= $nstarts [$count $astarts]]
+          [= $first-decl [?if [= $nstarts 0] [then [+ $n 1]] [else $astarts[1]]]]
+
+          # preamble = pre-decl lines minus module/import/blank
+          [= $preamble
+            [$strings:join
+              [?for [in $i [$range 1 [- $first-decl 1]]]
+                [= $l $lines[$i]]
+                [where [not [$strings:starts-with $l "module "]]]
+                [where [not [$strings:starts-with $l "import "]]]
+                [where [not [= [$strings:trim $l] ""]]]
+                [yield $l]] "\n"]]
+
+          # chunks: astarts[k] .. astarts[k+1]-1 (last chunk to EOF)
+          [= $chunk-list
+            [?for [in $k [$range 1 $nstarts]]
+              [= $from $astarts[$k]]
+              [= $to [?if [= $k $nstarts] [then $n] [else [- $astarts[[+ $k 1]] 1]]]]
+              [= $body
+                [$strings:join
+                  [?for [in $i [$range $from $to]] [yield $lines[$i]]] "\n"]]
+              [yield [$strings:trim-end $body]]]]
+          [= $chunks [$strings:join $chunk-list [fence]]]
+          # the dedupe keys, precomputed once per file (fence-joined,
+          # positionally parallel to chunks=)
+          [= $keys
+            [$strings:join
+              [?for [in $c $chunk-list] [yield [chunk-key $c]]] [fence]]]
+
+          [= $tfns
+            [$count
+              [?for [in $l $lines]
+                [where [$strings:starts-with $l "fn test_"]]
+                [yield 1]]]]
+
+          [yield [file-part file=$f module=$module-line imports=$import-lines
+                    preamble=$preamble chunks=$chunks keys=$keys tfns=$tfns]]]]
+
+      # ── refusal 1: mixed module clauses ───────────────────────────────
+      [= $p1 [?if [= [$count $parts] 0] [then [file-part module=""]] [else $parts[1]]]]
+      [= $module0 [$string $p1@module]]
+      [= $mixed-module
+        [?for [in $p $parts]
+          [where [not [= [$string $p@module] $module0]]]
+          [yield [$string $p@file]]]]
+
+      # ── refusal 2: duplicate test-fn names across the area ────────────
+      [= $all-test-names
+        [$sort
+          [?for [in $p $parts]
+            [in $l [$strings:split [$string $p@chunks] "\n"]]
+            [where [$strings:starts-with $l "fn test_"]]
+            [= $paren [$strings:find $l "("]]
+            [where [> $paren 3]]
+            [yield [$strings:slice $l 3 $paren]]]]]
+      [= $dup-test-names
+        [$distinct
+          [?for [in $i [$range 2 [$count $all-test-names]]]
+            [where [= $all-test-names[$i] $all-test-names[[- $i 1]]]]
+            [yield $all-test-names[$i]]]]]
+
+      # ── refusal 3: same NAME, DIFFERENT body (non-test decls) ─────────
+      # The V compiler would refuse these as redefinitions AFTER an apply
+      # attempt; refusing here is earlier and names the offending files.
+      # Name = first word after the decl keyword on the key's first line.
+      # Records: "name\u{0007}file\u{0007}key" sorted by name+key; a name
+      # with ≥2 DISTINCT keys is a conflict.
+      [= $decl-records
+        [$sort
+          [?for [in $p $parts]
+            [in $k [$strings:split [$string $p@keys] [fence]]]
+            [where [not [= $k ""]]]
+            [= $l1 [?let [= $kls [$strings:split $k "\n"]] $kls[1]]]
+            [= $l1x [?if [$strings:starts-with $l1 "pub "] [then [$strings:slice $l1 4 [$strings:length $l1]]] [else $l1]]]
+            [= $is-named
+              [or [$strings:starts-with $l1x "fn "]
+                  [$strings:starts-with $l1x "struct "]
+                  [$strings:starts-with $l1x "enum "]
+                  [$strings:starts-with $l1x "interface "]
+                  [$strings:starts-with $l1x "type "]]]
+            [where $is-named]
+            [= $rest [$strings:slice $l1x [+ [$strings:find $l1x " "] 1] [$strings:length $l1x]]]
+            [= $sp [$strings:find $rest " "]]
+            [= $par [$strings:find $rest "("]]
+            [= $br [$strings:find $rest "{"]]
+            [= $cands
+              [$sort
+                [?for [in $x ($sp, $par, $br)] [where [>= $x 0]] [yield $x]]]]
+            [= $end [?if [= [$count $cands] 0] [then [$strings:length $rest]] [else $cands[1]]]]
+            [= $nm [$strings:slice $rest 0 $end]]
+            [where [not [$strings:starts-with $nm "test_"]]]
+            [yield [$concat $nm [fence] $k [fence] [$string $p@file]]]]]]
+      [= $conflicts
+        [$distinct
+          [?for [in $i [$range 2 [$count $decl-records]]]
+            [= $cur [$strings:split $decl-records[$i] [fence]]]
+            [= $prv [$strings:split $decl-records[[- $i 1]] [fence]]]
+            [where [= $cur[1] $prv[1]]]
+            [where [not [= $cur[2] $prv[2]]]]
+            [yield [$concat $cur[1] " (" $prv[3] " vs " $cur[3] ")"]]]]]
+
+      [?if [> [$count $mixed-module] 0]
+        [then
+          [?let [= $_e [$io:write-line [$env:stderr]
+              [$concat "consolidate_tests: REFUSED (area " $area ") -- module clause differs from '" $module0 "' in:\n  "
+                [$strings:join $mixed-module "\n  "]]]]
+            [$env:exit 2]]]
+        [else
+          [?if [> [$count $dup-test-names] 0]
+            [then
+              [?let [= $_e [$io:write-line [$env:stderr]
+                  [$concat "consolidate_tests: REFUSED (area " $area ") -- duplicate test-fn name(s) across inputs (rename or exclude):\n  "
+                    [$strings:join $dup-test-names "\n  "]]]]
+                [$env:exit 2]]]
+            [else
+          [?if [> [$count $conflicts] 0]
+            [then
+              [?let [= $_e [$io:write-line [$env:stderr]
+                  [$concat "consolidate_tests: REFUSED (area " $area ") -- same NAME, DIFFERENT body (the compiler would refuse these as redefinitions; exclude a holder or split the area):\n  "
+                    [$strings:join $conflicts "\n  "]]]]
+                [$env:exit 2]]]
+            [else
+
+      # ── merge (its own [?let]: the refusal forks above are control
+      #    flow, bindings cannot continue inside an [else]) ─────────────
+      [?let
+          [= $import-list
+            [$sort [$distinct
+              [?for [in $p $parts]
+                [in $l [$strings:split [$string $p@imports] "\n"]]
+                [where [not [= $l ""]]]
+                [yield $l]]]]]
+          [= $import-fence
+            [$concat "\n" [$strings:join $import-list "\n"] "\n"]]
+          # Selective imports merge per MODULE: the member lists union
+          # (sorted, deduped) into ONE `import X { ... }` line -- two
+          # files selecting different names from the same module is the
+          # normal case, and V refuses a module imported twice. A plain
+          # `import X` and an `import X as _` (registration-only) are
+          # subsumed by a selective import of X (a selective import also
+          # imports the module for qualified use); `import X as _` is
+          # subsumed by a plain `import X` as before. Any OTHER alias
+          # divergence still emits both lines: the compiler is the
+          # oracle.
+          [= $sel-lines
+            [?for [in $l $import-list]
+              [where [and [$strings:contains $l "{"] [$strings:contains $l "}"]]]
+              [yield $l]]]
+          [= $sel-mods
+            [$sort [$distinct
+              [?for [in $l $sel-lines] [yield [sel-mod $l]]]]]]
+          [= $sel-merged
+            [?for [in $m $sel-mods]
+              [= $mems-raw
+                [$strings:join
+                  [?for [in $l $sel-lines]
+                    [where [= [sel-mod $l] $m]]
+                    [yield [sel-members $l]]] ","]]
+              [= $mems
+                [$sort [$distinct
+                  [?for [in $mm [$strings:split $mems-raw ","]]
+                    [= $mt [$strings:trim $mm]]
+                    [where [not [= $mt ""]]]
+                    [yield $mt]]]]]
+              [yield [$concat "import " $m " { " [$strings:join $mems ", "] " }"]]]]
+          [= $sel-mods-fence
+            [$concat "\n" [$strings:join $sel-mods "\n"] "\n"]]
+          [= $import-union
+            [$strings:join
+              [$sort [$distinct
+                [?for [in $l $import-list]
+                  [= $is-sel [and [$strings:contains $l "{"] [$strings:contains $l "}"]]]
+                  [= $base
+                    [?if [$strings:ends-with $l " as _"]
+                      [then [$strings:slice $l 0 [- [$strings:length $l] 5]]]
+                      [else $l]]]
+                  [= $base-mod [$strings:slice $base 7 [$strings:length $base]]]
+                  [= $plain-sub
+                    [and [not $is-sel]
+                         [not [$strings:contains $base-mod " "]]
+                         [$strings:contains $sel-mods-fence [$concat "\n" $base-mod "\n"]]]]
+                  [= $underscore-sub
+                    [and [$strings:ends-with $l " as _"]
+                         [$strings:contains $import-fence [$concat "\n" $base "\n"]]]]
+                  [where [not [or $plain-sub $underscore-sub]]]
+                  [yield
+                    [?if $is-sel
+                      [then
+                        [?let [= $ml
+                                [?for [in $k [$range 1 [$count $sel-mods]]]
+                                  [where [= $sel-mods[$k] [sel-mod $l]]]
+                                  [yield $sel-merged[$k]]]]
+                          $ml[1]]]
+                      [else $l]]]]]]
+              "\n"]]
+
+          # per-file kept-chunk sections; dedupe = fenced byte-identical
+          # membership against all EARLIER chunks (earlier files +
+          # earlier in the same file). Test-fn chunks are never dropped.
+          [= $sections
+            [?for [in $pi [$range 1 [$count $parts]]]
+              [= $p $parts[$pi]]
+              [= $clist [$strings:split [$string $p@chunks] [fence]]]
+              [= $klist [$strings:split [$string $p@keys] [fence]]]
+              [= $earlier-fence
+                [$concat [fence]
+                  [$strings:join
+                    [?for [in $qj [$range 1 [- $pi 1]]]
+                      [= $q $parts[$qj]]
+                      [yield [$string $q@keys]]] [fence]]
+                  [fence]]]
+              # per-chunk verdicts: keep the chunk, or (on a duplicate)
+              # keep only its trailing narrative so no commentary is lost
+              [= $emits
+                [?for [in $ci [$range 1 [$count $clist]]]
+                  [= $c $clist[$ci]]
+                  [= $k $klist[$ci]]
+                  [= $carries-test
+                    [or [$strings:starts-with $c "fn test_"]
+                        [$strings:contains $c "\nfn test_"]]]
+                  [= $same-file-fence
+                    [$concat [fence]
+                      [$strings:join
+                        [?for [in $cj [$range 1 [- $ci 1]]] [yield $klist[$cj]]] [fence]]
+                      [fence]]]
+                  [= $dup
+                    [and [not [= $k ""]]
+                         [not $carries-test]
+                         [or [$strings:contains $earlier-fence [$concat [fence] $k [fence]]]
+                             [$strings:contains $same-file-fence [$concat [fence] $k [fence]]]]]]
+                  [yield [emit dropped=[?if $dup [then 1] [else 0]]
+                           text=[?if $dup [then [chunk-tail $c]] [else $c]]]]]]
+              [= $kept
+                [?for [in $e $emits]
+                  [= $t [$string $e@text]]
+                  [where [not [= [$strings:trim $t] ""]]]
+                  [yield $t]]]
+              [= $dropped
+                [?if [= [$count $emits] 0] [then 0]
+                  [else [$sum [?for [in $e $emits] [yield $e@dropped]]]]]]
+              [= $pre [$string $p@preamble]]
+              [yield [section file=[$string $p@file] dropped=$dropped
+                       text=[$concat
+                         "// ── source: " [$string $p@file] " ──\n"
+                         [?if [= $pre ""] [then ""] [else [$concat $pre "\n"]]]
+                         [?if [= [$count $kept] 0] [then ""]
+                           [else [$concat "\n" [$strings:join $kept "\n\n"] "\n"]]]]]]]]
+
+          [= $deduped-total
+            [?if [= [$count $sections] 0] [then 0]
+              [else [$sum [?for [in $s $sections] [yield $s@dropped]]]]]]
+          [= $tfns-in
+            [?if [= [$count $parts] 0] [then 0]
+              [else [$sum [?for [in $p $parts] [yield $p@tfns]]]]]]
+
+          [= $header
+            [$concat
+              "// " $area "_umbrella_test.v -- GENERATED by scripts/consolidate_tests.sh (#700):\n"
+              "// the per-area test-binary umbrella. " [$string [$count $files]]
+              " source files merged verbatim (byte-identical\n"
+              "// helper dedupe only; the V compiler is the name-collision oracle). Fewer test\n"
+              "// files = fewer whole-module-graph compiles (V compilation was 99% of the gate).\n"
+              "// Regenerate: scripts/consolidate_tests.sh gen " $area "\n"
+              "// Manifest:   " $manifest "\n\n"]]
+
+          [= $out-text
+            [$concat $header
+              [?if [= $module0 ""] [then "module main\n"] [else [$concat $module0 "\n"]]]
+              "\n"
+              $import-union "\n"
+              [$strings:join
+                [?for [in $s $sections] [yield [$concat "\n" [$string $s@text]]]] ""]]]
+
+          [= $tfns-out
+            [$count
+              [?for [in $l [$strings:split $out-text "\n"]]
+                [where [$strings:starts-with $l "fn test_"]]
+                [yield 1]]]]
+
+        [?if [not [= $tfns-in $tfns-out]]
+          [then
+            [?let [= $_e [$io:write-line [$env:stderr]
+                [$concat "consolidate_tests: REFUSED (area " $area ") -- test-fn count moved in the merge: in="
+                  [$string $tfns-in] " out=" [$string $tfns-out]]]]
+              [$env:exit 2]]]
+          [else
+            [?let [= $_w [$io:write-file $out-path $out-text]]
+                  [= $_p [$io:write-line [$env:stdout]
+                    [$format:canonical [consolidate area=$area files=[$count $files]
+                      test-fns-in=$tfns-in test-fns-out=$tfns-out
+                      chunks-deduped=$deduped-total
+                      out=$out-path]]]]
+              [$env:exit 0]]]]]]]]]]]]]]]

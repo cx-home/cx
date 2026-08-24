@@ -1,0 +1,3 @@
+# area: real_services
+vcx/tests/adjudicate_real_test.v
+vcx/tests/process_stdio_test.v

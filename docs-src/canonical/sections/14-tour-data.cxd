@@ -5,7 +5,7 @@
    Designer pre-approved as guide appendix.
    File extension .cxd — data-only source. #]
 
-[section id=tour-data n=14 title='50 Ways to Love Your CX Data'
+[section id=tour-data group='Ring 0 — Data' n=14 title='50 Ways to Love Your CX Data'
 
   [intro
     """Fifty examples that walk through CX data — bare attributes
@@ -44,7 +44,7 @@
     [body """When you want both polarities, write the word."""]
     [example lang=cx """[pizza vegan=true gluten-free=false]"""]]
 
-  [child id=td-8  n=14.8  title='8. Boolean sigil shorthand'
+  [child id=td-8  n=14.8  title='8. Booleans are ordinary attributes'
     [body """Booleans are ordinary attributes — `name=true` / `name=false`; the bare tokens auto-type as bool."""]
     [example lang=cx """[pizza vegan=true nuts=false gluten=false]"""]]
 
@@ -73,8 +73,8 @@
     [example lang=cx """[pizza alert='Hot!\\nHandle with care.\\tCafé']"""]]
 
   [child id=td-15 n=14.15 title='15. Entity references (XML-style)'
-    [body """`&amp;`, `&lt;`, `&gt;` work as in XML. Useful when a literal ampersand would confuse the parser."""]
-    [example lang=cx """[pizza name='Cheese &amp; Pepper' note='use &lt;tongs&gt;']"""]]
+    [body """`&amp;`, `&lt;`, `&gt;` are recognized in **body text** — they round-trip faithfully, and an `--xml` emit renders them as proper XML entities. In attribute values they are **not** decoded: the characters stay literal (and `--xml` escapes the ampersand a second time). For a literal `&` or `<` in an attribute, just write the character inside quotes."""]
+    [example lang=cx """[note Cheese &amp; Pepper]"""]]
 
   [child id=td-16 n=14.16 title='16. Null'
     [body """A real null value, distinct from empty string or the word "null" as a string."""]
@@ -239,8 +239,8 @@
   [child id=td-43 n=14.43 title='43. Typed array as body'
     [body """`::int[]` for typed; `::[]` for inferred (string array here)."""]
     [example lang=cx
-      """[oven-temps ::int[] 220 240 260 480]
-         [tags ::[] cheap fast tasty]"""]]
+      """[oven-temps::int[] 220 240 260 480]
+         [tags::[] cheap fast tasty]"""]]
 
   [child id=td-44 n=14.44 title='44. Plain table — header plus rows'
     [body """The `[table[…]]` block declares column names once. Each line below is a row."""]
@@ -266,13 +266,13 @@
            'Jean-Luc' 4 null]"""]]
 
   [child id=td-47 n=14.47 title='47. Anchor and alias'
-    [body """`&classic` names this element; `[*classic]` drops a full copy in."""]
+    [body """`&classic` **names** this element; `[*classic]` is an alias node referencing it. Which reading you get depends on the lane. The **lossless lanes** carry the reference as written: canonical CX emit prints `[*classic]` back out, and `--xml` marks it with a `cx:` attribute, so the document round-trips byte-faithfully. The **semantic lanes resolve it**: under `--json`/`--yaml`/`--csv` (any lossy projection) and inside a program's `$doc`, each alias expands to a deep copy of its anchor — the JSON of the example below carries two full Margheritas inside `menu`. `cx lint` (CX-L004) errors on a reference whose anchor does not exist, and a lossy projection of a dangling alias refuses outright."""]
     [example lang=cx
       """[pizza &classic name=Margherita price=12 [base tomato]]
          [menu [*classic] [*classic]]"""]]
 
-  [child id=td-48 n=14.48 title='48. Merge with overrides'
-    [body """`*classic` inherits the anchor's attrs and children; overrides apply on top."""]
+  [child id=td-48 n=14.48 title='48. Merge declaration'
+    [body """`*classic` **declares** a merge from the anchor, with the element's own attrs as overrides. The same lane split as the alias: the lossless lanes keep the declaration as written — canonical emit prints `[pizza *classic …]`, `--xml` emits a `cx:merge="classic"` attribute — while the semantic lanes **apply** it: under a lossy projection or `$doc`, the second pizza inherits `name=Margherita price=12 [base tomato]` and its own attrs win on collision, so it comes out `name=ClassicXL size=large price=16` with the tomato base. CX-L004 checks the target anchor exists."""]
     [example lang=cx
       """[pizza &classic name=Margherita price=12 [base tomato]]
          [pizza *classic name=ClassicXL size=large price=16]"""]]
@@ -298,7 +298,7 @@
            ''']]"""]]
 
   [child id=td-50 n=14.50 title='50. The whole shop'
-    [body """XML decl, anchor, block comments, typed table, merged child, map and sequence children, triple-quoted text. One syntax, everywhere."""]
+    [body """XML decl, anchor, block comments, typed table, a merge declaration (carried on the lossless lanes, applied on the semantic ones — see 48), map and sequence children, triple-quoted text. One syntax, everywhere."""]
     [example lang=cx
       """[?xml version=1.0 encoding=UTF-8]
          [shop &flagship name='New Haven' port=8080 open=true

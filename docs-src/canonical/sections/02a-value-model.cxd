@@ -1,0 +1,239 @@
+[# Section 2a — the value model: one value, one address, everywhere.
+   Authored 2026-08-19 for the #826 restructure (acceptance 3 — the ring
+   arcs). Teaching surface for spec/03-approved/core/semantic_value_model.md
+   (the E4 contract); absorbs the homoiconicity concept page (was 9.1).
+   Authority: semantic_value_model.md, canonical.md §1.2/§1.4, cxdm §4/§5.
+   The guide teaches; the spec rules. #]
+
+[section id=value-model group='Ring 0 — Data' n='2a' title='The value model'
+
+  [child id=vm-invariant n=2a.1 title='One value, one address'
+    [intro
+      """Everything in Ring 0 rests on one promise: **a CX value has the
+         same identity and the same meaning whether it is stored,
+         transmitted, queried, executed, replicated, rendered, or handled
+         by an agent.** Identity is a content address — the SHA-256 of
+         the value's strict canonical text — and no surface, protocol,
+         or internal representation is allowed to present a different
+         address or a different value for the same canonical bytes."""]
+
+    [body
+      """That sentence is a contract, not a description. A store key, a
+         wire frame, a query result, a cached computation, and a signed
+         approval all name values by the same address, so they can be
+         compared, deduplicated, and audited against each other without
+         translation. When two systems disagree about a value, the
+         address settles it."""]
+
+    [example lang=sh
+      """$ cx hash order.cx
+         sha2-256:f09867e376c94f2f…   # the same address on every machine,
+                                      # every OS, every binding"""]
+
+    [body
+      """The address is computed over **strict canonical text** — the
+         one normalized spelling of a value (attribute order, whitespace,
+         number formatting, and quoting all pinned; see [[identity]]).
+         Reformatting a document does not move its address; changing one
+         field does. `cx eq` is exactly \"do the canonical bytes
+         agree\", and `cx hash` is exactly \"name those bytes\"."""]
+
+    [note
+      """A surface that **cannot** honor the invariant for a value class
+         must refuse loudly rather than improvise. Two classes refuse
+         today by design: **closures** (they capture an environment no
+         canonical text can carry) and **secret-bearing values**
+         (hashing the plaintext would turn every address into a
+         secret-confirmation oracle; hashing the redacted form would
+         give two secrets one address). Refusal is a typed error —
+         never a silent fallback address. **Unbounded iterators** (an
+         address that depends on consumption state is not an identity)
+         are today force-materialized before addressing; the typed
+         refusal for them is approved surface that lands with the next
+         identity revision."""]]
+
+  [child id=homoiconicity n=2a.2 title='Code is data — and has the same identity'
+    [intro
+      """CX is homoiconic: a program is a CX document. A `[?for]`
+         directive is an element whose name happens to start with `?` —
+         attributes, body, closing bracket — structurally identical to
+         `[user]` or `[order]`. There is no separate syntax tree for
+         code; the reader emits the same element values the rest of the
+         system manipulates."""]
+
+    [body
+      """For Ring 0 this has a precise consequence: a Ring-0 consumer
+         reads a program the way an XML parser reads XSLT — as an inert
+         tree. It can hash it, diff it, validate it, convert it, and
+         hand it on, with no means of running it (there is no evaluator
+         in Ring 0). **Identity therefore belongs to Ring 0**: a
+         definition hashes to the same bytes everywhere, whether or not
+         the reader could execute it."""]
+
+    [list
+      [item """**One toolchain.** Parser, formatter, linter, LSP,
+              tree-sitter grammar — one each, used identically on code
+              and data. `cx fmt` formats both; `cx lint` checks both;
+              the same CXPath vocabulary that queries a user database
+              queries the program that processes it."""]
+      [item """**One identity contract.** A program has a content
+              address just like a document does. Build caches key on the
+              hash of canonicalized program text; if the program is
+              semantically unchanged, the cache hits even when the
+              layout differs."""]
+      [item """**One projection table.** Every CX value — code or data —
+              projects to JSON, XML, YAML, TOML, Markdown, and the
+              binary forms. Shipping code alongside data over the wire
+              is shipping one more document."""]
+      [item """**Macros are unnecessary.** A directive is data; you
+              build or rewrite it with the same element construction and
+              `[?modify]` machinery you use on data. Deploy-time program
+              rewrite is a path predicate plus an action — no string
+              substitution, no template engine."""]]
+
+    [example lang=sh
+      """# A program IS a document — the same tools apply unchanged.
+         $ cat prog.cx
+         [?for [in $x (1, 2)] [yield [n $x]]]
+
+         # Identity works on code exactly as on data:
+         $ cx hash prog.cx
+         sha2-256:b9f0fe8ea88e5cbf…
+
+         # Reformat-stable: a relaid-out spelling of the same program
+         # hashes to the same address.
+         $ cx hash prog-reformatted.cx
+         sha2-256:b9f0fe8ea88e5cbf…"""]]
+
+  [child id=vm-senses n=2a.3 title='The four senses of identity'
+    [intro
+      """The word \"identity\" is overloaded in every data system. CX
+         gives each sense its own name, and a specification (or this
+         guide) that says \"identity\" without qualification always
+         means the content address."""]
+
+    [table
+      [tr [th 'Sense'] [th 'Where'] [th 'What it is']]
+      [tr [td '**Document ID / IDREF**'] [td '`#name`, `[ref @name]`']
+          [td 'intra-document naming — authored data; participates in the canonical bytes; NOT a content address']]
+      [tr [td '**Content address**'] [td '`cx hash`, store keys, claims']
+          [td 'THE identity: `sha2-256:<hex>` over strict canonical text']]
+      [tr [td '**Canonical equality**'] [td '`cx eq`, `[$cx:equal]`']
+          [td 'a predicate — true iff the canonical bytes agree; not an address']]
+      [tr [td '**Collection equality**'] [td 'the value model (cxdm §5)']
+          [td 'per-kind comparison semantics (order and dedup rules inside values); never an identity claim about documents']]]
+
+    [body
+      """Additional identity **tiers** exist above the content address —
+         a code-equivalence tier for definitions and a computation
+         address for cached results (see [[computation-identity]] in
+         Ring 1) — but they are additional, never substitutes. Trust
+         decisions bind to the content address of the exact text."""]]
+
+  [child id=vm-lanes n=2a.4 title='What rides with a value — the three lanes'
+    [intro
+      """Not everything about a value belongs *in* the value. CX admits
+         exactly three ways to attach information to one, and the list
+         is closed — no fourth lane, no intrinsic envelope under any
+         name."""]
+
+    [table
+      [tr [th 'Lane'] [th 'Mechanism'] [th 'Identity?'] [th 'Use for']]
+      [tr [td '1 — inert side-band'] [td '`[?meta]` — rides with the value']
+          [td '**excluded** — annotating never moves the address'] [td 'display hints, tooling notes, PII flags']]
+      [tr [td '2 — detached claims'] [td 'hash-keyed values ABOUT an address']
+          [td 'each claim has its own address'] [td 'provenance, approvals, type bindings, lineage']]
+      [tr [td '3 — event envelopes'] [td 'journal entries wrapping payloads verbatim']
+          [td 'envelope hashed with its payload'] [td 'attribution: who did what, when, in which stream']]]
+
+    [body
+      """The lane discipline is what keeps identity honest. Two records
+         that differ only in a `[?meta]` annotation are the **same
+         value** — same address, same cache hits, same approvals. Two
+         records that differ in an effective date are **different
+         values**, which is why validity dates are payload data and not
+         metadata (see [[bitemporal]] in Ring 2). And a claim about a
+         value — who produced it, who approved it, what schema it
+         satisfied — is a first-class value of its own, keyed by the
+         subject's address, so it can be signed, stored, and audited
+         without touching the subject."""]]
+
+  [child id=vm-expression n=2a.5 title='Expression identity'
+    [intro
+      """Because programs are documents, expressions have addresses too.
+         `[?quote]` returns the expression as a value — after hole
+         substitution, exactly what would evaluate — and that value's
+         canonical text is the expression's identity. One expression,
+         one address, wherever it was authored and however it was
+         formatted."""]
+
+    [; check=none — [?quote] result shown alongside its meaning;
+       illustrative panel, not a runnable assertion. ]
+    [example lang=cx check=none
+      """[?quote [total-due
+        [$sum [$map $lines [?fn ($l) [* $l@qty $l@unit-price]]]]
+        [tax-for $region]]]
+      [; one Tier-1 address for this pricing expression — the same
+         address in the author's editor, the store, and the approval
+         that binds to it. ]"""]
+
+    [body
+      """Expression identity is **name-sensitive by design**: `$x` and
+         `$y` are different expressions with different addresses.
+         (Alpha-normalized equivalence — treating `$x` and `$y` as the
+         same binder — exists as an additional tier for cache sharing,
+         never as a redefinition of identity.) This is what makes
+         address-bound approval workable: an agent proposes a concrete
+         expression, a principal approves **that address**, and no
+         rewording, re-parameterization, or reformatting can ride the
+         approval (see [[commands-effects]] in Ring 1)."""]]
+
+  [child id=vm-type n=2a.6 title='Type identity'
+    [intro
+      """A type's identity is a pair: **the element name plus the
+         content hash of the schema text that defines it.** Two parties
+         adopt a type by exchanging that pair — nominal typing with zero
+         registry, zero coordination service."""]
+
+    [example lang=text
+      """("order", sha2-256:9c1f0e442ab8...)
+         # a 3PL and a merchant agree on what an order IS by
+         # exchanging these two tokens out-of-band"""]
+
+    [body
+      """The pair is primarily **recoverable by computation** — the name
+         comes from the value, the hash from the schema in force, so
+         there are no extra bytes to desync. When a type identity must
+         be *asserted* (at a trust boundary), it travels as a detached
+         Lane-2 `[type-binding]` claim, and asserting it obliges
+         fail-closed validation. A schema document that anchors a type
+         identity declares exactly one type, so editing one type can
+         never silently move another's identity. Schema *revisions* are
+         distinct type identities — the link between them is explicit
+         lineage, covered in [[schema-evolution]]."""]]
+
+  [child id=vm-version n=2a.7 title='Version identity'
+    [intro
+      """Values are immutable, so a value is never \"at version 17\" —
+         a **name** is. Version identity belongs to refs: named
+         pointers whose advance history is journal-backed, dense, and
+         gap-free. \"v17\" means: the 17th advance of this ref."""]
+
+    [body
+      """Every advance is an act and every act appears in the history —
+         including force-moves and re-pointing a ref at its current
+         target. Racing writers resolve through **one conflict
+         vocabulary**: a compare-and-set that states its expectation
+         either as the prior address (`expect=<address>`, with `\"\"`
+         meaning must-not-exist) or as a position (`expect-pos=N`), and
+         the loser receives one well-known conflict error, locally and
+         over the wire."""]
+
+    [note
+      """**No version fields on values.** A document carrying
+         `version=17` as authored data is domain data — it is not the
+         value's version, and nothing in the substrate reads it as one.
+         The version lives in the ref history, where it is auditable;
+         the value lives at its address, where it is immutable. The
+         store's use of refs and histories is covered in [[store]]."""]]
+]

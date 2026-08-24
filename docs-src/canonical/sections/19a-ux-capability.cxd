@@ -1,0 +1,131 @@
+[section id=ux-capability group='Ring 2 — Platform' n='19a' title='Projected surfaces — the ux capability'
+
+  [intro
+    """You define commands and queries; the platform projects the
+       interface. The ux capability is CX's third projection — the same
+       `[?def]`s that serve the wire and the agent-tools face also
+       produce forms, tables, and live regions, **derived at render time
+       from the definitions themselves**. There is no UI manifest to
+       drift, the same way there is no tool manifest to drift: when a
+       command gains a parameter, its form gains a field."""]
+
+  [child id=ux-three-projections n='19a.1' title='One projection, many faces'
+    [body
+      """Three entry points cover the surface. `[$ux:form]` projects a
+       command's parameter schema into a complete form; `[$ux:table]`
+       projects a query's row schema into a complete table;
+       `[$ux:feed]` turns a live-modes subscription into a live region.
+       A **command** is discriminated exactly as the agent-tools face
+       discriminates it — an ordinary `[?def]` whose `[effects]` clause
+       is present — and the projection reuses the same machinery:
+       fields from the param list, required-ness from the non-defaulted
+       positionals, labels and help text from the same `[fn-doc]` /
+       `[param-doc]` sources the tool descriptors consume."""]
+
+    [; check=none — a projection sketch: the command's declaration is
+       contract-position, and [$ux:form] needs the Ring-2 pack loaded. ]
+    [example lang=cx check=none
+      """[?def place-order impure ($sku $qty)
+           [preconditions [in-stock $sku $qty]]
+           [effects [write "orders"]]
+           …body…]
+
+         [$ux:form place-order]   [; param schema → a complete form ]"""]
+
+    [body
+      """Rules are enforced **once, at the command layer** — a refused
+       precondition renders as a form error from the `[err]` channel;
+       the projection never restates a rule, so a rule can never be
+       enforced differently in two places. Where the tools projection
+       fails loud on a missing `[summary]` (agent-facing text is
+       load-bearing), the ux projection degrades to name-derived labels
+       — human-facing defaults are presentational, and quality gates
+       measure them rather than refusals."""]]
+
+  [child id=ux-vocabulary n='19a.2' title='A closed semantic vocabulary'
+    [body
+      """Projection emits **semantic elements** — `ux:card`,
+       `ux:field`, `ux:table`, `ux:action`, `ux:facet`, `ux:status`,
+       forty-five members in all — that assume no hover, no pointer,
+       and no CSS-shaped layout. The set is closed and gate-enforced:
+       an unknown member refuses (`ux-unknown-element`), and so does an
+       unknown attribute on a known member (`ux-unknown-attr`) — an
+       invented spelling gets a loud error, never silent acceptance. A
+       candidate member is admitted only when it carries semantics no
+       existing member carries **and** every face can honor it natively
+       — "the same thing with a different appearance" becomes a hint,
+       never a member."""]
+
+    [example lang=cx
+      """[ux:card
+           [ux:media src="/static/art/pan.svg" alt="A 24 cm sauté pan in graphite" kind=illustration]
+           [ux:heading 'Farrow 24 cm sauté pan']
+           [ux:field label='Price' format=money 68.00]
+           [ux:action verb=add-to-cart label='Add to cart'
+             [ux:param name=sku value='FK-0119']]]"""]
+
+    [body
+      """That value is the whole interface contract for a product card.
+       Notice what it does **not** say: no widths, no colors, no
+       columns, no click handlers. Presentation intent that varies by
+       deployment rides **hint claims** keyed by (schema address, field
+       path) — `view=cards`, `format=money`, grouping, ordering,
+       labels per language — resolved through a four-level cascade
+       (platform → vendor → tenant → surface), so a tenant can restyle
+       a field everywhere it appears without touching a definition."""]]
+
+  [child id=ux-two-faces n='19a.3' title='Two faces, one tree'
+    [body
+      """Renderers lower the same semantic tree and neither is
+       privileged. The **web face** lowers to HTML over a pinned
+       hypermedia kernel — the emitter is the sole author of every
+       kernel attribute, escaping is by construction (tree composition,
+       never string concatenation), and strict CSP holds because the
+       emitter never writes inline styles, scripts, or handler
+       attributes. The **terminal face** lowers the same tree to a
+       measured, keyboard-driven TUI. The pairing is load-bearing for
+       quality: a face with no pointer cannot hide an unreachable
+       control, so the terminal's focus ring enumerating the same
+       affordances the web face offers is a mechanical
+       keyboard-reachability test — accessibility as a fixture, not a
+       review comment."""]]
+
+  [child id=ux-writes n='19a.4' title='Writes are intents; reads are places'
+    [body
+      """Every state change is a **POST of an intent** to the composed
+       grammar's verb — the same wire agents use, with the same policy
+       decision, the same journal append, the same refusal channel. An
+       `[ux:action]` inside a collection item carries its parameters
+       server-derived at projection time; nothing is read back out of
+       the rendered document, so a stale page posts what it was
+       rendered with and the command layer refuses it honestly. And
+       every meaningful state is a **URL**: a facet selection, a sort,
+       a page, a checkout step, an open basket. GET is safe and
+       idempotent, mutations never hide behind links, and with the
+       kernel absent every control still works as a plain form or link
+       — full page loads instead of fragment swaps, and nothing
+       else lost."""]]
+
+  [child id=ux-authz n='19a.5' title='What is shown is what is allowed'
+    [body
+      """The emitter consults the **same authorization evaluator** as
+       the wire and the tools face, per session, at render time — being
+       shown and being allowed are one computation. Commands the actor
+       cannot invoke are not emitted; unreadable fields are omitted by
+       default (never computed into the output at all) or masked
+       server-side where discoverability is wanted; reading past a lens
+       is a separate journaled command, not a rendering variant. A
+       field masked on the web is masked in a tool result — one ruling,
+       all surfaces."""]]
+
+  [child id=ux-where-specified n='19a.6' title='Where it is specified'
+    [body
+      """The capability's normative home is the ux spec in the XAP spec
+       set — the projection vocabulary, the keying regimes, the emitter
+       contract, the session/authz rulings, and the accessibility
+       clauses, each fixture-mapped. The semantic core lives in the
+       `cx-x/ux` module with the web and terminal faces beside it, and
+       the conformance lane exercises projection, addressing, the
+       refusal gate, and redaction against goldens. The pack is
+       x-tier: bundled and gated in-tree, with its stability promise
+       deliberately unfrozen until its go/kill review passes."""]]]
