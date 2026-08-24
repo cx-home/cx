@@ -10,6 +10,6 @@
 # ── #700 wave 1, 2026-08-24: the three node wire-codec lanes. All three
 # carried the same five test-fn names and a `round_trip` helper per node
 # type; each was renamed with its source prefix in the same commit.
-vcx/tests/modify_node_codec_test.v
-vcx/tests/match_node_codec_test.v
-vcx/tests/path_node_codec_test.v
+#absorbed vcx/tests/modify_node_codec_test.v
+#absorbed vcx/tests/match_node_codec_test.v
+#absorbed vcx/tests/path_node_codec_test.v
