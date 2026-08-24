@@ -167,3 +167,48 @@ does NOT carry graduation: G3 approval to place spec text in
 
 Commits under both rulings carry their `RULED: VC-6` / `RULED: VC-7`
 token (spec-freeze R4.1).
+
+---
+
+# AMENDMENT 3 (2026-08-24) — VC-8, VC-9
+
+**Status:** RULED by the owner — reply verbatim: **"3a 4a"** — against the
+two questions posed after VC-6/VC-7 went to work. Recorded BEFORE the work
+per R6.1/R4.2.
+
+## VC-8 (3a) — #907: catalogue preflight SPLITS by ownership
+
+The question: *"(a) Split it — compatibility report for products, replay
+for the field registry. It matches the lean recorded in the issue. A price
+a merchant set is not a modification of something the vendor shipped, so
+replaying it asserts an ownership the vendor does not have; but the field
+registry is genuinely vendor-shipped, so registry edits replay like
+layout. Cost: two code paths instead of one. (b) Replay everything as
+layout-equivalent. (c) Compatibility report for everything, no replay."*
+Ruled (a).
+
+This answers the design question #905 raised and #907 carried unresolved:
+domain data IS a fourth kind of thing. Tenant-owned catalogue CONTENT
+(products, prices, stock, copy, retirement) is not vendor-document
+customization, so `/fleet/preflight` owes it a COMPATIBILITY REPORT — which
+of this tenant's products reference categories, fields or skus the
+candidate no longer defines — and does not replay it. The FIELD REGISTRY is
+vendor-shipped, so registry edits replay exactly as layout commands do.
+
+## VC-9 (4a) — #874: editor-tooling distribution STAYS PARKED
+
+The question: *"(a) Leave parked, close nothing — every user builds from
+source today, so the copy-from-repo flow is the right trade, and publishing
+to Marketplace/OpenVSX is an outward-facing irreversible step besides.
+(b) Do items 2 and 3 only (Neovim plugin-root layout, nvim-treesitter
+registration) — in-repo and reversible. (c) Do all four including
+Marketplace publishing."* Ruled (a).
+
+#874 stays OPEN and PARKED at `prio:high`, not closed and not partially
+executed. Its own scope note makes item 4 depend on a binary install
+channel that does not exist yet, and CX has no external users, so the
+copy-from-repo flow remains the correct trade. Re-confirmed parked in this
+campaign so a later session does not re-litigate it.
+
+Commits under VC-8 carry a `RULED: VC-8` token (spec-freeze R4.1). VC-9
+authorizes no work.
