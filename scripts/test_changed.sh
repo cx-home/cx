@@ -92,6 +92,7 @@ lane_globs() {
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
+    test-xpath-parity-cx)          echo 'vcx/* conformance/* scripts/check_xpath_parity_fixtures.cx' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }

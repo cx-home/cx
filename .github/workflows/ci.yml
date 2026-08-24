@@ -93,7 +93,7 @@ jobs:
         run: make test-code-diagram
 
   v0_8_0-gates:
-    name: v0.8.0 release gates (28.5 / 28.6)
+    name: v0.8.0 release gates (28.5a / 28.6)
     runs-on: ubuntu-22.04
     needs: experience-gate
     steps:
@@ -107,13 +107,15 @@ jobs:
       - name: Build cx
         run: make build-vcx
 
-      # Gate 28.5 — XPath 3.1 parity vs Saxon-HE. Docker is preinstalled
-      # on GitHub-hosted ubuntu runners; the script exits 2 on prerequisite
-      # failure and 1 on fixture mismatch. continue-on-error until impl
-      # lands per spec/v0_8_0_status.md gate 28.5.
-      - name: XPath 3.1 parity (gate 28.5)
-        run: make test-xpath-parity
-        continue-on-error: true
+      # Gate 28.5a — CXPath / XPath 3.1 alignment, CX side (RULED: VC-7, #945).
+      # NOT continue-on-error: this half needs no Docker and is green on the
+      # tree, so a red here is a real regression. The step used to run
+      # `make test-xpath-parity` under continue-on-error, which is how a gate
+      # that had never executed a single case went unnoticed for months.
+      # Gate 28.5b (the Saxon-HE cross-check) is MANUAL by ruling and is
+      # deliberately not a CI step — see conformance/GATE_REGISTER.md.
+      - name: CXPath / XPath 3.1 alignment, CX side (gate 28.5a)
+        run: make test-xpath-parity-cx
 
       # Gate 28.6 — Layer-1 binding-API parity. Runner stub until Phase 3
       # bindings land per spec/v0_8_0_status.md gate 28.6.

@@ -94,4 +94,14 @@
      the gate (distribution spec §1 — requirements are the tests). Keyed by
      package directory name; absent = enforced. #]
   [suite name=packages default=enforced
-    [module name=gtin gate=enforced reason='the kind=library reference package (distribution §1.1 reference case; #727 successor to the relocated wire-protocol codec): check-digit/parse/render/valid behavior corpus, authored against the real binary.']]]
+    [module name=gtin gate=enforced reason='the kind=library reference package (distribution §1.1 reference case; #727 successor to the relocated wire-protocol codec): check-digit/parse/render/valid behavior corpus, authored against the real binary.']]
+
+  [# xpath-31-parity (RULED: VC-7, #945): conformance/xpath_31_parity.cxd, the
+     CXPath / XPath 3.1 alignment corpus. Single-file suite — no module rows,
+     the suite default governs the whole file (the `code` shape). Consumer:
+     scripts/check_xpath_parity_fixtures.cx (gate 28.5a, in TEST_TARGETS), which
+     resolves per-case gate= > this default > the [gate-policy] default and
+     EXITS 2 if this row is missing — a lane whose tier is invisible is the
+     class of defect #945 filed. The Saxon-HE cross-check (gate 28.5b) is a
+     MANUAL row and is not governed here; see conformance/GATE_REGISTER.md. #]
+  [suite name=xpath-31-parity default=enforced]]

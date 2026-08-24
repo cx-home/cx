@@ -67,7 +67,7 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
  test-rust-parquet test-rust-arrow-conformance \
  test-go test-go-arrow \
  test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-go-api \
- test-xpath-parity test-binding-api-parity \
+ test-xpath-parity test-xpath-parity-cx test-binding-api-parity \
  abi-c-test \
  conform conform-vcx conform-md bench bench-python bench-streaming bench-cxparse \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
@@ -484,7 +484,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
+TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -945,18 +945,29 @@ test-code-diagram: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
 test-code-diagram: build-vcx-dev
 	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_code_diagram_fixtures.cx
 
-# ── v0.8.0 gate 28.5 — XPath 3.1 parity (Saxon-HE reference) ─────────────
-# Gate 28.5 — BROKEN, retirement or rebuild proposed, awaiting an owner ruling
-# (#945). This target is deliberately NOT in TEST_TARGETS: the gate cannot pass
-# in any environment (its recorded expected outputs are XML while cx emits
-# canonical CX, and its cited normative spec does not exist in the tree), and
-# even repaired the Saxon half would need Docker + network + a third-party
-# image. Running it prints a pre-flight naming all six measured findings and
-# exits 2 — it does not "skip cleanly", because a clean skip is what let the
-# breakage sit unexamined. Full findings: conformance/GATE_REGISTER.md row 28.5
-# and the header of scripts/test_xpath_parity.sh. The old comment here claimed
-# it ran conformance/xpath_31_parity.txt through `cx eval`; neither the file nor
-# that invocation exists.
+# ── gate 28.5a — CXPath / XPath 3.1 alignment, CX side (RULED: VC-7, #945) ─
+# The half of the old gate 28.5 that needs no Docker and is real new signal:
+# every case in conformance/xpath_31_parity.cxd evaluated by THIS tree's cx and
+# graded against an expectation DERIVED from that same binary. Before VC-7 those
+# 23 cases had no conformance/gates.cxd row and no lane read them, so they ran
+# NOWHERE while the register showed a gate. Normative reference:
+# spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
+.PHONY: test-xpath-parity-cx
+test-xpath-parity-cx: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
+test-xpath-parity-cx: build-vcx-dev
+	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_xpath_parity_fixtures.cx
+
+# ── gate 28.5b — the Saxon-HE cross-check (MANUAL, RULED: VC-7, #945) ─────
+# Deliberately NOT in TEST_TARGETS and deliberately NOT automated: it needs
+# Docker + network + the third-party saxonica/saxonhe:12 image, so wiring it
+# would make `make test` fail or hang on any host without them. It is the only
+# implementation-vs-external compliance check in the tree, which is why VC-7
+# kept it rather than retiring it. Running it prints the operator recipe and the
+# preconditions and exits 2 — it does not "skip cleanly", because a clean skip
+# is what let the old breakage sit unexamined for months. The CX side of the
+# same corpus is gate 28.5a above and DOES run in every `make test`.
+# Full contract: conformance/GATE_REGISTER.md rows 28.5a/28.5b and the header of
+# scripts/test_xpath_parity.sh.
 .PHONY: test-xpath-parity
 test-xpath-parity: build-vcx
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
