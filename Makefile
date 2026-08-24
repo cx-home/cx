@@ -1196,10 +1196,17 @@ CX_SKIP_LOG := vcx/target/test-skips.log
 #     duplicate V-runtime symbol, e.g. ___v_thread_wait; cache-free green
 #     proves the artifact — the cache-key root fix is the V-fork follow-up);
 #   • anything else → a real failure, no retry, gate stays red.
+#   • code_eval_fixtures_test.v joined 2026-08-23 for the #951 supervise
+#     load-race family (sup-011/sup-012: a note/terminal lost or starved
+#     only under full-parallel compile storms — measured green 25/25 and
+#     80/80 in isolation, red 3× across gates only under -j12 load, root
+#     tracked on #951). The serial retry keeps the same honesty contract:
+#     a deterministic eval regression re-fails it and the gate stays red.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
-                      vcx/tests/a2a_real_test.v
+                      vcx/tests/a2a_real_test.v \
+                      vcx/tests/code_eval_fixtures_test.v
 
 test-vcx-suite: build-vcx-dev
 	@rm -f $(CX_SKIP_LOG)
