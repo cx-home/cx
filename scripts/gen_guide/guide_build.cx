@@ -37,6 +37,9 @@
 [# cat: join string parts with no separator. #]
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 
+[; asset cache-busting suffix (#953) — see copy-stamped-if below. ]
+[?def stamp scope=public ($path $ver) [$cat ($path, '?v=', $ver)]]
+
 [# parse-or-die: read + parse a source file; a parse failure names the
    file on stderr and exits 1. A failed section must never be silently
    dropped from the site (issue #425: 10 of 16 pages vanished with
@@ -374,7 +377,7 @@
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n',
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n',
     '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">\n',
-    '<link rel="stylesheet" href="style.css">\n</head>\n<body>\n',
+    '<link rel="stylesheet" href="', [$stamp 'style.css' $ver], '">\n</head>\n<body>\n',
     [$nav-html $metas $libfiles $active],
     '<header class="sheet-bar">\n',
     '  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span>',
@@ -392,9 +395,9 @@
     '  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>\n',
     '  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>\n',
     '</footer>\n',
-    '<script src="highlight/highlight.js" defer></script>\n',
-    '<script src="search-index.js" defer></script>\n',
-    '<script src="search/search.js" defer></script>\n',
+    '<script src="', [$stamp 'highlight/highlight.js' $ver], '" defer></script>\n',
+    '<script src="', [$stamp 'search-index.js' $ver], '" defer></script>\n',
+    '<script src="', [$stamp 'search/search.js' $ver], '" defer></script>\n',
     '</body>\n</html>\n')]]
 
 [# ── [[anchor]] cross-reference resolution ───────────────────────────────
@@ -600,6 +603,33 @@
    own build steps). #]
 [?def copy-if scope=public impure ($from $to)
   [?if [$io:exists $from] [then [$io:copy $from $to]] [else ()]]]
+
+[# ── asset cache-busting (#953) ───────────────────────────────────────────
+   A returning visitor loading the site across a deploy got the NEW page HTML
+   with their CACHED pre-release style.css: the sidebar styled from old rules
+   while the sheet-bar (newer markup) rendered as bare glued text. Nothing was
+   wrong with the server — the live bytes were diff-identical to the repo — and
+   a hard refresh cleared it, but every deploy re-opened that window for every
+   cached visitor.
+
+   So every LOCAL asset reference carries `?v=<VERSION>`. The version is
+   DERIVED from the repo-root VERSION file that $ver already reads, never
+   spelled a second time. Third-party references (Google Fonts, the mermaid
+   CDN) are left alone: their URLs are already immutable-versioned and are not
+   ours to stamp.
+
+   `stamp` is for hrefs this file emits. `copy-stamped-if` is for the static
+   playground page, which is copied verbatim and carries its own <head>: it
+   would otherwise be the one page still able to pair fresh HTML with a stale
+   sheet. #]
+
+[?def copy-stamped-if scope=public impure ($from $to $ver $assets)
+  [?if [not [$io:exists $from]] [then ()]
+    [else [?let [= $src [$io:read-file $from]]
+      [= $out [$fp:fold $assets $src [?fn ($acc $a)
+        [$strings:replace $acc [$cat ('"', $a, '"')]
+                               [$cat ('"', [$stamp $a $ver], '"')]]]]]
+      [$io:write-file $to $out]]]]]
 
 [# ── search index ─────────────────────────────────────────────────────────
    Mirrors the old inline-Python builder: per rendered page, drop
@@ -928,7 +958,15 @@
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
     [$copy-if [$cat ($gen, '/playground/jspi_probe.html')]        [$cat ($out, '/playground/jspi_probe.html')]],
-    [$copy-if [$cat ($gen, '/playground/playground.html')] [$cat ($out, '/playground.html')]],
+    [; #953 — the playground page carries its own <head>, so it is stamped on
+       the way out rather than copied verbatim. Its LOCAL assets only: the
+       Google Fonts and mermaid CDN URLs in that file are already
+       immutable-versioned and are not ours to rewrite. ]
+    [$copy-stamped-if [$cat ($gen, '/playground/playground.html')]
+                      [$cat ($out, '/playground.html')] $ver
+                      ('playground/playground.css', 'playground/playground.js',
+                       'playground/playground.examples.js', 'highlight/highlight.js',
+                       'wasm/cxlib.js')],
     [$io:make-dirs [$cat ($out, '/wasm')]],
     [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],
     [$copy-if 'dist/wasm/libcx-async.js'      [$cat ($out, '/wasm/libcx-async.js')]],
