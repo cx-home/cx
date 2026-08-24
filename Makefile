@@ -891,6 +891,12 @@ TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 
 # when the running make advertises the feature.
 OUTPUT_SYNC := $(if $(filter output-sync,$(.FEATURES)),--output-sync=target,)
 test:
+	# Serial pre-build BEFORE the parallel fan-out: every lane's recursive
+	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
+	# skips the relink — without this, concurrent sub-makes RELINKED
+	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
+	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
+	@$(MAKE) build-vcx
 	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(TEST_TARGETS)
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
