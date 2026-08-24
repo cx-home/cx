@@ -355,3 +355,44 @@ Worktrees PRESERVED and not to be pruned: `busy-maxwell-6e39ce` (#962) and
 `objective-lovelace-b5cd8e` (#961) — live shipped defects whose fixes are
 not yet ported.
 
+
+---
+
+# AMENDMENT 7 (2026-08-24) — VC-13
+
+**Status:** RULED by the owner — reply verbatim: **"961/962 port into this
+campaign"** — against the question of whether two adopted stranded fixes ride
+v0.17.0 or the next line. Recorded BEFORE the work per R6.1/R4.2.
+
+## VC-13 — #961 and #962 PORT INTO v0.17.0
+
+The question: *"(a) Next campaign — file-only for now. Both are explicitly
+UNVERIFIED off a base 1897 commits old, so they are genuine ports needing a
+real read; landing them after the verdict invalidates it. (b) Port both now,
+re-run the full matrix. (c) Port #962 only."* Ruled: port both, this
+campaign — overriding the recommendation.
+
+Both defects are LIVE in shipped v0.16.0 and reproduce on release/0.17
+(measured this session):
+
+- **#961** — the child axis is blind to a sequence grouping:
+  `$bag/violation` returns **0** where `$bag//violation` returns 2. Violates
+  `spec/03-approved/core/code.md:1010`, normative: "a step that works on one
+  element works on a sequence of elements."
+- **#962** — a raw V struct dump (`cx.Node(cx.CommentNode{…})`) leaks into
+  program output where the data lane renders correctly. `ast.md:156` gives
+  Comment exactly one CX spelling.
+
+Consequences accepted with the ruling: the integrated matrix is re-run after
+the ports land, and the ports are treated as PORTS — the source branches
+(`claude/busy-maxwell-6e39ce` @ 84b469dc0, `claude/objective-lovelace-b5cd8e`
+@ 1749e529f) are 1897 commits behind and their commits are marked UNVERIFIED,
+so each change is read against the current engine rather than replayed.
+
+Two traps carried from the handoff and not to be rediscovered: the node-set
+arity half of busy-maxwell is ALREADY upstream as `node_set_query` and must
+not be reapplied; and the naive #962 fix is WORSE than the defect, because a
+line comment emitted inline swallows the following siblings and the closing
+bracket on re-parse — the emitter newline handling travels with the fix.
+
+The two worktrees stay until the ports land and are verified.
