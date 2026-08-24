@@ -633,3 +633,94 @@ that came with it.
   1. #700 wave 2 — Opus 5, FIRST
   2. Cluster A — path/value matrix — Fable 5
   3. Cluster B/C — comment fidelity + error surfacing — Fable 5
+
+---
+
+# AMENDMENT 12 (2026-08-24) — VC-21, VC-22
+
+**Status:** RULED by the owner in a fresh audit session. Recorded BEFORE the
+work per R6.1/R4.2. The session was opened with an explicit instruction to
+audit the #700 wave-2 handoff independently rather than execute it, and the
+audit found the handoff's central measurement wrong.
+
+## VC-21 — VC-14's measured basis is STRUCK; the floor is ~25 CPU-s, not ~700 s
+
+VC-14, VC-18 and VC-20 all rest on a per-file compile floor of "~700 s
+independent of content". That number is wrong by roughly 25x and every
+conclusion sized against it was mis-sized.
+
+**Measured, this session, on the exact file VC-14 names, with the exact gate
+flags** (`-cc cc -gc e -d cx_db_sqlite -d cx_db_redis -usecache`,
+`vcx/tests/cxparse_full_corpus_diff_test.v`, warm cache, 3 runs each):
+
+| context | per-test-binary wall |
+|---|---|
+| inside `devbox` (nix `clang-wrapper-21.1.8` + `cctools-binutils-darwin-wrapper`) | 53–54 s |
+| outside `devbox` (`/usr/bin/cc`, Apple clang 21.0.0) | 13–14 s |
+
+VC-14's own wave-1 table contradicts its floor table: 2,180,389 ms CPU
+comptime over 57 files is 38 CPU-s/file, not 700 s. The `16,028` /
+`15,154` "compile CPU-s" lane column is not reproducible in any unit
+consistent with either figure.
+
+**What survives:** the floor is real, content-independent, and is the
+dominant cost. VC-14's ruled lever — one test binary per module, not per
+file — stands on that. **What is struck:** the magnitudes, and every estimate
+derived from them.
+
+**Also struck as factually void:** VC-14 declined option (b), `-usecache`,
+"on risk". `CX_CACHE ?= -usecache` has been the default for
+`test-vcx-suite` / `test-vcx-code` / `test-vcx-cmd` since #129
+(`Makefile:1218`), with a dedicated cache-free retry class built around it.
+The lever the ruling declined was already in production, and the measured
+floor already includes it. Cache-free was then measured SLOWER (71 s vs
+53 s), so the default is correct on its merits — the decline was simply
+describing a decision already made.
+
+**Recorded as method, not blame:** a second session executed a brief whose
+numbers it did not verify, which is the same failure VC-20 named in the
+first. Numbers inherited from a handoff are unverified until re-measured.
+
+## VC-22 — the gate is scoped BY RING; devbox stays
+
+**Owner's words, verbatim:** *"keep running in devbox, we can't afford to
+screw up our dependency management."* And: *"why do we need all the lanes all
+the time. we have 4 rings now. if something didn't touch a ring don't bring
+that into the test."* And, on the plan below: *"do it."*
+
+**Consequence 1 — the toolchain is NOT touched.** The 4x devbox/host
+compiler gap measured under VC-21 is recorded as a finding and closed as a
+lever. `devbox` remains the execution environment for every gate. Dependency
+management outranks wall-clock.
+
+**Consequence 2 — lane selection becomes ring-precise.** `make test-changed`
+already skips lanes whose declared inputs did not change, but
+`scripts/test_changed.sh` declares `vcx/*` as the input of `test-vcx`,
+`test-v`, `test-rust`, `test-go`, `test-python`, `abi-c-test` and
+`check-prod-build` — so any edit under `vcx/` selects nearly every lane and
+the ring boundary is ignored, even though `ring-import-gate` already enforces
+that boundary in the tree. The globs are replaced with ring-precise paths,
+with `scripts/ring_import_gate.sh`'s machine-checked import contract as the
+authority for what each lane can actually depend on.
+
+**Bounded honestly, measured from the build graph:** `libcx` is built from
+`platform/` (`vcx/Makefile:222`), the TOP of the ring DAG. So an edit to
+`cx`, `code`, `cxstore`, `platform`, `arrow` or `transport` genuinely changes
+`libcx`, and the binding lanes must run. Ring-scoping buys: ring-0 and
+cxstore lanes skipped on a platform-only edit; nearly everything skipped on a
+`cli`/`cmd_data`-only edit. It does NOT skip the bindings for an ordinary
+ring-1/ring-2 edit, and must never be sold as doing so. The script's standing
+doctrine holds: a false RUN costs minutes, a false SKIP costs correctness —
+over-include on doubt.
+
+**Consequence 3 — the four binding lanes stop rebuilding `libcx`
+independently.** That is a larger win than selection on the same lanes and is
+in scope here.
+
+**Measured baseline this work is judged against**, `make test` at
+`b6a130141`, the current tip (which also establishes that the tip is
+full-matrix green, previously unknown): **1,428 s wall / 10,924 CPU-s
+(user+sys) / 7.6x average parallelism on 12 cores, GATE-RC=0.**
+
+**Target:** full gate under 10 minutes; a ring-scoped dev loop under 5. No
+lane is removed from the release gate to buy either number.

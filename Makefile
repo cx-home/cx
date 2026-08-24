@@ -484,7 +484,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx
+TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1168,6 +1168,28 @@ test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxsto
 	# of green test-vcx runs — the discipline did not decay, the feedback loop
 	# was disconnected.
 	$(MAKE) spec-freeze-gate
+
+# ── test-vcx-conform (RULED: VC-22) — the conformance aggregates, as their
+# OWN lane. `test-vcx` used to be the single TEST_TARGETS row for the whole V
+# side: five ring test lanes PLUS these three aggregates. That umbrella made
+# ring-precise selection impossible — a change anywhere under vcx/ selected
+# all five ring lanes, because the gate could only see one node.
+#
+# TEST_TARGETS now names the five ring lanes individually, so
+# scripts/test_changed.sh can skip the ones a change cannot reach. These three
+# aggregates were the ONLY work the old umbrella contributed that no other
+# TEST_TARGETS row already carries (check-code-spec-consistency,
+# check-code-fixtures and spec-freeze-gate are their own rows), so they get a
+# lane rather than being dropped — splitting the umbrella must not narrow the
+# release gate by one target.
+#
+# `test-vcx` itself is UNCHANGED and stays the human entry point: `make
+# test-vcx` still runs everything the V side owns in one command.
+.PHONY: test-vcx-conform
+test-vcx-conform: build-vcx-dev
+	$(MAKE) -C vcx conform-all
+	$(MAKE) -C vcx conform-fmt
+	$(MAKE) -C vcx conform-data-bin-arrow
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the

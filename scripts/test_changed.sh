@@ -35,16 +35,67 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   - vcx/** counts as input to EVERY compiled lane;
 #   - conformance/** feeds every corpus-consuming lane;
 #   - spec/** feeds the doc/consistency gates.
+# ── The ring DAG, once (RULED: VC-22) ────────────────────────────────────
+# Authority: scripts/ring_import_gate.sh, which enforces these edges
+# grep-level with zero tolerance. Stated here so a lane's input set is
+# derived from the import contract rather than re-guessed per row.
+#
+#   vcx/cx        Ring-0, strict sink (imports nothing above it)
+#   vcx/cxstore   <- cx
+#   vcx/code      Ring-1 <- cx
+#   vcx/arrow     <- cx        vcx/transport <- cx
+#   vcx/platform  Ring-2 <- cx code cxstore arrow transport
+#   vcx/cli, vcx/cmd_data      platform-free <- cx code cli cmd_data
+#   vcx/cmd       <- cli code cx platform
+#
+# Every vcx/ subdir must be named by at least one row below. Narrowing the
+# old blanket `vcx/*` rows means a path named by NO row would skip every
+# lane, so the support/rare dirs (testenv fixtures deps bench fuzz tools +
+# v.mod) ride RING_SUP, which every compiled lane carries. Over-include on
+# doubt: a false RUN costs minutes, a false SKIP costs correctness.
+RING0='vcx/cx/*'
+RING_STORE='vcx/cxstore/*'
+RING1='vcx/code/*'
+RING_LEAF='vcx/arrow/* vcx/transport/*'
+RING2='vcx/platform/*'
+RING_CLI='vcx/cli/* vcx/cmd_data/*'
+RING_CMD='vcx/cmd/*'
+RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
+# libcx is built from platform/ (vcx/Makefile:222) — the TOP of the DAG — so
+# every binding/ABI/prod lane legitimately depends on the whole closure. This
+# is the honest bound on ring selection: it narrows those lanes away from
+# vcx/tests, vcx/cmd and vcx/cli, and no further.
+RING_LIB="$RING0 $RING_STORE $RING1 $RING_LEAF $RING2"
+
 lane_globs() {
   case "$1" in
-    abi-c-test)                    echo 'vcx/* include/* lang/*' ;;
-    test-python)                   echo 'vcx/* lang/* include/* conformance/*' ;;
+    abi-c-test)                    echo "$RING_LIB $RING_SUP include/* lang/*" ;;
+    test-python)                   echo "$RING_LIB $RING_SUP include/* lang/* conformance/*" ;;
+    test-rust)                     echo "$RING_LIB $RING_SUP include/* lang/*" ;;
+    test-go)                       echo "$RING_LIB $RING_SUP include/* lang/*" ;;
+    test-v)                        echo "$RING_LIB $RING_SUP lang/v/*" ;;
+    check-prod-build)              echo "$RING_LIB $RING_SUP stdlib/* x/*" ;;
+    # ── the five ring test lanes (VC-22: TEST_TARGETS names them
+    # individually now; the old single `test-vcx` row could only ever say
+    # "something under vcx/ moved", which selected all five) ──
+    # Ring-0 lane: vcx/cx/*_test.v + the vcx/fixtures corpus loader. Cannot
+    # be reached by a code/ or platform/ edit — cx imports nothing above it.
+    test-vcx-cx)                   echo "$RING0 $RING_SUP conformance/*" ;;
+    # cxstore imports cx only.
+    test-vcx-cxstore)              echo "$RING0 $RING_STORE $RING_SUP" ;;
+    # in-module tests for vcx/code + vcx/platform.
+    test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* x/*" ;;
+    # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
+    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* stdlib/* x/*" ;;
+    # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
+    test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
+    # the conformance aggregates drive the built cx binary over the corpus.
+    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
+    # `test-vcx` is no longer a TEST_TARGETS row (it stays the human entry
+    # point). The row is kept so an explicit `test-changed` over a tree whose
+    # Makefile still names it cannot fall through to deny-by-default.
     test-vcx)                      echo 'vcx/* stdlib/* x/* conformance/* third_party/*' ;;
     test-vcx-columnar)             echo 'vcx/platform/store_columnar* vcx/platform/stdlib_store.v vcx/arrow/* third_party/*' ;;
-    test-v)                        echo 'vcx/* third_party/*' ;;
-    test-rust)                     echo 'vcx/* lang/* include/*' ;;
-    test-go)                       echo 'vcx/* lang/* include/*' ;;
-    check-prod-build)              echo 'vcx/* stdlib/* x/* third_party/*' ;;
     check-no-legacy-try)           echo 'vcx/* conformance/* stdlib/* docs-src/*' ;;
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;
