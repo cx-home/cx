@@ -931,11 +931,17 @@ test-code-diagram: build-vcx-dev
 	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_code_diagram_fixtures.cx
 
 # ── v0.8.0 gate 28.5 — XPath 3.1 parity (Saxon-HE reference) ─────────────
-# Runs conformance/xpath_31_parity.txt fixtures through both `cx eval` and
-# Saxon-HE (via Docker) and asserts byte-identical results for the parity
-# tag and documented divergence for the divergence tag. Requires Docker on
-# PATH; skip-cleanly behaviour lives inside the script (exit 2 on missing
-# prerequisites). Active gate per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded).
+# Gate 28.5 — BROKEN, retirement or rebuild proposed, awaiting an owner ruling
+# (#945). This target is deliberately NOT in TEST_TARGETS: the gate cannot pass
+# in any environment (its recorded expected outputs are XML while cx emits
+# canonical CX, and its cited normative spec does not exist in the tree), and
+# even repaired the Saxon half would need Docker + network + a third-party
+# image. Running it prints a pre-flight naming all six measured findings and
+# exits 2 — it does not "skip cleanly", because a clean skip is what let the
+# breakage sit unexamined. Full findings: conformance/GATE_REGISTER.md row 28.5
+# and the header of scripts/test_xpath_parity.sh. The old comment here claimed
+# it ran conformance/xpath_31_parity.txt through `cx eval`; neither the file nor
+# that invocation exists.
 .PHONY: test-xpath-parity
 test-xpath-parity: build-vcx
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
